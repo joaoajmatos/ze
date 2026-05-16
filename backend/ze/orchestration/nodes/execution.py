@@ -33,6 +33,7 @@ async def capability_check(state: AgentState, config: dict) -> dict:
 async def execute_tool(state: AgentState, config: dict) -> dict:
     """Run the primary agent and collect results. Handles compound tasks sequentially."""
     settings: Settings = config["configurable"]["settings"]
+    token_queue: asyncio.Queue | None = config["configurable"].get("token_queue")
     envelope = state["envelope"]
     base_ctx = state["agent_context"]
 
@@ -42,7 +43,7 @@ async def execute_tool(state: AgentState, config: dict) -> dict:
     if envelope.is_compound:
         return await _execute_compound(envelope.subtasks, base_ctx, settings)
     else:
-        return await _execute_single(envelope.subtasks[0], base_ctx, settings)
+        return await _execute_single(envelope.subtasks[0], base_ctx, settings, token_queue)
 
 
 async def draft_response(state: AgentState, config: dict) -> dict:
@@ -67,14 +68,19 @@ async def draft_response(state: AgentState, config: dict) -> dict:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def _execute_single(subtask, base_ctx: AgentContext, settings: Settings) -> dict:
+async def _execute_single(
+    subtask,
+    base_ctx: AgentContext,
+    settings: Settings,
+    token_queue: asyncio.Queue | None = None,
+) -> dict:
     ctx = AgentContext(
         session_id=base_ctx.session_id,
         prompt=subtask.prompt,
         intent=subtask.intent,
         memory=base_ctx.memory,
     )
-    result = await _run_with_timeout(subtask.agent, ctx, settings)
+    result = await _run_with_timeout(subtask.agent, ctx, settings, token_queue)
     return {"agent_result": result, "subtask_results": []}
 
 
@@ -93,10 +99,30 @@ async def _execute_compound(subtasks, base_ctx: AgentContext, settings: Settings
 
 
 async def _run_with_timeout(
-    agent_name: str, ctx: AgentContext, settings: Settings
+    agent_name: str,
+    ctx: AgentContext,
+    settings: Settings,
+    token_queue: asyncio.Queue | None = None,
 ) -> AgentResult:
     agent: BaseAgent = get_agent(agent_name)
     timeout = float(settings.agent_configs.get(agent_name, {}).get("timeout", 30))
+
+    if token_queue is not None:
+        async def _stream_and_collect() -> AgentResult:
+            tokens: list[str] = []
+            try:
+                async for token in agent.stream(ctx):
+                    tokens.append(token)
+                    await token_queue.put(token)
+            finally:
+                await token_queue.put(None)  # sentinel — always signal completion
+            return AgentResult(agent=agent_name, response="".join(tokens))
+
+        try:
+            return await asyncio.wait_for(_stream_and_collect(), timeout=timeout)
+        except asyncio.TimeoutError:
+            raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
+
     try:
         return await asyncio.wait_for(agent.run(ctx), timeout=timeout)
     except asyncio.TimeoutError:
