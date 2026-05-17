@@ -24,11 +24,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    develop:
-      watch:
-        - action: sync
-          path: ./backend
-          target: /app
 
   frontend:
     build:
@@ -38,14 +33,6 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    develop:
-      watch:
-        - action: sync
-          path: ./frontend
-          target: /app
-          ignore:
-            - node_modules
-            - .next
 
 volumes:
   postgres_data:

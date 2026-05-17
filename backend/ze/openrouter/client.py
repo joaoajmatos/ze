@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 import structlog
 from openrouter import OpenRouter
 from openrouter import errors as sdk_errors
+from openrouter.components.chatassistantmessage import ChatAssistantMessage
 from openrouter.components.chatresult import ChatResult
 from openrouter.components.chatstreamchunk import ChatStreamChunk
 from openrouter.types import UNSET, UNSET_SENTINEL
@@ -45,6 +46,9 @@ class OpenRouterClient:
         system: str | None = None,
         temperature: float = 0.3,
         max_tokens: int = 1000,
+        *,
+        response_format: dict | None = None,
+        reasoning: dict | None = None,
     ) -> str:
         """Send a non-streaming completion. Returns the full response string."""
         full_messages = _build_messages(messages, system)
@@ -53,13 +57,18 @@ class OpenRouterClient:
 
         for attempt, backoff in enumerate(_BACKOFFS, start=1):
             try:
-                response = await self._sdk.chat.send_async(
-                    messages=full_messages,
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    stream=False,
-                )
+                request_kwargs: dict = {
+                    "messages": full_messages,
+                    "model": model,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "stream": False,
+                }
+                if response_format is not None:
+                    request_kwargs["response_format"] = response_format
+                if reasoning is not None:
+                    request_kwargs["reasoning"] = reasoning
+                response = await self._sdk.chat.send_async(**request_kwargs)
             except sdk_errors.OpenRouterError as exc:
                 ze_exc = _map_sdk_error(exc)
                 if not _is_retryable(ze_exc):
@@ -86,11 +95,7 @@ class OpenRouterClient:
 
             duration_ms = int((time.monotonic() - start) * 1000)
             usage = _extract_usage(response)
-            content = response.choices[0].message.content
-            if content is None or content is UNSET or content is UNSET_SENTINEL:
-                content = ""
-            elif not isinstance(content, str):
-                content = str(content)
+            content = _extract_message_text(response.choices[0].message)
 
             self._log.info(
                 "openrouter_complete",
@@ -177,10 +182,38 @@ def _chunk_content(chunk: ChatStreamChunk) -> str | None:
     if not chunk.choices:
         return None
     delta = chunk.choices[0].delta
-    content = delta.content
-    if content is UNSET or content is UNSET_SENTINEL or content is None:
-        return None
-    return content
+    text = _content_to_str(delta.content)
+    if not text.strip():
+        reasoning = delta.reasoning
+        if reasoning not in (UNSET, UNSET_SENTINEL, None) and isinstance(reasoning, str):
+            text = reasoning
+    return text or None
+
+
+def _extract_message_text(message: ChatAssistantMessage) -> str:
+    text = _content_to_str(message.content)
+    if not text.strip():
+        reasoning = message.reasoning
+        if reasoning not in (UNSET, UNSET_SENTINEL, None) and isinstance(reasoning, str):
+            return reasoning
+    return text
+
+
+def _content_to_str(content: object) -> str:
+    if content is None or content is UNSET or content is UNSET_SENTINEL:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            text = getattr(block, "text", None)
+            if text is None and isinstance(block, dict):
+                text = block.get("text")
+            if text:
+                parts.append(text)
+        return "".join(parts)
+    return str(content)
 
 
 def _map_sdk_error(exc: sdk_errors.OpenRouterError) -> OpenRouterError:

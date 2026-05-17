@@ -1,5 +1,7 @@
 import asyncio
 
+from langchain_core.runnables import RunnableConfig
+
 from ze.agents.base import BaseAgent
 from ze.agents.registry import get_agent
 from ze.agents.types import AgentContext, AgentResult
@@ -13,7 +15,7 @@ from ze.settings import Settings
 log = get_logger(__name__)
 
 
-async def capability_check(state: AgentState, config: dict) -> dict:
+async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
     """Evaluate capability gate for the primary agent and intent."""
     gate: CapabilityGate = config["configurable"]["capability_gate"]
     envelope = state["envelope"]
@@ -30,7 +32,7 @@ async def capability_check(state: AgentState, config: dict) -> dict:
     return {"gate_decision": decision}
 
 
-async def execute_tool(state: AgentState, config: dict) -> dict:
+async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     """Run the primary agent and collect results. Handles compound tasks sequentially."""
     settings: Settings = config["configurable"]["settings"]
     token_queue: asyncio.Queue | None = config["configurable"].get("token_queue")
@@ -46,7 +48,7 @@ async def execute_tool(state: AgentState, config: dict) -> dict:
         return await _execute_single(envelope.subtasks[0], base_ctx, settings, token_queue)
 
 
-async def draft_response(state: AgentState, config: dict) -> dict:
+async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
     """Run the agent in draft mode — no write tool calls, result goes to confirmation."""
     settings: Settings = config["configurable"]["settings"]
     envelope = state["envelope"]

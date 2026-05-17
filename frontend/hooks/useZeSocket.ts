@@ -185,7 +185,7 @@ export function useZeSocket(sessionId: string): UseZeSocketReturn {
       { id: agentMsgId, role: "agent", content: "", isStreaming: true },
     ])
     setUiState("streaming")
-    wsRef.current.send(JSON.stringify({ type: "user", content }))
+    wsRef.current.send(JSON.stringify({ type: "message", content }))
   }, [])
 
   const sendConfirm = useCallback(

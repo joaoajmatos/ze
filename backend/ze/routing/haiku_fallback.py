@@ -28,6 +28,18 @@ Intent values: read, create, update, delete, execute, reason
 """
 
 
+def _strip_json_fences(raw: str) -> str:
+    text = raw.strip()
+    if not text.startswith("```"):
+        return text
+    lines = text.splitlines()
+    if lines[0].startswith("```"):
+        lines = lines[1:]
+    if lines and lines[-1].strip() == "```":
+        lines = lines[:-1]
+    return "\n".join(lines).strip()
+
+
 async def decompose(
     prompt: str,
     raw_scores: dict[str, float],
@@ -66,8 +78,10 @@ async def decompose(
                 system=system,
                 temperature=0.1,
                 max_tokens=500,
+                response_format={"type": "json_object"},
+                reasoning={"enabled": False},
             )
-            data = json.loads(raw)
+            data = json.loads(_strip_json_fences(raw))
             subtasks = [
                 SubTask(
                     agent=st["agent"],

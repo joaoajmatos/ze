@@ -1,10 +1,12 @@
+from langchain_core.runnables import RunnableConfig
+
 from ze.logging import get_logger
 from ze.orchestration.state import AgentState
 
 log = get_logger(__name__)
 
 
-async def await_confirmation(state: AgentState, config: dict) -> dict:
+async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
     """
     Mark the graph as paused awaiting user confirmation.
 

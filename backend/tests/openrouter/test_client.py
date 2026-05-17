@@ -3,6 +3,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from openrouter.components.chatassistantmessage import ChatAssistantMessage
+from openrouter.components.chatcontenttext import ChatContentText
 from openrouter.components.chatchoice import ChatChoice
 from openrouter.components.chatresult import ChatResult
 from openrouter.components.chatstreamchunk import ChatStreamChunk
@@ -152,6 +153,66 @@ async def test_complete_returns_content(client, mock_sdk):
         model="test-model",
     )
     assert result == "Paris"
+
+
+async def test_complete_extracts_text_from_content_blocks(client, mock_sdk):
+    mock_sdk.chat.send_async.return_value = ChatResult(
+        choices=[
+            ChatChoice(
+                finish_reason="stop",
+                index=0,
+                message=ChatAssistantMessage(
+                    role="assistant",
+                    content=[ChatContentText(type="text", text='{"ok": true}')],
+                ),
+            )
+        ],
+        created=0,
+        id="gen-test",
+        model="test-model",
+        object="chat.completion",
+        system_fingerprint=None,
+        usage=ChatUsage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+    )
+    result = await client.complete([{"role": "user", "content": "hi"}], model="test-model")
+    assert result == '{"ok": true}'
+
+
+async def test_complete_falls_back_to_reasoning_when_content_empty(client, mock_sdk):
+    mock_sdk.chat.send_async.return_value = ChatResult(
+        choices=[
+            ChatChoice(
+                finish_reason="stop",
+                index=0,
+                message=ChatAssistantMessage(
+                    role="assistant",
+                    content="",
+                    reasoning='{"ok": true}',
+                ),
+            )
+        ],
+        created=0,
+        id="gen-test",
+        model="test-model",
+        object="chat.completion",
+        system_fingerprint=None,
+        usage=ChatUsage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+    )
+    result = await client.complete([{"role": "user", "content": "hi"}], model="test-model")
+    assert result == '{"ok": true}'
+
+
+async def test_complete_forwards_response_format_and_reasoning(client, mock_sdk):
+    mock_sdk.chat.send_async.return_value = make_result("ok")
+    await client.complete(
+        [{"role": "user", "content": "hi"}],
+        model="test-model",
+        response_format={"type": "json_object"},
+        reasoning={"enabled": False},
+    )
+    kwargs = mock_sdk.chat.send_async.call_args.kwargs
+    assert kwargs["response_format"] == {"type": "json_object"}
+    assert kwargs["reasoning"] == {"enabled": False}
 
 
 async def test_complete_prepends_system_prompt(client, mock_sdk):

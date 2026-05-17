@@ -1,5 +1,6 @@
 import asyncio
 
+from langchain_core.runnables import RunnableConfig
 from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentResult
@@ -11,7 +12,7 @@ from ze.settings import Settings
 log = get_logger(__name__)
 
 
-async def write_memory(state: AgentState, config: dict) -> dict:
+async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     """
     Persist the completed interaction as an episode and propose any facts the
     agent flagged. Fires as background tasks — never blocks the graph.
@@ -55,7 +56,7 @@ async def write_memory(state: AgentState, config: dict) -> dict:
     return {}
 
 
-async def synthesize(state: AgentState, config: dict) -> dict:
+async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
     """Merge multiple subtask results into a single coherent response via Haiku."""
     from ze.openrouter.client import OpenRouterClient
 

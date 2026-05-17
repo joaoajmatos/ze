@@ -1,3 +1,5 @@
+from langchain_core.runnables import RunnableConfig
+
 from ze.logging import get_logger
 from ze.orchestration.state import AgentState
 from ze.routing.router import EmbeddingRouter
@@ -5,7 +7,7 @@ from ze.routing.router import EmbeddingRouter
 log = get_logger(__name__)
 
 
-async def embed_route(state: AgentState, config: dict) -> dict:
+async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     """Score the prompt against agent embeddings and produce a RoutingEnvelope."""
     router: EmbeddingRouter = config["configurable"]["router"]
     envelope = await router.route(
@@ -22,7 +24,7 @@ async def embed_route(state: AgentState, config: dict) -> dict:
     return {"envelope": envelope}
 
 
-async def decompose(state: AgentState, config: dict) -> dict:
+async def decompose(state: AgentState, config: RunnableConfig) -> dict:
     """
     For compound tasks the EmbeddingRouter already called haiku_fallback.decompose()
     internally. This node is a no-op passthrough that keeps the graph readable.

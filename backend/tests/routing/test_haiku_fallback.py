@@ -54,6 +54,8 @@ async def test_decompose_single_subtask(settings):
     client = make_client(single_subtask_response())
     env = await decompose("find AI news", raw_scores={}, client=client, settings=settings)
 
+    assert client.complete.await_args.kwargs["response_format"] == {"type": "json_object"}
+    assert client.complete.await_args.kwargs["reasoning"] == {"enabled": False}
     assert isinstance(env, RoutingEnvelope)
     assert env.routing_method == "haiku"
     assert env.is_compound is False

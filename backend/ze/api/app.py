@@ -7,8 +7,9 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from ze.api.openapi import OPENAPI_TAGS
 from ze.api.routes import capabilities, memory, routing
+from ze.agents.bootstrap import bootstrap_agents
 from ze.capability.gate import CapabilityGate
-from ze.db import create_pool
+from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
 from ze.logging import configure_logging, get_logger
 from ze.memory.store import MemoryStore
@@ -26,9 +27,10 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.log_level)
 
     pool = await create_pool(settings)
+    checkpointer_pool = await create_checkpointer_pool(settings)
     embedder = get_embedder()
 
-    checkpointer = AsyncPostgresSaver(pool)
+    checkpointer = AsyncPostgresSaver(checkpointer_pool)
     await checkpointer.setup()
 
     openrouter_client = OpenRouterClient(
@@ -53,6 +55,7 @@ async def lifespan(app: FastAPI):
         openrouter_client=openrouter_client,
         settings=settings,
     )
+    bootstrap_agents(openrouter_client=openrouter_client, settings=settings)
     graph = build_graph(checkpointer=checkpointer)
 
     app.state.pool = pool
@@ -70,6 +73,7 @@ async def lifespan(app: FastAPI):
 
     log.info("ze_shutdown")
     await openrouter_client.aclose()
+    await dispose_checkpointer_pool(checkpointer_pool)
     await pool.close()
 
 

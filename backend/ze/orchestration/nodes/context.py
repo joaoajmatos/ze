@@ -1,3 +1,4 @@
+from langchain_core.runnables import RunnableConfig
 from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentContext
@@ -8,7 +9,7 @@ from ze.orchestration.state import AgentState
 log = get_logger(__name__)
 
 
-async def fetch_context(state: AgentState, config: dict) -> dict:
+async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     """Encode the prompt, load memory context, and build the AgentContext."""
     store: MemoryStore = config["configurable"]["memory_store"]
     embedder: SentenceTransformer = config["configurable"]["embedder"]
