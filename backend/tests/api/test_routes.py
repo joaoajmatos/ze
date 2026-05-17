@@ -162,3 +162,26 @@ def test_memory_facts_returns_list(client):
     resp = c.get("/memory/facts")
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
+
+
+# ── OpenAPI schema ────────────────────────────────────────────────────────────
+
+def test_openapi_includes_rest_paths(client):
+    c, _ = client
+    schema = c.get("/openapi.json").json()
+    paths = schema["paths"]
+    assert "/capabilities" in paths
+    assert "/capabilities/{agent}/{intent}" in paths
+    assert "/memory/facts" in paths
+    assert "/memory/facts/review" in paths
+    assert "/memory/digest" in paths
+    assert "/routing/log" in paths
+
+
+def test_openapi_capabilities_get_has_response_schema(client):
+    c, _ = client
+    schema = c.get("/openapi.json").json()
+    get_op = schema["paths"]["/capabilities"]["get"]
+    assert "200" in get_op["responses"]
+    assert get_op["summary"]
+    assert get_op["description"]

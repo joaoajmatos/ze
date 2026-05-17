@@ -15,6 +15,8 @@ It is the only entry point into Ze — all external communication goes through h
 - Resume paused graphs when the client sends a `confirm` message.
 - Expire paused graphs after `CONFIRM_TIMEOUT_SECONDS` (default 900).
 - Expose REST endpoints for capabilities, memory, and routing log.
+- Publish machine-readable OpenAPI documentation for all REST endpoints (see
+  [OpenAPI documentation](#openapi-documentation)).
 - Wire all dependencies via FastAPI `Depends()` in `dependencies.py`.
 - Manage FastAPI lifespan: DB pool, embedding model, graph, checkpointer.
 
@@ -141,6 +143,26 @@ GET  /routing/log?limit=50&offset=0
 All schemas live in `ze/api/schemas.py`. This is the only file that defines
 Pydantic models. Domain dataclasses (in `types.py` files) are converted to
 response schemas here before serialisation.
+
+## OpenAPI documentation
+
+FastAPI generates OpenAPI 3.1 automatically. Ze requires every REST route to
+participate fully in that schema:
+
+- **Response models**: declare `response_model` on every REST handler. Request
+  bodies use Pydantic models in `schemas.py` (already required).
+- **Route metadata**: each handler must set `summary` and `description` (what it
+  does, not how it is implemented).
+- **Tags**: routers use `tags=[...]` matching the `openapi_tags` list in
+  `ze/api/app.py`.
+- **Query parameters**: use `Query(..., description=...)` for documented
+  pagination and filters.
+- **Errors**: document non-validation error responses (e.g. HTTP 422 from
+  unknown agent/intent) via the route `responses` dict where applicable.
+
+Interactive docs are served at `GET /docs` (Swagger UI) and `GET /redoc`
+(ReDoc) in development. WebSocket endpoints are excluded from OpenAPI (they are
+documented in this spec and in `schemas.py` WS message types).
 
 ## Dependencies (FastAPI `Depends()`)
 

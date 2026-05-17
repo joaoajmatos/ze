@@ -80,6 +80,9 @@ make test-all        # all backend tests including slow ones
 - **DI**: Constructor injection in all classes; FastAPI `Depends()` only in `ze/api/`.
   No module-level globals that hold mutable state (except the `lru_cache` singletons
   in `settings.py` and `embeddings.py`).
+- **OpenAPI**: Every REST route must declare `response_model`, `summary`, and
+  `description`; request/query params use Pydantic or annotated `Query`. See
+  `specs/07-api.md`.
 - **Logging**: Always use `get_logger(__name__)`. Never use `print()` or stdlib
   `logging` directly. Bind `session_id` at WebSocket connect time via `bind_context()`.
 - **Errors**: Raise from `ze/errors.py`. Never raise bare `Exception` or `ValueError`

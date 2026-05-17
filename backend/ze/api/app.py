@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
+from ze.api.openapi import OPENAPI_TAGS
 from ze.api.routes import capabilities, memory, routing
 from ze.capability.gate import CapabilityGate
 from ze.db import create_pool
@@ -74,7 +75,16 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
 
-    app = FastAPI(title="Ze API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Ze API",
+        version="0.1.0",
+        description=(
+            "Personal AI assistant API. REST endpoints manage capabilities, memory, "
+            "and routing logs; real-time chat uses the WebSocket at `/ws/{session_id}`."
+        ),
+        lifespan=lifespan,
+        openapi_tags=OPENAPI_TAGS,
+    )
 
     app.add_middleware(
         CORSMiddleware,

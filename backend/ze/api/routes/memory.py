@@ -1,24 +1,45 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from ze.api.dependencies import get_pool
-from ze.api.schemas import FactReviewRequest
+from ze.api.openapi import OPENAPI_RESPONSES_422
+from ze.api.schemas import (
+    FactReviewRequest,
+    MemoryDigestResponse,
+    UserFactResponse,
+)
 
 router = APIRouter(tags=["memory"])
 
 
-@router.get("/facts")
-async def list_facts(pool=Depends(get_pool)) -> list[dict]:
+@router.get(
+    "/facts",
+    response_model=list[UserFactResponse],
+    summary="List user facts",
+    description="Return all user facts, reviewed and unreviewed, newest first.",
+)
+async def list_facts(pool=Depends(get_pool)) -> list[UserFactResponse]:
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             "SELECT id, key, value, agent, confidence, reviewed, contradicted, updated_at "
             "FROM user_facts ORDER BY updated_at DESC"
         )
-    return [dict(r) for r in rows]
+    return [UserFactResponse.model_validate(dict(r)) for r in rows]
 
 
-@router.post("/facts/review")
-async def review_facts(body: FactReviewRequest, pool=Depends(get_pool)) -> list[dict]:
-    updated: list[dict] = []
+@router.post(
+    "/facts/review",
+    response_model=list[UserFactResponse],
+    summary="Review user facts",
+    description=(
+        "Apply confirm, reject, or edit actions to user facts. Confirm and edit set "
+        "`reviewed=true`; reject deletes the row. Edit requires `value` in the action."
+    ),
+    responses=OPENAPI_RESPONSES_422,
+)
+async def review_facts(
+    body: FactReviewRequest, pool=Depends(get_pool)
+) -> list[UserFactResponse]:
+    updated: list[UserFactResponse] = []
     async with pool.acquire() as conn:
         for action in body.actions:
             if action.action == "reject":
@@ -31,7 +52,7 @@ async def review_facts(body: FactReviewRequest, pool=Depends(get_pool)) -> list[
                     action.id,
                 )
                 if row:
-                    updated.append(dict(row))
+                    updated.append(UserFactResponse.model_validate(dict(row)))
             elif action.action == "edit":
                 if action.value is None:
                     raise HTTPException(status_code=422, detail="value required for edit action")
@@ -41,12 +62,20 @@ async def review_facts(body: FactReviewRequest, pool=Depends(get_pool)) -> list[
                     action.id,
                 )
                 if row:
-                    updated.append(dict(row))
+                    updated.append(UserFactResponse.model_validate(dict(row)))
     return updated
 
 
-@router.get("/digest")
-async def memory_digest(pool=Depends(get_pool)) -> dict:
+@router.get(
+    "/digest",
+    response_model=MemoryDigestResponse,
+    summary="Memory digest",
+    description=(
+        "Snapshot for the memory UI: unreviewed facts, contradicted facts, and the "
+        "10 most recent episodes."
+    ),
+)
+async def memory_digest(pool=Depends(get_pool)) -> MemoryDigestResponse:
     async with pool.acquire() as conn:
         unreviewed = await conn.fetch(
             "SELECT id, key, value, agent FROM user_facts WHERE reviewed = false ORDER BY updated_at DESC"
@@ -55,10 +84,10 @@ async def memory_digest(pool=Depends(get_pool)) -> dict:
             "SELECT id, key, value, agent FROM user_facts WHERE contradicted = true ORDER BY updated_at DESC"
         )
         episodes = await conn.fetch(
-            "SELECT id, agent, summary, relevance, created_at FROM episodes ORDER BY created_at DESC LIMIT 10"
+            "SELECT id, agent, summary, created_at FROM episodes ORDER BY created_at DESC LIMIT 10"
         )
-    return {
-        "unreviewed_facts": [dict(r) for r in unreviewed],
-        "contradicted_facts": [dict(r) for r in contradicted],
-        "recent_episodes": [dict(r) for r in episodes],
-    }
+    return MemoryDigestResponse(
+        unreviewed_facts=[dict(r) for r in unreviewed],
+        contradicted_facts=[dict(r) for r in contradicted],
+        recent_episodes=[dict(r) for r in episodes],
+    )
