@@ -172,8 +172,7 @@ google_refresh_token: str = ""
 ```
 ze/agents/calendar/
 ├── __init__.py      # no agent-specific tools to register
-├── agent.py         # @register CalendarAgent
-├── prompt.py        # system prompt
+├── agent.py         # _AGENT_INSTRUCTIONS constant + @register CalendarAgent
 └── tools.py         # list_events, create_event, update_event, delete_event
 ```
 
@@ -282,8 +281,7 @@ calendar:
 ```
 ze/agents/email/
 ├── __init__.py
-├── agent.py         # @register EmailAgent
-├── prompt.py
+├── agent.py         # _AGENT_INSTRUCTIONS constant + @register EmailAgent
 └── tools.py         # list_emails, get_email, draft_email, send_email, archive_email
 ```
 
@@ -475,11 +473,11 @@ Google API call, timing, try/except returning a failed `ToolCall` on error.
 | `ze/google/auth.py` | New — `GoogleCredentials` |
 | `ze/agents/calendar/__init__.py` | Update — import tools |
 | `ze/agents/calendar/agent.py` | New |
-| `ze/agents/calendar/prompt.py` | New |
+| `ze/agents/calendar/agent.py` | `_AGENT_INSTRUCTIONS` defined inline |
 | `ze/agents/calendar/tools.py` | New |
 | `ze/agents/email/__init__.py` | Update — import tools |
 | `ze/agents/email/agent.py` | New |
-| `ze/agents/email/prompt.py` | New |
+| `ze/agents/email/agent.py` | `_AGENT_INSTRUCTIONS` defined inline |
 | `ze/agents/email/tools.py` | New |
 | `ze/settings.py` | Add 3 Google env vars |
 | `ze/container.py` | Wire `GoogleCredentials` before bootstrap |

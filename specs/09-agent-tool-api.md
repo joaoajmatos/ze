@@ -535,8 +535,7 @@ Existing YAML files already satisfy this.
 ```
 ze/agents/<name>/
 ├── __init__.py         # imports tools module to trigger @tool registration
-├── agent.py            # @register class, implements BaseAgent
-├── prompt.py           # system prompt string(s)
+├── agent.py            # _AGENT_INSTRUCTIONS constant + @register class, implements BaseAgent
 └── tools.py            # @tool decorated functions
 ```
 

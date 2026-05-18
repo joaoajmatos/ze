@@ -151,7 +151,7 @@ Routing thresholds (`threshold`, `gap_threshold`) and model assignments.
 2. Add `config/agents/<name>.yaml` with `enabled: false` initially.
 3. Add `config/capabilities.yaml` entry.
 4. Create `ze/agents/<name>/agent.py` — subclass `BaseAgent`, add `@register`.
-5. Add `ze/agents/<name>/prompt.py`, `tools.py`, `intent_map.py`.
+5. Add `ze/agents/<name>/tools.py`. Define `_AGENT_INSTRUCTIONS` at the top of `agent.py`.
 6. Write tests in `tests/agents/<name>/`.
 7. Register the live instance in `ze/api/app.py` lifespan via `register_instance()`.
 8. Set `enabled: true` in the agent YAML when ready.

@@ -11,7 +11,7 @@ never imports individual agent modules directly.
 
 - Implement the `BaseAgent` interface.
 - Register with `@register("<name>")` in `agents/registry.py`.
-- Own a system prompt defined in `prompt.py` — no inline strings.
+- Own agent-specific instructions in a module-level `_AGENT_INSTRUCTIONS` constant at the top of `agent.py`.
 - Define a deterministic intent→tool map in `intent_map.py`.
 - Implement tool functions in `tools.py`.
 - Return an `AgentResult` from every `run()` call, including `memory_proposals`.
@@ -222,8 +222,7 @@ to pass before execution. Auth via Google OAuth2 — token stored in Fly.io secr
 ```
 ze/agents/<name>/
 ├── __init__.py
-├── agent.py        # @register("<name>") class, implements BaseAgent
-├── prompt.py       # System prompt string(s) — no inline strings in agent.py
+├── agent.py        # _AGENT_INSTRUCTIONS constant + @register class, implements BaseAgent
 └── tools.py        # Async tool functions called by the agent
 ```
 

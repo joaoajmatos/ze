@@ -1,13 +1,22 @@
 from typing import AsyncIterator
 
 from ze.agents.base import BaseAgent
-from ze.agents.email.prompt import SYSTEM_PROMPT
 from ze.agents.registry import register
 from ze.agents.types import AgentContext, AgentResult
 from ze.google.auth import GoogleCredentials
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze.tools.facts import to_user_facts
+
+_AGENT_INSTRUCTIONS = """\
+You manage the user's Gmail inbox.
+
+- Emails are plain text only — no HTML or markdown in the body.
+- Before sending, always ask for confirmation.
+- Summarize email content concisely: sender, subject, key points.
+- When searching, use Gmail query syntax (from:, subject:, is:unread, etc.).
+- If an operation fails, explain what went wrong clearly.\
+"""
 
 
 @register
@@ -37,7 +46,7 @@ class EmailAgent(BaseAgent):
         response = await self._client.complete(
             messages=[{"role": "user", "content": augmented}],
             model=self._model(),
-            system=SYSTEM_PROMPT.format(memory_context=self._format_memory(ctx)),
+            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         )
 
         facts_tc = await self.call_tool(
@@ -75,6 +84,6 @@ class EmailAgent(BaseAgent):
         async for token in self._client.stream(
             messages=[{"role": "user", "content": augmented}],
             model=self._model(),
-            system=SYSTEM_PROMPT.format(memory_context=self._format_memory(ctx)),
+            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         ):
             yield token

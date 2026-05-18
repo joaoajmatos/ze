@@ -73,6 +73,13 @@ class Settings(BaseSettings):
         agents_dir = self.config_dir / "agents"
         return {p.stem: _load_yaml(p) for p in sorted(agents_dir.glob("*.yaml"))}
 
+    @property
+    def persona_config(self) -> dict[str, Any]:
+        path = self.config_dir / "persona.yaml"
+        if path.exists():
+            return _load_yaml(path)
+        return {"traits": ["direct", "warm", "concise"], "verbosity": "concise", "custom_instructions": ""}
+
 
 def _load_yaml(path: Path) -> dict[str, Any]:
     with open(path) as f:

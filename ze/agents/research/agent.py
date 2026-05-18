@@ -4,12 +4,20 @@ from tavily import AsyncTavilyClient
 
 from ze.agents.base import BaseAgent
 from ze.agents.registry import register
-from ze.agents.research.prompt import SYSTEM_PROMPT
 from ze.agents.research.tools import format_search_results
 from ze.agents.types import AgentContext, AgentResult
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze.tools.facts import to_user_facts
+
+_AGENT_INSTRUCTIONS = """\
+You are Ze's research capability. Use web search to find accurate, up-to-date information.
+
+- Always search before answering questions about current events, facts, or anything that may have changed.
+- Summarize sources clearly and cite them when relevant.
+- If search results are insufficient, say so rather than guessing.
+- Never fabricate URLs or quotes.\
+"""
 
 
 @register
@@ -36,7 +44,7 @@ class ResearchAgent(BaseAgent):
         response = await self._client.complete(
             messages=[{"role": "user", "content": augmented}],
             model=self._model(),
-            system=SYSTEM_PROMPT.format(memory_context=self._format_memory(ctx)),
+            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         )
 
         facts_tc = await self.call_tool(
@@ -71,7 +79,7 @@ class ResearchAgent(BaseAgent):
         async for token in self._client.stream(
             messages=[{"role": "user", "content": augmented}],
             model=self._model(),
-            system=SYSTEM_PROMPT.format(memory_context=self._format_memory(ctx)),
+            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         ):
             yield token
 

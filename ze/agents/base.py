@@ -2,6 +2,7 @@ import time
 from abc import ABC, abstractmethod
 from typing import AsyncIterator
 
+from ze.agents.identity import build_identity_block
 from ze.agents.tool import ToolAccess, get_tool
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.capability.types import GateDecision
@@ -104,6 +105,16 @@ class BaseAgent(ABC):
         )
 
     def _format_memory(self, ctx: AgentContext) -> str:
-        """Render memory facts as a bullet list for system prompt injection."""
         lines = [f"- {f.key}: {f.value}" for f in ctx.memory.facts]
         return "\n".join(lines) if lines else "(none)"
+
+    def _build_system_prompt(
+        self,
+        agent_instructions: str,
+        ctx: AgentContext,
+        **extra: str,
+    ) -> str:
+        """Compose the full system prompt: shared identity block + agent instructions."""
+        identity = build_identity_block(self._settings.persona_config, self._format_memory(ctx))
+        rendered = agent_instructions.format(**extra) if extra else agent_instructions
+        return f"{identity}\n\n{rendered}"

@@ -1,13 +1,21 @@
 from typing import AsyncIterator
 
 from ze.agents.base import BaseAgent
-from ze.agents.calendar.prompt import SYSTEM_PROMPT
 from ze.agents.registry import register
 from ze.agents.types import AgentContext, AgentResult
 from ze.google.auth import GoogleCredentials
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze.tools.facts import to_user_facts
+
+_AGENT_INSTRUCTIONS = """\
+You manage the user's Google Calendar. All times are in {timezone}.
+
+- Before creating or modifying events, confirm the details.
+- When listing events, summarize concisely: title, date/time, location if present.
+- Resolve ambiguous time references ("tomorrow", "next week") explicitly before acting.
+- If an operation fails, explain what went wrong clearly.\
+"""
 
 
 @register
@@ -25,12 +33,6 @@ class CalendarAgent(BaseAgent):
         self._client = openrouter_client
         self._creds  = google_credentials
 
-    def _system_prompt(self, ctx: AgentContext) -> str:
-        return SYSTEM_PROMPT.format(
-            timezone=self._settings.timezone,
-            memory_context=self._format_memory(ctx),
-        )
-
     async def run(self, ctx: AgentContext) -> AgentResult:
         events_tc = await self.call_tool(
             "list_events", ctx, credentials=self._creds
@@ -43,7 +45,7 @@ class CalendarAgent(BaseAgent):
         response = await self._client.complete(
             messages=[{"role": "user", "content": augmented}],
             model=self._model(),
-            system=self._system_prompt(ctx),
+            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx, timezone=self._settings.timezone),
         )
 
         facts_tc = await self.call_tool(
@@ -81,6 +83,6 @@ class CalendarAgent(BaseAgent):
         async for token in self._client.stream(
             messages=[{"role": "user", "content": augmented}],
             model=self._model(),
-            system=self._system_prompt(ctx),
+            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx, timezone=self._settings.timezone),
         ):
             yield token
