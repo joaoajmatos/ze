@@ -19,15 +19,6 @@ def make_settings(**overrides) -> Settings:
     return Settings(**{**defaults, **overrides})
 
 
-def test_cors_origins_parsed_from_comma_string():
-    s = make_settings(cors_origins="http://localhost:3000,http://localhost:3001")
-    assert s.cors_origins == ["http://localhost:3000", "http://localhost:3001"]
-
-
-def test_cors_origins_accepts_list():
-    s = make_settings(cors_origins=["http://localhost:3000"])
-    assert s.cors_origins == ["http://localhost:3000"]
-
 
 def test_capabilities_path_points_to_config_dir(tmp_path):
     s = make_settings()

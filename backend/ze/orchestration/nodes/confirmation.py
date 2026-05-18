@@ -12,9 +12,8 @@ async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
 
     The graph is configured with interrupt_before=["await_confirmation"], so
     LangGraph pauses *before* this node executes and checkpoints state. This node
-    runs only after the WebSocket handler resumes execution with a confirm/reject
-    message. It simply records that confirmation is pending so downstream edges
-    can inspect it.
+    runs only after the Telegram bot resumes execution via a callback_query.
+    It simply records that confirmation is pending so downstream edges can inspect it.
     """
     log.info(
         "orchestration_awaiting_confirmation",

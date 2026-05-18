@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _BACKEND_ROOT = Path(__file__).parent.parent  # backend/
@@ -32,21 +31,19 @@ class Settings(BaseSettings):
 
     # ── API ───────────────────────────────────────────────────────────────────
     ze_api_key: str = "change-me"
-    cors_origins: list[str] = ["http://localhost:3000"]
     confirm_timeout_seconds: int = 900
+
+    # ── Telegram ──────────────────────────────────────────────────────────────
+    telegram_bot_token: str = ""
+    telegram_webhook_secret: str = ""
+    telegram_allowed_chat_id: int = 0
+    public_url: str = ""
 
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = "INFO"
 
     # ── Config paths ─────────────────────────────────────────────────────────
     config_dir: Path = _BACKEND_ROOT / "config"
-
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def split_cors(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
 
     # ── Derived config (loaded from YAML, not env) ────────────────────────────
 
