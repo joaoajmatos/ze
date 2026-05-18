@@ -1,5 +1,21 @@
 # Memory — Spec
 
+## Implementation Status
+
+| Feature | Status |
+|---------|--------|
+| Episode write + pgvector embedding | ✅ Done |
+| Semantic episode retrieval (cosine similarity) | ✅ Done |
+| Lazy episode summarisation via Haiku, cached in DB | ✅ Done |
+| Contradiction detection — exact key match | ✅ Done |
+| Contradiction detection — embedding similarity | ✅ Done |
+| Fact retrieval by recency + agent-scoping | ✅ Done |
+| Memory digest API (`GET /memory/digest`) | ✅ Done |
+| Fact review API (`POST /memory/facts/review`) | ✅ Done |
+| **Semantic fact retrieval (embedding on `user_facts`)** | ❌ Remaining |
+
+Background consolidation (dedup, expiry, re-embedding) is **Phase 4** — not in scope here. Memory writes fire as `asyncio.create_task()` at the end of each graph run; no background worker.
+
 ## Purpose
 
 Persist and retrieve two types of memory: stable user facts (Tier 1) and episodic
@@ -227,6 +243,71 @@ class MemoryStore:
   `001_initial_schema.py` with `lists = 100`. Monitor and re-create with higher
   `lists` if the table grows past 10,000 rows.
 - Episode writes must not block the LangGraph node. Fire as `asyncio.create_task`.
+
+## Semantic Fact Retrieval (Remaining Phase 2 Work)
+
+Currently `user_facts` has no embedding column — facts are loaded by recency and
+agent-scoping, ignoring the `prompt_embedding` available in `get_context`. This means
+unrelated facts consume the token budget.
+
+### Required changes
+
+**Migration** — add embedding column and vector index to `user_facts`:
+
+```sql
+ALTER TABLE user_facts ADD COLUMN embedding VECTOR(384);
+CREATE INDEX ON user_facts USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 100);
+```
+
+**`propose_facts`** — encode `fact.value` and store the embedding at insert time:
+
+```python
+value_embedding = self._embedder.encode(fact.value)
+await conn.execute(
+    "INSERT INTO user_facts (key, value, agent, confidence, embedding) VALUES ($1, $2, $3, $4, $5::vector)",
+    fact.key, fact.value, fact.agent, fact.confidence, _vec(value_embedding),
+)
+```
+
+Note: the embedding similarity contradiction check already calls `self._embedder.encode(fact.value)` — reuse that result instead of encoding twice.
+
+**`_load_facts`** — accept `prompt_embedding` and rank by cosine similarity, falling
+back to recency for facts without an embedding (rows written before the migration):
+
+```python
+async def _load_facts(
+    self,
+    agent: str,
+    token_budget: int,
+    prompt_embedding: np.ndarray | None = None,
+) -> list[UserFact]:
+```
+
+Query when `prompt_embedding` is provided:
+
+```sql
+SELECT id, key, value, agent, confidence, reviewed, contradicted, updated_at,
+       CASE
+         WHEN embedding IS NOT NULL THEN 1 - (embedding <=> $3::vector)
+         ELSE 0.0
+       END AS relevance
+FROM user_facts
+WHERE contradicted = false
+ORDER BY
+    CASE WHEN agent = $1 THEN 0 ELSE 1 END,
+    relevance DESC,
+    updated_at DESC
+```
+
+**`get_context`** — pass `prompt_embedding` through to `_load_facts`.
+
+### Behaviour after migration
+
+- New facts are embedded on write (reusing the encoding already done for contradiction check).
+- Facts written before the migration have `embedding IS NULL`; they sort last by relevance
+  and fall back to recency — no data loss, no backfill required.
+- The token budget and truncation logic are unchanged.
 
 ## Open Questions
 

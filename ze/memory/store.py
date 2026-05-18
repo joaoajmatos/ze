@@ -51,7 +51,7 @@ class MemoryStore:
     ) -> MemoryContext:
         budget = token_budget or _DEFAULT_BUDGET
 
-        facts = await self._load_facts(agent, budget["facts"])
+        facts = await self._load_facts(agent, budget["facts"], prompt_embedding)
         episodes = await self._load_episodes(prompt_embedding, budget["episodes"])
 
         token_estimate = sum(_tokens(f.value) for f in facts)
@@ -94,19 +94,43 @@ class MemoryStore:
 
     # ── Retrieval helpers ─────────────────────────────────────────────────────
 
-    async def _load_facts(self, agent: str, token_budget: int) -> list[UserFact]:
+    async def _load_facts(
+        self,
+        agent: str,
+        token_budget: int,
+        prompt_embedding: np.ndarray | None = None,
+    ) -> list[UserFact]:
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT id, key, value, agent, confidence, reviewed, contradicted, updated_at
-                FROM user_facts
-                WHERE contradicted = false
-                ORDER BY
-                    CASE WHEN agent = $1 THEN 0 ELSE 1 END,
-                    updated_at DESC
-                """,
-                agent,
-            )
+            if prompt_embedding is not None:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, key, value, agent, confidence, reviewed, contradicted, updated_at,
+                           CASE
+                             WHEN embedding IS NOT NULL THEN 1 - (embedding <=> $2::vector)
+                             ELSE 0.0
+                           END AS relevance
+                    FROM user_facts
+                    WHERE contradicted = false
+                    ORDER BY
+                        CASE WHEN agent = $1 THEN 0 ELSE 1 END,
+                        relevance DESC,
+                        updated_at DESC
+                    """,
+                    agent,
+                    _vec(prompt_embedding),
+                )
+            else:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, key, value, agent, confidence, reviewed, contradicted, updated_at
+                    FROM user_facts
+                    WHERE contradicted = false
+                    ORDER BY
+                        CASE WHEN agent = $1 THEN 0 ELSE 1 END,
+                        updated_at DESC
+                    """,
+                    agent,
+                )
 
         facts: list[UserFact] = []
         used = 0
@@ -235,6 +259,7 @@ class MemoryStore:
             self._log.info("fact_contradicted_exact_key", key=fact.key)
 
         # Embedding similarity → flag semantically contradictory entries
+        # Encode once; reuse for both contradiction check and storage.
         value_embedding = self._embedder.encode(fact.value)
         all_rows = await conn.fetch(
             "SELECT id, key, value FROM user_facts WHERE key != $1 AND contradicted = false",
@@ -260,15 +285,16 @@ class MemoryStore:
                     similarity=round(similarity, 3),
                 )
 
-        # Insert the new fact (unreviewed by default)
+        # Insert the new fact with its embedding for semantic retrieval.
         await conn.execute(
             """
-            INSERT INTO user_facts (key, value, agent, confidence)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO user_facts (key, value, agent, confidence, embedding)
+            VALUES ($1, $2, $3, $4, $5::vector)
             """,
             fact.key,
             fact.value,
             fact.agent,
             fact.confidence,
+            _vec(value_embedding),
         )
         self._log.debug("fact_proposed", key=fact.key, agent=fact.agent)

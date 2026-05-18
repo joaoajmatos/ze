@@ -177,6 +177,6 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Routing, research + companion agents, orchestration, API, Telegram bot | In progress |
-| 2 | Memory (full implementation), contradiction detection, episode embeddings | Not started |
-| 3 | Calendar + email agents, Google OAuth2 | Not started |
-| 4 | Workflow agent, multi-step planning | Not started |
+| 2 | Memory — contradiction detection, episode summarisation, semantic retrieval | Mostly done — semantic fact retrieval (embeddings on `user_facts`) remaining |
+| 3 | Calendar + email agents, Google OAuth2 | Done |
+| 4 | Workflow agent, multi-step planning, background memory consolidation | Not started |
