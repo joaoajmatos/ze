@@ -8,7 +8,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "backend/**"
+      - "ze/**"
+      - "config/**"
+      - "migrations/**"
+      - "pyproject.toml"
+      - "Dockerfile"
       - "fly.toml"
       - ".github/workflows/deploy-backend.yml"
   workflow_dispatch:

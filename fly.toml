@@ -2,7 +2,7 @@ app = "ze-backend"
 primary_region = "lhr"
 
 [build]
-  dockerfile = "backend/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = "8000"

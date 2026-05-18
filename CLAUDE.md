@@ -11,32 +11,34 @@ OpenRouter.
 
 ```
 ze/
-├── backend/                  # Python package (uv)
-│   ├── ze/
-│   │   ├── api/              # FastAPI app, Telegram webhook handler, REST routes
-│   │   ├── agents/           # BaseAgent ABC, registry, research + companion agents
-│   │   ├── capability/       # CapabilityGate — permission enforcement
-│   │   ├── memory/           # MemoryStore (Phase 1 stub), UserFact, Episode types
-│   │   ├── openrouter/       # OpenRouterClient (complete() + stream())
-│   │   ├── orchestration/    # LangGraph state machine (nodes/, edges, graph, state)
-│   │   ├── routing/          # EmbeddingRouter + haiku_fallback
-│   │   ├── telegram/         # ZeBot, handlers, keyboards, session store
-│   │   ├── db.py             # asyncpg pool factory
-│   │   ├── embeddings.py     # SentenceTransformer singleton
-│   │   ├── errors.py         # Ze exception hierarchy
-│   │   ├── logging.py        # structlog JSON config
-│   │   └── settings.py       # Pydantic BaseSettings (single config source)
-│   ├── config/
-│   │   ├── agents/           # One YAML per agent (description, model, tools, timeout)
-│   │   ├── capabilities.yaml # Per-agent permission modes
-│   │   └── models.yaml       # Model names + routing thresholds
-│   ├── migrations/versions/  # Alembic raw-SQL migrations (no ORM)
-│   │   ├── 001_initial_schema.py   # routing_log, user_facts, episodes
-│   │   └── 002_checkpointer.py     # LangGraph checkpoint tables
-│   └── tests/                # Mirrors ze/ structure
+├── ze/                       # Python package
+│   ├── api/                  # FastAPI app, Telegram webhook handler, REST routes
+│   ├── agents/               # BaseAgent ABC, registry, research + companion agents
+│   ├── capability/           # CapabilityGate — permission enforcement
+│   ├── memory/               # MemoryStore (Phase 1 stub), UserFact, Episode types
+│   ├── openrouter/           # OpenRouterClient (complete() + stream())
+│   ├── orchestration/        # LangGraph state machine (nodes/, edges, graph, state)
+│   ├── routing/              # EmbeddingRouter + haiku_fallback
+│   ├── telegram/             # ZeBot, keyboards, session store
+│   ├── container.py          # Dependency wiring — builds all shared resources
+│   ├── db.py                 # asyncpg pool factory
+│   ├── embeddings.py         # SentenceTransformer singleton
+│   ├── errors.py             # Ze exception hierarchy
+│   ├── logging.py            # structlog JSON config
+│   └── settings.py           # Pydantic BaseSettings (single config source)
+├── config/
+│   ├── agents/               # One YAML per agent (description, model, tools, timeout)
+│   ├── capabilities.yaml     # Per-agent permission modes
+│   └── models.yaml           # Model names + routing thresholds
+├── migrations/versions/      # Alembic raw-SQL migrations (no ORM)
+│   ├── 001_initial_schema.py # routing_log, user_facts, episodes
+│   └── 002_checkpointer.py   # LangGraph checkpoint tables
+├── tests/                    # Mirrors ze/ structure
 ├── specs/                    # All 8 design specs (read before modifying a module)
+├── Dockerfile                # Production image
 ├── docker-compose.yml        # Postgres (pgvector/pgvector:pg16) + backend
 ├── fly.toml                  # Fly.io deployment config
+├── pyproject.toml            # Python project + dependencies
 └── Makefile                  # All dev commands (see `make help`)
 ```
 
@@ -46,9 +48,9 @@ ze/
 make help            # full target list
 make db-up           # start Postgres via Docker
 make migrate         # apply migrations (requires db-up first)
-make dev-be          # uvicorn --reload on :8000
-make test            # backend tests, fast (skips embedding model load)
-make test-all        # all backend tests including slow ones
+make dev             # uvicorn --reload on :8000
+make test            # tests, fast (skips embedding model load)
+make test-all        # all tests including slow ones
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)

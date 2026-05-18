@@ -1,14 +1,9 @@
 # ── Ze — project Makefile ─────────────────────────────────────────────────────
-# All targets run from the repo root.
-# Backend commands delegate to uv inside ./backend.
 
 .DEFAULT_GOAL := help
-BACKEND  := backend
-UV       := uv run --project $(BACKEND)
 
 DB_SYNC_URL ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
-# alembic resolves script_location relative to cwd, so we cd into backend first
-ALEMBIC     := cd $(BACKEND) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m alembic
+ALEMBIC     := DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m alembic
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -17,7 +12,7 @@ help:
 	@echo "  Ze — available targets"
 	@echo ""
 	@echo "  Setup"
-	@echo "    install        Install backend dependencies"
+	@echo "    install        Install dependencies"
 	@echo ""
 	@echo "  Database"
 	@echo "    db-up          Start Postgres via docker-compose"
@@ -29,14 +24,14 @@ help:
 	@echo "    migrate-history List all migrations"
 	@echo ""
 	@echo "  Development"
-	@echo "    dev            Start backend dev server (uvicorn --reload)"
+	@echo "    dev            Start dev server (uvicorn --reload)"
 	@echo ""
 	@echo "  Testing"
-	@echo "    test           Run backend tests (excludes slow embedding tests)"
-	@echo "    test-all       Run all backend tests including slow ones"
+	@echo "    test           Run tests (excludes slow embedding tests)"
+	@echo "    test-all       Run all tests including slow ones"
 	@echo ""
 	@echo "  Code quality"
-	@echo "    lint           Lint backend (ruff)"
+	@echo "    lint           Lint with ruff"
 	@echo ""
 	@echo "  Docker"
 	@echo "    docker-up      Start all services via docker-compose"
@@ -48,7 +43,7 @@ help:
 .PHONY: install
 
 install:
-	cd $(BACKEND) && uv sync
+	uv sync
 
 .PHONY: sync-ze-api-key
 sync-ze-api-key:
@@ -83,29 +78,25 @@ migrate-history:
 	$(ALEMBIC) history --verbose
 
 # ── Development ───────────────────────────────────────────────────────────────
-.PHONY: dev dev-be
+.PHONY: dev
 
-dev: dev-be
-
-dev-be:
-	cd $(BACKEND) && uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+dev:
+	uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 .PHONY: test test-all
 
 test:
-	cd $(BACKEND) && uv run pytest --ignore=tests/test_embeddings.py -q
+	uv run pytest --ignore=tests/test_embeddings.py -q
 
 test-all:
-	cd $(BACKEND) && uv run pytest -q
+	uv run pytest -q
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: lint lint-be
+.PHONY: lint
 
-lint: lint-be
-
-lint-be:
-	cd $(BACKEND) && uv run ruff check ze tests
+lint:
+	uv run ruff check ze tests
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 .PHONY: docker-up docker-down docker-build

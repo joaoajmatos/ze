@@ -1,34 +1,51 @@
-import signal
-from contextlib import asynccontextmanager
+from __future__ import annotations
+
+from dataclasses import dataclass
 
 from aiogram import Bot
-from fastapi import FastAPI
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from ze.api.openapi import OPENAPI_TAGS
-from ze.api.routes import capabilities, memory, routing
-from ze.api.telegram import router as telegram_router
 from ze.agents.bootstrap import bootstrap_agents
 from ze.capability.gate import CapabilityGate
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
-from ze.logging import configure_logging, get_logger
+from ze.logging import get_logger
 from ze.memory.store import MemoryStore
 from ze.openrouter.client import OpenRouterClient
 from ze.orchestration.graph import build_graph
 from ze.routing.router import EmbeddingRouter
-from ze.settings import get_settings
+from ze.settings import Settings
 from ze.telegram.bot import ZeBot
 from ze.telegram.session import ActiveSessionStore
 
 log = get_logger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    settings = get_settings()
-    configure_logging(settings.log_level)
+@dataclass
+class Container:
+    """Holds all shared resources for the Ze application lifetime."""
 
+    settings: Settings
+    pool: object
+    checkpointer_pool: object
+    embedder: object
+    openrouter_client: OpenRouterClient
+    router: EmbeddingRouter
+    capability_gate: CapabilityGate
+    memory_store: MemoryStore
+    graph: object
+    bot: Bot
+    ze_bot: ZeBot
+
+    async def close(self) -> None:
+        await self.bot.session.close()
+        await self.openrouter_client.aclose()
+        await dispose_checkpointer_pool(self.checkpointer_pool)
+        await self.pool.close()
+        log.info("container_closed")
+
+
+async def build_container(settings: Settings) -> Container:
     pool = await create_pool(settings)
     checkpointer_pool = await create_checkpointer_pool(settings)
     embedder = get_embedder()
@@ -58,6 +75,7 @@ async def lifespan(app: FastAPI):
         openrouter_client=openrouter_client,
         settings=settings,
     )
+
     bootstrap_agents(openrouter_client=openrouter_client, settings=settings)
     graph = build_graph(checkpointer=checkpointer)
 
@@ -82,46 +100,16 @@ async def lifespan(app: FastAPI):
         settings=settings,
     )
 
-    app.state.settings = settings
-    app.state.pool = pool
-    app.state.embedder = embedder
-    app.state.graph = graph
-    app.state.openrouter_client = openrouter_client
-    app.state.router = router
-    app.state.capability_gate = capability_gate
-    app.state.memory_store = memory_store
-    app.state.ze_bot = ze_bot
-
-    signal.signal(signal.SIGHUP, lambda *_: capability_gate.reload())
-
-    log.info("ze_startup_complete")
-    yield
-
-    log.info("ze_shutdown")
-    await bot.session.close()
-    await openrouter_client.aclose()
-    await dispose_checkpointer_pool(checkpointer_pool)
-    await pool.close()
-
-
-def create_app() -> FastAPI:
-    app = FastAPI(
-        title="Ze API",
-        version="0.1.0",
-        description=(
-            "Personal AI assistant API. REST endpoints manage capabilities, memory, "
-            "and routing logs. Chat is handled by the Telegram bot."
-        ),
-        lifespan=lifespan,
-        openapi_tags=OPENAPI_TAGS,
+    return Container(
+        settings=settings,
+        pool=pool,
+        checkpointer_pool=checkpointer_pool,
+        embedder=embedder,
+        openrouter_client=openrouter_client,
+        router=router,
+        capability_gate=capability_gate,
+        memory_store=memory_store,
+        graph=graph,
+        bot=bot,
+        ze_bot=ze_bot,
     )
-
-    app.include_router(capabilities.router, prefix="/capabilities")
-    app.include_router(memory.router, prefix="/memory")
-    app.include_router(routing.router, prefix="/routing")
-    app.include_router(telegram_router)
-
-    return app
-
-
-app = create_app()
