@@ -12,8 +12,9 @@ help:
 	@echo "  Ze — available targets"
 	@echo ""
 	@echo "  Setup"
-	@echo "    install        Install dependencies"
-	@echo "    google-auth    One-time Google OAuth2 flow (Calendar + Gmail)"
+	@echo "    install              Install dependencies"
+	@echo "    google-auth          One-time Google OAuth2 flow (Calendar + Gmail)"
+	@echo "    generate-ze-api-key  Generate or refresh ZE_API_KEY in .env"
 	@echo ""
 	@echo "  Database"
 	@echo "    db-up          Start Postgres via docker-compose"
@@ -42,7 +43,7 @@ help:
 	@echo ""
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
-.PHONY: install google-auth
+.PHONY: install google-auth generate-ze-api-key
 
 install:
 	uv sync
@@ -50,9 +51,8 @@ install:
 google-auth:
 	uv run python scripts/google_auth.py
 
-.PHONY: sync-ze-api-key
-sync-ze-api-key:
-	python3 tools/sync_ze_api_key.py $(if $(ZE_API_TOKEN),--token $(ZE_API_TOKEN))
+generate-ze-api-key:
+	uv run python scripts/generate_ze_api_key.py $(if $(ZE_API_TOKEN),--token $(ZE_API_TOKEN))
 
 # ── Database ──────────────────────────────────────────────────────────────────
 .PHONY: db-up db-down db-reset migrate migrate-down migrate-status migrate-history
