@@ -30,6 +30,18 @@ class ToolError(AgentError):
     """A tool call within an agent failed."""
 
 
+class UnknownToolError(ToolError):
+    """No tool registered for the requested name."""
+
+
+class ToolBlockedError(ToolError):
+    """Tool call rejected by the capability gate."""
+
+
+class AgentConfigError(AgentError):
+    """Agent or tool misconfiguration detected at startup."""
+
+
 # ── Capability ────────────────────────────────────────────────────────────────
 
 class CapabilityError(ZeError):

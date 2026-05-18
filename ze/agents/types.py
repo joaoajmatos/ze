@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
+from ze.capability.types import GateDecision
 from ze.memory.types import MemoryContext
 
 
@@ -12,6 +13,7 @@ class ToolCall:
     duration_ms: int
     success: bool
     error: str | None = None
+    is_draft: bool = False
 
 
 @dataclass
@@ -19,6 +21,7 @@ class AgentContext:
     session_id: str
     prompt: str
     intent: str
+    gate_decision: GateDecision = GateDecision.EXECUTE
     memory: MemoryContext = field(default_factory=MemoryContext)
     tool_calls: list[ToolCall] = field(default_factory=list)
 
