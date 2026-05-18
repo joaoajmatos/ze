@@ -24,6 +24,9 @@ dependencies = [
     "alembic>=1.14",
     "sqlalchemy>=2.0",             # alembic dependency; not used for ORM
     "openrouter>=0.9.1",
+    "google-api-python-client>=2.0",
+    "google-auth>=2.0",
+    "google-auth-oauthlib>=1.0",
 ]
 
 [dependency-groups]

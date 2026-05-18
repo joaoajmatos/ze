@@ -256,6 +256,7 @@ ze/agents/<name>/
 
 ## Open Questions
 
-- [ ] Phase 3: Google OAuth2 token refresh strategy — confirm short-lived access
-  token + long-lived refresh token stored as Fly.io secret. Refresh on 401 response.
+- [x] Phase 3: Google OAuth2 — refresh token in `GOOGLE_REFRESH_TOKEN` Fly.io
+  secret, access token exchanged at startup and refreshed on 401. Single OAuth2
+  flow run once via local CLI script. Covers both Calendar and Gmail.
 - [ ] Phase 4: Workflow integrations to define (Notion, GitHub, Slack, or other).

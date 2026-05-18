@@ -7,6 +7,7 @@ from tavily import AsyncTavilyClient
 
 from ze.agents.registry import _registry, register_instance
 from ze.errors import AgentConfigError
+from ze.google.auth import GoogleCredentials
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 
@@ -20,15 +21,20 @@ def bootstrap_agents(
     openrouter_client: OpenRouterClient,
     settings: Settings,
     tavily_client: AsyncTavilyClient | None = None,
+    google_credentials: GoogleCredentials | None = None,
 ) -> None:
     """Instantiate and register all enabled agents. Called once at app startup."""
     if tavily_client is None:
         tavily_client = AsyncTavilyClient(api_key=settings.tavily_api_key)
 
+    if google_credentials is None:
+        google_credentials = GoogleCredentials.from_settings(settings)
+
     _dep_map.clear()
-    _dep_map[OpenRouterClient]  = openrouter_client
-    _dep_map[Settings]          = settings
-    _dep_map[AsyncTavilyClient] = tavily_client
+    _dep_map[OpenRouterClient]   = openrouter_client
+    _dep_map[Settings]           = settings
+    _dep_map[AsyncTavilyClient]  = tavily_client
+    _dep_map[GoogleCredentials]  = google_credentials
 
     _import_agent_modules()
 

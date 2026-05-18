@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     telegram_allowed_chat_id: int = 0
     public_url: str = ""
 
+    # ── Google OAuth2 ────────────────────────────────────────────────────────
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_refresh_token: str = ""
+    timezone: str = "UTC"
+
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = "INFO"
 

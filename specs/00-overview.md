@@ -126,6 +126,8 @@ These live at the root of `ze/` and are imported by all other modules.
 
 ## Open Questions
 
-- [ ] Phase 3: confirm OAuth2 token refresh strategy (short-lived access token +
-  long-lived refresh token stored as Fly.io secret).
+- [x] Phase 3: OAuth2 strategy resolved — Google OAuth2 (Calendar + Gmail).
+  Refresh token stored as `GOOGLE_REFRESH_TOKEN` Fly.io secret. Access token
+  exchanged at startup and on every 401. One OAuth2 flow run once locally via
+  a temporary CLI script; refresh token never touches the DB.
 - [ ] Phase 4: define which integrations are in scope for the workflow agent.
