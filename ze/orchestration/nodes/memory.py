@@ -26,13 +26,27 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     if ctx is None:
         return {}
 
+    final_response = state.get("final_response")
+    subtask_results: list[AgentResult] = state.get("subtask_results") or []
+
     if result is None:
-        error_msg = state.get("error") or "unknown error"
         envelope = state.get("envelope")
-        result = AgentResult(
-            agent=envelope.primary_agent if envelope else "unknown",
-            response=f"[ERROR] {error_msg}",
-        )
+        agent_name = envelope.primary_agent if envelope else "unknown"
+        if final_response:
+            # Compound task: synthesized response is in final_response
+            all_proposals = [p for sr in subtask_results for p in sr.memory_proposals]
+            result = AgentResult(
+                agent=agent_name,
+                response=final_response,
+                memory_proposals=all_proposals,
+            )
+        else:
+            # Genuine error
+            error_msg = state.get("error") or "unknown error"
+            result = AgentResult(
+                agent=agent_name,
+                response=f"[ERROR] {error_msg}",
+            )
 
     embedding = embedder.encode(ctx.prompt)
 

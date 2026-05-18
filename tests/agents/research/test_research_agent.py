@@ -94,8 +94,9 @@ async def test_run_returns_response_string():
 async def test_run_includes_tool_calls():
     agent = make_agent()
     result = await agent.run(make_ctx())
-    assert len(result.tool_calls) == 1
+    assert len(result.tool_calls) == 2
     assert result.tool_calls[0].tool_name == "web_search"
+    assert result.tool_calls[1].tool_name == "extract_facts"
 
 
 async def test_run_calls_tavily_with_prompt():

@@ -76,7 +76,8 @@ def validate_registry(settings: Settings) -> None:
 # ── Private ───────────────────────────────────────────────────────────────────
 
 def _import_agent_modules() -> None:
-    """Import every agent sub-package that has an agent.py, triggering @register."""
+    """Import shared tools then every agent sub-package that has an agent.py."""
+    importlib.import_module("ze.tools")  # shared tools — always registered
     for path in sorted(_AGENTS_DIR.iterdir()):
         if path.is_dir() and (path / "agent.py").exists():
             importlib.import_module(f"ze.agents.{path.name}.agent")

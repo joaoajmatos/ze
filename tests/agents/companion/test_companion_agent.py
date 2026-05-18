@@ -78,10 +78,11 @@ async def test_run_returns_response_string():
     assert result.response == "I am doing great, thank you!"
 
 
-async def test_run_has_no_tool_calls():
+async def test_run_includes_extract_facts_tool_call():
     agent = make_agent()
     result = await agent.run(make_ctx())
-    assert result.tool_calls == []
+    assert len(result.tool_calls) == 1
+    assert result.tool_calls[0].tool_name == "extract_facts"
 
 
 async def test_run_sends_prompt_as_user_message():

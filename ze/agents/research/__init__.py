@@ -1,1 +1,1 @@
-from ze.agents.research import tools  # noqa: F401 — registers @tool decorators
+# No agent-specific tools to register — research uses shared tools from ze.tools.
