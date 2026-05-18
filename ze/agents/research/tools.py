@@ -3,11 +3,13 @@ import time
 import structlog
 from tavily import AsyncTavilyClient
 
+from ze.agents.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
 
 log = structlog.get_logger(__name__)
 
 
+@tool(access=ToolAccess.READ, description="Search the web for current information via Tavily.")
 async def web_search(
     query: str,
     client: AsyncTavilyClient,
