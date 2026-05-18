@@ -1,28 +1,28 @@
 # Ze — Personal AI Assistant
 
-A single-user AI assistant that routes conversations to specialised agents (research,
-companion, calendar, email) via a LangGraph orchestration layer. Communicates over
-WebSocket with a Next.js frontend. All LLM inference goes through OpenRouter.
+A single-user AI assistant accessed via Telegram. Routes conversations to specialised
+agents (research, companion, calendar, email) via a LangGraph orchestration layer.
+All LLM inference goes through OpenRouter.
 
 ## Stack
 
 | Layer | Technology |
 |---|---|
 | Backend | Python 3.12 · FastAPI · LangGraph |
+| Bot interface | Telegram (aiogram 3.x) |
 | LLM gateway | OpenRouter (all models) |
 | Embeddings | `all-MiniLM-L6-v2` (local, no API cost) |
 | Graph persistence | LangGraph `AsyncPostgresSaver` → Postgres |
 | Database | PostgreSQL 16 + pgvector |
 | Migrations | Alembic (raw SQL) |
-| Frontend | Next.js 14 · React 18 · Tailwind CSS |
 | Deployment | Fly.io |
 
 ## Prerequisites
 
 - Python 3.12+
-- Node.js 18+
 - [uv](https://github.com/astral-sh/uv) — `pip install uv`
 - Docker (for Postgres)
+- A Telegram bot token from [@BotFather](https://t.me/BotFather)
 
 ## Quick start
 
@@ -35,18 +35,21 @@ make install
 
 # 3. Configure secrets
 cp .env.example .env
-# Edit `.env` — fill in OPENROUTER_API_KEY, TAVILY_API_KEY, ZE_API_KEY and any other optional vars.
-# Run `make sync-ze-api-key` (or `python tools/sync_ze_api_key.py`) to generate/sync the ZE token so the
-# backend and frontend share the same bearer token. Pass `ZE_API_TOKEN=...` to fix it to a specific value.
+# Edit .env — fill in all required variables (see below).
 
 # 4. Start Postgres and apply migrations
 make db-up
 make migrate
 
-# 5. Start the backend and frontend
-make dev-be   # terminal 1 — http://localhost:8000
-make dev-fe   # terminal 2 — http://localhost:3000
+# 5. Start the backend
+make dev
 ```
+
+The backend registers the Telegram webhook automatically on startup. Messages sent
+to your bot will be routed to the running server.
+
+For local development, expose the backend with a tunnelling tool (e.g. `ngrok http 8000`)
+and set `PUBLIC_URL` in `.env` to the tunnel URL before starting.
 
 ## Environment variables
 
@@ -55,15 +58,14 @@ Copy `.env.example` to `.env` and fill in:
 | Variable | Required | Description |
 |---|---|---|
 | `OPENROUTER_API_KEY` | Yes | OpenRouter API key |
-| `OPENROUTER_BASE_URL` | No | OpenRouter API base URL (default: `https://openrouter.ai/api/v1`) |
-| `OPENROUTER_HTTP_REFERER` | No | App URL for OpenRouter attribution/rankings (default: `https://github.com/ze`) |
-| `OPENROUTER_TITLE` | No | App display name on OpenRouter (default: `Ze Personal Assistant`) |
 | `TAVILY_API_KEY` | Yes | Tavily search API key (research agent) |
-| `ZE_API_KEY` | Yes | Static bearer token for WebSocket auth |
-| `NEXT_PUBLIC_ZE_API_KEY` | Yes | Exposes the same token to the frontend so the WS client can send it (via `token` query param) |
+| `ZE_API_KEY` | Yes | Static bearer token for REST endpoints |
 | `DATABASE_URL` | No | asyncpg-format Postgres URL (default: `postgresql://ze:ze@localhost:5432/ze`) |
 | `DATABASE_URL_SYNC` | No | psycopg2-format URL for Alembic CLI |
-| `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `http://localhost:3000`) |
+| `TELEGRAM_BOT_TOKEN` | Yes | Token from @BotFather |
+| `TELEGRAM_WEBHOOK_SECRET` | Yes | Arbitrary secret used to verify Telegram POSTs |
+| `TELEGRAM_ALLOWED_CHAT_ID` | Yes | Your personal Telegram chat ID |
+| `PUBLIC_URL` | Yes | Public HTTPS base URL (e.g. `https://ze.fly.dev` or ngrok tunnel) |
 | `CONFIRM_TIMEOUT_SECONDS` | No | Confirmation timeout in seconds (default: `900`) |
 | `LOG_LEVEL` | No | `DEBUG` / `INFO` / `WARNING` (default: `INFO`) |
 
@@ -74,9 +76,8 @@ make help           # list all targets
 
 make test           # backend unit tests (fast)
 make test-all       # include slow embedding-model tests
-make test-fe        # frontend typecheck + lint
 
-make lint           # ruff (backend) + eslint (frontend)
+make lint           # ruff
 make migrate        # apply pending DB migrations
 make migrate-down   # roll back one step
 make db-reset       # drop + recreate the database
@@ -88,23 +89,19 @@ make db-reset       # drop + recreate the database
 ze/
 ├── backend/
 │   ├── ze/
-│   │   ├── api/          # FastAPI app, WebSocket handler, REST routes
+│   │   ├── api/          # FastAPI app, Telegram webhook handler, REST routes
 │   │   ├── agents/       # Agent implementations (research, companion, …)
 │   │   ├── capability/   # Permission gate (autonomous / confirm / draft_only)
 │   │   ├── memory/       # User facts + episodic memory (Phase 2)
 │   │   ├── openrouter/   # LLM client (complete + stream)
 │   │   ├── orchestration/# LangGraph graph, nodes, edges, state
-│   │   └── routing/      # Embedding router + Haiku fallback
+│   │   ├── routing/      # Embedding router + Haiku fallback
+│   │   └── telegram/     # ZeBot, handlers, keyboards, session store
 │   ├── config/
 │   │   ├── agents/       # Per-agent YAML (model, tools, timeout, description)
 │   │   ├── capabilities.yaml
 │   │   └── models.yaml
 │   └── migrations/       # Alembic versions
-├── frontend/
-│   ├── app/              # Next.js App Router
-│   ├── components/       # React components
-│   ├── hooks/            # useZeSocket, etc.
-│   └── types/            # Shared TS types (mirrors backend schemas)
 └── specs/                # Design specs for every module
 ```
 
@@ -115,14 +112,14 @@ top score is above threshold and the gap to the second agent is wide enough, the
 message routes directly. Otherwise Haiku decomposes it into subtasks — one per agent.
 
 ```
-User message
+Telegram message
   → EmbeddingRouter (all-MiniLM-L6-v2, local)
       confident → agent directly
       ambiguous → Haiku decompose → one or more agents
   → CapabilityGate (autonomous / confirm / draft_only / blocked)
   → Agent.run() with asyncio.wait_for timeout
   → memory written (fire and forget)
-  → response streamed token by token over WebSocket
+  → response sent via Telegram Bot API
 ```
 
 ## Agents
@@ -140,28 +137,28 @@ User message
 Each `agent.intent` pair has a permission mode in `config/capabilities.yaml`:
 
 - `autonomous` — executes immediately
-- `confirm` — shows a draft and waits for user approval (15-min timeout)
+- `confirm` — sends a Telegram message with Yes / No / Edit inline buttons (15-min timeout)
 - `draft_only` — generates draft, never executes without a YAML change
 - `disabled` — always blocked
 
-Session-scoped overrides can escalate within the YAML ceiling. Config hot-reloads on `SIGHUP`.
+Config hot-reloads on `SIGHUP`.
 
 ## Docker
 
 ```bash
-make docker-up      # start all services (Postgres + backend + frontend)
+make docker-up      # start all services (Postgres + backend)
 make docker-down    # stop all services
 make docker-build   # rebuild images
 ```
 
 ## CI/CD (GitHub Actions)
 
-On every push and pull request to `main`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs:
+On every push and pull request to `main`, CI runs:
 
-- **Backend** — `ruff check`, fast `pytest` (embedding-model tests excluded)
-- **Frontend** — `tsc`, `next lint`, `next build`
+- `ruff check`
+- fast `pytest` (embedding-model tests excluded)
 
-Merges to `main` that touch `backend/` also trigger [`.github/workflows/deploy-backend.yml`](.github/workflows/deploy-backend.yml), which deploys the backend to Fly.io.
+Merges to `main` that touch `backend/` trigger deployment to Fly.io.
 
 ### One-time setup
 
@@ -169,15 +166,15 @@ Merges to `main` that touch `backend/` also trigger [`.github/workflows/deploy-b
    ```bash
    fly tokens create deploy -x 999999h
    ```
-2. **Fly secrets** — set runtime env on the app (not in GitHub): `fly secrets set OPENROUTER_API_KEY=...`
-
-Frontend is not deployed by these workflows (use Vercel or a separate Fly app).
+2. **Fly secrets** — set runtime env on the app:
+   ```bash
+   fly secrets set OPENROUTER_API_KEY=... TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=...
+   ```
 
 ## Deployment (Fly.io)
 
 ```bash
-fly deploy          # deploy backend (or rely on GitHub Actions on push to main)
-# frontend deployed separately (Vercel or second Fly app)
+fly deploy   # or rely on GitHub Actions on push to main
 ```
 
 Set all env vars as Fly secrets: `fly secrets set OPENROUTER_API_KEY=...`
