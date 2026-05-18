@@ -39,6 +39,7 @@ models/
 Thumbs.db
 .idea/
 .vscode/
+.cursor/hooks/state/
 *.swp
 *.swo
 *~
