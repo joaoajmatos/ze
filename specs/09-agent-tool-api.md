@@ -537,9 +537,12 @@ ze/agents/<name>/
 ├── __init__.py         # imports tools module to trigger @tool registration
 ├── agent.py            # @register class, implements BaseAgent
 ├── prompt.py           # system prompt string(s)
-├── tools.py            # @tool decorated functions
-└── intent_map.py       # dict[str, str] — intent → tool description
+└── tools.py            # @tool decorated functions
 ```
+
+Intent→permission mappings are declared in `config/agents/<name>.yaml:intent_map`
+(YAML only). There is no `intent_map.py` — the Python module was removed as a
+duplicate of the YAML source of truth.
 
 `__init__.py` must import `tools` to trigger `@tool` registration at module import
 time. Without this import, declared tools are unknown to the registry.

@@ -224,9 +224,12 @@ ze/agents/<name>/
 ├── __init__.py
 ├── agent.py        # @register("<name>") class, implements BaseAgent
 ├── prompt.py       # System prompt string(s) — no inline strings in agent.py
-├── tools.py        # Async tool functions called by the agent
-└── intent_map.py   # Dict[str, Callable] mapping intent → tool function
+└── tools.py        # Async tool functions called by the agent
 ```
+
+Intent→permission mappings live in `config/agents/<name>.yaml:intent_map` (YAML)
+and are validated at startup against `config/capabilities.yaml`. There is no
+per-agent Python `intent_map.py` — that would be a duplicate of the YAML.
 
 ## Dependencies
 
