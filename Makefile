@@ -1,13 +1,10 @@
 # ── Ze — project Makefile ─────────────────────────────────────────────────────
 # All targets run from the repo root.
 # Backend commands delegate to uv inside ./backend.
-# Frontend commands delegate to npm inside ./frontend.
 
 .DEFAULT_GOAL := help
 BACKEND  := backend
-FRONTEND := frontend
 UV       := uv run --project $(BACKEND)
-NPM      := npm --prefix $(FRONTEND)
 
 DB_SYNC_URL ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
 # alembic resolves script_location relative to cwd, so we cd into backend first
@@ -20,9 +17,7 @@ help:
 	@echo "  Ze — available targets"
 	@echo ""
 	@echo "  Setup"
-	@echo "    install        Install backend + frontend dependencies"
-	@echo "    install-be     Install backend dependencies (uv sync)"
-	@echo "    install-fe     Install frontend dependencies (npm install)"
+	@echo "    install        Install backend dependencies"
 	@echo ""
 	@echo "  Database"
 	@echo "    db-up          Start Postgres via docker-compose"
@@ -34,20 +29,14 @@ help:
 	@echo "    migrate-history List all migrations"
 	@echo ""
 	@echo "  Development"
-	@echo "    dev            Start backend + frontend concurrently"
-	@echo "    dev-be         Start backend dev server (uvicorn --reload)"
-	@echo "    dev-fe         Start frontend dev server (next dev)"
+	@echo "    dev            Start backend dev server (uvicorn --reload)"
 	@echo ""
 	@echo "  Testing"
 	@echo "    test           Run backend tests (excludes slow embedding tests)"
 	@echo "    test-all       Run all backend tests including slow ones"
-	@echo "    test-fe        Run frontend type-check + lint"
 	@echo ""
 	@echo "  Code quality"
-	@echo "    lint           Lint backend (ruff) + frontend (eslint)"
-	@echo "    lint-be        Lint backend only"
-	@echo "    lint-fe        Lint frontend only"
-	@echo "    typecheck-fe   Run tsc on the frontend"
+	@echo "    lint           Lint backend (ruff)"
 	@echo ""
 	@echo "  Docker"
 	@echo "    docker-up      Start all services via docker-compose"
@@ -56,14 +45,10 @@ help:
 	@echo ""
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
-.PHONY: install install-be install-fe
-install: install-be install-fe
+.PHONY: install
 
-install-be:
+install:
 	cd $(BACKEND) && uv sync
-
-install-fe:
-	$(NPM) install
 
 .PHONY: sync-ze-api-key
 sync-ze-api-key:
@@ -98,24 +83,15 @@ migrate-history:
 	$(ALEMBIC) history --verbose
 
 # ── Development ───────────────────────────────────────────────────────────────
-.PHONY: dev dev-be dev-fe
+.PHONY: dev dev-be
 
-dev:
-	@command -v concurrently >/dev/null 2>&1 || npm install -g concurrently
-	concurrently \
-	  --names "BE,FE" \
-	  --prefix-colors "blue,green" \
-	  "$(MAKE) dev-be" \
-	  "$(MAKE) dev-fe"
+dev: dev-be
 
 dev-be:
 	cd $(BACKEND) && uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
-dev-fe:
-	$(NPM) run dev
-
 # ── Testing ───────────────────────────────────────────────────────────────────
-.PHONY: test test-all test-fe
+.PHONY: test test-all
 
 test:
 	cd $(BACKEND) && uv run pytest --ignore=tests/test_embeddings.py -q
@@ -123,23 +99,13 @@ test:
 test-all:
 	cd $(BACKEND) && uv run pytest -q
 
-test-fe:
-	$(NPM) run typecheck
-	$(NPM) run lint
-
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: lint lint-be lint-fe typecheck-fe
+.PHONY: lint lint-be
 
-lint: lint-be lint-fe
+lint: lint-be
 
 lint-be:
 	cd $(BACKEND) && uv run ruff check ze tests
-
-lint-fe:
-	$(NPM) run lint
-
-typecheck-fe:
-	$(NPM) run typecheck
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 .PHONY: docker-up docker-down docker-build
