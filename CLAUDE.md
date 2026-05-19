@@ -177,6 +177,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Routing, research + companion agents, orchestration, API, Telegram bot | In progress |
-| 2 | Memory — contradiction detection, episode summarisation, semantic retrieval | Mostly done — semantic fact retrieval (embeddings on `user_facts`) remaining |
+| 2 | Memory — contradiction detection, episode summarisation, semantic retrieval | Done |
 | 3 | Calendar + email agents, Google OAuth2 | Done |
-| 4 | Workflow agent, multi-step planning, background memory consolidation | Not started |
+| 4 | Workflow agent, multi-step planning, Postgres-persisted scheduler | Not started |
+| 5 | Memory consolidation — dedup facts, expire stale, summarise episodes | Not started |
