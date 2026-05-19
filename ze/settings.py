@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     google_refresh_token: str = ""
     timezone: str = "UTC"
 
+    # ── Workflow ──────────────────────────────────────────────────────────────
+    scheduler_enabled: bool = True
+    workflow_plan_model: str = "anthropic/claude-haiku-4-5-20251001"
+    workflow_verify_model: str = "anthropic/claude-haiku-4-5-20251001"
+
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = "INFO"
 

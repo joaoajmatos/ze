@@ -70,3 +70,17 @@ class OpenRouterError(ZeError):
 
 class RateLimitError(OpenRouterError):
     """OpenRouter returned HTTP 429."""
+
+
+# ── Workflow ───────────────────────────────────────────────────────────────────
+
+class WorkflowError(ZeError):
+    """Base class for workflow errors."""
+
+
+class WorkflowPlanError(WorkflowError):
+    """Planner failed to produce a valid workflow plan."""
+
+
+class WorkflowExecutionError(WorkflowError):
+    """Step execution failed unrecoverably."""

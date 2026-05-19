@@ -19,8 +19,9 @@ capabilities:
     execute: confirm
 
   workflow:
-    enabled: false          # Phase 4
-    execute: confirm
+    enabled: true
+    read:   autonomous
+    manage: confirm
 
   companion:
     enabled: true
