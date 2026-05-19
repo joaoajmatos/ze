@@ -4,14 +4,14 @@
 
 | Feature | Status |
 |---------|--------|
-| WorkflowStore — CRUD | ❌ Not started |
-| WorkflowPlanner — NL → step list + schedule | ❌ Not started |
-| WorkflowScheduler — APScheduler + Postgres persistence | ❌ Not started |
-| WorkflowManagerAgent — user-facing CRUD + trigger | ❌ Not started |
-| Workflow graph — loop execution, step verification | ❌ Not started |
+| WorkflowStore — CRUD | ✅ Done |
+| WorkflowPlanner — NL → step list + schedule | ✅ Done |
+| WorkflowScheduler — APScheduler + Postgres persistence | ✅ Done |
+| WorkflowManagerAgent — user-facing CRUD + trigger | ✅ Done |
+| Workflow graph — loop execution, step verification | ✅ Done |
 | Dynamic planning — sequential plan approval flow | ❌ Not started |
-| Migration 003 — workflows + workflow_executions tables | ❌ Not started |
-| REST API — workflow endpoints | ❌ Not started |
+| Migration 003 — workflows + workflow_executions tables | ✅ Done |
+| REST API — workflow endpoints | ✅ Done |
 
 ---
 

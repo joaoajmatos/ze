@@ -58,6 +58,17 @@ class AgentState(TypedDict):
     subtask_results: list[AgentResult]  # populated during compound task fan-out
     pending_confirmation: bool
 
+    # ── Conversation history ────────────────────────────────────────────────
+    messages: list[dict]
+    last_active_at: float | None
+
+    # ── Workflow execution (None / 0 / [] in normal graph runs) ────────────
+    workflow_id: UUID | None
+    workflow_execution_id: UUID | None
+    workflow_steps: list | None          # list[WorkflowStep]
+    current_step_index: int
+    workflow_step_results: list          # list[StepResult]
+
     # ── Output ─────────────────────────────────────────────────────────────
     final_response: str | None
     error: str | None
@@ -255,6 +266,26 @@ async def lifespan(app: FastAPI):
 | `ze.memory.store` | `MemoryStore` |
 | `ze.errors` | `AgentTimeoutError`, `AgentError` |
 | `ze.settings` | Config access |
+
+## Workflow Graph (Phase 4)
+
+A second compiled graph (`ze/orchestration/workflow_graph.py`) handles sequential
+workflow execution. It reuses the same node functions as the main graph but has a
+different topology that loops through steps.
+
+**Entry point:** `load_workflow_step` (not `embed_route`)
+
+**Loop:** `load_workflow_step → embed_route → fetch_context → capability_check →
+execute_tool → write_memory → verify_step → [loop | workflow_synthesize | workflow_failed]`
+
+**Key differences from the main graph:**
+- No `decompose`, `draft_response`, `await_confirmation`, or `synthesize` nodes.
+- `after_capability_check_workflow` maps all non-BLOCKED decisions to `execute_tool`
+  (workflow steps execute directly — workflow creation was the gate).
+- `verify_step` does programmatic output validation and advances `current_step_index`.
+- `thread_id` is set to `str(workflow_execution_id)`, not the Telegram chat ID.
+
+See `specs/12-workflow.md` for the full workflow system spec.
 
 ## Open Questions
 

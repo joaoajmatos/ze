@@ -189,11 +189,20 @@ to pass before execution. Auth via Google OAuth2 — token stored in Fly.io secr
 | Property | Value |
 |----------|-------|
 | Model    | `anthropic/claude-sonnet-4-5` |
-| Tools    | `run_script`, `call_api`, `move_file`, `send_notification` |
-| Scope    | Configured integrations only (Phase 4) |
+| Tools    | None — actions are internal methods, not globally registered tools |
+| Scope    | Workflow lifecycle management (Phase 4) |
 | Phase    | 4 |
 
-**Intent map:** LLM-determined (tool selection is too variable for a keyword map).
+**Role:** Manager only — creates, lists, enables, disables, deletes, and triggers stored
+workflows. Never executes workflow steps directly; execution is handled by the workflow
+graph in `ze/orchestration/workflow_graph.py`.
+
+**Intent map:**
+
+| Intent   | Capability |
+|----------|------------|
+| `read`   | autonomous |
+| `manage` | confirm    |
 
 ---
 
@@ -261,4 +270,5 @@ per-agent Python `intent_map.py` — that would be a duplicate of the YAML.
 - [x] Phase 3: Google OAuth2 — refresh token in `GOOGLE_REFRESH_TOKEN` Fly.io
   secret, access token exchanged at startup and refreshed on 401. Single OAuth2
   flow run once via local CLI script. Covers both Calendar and Gmail.
-- [ ] Phase 4: Workflow integrations to define (Notion, GitHub, Slack, or other).
+- [x] Phase 4: Workflow manager agent implemented. Execution delegated to the
+  workflow graph (see `specs/12-workflow.md`). Dynamic plan approval flow not yet started.
