@@ -11,7 +11,7 @@ def setup_logging():
     configure_logging()
 
 
-def make_envelope(is_compound: bool = False, agents=("research",)) -> RoutingEnvelope:
+def make_envelope(is_compound: bool = False, agents=("research",), is_sequential: bool = False) -> RoutingEnvelope:
     subtasks = [SubTask(agent=a, intent="read", prompt="hi") for a in agents]
     return RoutingEnvelope(
         primary_agent=subtasks[0].agent,
@@ -20,7 +20,8 @@ def make_envelope(is_compound: bool = False, agents=("research",)) -> RoutingEnv
         routing_method="embedding",
         is_compound=is_compound,
         subtasks=subtasks,
-        requires_synthesis=is_compound,
+        requires_synthesis=is_compound and not is_sequential,
+        is_sequential=is_sequential,
     )
 
 
@@ -57,6 +58,19 @@ def test_after_embed_route_compound_goes_to_decompose():
 
 def test_after_embed_route_none_envelope_goes_to_fetch_context():
     state = base_state(envelope=None)
+    assert after_embed_route(state) == "fetch_context"
+
+
+def test_after_embed_route_sequential_compound_goes_to_plan_sequential():
+    state = base_state(
+        envelope=make_envelope(is_compound=True, agents=("research", "email"), is_sequential=True)
+    )
+    assert after_embed_route(state) == "plan_sequential"
+
+
+def test_after_embed_route_sequential_single_agent_goes_to_fetch_context():
+    # Sequential flag on a single-agent task should not trigger plan_sequential
+    state = base_state(envelope=make_envelope(is_compound=False, is_sequential=True))
     assert after_embed_route(state) == "fetch_context"
 
 

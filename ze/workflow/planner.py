@@ -10,12 +10,22 @@ log = get_logger(__name__)
 
 _PLAN_SYSTEM = """\
 You decompose a workflow description into an ordered list of steps.
-Each step must have a "task" (natural language instruction), an optional "agent_hint"
-(one of: research, calendar, email, companion), and an optional "verify" (a natural
-language criterion to check the step's output against).
+Each step must have:
+  "task"       — natural language instruction for the agent
+  "agent_hint" — one of: research, calendar, email, companion (or null)
+  "intent"     — one of: read, create, update, delete, execute, reason
+  "verify"     — natural language criterion to check the step output (or null)
 
 Output ONLY a JSON array — no explanation, no markdown:
-[{"task": "...", "agent_hint": "research", "verify": "..."}, ...]
+[{"task": "...", "agent_hint": "research", "intent": "read", "verify": "..."}, ...]
+
+Intent guidelines:
+  research/companion tasks that only retrieve information → "read"
+  tasks that create new items (emails, events, workflows) → "create"
+  tasks that modify existing items → "update"
+  tasks that remove items → "delete"
+  tasks that run or trigger something → "execute"
+  tasks that reason, summarise, or plan → "reason"
 
 Omit agent_hint and verify if not applicable (use null).\
 """
@@ -49,6 +59,7 @@ class WorkflowPlanner:
                     task=item["task"],
                     agent_hint=item.get("agent_hint"),
                     verify=item.get("verify"),
+                    intent=item.get("intent", "execute"),
                 )
                 for item in data
             ]

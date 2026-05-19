@@ -7,3 +7,10 @@ def confirmation_keyboard() -> InlineKeyboardMarkup:
         InlineKeyboardButton(text="❌ No", callback_data="confirm:no"),
         InlineKeyboardButton(text="✏️ Edit", callback_data="confirm:edit"),
     ]])
+
+
+def plan_confirmation_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Yes, run it", callback_data="plan:yes"),
+        InlineKeyboardButton(text="❌ No", callback_data="plan:no"),
+    ]])

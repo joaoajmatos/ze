@@ -9,7 +9,7 @@
 | WorkflowScheduler — APScheduler + Postgres persistence | ✅ Done |
 | WorkflowManagerAgent — user-facing CRUD + trigger | ✅ Done |
 | Workflow graph — loop execution, step verification | ✅ Done |
-| Dynamic planning — sequential plan approval flow | ❌ Not started |
+| Dynamic planning — sequential plan approval flow | ✅ Done |
 | Migration 003 — workflows + workflow_executions tables | ✅ Done |
 | REST API — workflow endpoints | ✅ Done |
 

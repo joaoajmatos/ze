@@ -8,6 +8,8 @@ class _SessionEntry:
     awaiting_edit_reply: bool = False
     pending_config: dict | None = None
     confirm_task: asyncio.Task | None = None
+    pending_plan: list | None = None       # list[WorkflowStep] for dynamic plan approval
+    plan_task: asyncio.Task | None = None  # approval timeout task
 
 
 class ActiveSessionStore:
@@ -63,8 +65,30 @@ class ActiveSessionStore:
     def clear_awaiting_edit(self, chat_id: int) -> None:
         self._get(chat_id).awaiting_edit_reply = False
 
+    def set_pending_plan(
+        self,
+        chat_id: int,
+        steps: list,
+        timeout_task: asyncio.Task,
+    ) -> None:
+        entry = self._get(chat_id)
+        entry.pending_plan = steps
+        entry.plan_task = timeout_task
+
+    def get_pending_plan(self, chat_id: int) -> tuple[list | None, "asyncio.Task | None"]:
+        entry = self._get(chat_id)
+        return entry.pending_plan, entry.plan_task
+
+    def cancel_plan_task(self, chat_id: int) -> None:
+        entry = self._get(chat_id)
+        if entry.plan_task:
+            entry.plan_task.cancel()
+            entry.plan_task = None
+        entry.pending_plan = None
+
     def clear_all(self, chat_id: int) -> None:
         self.cancel_confirm_task(chat_id)
+        self.cancel_plan_task(chat_id)
         entry = self._get(chat_id)
         entry.active = False
         entry.awaiting_edit_reply = False

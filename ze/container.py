@@ -102,7 +102,7 @@ async def build_container(settings: Settings) -> Container:
     workflow_planner = WorkflowPlanner(openrouter_client=openrouter_client, settings=settings)
     workflow_graph = build_workflow_graph(checkpointer=checkpointer)
 
-    # The graph_config mirrors _make_config in ZeBot — passed to the scheduler
+    # The graph_config mirrors _make_workflow_config in ZeBot — passed to the scheduler
     # so scheduled workflow runs have access to all required services.
     workflow_graph_config = {
         "configurable": {
@@ -112,6 +112,7 @@ async def build_container(settings: Settings) -> Container:
             "openrouter_client": openrouter_client,
             "embedder": embedder,
             "settings": settings,
+            "workflow_store": workflow_store,
         }
     }
 
@@ -145,10 +146,13 @@ async def build_container(settings: Settings) -> Container:
     ze_bot = ZeBot(
         bot=bot,
         graph=graph,
+        workflow_graph=workflow_graph,
         store=ActiveSessionStore(),
         router=router,
         capability_gate=capability_gate,
         memory_store=memory_store,
+        workflow_store=workflow_store,
+        workflow_planner=workflow_planner,
         openrouter_client=openrouter_client,
         embedder=embedder,
         settings=settings,

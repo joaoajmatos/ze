@@ -18,3 +18,4 @@ class RoutingEnvelope:
     subtasks: list[SubTask]      # always at least one entry
     requires_synthesis: bool     # True when len(subtasks) > 1
     raw_scores: dict[str, float] = field(default_factory=dict)
+    is_sequential: bool = False  # True when step N's output feeds step N+1

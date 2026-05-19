@@ -296,3 +296,98 @@ async def test_synthesize_returns_empty_when_no_subtasks():
     cfg = make_config()
     result = await memory.synthesize(base_state(subtask_results=[]), cfg)
     assert result == {}
+
+
+# ── routing.plan_sequential ───────────────────────────────────────────────────
+
+async def test_plan_sequential_identifies_high_risk_steps():
+    from ze.workflow.planner import WorkflowPlanner
+    from ze.workflow.types import WorkflowStep
+
+    steps = [
+        WorkflowStep(task="Research AI news", agent_hint="research", intent="read"),
+        WorkflowStep(task="Draft email summary", agent_hint="email", intent="create"),
+        WorkflowStep(task="Schedule meeting", agent_hint="calendar", intent="create"),
+    ]
+    planner = AsyncMock(spec=WorkflowPlanner)
+    planner.plan = AsyncMock(return_value=steps)
+
+    gate = MagicMock(spec=CapabilityGate)
+    gate.evaluate = MagicMock(side_effect=[
+        GateDecision.EXECUTE,            # research.read — autonomous
+        GateDecision.DRAFT,              # email.create — high-risk
+        GateDecision.AWAIT_CONFIRMATION, # calendar.create — high-risk
+    ])
+
+    cfg = make_config(capability_gate=gate)
+    cfg["configurable"]["workflow_planner"] = planner
+
+    state = base_state(prompt="Research AI news, draft email, schedule meeting")
+    result = await routing.plan_sequential(state, cfg)
+
+    assert result["dynamic_plan_steps"] == steps
+    assert result["dynamic_plan_high_risk"] == [1, 2]
+    planner.plan.assert_awaited_once_with("Research AI news, draft email, schedule meeting")
+
+
+async def test_plan_sequential_empty_high_risk_when_all_autonomous():
+    from ze.workflow.planner import WorkflowPlanner
+    from ze.workflow.types import WorkflowStep
+
+    steps = [
+        WorkflowStep(task="Look up AI news", agent_hint="research", intent="read"),
+        WorkflowStep(task="Look up stock prices", agent_hint="research", intent="read"),
+    ]
+    planner = AsyncMock(spec=WorkflowPlanner)
+    planner.plan = AsyncMock(return_value=steps)
+
+    gate = MagicMock(spec=CapabilityGate)
+    gate.evaluate = MagicMock(return_value=GateDecision.EXECUTE)
+
+    cfg = make_config(capability_gate=gate)
+    cfg["configurable"]["workflow_planner"] = planner
+
+    state = base_state(prompt="Look up AI news and stock prices")
+    result = await routing.plan_sequential(state, cfg)
+
+    assert result["dynamic_plan_steps"] == steps
+    assert result["dynamic_plan_high_risk"] == []
+
+
+async def test_plan_sequential_returns_error_on_plan_failure():
+    from ze.errors import WorkflowPlanError
+    from ze.workflow.planner import WorkflowPlanner
+
+    planner = AsyncMock(spec=WorkflowPlanner)
+    planner.plan = AsyncMock(side_effect=WorkflowPlanError("malformed plan"))
+
+    cfg = make_config()
+    cfg["configurable"]["workflow_planner"] = planner
+
+    state = base_state(prompt="do something complex")
+    result = await routing.plan_sequential(state, cfg)
+
+    assert "couldn't plan" in result["final_response"]
+    assert result["dynamic_plan_steps"] is None
+    assert result["dynamic_plan_high_risk"] == []
+
+
+async def test_plan_sequential_uses_agent_hint_for_gate_check():
+    from ze.workflow.planner import WorkflowPlanner
+    from ze.workflow.types import WorkflowStep
+
+    steps = [WorkflowStep(task="Do something", agent_hint=None, intent="execute")]
+    planner = AsyncMock(spec=WorkflowPlanner)
+    planner.plan = AsyncMock(return_value=steps)
+
+    gate = MagicMock(spec=CapabilityGate)
+    gate.evaluate = MagicMock(return_value=GateDecision.EXECUTE)
+
+    cfg = make_config(capability_gate=gate)
+    cfg["configurable"]["workflow_planner"] = planner
+
+    state = base_state(prompt="do something")
+    await routing.plan_sequential(state, cfg)
+
+    # Falls back to "research" when agent_hint is None
+    gate.evaluate.assert_called_once_with("research", "execute", {})

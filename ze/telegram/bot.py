@@ -4,7 +4,7 @@ from aiogram import Bot
 from aiogram.types import CallbackQuery, ForceReply, Message
 
 from ze.logging import bind_context, get_logger, unbind_context
-from ze.telegram.keyboards import confirmation_keyboard
+from ze.telegram.keyboards import confirmation_keyboard, plan_confirmation_keyboard
 from ze.telegram.session import ActiveSessionStore
 
 log = get_logger(__name__)
@@ -17,20 +17,26 @@ class ZeBot:
         self,
         bot: Bot,
         graph,
+        workflow_graph,
         store: ActiveSessionStore,
         router,
         capability_gate,
         memory_store,
+        workflow_store,
+        workflow_planner,
         openrouter_client,
         embedder,
         settings,
     ) -> None:
         self._bot = bot
         self._graph = graph
+        self._workflow_graph = workflow_graph
         self._store = store
         self._router = router
         self._capability_gate = capability_gate
         self._memory_store = memory_store
+        self._workflow_store = workflow_store
+        self._workflow_planner = workflow_planner
         self._openrouter_client = openrouter_client
         self._embedder = embedder
         self._settings = settings
@@ -68,6 +74,10 @@ class ZeBot:
         bind_context(str(chat_id))
 
         try:
+            if data.startswith("plan:"):
+                await self._handle_plan_callback(chat_id, query)
+                return
+
             if not data.startswith("confirm:"):
                 await query.answer()
                 return
@@ -133,6 +143,15 @@ class ZeBot:
                 else ""
             )
             await self._send_confirmation(chat_id, draft, agent, action, config)
+        elif final_state.get("dynamic_plan_steps") is not None:
+            steps = final_state["dynamic_plan_steps"]
+            high_risk: list[int] = final_state.get("dynamic_plan_high_risk") or []
+            if not high_risk:
+                # All steps are autonomous — execute immediately
+                await self._execute_dynamic_plan(chat_id, steps)
+            else:
+                # Show plan for user approval
+                await self._send_plan_confirmation(chat_id, steps, high_risk)
         else:
             response = _extract_response(final_state)
             self._store.clear_active(chat_id)
@@ -229,6 +248,108 @@ class ZeBot:
         except asyncio.CancelledError:
             pass
 
+    async def _send_plan_confirmation(
+        self,
+        chat_id: int,
+        steps: list,
+        high_risk: list[int],
+    ) -> None:
+        lines = ["Ze will run the following steps:\n"]
+        for i, step in enumerate(steps):
+            marker = "⚠️ " if i in high_risk else ""
+            lines.append(f"  {i + 1}. {marker}{step.task}")
+        lines.append("\nProceed?")
+
+        await self._bot.send_message(
+            chat_id,
+            "\n".join(lines),
+            reply_markup=plan_confirmation_keyboard(),
+        )
+
+        timeout_task = asyncio.create_task(self._plan_approval_timeout(chat_id))
+        self._store.clear_active(chat_id)
+        self._store.set_pending_plan(chat_id, steps, timeout_task)
+        log.info("awaiting_plan_approval", chat_id=chat_id, steps=len(steps), high_risk=high_risk)
+
+    async def _handle_plan_callback(self, chat_id: int, query: CallbackQuery) -> None:
+        decision = (query.data or "").split(":", 1)[1]
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+
+        steps, timeout_task = self._store.get_pending_plan(chat_id)
+        if timeout_task:
+            timeout_task.cancel()
+
+        if decision == "yes" and steps:
+            self._store.cancel_plan_task(chat_id)
+            self._store.mark_active(chat_id)
+            asyncio.create_task(self._execute_dynamic_plan(chat_id, steps))
+        else:
+            self._store.cancel_plan_task(chat_id)
+            self._store.clear_active(chat_id)
+            await self._bot.send_message(
+                chat_id,
+                "Plan cancelled. What would you like to change?",
+            )
+
+    async def _execute_dynamic_plan(self, chat_id: int, steps: list) -> None:
+        execution_id = await self._workflow_store.start_execution(None)
+        thread_id = str(execution_id)
+        config = self._make_workflow_config(thread_id)
+
+        state = {
+            "prompt": "",
+            "session_id": str(chat_id),
+            "session_overrides": {},
+            "envelope": None,
+            "memory_context": None,
+            "agent_context": None,
+            "gate_decision": None,
+            "agent_result": None,
+            "subtask_results": [],
+            "pending_confirmation": False,
+            "final_response": None,
+            "error": None,
+            "messages": [],
+            "last_active_at": None,
+            "workflow_id": None,
+            "workflow_execution_id": execution_id,
+            "workflow_steps": steps,
+            "current_step_index": 0,
+            "workflow_step_results": [],
+            "dynamic_plan_steps": None,
+            "dynamic_plan_high_risk": [],
+        }
+
+        typing_task = asyncio.create_task(self._keep_typing(chat_id))
+        try:
+            final_state = await self._workflow_graph.ainvoke(state, config)
+        except Exception as exc:
+            log.exception("dynamic_plan_exec_error", chat_id=chat_id, error=str(exc))
+            self._store.clear_active(chat_id)
+            await self._bot.send_message(chat_id, "Something went wrong executing the plan. Try again.")
+            return
+        finally:
+            typing_task.cancel()
+
+        response = _extract_response(final_state)
+        self._store.clear_active(chat_id)
+        await self._send_response(chat_id, response)
+        log.info("dynamic_plan_complete", chat_id=chat_id, execution_id=str(execution_id))
+
+    async def _plan_approval_timeout(self, chat_id: int) -> None:
+        try:
+            await asyncio.sleep(self._settings.confirm_timeout_seconds)
+            self._store.cancel_plan_task(chat_id)
+            self._store.clear_active(chat_id)
+            await self._bot.send_message(
+                chat_id,
+                "⏱ Plan approval timed out. The plan was cancelled.",
+            )
+            log.info("plan_approval_expired", chat_id=chat_id)
+        except asyncio.CancelledError:
+            pass
+
     async def _send_response(self, chat_id: int, text: str) -> None:
         if not text:
             return
@@ -245,6 +366,21 @@ class ZeBot:
                 "openrouter_client": self._openrouter_client,
                 "embedder": self._embedder,
                 "settings": self._settings,
+                "workflow_planner": self._workflow_planner,
+            }
+        }
+
+    def _make_workflow_config(self, thread_id: str) -> dict:
+        return {
+            "configurable": {
+                "thread_id": thread_id,
+                "router": self._router,
+                "capability_gate": self._capability_gate,
+                "memory_store": self._memory_store,
+                "openrouter_client": self._openrouter_client,
+                "embedder": self._embedder,
+                "settings": self._settings,
+                "workflow_store": self._workflow_store,
             }
         }
 
@@ -265,6 +401,13 @@ class ZeBot:
             "error": None,
             "messages": [],
             "last_active_at": None,
+            "workflow_id": None,
+            "workflow_execution_id": None,
+            "workflow_steps": None,
+            "current_step_index": 0,
+            "workflow_step_results": [],
+            "dynamic_plan_steps": None,
+            "dynamic_plan_high_risk": [],
         }
 
 

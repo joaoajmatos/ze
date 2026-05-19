@@ -11,11 +11,16 @@ log = get_logger(__name__)
 
 
 def _step_to_dict(step: WorkflowStep) -> dict:
-    return {"task": step.task, "agent_hint": step.agent_hint, "verify": step.verify}
+    return {"task": step.task, "agent_hint": step.agent_hint, "verify": step.verify, "intent": step.intent}
 
 
 def _step_from_dict(d: dict) -> WorkflowStep:
-    return WorkflowStep(task=d["task"], agent_hint=d.get("agent_hint"), verify=d.get("verify"))
+    return WorkflowStep(
+        task=d["task"],
+        agent_hint=d.get("agent_hint"),
+        verify=d.get("verify"),
+        intent=d.get("intent", "execute"),
+    )
 
 
 def _step_result_to_dict(r: StepResult) -> dict:

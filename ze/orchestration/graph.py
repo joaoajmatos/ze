@@ -18,6 +18,7 @@ def build_graph(checkpointer: AsyncPostgresSaver):
     # ── Nodes ─────────────────────────────────────────────────────────────
     builder.add_node("embed_route", routing.embed_route)
     builder.add_node("decompose", routing.decompose)
+    builder.add_node("plan_sequential", routing.plan_sequential)
     builder.add_node("fetch_context", context.fetch_context)
     builder.add_node("capability_check", execution.capability_check)
     builder.add_node("execute_tool", execution.execute_tool)
@@ -33,8 +34,9 @@ def build_graph(checkpointer: AsyncPostgresSaver):
     builder.add_conditional_edges(
         "embed_route",
         edges.after_embed_route,
-        {"decompose": "decompose", "fetch_context": "fetch_context"},
+        {"decompose": "decompose", "fetch_context": "fetch_context", "plan_sequential": "plan_sequential"},
     )
+    builder.add_edge("plan_sequential", END)
     builder.add_edge("decompose", "fetch_context")
     builder.add_edge("fetch_context", "capability_check")
     builder.add_conditional_edges(

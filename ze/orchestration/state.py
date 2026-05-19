@@ -41,6 +41,10 @@ class AgentState(TypedDict):
     current_step_index: int
     workflow_step_results: list          # list[StepResult]
 
+    # ── Dynamic plan (Mode 3) ──────────────────────────────────────────────
+    dynamic_plan_steps: list | None      # list[WorkflowStep] set by plan_sequential node
+    dynamic_plan_high_risk: list         # list[int] — indices of steps requiring approval
+
     # ── Output ─────────────────────────────────────────────────────────────
     final_response: str | None
     error: str | None

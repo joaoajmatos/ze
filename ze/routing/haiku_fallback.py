@@ -18,13 +18,15 @@ Respond ONLY with a JSON object — no prose, no markdown:
 {{
   "subtasks": [
     {{ "agent": "<name>", "intent": "<intent>", "prompt": "<isolated prompt>" }}
-  ]
+  ],
+  "sequential": false
 }}
 
 Intent values: read, create, update, delete, execute, reason
 - Use exactly one subtask for single-agent tasks.
 - Use multiple subtasks only when the request genuinely requires different agents.
 - Each subtask prompt must be self-contained for its agent.
+- Set "sequential" to true when step N's output is needed as input for step N+1 (data dependency). Set to false for independent parallel tasks.
 """
 
 
@@ -104,6 +106,7 @@ async def decompose(
             continue
 
         is_compound = len(subtasks) > 1
+        is_sequential = bool(data.get("sequential", False)) and is_compound
         primary = subtasks[0].agent
 
         return RoutingEnvelope(
@@ -113,8 +116,9 @@ async def decompose(
             routing_method="haiku",
             is_compound=is_compound,
             subtasks=subtasks,
-            requires_synthesis=is_compound,
+            requires_synthesis=is_compound and not is_sequential,
             raw_scores=raw_scores,
+            is_sequential=is_sequential,
         )
 
     raise last_exc or RoutingError("Haiku decomposition failed after 2 attempts")

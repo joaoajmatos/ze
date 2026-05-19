@@ -8,6 +8,7 @@ class WorkflowStep:
     task: str
     agent_hint: str | None = None
     verify: str | None = None
+    intent: str = "execute"
 
 
 @dataclass
