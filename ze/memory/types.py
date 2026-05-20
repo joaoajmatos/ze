@@ -24,6 +24,7 @@ class Episode:
     response: str
     summary: str | None = None
     relevance: float = 0.0          # populated at retrieval time, never persisted
+    is_archive: bool = False
     id: UUID | None = None
     created_at: datetime | None = None
     # embedding is write-time only; left None in context objects so that
@@ -36,3 +37,13 @@ class MemoryContext:
     facts: list[UserFact] = field(default_factory=list)
     episodes: list[Episode] = field(default_factory=list)
     token_estimate: int = 0
+
+
+@dataclass
+class ConsolidationReport:
+    facts_merged: int = 0
+    facts_soft_expired: int = 0
+    facts_hard_deleted: int = 0
+    episodes_archived: int = 0
+    episodes_deleted: int = 0
+    duration_ms: int = 0
