@@ -78,7 +78,8 @@ User message (Telegram Bot API)
 | 2     | Memory (pgvector), capability gate, confirmation + draft UI.          | ✅ Done     |
 | 3     | `calendar` + `email`, Google OAuth2, compound task decomposition.     | ✅ Done     |
 | 4     | `workflow`, memory digest, routing log UI, capability config UI.      | ✅ Done     |
-| 5     | Memory consolidation — dedup facts, expire stale, summarise episodes. | 🔲 Planned  |
+| 5     | Memory consolidation — dedup facts, expire stale, summarise episodes. | ✅ Done     |
+| 6     | User profile — synthesise facts + episodes into a structured portrait. | 🔲 Planned  |
 
 ## Module Map
 
@@ -98,6 +99,7 @@ User message (Telegram Bot API)
 | `11-persona.md`               | Companion persona             | 1–2       |
 | `12-workflow.md`              | Workflow agent + scheduler    | 4         |
 | `13-phase5-memory.md`         | Memory consolidation          | 5         |
+| `14-user-profile.md`          | User profile synthesis        | 6         |
 
 ## Cross-Cutting Modules
 
