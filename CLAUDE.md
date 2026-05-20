@@ -35,7 +35,7 @@ ze/
 │   ├── 001_initial_schema.py # routing_log, user_facts, episodes
 │   └── 002_checkpointer.py   # LangGraph checkpoint tables
 ├── tests/                    # Mirrors ze/ structure
-├── specs/                    # All 17 design specs (read before modifying a module)
+├── specs/                    # All 20 design specs (read before modifying a module)
 ├── Dockerfile                # Production image
 ├── docker-compose.yml        # Postgres (pgvector/pgvector:pg16) + backend
 ├── fly.toml                  # Fly.io deployment config
@@ -186,3 +186,4 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 7 | Proactive Ze — morning briefing, workflow failure alerts, calendar reminders | Done |
 | 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | Done |
 | 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | Done |
+| 10 | Multimodal input — voice transcription + image/vision support | Planned |
