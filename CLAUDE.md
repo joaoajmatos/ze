@@ -20,6 +20,7 @@ ze/
 │   ├── orchestration/        # LangGraph state machine (nodes/, edges, graph, state)
 │   ├── routing/              # EmbeddingRouter + haiku_fallback
 │   ├── telegram/             # ZeBot, keyboards, session store
+│   ├── telemetry/            # Cost tracking — CostTracker, CostReconciler, ContextVar attribution
 │   ├── container.py          # Dependency wiring — builds all shared resources
 │   ├── db.py                 # asyncpg pool factory
 │   ├── embeddings.py         # SentenceTransformer singleton
@@ -34,7 +35,7 @@ ze/
 │   ├── 001_initial_schema.py # routing_log, user_facts, episodes
 │   └── 002_checkpointer.py   # LangGraph checkpoint tables
 ├── tests/                    # Mirrors ze/ structure
-├── specs/                    # All 8 design specs (read before modifying a module)
+├── specs/                    # All 17 design specs (read before modifying a module)
 ├── Dockerfile                # Production image
 ├── docker-compose.yml        # Postgres (pgvector/pgvector:pg16) + backend
 ├── fly.toml                  # Fly.io deployment config
@@ -142,8 +143,8 @@ intent_map:
 Permission modes per `agent.intent`: `autonomous` | `confirm` | `draft_only` | `disabled`.
 Hot-reloaded on SIGHUP without restart.
 
-### `config/models.yaml`
-Routing thresholds (`threshold`, `gap_threshold`) and model assignments.
+### `config/config.yaml`
+Routing thresholds, model assignments, persona, memory, proactive, and agent config.
 
 ## Adding a new agent
 
@@ -183,3 +184,5 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 5 | Memory consolidation — dedup facts, expire stale, summarise episodes | Done |
 | 6 | User profile — synthesise facts + episodes into a structured portrait | Done |
 | 7 | Proactive Ze — morning briefing, workflow failure alerts, calendar reminders | Done |
+| 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | Done |
+| 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | Done |
