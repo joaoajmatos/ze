@@ -36,18 +36,16 @@ def make_pool(conn=None):
     return pool, conn
 
 
-def make_settings(extra_proactive: dict | None = None):
+def make_settings(extra_insights_mem: dict | None = None):
     s = MagicMock()
-    cfg = {
-        "insights_lookback_days": 7,
-        "insights_min_evidence": 3,
-        "insights_max_per_run": 3,
-        "insights_category_cooldown_days": 7,
-        "insights_model": "anthropic/claude-haiku-4-5",
+    s.memory_insights_config = {
+        "lookback_days": 7,
+        "min_evidence": 3,
+        "max_per_run": 3,
+        **(extra_insights_mem or {}),
     }
-    if extra_proactive:
-        cfg.update(extra_proactive)
-    s.proactive_config = cfg
+    s.proactive_config = {"insights": {"category_cooldown_days": 7}}
+    s.config = {"models": {"insights": "anthropic/claude-haiku-4-5"}}
     return s
 
 
@@ -177,7 +175,7 @@ async def test_insights_caps_max_per_run():
     client = AsyncMock()
     client.complete = AsyncMock(return_value=five_insights)
     notifier = make_notifier()
-    settings = make_settings({"insights_max_per_run": 3})
+    settings = make_settings({"max_per_run": 3})
 
     engine, _ = make_engine(conn=conn, notifier=notifier, client=client, settings=settings)
     await engine.run()

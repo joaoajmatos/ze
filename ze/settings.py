@@ -66,29 +66,41 @@ class Settings(BaseSettings):
         return self.config_dir / "config.yaml"
 
     @property
-    def models_config(self) -> dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         return _load_yaml(self.config_dir / "config.yaml")
+
+    # Keep alias so external tooling that reads models_config still works.
+    @property
+    def models_config(self) -> dict[str, Any]:
+        return self.config
 
     @property
     def routing_config(self) -> dict[str, Any]:
-        return self.models_config.get("routing", {})
+        return self.config.get("routing", {})
 
     @property
     def consolidation_config(self) -> dict[str, Any]:
-        return self.models_config.get("memory", {}).get("consolidation", {})
+        return self.config.get("memory", {}).get("consolidation", {})
+
+    @property
+    def profile_config(self) -> dict[str, Any]:
+        return self.config.get("memory", {}).get("profile", {})
+
+    @property
+    def memory_insights_config(self) -> dict[str, Any]:
+        return self.config.get("memory", {}).get("insights", {})
 
     @property
     def proactive_config(self) -> dict[str, Any]:
-        return self.models_config.get("proactive", {})
+        return self.config.get("proactive", {})
 
     @property
     def agent_configs(self) -> dict[str, dict[str, Any]]:
-        return _load_yaml(self.config_dir / "config.yaml").get("agents", {})
+        return self.config.get("agents", {})
 
     @property
     def persona_config(self) -> dict[str, Any]:
-        cfg = _load_yaml(self.config_dir / "config.yaml")
-        return cfg.get("persona", {"traits": ["direct", "warm", "concise"], "verbosity": "concise", "custom_instructions": ""})
+        return self.config.get("persona", {"traits": ["direct", "warm", "concise"], "verbosity": "concise", "custom_instructions": ""})
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:

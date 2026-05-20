@@ -43,12 +43,17 @@ class InsightEngine:
 
     async def run(self) -> None:
         """Weekly job: generate insights from recent evidence and push any novel ones."""
-        cfg = self._settings.proactive_config
-        lookback_days = int(cfg.get("insights_lookback_days", 7))
-        min_evidence = int(cfg.get("insights_min_evidence", 3))
-        max_per_run = int(cfg.get("insights_max_per_run", 3))
-        cooldown_days = int(cfg.get("insights_category_cooldown_days", 7))
-        model = cfg.get("insights_model", "anthropic/claude-haiku-4-5")
+        insight_mem_cfg = self._settings.memory_insights_config
+        lookback_days = int(insight_mem_cfg.get("lookback_days", 7))
+        min_evidence = int(insight_mem_cfg.get("min_evidence", 3))
+        max_per_run = int(insight_mem_cfg.get("max_per_run", 3))
+
+        cooldown_days = int(
+            self._settings.proactive_config.get("insights", {}).get("category_cooldown_days", 7)
+        )
+        model = self._settings.config.get("models", {}).get(
+            "insights", "anthropic/claude-haiku-4-5"
+        )
 
         week_of = date.today() - timedelta(days=date.today().weekday())
 

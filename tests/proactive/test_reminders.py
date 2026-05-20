@@ -398,7 +398,7 @@ async def test_workflow_failure_alert_disabled():
     tmp = pl.Path(tempfile.mkdtemp())
     real_cfg = pl.Path(__file__).parent.parent.parent / "config" / "config.yaml"
     cfg = yaml.safe_load(real_cfg.read_text())
-    cfg.setdefault("proactive", {})["workflow_failure_alerts"] = False
+    cfg.setdefault("proactive", {}).setdefault("alerts", {})["workflow_failure_enabled"] = False
     (tmp / "config.yaml").write_text(yaml.dump(cfg))
     get_settings.cache_clear()
     settings = Settings(

@@ -247,8 +247,8 @@ class MemoryStore:
         return episodes
 
     async def _generate_summary(self, episode_id: UUID, prompt: str, response: str) -> str | None:
-        model = self._settings.models_config.get("models", {}).get(
-            "router", "anthropic/claude-haiku-4-5"
+        model = self._settings.config.get("models", {}).get(
+            "synthesis", "anthropic/claude-haiku-4-5"
         )
         try:
             return await self._client.complete(
@@ -293,7 +293,7 @@ class MemoryStore:
             fact.key,
         )
         threshold = float(
-            self._settings.models_config.get("memory", {}).get(
+            self._settings.config.get("memory", {}).get(
                 "contradiction_threshold", _CONTRADICTION_THRESHOLD
             )
         )

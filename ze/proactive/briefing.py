@@ -41,8 +41,9 @@ class MorningBriefing:
             )
 
         unreviewed = unreviewed_row["n"]
-        cfg = self._settings.proactive_config
-        threshold = int(cfg.get("unreviewed_nudge_threshold", 5))
+        threshold = int(
+            self._settings.proactive_config.get("briefing", {}).get("unreviewed_nudge_threshold", 5)
+        )
 
         lines = ["Good morning! Here's your Ze briefing.", ""]
         lines.append(f"📋 Unreviewed facts: {unreviewed}")

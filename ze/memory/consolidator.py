@@ -45,9 +45,6 @@ _DEFAULTS = {
     "episode_recency_days": 14,
     "episode_archive_batch": 20,
     "episode_min_archive_batch": 10,
-    "profile_min_facts": 3,
-    "profile_episode_limit": 50,
-    "profile_model": "anthropic/claude-haiku-4-5",
 }
 
 
@@ -95,10 +92,10 @@ class MemoryConsolidator:
         return report
 
     async def synthesise_profile(self) -> bool:
-        cfg = self._cfg()
-        min_facts = int(cfg["profile_min_facts"])
-        episode_limit = int(cfg["profile_episode_limit"])
-        model = str(cfg["profile_model"])
+        profile_cfg = self._settings.profile_config
+        min_facts = int(profile_cfg.get("min_facts", 3))
+        episode_limit = int(profile_cfg.get("episode_limit", 50))
+        model = self._settings.config.get("models", {}).get("profile", "anthropic/claude-haiku-4-5")
 
         async with self._pool.acquire() as conn:
             fact_rows = await conn.fetch(
@@ -377,8 +374,8 @@ class MemoryConsolidator:
         return {k: cfg.get(k, v) for k, v in _DEFAULTS.items()}
 
     def _haiku_model(self) -> str:
-        return self._settings.models_config.get("models", {}).get(
-            "router", "anthropic/claude-haiku-4-5"
+        return self._settings.config.get("models", {}).get(
+            "synthesis", "anthropic/claude-haiku-4-5"
         )
 
     async def _mark_contradicted(self, fact_id: UUID) -> None:

@@ -5,13 +5,11 @@ routing:
   fallback_model: anthropic/claude-haiku-4-5
 
 models:
-  router:    anthropic/claude-haiku-4-5
-  calendar:  anthropic/claude-haiku-4-5
-  email:     anthropic/claude-haiku-4-5
-  research:  anthropic/claude-sonnet-4-5
-  workflow:  anthropic/claude-sonnet-4-5
-  companion: anthropic/claude-sonnet-4-5
-  synthesis: anthropic/claude-haiku-4-5
+  router:    anthropic/claude-haiku-4-5   # routing fallback + fact dedup merges
+  synthesis: anthropic/claude-haiku-4-5   # multi-agent response synthesis + episode summaries
+  profile:   anthropic/claude-haiku-4-5   # user profile synthesis
+  reminders: anthropic/claude-haiku-4-5   # calendar reminder interval assessment
+  insights:  anthropic/claude-haiku-4-5   # weekly insight generation
 
 persona:
   traits:
@@ -29,7 +27,7 @@ memory:
 
   consolidation:
     merge_silent_threshold: 0.95   # > this → silent merge, no LLM
-    merge_llm_threshold: 0.85      # > this (and < silent) → Haiku merge
+    merge_llm_threshold: 0.85      # > this (and < silent) → LLM merge
     contradicted_ttl_days: 30      # hard-delete contradicted facts after N days
     unreviewed_ttl_days: 90        # soft-expire unreviewed facts after N days
     expiry_grace_days: 7           # days between soft-expire and hard-delete
@@ -37,28 +35,35 @@ memory:
     episode_archive_batch: 20      # episodes per archive batch
     episode_min_archive_batch: 10  # minimum unarchived episodes to trigger a run
     nightly_cron: "0 2 * * *"      # 2 AM UTC daily
-    profile_min_facts: 3            # skip synthesis below this many reviewed facts
-    profile_episode_limit: 50       # max episodes fed into synthesis prompt
-    profile_model: anthropic/claude-haiku-4-5  # model for profile synthesis
+
+  profile:
+    min_facts: 3      # skip synthesis below this many reviewed facts
+    episode_limit: 50 # max episodes fed into synthesis prompt
+
+  insights:
+    lookback_days: 7  # evidence window
+    min_evidence: 3   # min facts + episodes to proceed
+    max_per_run: 3    # cap on insights pushed per weekly run
 
 proactive:
-  enabled: true
-  briefing_enabled: true
-  briefing_cron: "0 8 * * *"           # 8 AM UTC daily
-  unreviewed_nudge_threshold: 5         # include nudge if unreviewed >= this
-  workflow_failure_alerts: true
-  workflow_failure_cooldown_hours: 1    # min hours between repeated alerts per workflow
-  calendar_sync_enabled: true
-  calendar_sync_cron: "45 7 * * *"     # 7:45 AM UTC — before briefing
-  calendar_sync_days_ahead: 7
-  calendar_reminder_model: anthropic/claude-haiku-4-5
-  insights_enabled: true
-  insights_cron: "0 7 * * 0"           # Sunday 7 AM UTC — before the 8 AM briefing
-  insights_model: anthropic/claude-haiku-4-5
-  insights_lookback_days: 7
-  insights_min_evidence: 3
-  insights_max_per_run: 3
-  insights_category_cooldown_days: 7
+  briefing:
+    enabled: true
+    cron: "0 8 * * *"               # 8 AM UTC daily
+    unreviewed_nudge_threshold: 5   # include nudge if unreviewed facts >= this
+
+  alerts:
+    workflow_failure_enabled: true
+    workflow_failure_cooldown_hours: 1  # min hours between repeated alerts per workflow
+
+  calendar:
+    sync_enabled: true
+    sync_cron: "45 7 * * *"   # 7:45 AM UTC — before briefing
+    sync_days_ahead: 7
+
+  insights:
+    enabled: true
+    cron: "0 7 * * 0"           # Sunday 7 AM UTC — before the 8 AM briefing
+    category_cooldown_days: 7   # suppress same category within this window
 
 agents:
   research:

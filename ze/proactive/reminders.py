@@ -121,8 +121,9 @@ class CalendarReminderScheduler:
             self._log.info("reminder_sync_skipped_no_credentials")
             return
 
-        cfg = self._settings.proactive_config
-        days_ahead = int(cfg.get("calendar_sync_days_ahead", 7))
+        days_ahead = int(
+            self._settings.proactive_config.get("calendar", {}).get("sync_days_ahead", 7)
+        )
 
         now = datetime.now(timezone.utc)
         time_max = now + timedelta(days=days_ahead)
@@ -256,8 +257,9 @@ class CalendarReminderScheduler:
         start_time: datetime,
         now: datetime,
     ) -> list[tuple[timedelta, datetime]]:
-        cfg = self._settings.proactive_config
-        model = cfg.get("calendar_reminder_model", "anthropic/claude-haiku-4-5")
+        model = self._settings.config.get("models", {}).get(
+            "reminders", "anthropic/claude-haiku-4-5"
+        )
 
         end_time = _event_start({"start": event.get("end", {})})
         if end_time and end_time > start_time:

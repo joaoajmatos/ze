@@ -97,7 +97,7 @@ async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
         f"Agent responses:\n{parts}"
     )
 
-    synthesis_model = settings.models_config.get("models", {}).get(
+    synthesis_model = settings.config.get("models", {}).get(
         "synthesis", "anthropic/claude-haiku-4-5"
     )
 

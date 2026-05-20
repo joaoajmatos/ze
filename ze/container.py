@@ -148,7 +148,7 @@ async def build_container(settings: Settings) -> Container:
         graph_config=workflow_graph_config,
         settings=settings,
         pool=pool,
-        notifier=notifier if proactive_cfg.get("workflow_failure_alerts", True) else None,
+        notifier=notifier if proactive_cfg.get("alerts", {}).get("workflow_failure_enabled", True) else None,
     )
 
     bootstrap_agents(
@@ -173,13 +173,15 @@ async def build_container(settings: Settings) -> Container:
 
     # ── Proactive push ────────────────────────────────────────────────────────
     morning_briefing = MorningBriefing(notifier=notifier, pool=pool, settings=settings)
-    if proactive_cfg.get("briefing_enabled", True):
+    briefing_cfg = proactive_cfg.get("briefing", {})
+    if briefing_cfg.get("enabled", True):
+        briefing_cron = briefing_cfg.get("cron", "0 8 * * *")
         workflow_scheduler.schedule_job(
             fn=morning_briefing.run,
-            cron=proactive_cfg.get("briefing_cron", "0 8 * * *"),
+            cron=briefing_cron,
             job_id="morning_briefing",
         )
-        log.info("briefing_scheduled", cron=proactive_cfg.get("briefing_cron", "0 8 * * *"))
+        log.info("briefing_scheduled", cron=briefing_cron)
 
     google_credentials = GoogleCredentials.from_settings(settings)
     calendar_reminders = CalendarReminderScheduler(
@@ -190,11 +192,12 @@ async def build_container(settings: Settings) -> Container:
         google_credentials=google_credentials,
         settings=settings,
     )
-    if proactive_cfg.get("calendar_sync_enabled", True):
+    calendar_cfg = proactive_cfg.get("calendar", {})
+    if calendar_cfg.get("sync_enabled", True):
         await calendar_reminders.start()
         workflow_scheduler.schedule_job(
             fn=calendar_reminders.sync,
-            cron=proactive_cfg.get("calendar_sync_cron", "45 7 * * *"),
+            cron=calendar_cfg.get("sync_cron", "45 7 * * *"),
             job_id="calendar_reminder_sync",
         )
         log.info("calendar_reminders_scheduled")
@@ -205,10 +208,11 @@ async def build_container(settings: Settings) -> Container:
         openrouter_client=openrouter_client,
         settings=settings,
     )
-    if proactive_cfg.get("insights_enabled", True):
+    insights_proactive_cfg = proactive_cfg.get("insights", {})
+    if insights_proactive_cfg.get("enabled", True):
         workflow_scheduler.schedule_job(
             fn=insight_engine.run,
-            cron=proactive_cfg.get("insights_cron", "0 7 * * 0"),
+            cron=insights_proactive_cfg.get("cron", "0 7 * * 0"),
             job_id="insight_generation",
         )
         log.info("insights_scheduled")

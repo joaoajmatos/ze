@@ -156,11 +156,11 @@ class WorkflowScheduler:
         log.info("workflow_execution_done", workflow=workflow.name, execution_id=str(execution_id))
 
     async def _push_failure_alert(self, workflow: Workflow, exc: Exception) -> None:
-        cfg = self._settings.proactive_config
-        if not cfg.get("workflow_failure_alerts", True):
+        alerts_cfg = self._settings.proactive_config.get("alerts", {})
+        if not alerts_cfg.get("workflow_failure_enabled", True):
             return
 
-        cooldown = int(cfg.get("workflow_failure_cooldown_hours", 1))
+        cooldown = int(alerts_cfg.get("workflow_failure_cooldown_hours", 1))
         event_type = f"workflow_failure:{workflow.id}"
 
         if self._pool is not None:
