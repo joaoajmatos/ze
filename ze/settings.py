@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     workflow_plan_model: str = "anthropic/claude-haiku-4-5-20251001"
     workflow_verify_model: str = "anthropic/claude-haiku-4-5-20251001"
 
+    # ── Memory consolidation ──────────────────────────────────────────────────
+    consolidation_enabled: bool = True
+
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = "INFO"
 
@@ -69,6 +72,10 @@ class Settings(BaseSettings):
     @property
     def routing_config(self) -> dict[str, Any]:
         return self.models_config.get("routing", {})
+
+    @property
+    def consolidation_config(self) -> dict[str, Any]:
+        return self.models_config.get("memory", {}).get("consolidation", {})
 
     @property
     def agent_configs(self) -> dict[str, dict[str, Any]]:

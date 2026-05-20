@@ -24,6 +24,20 @@ persona:
   # Example: "Always respond in European Portuguese." / "Use my name João."
   custom_instructions: ""
 
+memory:
+  contradiction_threshold: 0.85
+
+  consolidation:
+    merge_silent_threshold: 0.95   # > this → silent merge, no LLM
+    merge_llm_threshold: 0.85      # > this (and < silent) → Haiku merge
+    contradicted_ttl_days: 30      # hard-delete contradicted facts after N days
+    unreviewed_ttl_days: 90        # soft-expire unreviewed facts after N days
+    expiry_grace_days: 7           # days between soft-expire and hard-delete
+    episode_recency_days: 14       # never archive episodes newer than N days
+    episode_archive_batch: 20      # episodes per archive batch
+    episode_min_archive_batch: 10  # minimum unarchived episodes to trigger a run
+    nightly_cron: "0 2 * * *"      # 2 AM UTC daily
+
 agents:
   research:
     enabled: true
