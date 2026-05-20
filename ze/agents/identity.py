@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ze.memory.types import UserProfile
+
 _VERBOSITY_CLAUSES = {
     "concise": " Keep responses brief — one to two paragraphs unless the user asks for more.",
     "detailed": " Be thorough — elaborate fully and include examples where helpful.",
@@ -6,14 +13,38 @@ _VERBOSITY_CLAUSES = {
 _IDENTITY_TEMPLATE = """\
 You are Ze, a personal AI assistant. You are {traits}.{verbosity_clause}
 {custom_block}
+{profile_block}\
 ## Known facts about this user
 Use these facts to personalise responses and to answer questions about the user directly. \
 Do not say you lack information if it appears below.
 {memory_context}\
 """
 
+_PROFILE_LABELS = {
+    "preferences": "Preferences",
+    "habits": "Habits",
+    "topics": "Topics",
+    "relationships": "Relationships",
+    "goals": "Goals",
+}
 
-def build_identity_block(persona: dict, memory_context: str) -> str:
+
+def _render_profile_block(profile: UserProfile) -> str:
+    lines = []
+    for key, label in _PROFILE_LABELS.items():
+        value = getattr(profile, key, "")
+        if value:
+            lines.append(f"**{label}:** {value}")
+    if not lines:
+        return ""
+    return "## Who this user is\n" + "\n".join(lines) + "\n\n"
+
+
+def build_identity_block(
+    persona: dict,
+    memory_context: str,
+    profile: UserProfile | None = None,
+) -> str:
     traits = persona.get("traits") or ["helpful"]
     if len(traits) == 1:
         traits_str = traits[0]
@@ -26,11 +57,14 @@ def build_identity_block(persona: dict, memory_context: str) -> str:
     verbosity_clause = _VERBOSITY_CLAUSES.get(verbosity, "")
 
     custom = (persona.get("custom_instructions") or "").strip()
-    custom_block = f"\n{custom}" if custom else ""
+    custom_block = f"\n{custom}\n" if custom else ""
+
+    profile_block = _render_profile_block(profile) if profile is not None else ""
 
     return _IDENTITY_TEMPLATE.format(
         traits=traits_str,
         verbosity_clause=verbosity_clause,
         custom_block=custom_block,
+        profile_block=profile_block,
         memory_context=memory_context,
     )

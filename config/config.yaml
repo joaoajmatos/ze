@@ -37,6 +37,9 @@ memory:
     episode_archive_batch: 20      # episodes per archive batch
     episode_min_archive_batch: 10  # minimum unarchived episodes to trigger a run
     nightly_cron: "0 2 * * *"      # 2 AM UTC daily
+    profile_min_facts: 3            # skip synthesis below this many reviewed facts
+    profile_episode_limit: 50       # max episodes fed into synthesis prompt
+    profile_model: anthropic/claude-haiku-4-5  # model for profile synthesis
 
 agents:
   research:

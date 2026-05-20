@@ -26,6 +26,16 @@ _ARCHIVE_SYSTEM = (
     "capturing the key facts, decisions, and outcomes. Be factual and brief."
 )
 
+_PROFILE_SYSTEM = """\
+You are maintaining a structured profile of a single user based on their
+interaction history with a personal AI assistant. Your output must be a JSON
+object with exactly five string keys: "preferences", "habits", "topics",
+"relationships", "goals". Each value should be a concise paragraph (2-4 sentences)
+or an empty string if there is insufficient evidence. Do not invent information.
+Base your response only on the provided facts and episode summaries."""
+
+_PROFILE_MAX_SECTION = 400
+
 _DEFAULTS = {
     "merge_silent_threshold": 0.95,
     "merge_llm_threshold": 0.85,
@@ -35,6 +45,9 @@ _DEFAULTS = {
     "episode_recency_days": 14,
     "episode_archive_batch": 20,
     "episode_min_archive_batch": 10,
+    "profile_min_facts": 3,
+    "profile_episode_limit": 50,
+    "profile_model": "anthropic/claude-haiku-4-5",
 }
 
 
@@ -65,6 +78,7 @@ class MemoryConsolidator:
         merged = await self.dedup_facts()
         soft_expired, hard_deleted = await self.expire_facts()
         archived, deleted = await self.archive_episodes()
+        profile_updated = await self.synthesise_profile()
 
         report = ConsolidationReport(
             facts_merged=merged,
@@ -72,12 +86,102 @@ class MemoryConsolidator:
             facts_hard_deleted=hard_deleted,
             episodes_archived=archived,
             episodes_deleted=deleted,
+            profile_updated=profile_updated,
             duration_ms=int((time.monotonic() - start) * 1000),
         )
         self._log.info("consolidation_done", **{
             k: v for k, v in report.__dict__.items()
         })
         return report
+
+    async def synthesise_profile(self) -> bool:
+        cfg = self._cfg()
+        min_facts = int(cfg["profile_min_facts"])
+        episode_limit = int(cfg["profile_episode_limit"])
+        model = str(cfg["profile_model"])
+
+        async with self._pool.acquire() as conn:
+            fact_rows = await conn.fetch(
+                "SELECT key, value FROM user_facts "
+                "WHERE reviewed = true AND contradicted = false "
+                "ORDER BY updated_at DESC"
+            )
+            episode_rows = await conn.fetch(
+                "SELECT summary, response FROM episodes "
+                "ORDER BY created_at DESC LIMIT $1",
+                episode_limit,
+            )
+            profile_row = await conn.fetchrow(
+                "SELECT preferences, habits, topics, relationships, goals, version "
+                "FROM user_profile WHERE id = 1"
+            )
+
+        if len(fact_rows) < min_facts and not episode_rows:
+            self._log.info("profile_synthesis_skipped", facts=len(fact_rows), episodes=len(episode_rows))
+            return False
+
+        current = {}
+        if profile_row:
+            current = {
+                "preferences": profile_row["preferences"],
+                "habits": profile_row["habits"],
+                "topics": profile_row["topics"],
+                "relationships": profile_row["relationships"],
+                "goals": profile_row["goals"],
+            }
+        current_version = profile_row["version"] if profile_row else 0
+
+        facts_block = "\n".join(f"- {r['key']}: {r['value']}" for r in fact_rows)
+        episodes_block = "\n".join(
+            f"- {r['summary'] or r['response'][:200]}" for r in episode_rows
+        )
+
+        user_prompt = (
+            f"Current profile (update rather than replace where possible):\n"
+            f"{json.dumps(current)}\n\n"
+            f"Reviewed user facts:\n{facts_block}\n\n"
+            f"Recent interaction summaries (newest first):\n{episodes_block}\n\n"
+            f"Produce the updated profile JSON."
+        )
+
+        try:
+            raw = await self._client.complete(
+                messages=[{"role": "user", "content": user_prompt}],
+                model=model,
+                system=_PROFILE_SYSTEM,
+                max_tokens=600,
+            )
+            parsed = json.loads(raw)
+        except Exception as exc:
+            self._log.warning("profile_synthesis_failed", error=str(exc))
+            return False
+
+        required = {"preferences", "habits", "topics", "relationships", "goals"}
+        if not required.issubset(parsed.keys()):
+            self._log.warning("profile_synthesis_bad_json", keys=list(parsed.keys()))
+            return False
+
+        sections = {k: str(parsed[k])[:_PROFILE_MAX_SECTION] for k in required}
+
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE user_profile
+                SET preferences = $1, habits = $2, topics = $3,
+                    relationships = $4, goals = $5,
+                    updated_at = NOW(), version = $6
+                WHERE id = 1
+                """,
+                sections["preferences"],
+                sections["habits"],
+                sections["topics"],
+                sections["relationships"],
+                sections["goals"],
+                current_version + 1,
+            )
+
+        self._log.info("profile_synthesis_done", version=current_version + 1)
+        return True
 
     async def dedup_facts(self) -> int:
         cfg = self._cfg()

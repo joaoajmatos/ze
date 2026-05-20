@@ -6,7 +6,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 from ze.logging import get_logger
-from ze.memory.types import Episode, MemoryContext, UserFact
+from ze.memory.types import Episode, MemoryContext, UserFact, UserProfile
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 
@@ -53,11 +53,38 @@ class MemoryStore:
 
         facts = await self._load_facts(agent, budget["facts"], prompt_embedding)
         episodes = await self._load_episodes(prompt_embedding, budget["episodes"])
+        profile = await self.get_profile()
 
         token_estimate = sum(_tokens(f.value) for f in facts)
         token_estimate += sum(_tokens(e.summary or e.response[:200]) for e in episodes)
 
-        return MemoryContext(facts=facts, episodes=episodes, token_estimate=token_estimate)
+        return MemoryContext(
+            facts=facts,
+            episodes=episodes,
+            token_estimate=token_estimate,
+            profile=profile,
+        )
+
+    async def get_profile(self) -> UserProfile | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT preferences, habits, topics, relationships, goals, updated_at, version "
+                "FROM user_profile WHERE id = 1"
+            )
+        if row is None:
+            return None
+        if not any([row["preferences"], row["habits"], row["topics"],
+                    row["relationships"], row["goals"]]):
+            return None
+        return UserProfile(
+            preferences=row["preferences"],
+            habits=row["habits"],
+            topics=row["topics"],
+            relationships=row["relationships"],
+            goals=row["goals"],
+            updated_at=row["updated_at"],
+            version=row["version"],
+        )
 
     async def write_episode(
         self,

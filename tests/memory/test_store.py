@@ -315,3 +315,61 @@ async def test_generate_summary_returns_none_on_error():
     store = make_store(client=client)
     result = await store._generate_summary(uuid4(), "prompt", "response")
     assert result is None
+
+
+# ── get_profile ───────────────────────────────────────────────────────────────
+
+async def test_get_profile_returns_none_when_empty():
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value={
+        "preferences": "", "habits": "", "topics": "",
+        "relationships": "", "goals": "",
+        "updated_at": datetime.utcnow(), "version": 0,
+    })
+    store = make_store(pool=make_pool(conn))
+    result = await store.get_profile()
+    assert result is None
+
+
+async def test_get_profile_returns_profile():
+    from ze.memory.types import UserProfile
+    now = datetime.utcnow()
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value={
+        "preferences": "Likes brevity.",
+        "habits": "Works mornings.",
+        "topics": "AI and tech.",
+        "relationships": "Has a cat.",
+        "goals": "Ship Ze.",
+        "updated_at": now,
+        "version": 3,
+    })
+    store = make_store(pool=make_pool(conn))
+    result = await store.get_profile()
+    assert isinstance(result, UserProfile)
+    assert result.preferences == "Likes brevity."
+    assert result.version == 3
+
+
+async def test_get_profile_returns_none_when_row_missing():
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value=None)
+    store = make_store(pool=make_pool(conn))
+    result = await store.get_profile()
+    assert result is None
+
+
+async def test_get_context_attaches_profile():
+    from ze.memory.types import UserProfile
+    now = datetime.utcnow()
+    conn = make_conn()
+    conn.fetch = AsyncMock(side_effect=[[], []])
+    conn.fetchrow = AsyncMock(return_value={
+        "preferences": "Prefers markdown.",
+        "habits": "", "topics": "", "relationships": "", "goals": "",
+        "updated_at": now, "version": 1,
+    })
+    store = make_store(pool=make_pool(conn))
+    ctx = await store.get_context(np.zeros(384), "research")
+    assert isinstance(ctx.profile, UserProfile)
+    assert ctx.profile.preferences == "Prefers markdown."

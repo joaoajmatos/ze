@@ -7,6 +7,7 @@ from ze.api.schemas import (
     FactReviewRequest,
     MemoryDigestResponse,
     UserFactResponse,
+    UserProfileResponse,
 )
 
 router = APIRouter(tags=["memory"])
@@ -118,5 +119,37 @@ async def run_consolidation(
         facts_hard_deleted=report.facts_hard_deleted,
         episodes_archived=report.episodes_archived,
         episodes_deleted=report.episodes_deleted,
+        profile_updated=report.profile_updated,
         duration_ms=report.duration_ms,
+    )
+
+
+@router.get(
+    "/profile",
+    response_model=UserProfileResponse,
+    summary="Current user profile",
+    description=(
+        "The synthesised user profile — preferences, habits, topics, relationships, "
+        "and goals. Updated nightly by the consolidation job."
+    ),
+)
+async def get_profile(pool=Depends(get_pool)) -> UserProfileResponse:
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT preferences, habits, topics, relationships, goals, updated_at, version "
+            "FROM user_profile WHERE id = 1"
+        )
+    if row is None or not any([
+        row["preferences"], row["habits"], row["topics"],
+        row["relationships"], row["goals"],
+    ]):
+        raise HTTPException(status_code=404, detail="No profile synthesised yet")
+    return UserProfileResponse(
+        preferences=row["preferences"],
+        habits=row["habits"],
+        topics=row["topics"],
+        relationships=row["relationships"],
+        goals=row["goals"],
+        updated_at=row["updated_at"],
+        version=row["version"],
     )

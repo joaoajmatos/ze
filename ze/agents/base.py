@@ -115,6 +115,10 @@ class BaseAgent(ABC):
         **extra: str,
     ) -> str:
         """Compose the full system prompt: shared identity block + agent instructions."""
-        identity = build_identity_block(self._settings.persona_config, self._format_memory(ctx))
+        identity = build_identity_block(
+            self._settings.persona_config,
+            self._format_memory(ctx),
+            profile=ctx.memory.profile,
+        )
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
         return f"{identity}\n\n{rendered}"

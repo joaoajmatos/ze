@@ -355,3 +355,136 @@ def test_mean_embedding_empty():
     result = _mean_embedding([])
     assert result.shape == (384,)
     assert np.all(result == 0)
+
+
+# ── synthesise_profile ────────────────────────────────────────────────────────
+
+def _make_profile_conn(fact_rows=None, episode_rows=None, profile_row=None):
+    """Return a conn where three sequential fetchrow/fetch calls return profile data."""
+    conn = make_conn()
+    conn.fetch = AsyncMock(side_effect=[
+        fact_rows or [],
+        episode_rows or [],
+    ])
+    conn.fetchrow = AsyncMock(return_value=profile_row)
+    conn.execute = AsyncMock(return_value="UPDATE 1")
+    return conn
+
+
+async def test_synthesise_profile_writes_profile():
+    fact_rows = [
+        {"key": "name", "value": "Alice"},
+        {"key": "city", "value": "Lisbon"},
+        {"key": "lang", "value": "Portuguese"},
+    ]
+    episode_rows = [{"summary": "Discussed travel plans.", "response": "..."}]
+    profile_row = {
+        "preferences": "", "habits": "", "topics": "",
+        "relationships": "", "goals": "", "version": 0,
+    }
+
+    conn = _make_profile_conn(fact_rows, episode_rows, profile_row)
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=json.dumps({
+        "preferences": "Prefers concise answers.",
+        "habits": "Works in the evenings.",
+        "topics": "Travel and languages.",
+        "relationships": "No relationships mentioned.",
+        "goals": "Learn Portuguese.",
+    }))
+
+    c = make_consolidator(pool=make_pool(conn), client=client)
+    result = await c.synthesise_profile()
+
+    assert result is True
+    client.complete.assert_called_once()
+    conn.execute.assert_called_once()
+    sql = conn.execute.call_args[0][0]
+    assert "UPDATE user_profile" in sql
+
+
+async def test_synthesise_profile_skips_sparse():
+    # Fewer than min_facts (3) reviewed facts and no episodes
+    conn = _make_profile_conn(fact_rows=[], episode_rows=[])
+    client = AsyncMock()
+
+    c = make_consolidator(pool=make_pool(conn), client=client)
+    result = await c.synthesise_profile()
+
+    assert result is False
+    client.complete.assert_not_called()
+    conn.execute.assert_not_called()
+
+
+async def test_synthesise_profile_haiku_failure():
+    fact_rows = [{"key": f"k{i}", "value": "v"} for i in range(3)]
+    conn = _make_profile_conn(fact_rows=fact_rows, profile_row={
+        "preferences": "", "habits": "", "topics": "",
+        "relationships": "", "goals": "", "version": 0,
+    })
+    client = AsyncMock()
+    client.complete = AsyncMock(side_effect=Exception("haiku unavailable"))
+
+    c = make_consolidator(pool=make_pool(conn), client=client)
+    result = await c.synthesise_profile()
+
+    assert result is False
+    conn.execute.assert_not_called()
+
+
+async def test_synthesise_profile_bad_json():
+    fact_rows = [{"key": f"k{i}", "value": "v"} for i in range(3)]
+    conn = _make_profile_conn(fact_rows=fact_rows, profile_row={
+        "preferences": "", "habits": "", "topics": "",
+        "relationships": "", "goals": "", "version": 0,
+    })
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value="not valid json at all")
+
+    c = make_consolidator(pool=make_pool(conn), client=client)
+    result = await c.synthesise_profile()
+
+    assert result is False
+    conn.execute.assert_not_called()
+
+
+async def test_synthesise_profile_truncates_long_sections():
+    fact_rows = [{"key": f"k{i}", "value": "v"} for i in range(3)]
+    conn = _make_profile_conn(fact_rows=fact_rows, profile_row={
+        "preferences": "", "habits": "", "topics": "",
+        "relationships": "", "goals": "", "version": 2,
+    })
+    long_text = "x" * 600
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=json.dumps({
+        "preferences": long_text,
+        "habits": long_text,
+        "topics": long_text,
+        "relationships": long_text,
+        "goals": long_text,
+    }))
+
+    c = make_consolidator(pool=make_pool(conn), client=client)
+    result = await c.synthesise_profile()
+
+    assert result is True
+    # Check that the stored values are truncated to 400 chars
+    call_args = conn.execute.call_args[0]
+    for section_val in call_args[1:6]:
+        assert len(section_val) <= 400
+
+
+async def test_run_includes_profile_updated_flag():
+    conn = make_conn()
+    conn.fetch = AsyncMock(return_value=[])
+    conn.execute = AsyncMock(side_effect=["DELETE 0", "DELETE 0", "UPDATE 0"] * 10)
+
+    c = make_consolidator(pool=make_pool(conn))
+
+    with patch.object(c, "dedup_facts", AsyncMock(return_value=0)), \
+         patch.object(c, "expire_facts", AsyncMock(return_value=(0, 0))), \
+         patch.object(c, "archive_episodes", AsyncMock(return_value=(0, 0))), \
+         patch.object(c, "synthesise_profile", AsyncMock(return_value=True)):
+        report = await c.run()
+
+    assert report.profile_updated is True

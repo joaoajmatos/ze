@@ -72,12 +72,23 @@ class MemoryDigestResponse(BaseModel):
     expiring_facts: list[ExpiringFactDigestItem]
 
 
+class UserProfileResponse(BaseModel):
+    preferences: str
+    habits: str
+    topics: str
+    relationships: str
+    goals: str
+    updated_at: datetime
+    version: int
+
+
 class ConsolidationReportResponse(BaseModel):
     facts_merged: int
     facts_soft_expired: int
     facts_hard_deleted: int
     episodes_archived: int
     episodes_deleted: int
+    profile_updated: bool
     duration_ms: int
 
 
