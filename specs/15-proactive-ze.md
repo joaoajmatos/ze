@@ -4,17 +4,17 @@
 
 | Feature | Status |
 |---------|--------|
-| Migration 006 — `push_log` + `calendar_reminders` tables | ❌ Not started |
-| `ProactiveNotifier` | ❌ Not started |
-| Config `proactive:` section | ❌ Not started |
-| `MorningBriefing` — stats-only, scheduled | ❌ Not started |
-| Unreviewed-facts nudge (part of morning briefing) | ❌ Not started |
-| Workflow failure alerts (immediate) | ❌ Not started |
-| `CalendarReminderScheduler` + daily sync job | ❌ Not started |
-| `WorkflowScheduler.schedule_at()` — one-shot DateTrigger | ❌ Not started |
-| Startup reminder replay | ❌ Not started |
-| Calendar reminder confirmation push | ❌ Not started |
-| Tests | ❌ Not started |
+| Migration 006 — `push_log` + `calendar_reminders` tables | ✅ Done |
+| `ProactiveNotifier` | ✅ Done |
+| Config `proactive:` section | ✅ Done |
+| `MorningBriefing` — stats-only, scheduled | ✅ Done |
+| Unreviewed-facts nudge (part of morning briefing) | ✅ Done |
+| Workflow failure alerts (immediate) | ✅ Done |
+| `CalendarReminderScheduler` + daily sync job | ✅ Done |
+| `WorkflowScheduler.schedule_at()` — one-shot DateTrigger | ✅ Done |
+| Startup reminder replay | ✅ Done |
+| Calendar reminder confirmation push | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 
