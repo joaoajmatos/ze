@@ -11,6 +11,7 @@ from ze.capability.gate import CapabilityGate
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
 from ze.logging import get_logger
+from ze.memory.consolidator import MemoryConsolidator
 from ze.memory.store import MemoryStore
 from ze.openrouter.client import OpenRouterClient
 from ze.orchestration.graph import build_graph
@@ -38,6 +39,7 @@ class Container:
     router: EmbeddingRouter
     capability_gate: CapabilityGate
     memory_store: MemoryStore
+    memory_consolidator: MemoryConsolidator
     workflow_store: WorkflowStore
     workflow_scheduler: WorkflowScheduler
     graph: object
@@ -97,6 +99,14 @@ async def build_container(settings: Settings) -> Container:
         settings=settings,
     )
 
+    # ── Memory consolidation ──────────────────────────────────────────────────
+    memory_consolidator = MemoryConsolidator(
+        pool=pool,
+        embedder=embedder,
+        openrouter_client=openrouter_client,
+        settings=settings,
+    )
+
     # ── Workflow ──────────────────────────────────────────────────────────────
     workflow_store = WorkflowStore(db_pool=pool)
     workflow_planner = WorkflowPlanner(openrouter_client=openrouter_client, settings=settings)
@@ -134,6 +144,15 @@ async def build_container(settings: Settings) -> Container:
 
     await workflow_scheduler.start()
 
+    if settings.consolidation_enabled:
+        nightly_cron = settings.consolidation_config.get("nightly_cron", "0 2 * * *")
+        workflow_scheduler.schedule_job(
+            fn=memory_consolidator.run,
+            cron=nightly_cron,
+            job_id="memory_consolidation",
+        )
+        log.info("consolidation_scheduled", cron=nightly_cron)
+
     bot = Bot(token=settings.telegram_bot_token)
     if settings.telegram_bot_token and settings.public_url:
         await bot.set_webhook(
@@ -167,6 +186,7 @@ async def build_container(settings: Settings) -> Container:
         router=router,
         capability_gate=capability_gate,
         memory_store=memory_store,
+        memory_consolidator=memory_consolidator,
         workflow_store=workflow_store,
         workflow_scheduler=workflow_scheduler,
         graph=graph,

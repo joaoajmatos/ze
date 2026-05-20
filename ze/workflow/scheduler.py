@@ -60,6 +60,21 @@ class WorkflowScheduler:
     async def trigger_now(self, workflow_id: UUID) -> None:
         await self._run_workflow(workflow_id)
 
+    def schedule_job(
+        self,
+        fn,
+        cron: str,
+        job_id: str,
+    ) -> None:
+        self._scheduler.add_job(
+            fn,
+            trigger=CronTrigger.from_crontab(cron),
+            id=job_id,
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
     # ── Private ───────────────────────────────────────────────────────────────
 
     def _add_job(self, workflow: Workflow) -> None:
