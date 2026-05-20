@@ -80,6 +80,7 @@ User message (Telegram Bot API)
 | 4     | `workflow`, memory digest, routing log UI, capability config UI.      | ✅ Done     |
 | 5     | Memory consolidation — dedup facts, expire stale, summarise episodes. | ✅ Done     |
 | 6     | User profile — synthesise facts + episodes into a structured portrait. | 🔲 Planned  |
+|| 10    | Multimodal input — voice transcription + image/vision support.        | 🔲 Planned  |
 
 ## Module Map
 
@@ -100,6 +101,7 @@ User message (Telegram Bot API)
 | `12-workflow.md`              | Workflow agent + scheduler    | 4         |
 | `13-phase5-memory.md`         | Memory consolidation          | 5         |
 | `14-user-profile.md`          | User profile synthesis        | 6         |
+| `19-multimodal-input.md`      | Voice + image input           | 10        |
 
 ## Cross-Cutting Modules
 
