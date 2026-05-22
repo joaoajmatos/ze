@@ -14,9 +14,13 @@ All LLM calls go through OpenRouter. No direct Anthropic or OpenAI API calls are
 
 ```mermaid
 flowchart TD
-    A([User message\nTelegram Bot API]) --> B[embed_route\nall-MiniLM-L6-v2]
-    B -->|confident + single agent| C[fetch_context\npgvector search]
-    B -->|ambiguous / compound| D[decompose\nclaude-haiku]
+    T([Text]) --> R
+    V([Voice note]) --> TR[TranscriptionClient\nWhisper] --> R
+    P([Photo]) --> VC[vision_caption\nif no text] --> R
+
+    R[embed_route\nall-MiniLM-L6-v2]
+    R -->|confident + single agent| C[fetch_context\npgvector search]
+    R -->|ambiguous / compound| D[decompose\nclaude-haiku]
     D --> C
     C --> E[capability_check]
     E -->|EXECUTE| F[execute_tool]
@@ -233,6 +237,36 @@ See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and confi
 
 ---
 
+## Multimodal input
+
+**Module:** `ze/transcription/`
+
+Ze accepts three input types from Telegram, all handled before the graph runs:
+
+| Input | Handler | Processing |
+|---|---|---|
+| Text | Existing path | Passed directly as `prompt` |
+| Voice note | `_handle_voice()` in `ZeBot` | Downloaded as OGG, transcribed to text by `TranscriptionClient` (Whisper via OpenRouter), result used as `prompt`. `input_modality = "voice"` |
+| Photo | `_handle_photo()` in `ZeBot` | Downloaded as raw bytes, stored in `AgentState.image_data`. `input_modality = "image"` |
+
+**Vision captioning** — when a photo arrives with no text caption, `embed_route` calls
+a lightweight vision model (`models.vision_caption` in config, defaults to
+`google/gemini-flash-1.5`) to generate a short description. That description is used
+as the routing prompt so the embedding router has text to score.
+
+**Vision-capable agents** — agents with `vision_capable: true` in their config receive
+a `ChatContentImage` content block alongside the text prompt. Agents without the flag
+receive only the routing caption as text — they are never sent raw image bytes.
+
+**Conversation history** — only the text caption (not base64 image bytes) is written
+to `AgentState.messages`, so conversation history replay doesn't bloat with binary data.
+
+**`TranscriptionClient`** wraps `OpenRouterClient.complete()` with an `input_audio`
+content block. It sets telemetry flow/agent context so transcription calls appear in
+cost records attributed to `flow_type="transcription"`, `agent="whisper"`.
+
+---
+
 ## Cost Telemetry
 
 **Module:** `ze/telemetry/`
@@ -244,7 +278,15 @@ See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and confi
   — set once at the flow entry point, read automatically inside the tracker.
 
 `CostReconciler` runs nightly, pulling actual billed costs from the OpenRouter API and
-reconciling them against estimated records. All data lives in the `cost_records` table.
+reconciling them against estimated records. All data lives in the `llm_cost_log` table.
+
+**REST API** — `GET /costs/summary` returns aggregated token usage and cost over a
+configurable lookback window, grouped by any single dimension:
+
+| Parameter | Default | Options |
+|---|---|---|
+| `days` | `30` | 1–365 |
+| `group_by` | `flow_type` | `flow_type` · `agent` · `model` · `session_id` |
 
 ---
 
@@ -260,7 +302,7 @@ The bot uses aiogram 3.x in webhook mode (production) or long-polling (local dev
 - Long responses (> 4096 chars) are split at sentence boundaries before sending.
 - `ForceReply` state is used for the Edit flow in confirmation dialogs.
 
-Multimodal input (voice + photos) is planned for Phase 10. See `specs/19-multimodal-input.md`.
+Voice notes and photos are supported — see the Multimodal input section below.
 
 ---
 

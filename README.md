@@ -115,7 +115,8 @@ ze/
 │   ├── openrouter/            # OpenRouterClient (complete + stream)
 │   ├── orchestration/         # LangGraph state machine (nodes, edges, graph, state)
 │   ├── proactive/             # Scheduled pushes — morning briefing, reminders, alerts
-│   ├── routing/               # EmbeddingRouter + Haiku fallback
+│   ├── routing/               # EmbeddingRouter + Haiku fallback + ComplexityEstimator
+│   ├── transcription/         # TranscriptionClient — voice notes → text via Whisper
 │   ├── telegram/              # ZeBot, handlers, keyboards, session store
 │   ├── telemetry/             # CostTracker — per-call token usage + cost attribution
 │   ├── tools/                 # Shared tool utilities
@@ -195,7 +196,7 @@ Config hot-reloads on `SIGHUP` — no restart needed.
 | 7 | Proactive Ze — morning briefing, workflow failure alerts, calendar reminders | ✅ Done |
 | 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | ✅ Done |
 | 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | ✅ Done |
-| 10 | Multimodal input — voice transcription + image/vision support | 🔲 Planned |
+| 10 | Multimodal input — voice transcription + image/vision support | ✅ Done |
 
 ## Docker
 

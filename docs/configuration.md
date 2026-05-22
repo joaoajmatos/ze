@@ -79,12 +79,19 @@ System-level model assignments for internal flows. These are not agent models.
 
 ```yaml
 models:
-  router:    anthropic/claude-haiku-4-5   # Haiku fallback + fact dedup merge decisions
-  synthesis: anthropic/claude-haiku-4-5   # Multi-agent response synthesis + episode summaries
-  profile:   anthropic/claude-haiku-4-5   # User profile synthesis
-  reminders: anthropic/claude-haiku-4-5   # Calendar reminder interval assessment
-  insights:  anthropic/claude-haiku-4-5   # Weekly insight generation
+  router:         anthropic/claude-haiku-4-5   # Haiku fallback + fact dedup merge decisions
+  synthesis:      anthropic/claude-haiku-4-5   # Multi-agent response synthesis + episode summaries
+  profile:        anthropic/claude-haiku-4-5   # User profile synthesis
+  reminders:      anthropic/claude-haiku-4-5   # Calendar reminder interval assessment
+  insights:       anthropic/claude-haiku-4-5   # Weekly insight generation
+  whisper:        openai/whisper-1             # Voice note transcription
+  vision_caption: google/gemini-flash-1.5      # Cheap routing caption for photos (no text)
 ```
+
+`whisper` is used by `TranscriptionClient` to convert OGG voice notes to text before
+the graph runs. `vision_caption` is called at `embed_route` when a photo arrives
+without a text caption, so the embedding router has text to score against agent
+embeddings. Both models are invoked via OpenRouter.
 
 ### `persona:`
 
@@ -170,6 +177,7 @@ agents:
       One or more sentences describing what this agent handles.
     model: anthropic/...            # Primary model for this agent
     model_simple: anthropic/...     # Optional cheaper model for simple requests (cost-aware routing)
+    vision_capable: true | false    # If true, agent receives ChatContentImage for photo inputs
     tools:
       - tool_name                   # Tools available to this agent
     timeout_seconds: 30             # asyncio.wait_for timeout for agent.run()
@@ -178,6 +186,11 @@ agents:
     capabilities:
       intent_key: autonomous | confirm | draft_only | disabled
 ```
+
+**`vision_capable`** — when `true`, the `execute_tool` node passes raw image bytes to
+the agent as a `ChatContentImage` content block alongside the text prompt. When `false`
+(or omitted), the agent receives only the routing caption generated at `embed_route`.
+All current agents have `vision_capable: true`.
 
 **Capability modes:**
 

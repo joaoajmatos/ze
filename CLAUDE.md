@@ -13,14 +13,19 @@ OpenRouter.
 ze/
 ├── ze/                       # Python package
 │   ├── api/                  # FastAPI app, Telegram webhook handler, REST routes
-│   ├── agents/               # BaseAgent ABC, registry, research + companion agents
+│   ├── agents/               # BaseAgent ABC, registry, all agent implementations
 │   ├── capability/           # CapabilityGate — permission enforcement
-│   ├── memory/               # MemoryStore (Phase 1 stub), UserFact, Episode types
+│   ├── google/               # Google OAuth2 token management (Calendar + Gmail)
+│   ├── memory/               # UserFact, Episode types, MemoryStore, consolidator
 │   ├── openrouter/           # OpenRouterClient (complete() + stream())
 │   ├── orchestration/        # LangGraph state machine (nodes/, edges, graph, state)
-│   ├── routing/              # EmbeddingRouter + haiku_fallback
+│   ├── proactive/            # Scheduled pushes — briefing, reminders, alerts, insights
+│   ├── routing/              # EmbeddingRouter + haiku_fallback + ComplexityEstimator
 │   ├── telegram/             # ZeBot, keyboards, session store
 │   ├── telemetry/            # Cost tracking — CostTracker, CostReconciler, ContextVar attribution
+│   ├── tools/                # Shared tool utilities
+│   ├── transcription/        # TranscriptionClient — voice notes → text via Whisper
+│   ├── workflow/             # WorkflowStore, WorkflowPlanner, WorkflowScheduler
 │   ├── container.py          # Dependency wiring — builds all shared resources
 │   ├── db.py                 # asyncpg pool factory
 │   ├── embeddings.py         # SentenceTransformer singleton
@@ -28,14 +33,11 @@ ze/
 │   ├── logging.py            # structlog JSON config
 │   └── settings.py           # Pydantic BaseSettings (single config source)
 ├── config/
-│   ├── agents/               # One YAML per agent (description, model, tools, timeout)
-│   ├── capabilities.yaml     # Per-agent permission modes
-│   └── models.yaml           # Model names + routing thresholds
+│   └── config.yaml           # All structural config — routing, models, persona, memory, proactive, agents
 ├── migrations/versions/      # Alembic raw-SQL migrations (no ORM)
-│   ├── 001_initial_schema.py # routing_log, user_facts, episodes
-│   └── 002_checkpointer.py   # LangGraph checkpoint tables
 ├── tests/                    # Mirrors ze/ structure
 ├── specs/                    # All 20 design specs (read before modifying a module)
+├── docs/                     # Architecture, configuration, deployment, and authoring guides
 ├── Dockerfile                # Production image
 ├── docker-compose.yml        # Postgres (pgvector/pgvector:pg16) + backend
 ├── fly.toml                  # Fly.io deployment config
@@ -129,39 +131,35 @@ LOG_LEVEL=INFO
 CONFIRM_TIMEOUT_SECONDS=900
 ```
 
-### `config/agents/<name>.yaml`
-```yaml
-enabled: true
-description: "One sentence used for embedding-based routing."
-model: anthropic/claude-sonnet-4-5
-timeout: 30
-intent_map:
-  read: "Search and retrieve information."
-```
-
-### `config/capabilities.yaml`
-Permission modes per `agent.intent`: `autonomous` | `confirm` | `draft_only` | `disabled`.
-Hot-reloaded on SIGHUP without restart.
-
 ### `config/config.yaml`
-Routing thresholds, model assignments, persona, memory, proactive, and agent config.
+All structural config in one file: routing thresholds, model assignments, persona,
+memory consolidation, proactive schedules, and full per-agent config (description,
+model, `model_simple`, `vision_capable`, tools, timeout, intent_map, capabilities).
+
+Capability modes per `agent.intent`: `autonomous` | `confirm` | `draft_only` | `disabled`.
+Hot-reloaded on SIGHUP without restart.
 
 ## Adding a new agent
 
 1. Write a spec in `specs/` first.
-2. Add `config/agents/<name>.yaml` with `enabled: false` initially.
-3. Add `config/capabilities.yaml` entry.
-4. Create `ze/agents/<name>/agent.py` — subclass `BaseAgent`, add `@register`.
-5. Add `ze/agents/<name>/tools.py`. Define `_AGENT_INSTRUCTIONS` at the top of `agent.py`.
-6. Write tests in `tests/agents/<name>/`.
-7. Register the live instance in `ze/api/app.py` lifespan via `register_instance()`.
-8. Set `enabled: true` in the agent YAML when ready.
+2. Add the agent block under `agents:` in `config/config.yaml` with `enabled: false`.
+   Include `description`, `model`, `tools`, `timeout_seconds`, `intent_map`, `capabilities`,
+   and optionally `model_simple` and `vision_capable`.
+3. Create `ze/agents/<name>/agent.py` — subclass `BaseAgent`, add `@register`.
+4. Add `ze/agents/<name>/tools.py`. Define `_AGENT_INSTRUCTIONS` at the top of `agent.py`.
+5. Write tests in `tests/agents/<name>/`.
+6. Wire the live instance in `ze/container.py` via `register_instance()`.
+7. Import the tools module at startup so `@tool` registration fires.
+8. Set `enabled: true` in `config/config.yaml` when ready.
+
+See `docs/adding-an-agent.md` for the full authoring guide.
 
 ## LangGraph graph flow
 
 ```
-embed_route → (compound?) → decompose → fetch_context → capability_check
-                                     ↘ fetch_context ↗
+[voice/image] → transcribe/caption ─┐
+[text]                               ├→ embed_route → (compound?) → decompose → fetch_context → capability_check
+                                                                  ↘ fetch_context ↗
 capability_check → execute_tool → (compound?) → synthesize → write_memory → END
                  → draft_response → await_confirmation → END  (graph pauses here)
                  → END (blocked)
