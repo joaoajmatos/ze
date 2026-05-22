@@ -8,7 +8,7 @@ correctly. The IDE's LLM is the judge — there is no fixed scoring function.
 
 ## Prerequisites
 
-- Ze server running locally (`make dev` or `make dev-poll`)
+- Ze server running locally: `make dev-eval`
 - `ZE_API_KEY` from your `.env`
 
 ---
@@ -37,7 +37,7 @@ local override file that is gitignored.
    and run `claude` again). MCP servers start when the session starts; Claude Code
    merges `settings.json` and `settings.local.json`, with local winning.
 
-3. **Start Ze** in another terminal: `make dev` or `make dev-poll`.
+3. **Start Ze** in another terminal: `make dev-eval`.
 
 4. **Use the tools.** Ask Claude Code anything like:
 

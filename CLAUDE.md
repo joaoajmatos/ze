@@ -55,7 +55,8 @@ make dev-poll        # Telegram long-polling — interact via Telegram locally (
 make dev             # uvicorn --reload on :8000 — REST API only, no Telegram
 make test            # tests, fast (skips embedding model load)
 make test-all        # all tests including slow ones
-make eval-server     # start MCP eval server (requires Ze server running; see docs/eval.md)
+make dev-eval        # start REST API without Telegram webhook (use this before running evals)
+make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)

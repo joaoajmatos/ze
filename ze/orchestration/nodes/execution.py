@@ -68,10 +68,11 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         return {"error": "Missing routing envelope or agent context"}
 
     subtask = envelope.subtasks[0]
-    messages: list[dict] = []
     if state.get("image_data"):
         agent_cfg = settings.agent_configs.get(subtask.agent, {})
         messages = [_build_user_message(state, agent_cfg)]
+    else:
+        messages = base_ctx.messages
     ctx = AgentContext(
         session_id=base_ctx.session_id,
         prompt=subtask.prompt,
@@ -119,10 +120,11 @@ async def _execute_single(
     state: dict | None = None,
     reporter=None,
 ) -> dict:
-    messages: list[dict] = []
     if state is not None and state.get("image_data"):
         agent_cfg = settings.agent_configs.get(subtask.agent, {})
         messages = [_build_user_message(state, agent_cfg)]
+    else:
+        messages = base_ctx.messages
     ctx = AgentContext(
         session_id=base_ctx.session_id,
         prompt=subtask.prompt,
@@ -147,10 +149,11 @@ async def _execute_compound(
     reporter=None,
 ) -> dict:
     def _make_ctx(subtask) -> AgentContext:
-        messages: list[dict] = []
         if state is not None and state.get("image_data"):
             agent_cfg = settings.agent_configs.get(subtask.agent, {})
             messages = [_build_user_message(state, agent_cfg)]
+        else:
+            messages = base_ctx.messages
         return AgentContext(
             session_id=base_ctx.session_id,
             prompt=subtask.prompt,

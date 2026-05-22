@@ -79,6 +79,9 @@ agents:
       Use when the user explicitly says "research", "look up", "find out", "search for",
       or asks about current events, factual lookups, topic deep-dives, company or
       organisation history, news, or anything requiring information retrieval from the web.
+      Also use for factual comparisons ("what are the differences between X and Y"),
+      technical how-things-work questions, and any query where accurate sourced information
+      matters more than reasoning or conversation.
     model: anthropic/claude-sonnet-4-5
     model_simple: anthropic/claude-haiku-4-5
     tools:

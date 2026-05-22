@@ -28,8 +28,9 @@ help:
 	@echo "  Development"
 	@echo "    dev            Start dev server (uvicorn --reload, REST API only)"
 	@echo "    dev-poll       Start Telegram long-polling (interact via Telegram locally)"
+	@echo "    dev-eval       Start REST API without Telegram webhook (for running evals)"
 	@echo ""
-	@echo "  Eval (requires Ze server running via 'make dev' or 'make dev-poll')"
+	@echo "  Eval (requires 'make dev-eval' running)"
 	@echo "    eval-server    Start MCP eval server (for Claude Code / Cursor / Codex)"
 	@echo ""
 	@echo "  Testing"
@@ -86,13 +87,16 @@ migrate-history:
 	$(ALEMBIC) history --verbose
 
 # ── Development ───────────────────────────────────────────────────────────────
-.PHONY: dev dev-poll
+.PHONY: dev dev-poll dev-eval
 
 dev:
 	uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 dev-poll:
 	uv run python -m ze.dev_poll
+
+dev-eval:
+	PUBLIC_URL= uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
 .PHONY: eval-server
