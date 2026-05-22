@@ -1,3 +1,4 @@
+import asyncio
 import base64
 
 from langchain_core.runnables import RunnableConfig
@@ -73,6 +74,18 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
         is_compound=envelope.is_compound,
         is_sequential=envelope.is_sequential,
     )
+
+    status_queue = config["configurable"].get("status_queue")
+    if status_queue is not None:
+        try:
+            status_queue.put_nowait({
+                "agent": envelope.primary_agent,
+                "intent": envelope.subtasks[0].intent if envelope.subtasks else "read",
+                "is_compound": envelope.is_compound,
+            })
+        except asyncio.QueueFull:
+            pass
+
     updates["envelope"] = envelope
     return updates
 
