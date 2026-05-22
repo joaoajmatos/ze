@@ -17,6 +17,7 @@ from ze.memory.store import MemoryStore
 from ze.openrouter.client import OpenRouterClient
 from ze.orchestration.graph import build_graph
 from ze.progress.translations import ProgressTranslations
+from ze.reminders.store import ReminderStore, fire_reminder
 from ze.orchestration.workflow_graph import build_workflow_graph
 from ze.proactive.briefing import MorningBriefing
 from ze.proactive.insights import InsightEngine
@@ -161,12 +162,27 @@ async def build_container(settings: Settings) -> Container:
         notifier=notifier if proactive_cfg.get("alerts", {}).get("workflow_failure_enabled", True) else None,
     )
 
+    reminder_store = ReminderStore(pool=pool)
+
+    # Replay any unsent reminders that were scheduled before the last restart.
+    pending_reminders = await reminder_store.list_pending()
+    for r in pending_reminders:
+        workflow_scheduler.schedule_at(
+            fn=lambda rid=r.id: fire_reminder(reminder_store, notifier, rid),
+            dt=r.fire_at,
+            job_id=f"user_reminder:{r.id}",
+        )
+    if pending_reminders:
+        log.info("reminders_replayed", count=len(pending_reminders))
+
     bootstrap_agents(
         openrouter_client=openrouter_client,
         settings=settings,
         workflow_store=workflow_store,
         workflow_planner=workflow_planner,
         workflow_scheduler=workflow_scheduler,
+        reminder_store=reminder_store,
+        notifier=notifier,
     )
     graph = build_graph(checkpointer=checkpointer)
 

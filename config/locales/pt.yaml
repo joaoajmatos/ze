@@ -43,3 +43,9 @@ workflow:
     - "⚙️ A configurar isso..."
     - "🔧 A tratar disso..."
     - "⚙️ Já a tratar..."
+
+reminders:
+  thinking:
+    - "⏰ A configurar esse lembrete..."
+    - "🔔 Já a tratar..."
+    - "⏰ Anotado, vou lembrar-te..."

@@ -43,3 +43,9 @@ workflow:
     - "⚙️ Setting that up..."
     - "🔧 Managing that for you..."
     - "⚙️ On it..."
+
+reminders:
+  thinking:
+    - "⏰ Setting that reminder..."
+    - "🔔 On it..."
+    - "⏰ Got it, I'll remind you..."

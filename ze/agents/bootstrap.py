@@ -9,6 +9,8 @@ from ze.agents.registry import _registry, register_instance
 from ze.errors import AgentConfigError
 from ze.google.auth import GoogleCredentials
 from ze.openrouter.client import OpenRouterClient
+from ze.proactive.notifier import ProactiveNotifier
+from ze.reminders.store import ReminderStore
 from ze.settings import Settings
 from ze.workflow.planner import WorkflowPlanner
 from ze.workflow.scheduler import WorkflowScheduler
@@ -28,6 +30,8 @@ def bootstrap_agents(
     workflow_store: WorkflowStore | None = None,
     workflow_planner: WorkflowPlanner | None = None,
     workflow_scheduler: WorkflowScheduler | None = None,
+    reminder_store: ReminderStore | None = None,
+    notifier: ProactiveNotifier | None = None,
 ) -> None:
     """Instantiate and register all enabled agents. Called once at app startup."""
     if tavily_client is None:
@@ -48,6 +52,10 @@ def bootstrap_agents(
         _dep_map[WorkflowPlanner] = workflow_planner
     if workflow_scheduler is not None:
         _dep_map[WorkflowScheduler] = workflow_scheduler
+    if reminder_store is not None:
+        _dep_map[ReminderStore] = reminder_store
+    if notifier is not None:
+        _dep_map[ProactiveNotifier] = notifier
 
     _import_agent_modules()
 
