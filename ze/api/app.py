@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from ze.api.openapi import OPENAPI_TAGS
-from ze.api.routes import capabilities, costs, memory, routing, workflows
+from ze.api.routes import capabilities, costs, eval, memory, routing, workflows
 from ze.api.telegram import router as telegram_router
 from ze.container import build_container
 from ze.logging import configure_logging, get_logger
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(workflows.router, prefix="/workflows")
     app.include_router(costs.router, prefix="/costs")
     app.include_router(telegram_router)
+    app.include_router(eval.router)
 
     return app
 

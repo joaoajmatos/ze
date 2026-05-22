@@ -4,7 +4,7 @@ from io import BytesIO
 from aiogram import Bot
 from aiogram.types import CallbackQuery, ForceReply, Message
 
-from ze.errors import ImageDownloadError, TranscriptionError
+from ze.errors import ImageDownloadError
 from ze.logging import bind_context, get_logger, unbind_context
 from ze.progress.reporter import ProgressReporter
 from ze.progress.translations import ProgressTranslations
@@ -488,6 +488,23 @@ class ZeBot:
         for chunk in _split(text):
             await self._bot.send_message(chat_id, chunk)
 
+    async def invoke(self, prompt: str, session_id: str) -> dict:
+        """Invoke the graph directly for eval/testing. Returns raw final state."""
+        state = self._make_initial_state(prompt, session_id)
+        config = {
+            "configurable": {
+                "thread_id": f"eval-{session_id}",
+                "router": self._router,
+                "capability_gate": self._capability_gate,
+                "memory_store": self._memory_store,
+                "openrouter_client": self._openrouter_client,
+                "embedder": self._embedder,
+                "settings": self._settings,
+                "workflow_planner": self._workflow_planner,
+            }
+        }
+        return await self._graph.ainvoke(state, config)
+
     def _make_config(self, chat_id: int) -> dict:
         return {
             "configurable": {
@@ -517,7 +534,7 @@ class ZeBot:
         }
 
     @staticmethod
-    def _make_initial_state(prompt: str, chat_id: int) -> dict:
+    def _make_initial_state(prompt: str, chat_id: int | str) -> dict:
         return {
             "prompt": prompt,
             "session_id": str(chat_id),

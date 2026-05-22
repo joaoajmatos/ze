@@ -38,6 +38,7 @@ dev = [
     "anyio[trio]>=4.7",
     "psycopg2-binary>=2.9",        # sync driver for alembic migrations
     "ruff>=0.8",
+    "mcp>=1.0",
 ]
 
 [tool.pytest.ini_options]

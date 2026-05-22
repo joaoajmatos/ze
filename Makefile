@@ -29,6 +29,9 @@ help:
 	@echo "    dev            Start dev server (uvicorn --reload, REST API only)"
 	@echo "    dev-poll       Start Telegram long-polling (interact via Telegram locally)"
 	@echo ""
+	@echo "  Eval (requires Ze server running via 'make dev' or 'make dev-poll')"
+	@echo "    eval-server    Start MCP eval server (for Claude Code / Cursor / Codex)"
+	@echo ""
 	@echo "  Testing"
 	@echo "    test           Run tests (excludes slow embedding tests)"
 	@echo "    test-all       Run all tests including slow ones"
@@ -90,6 +93,12 @@ dev:
 
 dev-poll:
 	uv run python -m ze.dev_poll
+
+# ── Eval ──────────────────────────────────────────────────────────────────────
+.PHONY: eval-server
+
+eval-server:
+	uv run python evals/mcp_server.py
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 .PHONY: test test-all

@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Any, Literal
 from uuid import UUID as UUIDType
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import BaseModel, ConfigDict, RootModel
 
 
 # ── REST: capabilities ────────────────────────────────────────────────────────
@@ -119,3 +119,28 @@ class RoutingLogEntry(BaseModel):
 
 class ErrorDetail(BaseModel):
     detail: str | list[dict[str, Any]]
+
+
+# ── REST: eval ────────────────────────────────────────────────────────────────
+
+class EvalChatRequest(BaseModel):
+    prompt: str
+    session_id: str = "eval"
+
+
+class EvalRoutingInfo(BaseModel):
+    primary_agent: str
+    confidence: float
+    routing_method: str
+    is_compound: bool
+    score_gap: float
+    raw_scores: dict[str, float]
+
+
+class EvalChatResponse(BaseModel):
+    session_id: str
+    response: str | None
+    agent_used: str | None
+    routing: EvalRoutingInfo | None
+    pending_confirmation: bool
+    error: str | None
