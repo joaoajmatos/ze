@@ -34,6 +34,8 @@ class CalendarAgent(BaseAgent):
         self._creds  = google_credentials
 
     async def run(self, ctx: AgentContext) -> AgentResult:
+        key = "calendar.writing" if ctx.intent in ("create", "update", "delete") else "calendar.reading"
+        await self.emit(ctx, key)
         events_tc = await self.call_tool(
             "list_events", ctx, credentials=self._creds
         )

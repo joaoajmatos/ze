@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ze.capability.types import GateDecision
 from ze.memory.types import MemoryContext
+
+if TYPE_CHECKING:
+    from ze.progress.reporter import ProgressReporter
 
 
 @dataclass
@@ -26,6 +31,7 @@ class AgentContext:
     tool_calls: list[ToolCall] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)  # history + current user message
     model: str | None = None    # None → agent falls back to its config default
+    reporter: ProgressReporter | None = None  # None outside Telegram / in tests
 
 
 @dataclass

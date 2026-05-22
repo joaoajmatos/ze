@@ -1,5 +1,4 @@
 import asyncio
-import random
 from io import BytesIO
 
 from aiogram import Bot
@@ -7,6 +6,8 @@ from aiogram.types import CallbackQuery, ForceReply, Message
 
 from ze.errors import ImageDownloadError, TranscriptionError
 from ze.logging import bind_context, get_logger, unbind_context
+from ze.progress.reporter import ProgressReporter
+from ze.progress.translations import ProgressTranslations
 from ze.telegram.keyboards import confirmation_keyboard, plan_confirmation_keyboard
 from ze.telegram.session import ActiveSessionStore
 from ze.telemetry.context import set_flow_context
@@ -14,47 +15,6 @@ from ze.telemetry.context import set_flow_context
 log = get_logger(__name__)
 
 _MAX_MESSAGE_LEN = 4096
-
-# ── Status messages ───────────────────────────────────────────────────────────
-
-_STATUS: dict[tuple[str, str], list[str]] = {
-    ("research", "read"):    ["🔍 Searching the web...", "🌐 Looking that up...", "📰 Digging through sources...", "🕵️ Tracking that down..."],
-    ("research", "execute"): ["🔍 Running a search...", "🌐 On it..."],
-    ("companion", "reason"): ["💭 Thinking...", "🧠 Working through this...", "✍️ Drafting a response...", "🤔 Mulling it over..."],
-    ("companion", "read"):   ["💭 On it...", "✍️ Writing..."],
-    ("calendar", "read"):    ["📅 Checking your calendar...", "🗓️ Looking at your schedule...", "📅 Let me check..."],
-    ("calendar", "create"):  ["📅 Creating the event...", "🗓️ Scheduling that for you..."],
-    ("calendar", "update"):  ["🗓️ Updating that event...", "📅 Making that change..."],
-    ("calendar", "delete"):  ["🗓️ Removing that event...", "📅 On it..."],
-    ("email", "read"):       ["📧 Checking your inbox...", "✉️ Searching your emails...", "📬 Looking through your mail..."],
-    ("email", "create"):     ["✉️ Drafting that email...", "📨 Composing your message...", "✍️ Writing that up..."],
-    ("email", "update"):     ["✉️ Drafting a reply...", "📨 Composing that..."],
-    ("email", "delete"):     ["📧 Archiving that...", "✉️ On it..."],
-    ("workflow", "read"):    ["⚙️ Checking your workflows...", "📋 Looking up your tasks..."],
-    ("workflow", "manage"):  ["⚙️ Setting that up...", "🔧 Managing that for you...", "⚙️ On it..."],
-}
-
-_STATUS_COMPOUND = [
-    "🔄 Working on a few things at once...",
-    "📋 Breaking this into steps...",
-    "🧩 Tackling this piece by piece...",
-    "⚡ On it — this one has a few parts...",
-]
-
-_STATUS_DEFAULT = [
-    "⚡ On it...",
-    "🤔 Just a moment...",
-    "⏳ Working on it...",
-    "💬 Let me handle that...",
-]
-
-
-def _pick_status(info: dict) -> str:
-    if info.get("is_compound"):
-        return random.choice(_STATUS_COMPOUND)
-    key = (info.get("agent", ""), info.get("intent", ""))
-    options = _STATUS.get(key) or _STATUS_DEFAULT
-    return random.choice(options)
 
 
 class ZeBot:
@@ -73,6 +33,7 @@ class ZeBot:
         embedder,
         settings,
         transcription_client=None,
+        translations: ProgressTranslations | None = None,
     ) -> None:
         self._bot = bot
         self._graph = graph
@@ -87,6 +48,7 @@ class ZeBot:
         self._embedder = embedder
         self._settings = settings
         self._transcription_client = transcription_client
+        self._translations = translations
 
     # ── Public handlers ───────────────────────────────────────────────────────
 
@@ -241,20 +203,29 @@ class ZeBot:
     async def _run_graph(self, chat_id: int, state: dict) -> None:
         config = self._make_config(chat_id)
 
-        # Status message: appears after routing resolves, disappears before the response.
-        status_queue: asyncio.Queue = asyncio.Queue(maxsize=1)
-        config["configurable"]["status_queue"] = status_queue
-        status_msg_ref: list = []  # holds the sent Message so we can delete it
+        progress_queue: asyncio.Queue[str] = asyncio.Queue()
+        message_bucket: list[int] = []
 
-        async def _send_status() -> None:
-            try:
-                info = await asyncio.wait_for(status_queue.get(), timeout=15)
-                msg = await self._bot.send_message(chat_id, _pick_status(info))
-                status_msg_ref.append(msg)
-            except (asyncio.TimeoutError, asyncio.CancelledError, Exception):
-                pass
+        if self._translations is not None:
+            reporter = ProgressReporter(progress_queue, self._translations)
+            config["configurable"]["reporter"] = reporter
 
-        status_task = asyncio.create_task(_send_status())
+            async def _progress_watcher() -> None:
+                try:
+                    while True:
+                        text = await progress_queue.get()
+                        try:
+                            msg = await self._bot.send_message(chat_id, text)
+                            message_bucket.append(msg.message_id)
+                        except Exception:
+                            pass
+                except asyncio.CancelledError:
+                    pass
+
+            watcher_task: asyncio.Task | None = asyncio.create_task(_progress_watcher())
+        else:
+            watcher_task = None
+
         typing_task = asyncio.create_task(self._keep_typing(chat_id))
         try:
             final_state = await self._graph.ainvoke(state, config)
@@ -265,12 +236,12 @@ class ZeBot:
             return
         finally:
             typing_task.cancel()
-            if not status_task.done():
-                status_task.cancel()
-            await asyncio.gather(status_task, return_exceptions=True)
-            if status_msg_ref:
+            if watcher_task is not None and not watcher_task.done():
+                watcher_task.cancel()
+                await asyncio.gather(watcher_task, return_exceptions=True)
+            for msg_id in message_bucket:
                 try:
-                    await self._bot.delete_message(chat_id, status_msg_ref[0].message_id)
+                    await self._bot.delete_message(chat_id, msg_id)
                 except Exception:
                     pass
 

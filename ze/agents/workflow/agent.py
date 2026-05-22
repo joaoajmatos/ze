@@ -53,6 +53,8 @@ class WorkflowManagerAgent(BaseAgent):
         self._scheduler = workflow_scheduler
 
     async def run(self, ctx: AgentContext) -> AgentResult:
+        key = "workflow.managing" if ctx.intent == "manage" else "workflow.reading"
+        await self.emit(ctx, key)
         raw = await self._client.complete(
             messages=[{"role": "user", "content": ctx.prompt}],
             model=self._model(ctx),

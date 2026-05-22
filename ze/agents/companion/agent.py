@@ -31,6 +31,7 @@ class CompanionAgent(BaseAgent):
         self._client = openrouter_client
 
     async def run(self, ctx: AgentContext) -> AgentResult:
+        await self.emit(ctx, "companion.thinking")
         response = await self._client.complete(
             messages=ctx.messages,
             model=self._model(ctx),

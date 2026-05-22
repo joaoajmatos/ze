@@ -124,6 +124,7 @@ async def _execute_single(
         memory=base_ctx.memory,
         model=subtask.model if subtask.model else None,
         messages=messages,
+        reporter=base_ctx.reporter,
     )
     result = await _run_with_timeout(subtask.agent, ctx, settings, token_queue)
     return {"agent_result": result, "subtask_results": []}
@@ -150,6 +151,7 @@ async def _execute_compound(
             memory=base_ctx.memory,
             model=subtask.model if subtask.model else None,
             messages=messages,
+            reporter=base_ctx.reporter,
         )
         result = await _run_with_timeout(subtask.agent, ctx, settings)
         results.append(result)

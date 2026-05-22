@@ -16,6 +16,7 @@ from ze.memory.consolidator import MemoryConsolidator
 from ze.memory.store import MemoryStore
 from ze.openrouter.client import OpenRouterClient
 from ze.orchestration.graph import build_graph
+from ze.progress.translations import ProgressTranslations
 from ze.orchestration.workflow_graph import build_workflow_graph
 from ze.proactive.briefing import MorningBriefing
 from ze.proactive.insights import InsightEngine
@@ -249,6 +250,9 @@ async def build_container(settings: Settings) -> Container:
         logger=get_logger("ze.transcription"),
     )
 
+    locale = settings.persona_config.get("locale", "en")
+    translations = ProgressTranslations.load(locale, settings.config_dir)
+
     ze_bot = ZeBot(
         bot=bot,
         graph=graph,
@@ -263,6 +267,7 @@ async def build_container(settings: Settings) -> Container:
         embedder=embedder,
         settings=settings,
         transcription_client=transcription_client,
+        translations=translations,
     )
 
     return Container(

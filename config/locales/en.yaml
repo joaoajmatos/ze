@@ -1,0 +1,45 @@
+research:
+  searching:
+    - "🔍 Searching the web..."
+    - "🌐 Looking that up..."
+    - "📰 Digging through sources..."
+    - "🕵️ Tracking that down..."
+  summarising:
+    - "📰 Summarising results..."
+    - "📚 Pulling this together..."
+    - "✍️ Writing up what I found..."
+
+companion:
+  thinking:
+    - "💭 Thinking..."
+    - "🧠 Working through this..."
+    - "✍️ Drafting a response..."
+    - "🤔 Mulling it over..."
+
+calendar:
+  reading:
+    - "📅 Checking your calendar..."
+    - "🗓️ Looking at your schedule..."
+    - "📅 Let me check..."
+  writing:
+    - "📅 Updating your calendar..."
+    - "🗓️ Making that change..."
+
+email:
+  reading:
+    - "📧 Checking your inbox..."
+    - "✉️ Searching your emails..."
+    - "📬 Looking through your mail..."
+  drafting:
+    - "✉️ Drafting that email..."
+    - "📨 Composing your message..."
+    - "✍️ Writing that up..."
+
+workflow:
+  reading:
+    - "⚙️ Checking your workflows..."
+    - "📋 Looking up your tasks..."
+  managing:
+    - "⚙️ Setting that up..."
+    - "🔧 Managing that for you..."
+    - "⚙️ On it..."

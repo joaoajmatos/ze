@@ -35,6 +35,8 @@ class EmailAgent(BaseAgent):
         self._creds  = google_credentials
 
     async def run(self, ctx: AgentContext) -> AgentResult:
+        key = "email.drafting" if ctx.intent in ("create", "update") else "email.reading"
+        await self.emit(ctx, key)
         inbox_tc = await self.call_tool(
             "list_emails", ctx, credentials=self._creds
         )

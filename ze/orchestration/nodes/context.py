@@ -51,6 +51,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         user_text = state["prompt"]
     messages = history + [{"role": "user", "content": user_text}]
 
+    reporter = config["configurable"].get("reporter")
     prompt_for_ctx = state.get("image_caption") or state["prompt"]
     agent_context = AgentContext(
         session_id=state["session_id"],
@@ -58,6 +59,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         intent=envelope.subtasks[0].intent if envelope and envelope.subtasks else "read",
         memory=memory_context,
         messages=messages,
+        reporter=reporter,
     )
 
     log.debug(

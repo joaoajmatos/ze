@@ -21,6 +21,8 @@ persona:
     - concise
   # concise | balanced | detailed
   verbosity: concise
+  # BCP 47 locale for progress message translations (en | pt)
+  locale: en
   # Free-form addition appended after traits, before memory context.
   # Example: "Always respond in European Portuguese." / "Use my name João."
   custom_instructions: ""

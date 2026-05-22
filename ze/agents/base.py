@@ -106,6 +106,11 @@ class BaseAgent(ABC):
             self._settings.agent_configs.get(self.name, {}).get("timeout", 30)
         )
 
+    async def emit(self, ctx: AgentContext, key: str, **kwargs: str) -> None:
+        """Emit a localized progress message if a reporter is attached."""
+        if ctx.reporter is not None:
+            await ctx.reporter.emit(key, **kwargs)
+
     def _format_memory(self, ctx: AgentContext) -> str:
         lines = [f"- {f.key}: {f.value}" for f in ctx.memory.facts]
         return "\n".join(lines) if lines else "(none)"

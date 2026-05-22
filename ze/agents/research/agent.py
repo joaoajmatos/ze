@@ -36,10 +36,12 @@ class ResearchAgent(BaseAgent):
         self._tavily = tavily_client
 
     async def run(self, ctx: AgentContext) -> AgentResult:
+        await self.emit(ctx, "research.searching")
         search_tc = await self.call_tool(
             "web_search", ctx, query=ctx.prompt, client=self._tavily
         )
 
+        await self.emit(ctx, "research.summarising")
         augmented = f"{ctx.prompt}\n\nSearch results:\n{format_search_results(search_tc)}"
         messages = ctx.messages[:-1] + [{"role": "user", "content": augmented}]
         response = await self._client.complete(
