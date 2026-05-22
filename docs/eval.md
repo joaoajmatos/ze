@@ -15,23 +15,65 @@ correctly. The IDE's LLM is the judge — there is no fixed scoring function.
 
 ## Quick start (Claude Code)
 
-1. **Set your API key** in `.claude/settings.local.json`:
+The MCP server definition is committed in `.claude/settings.json` and available
+to anyone who clones the repo. You only need to supply your API key once via a
+local override file that is gitignored.
+
+1. **Create `.claude/settings.local.json`** in the repo root with your key:
    ```json
-   "env": {
-     "ZE_EVAL_URL": "http://localhost:8000",
-     "ZE_API_KEY": "<your key from .env>"
+   {
+     "mcpServers": {
+       "ze-eval": {
+         "env": {
+           "ZE_API_KEY": "<your ZE_API_KEY from .env>"
+         }
+       }
+     }
    }
    ```
+   This file is gitignored — it will never be committed.
 
-2. **Reload MCP servers** — in Claude Code: `/mcp` → restart, or restart the IDE.
+2. **Start a new Claude Code session** (quit and reopen, or open a new terminal
+   and run `claude` again). MCP servers start when the session starts; Claude Code
+   merges `settings.json` and `settings.local.json`, with local winning.
 
-3. **Use the tools.** Ask Claude Code anything like:
+3. **Start Ze** in another terminal: `make dev` or `make dev-poll`.
+
+4. **Use the tools.** Ask Claude Code anything like:
 
    > "Run the `companion_greeting` scenario against Ze and tell me if the response is in character."
 
    > "Run the full routing suite and identify which scenarios Ze gets wrong."
 
    > "Send Ze the message 'remind me to call mum tomorrow at 6pm' and evaluate whether it handles the reminders correctly."
+
+---
+
+## Cursor / Codex / other MCP-compatible IDEs
+
+Add the following to your IDE's MCP server config. The exact location varies:
+- **Cursor**: `~/.cursor/mcp.json`
+- **Codex CLI**: `~/.codex/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "ze-eval": {
+      "command": "uv",
+      "args": ["run", "python", "evals/mcp_server.py"],
+      "cwd": "/path/to/ze",
+      "env": {
+        "ZE_EVAL_URL": "http://localhost:8000",
+        "ZE_API_KEY": "<your ZE_API_KEY from .env>"
+      }
+    }
+  }
+}
+```
+
+Note the `cwd` field — unlike the Claude Code config (which runs from the project
+root automatically), external IDE configs may need an explicit working directory so
+`evals/mcp_server.py` resolves correctly.
 
 ---
 

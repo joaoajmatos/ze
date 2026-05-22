@@ -12,19 +12,18 @@ Configuration (via environment variables):
 Usage:
   uv run python evals/mcp_server.py
 
-Add to Claude Code (.claude/settings.json):
+The server definition is committed in .claude/settings.json. To activate it,
+create .claude/settings.local.json (gitignored) with your key:
+
   {
     "mcpServers": {
       "ze-eval": {
-        "command": "uv",
-        "args": ["run", "python", "evals/mcp_server.py"],
-        "env": {
-          "ZE_EVAL_URL": "http://localhost:8000",
-          "ZE_API_KEY": "<your-key>"
-        }
+        "env": { "ZE_API_KEY": "<your key from .env>" }
       }
     }
   }
+
+Then start a new Claude Code session. See docs/eval.md for full setup instructions.
 """
 from __future__ import annotations
 
