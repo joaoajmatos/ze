@@ -346,3 +346,260 @@ def test_validate_registry_fails_on_missing_capability_intent(settings, tmp_path
     finally:
         _registry.pop("_bad_intent_agent", None)
         get_settings.cache_clear()
+
+
+# ── ToolSpec.llm_schema() ─────────────────────────────────────────────────────
+
+def _make_schema_tool(fn):
+    """Register fn as a tool and return its ToolSpec."""
+    from ze.agents.tool import ToolAccess, tool as tool_dec, get_tool
+    tool_dec(access=ToolAccess.READ, description=fn.__doc__ or "test")(fn)
+    return get_tool(fn.__name__)
+
+
+def test_llm_schema_basic_string_param():
+    async def _schema_str(query: str) -> ToolCall: ...
+    _schema_str.__doc__ = "A string tool."
+    spec = _make_schema_tool(_schema_str)
+    schema = spec.llm_schema()
+    assert schema["type"] == "function"
+    assert schema["function"]["name"] == "_schema_str"
+    assert schema["function"]["description"] == "A string tool."
+    props = schema["function"]["parameters"]["properties"]
+    assert "query" in props
+    assert props["query"]["type"] == "string"
+    assert "query" in schema["function"]["parameters"]["required"]
+
+
+def test_llm_schema_excludes_complex_type_params():
+    """Params typed as domain objects (e.g. client) must not appear in schema."""
+    from tavily import AsyncTavilyClient
+
+    async def _schema_with_client(query: str, client: AsyncTavilyClient) -> ToolCall: ...
+    _schema_with_client.__doc__ = "Client excluded."
+    spec = _make_schema_tool(_schema_with_client)
+    schema = spec.llm_schema()
+    props = schema["function"]["parameters"]["properties"]
+    assert "query" in props
+    assert "client" not in props
+
+
+def test_llm_schema_optional_param_not_required():
+    from typing import Optional
+
+    async def _schema_optional(query: str, limit: Optional[int] = None) -> ToolCall: ...
+    _schema_optional.__doc__ = "Optional param."
+    spec = _make_schema_tool(_schema_optional)
+    schema = spec.llm_schema()
+    required = schema["function"]["parameters"].get("required", [])
+    assert "query" in required
+    assert "limit" not in required
+
+
+def test_llm_schema_default_param_not_required():
+    async def _schema_default(query: str, max_results: int = 5) -> ToolCall: ...
+    _schema_default.__doc__ = "Default param."
+    spec = _make_schema_tool(_schema_default)
+    schema = spec.llm_schema()
+    required = schema["function"]["parameters"].get("required", [])
+    assert "query" in required
+    assert "max_results" not in required
+
+
+def test_llm_schema_integer_type():
+    async def _schema_int(count: int) -> ToolCall: ...
+    _schema_int.__doc__ = "Integer."
+    spec = _make_schema_tool(_schema_int)
+    props = spec.llm_schema()["function"]["parameters"]["properties"]
+    assert props["count"]["type"] == "integer"
+
+
+def test_llm_schema_float_type():
+    async def _schema_float(ratio: float) -> ToolCall: ...
+    _schema_float.__doc__ = "Float."
+    spec = _make_schema_tool(_schema_float)
+    props = spec.llm_schema()["function"]["parameters"]["properties"]
+    assert props["ratio"]["type"] == "number"
+
+
+def test_llm_schema_bool_type():
+    async def _schema_bool(flag: bool) -> ToolCall: ...
+    _schema_bool.__doc__ = "Bool."
+    spec = _make_schema_tool(_schema_bool)
+    props = spec.llm_schema()["function"]["parameters"]["properties"]
+    assert props["flag"]["type"] == "boolean"
+
+
+def test_llm_schema_all_complex_excluded_yields_empty_properties():
+    from ze.openrouter.client import OpenRouterClient as ORC
+
+    async def _schema_all_complex(client: ORC, model: str) -> ToolCall: ...
+    _schema_all_complex.__doc__ = "Complex only."
+    spec = _make_schema_tool(_schema_all_complex)
+    schema = spec.llm_schema()
+    # model (str) is visible, client (ORC) is not
+    props = schema["function"]["parameters"]["properties"]
+    assert "model" in props
+    assert "client" not in props
+
+
+# ── agentic_loop() ────────────────────────────────────────────────────────────
+
+def _make_loop_agent(settings) -> _ConcreteAgent:
+    agent = _ConcreteAgent(settings=settings)
+    agent.tools = ["web_search"]
+    return agent
+
+
+def make_loop_ctx() -> AgentContext:
+    return AgentContext(
+        session_id="s1",
+        prompt="test",
+        intent="read",
+        gate_decision=GateDecision.EXECUTE,
+        memory=MemoryContext(),
+        messages=[{"role": "user", "content": "test"}],
+    )
+
+
+async def test_agentic_loop_returns_text_immediately(settings):
+    """LLM returns text on first call — no tool calls, no iterations."""
+    import ze.tools.web  # noqa: ensure web_search is registered
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(return_value=("Answer.", None))
+    agent = _make_loop_agent(settings)
+    from tavily import AsyncTavilyClient
+
+    text, tool_calls = await agent.agentic_loop(
+        make_loop_ctx(),
+        client=client,
+        messages=[{"role": "user", "content": "test"}],
+        system="sys",
+        deps={"client": AsyncMock(spec=AsyncTavilyClient)},
+        tool_names=["web_search"],
+    )
+    assert text == "Answer."
+    assert tool_calls == []
+    client.complete_with_tools.assert_awaited_once()
+
+
+async def test_agentic_loop_one_tool_call_round_trip(settings):
+    """LLM calls web_search once, then returns text."""
+    import ze.tools.web  # noqa: ensure web_search is registered
+    from tavily import AsyncTavilyClient
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "test"}}]),
+        ("Final answer.", None),
+    ])
+    client.complete = AsyncMock(return_value="Final answer.")
+
+    mock_tavily = AsyncMock(spec=AsyncTavilyClient)
+    mock_tavily.search = AsyncMock(return_value={"results": [{"title": "R", "url": "u", "content": "c"}]})
+
+    agent = _make_loop_agent(settings)
+    messages = [{"role": "user", "content": "test"}]
+    text, tool_calls = await agent.agentic_loop(
+        make_loop_ctx(),
+        client=client,
+        messages=messages,
+        system="sys",
+        deps={"client": mock_tavily},
+        tool_names=["web_search"],
+    )
+
+    assert text == "Final answer."
+    assert len(tool_calls) == 1
+    assert tool_calls[0].tool_name == "web_search"
+    mock_tavily.search.assert_awaited_once_with("test", max_results=5)
+
+
+async def test_agentic_loop_appends_tool_turns_to_messages(settings):
+    """Tool call and result messages are appended to the messages list."""
+    import ze.tools.web  # noqa
+    from tavily import AsyncTavilyClient
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "q"}}]),
+        ("Done.", None),
+    ])
+
+    mock_tavily = AsyncMock(spec=AsyncTavilyClient)
+    mock_tavily.search = AsyncMock(return_value={"results": []})
+
+    agent = _make_loop_agent(settings)
+    messages = [{"role": "user", "content": "q"}]
+    await agent.agentic_loop(
+        make_loop_ctx(),
+        client=client,
+        messages=messages,
+        system="sys",
+        deps={"client": mock_tavily},
+        tool_names=["web_search"],
+    )
+
+    # messages should now contain: user | assistant(tool_calls) | tool(result)
+    roles = [m["role"] for m in messages]
+    assert "assistant" in roles
+    assert "tool" in roles
+
+
+async def test_agentic_loop_forces_text_after_max_iterations(settings):
+    """After max_iterations, falls back to plain complete() without tools."""
+    import ze.tools.web  # noqa
+    from tavily import AsyncTavilyClient
+
+    tool_call = (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "q"}}])
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(return_value=tool_call)
+    client.complete = AsyncMock(return_value="Forced final answer.")
+
+    mock_tavily = AsyncMock(spec=AsyncTavilyClient)
+    mock_tavily.search = AsyncMock(return_value={"results": []})
+
+    agent = _make_loop_agent(settings)
+    text, tool_calls = await agent.agentic_loop(
+        make_loop_ctx(),
+        client=client,
+        messages=[{"role": "user", "content": "q"}],
+        system="sys",
+        deps={"client": mock_tavily},
+        tool_names=["web_search"],
+        max_iterations=2,
+    )
+
+    assert text == "Forced final answer."
+    assert len(tool_calls) == 2  # two iterations of web_search
+    client.complete.assert_awaited_once()
+
+
+async def test_agentic_loop_passes_schemas_to_client(settings):
+    """Tool schemas are generated and forwarded to complete_with_tools."""
+    import ze.tools.web  # noqa
+    from tavily import AsyncTavilyClient
+
+    received_tools: list = []
+
+    async def _mock_cwt(messages, model, tools, system=None, **kwargs):
+        received_tools.extend(tools)
+        return ("Done.", None)
+
+    client = AsyncMock()
+    client.complete_with_tools = _mock_cwt
+
+    agent = _make_loop_agent(settings)
+    await agent.agentic_loop(
+        make_loop_ctx(),
+        client=client,
+        messages=[{"role": "user", "content": "q"}],
+        system="sys",
+        deps={"client": AsyncMock(spec=AsyncTavilyClient)},
+        tool_names=["web_search"],
+    )
+
+    assert len(received_tools) == 1
+    assert received_tools[0]["type"] == "function"
+    assert received_tools[0]["function"]["name"] == "web_search"

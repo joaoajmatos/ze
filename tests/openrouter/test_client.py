@@ -9,6 +9,7 @@ from openrouter.components.chatresult import ChatResult
 from openrouter.components.chatstreamchunk import ChatStreamChunk
 from openrouter.components.chatstreamchoice import ChatStreamChoice
 from openrouter.components.chatstreamdelta import ChatStreamDelta
+from openrouter.components.chattoolcall import ChatToolCall, ChatToolCallFunction
 from openrouter.components.chatusage import ChatUsage
 from openrouter.components.toomanyrequestsresponseerrordata import (
     TooManyRequestsResponseErrorData as ErrorBody,
@@ -365,3 +366,104 @@ async def test_stream_raises_on_4xx(client, mock_sdk):
         async for _ in client.stream([{"role": "user", "content": "hi"}], model="m"):
             pass
     assert exc_info.value.status_code == 403
+
+
+# ── complete_with_tools() ─────────────────────────────────────────────────────
+
+def make_tool_result(
+    content: str | None,
+    tool_calls: list[ChatToolCall] | None = None,
+    usage: ChatUsage | None = None,
+) -> ChatResult:
+    return ChatResult(
+        choices=[
+            ChatChoice(
+                finish_reason="tool_calls" if tool_calls else "stop",
+                index=0,
+                message=ChatAssistantMessage(
+                    role="assistant",
+                    content=content,
+                    tool_calls=tool_calls,
+                ),
+            )
+        ],
+        created=0,
+        id="gen-tool",
+        model="test-model",
+        object="chat.completion",
+        system_fingerprint=None,
+        usage=usage or ChatUsage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+    )
+
+
+def make_tool_call(name: str, args: str, call_id: str = "c1") -> ChatToolCall:
+    return ChatToolCall(
+        id=call_id,
+        type="function",
+        function=ChatToolCallFunction(name=name, arguments=args),
+    )
+
+
+_TOOLS = [{"type": "function", "function": {"name": "web_search", "description": "search", "parameters": {}}}]
+
+
+async def test_complete_with_tools_returns_text_when_no_tool_calls(client, mock_sdk):
+    mock_sdk.chat.send_async.return_value = make_tool_result("Answer.")
+    text, calls = await client.complete_with_tools(
+        [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
+    )
+    assert text == "Answer."
+    assert calls is None
+
+
+async def test_complete_with_tools_returns_tool_call_list(client, mock_sdk):
+    tc = make_tool_call("web_search", '{"query": "AI news"}')
+    mock_sdk.chat.send_async.return_value = make_tool_result(None, tool_calls=[tc])
+    text, calls = await client.complete_with_tools(
+        [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
+    )
+    assert text is None
+    assert calls is not None
+    assert len(calls) == 1
+    assert calls[0]["name"] == "web_search"
+    assert calls[0]["arguments"] == {"query": "AI news"}
+    assert calls[0]["id"] == "c1"
+
+
+async def test_complete_with_tools_parses_invalid_json_args_as_empty(client, mock_sdk):
+    tc = make_tool_call("web_search", "not-valid-json")
+    mock_sdk.chat.send_async.return_value = make_tool_result(None, tool_calls=[tc])
+    _, calls = await client.complete_with_tools(
+        [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
+    )
+    assert calls[0]["arguments"] == {}
+
+
+async def test_complete_with_tools_retries_on_429(client, mock_sdk):
+    good = make_tool_result("ok")
+    mock_sdk.chat.send_async.side_effect = [sdk_429(), good]
+    with patch("ze.openrouter.client.asyncio.sleep", new_callable=AsyncMock):
+        text, _ = await client.complete_with_tools(
+            [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
+        )
+    assert text == "ok"
+    assert mock_sdk.chat.send_async.call_count == 2
+
+
+async def test_complete_with_tools_raises_on_403(client, mock_sdk):
+    mock_sdk.chat.send_async.side_effect = sdk_403()
+    with pytest.raises(OpenRouterError) as exc_info:
+        await client.complete_with_tools(
+            [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
+        )
+    assert exc_info.value.status_code == 403
+
+
+async def test_complete_with_tools_passes_tools_to_sdk(client, mock_sdk):
+    mock_sdk.chat.send_async.return_value = make_tool_result("done")
+    await client.complete_with_tools(
+        [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
+    )
+    call_kwargs = mock_sdk.chat.send_async.call_args.kwargs
+    assert "tools" in call_kwargs
+    assert call_kwargs["tools"] == _TOOLS

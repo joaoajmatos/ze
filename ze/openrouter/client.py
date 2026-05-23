@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from collections.abc import AsyncIterator
 
@@ -119,6 +120,98 @@ class OpenRouterClient:
                     audio_seconds=audio_seconds,
                 )
             return content
+
+        raise last_exc or OpenRouterError("All retry attempts exhausted")
+
+    async def complete_with_tools(
+        self,
+        messages: list[dict],
+        model: str,
+        tools: list[dict],
+        system: str | None = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ) -> tuple[str | None, list[dict] | None]:
+        """Send a completion with tool schemas. Returns (text, None) or (None, tool_call_list).
+
+        Each item in tool_call_list: {"id": str, "name": str, "arguments": dict}.
+        """
+        full_messages = _build_messages(messages, system)
+        start = time.monotonic()
+        last_exc: Exception | None = None
+
+        for attempt, backoff in enumerate(_BACKOFFS, start=1):
+            try:
+                response = await self._sdk.chat.send_async(
+                    messages=full_messages,
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    stream=False,
+                    tools=tools,
+                )
+            except sdk_errors.OpenRouterError as exc:
+                ze_exc = _map_sdk_error(exc)
+                if not _is_retryable(ze_exc):
+                    raise ze_exc from exc
+                wait = max(backoff, _parse_retry_after(exc))
+                self._log.warning(
+                    "openrouter_tools_retry",
+                    status=ze_exc.status_code,
+                    attempt=attempt,
+                    wait_seconds=wait,
+                )
+                last_exc = ze_exc
+                await asyncio.sleep(wait)
+                continue
+            except sdk_errors.NoResponseError as exc:
+                last_exc = OpenRouterError(f"Request failed: {exc}")
+                if attempt == len(_BACKOFFS):
+                    break
+                await asyncio.sleep(backoff)
+                continue
+
+            if not isinstance(response, ChatResult):
+                raise OpenRouterError("Unexpected streaming response for tool-call request")
+
+            duration_ms = int((time.monotonic() - start) * 1000)
+            usage = _extract_usage(response)
+            message = response.choices[0].message
+
+            self._log.info(
+                "openrouter_complete_with_tools",
+                model=model,
+                duration_ms=duration_ms,
+                prompt_tokens=usage.prompt_tokens,
+                completion_tokens=usage.completion_tokens,
+                has_tool_calls=bool(message.tool_calls),
+                success=True,
+            )
+            if self._cost_tracker is not None:
+                self._cost_tracker.record(
+                    model=model,
+                    prompt_tokens=usage.prompt_tokens,
+                    completion_tokens=usage.completion_tokens,
+                    total_tokens=usage.total_tokens,
+                    duration_ms=duration_ms,
+                    generation_id=response.id or None,
+                )
+
+            if message.tool_calls:
+                tool_call_list = []
+                for tc in message.tool_calls:
+                    try:
+                        args = json.loads(tc.function.arguments)
+                    except (json.JSONDecodeError, ValueError):
+                        args = {}
+                    tool_call_list.append({
+                        "id": tc.id,
+                        "name": tc.function.name,
+                        "arguments": args,
+                    })
+                return None, tool_call_list
+
+            return _extract_message_text(message), None
 
         raise last_exc or OpenRouterError("All retry attempts exhausted")
 

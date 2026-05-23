@@ -122,7 +122,7 @@ agents:
       execute: autonomous
 
   calendar:
-    enabled: false
+    enabled: true
     vision_capable: true
     description: |
       Manages Google Calendar events. Use for creating, reading, updating, or deleting
@@ -147,7 +147,7 @@ agents:
       delete: confirm
 
   email:
-    enabled: false
+    enabled: true
     vision_capable: true
     description: |
       Manages Gmail messages. Use for reading, drafting, sending, or archiving emails,

@@ -1,14 +1,18 @@
+import json
 import time
 from abc import ABC, abstractmethod
-from typing import AsyncIterator
+from typing import TYPE_CHECKING, Any, AsyncIterator
 
 from ze.agents.identity import build_identity_block
 from ze.agents.tool import ToolAccess, get_tool
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.capability.types import GateDecision
-from ze.errors import ToolBlockedError
+from ze.errors import ToolBlockedError, ZeError
 from ze.logging import get_logger
 from ze.settings import Settings
+
+if TYPE_CHECKING:
+    from ze.openrouter.client import OpenRouterClient
 
 
 class BaseAgent(ABC):
@@ -92,6 +96,93 @@ class BaseAgent(ABC):
         )
         return result
 
+    # ── Agentic tool loop ─────────────────────────────────────────────────────
+
+    async def agentic_loop(
+        self,
+        ctx: AgentContext,
+        client: "OpenRouterClient",
+        messages: list[dict],
+        system: str,
+        deps: dict[str, Any],
+        tool_names: list[str] | None = None,
+        max_iterations: int = 6,
+    ) -> tuple[str, list[ToolCall]]:
+        """Drive a ReAct loop: LLM picks tools, Ze dispatches them, loop until text.
+
+        Args:
+            ctx:            Agent context — passed to call_tool() for gate checks.
+            client:         OpenRouter client to use for LLM calls.
+            messages:       Conversation history including current user turn.
+                            Mutated in-place as tool turns are appended.
+            system:         System prompt.
+            deps:           Ze-internal dep map injected per tool (e.g. {"client": tavily}).
+            tool_names:     Which tools to expose; defaults to self.tools.
+            max_iterations: Max tool-call rounds before forcing a plain completion.
+        """
+        names = tool_names if tool_names is not None else self.tools
+        tool_schemas = [get_tool(n).llm_schema() for n in names]
+        accumulated: list[ToolCall] = []
+
+        for iteration in range(max_iterations):
+            text, tool_calls = await client.complete_with_tools(
+                messages=messages,
+                model=self._model(ctx),
+                tools=tool_schemas,
+                system=system,
+            )
+
+            if text is not None:
+                self._log.debug(
+                    "agentic_loop_done",
+                    agent=self.name,
+                    iterations=iteration + 1,
+                    tool_calls=len(accumulated),
+                )
+                return text, accumulated
+
+            # Append the assistant turn (with tool call requests) to history
+            assert tool_calls is not None
+            messages.append({
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": tc["id"],
+                        "type": "function",
+                        "function": {
+                            "name": tc["name"],
+                            "arguments": json.dumps(tc["arguments"]),
+                        },
+                    }
+                    for tc in tool_calls
+                ],
+            })
+
+            # Execute each tool call and append the result turn
+            for tc in tool_calls:
+                merged = _merge_deps(tc["name"], tc["arguments"], deps)
+                tool_call = await self.call_tool(tc["name"], ctx, **merged)
+                accumulated.append(tool_call)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "content": _serialise_result(tool_call),
+                })
+
+        # max_iterations reached — force a plain text response without tools
+        self._log.warning(
+            "agentic_loop_max_iterations",
+            agent=self.name,
+            max_iterations=max_iterations,
+        )
+        text = await client.complete(
+            messages=messages,
+            model=self._model(ctx),
+            system=system,
+        )
+        return text, accumulated
+
     # ── Config helpers ────────────────────────────────────────────────────────
 
     def _model(self, ctx: AgentContext | None = None) -> str:
@@ -129,3 +220,35 @@ class BaseAgent(ABC):
         )
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
         return f"{identity}\n\n{rendered}"
+
+
+# ── Module-level helpers used by agentic_loop ─────────────────────────────────
+
+def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
+    """Merge LLM-provided args with Ze-internal deps for a tool call.
+
+    For each param in the tool spec that is absent from llm_args, inject from
+    deps by param name. Unknown params not in deps are left out (call_tool will
+    receive them only if the LLM supplied them).
+    """
+    from ze.agents.tool import get_tool
+    spec = get_tool(tool_name)
+    merged = dict(llm_args)
+    for param in spec.params:
+        if param.name not in merged and param.name in deps:
+            merged[param.name] = deps[param.name]
+    return merged
+
+
+def _serialise_result(tc: ToolCall) -> str:
+    """Convert a ToolCall result to a string for inclusion in a tool message."""
+    if not tc.success:
+        return f"[error: {tc.error}]"
+    if tc.result is None:
+        return "[no result]"
+    if isinstance(tc.result, str):
+        return tc.result
+    try:
+        return json.dumps(tc.result)
+    except (TypeError, ValueError):
+        return str(tc.result)

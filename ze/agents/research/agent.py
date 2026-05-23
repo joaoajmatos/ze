@@ -37,19 +37,17 @@ class ResearchAgent(BaseAgent):
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "research.searching")
-        search_tc = await self.call_tool(
-            "web_search", ctx, query=ctx.prompt, client=self._tavily
+        system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
+        response, loop_tool_calls = await self.agentic_loop(
+            ctx,
+            client=self._client,
+            messages=list(ctx.messages),
+            system=system,
+            deps={"client": self._tavily},
+            tool_names=["web_search"],
         )
 
         await self.emit(ctx, "research.summarising")
-        augmented = f"{ctx.prompt}\n\nSearch results:\n{format_search_results(search_tc)}"
-        messages = ctx.messages[:-1] + [{"role": "user", "content": augmented}]
-        response = await self._client.complete(
-            messages=messages,
-            model=self._model(ctx),
-            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
-        )
-
         facts_tc = await self.call_tool(
             "extract_facts", ctx,
             prompt=ctx.prompt,
@@ -59,18 +57,19 @@ class ResearchAgent(BaseAgent):
         )
 
         proposals = to_user_facts(facts_tc.result or [])
+        search_count = len([tc for tc in loop_tool_calls if tc.tool_name == "web_search"])
 
         self._log.info(
             "research_agent_complete",
             session_id=ctx.session_id,
-            search_success=search_tc.success,
+            search_count=search_count,
             proposals=len(proposals),
         )
 
         return AgentResult(
             agent=self.name,
             response=response,
-            tool_calls=[search_tc, facts_tc],
+            tool_calls=loop_tool_calls + [facts_tc],
             memory_proposals=proposals,
         )
 

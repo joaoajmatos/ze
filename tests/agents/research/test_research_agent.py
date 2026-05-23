@@ -23,25 +23,34 @@ def make_settings():
     )
 
 
-def make_client(response: str = "Here is what I found.") -> AsyncMock:
+def make_search_result(content: str = "Latest AI developments.") -> dict:
+    return {"results": [{"title": "AI News", "url": "https://example.com", "content": content}]}
+
+
+def make_client(
+    loop_response: str = "Here is what I found.",
+    facts_response: str = "[]",
+) -> AsyncMock:
+    """Return a mock OpenRouterClient.
+
+    complete_with_tools returns text immediately (no tool-call round-trips).
+    complete is used by extract_facts internally.
+    """
     client = AsyncMock()
-    client.complete = AsyncMock(return_value=response)
+    client.complete_with_tools = AsyncMock(return_value=(loop_response, None))
+    client.complete = AsyncMock(return_value=facts_response)
 
     async def _stream(*args, **kwargs):
-        for token in response.split():
+        for token in loop_response.split():
             yield token
 
     client.stream = _stream
     return client
 
 
-def make_tavily(result: dict | None = None) -> AsyncMock:
+def make_tavily(content: str = "Latest AI developments.") -> AsyncMock:
     tavily = AsyncMock()
-    tavily.search = AsyncMock(return_value=result or {
-        "results": [
-            {"title": "AI News", "url": "https://example.com", "content": "Latest AI developments."}
-        ]
-    })
+    tavily.search = AsyncMock(return_value=make_search_result(content))
     return tavily
 
 
@@ -51,6 +60,7 @@ def make_ctx(prompt: str = "find AI news", memory: MemoryContext | None = None) 
         prompt=prompt,
         intent="read",
         memory=memory or MemoryContext(),
+        messages=[{"role": "user", "content": prompt}],
     )
 
 
@@ -75,7 +85,7 @@ def test_research_agent_is_registered():
     assert "research" in _registry
 
 
-# ── run() ─────────────────────────────────────────────────────────────────────
+# ── run() — basic structure ───────────────────────────────────────────────────
 
 async def test_run_returns_agent_result():
     agent = make_agent()
@@ -84,95 +94,126 @@ async def test_run_returns_agent_result():
     assert result.agent == "research"
 
 
-async def test_run_returns_response_string():
-    client = make_client("Here is the latest AI news.")
+async def test_run_returns_response_from_agentic_loop():
+    client = make_client(loop_response="Here is the latest AI news.")
     agent = make_agent(client=client)
     result = await agent.run(make_ctx("find AI news"))
     assert result.response == "Here is the latest AI news."
 
 
-async def test_run_includes_tool_calls():
+async def test_run_always_includes_extract_facts_call():
     agent = make_agent()
     result = await agent.run(make_ctx())
-    assert len(result.tool_calls) == 2
-    assert result.tool_calls[0].tool_name == "web_search"
-    assert result.tool_calls[1].tool_name == "extract_facts"
+    tool_names = [tc.tool_name for tc in result.tool_calls]
+    assert "extract_facts" in tool_names
 
 
-async def test_run_calls_tavily_with_prompt():
+async def test_run_extract_facts_is_last_tool_call():
+    agent = make_agent()
+    result = await agent.run(make_ctx())
+    assert result.tool_calls[-1].tool_name == "extract_facts"
+
+
+# ── run() — agentic loop with tool-call round-trips ──────────────────────────
+
+async def test_run_single_search_iteration():
+    """LLM requests one web_search then returns text."""
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "AI news"}}]),
+        ("Here is what I found.", None),
+    ])
+    client.complete = AsyncMock(return_value="[]")  # extract_facts
     tavily = make_tavily()
-    agent = make_agent(tavily=tavily)
-    await agent.run(make_ctx("quantum computing news"))
-    tavily.search.assert_awaited_once()
-    call_args = tavily.search.call_args
-    assert "quantum computing news" in call_args.args or "quantum computing news" in str(call_args)
+    agent = make_agent(client=client, tavily=tavily)
+
+    result = await agent.run(make_ctx("AI news"))
+
+    assert result.response == "Here is what I found."
+    web_calls = [tc for tc in result.tool_calls if tc.tool_name == "web_search"]
+    assert len(web_calls) == 1
+    tavily.search.assert_awaited_once_with("AI news", max_results=5)
 
 
-async def test_run_augments_prompt_with_search_results():
-    tavily = make_tavily({
-        "results": [{"title": "Test", "url": "https://t.co", "content": "unique_content_xyz"}]
-    })
-    captured_messages = []
+async def test_run_multiple_search_iterations():
+    """LLM requests two searches before producing text."""
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "AI 2024"}}]),
+        (None, [{"id": "c2", "name": "web_search", "arguments": {"query": "AI 2025"}}]),
+        ("Comprehensive answer.", None),
+    ])
+    client.complete = AsyncMock(return_value="[]")
+    tavily = make_tavily()
+    agent = make_agent(client=client, tavily=tavily)
+
+    result = await agent.run(make_ctx("AI trends"))
+
+    assert result.response == "Comprehensive answer."
+    web_calls = [tc for tc in result.tool_calls if tc.tool_name == "web_search"]
+    assert len(web_calls) == 2
+    assert tavily.search.await_count == 2
+
+
+async def test_run_no_search_when_llm_answers_directly():
+    """LLM returns text on first call — no web_search is made."""
+    tavily = make_tavily()
+    agent = make_agent(tavily=tavily)  # make_client returns text immediately
+    result = await agent.run(make_ctx())
+    assert tavily.search.await_count == 0
+    web_calls = [tc for tc in result.tool_calls if tc.tool_name == "web_search"]
+    assert len(web_calls) == 0
+
+
+async def test_run_handles_search_failure_gracefully():
+    """Failed web_search result is still passed back to LLM; agent returns response."""
+    tavily = AsyncMock()
+    tavily.search = AsyncMock(side_effect=Exception("Tavily down"))
 
     client = AsyncMock()
-    async def _complete(messages, **kwargs):
-        captured_messages.extend(messages)
-        return "done"
-    client.complete = _complete
-
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "test"}}]),
+        ("I could not find anything.", None),
+    ])
+    client.complete = AsyncMock(return_value="[]")
     agent = make_agent(client=client, tavily=tavily)
-    await agent.run(make_ctx("test query"))
 
-    user_message = captured_messages[0]["content"]
-    assert "unique_content_xyz" in user_message
+    result = await agent.run(make_ctx())
+
+    assert result.response == "I could not find anything."
+    assert result.tool_calls[0].success is False
 
 
 async def test_run_with_memory_facts_injects_into_system_prompt():
     memory = MemoryContext(facts=[UserFact(key="name", value="Alice")])
-    captured_system: list[str] = []
+    captured: list[str] = []
 
     client = AsyncMock()
-    async def _complete(messages, system=None, **kwargs):
+    async def _complete_with_tools(messages, model, tools, system=None, **kwargs):
         if system:
-            captured_system.append(system)
-        return "done"
-    client.complete = _complete
+            captured.append(system)
+        return ("done", None)
+    client.complete_with_tools = _complete_with_tools
+    client.complete = AsyncMock(return_value="[]")
 
     agent = make_agent(client=client)
     await agent.run(make_ctx(memory=memory))
 
-    assert captured_system
-    assert "name: Alice" in captured_system[0]
-
-
-async def test_run_handles_tavily_failure_gracefully():
-    tavily = AsyncMock()
-    tavily.search = AsyncMock(side_effect=Exception("Tavily down"))
-    client = make_client("I could not find anything.")
-    agent = make_agent(client=client, tavily=tavily)
-    # Should not raise — failed search is included as a failed ToolCall
-    result = await agent.run(make_ctx())
-    assert result.tool_calls[0].success is False
-    assert result.response == "I could not find anything."
-
-
-async def test_run_tool_call_has_duration():
-    agent = make_agent()
-    result = await agent.run(make_ctx())
-    assert result.tool_calls[0].duration_ms >= 0
+    assert captured
+    assert "name: Alice" in captured[0]
 
 
 # ── stream() ─────────────────────────────────────────────────────────────────
 
 async def test_stream_yields_tokens():
-    client = make_client("hello world")
+    client = make_client(loop_response="hello world")
     agent = make_agent(client=client)
     tokens = [t async for t in agent.stream(make_ctx())]
     assert len(tokens) > 0
     assert "".join(tokens).strip() != ""
 
 
-# ── format_search_results ─────────────────────────────────────────────────────
+# ── format_search_results (used by stream()) ──────────────────────────────────
 
 def test_format_search_results_success():
     tc = ToolCall(

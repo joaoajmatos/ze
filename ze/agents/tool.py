@@ -1,7 +1,9 @@
 import inspect
+import types
+import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, Union
 
 from ze.errors import UnknownToolError
 
@@ -19,6 +21,64 @@ class ToolParam:
     default:    Any = None
 
 
+_JSON_PRIMITIVES = frozenset({str, int, float, bool, type(None)})
+
+
+def _is_llm_visible(annotation: Any) -> bool:
+    """Return True if annotation is a JSON-primitive type the LLM can supply."""
+    if annotation is Any:
+        return True
+    if annotation in _JSON_PRIMITIVES:
+        return True
+    origin = getattr(annotation, "__origin__", None)
+    # Handle Python 3.10+ X | Y union syntax
+    if isinstance(annotation, types.UnionType):
+        return all(_is_llm_visible(a) for a in annotation.__args__)
+    # Handle typing.Union / Optional
+    if origin is Union:
+        return all(_is_llm_visible(a) for a in annotation.__args__)
+    # Handle list[X] / List[X] / tuple[X]
+    if origin in (list, tuple):
+        args = getattr(annotation, "__args__", ()) or ()
+        return all(_is_llm_visible(a) for a in args)
+    # dict / Dict — treat as opaque object
+    if origin is dict or annotation is dict:
+        return True
+    return False
+
+
+def _to_json_type(annotation: Any) -> str:
+    """Map a Python annotation to a JSON Schema type string."""
+    if annotation is str or annotation is Any:
+        return "string"
+    if annotation is int:
+        return "integer"
+    if annotation is float:
+        return "number"
+    if annotation is bool:
+        return "boolean"
+    if annotation is dict:
+        return "object"
+    origin = getattr(annotation, "__origin__", None)
+    if origin in (list, tuple):
+        return "array"
+    if origin is dict:
+        return "object"
+    # Union / Optional — use type of first non-None arg
+    if isinstance(annotation, types.UnionType) or origin is Union:
+        non_none = [a for a in annotation.__args__ if a is not type(None)]
+        return _to_json_type(non_none[0]) if non_none else "string"
+    return "string"
+
+
+def _is_optional(annotation: Any) -> bool:
+    """Return True if annotation is Optional[X] (i.e. can be None)."""
+    origin = getattr(annotation, "__origin__", None)
+    if isinstance(annotation, types.UnionType) or origin is Union:
+        return type(None) in annotation.__args__
+    return False
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     name:        str
@@ -26,6 +86,36 @@ class ToolSpec:
     access:      ToolAccess
     description: str
     params:      tuple[ToolParam, ...]
+
+    def llm_schema(self) -> dict:
+        """Return OpenAI-format function schema for this tool.
+
+        Only JSON-primitive params are included; Ze-internal deps (e.g. client
+        objects) are automatically excluded so the LLM never sees them.
+        """
+        properties: dict[str, dict] = {}
+        required: list[str] = []
+
+        for p in self.params:
+            if not _is_llm_visible(p.annotation):
+                continue
+            prop: dict = {"type": _to_json_type(p.annotation)}
+            properties[p.name] = prop
+            if p.required and not _is_optional(p.annotation):
+                required.append(p.name)
+
+        schema: dict = {"type": "object", "properties": properties}
+        if required:
+            schema["required"] = required
+
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": schema,
+            },
+        }
 
 
 _tool_registry: dict[str, ToolSpec] = {}

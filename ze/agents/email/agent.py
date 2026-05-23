@@ -11,10 +11,17 @@ from ze.tools.facts import to_user_facts
 _AGENT_INSTRUCTIONS = """\
 You manage the user's Gmail inbox.
 
-- Emails are plain text only — no HTML or markdown in the body.
-- Before sending, always ask for confirmation.
+Available tools:
+- list_emails: search messages using Gmail query syntax (from:, subject:, is:unread, etc.)
+- get_email: retrieve the full content of a message by message_id
+- draft_email: create a draft without sending
+- send_email: send an email immediately
+- archive_email: remove a message from the inbox by message_id
+
+Guidelines:
+- Emails are plain text only — no HTML in the body.
+- Use list_emails then get_email to read content before drafting replies.
 - Summarize email content concisely: sender, subject, key points.
-- When searching, use Gmail query syntax (from:, subject:, is:unread, etc.).
 - If an operation fails, explain what went wrong clearly.\
 """
 
@@ -37,18 +44,14 @@ class EmailAgent(BaseAgent):
     async def run(self, ctx: AgentContext) -> AgentResult:
         key = "email.drafting" if ctx.intent in ("create", "update") else "email.reading"
         await self.emit(ctx, key)
-        inbox_tc = await self.call_tool(
-            "list_emails", ctx, credentials=self._creds
-        )
-
-        augmented = ctx.prompt
-        if inbox_tc.success and inbox_tc.result:
-            augmented = f"{ctx.prompt}\n\nRecent emails:\n{inbox_tc.result}"
-
-        response = await self._client.complete(
-            messages=[{"role": "user", "content": augmented}],
-            model=self._model(ctx),
-            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
+        system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
+        response, loop_tool_calls = await self.agentic_loop(
+            ctx,
+            client=self._client,
+            messages=list(ctx.messages),
+            system=system,
+            deps={"credentials": self._creds},
+            tool_names=["list_emails", "get_email", "draft_email", "send_email", "archive_email"],
         )
 
         facts_tc = await self.call_tool(
@@ -64,14 +67,14 @@ class EmailAgent(BaseAgent):
         self._log.info(
             "email_agent_complete",
             session_id=ctx.session_id,
-            emails_fetched=len(inbox_tc.result or []),
+            tool_calls=len(loop_tool_calls),
             proposals=len(proposals),
         )
 
         return AgentResult(
             agent=self.name,
             response=response,
-            tool_calls=[inbox_tc, facts_tc],
+            tool_calls=loop_tool_calls + [facts_tc],
             memory_proposals=proposals,
         )
 
