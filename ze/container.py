@@ -12,6 +12,7 @@ from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_po
 from ze.embeddings import get_embedder
 from ze.google.auth import GoogleCredentials
 from ze.logging import get_logger
+from ze.contacts.store import PersonStore
 from ze.memory.consolidator import MemoryConsolidator
 from ze.memory.store import MemoryStore
 from ze.persona.store import PersonaStore
@@ -51,6 +52,7 @@ class Container:
     router: EmbeddingRouter
     capability_gate: CapabilityGate
     memory_store: MemoryStore
+    person_store: PersonStore
     memory_consolidator: MemoryConsolidator
     workflow_store: WorkflowStore
     workflow_scheduler: WorkflowScheduler
@@ -123,6 +125,7 @@ async def build_container(settings: Settings) -> Container:
     )
 
     persona_store = PersonaStore(pool=pool, settings=settings)
+    person_store = PersonStore(pool=pool)
 
     # ── Memory consolidation ──────────────────────────────────────────────────
     memory_consolidator = MemoryConsolidator(
@@ -303,6 +306,7 @@ async def build_container(settings: Settings) -> Container:
         router=router,
         capability_gate=capability_gate,
         memory_store=memory_store,
+        person_store=person_store,
         memory_consolidator=memory_consolidator,
         workflow_store=workflow_store,
         workflow_scheduler=workflow_scheduler,
