@@ -101,7 +101,37 @@ class Settings(BaseSettings):
 
     @property
     def persona_config(self) -> dict[str, Any]:
-        return self.config.get("persona", {"traits": ["direct", "warm", "concise"], "verbosity": "concise", "custom_instructions": ""})
+        cfg = self.config.get("persona", {})
+        if cfg:
+            return cfg
+        # Absolute fallback if persona: block is missing entirely.
+        return {
+            "profile": "default",
+            "locale": "en",
+            "profiles": {
+                "default": {
+                    "traits": ["direct", "warm", "concise"],
+                    "verbosity": "concise",
+                    "custom_instructions": "",
+                    "dials": {"humor": 0.3, "directness": 0.9, "formality": 0.2, "depth": 0.5},
+                }
+            },
+        }
+
+    def active_profile(self) -> dict[str, Any]:
+        """Return the YAML-default active profile dict (no DB override)."""
+        cfg = self.persona_config
+        profiles = cfg.get("profiles", {})
+        if profiles:
+            name = cfg.get("profile", "default")
+            return profiles.get(name) or next(iter(profiles.values()))
+        # Legacy flat format: wrap as a profile dict.
+        return {
+            "traits": cfg.get("traits", ["direct", "warm", "concise"]),
+            "verbosity": cfg.get("verbosity", "concise"),
+            "custom_instructions": cfg.get("custom_instructions", ""),
+            "dials": {},
+        }
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
