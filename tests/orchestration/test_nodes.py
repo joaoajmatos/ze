@@ -79,6 +79,12 @@ def make_mock_embedder():
     return embedder
 
 
+def make_persona_store():
+    store = AsyncMock()
+    store.get_active = AsyncMock(return_value={"traits": ["direct"], "verbosity": "concise", "dials": {}})
+    return store
+
+
 def make_config(
     router=None,
     memory_store=None,
@@ -86,10 +92,12 @@ def make_config(
     settings=None,
     openrouter_client=None,
     embedder=None,
+    persona_store=None,
 ) -> dict:
     return {"configurable": {
         "router": router or MagicMock(),
         "memory_store": memory_store or AsyncMock(spec=MemoryStore),
+        "persona_store": persona_store or make_persona_store(),
         "capability_gate": capability_gate or MagicMock(spec=CapabilityGate),
         "settings": settings or make_settings(),
         "openrouter_client": openrouter_client or AsyncMock(),

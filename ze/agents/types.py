@@ -30,6 +30,7 @@ class AgentContext:
     memory: MemoryContext = field(default_factory=MemoryContext)
     tool_calls: list[ToolCall] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)  # history + current user message
+    persona: dict = field(default_factory=dict)
     model: str | None = None    # None → agent falls back to its config default
     reporter: ProgressReporter | None = None  # None outside Telegram / in tests
 

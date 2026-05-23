@@ -14,6 +14,7 @@ from ze.google.auth import GoogleCredentials
 from ze.logging import get_logger
 from ze.memory.consolidator import MemoryConsolidator
 from ze.memory.store import MemoryStore
+from ze.persona.store import PersonaStore
 from ze.openrouter.client import OpenRouterClient
 from ze.orchestration.graph import build_graph
 from ze.progress.translations import ProgressTranslations
@@ -121,6 +122,8 @@ async def build_container(settings: Settings) -> Container:
         settings=settings,
     )
 
+    persona_store = PersonaStore(pool=pool, settings=settings)
+
     # ── Memory consolidation ──────────────────────────────────────────────────
     memory_consolidator = MemoryConsolidator(
         pool=pool,
@@ -141,6 +144,7 @@ async def build_container(settings: Settings) -> Container:
             "router": router,
             "capability_gate": capability_gate,
             "memory_store": memory_store,
+            "persona_store": persona_store,
             "openrouter_client": openrouter_client,
             "embedder": embedder,
             "settings": settings,
@@ -279,6 +283,7 @@ async def build_container(settings: Settings) -> Container:
         router=router,
         capability_gate=capability_gate,
         memory_store=memory_store,
+        persona_store=persona_store,
         workflow_store=workflow_store,
         workflow_planner=workflow_planner,
         openrouter_client=openrouter_client,

@@ -28,6 +28,7 @@ class ZeBot:
         router,
         capability_gate,
         memory_store,
+        persona_store,
         workflow_store,
         workflow_planner,
         openrouter_client,
@@ -44,6 +45,7 @@ class ZeBot:
         self._router = router
         self._capability_gate = capability_gate
         self._memory_store = memory_store
+        self._persona_store = persona_store
         self._workflow_store = workflow_store
         self._workflow_planner = workflow_planner
         self._openrouter_client = openrouter_client
@@ -498,6 +500,7 @@ class ZeBot:
                 "router": self._router,
                 "capability_gate": self._capability_gate,
                 "memory_store": self._memory_store,
+                "persona_store": self._persona_store,
                 "openrouter_client": self._openrouter_client,
                 "embedder": self._embedder,
                 "settings": self._settings,
@@ -513,6 +516,7 @@ class ZeBot:
                 "router": self._router,
                 "capability_gate": self._capability_gate,
                 "memory_store": self._memory_store,
+                "persona_store": self._persona_store,
                 "openrouter_client": self._openrouter_client,
                 "embedder": self._embedder,
                 "settings": self._settings,
@@ -527,6 +531,7 @@ class ZeBot:
                 "router": self._router,
                 "capability_gate": self._capability_gate,
                 "memory_store": self._memory_store,
+                "persona_store": self._persona_store,
                 "openrouter_client": self._openrouter_client,
                 "embedder": self._embedder,
                 "settings": self._settings,

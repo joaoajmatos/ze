@@ -7,6 +7,7 @@ from ze.agents.types import AgentContext
 from ze.logging import get_logger
 from ze.memory.store import MemoryStore
 from ze.orchestration.state import AgentState
+from ze.persona.store import PersonaStore
 from ze.settings import Settings
 from ze.telemetry.context import set_agent_context
 
@@ -19,6 +20,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     """Encode the prompt, load memory context, and build the AgentContext."""
     set_agent_context("memory_store")
     store: MemoryStore = config["configurable"]["memory_store"]
+    persona_store: PersonaStore = config["configurable"]["persona_store"]
     embedder: SentenceTransformer = config["configurable"]["embedder"]
     settings: Settings = config["configurable"]["settings"]
     envelope = state["envelope"]
@@ -34,6 +36,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         prompt_embedding=prompt_embedding,
         agent=agent,
     )
+    active_persona = await persona_store.get_active()
 
     # Clear history if the session has been inactive too long.
     now = time.time()
@@ -58,6 +61,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         intent=envelope.subtasks[0].intent if envelope and envelope.subtasks else "read",
         memory=memory_context,
         messages=messages,
+        persona=active_persona,
         # reporter is intentionally omitted — ProgressReporter is not serializable and
         # must not be stored in AgentState. execution.py injects it from config directly.
     )

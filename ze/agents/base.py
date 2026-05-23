@@ -214,7 +214,7 @@ class BaseAgent(ABC):
     ) -> str:
         """Compose the full system prompt: shared identity block + agent instructions."""
         identity = build_identity_block(
-            self._settings.persona_config,
+            ctx.persona if ctx.persona else self._settings.active_profile(),
             self._format_memory(ctx),
             profile=ctx.memory.profile,
         )
