@@ -95,20 +95,75 @@ embeddings. Both models are invoked via OpenRouter.
 
 ### `persona:`
 
-Controls Ze's tone in all agent responses.
+Controls Ze's tone across all agent responses via named profiles and continuous dials.
 
 ```yaml
 persona:
-  traits:
-    - direct
-    - warm
-    - concise
-  verbosity: concise        # concise | balanced | detailed
-  custom_instructions: ""   # Free-form text appended to every system prompt
+  profile: default   # Active profile name. Overridden at runtime via /persona command.
+  locale: en         # BCP 47 locale for progress message translations (en | pt)
+
+  profiles:
+    default:
+      traits: [direct, warm, concise]
+      verbosity: concise        # concise | balanced | detailed
+      custom_instructions: ""   # Free-form text appended after traits, before memory context
+      dials:
+        humor:       0.3        # 0 = none → 1 = freely witty
+        directness:  0.9        # 0 = Socratic → 1 = blunt conclusions-first
+        formality:   0.2        # 0 = casual → 1 = formal
+        depth:       0.5        # 0 = surface → 1 = full elaboration
+
+    stoic:
+      traits: [precise, measured]
+      verbosity: concise
+      custom_instructions: ""
+      dials:
+        humor: 0.05
+        directness: 1.0
+        formality: 0.7
+        depth: 0.4
+
+    playful:
+      traits: [warm, curious, witty]
+      verbosity: balanced
+      custom_instructions: ""
+      dials:
+        humor: 0.85
+        directness: 0.4
+        formality: 0.1
+        depth: 0.6
 ```
 
-`custom_instructions` is useful for things like "Always respond in European Portuguese"
-or "Use my name João." It is appended after the trait list and before memory context.
+**Profiles** are named personality presets. Add as many as you like under `profiles:`.
+The `profile:` key sets the YAML default; the active profile is overridden at runtime
+by the DB value set via `/persona` commands and survives process restarts.
+
+**Dials** are continuous `[0.0, 1.0]` values. Each dial maps to a prose clause injected
+into the identity block only at the extremes (below `0.2` or above `0.8`). The neutral
+band `[0.2, 0.8)` is intentionally silent — no instruction is added, keeping the system
+prompt compact for untuned dials.
+
+| Dial | Low (< 0.2) effect | High (≥ 0.8) effect |
+|---|---|---|
+| `humor` | No humor | Openly funny |
+| `directness` | Socratic / exploratory | Conclusions first, no preamble |
+| `formality` | Casual, first names | Formal and precise |
+| `depth` | Surface level | Full elaboration with examples |
+
+**`custom_instructions`** is free-form text appended to every system prompt for that
+profile — useful for "Always respond in European Portuguese" or "Use my name João."
+
+**Runtime switching** via Telegram:
+
+```
+/persona                    # show current profile + dial values
+/persona stoic              # switch to named profile (resets dial overrides)
+/persona humor 0.8          # override one dial on the active profile
+/persona reset              # restore all dials to profile YAML defaults
+```
+
+Profile switches and dial overrides are persisted in the `persona_state` DB table and
+survive restarts. The inline keyboard attached to `/persona` allows one-tap profile switching.
 
 ### `memory:`
 

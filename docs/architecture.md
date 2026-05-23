@@ -182,15 +182,27 @@ The identity block ensures Ze sounds like the same assistant regardless of which
 agent handles the request. Agents only define `_AGENT_INSTRUCTIONS` — they never
 set the identity or inject memory themselves.
 
-**Configurable identity fields** (in `config/config.yaml` under `persona:`):
+**Configurable identity fields** (in `config/config.yaml` under `persona.profiles.<name>:`):
 
 | Field | Description |
 |---|---|
-| `traits` | List of personality adjectives rendered as a natural-language list |
-| `verbosity` | `concise` / `balanced` / `detailed` — controls response length guidance |
+| `traits` | Adjective list rendered as natural language ("direct, warm, and concise") |
+| `verbosity` | `concise` / `balanced` / `detailed` — response length guidance |
 | `custom_instructions` | Free-form text appended after traits, before memory context |
+| `dials` | Map of named continuous values `[0.0, 1.0]` — see below |
 
-Changes to persona config hot-reload on `SIGHUP`.
+**Personality dials** translate numeric values into prose clauses appended to the traits
+sentence. Only extreme values (below 0.2 or above 0.8) emit a clause; the neutral band
+is silent. Four built-in dials: `humor`, `directness`, `formality`, `depth`.
+
+**Runtime switching** — `PersonaStore` (`ze/persona/store.py`) reads the active profile
+from the `persona_state` DB table and merges any per-session dial overrides. `fetch_context`
+calls `await persona_store.get_active()` once per graph invocation and sets the resolved
+profile on `AgentContext.persona`. All agents receive it through `_build_system_prompt`
+without any per-agent changes.
+
+The `/persona` Telegram command switches profiles and tunes dials live; changes persist
+across restarts. YAML values serve as profile defaults; DB overrides take precedence.
 
 **Memory injection** — `fetch_context` runs a pgvector semantic search before every
 agent execution and injects the top-k relevant facts and episodes as text into the
@@ -316,6 +328,7 @@ Voice notes and photos are supported — see the Multimodal input section below.
 | `ze/embeddings.py` | Shared `SentenceTransformer` singleton — loaded once at startup |
 | `ze/db.py` | asyncpg pool factory — lifespan-managed, injected via `Depends()` |
 | `ze/container.py` | Dependency wiring — constructs and connects all shared resources |
+| `ze/persona/` | `PersonaStore` — named profiles, dial overrides, DB persistence |
 | `ze/google/` | Google OAuth2 token management (Calendar + Gmail) |
 
 ---
@@ -335,6 +348,7 @@ Migrations live in `migrations/versions/` as raw SQL Alembic files (no ORM).
 | `push_log` | Proactive push delivery log |
 | `calendar_reminders` | Synced calendar events scheduled for reminders |
 | `cost_records` | Per-call token usage and estimated cost |
+| `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |
 
 ---
 

@@ -72,15 +72,19 @@ User message (Telegram Bot API)
 
 ## Implementation Phases
 
-| Phase | Scope                                                                 | Status      |
-|-------|-----------------------------------------------------------------------|-------------|
-| 1     | `research` + `companion` only. Full stack vertical slice.             | ✅ Done     |
-| 2     | Memory (pgvector), capability gate, confirmation + draft UI.          | ✅ Done     |
-| 3     | `calendar` + `email`, Google OAuth2, compound task decomposition.     | ✅ Done     |
-| 4     | `workflow`, memory digest, routing log UI, capability config UI.      | ✅ Done     |
-| 5     | Memory consolidation — dedup facts, expire stale, summarise episodes. | ✅ Done     |
-| 6     | User profile — synthesise facts + episodes into a structured portrait. | 🔲 Planned  |
-|| 10    | Multimodal input — voice transcription + image/vision support.        | 🔲 Planned  |
+| Phase | Scope                                                                        | Status  |
+|-------|------------------------------------------------------------------------------|---------|
+| 1     | `research` + `companion` only. Full stack vertical slice.                    | ✅ Done |
+| 2     | Memory (pgvector), capability gate, confirmation + draft UI.                 | ✅ Done |
+| 3     | `calendar` + `email`, Google OAuth2, compound task decomposition.            | ✅ Done |
+| 4     | `workflow`, memory digest, routing log UI, capability config UI.             | ✅ Done |
+| 5     | Memory consolidation — dedup facts, expire stale, summarise episodes.        | ✅ Done |
+| 6     | User profile — synthesise facts + episodes into a structured portrait.       | ✅ Done |
+| 7     | Proactive Ze — morning briefing, workflow failure alerts, calendar reminders. | ✅ Done |
+| 8     | Insight engine — weekly synthesis of facts + episodes into actionable insights. | ✅ Done |
+| 9     | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation. | ✅ Done |
+| 10    | Multimodal input — voice transcription + image/vision support.               | ✅ Done |
+| 11    | Persona profiles + dials — named profiles, TARS-style dials, `/persona` cmd. | ✅ Done |
 
 ## Module Map
 
@@ -102,6 +106,7 @@ User message (Telegram Bot API)
 | `13-phase5-memory.md`         | Memory consolidation          | 5         |
 | `14-user-profile.md`          | User profile synthesis        | 6         |
 | `19-multimodal-input.md`      | Voice + image input           | 10        |
+| `25-persona-profiles.md`      | Persona profiles + dials      | 11        |
 
 ## Cross-Cutting Modules
 

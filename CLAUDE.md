@@ -20,6 +20,7 @@ ze/
 │   ├── openrouter/           # OpenRouterClient (complete() + stream())
 │   ├── orchestration/        # LangGraph state machine (nodes/, edges, graph, state)
 │   ├── proactive/            # Scheduled pushes — briefing, reminders, alerts, insights
+│   ├── persona/              # PersonaStore — named profiles + runtime dial persistence
 │   ├── routing/              # EmbeddingRouter + haiku_fallback + ComplexityEstimator
 │   ├── telegram/             # ZeBot, keyboards, session store
 │   ├── telemetry/            # Cost tracking — CostTracker, CostReconciler, ContextVar attribution
@@ -36,7 +37,7 @@ ze/
 │   └── config.yaml           # All structural config — routing, models, persona, memory, proactive, agents
 ├── migrations/versions/      # Alembic raw-SQL migrations (no ORM)
 ├── tests/                    # Mirrors ze/ structure
-├── specs/                    # All 20 design specs (read before modifying a module)
+├── specs/                    # All 25 design specs (read before modifying a module)
 ├── docs/                     # Architecture, configuration, deployment, and authoring guides
 ├── Dockerfile                # Production image
 ├── docker-compose.yml        # Postgres (pgvector/pgvector:pg16) + backend
@@ -187,3 +188,4 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | Done |
 | 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | Done |
 | 10 | Multimodal input — voice transcription + image/vision support | Done |
+| 11 | Persona profiles + dials — named profiles, TARS-style numeric dials, `/persona` command | Done |
