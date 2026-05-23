@@ -115,15 +115,42 @@ async def ze_list_scenarios(tag: str = "") -> str:
     return json.dumps(all_scenarios, indent=2)
 
 
+async def _run_scenario_turns(scenario: dict, session_id: str) -> dict:
+    """Run a scenario, handling both single-prompt and multi-turn formats."""
+    turns = scenario.get("turns")
+    if turns:
+        turn_results = []
+        for i, turn in enumerate(turns):
+            result = await _do_chat(turn["prompt"], session_id)
+            turn_results.append({
+                "turn": i + 1,
+                "prompt": turn["prompt"],
+                "description": turn.get("description", ""),
+                "result": result,
+            })
+        final_agent = turn_results[-1]["result"].get("agent_used") if turn_results else None
+        return {"turns": turn_results, "agent_used": final_agent}
+    else:
+        result = await _do_chat(scenario["prompt"], session_id)
+        return result
+
+
 @mcp.tool()
 async def ze_run_scenario(scenario_id: str) -> str:
     """
     Run a named test scenario against Ze and return the result alongside the scenario definition.
 
+    Supports both single-turn scenarios (with a top-level 'prompt') and multi-turn scenarios
+    (with a 'turns' array of {prompt, description} objects). Multi-turn scenarios use the
+    same session_id across turns to maintain conversation context.
+
     Returns JSON with:
-      - scenario: the full scenario definition (prompt, expected_agent, criteria, etc.)
-      - result: Ze's response and routing metadata
+      - scenario: the full scenario definition (prompt/turns, expected_agent, criteria, etc.)
+      - result: Ze's response(s) and routing metadata
       - matches_expected_agent: true if Ze used the expected agent (null if no expectation set)
+      - tool_calls: list of tools invoked during execution (name, args, duration_ms, success)
+      - tokens_used: total tokens consumed
+      - memory_proposals_count: number of memory facts proposed for storage
 
     You (the evaluator) should read the criteria and judge whether Ze's response passes.
     """
@@ -131,11 +158,14 @@ async def ze_run_scenario(scenario_id: str) -> str:
     if scenario is None:
         return json.dumps({"error": f"Scenario '{scenario_id}' not found"})
 
-    result = await _do_chat(scenario["prompt"], f"eval-{scenario_id}")
+    result = await _run_scenario_turns(scenario, f"eval-{scenario_id}")
 
     matches = None
-    if scenario.get("expected_agent") and result.get("agent_used"):
-        matches = result["agent_used"] == scenario["expected_agent"]
+    expected = scenario.get("expected_agent")
+    if expected:
+        agent_used = result.get("agent_used")
+        if agent_used:
+            matches = agent_used == expected
 
     return json.dumps({
         "scenario": scenario,
@@ -149,13 +179,19 @@ async def ze_run_suite(tag: str = "") -> str:
     """
     Run all test scenarios (optionally filtered by tag) against Ze.
 
-    Returns a JSON array of results, each with:
-      - scenario: the scenario definition
-      - result: Ze's response and routing metadata
-      - matches_expected_agent: routing accuracy check
+    Supports both single-turn and multi-turn scenarios. Multi-turn scenarios
+    send each turn sequentially and return all turn results in order.
+
+    Returns a JSON summary with:
+      - total, routing_correct, routing_wrong, routing_unchecked, errors counts
+      - results: per-scenario objects with scenario definition, Ze's response(s),
+        routing metadata, tool_calls, tokens_used, and memory_proposals_count
 
     Use this to get a broad picture of Ze's current behaviour before making changes,
     then run again after to detect regressions.
+
+    Available tags: companion, routing, persona, research, reminders, memory,
+    edge_case, multi_turn, emotional, safety, compound, graceful_degradation.
     """
     all_scenarios = _load_all_scenarios()
     if tag:
@@ -163,10 +199,13 @@ async def ze_run_suite(tag: str = "") -> str:
 
     results = []
     for scenario in all_scenarios:
-        result = await _do_chat(scenario["prompt"], f"eval-{scenario['id']}")
+        result = await _run_scenario_turns(scenario, f"eval-{scenario['id']}")
         matches = None
-        if scenario.get("expected_agent") and result.get("agent_used"):
-            matches = result["agent_used"] == scenario["expected_agent"]
+        expected = scenario.get("expected_agent")
+        if expected:
+            agent_used = result.get("agent_used")
+            if agent_used:
+                matches = agent_used == expected
         results.append({
             "scenario": scenario,
             "result": result,

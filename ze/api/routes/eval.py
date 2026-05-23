@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Header, HTTPException, Request, status
 
-from ze.api.schemas import EvalChatRequest, EvalChatResponse, EvalRoutingInfo
+from ze.api.schemas import EvalChatRequest, EvalChatResponse, EvalRoutingInfo, EvalToolCall
 from ze.logging import get_logger
 
 log = get_logger(__name__)
@@ -60,6 +60,24 @@ async def eval_chat(
     if response_text is None and agent_result is not None:
         response_text = agent_result.response
 
+    tool_calls: list[EvalToolCall] = []
+    tokens_used = 0
+    memory_proposals_count = 0
+    if agent_result is not None:
+        tool_calls = [
+            EvalToolCall(
+                tool_name=tc.tool_name,
+                args=tc.args,
+                duration_ms=tc.duration_ms,
+                success=tc.success,
+                error=tc.error,
+                is_draft=tc.is_draft,
+            )
+            for tc in (agent_result.tool_calls or [])
+        ]
+        tokens_used = agent_result.tokens_used or 0
+        memory_proposals_count = len(agent_result.memory_proposals or [])
+
     return EvalChatResponse(
         session_id=body.session_id,
         response=response_text,
@@ -67,4 +85,7 @@ async def eval_chat(
         routing=routing,
         pending_confirmation=bool(final_state.get("pending_confirmation")),
         error=final_state.get("error"),
+        tool_calls=tool_calls,
+        tokens_used=tokens_used,
+        memory_proposals_count=memory_proposals_count,
     )

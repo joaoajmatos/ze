@@ -10,7 +10,7 @@ models:
   profile:        anthropic/claude-haiku-4-5   # user profile synthesis
   reminders:      anthropic/claude-haiku-4-5   # calendar reminder interval assessment
   insights:       anthropic/claude-haiku-4-5   # weekly insight generation
-  whisper:        openai/whisper-1             # voice transcription
+  whisper:        openai/gpt-audio             # voice transcription
   vision_caption: google/gemini-flash-1.5      # cheap routing caption for images
 
 
@@ -198,6 +198,9 @@ agents:
       or wants to see, check, or cancel their reminders
       (e.g. "remind me in 2 hours", "remind me tomorrow at 9am to call João",
       "what reminders do I have", "show my reminders", "cancel my reminder").
+      Also use when the user says "remind me" but specifies an invalid or past time
+      (e.g. "remind me yesterday", "remind me last Tuesday") — the reminders agent
+      validates the time and rejects it gracefully rather than silently routing elsewhere.
       Do NOT use for recurring tasks — use the workflow agent for those.
     model: anthropic/claude-haiku-4-5
     tools: []

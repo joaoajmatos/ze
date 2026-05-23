@@ -137,6 +137,15 @@ class EvalRoutingInfo(BaseModel):
     raw_scores: dict[str, float]
 
 
+class EvalToolCall(BaseModel):
+    tool_name: str
+    args: dict[str, Any]
+    duration_ms: int
+    success: bool
+    error: str | None = None
+    is_draft: bool = False
+
+
 class EvalChatResponse(BaseModel):
     session_id: str
     response: str | None
@@ -144,3 +153,6 @@ class EvalChatResponse(BaseModel):
     routing: EvalRoutingInfo | None
     pending_confirmation: bool
     error: str | None
+    tool_calls: list[EvalToolCall] = []
+    tokens_used: int = 0
+    memory_proposals_count: int = 0

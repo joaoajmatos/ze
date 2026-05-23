@@ -159,6 +159,8 @@ curl -X POST http://localhost:8000/eval/chat \
 
 Create or edit YAML files in `evals/scenarios/`. No code changes required.
 
+### Single-turn scenario
+
 ```yaml
 - id: my_new_scenario
   prompt: "The message Ze will receive"
@@ -170,7 +172,64 @@ Create or edit YAML files in `evals/scenarios/`. No code changes required.
     - Should not use corporate language
 ```
 
+### Multi-turn scenario
+
+Use `turns` instead of `prompt` to send a sequence of messages in the same session:
+
+```yaml
+- id: my_multi_turn_scenario
+  description: "What this sequence is testing"
+  turns:
+    - prompt: "First message to Ze"
+      description: "Turn 1: establish context"
+    - prompt: "Follow-up that depends on turn 1"
+      description: "Turn 2: test context retention"
+  expected_agent: companion          # checked against the last turn's agent_used
+  tags: [companion, memory, multi_turn]
+  criteria:
+    - Turn 1 should do X
+    - Turn 2 should reference turn 1 context
+```
+
+All turns in a multi-turn scenario share the same `session_id`, so LangGraph
+conversation history is maintained between them.
+
 Run `ze_list_scenarios()` to confirm it appears.
+
+---
+
+## Scenario coverage
+
+| File | Scenarios | Focus |
+|------|-----------|-------|
+| `companion.yaml` | 5 | Greeting, emotional check-in, capabilities, graceful degradation, memory |
+| `persona.yaml` | 5 | Sycophancy, honesty, refusal, tone, conciseness |
+| `routing.yaml` | 6 | Routing accuracy across all agents, compound tasks |
+| `research.yaml` | 6 | Research quality, coding questions, uncertainty, multi-turn |
+| `reminders.yaml` | 7 | Create/list/cancel reminders, edge cases, multi-turn |
+| `memory.yaml` | 6 | Fact storage, recall, contradiction handling, hallucination |
+| `edge_cases.yaml` | 8 | Emoji-only, code paste, language switch, very long, topic switch |
+
+Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
+`memory`, `edge_case`, `multi_turn`, `emotional`, `safety`, `compound`,
+`graceful_degradation`, `honesty`, `tone`, `conciseness`, `capabilities`.
+
+---
+
+## Eval response fields
+
+`ze_chat` and `ze_run_scenario` return these fields per turn:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `response` | string | Ze's text response |
+| `agent_used` | string | Which agent handled it |
+| `routing` | object | confidence, routing_method, is_compound, score_gap, raw_scores |
+| `pending_confirmation` | bool | True if Ze paused for user approval |
+| `tool_calls` | array | Tools invoked: name, args, duration_ms, success, error |
+| `tokens_used` | int | Total tokens consumed by the agent |
+| `memory_proposals_count` | int | Number of memory facts proposed for storage |
+| `error` | string | Error message if the graph failed |
 
 ---
 
@@ -183,3 +242,5 @@ Run `ze_list_scenarios()` to confirm it appears.
   The eval endpoint returns the draft response in `response` and does not auto-resume.
 - Calendar and email scenarios require valid Google credentials in `.env`.
   Without them, Ze should return a graceful error — that is itself a valid eval outcome.
+- Reminders scenarios write real rows to the database. Clean up with
+  `ze_chat("cancel all my reminders", session_id="cleanup")` after a suite run if needed.

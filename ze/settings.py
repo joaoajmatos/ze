@@ -55,6 +55,7 @@ class Settings(BaseSettings):
 
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = "INFO"
+    log_file: str = ""
 
     # ── Config paths ─────────────────────────────────────────────────────────
     config_dir: Path = _ROOT / "config"

@@ -33,6 +33,7 @@ models/
 
 # Logs
 *.log
+logs/
 
 # Claude Code local settings (contains secrets — use .claude/settings.json for shared config)
 .claude/settings.local.json

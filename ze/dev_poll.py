@@ -46,15 +46,20 @@ async def _poll(container) -> None:
             offset = update.update_id + 1
             if _chat_id(update) != allowed:
                 continue
-            if update.message and update.message.text:
-                await ze_bot.handle_message(update.message)
+            if update.message:
+                if update.message.text:
+                    await ze_bot.handle_message(update.message)
+                elif update.message.voice or update.message.audio:
+                    await ze_bot.handle_voice(update.message)
+                elif update.message.photo:
+                    await ze_bot.handle_photo(update.message)
             elif update.callback_query:
                 await ze_bot.handle_callback(update.callback_query)
 
 
 async def main() -> None:
     settings = get_settings()
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, dev=True, log_file=settings.log_file)
     container = await build_container(settings)
     try:
         await _poll(container)

@@ -32,6 +32,7 @@ help:
 	@echo ""
 	@echo "  Eval (requires 'make dev-eval' running)"
 	@echo "    eval-server    Start MCP eval server (for Claude Code / Cursor / Codex)"
+	@echo "    eval-clean     Delete eval-namespaced rows from DB (routing_log, checkpoints, cost_log)"
 	@echo ""
 	@echo "  Testing"
 	@echo "    test           Run tests (excludes slow embedding tests)"
@@ -90,19 +91,36 @@ migrate-history:
 .PHONY: dev dev-poll dev-eval
 
 dev:
-	uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+	LOG_FILE=logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 dev-poll:
-	uv run python -m ze.dev_poll
+	LOG_FILE=logs/ze.log uv run python -m ze.dev_poll
 
 dev-eval:
-	PUBLIC_URL= uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+	PUBLIC_URL= LOG_FILE=logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
-.PHONY: eval-server
+.PHONY: eval-server eval-clean
 
 eval-server:
 	uv run python evals/mcp_server.py
+
+eval-clean:
+	@echo "Removing eval-namespaced rows from routing_log, checkpoints, llm_cost_log..."
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM routing_log WHERE session_id LIKE 'eval-%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM llm_cost_log WHERE session_id LIKE 'eval-%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM checkpoint_blobs WHERE thread_id LIKE 'eval-%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM checkpoint_writes WHERE thread_id LIKE 'eval-%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM checkpoints WHERE thread_id LIKE 'eval-%';"
+	@echo "Done. Note: user_facts and episodes written before this fix was deployed"
+	@echo "cannot be isolated by eval session. Delete them manually if needed:"
+	@echo "  docker compose exec -T postgres psql -U ze -d ze"
+	@echo "  then: SELECT key, value, updated_at FROM user_facts ORDER BY updated_at DESC LIMIT 20;"
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 .PHONY: test test-all

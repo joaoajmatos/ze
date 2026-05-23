@@ -50,24 +50,29 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                 response=f"[ERROR] {error_msg}",
             )
 
-    embedding = embedder.encode(ctx.prompt)
+    thread_id: str = config["configurable"].get("thread_id", "")
+    is_eval = thread_id.startswith("eval-")
 
-    asyncio.create_task(
-        store.write_episode(
-            agent=result.agent,
-            prompt=ctx.prompt,
-            response=result.response,
-            embedding=embedding,
+    if not is_eval:
+        embedding = embedder.encode(ctx.prompt)
+
+        asyncio.create_task(
+            store.write_episode(
+                agent=result.agent,
+                prompt=ctx.prompt,
+                response=result.response,
+                embedding=embedding,
+            )
         )
-    )
 
-    if result.memory_proposals:
-        await store.propose_facts(result.memory_proposals)
+        if result.memory_proposals:
+            await store.propose_facts(result.memory_proposals)
 
     log.debug(
         "orchestration_memory_write_scheduled",
         session_id=state["session_id"],
-        proposals=len(result.memory_proposals),
+        proposals=len(result.memory_proposals) if not is_eval else 0,
+        eval=is_eval,
     )
 
     # Append the completed turn and apply the rolling window.

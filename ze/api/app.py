@@ -16,7 +16,7 @@ log = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, log_file=settings.log_file)
 
     container = await build_container(settings)
 
