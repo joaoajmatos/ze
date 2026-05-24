@@ -309,19 +309,8 @@ class PersonStore:
         ]
 
     async def get_context(self, query: str, token_budget: int = 300) -> PersonContext:
-        """Return confirmed contacts relevant to query, within token budget."""
+        """Return confirmed contacts whose name/role/notes match the query."""
         people = await self.search(query, confirmed_only=True)
-        if not people:
-            async with self._pool.acquire() as conn:
-                rows = await conn.fetch(
-                    """
-                    SELECT * FROM contacts
-                    WHERE confirmed = true AND dismissed = false
-                    ORDER BY last_mentioned DESC
-                    LIMIT 10
-                    """
-                )
-            people = [_person_from_row(r) for r in rows]
 
         result: list[Person] = []
         used = 0

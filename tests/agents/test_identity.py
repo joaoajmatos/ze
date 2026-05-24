@@ -125,3 +125,23 @@ def test_persona_without_dials_key_works():
     # Legacy persona dict with no dials entry
     block = build_identity_block({"traits": ["direct"], "verbosity": "concise"}, "(none)")
     assert "Ze" in block
+
+
+# ── Contacts rendering ────────────────────────────────────────────────────────
+
+def test_contacts_block_renders_when_present():
+    block = build_identity_block(
+        make_persona(), "(none)", contacts_context="- João Silva: charter operator"
+    )
+    assert "## People this user knows" in block
+    assert "João Silva" in block
+
+
+def test_contacts_block_absent_when_empty():
+    block = build_identity_block(make_persona(), "(none)", contacts_context="")
+    assert "## People this user knows" not in block
+
+
+def test_contacts_block_absent_by_default():
+    block = build_identity_block(make_persona(), "(none)")
+    assert "## People this user knows" not in block

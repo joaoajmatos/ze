@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ze.capability.types import GateDecision
+from ze.contacts.types import PersonContext
 from ze.memory.types import MemoryContext
 
 if TYPE_CHECKING:
@@ -28,6 +29,7 @@ class AgentContext:
     intent: str
     gate_decision: GateDecision = GateDecision.EXECUTE
     memory: MemoryContext = field(default_factory=MemoryContext)
+    contacts: PersonContext = field(default_factory=PersonContext)
     tool_calls: list[ToolCall] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)  # history + current user message
     persona: dict = field(default_factory=dict)

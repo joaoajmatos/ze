@@ -206,6 +206,15 @@ class BaseAgent(ABC):
         lines = [f"- {f.key}: {f.value}" for f in ctx.memory.facts]
         return "\n".join(lines) if lines else "(none)"
 
+    def _format_contacts(self, ctx: AgentContext) -> str:
+        lines = []
+        for p in ctx.contacts.people:
+            line = f"- {p.name}: {p.relationship_to_user}"
+            if p.notes:
+                line += f" ({p.notes})"
+            lines.append(line)
+        return "\n".join(lines)
+
     def _build_system_prompt(
         self,
         agent_instructions: str,
@@ -217,6 +226,7 @@ class BaseAgent(ABC):
             ctx.persona if ctx.persona else self._settings.active_profile(),
             self._format_memory(ctx),
             profile=ctx.memory.profile,
+            contacts_context=self._format_contacts(ctx),
         )
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
         return f"{identity}\n\n{rendered}"

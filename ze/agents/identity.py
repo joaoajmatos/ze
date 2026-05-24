@@ -45,7 +45,7 @@ purposeful — don't add headers to short conversational replies.
 Use these facts to personalise responses and to answer questions about the user directly. \
 Do not say you lack information if it appears below.
 {memory_context}\
-"""
+{contacts_block}"""
 
 _PROFILE_LABELS = {
     "preferences": "Preferences",
@@ -84,6 +84,7 @@ def build_identity_block(
     persona: dict,
     memory_context: str,
     profile: UserProfile | None = None,
+    contacts_context: str = "",
 ) -> str:
     traits = persona.get("traits") or ["helpful"]
     if len(traits) == 1:
@@ -103,6 +104,9 @@ def build_identity_block(
     custom_block = f"\n{custom}\n" if custom else ""
 
     profile_block = _render_profile_block(profile) if profile is not None else ""
+    contacts_block = (
+        f"\n## People this user knows\n{contacts_context}\n" if contacts_context else ""
+    )
 
     return _IDENTITY_TEMPLATE.format(
         traits=traits_str,
@@ -111,4 +115,5 @@ def build_identity_block(
         custom_block=custom_block,
         profile_block=profile_block,
         memory_context=memory_context,
+        contacts_block=contacts_block,
     )

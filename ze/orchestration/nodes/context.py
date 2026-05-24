@@ -4,6 +4,8 @@ from langchain_core.runnables import RunnableConfig
 from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentContext
+from ze.contacts.store import PersonStore
+from ze.contacts.types import PersonContext
 from ze.logging import get_logger
 from ze.memory.store import MemoryStore
 from ze.orchestration.state import AgentState
@@ -21,6 +23,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     set_agent_context("memory_store")
     store: MemoryStore = config["configurable"]["memory_store"]
     persona_store: PersonaStore = config["configurable"]["persona_store"]
+    person_store: PersonStore | None = config["configurable"].get("person_store")
     embedder: SentenceTransformer = config["configurable"]["embedder"]
     settings: Settings = config["configurable"]["settings"]
     envelope = state["envelope"]
@@ -55,11 +58,17 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     messages = history + [{"role": "user", "content": user_text}]
 
     prompt_for_ctx = state.get("image_caption") or state["prompt"]
+
+    contact_context = PersonContext()
+    if person_store:
+        contact_context = await person_store.get_context(prompt_for_ctx)
+
     agent_context = AgentContext(
         session_id=state["session_id"],
         prompt=prompt_for_ctx,
         intent=envelope.subtasks[0].intent if envelope and envelope.subtasks else "read",
         memory=memory_context,
+        contacts=contact_context,
         messages=messages,
         persona=active_persona,
         # reporter is intentionally omitted — ProgressReporter is not serializable and
@@ -71,6 +80,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         session_id=state["session_id"],
         fact_count=len(memory_context.facts),
         episode_count=len(memory_context.episodes),
+        contact_count=len(contact_context.people),
         history_len=len(history),
     )
 
