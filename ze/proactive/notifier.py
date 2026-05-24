@@ -19,6 +19,13 @@ class ProactiveNotifier:
         except Exception as exc:
             self._log.warning("proactive_push_failed", chat_id=self._chat_id, error=str(exc))
 
+    async def push_with_keyboard(self, text: str, reply_markup) -> None:
+        """Send a single message with an inline keyboard. Swallows and logs errors."""
+        try:
+            await self._bot.send_message(self._chat_id, text, reply_markup=reply_markup)
+        except Exception as exc:
+            self._log.warning("proactive_push_failed", chat_id=self._chat_id, error=str(exc))
+
 
 def _split(text: str, limit: int = _MAX_MESSAGE_LEN) -> list[str]:
     if len(text) <= limit:

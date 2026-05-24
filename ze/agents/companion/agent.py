@@ -1,3 +1,4 @@
+import asyncio
 from typing import AsyncIterator
 
 from ze.agents.base import BaseAgent
@@ -5,6 +6,7 @@ from ze.agents.registry import register
 from ze.agents.types import AgentContext, AgentResult
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
+from ze.tools.contacts import extract_contacts as _  # noqa: F401 — registers @tool
 from ze.tools.facts import to_user_facts
 
 _AGENT_INSTRUCTIONS = """\
@@ -21,7 +23,7 @@ or "I'm here to". Just respond naturally.
 @register
 class CompanionAgent(BaseAgent):
     name  = "companion"
-    tools = ["extract_facts"]
+    tools = ["extract_facts", "extract_contacts"]
 
     def __init__(
         self,
@@ -39,27 +41,39 @@ class CompanionAgent(BaseAgent):
             system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         )
 
-        facts_tc = await self.call_tool(
-            "extract_facts", ctx,
-            prompt=ctx.prompt,
-            response=response,
-            client=self._client,
-            model=self._model(ctx),
+        facts_tc, contacts_tc = await asyncio.gather(
+            self.call_tool(
+                "extract_facts", ctx,
+                prompt=ctx.prompt,
+                response=response,
+                client=self._client,
+                model=self._model(ctx),
+            ),
+            self.call_tool(
+                "extract_contacts", ctx,
+                prompt=ctx.prompt,
+                response=response,
+                client=self._client,
+                model=self._model(ctx),
+            ),
         )
 
         proposals = to_user_facts(facts_tc.result or [])
+        contact_proposals = contacts_tc.result or []
 
         self._log.info(
             "companion_agent_complete",
             session_id=ctx.session_id,
             proposals=len(proposals),
+            contact_proposals=len(contact_proposals),
         )
 
         return AgentResult(
             agent=self.name,
             response=response,
-            tool_calls=[facts_tc],
+            tool_calls=[facts_tc, contacts_tc],
             memory_proposals=proposals,
+            contact_proposals=contact_proposals,
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:

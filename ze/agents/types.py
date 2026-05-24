@@ -41,4 +41,5 @@ class AgentResult:
     response: str
     tool_calls: list[ToolCall] = field(default_factory=list)
     tokens_used: int = 0
-    memory_proposals: list = field(default_factory=list)  # list[UserFact], populated by agents
+    memory_proposals: list = field(default_factory=list)   # list[UserFact], populated by agents
+    contact_proposals: list = field(default_factory=list)  # list[dict], populated by agents

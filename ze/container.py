@@ -14,6 +14,7 @@ from ze.google.auth import GoogleCredentials
 from ze.logging import get_logger
 from ze.contacts.consolidator import ContactsConsolidator
 from ze.contacts.store import PersonStore
+from ze.proactive.contacts import ContactReviewNotifier
 from ze.memory.consolidator import MemoryConsolidator
 from ze.memory.store import MemoryStore
 from ze.persona.store import PersonaStore
@@ -232,6 +233,20 @@ async def build_container(settings: Settings) -> Container:
         )
         log.info("contacts_consolidation_scheduled", cron=contacts_cron)
 
+        contact_review = ContactReviewNotifier(
+            person_store=person_store,
+            notifier=notifier,
+        )
+        review_cron = settings.contacts_config.get(
+            "consolidation", {}
+        ).get("review_cron", "30 8 * * *")
+        workflow_scheduler.schedule_job(
+            fn=contact_review.run,
+            cron=review_cron,
+            job_id="contact_review",
+        )
+        log.info("contact_review_scheduled", cron=review_cron)
+
     # ── Proactive push ────────────────────────────────────────────────────────
     morning_briefing = MorningBriefing(notifier=notifier, pool=pool, settings=settings)
     briefing_cfg = proactive_cfg.get("briefing", {})
@@ -305,6 +320,7 @@ async def build_container(settings: Settings) -> Container:
         capability_gate=capability_gate,
         memory_store=memory_store,
         persona_store=persona_store,
+        person_store=person_store,
         workflow_store=workflow_store,
         workflow_planner=workflow_planner,
         openrouter_client=openrouter_client,

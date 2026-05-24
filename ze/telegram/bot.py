@@ -1,6 +1,7 @@
 import asyncio
 import html as _html
 from io import BytesIO
+from uuid import UUID
 
 from aiogram import Bot
 from aiogram.types import CallbackQuery, ForceReply, Message
@@ -29,6 +30,7 @@ class ZeBot:
         capability_gate,
         memory_store,
         persona_store,
+        person_store,
         workflow_store,
         workflow_planner,
         openrouter_client,
@@ -46,6 +48,7 @@ class ZeBot:
         self._capability_gate = capability_gate
         self._memory_store = memory_store
         self._persona_store = persona_store
+        self._person_store = person_store
         self._workflow_store = workflow_store
         self._workflow_planner = workflow_planner
         self._openrouter_client = openrouter_client
@@ -184,6 +187,10 @@ class ZeBot:
 
             if data.startswith("persona:"):
                 await self._handle_persona_callback(chat_id, query)
+                return
+
+            if data.startswith("contact:"):
+                await self._handle_contact_callback(chat_id, query)
                 return
 
             if not data.startswith("confirm:"):
@@ -465,6 +472,35 @@ class ZeBot:
         keyboard = persona_keyboard(profiles, active=state.profile)
         await query.message.edit_text(summary, parse_mode="HTML", reply_markup=keyboard)
 
+    async def _handle_contact_callback(self, chat_id: int, query: CallbackQuery) -> None:
+        data = query.data or ""
+        # data: "contact:confirm:<uuid>" or "contact:dismiss:<uuid>"
+        parts = data.split(":", 2)
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+
+        if len(parts) != 3 or not self._person_store:
+            return
+
+        action, person_id_str = parts[1], parts[2]
+        try:
+            person_id = UUID(person_id_str)
+        except ValueError:
+            return
+
+        if action == "confirm":
+            try:
+                person = await self._person_store.confirm(person_id)
+                await self._bot.send_message(
+                    chat_id,
+                    f"✅ Added <b>{_html.escape(person.name)}</b> to your contacts.",
+                    parse_mode="HTML",
+                )
+            except ValueError:
+                await self._bot.send_message(chat_id, "Contact not found.")
+        elif action == "dismiss":
+            await self._person_store.dismiss(person_id)
+
     async def _handle_plan_callback(self, chat_id: int, query: CallbackQuery) -> None:
         decision = (query.data or "").split(":", 1)[1]
         await query.answer()
@@ -565,6 +601,7 @@ class ZeBot:
                 "capability_gate": self._capability_gate,
                 "memory_store": self._memory_store,
                 "persona_store": self._persona_store,
+                "person_store": self._person_store,
                 "openrouter_client": self._openrouter_client,
                 "embedder": self._embedder,
                 "settings": self._settings,
@@ -581,6 +618,7 @@ class ZeBot:
                 "capability_gate": self._capability_gate,
                 "memory_store": self._memory_store,
                 "persona_store": self._persona_store,
+                "person_store": self._person_store,
                 "openrouter_client": self._openrouter_client,
                 "embedder": self._embedder,
                 "settings": self._settings,

@@ -82,8 +82,10 @@ async def test_run_returns_response_string():
 async def test_run_includes_extract_facts_tool_call():
     agent = make_agent()
     result = await agent.run(make_ctx())
-    assert len(result.tool_calls) == 1
-    assert result.tool_calls[0].tool_name == "extract_facts"
+    assert len(result.tool_calls) == 2
+    names = {tc.tool_name for tc in result.tool_calls}
+    assert "extract_facts" in names
+    assert "extract_contacts" in names
 
 
 async def test_run_sends_prompt_as_user_message():

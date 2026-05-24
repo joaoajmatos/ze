@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentResult
+from ze.contacts.types import Person, PersonSource, SOURCE_WEIGHTS
 from ze.logging import get_logger
 from ze.memory.store import MemoryStore
 from ze.orchestration.nodes.context import _SESSION_HISTORY_LIMIT
@@ -68,6 +69,12 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         if result.memory_proposals:
             await store.propose_facts(result.memory_proposals)
 
+        person_store = config["configurable"].get("person_store")
+        if person_store and result.contact_proposals:
+            asyncio.create_task(
+                _write_contact_proposals(person_store, result.contact_proposals, ctx.prompt)
+            )
+
     log.debug(
         "orchestration_memory_write_scheduled",
         session_id=state["session_id"],
@@ -125,3 +132,43 @@ async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
     )
 
     return {"final_response": response}
+
+
+async def _write_contact_proposals(
+    person_store,
+    proposals: list[dict],
+    prompt: str,
+) -> None:
+    """Persist contact proposals from the companion agent. Fires as a background task."""
+    for proposal in proposals:
+        name = (proposal.get("name") or "").strip()
+        if not name:
+            continue
+        try:
+            existing = await person_store.get_by_name(name)
+            source = PersonSource(
+                person_id=None,  # type: ignore[arg-type]  — replaced below
+                source_type="conversation",
+                weight=SOURCE_WEIGHTS["conversation"],
+                raw_context=prompt[:300],
+            )
+            if existing:
+                best = existing[0]
+                source.person_id = best.id
+                await person_store.add_source(best.id, source)
+            else:
+                person = Person(
+                    name=name,
+                    classification=proposal.get("classification", "unknown"),
+                    classification_confidence=float(proposal.get("confidence", 0.8)),
+                    relationship_to_user=proposal.get("relationship", ""),
+                    contact_info=proposal.get("contact_info") or {},
+                    confirmed=True,
+                    dismissed=False,
+                    confidence=SOURCE_WEIGHTS["conversation"],
+                )
+                stored = await person_store.upsert(person)
+                source.person_id = stored.id
+                await person_store.add_source(stored.id, source)
+        except Exception as exc:
+            log.warning("contact_proposal_write_failed", name=name, error=str(exc))

@@ -1,4 +1,14 @@
+from uuid import UUID
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+
+def contact_confirmation_keyboard(person_id: UUID) -> InlineKeyboardMarkup:
+    pid = str(person_id)
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Add", callback_data=f"contact:confirm:{pid}"),
+        InlineKeyboardButton(text="❌ Skip", callback_data=f"contact:dismiss:{pid}"),
+    ]])
 
 
 def persona_keyboard(profiles: list[str], active: str) -> InlineKeyboardMarkup:
