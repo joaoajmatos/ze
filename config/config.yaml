@@ -260,3 +260,30 @@ agents:
       delete: autonomous
       execute: autonomous
       reason: autonomous
+
+  prospecting:
+    enabled: true
+    model: anthropic/claude-sonnet-4-5
+    timeout_seconds: 180
+    description: >
+      Find people matching a target profile, enrich their contact details, and
+      generate outreach materials. Use when the user wants to build a prospect
+      list, find contacts in an industry or geography, or prepare outreach for
+      a campaign.
+    intent_map:
+      read: autonomous
+      write: autonomous
+    capabilities:
+      read: autonomous
+      write: autonomous
+
+browser:
+  service_url: "http://ze-browser.internal:8080"
+  timeout_seconds: 20
+  max_text_chars: 8000
+  delay_ms: 2000
+
+prospecting:
+  max_iterations: 15
+  max_loop_tokens: 24000
+  stale_campaign_timeout_minutes: 60

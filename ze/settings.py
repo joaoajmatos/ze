@@ -53,6 +53,17 @@ class Settings(BaseSettings):
     # ── Memory consolidation ──────────────────────────────────────────────────
     consolidation_enabled: bool = True
 
+    # ── Browser sidecar ───────────────────────────────────────────────────────
+    browser_service_url: str = "http://ze-browser.internal:8080"
+    browser_timeout_seconds: int = 20
+    browser_max_text_chars: int = 8000
+    browser_delay_ms: int = 2000
+
+    # ── Prospecting ───────────────────────────────────────────────────────────
+    prospecting_max_iterations: int = 15
+    prospecting_max_loop_tokens: int = 24_000
+    prospecting_stale_timeout_minutes: int = 60
+
     # ── Logging ───────────────────────────────────────────────────────────────
     log_level: str = "INFO"
     log_file: str = ""
