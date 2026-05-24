@@ -7,6 +7,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
 from ze.agents.bootstrap import bootstrap_agents
+from ze.browser.client import BrowserClient
 from ze.capability.gate import CapabilityGate
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
@@ -15,6 +16,7 @@ from ze.logging import get_logger
 from ze.contacts.consolidator import ContactsConsolidator
 from ze.contacts.store import PersonStore
 from ze.proactive.contacts import ContactReviewNotifier
+from ze.proactive.prospecting import recover_stale_campaigns
 from ze.memory.consolidator import MemoryConsolidator
 from ze.memory.store import MemoryStore
 from ze.persona.store import PersonaStore
@@ -66,6 +68,7 @@ class Container:
     morning_briefing: MorningBriefing
     calendar_reminders: CalendarReminderScheduler
     insight_engine: InsightEngine
+    browser_client: BrowserClient
 
     async def close(self) -> None:
         await self.workflow_scheduler.stop()
@@ -125,6 +128,11 @@ async def build_container(settings: Settings) -> Container:
         embedder=embedder,
         openrouter_client=openrouter_client,
         settings=settings,
+    )
+
+    browser_client = BrowserClient(
+        base_url=settings.browser_service_url,
+        timeout=settings.browser_timeout_seconds,
     )
 
     persona_store = PersonaStore(pool=pool, settings=settings)
@@ -201,8 +209,14 @@ async def build_container(settings: Settings) -> Container:
         workflow_scheduler=workflow_scheduler,
         reminder_store=reminder_store,
         notifier=notifier,
+        person_store=person_store,
+        browser_client=browser_client,
+        pool=pool,
     )
     graph = build_graph(checkpointer=checkpointer)
+
+    await recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes)
+    log.info("stale_campaigns_checked")
 
     cost_reconciler = CostReconciler(pool=pool, sdk=openrouter_client._sdk)
     workflow_scheduler.schedule_job(
@@ -246,6 +260,13 @@ async def build_container(settings: Settings) -> Container:
             job_id="contact_review",
         )
         log.info("contact_review_scheduled", cron=review_cron)
+
+        workflow_scheduler.schedule_job(
+            fn=lambda: recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes),
+            cron="0 3 * * *",
+            job_id="recover_stale_campaigns",
+        )
+        log.info("stale_campaign_recovery_scheduled")
 
     # ── Proactive push ────────────────────────────────────────────────────────
     morning_briefing = MorningBriefing(notifier=notifier, pool=pool, settings=settings)
@@ -352,4 +373,5 @@ async def build_container(settings: Settings) -> Container:
         morning_briefing=morning_briefing,
         calendar_reminders=calendar_reminders,
         insight_engine=insight_engine,
+        browser_client=browser_client,
     )

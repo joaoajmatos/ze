@@ -3,9 +3,12 @@ import inspect
 from pathlib import Path
 from typing import Any, get_type_hints
 
+import asyncpg
 from tavily import AsyncTavilyClient
 
 from ze.agents.registry import _registry, register_instance
+from ze.browser.client import BrowserClient
+from ze.contacts.store import PersonStore
 from ze.errors import AgentConfigError
 from ze.google.auth import GoogleCredentials
 from ze.openrouter.client import OpenRouterClient
@@ -32,6 +35,9 @@ def bootstrap_agents(
     workflow_scheduler: WorkflowScheduler | None = None,
     reminder_store: ReminderStore | None = None,
     notifier: ProactiveNotifier | None = None,
+    person_store: PersonStore | None = None,
+    browser_client: BrowserClient | None = None,
+    pool: asyncpg.Pool | None = None,
 ) -> None:
     """Instantiate and register all enabled agents. Called once at app startup."""
     if tavily_client is None:
@@ -56,6 +62,12 @@ def bootstrap_agents(
         _dep_map[ReminderStore] = reminder_store
     if notifier is not None:
         _dep_map[ProactiveNotifier] = notifier
+    if person_store is not None:
+        _dep_map[PersonStore] = person_store
+    if browser_client is not None:
+        _dep_map[BrowserClient] = browser_client
+    if pool is not None:
+        _dep_map[asyncpg.Pool] = pool
 
     _import_agent_modules()
 
