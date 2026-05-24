@@ -94,3 +94,9 @@ class TranscriptionError(ZeError):
 
 class ImageDownloadError(ZeError):
     """Failed to download image bytes from Telegram's file server."""
+
+
+# ── Browser ────────────────────────────────────────────────────────────────────
+
+class BrowserError(ZeError):
+    """ze-browser sidecar request failed (connection error or 5xx)."""
