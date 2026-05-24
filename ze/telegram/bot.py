@@ -10,7 +10,7 @@ from ze.errors import ImageDownloadError
 from ze.logging import bind_context, get_logger, unbind_context
 from ze.progress.reporter import ProgressReporter
 from ze.progress.translations import ProgressTranslations
-from ze.telegram.commands import costs_summary, memory_summary, parse_persona_command, persona_summary
+from ze.telegram.commands import contacts_search, contacts_summary, costs_summary, memory_summary, parse_persona_command, persona_summary
 from ze.telegram.formatting import md_to_html, split_html
 from ze.telegram.keyboards import confirmation_keyboard, persona_keyboard, plan_confirmation_keyboard
 from ze.telegram.session import ActiveSessionStore
@@ -91,6 +91,10 @@ class ZeBot:
 
             if text == "/persona" or text.startswith("/persona "):
                 await self._handle_persona_command(chat_id, text)
+                return
+
+            if text == "/contacts" or text.startswith("/contacts "):
+                await self._handle_contacts_command(chat_id, text)
                 return
 
             self._store.mark_active(chat_id)
@@ -471,6 +475,14 @@ class ZeBot:
         profiles = self._persona_store.available_profiles()
         keyboard = persona_keyboard(profiles, active=state.profile)
         await query.message.edit_text(summary, parse_mode="HTML", reply_markup=keyboard)
+
+    async def _handle_contacts_command(self, chat_id: int, text: str) -> None:
+        query = text[len("/contacts"):].strip()
+        if query:
+            summary = await contacts_search(self._person_store, query)
+        else:
+            summary = await contacts_summary(self._person_store)
+        await self._bot.send_message(chat_id, summary, parse_mode="HTML")
 
     async def _handle_contact_callback(self, chat_id: int, query: CallbackQuery) -> None:
         data = query.data or ""

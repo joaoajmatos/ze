@@ -4,6 +4,7 @@ from datetime import datetime as dt
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ze.contacts.store import PersonStore
     from ze.persona.store import PersonaStore
 
 _NAMED_AGENTS = {"companion", "research", "calendar", "email", "whisper", "routing", "memory"}
@@ -121,6 +122,56 @@ async def memory_summary(pool) -> str:
             sections.extend(profile_lines)
 
     return "\n".join(sections)
+
+
+def _fmt_contact(person) -> str:
+    parts = []
+    if person.classification and person.classification != "unknown":
+        parts.append(html.escape(person.classification))
+    if person.relationship_to_user:
+        parts.append(html.escape(person.relationship_to_user))
+    sub = " · ".join(parts) if parts else "<i>no relationship noted</i>"
+    return f"<b>{html.escape(person.name)}</b>\n  {sub}"
+
+
+async def contacts_summary(person_store: "PersonStore") -> str:
+    import asyncpg
+    async with person_store._pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT * FROM contacts
+            WHERE confirmed = true AND dismissed = false
+            ORDER BY last_mentioned DESC NULLS LAST, created_at DESC
+            LIMIT 20
+            """
+        )
+    if not rows:
+        return "No contacts yet. Ze will add people as you mention them."
+
+    from ze.contacts.store import _person_from_row
+    people = [_person_from_row(r) for r in rows]
+    lines = [f"\U0001f4c7 <b>Your contacts</b> ({len(people)})"]
+    for person in people:
+        lines.append("")
+        lines.append(_fmt_contact(person))
+    lines.append("")
+    lines.append("<i>Search: /contacts &lt;name or keyword&gt;</i>")
+    return "\n".join(lines)
+
+
+async def contacts_search(person_store: "PersonStore", query: str) -> str:
+    people = await person_store.search(query, confirmed_only=False)
+    escaped_q = html.escape(query)
+    if not people:
+        return f"No contacts matching <i>{escaped_q}</i>."
+
+    lines = [f"\U0001f50d <b>Contacts matching \"{escaped_q}\"</b> ({len(people)})"]
+    for person in people:
+        lines.append("")
+        lines.append(_fmt_contact(person))
+        if not person.confirmed:
+            lines[-1] += " <i>(unconfirmed)</i>"
+    return "\n".join(lines)
 
 
 def _dial_bar(value: float, width: int = 10) -> str:
