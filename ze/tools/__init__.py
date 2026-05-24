@@ -1,1 +1,1 @@
-from ze.tools import facts, web  # noqa: F401 — registers @tool decorators
+from ze.tools import browser, facts, prospecting, web  # noqa: F401 — registers @tool decorators
