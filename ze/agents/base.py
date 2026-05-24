@@ -107,6 +107,7 @@ class BaseAgent(ABC):
         deps: dict[str, Any],
         tool_names: list[str] | None = None,
         max_iterations: int = 6,
+        max_history_tokens: int | None = None,
     ) -> tuple[str, list[ToolCall]]:
         """Drive a ReAct loop: LLM picks tools, Ze dispatches them, loop until text.
 
@@ -119,12 +120,18 @@ class BaseAgent(ABC):
             deps:           Ze-internal dep map injected per tool (e.g. {"client": tavily}).
             tool_names:     Which tools to expose; defaults to self.tools.
             max_iterations: Max tool-call rounds before forcing a plain completion.
+            max_history_tokens: If set, oldest role="tool" messages are dropped when the
+                                approximate token count of messages exceeds this budget.
+                                The system prompt and last 4 messages are never removed.
         """
         names = tool_names if tool_names is not None else self.tools
         tool_schemas = [get_tool(n).llm_schema() for n in names]
         accumulated: list[ToolCall] = []
 
         for iteration in range(max_iterations):
+            if max_history_tokens is not None:
+                _truncate_messages(messages, max_history_tokens)
+
             text, tool_calls = await client.complete_with_tools(
                 messages=messages,
                 model=self._model(ctx),
@@ -262,3 +269,26 @@ def _serialise_result(tc: ToolCall) -> str:
         return json.dumps(tc.result)
     except (TypeError, ValueError):
         return str(tc.result)
+
+
+def _truncate_messages(messages: list[dict], max_tokens: int) -> None:
+    """Remove oldest role='tool' messages until total token estimate is under budget.
+
+    The last 4 messages are never removed regardless of budget.
+    Token estimate: len(json.dumps(msg)) // 4 per message.
+    """
+    while True:
+        total = sum(len(json.dumps(m)) // 4 for m in messages)
+        if total <= max_tokens:
+            break
+
+        protected_from = max(0, len(messages) - 4)
+        removed = False
+        for i in range(protected_from):
+            if messages[i].get("role") == "tool":
+                messages.pop(i)
+                removed = True
+                break
+
+        if not removed:
+            break
