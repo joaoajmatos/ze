@@ -5,8 +5,8 @@
 | Feature | Status |
 |---------|--------|
 | `ze/channels/` module — `Channel` ABC, `Message`, `Thread`, `ChannelType` types | ✅ Done |
-| `ze/channels/email.py` — `EmailChannel` (send + thread tracking + reply detection) | 🔲 Pending |
-| `ze/channels/registry.py` — channel registry | 🔲 Pending |
+| `ze/channels/email.py` — `EmailChannel` (send + thread tracking + reply detection) | ✅ Done |
+| `ze/channels/registry.py` — channel registry | ✅ Done |
 | Migration 015 — `contact_channels` table | 🔲 Pending |
 | `ContactChannelStore` — CRUD for per-contact channel handles | 🔲 Pending |
 | Email agent refactor — delegates transport to `EmailChannel` | 🔲 Pending |
