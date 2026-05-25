@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from ze.errors import GoalExecutionError
 from ze.goals.executor import GoalExecutor
 from ze.goals.types import (
     Goal,
@@ -229,6 +230,20 @@ async def test_advance_executes_pending_milestone():
 
 
 # ── advance: failed milestone ──────────────────────────────────────────────────
+
+async def test_execute_milestone_raises_goal_execution_error():
+    goal = make_goal()
+    m1 = make_milestone(1, goal_id=goal.id)
+    store = MagicMock()
+    executor = make_executor(goal_store=store)
+
+    mock_agent = MagicMock()
+    mock_agent.run = AsyncMock(side_effect=RuntimeError("boom"))
+
+    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
+        with pytest.raises(GoalExecutionError, match="boom"):
+            await executor._execute_milestone(m1)
+
 
 async def test_advance_skips_milestone_on_failure():
     goal = make_goal()

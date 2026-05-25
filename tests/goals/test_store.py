@@ -142,6 +142,18 @@ async def test_list_active_returns_empty_when_none():
     assert result == []
 
 
+async def test_list_for_advance_returns_only_active():
+    rows = [make_goal_row(status="active")]
+    conn = make_conn()
+    conn.fetch = AsyncMock(return_value=rows)
+    store = make_store(conn)
+    goals = await store.list_for_advance()
+    assert len(goals) == 1
+    assert goals[0].status == GoalStatus.ACTIVE
+    sql = conn.fetch.call_args.args[0]
+    assert "status = 'active'" in sql
+
+
 async def test_list_active_returns_active_goals():
     rows = [make_goal_row(status="active"), make_goal_row(status="awaiting_gate")]
     conn = make_conn()
