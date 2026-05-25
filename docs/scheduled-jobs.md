@@ -191,6 +191,29 @@ alert spam for repeatedly-failing workflows.
 
 ---
 
+## Goal advance sweep (every 15 minutes)
+
+**Module:** `ze/goals/executor.py` · registered in `ze/container.py`  
+**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *`
+
+For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
+The advance loop either:
+
+- Fires a **verification gate** (Telegram checkpoint with Proceed / Stop / Redirect),
+  setting status to `AWAITING_GATE` until you respond, or
+- Runs the next pending **milestone** via the normal agent registry, stores output and
+  a learning, and pushes a short progress line (e.g. *"✅ Draft target list done (2/8)"*).
+
+Goals in `AWAITING_GATE`, `PAUSED`, `PLANNING`, `COMPLETED`, or `ABANDONED` are skipped.
+The sweep is lightweight — it returns early when there is no actionable next step.
+
+Gate responses are handled immediately in `ZeBot` (not on the cron tick): approving
+or redirecting calls `advance` again from the callback handler.
+
+See [docs/goals.md](goals.md) and [specs/28-goal-engine.md](../specs/28-goal-engine.md).
+
+---
+
 ## Full schedule at a glance
 
 | Time (UTC) | Job | Module |
@@ -199,8 +222,10 @@ alert spam for repeatedly-failing workflows.
 | 7:45 AM daily | Calendar sync + reminder scheduling | `ze/proactive/reminders.py` |
 | 8:00 AM daily | Morning briefing | `ze/proactive/briefing.py` |
 | 2:00 AM daily | Memory consolidation + profile synthesis | `ze/memory/consolidator.py` |
+| Every 15 min | Goal advance sweep | `ze/goals/executor.py` (via `container.py`) |
 | Immediate | Workflow failure alerts | `ze/proactive/notifier.py` |
 | Immediate | Calendar event reminders (when they fire) | `ze/proactive/reminders.py` |
+| Immediate | Goal verification gates + milestone progress | `ze/proactive/notifier.py` |
 
 All scheduled jobs use APScheduler with Postgres as the job store, so jobs survive
 process restarts. Cron expressions are configurable in `config/config.yaml`.

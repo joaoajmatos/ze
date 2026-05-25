@@ -233,6 +233,7 @@ Merges to `main` that change application code trigger deployment to Fly.io.
 - [docs/architecture.md](docs/architecture.md) — system design, graph flow, module map
 - [docs/scheduled-jobs.md](docs/scheduled-jobs.md) — daily/weekly jobs, memory lifecycle, proactive messages
 - [docs/workflows.md](docs/workflows.md) — workflow modes, execution loop, scheduling
+- [docs/goals.md](docs/goals.md) — multi-week goals, verification gates, advance loop
 - [docs/configuration.md](docs/configuration.md) — full config reference
 - [docs/deployment.md](docs/deployment.md) — Fly.io setup and operations
 - [docs/adding-an-agent.md](docs/adding-an-agent.md) — guide for authoring a new agent

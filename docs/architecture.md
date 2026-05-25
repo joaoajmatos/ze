@@ -121,6 +121,9 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `calendar` | Google Calendar API (CRUD) | Haiku |
 | `email` | Gmail API (read, draft, send) | Haiku |
 | `workflow` | APScheduler, file ops, external API calls | Full |
+| `goals` | Goal lifecycle (create, status, pause, abandon) | Full |
+
+See [docs/goals.md](goals.md) for conversational usage and gate behaviour.
 
 ---
 
@@ -243,9 +246,65 @@ Ze pushes messages to Telegram on a schedule, without the user prompting anythin
 | Nightly consolidation | 2 AM UTC | Dedup facts, expire stale, archive episodes, re-synthesise profile |
 | Workflow failure alerts | Immediate | Push when a scheduled step fails |
 | Calendar reminders | When they fire | Event-specific reminders, interval assessed by Haiku |
+| Goal advance sweep | Every 15 min | Advance all `ACTIVE` goals via `GoalExecutor` |
+| Goal milestone progress | After each milestone | Short completion line pushed to Telegram |
 
 All scheduled jobs use APScheduler with Postgres as the job store (survives restarts).
 See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and config.
+
+---
+
+## Goal Engine
+
+**Module:** `ze/goals/` · **Agent:** `ze/agents/goals/`
+
+Goals address multi-week objectives that neither workflows nor per-action capability
+gates fit well: Ze works in the background and checks in at **verification gates**
+(days apart), not on every write.
+
+### Primitives
+
+| Type | Role |
+|---|---|
+| `Goal` | Stated objective, success condition, time horizon |
+| `Milestone` | Ordered unit of work executed by an existing agent |
+| `VerificationGate` | Pause point — summarise done/planned work, wait for approval |
+| `GoalLearning` | Insight captured at each milestone boundary |
+
+### Components
+
+| Component | Module | Responsibility |
+|---|---|---|
+| `GoalStore` | `ze/goals/store.py` | Postgres CRUD for goals, milestones, gates, learnings |
+| `GoalPlanner` | `ze/goals/planner.py` | LLM decomposition into milestones + gate placement |
+| `GoalExecutor` | `ze/goals/executor.py` | `advance()` loop, gate firing, milestone dispatch |
+| `GoalAgent` | `ze/agents/goals/agent.py` | Conversational create / status / pause / abandon |
+
+Goals sit **above** workflows: a goal spans weeks; a workflow execution is what can
+happen inside a single milestone. `GoalExecutor` dispatches milestones through the same
+agent registry as workflow steps — agents remain peers.
+
+### Execution and scheduling
+
+`GoalExecutor.advance(goal_id)` runs from:
+
+- `goal_advance_sweep` — cron `*/15 * * * *`, registered in `container.py`
+- Gate approval / redirect handlers in `ZeBot`
+- Plan approval after `GoalAgent` creates a goal
+
+While status is `AWAITING_GATE`, the sweep no-ops until the user responds on Telegram.
+
+### Two approval paths
+
+| Path | When | Mechanism |
+|---|---|---|
+| Capability gate | Per high-risk agent action in the main graph | `await_confirmation` + `confirm:` callbacks |
+| Verification gate | Between milestone batches on a goal | Rich checkpoint message + `goal:approve\|stop\|redirect` callbacks |
+
+Redirect gates use `ForceReply` for free-text instructions, then re-plan remaining
+milestones via `GoalPlanner`.
+
+See [docs/goals.md](goals.md) for usage. Implementation detail: [specs/28-goal-engine.md](../specs/28-goal-engine.md).
 
 ---
 
@@ -362,7 +421,10 @@ The bot uses aiogram 3.x in webhook mode (production) or long-polling (local dev
 - `handlers.py` registers message, callback, and edit-reply handlers.
 - `ActiveSessionStore` tracks in-progress graph invocations (prevents double-sends).
 - Long responses (> 4096 chars) are split at sentence boundaries before sending.
-- `ForceReply` state is used for the Edit flow in confirmation dialogs.
+- `ForceReply` state is used for the Edit flow in confirmation dialogs and for goal
+  gate redirects.
+- `handle_callback` handles `goal:approve`, `goal:stop`, and `goal:redirect` for
+  verification gates (separate from orchestration `confirm:` payloads).
 
 Voice notes and photos are supported — see the Multimodal input section below.
 
@@ -400,6 +462,10 @@ Migrations live in `migrations/versions/` as raw SQL Alembic files (no ORM).
 | `cost_records` | Per-call token usage and estimated cost |
 | `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |
 | `contact_channels` | Per-contact channel handles (type, handle string, preferred flag, verified flag) |
+| `goals` | Long-running objectives (status, type, time horizon, synthesised learnings) |
+| `goal_milestones` | Ordered milestones per goal with execution output |
+| `goal_gates` | Verification gates between milestone sequences |
+| `goal_learnings` | Per-milestone insights appended during execution |
 
 ---
 
