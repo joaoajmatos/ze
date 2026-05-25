@@ -11,6 +11,9 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from ze.agents.bootstrap import bootstrap_agents
 from ze.browser.client import BrowserClient
 from ze.capability.gate import CapabilityGate
+from ze.channels.email import EmailChannel
+from ze.channels.registry import ChannelRegistry
+from ze.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
 from ze.google.auth import GoogleCredentials
@@ -71,6 +74,8 @@ class Container:
     calendar_reminders: CalendarReminderScheduler
     insight_engine: InsightEngine
     browser_client: BrowserClient
+    channel_registry: ChannelRegistry
+    contact_channel_store: ContactChannelStore
 
     async def close(self) -> None:
         await self.workflow_scheduler.stop()
@@ -227,6 +232,7 @@ async def build_container(settings: Settings) -> Container:
         notifier=notifier,
         person_store=person_store,
         browser_client=browser_client,
+        contact_channel_store=contact_channel_store,
         pool=pool,
     )
     graph = build_graph(checkpointer=checkpointer)
@@ -297,6 +303,11 @@ async def build_container(settings: Settings) -> Container:
         log.info("briefing_scheduled", cron=briefing_cron)
 
     google_credentials = GoogleCredentials.from_settings(settings)
+
+    email_channel = EmailChannel(credentials=google_credentials) if google_credentials else None
+    channel_registry = ChannelRegistry(channels=[email_channel] if email_channel else [])
+    contact_channel_store = ContactChannelStore(pool=pool)
+
     calendar_reminders = CalendarReminderScheduler(
         notifier=notifier,
         pool=pool,
@@ -390,4 +401,6 @@ async def build_container(settings: Settings) -> Container:
         calendar_reminders=calendar_reminders,
         insight_engine=insight_engine,
         browser_client=browser_client,
+        channel_registry=channel_registry,
+        contact_channel_store=contact_channel_store,
     )

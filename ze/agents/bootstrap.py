@@ -8,6 +8,7 @@ from tavily import AsyncTavilyClient
 
 from ze.agents.registry import _registry, register_instance
 from ze.browser.client import BrowserClient
+from ze.contacts.channel_store import ContactChannelStore
 from ze.contacts.store import PersonStore
 from ze.errors import AgentConfigError
 from ze.google.auth import GoogleCredentials
@@ -37,6 +38,7 @@ def bootstrap_agents(
     notifier: ProactiveNotifier | None = None,
     person_store: PersonStore | None = None,
     browser_client: BrowserClient | None = None,
+    contact_channel_store: ContactChannelStore | None = None,
     pool: asyncpg.Pool | None = None,
 ) -> None:
     """Instantiate and register all enabled agents. Called once at app startup."""
@@ -66,6 +68,8 @@ def bootstrap_agents(
         _dep_map[PersonStore] = person_store
     if browser_client is not None:
         _dep_map[BrowserClient] = browser_client
+    if contact_channel_store is not None:
+        _dep_map[ContactChannelStore] = contact_channel_store
     if pool is not None:
         _dep_map[asyncpg.Pool] = pool
 
