@@ -7,7 +7,7 @@ from ze.agents.identity import build_identity_block
 from ze.agents.tool import ToolAccess, get_tool
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.capability.types import GateDecision
-from ze.errors import ToolBlockedError, ZeError
+from ze.errors import AgentError, ToolBlockedError, ZeError
 from ze.logging import get_logger
 from ze.settings import Settings
 
@@ -108,6 +108,7 @@ class BaseAgent(ABC):
         tool_names: list[str] | None = None,
         max_iterations: int = 6,
         max_history_tokens: int | None = None,
+        max_tokens: int = 2000,
     ) -> tuple[str, list[ToolCall]]:
         """Drive a ReAct loop: LLM picks tools, Ze dispatches them, loop until text.
 
@@ -120,9 +121,10 @@ class BaseAgent(ABC):
             deps:           Ze-internal dep map injected per tool (e.g. {"client": tavily}).
             tool_names:     Which tools to expose; defaults to self.tools.
             max_iterations: Max tool-call rounds before forcing a plain completion.
-            max_history_tokens: If set, oldest role="tool" messages are dropped when the
+            max_history_tokens: If set, oldest tool-call rounds are dropped when the
                                 approximate token count of messages exceeds this budget.
-                                The system prompt and last 4 messages are never removed.
+                                The last 4 messages are never removed.
+            max_tokens:     Max tokens for each completion call (in-loop and fallback).
         """
         names = tool_names if tool_names is not None else self.tools
         tool_schemas = [get_tool(n).llm_schema() for n in names]
@@ -137,9 +139,10 @@ class BaseAgent(ABC):
                 model=self._model(ctx),
                 tools=tool_schemas,
                 system=system,
+                max_tokens=max_tokens,
             )
 
-            if text is not None:
+            if text:
                 self._log.debug(
                     "agentic_loop_done",
                     agent=self.name,
@@ -148,8 +151,13 @@ class BaseAgent(ABC):
                 )
                 return text, accumulated
 
+            if tool_calls is None:
+                raise AgentError(
+                    f"complete_with_tools returned no text and no tool calls "
+                    f"(iteration {iteration + 1})"
+                )
+
             # Append the assistant turn (with tool call requests) to history
-            assert tool_calls is not None
             messages.append({
                 "role": "assistant",
                 "content": None,
@@ -187,6 +195,7 @@ class BaseAgent(ABC):
             messages=messages,
             model=self._model(ctx),
             system=system,
+            max_tokens=max_tokens,
         )
         return text, accumulated
 
@@ -272,7 +281,11 @@ def _serialise_result(tc: ToolCall) -> str:
 
 
 def _truncate_messages(messages: list[dict], max_tokens: int) -> None:
-    """Remove oldest role='tool' messages until total token estimate is under budget.
+    """Remove oldest tool-call rounds until total token estimate is under budget.
+
+    A round is an assistant message with tool_calls plus all its tool result
+    messages. Rounds are always removed atomically so the history stays
+    structurally valid for the API (no orphaned assistant turns).
 
     The last 4 messages are never removed regardless of budget.
     Token estimate: len(json.dumps(msg)) // 4 per message.
@@ -283,12 +296,25 @@ def _truncate_messages(messages: list[dict], max_tokens: int) -> None:
             break
 
         protected_from = max(0, len(messages) - 4)
-        removed = False
+
+        # Find the earliest unprotected assistant turn with tool_calls
+        round_start = None
         for i in range(protected_from):
-            if messages[i].get("role") == "tool":
-                messages.pop(i)
-                removed = True
+            if messages[i].get("role") == "assistant" and messages[i].get("tool_calls"):
+                round_start = i
                 break
 
-        if not removed:
+        if round_start is None:
             break
+
+        # Collect that turn's tool_call IDs and all matching tool result messages
+        tool_call_ids = {tc["id"] for tc in messages[round_start]["tool_calls"]}
+        indices_to_remove = [round_start]
+        for j in range(round_start + 1, len(messages)):
+            if messages[j].get("role") == "tool" and messages[j].get("tool_call_id") in tool_call_ids:
+                indices_to_remove.append(j)
+            elif messages[j].get("role") != "tool":
+                break
+
+        for idx in sorted(indices_to_remove, reverse=True):
+            messages.pop(idx)

@@ -111,6 +111,7 @@ class ProspectingAgent(BaseAgent):
                 tool_names=tool_names,
                 max_iterations=self._settings.prospecting_max_iterations,
                 max_history_tokens=self._settings.prospecting_max_loop_tokens,
+                max_tokens=4000,
             )
 
             async with self._pool.acquire() as conn:

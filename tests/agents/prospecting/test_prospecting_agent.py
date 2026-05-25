@@ -192,46 +192,54 @@ async def test_prospecting_agent_passes_campaign_id_in_deps():
 
 # ── agentic_loop max_history_tokens ──────────────────────────────────────────
 
-async def test_agentic_loop_truncates_old_tool_messages():
+async def test_agentic_loop_truncates_old_rounds():
     from ze.agents.base import _truncate_messages
+
+    def tc(id_): return {"id": id_, "type": "function", "function": {"name": "web_search", "arguments": "{}"}}
 
     messages = [
         {"role": "user", "content": "find prospects"},
-        {"role": "assistant", "content": None, "tool_calls": []},
+        {"role": "assistant", "content": None, "tool_calls": [tc("1"), tc("2")]},
         {"role": "tool", "tool_call_id": "1", "content": "x" * 4000},
         {"role": "tool", "tool_call_id": "2", "content": "x" * 4000},
+        {"role": "assistant", "content": None, "tool_calls": [tc("3")]},
         {"role": "tool", "tool_call_id": "3", "content": "x" * 4000},
-        {"role": "tool", "tool_call_id": "4", "content": "x" * 4000},
-        {"role": "tool", "tool_call_id": "5", "content": "x" * 4000},
+        {"role": "assistant", "content": "Done."},
     ]
 
     original_len = len(messages)
     _truncate_messages(messages, max_tokens=100)
 
     assert len(messages) < original_len
+    # History must remain structurally valid after truncation
+    for msg in messages:
+        if msg.get("role") == "assistant" and msg.get("tool_calls"):
+            expected_ids = {tc["id"] for tc in msg["tool_calls"]}
+            result_ids = {m.get("tool_call_id") for m in messages if m.get("role") == "tool"}
+            assert expected_ids <= result_ids, "truncation left orphaned assistant turn"
 
 
 async def test_agentic_loop_protects_last_4_messages():
     from ze.agents.base import _truncate_messages
 
+    def tc(id_): return {"id": id_, "type": "function", "function": {"name": "web_search", "arguments": "{}"}}
+
     tail = [
+        {"role": "assistant", "content": None, "tool_calls": [tc("recent-1")]},
         {"role": "tool", "tool_call_id": "recent-1", "content": "recent tool result"},
         {"role": "assistant", "content": "working"},
-        {"role": "tool", "tool_call_id": "recent-2", "content": "another recent"},
         {"role": "user", "content": "ok"},
     ]
 
     messages = [
+        {"role": "assistant", "content": None, "tool_calls": [tc("old-1")]},
         {"role": "tool", "tool_call_id": "old-1", "content": "old content " * 100},
-        {"role": "tool", "tool_call_id": "old-2", "content": "old content " * 100},
     ] + tail
 
     _truncate_messages(messages, max_tokens=10)
 
-    remaining_ids = {m.get("tool_call_id") for m in messages if m.get("role") == "tool"}
-    for m in tail:
-        if m.get("tool_call_id"):
-            assert m["tool_call_id"] in remaining_ids
+    for msg in tail:
+        assert msg in messages, f"protected message was removed: {msg}"
 
 
 # ── recover_stale_campaigns ───────────────────────────────────────────────────

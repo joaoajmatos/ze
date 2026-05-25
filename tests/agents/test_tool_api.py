@@ -603,3 +603,152 @@ async def test_agentic_loop_passes_schemas_to_client(settings):
     assert len(received_tools) == 1
     assert received_tools[0]["type"] == "function"
     assert received_tools[0]["function"]["name"] == "web_search"
+
+
+async def test_agentic_loop_raises_agent_error_on_none_none_response(settings):
+    """complete_with_tools returning (None, None) raises AgentError, not AssertionError."""
+    import ze.tools.web  # noqa
+    from ze.errors import AgentError
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(return_value=(None, None))
+
+    agent = _make_loop_agent(settings)
+    with pytest.raises(AgentError, match="no text and no tool calls"):
+        await agent.agentic_loop(
+            make_loop_ctx(),
+            client=client,
+            messages=[{"role": "user", "content": "q"}],
+            system="sys",
+            deps={},
+            tool_names=["web_search"],
+        )
+
+
+async def test_agentic_loop_empty_string_raises_agent_error(settings):
+    """Empty text + no tool calls from complete_with_tools raises AgentError, not returns ''."""
+    import ze.tools.web  # noqa
+    from ze.errors import AgentError
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(return_value=("", None))
+
+    agent = _make_loop_agent(settings)
+    with pytest.raises(AgentError, match="no text and no tool calls"):
+        await agent.agentic_loop(
+            make_loop_ctx(),
+            client=client,
+            messages=[{"role": "user", "content": "q"}],
+            system="sys",
+            deps={},
+            tool_names=["web_search"],
+        )
+
+
+async def test_agentic_loop_forwards_max_tokens(settings):
+    """max_tokens is forwarded to complete_with_tools."""
+    import ze.tools.web  # noqa
+
+    received_kwargs: list[dict] = []
+
+    async def _mock_cwt(messages, model, tools, system=None, **kwargs):
+        received_kwargs.append(kwargs)
+        return ("Done.", None)
+
+    client = AsyncMock()
+    client.complete_with_tools = _mock_cwt
+
+    agent = _make_loop_agent(settings)
+    await agent.agentic_loop(
+        make_loop_ctx(),
+        client=client,
+        messages=[{"role": "user", "content": "q"}],
+        system="sys",
+        deps={},
+        tool_names=["web_search"],
+        max_tokens=4000,
+    )
+
+    assert received_kwargs[0].get("max_tokens") == 4000
+
+
+# ── _truncate_messages ────────────────────────────────────────────────────────
+
+def test_truncate_removes_full_round_atomically():
+    """Removing a round removes the assistant turn AND its tool results together."""
+    from ze.agents.base import _truncate_messages
+
+    messages = [
+        {"role": "user", "content": "find me prospects"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [{"id": "c1", "type": "function", "function": {"name": "web_search", "arguments": "{}"}}],
+        },
+        {"role": "tool", "tool_call_id": "c1", "content": "x" * 4000},
+        {"role": "assistant", "content": "Here are the results."},
+    ]
+
+    _truncate_messages(messages, max_tokens=10)
+
+    roles = [m["role"] for m in messages]
+    # assistant turn with tool_calls must not remain without its tool result
+    for msg in messages:
+        if msg.get("role") == "assistant" and msg.get("tool_calls"):
+            tool_ids = {tc["id"] for tc in msg["tool_calls"]}
+            result_ids = {m.get("tool_call_id") for m in messages if m.get("role") == "tool"}
+            assert tool_ids <= result_ids, "orphaned assistant turn after truncation"
+
+
+def test_truncate_removes_multi_tool_round_atomically():
+    """An assistant turn with two tool calls has both results removed together."""
+    from ze.agents.base import _truncate_messages
+
+    messages = [
+        {"role": "user", "content": "q"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {"id": "c1", "type": "function", "function": {"name": "web_search", "arguments": "{}"}},
+                {"id": "c2", "type": "function", "function": {"name": "web_search", "arguments": "{}"}},
+            ],
+        },
+        {"role": "tool", "tool_call_id": "c1", "content": "x" * 2000},
+        {"role": "tool", "tool_call_id": "c2", "content": "x" * 2000},
+        {"role": "assistant", "content": "Done."},
+    ]
+
+    _truncate_messages(messages, max_tokens=10)
+
+    # Either the whole round is gone or the whole round remains — never partial
+    assistant_with_tools = [m for m in messages if m.get("role") == "assistant" and m.get("tool_calls")]
+    for msg in assistant_with_tools:
+        tool_ids = {tc["id"] for tc in msg["tool_calls"]}
+        result_ids = {m.get("tool_call_id") for m in messages if m.get("role") == "tool"}
+        assert tool_ids <= result_ids, "partial round removal left orphaned assistant turn"
+
+
+def test_truncate_never_removes_protected_messages():
+    """Last 4 messages are never removed even when over budget."""
+    from ze.agents.base import _truncate_messages
+
+    tail = [
+        {"role": "tool", "tool_call_id": "recent-1", "content": "recent result"},
+        {"role": "assistant", "content": "working on it"},
+        {"role": "tool", "tool_call_id": "recent-2", "content": "another result"},
+        {"role": "user", "content": "ok"},
+    ]
+    messages = [
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [{"id": "old-1", "type": "function", "function": {"name": "web_search", "arguments": "{}"}}],
+        },
+        {"role": "tool", "tool_call_id": "old-1", "content": "old content " * 200},
+    ] + tail
+
+    _truncate_messages(messages, max_tokens=10)
+
+    for msg in tail:
+        assert msg in messages, f"protected message was removed: {msg}"
