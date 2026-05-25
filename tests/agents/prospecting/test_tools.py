@@ -53,8 +53,8 @@ def make_person(**overrides):
 def make_conn():
     conn = AsyncMock()
     conn.fetch = AsyncMock(return_value=[])
-    conn.fetchrow = AsyncMock(return_value=None)
-    conn.execute = AsyncMock(return_value="INSERT 0 1")
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    conn.execute = AsyncMock()
     return conn
 
 
@@ -216,6 +216,7 @@ async def test_add_prospect_new_person():
         source_url="https://aircharter.pt/about",
         enrichment_notes="email found on website",
         campaign_id=campaign_id,
+        channel="email",
         person_store=person_store,
         pool=pool,
     )
@@ -230,7 +231,9 @@ async def test_add_prospect_duplicate_adds_source():
 
     existing_person = make_person(name="Maria Santos")
     person_store = make_person_store(existing=[existing_person])
-    pool = make_pool()
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value=None)  # ON CONFLICT DO NOTHING
+    pool = make_pool(conn)
     campaign_id = str(uuid4())
 
     tc = await add_prospect(
@@ -242,6 +245,7 @@ async def test_add_prospect_duplicate_adds_source():
         source_url="https://example.com",
         enrichment_notes="found via LinkedIn",
         campaign_id=campaign_id,
+        channel="linkedin",
         person_store=person_store,
         pool=pool,
     )
@@ -273,6 +277,7 @@ async def test_add_prospect_stores_enrichment_notes():
         source_url="https://tap.pt",
         enrichment_notes="found LinkedIn, no email",
         campaign_id=str(uuid4()),
+        channel="linkedin",
         person_store=person_store,
         pool=pool,
     )
@@ -409,3 +414,24 @@ async def test_log_outreach_event_ambiguous_returns_clarification():
     assert tc.success is False
     assert "Ambiguous" in tc.result
     pool.acquire.assert_not_called()
+
+
+async def test_log_outreach_event_invalid_event_type_rejected():
+    from ze.tools.prospecting import log_outreach_event
+
+    person_store = make_person_store(existing=[make_person(name="Maria Santos")])
+    pool = make_pool()
+
+    tc = await log_outreach_event(
+        contact_name="Maria Santos",
+        event_type="hacked",
+        channel="email",
+        notes="test",
+        pool=pool,
+        person_store=person_store,
+    )
+
+    assert tc.success is False
+    assert "invalid event_type" in tc.error
+    pool.acquire.assert_not_called()
+    person_store.get_by_name.assert_not_called()

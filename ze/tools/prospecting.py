@@ -12,6 +12,8 @@ from ze.openrouter.client import OpenRouterClient
 
 log = get_logger(__name__)
 
+_VALID_EVENT_TYPES = frozenset({"sent", "replied", "bounced"})
+
 _DRAFT_SYSTEM = (
     "You write concise, personalised outreach messages. "
     "Write only the message body — no subject line, no greeting, no sign-off. "
@@ -24,7 +26,8 @@ _DRAFT_SYSTEM = (
     description=(
         "Add a prospective contact found during research. "
         "Sets confirmed=False and source_type='research'. "
-        "Call once per person found — deduplication is automatic."
+        "Call once per person found — deduplication is automatic. "
+        "Set channel to 'email' or 'linkedin' based on what contact info was found."
     ),
 )
 async def add_prospect(
@@ -36,8 +39,9 @@ async def add_prospect(
     source_url: str,
     enrichment_notes: str,
     campaign_id: str,
-    person_store: PersonStore,
-    pool: asyncpg.Pool,
+    channel: str = "email",
+    person_store: PersonStore = None,
+    pool: asyncpg.Pool = None,
 ) -> ToolCall:
     args = {
         "name": name,
@@ -47,6 +51,7 @@ async def add_prospect(
         "source_url": source_url,
         "enrichment_notes": enrichment_notes,
         "campaign_id": campaign_id,
+        "channel": channel,
     }
     start = time.monotonic()
     try:
@@ -94,16 +99,18 @@ async def add_prospect(
             )
 
         async with pool.acquire() as conn:
-            result = await conn.execute(
+            row = await conn.fetchrow(
                 """
                 INSERT INTO prospect_outreach (campaign_id, contact_id, channel, status)
-                VALUES ($1, $2, 'email', 'pending')
+                VALUES ($1, $2, $3, 'pending')
                 ON CONFLICT (campaign_id, contact_id) DO NOTHING
+                RETURNING id
                 """,
                 UUID(campaign_id),
                 person.id,
+                channel,
             )
-            if result == "INSERT 0 1":
+            if row is not None:
                 await conn.execute(
                     "UPDATE prospect_campaigns SET found_count = found_count + 1 WHERE id = $1",
                     UUID(campaign_id),
@@ -150,6 +157,7 @@ async def draft_outreach(
         "context": context,
         "campaign_brief": campaign_brief,
         "channel": channel,
+        "campaign_id": campaign_id,
     }
     start = time.monotonic()
     try:
@@ -236,6 +244,15 @@ async def log_outreach_event(
         "notes": notes,
     }
     start = time.monotonic()
+    if event_type not in _VALID_EVENT_TYPES:
+        return ToolCall(
+            tool_name="log_outreach_event",
+            args=args,
+            result=f"Invalid event_type {event_type!r} — must be one of {sorted(_VALID_EVENT_TYPES)}",
+            duration_ms=0,
+            success=False,
+            error=f"invalid event_type: {event_type!r}",
+        )
     try:
         matches = await person_store.get_by_name(contact_name)
 

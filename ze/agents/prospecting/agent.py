@@ -11,11 +11,8 @@ from ze.agents.registry import register
 from ze.agents.types import AgentContext, AgentResult
 from ze.browser.client import BrowserClient
 from ze.contacts.store import PersonStore
-from ze.logging import get_logger
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
-
-log = get_logger(__name__)
 
 _AGENT_INSTRUCTIONS = """\
 You are Ze's prospecting engine. Given a brief, you autonomously:

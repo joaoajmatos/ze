@@ -240,7 +240,7 @@ async def test_recover_stale_campaigns():
     from ze.proactive.prospecting import recover_stale_campaigns
 
     pool = MagicMock()
-    pool.execute = AsyncMock()
+    pool.execute = AsyncMock(return_value="UPDATE 0")
 
     await recover_stale_campaigns(pool, timeout_minutes=60)
 
@@ -249,3 +249,14 @@ async def test_recover_stale_campaigns():
     assert "UPDATE prospect_campaigns" in sql
     assert "failed" in sql
     assert "running" in sql
+
+
+async def test_recover_stale_campaigns_logs_when_rows_updated():
+    from ze.proactive.prospecting import recover_stale_campaigns
+
+    pool = MagicMock()
+    pool.execute = AsyncMock(return_value="UPDATE 3")
+
+    await recover_stale_campaigns(pool, timeout_minutes=60)
+
+    pool.execute.assert_called_once()

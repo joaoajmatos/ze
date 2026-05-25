@@ -74,6 +74,7 @@ class Container:
         await self.workflow_scheduler.stop()
         await self.bot.session.close()
         await self.openrouter_client.aclose()
+        await self.browser_client.close()
         await dispose_checkpointer_pool(self.checkpointer_pool)
         await self.pool.close()
         log.info("container_closed")

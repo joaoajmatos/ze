@@ -10,15 +10,14 @@ log = get_logger(__name__)
 class BrowserClient:
     def __init__(self, base_url: str, timeout: int = 20) -> None:
         self._base_url = base_url.rstrip("/")
-        self._timeout = timeout
+        self._client = httpx.AsyncClient(timeout=timeout)
 
     async def extract(self, url: str) -> BrowserResult:
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                resp = await client.post(
-                    f"{self._base_url}/extract",
-                    json={"url": url},
-                )
+            resp = await self._client.post(
+                f"{self._base_url}/extract",
+                json={"url": url},
+            )
         except httpx.TimeoutException as exc:
             raise BrowserError(f"Browser service timed out: {exc}") from exc
         except (httpx.ConnectError, httpx.RemoteProtocolError) as exc:
@@ -39,8 +38,10 @@ class BrowserClient:
 
     async def health(self) -> bool:
         try:
-            async with httpx.AsyncClient(timeout=5) as client:
-                resp = await client.get(f"{self._base_url}/health")
+            resp = await self._client.get(f"{self._base_url}/health", timeout=5)
             return resp.status_code == 200
         except Exception:
             return False
+
+    async def close(self) -> None:
+        await self._client.aclose()

@@ -227,6 +227,26 @@ async def test_route_uses_haiku_when_gap_too_small(two_agent_settings):
     assert len(env.subtasks) == 2
 
 
+# ── route() — prospecting agent ──────────────────────────────────────────────
+
+async def test_route_picks_prospecting_as_single_agent(prospecting_only_settings):
+    router = make_router(prospecting_only_settings)
+    env = await router.route("find 5 charter operators in Portugal", session_id="s1")
+    assert env.primary_agent == "prospecting"
+    assert env.routing_method == "embedding"
+    assert env.confidence == 1.0
+
+
+async def test_route_picks_prospecting_over_research(prospecting_and_research_settings):
+    prospecting_vec = unit_vec()
+    agent_vecs = {"prospecting": prospecting_vec, "research": unit_vec()}
+    embedder = make_embedder(agent_vecs=agent_vecs, prompt_vec=prospecting_vec)
+    router = make_router(prospecting_and_research_settings, embedder=embedder)
+    env = await router.route("build a prospect list of aviation CEOs in Europe", session_id="s1")
+    assert env.primary_agent == "prospecting"
+    assert env.confidence > 0.9
+
+
 # ── _write_log ────────────────────────────────────────────────────────────────
 
 async def test_write_log_failure_does_not_raise(two_agent_settings):
@@ -256,6 +276,18 @@ def two_agent_settings(tmp_path):
 def single_agent_settings(tmp_path):
     """Settings with only research enabled."""
     return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "companion", "reminders", "prospecting"})
+
+
+@pytest.fixture
+def prospecting_only_settings(tmp_path):
+    """Settings with only prospecting enabled."""
+    return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "companion", "reminders", "research"})
+
+
+@pytest.fixture
+def prospecting_and_research_settings(tmp_path):
+    """Settings with prospecting + research enabled."""
+    return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "companion", "reminders"})
 
 
 @pytest.fixture

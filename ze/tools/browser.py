@@ -28,7 +28,7 @@ async def browser_extract(
         result = await browser_client.extract(url)
         duration_ms = int((time.monotonic() - start) * 1000)
 
-        if not result.text or result.status_code == 403:
+        if not result.text or result.status_code >= 400:
             return ToolCall(
                 tool_name="browser_extract",
                 args={"url": url},
