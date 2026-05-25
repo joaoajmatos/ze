@@ -198,3 +198,4 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 16 | Agentic tool loop — LLM-driven ReAct loop in `BaseAgent`, calendar + email migrated | Done |
 | 17 | Prospecting agent — autonomous target research, browser sidecar, outreach drafting | Done |
 | 18 | Communication channel abstraction — `Channel` ABC, `EmailChannel`, contact channel handles | Done |
+| 19 | Goal Engine — autonomous multi-week goal execution, verification gates, milestone loop | Done |

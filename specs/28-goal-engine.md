@@ -4,16 +4,16 @@
 
 | Feature | Status |
 |---------|--------|
-| `ze/goals/` module — types, store, planner, executor | 🔲 Pending |
-| Migration 016 — `goals`, `goal_milestones`, `goal_gates`, `goal_learnings` | 🔲 Pending |
-| `GoalPlanner` — LLM-driven decomposition into milestones + gates | 🔲 Pending |
-| `GoalExecutor` — autonomous loop: advance milestones, fire gates | 🔲 Pending |
-| `GoalAgent` — create, inspect, pause, abandon goals via conversation | 🔲 Pending |
-| Telegram gate flow — rich approval message + inline keyboard + redirect | 🔲 Pending |
-| Proactive milestone progress updates | 🔲 Pending |
-| Scheduler wiring — periodic `advance` calls | 🔲 Pending |
-| Container wiring | 🔲 Pending |
-| Tests | 🔲 Pending |
+| `ze/goals/` module — types, store, planner, executor | ✅ Done |
+| Migration 016 — `goals`, `goal_milestones`, `goal_gates`, `goal_learnings` | ✅ Done |
+| `GoalPlanner` — LLM-driven decomposition into milestones + gates | ✅ Done |
+| `GoalExecutor` — autonomous loop: advance milestones, fire gates | ✅ Done |
+| `GoalAgent` — create, inspect, pause, abandon goals via conversation | ✅ Done |
+| Telegram gate flow — rich approval message + inline keyboard + redirect | ✅ Done |
+| Proactive milestone progress updates | ✅ Done |
+| Scheduler wiring — periodic `advance` calls | ✅ Done |
+| Container wiring | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 
