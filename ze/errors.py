@@ -100,3 +100,17 @@ class ImageDownloadError(ZeError):
 
 class BrowserError(ZeError):
     """ze-browser sidecar request failed (connection error or 5xx)."""
+
+
+# ── Channels ───────────────────────────────────────────────────────────────────
+
+class ChannelError(ZeError):
+    """Base class for communication channel errors."""
+
+
+class ChannelNotFoundError(ChannelError):
+    """No channel registered for the requested ChannelType."""
+
+
+class ChannelSendError(ChannelError):
+    """Channel transport failed during send."""
