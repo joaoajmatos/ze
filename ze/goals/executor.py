@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import html as _html
+from collections import defaultdict
 from uuid import UUID
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
@@ -38,12 +39,27 @@ class GoalExecutor:
         self._store = goal_store
         self._planner = goal_planner
         self._notifier = notifier
+        self._advance_locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
 
     async def advance(self, goal_id: UUID) -> None:
-        """Advance execution of a goal by one step. Idempotent — safe to call repeatedly."""
+        """Advance execution of a goal by one step. Serialized per goal_id."""
+        async with self._advance_locks[goal_id]:
+            await self._advance_unlocked(goal_id)
+
+    async def _advance_unlocked(self, goal_id: UUID) -> None:
         goal = await self._store.get_goal(goal_id)
         if goal is None or goal.status != GoalStatus.ACTIVE:
             return
+
+        milestones = await self._store.list_milestones(goal_id)
+        for stuck in [m for m in milestones if m.status == MilestoneStatus.IN_PROGRESS]:
+            log.warning(
+                "milestone_in_progress_reset",
+                goal_id=str(goal_id),
+                milestone_id=str(stuck.id),
+                sequence=stuck.sequence,
+            )
+            await self._store.update_milestone(stuck.id, MilestoneStatus.PENDING)
 
         milestones = await self._store.list_milestones(goal_id)
         pending = [m for m in milestones if m.status == MilestoneStatus.PENDING]

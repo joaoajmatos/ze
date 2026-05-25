@@ -100,6 +100,42 @@ async def test_advance_returns_early_if_goal_not_active():
     store.list_milestones.assert_not_called()
 
 
+async def test_advance_resets_stuck_in_progress_milestone():
+    goal = make_goal()
+    m1 = make_milestone(1, MilestoneStatus.IN_PROGRESS, goal_id=goal.id)
+
+    store = MagicMock()
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(side_effect=[
+        [m1],
+        [make_milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)],
+        [make_milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)],
+    ])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.update_milestone = AsyncMock()
+    store.update_status = AsyncMock()
+
+    mock_agent = MagicMock()
+    mock_agent.run = AsyncMock(return_value=MagicMock(response="Done."))
+    executor = make_executor(goal_store=store)
+
+    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
+        advance_calls = []
+        orig = executor._advance_unlocked
+        async def once(gid):
+            advance_calls.append(gid)
+            if len(advance_calls) == 1:
+                await orig(gid)
+        executor._advance_unlocked = once
+        await executor.advance(goal.id)
+
+    reset_call = [
+        c for c in store.update_milestone.call_args_list
+        if len(c.args) >= 2 and c.args[1] == MilestoneStatus.PENDING
+    ]
+    assert reset_call
+
+
 async def test_advance_returns_early_if_goal_not_found():
     store = MagicMock()
     store.get_goal = AsyncMock(return_value=None)
@@ -176,24 +212,17 @@ async def test_advance_executes_pending_milestone():
     executor = make_executor(goal_store=store, notifier=notifier)
 
     with patch("ze.goals.executor.get_agent", return_value=mock_agent):
-        # advance will recursively create_task — cancel it by making list_milestones
-        # return all completed on second call
-        store.list_milestones.side_effect = [
-            [m1],
-            [make_milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)],
-        ]
-        # Run only the first iteration
         call_count = 0
-        orig_advance = executor.advance
+        orig_unlocked = executor._advance_unlocked
 
-        async def limited_advance(gid):
+        async def limited_unlocked(gid):
             nonlocal call_count
             call_count += 1
             if call_count > 1:
                 return
-            await orig_advance(gid)
+            await orig_unlocked(gid)
 
-        executor.advance = limited_advance
+        executor._advance_unlocked = limited_unlocked
         await executor.advance(goal.id)
 
     store.update_milestone.assert_awaited()
