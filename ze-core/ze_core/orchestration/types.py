@@ -9,9 +9,13 @@ from ze_core.memory.types import MemoryContext  # re-exported for AgentContext c
 
 @dataclass
 class ToolCall:
-    name: str
-    arguments: dict[str, Any] = field(default_factory=dict)
-    result: Any = None
+    tool_name: str
+    args: dict[str, Any]
+    result: Any
+    duration_ms: int
+    success: bool
+    error: str | None = None
+    is_draft: bool = False
 
 
 @runtime_checkable

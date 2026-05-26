@@ -42,29 +42,21 @@ the result in `state["envelope"]`.
 
 ---
 
-## 3. Tool Execution Path (Design Decision Required)
+## 3. ~~Tool Execution Path~~ ✓ DONE
 
-`@tool` registers async functions. `BaseAgent.tools` lists names. But there is
-no mechanism in ze_core for an agent to actually invoke a registered tool during
-`run()`.
+`BaseAgent` now provides two methods agents can call from `run()`:
 
-Two options:
+- **`call_tool(name, ctx, **kwargs)`** — capability-gated dispatch. Suppresses
+  WRITE tools in DRAFT mode; raises `ToolBlockedError` in BLOCKED mode.
+- **`agentic_loop(ctx, client, messages, system, deps, ...)`** — full ReAct loop.
+  LLM picks tools, ze_core dispatches them, loop repeats until the model returns
+  text. Falls back to a plain `complete()` call when `max_iterations` is reached.
 
-**Option A — Framework provides a `ToolAgent` base class** with a built-in
-ReAct loop (LLM → tool call → result → LLM …). Agents that use tools subclass
-`ToolAgent` instead of `BaseAgent`. Ze Core handles the loop; agents only
-declare tools and instructions.
+Module-level helpers (`_merge_deps`, `_serialise_result`, `_truncate_messages`)
+live in `base_agent.py` and are importable for testing.
 
-**Option B — Convention only** — ze_core declares `@tool` and the tools list
-for validation purposes; each agent implements its own tool-calling logic in
-`run()`. Ze Core provides `get_tool(name)` and `ToolSpec.func` so agents can
-dispatch, but the loop is the agent's responsibility.
-
-Option A is more ergonomic but adds significant complexity to ze_core.
-Option B is the current implicit state; just needs to be documented clearly.
-
-**Action:** Decide, then either implement `ToolAgent` or document Option B
-explicitly in `BaseAgent`'s docstring.
+The design mirrors Ze Phase 16: no separate `ToolAgent` subclass — the loop
+lives directly on `BaseAgent` and agents opt in by calling it from `run()`.
 
 ---
 
@@ -100,28 +92,13 @@ know what to implement. Validate the interface style regardless.
 
 ---
 
-## 5. `LLMClient` Protocol / `OpenRouterClient` Mismatch
+## 5. ~~`LLMClient` Protocol / `OpenRouterClient` Mismatch~~ ✓ DONE
 
-`LLMClient.complete()` signature (routing/types.py):
+`OpenRouterClient.complete()` now accepts `system`, `temperature`,
+`response_format`, `**kwargs` and passes them through to the API payload.
 
-```python
-async def complete(
-    self, messages, model, system=None, temperature=0.3,
-    max_tokens=None, response_format=None, **kwargs
-) -> str: ...
-```
-
-`OpenRouterClient.complete()` (openrouter/client.py):
-
-```python
-async def complete(self, messages, model, max_tokens=None) -> str:
-```
-
-`OpenRouterClient` does not satisfy `LLMClient`. Any code that type-checks
-against the Protocol will fail.
-
-**Action:** Add `system`, `temperature`, `response_format`, `**kwargs` to
-`OpenRouterClient.complete()` and pass them through to the API payload.
+`complete_with_tools(messages, model, tools, system, temperature, max_tokens)`
+added to both `OpenRouterClient` and the `LLMClient` Protocol.
 
 ---
 
@@ -175,9 +152,9 @@ to hatch build config.
 |---|------|----------|--------|
 | 1 | ~~Database schema (schema.sql / migration)~~ ✓ | Blocker | Small |
 | 2 | `decompose` node is a stub | Blocker | Small |
-| 3 | Tool execution path (design decision) | High | Medium–Large |
+| 3 | ~~Tool execution path~~ ✓ | High | Medium–Large |
 | 4 | Interface ↔ graph bridge (design decision) | High | Small–Medium |
-| 5 | `OpenRouterClient` / `LLMClient` mismatch | Medium | Small |
+| 5 | ~~`OpenRouterClient` / `LLMClient` mismatch~~ ✓ | Medium | Small |
 | 6 | `ze_core/__init__.py` public API | Medium | Small |
 | 7 | `asyncpg.Pool` DI key forces agent dep | Medium | Small |
 | 8 | `py.typed` marker missing | Low | Trivial |

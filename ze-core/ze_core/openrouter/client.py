@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, AsyncIterator
 
 from ze_core.logging import get_logger
@@ -7,6 +8,12 @@ from ze_core.logging import get_logger
 log = get_logger(__name__)
 
 _BASE_URL = "https://openrouter.ai/api/v1"
+
+
+def _build_messages(messages: list[dict], system: str | None) -> list[dict]:
+    if system:
+        return [{"role": "system", "content": system}, *messages]
+    return messages
 
 
 class OpenRouterClient:
@@ -40,12 +47,23 @@ class OpenRouterClient:
         self,
         messages: list[dict],
         model: str,
+        system: str | None = None,
+        temperature: float = 0.3,
         max_tokens: int | None = None,
+        response_format: dict | None = None,
+        **kwargs: Any,
     ) -> str:
         session = await self._get_session()
-        payload: dict[str, Any] = {"model": model, "messages": messages}
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": _build_messages(messages, system),
+            "temperature": temperature,
+        }
         if max_tokens is not None:
             payload["max_tokens"] = max_tokens
+        if response_format is not None:
+            payload["response_format"] = response_format
+        payload.update(kwargs)
         async with session.post(
             f"{self._base_url}/chat/completions", json=payload
         ) as resp:
@@ -53,16 +71,67 @@ class OpenRouterClient:
             data = await resp.json()
             return data["choices"][0]["message"]["content"]
 
+    async def complete_with_tools(
+        self,
+        messages: list[dict],
+        model: str,
+        tools: list[dict],
+        system: str | None = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ) -> tuple[str | None, list[dict] | None]:
+        """Send a completion with tool schemas.
+
+        Returns (text, None) when the model produces a text response, or
+        (None, tool_call_list) when the model requests tool calls.
+        Each item in tool_call_list: {"id": str, "name": str, "arguments": dict}.
+        """
+        session = await self._get_session()
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": _build_messages(messages, system),
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "tools": [{"type": "function", "function": t} for t in tools],
+        }
+        async with session.post(
+            f"{self._base_url}/chat/completions", json=payload
+        ) as resp:
+            resp.raise_for_status()
+            data = await resp.json()
+
+        message = data["choices"][0]["message"]
+        tool_calls_raw = message.get("tool_calls")
+
+        if tool_calls_raw:
+            result = []
+            for tc in tool_calls_raw:
+                try:
+                    args = json.loads(tc["function"]["arguments"])
+                except (json.JSONDecodeError, ValueError):
+                    args = {}
+                result.append({
+                    "id": tc["id"],
+                    "name": tc["function"]["name"],
+                    "arguments": args,
+                })
+            return None, result
+
+        return message.get("content") or "", None
+
     async def stream(
         self,
         messages: list[dict],
         model: str,
+        system: str | None = None,
+        temperature: float = 0.3,
         max_tokens: int | None = None,
     ) -> AsyncIterator[str]:
         session = await self._get_session()
         payload: dict[str, Any] = {
             "model": model,
-            "messages": messages,
+            "messages": _build_messages(messages, system),
+            "temperature": temperature,
             "stream": True,
         }
         if max_tokens is not None:
@@ -74,7 +143,6 @@ class OpenRouterClient:
             async for line in resp.content:
                 text = line.decode().strip()
                 if text.startswith("data: ") and text != "data: [DONE]":
-                    import json
                     try:
                         chunk = json.loads(text[6:])
                         content = chunk["choices"][0]["delta"].get("content", "")

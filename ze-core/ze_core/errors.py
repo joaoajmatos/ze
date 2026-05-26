@@ -56,3 +56,7 @@ class MemoryError(ZeCoreError):
 
 class UnknownToolError(AgentError):
     """No tool registered for the requested name."""
+
+
+class ToolBlockedError(AgentError):
+    """Tool call rejected because the capability gate is BLOCKED."""

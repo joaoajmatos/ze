@@ -45,3 +45,13 @@ class LLMClient(Protocol):
         response_format: dict | None = None,
         **kwargs: Any,
     ) -> str: ...
+
+    async def complete_with_tools(
+        self,
+        messages: list[dict],
+        model: str,
+        tools: list[dict],
+        system: str | None = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+    ) -> tuple[str | None, list[dict] | None]: ...
