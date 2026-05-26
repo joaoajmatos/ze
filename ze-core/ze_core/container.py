@@ -65,6 +65,13 @@ class Container:
         pool = await asyncpg.create_pool(settings.database_url)
         checkpointer_pool = await asyncpg.create_pool(settings.database_url)
 
+        # 2a. Optionally apply pending migrations (ZC_AUTO_MIGRATE=true)
+        if settings.auto_migrate:
+            from ze_core.migrate import upgrade
+            log.info("container_auto_migrate_start")
+            upgrade(settings.database_url_sync)
+            log.info("container_auto_migrate_done")
+
         # 3. Load embedder (sentence_transformers)
         from sentence_transformers import SentenceTransformer  # type: ignore[import]
 
@@ -104,8 +111,21 @@ class Container:
 
         # 9. Build EmbeddingRouter
         from ze_core.routing.router import EmbeddingRouter
+        from ze_core.routing.types import RouterConfig
 
-        router = EmbeddingRouter(embedder=embedder)
+        routing_cfg = settings.config.get("routing", {})
+        _defaults = RouterConfig()
+        router_config = RouterConfig(
+            threshold=routing_cfg.get("threshold", _defaults.threshold),
+            gap_threshold=routing_cfg.get("gap_threshold", _defaults.gap_threshold),
+            fallback_model=routing_cfg.get("fallback_model", _defaults.fallback_model),
+        )
+        router = EmbeddingRouter(
+            embedder=embedder,
+            openrouter_client=openrouter_client,
+            db_pool=pool,
+            config=router_config,
+        )
 
         # 10. Build CapabilityGate
         from ze_core.capability.gate import CapabilityGate

@@ -8,6 +8,14 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+# pip install 'ze-core[migrations]'  — required to run `python -m ze_core.migrate`
+# or to use ZC_AUTO_MIGRATE=true
+migrations = [
+    "alembic>=1.13",
+    "psycopg2-binary>=2.9",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

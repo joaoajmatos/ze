@@ -13,6 +13,7 @@ class Settings:
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     session_inactivity_minutes: int = 30
     consolidation_enabled: bool = True
+    auto_migrate: bool = False
     log_level: str = "INFO"
     config: dict = field(default_factory=dict)
 
@@ -44,6 +45,9 @@ class Settings:
             ),
             consolidation_enabled=(
                 os.environ.get("CONSOLIDATION_ENABLED", "true").lower() != "false"
+            ),
+            auto_migrate=(
+                os.environ.get("ZC_AUTO_MIGRATE", "false").lower() == "true"
             ),
             log_level=os.environ.get("LOG_LEVEL", "INFO"),
             config=loaded_config,
