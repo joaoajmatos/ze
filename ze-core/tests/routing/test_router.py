@@ -135,7 +135,7 @@ class TestEmbeddingRouting:
         assert env.routing_method == "embedding"
         assert env.score_gap == pytest.approx(0.6)
 
-    async def test_below_threshold_triggers_haiku_fallback(self):
+    async def test_below_threshold_triggers_fallback(self):
         _register("alpha", intent_map={"read": "Read"})
         _register("beta", intent_map={"create": "Create"})
         embedder = _FakeEmbedder(
@@ -152,7 +152,7 @@ class TestEmbeddingRouting:
         assert env.routing_method == "haiku"
         assert client.complete.called
 
-    async def test_low_gap_triggers_haiku_fallback(self):
+    async def test_low_gap_triggers_fallback(self):
         _register("alpha", intent_map={"read": "Read"})
         _register("beta", intent_map={"create": "Create"})
         embedder = _FakeEmbedder(

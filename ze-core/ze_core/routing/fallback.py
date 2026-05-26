@@ -57,7 +57,7 @@ def _hard_fallback_agent(
     log: _BoundLogger,
     last_exc: Exception | None,
 ) -> RoutingEnvelope:
-    log.error("haiku_fallback_exhausted", error=str(last_exc))
+    log.error("fallback_exhausted", error=str(last_exc))
     reason_agent = next(
         (name for name, cls in agent_registry.items() if "reason" in getattr(cls, "intent_map", {})),
         None,
@@ -68,7 +68,7 @@ def _hard_fallback_agent(
         primary_agent=fallback_name,
         confidence=0.0,
         score_gap=0.0,
-        routing_method="haiku_fallback",
+        routing_method="fallback",
         is_compound=False,
         subtasks=[fallback],
         requires_synthesis=False,
@@ -110,7 +110,7 @@ async def decompose(
             raw_subtasks = data.get("subtasks", [])
         except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as exc:
             last_exc = RoutingError(f"Haiku returned invalid JSON (attempt {attempt + 1}): {exc}")
-            log.warning("haiku_fallback_parse_error", attempt=attempt + 1, error=str(exc))
+            log.warning("fallback_parse_error", attempt=attempt + 1, error=str(exc))
             continue
 
         unknown = [st["agent"] for st in raw_subtasks if st.get("agent") not in known_agents]
@@ -118,7 +118,7 @@ async def decompose(
             raise RoutingError(f"Haiku returned unknown agent(s): {unknown}")
 
         if not raw_subtasks:
-            log.warning("haiku_fallback_zero_subtasks", attempt=attempt + 1)
+            log.warning("fallback_zero_subtasks", attempt=attempt + 1)
             last_exc = RoutingError("Haiku returned zero subtasks")
             continue
 

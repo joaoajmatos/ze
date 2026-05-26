@@ -6,7 +6,7 @@ import pytest
 from ze_core.errors import RoutingError
 from ze_core.orchestration import agent, clear_registry
 from ze_core.orchestration.types import AgentContext, AgentResult
-from ze_core.routing.haiku_fallback import decompose
+from ze_core.routing.fallback import decompose
 
 
 @pytest.fixture(autouse=True)
@@ -104,7 +104,7 @@ class TestErrorHandling:
         _register("research", intent_map={"reason": "Reasoning"})
         client = _mock_client("not json at all")
         env = await decompose("q", {}, client, _registry_from_names(), "haiku")
-        assert env.routing_method == "haiku_fallback"
+        assert env.routing_method == "fallback"
         assert client.complete.call_count == 2
 
     async def test_empty_subtasks_retries_then_hard_fallback(self):
@@ -112,7 +112,7 @@ class TestErrorHandling:
         payload = json.dumps({"subtasks": [], "sequential": False})
         client = _mock_client(payload)
         env = await decompose("q", {}, client, _registry_from_names(), "haiku")
-        assert env.routing_method == "haiku_fallback"
+        assert env.routing_method == "fallback"
 
     async def test_hard_fallback_prefers_reason_agent(self):
         _register("alpha")

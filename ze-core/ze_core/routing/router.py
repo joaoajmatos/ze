@@ -7,7 +7,7 @@ from typing import Any
 from ze_core.errors import InvalidPromptError, RoutingError
 from ze_core.logging import get_logger
 from ze_core.orchestration.registry import get_enabled_agents
-from ze_core.routing import haiku_fallback
+from ze_core.routing import fallback
 from ze_core.routing.complexity import ComplexityEstimator
 from ze_core.routing.types import LLMClient, RouterConfig, RoutingEnvelope, SubTask
 
@@ -105,12 +105,12 @@ class EmbeddingRouter:
         cfg = self._config
         if top_score < cfg.threshold or score_gap < cfg.gap_threshold:
             log.info(
-                "routing_haiku_fallback",
+                "routing_fallback",
                 top_score=round(top_score, 3),
                 score_gap=round(score_gap, 3),
                 reason="below_threshold" if top_score < cfg.threshold else "low_gap",
             )
-            envelope = await haiku_fallback.decompose(
+            envelope = await fallback.decompose(
                 prompt=prompt,
                 raw_scores=raw_scores,
                 client=self._client,
