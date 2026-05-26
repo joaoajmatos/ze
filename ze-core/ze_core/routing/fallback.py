@@ -106,6 +106,11 @@ async def decompose(
                 max_tokens=500,
                 response_format={"type": "json_object"},
             )
+        except Exception as exc:
+            last_exc = exc
+            log.warning("fallback_llm_error", attempt=attempt + 1, error=str(exc))
+            continue
+        try:
             data = json.loads(_extract_json_object(raw))
             raw_subtasks = data.get("subtasks", [])
         except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as exc:

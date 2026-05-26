@@ -7,7 +7,6 @@ from typing import Any
 from ze_core.errors import InvalidPromptError, RoutingError
 from ze_core.logging import get_logger
 from ze_core.orchestration.registry import get_enabled_agents
-from ze_core.routing import fallback
 from ze_core.routing.complexity import ComplexityEstimator
 from ze_core.routing.types import LLMClient, RouterConfig, RoutingEnvelope, SubTask
 
@@ -105,25 +104,27 @@ class EmbeddingRouter:
         cfg = self._config
         if top_score < cfg.threshold or score_gap < cfg.gap_threshold:
             log.info(
-                "routing_fallback",
+                "routing_low_confidence",
                 top_score=round(top_score, 3),
                 score_gap=round(score_gap, 3),
                 reason="below_threshold" if top_score < cfg.threshold else "low_gap",
             )
-            envelope = await fallback.decompose(
-                prompt=prompt,
+            # Signal to the graph that LLM decomposition is needed.
+            # The `decompose` node owns the fallback.decompose() call.
+            intent = self._primary_intent(top_agent)
+            complexity = self._estimator.classify(prompt, intent, top_score)
+            model = self._resolve_model(top_agent, complexity)
+            return RoutingEnvelope(
+                primary_agent=top_agent,
+                confidence=top_score,
+                score_gap=score_gap,
+                routing_method="embedding",
+                is_compound=True,
+                subtasks=[SubTask(agent=top_agent, intent=intent, prompt=prompt, model=model)],
+                requires_synthesis=False,
                 raw_scores=raw_scores,
-                client=self._client,
-                agent_registry=get_enabled_agents(),
-                fallback_model=cfg.fallback_model,
-                logger=log,
+                complexity=complexity,
             )
-            primary_intent = envelope.subtasks[0].intent if envelope.subtasks else "read"
-            complexity = self._estimator.classify(prompt, primary_intent, envelope.confidence)
-            for subtask in envelope.subtasks:
-                subtask.model = self._resolve_model(subtask.agent, complexity)
-            envelope.complexity = complexity
-            return envelope
 
         intent = self._primary_intent(top_agent)
         complexity = self._estimator.classify(prompt, intent, top_score)

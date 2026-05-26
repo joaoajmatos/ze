@@ -135,38 +135,35 @@ class TestEmbeddingRouting:
         assert env.routing_method == "embedding"
         assert env.score_gap == pytest.approx(0.6)
 
-    async def test_below_threshold_triggers_fallback(self):
+    async def test_below_threshold_signals_compound_for_decompose(self):
         _register("alpha", intent_map={"read": "Read"})
         _register("beta", intent_map={"create": "Create"})
         embedder = _FakeEmbedder(
             {"alpha": [0.4, 0.0], "beta": [0.3, 0.0]},
             [1.0, 0.0],
         )
-        haiku_response = json.dumps({
-            "subtasks": [{"agent": "alpha", "intent": "read", "prompt": "hello"}],
-            "sequential": False,
-        })
-        client = _make_client(haiku_response)
+        client = _make_client()
         r = EmbeddingRouter(embedder, client, _make_pool())
         env = await r.route("hello", "s1")
-        assert env.routing_method == "haiku"
-        assert client.complete.called
+        # Router no longer calls the LLM — it signals the graph via is_compound=True
+        assert env.routing_method == "embedding"
+        assert env.is_compound is True
+        assert env.raw_scores  # scores preserved for the decompose node
+        client.complete.assert_not_called()
 
-    async def test_low_gap_triggers_fallback(self):
+    async def test_low_gap_signals_compound_for_decompose(self):
         _register("alpha", intent_map={"read": "Read"})
         _register("beta", intent_map={"create": "Create"})
         embedder = _FakeEmbedder(
             {"alpha": [0.7, 0.0], "beta": [0.65, 0.0]},
             [1.0, 0.0],
         )
-        haiku_response = json.dumps({
-            "subtasks": [{"agent": "alpha", "intent": "read", "prompt": "hello"}],
-            "sequential": False,
-        })
-        client = _make_client(haiku_response)
+        client = _make_client()
         r = EmbeddingRouter(embedder, client, _make_pool(), config=RouterConfig(gap_threshold=0.10))
         env = await r.route("hello", "s1")
-        assert env.routing_method == "haiku"
+        assert env.routing_method == "embedding"
+        assert env.is_compound is True
+        client.complete.assert_not_called()
 
 
 class TestModelResolution:
