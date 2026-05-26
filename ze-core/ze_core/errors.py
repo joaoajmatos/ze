@@ -32,7 +32,11 @@ class AgentConfigError(AgentError):
 
 # ── Interface ─────────────────────────────────────────────────────────────────
 
-class InterfaceConfigError(ZeCoreError):
+class InterfaceError(ZeCoreError):
+    """Base class for interface errors."""
+
+
+class InterfaceConfigError(InterfaceError):
     """AppInterface implementation is misconfigured."""
 
 
