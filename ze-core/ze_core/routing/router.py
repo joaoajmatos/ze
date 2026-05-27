@@ -144,6 +144,8 @@ class EmbeddingRouter:
     async def _write_log(
         self, session_id: str, prompt: str, envelope: RoutingEnvelope
     ) -> None:
+        if self._pool is None:
+            return
         try:
             async with self._pool.acquire() as conn:
                 await conn.execute(

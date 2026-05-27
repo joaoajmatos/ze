@@ -158,6 +158,11 @@ class Container:
                 )
 
         await self.openrouter_client.aclose()
+        aclose = getattr(self.memory_store, "aclose", None)
+        if callable(aclose):
+            import asyncio
+            if asyncio.iscoroutinefunction(aclose):
+                await aclose()
         await _dispose_pool(self.checkpointer_pool)
         await _dispose_pool(self.pool)
         log.info("container_closed")
@@ -182,18 +187,24 @@ class Container:
 
         settings = Settings.from_env(config_path)
 
-        # 2. Create asyncpg pools
-        import asyncpg  # type: ignore[import]
+        # 2. Create database pools / connections
+        is_sqlite = settings.database_url.lower().startswith("sqlite")
 
-        pool = await asyncpg.create_pool(settings.database_url)
-        checkpointer_pool = await asyncpg.create_pool(settings.database_url)
+        if is_sqlite:
+            pool = None
+            checkpointer_pool = None
+        else:
+            import asyncpg  # type: ignore[import]
 
-        # 2a. Optionally apply pending migrations (ZC_AUTO_MIGRATE=true)
-        if settings.auto_migrate:
-            from ze_core.migrate import upgrade
-            log.info("container_auto_migrate_start")
-            upgrade(settings.database_url_sync)
-            log.info("container_auto_migrate_done")
+            pool = await asyncpg.create_pool(settings.database_url)
+            checkpointer_pool = await asyncpg.create_pool(settings.database_url)
+
+            # 2a. Optionally apply pending migrations (ZC_AUTO_MIGRATE=true)
+            if settings.auto_migrate:
+                from ze_core.migrate import upgrade
+                log.info("container_auto_migrate_start")
+                upgrade(settings.database_url_sync)
+                log.info("container_auto_migrate_done")
 
         # 3. Load embedder (sentence_transformers)
         from sentence_transformers import SentenceTransformer  # type: ignore[import]
@@ -257,48 +268,64 @@ class Container:
 
         capability_gate = CapabilityGate()
 
-        # 11. Build MemoryStore
-        from ze_core.memory.store import MemoryStore
+        # 11. Build MemoryStore and MemoryConsolidator
+        if is_sqlite:
+            from ze_core.storage.sqlite import SQLiteMemoryStore
 
-        memory_store = MemoryStore(
-            pool=pool,
-            embedder=embedder,
-            openrouter_client=openrouter_client,
-            settings=settings,
-        )
+            db_path = _sqlite_db_path(settings.database_url)
+            memory_store = SQLiteMemoryStore(
+                db_path=db_path,
+                embedder=embedder,
+                openrouter_client=openrouter_client,
+                settings=settings,
+            )
+            await memory_store.setup()
+            memory_consolidator = None  # consolidation not supported for SQLite yet
+        else:
+            from ze_core.memory.consolidator import MemoryConsolidator
+            from ze_core.memory.store import MemoryStore
 
-        # 12. Build MemoryConsolidator
-        from ze_core.memory.consolidator import MemoryConsolidator
+            memory_store = MemoryStore(
+                pool=pool,
+                embedder=embedder,
+                openrouter_client=openrouter_client,
+                settings=settings,
+            )
+            memory_consolidator = MemoryConsolidator(
+                pool=pool,
+                embedder=embedder,
+                openrouter_client=openrouter_client,
+                settings=settings,
+            )
 
-        memory_consolidator = MemoryConsolidator(
-            pool=pool,
-            embedder=embedder,
-            openrouter_client=openrouter_client,
-            settings=settings,
-        )
-
-        # 13. Build LangGraph checkpointer and compile graph
-        from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver  # type: ignore[import]
-        from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
-
+        # 12. Build LangGraph checkpointer and compile graph
         from ze_core.orchestration.graph import build_graph
 
-        serde = JsonPlusSerializer(
-            allowed_msgpack_modules=[
-                ("ze_core.routing.types", "SubTask"),
-                ("ze_core.routing.types", "RoutingEnvelope"),
-                ("ze_core.orchestration.types", "ToolCall"),
-                ("ze_core.orchestration.types", "AgentResult"),
-                ("ze_core.orchestration.types", "AgentContext"),
-                ("ze_core.capability.types", "GateDecision"),
-                ("ze_core.memory.types", "MemoryContext"),
-                ("ze_core.memory.types", "UserFact"),
-                ("ze_core.memory.types", "Episode"),
-                ("ze_core.memory.types", "UserProfile"),
-            ]
-        )
-        checkpointer = AsyncPostgresSaver(checkpointer_pool, serde=serde)
-        await checkpointer.setup()
+        if is_sqlite:
+            from langgraph.checkpoint.memory import MemorySaver  # type: ignore[import]
+
+            checkpointer = MemorySaver()
+        else:
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver  # type: ignore[import]
+            from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
+
+            serde = JsonPlusSerializer(
+                allowed_msgpack_modules=[
+                    ("ze_core.routing.types", "SubTask"),
+                    ("ze_core.routing.types", "RoutingEnvelope"),
+                    ("ze_core.orchestration.types", "ToolCall"),
+                    ("ze_core.orchestration.types", "AgentResult"),
+                    ("ze_core.orchestration.types", "AgentContext"),
+                    ("ze_core.capability.types", "GateDecision"),
+                    ("ze_core.memory.types", "MemoryContext"),
+                    ("ze_core.memory.types", "UserFact"),
+                    ("ze_core.memory.types", "Episode"),
+                    ("ze_core.memory.types", "UserProfile"),
+                ]
+            )
+            checkpointer = AsyncPostgresSaver(checkpointer_pool, serde=serde)
+            await checkpointer.setup()
+
         graph = build_graph(checkpointer)
 
         log.info("container_ready", agents=list(instances.keys()))
@@ -409,7 +436,24 @@ def _infer_package(app_root: Path) -> str:
     return app_root.name
 
 
+def _sqlite_db_path(url: str) -> str:
+    """Extract the file path from a sqlite:// URL.
+
+    sqlite:///./app.db   -> ./app.db
+    sqlite:////abs/p.db  -> /abs/p.db
+    sqlite:///:memory:   -> :memory:
+    """
+    # Strip the sqlite:// or sqlite:/// prefix
+    if url.startswith("sqlite:///"):
+        return url[len("sqlite:///"):]
+    if url.startswith("sqlite://"):
+        return url[len("sqlite://"):]
+    return url
+
+
 async def _dispose_pool(pool: Any) -> None:
+    if pool is None:
+        return
     try:
         await pool.close()
     except Exception as exc:

@@ -15,6 +15,10 @@ migrations = [
     "alembic>=1.13",
     "psycopg2-binary>=2.9",
 ]
+# pip install 'ze-core[sqlite]'  — SQLite storage backend (no Postgres required)
+sqlite = [
+    "aiosqlite>=0.19",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
