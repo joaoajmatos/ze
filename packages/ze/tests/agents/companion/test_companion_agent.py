@@ -100,12 +100,11 @@ async def test_run_returns_response_string():
     assert result.response == "I am doing great, thank you!"
 
 
-async def test_run_includes_extract_facts_tool_call():
+async def test_run_includes_post_response_extraction_tools():
     agent = make_agent()
     result = await agent.run(make_ctx())
-    assert len(result.tool_calls) == 3
+    assert len(result.tool_calls) == 2
     names = {tc.tool_name for tc in result.tool_calls}
-    assert "extract_facts" in names
     assert "extract_contacts" in names
     assert "log_outreach_event" in names
 

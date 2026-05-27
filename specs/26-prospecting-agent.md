@@ -533,10 +533,11 @@ a natural fast-follow but is out of scope for this phase.
 
 ## Outreach Tracking via Companion
 
-The companion agent runs three parallel post-response extraction calls:
-1. `extract_facts`
-2. `extract_contacts`
-3. `log_outreach_event`
+The companion agent runs two parallel post-response extraction calls:
+1. `extract_contacts`
+2. `log_outreach_event`
+
+User facts are extracted in `write_memory` (see `specs/zc-06-memory.md`).
 
 `log_outreach_event` only fires when the user's message **explicitly mentions**
 contacting someone. Casual phrasing ("had a call with the charter guy") is not

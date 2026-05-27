@@ -66,9 +66,9 @@ User message (Telegram Bot API)
 |-------------|-------------------------------------------------------|--------------|
 | `calendar`  | Read, create, update, delete Google Calendar events   | Medium       |
 | `email`     | Read, draft, send Gmail messages                      | High         |
-| `research`  | Web search (Tavily), summarisation, fact extraction   | Low          |
+| `research`  | Web search (Tavily), summarisation                      | Low          |
 | `workflow`  | File operations, API triggers, automations            | Variable     |
-| `companion` | Reasoning, thinking partner — no external tool calls  | None         |
+| `companion` | Reasoning, thinking partner; contact/outreach tools | None         |
 
 ## Implementation Phases
 

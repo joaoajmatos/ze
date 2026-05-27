@@ -229,7 +229,7 @@ the system prompt instructs the model to use the correct format and timezone.
 @register
 class CalendarAgent(BaseAgent):
     name  = "calendar"
-    tools = ["list_events", "create_event", "update_event", "delete_event", "extract_facts"]
+    tools = ["list_events", "create_event", "update_event", "delete_event"]
 
     def __init__(
         self,
@@ -332,7 +332,7 @@ Hard delete is not supported — `archive_email` removes the INBOX label only.
 @register
 class EmailAgent(BaseAgent):
     name  = "email"
-    tools = ["list_emails", "get_email", "draft_email", "send_email", "archive_email", "extract_facts"]
+    tools = ["list_emails", "get_email", "draft_email", "send_email", "archive_email"]
 
     def __init__(
         self,

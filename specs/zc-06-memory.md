@@ -15,6 +15,7 @@ users confirm (or consolidation merges them automatically on a schedule).
 - Retrieve relevant episodes via cosine similarity search.
 - Generate and cache episode summaries lazily (on first retrieval).
 - Store typed user facts (key-value, agent-scoped or global).
+- Extract user facts from completed turns via LLM (`ze_core/memory/extractor.py`).
 - Detect and mark contradictory facts (exact key match and semantic similarity).
 - Inject ranked facts and episodes into `MemoryContext` within a token budget.
 - Store and retrieve a structured `UserProfile` synthesised from facts and episodes.
@@ -23,10 +24,12 @@ users confirm (or consolidation merges them automatically on a schedule).
 
 ## Out of Scope
 
-- Does not decide what to remember — agents propose; the framework writes.
 - Does not push memory digests proactively (that is a Ze-specific proactive feature).
 - Does not handle cross-user memory (single-user system).
 - Does not authenticate or authorise memory access.
+
+Agents may still attach explicit `memory_proposals` on `AgentResult`; these override
+extracted facts with the same key. Otherwise the framework extracts and proposes.
 
 ---
 
@@ -385,7 +388,7 @@ Memory is integrated at two graph nodes:
 |---|---|---|
 | `fetch_context` | `store.get_context(prompt_embedding, agent)` | No — awaited inline |
 | `write_memory` | `store.write_episode(...)` | Yes — `asyncio.create_task` |
-| `write_memory` | `store.propose_facts(result.memory_proposals)` | No — awaited inline |
+| `write_memory` | `gather_fact_proposals()` then `store.propose_facts(...)` | No — awaited inline |
 
 `write_memory` skips all memory writes when `thread_id` starts with `"eval-"`.
 
@@ -397,6 +400,7 @@ All memory settings live under `config["memory"]` in `settings.config`:
 
 | Key | Default | Purpose |
 |---|---|---|
+| `fact_extraction_model` | *(falls back to `models.synthesis`)* | Model for post-turn user-fact extraction |
 | `contradiction_threshold` | `0.85` | Cosine similarity above which a fact is flagged as contradicted |
 | `merge_silent_threshold` | `0.95` | Auto-merge without LLM |
 | `merge_llm_threshold` | `0.85` | LLM-assisted merge |

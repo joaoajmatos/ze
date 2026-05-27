@@ -34,7 +34,8 @@ execution. Propose new facts for user approval rather than writing silently.
 
 ## Out of Scope
 
-- Does not decide what to remember — agents propose, users confirm.
+- Does not decide what to remember silently — the framework extracts and proposes;
+  users confirm. Agents may still supply explicit `memory_proposals` when needed.
 - Does not summarise across multiple episodes (raw retrieval only).
 - Does not handle cross-user memory (single-user system).
 - Does not push digest notifications proactively.
@@ -67,7 +68,10 @@ embedding: np.ndarray
 ### Write Input (fact proposal)
 
 ```python
-proposals: list[UserFact]   # from AgentResult.memory_proposals
+# write_memory gathers proposals via ze_core.memory.extractor.gather_fact_proposals():
+#   1. LLM extraction from (prompt, response) for the completed turn
+#   2. merged with any explicit AgentResult.memory_proposals (explicit wins on key clash)
+proposals: list[UserFact]
 ```
 
 ### Errors / Edge Cases

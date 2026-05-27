@@ -34,7 +34,7 @@ def make_client(
     """Return a mock OpenRouterClient.
 
     complete_with_tools returns text immediately (no tool-call round-trips).
-    complete is used by extract_facts internally.
+    complete is used for plain completions when needed.
     """
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(return_value=(loop_response, None))
@@ -101,19 +101,6 @@ async def test_run_returns_response_from_agentic_loop():
     assert result.response == "Here is the latest AI news."
 
 
-async def test_run_always_includes_extract_facts_call():
-    agent = make_agent()
-    result = await agent.run(make_ctx())
-    tool_names = [tc.tool_name for tc in result.tool_calls]
-    assert "extract_facts" in tool_names
-
-
-async def test_run_extract_facts_is_last_tool_call():
-    agent = make_agent()
-    result = await agent.run(make_ctx())
-    assert result.tool_calls[-1].tool_name == "extract_facts"
-
-
 # ── run() — agentic loop with tool-call round-trips ──────────────────────────
 
 async def test_run_single_search_iteration():
@@ -123,7 +110,7 @@ async def test_run_single_search_iteration():
         (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "AI news"}}]),
         ("Here is what I found.", None),
     ])
-    client.complete = AsyncMock(return_value="[]")  # extract_facts
+    client.complete = AsyncMock(return_value="ok")
     tavily = make_tavily()
     agent = make_agent(client=client, tavily=tavily)
 

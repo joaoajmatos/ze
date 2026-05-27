@@ -27,7 +27,7 @@ def make_settings():
 def make_client(loop_response: str = "You have no upcoming events.") -> AsyncMock:
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(return_value=(loop_response, None))
-    client.complete = AsyncMock(return_value="[]")  # extract_facts
+    client.complete = AsyncMock(return_value="ok")
 
     async def _stream(*args, **kwargs):
         for token in loop_response.split():
@@ -92,11 +92,6 @@ async def test_run_returns_response_from_agentic_loop():
     client = make_client("You have a dentist at 10am.")
     result = await make_agent(client=client).run(make_ctx())
     assert result.response == "You have a dentist at 10am."
-
-
-async def test_run_always_includes_extract_facts():
-    result = await make_agent().run(make_ctx())
-    assert result.tool_calls[-1].tool_name == "extract_facts"
 
 
 # ── run() — agentic loop round-trips ─────────────────────────────────────────
@@ -186,7 +181,7 @@ async def test_run_list_then_update_in_single_turn():
 async def test_run_no_tool_calls_when_llm_answers_directly():
     """LLM responds without calling any tools."""
     result = await make_agent().run(make_ctx())  # make_client returns text immediately
-    calendar_calls = [tc for tc in result.tool_calls if tc.tool_name != "extract_facts"]
+    calendar_calls = list(result.tool_calls)
     assert len(calendar_calls) == 0
 
 

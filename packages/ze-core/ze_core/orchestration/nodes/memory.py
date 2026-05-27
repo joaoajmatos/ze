@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 
 from ze_core.logging import get_logger
+from ze_core.memory.extractor import gather_fact_proposals
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.state import AgentState
 from ze_core.orchestration.types import AgentResult
@@ -46,8 +47,15 @@ async def write_memory(state: AgentState, config: dict) -> dict:
                 embedding=embedding,
             )
         )
-        if result.memory_proposals:
-            await store.propose_facts(result.memory_proposals)
+        proposals = await gather_fact_proposals(
+            config["configurable"],
+            agent=result.agent,
+            prompt=ctx.prompt,
+            response=result.response,
+            explicit=result.memory_proposals,
+        )
+        if proposals:
+            await store.propose_facts(proposals)
 
         person_store = config["configurable"].get("person_store")
         if person_store and result.contact_proposals:
@@ -58,7 +66,7 @@ async def write_memory(state: AgentState, config: dict) -> dict:
     log.debug(
         "orchestration_memory_write_scheduled",
         session_id=state["session_id"],
-        proposals=len(result.memory_proposals) if not is_eval else 0,
+        explicit_proposals=len(result.memory_proposals) if not is_eval else 0,
         eval=is_eval,
     )
 

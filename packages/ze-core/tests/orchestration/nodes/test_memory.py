@@ -107,6 +107,25 @@ class TestWriteMemory:
         user_msgs = [m for m in result["messages"] if m["role"] == "user"]
         assert user_msgs[-1]["content"] == "[Image] a cat on a mat"
 
+    async def test_proposes_extracted_facts(self):
+        store = _make_store()
+        client = AsyncMock()
+        client.complete = AsyncMock(
+            return_value='[{"key": "city", "value": "Lisbon", "confidence": 0.9}]'
+        )
+        state = {
+            "session_id": "s1",
+            "agent_context": _ctx("I live in Lisbon"),
+            "agent_result": AgentResult(agent="companion", response="Nice city!"),
+            "subtask_results": [],
+            "messages": [],
+            "input_modality": "text",
+        }
+        await write_memory(state, _config(store=store, client=client, thread_id="s1"))
+        store.propose_facts.assert_awaited_once()
+        proposed = store.propose_facts.call_args[0][0]
+        assert any(f.key == "city" for f in proposed)
+
     async def test_compound_synthesizes_result(self):
         store = _make_store()
         envelope = RoutingEnvelope(

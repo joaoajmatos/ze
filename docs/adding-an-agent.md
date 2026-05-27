@@ -114,7 +114,8 @@ class MyAgent(BaseAgent):
             agent=self.name,
             output=response,
             tool_calls=[result],
-            memory_proposals=[],   # list[MemoryProposal] if you want to propose facts
+            # memory_proposals optional — write_memory extracts facts automatically;
+            # set explicitly only when the agent has structured facts to propose
         )
 
     async def stream(self, ctx: AgentContext):

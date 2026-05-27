@@ -27,7 +27,7 @@ Every agent today hand-wires its tool sequence:
 # research agent — always exactly one search, regardless of result quality
 search_tc  = await self.call_tool("web_search", ctx, query=ctx.prompt, ...)
 response   = await self._client.complete(augmented, ...)
-facts_tc   = await self.call_tool("extract_facts", ...)
+# fact extraction runs in write_memory — not in the agent run() path
 ```
 
 If the first search is shallow the agent cannot search again. If the prompt only
@@ -205,23 +205,16 @@ async def run(self, ctx: AgentContext) -> AgentResult:
         tool_names=["web_search"],
     )
     await self.emit(ctx, "research.summarising")
-    facts_tc = await self.call_tool(
-        "extract_facts", ctx,
-        prompt=ctx.prompt, response=response,
-        client=self._client, model=self._model(ctx),
-    )
-    proposals = to_user_facts(facts_tc.result or [])
     return AgentResult(
         agent=self.name,
         response=response,
-        tool_calls=tool_calls + [facts_tc],
-        memory_proposals=proposals,
+        tool_calls=tool_calls,
     )
 ```
 
 The LLM may now issue multiple `web_search` calls if the first result is
-insufficient, summarise them, and return. Ze always runs `extract_facts`
-post-loop regardless.
+insufficient, summarise them, and return. User-fact extraction runs in
+`write_memory` via `ze_core.memory.extractor`, not in the agent loop.
 
 `stream()` is unchanged — it remains a fixed-sequence fallback for streaming
 contexts, which do not support tool-call loops.

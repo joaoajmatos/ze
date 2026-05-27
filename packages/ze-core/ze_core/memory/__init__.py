@@ -1,4 +1,9 @@
 from ze_core.memory.consolidator import MemoryConsolidator
+from ze_core.memory.extractor import (
+    extract_user_facts,
+    gather_fact_proposals,
+    merge_fact_proposals,
+)
 from ze_core.memory.store import MemoryStore
 from ze_core.memory.postgres import PostgresMemoryStore
 from ze_core.memory.sqlite import SQLiteMemoryStore
@@ -20,4 +25,7 @@ __all__ = [
     "Episode",
     "UserProfile",
     "ConsolidationReport",
+    "extract_user_facts",
+    "gather_fact_proposals",
+    "merge_fact_proposals",
 ]

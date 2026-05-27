@@ -111,7 +111,7 @@ description: |
   Use for questions about current events, factual lookups, topic deep-dives,
   or anything requiring information retrieval from the web.
 model: anthropic/claude-sonnet-4-5
-tools: [web_search, summarize, extract_facts]
+tools: [web_search, summarize]
 timeout_seconds: 30
 intent_map:
   read: web_search    # pipeline: web_search → summarize
@@ -167,7 +167,7 @@ to pass before execution. Auth via Google OAuth2 — token stored in Fly.io secr
 | Property | Value |
 |----------|-------|
 | Model    | `anthropic/claude-sonnet-4-5` |
-| Tools    | `web_search`, `summarize`, `extract_facts` |
+| Tools    | `web_search`, `summarize` |
 | Scope    | Tavily API |
 | Phase    | 1 |
 
@@ -179,7 +179,7 @@ to pass before execution. Auth via Google OAuth2 — token stored in Fly.io secr
 
 **Notes:**
 - Uses Tavily API for structured search results (title, URL, snippet, score).
-- `extract_facts` is called by the agent to propose `memory_proposals`.
+- User facts are extracted in `write_memory` (see `specs/zc-06-memory.md`), not by agent tools.
 - Tavily API key stored in `.env` as `TAVILY_API_KEY`.
 
 ---
@@ -211,7 +211,7 @@ graph in `ze/orchestration/workflow_graph.py`.
 | Property | Value |
 |----------|-------|
 | Model    | `anthropic/claude-sonnet-4-5` |
-| Tools    | None — pure reasoning, no external calls |
+| Tools    | `extract_contacts`, `log_outreach_event` (post-response); no web/calendar/email tools |
 | Scope    | In-context only |
 | Phase    | 1 |
 
@@ -223,8 +223,8 @@ graph in `ze/orchestration/workflow_graph.py`.
 
 **Notes:**
 - Receives full `MemoryContext` — user facts and recent episodes.
-- `memory_proposals` always empty (companion makes no tool calls that produce facts).
-- `tool_calls` always empty list.
+- User facts are proposed by `write_memory` extraction, not by companion tools.
+- Post-response tools: `extract_contacts`, optional `log_outreach_event`.
 
 ## Per-Agent Module Structure
 
