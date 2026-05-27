@@ -7,7 +7,8 @@ from aiogram import Bot
 from aiogram.types import CallbackQuery, ForceReply, Message
 
 from ze.conversation import extract_response, make_graph_input_from_raw_text
-from ze.errors import ImageDownloadError, UnknownDialError, UnknownProfileError
+from ze.errors import ImageDownloadError
+from ze_core.errors import UnknownDialError, UnknownProfileError
 from ze.interface.preprocessor import TelegramInputPreprocessor
 from ze.interface.telegram import TelegramInterface
 from ze.logging import bind_context, get_logger, unbind_context

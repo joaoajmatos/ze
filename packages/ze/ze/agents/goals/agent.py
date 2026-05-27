@@ -10,7 +10,7 @@ from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
-from ze.errors import GoalPlanError
+from ze_core.errors import GoalPlanError
 from ze_core.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
 from ze_core.goals.postgres import PostgresGoalStore as GoalStore

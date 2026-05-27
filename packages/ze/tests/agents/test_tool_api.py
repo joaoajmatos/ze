@@ -12,7 +12,7 @@ from ze_core.orchestration.tool import ToolAccess, ToolSpec, get_tool, registere
 _tool_registry = _tool_mod._tools
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.capability.types import GateDecision
-from ze.errors import AgentConfigError, ToolBlockedError, UnknownToolError
+from ze_core.errors import AgentConfigError, ToolBlockedError, UnknownToolError
 from ze.logging import configure_logging
 from ze_core.memory.types import MemoryContext
 from ze.settings import Settings
@@ -581,7 +581,7 @@ async def test_agentic_loop_passes_schemas_to_client(settings):
 async def test_agentic_loop_raises_agent_error_on_none_none_response(settings):
     """complete_with_tools returning (None, None) raises AgentError, not AssertionError."""
     import ze.tools.web  # noqa
-    from ze.errors import AgentError
+    from ze_core.errors import AgentError
 
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(return_value=(None, None))
@@ -601,7 +601,7 @@ async def test_agentic_loop_raises_agent_error_on_none_none_response(settings):
 async def test_agentic_loop_empty_string_raises_agent_error(settings):
     """Empty text + no tool calls from complete_with_tools raises AgentError, not returns ''."""
     import ze.tools.web  # noqa
-    from ze.errors import AgentError
+    from ze_core.errors import AgentError
 
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(return_value=("", None))

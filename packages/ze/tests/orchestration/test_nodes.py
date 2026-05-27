@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from ze.agents.types import AgentContext, AgentResult
 from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.types import GateDecision
-from ze.errors import AgentTimeoutError
+from ze_core.errors import AgentTimeoutError
 from ze.logging import configure_logging
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze_core.memory.types import MemoryContext, UserFact

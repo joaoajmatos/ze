@@ -6,7 +6,7 @@ from typing import Any, get_type_hints
 import asyncpg
 from tavily import AsyncTavilyClient
 
-from ze.errors import AgentConfigError
+from ze_core.errors import AgentConfigError
 from ze_core.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
 from ze_core.goals.postgres import PostgresGoalStore as GoalStore

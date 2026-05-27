@@ -1,24 +1,6 @@
-"""Ze application exceptions — ze-core re-exports plus Ze-only types."""
+"""Ze application exceptions."""
 
 from ze_core.errors import ZeCoreError as ZeError
-
-# ── Routing (ze-core) ─────────────────────────────────────────────────────────
-
-from ze_core.errors import InvalidPromptError, RoutingError  # noqa: E402
-
-# ── Agents (ze-core) ──────────────────────────────────────────────────────────
-
-from ze_core.errors import (  # noqa: E402
-    AgentConfigError,
-    AgentError,
-    AgentTimeoutError,
-    ToolBlockedError,
-    UnknownAgentError,
-    UnknownToolError,
-)
-
-# Backward-compatible alias — tool errors are agent errors in ze-core.
-ToolError = AgentError
 
 # ── Capability ────────────────────────────────────────────────────────────────
 
@@ -86,12 +68,3 @@ class ChannelNotFoundError(ChannelError):
 
 class ChannelSendError(ChannelError):
     """Channel transport failed during send."""
-
-
-# ── Goals (ze-core) ───────────────────────────────────────────────────────────
-
-from ze_core.errors import GoalError, GoalExecutionError, GoalPlanError  # noqa: E402
-
-# ── Persona (ze-core) ─────────────────────────────────────────────────────────
-
-from ze_core.errors import PersonaError, UnknownDialError, UnknownProfileError  # noqa: E402

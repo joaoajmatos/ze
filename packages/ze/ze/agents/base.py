@@ -8,7 +8,6 @@ from ze.agents.identity import build_identity_block
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.orchestration.base_agent import BaseAgent as _CoreBaseAgent
 from ze_core.orchestration.base_agent import _truncate_messages
-from ze_core.orchestration.types import ToolCall as CoreToolCall
 
 if TYPE_CHECKING:
     from ze.settings import Settings
@@ -22,12 +21,12 @@ class BaseAgent(_CoreBaseAgent):
         from ze.logging import get_logger
         self._log = get_logger(__name__)
 
-    async def call_tool(self, name: str, ctx: AgentContext, **kwargs) -> CoreToolCall:
+    async def call_tool(self, name: str, ctx: AgentContext, **kwargs) -> ToolCall:
         """Unwrap legacy Ze tools that still return a nested ToolCall."""
         tc = await super().call_tool(name, ctx, **kwargs)
         inner = tc.result
-        if isinstance(inner, (ToolCall, CoreToolCall)):
-            return CoreToolCall(
+        if isinstance(inner, ToolCall):
+            return ToolCall(
                 tool_name=tc.tool_name,
                 args=tc.args,
                 result=inner.result,

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze.errors import GoalPlanError
+from ze_core.errors import GoalPlanError
 from ze_core.goals.executor import GoalExecutor
 from ze_core.goals.types import (
     Goal,

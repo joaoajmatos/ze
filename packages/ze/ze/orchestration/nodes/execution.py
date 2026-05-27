@@ -8,7 +8,7 @@ from ze_core.orchestration.registry import get_agent, get_agent_class
 from ze.agents.types import AgentContext, AgentResult
 from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.types import GateDecision
-from ze.errors import AgentTimeoutError
+from ze_core.errors import AgentTimeoutError
 from ze.logging import get_logger
 from ze.orchestration.state import AgentState
 from ze.settings import Settings

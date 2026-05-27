@@ -1,10 +1,12 @@
 from ze.errors import (
     ZeError,
-    RoutingError, InvalidPromptError,
-    AgentError, AgentTimeoutError, UnknownAgentError, ToolError,
     CapabilityError, CapabilityConfigError,
     MemoryError,
     OpenRouterError, RateLimitError,
+)
+from ze_core.errors import (
+    AgentError, AgentTimeoutError, UnknownAgentError,
+    InvalidPromptError, RoutingError,
 )
 
 
@@ -16,7 +18,6 @@ def test_hierarchy_routing():
 def test_hierarchy_agent():
     assert issubclass(AgentTimeoutError, AgentError)
     assert issubclass(UnknownAgentError, AgentError)
-    assert issubclass(ToolError, AgentError)
     assert issubclass(AgentError, ZeError)
 
 
@@ -50,7 +51,7 @@ def test_all_are_catchable_as_ze_error():
         InvalidPromptError("empty"),
         AgentTimeoutError("timed out"),
         UnknownAgentError("no agent"),
-        ToolError("tool failed"),
+        AgentError("tool failed"),
         CapabilityConfigError("bad yaml"),
         MemoryError("db error"),
         RateLimitError("429", status_code=429),

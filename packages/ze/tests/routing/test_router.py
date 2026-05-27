@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from ze.agents.bootstrap import prepare_gate_registry
-from ze.errors import InvalidPromptError, RoutingError
+from ze_core.errors import InvalidPromptError, RoutingError
 from ze.logging import configure_logging
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.types import RouterConfig, RoutingEnvelope, SubTask

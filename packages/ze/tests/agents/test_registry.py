@@ -7,7 +7,7 @@ from ze_core.orchestration.registry import (
     get_agent,
     register_instance,
 )
-from ze.errors import UnknownAgentError
+from ze_core.errors import UnknownAgentError
 from ze.logging import configure_logging
 
 

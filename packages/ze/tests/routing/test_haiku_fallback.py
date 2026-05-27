@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from ze.agents.bootstrap import prepare_gate_registry
-from ze.errors import RoutingError
+from ze_core.errors import RoutingError
 from ze.logging import configure_logging
 from ze.routing.haiku_fallback import decompose
 from ze_core.routing.types import RoutingEnvelope

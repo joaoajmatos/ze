@@ -30,6 +30,7 @@ class AgentContext:
     intent: str
     gate_decision: GateDecision = GateDecision.EXECUTE
     memory: MemoryContext = field(default_factory=MemoryContext)
+    tool_calls: list[ToolCall] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)
     persona: dict = field(default_factory=dict)
     model: str | None = None
