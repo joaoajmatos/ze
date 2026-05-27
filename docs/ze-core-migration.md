@@ -130,6 +130,15 @@ ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and 
 
 **Phase 2 done when:** No `ze.capability` package (or re-export only); gate has no Telegram imports.
 
+**Implemented (2025-05):**
+
+- `ze_core.capability.gate.CapabilityGate` with `PostgresCapabilityOverrideStore`
+- `prepare_gate_registry()` mirrors `config.yaml` agent capabilities into ze-core registry (until Phase 7 `@agent`)
+- `PUT /capabilities` persists to DB via `set_permanent()`; `GET` merges YAML + overrides
+- `interface` passed in `Container.make_graph_config()`
+- Migration `017_capability_overrides.py`
+- `ze/capability/gate.py` and `types.py` are thin re-exports
+
 ---
 
 ### Phase 3 — Routing
@@ -272,7 +281,7 @@ Update as PRs merge:
 |-------|--------|-------|-------|
 | 0 Prep | ✅ | | Doc + architecture link |
 | 1 Interface | ✅ | | `invoke_raw_turn` / `resume_turn` on `Container` |
-| 2 Capability | ⬜ | | |
+| 2 Capability | ✅ | | ze-core gate + DB overrides; YAML sync via `prepare_gate_registry` |
 | 3 Routing | ⬜ | | |
 | 4 Memory | ⬜ | | |
 | 5 Goals / proactive | ⬜ | | |

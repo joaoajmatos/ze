@@ -8,9 +8,10 @@ from aiogram import Bot
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
-from ze.agents.bootstrap import bootstrap_agents
+from ze.agents.bootstrap import bootstrap_agents, prepare_gate_registry
 from ze_browser import BrowserClient
 from ze.capability.gate import CapabilityGate
+from ze_core.capability.overrides import PostgresCapabilityOverrideStore
 from ze.channels.email import EmailChannel
 from ze.channels.registry import ChannelRegistry
 from ze.contacts.channel_store import ContactChannelStore
@@ -105,6 +106,7 @@ class Container:
             "settings": self.settings,
             "workflow_planner": self.workflow_planner,
             "contact_channel_store": self.contact_channel_store,
+            "interface": self.interface,
         }
         configurable.update(configurable_extra)
         return {"configurable": configurable}
@@ -145,7 +147,7 @@ async def build_container(settings: Settings) -> Container:
             ("ze.agents.types", "ToolCall"),
             ("ze.agents.types", "AgentResult"),
             ("ze.agents.types", "AgentContext"),
-            ("ze.capability.types", "GateDecision"),
+            ("ze_core.capability.types", "GateDecision"),
             ("ze.memory.types", "MemoryContext"),
             ("ze.memory.types", "UserFact"),
             ("ze.memory.types", "Episode"),
@@ -176,7 +178,6 @@ async def build_container(settings: Settings) -> Container:
         estimator=estimator,
     )
 
-    capability_gate = CapabilityGate(config_path=settings.capabilities_path)
     memory_store = MemoryStore(
         pool=pool,
         embedder=embedder,
@@ -211,8 +212,21 @@ async def build_container(settings: Settings) -> Container:
     workflow_planner = WorkflowPlanner(openrouter_client=openrouter_client, settings=settings)
     workflow_graph = build_workflow_graph(checkpointer=checkpointer)
 
-    # The graph_config mirrors _make_workflow_config in ZeBot — passed to the scheduler
-    # so scheduled workflow runs have access to all required services.
+    prepare_gate_registry(settings)
+    override_store = PostgresCapabilityOverrideStore(pool=pool)
+    capability_gate = CapabilityGate(override_store=override_store)
+    await capability_gate.load_persistent_overrides()
+
+    bot = Bot(token=settings.telegram_bot_token)
+    telegram_chat_id = (
+        int(settings.telegram_allowed_chat_id)
+        if settings.telegram_allowed_chat_id
+        else 0
+    )
+    interface = TelegramInterface(bot=bot, chat_id=telegram_chat_id)
+    validate_interface(interface)
+    notifier = ProactiveNotifier(interface=interface)
+
     workflow_graph_config = {
         "configurable": {
             "router": router,
@@ -226,15 +240,6 @@ async def build_container(settings: Settings) -> Container:
         }
     }
 
-    bot = Bot(token=settings.telegram_bot_token)
-    telegram_chat_id = (
-        int(settings.telegram_allowed_chat_id)
-        if settings.telegram_allowed_chat_id
-        else 0
-    )
-    interface = TelegramInterface(bot=bot, chat_id=telegram_chat_id)
-    validate_interface(interface)
-
     proactive_cfg = settings.proactive_config
     workflow_scheduler = WorkflowScheduler(
         workflow_store=workflow_store,
@@ -245,11 +250,35 @@ async def build_container(settings: Settings) -> Container:
         notifier=notifier if proactive_cfg.get("alerts", {}).get("workflow_failure_enabled", True) else None,
     )
 
+    contact_channel_store = ContactChannelStore(pool=pool)
+    goal_store = GoalStore(pool=pool)
+    goal_planner = GoalPlanner(openrouter_client=openrouter_client, settings=settings)
+    goal_executor = GoalExecutor(
+        goal_store=goal_store,
+        goal_planner=goal_planner,
+        notifier=notifier,
+    )
     reminder_store = ReminderStore(pool=pool)
 
-    # Replay unsent reminders from before the last restart.
-    # list_all_unsent (no fire_at filter) catches reminders that fired while the
-    # server was down and were never delivered — fire them immediately via a task.
+    bootstrap_agents(
+        openrouter_client=openrouter_client,
+        settings=settings,
+        pool=pool,
+        workflow_store=workflow_store,
+        workflow_planner=workflow_planner,
+        workflow_scheduler=workflow_scheduler,
+        reminder_store=reminder_store,
+        notifier=notifier,
+        person_store=person_store,
+        browser_client=browser_client,
+        contact_channel_store=contact_channel_store,
+        goal_store=goal_store,
+        goal_planner=goal_planner,
+        goal_executor=goal_executor,
+    )
+
+    graph = build_graph(checkpointer=checkpointer)
+
     now = datetime.now(timezone.utc)
     unsent_reminders = await reminder_store.list_all_unsent()
     overdue_count = 0
@@ -270,24 +299,6 @@ async def build_container(settings: Settings) -> Container:
             overdue=overdue_count,
             scheduled=len(unsent_reminders) - overdue_count,
         )
-
-    bootstrap_agents(
-        openrouter_client=openrouter_client,
-        settings=settings,
-        workflow_store=workflow_store,
-        workflow_planner=workflow_planner,
-        workflow_scheduler=workflow_scheduler,
-        reminder_store=reminder_store,
-        notifier=notifier,
-        person_store=person_store,
-        browser_client=browser_client,
-        contact_channel_store=contact_channel_store,
-        goal_store=goal_store,
-        goal_planner=goal_planner,
-        goal_executor=goal_executor,
-        pool=pool,
-    )
-    graph = build_graph(checkpointer=checkpointer)
 
     await recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes)
     log.info("stale_campaigns_checked")
@@ -370,16 +381,6 @@ async def build_container(settings: Settings) -> Container:
 
     email_channel = EmailChannel(credentials=google_credentials) if google_credentials else None
     channel_registry = ChannelRegistry(channels=[email_channel] if email_channel else [])
-    contact_channel_store = ContactChannelStore(pool=pool)
-
-    # ── Goal Engine ───────────────────────────────────────────────────────────
-    goal_store = GoalStore(pool=pool)
-    goal_planner = GoalPlanner(openrouter_client=openrouter_client, settings=settings)
-    goal_executor = GoalExecutor(
-        goal_store=goal_store,
-        goal_planner=goal_planner,
-        notifier=notifier,
-    )
 
     calendar_reminders = CalendarReminderScheduler(
         notifier=notifier,
@@ -429,7 +430,6 @@ async def build_container(settings: Settings) -> Container:
         logger=get_logger("ze.transcription"),
     )
     preprocessor = TelegramInputPreprocessor(transcription_client=transcription_client)
-    notifier = ProactiveNotifier(interface=interface)
 
     locale = settings.persona_config.get("locale", "en")
     translations = ProgressTranslations.load(locale, settings.config_dir)

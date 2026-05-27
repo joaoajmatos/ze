@@ -748,6 +748,8 @@ class ZeBot:
         return await self._graph.ainvoke(state, config)
 
     def _make_config(self, chat_id: int) -> dict:
+        if self._container is not None:
+            return self._container.make_graph_config(chat_id)
         return {
             "configurable": {
                 "thread_id": str(chat_id),
@@ -761,6 +763,7 @@ class ZeBot:
                 "settings": self._settings,
                 "workflow_planner": self._workflow_planner,
                 "contact_channel_store": self._contact_channel_store,
+                "interface": self._interface,
             }
         }
 

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from ze.api import dependencies
 from ze.api.routes import capabilities, memory, routing
-from ze.capability.gate import CapabilityGate
+from ze.capability.testing import make_gate
 from ze.logging import configure_logging
 from ze.settings import Settings, get_settings
 
@@ -17,15 +17,13 @@ def setup_logging():
     configure_logging()
 
 
-def make_settings():
-    import pathlib
+def make_settings(config_dir):
     get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent / "config"
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
         database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
+        config_dir=config_dir,
     )
 
 
@@ -43,8 +41,14 @@ def capabilities_yaml(tmp_path):
 
 
 @pytest.fixture
-def gate(capabilities_yaml) -> CapabilityGate:
-    return CapabilityGate(config_path=capabilities_yaml)
+def gate(capabilities_yaml):
+    cfg = yaml.safe_load(capabilities_yaml.read_text())
+    store = MagicMock()
+    store.get_all = AsyncMock(return_value={})
+    store.set = AsyncMock()
+    gate = make_gate(cfg["agents"], override_store=store)
+    gate._persistent_cache = {}
+    return gate
 
 
 @pytest.fixture
@@ -60,17 +64,15 @@ def mock_pool():
 
 
 @pytest.fixture
-def client(gate, mock_pool):
+def client(gate, mock_pool, capabilities_yaml):
     pool, conn = mock_pool
-    settings = make_settings()
+    settings = make_settings(capabilities_yaml.parent)
 
-    # Build a minimal app with only the routes under test — no lifespan
     app = FastAPI()
     app.include_router(capabilities.router, prefix="/capabilities")
     app.include_router(memory.router, prefix="/memory")
     app.include_router(routing.router, prefix="/routing")
 
-    # Override all dependencies used by the routes
     app.dependency_overrides[dependencies.get_capability_gate] = lambda: gate
     app.dependency_overrides[dependencies.get_pool] = lambda: pool
     app.dependency_overrides[dependencies.get_settings] = lambda: settings
@@ -92,12 +94,14 @@ def test_get_capabilities_returns_config(client):
 
 # ── PUT /capabilities/{agent}/{intent} ────────────────────────────────────────
 
-def test_put_capability_updates_mode(client):
+def test_put_capability_updates_mode(client, gate):
     c, _ = client
     resp = c.put("/capabilities/research/read", json={"mode": "confirm"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["research"]["read"] == "confirm"
+    from ze.capability.types import GateDecision
+    assert gate.evaluate("research", "read", {}) == GateDecision.AWAIT_CONFIRMATION
 
 
 def test_put_capability_unknown_agent_returns_422(client):

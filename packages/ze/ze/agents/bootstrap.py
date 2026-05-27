@@ -7,6 +7,7 @@ import asyncpg
 from tavily import AsyncTavilyClient
 
 from ze.agents.registry import _registry, register_instance
+from ze.capability.sync import sync_gate_registry
 from ze_browser import BrowserClient
 from ze.contacts.channel_store import ContactChannelStore
 from ze.contacts.store import PersonStore
@@ -26,6 +27,12 @@ from ze.workflow.store import WorkflowStore
 _dep_map: dict[type, Any] = {}
 
 _AGENTS_DIR = Path(__file__).parent
+
+
+def prepare_gate_registry(settings: Settings) -> None:
+    """Import agent modules and sync YAML capabilities into ze-core for the gate."""
+    _import_agent_modules()
+    sync_gate_registry(settings)
 
 
 def bootstrap_agents(
@@ -85,7 +92,7 @@ def bootstrap_agents(
     if pool is not None:
         _dep_map[asyncpg.Pool] = pool
 
-    _import_agent_modules()
+    prepare_gate_registry(settings)
 
     for name, cls in _registry.items():
         agent_cfg = settings.agent_configs.get(name, {})

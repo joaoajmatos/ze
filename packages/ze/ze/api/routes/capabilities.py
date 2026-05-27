@@ -9,25 +9,45 @@ from ze.api.schemas import (
     UpdateCapabilityResponse,
 )
 from ze.capability.gate import CapabilityGate
+from ze.capability.types import Mode
 from ze.settings import Settings
 
 router = APIRouter(tags=["capabilities"])
+
+
+def _effective_capabilities(
+    settings: Settings,
+    gate: CapabilityGate,
+) -> dict[str, AgentCapabilityConfig]:
+    """Merge YAML defaults with DB-backed persistent overrides."""
+    cache = gate._persistent_cache or {}
+    result: dict[str, AgentCapabilityConfig] = {}
+
+    for agent, cfg in settings.agent_configs.items():
+        caps = dict(cfg.get("capabilities", {}))
+        for (a, intent), mode in cache.items():
+            if a == agent:
+                caps[intent] = mode.value
+        result[agent] = AgentCapabilityConfig.model_validate(
+            {"enabled": cfg.get("enabled", True), **caps},
+        )
+    return result
 
 
 @router.get(
     "",
     response_model=CapabilitiesResponse,
     summary="List capability modes",
-    description="Return the full capabilities configuration as loaded from `capabilities.yaml`.",
+    description=(
+        "Return effective capability modes per agent (YAML defaults merged with "
+        "any persistent DB overrides)."
+    ),
 )
-def list_capabilities(gate: CapabilityGate = Depends(get_capability_gate)) -> CapabilitiesResponse:
-    agents = gate._config.get("agents", {})
-    return CapabilitiesResponse({
-        agent: AgentCapabilityConfig.model_validate(
-            {"enabled": cfg.get("enabled", True), **cfg.get("capabilities", {})}
-        )
-        for agent, cfg in agents.items()
-    })
+def list_capabilities(
+    gate: CapabilityGate = Depends(get_capability_gate),
+    settings: Settings = Depends(get_settings),
+) -> CapabilitiesResponse:
+    return CapabilitiesResponse(_effective_capabilities(settings, gate))
 
 
 @router.put(
@@ -35,12 +55,12 @@ def list_capabilities(gate: CapabilityGate = Depends(get_capability_gate)) -> Ca
     response_model=UpdateCapabilityResponse,
     summary="Update capability mode",
     description=(
-        "Set the permission mode for an agent intent. The change is written to "
-        "`capabilities.yaml` atomically. Returns the updated config for that agent."
+        "Set the permission mode for an agent intent. The change is persisted in "
+        "the database and takes precedence over config.yaml until cleared."
     ),
     responses=OPENAPI_RESPONSES_422,
 )
-def update_capability(
+async def update_capability(
     agent: str,
     intent: str,
     body: CapabilityModeUpdate,
@@ -58,7 +78,11 @@ def update_capability(
     if intent not in known_intents:
         raise HTTPException(status_code=422, detail=f"Unknown intent {intent!r} for agent {agent!r}")
 
-    gate.update_permanent(agent, intent, body.mode)
-    updated_agent = gate._config.get("agents", {}).get(agent, {})
-    updated_caps = {"enabled": updated_agent.get("enabled", True), **updated_agent.get("capabilities", {})}
-    return UpdateCapabilityResponse({agent: AgentCapabilityConfig.model_validate(updated_caps)})
+    try:
+        mode = Mode(body.mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid mode: {body.mode!r}") from exc
+
+    await gate.set_permanent(agent, intent, mode)
+    effective = _effective_capabilities(settings, gate)
+    return UpdateCapabilityResponse({agent: effective[agent]})

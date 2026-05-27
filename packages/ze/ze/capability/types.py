@@ -1,14 +1,5 @@
-from dataclasses import dataclass
-from enum import Enum
+"""Re-export ze-core capability types (Ze imports from here until Phase 7)."""
 
+from ze_core.capability.types import GateDecision, Mode
 
-class GateDecision(Enum):
-    EXECUTE = "execute"
-    DRAFT = "draft"
-    AWAIT_CONFIRMATION = "confirm"
-    BLOCKED = "blocked"
-
-
-@dataclass(frozen=True)
-class CapabilityConfig:
-    mode: str  # "autonomous" | "confirm" | "draft_only" | "disabled"
+__all__ = ["GateDecision", "Mode"]

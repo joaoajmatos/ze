@@ -32,8 +32,6 @@ async def lifespan(app: FastAPI):
     app.state.ze_bot = container.ze_bot
     app.state.workflow_store = container.workflow_store
 
-    signal.signal(signal.SIGHUP, lambda *_: container.capability_gate.reload())
-
     log.info("ze_startup_complete")
     yield
 
