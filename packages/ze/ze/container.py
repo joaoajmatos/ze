@@ -54,6 +54,7 @@ from ze.telegram.session import ActiveSessionStore
 from ze_core.interface.validation import validate_interface
 from ze.telemetry.reconciler import CostReconciler
 from ze.telemetry.tracker import CostTracker
+from ze_core.telemetry.postgres import PostgresCostStore
 from ze.transcription.client import TranscriptionClient
 from ze.workflow.planner import WorkflowPlanner
 from ze.workflow.scheduler import WorkflowScheduler
@@ -164,7 +165,8 @@ async def build_container(settings: Settings) -> Container:
     checkpointer = AsyncPostgresSaver(checkpointer_pool, serde=serde)
     await checkpointer.setup()
 
-    cost_tracker = CostTracker(pool=pool)
+    cost_store = PostgresCostStore(pool=pool)
+    cost_tracker = CostTracker(store=cost_store)
 
     openrouter_client = OpenRouterClient(
         api_key=settings.openrouter_api_key,
@@ -310,7 +312,7 @@ async def build_container(settings: Settings) -> Container:
     await recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes)
     log.info("stale_campaigns_checked")
 
-    cost_reconciler = CostReconciler(pool=pool, sdk=openrouter_client._sdk)
+    cost_reconciler = CostReconciler(store=cost_store, openrouter_client=openrouter_client)
     workflow_scheduler.schedule_job(
         fn=cost_reconciler.run,
         cron="*/15 * * * *",

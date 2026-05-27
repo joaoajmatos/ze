@@ -40,6 +40,15 @@ class OpenRouterClient:
     async def aclose(self) -> None:
         await self._sdk.__aexit__(None, None, None)
 
+    async def fetch_generation_cost(self, generation_id: str) -> float | None:
+        """Fetch actual USD cost for a generation (used by CostReconciler)."""
+        try:
+            resp = await self._sdk.generations.get_generation_async(id=generation_id)
+            return resp.data.total_cost
+        except Exception as exc:
+            self._log.warning("cost_fetch_failed", generation_id=generation_id, error=str(exc))
+            return None
+
     # ── Public interface ──────────────────────────────────────────────────────
 
     async def complete(

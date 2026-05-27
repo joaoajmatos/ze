@@ -217,6 +217,14 @@ ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and 
 
 **Phase 6 done when:** Telemetry and persona packages are ze-core + thin Ze wiring.
 
+**Implemented (2025-05):**
+
+- `ze/telemetry/*` — re-exports; `PostgresCostStore` + `CostTracker(store=…)` in `Container`
+- `CostReconciler` uses `openrouter_client.fetch_generation_cost()`
+- `ze/persona/*` — `PostgresPersonaStore` via thin `PersonaStore(pool, settings)` adapter
+- Profiles moved to `packages/ze/config/persona.yaml`; removed from `config.yaml`
+- `ze_core.errors` persona exceptions re-exported in `ze.errors`
+
 ---
 
 ### Phase 7 — Agents: `@register` → `@agent`
@@ -309,7 +317,7 @@ Update as PRs merge:
 | 3 Routing | ✅ | | ze-core router/fallback; `plan_sequential` + `after_decompose` in Ze graph |
 | 4 Memory | ✅ | | ze-core PostgresMemoryStore + consolidator; memory: removed from config.yaml |
 | 5 Goals / proactive | ✅ | | ze-core goals store/planner/executor; ProactiveNotifier + ProactiveScheduler; gate actions via Notification |
-| 6 Telemetry / persona | ⬜ | | |
+| 6 Telemetry / persona | ✅ | | ze-core CostTracker/Reconciler + PostgresCostStore; persona.yaml + PostgresPersonaStore |
 | 7 Agents `@agent` | ⬜ | | |
 | 8 Orchestration | ⬜ | | |
 | 9 Container / cleanup | ⬜ | | |

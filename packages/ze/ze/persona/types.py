@@ -1,11 +1,5 @@
-from __future__ import annotations
+"""Re-export ze-core persona types (Phase 6 migration)."""
 
-from dataclasses import dataclass, field
-from datetime import datetime
+from ze_core.persona.types import PersonaState
 
-
-@dataclass
-class PersonaState:
-    profile: str
-    dials: dict[str, float] = field(default_factory=dict)
-    updated_at: datetime | None = None
+__all__ = ["PersonaState"]

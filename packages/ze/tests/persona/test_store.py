@@ -7,6 +7,7 @@ import pytest
 from ze.persona.store import PersonaStore
 from ze.persona.types import PersonaState
 from ze.settings import Settings
+from ze_core.errors import UnknownDialError, UnknownProfileError
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ async def test_set_profile_executes_update():
 async def test_set_profile_raises_for_unknown_name():
     store = make_store()
 
-    with pytest.raises(ValueError, match="Unknown profile"):
+    with pytest.raises(UnknownProfileError, match="Unknown profile"):
         await store.set_profile("nonexistent")
 
 
@@ -143,7 +144,7 @@ async def test_set_dial_executes_update():
 async def test_set_dial_raises_for_unknown_dial():
     store = make_store()
 
-    with pytest.raises(ValueError, match="Unknown dial"):
+    with pytest.raises(UnknownDialError, match="Unknown dial"):
         await store.set_dial("sarcasm", 0.5)
 
 

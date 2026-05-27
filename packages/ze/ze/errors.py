@@ -108,3 +108,7 @@ class ChannelSendError(ChannelError):
 # ── Goals (ze-core) ───────────────────────────────────────────────────────────
 
 from ze_core.errors import GoalError, GoalExecutionError, GoalPlanError  # noqa: E402
+
+# ── Persona (ze-core) ─────────────────────────────────────────────────────────
+
+from ze_core.errors import PersonaError, UnknownDialError, UnknownProfileError  # noqa: E402

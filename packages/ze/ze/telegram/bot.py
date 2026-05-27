@@ -7,7 +7,7 @@ from aiogram import Bot
 from aiogram.types import CallbackQuery, ForceReply, Message
 
 from ze.conversation import extract_response, make_graph_input_from_raw_text
-from ze.errors import ImageDownloadError
+from ze.errors import ImageDownloadError, UnknownDialError, UnknownProfileError
 from ze.interface.preprocessor import TelegramInputPreprocessor
 from ze.interface.telegram import TelegramInterface
 from ze.logging import bind_context, get_logger, unbind_context
@@ -483,7 +483,7 @@ class ZeBot:
             name = args[0]
             try:
                 await self._persona_store.set_profile(name)
-            except ValueError:
+            except UnknownProfileError:
                 profiles = self._persona_store.available_profiles()
                 await self._bot.send_message(
                     chat_id,
@@ -496,7 +496,7 @@ class ZeBot:
             dial_name, value_str = args
             try:
                 await self._persona_store.set_dial(dial_name, float(value_str))
-            except ValueError as exc:
+            except (UnknownDialError, ValueError) as exc:
                 await self._bot.send_message(chat_id, _html.escape(str(exc)), parse_mode="HTML")
                 return
 
@@ -519,7 +519,7 @@ class ZeBot:
             name = parts[2]
             try:
                 await self._persona_store.set_profile(name)
-            except ValueError:
+            except UnknownProfileError:
                 return
 
         summary = await persona_summary(self._persona_store)

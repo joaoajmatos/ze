@@ -118,11 +118,17 @@ class Settings(BaseSettings):
         return self.config.get("agents", {})
 
     @property
+    def persona_path(self) -> Path:
+        return self.config_dir / "persona.yaml"
+
+    @property
     def persona_config(self) -> dict[str, Any]:
+        if self.persona_path.exists():
+            return _load_yaml(self.persona_path)
+        # Legacy: persona block embedded in config.yaml
         cfg = self.config.get("persona", {})
         if cfg:
             return cfg
-        # Absolute fallback if persona: block is missing entirely.
         return {
             "profile": "default",
             "locale": "en",
