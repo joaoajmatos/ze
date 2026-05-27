@@ -27,6 +27,7 @@ class BaseAgent(ABC):
     capabilities: dict[str, Mode] = {}
     intent_map: dict[str, str] = {}
     tools: list[str] = []
+    system_prompt: str = ""
 
     @abstractmethod
     async def run(self, ctx: AgentContext) -> AgentResult:

@@ -12,10 +12,55 @@ _instances: dict[str, BaseAgent] = {}
 
 
 def agent(cls: type) -> type:
-    """Register an agent class. Raises AgentConfigError on duplicate name."""
+    """Register an agent class and validate its self-describing configuration.
+
+    Accepts tools as either string names or callables; normalises callables to
+    their ``__name__`` so downstream code always sees ``list[str]``.
+
+    Raises AgentConfigError for: missing/empty name, missing/empty description,
+    intent_map key not present in capabilities, duplicate name, or a tool entry
+    that is neither a string nor a callable with ``__name__``.
+    """
     name = getattr(cls, "name", None)
     if not name:
         raise AgentConfigError(f"{cls.__name__} must define a `name` class attribute")
+
+    description = getattr(cls, "description", "").strip()
+    if not description:
+        raise AgentConfigError(f"Agent {name!r} must define a non-empty `description`")
+
+    # Normalise tools: accept callables; extract __name__ so callers always
+    # see list[str].  Validation against the tool registry is deferred to
+    # Container._validate_registry (tools may not be registered yet at import time).
+    raw_tools = list(getattr(cls, "tools", []))
+    normalised: list[str] = []
+    for t in raw_tools:
+        if isinstance(t, str):
+            normalised.append(t)
+        elif callable(t):
+            tool_name = getattr(t, "__name__", None)
+            if not tool_name:
+                raise AgentConfigError(
+                    f"Agent {name!r}: tool {t!r} is callable but has no __name__"
+                )
+            normalised.append(tool_name)
+        else:
+            raise AgentConfigError(
+                f"Agent {name!r}: tool entry {t!r} must be a string name or a callable"
+            )
+    cls.tools = normalised
+
+    # When capabilities is declared, every intent_map key must be covered.
+    # An empty capabilities dict means the agent hasn't declared gating rules;
+    # the gate will default to AWAIT_CONFIRMATION for all intents.
+    capabilities: dict = getattr(cls, "capabilities", {})
+    if capabilities:
+        for intent in getattr(cls, "intent_map", {}):
+            if intent not in capabilities:
+                raise AgentConfigError(
+                    f"Agent {name!r} intent_map key {intent!r} not in capabilities"
+                )
+
     if name in _registry:
         raise AgentConfigError(f"Duplicate agent name {name!r}")
     _registry[name] = cls

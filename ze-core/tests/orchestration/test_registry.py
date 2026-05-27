@@ -10,14 +10,17 @@ from ze_core.orchestration import (
     get_enabled_agents,
     get_registered_agents,
 )
+from ze_core.orchestration.tool import ToolAccess, clear_tool_registry, tool
 from ze_core.orchestration.types import AgentContext, AgentResult
 
 
 @pytest.fixture(autouse=True)
 def clean_registry():
     clear_registry()
+    clear_tool_registry()
     yield
     clear_registry()
+    clear_tool_registry()
 
 
 def _make_agent(name: str, enabled: bool = True) -> type[BaseAgent]:
@@ -55,6 +58,75 @@ class TestAgentDecorator:
 
         with pytest.raises(AgentConfigError, match="must define a `name`"):
             agent(NoName)
+
+    def test_empty_description_raises(self):
+        cls = _make_agent("nodesc")
+        cls.description = "   "
+        with pytest.raises(AgentConfigError, match="non-empty `description`"):
+            agent(cls)
+
+    def test_intent_map_key_not_in_capabilities_raises(self):
+        cls = _make_agent("badmap")
+        cls.capabilities = {"read": Mode.AUTONOMOUS}
+        cls.intent_map = {"read": "Read something", "write": "Write something"}
+        with pytest.raises(AgentConfigError, match="intent_map key 'write' not in capabilities"):
+            agent(cls)
+
+    def test_valid_capabilities_and_intent_map_registers(self):
+        cls = _make_agent("goodmap")
+        cls.capabilities = {"read": Mode.AUTONOMOUS, "write": Mode.CONFIRM}
+        cls.intent_map = {"read": "Read.", "write": "Write."}
+        result = agent(cls)
+        assert get_registered_agents()["goodmap"] is result
+
+
+class TestToolNormalisation:
+    def test_string_tools_unchanged(self):
+        @tool(access=ToolAccess.READ, description="A tool")
+        async def string_tool() -> str:
+            return "ok"
+
+        cls = _make_agent("str_tools")
+        cls.tools = ["string_tool"]
+        agent(cls)
+        assert get_agent_class("str_tools").tools == ["string_tool"]
+
+    def test_callable_tools_normalised_to_names(self):
+        @tool(access=ToolAccess.READ, description="Callable tool")
+        async def callable_tool() -> str:
+            return "ok"
+
+        cls = _make_agent("callable_tools")
+        cls.tools = [callable_tool]
+        agent(cls)
+        assert get_agent_class("callable_tools").tools == ["callable_tool"]
+
+    def test_mixed_tools_normalised(self):
+        @tool(access=ToolAccess.READ, description="First tool")
+        async def first_tool() -> str:
+            return "a"
+
+        @tool(access=ToolAccess.WRITE, description="Second tool")
+        async def second_tool() -> str:
+            return "b"
+
+        cls = _make_agent("mixed_tools")
+        cls.tools = [first_tool, "second_tool"]
+        agent(cls)
+        assert get_agent_class("mixed_tools").tools == ["first_tool", "second_tool"]
+
+    def test_invalid_tool_entry_raises(self):
+        cls = _make_agent("bad_tools")
+        cls.tools = [42]  # type: ignore[list-item]
+        with pytest.raises(AgentConfigError, match="must be a string name or a callable"):
+            agent(cls)
+
+    def test_callable_without_name_raises(self):
+        nameless = type("Nameless", (), {"__call__": lambda self: None})()
+        cls = _make_agent("nameless_tools")
+        cls.tools = [nameless]
+        with pytest.raises(AgentConfigError, match="has no __name__"):
+            agent(cls)
 
 
 class TestRegistryAccessors:
@@ -99,6 +171,10 @@ class TestBaseAgentDefaults:
     def test_default_timeout(self):
         cls = _make_agent("theta")
         assert cls.timeout == 30
+
+    def test_default_system_prompt(self):
+        cls = _make_agent("kappa")
+        assert cls.system_prompt == ""
 
     async def test_stream_raises_not_implemented(self):
         cls = _make_agent("iota")

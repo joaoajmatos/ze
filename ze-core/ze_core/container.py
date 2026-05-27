@@ -331,6 +331,8 @@ def _discover_agents(app_root: Path, package: str) -> None:
 
 
 def _validate_registry(settings: Any) -> None:
+    """Validate tool names against the tool registry (name/description/capabilities
+    are already validated by @agent at decoration time)."""
     from ze_core.orchestration.registry import get_registered_agents
     from ze_core.orchestration.tool import registered_tools
 
@@ -338,22 +340,10 @@ def _validate_registry(settings: Any) -> None:
     registered = get_registered_agents()
 
     for name, cls in registered.items():
-        if not getattr(cls, "name", ""):
-            raise AgentConfigError(f"{cls.__name__} must define a non-empty `name`")
-        if not getattr(cls, "description", "").strip():
-            raise AgentConfigError(
-                f"Agent {name!r} must define a non-empty `description`"
-            )
         for tool_name in getattr(cls, "tools", []):
             if tool_name not in tool_reg:
                 raise AgentConfigError(
                     f"Agent {name!r} declares unknown tool {tool_name!r}"
-                )
-        capabilities = getattr(cls, "capabilities", {})
-        for intent in getattr(cls, "intent_map", {}):
-            if intent not in capabilities:
-                raise AgentConfigError(
-                    f"Agent {name!r} intent_map key {intent!r} not in capabilities"
                 )
 
     enabled = {n: c for n, c in registered.items() if getattr(c, "enabled", True)}

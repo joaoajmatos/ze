@@ -131,20 +131,15 @@ class TestValidateRegistry:
         _validate_registry(None)  # should not raise
 
     def test_raises_on_empty_description(self):
-        from ze_core.container import _validate_registry
-
+        # Validation now happens at decoration time, not _validate_registry time.
         cls = _agent_cls("x", "")
-        agent(cls)
         with pytest.raises(AgentConfigError, match="description"):
-            _validate_registry(None)
+            agent(cls)
 
     def test_raises_on_whitespace_only_description(self):
-        from ze_core.container import _validate_registry
-
         cls = _agent_cls("x", "   ")
-        agent(cls)
         with pytest.raises(AgentConfigError, match="description"):
-            _validate_registry(None)
+            agent(cls)
 
     def test_raises_on_unknown_tool(self):
         from ze_core.container import _validate_registry
@@ -166,16 +161,14 @@ class TestValidateRegistry:
         _validate_registry(None)  # should not raise
 
     def test_raises_when_intent_map_key_not_in_capabilities(self):
-        from ze_core.container import _validate_registry
-
+        # Validation now happens at decoration time.
         cls = _agent_cls(
             "x", "desc",
             capabilities={"read": "autonomous"},
             intent_map={"write": "assistant"},
         )
-        agent(cls)
         with pytest.raises(AgentConfigError, match="intent_map"):
-            _validate_registry(None)
+            agent(cls)
 
     def test_raises_when_no_enabled_agents(self):
         from ze_core.container import _validate_registry
