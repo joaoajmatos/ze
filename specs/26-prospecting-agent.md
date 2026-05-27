@@ -5,7 +5,7 @@
 | Feature | Status |
 |---------|--------|
 | `ze-browser` sidecar service (Playwright + FastAPI) | 🔲 Pending |
-| `BrowserClient` — Ze-side HTTP client (`httpx`) | 🔲 Pending |
+| `ze-browser` Python package — `BrowserClient` (`httpx`) | ✅ Done |
 | `browser_extract` tool — with stealth + rate limiting | 🔲 Pending |
 | `add_prospect` tool | 🔲 Pending |
 | `draft_outreach` tool — WRITE, saves draft to DB directly | 🔲 Pending |
@@ -46,28 +46,37 @@ the prospecting-to-close pipeline described in `VISION.md`.
 ## Repository Layout
 
 ```
-ze/
-├── ze/
-│   ├── browser/
-│   │   ├── __init__.py
-│   │   ├── client.py       # BrowserClient
-│   │   └── types.py        # BrowserResult
-│   ├── agents/
-│   │   └── prospecting/
-│   │       ├── __init__.py
-│   │       └── agent.py
-│   └── tools/
-│       ├── browser.py      # browser_extract
-│       └── prospecting.py  # add_prospect, draft_outreach, log_outreach_event
-├── ze-browser/             # sidecar Fly.io service
-│   ├── main.py
-│   ├── extractor.py
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── fly.toml
-└── migrations/versions/
-    └── 014_prospecting.py
+packages/
+├── ze-browser/                 # installable Python package (httpx client)
+│   ├── pyproject.toml
+│   ├── ze_browser/
+│   │   ├── client.py           # BrowserClient
+│   │   ├── types.py            # BrowserResult
+│   │   └── errors.py           # BrowserError
+│   └── tests/
+│       └── test_browser_client.py
+└── ze/
+    ├── ze/
+    │   ├── agents/prospecting/
+    │   │   ├── __init__.py
+    │   │   └── agent.py
+    │   └── tools/
+    │       ├── browser.py      # browser_extract (imports ze_browser)
+    │       └── prospecting.py  # add_prospect, draft_outreach, log_outreach_event
+    └── migrations/versions/
+        └── 014_prospecting.py
+
+sidecar/browser/                # Fly.io sidecar (separate deploy)
+├── main.py
+├── extractor.py
+├── Dockerfile
+├── requirements.txt
+└── fly.toml
 ```
+
+Ze declares `ze-browser` as a workspace dependency in `packages/ze/pyproject.toml`.
+The sidecar HTTP service is **not** part of the Python package — it is deployed
+independently and called at `settings.browser_service_url`.
 
 ---
 
@@ -164,9 +173,15 @@ coordinated manually.
 
 ---
 
-## `BrowserClient` (`ze/browser/client.py`)
+## `BrowserClient` (`packages/ze-browser/ze_browser/client.py`)
 
-Uses `httpx` (already in Ze's dependency stack, unlike `aiohttp`).
+Installable package `ze-browser`. Import as:
+
+```python
+from ze_browser import BrowserClient, BrowserError, BrowserResult
+```
+
+Uses `httpx` (declared in `ze-browser`'s `pyproject.toml`; Ze re-exports via workspace dep).
 
 ```python
 @dataclass
@@ -186,7 +201,7 @@ class BrowserClient:
         """Navigate to url and return visible page text."""
 ```
 
-Raises `ZeError` subclass on connection error or HTTP 5xx so agents can handle
+Raises `BrowserError` on connection error or HTTP 5xx so agents can handle
 gracefully. HTTP 403 (blocked) is returned as a valid `BrowserResult` with empty
 `text` — not an exception.
 
@@ -578,10 +593,10 @@ prospecting_stale_timeout_minutes: int = 60
 
 ---
 
-## Container Wiring (`ze/container.py`)
+## Container Wiring (`packages/ze/ze/container.py`)
 
 ```python
-from ze.browser.client import BrowserClient
+from ze_browser import BrowserClient
 from ze.agents.prospecting import agent as _  # noqa — registers @register
 from ze.proactive.prospecting import recover_stale_campaigns
 
@@ -624,12 +639,13 @@ workflow_scheduler.schedule_job(
 
 ## Testing
 
-Tests live in `tests/agents/prospecting/` and `tests/browser/`.
+Tests live in `packages/ze/tests/agents/prospecting/` and
+`packages/ze-browser/tests/`.
 
 | Test | What it verifies |
 |------|-----------------|
 | `test_browser_client_extract` | Mocked `httpx` → `BrowserResult` returned correctly |
-| `test_browser_client_timeout` | `httpx.TimeoutException` → `ZeError` raised |
+| `test_browser_client_timeout` | `httpx.TimeoutException` → `BrowserError` raised |
 | `test_browser_client_403` | 403 response → `BrowserResult` with empty text, no exception |
 | `test_browser_extract_tool_rate_limit` | Two calls → sleep called between them |
 | `test_browser_extract_tool_truncates` | Page text > `max_text_chars` → truncated in result |

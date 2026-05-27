@@ -1,5 +1,11 @@
 # Multimodal Input — Spec
 
+> **Ze Core boundary:** Transport-agnostic types (`RawInput`, `ProcessedInput`) and
+> the `InputPreprocessor` protocol live in ze-core (`zc-02-app-interface.md`).
+> `Container.invoke_raw()` calls the preprocessor before graph invocation
+> (`zc-07-container.md`). This spec covers **Ze application** behaviour: Telegram
+> handlers, Whisper, vision caption, and `AgentState` fields consumed by graph nodes.
+
 ## Purpose
 
 Extend Ze's Telegram interface to accept **voice notes** and **photos** in addition
@@ -413,20 +419,22 @@ explicitly.
 
 ---
 
-## Container Changes
+## Container / Invocation Changes
 
-`ze/container.py` — construct and inject `TranscriptionClient`:
+**Target shape** (when Telegram preprocessor is implemented):
 
-```python
-transcription_client = TranscriptionClient(
-    openrouter_client=openrouter_client,
-    model=config["models"]["whisper"],
-    logger=get_logger("ze.transcription"),
-)
-```
+1. Ze implements `TelegramInputPreprocessor(InputPreprocessor)` — downloads
+   voice/photo from Telegram, runs Whisper / vision caption, returns `ProcessedInput`.
+2. Register on the ze-core `Container`: `preprocessor=telegram_preprocessor`.
+3. Telegram handlers call `container.invoke_raw(RawInput(...), session_id=...)` instead
+   of building `AgentState` and calling `graph.ainvoke()` directly.
 
-`TranscriptionClient` is injected into `ZeBot` alongside the existing `graph` and
-`settings` dependencies.
+Until that migration lands, Ze may still transcribe in the bot layer and call
+`container.invoke(prompt=..., input_modality=..., image_data=...)`.
+
+`TranscriptionClient` (or equivalent logic inside the preprocessor) uses the
+existing `OpenRouterClient` and `config["models"]["whisper"]`. No separate HTTP
+client package is required.
 
 ---
 

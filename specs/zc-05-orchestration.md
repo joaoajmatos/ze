@@ -15,7 +15,8 @@ modules.
 - Define `AgentState` as the single source of truth for graph state.
 - Define all graph nodes as pure async functions in `ze_core/orchestration/nodes/`.
 - Define all conditional edges as pure functions in `ze_core/orchestration/edges.py`.
-- Compile and expose the LangGraph graph in `ze_core/orchestration/graph.py`.
+- Compile and expose the LangGraph graph in `ze_core/orchestration/graph.py`
+  via `graph_builder()` (extensible) and `build_graph()` (default topology).
 - Persist graph state via `AsyncPostgresSaver` (survives restarts).
 - Handle human-in-the-loop pausing via `interrupt_before=["await_confirmation"]`.
 - Enforce per-agent timeouts via `asyncio.wait_for`.
@@ -90,54 +91,94 @@ class AgentState(TypedDict):
 
 `ze_core/orchestration/graph.py`
 
+Ze Core splits graph construction into two functions so applications can add nodes
+and custom routing without forking the entire graph module.
+
+### `graph_builder()`
+
+Returns a fully-wired but **uncompiled** `StateGraph(AgentState)` with:
+
+- All standard nodes: `embed_route`, `decompose`, `fetch_context`,
+  `capability_check`, `execute_tool`, `draft_response`, `await_confirmation`,
+  `synthesize`, `write_memory`.
+- Entry point `embed_route`.
+- All internal edges **except** the `embed_route` conditional.
+
+The `embed_route` conditional is **intentionally omitted** so callers can wire
+custom destinations (e.g. Ze's `plan_sequential` node) before compile.
+
+```python
+def graph_builder() -> StateGraph:
+    builder = StateGraph(AgentState)
+    # ... add standard nodes and non-routing edges ...
+    # embed_route conditional NOT added here
+    return builder
+```
+
+### `build_graph(checkpointer)`
+
+Default Ze Core topology for applications that do not extend the graph:
+
 ```python
 def build_graph(checkpointer: AsyncPostgresSaver) -> CompiledGraph:
-    builder = StateGraph(AgentState)
+    from ze_core.orchestration.edges import after_embed_route
 
-    builder.add_node("embed_route",        nodes.embed_route)
-    builder.add_node("decompose",          nodes.decompose)
-    builder.add_node("fetch_context",      nodes.fetch_context)
-    builder.add_node("capability_check",   nodes.capability_check)
-    builder.add_node("execute_tool",       nodes.execute_tool)
-    builder.add_node("draft_response",     nodes.draft_response)
-    builder.add_node("await_confirmation", nodes.await_confirmation)
-    builder.add_node("synthesize",         nodes.synthesize)
-    builder.add_node("write_memory",       nodes.write_memory)
-
-    builder.set_entry_point("embed_route")
-
+    builder = graph_builder()
     builder.add_conditional_edges(
         "embed_route",
-        edges.after_embed_route,
+        after_embed_route,
         {"decompose": "decompose", "fetch_context": "fetch_context"},
     )
-    builder.add_edge("decompose", "fetch_context")
-    builder.add_edge("fetch_context", "capability_check")
-    builder.add_conditional_edges(
-        "capability_check",
-        edges.after_capability_check,
-        {"execute_tool": "execute_tool", "draft_response": "draft_response", "end_blocked": END},
-    )
-    builder.add_conditional_edges(
-        "execute_tool",
-        edges.after_execute_tool,
-        {"synthesize": "synthesize", "write_memory": "write_memory"},
-    )
-    builder.add_edge("draft_response",     "await_confirmation")
-    builder.add_edge("await_confirmation", "execute_tool")
-    builder.add_edge("synthesize",         "write_memory")
-    builder.add_edge("write_memory",       END)
-
     return builder.compile(
         checkpointer=checkpointer,
         interrupt_before=["await_confirmation"],
     )
 ```
 
+Ze Core callers that use `Container.from_config()` receive this compiled graph
+unless the application overrides graph construction.
+
+### Extending the graph (Ze example)
+
+Ze adds a `plan_sequential` node for the workflow agent and a third branch from
+`embed_route`. The application imports `graph_builder` from ze-core, adds nodes,
+wires routing, then compiles:
+
+```python
+from ze_core.orchestration.graph import graph_builder
+
+def build_graph(checkpointer):
+    from ze.orchestration import edges
+    from ze.orchestration.nodes import routing
+
+    builder = graph_builder()
+    builder.add_node("plan_sequential", routing.plan_sequential)
+    builder.add_conditional_edges(
+        "embed_route",
+        edges.after_embed_route,
+        {
+            "decompose": "decompose",
+            "fetch_context": "fetch_context",
+            "plan_sequential": "plan_sequential",
+        },
+    )
+    builder.add_edge("plan_sequential", END)
+    return builder.compile(
+        checkpointer=checkpointer,
+        interrupt_before=["await_confirmation"],
+    )
+```
+
+Ze-specific nodes and edges live in `packages/ze/ze/orchestration/`; ze-core
+remains the shared skeleton.
+
+### Checkpoint interrupt
+
 The `interrupt_before=["await_confirmation"]` configuration causes LangGraph to
 checkpoint state before entering `await_confirmation` and pause the graph run.
 The graph is resumed by calling `graph.ainvoke(None, config)` with the same
-`thread_id` after the user responds.
+`thread_id` after the user responds (or via `Container.resume()` when using the
+container API).
 
 ---
 
@@ -312,10 +353,12 @@ def after_embed_route(state: AgentState) -> str:
     return "fetch_context"
 ```
 
-Compound tasks (both parallel and sequential) go to `decompose` first. Sequential
-compound tasks are handled inside `execute_tool` — there is no separate sequential
-planning node in Ze Core. (Ze's `plan_sequential` node is a Ze-specific extension
-for the workflow agent and is not part of the Ze Core graph.)
+In the **default** Ze Core graph, compound tasks (parallel and sequential) go to
+`decompose` first; sequential execution is handled inside `execute_tool`.
+
+Ze's extended graph replaces `after_embed_route` with a version that can return
+`plan_sequential` for sequential compound workflow tasks (see Graph → Extending the
+graph above). That node is not part of ze-core's `build_graph()`.
 
 ### `after_capability_check`
 

@@ -17,10 +17,14 @@ framework imports Telegram, aiogram, Slack SDKs, or any other transport library.
   user's decision. Used by the capability gate and goal verification gates.
 - `push()` — deliver a proactive notification the user did not request (briefings,
   reminders, alerts, insights).
+- Input normalisation is **not** part of `AppInterface`. Transport adapters build
+  `RawInput` and call `Container.invoke_raw()`, or call `Container.invoke()` directly
+  when input is already text (see Input preprocessing below).
 
 Message ingestion (`receive()`) is intentionally absent from this Protocol. The
-transport layer (Telegram webhook handler, CLI input loop) pushes messages into
-the graph. Ze Core does not poll for messages.
+transport layer (Telegram webhook handler, CLI input loop) normalises user input
+and invokes the graph via `Container.invoke()` or `Container.invoke_raw()`.
+Ze Core does not poll for messages.
 
 ## Out of Scope
 
@@ -29,6 +33,8 @@ the graph. Ze Core does not poll for messages.
 - Does not send messages to external contacts or third parties (that is `Channel`'s
   job — see `zc-04-channels.md`).
 - Does not authenticate the user. Single-user applications have no login flow.
+- Does not transcribe audio, caption images, or download transport attachments
+  (that is an `InputPreprocessor` in the application layer).
 
 ---
 
@@ -85,11 +91,76 @@ class AppInterface(Protocol):
 
 ---
 
+## Input Preprocessing
+
+Multimodal transports (voice, images) must be converted to a routing-ready text
+prompt before the graph runs. Ze Core defines the transport-agnostic types and a
+`InputPreprocessor` protocol; **applications** implement preprocessing (e.g. Ze's
+`TelegramInputPreprocessor` with Whisper + vision caption — see `specs/19-multimodal-input.md`
+for Telegram-specific behaviour).
+
+Ze Core does **not** ship a default preprocessor. Without one registered on the
+container, `invoke_raw()` passes through `RawInput.text` and infers `input_modality`
+from which byte fields are set.
+
+### `InputPreprocessor` Protocol
+
+`ze_core/interface/base.py`
+
+```python
+class InputPreprocessor(Protocol):
+    async def process(self, raw: RawInput, client: Any) -> ProcessedInput:
+        """
+        Normalise raw transport input to a text prompt and optional image passthrough.
+
+        Args:
+            raw: Unprocessed input from the transport layer.
+            client: OpenRouterClient (or any LLM client) for transcription / captioning.
+
+        Returns:
+            ProcessedInput with a non-empty ``prompt`` when the turn can be routed.
+        """
+```
+
+Implementations may raise application-specific errors (e.g. transcription failure);
+the transport layer catches those and sends a user-facing message.
+
+### Registration
+
+Set `Container.preprocessor` at construction time (or pass through `from_config()`
+when that gains a `preprocessor` argument). The container calls
+`preprocessor.process(raw, openrouter_client)` inside `invoke_raw()` before building
+graph state.
+
+CLI and text-only transports can skip a preprocessor and call `invoke(prompt, …)`
+directly.
+
+---
+
 ## Types
 
 `ze_core/interface/types.py`
 
 ```python
+@dataclass
+class RawInput:
+    """Unprocessed input from any transport layer."""
+    text: str | None = None
+    audio: bytes | None = None
+    audio_mime: str | None = None   # e.g. "audio/ogg; codecs=opus"
+    image: bytes | None = None
+    image_mime: str | None = None   # e.g. "image/jpeg"
+
+
+@dataclass
+class ProcessedInput:
+    """Normalised input ready for graph invocation."""
+    prompt: str
+    input_modality: str = "text"    # "text" | "voice" | "image"
+    image_data: bytes | None = None
+    image_mime: str | None = None
+
+
 @dataclass
 class OutboundMessage:
     content: str
@@ -109,10 +180,24 @@ class ConfirmationResponse:
     timed_out: bool = False            # True when the confirmation window expired
 
 @dataclass
+class Action:
+    label: str
+    payload: str   # opaque string returned by the transport on tap
+
+@dataclass
 class Notification:
     content: str
     format: str = "text"    # "text" | "markdown"
     urgency: str = "normal" # "normal" | "high"
+    actions: list[Action] = field(default_factory=list)
+
+@dataclass
+class InvokeResult:
+    """Return value from Container.invoke(), invoke_raw(), and resume()."""
+    session_id: str
+    response: str | None = None
+    confirmation_pending: bool = False
+    error: str | None = None
 ```
 
 ---
@@ -234,6 +319,17 @@ The CLI adapter:
 |---|---|
 | `ze_core.errors` | `InterfaceError` base class |
 | `ze_core.orchestration.state` | `AgentState` — read/written by `await_confirmation` node |
+| `ze_core.container` | `invoke_raw()` — calls `InputPreprocessor` when registered |
+
+---
+
+## Related Specs
+
+| Spec | Relationship |
+|---|---|
+| `zc-07-container.md` | `invoke()`, `invoke_raw()`, `resume()` — graph entry points |
+| `specs/19-multimodal-input.md` | Ze Telegram handlers + Whisper/vision (application layer) |
+| `zc-05-orchestration.md` | `AgentState.input_modality`, `image_data`, vision caption in `embed_route` |
 
 ---
 

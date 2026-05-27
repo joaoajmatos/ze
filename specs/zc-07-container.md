@@ -10,6 +10,8 @@ the application. The container is responsible for:
 3. Instantiating enabled agents via type-based dependency injection.
 4. Constructing all framework singletons (router, gate, memory store, graph).
 5. Providing a clean `close()` lifecycle hook.
+6. Exposing `invoke()`, `invoke_raw()`, and `resume()` as the preferred graph entry
+   points (optional `AppInterface` and `InputPreprocessor`).
 
 Ze Core's container is intentionally minimal — it wires the framework, not the
 application. Ze-specific concerns (Telegram bot, proactive schedulers, cost
@@ -29,6 +31,8 @@ telemetry, browser sidecar) are not part of Ze Core's container.
 - Register live agent instances so `get_agent()` works at graph execution time.
 - Call `agent.startup()` on every instantiated agent.
 - Call `agent.shutdown()` on every instantiated agent during `close()`.
+- Run conversation turns via `invoke()` / `invoke_raw()` with optional confirmation
+  handling through `AppInterface`.
 
 ## Out of Scope
 
@@ -37,6 +41,7 @@ telemetry, browser sidecar) are not part of Ze Core's container.
 - Does not manage the Alembic migration lifecycle.
 - Does not provide a REST API or health endpoint.
 - Does not create DB schemas — assumes migrations have been applied.
+- Does not implement Telegram/Whisper/image download (application `InputPreprocessor`).
 
 ---
 
@@ -84,6 +89,8 @@ class Container:
     memory_store: MemoryStore
     memory_consolidator: MemoryConsolidator
     graph: CompiledGraph
+    interface: AppInterface | None = None
+    preprocessor: InputPreprocessor | None = None
 
     async def close(self) -> None:
         """Shut down all agents, then release shared resources."""
@@ -97,6 +104,76 @@ class Container:
         await dispose_checkpointer_pool(self.checkpointer_pool)
         await self.pool.close()
         log.info("container_closed")
+```
+
+`interface` and `preprocessor` are optional. When `interface` is set, `invoke()` and
+`resume()` deliver responses and handle the confirmation loop. When `preprocessor` is
+set, `invoke_raw()` runs it before delegating to `invoke()`.
+
+---
+
+## Turn Invocation
+
+Applications should prefer these methods over calling `graph.ainvoke()` directly.
+They build graph input, wire `config["configurable"]`, and integrate with
+`AppInterface` when configured.
+
+### `invoke(prompt, session_id, …)`
+
+Runs a full conversation turn from an already-normalised text prompt.
+
+| Parameter | Purpose |
+|---|---|
+| `prompt` | Routing and agent text (required for routing; may be empty for image-only turns if modality fields are set) |
+| `session_id` | LangGraph `thread_id` / session key |
+| `session_overrides` | Capability overrides, e.g. `{"calendar.write": "execute"}` |
+| `input_modality` | `"text"` \| `"voice"` \| `"image"` — default `"text"` |
+| `image_data`, `image_mime` | Raw image bytes for vision agents; `None` for text/voice |
+| `messages` | Rolling history seed; graph persists updates via checkpoint |
+
+Returns `InvokeResult` with `response`, `confirmation_pending`, or `error`.
+
+**Confirmation behaviour** (when `interface` is set):
+
+| `confirmation_style` | Behaviour |
+|---|---|
+| `"inline"` | `invoke()` blocks on `interface.confirm()`, resumes graph on approval, then `send()` |
+| `"async"` | Returns `confirmation_pending=True` after `send_confirmation()`; caller uses `resume()` |
+
+When `interface` is `None`, the graph runs once and the result is returned without
+delivery calls (eval, tests, scripts).
+
+### `invoke_raw(raw, session_id, …)`
+
+Runs a turn from transport-layer `RawInput`.
+
+1. If `preprocessor` is registered → `await preprocessor.process(raw, openrouter_client)`.
+2. Else → build `ProcessedInput` from `raw.text` and infer modality from `raw.audio` / `raw.image`.
+3. Call `invoke()` with `processed.prompt`, `processed.input_modality`, and image fields.
+
+Transport handlers (Telegram voice/photo, etc.) should use this entry point when a
+preprocessor is wired. Text-only paths may call `invoke()` directly.
+
+### `resume(session_id)`
+
+Resumes a graph paused at `await_confirmation` after an async confirmation callback.
+Delivers `final_response` via `interface.send()` when configured.
+
+### Example
+
+```python
+from ze_core.container import Container
+from ze_core.interface.types import RawInput
+
+# Text turn (CLI or pre-normalised Telegram text)
+result = await container.invoke("What's on my calendar?", session_id="user-1")
+
+# Multimodal turn (Telegram photo handler)
+raw = RawInput(text=message.caption, image=jpeg_bytes, image_mime="image/jpeg")
+result = await container.invoke_raw(raw, session_id=str(chat_id))
+
+# Async confirmation resume (Telegram callback handler)
+result = await container.resume(session_id=str(chat_id))
 ```
 
 ---
@@ -469,8 +546,8 @@ container = await Container.from_config(
     deps=custom_deps,
 )
 
-# Application uses container
-graph_result = await container.graph.ainvoke(state, config)
+# Application uses container (preferred)
+result = await container.invoke("Hello", session_id="dev")
 
 # On shutdown
 await container.close()
@@ -511,6 +588,8 @@ misconfigured application must not start.
 | `ze_core.capability.gate` | `CapabilityGate` construction |
 | `ze_core.memory.store` | `MemoryStore` construction |
 | `ze_core.memory.consolidator` | `MemoryConsolidator` construction |
-| `ze_core.orchestration.graph` | `build_graph()` |
+| `ze_core.orchestration.graph` | `build_graph()`, `graph_builder()` |
+| `ze_core.interface.base` | `InputPreprocessor` (optional on container) |
+| `ze_core.interface.types` | `RawInput`, `ProcessedInput`, `InvokeResult` |
 | `ze_core.errors` | `AgentConfigError`, `RoutingError`, `InterfaceConfigError` |
 | `ze_core.logging` | Structured logging |
