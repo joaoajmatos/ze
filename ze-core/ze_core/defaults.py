@@ -60,6 +60,9 @@ MEMORY_UNREVIEWED_TTL_DAYS: int = 90
 MEMORY_CONTRADICTED_TTL_DAYS: int = 30
 """Days after which a contradicted fact is hard-deleted."""
 
+MEMORY_EXPIRY_GRACE_DAYS: int = 7
+"""Days between soft-expiry (expires_at set) and hard-deletion of unreviewed facts."""
+
 MEMORY_EPISODE_RECENCY_DAYS: int = 14
 """Episodes older than this are eligible for archival."""
 

@@ -291,13 +291,25 @@ class PostgresMemoryStore:
                 key, value, agent, confidence, _to_list(embedding),
             )
 
-    async def expire_unreviewed_facts(self, ttl_days: int) -> int:
+    async def soft_expire_unreviewed_facts(self, ttl_days: int, grace_days: int) -> int:
+        """Set expires_at on old unreviewed facts that haven't been scheduled yet."""
         async with self._pool.acquire() as conn:
             result = await conn.execute(
-                "UPDATE user_facts SET contradicted = true"
+                "UPDATE user_facts"
+                " SET expires_at = NOW() + $1::interval"
                 " WHERE reviewed = false AND contradicted = false"
-                " AND updated_at < NOW() - $1::interval",
+                " AND expires_at IS NULL"
+                " AND updated_at < NOW() - $2::interval",
+                f"{grace_days} days",
                 f"{ttl_days} days",
+            )
+        return _parse_update_count(result)
+
+    async def delete_expired_facts(self) -> int:
+        """Hard-delete facts whose grace period has elapsed."""
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "DELETE FROM user_facts WHERE expires_at IS NOT NULL AND expires_at < NOW()"
             )
         return _parse_update_count(result)
 

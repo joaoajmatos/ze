@@ -15,7 +15,8 @@ def _store(**overrides):
     s.fetch_active_facts = AsyncMock(return_value=[])
     s.mark_contradicted = AsyncMock()
     s.insert_merged_fact = AsyncMock()
-    s.expire_unreviewed_facts = AsyncMock(return_value=0)
+    s.soft_expire_unreviewed_facts = AsyncMock(return_value=0)
+    s.delete_expired_facts = AsyncMock(return_value=0)
     s.delete_contradicted_facts = AsyncMock(return_value=0)
     s.fetch_episode_candidates = AsyncMock(return_value=[])
     s.delete_old_episode_summaries = AsyncMock(return_value=0)
@@ -132,22 +133,31 @@ class TestDedupFacts:
 class TestExpireFacts:
     async def test_returns_counts_from_store(self):
         store = _store(
-            expire_unreviewed_facts=AsyncMock(return_value=3),
+            soft_expire_unreviewed_facts=AsyncMock(return_value=3),
+            delete_expired_facts=AsyncMock(return_value=1),
             delete_contradicted_facts=AsyncMock(return_value=2),
         )
         soft, hard = await _consolidator(store=store).expire_facts()
         assert soft == 3
-        assert hard == 2
+        assert hard == 3  # delete_expired(1) + delete_contradicted(2)
 
-    async def test_passes_ttl_from_settings(self):
-        settings = {"memory": {"unreviewed_ttl_days": 45, "contradicted_ttl_days": 15}}
+    async def test_passes_ttl_and_grace_from_settings(self):
+        settings = {
+            "memory": {
+                "unreviewed_ttl_days": 45,
+                "contradicted_ttl_days": 15,
+                "expiry_grace_days": 3,
+            }
+        }
         store = _store(
-            expire_unreviewed_facts=AsyncMock(return_value=0),
+            soft_expire_unreviewed_facts=AsyncMock(return_value=0),
+            delete_expired_facts=AsyncMock(return_value=0),
             delete_contradicted_facts=AsyncMock(return_value=0),
         )
         await _consolidator(store=store, settings=settings).expire_facts()
-        store.expire_unreviewed_facts.assert_awaited_once_with(45)
+        store.soft_expire_unreviewed_facts.assert_awaited_once_with(45, 3)
         store.delete_contradicted_facts.assert_awaited_once_with(15)
+        store.delete_expired_facts.assert_awaited_once()
 
     async def test_zero_counts_on_empty(self):
         soft, hard = await _consolidator().expire_facts()

@@ -9,6 +9,7 @@ from ze_core.defaults import (
     MEMORY_EPISODE_ARCHIVE_BATCH,
     MEMORY_EPISODE_MIN_ARCHIVE_BATCH,
     MEMORY_EPISODE_RECENCY_DAYS,
+    MEMORY_EXPIRY_GRACE_DAYS,
     MEMORY_MERGE_LLM_THRESHOLD,
     MEMORY_MERGE_SILENT_THRESHOLD,
     MEMORY_UNREVIEWED_TTL_DAYS,
@@ -112,9 +113,14 @@ class MemoryConsolidator:
     async def expire_facts(self) -> tuple[int, int]:
         cfg = self._memory_config()
         unreviewed_ttl = cfg.get("unreviewed_ttl_days", MEMORY_UNREVIEWED_TTL_DAYS)
+        grace_days = cfg.get("expiry_grace_days", MEMORY_EXPIRY_GRACE_DAYS)
         contradicted_ttl = cfg.get("contradicted_ttl_days", MEMORY_CONTRADICTED_TTL_DAYS)
-        soft = await self._store.expire_unreviewed_facts(unreviewed_ttl)
-        hard = await self._store.delete_contradicted_facts(contradicted_ttl)
+        # Stage 1: hard-delete facts whose grace period has elapsed
+        hard = await self._store.delete_expired_facts()
+        # Stage 2: hard-delete old contradicted facts
+        hard += await self._store.delete_contradicted_facts(contradicted_ttl)
+        # Stage 3: soft-expire old unreviewed facts (sets expires_at)
+        soft = await self._store.soft_expire_unreviewed_facts(unreviewed_ttl, grace_days)
         return soft, hard
 
     async def archive_episodes(self) -> tuple[int, int]:
