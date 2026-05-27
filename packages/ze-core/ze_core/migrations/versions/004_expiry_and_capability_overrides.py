@@ -1,7 +1,7 @@
 """Add expires_at to user_facts and capability_overrides table
 
-Revision ID: 004
-Revises: 003
+Revision ID: zc004
+Revises: zc003
 Create Date: 2026-05-27
 """
 from __future__ import annotations
@@ -10,8 +10,8 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "004"
-down_revision: Union[str, Sequence[str], None] = "003"
+revision: str = "zc004"
+down_revision: Union[str, Sequence[str], None] = "zc003"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

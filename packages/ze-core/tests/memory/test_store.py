@@ -326,3 +326,10 @@ class TestSettingsAccess:
             openrouter_client=MagicMock(), settings=None,
         )
         assert store._synthesis_model() == "anthropic/claude-haiku-4-5"
+
+    async def test_count_unreviewed_facts(self):
+        conn = _conn()
+        conn.fetchrow = AsyncMock(return_value={"n": 7})
+        store, _ = _store(conn=conn)
+        assert await store.count_unreviewed_facts() == 7
+

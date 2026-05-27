@@ -1,7 +1,7 @@
 """Add goals, goal_milestones, goal_gates, goal_learnings, and persona_state tables
 
-Revision ID: 003
-Revises: 002
+Revision ID: zc003
+Revises: zc002
 Create Date: 2026-05-27
 """
 from __future__ import annotations
@@ -10,8 +10,8 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "003"
-down_revision: Union[str, Sequence[str], None] = "002"
+revision: str = "zc003"
+down_revision: Union[str, Sequence[str], None] = "zc002"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

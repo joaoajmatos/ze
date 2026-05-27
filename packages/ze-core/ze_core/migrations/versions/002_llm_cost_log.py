@@ -1,7 +1,7 @@
 """Add llm_cost_log table for telemetry
 
-Revision ID: 002
-Revises: 001
+Revision ID: zc002
+Revises: zc001
 Create Date: 2025-05-27
 """
 from __future__ import annotations
@@ -10,8 +10,8 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "002"
-down_revision: Union[str, Sequence[str], None] = "001"
+revision: str = "zc002"
+down_revision: Union[str, Sequence[str], None] = "zc001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

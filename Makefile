@@ -23,7 +23,7 @@ help:
 	@echo "    db-up          Start Postgres via docker-compose"
 	@echo "    db-down        Stop Postgres"
 	@echo "    db-reset       Drop + recreate the ze database"
-	@echo "    migrate        Apply all pending migrations (upgrade head)"
+	@echo "    migrate        Apply all pending migrations (upgrade heads)"
 	@echo "    migrate-down   Roll back one migration step"
 	@echo "    migrate-status Show current migration revision"
 	@echo "    migrate-history List all migrations"
@@ -80,7 +80,7 @@ db-reset:
 	docker compose exec -T postgres psql -U ze -c "CREATE DATABASE ze"
 
 migrate:
-	$(ALEMBIC) upgrade head
+	$(ALEMBIC) upgrade heads
 
 migrate-down:
 	$(ALEMBIC) downgrade -1

@@ -1,6 +1,6 @@
 """Initial schema: user_facts, episodes, user_profile, routing_log
 
-Revision ID: 001
+Revision ID: zc001
 Revises:
 Create Date: 2025-05-26
 """
@@ -10,9 +10,9 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "001"
+revision: str = "zc001"
 down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = ("ze_core",)
 depends_on: Union[str, Sequence[str], None] = None
 
 

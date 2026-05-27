@@ -291,6 +291,14 @@ class PostgresMemoryStore:
                 key, value, agent, confidence, _to_list(embedding),
             )
 
+    async def count_unreviewed_facts(self) -> int:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT COUNT(*) AS n FROM user_facts"
+                " WHERE reviewed = false AND contradicted = false"
+            )
+        return int(row["n"])
+
     async def soft_expire_unreviewed_facts(self, ttl_days: int, grace_days: int) -> int:
         """Set expires_at on old unreviewed facts that haven't been scheduled yet."""
         async with self._pool.acquire() as conn:
