@@ -115,6 +115,7 @@ class Settings(BaseSettings):
 
     @property
     def agent_configs(self) -> dict[str, dict[str, Any]]:
+        """Deprecated: agent metadata is declared on @agent classes."""
         return self.config.get("agents", {})
 
     @property

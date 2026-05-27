@@ -17,7 +17,8 @@ def setup_logging():
 def gate(config_file):
     g = make_gate(config_file)
     g._persistent_cache = {}
-    return g
+    yield g
+    g._restore_registry()
 
 
 # ── evaluate() — basic decisions ─────────────────────────────────────────────

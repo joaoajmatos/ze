@@ -4,7 +4,7 @@ import base64
 from langchain_core.runnables import RunnableConfig
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import get_agent
+from ze_core.orchestration.registry import get_agent, get_agent_class
 from ze.agents.types import AgentContext, AgentResult
 from ze.capability.gate import CapabilityGate
 from ze.capability.types import GateDecision
@@ -69,8 +69,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
 
     subtask = envelope.subtasks[0]
     if state.get("image_data"):
-        agent_cfg = settings.agent_configs.get(subtask.agent, {})
-        messages = [_build_user_message(state, agent_cfg)]
+        messages = [_build_user_message(state, get_agent_class(subtask.agent))]
     else:
         messages = base_ctx.messages
     ctx = AgentContext(
@@ -88,10 +87,10 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _build_user_message(state: dict, agent_config: dict) -> dict:
+def _build_user_message(state: dict, agent_cls: type) -> dict:
     """Build the user message dict, including image content block for vision-capable agents."""
     prompt = state.get("prompt") or state.get("image_caption") or ""
-    vision_capable = agent_config.get("vision_capable", True)
+    vision_capable = getattr(agent_cls, "vision_capable", True)
 
     if state.get("image_data") and vision_capable:
         mime = state.get("image_mime", "image/jpeg")
@@ -121,8 +120,7 @@ async def _execute_single(
     reporter=None,
 ) -> dict:
     if state is not None and state.get("image_data"):
-        agent_cfg = settings.agent_configs.get(subtask.agent, {})
-        messages = [_build_user_message(state, agent_cfg)]
+        messages = [_build_user_message(state, get_agent_class(subtask.agent))]
     else:
         messages = base_ctx.messages
     ctx = AgentContext(
@@ -150,8 +148,7 @@ async def _execute_compound(
 ) -> dict:
     def _make_ctx(subtask) -> AgentContext:
         if state is not None and state.get("image_data"):
-            agent_cfg = settings.agent_configs.get(subtask.agent, {})
-            messages = [_build_user_message(state, agent_cfg)]
+            messages = [_build_user_message(state, get_agent_class(subtask.agent))]
         else:
             messages = base_ctx.messages
         return AgentContext(
@@ -188,7 +185,7 @@ async def _run_with_timeout(
 ) -> AgentResult:
     set_agent_context(agent_name)
     agent: BaseAgent = get_agent(agent_name)
-    timeout = float(settings.agent_configs.get(agent_name, {}).get("timeout", 30))
+    timeout = float(getattr(get_agent_class(agent_name), "timeout", 30))
 
     if token_queue is not None:
         async def _stream_and_collect() -> AgentResult:

@@ -6,11 +6,6 @@ from typing import Any, get_type_hints
 import asyncpg
 from tavily import AsyncTavilyClient
 
-from ze.agents.registry import _registry, register_instance
-from ze.capability.sync import sync_gate_registry
-from ze_browser import BrowserClient
-from ze.contacts.channel_store import ContactChannelStore
-from ze.contacts.store import PersonStore
 from ze.errors import AgentConfigError
 from ze.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
@@ -23,6 +18,10 @@ from ze.settings import Settings
 from ze.workflow.planner import WorkflowPlanner
 from ze.workflow.scheduler import WorkflowScheduler
 from ze.workflow.store import WorkflowStore
+from ze_core.orchestration.registry import (
+    get_registered_agents,
+    register_instance,
+)
 
 _dep_map: dict[type, Any] = {}
 
@@ -30,9 +29,8 @@ _AGENTS_DIR = Path(__file__).parent
 
 
 def prepare_gate_registry(settings: Settings) -> None:
-    """Import agent modules and sync YAML capabilities into ze-core for the gate."""
+    """Import agent modules so @agent registers classes in ze-core."""
     _import_agent_modules()
-    sync_gate_registry(settings)
 
 
 def bootstrap_agents(
@@ -46,9 +44,9 @@ def bootstrap_agents(
     workflow_scheduler: WorkflowScheduler | None = None,
     reminder_store: ReminderStore | None = None,
     notifier: ProactiveNotifier | None = None,
-    person_store: PersonStore | None = None,
-    browser_client: BrowserClient | None = None,
-    contact_channel_store: ContactChannelStore | None = None,
+    person_store=None,
+    browser_client=None,
+    contact_channel_store=None,
     goal_store: GoalStore | None = None,
     goal_planner: GoalPlanner | None = None,
     goal_executor: GoalExecutor | None = None,
@@ -62,10 +60,10 @@ def bootstrap_agents(
         google_credentials = GoogleCredentials.from_settings(settings)
 
     _dep_map.clear()
-    _dep_map[OpenRouterClient]   = openrouter_client
-    _dep_map[Settings]           = settings
-    _dep_map[AsyncTavilyClient]  = tavily_client
-    _dep_map[GoogleCredentials]  = google_credentials
+    _dep_map[OpenRouterClient] = openrouter_client
+    _dep_map[Settings] = settings
+    _dep_map[AsyncTavilyClient] = tavily_client
+    _dep_map[GoogleCredentials] = google_credentials
 
     if workflow_store is not None:
         _dep_map[WorkflowStore] = workflow_store
@@ -78,10 +76,13 @@ def bootstrap_agents(
     if notifier is not None:
         _dep_map[ProactiveNotifier] = notifier
     if person_store is not None:
+        from ze.contacts.store import PersonStore
         _dep_map[PersonStore] = person_store
     if browser_client is not None:
+        from ze_browser import BrowserClient
         _dep_map[BrowserClient] = browser_client
     if contact_channel_store is not None:
+        from ze.contacts.channel_store import ContactChannelStore
         _dep_map[ContactChannelStore] = contact_channel_store
     if goal_store is not None:
         _dep_map[GoalStore] = goal_store
@@ -94,31 +95,25 @@ def bootstrap_agents(
 
     prepare_gate_registry(settings)
 
-    for name, cls in _registry.items():
-        agent_cfg = settings.agent_configs.get(name, {})
-        if not agent_cfg.get("enabled", True):
+    for name, cls in get_registered_agents().items():
+        if not getattr(cls, "enabled", True):
             continue
         instance = _resolve(cls)
         register_instance(name, instance)
 
-    validate_registry(settings)
+    validate_registry()
 
 
-def validate_registry(settings: Settings) -> None:
-    """Cross-check declared tools and intent_map entries against registries.
-
-    Raises AgentConfigError on the first inconsistency found — misconfigured
-    agents must not reach a running server.
-    """
+def validate_registry() -> None:
+    """Cross-check declared tools and intent_map entries against registries."""
     from ze.agents.tool import registered_tools
 
     tool_reg = registered_tools()
 
-    for name, cls in _registry.items():
+    for name, cls in get_registered_agents().items():
         declared_tools: list[str] = getattr(cls, "tools", [])
-        agent_cfg = settings.agent_configs.get(name, {})
-        agent_cap: dict = agent_cfg.get("capabilities", {})
-        intent_map: dict = agent_cfg.get("intent_map", {})
+        capabilities: dict = getattr(cls, "capabilities", {})
+        intent_map: dict = getattr(cls, "intent_map", {})
 
         for tool_name in declared_tools:
             if tool_name not in tool_reg:
@@ -127,22 +122,36 @@ def validate_registry(settings: Settings) -> None:
                     f"Ensure the agent's tools module is imported at startup."
                 )
 
-        for intent in intent_map:
-            if intent not in agent_cap:
-                raise AgentConfigError(
-                    f"Agent {name!r} declares intent {intent!r} in its YAML "
-                    f"intent_map but {intent!r} is missing from config.yaml capabilities."
-                )
+        if capabilities:
+            for intent in intent_map:
+                if intent not in capabilities:
+                    raise AgentConfigError(
+                        f"Agent {name!r} declares intent {intent!r} in intent_map "
+                        f"but {intent!r} is missing from capabilities."
+                    )
 
-
-# ── Private ───────────────────────────────────────────────────────────────────
 
 def _import_agent_modules() -> None:
     """Import shared tools then every agent sub-package that has an agent.py."""
-    importlib.import_module("ze.tools")  # shared tools — always registered
+    importlib.import_module("ze.tools")
     for path in sorted(_AGENTS_DIR.iterdir()):
         if path.is_dir() and (path / "agent.py").exists():
             importlib.import_module(f"ze.agents.{path.name}.agent")
+
+
+def reload_agent_modules() -> None:
+    """Force @agent registration after tests replace the ze-core registry."""
+    import sys
+
+    from ze_core.orchestration.registry import _instances, _registry
+
+    _registry.clear()
+    _instances.clear()
+    importlib.import_module("ze.tools")
+    for path in sorted(_AGENTS_DIR.iterdir()):
+        if path.is_dir() and (path / "agent.py").exists():
+            sys.modules.pop(f"ze.agents.{path.name}.agent", None)
+    _import_agent_modules()
 
 
 def _resolve(cls: type) -> object:

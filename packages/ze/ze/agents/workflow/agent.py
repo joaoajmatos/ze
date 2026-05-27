@@ -6,7 +6,8 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
+from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.errors import WorkflowPlanError
 from ze.openrouter.client import OpenRouterClient
@@ -33,10 +34,23 @@ Respond ONLY with the JSON object — no explanation.\
 """
 
 
-@register
+@agent
 class WorkflowManagerAgent(BaseAgent):
     name = "workflow"
+    description = """
+      Manages stored workflows and recurring scheduled tasks. Use when the user wants
+      to create, list, enable, disable, delete, or manually run a named workflow or
+      recurring automated task.
+    """
+    model = "anthropic/claude-sonnet-4-5"
+    vision_capable = True
+    timeout = 60
     tools: list[str] = []
+    intent_map = {"read": "", "manage": ""}
+    capabilities = {
+        "read": Mode.AUTONOMOUS,
+        "manage": Mode.CONFIRM,
+    }
 
     def __init__(
         self,

@@ -1,41 +1,24 @@
-class ZeError(Exception):
-    """Base exception for all Ze errors."""
+"""Ze application exceptions — ze-core re-exports plus Ze-only types."""
 
+from ze_core.errors import ZeCoreError as ZeError
 
 # ── Routing (ze-core) ─────────────────────────────────────────────────────────
 
 from ze_core.errors import InvalidPromptError, RoutingError  # noqa: E402
 
+# ── Agents (ze-core) ──────────────────────────────────────────────────────────
 
-# ── Agents ────────────────────────────────────────────────────────────────────
+from ze_core.errors import (  # noqa: E402
+    AgentConfigError,
+    AgentError,
+    AgentTimeoutError,
+    ToolBlockedError,
+    UnknownAgentError,
+    UnknownToolError,
+)
 
-class AgentError(ZeError):
-    """An agent failed during execution."""
-
-
-class AgentTimeoutError(AgentError):
-    """Agent exceeded its configured timeout."""
-
-
-class UnknownAgentError(AgentError):
-    """No agent registered for the requested name."""
-
-
-class ToolError(AgentError):
-    """A tool call within an agent failed."""
-
-
-class UnknownToolError(ToolError):
-    """No tool registered for the requested name."""
-
-
-class ToolBlockedError(ToolError):
-    """Tool call rejected by the capability gate."""
-
-
-class AgentConfigError(AgentError):
-    """Agent or tool misconfiguration detected at startup."""
-
+# Backward-compatible alias — tool errors are agent errors in ze-core.
+ToolError = AgentError
 
 # ── Capability ────────────────────────────────────────────────────────────────
 

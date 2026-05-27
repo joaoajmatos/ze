@@ -49,11 +49,9 @@ def make_router(
 ) -> EmbeddingRouter:
     if embedder is None:
         _prompt_vec = prompt_vec or unit_vec()
-        enabled = {
-            name: cfg
-            for name, cfg in settings.agent_configs.items()
-            if cfg.get("enabled", True)
-        }
+        from ze_core.orchestration.registry import get_enabled_agents
+
+        enabled = {name: {} for name in get_enabled_agents()}
         agent_vecs = {name: unit_vec() for name in enabled}
         embedder = make_embedder(agent_vecs, _prompt_vec)
     prepare_gate_registry(settings)
@@ -230,69 +228,82 @@ async def test_route_picks_prospecting_over_research(prospecting_and_research_se
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+_ALL_AGENTS = frozenset({
+    "calendar", "companion", "email", "goals", "prospecting",
+    "reminders", "research", "workflow",
+})
+
+
+@pytest.fixture(autouse=True)
+def _reset_agent_enabled_flags():
+    """Each test starts from all agents enabled (Phase 7: class-level `enabled`)."""
+    from ze.agents.bootstrap import _import_agent_modules
+    from ze_core.orchestration.registry import get_registered_agents
+
+    def _enable_all() -> None:
+        _import_agent_modules()
+        for cls in get_registered_agents().values():
+            cls.enabled = True
+
+    _enable_all()
+    yield
+    _enable_all()
+
+
+def _configure_enabled_agents(enabled: set[str]) -> None:
+    from ze.agents.bootstrap import _import_agent_modules
+    from ze_core.orchestration.registry import get_registered_agents
+
+    _import_agent_modules()
+    for name, cls in get_registered_agents().items():
+        cls.enabled = name in enabled
+
+
 @pytest.fixture
 def two_agent_settings(tmp_path):
-    """Settings with only research + companion enabled."""
-    return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "reminders", "prospecting", "goals"})
+    """Only research + companion enabled (class-level flags)."""
+    _configure_enabled_agents({"research", "companion"})
+    return _make_settings(tmp_path)
 
 
 @pytest.fixture
 def single_agent_settings(tmp_path):
-    """Settings with only research enabled."""
-    return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "companion", "reminders", "prospecting", "goals"})
+    _configure_enabled_agents({"research"})
+    return _make_settings(tmp_path)
 
 
 @pytest.fixture
 def prospecting_only_settings(tmp_path):
-    """Settings with only prospecting enabled."""
-    return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "companion", "reminders", "research", "goals"})
+    _configure_enabled_agents({"prospecting"})
+    return _make_settings(tmp_path)
 
 
 @pytest.fixture
 def prospecting_and_research_settings(tmp_path):
-    """Settings with prospecting + research enabled."""
-    return _make_settings(tmp_path, disable={"calendar", "email", "workflow", "companion", "reminders", "goals"})
+    _configure_enabled_agents({"prospecting", "research"})
+    return _make_settings(tmp_path)
 
 
 @pytest.fixture
 def settings_factory(tmp_path):
     def _factory(disable_all: bool = False):
         if disable_all:
-            import pathlib
-            import yaml
-            real_config = pathlib.Path(__file__).parent.parent.parent / "config"
-            with open(real_config / "config.yaml") as f:
-                cfg = yaml.safe_load(f)
-            disable = set(cfg.get("agents", {}).keys())
+            _configure_enabled_agents(set())
         else:
-            disable = set()
-        return _make_settings(tmp_path, disable=disable)
+            _configure_enabled_agents(set(_ALL_AGENTS))
+        return _make_settings(tmp_path)
     return _factory
 
 
-def _make_settings(tmp_path, disable: set[str]):
+def _make_settings(tmp_path):
     import pathlib
-    import shutil
-    import yaml
     from ze.settings import Settings, get_settings
 
     get_settings.cache_clear()
-
     real_config = pathlib.Path(__file__).parent.parent.parent / "config"
-    config_dir = tmp_path / "config"
-    config_dir.mkdir(parents=True)
-
-    with open(real_config / "config.yaml") as f:
-        cfg = yaml.safe_load(f)
-    for name in disable:
-        if name in cfg.get("agents", {}):
-            cfg["agents"][name]["enabled"] = False
-    with open(config_dir / "config.yaml", "w") as f:
-        yaml.dump(cfg, f)
-
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
         database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=config_dir,
+        config_dir=real_config,
     )

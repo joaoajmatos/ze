@@ -32,6 +32,7 @@ def test_register_decorator_adds_to_registry():
     @register
     class FakeAgent:
         name = "fake_test_agent"
+        description = "fake test agent"
 
     assert "fake_test_agent" in _registry
     assert _registry["fake_test_agent"] is FakeAgent
@@ -41,6 +42,7 @@ def test_register_returns_class_unchanged():
     @register
     class AnotherFake:
         name = "another_fake"
+        description = "another fake"
         value = 42
 
     assert AnotherFake.value == 42

@@ -236,13 +236,9 @@ async def test_execute_tool_raises_timeout(monkeypatch):
     monkeypatch.setitem(reg._instances, "research", mock_agent)
 
     settings = make_settings()
-    # Patch agent config to use 0.01s timeout
-    original = settings.agent_configs
-    patched = dict(original)
-    patched["research"] = dict(patched.get("research", {}))
-    patched["research"]["timeout"] = "0.01"
+    mock_cls = type("FastTimeoutResearch", (), {"timeout": 0.01})
 
-    with patch.object(type(settings), "agent_configs", new_callable=lambda: property(lambda self: patched)):
+    with patch("ze.orchestration.nodes.execution.get_agent_class", return_value=mock_cls):
         ctx = AgentContext(session_id="s1", prompt="test", intent="read", memory=MemoryContext())
         state = base_state(agent_context=ctx)
         cfg = make_config(settings=settings)

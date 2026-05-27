@@ -6,7 +6,8 @@ from typing import AsyncIterator
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
+from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.openrouter.client import OpenRouterClient
 from ze.proactive.notifier import ProactiveNotifier
@@ -33,10 +34,29 @@ Return ONLY the JSON — no explanation, no markdown.\
 """
 
 
-@register
+@agent
 class RemindersAgent(BaseAgent):
     name = "reminders"
+    description = """
+      Sets, lists, and cancels one-off time-based reminders. Use when the user asks
+      to be reminded about something at a specific future time or after a delay,
+      or wants to see, check, or cancel their reminders.
+      Do NOT use for recurring tasks — use the workflow agent for those.
+    """
+    model = "anthropic/claude-haiku-4-5"
+    vision_capable = False
+    timeout = 15
     tools: list[str] = []
+    intent_map = {"manage": ""}
+    capabilities = {
+        "manage": Mode.AUTONOMOUS,
+        "create": Mode.AUTONOMOUS,
+        "read": Mode.AUTONOMOUS,
+        "update": Mode.AUTONOMOUS,
+        "delete": Mode.AUTONOMOUS,
+        "execute": Mode.AUTONOMOUS,
+        "reason": Mode.AUTONOMOUS,
+    }
 
     def __init__(
         self,

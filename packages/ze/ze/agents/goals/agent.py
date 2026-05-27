@@ -7,7 +7,8 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
+from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.errors import GoalPlanError
 from ze.goals.executor import GoalExecutor
@@ -40,10 +41,31 @@ Respond ONLY with the JSON object — no explanation.\
 """
 
 
-@register
+@agent
 class GoalAgent(BaseAgent):
     name = "goals"
+    description = """
+      Creates and manages long-running goals that Ze executes autonomously over days or weeks.
+      Use when the user describes a multi-step objective with a time horizon.
+      Also use for inspecting, pausing, resuming, or abandoning active goals.
+      Do NOT use for one-shot tasks — use the workflow agent for those.
+    """
+    model = "anthropic/claude-sonnet-4-5"
+    model_simple = "anthropic/claude-haiku-4-5"
+    timeout = 60
     tools: list[str] = []
+    intent_map = {
+        "create": "Create a new multi-week goal and decompose it into milestones.",
+        "read": "Inspect goal status, list active goals, or review learnings.",
+        "update": "Pause, resume, or redirect an active goal.",
+        "delete": "Abandon a goal.",
+    }
+    capabilities = {
+        "create": Mode.CONFIRM,
+        "read": Mode.AUTONOMOUS,
+        "update": Mode.CONFIRM,
+        "delete": Mode.CONFIRM,
+    }
 
     def __init__(
         self,

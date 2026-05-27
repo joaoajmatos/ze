@@ -240,6 +240,15 @@ ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and 
 
 **Phase 7 done when:** Agent config lives only in Python classes; settings has no `agent_configs`.
 
+**Implemented (2025-05):**
+
+- All agents use `@agent` with class-level `description`, `model`, `capabilities`, `intent_map`, `tools`
+- `ze/agents/registry.py` and `ze/agents/tool.py` re-export ze-core; `register` alias kept for tests
+- `ze/agents/base.py` extends ze-core `BaseAgent` (persona prompts, legacy `ToolCall` unwrap in `call_tool`)
+- `bootstrap_agents` / `validate_registry()` use `get_registered_agents()` — no `settings.agent_configs`
+- `agents:` block removed from `config.yaml`; `settings.agent_configs` returns `{}`
+- `ze/errors.py` re-exports ze-core agent/routing exceptions (`UnknownAgentError`, `UnknownToolError`, …)
+
 ---
 
 ### Phase 8 — Orchestration graph
@@ -318,7 +327,7 @@ Update as PRs merge:
 | 4 Memory | ✅ | | ze-core PostgresMemoryStore + consolidator; memory: removed from config.yaml |
 | 5 Goals / proactive | ✅ | | ze-core goals store/planner/executor; ProactiveNotifier + ProactiveScheduler; gate actions via Notification |
 | 6 Telemetry / persona | ✅ | | ze-core CostTracker/Reconciler + PostgresCostStore; persona.yaml + PostgresPersonaStore |
-| 7 Agents `@agent` | ⬜ | | |
+| 7 Agents `@agent` | ✅ | | Class-level agent config; ze-core registry/tool/base |
 | 8 Orchestration | ⬜ | | |
 | 9 Container / cleanup | ⬜ | | |
 | Schema unified | ⬜ | | |

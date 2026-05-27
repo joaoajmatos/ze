@@ -17,7 +17,7 @@ from ze.channels.registry import ChannelRegistry
 from ze.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
-from ze.agents.registry import get_agent
+from ze_core.orchestration.registry import get_agent
 from ze.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
 from ze.goals.store import GoalStore

@@ -1,7 +1,8 @@
 from typing import AsyncIterator
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
+from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.contacts.extractors import extract_calendar_contacts
 from ze.google.auth import GoogleCredentials
@@ -26,10 +27,29 @@ Guidelines:
 """
 
 
-@register
+@agent
 class CalendarAgent(BaseAgent):
-    name  = "calendar"
+    name = "calendar"
+    description = """
+      Manages Google Calendar events. Use for creating, reading, updating, or deleting
+      calendar events, checking availability, finding free time, or setting reminders.
+    """
+    model = "anthropic/claude-haiku-4-5"
+    vision_capable = True
+    timeout = 30
     tools = ["list_events", "create_event", "update_event", "delete_event", "extract_facts"]
+    intent_map = {
+        "read": "Search and retrieve calendar events.",
+        "create": "Create a new calendar event.",
+        "update": "Update an existing calendar event.",
+        "delete": "Delete a calendar event.",
+    }
+    capabilities = {
+        "read": Mode.AUTONOMOUS,
+        "create": Mode.CONFIRM,
+        "update": Mode.CONFIRM,
+        "delete": Mode.CONFIRM,
+    }
 
     def __init__(
         self,

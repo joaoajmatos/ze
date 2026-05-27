@@ -1,7 +1,8 @@
 from typing import AsyncIterator
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
+from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.channels.email import EmailChannel
 from ze.contacts.extractors import extract_email_contacts
@@ -29,10 +30,29 @@ Guidelines:
 """
 
 
-@register
+@agent
 class EmailAgent(BaseAgent):
-    name  = "email"
+    name = "email"
+    description = """
+      Manages Gmail messages. Use for reading, drafting, sending, or archiving emails,
+      searching your inbox, or composing replies.
+    """
+    model = "anthropic/claude-haiku-4-5"
+    vision_capable = True
+    timeout = 30
     tools = ["list_emails", "get_email", "draft_email", "send_email", "archive_email", "extract_facts"]
+    intent_map = {
+        "read": "Search and retrieve emails from Gmail.",
+        "create": "Draft or send an email.",
+        "update": "Draft a reply or forward.",
+        "delete": "Archive or delete an email.",
+    }
+    capabilities = {
+        "read": Mode.AUTONOMOUS,
+        "create": Mode.DRAFT_ONLY,
+        "update": Mode.DRAFT_ONLY,
+        "delete": Mode.CONFIRM,
+    }
 
     def __init__(
         self,

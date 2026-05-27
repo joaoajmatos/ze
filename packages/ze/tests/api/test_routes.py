@@ -48,7 +48,8 @@ def gate(capabilities_yaml):
     store.set = AsyncMock()
     gate = make_gate(cfg["agents"], override_store=store)
     gate._persistent_cache = {}
-    return gate
+    yield gate
+    gate._restore_registry()
 
 
 @pytest.fixture

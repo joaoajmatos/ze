@@ -1,12 +1,10 @@
-"""Test helpers for building a CapabilityGate from YAML-style config."""
+"""Test helpers for building a CapabilityGate from @agent class metadata."""
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 from ze.capability.gate import CapabilityGate
-from ze.capability.sync import sync_gate_registry
-from ze_core.orchestration.registry import clear_registry as clear_zc_registry
+from ze.capability.types import Mode
+from ze_core.orchestration import registry as zc_registry
 
 
 def make_gate(
@@ -14,15 +12,47 @@ def make_gate(
     *,
     override_store=None,
 ) -> CapabilityGate:
-    from ze.agents import registry as ze_registry
+    """Build a gate backed by synthetic agent classes for the given config.
 
-    ze_registry._registry.clear()
-    for name in agents_config:
-        ze_registry._registry[name] = type("AgentStub", (), {"name": name})
+    Saves and restores the live agent registry so other tests are not affected.
+    Call ``gate._restore_registry()`` in fixture teardown (see capability conftest).
+    """
+    from ze.agents.bootstrap import reload_agent_modules
 
-    settings = MagicMock()
-    settings.agent_configs = agents_config
+    reload_agent_modules()
+    backup_registry = dict(zc_registry._registry)
+    backup_instances = dict(zc_registry._instances)
+    zc_registry._registry.clear()
+    zc_registry._instances.clear()
 
-    clear_zc_registry()
-    sync_gate_registry(settings)
-    return CapabilityGate(override_store=override_store)
+    for name, cfg in agents_config.items():
+        caps_raw = cfg.get("capabilities", {})
+        capabilities = {intent: Mode(mode_str) for intent, mode_str in caps_raw.items()}
+        gate_cls = type(
+            f"GateConfig_{name}",
+            (),
+            {
+                "name": name,
+                "description": str(cfg.get("description") or name),
+                "enabled": cfg.get("enabled", True),
+                "capabilities": capabilities,
+                "intent_map": cfg.get("intent_map", {}),
+                "model": cfg.get("model", "anthropic/claude-sonnet-4-5"),
+                "model_simple": cfg.get("model_simple", ""),
+                "tools": cfg.get("tools", []),
+            },
+        )
+        zc_registry._registry[name] = gate_cls
+
+    gate = CapabilityGate(override_store=override_store)
+
+    def restore() -> None:
+        zc_registry._registry.clear()
+        zc_registry._registry.update(backup_registry)
+        zc_registry._instances.clear()
+        zc_registry._instances.update(backup_instances)
+        if "research" not in zc_registry._registry:
+            reload_agent_modules()
+
+    gate._restore_registry = restore  # type: ignore[attr-defined]
+    return gate

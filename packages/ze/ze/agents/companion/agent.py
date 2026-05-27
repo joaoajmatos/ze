@@ -5,7 +5,7 @@ from typing import AsyncIterator
 import asyncpg
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.contacts.store import PersonStore
 from ze.openrouter.client import OpenRouterClient
@@ -13,6 +13,7 @@ from ze.settings import Settings
 import ze.tools.prospecting  # noqa: F401 — registers log_outreach_event @tool
 from ze.tools.contacts import extract_contacts as _  # noqa: F401 — registers @tool
 from ze.tools.facts import to_user_facts
+from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\
 You reason from what you know and what the user tells you — you do not search the web.
@@ -39,10 +40,29 @@ _CHANNEL_KEYWORDS: dict[str, list[str]] = {
 }
 
 
-@register
+@agent
 class CompanionAgent(BaseAgent):
-    name  = "companion"
+    name = "companion"
+    description = """
+      Handles reasoning, thinking, brainstorming, analysis, and open-ended conversation.
+      Use for thinking through problems, getting a second opinion, exploring ideas,
+      writing assistance, or any task that does not require external tools or live data.
+      Do NOT use for queries that involve researching, searching, or looking things up.
+    """
+    model = "anthropic/claude-sonnet-4-5"
+    model_simple = "anthropic/claude-haiku-4-5"
+    vision_capable = True
+    timeout = 60
     tools = ["extract_facts", "extract_contacts", "log_outreach_event"]
+    intent_map = {"reason": "direct_completion"}
+    capabilities = {
+        "reason": Mode.AUTONOMOUS,
+        "read": Mode.AUTONOMOUS,
+        "create": Mode.AUTONOMOUS,
+        "update": Mode.AUTONOMOUS,
+        "delete": Mode.AUTONOMOUS,
+        "execute": Mode.AUTONOMOUS,
+    }
 
     def __init__(
         self,
@@ -142,8 +162,10 @@ def _detect_outreach_event(text: str) -> dict | None:
     if event_type is None:
         return None
 
-    # Extract first proper noun (likely the contact name)
-    names = re.findall(r"\b[A-Z][a-záàâãéèêíïóôõöúüçñ]+(?:\s+[A-Z][a-záàâãéèêíïóôõöúüçñ]+)?\b", text)
+    names = re.findall(
+        r"\b[A-Z][a-záàâãéèêíïóôõöúüçñ]+(?:\s+[A-Z][a-záàâãéèêíïóôõöúüçñ]+)?\b",
+        text,
+    )
     if not names:
         return None
 

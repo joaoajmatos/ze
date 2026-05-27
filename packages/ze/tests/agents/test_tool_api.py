@@ -89,20 +89,17 @@ def test_tool_decorator_preserves_function():
 
 
 def test_tool_params_extracted_from_signature():
+    import inspect
+
     @tool(access=ToolAccess.READ, description="Param test.")
     async def _param_tool(query: str, max_results: int = 5) -> ToolCall: ...
 
     spec = _tool_registry["_param_tool"]
-    names = [p.name for p in spec.params]
-    assert "query" in names
-    assert "max_results" in names
-
-    query_param = next(p for p in spec.params if p.name == "query")
-    assert query_param.required is True
-
-    max_param = next(p for p in spec.params if p.name == "max_results")
-    assert max_param.required is False
-    assert max_param.default == 5
+    sig = inspect.signature(spec.func)
+    assert "query" in sig.parameters
+    assert "max_results" in sig.parameters
+    assert sig.parameters["query"].default is inspect.Parameter.empty
+    assert sig.parameters["max_results"].default == 5
 
 
 def test_get_tool_raises_for_unknown():
@@ -275,20 +272,20 @@ def test_format_memory_with_facts(settings):
 
 # ── validate_registry() ───────────────────────────────────────────────────────
 
-def test_validate_registry_passes_with_valid_config(settings):
+def test_validate_registry_passes_with_valid_config():
     from ze.agents.bootstrap import validate_registry
-    # Should not raise — real agents and their tools are correctly wired
-    import ze.agents.research.agent  # ensure registered  # noqa: F401
+    import ze.agents.research.agent  # noqa: F401
     import ze.agents.companion.agent  # noqa: F401
-    validate_registry(settings)
+    validate_registry()
 
 
-def test_validate_registry_fails_on_unknown_tool(settings):
+def test_validate_registry_fails_on_unknown_tool():
     from ze.agents.bootstrap import validate_registry
     from ze.agents.registry import _registry
 
     class _BadAgent(BaseAgent):
         name = "_bad_agent_unknown_tool"
+        description = "bad"
         tools = ["this_tool_does_not_exist"]
         async def run(self, ctx): ...
         async def stream(self, ctx): yield ""
@@ -296,56 +293,31 @@ def test_validate_registry_fails_on_unknown_tool(settings):
     _registry["_bad_agent_unknown_tool"] = _BadAgent
     try:
         with pytest.raises(AgentConfigError, match="this_tool_does_not_exist"):
-            validate_registry(settings)
+            validate_registry()
     finally:
         _registry.pop("_bad_agent_unknown_tool", None)
 
 
-def test_validate_registry_fails_on_missing_capability_intent(settings, tmp_path):
+def test_validate_registry_fails_on_missing_capability_intent():
     from ze.agents.bootstrap import validate_registry
     from ze.agents.registry import _registry
-    import yaml
-
-    # Copy real config to tmp_path and inject a bad agent with an intent
-    # that has no matching capabilities entry
-    config_dir = tmp_path / "config"
-    config_dir.mkdir(parents=True)
-    config_path = config_dir / "config.yaml"
-    real_config_path = pathlib.Path(__file__).parent.parent.parent / "config" / "config.yaml"
-    with open(real_config_path) as f:
-        cfg = yaml.safe_load(f)
-    cfg["agents"]["_bad_intent_agent"] = {
-        "enabled": True,
-        "description": "test",
-        "model": "x",
-        "timeout": 10,
-        "intent_map": {"destroy": "obliterate"},
-        "capabilities": {},
-    }
-    config_path.write_text(yaml.dump(cfg))
-
-    from ze.settings import get_settings
-    get_settings.cache_clear()
-    bad_settings = Settings(
-        openrouter_api_key="test-key",
-        database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=tmp_path / "config",
-    )
+    from ze_core.capability.types import Mode
 
     class _BadIntentAgent(BaseAgent):
         name = "_bad_intent_agent"
+        description = "bad"
         tools: list[str] = []
+        intent_map = {"destroy": "obliterate"}
+        capabilities = {"read": Mode.AUTONOMOUS}
         async def run(self, ctx): ...
         async def stream(self, ctx): yield ""
 
     _registry["_bad_intent_agent"] = _BadIntentAgent
     try:
         with pytest.raises(AgentConfigError, match="destroy"):
-            validate_registry(bad_settings)
+            validate_registry()
     finally:
         _registry.pop("_bad_intent_agent", None)
-        get_settings.cache_clear()
 
 
 # ── ToolSpec.llm_schema() ─────────────────────────────────────────────────────
@@ -362,13 +334,12 @@ def test_llm_schema_basic_string_param():
     _schema_str.__doc__ = "A string tool."
     spec = _make_schema_tool(_schema_str)
     schema = spec.llm_schema()
-    assert schema["type"] == "function"
-    assert schema["function"]["name"] == "_schema_str"
-    assert schema["function"]["description"] == "A string tool."
-    props = schema["function"]["parameters"]["properties"]
+    assert schema["name"] == "_schema_str"
+    assert schema["description"] == "A string tool."
+    props = schema["parameters"]["properties"]
     assert "query" in props
     assert props["query"]["type"] == "string"
-    assert "query" in schema["function"]["parameters"]["required"]
+    assert "query" in schema["parameters"]["required"]
 
 
 def test_llm_schema_excludes_complex_type_params():
@@ -379,7 +350,7 @@ def test_llm_schema_excludes_complex_type_params():
     _schema_with_client.__doc__ = "Client excluded."
     spec = _make_schema_tool(_schema_with_client)
     schema = spec.llm_schema()
-    props = schema["function"]["parameters"]["properties"]
+    props = schema["parameters"]["properties"]
     assert "query" in props
     assert "client" not in props
 
@@ -391,7 +362,7 @@ def test_llm_schema_optional_param_not_required():
     _schema_optional.__doc__ = "Optional param."
     spec = _make_schema_tool(_schema_optional)
     schema = spec.llm_schema()
-    required = schema["function"]["parameters"].get("required", [])
+    required = schema["parameters"].get("required", [])
     assert "query" in required
     assert "limit" not in required
 
@@ -401,7 +372,7 @@ def test_llm_schema_default_param_not_required():
     _schema_default.__doc__ = "Default param."
     spec = _make_schema_tool(_schema_default)
     schema = spec.llm_schema()
-    required = schema["function"]["parameters"].get("required", [])
+    required = schema["parameters"].get("required", [])
     assert "query" in required
     assert "max_results" not in required
 
@@ -410,7 +381,7 @@ def test_llm_schema_integer_type():
     async def _schema_int(count: int) -> ToolCall: ...
     _schema_int.__doc__ = "Integer."
     spec = _make_schema_tool(_schema_int)
-    props = spec.llm_schema()["function"]["parameters"]["properties"]
+    props = spec.llm_schema()["parameters"]["properties"]
     assert props["count"]["type"] == "integer"
 
 
@@ -418,7 +389,7 @@ def test_llm_schema_float_type():
     async def _schema_float(ratio: float) -> ToolCall: ...
     _schema_float.__doc__ = "Float."
     spec = _make_schema_tool(_schema_float)
-    props = spec.llm_schema()["function"]["parameters"]["properties"]
+    props = spec.llm_schema()["parameters"]["properties"]
     assert props["ratio"]["type"] == "number"
 
 
@@ -426,7 +397,7 @@ def test_llm_schema_bool_type():
     async def _schema_bool(flag: bool) -> ToolCall: ...
     _schema_bool.__doc__ = "Bool."
     spec = _make_schema_tool(_schema_bool)
-    props = spec.llm_schema()["function"]["parameters"]["properties"]
+    props = spec.llm_schema()["parameters"]["properties"]
     assert props["flag"]["type"] == "boolean"
 
 
@@ -438,7 +409,7 @@ def test_llm_schema_all_complex_excluded_yields_empty_properties():
     spec = _make_schema_tool(_schema_all_complex)
     schema = spec.llm_schema()
     # model (str) is visible, client (ORC) is not
-    props = schema["function"]["parameters"]["properties"]
+    props = schema["parameters"]["properties"]
     assert "model" in props
     assert "client" not in props
 
@@ -601,8 +572,7 @@ async def test_agentic_loop_passes_schemas_to_client(settings):
     )
 
     assert len(received_tools) == 1
-    assert received_tools[0]["type"] == "function"
-    assert received_tools[0]["function"]["name"] == "web_search"
+    assert received_tools[0]["name"] == "web_search"
 
 
 async def test_agentic_loop_raises_agent_error_on_none_none_response(settings):

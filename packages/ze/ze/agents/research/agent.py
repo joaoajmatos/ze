@@ -3,12 +3,13 @@ from typing import AsyncIterator
 from tavily import AsyncTavilyClient
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import register
+from ze.agents.registry import agent
 from ze.agents.research.tools import format_search_results
 from ze.agents.types import AgentContext, AgentResult
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze.tools.facts import to_user_facts
+from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\
 You are Ze's research capability. Use web search to find accurate, up-to-date information.
@@ -20,10 +21,32 @@ You are Ze's research capability. Use web search to find accurate, up-to-date in
 """
 
 
-@register
+@agent
 class ResearchAgent(BaseAgent):
-    name  = "research"
+    name = "research"
+    description = """
+      Handles web searches, fact-finding, summarisation, and research synthesis.
+      Use when the user explicitly says "research", "look up", "find out", "search for",
+      or asks about current events, factual lookups, topic deep-dives, company or
+      organisation history, news, or anything requiring information retrieval from the web.
+      Also use for factual comparisons ("what are the differences between X and Y"),
+      technical how-things-work questions, and any query where accurate sourced information
+      matters more than reasoning or conversation.
+    """
+    model = "anthropic/claude-sonnet-4-5"
+    model_simple = "anthropic/claude-haiku-4-5"
+    vision_capable = True
+    timeout = 30
     tools = ["web_search", "extract_facts"]
+    intent_map = {"read": "web_search"}
+    capabilities = {
+        "read": Mode.AUTONOMOUS,
+        "execute": Mode.CONFIRM,
+        "create": Mode.AUTONOMOUS,
+        "update": Mode.AUTONOMOUS,
+        "delete": Mode.AUTONOMOUS,
+        "reason": Mode.AUTONOMOUS,
+    }
 
     def __init__(
         self,
@@ -85,5 +108,3 @@ class ResearchAgent(BaseAgent):
             system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         ):
             yield token
-
-
