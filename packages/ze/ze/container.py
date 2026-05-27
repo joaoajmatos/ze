@@ -151,9 +151,9 @@ async def build_container(settings: Settings) -> Container:
         allowed_msgpack_modules=[
             ("ze_core.routing.types", "SubTask"),
             ("ze_core.routing.types", "RoutingEnvelope"),
-            ("ze.agents.types", "ToolCall"),
-            ("ze.agents.types", "AgentResult"),
-            ("ze.agents.types", "AgentContext"),
+            ("ze_core.orchestration.types", "ToolCall"),
+            ("ze_core.orchestration.types", "AgentResult"),
+            ("ze_core.orchestration.types", "AgentContext"),
             ("ze_core.capability.types", "GateDecision"),
             ("ze_core.memory.types", "MemoryContext"),
             ("ze_core.memory.types", "UserFact"),

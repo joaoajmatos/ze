@@ -9,7 +9,7 @@ from ze.contacts.channel_store import ContactChannelStore
 from ze.contacts.types import Person, PersonSource, SOURCE_WEIGHTS
 from ze.logging import get_logger
 from ze.memory.store import MemoryStore
-from ze.orchestration.nodes.context import _SESSION_HISTORY_LIMIT
+from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT as _SESSION_HISTORY_LIMIT
 from ze.orchestration.state import AgentState
 from ze.settings import Settings
 from ze.telemetry.context import set_agent_context

@@ -1,66 +1,57 @@
+from __future__ import annotations
+
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from langgraph.graph import END, StateGraph
+from langgraph.constants import END
+from langgraph.graph import StateGraph
 
 from ze.orchestration import edges
-from ze.orchestration.nodes import (
-    confirmation,
-    context,
-    execution,
-    memory,
-    routing,
-)
-from ze.orchestration.state import AgentState
+from ze.orchestration.nodes import confirmation, context, execution, memory, routing
+from ze_core.orchestration.graph import graph_builder
+
+
+def _wire_ze_nodes(builder: StateGraph) -> None:
+    """Swap ze-core node runnables for Ze implementations (contacts, telemetry, …)."""
+    replacements = {
+        "embed_route": routing.embed_route,
+        "decompose": routing.decompose,
+        "fetch_context": context.fetch_context,
+        "capability_check": execution.capability_check,
+        "execute_tool": execution.execute_tool,
+        "draft_response": execution.draft_response,
+        "await_confirmation": confirmation.await_confirmation,
+        "synthesize": memory.synthesize,
+        "write_memory": memory.write_memory,
+    }
+    for name, fn in replacements.items():
+        spec = builder.nodes[name]
+        if hasattr(spec, "runnable"):
+            spec.runnable = fn
+        else:
+            builder.nodes[name] = fn
 
 
 def build_graph(checkpointer: AsyncPostgresSaver):
-    builder = StateGraph(AgentState)
+    """Ze conversation graph: ze-core skeleton + Ze nodes + plan_sequential."""
+    builder = graph_builder()
+    _wire_ze_nodes(builder)
 
-    # ── Nodes ─────────────────────────────────────────────────────────────
-    builder.add_node("embed_route", routing.embed_route)
-    builder.add_node("decompose", routing.decompose)
     builder.add_node("plan_sequential", routing.plan_sequential)
-    builder.add_node("fetch_context", context.fetch_context)
-    builder.add_node("capability_check", execution.capability_check)
-    builder.add_node("execute_tool", execution.execute_tool)
-    builder.add_node("draft_response", execution.draft_response)
-    builder.add_node("await_confirmation", confirmation.await_confirmation)
-    builder.add_node("synthesize", memory.synthesize)
-    builder.add_node("write_memory", memory.write_memory)
 
-    # ── Entry ─────────────────────────────────────────────────────────────
-    builder.set_entry_point("embed_route")
-
-    # ── Edges ─────────────────────────────────────────────────────────────
     builder.add_conditional_edges(
         "embed_route",
         edges.after_embed_route,
-        {"decompose": "decompose", "fetch_context": "fetch_context", "plan_sequential": "plan_sequential"},
+        {
+            "decompose": "decompose",
+            "fetch_context": "fetch_context",
+            "plan_sequential": "plan_sequential",
+        },
     )
-    builder.add_edge("plan_sequential", END)
     builder.add_conditional_edges(
         "decompose",
         edges.after_decompose,
         {"plan_sequential": "plan_sequential", "fetch_context": "fetch_context"},
     )
-    builder.add_edge("fetch_context", "capability_check")
-    builder.add_conditional_edges(
-        "capability_check",
-        edges.after_capability_check,
-        {
-            "execute_tool": "execute_tool",
-            "draft_response": "draft_response",
-            "end_blocked": END,
-        },
-    )
-    builder.add_conditional_edges(
-        "execute_tool",
-        edges.after_execute_tool,
-        {"synthesize": "synthesize", "write_memory": "write_memory"},
-    )
-    builder.add_edge("draft_response", "await_confirmation")
-    builder.add_edge("await_confirmation", "execute_tool")  # resumes with EXECUTE after user confirms
-    builder.add_edge("synthesize", "write_memory")
-    builder.add_edge("write_memory", END)
+    builder.add_edge("plan_sequential", END)
 
     return builder.compile(
         checkpointer=checkpointer,

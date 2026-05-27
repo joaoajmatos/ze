@@ -47,9 +47,8 @@ def graph_builder() -> Any:
 
     builder.set_entry_point("embed_route")
 
-    # embed_route conditional edge is NOT wired here — see docstring above.
+    # embed_route and decompose routing conditionals are NOT wired here — see docstring.
 
-    builder.add_edge("decompose",      "fetch_context")
     builder.add_edge("fetch_context",  "capability_check")
     builder.add_conditional_edges(
         "capability_check",
@@ -83,6 +82,7 @@ def build_graph(checkpointer: Any) -> Any:
         after_embed_route,
         {"decompose": "decompose", "fetch_context": "fetch_context"},
     )
+    builder.add_edge("decompose", "fetch_context")
     return builder.compile(
         checkpointer=checkpointer,
         interrupt_before=["await_confirmation"],

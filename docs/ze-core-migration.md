@@ -264,6 +264,16 @@ ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and 
 
 **Phase 8 done when:** Single conversation graph from ze-core; Ze only adds nodes/edges it owns.
 
+**Implemented (2025-05):**
+
+- `ze/orchestration/graph.py` — `graph_builder()` + `_wire_ze_nodes()` + `plan_sequential` / `after_decompose` edges
+- `ze/orchestration/state.py` — extends `ze_core.orchestration.state.AgentState` with workflow + dynamic-plan fields
+- `ze/orchestration/edges.py` — re-exports ze-core gate/execute edges; Ze-only workflow + `after_decompose`
+- `ze/orchestration/workflow_graph.py` — built on same `graph_builder()` skeleton with Ze node wiring
+- Checkpointer serde uses `ze_core.orchestration.types` for `AgentContext` / `AgentResult` / `ToolCall`
+- Ze-only nodes kept: `routing` (decompose complexity, `plan_sequential`), `context`, `execution`, `memory`, `workflow`
+- `confirmation` re-exports ze-core `await_confirmation`
+
 ---
 
 ### Phase 9 — Container, settings, cleanup
@@ -328,7 +338,7 @@ Update as PRs merge:
 | 5 Goals / proactive | ✅ | | ze-core goals store/planner/executor; ProactiveNotifier + ProactiveScheduler; gate actions via Notification |
 | 6 Telemetry / persona | ✅ | | ze-core CostTracker/Reconciler + PostgresCostStore; persona.yaml + PostgresPersonaStore |
 | 7 Agents `@agent` | ✅ | | Class-level agent config; ze-core registry/tool/base |
-| 8 Orchestration | ⬜ | | |
+| 8 Orchestration | ✅ | | graph_builder + Ze node wiring; extended AgentState; ze_core checkpoint types |
 | 9 Container / cleanup | ⬜ | | |
 | Schema unified | ⬜ | | |
 

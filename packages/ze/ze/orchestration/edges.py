@@ -1,12 +1,21 @@
+"""Ze graph edges — ze-core defaults plus workflow and plan_sequential routing."""
+
 from ze.capability.types import GateDecision
 from ze.orchestration.state import AgentState
+from ze_core.orchestration.edges import (
+    after_capability_check,
+    after_embed_route,
+    after_execute_tool,
+)
 
-
-def after_embed_route(state: AgentState) -> str:
-    envelope = state.get("envelope")
-    if envelope and envelope.is_compound:
-        return "decompose"
-    return "fetch_context"
+__all__ = [
+    "after_capability_check",
+    "after_embed_route",
+    "after_execute_tool",
+    "after_decompose",
+    "after_capability_check_workflow",
+    "after_verify_step",
+]
 
 
 def after_decompose(state: AgentState) -> str:
@@ -17,32 +26,10 @@ def after_decompose(state: AgentState) -> str:
     return "fetch_context"
 
 
-def after_capability_check(state: AgentState) -> str:
-    decision = state.get("gate_decision")
-    match decision:
-        case GateDecision.EXECUTE:
-            return "execute_tool"
-        case GateDecision.DRAFT:
-            return "draft_response"
-        case GateDecision.AWAIT_CONFIRMATION:
-            return "draft_response"
-        case GateDecision.BLOCKED:
-            return "end_blocked"
-        case _:
-            return "end_blocked"
-
-
-def after_execute_tool(state: AgentState) -> str:
-    envelope = state.get("envelope")
-    if envelope and envelope.is_compound and state.get("subtask_results"):
-        return "synthesize"
-    return "write_memory"
-
-
 # ── Workflow graph edges ───────────────────────────────────────────────────────
 
 def after_capability_check_workflow(state: AgentState) -> str:
-    """In workflow mode all steps execute directly — the workflow creation was the gate."""
+    """In workflow mode all steps execute directly — workflow creation was the gate."""
     decision = state.get("gate_decision")
     if decision == GateDecision.BLOCKED:
         return "workflow_failed"
