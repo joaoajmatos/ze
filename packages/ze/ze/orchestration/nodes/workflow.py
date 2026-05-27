@@ -38,7 +38,7 @@ async def load_workflow_step(state: AgentState, config: RunnableConfig) -> dict:
 
 async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
     """Validate step output; append StepResult and advance index."""
-    from ze.openrouter.client import OpenRouterClient
+    from ze_core.openrouter.client import OpenRouterClient
     from ze.settings import Settings
 
     store: WorkflowStore = config["configurable"]["workflow_store"]
@@ -105,7 +105,7 @@ async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
 
 async def workflow_synthesize(state: AgentState, config: RunnableConfig) -> dict:
     """Merge all step outputs into a final response and mark execution complete."""
-    from ze.openrouter.client import OpenRouterClient
+    from ze_core.openrouter.client import OpenRouterClient
     from ze.settings import Settings
 
     store: WorkflowStore = config["configurable"]["workflow_store"]

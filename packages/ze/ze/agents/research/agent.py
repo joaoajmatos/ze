@@ -6,9 +6,8 @@ from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze.agents.research.tools import format_search_results
 from ze.agents.types import AgentContext, AgentResult
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
-from ze.tools.facts import to_user_facts
 from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\
@@ -37,7 +36,7 @@ class ResearchAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 30
-    tools = ["web_search", "extract_facts"]
+    tools = ["web_search"]
     intent_map = {"read": "web_search"}
     capabilities = {
         "read": Mode.AUTONOMOUS,
@@ -71,29 +70,18 @@ class ResearchAgent(BaseAgent):
         )
 
         await self.emit(ctx, "research.summarising")
-        facts_tc = await self.call_tool(
-            "extract_facts", ctx,
-            prompt=ctx.prompt,
-            response=response,
-            client=self._client,
-            model=self._model(ctx),
-        )
-
-        proposals = to_user_facts(facts_tc.result or [])
         search_count = len([tc for tc in loop_tool_calls if tc.tool_name == "web_search"])
 
         self._log.info(
             "research_agent_complete",
             session_id=ctx.session_id,
             search_count=search_count,
-            proposals=len(proposals),
         )
 
         return AgentResult(
             agent=self.name,
             response=response,
-            tool_calls=loop_tool_calls + [facts_tc],
-            memory_proposals=proposals,
+            tool_calls=loop_tool_calls,
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:

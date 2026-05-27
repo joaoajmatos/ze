@@ -6,9 +6,9 @@ import structlog
 
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
-from ze.channels.types import ChannelHandle, ChannelType
+from ze_core.channels.types import ChannelHandle, ChannelType
 from ze.contacts.channel_store import ContactChannelStore
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 
 log = structlog.get_logger(__name__)
 

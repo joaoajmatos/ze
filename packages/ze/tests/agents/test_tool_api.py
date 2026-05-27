@@ -405,7 +405,7 @@ def test_llm_schema_bool_type():
 
 
 def test_llm_schema_all_complex_excluded_yields_empty_properties():
-    from ze.openrouter.client import OpenRouterClient as ORC
+    from ze_core.openrouter.client import OpenRouterClient as ORC
 
     async def _schema_all_complex(client: ORC, model: str) -> ToolCall: ...
     _schema_all_complex.__doc__ = "Complex only."

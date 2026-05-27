@@ -262,7 +262,9 @@ async def test_write_memory_schedules_tasks_without_blocking():
     store = AsyncMock(spec=MemoryStore)
     store.write_episode = AsyncMock()
     store.propose_facts = AsyncMock()
-    cfg = make_config(memory_store=store)
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value="[]")
+    cfg = make_config(memory_store=store, openrouter_client=client)
 
     result_obj = AgentResult(agent="research", response="done")
     ctx = AgentContext(session_id="s1", prompt="hi", intent="read", memory=MemoryContext())
@@ -283,7 +285,7 @@ async def test_write_memory_no_crash_if_no_agent_context():
 # ── memory._write_contact_proposals ──────────────────────────────────────────
 
 async def test_write_contact_proposals_writes_email_to_channel_store():
-    from ze.channels.types import ChannelType
+    from ze_core.channels.types import ChannelType
     from ze.orchestration.nodes.memory import _write_contact_proposals
 
     person_store = AsyncMock()
@@ -361,7 +363,7 @@ async def test_write_contact_proposals_works_without_channel_store():
 
 
 async def test_write_contact_proposals_writes_channel_for_existing_contact():
-    from ze.channels.types import ChannelType
+    from ze_core.channels.types import ChannelType
     from ze.contacts.types import Person
     from ze.orchestration.nodes.memory import _write_contact_proposals
     from datetime import datetime, timezone

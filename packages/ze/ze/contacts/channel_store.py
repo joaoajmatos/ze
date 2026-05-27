@@ -2,7 +2,7 @@ from uuid import UUID
 
 import asyncpg
 
-from ze.channels.types import ChannelHandle, ChannelType
+from ze_core.channels.types import ChannelHandle, ChannelType
 from ze.logging import get_logger
 
 

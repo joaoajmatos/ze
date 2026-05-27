@@ -15,7 +15,7 @@ from ze_core.goals.executor import GoalExecutor
 from ze_core.goals.planner import GoalPlanner
 from ze_core.goals.postgres import PostgresGoalStore as GoalStore
 from ze_core.goals.types import Goal, GoalStatus, MilestoneStatus
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze.settings import Settings
 from ze_core.interface.types import Action, Notification

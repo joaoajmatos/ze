@@ -1,6 +1,7 @@
 """Ze application exceptions."""
 
 from ze_core.errors import ZeCoreError as ZeError
+from ze_core.errors import ChannelError
 
 # ── Capability ────────────────────────────────────────────────────────────────
 
@@ -16,20 +17,6 @@ class CapabilityConfigError(CapabilityError):
 
 class MemoryError(ZeError):
     """Memory store operation failed."""
-
-
-# ── OpenRouter ────────────────────────────────────────────────────────────────
-
-class OpenRouterError(ZeError):
-    """OpenRouter API call failed."""
-
-    def __init__(self, message: str, status_code: int | None = None) -> None:
-        super().__init__(message)
-        self.status_code = status_code
-
-
-class RateLimitError(OpenRouterError):
-    """OpenRouter returned HTTP 429."""
 
 
 # ── Workflow ───────────────────────────────────────────────────────────────────
@@ -57,14 +44,6 @@ class ImageDownloadError(ZeError):
 
 
 # ── Channels ───────────────────────────────────────────────────────────────────
-
-class ChannelError(ZeError):
-    """Base class for communication channel errors."""
-
-
-class ChannelNotFoundError(ChannelError):
-    """No channel registered for the requested ChannelType."""
-
 
 class ChannelSendError(ChannelError):
     """Channel transport failed during send."""

@@ -8,11 +8,10 @@ from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.contacts.store import PersonStore
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 import ze.tools.prospecting  # noqa: F401 — registers log_outreach_event @tool
 from ze.tools.contacts import extract_contacts as _  # noqa: F401 — registers @tool
-from ze.tools.facts import to_user_facts
 from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\
@@ -53,7 +52,7 @@ class CompanionAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 60
-    tools = ["extract_facts", "extract_contacts", "log_outreach_event"]
+    tools = ["extract_contacts", "log_outreach_event"]
     intent_map = {"reason": "direct_completion"}
     capabilities = {
         "reason": Mode.AUTONOMOUS,
@@ -84,14 +83,7 @@ class CompanionAgent(BaseAgent):
             system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         )
 
-        facts_tc, contacts_tc, outreach_tc = await asyncio.gather(
-            self.call_tool(
-                "extract_facts", ctx,
-                prompt=ctx.prompt,
-                response=response,
-                client=self._client,
-                model=self._model(ctx),
-            ),
+        contacts_tc, outreach_tc = await asyncio.gather(
             self.call_tool(
                 "extract_contacts", ctx,
                 prompt=ctx.prompt,
@@ -102,21 +94,18 @@ class CompanionAgent(BaseAgent):
             self._attempt_log_outreach(ctx),
         )
 
-        proposals = to_user_facts(facts_tc.result or [])
         contact_proposals = contacts_tc.result or []
 
         self._log.info(
             "companion_agent_complete",
             session_id=ctx.session_id,
-            proposals=len(proposals),
             contact_proposals=len(contact_proposals),
         )
 
         return AgentResult(
             agent=self.name,
             response=response,
-            tool_calls=[facts_tc, contacts_tc, outreach_tc],
-            memory_proposals=proposals,
+            tool_calls=[contacts_tc, outreach_tc],
             contact_proposals=contact_proposals,
         )
 

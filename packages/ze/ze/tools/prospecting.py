@@ -8,7 +8,7 @@ from ze.agents.types import ToolCall
 from ze.contacts.store import PersonStore
 from ze.contacts.types import Person, PersonSource
 from ze.logging import get_logger
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 
 log = get_logger(__name__)
 

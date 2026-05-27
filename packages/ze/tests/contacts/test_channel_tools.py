@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze.channels.types import ChannelHandle, ChannelType
+from ze_core.channels.types import ChannelHandle, ChannelType
 from ze.tools.contacts import get_contact_channels, set_contact_channel
 
 

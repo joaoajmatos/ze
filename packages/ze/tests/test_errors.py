@@ -2,11 +2,11 @@ from ze.errors import (
     ZeError,
     CapabilityError, CapabilityConfigError,
     MemoryError,
-    OpenRouterError, RateLimitError,
 )
 from ze_core.errors import (
     AgentError, AgentTimeoutError, UnknownAgentError,
     InvalidPromptError, RoutingError,
+    OpenRouterError, RateLimitError,
 )
 
 

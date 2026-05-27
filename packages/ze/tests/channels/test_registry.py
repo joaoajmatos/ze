@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ze.channels.base import Channel
-from ze.channels.registry import ChannelRegistry
-from ze.channels.types import ChannelType, Message, SentMessage, Thread, ThreadMessage
-from ze.errors import ChannelNotFoundError
+from ze_core.channels.base import Channel
+from ze_core.channels.registry import ChannelRegistry
+from ze_core.channels.types import ChannelType, Message, SentMessage, Thread, ThreadMessage
+from ze_core.errors import ChannelNotFoundError
 
 
 class _StubChannel(Channel):

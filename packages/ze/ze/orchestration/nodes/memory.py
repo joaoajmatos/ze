@@ -4,10 +4,11 @@ from langchain_core.runnables import RunnableConfig
 from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentResult
-from ze.channels.types import ChannelHandle, ChannelType
+from ze_core.channels.types import ChannelHandle, ChannelType
 from ze.contacts.channel_store import ContactChannelStore
 from ze.contacts.types import Person, PersonSource, SOURCE_WEIGHTS
 from ze.logging import get_logger
+from ze_core.memory.extractor import gather_fact_proposals
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT as _SESSION_HISTORY_LIMIT
 from ze.orchestration.state import AgentState
@@ -68,8 +69,15 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             )
         )
 
-        if result.memory_proposals:
-            await store.propose_facts(result.memory_proposals)
+        proposals = await gather_fact_proposals(
+            config["configurable"],
+            agent=result.agent,
+            prompt=ctx.prompt,
+            response=result.response,
+            explicit=result.memory_proposals,
+        )
+        if proposals:
+            await store.propose_facts(proposals)
 
         person_store = config["configurable"].get("person_store")
         contact_channel_store = config["configurable"].get("contact_channel_store")
@@ -86,7 +94,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     log.debug(
         "orchestration_memory_write_scheduled",
         session_id=state["session_id"],
-        proposals=len(result.memory_proposals) if not is_eval else 0,
+        explicit_proposals=len(result.memory_proposals) if not is_eval else 0,
         eval=is_eval,
     )
 
@@ -106,7 +114,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
 async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
     """Merge multiple subtask results into a single coherent response via Haiku."""
-    from ze.openrouter.client import OpenRouterClient
+    from ze_core.openrouter.client import OpenRouterClient
 
     set_agent_context("synthesis")
     client: OpenRouterClient = config["configurable"]["openrouter_client"]

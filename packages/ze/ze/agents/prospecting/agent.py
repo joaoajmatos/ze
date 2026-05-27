@@ -12,7 +12,7 @@ from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze_browser import BrowserClient
 from ze.contacts.store import PersonStore
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 
 _AGENT_INSTRUCTIONS = """\

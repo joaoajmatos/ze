@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ze.channels.email import EmailChannel
-from ze.channels.types import ChannelType, Message, SentMessage, ThreadMessage
+from ze_core.channels.types import ChannelType, Message, SentMessage, ThreadMessage
 from ze.errors import ChannelSendError
 
 

@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from ze_core.capability.gate import CapabilityGate
 from ze_core.memory.consolidator import MemoryConsolidator
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze_core.routing.router import EmbeddingRouter
 from ze.settings import Settings, get_settings as _get_settings
 

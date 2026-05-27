@@ -8,7 +8,7 @@ from uuid import UUID
 import asyncpg
 
 from ze.logging import get_logger
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze.settings import Settings
 from ze_core.telemetry.context import set_agent_context, set_flow_context

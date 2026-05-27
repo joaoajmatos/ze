@@ -6,9 +6,8 @@ from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.contacts.extractors import extract_calendar_contacts
 from ze.google.auth import GoogleCredentials
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
-from ze.tools.facts import to_user_facts
 
 _AGENT_INSTRUCTIONS = """\
 You manage the user's Google Calendar. All times are in {timezone}.
@@ -37,7 +36,7 @@ class CalendarAgent(BaseAgent):
     model = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 30
-    tools = ["list_events", "create_event", "update_event", "delete_event", "extract_facts"]
+    tools = ["list_events", "create_event", "update_event", "delete_event"]
     intent_map = {
         "read": "Search and retrieve calendar events.",
         "create": "Create a new calendar event.",
@@ -74,30 +73,19 @@ class CalendarAgent(BaseAgent):
             tool_names=["list_events", "create_event", "update_event", "delete_event"],
         )
 
-        facts_tc = await self.call_tool(
-            "extract_facts", ctx,
-            prompt=ctx.prompt,
-            response=response,
-            client=self._client,
-            model=self._model(ctx),
-        )
-
-        proposals = to_user_facts(facts_tc.result or [])
         contact_proposals = extract_calendar_contacts(loop_tool_calls)
 
         self._log.info(
             "calendar_agent_complete",
             session_id=ctx.session_id,
             tool_calls=len(loop_tool_calls),
-            proposals=len(proposals),
             contact_proposals=len(contact_proposals),
         )
 
         return AgentResult(
             agent=self.name,
             response=response,
-            tool_calls=loop_tool_calls + [facts_tc],
-            memory_proposals=proposals,
+            tool_calls=loop_tool_calls,
             contact_proposals=contact_proposals,
         )
 

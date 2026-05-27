@@ -10,7 +10,7 @@ from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.errors import WorkflowPlanError
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze.workflow.planner import WorkflowPlanner
 from ze.workflow.scheduler import WorkflowScheduler

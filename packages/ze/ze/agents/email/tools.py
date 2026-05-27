@@ -8,7 +8,7 @@ import structlog
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
 from ze.channels.email import EmailChannel
-from ze.channels.types import ChannelType, Message
+from ze_core.channels.types import ChannelType, Message
 from ze.google.auth import GoogleCredentials
 
 log = structlog.get_logger(__name__)

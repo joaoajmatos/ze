@@ -2,7 +2,7 @@ import json
 
 from ze.errors import WorkflowPlanError
 from ze.logging import get_logger
-from ze.openrouter.client import OpenRouterClient
+from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze.workflow.types import WorkflowStep
 
