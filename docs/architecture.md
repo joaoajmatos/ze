@@ -1,5 +1,8 @@
 # Ze — Architecture
 
+> **Migrating to ze-core?** See [ze-core-migration.md](./ze-core-migration.md) for the
+> phased plan, PR order, and progress tracker.
+
 ## Overview
 
 Ze is a single-user, self-hosted AI assistant. The only interface is a Telegram bot.
