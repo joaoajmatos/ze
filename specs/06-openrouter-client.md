@@ -48,6 +48,21 @@ class OpenRouterClient:
         """Send a non-streaming completion. Returns the full response string."""
         ...
 
+    async def transcribe(
+        self,
+        audio_bytes: bytes,
+        audio_format: str,
+        model: str,
+        duration_seconds: float | None = None,
+    ) -> str:
+        """Transcribe audio via an OpenRouter Whisper-compatible model.
+
+        Unsupported formats are converted to mp3 via ffmpeg. Returns the stripped
+        transcript. Sets telemetry context (flow=transcription, agent=whisper) before
+        calling complete() so cost rows are attributed correctly.
+        """
+        ...
+
     async def stream(
         self,
         messages: list[dict],

@@ -45,9 +45,11 @@ class AgentState(TypedDict):
 
     # ── Multimodal ─────────────────────────────────────────────────────────
     input_modality: str         # "text" | "voice" | "image" — default "text"
+    audio_data: bytes | None    # raw audio bytes; cleared by preprocess after transcription
+    audio_mime: str | None      # e.g. "audio/ogg; codecs=opus"
     image_data: bytes | None    # raw image bytes; None for text/voice turns
     image_mime: str | None      # "image/jpeg" | "image/png" | None
-    image_caption: str | None   # caption generated at embed_route; None until set
+    image_caption: str | None   # caption generated at preprocess; None until set
 
     # ── Routing ────────────────────────────────────────────────────────────
     envelope: RoutingEnvelope | None
@@ -75,8 +77,8 @@ class AgentState(TypedDict):
 
 ### Key invariants
 
-- `prompt` is never empty when the graph starts (validated at entry by the
-  transport adapter before invoking the graph).
+- `prompt` may be empty on entry when `audio_data` is set — the `preprocess` node
+  populates it from the transcription result before routing.
 - `envelope.subtasks` always has at least one entry (enforced by `EmbeddingRouter`).
 - `agent_context` is populated by `fetch_context` before any execution node runs.
 - `messages` holds at most `SESSION_HISTORY_LIMIT` completed turns (10 by default).
@@ -98,10 +100,10 @@ and custom routing without forking the entire graph module.
 
 Returns a fully-wired but **uncompiled** `StateGraph(AgentState)` with:
 
-- All standard nodes: `embed_route`, `decompose`, `fetch_context`,
+- All standard nodes: `preprocess`, `embed_route`, `decompose`, `fetch_context`,
   `capability_check`, `execute_tool`, `draft_response`, `await_confirmation`,
   `synthesize`, `write_memory`.
-- Entry point `embed_route`.
+- Entry point `preprocess`, with a fixed edge `preprocess → embed_route`.
 - All internal edges **except** the `embed_route` conditional.
 
 The `embed_route` conditional is **intentionally omitted** so callers can wire
@@ -186,24 +188,38 @@ container API).
 
 All nodes are in `ze_core/orchestration/nodes/`.
 
+### `preprocess`
+
+Normalises multimodal input before routing. All LLM pre-processing happens here so
+that downstream nodes always receive a populated `prompt` and never deal with raw bytes.
+
+- **Audio** (`audio_data` set): calls `openrouter_client.transcribe()` with the model
+  from `settings.config["models"]["whisper"]` (default `"openai/whisper-1"`). Writes
+  `prompt = transcript`, `input_modality = "voice"`, clears `audio_data`/`audio_mime`
+  so bytes are not persisted in the LangGraph checkpoint.
+- **Image without prompt**: calls a cheap vision model to generate a one-sentence routing
+  caption. Writes `image_caption`; `image_data` is preserved for the execution node.
+  Model from `settings.config["models"]["vision_caption"]` (default `"google/gemini-flash-1.5"`).
+- **Image with prompt**: sets `image_caption = prompt` (user's text serves as the caption).
+- **Text-only**: no-op pass-through.
+
+```python
+async def preprocess(state: AgentState, config: RunnableConfig) -> dict: ...
+```
+
 ### `embed_route`
 
-Calls `EmbeddingRouter.route()` to produce a `RoutingEnvelope`. For image turns
-without a text prompt, first calls a cheap vision model to generate a one-sentence
-routing caption, then routes on that caption. Writes `envelope` (and optionally
-`image_caption`) to state.
+Calls `EmbeddingRouter.route()` to produce a `RoutingEnvelope`. `preprocess` guarantees
+that either `prompt` or `image_caption` is set before this node runs. Routing text is
+`image_caption or prompt`.
 
 ```python
 async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     router: EmbeddingRouter = config["configurable"]["router"]
-    ...
+    routing_text = state.get("image_caption") or state["prompt"]
     envelope = await router.route(prompt=routing_text, session_id=state["session_id"])
-    return {"envelope": envelope, ...}
+    return {"envelope": envelope}
 ```
-
-The vision caption model is read from `settings.config["models"]["vision_caption"]`.
-Default: `"google/gemini-flash-1.5"`. The `OpenRouterClient` must be present in
-`config["configurable"]` whenever `input_modality == "image"` and `prompt` is empty.
 
 ### `decompose`
 
@@ -401,7 +417,7 @@ concurrent invocations.
 | `capability_gate` | `CapabilityGate` | Yes | `capability_check` node |
 | `memory_store` | `MemoryStore` | Yes | `fetch_context`, `write_memory` |
 | `embedder` | `SentenceTransformer` | Yes | `fetch_context`, `write_memory` |
-| `openrouter_client` | `OpenRouterClient` | Yes | `synthesize`, vision caption |
+| `openrouter_client` | `OpenRouterClient` | Yes | `preprocess` (transcription + caption), `synthesize` |
 | `settings` | `Settings` | Yes | timeouts, models, session expiry |
 | `thread_id` | `str` | Yes | LangGraph checkpoint key; `"eval-"` prefix skips memory |
 | `persona_store` | `PersonaStore` | No | `fetch_context` — active persona |
@@ -435,10 +451,12 @@ config = {
     }
 }
 state = {
-    "prompt": user_message,
+    "prompt": user_message,   # empty string when audio_data is set
     "session_id": session_id,
     "session_overrides": {},
-    "input_modality": "text",
+    "input_modality": "text",  # "voice" when audio_data set; "image" when image_data set
+    "audio_data": None,        # raw audio bytes; preprocess node transcribes and clears
+    "audio_mime": None,
     "image_data": None,
     "image_mime": None,
     "image_caption": None,
@@ -460,6 +478,8 @@ from the checkpoint and resumes from `await_confirmation`.
 ## Graph Topology Diagram
 
 ```
+preprocess   (transcription / vision caption)
+    │
 embed_route
     │
     ├─ is_compound ─→ decompose ─→ fetch_context
@@ -509,7 +529,8 @@ the LangGraph checkpoint and survives restarts.
 
 | Condition | Behaviour |
 |---|---|
-| `embed_route` receives empty prompt | `EmbeddingRouter` raises `InvalidPromptError` — graph aborts |
+| `preprocess` receives audio but no transcription model configured | `OpenRouterError` propagates — graph aborts |
+| `embed_route` receives empty prompt and no image_caption | `EmbeddingRouter` raises `InvalidPromptError` — graph aborts |
 | `capability_check` gets no envelope subtasks | Returns `GateDecision.BLOCKED` — routes to END |
 | `execute_tool` agent times out | `AgentTimeoutError` — graph writes error episode and ends |
 | `execute_tool` agent raises unexpectedly | Exception propagates; LangGraph surfaces it to the caller |

@@ -1,10 +1,10 @@
 # Multimodal Input — Spec
 
-> **Ze Core boundary:** Transport-agnostic types (`RawInput`, `ProcessedInput`) and
-> the `InputPreprocessor` protocol live in ze-core (`zc-02-app-interface.md`).
-> `Container.invoke_raw()` calls the preprocessor before graph invocation
-> (`zc-07-container.md`). This spec covers **Ze application** behaviour: Telegram
-> handlers, Whisper, vision caption, and `AgentState` fields consumed by graph nodes.
+> **Ze Core boundary:** Transport-agnostic types (`RawInput`) live in ze-core.
+> `Container.invoke_raw()` maps bytes directly into `AgentState`; the graph's
+> `preprocess` node handles transcription and vision captioning via `OpenRouterClient`
+> (`zc-05-orchestration.md`). This spec covers **Ze application** behaviour:
+> Telegram handlers and `AgentState` fields consumed by graph nodes.
 
 ## Purpose
 
@@ -53,10 +53,6 @@ no new credentials or HTTP clients.
 
 ```
 ze/
-├── transcription/
-│   ├── __init__.py
-│   ├── client.py           # TranscriptionClient
-│   └── types.py            # TranscriptionResult
 ├── telegram/
 │   ├── bot.py              # add _handle_voice(), _handle_photo()
 │   └── handlers.py         # register voice and photo message handlers
@@ -190,14 +186,10 @@ router.message.register(handle_photo, F.photo)
 2. Check ActiveSessionStore — reject if already active.
 3. bot.get_file(message.voice.file_id) → File object.
 4. bot.download_file(file.file_path) → BytesIO.
-5. TranscriptionClient.transcribe(bytes, "ogg") → TranscriptionResult.
-   On TranscriptionError: send "Sorry, I couldn't transcribe that voice note." and return.
-6. AgentState.prompt          = result.text
-   AgentState.input_modality  = "voice"
-   AgentState.image_data      = None
-   AgentState.image_mime      = None
-   AgentState.image_caption   = None
-7. Proceed with normal graph invocation (sendChatAction, ainvoke, send response).
+5. invoke_raw_turn(session_id, RawInput(audio=bytes, audio_mime="audio/ogg"))
+   The graph's preprocess node calls openrouter_client.transcribe() and sets
+   AgentState.prompt = transcript, input_modality = "voice".
+   On OpenRouterError: graph surfaces the error; bot sends generic error message.
 ```
 
 ### Photo path
@@ -461,18 +453,20 @@ read from `config/config.yaml` at startup.
 ```
 Telegram voice update
   → download OGG bytes
-  → TranscriptionClient.transcribe(ogg, "ogg")
-      → OpenRouterClient.complete([{input_audio}], model=whisper)
-  → AgentState.prompt = text, input_modality = "voice"
-  → [normal graph: embed_route → capability_check → execute_tool → …]
+  → RawInput(audio=bytes, audio_mime="audio/ogg") → invoke_raw_turn()
+  → graph preprocess node:
+      openrouter_client.transcribe(ogg, "ogg", model=whisper)
+      AgentState.prompt = transcript, input_modality = "voice"
+  → [embed_route → capability_check → execute_tool → …]
 
 Telegram photo update
   → size check (> 8 MB → reject)
   → download JPEG bytes
-  → AgentState.image_data = bytes, input_modality = "image", prompt = caption or ""
-  → embed_route:
-      if no prompt → _vision_caption() → AgentState.image_caption
+  → RawInput(image=bytes, image_mime="image/jpeg") → invoke_raw_turn()
+  → graph preprocess node:
+      if no prompt → openrouter_client.complete([{image_url}]) → AgentState.image_caption
       else          → AgentState.image_caption = prompt
+  → embed_route (routes on image_caption):
   → execute_tool:
       vision_capable? → ChatContentImage message → agent LLM call
       else            → AgentState.image_caption as plain text prompt
@@ -484,12 +478,13 @@ Telegram photo update
 
 ## Testing
 
-- `TranscriptionClient.transcribe()`: mock `OpenRouterClient.complete`; assert the
-  message passed has `type: "input_audio"` with correct base64 encoding and format.
-  Assert that `flow_type="transcription"` and `agent="whisper"` are set in the
-  telemetry context before `complete()` is called.
-- `ZeBot._handle_voice()`: mock `bot.download_file` and `TranscriptionClient`; assert
-  `AgentState.prompt` equals the mock transcription and `input_modality == "voice"`.
+- `OpenRouterClient.transcribe()`: see `ze-core/tests/openrouter/test_transcribe.py`.
+  Asserts `input_audio` content block, base64 encoding, format normalisation, model
+  passthrough, telemetry context, and duration.
+- `preprocess` node (audio path): mock `openrouter_client.transcribe`; assert state
+  update sets `prompt`, `input_modality="voice"`, clears `audio_data`/`audio_mime`.
+- `ZeBot.handle_voice()`: mock `bot.download_file`; assert `RawInput(audio=bytes,
+  audio_mime="audio/ogg")` is passed to `invoke_raw_turn`.
 - `ZeBot._handle_photo()`: assert size guard rejects files > 8 MB; assert
   `image_data`, `image_mime`, and `input_modality` are set correctly.
 - `_vision_caption()`: mock `OpenRouterClient.complete`; assert the message contains

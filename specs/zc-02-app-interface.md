@@ -33,8 +33,8 @@ Ze Core does not poll for messages.
 - Does not send messages to external contacts or third parties (that is `Channel`'s
   job — see `zc-04-channels.md`).
 - Does not authenticate the user. Single-user applications have no login flow.
-- Does not transcribe audio, caption images, or download transport attachments
-  (that is an `InputPreprocessor` in the application layer).
+- Does not transcribe audio or caption images — those LLM calls happen inside the
+  graph's `preprocess` node via `OpenRouterClient` (see `zc-05-orchestration.md`).
 
 ---
 
@@ -93,47 +93,18 @@ class AppInterface(Protocol):
 
 ## Input Preprocessing
 
-Multimodal transports (voice, images) must be converted to a routing-ready text
-prompt before the graph runs. Ze Core defines the transport-agnostic types and a
-`InputPreprocessor` protocol; **applications** implement preprocessing (e.g. Ze's
-`TelegramInputPreprocessor` with Whisper + vision caption — see `specs/19-multimodal-input.md`
-for Telegram-specific behaviour).
+Multimodal transports pass raw bytes (audio, images) to the graph via `RawInput`.
+All LLM-based pre-processing — transcription and vision captioning — happens inside
+the graph's `preprocess` node via `OpenRouterClient` (see `zc-05-orchestration.md`).
 
-Ze Core does **not** ship a default preprocessor. Without one registered on the
-container, `invoke_raw()` passes through `RawInput.text` and infers `input_modality`
-from which byte fields are set.
+`Container.invoke_raw()` maps `RawInput` fields directly to `AgentState`:
+- `audio` bytes → `audio_data` / `audio_mime` in graph state
+- `image` bytes → `image_data` / `image_mime` in graph state
+- `text` → `prompt`
 
-### `InputPreprocessor` Protocol
-
-`ze_core/interface/base.py`
-
-```python
-class InputPreprocessor(Protocol):
-    async def process(self, raw: RawInput, client: Any) -> ProcessedInput:
-        """
-        Normalise raw transport input to a text prompt and optional image passthrough.
-
-        Args:
-            raw: Unprocessed input from the transport layer.
-            client: OpenRouterClient (or any LLM client) for transcription / captioning.
-
-        Returns:
-            ProcessedInput with a non-empty ``prompt`` when the turn can be routed.
-        """
-```
-
-Implementations may raise application-specific errors (e.g. transcription failure);
-the transport layer catches those and sends a user-facing message.
-
-### Registration
-
-Set `Container.preprocessor` at construction time (or pass through `from_config()`
-when that gains a `preprocessor` argument). The container calls
-`preprocessor.process(raw, openrouter_client)` inside `invoke_raw()` before building
-graph state.
-
-CLI and text-only transports can skip a preprocessor and call `invoke(prompt, …)`
-directly.
+No application-level preprocessor is needed. Transport adapters are responsible only
+for downloading bytes from transport-specific sources (e.g. Telegram CDN) before
+calling `invoke_raw()`. All LLM calls stay inside the graph boundary.
 
 ---
 
