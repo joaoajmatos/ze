@@ -29,7 +29,8 @@ from ze_core.goals import (
 )
 from ze_core.goals.store import GoalStore
 from ze_core.goals.postgres import PostgresGoalStore
-from ze_core.interface.types import Action, Notification
+from ze_core.interface.base import InputPreprocessor
+from ze_core.interface.types import Action, Notification, ProcessedInput, RawInput
 from ze_core.memory import MemoryConsolidator, MemoryStore
 from ze_core.persona import PersonaState, PersonaStore, PostgresPersonaStore
 from ze_core.proactive import ProactiveNotifier, ProactiveScheduler
@@ -50,6 +51,7 @@ from ze_core.memory.postgres import PostgresMemoryStore
 from ze_core.memory.sqlite import SQLiteMemoryStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.orchestration import BaseAgent, agent
+from ze_core.orchestration.graph import graph_builder
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze_core.settings import Settings
 
@@ -57,7 +59,11 @@ __all__ = [
     "defaults",
     "Mode",
     "Action",
+    "InputPreprocessor",
     "Notification",
+    "ProcessedInput",
+    "RawInput",
+    "graph_builder",
     "Channel",
     "ChannelRegistry",
     "ChannelHandle",

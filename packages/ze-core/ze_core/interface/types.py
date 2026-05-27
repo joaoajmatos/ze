@@ -5,6 +5,25 @@ from typing import Any
 
 
 @dataclass
+class RawInput:
+    """Unprocessed input from any transport layer."""
+    text: str | None = None
+    audio: bytes | None = None
+    audio_mime: str | None = None  # e.g. "audio/ogg; codecs=opus"
+    image: bytes | None = None
+    image_mime: str | None = None  # e.g. "image/jpeg"
+
+
+@dataclass
+class ProcessedInput:
+    """Normalised input ready for graph invocation."""
+    prompt: str
+    input_modality: str = "text"   # "text" | "voice" | "image"
+    image_data: bytes | None = None
+    image_mime: str | None = None
+
+
+@dataclass
 class OutboundMessage:
     content: str
     format: str = "text"  # "text" | "markdown"

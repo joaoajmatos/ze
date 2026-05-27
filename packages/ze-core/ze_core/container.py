@@ -27,6 +27,7 @@ class Container:
     memory_consolidator: Any
     graph: Any
     interface: Any = None
+    preprocessor: Any = None  # InputPreprocessor | None
 
     def _build_config(self, session_id: str, **extra: Any) -> dict:
         """Build the LangGraph configurable dict for a session."""
@@ -124,6 +125,47 @@ class Container:
         if self.interface and response:
             await self.interface.send(OutboundMessage(content=response))
         return InvokeResult(session_id=session_id, response=response)
+
+    async def invoke_raw(
+        self,
+        raw: "RawInput",
+        session_id: str,
+        *,
+        session_overrides: dict[str, str] | None = None,
+        messages: list[dict] | None = None,
+    ) -> "InvokeResult":
+        """Run a conversation turn from raw (pre-normalisation) input.
+
+        If a preprocessor is registered on the container it is called first to
+        convert audio/image bytes to a text prompt. Without a preprocessor the
+        text field of RawInput is used directly.
+        """
+        from ze_core.interface.types import ProcessedInput, RawInput as _RawInput
+
+        if self.preprocessor is not None:
+            processed: ProcessedInput = await self.preprocessor.process(raw, self.openrouter_client)
+        else:
+            modality = (
+                "voice" if raw.audio else
+                "image" if raw.image else
+                "text"
+            )
+            processed = ProcessedInput(
+                prompt=raw.text or "",
+                input_modality=modality,
+                image_data=raw.image,
+                image_mime=raw.image_mime,
+            )
+
+        return await self.invoke(
+            prompt=processed.prompt,
+            session_id=session_id,
+            session_overrides=session_overrides,
+            input_modality=processed.input_modality,
+            image_data=processed.image_data,
+            image_mime=processed.image_mime,
+            messages=messages or [],
+        )
 
     async def resume(self, session_id: str) -> "InvokeResult":
         """Resume a graph that paused at await_confirmation (async style).
