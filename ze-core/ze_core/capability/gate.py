@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ze_core.capability.types import GateDecision, Mode
 from ze_core.logging import get_logger
+
+if TYPE_CHECKING:
+    from ze_core.capability.overrides import CapabilityOverrideStore
 
 log = get_logger(__name__)
 
@@ -35,9 +40,46 @@ def _at_or_below_ceiling(ceiling: GateDecision, requested: GateDecision) -> bool
 
 class CapabilityGate:
     """
-    Stateless gate that maps (agent, intent, session_overrides) to a GateDecision.
+    Gate that maps (agent, intent, overrides) to a GateDecision.
+
+    Override priority (highest to lowest):
+      1. Session overrides — per-invocation, stored in AgentState, not persisted.
+      2. Persistent overrides — DB-backed, survive restarts (CapabilityOverrideStore).
+      3. Agent class attribute — declared in @agent class, changed by code + redeploy.
+
     Construct once in the container; safe to share across concurrent graph invocations.
     """
+
+    def __init__(
+        self,
+        override_store: "CapabilityOverrideStore | None" = None,
+    ) -> None:
+        self._override_store = override_store
+        # Eager cache populated at startup; invalidated on set_permanent calls.
+        self._persistent_cache: dict[tuple[str, str], Mode] | None = None
+
+    async def load_persistent_overrides(self) -> None:
+        """Pre-load all DB overrides into memory. Call once at container startup."""
+        if self._override_store is None:
+            self._persistent_cache = {}
+            return
+        self._persistent_cache = await self._override_store.get_all()
+
+    async def set_permanent(self, agent: str, intent: str, mode: Mode) -> None:
+        """Persist a capability override and invalidate the cache."""
+        if self._override_store is None:
+            raise RuntimeError("No CapabilityOverrideStore configured")
+        await self._override_store.set(agent, intent, mode)
+        if self._persistent_cache is not None:
+            self._persistent_cache[(agent, intent)] = mode
+
+    async def clear_permanent(self, agent: str, intent: str) -> None:
+        """Remove a persisted override and invalidate the cache."""
+        if self._override_store is None:
+            raise RuntimeError("No CapabilityOverrideStore configured")
+        await self._override_store.clear(agent, intent)
+        if self._persistent_cache is not None:
+            self._persistent_cache.pop((agent, intent), None)
 
     def evaluate(
         self,
@@ -57,7 +99,14 @@ class CapabilityGate:
         if not getattr(agent_cls, "enabled", True):
             return GateDecision.BLOCKED
 
-        mode: Mode | None = getattr(agent_cls, "capabilities", {}).get(intent)
+        # Base mode: persistent DB override > agent class attribute
+        class_mode: Mode | None = getattr(agent_cls, "capabilities", {}).get(intent)
+        persistent_mode: Mode | None = (
+            self._persistent_cache.get((agent, intent))
+            if self._persistent_cache is not None
+            else None
+        )
+        mode = persistent_mode or class_mode
         if mode is None:
             log.warning("capability_unknown_intent", agent=agent, intent=intent)
             return GateDecision.AWAIT_CONFIRMATION
@@ -65,6 +114,8 @@ class CapabilityGate:
         if mode == Mode.DISABLED:
             return GateDecision.BLOCKED
 
+        # Persistent overrides are treated as a code change — no ceiling applied.
+        # Session override ceiling is derived from the effective mode (persistent or class).
         base = _MODE_TO_DECISION[mode]
         ceiling = _MODE_CEILING[mode]
 
