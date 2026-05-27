@@ -4,13 +4,22 @@ import json
 import time
 from typing import Any
 
+from ze_core.defaults import (
+    MEMORY_CONTRADICTED_TTL_DAYS,
+    MEMORY_EPISODE_ARCHIVE_BATCH,
+    MEMORY_EPISODE_MIN_ARCHIVE_BATCH,
+    MEMORY_EPISODE_RECENCY_DAYS,
+    MEMORY_MERGE_LLM_THRESHOLD,
+    MEMORY_MERGE_SILENT_THRESHOLD,
+    MEMORY_UNREVIEWED_TTL_DAYS,
+    MODEL_SYNTHESIS,
+)
 from ze_core.logging import get_logger
 from ze_core.memory.store import _cosine_similarity, _parse_update_count, _to_list
 from ze_core.memory.types import ConsolidationReport
 
 log = get_logger(__name__)
 
-_DEFAULT_SYNTHESIS_MODEL = "anthropic/claude-haiku-4-5"
 _PROFILE_KEYS = {"preferences", "habits", "topics", "relationships", "goals"}
 
 
@@ -55,8 +64,8 @@ class MemoryConsolidator:
 
     async def dedup_facts(self) -> int:
         cfg = self._memory_config()
-        silent_threshold = cfg.get("merge_silent_threshold", 0.95)
-        llm_threshold = cfg.get("merge_llm_threshold", 0.85)
+        silent_threshold = cfg.get("merge_silent_threshold", MEMORY_MERGE_SILENT_THRESHOLD)
+        llm_threshold = cfg.get("merge_llm_threshold", MEMORY_MERGE_LLM_THRESHOLD)
 
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -125,8 +134,8 @@ class MemoryConsolidator:
 
     async def expire_facts(self) -> tuple[int, int]:
         cfg = self._memory_config()
-        unreviewed_ttl = cfg.get("unreviewed_ttl_days", 90)
-        contradicted_ttl = cfg.get("contradicted_ttl_days", 30)
+        unreviewed_ttl = cfg.get("unreviewed_ttl_days", MEMORY_UNREVIEWED_TTL_DAYS)
+        contradicted_ttl = cfg.get("contradicted_ttl_days", MEMORY_CONTRADICTED_TTL_DAYS)
 
         async with self._pool.acquire() as conn:
             soft = await conn.execute(
@@ -146,9 +155,9 @@ class MemoryConsolidator:
 
     async def archive_episodes(self) -> tuple[int, int]:
         cfg = self._memory_config()
-        recency_days = cfg.get("episode_recency_days", 14)
-        min_batch = cfg.get("episode_min_archive_batch", 10)
-        max_batch = cfg.get("episode_archive_batch", 20)
+        recency_days = cfg.get("episode_recency_days", MEMORY_EPISODE_RECENCY_DAYS)
+        min_batch = cfg.get("episode_min_archive_batch", MEMORY_EPISODE_MIN_ARCHIVE_BATCH)
+        max_batch = cfg.get("episode_archive_batch", MEMORY_EPISODE_ARCHIVE_BATCH)
 
         async with self._pool.acquire() as conn:
             candidates = await conn.fetch(
@@ -291,10 +300,10 @@ class MemoryConsolidator:
 
     def _synthesis_model(self) -> str:
         if self._settings is None:
-            return _DEFAULT_SYNTHESIS_MODEL
+            return MODEL_SYNTHESIS
         cfg = getattr(self._settings, "config", None)
         if isinstance(cfg, dict):
-            return cfg.get("models", {}).get("synthesis", _DEFAULT_SYNTHESIS_MODEL)
+            return cfg.get("models", {}).get("synthesis", MODEL_SYNTHESIS)
         if isinstance(self._settings, dict):
-            return self._settings.get("models", {}).get("synthesis", _DEFAULT_SYNTHESIS_MODEL)
-        return _DEFAULT_SYNTHESIS_MODEL
+            return self._settings.get("models", {}).get("synthesis", MODEL_SYNTHESIS)
+        return MODEL_SYNTHESIS

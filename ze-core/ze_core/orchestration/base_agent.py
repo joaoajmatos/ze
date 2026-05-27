@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, AsyncIterator
 
 from ze_core.capability.types import GateDecision, Mode
+from ze_core.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
 from ze_core.errors import AgentError, ToolBlockedError
 from ze_core.logging import get_logger
 from ze_core.orchestration.types import AgentContext, AgentResult, ToolCall
@@ -19,10 +20,10 @@ log = get_logger(__name__)
 class BaseAgent(ABC):
     name: str
     description: str
-    model: str = "anthropic/claude-sonnet-4-5"
+    model: str = MODEL_AGENT_DEFAULT
     model_simple: str | None = None
     vision_capable: bool = False
-    timeout: int = 30
+    timeout: int = MODEL_AGENT_TIMEOUT
     enabled: bool = True
     capabilities: dict[str, Mode] = {}
     intent_map: dict[str, str] = {}

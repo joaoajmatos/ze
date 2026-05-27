@@ -3,6 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from ze_core.defaults import (
+    MODEL_ROUTER_FALLBACK,
+    ROUTING_GAP_THRESHOLD,
+    ROUTING_THRESHOLD,
+)
+
 
 @dataclass
 class SubTask:
@@ -28,9 +34,9 @@ class RoutingEnvelope:
 
 @dataclass
 class RouterConfig:
-    threshold: float = 0.55
-    gap_threshold: float = 0.10
-    fallback_model: str = "anthropic/claude-haiku-4-5"
+    threshold: float = ROUTING_THRESHOLD
+    gap_threshold: float = ROUTING_GAP_THRESHOLD
+    fallback_model: str = MODEL_ROUTER_FALLBACK
 
 
 @runtime_checkable

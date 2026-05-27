@@ -3,12 +3,11 @@ from __future__ import annotations
 import base64
 from typing import Any
 
+from ze_core.defaults import MODEL_VISION_CAPTION
 from ze_core.logging import get_logger
 from ze_core.orchestration.state import AgentState
 
 log = get_logger(__name__)
-
-_DEFAULT_CAPTION_MODEL = "google/gemini-flash-1.5"
 
 
 async def _vision_caption(
@@ -44,7 +43,7 @@ async def embed_route(state: AgentState, config: dict) -> dict:
         client = config["configurable"]["openrouter_client"]
         cfg = config["configurable"].get("settings") or {}
         models = cfg.get("models", {}) if isinstance(cfg, dict) else getattr(cfg, "config", {}).get("models", {})
-        caption_model = models.get("vision_caption", _DEFAULT_CAPTION_MODEL)
+        caption_model = models.get("vision_caption", MODEL_VISION_CAPTION)
         caption = await _vision_caption(state["image_data"], state["image_mime"], client, caption_model)
         routing_text = caption
         updates["image_caption"] = caption

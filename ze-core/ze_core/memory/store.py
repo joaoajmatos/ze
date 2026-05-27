@@ -5,14 +5,19 @@ import json
 from typing import Any
 from uuid import UUID
 
+from ze_core.defaults import (
+    MEMORY_CONTRADICTION_THRESHOLD,
+    MEMORY_EPISODES_FETCH_LIMIT,
+    MEMORY_EPISODES_TOKEN_BUDGET,
+    MEMORY_FACTS_TOKEN_BUDGET,
+    MODEL_SYNTHESIS,
+)
 from ze_core.logging import get_logger
 from ze_core.memory.types import Episode, MemoryContext, UserFact, UserProfile
 
 log = get_logger(__name__)
 
-_DEFAULT_BUDGET = {"facts": 200, "episodes": 500}
-_DEFAULT_SYNTHESIS_MODEL = "anthropic/claude-haiku-4-5"
-_DEFAULT_CONTRADICTION_THRESHOLD = 0.85
+_DEFAULT_BUDGET = {"facts": MEMORY_FACTS_TOKEN_BUDGET, "episodes": MEMORY_EPISODES_TOKEN_BUDGET}
 
 
 def _cosine_similarity(a: Any, b: Any) -> float:
@@ -88,9 +93,10 @@ class MemoryStore:
                 FROM episodes
                 WHERE embedding IS NOT NULL
                 ORDER BY embedding <=> $1::vector
-                LIMIT 20
+                LIMIT $2
                 """,
                 emb_list,
+                MEMORY_EPISODES_FETCH_LIMIT,
             )
             profile_row = await conn.fetchrow(
                 "SELECT preferences, habits, topics, relationships, goals, updated_at, version"
@@ -154,7 +160,7 @@ class MemoryStore:
 
     async def _write_fact_with_contradiction_check(self, fact: UserFact) -> None:
         threshold = self._memory_config().get(
-            "contradiction_threshold", _DEFAULT_CONTRADICTION_THRESHOLD
+            "contradiction_threshold", MEMORY_CONTRADICTION_THRESHOLD
         )
         value_emb = self._embedder.encode(fact.value)
         emb_list = _to_list(value_emb)
@@ -254,13 +260,13 @@ class MemoryStore:
 
     def _synthesis_model(self) -> str:
         if self._settings is None:
-            return _DEFAULT_SYNTHESIS_MODEL
+            return MODEL_SYNTHESIS
         cfg = getattr(self._settings, "config", None)
         if isinstance(cfg, dict):
-            return cfg.get("models", {}).get("synthesis", _DEFAULT_SYNTHESIS_MODEL)
+            return cfg.get("models", {}).get("synthesis", MODEL_SYNTHESIS)
         if isinstance(self._settings, dict):
-            return self._settings.get("models", {}).get("synthesis", _DEFAULT_SYNTHESIS_MODEL)
-        return _DEFAULT_SYNTHESIS_MODEL
+            return self._settings.get("models", {}).get("synthesis", MODEL_SYNTHESIS)
+        return MODEL_SYNTHESIS
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
