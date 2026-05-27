@@ -17,8 +17,8 @@ services:
 
   backend:
     build:
-      context: .
-    env_file: .env
+      context: packages/ze
+    env_file: packages/ze/.env
     ports:
       - "8000:8000"
     depends_on:

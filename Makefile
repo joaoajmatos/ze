@@ -2,8 +2,11 @@
 
 .DEFAULT_GOAL := help
 
+ZE      := packages/ze
+ZE_CORE := packages/ze-core
+
 DB_SYNC_URL ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
-ALEMBIC     := DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m alembic
+ALEMBIC     := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m alembic
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -12,7 +15,7 @@ help:
 	@echo "  Ze — available targets"
 	@echo ""
 	@echo "  Setup"
-	@echo "    install              Install dependencies"
+	@echo "    install              Install all workspace dependencies"
 	@echo "    google-auth          One-time Google OAuth2 flow (Calendar + Gmail)"
 	@echo "    generate-ze-api-key  Generate or refresh ZE_API_KEY in .env"
 	@echo ""
@@ -32,14 +35,15 @@ help:
 	@echo ""
 	@echo "  Eval (requires 'make dev-eval' running)"
 	@echo "    eval-server    Start MCP eval server (for Claude Code / Cursor / Codex)"
-	@echo "    eval-clean     Delete eval-namespaced rows from DB (routing_log, checkpoints, cost_log)"
+	@echo "    eval-clean     Delete eval-namespaced rows from DB"
 	@echo ""
 	@echo "  Testing"
-	@echo "    test           Run tests (excludes slow embedding tests)"
+	@echo "    test           Run ze tests (excludes slow embedding tests)"
+	@echo "    test-core      Run ze-core tests"
 	@echo "    test-all       Run all tests including slow ones"
 	@echo ""
 	@echo "  Code quality"
-	@echo "    lint           Lint with ruff"
+	@echo "    lint           Lint all packages with ruff"
 	@echo ""
 	@echo "  Docker"
 	@echo "    docker-up      Start all services via docker-compose"
@@ -54,10 +58,10 @@ install:
 	uv sync
 
 google-auth:
-	uv run python scripts/google_auth.py
+	uv run python $(ZE)/scripts/google_auth.py
 
 generate-ze-api-key:
-	uv run python scripts/generate_ze_api_key.py $(if $(ZE_API_TOKEN),--token $(ZE_API_TOKEN))
+	uv run python $(ZE)/scripts/generate_ze_api_key.py $(if $(ZE_API_TOKEN),--token $(ZE_API_TOKEN))
 
 # ── Database ──────────────────────────────────────────────────────────────────
 .PHONY: db-up db-down db-reset migrate migrate-down migrate-status migrate-history
@@ -91,13 +95,13 @@ migrate-history:
 .PHONY: dev dev-poll dev-eval
 
 dev:
-	LOG_FILE=logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+	LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 dev-poll:
-	LOG_FILE=logs/ze.log uv run python -m ze.dev_poll
+	LOG_FILE=$(ZE)/logs/ze.log uv run python -m ze.dev_poll
 
 dev-eval:
-	PUBLIC_URL= LOG_FILE=logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+	PUBLIC_URL= LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
 .PHONY: eval-server eval-clean
@@ -117,25 +121,24 @@ eval-clean:
 		"DELETE FROM checkpoint_writes WHERE thread_id LIKE 'eval-%';"
 	docker compose exec -T postgres psql -U ze -d ze -c \
 		"DELETE FROM checkpoints WHERE thread_id LIKE 'eval-%';"
-	@echo "Done. Note: user_facts and episodes written before this fix was deployed"
-	@echo "cannot be isolated by eval session. Delete them manually if needed:"
-	@echo "  docker compose exec -T postgres psql -U ze -d ze"
-	@echo "  then: SELECT key, value, updated_at FROM user_facts ORDER BY updated_at DESC LIMIT 20;"
 
 # ── Testing ───────────────────────────────────────────────────────────────────
-.PHONY: test test-all
+.PHONY: test test-core test-all
 
 test:
-	uv run pytest --ignore=tests/test_embeddings.py -q
+	uv run pytest $(ZE)/tests --ignore=$(ZE)/tests/test_embeddings.py -q
+
+test-core:
+	uv run pytest $(ZE_CORE)/tests -q
 
 test-all:
-	uv run pytest -q
+	uv run pytest $(ZE)/tests $(ZE_CORE)/tests -q
 
 # ── Code quality ──────────────────────────────────────────────────────────────
 .PHONY: lint
 
 lint:
-	uv run ruff check ze tests
+	uv run ruff check $(ZE)/ze $(ZE)/tests $(ZE_CORE)/ze_core $(ZE_CORE)/tests
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 .PHONY: docker-up docker-down docker-build
