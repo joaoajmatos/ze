@@ -2,9 +2,13 @@
 
 from ze_core.capability.types import Mode
 import ze_core.defaults as defaults
+from ze_core.channels import Channel, ChannelRegistry
+from ze_core.channels.types import ChannelHandle, Message, SentMessage, Thread, ThreadMessage
 from ze_core.container import Container
 from ze_core.db import DBPool
+from ze_core.errors import ChannelError, ChannelNotFoundError
 from ze_core.memory import MemoryConsolidator, MemoryStore
+from ze_core.storage.postgres import PostgresMemoryStore
 from ze_core.storage.sqlite import SQLiteMemoryStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.orchestration import BaseAgent, agent
@@ -14,10 +18,20 @@ from ze_core.settings import Settings
 __all__ = [
     "defaults",
     "Mode",
+    "Channel",
+    "ChannelRegistry",
+    "ChannelHandle",
+    "ChannelError",
+    "ChannelNotFoundError",
+    "Message",
+    "SentMessage",
+    "Thread",
+    "ThreadMessage",
     "Container",
     "DBPool",
     "MemoryConsolidator",
     "MemoryStore",
+    "PostgresMemoryStore",
     "SQLiteMemoryStore",
     "OpenRouterClient",
     "BaseAgent",

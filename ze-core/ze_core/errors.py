@@ -60,3 +60,13 @@ class UnknownToolError(AgentError):
 
 class ToolBlockedError(AgentError):
     """Tool call rejected because the capability gate is BLOCKED."""
+
+
+# ── Channels ──────────────────────────────────────────────────────────────────
+
+class ChannelError(ZeCoreError):
+    """Base class for channel errors."""
+
+
+class ChannelNotFoundError(ChannelError):
+    """No channel registered for the requested channel type."""

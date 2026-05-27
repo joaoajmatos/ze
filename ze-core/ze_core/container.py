@@ -283,9 +283,9 @@ class Container:
             memory_consolidator = None  # consolidation not supported for SQLite yet
         else:
             from ze_core.memory.consolidator import MemoryConsolidator
-            from ze_core.memory.store import MemoryStore
+            from ze_core.storage.postgres import PostgresMemoryStore
 
-            memory_store = MemoryStore(
+            memory_store = PostgresMemoryStore(
                 pool=pool,
                 embedder=embedder,
                 openrouter_client=openrouter_client,
