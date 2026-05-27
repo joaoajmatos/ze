@@ -178,7 +178,9 @@ class WorkflowScheduler:
                 return
 
         await self._notifier.push(
-            f"⚠️ Workflow failed: *{workflow.name}*\n`{str(exc)[:200]}`"
+            f"Workflow failed: *{workflow.name}*\n`{str(exc)[:200]}`",
+            format="markdown",
+            urgency="high",
         )
 
         if self._pool is not None:

@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from ze.interface.telegram import TelegramInterface
 from ze.proactive.notifier import ProactiveNotifier, _split
-from ze_core.interface.types import Notification
+from ze_core.interface.types import Action, Notification
 
 
 def make_interface():
@@ -34,12 +34,19 @@ async def test_notifier_push_splits_long_message():
     assert interface._bot.send_message.await_count >= 2
 
 
-async def test_notifier_push_with_keyboard():
+async def test_notifier_push_notification_with_actions():
     interface = make_interface()
     n = ProactiveNotifier(interface=interface)
-    markup = MagicMock()
-    await n.push_with_keyboard("Pick one", markup, parse_mode="HTML")
+    await n.push_notification(
+        Notification(
+            content="Pick one",
+            format="html",
+            actions=[Action(label="Yes", payload="yes:1")],
+        )
+    )
     interface._bot.send_message.assert_awaited_once()
+    call_kwargs = interface._bot.send_message.call_args.kwargs
+    assert call_kwargs.get("reply_markup") is not None
 
 
 def test_split_short_message():

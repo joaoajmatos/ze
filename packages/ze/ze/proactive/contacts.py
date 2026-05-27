@@ -1,8 +1,8 @@
 from ze.contacts.store import PersonStore
 from ze.logging import get_logger
 from ze.proactive.notifier import ProactiveNotifier
-from ze.telegram.keyboards import contact_confirmation_keyboard
 from ze.telemetry.context import set_flow_context
+from ze_core.interface.types import Action, Notification
 
 
 class ContactReviewNotifier:
@@ -37,9 +37,16 @@ class ContactReviewNotifier:
                     lines.append(f'Context: "<i>{snippet}</i>"')
             lines.append("\nAdd to your contacts?")
 
-            await self._notifier.push_with_keyboard(
-                "\n".join(lines),
-                reply_markup=contact_confirmation_keyboard(person.id),
+            pid = str(person.id)
+            await self._notifier.push_notification(
+                Notification(
+                    content="\n".join(lines),
+                    format="html",
+                    actions=[
+                        Action(label="Add", payload=f"contact:confirm:{pid}"),
+                        Action(label="Skip", payload=f"contact:dismiss:{pid}"),
+                    ],
+                )
             )
 
         self._log.info("contact_review_pushed", count=len(pending))

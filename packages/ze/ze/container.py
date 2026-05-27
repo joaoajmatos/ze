@@ -17,6 +17,7 @@ from ze.channels.registry import ChannelRegistry
 from ze.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
+from ze.agents.registry import get_agent
 from ze.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
 from ze.goals.store import GoalStore
@@ -37,6 +38,7 @@ from ze.orchestration.workflow_graph import build_workflow_graph
 from ze.proactive.briefing import MorningBriefing
 from ze.proactive.insights import InsightEngine
 from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.scheduler import ProactiveScheduler
 from ze.proactive.reminders import CalendarReminderScheduler
 from ze.routing.complexity import ComplexityEstimator
 from ze.routing.router import EmbeddingRouter
@@ -79,6 +81,7 @@ class Container:
     workflow_store: WorkflowStore
     workflow_planner: WorkflowPlanner
     workflow_scheduler: WorkflowScheduler
+    proactive_scheduler: ProactiveScheduler
     graph: object
     bot: Bot
     ze_bot: ZeBot
@@ -128,6 +131,7 @@ class Container:
         return await resume_turn(self, config)
 
     async def close(self) -> None:
+        await self.proactive_scheduler.stop()
         await self.workflow_scheduler.stop()
         await self.bot.session.close()
         await self.openrouter_client.aclose()
@@ -257,8 +261,10 @@ async def build_container(settings: Settings) -> Container:
     goal_executor = GoalExecutor(
         goal_store=goal_store,
         goal_planner=goal_planner,
-        notifier=notifier,
+        push=notifier.push_notification,
+        agent_getter=get_agent,
     )
+    proactive_scheduler = ProactiveScheduler()
     reminder_store = ReminderStore(pool=pool)
 
     bootstrap_agents(
@@ -317,7 +323,7 @@ async def build_container(settings: Settings) -> Container:
         for g in goals:
             asyncio.create_task(goal_executor.advance(g.id))
 
-    workflow_scheduler.schedule_job(
+    proactive_scheduler.add_cron_job(
         fn=_sweep_active_goals,
         cron="*/15 * * * *",
         job_id="goal_advance_sweep",
@@ -328,7 +334,7 @@ async def build_container(settings: Settings) -> Container:
 
     if settings.consolidation_enabled:
         nightly_cron = settings.consolidation_config.get("nightly_cron") or "0 2 * * *"
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=memory_consolidator.run,
             cron=nightly_cron,
             job_id="memory_consolidation",
@@ -338,7 +344,7 @@ async def build_container(settings: Settings) -> Container:
         contacts_cron = settings.contacts_config.get(
             "consolidation", {}
         ).get("nightly_cron", "0 3 * * *")
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=contacts_consolidator.run,
             cron=contacts_cron,
             job_id="contacts_consolidation",
@@ -352,14 +358,14 @@ async def build_container(settings: Settings) -> Container:
         review_cron = settings.contacts_config.get(
             "consolidation", {}
         ).get("review_cron", "30 8 * * *")
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=contact_review.run,
             cron=review_cron,
             job_id="contact_review",
         )
         log.info("contact_review_scheduled", cron=review_cron)
 
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=lambda: recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes),
             cron="0 3 * * *",
             job_id="recover_stale_campaigns",
@@ -371,7 +377,7 @@ async def build_container(settings: Settings) -> Container:
     briefing_cfg = proactive_cfg.get("briefing", {})
     if briefing_cfg.get("enabled", True):
         briefing_cron = briefing_cfg.get("cron", "0 8 * * *")
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=morning_briefing.run,
             cron=briefing_cron,
             job_id="morning_briefing",
@@ -394,7 +400,7 @@ async def build_container(settings: Settings) -> Container:
     calendar_cfg = proactive_cfg.get("calendar", {})
     if calendar_cfg.get("sync_enabled", True):
         await calendar_reminders.start()
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=calendar_reminders.sync,
             cron=calendar_cfg.get("sync_cron", "45 7 * * *"),
             job_id="calendar_reminder_sync",
@@ -409,12 +415,14 @@ async def build_container(settings: Settings) -> Container:
     )
     insights_proactive_cfg = proactive_cfg.get("insights", {})
     if insights_proactive_cfg.get("enabled", True):
-        workflow_scheduler.schedule_job(
+        proactive_scheduler.add_cron_job(
             fn=insight_engine.run,
             cron=insights_proactive_cfg.get("cron", "0 7 * * 0"),
             job_id="insight_generation",
         )
         log.info("insights_scheduled")
+
+    await proactive_scheduler.start()
 
     if settings.telegram_bot_token and settings.public_url:
         await bot.set_webhook(
@@ -476,6 +484,7 @@ async def build_container(settings: Settings) -> Container:
         workflow_store=workflow_store,
         workflow_planner=workflow_planner,
         workflow_scheduler=workflow_scheduler,
+        proactive_scheduler=proactive_scheduler,
         graph=graph,
         bot=bot,
         ze_bot=ze_bot,

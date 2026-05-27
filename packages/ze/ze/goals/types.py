@@ -1,83 +1,21 @@
-from __future__ import annotations
+"""Re-export ze-core goal types (Phase 5 migration)."""
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import StrEnum
-from uuid import UUID
+from ze_core.goals.types import (
+    GateStatus,
+    Goal,
+    GoalLearning,
+    GoalStatus,
+    Milestone,
+    MilestoneStatus,
+    VerificationGate,
+)
 
-
-class GoalStatus(StrEnum):
-    PLANNING      = "planning"
-    ACTIVE        = "active"
-    AWAITING_GATE = "awaiting_gate"
-    PAUSED        = "paused"
-    COMPLETED     = "completed"
-    ABANDONED     = "abandoned"
-
-
-class MilestoneStatus(StrEnum):
-    PENDING     = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED   = "completed"
-    SKIPPED     = "skipped"
-
-
-class GateStatus(StrEnum):
-    PENDING           = "pending"
-    AWAITING_APPROVAL = "awaiting_approval"
-    APPROVED          = "approved"
-    STOPPED           = "stopped"
-    REDIRECTED        = "redirected"
-
-
-@dataclass
-class Goal:
-    title: str
-    objective: str
-    success_condition: str
-    status: GoalStatus = GoalStatus.PLANNING
-    type: str = "custom"
-    time_horizon: str = ""
-    learnings: str = ""
-    id: UUID | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-
-
-@dataclass
-class Milestone:
-    goal_id: UUID
-    title: str
-    description: str
-    sequence: int
-    agent_hint: str | None = None
-    intent: str = "execute"
-    status: MilestoneStatus = MilestoneStatus.PENDING
-    output: str = ""
-    id: UUID | None = None
-    completed_at: datetime | None = None
-    created_at: datetime | None = None
-
-
-@dataclass
-class VerificationGate:
-    goal_id: UUID
-    after_sequence: int
-    title: str
-    status: GateStatus = GateStatus.PENDING
-    context_summary: str = ""
-    plan_summary: str = ""
-    user_feedback: str = ""
-    id: UUID | None = None
-    fired_at: datetime | None = None
-    resolved_at: datetime | None = None
-    created_at: datetime | None = None
-
-
-@dataclass
-class GoalLearning:
-    goal_id: UUID
-    content: str
-    source: str
-    id: UUID | None = None
-    created_at: datetime | None = None
+__all__ = [
+    "Goal",
+    "GoalLearning",
+    "GoalStatus",
+    "GateStatus",
+    "Milestone",
+    "MilestoneStatus",
+    "VerificationGate",
+]

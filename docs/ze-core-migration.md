@@ -197,6 +197,14 @@ ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and 
 
 **Phase 5 done when:** Proactive and goals have no parallel ze implementations.
 
+**Implemented (2025-05):**
+
+- `ze/goals/*` — thin re-exports; `GoalPlanner` adapter uses `workflow_plan_model` from settings
+- `GoalExecutor` — ze-core with `push=notifier.push_notification` and `agent_getter=get_agent`
+- `ProactiveNotifier` — ze-core; `TelegramInterface.push()` renders `Notification.actions` as inline keyboards
+- Proactive crons (briefing, insights, calendar sync, consolidation, contact review, goal sweep) on `ProactiveScheduler`
+- Workflow scheduler retains workflows, cost reconciliation, user reminders
+
 ---
 
 ### Phase 6 — Telemetry & persona
@@ -300,7 +308,7 @@ Update as PRs merge:
 | 2 Capability | ✅ | | ze-core gate + DB overrides; YAML sync via `prepare_gate_registry` |
 | 3 Routing | ✅ | | ze-core router/fallback; `plan_sequential` + `after_decompose` in Ze graph |
 | 4 Memory | ✅ | | ze-core PostgresMemoryStore + consolidator; memory: removed from config.yaml |
-| 5 Goals / proactive | ⬜ | | |
+| 5 Goals / proactive | ✅ | | ze-core goals store/planner/executor; ProactiveNotifier + ProactiveScheduler; gate actions via Notification |
 | 6 Telemetry / persona | ⬜ | | |
 | 7 Agents `@agent` | ⬜ | | |
 | 8 Orchestration | ⬜ | | |

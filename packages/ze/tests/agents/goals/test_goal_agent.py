@@ -46,13 +46,17 @@ def make_agent(llm_response: str = ""):
     goal_planner = MagicMock()
     goal_planner.plan = AsyncMock(return_value=([], []))
 
+    goal_executor = MagicMock()
+    goal_executor.advance = AsyncMock()
+
     notifier = MagicMock()
-    notifier.push_with_keyboard = AsyncMock()
+    notifier.push_notification = AsyncMock()
 
     return GoalAgent(
         openrouter_client=client,
         goal_store=goal_store,
         goal_planner=goal_planner,
+        goal_executor=goal_executor,
         notifier=notifier,
         settings=make_settings(),
     ), goal_store, goal_planner, notifier
@@ -109,7 +113,7 @@ async def test_create_calls_planner_and_store():
     planner.plan.assert_awaited_once()
     store.create_goal.assert_awaited_once()
     store.update_status.assert_not_called()
-    notifier.push_with_keyboard.assert_awaited_once()
+    notifier.push_notification.assert_awaited_once()
     assert "Find leads" in result.response
     assert "Approve" in result.response
 

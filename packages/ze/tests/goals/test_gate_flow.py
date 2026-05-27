@@ -87,13 +87,12 @@ async def test_handle_gate_redirected_skips_when_replan_fails():
     planner = MagicMock()
     planner.replan_remaining = AsyncMock(side_effect=GoalPlanError("bad plan"))
 
-    notifier = MagicMock()
-    notifier.push = AsyncMock()
-    executor = make_executor(goal_store=store, goal_planner=planner, notifier=notifier)
+    push = AsyncMock()
+    executor = make_executor(goal_store=store, goal_planner=planner, push=push)
 
     await executor.handle_gate_redirected(gate.id, "change course")
     store.replace_pending_milestones.assert_not_called()
-    notifier.push.assert_awaited()
+    push.assert_awaited()
 
 
 async def test_approve_plan_activates_and_advances():

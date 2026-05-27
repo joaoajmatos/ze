@@ -4,8 +4,9 @@ from uuid import uuid4
 
 import pytest
 
-from ze.errors import GoalExecutionError
-from ze.goals.executor import GoalExecutor
+from ze_core.errors import GoalExecutionError
+from ze_core.goals.executor import GoalExecutor
+from ze_core.interface.types import Notification
 from ze.goals.types import (
     Goal,
     GoalLearning,
@@ -56,7 +57,7 @@ def make_gate(after_sequence: int, status: GateStatus = GateStatus.PENDING, **ov
     )
 
 
-def make_executor(goal_store=None, goal_planner=None, notifier=None):
+def make_executor(goal_store=None, goal_planner=None, push=None, agent_getter=None):
     if goal_store is None:
         goal_store = MagicMock()
         goal_store.get_goal = AsyncMock(return_value=None)
@@ -78,15 +79,19 @@ def make_executor(goal_store=None, goal_planner=None, notifier=None):
         goal_planner.extract_learning = AsyncMock(return_value="A useful insight.")
         goal_planner.replan_remaining = AsyncMock(return_value=([], []))
 
-    if notifier is None:
-        notifier = MagicMock()
-        notifier.push = AsyncMock()
-        notifier.push_with_keyboard = AsyncMock()
+    if push is None:
+        push = AsyncMock()
+
+    if agent_getter is None:
+        mock_agent = MagicMock()
+        mock_agent.run = AsyncMock(return_value=MagicMock(response="Done."))
+        agent_getter = lambda name: mock_agent
 
     return GoalExecutor(
         goal_store=goal_store,
         goal_planner=goal_planner,
-        notifier=notifier,
+        push=push,
+        agent_getter=agent_getter,
     )
 
 
@@ -103,50 +108,26 @@ async def test_advance_returns_early_if_goal_not_active():
 
 async def test_advance_resets_stuck_in_progress_milestone():
     goal = make_goal()
-    m1 = make_milestone(1, MilestoneStatus.IN_PROGRESS, goal_id=goal.id)
-
+    stuck = make_milestone(1, MilestoneStatus.IN_PROGRESS, goal_id=goal.id)
     store = MagicMock()
     store.get_goal = AsyncMock(return_value=goal)
     store.list_milestones = AsyncMock(side_effect=[
-        [m1],
-        [make_milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)],
+        [stuck],
         [make_milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)],
     ])
     store.get_pending_gate = AsyncMock(return_value=None)
     store.update_milestone = AsyncMock()
-    store.update_status = AsyncMock()
 
     mock_agent = MagicMock()
-    mock_agent.run = AsyncMock(return_value=MagicMock(response="Done."))
-    executor = make_executor(goal_store=store)
+    mock_agent.run = AsyncMock(return_value=MagicMock(response="ok"))
 
-    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
-        advance_calls = []
-        orig = executor._advance_unlocked
-        async def once(gid):
-            advance_calls.append(gid)
-            if len(advance_calls) == 1:
-                await orig(gid)
-        executor._advance_unlocked = once
+    executor = make_executor(goal_store=store, agent_getter=lambda _: mock_agent)
+
+    with patch("ze_core.goals.executor.asyncio.create_task"):
         await executor.advance(goal.id)
 
-    reset_call = [
-        c for c in store.update_milestone.call_args_list
-        if len(c.args) >= 2 and c.args[1] == MilestoneStatus.PENDING
-    ]
-    assert reset_call
+    store.update_milestone.assert_any_call(stuck.id, MilestoneStatus.PENDING)
 
-
-async def test_advance_returns_early_if_goal_not_found():
-    store = MagicMock()
-    store.get_goal = AsyncMock(return_value=None)
-    store.list_milestones = AsyncMock(return_value=[])
-    executor = make_executor(goal_store=store)
-    await executor.advance(uuid4())
-    store.list_milestones.assert_not_called()
-
-
-# ── advance: completion ───────────────────────────────────────────────────────
 
 async def test_advance_marks_completed_when_no_pending_milestones():
     goal = make_goal()
@@ -157,15 +138,13 @@ async def test_advance_marks_completed_when_no_pending_milestones():
     ])
     store.get_pending_gate = AsyncMock(return_value=None)
     store.update_status = AsyncMock()
-    notifier = MagicMock()
-    notifier.push = AsyncMock()
-    executor = make_executor(goal_store=store, notifier=notifier)
+    push = AsyncMock()
+    executor = make_executor(goal_store=store, push=push)
     await executor.advance(goal.id)
     store.update_status.assert_awaited_once_with(goal.id, GoalStatus.COMPLETED)
-    notifier.push.assert_awaited_once()
+    push.assert_awaited_once()
+    assert isinstance(push.call_args.args[0], Notification)
 
-
-# ── advance: gate firing ──────────────────────────────────────────────────────
 
 async def test_advance_fires_gate_when_due():
     goal = make_goal()
@@ -179,18 +158,17 @@ async def test_advance_fires_gate_when_due():
     store.get_pending_gate = AsyncMock(return_value=gate)
     store.fire_gate = AsyncMock()
     store.update_status = AsyncMock()
-    notifier = MagicMock()
-    notifier.push_with_keyboard = AsyncMock()
+    push = AsyncMock()
 
-    executor = make_executor(goal_store=store, notifier=notifier)
+    executor = make_executor(goal_store=store, push=push)
     await executor.advance(goal.id)
 
     store.fire_gate.assert_awaited_once()
     store.update_status.assert_awaited_once_with(goal.id, GoalStatus.AWAITING_GATE)
-    notifier.push_with_keyboard.assert_awaited_once()
+    notif = push.call_args.args[0]
+    assert isinstance(notif, Notification)
+    assert len(notif.actions) == 3
 
-
-# ── advance: milestone execution ──────────────────────────────────────────────
 
 async def test_advance_executes_pending_milestone():
     goal = make_goal()
@@ -203,16 +181,14 @@ async def test_advance_executes_pending_milestone():
     store.update_milestone = AsyncMock()
     store.add_learning = AsyncMock()
     store.append_learnings = AsyncMock()
-    store.update_status = AsyncMock()
-    notifier = MagicMock()
-    notifier.push = AsyncMock()
+    push = AsyncMock()
 
     mock_agent = MagicMock()
     mock_agent.run = AsyncMock(return_value=MagicMock(response="Done."))
 
-    executor = make_executor(goal_store=store, notifier=notifier)
+    executor = make_executor(goal_store=store, push=push, agent_getter=lambda _: mock_agent)
 
-    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
+    with patch("ze_core.goals.executor.asyncio.create_task"):
         call_count = 0
         orig_unlocked = executor._advance_unlocked
 
@@ -227,25 +203,10 @@ async def test_advance_executes_pending_milestone():
         await executor.advance(goal.id)
 
     store.update_milestone.assert_awaited()
+    push.assert_awaited()
 
 
-# ── advance: failed milestone ──────────────────────────────────────────────────
-
-async def test_execute_milestone_raises_goal_execution_error():
-    goal = make_goal()
-    m1 = make_milestone(1, goal_id=goal.id)
-    store = MagicMock()
-    executor = make_executor(goal_store=store)
-
-    mock_agent = MagicMock()
-    mock_agent.run = AsyncMock(side_effect=RuntimeError("boom"))
-
-    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
-        with pytest.raises(GoalExecutionError, match="boom"):
-            await executor._execute_milestone(m1)
-
-
-async def test_advance_skips_milestone_on_failure():
+async def test_advance_skips_milestone_on_execution_error():
     goal = make_goal()
     m1 = make_milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
 
@@ -255,109 +216,58 @@ async def test_advance_skips_milestone_on_failure():
     store.get_pending_gate = AsyncMock(return_value=None)
     store.update_milestone = AsyncMock()
     store.add_learning = AsyncMock()
-    store.update_status = AsyncMock()
-    notifier = MagicMock()
-    notifier.push = AsyncMock()
 
     mock_agent = MagicMock()
-    mock_agent.run = AsyncMock(side_effect=Exception("agent crashed"))
+    mock_agent.run = AsyncMock(side_effect=Exception("network error"))
 
-    executor = make_executor(goal_store=store, notifier=notifier)
+    executor = make_executor(goal_store=store, agent_getter=lambda _: mock_agent)
 
-    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
-        # Prevent recursive advance
-        advance_calls = []
-        orig = executor.advance
-        async def once(gid):
-            advance_calls.append(gid)
-            if len(advance_calls) == 1:
-                await orig(gid)
-        executor.advance = once
+    with patch("ze_core.goals.executor.asyncio.create_task"):
         await executor.advance(goal.id)
 
-    # Should mark as SKIPPED with error output
-    update_call = store.update_milestone.call_args_list
-    assert any(MilestoneStatus.SKIPPED in c.args for c in update_call)
+    store.update_milestone.assert_any_call(
+        m1.id, MilestoneStatus.SKIPPED, output=pytest.approx("Failed: Milestone 1 (Step 1) failed: network error", abs=100)
+    )
 
 
-# ── gate: approve / stop / redirect ───────────────────────────────────────────
-
-async def test_advance_does_not_fire_gate_before_prior_milestone_done():
-    goal = make_goal()
-    m1 = make_milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
-    gate = make_gate(1, GateStatus.PENDING, goal_id=goal.id)
-
+async def test_approve_plan_activates_goal():
+    goal = make_goal(status=GoalStatus.PLANNING)
     store = MagicMock()
     store.get_goal = AsyncMock(return_value=goal)
-    store.list_milestones = AsyncMock(return_value=[m1])
-    store.get_pending_gate = AsyncMock(return_value=gate)
-    store.update_milestone = AsyncMock()
-    store.add_learning = AsyncMock()
-    store.append_learnings = AsyncMock()
-
-    mock_agent = MagicMock()
-    mock_agent.run = AsyncMock(return_value=MagicMock(response="Done."))
-    executor = make_executor(goal_store=store)
-
-    with patch("ze.goals.executor.get_agent", return_value=mock_agent):
-        advance_calls = []
-        orig = executor.advance
-        async def once(gid):
-            advance_calls.append(gid)
-            if len(advance_calls) == 1:
-                await orig(gid)
-        executor.advance = once
-        await executor.advance(goal.id)
-
-    store.fire_gate.assert_not_called()
-
-
-async def test_handle_gate_approved_sets_active_and_advances():
-    goal_id = uuid4()
-    gate = make_gate(1, GateStatus.AWAITING_APPROVAL, goal_id=goal_id)
-    gate.goal_id = goal_id
-
-    store = MagicMock()
-    store.get_gate = AsyncMock(return_value=gate)
-    store.resolve_gate = AsyncMock()
-    store.update_status = AsyncMock()
-    # Prevent real advance from running
-    store.get_goal = AsyncMock(return_value=None)
-
-    executor = make_executor(goal_store=store)
-    await executor.handle_gate_approved(gate.id)
-
-    store.resolve_gate.assert_awaited_once_with(gate.id, GateStatus.APPROVED)
-    store.update_status.assert_awaited_once_with(goal_id, GoalStatus.ACTIVE)
-
-
-async def test_handle_gate_approved_ignores_already_resolved_gate():
-    gate = make_gate(1, GateStatus.APPROVED, goal_id=uuid4())
-    store = MagicMock()
-    store.get_gate = AsyncMock(return_value=gate)
-    store.resolve_gate = AsyncMock()
     store.update_status = AsyncMock()
     executor = make_executor(goal_store=store)
-    await executor.handle_gate_approved(gate.id)
-    store.resolve_gate.assert_not_called()
+
+    with patch("ze_core.goals.executor.asyncio.create_task"):
+        result = await executor.approve_plan(goal.id)
+
+    assert result is True
+    store.update_status.assert_awaited_once_with(goal.id, GoalStatus.ACTIVE)
 
 
-async def test_handle_gate_stopped_abandons_goal():
+async def test_handle_gate_redirected_replans():
     goal = make_goal()
     gate = make_gate(1, GateStatus.AWAITING_APPROVAL, goal_id=goal.id)
-    gate.goal_id = goal.id
+    m1 = make_milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
 
     store = MagicMock()
     store.get_gate = AsyncMock(return_value=gate)
     store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.add_learning = AsyncMock()
+    store.append_learnings = AsyncMock()
+    store.replace_pending_milestones = AsyncMock(return_value=[])
+    store.replace_pending_gates = AsyncMock(return_value=[])
     store.resolve_gate = AsyncMock()
     store.update_status = AsyncMock()
-    notifier = MagicMock()
-    notifier.push = AsyncMock()
 
-    executor = make_executor(goal_store=store, notifier=notifier)
-    await executor.handle_gate_stopped(gate.id)
+    new_m = make_milestone(2, goal_id=goal.id)
+    planner = MagicMock()
+    planner.replan_remaining = AsyncMock(return_value=([new_m], []))
 
-    store.resolve_gate.assert_awaited_once_with(gate.id, GateStatus.STOPPED)
-    store.update_status.assert_awaited_once_with(goal.id, GoalStatus.ABANDONED)
-    notifier.push.assert_awaited_once()
+    executor = make_executor(goal_store=store, goal_planner=planner)
+
+    with patch("ze_core.goals.executor.asyncio.create_task"):
+        await executor.handle_gate_redirected(gate.id, "focus on Portugal only")
+
+    planner.replan_remaining.assert_awaited_once()
+    store.resolve_gate.assert_awaited_once_with(gate.id, GateStatus.REDIRECTED, user_feedback="focus on Portugal only")

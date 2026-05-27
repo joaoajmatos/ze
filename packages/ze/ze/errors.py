@@ -105,15 +105,6 @@ class ChannelSendError(ChannelError):
     """Channel transport failed during send."""
 
 
-# ── Goals ──────────────────────────────────────────────────────────────────────
+# ── Goals (ze-core) ───────────────────────────────────────────────────────────
 
-class GoalError(ZeError):
-    """Base class for goal engine errors."""
-
-
-class GoalPlanError(GoalError):
-    """Planner returned invalid output."""
-
-
-class GoalExecutionError(GoalError):
-    """Milestone execution failed."""
+from ze_core.errors import GoalError, GoalExecutionError, GoalPlanError  # noqa: E402

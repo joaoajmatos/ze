@@ -4,12 +4,13 @@ import html as _html
 from typing import ClassVar, Literal
 
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ze.logging import get_logger
 from ze.telegram.formatting import md_to_html, split_html
 from ze.telegram.keyboards import confirmation_keyboard
 from ze_core.interface.types import (
+    Action,
     ConfirmationRequest,
     Notification,
     OutboundMessage,
@@ -76,36 +77,40 @@ class TelegramInterface:
 
     async def push(self, notification: Notification) -> None:
         try:
-            parse_mode = "HTML" if notification.format == "markdown" else None
             prefix = "[!] " if notification.urgency == "high" else ""
             content = prefix + notification.content
             if notification.format == "markdown":
                 body = md_to_html(content)
+                parse_mode: str | None = "HTML"
+            elif notification.format == "html":
+                body = content
                 parse_mode = "HTML"
             else:
                 body = content
-            for chunk in split_html(body) if parse_mode == "HTML" else _split_plain(body):
-                await self._bot.send_message(self._chat_id(), chunk, parse_mode=parse_mode)
+                parse_mode = None
+
+            chunks = split_html(body) if parse_mode == "HTML" else _split_plain(body)
+            markup = _actions_keyboard(notification.actions)
+            for i, chunk in enumerate(chunks):
+                is_last = i == len(chunks) - 1
+                await self._bot.send_message(
+                    self._chat_id(),
+                    chunk,
+                    parse_mode=parse_mode,
+                    reply_markup=markup if is_last and markup else None,
+                )
         except Exception as exc:
             log.warning("interface_push_failed", chat_id=self._chat_id(), error=str(exc))
 
-    async def push_with_keyboard(
-        self,
-        text: str,
-        reply_markup: InlineKeyboardMarkup,
-        *,
-        parse_mode: str | None = None,
-    ) -> None:
-        """Telegram-specific proactive helper (not part of AppInterface)."""
-        try:
-            await self._bot.send_message(
-                self._chat_id(),
-                text,
-                reply_markup=reply_markup,
-                parse_mode=parse_mode,
-            )
-        except Exception as exc:
-            log.warning("interface_push_keyboard_failed", chat_id=self._chat_id(), error=str(exc))
+
+def _actions_keyboard(actions: list[Action]) -> InlineKeyboardMarkup | None:
+    if not actions:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=a.label, callback_data=a.payload) for a in actions]
+        ]
+    )
 
 
 def _split_plain(text: str, limit: int = 4096) -> list[str]:

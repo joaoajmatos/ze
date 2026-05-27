@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import html as _html
 import json
 from typing import AsyncIterator
@@ -9,13 +10,14 @@ from ze.agents.base import BaseAgent
 from ze.agents.registry import register
 from ze.agents.types import AgentContext, AgentResult
 from ze.errors import GoalPlanError
+from ze.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
 from ze.goals.store import GoalStore
 from ze.goals.types import Goal, GoalStatus, MilestoneStatus
 from ze.openrouter.client import OpenRouterClient
 from ze.proactive.notifier import ProactiveNotifier
 from ze.settings import Settings
-from ze.telegram.keyboards import goal_plan_confirmation_keyboard
+from ze_core.interface.types import Action, Notification
 
 _AGENT_INSTRUCTIONS = """\
 You are Ze's goal manager. You create, inspect, pause, resume, and abandon long-running goals.
@@ -48,6 +50,7 @@ class GoalAgent(BaseAgent):
         openrouter_client: OpenRouterClient,
         goal_store: GoalStore,
         goal_planner: GoalPlanner,
+        goal_executor: GoalExecutor,
         notifier: ProactiveNotifier,
         settings: Settings,
     ) -> None:
@@ -55,6 +58,7 @@ class GoalAgent(BaseAgent):
         self._client = openrouter_client
         self._store = goal_store
         self._planner = goal_planner
+        self._executor = goal_executor
         self._notifier = notifier
 
     async def run(self, ctx: AgentContext) -> AgentResult:
@@ -146,10 +150,16 @@ class GoalAgent(BaseAgent):
             f"<b>Checkpoints:</b>\n{_html.escape(gate_summary)}\n\n"
             "Start this goal?"
         )
-        await self._notifier.push_with_keyboard(
-            plan_text,
-            goal_plan_confirmation_keyboard(goal.id),
-            parse_mode="HTML",
+        await self._notifier.push_notification(
+            Notification(
+                content=plan_text,
+                format="html",
+                urgency="high",
+                actions=[
+                    Action(label="Start goal", payload=f"goal_plan:yes:{goal.id}"),
+                    Action(label="Cancel", payload=f"goal_plan:no:{goal.id}"),
+                ],
+            )
         )
 
         return (
