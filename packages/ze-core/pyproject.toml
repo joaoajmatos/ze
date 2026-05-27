@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ze-core"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.9",
+    "numpy>=2.0",
+]
+
+[project.optional-dependencies]
+# pip install 'ze-core[migrations]'  — required to run `python -m ze_core.migrate`
+# or to use ZC_AUTO_MIGRATE=true
+migrations = [
+    "alembic>=1.13",
+    "psycopg2-binary>=2.9",
+    "sqlalchemy>=2.0",
+]
+# pip install 'ze-core[sqlite]'  — SQLite storage backend (no Postgres required)
+sqlite = [
+    "aiosqlite>=0.19",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-mock>=3.14",
+    "anyio[trio]>=4.7",
+    "ruff>=0.8",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests that load the embedding model (deselect with -m 'not slow')",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ze_core"]
+include = ["ze_core/py.typed"]
