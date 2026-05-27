@@ -6,7 +6,7 @@ from uuid import UUID
 from aiogram import Bot
 from aiogram.types import CallbackQuery, ForceReply, Message
 
-from ze.conversation import extract_response, make_graph_input, preprocess_raw
+from ze.conversation import extract_response, make_graph_input_from_raw_text
 from ze.errors import ImageDownloadError
 from ze.interface.preprocessor import TelegramInputPreprocessor
 from ze.interface.telegram import TelegramInterface
@@ -52,6 +52,7 @@ class ZeBot:
         self._bot = bot
         self._interface = interface
         self._preprocessor = preprocessor
+        self._container = None
         self._graph = graph
         self._workflow_graph = workflow_graph
         self._store = store
@@ -71,6 +72,10 @@ class ZeBot:
         self._contact_channel_store = contact_channel_store
         self._goal_store = goal_store
         self._goal_executor = goal_executor
+
+    def bind_container(self, container) -> None:
+        """Attach the app container after construction (avoids a circular import)."""
+        self._container = container
 
     # ── Public handlers ───────────────────────────────────────────────────────
 
@@ -250,23 +255,13 @@ class ZeBot:
         if self._interface is not None:
             self._interface.set_chat(chat_id)
 
-        class _PreprocessCtx:
-            preprocessor = self._preprocessor
-            openrouter_client = self._openrouter_client
-
-        try:
-            processed = await preprocess_raw(_PreprocessCtx(), raw)
-        except Exception as exc:
-            log.warning("preprocess_failed", chat_id=chat_id, error=str(exc))
-            await self._bot.send_message(
-                chat_id,
-                "Sorry, I couldn't process that input.",
-            )
+        if self._container is None:
+            log.error("ze_bot_missing_container", chat_id=chat_id)
+            await self._bot.send_message(chat_id, "Internal error. Try again.")
             self._store.clear_active(chat_id)
             return
 
-        state = make_graph_input(processed, str(chat_id))
-        await self._run_graph(chat_id, state)
+        await self._run_turn(chat_id, raw)
 
     async def _reset_session(self, chat_id: int) -> None:
         config = self._make_config(chat_id)
@@ -280,15 +275,15 @@ class ZeBot:
         log.info("edit_reply_received", chat_id=chat_id)
         await self._resume_graph(chat_id, "edit", edit_content=text)
 
-    async def _run_graph(self, chat_id: int, state: dict) -> None:
-        config = self._make_config(chat_id)
-
+    async def _run_turn(self, chat_id: int, raw: RawInput) -> None:
+        config_extra: dict = {}
         progress_queue: asyncio.Queue[str] = asyncio.Queue()
         message_bucket: list[int] = []
+        watcher_task: asyncio.Task | None = None
 
         if self._translations is not None:
             reporter = ProgressReporter(progress_queue, self._translations)
-            config["configurable"]["reporter"] = reporter
+            config_extra["reporter"] = reporter
 
             async def _progress_watcher() -> None:
                 try:
@@ -302,13 +297,15 @@ class ZeBot:
                 except asyncio.CancelledError:
                     pass
 
-            watcher_task: asyncio.Task | None = asyncio.create_task(_progress_watcher())
-        else:
-            watcher_task = None
+            watcher_task = asyncio.create_task(_progress_watcher())
 
         typing_task = asyncio.create_task(self._keep_typing(chat_id))
         try:
-            final_state = await self._graph.ainvoke(state, config)
+            outcome = await self._container.invoke_raw_turn(
+                str(chat_id),
+                raw,
+                config_extra=config_extra,
+            )
         except Exception as exc:
             log.exception("graph_error", chat_id=chat_id, error=str(exc))
             self._store.clear_all(chat_id)
@@ -325,32 +322,36 @@ class ZeBot:
                 except Exception:
                     pass
 
-        graph_state = await self._graph.aget_state(config)
-        if graph_state.next:
-            result = final_state.get("agent_result")
-            envelope = final_state.get("envelope")
-            draft = result.response if result else ""
-            agent = envelope.primary_agent if envelope else ""
-            action = (
-                envelope.subtasks[0].intent
-                if envelope and envelope.subtasks
-                else ""
+        await self._handle_turn_outcome(chat_id, outcome)
+
+    async def _handle_turn_outcome(self, chat_id: int, outcome) -> None:
+        if outcome.error:
+            self._store.clear_active(chat_id)
+            await self._bot.send_message(chat_id, f"Error: {outcome.error}")
+            return
+
+        if outcome.interrupted:
+            await self._send_confirmation(
+                chat_id,
+                outcome.draft,
+                outcome.confirm_agent,
+                outcome.confirm_action,
+                outcome.config,
             )
-            await self._send_confirmation(chat_id, draft, agent, action, config)
-        elif final_state.get("dynamic_plan_steps") is not None:
-            steps = final_state["dynamic_plan_steps"]
-            high_risk: list[int] = final_state.get("dynamic_plan_high_risk") or []
+            return
+
+        if outcome.dynamic_plan_steps is not None:
+            steps = outcome.dynamic_plan_steps
+            high_risk = outcome.dynamic_plan_high_risk or []
             if not high_risk:
-                # All steps are autonomous — execute immediately
                 await self._execute_dynamic_plan(chat_id, steps)
             else:
-                # Show plan for user approval
                 await self._send_plan_confirmation(chat_id, steps, high_risk)
-        else:
-            response = extract_response(final_state)
-            self._store.clear_active(chat_id)
-            await self._deliver_response(chat_id, response)
-            log.info("graph_complete", chat_id=chat_id)
+            return
+
+        self._store.clear_active(chat_id)
+        await self._deliver_response(chat_id, outcome.response or "")
+        log.info("graph_complete", chat_id=chat_id)
 
     async def _resume_graph(
         self,
@@ -379,7 +380,12 @@ class ZeBot:
 
         typing_task = asyncio.create_task(self._keep_typing(chat_id))
         try:
-            final_state = await self._graph.ainvoke(None, config)
+            if self._container is not None:
+                outcome = await self._container.resume_turn(config)
+                response = outcome.response or ""
+            else:
+                final_state = await self._graph.ainvoke(None, config)
+                response = extract_response(final_state)
         except Exception as exc:
             log.exception("resume_error", chat_id=chat_id, error=str(exc))
             self._store.clear_all(chat_id)
@@ -389,7 +395,6 @@ class ZeBot:
             typing_task.cancel()
 
         self._store.clear_all(chat_id)
-        response = extract_response(final_state)
         await self._deliver_response(chat_id, response)
         log.info("resume_complete", chat_id=chat_id)
 
@@ -730,24 +735,16 @@ class ZeBot:
 
     async def invoke(self, prompt: str, session_id: str) -> dict:
         """Invoke the graph directly for eval/testing. Returns raw final state."""
-        from ze.conversation import make_graph_input_from_raw_text
+        eval_session = f"eval-{session_id}"
+        if self._container is not None:
+            outcome = await self._container.invoke_raw_turn(
+                eval_session,
+                RawInput(text=prompt),
+            )
+            return outcome.final_state
 
-        state = make_graph_input_from_raw_text(prompt, session_id)
-        config = {
-            "configurable": {
-                "thread_id": f"eval-{session_id}",
-                "router": self._router,
-                "capability_gate": self._capability_gate,
-                "memory_store": self._memory_store,
-                "persona_store": self._persona_store,
-                "person_store": self._person_store,
-                "openrouter_client": self._openrouter_client,
-                "embedder": self._embedder,
-                "settings": self._settings,
-                "workflow_planner": self._workflow_planner,
-                "contact_channel_store": self._contact_channel_store,
-            }
-        }
+        state = make_graph_input_from_raw_text(prompt, eval_session)
+        config = self._make_config(eval_session)
         return await self._graph.ainvoke(state, config)
 
     def _make_config(self, chat_id: int) -> dict:

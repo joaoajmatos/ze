@@ -40,8 +40,10 @@ from ze.proactive.reminders import CalendarReminderScheduler
 from ze.routing.complexity import ComplexityEstimator
 from ze.routing.router import EmbeddingRouter
 from ze.settings import Settings
+from ze.conversation import TurnResult, invoke_raw_turn, resume_turn
 from ze.interface.preprocessor import TelegramInputPreprocessor
 from ze.interface.telegram import TelegramInterface
+from ze_core.interface.types import RawInput
 from ze.telegram.bot import ZeBot
 from ze.telegram.session import ActiveSessionStore
 from ze_core.interface.validation import validate_interface
@@ -106,6 +108,20 @@ class Container:
         }
         configurable.update(configurable_extra)
         return {"configurable": configurable}
+
+    async def invoke_raw_turn(
+        self,
+        session_id: str,
+        raw: RawInput,
+        *,
+        config_extra: dict | None = None,
+    ) -> TurnResult:
+        """Run one conversation turn from transport-layer input (Ze graph + state)."""
+        return await invoke_raw_turn(self, session_id, raw, config_extra=config_extra)
+
+    async def resume_turn(self, config: dict) -> TurnResult:
+        """Resume after capability confirmation (LangGraph interrupt)."""
+        return await resume_turn(self, config)
 
     async def close(self) -> None:
         await self.workflow_scheduler.stop()
@@ -443,7 +459,7 @@ async def build_container(settings: Settings) -> Container:
         preprocessor=preprocessor,
     )
 
-    return Container(
+    container = Container(
         settings=settings,
         pool=pool,
         checkpointer_pool=checkpointer_pool,
@@ -474,3 +490,5 @@ async def build_container(settings: Settings) -> Container:
         interface=interface,
         preprocessor=preprocessor,
     )
+    ze_bot.bind_container(container)
+    return container

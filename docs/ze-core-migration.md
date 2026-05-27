@@ -113,8 +113,8 @@ pause → callback → `resume` → response; proactive pushes use `interface.pu
 - `Container` — `validate_interface()` at startup; `make_graph_config()` helper
 - Goal/plan/persona/contact callbacks remain in `ZeBot` (pre-invoke routing per step 1.6)
 
-**Still for a follow-up PR:** call `ze_core.container.Container.invoke_raw()` / `resume()` from
-`ZeBot` instead of hand-rolled `graph.ainvoke()` (requires a `ZeContainer` subclass with Ze’s graph and config).
+**Follow-up (done):** `Container.invoke_raw_turn()` / `resume_turn()` in `ze/conversation.py` —
+ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and capability resume.
 
 ---
 
@@ -271,7 +271,7 @@ Update as PRs merge:
 | Phase | Status | PR(s) | Notes |
 |-------|--------|-------|-------|
 | 0 Prep | ✅ | | Doc + architecture link |
-| 1 Interface | 🟡 | | `TelegramInterface`, preprocessor, ZeBot `RawInput` path |
+| 1 Interface | ✅ | | `invoke_raw_turn` / `resume_turn` on `Container` |
 | 2 Capability | ⬜ | | |
 | 3 Routing | ⬜ | | |
 | 4 Memory | ⬜ | | |

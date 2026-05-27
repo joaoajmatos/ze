@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from ze_core.interface.types import ProcessedInput, RawInput
+
+if TYPE_CHECKING:
+    from ze.container import Container
 
 
 def make_graph_input(
@@ -69,4 +73,77 @@ async def preprocess_raw(container: Any, raw: RawInput) -> ProcessedInput:
         input_modality=modality,
         image_data=raw.image,
         image_mime=raw.image_mime,
+    )
+
+
+@dataclass
+class TurnResult:
+    """Outcome of one main-graph invocation (may pause at await_confirmation)."""
+
+    final_state: dict
+    config: dict
+    interrupted: bool
+    draft: str = ""
+    confirm_agent: str = ""
+    confirm_action: str = ""
+    dynamic_plan_steps: list | None = None
+    dynamic_plan_high_risk: list | None = None
+    error: str | None = None
+    response: str | None = None
+
+
+def _confirmation_meta(final_state: dict) -> tuple[str, str, str]:
+    result = final_state.get("agent_result")
+    envelope = final_state.get("envelope")
+    draft = result.response if result else ""
+    agent = envelope.primary_agent if envelope else ""
+    action = (
+        envelope.subtasks[0].intent
+        if envelope and envelope.subtasks
+        else ""
+    )
+    return draft, agent, action
+
+
+async def invoke_raw_turn(
+    container: Container,
+    session_id: str,
+    raw: RawInput,
+    *,
+    config_extra: dict | None = None,
+) -> TurnResult:
+    """Preprocess input, run the conversation graph once, interpret the outcome."""
+    processed = await preprocess_raw(container, raw)
+    graph_input = make_graph_input(processed, session_id)
+    config = container.make_graph_config(session_id, **(config_extra or {}))
+
+    final_state = await container.graph.ainvoke(graph_input, config)
+    graph_state = await container.graph.aget_state(config)
+    interrupted = bool(graph_state.next)
+    draft, agent, action = _confirmation_meta(final_state)
+
+    return TurnResult(
+        final_state=final_state,
+        config=config,
+        interrupted=interrupted,
+        draft=draft,
+        confirm_agent=agent,
+        confirm_action=action,
+        dynamic_plan_steps=final_state.get("dynamic_plan_steps"),
+        dynamic_plan_high_risk=final_state.get("dynamic_plan_high_risk"),
+        error=final_state.get("error"),
+        response=None if interrupted else extract_response(final_state),
+    )
+
+
+async def resume_turn(container: Container, config: dict) -> TurnResult:
+    """Resume the graph after the user confirms (async confirmation path)."""
+    session_id = config["configurable"]["thread_id"]
+    final_state = await container.graph.ainvoke(None, config)
+    return TurnResult(
+        final_state=final_state,
+        config=config,
+        interrupted=False,
+        error=final_state.get("error"),
+        response=extract_response(final_state),
     )
