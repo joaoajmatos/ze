@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, get_type_hints
 
 import asyncpg
-from tavily import AsyncTavilyClient
 
 from ze_core.errors import AgentConfigError
 from ze_core.goals.executor import GoalExecutor
@@ -37,7 +36,6 @@ def bootstrap_agents(
     *,
     openrouter_client: OpenRouterClient,
     settings: Settings,
-    tavily_client: AsyncTavilyClient | None = None,
     google_credentials: GoogleCredentials | None = None,
     workflow_store: WorkflowStore | None = None,
     workflow_planner: WorkflowPlanner | None = None,
@@ -53,16 +51,12 @@ def bootstrap_agents(
     pool: asyncpg.Pool | None = None,
 ) -> None:
     """Instantiate and register all enabled agents. Called once at app startup."""
-    if tavily_client is None:
-        tavily_client = AsyncTavilyClient(api_key=settings.tavily_api_key)
-
     if google_credentials is None:
         google_credentials = GoogleCredentials.from_settings(settings)
 
     _dep_map.clear()
     _dep_map[OpenRouterClient] = openrouter_client
     _dep_map[Settings] = settings
-    _dep_map[AsyncTavilyClient] = tavily_client
     _dep_map[GoogleCredentials] = google_credentials
 
     if workflow_store is not None:
@@ -116,6 +110,8 @@ def validate_registry() -> None:
         intent_map: dict = getattr(cls, "intent_map", {})
 
         for tool_name in declared_tools:
+            if tool_name.startswith("openrouter:"):
+                continue  # server tool — handled by OpenRouter, not registered locally
             if tool_name not in tool_reg:
                 raise AgentConfigError(
                     f"Agent {name!r} declares unknown tool {tool_name!r}. "

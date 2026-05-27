@@ -21,7 +21,6 @@ dependencies = [
     "structlog>=24.4",
     "pyyaml>=6.0",
     "numpy>=2.0",
-    "tavily-python>=0.5",
     "aiogram>=3.0",
     "alembic>=1.14",
     "sqlalchemy>=2.0",             # alembic dependency; not used for ORM

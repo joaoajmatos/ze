@@ -1,10 +1,7 @@
 from typing import AsyncIterator
 
-from tavily import AsyncTavilyClient
-
 from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import agent
-from ze.agents.research.tools import format_search_results
 from ze.agents.types import AgentContext, AgentResult
 from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
@@ -36,8 +33,8 @@ class ResearchAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 30
-    tools = ["web_search"]
-    intent_map = {"read": "web_search"}
+    tools = ["openrouter:web_search"]
+    intent_map = {"read": "openrouter:web_search"}
     capabilities = {
         "read": Mode.AUTONOMOUS,
         "execute": Mode.CONFIRM,
@@ -50,12 +47,10 @@ class ResearchAgent(BaseAgent):
     def __init__(
         self,
         openrouter_client: OpenRouterClient,
-        tavily_client: AsyncTavilyClient,
         settings: Settings,
     ) -> None:
         super().__init__(settings)
         self._client = openrouter_client
-        self._tavily = tavily_client
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "research.searching")
@@ -65,11 +60,9 @@ class ResearchAgent(BaseAgent):
             client=self._client,
             messages=list(ctx.messages),
             system=system,
-            deps={"client": self._tavily},
         )
 
-        await self.emit(ctx, "research.summarising")
-        search_count = len([tc for tc in loop_tool_calls if tc.tool_name == "web_search"])
+        search_count = len([tc for tc in loop_tool_calls if tc.tool_name == "openrouter:web_search"])
 
         self._log.info(
             "research_agent_complete",
@@ -84,14 +77,12 @@ class ResearchAgent(BaseAgent):
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
-        search_tc = await self.call_tool(
-            "web_search", ctx, query=ctx.prompt, client=self._tavily
-        )
-        augmented = f"{ctx.prompt}\n\nSearch results:\n{format_search_results(search_tc)}"
-        messages = ctx.messages[:-1] + [{"role": "user", "content": augmented}]
+        model = self._model(ctx)
+        if not model.endswith(":online"):
+            model = f"{model}:online"
         async for token in self._client.stream(
-            messages=messages,
-            model=self._model(ctx),
+            messages=ctx.messages,
+            model=model,
             system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         ):
             yield token

@@ -27,9 +27,6 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://ze:ze@localhost:5432/ze"
     database_url_sync: str = "postgresql+psycopg2://ze:ze@localhost:5432/ze"
 
-    # ── Research ──────────────────────────────────────────────────────────────
-    tavily_api_key: str = ""
-
     # ── API ───────────────────────────────────────────────────────────────────
     ze_api_key: str = "change-me"
     confirm_timeout_seconds: int = 900

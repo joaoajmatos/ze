@@ -167,7 +167,7 @@ async def test_prospecting_agent_browser_unreachable_excludes_browser_extract():
         await agent.run(make_ctx())
 
     assert "browser_extract" not in captured_tool_names
-    assert "web_search" in captured_tool_names
+    assert "openrouter:web_search" in captured_tool_names
 
 
 async def test_prospecting_agent_passes_campaign_id_in_deps():

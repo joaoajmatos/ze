@@ -15,8 +15,7 @@ Copy `.env.example` to `.env` and fill in every value before starting the server
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENROUTER_API_KEY` | Yes | OpenRouter API key — all LLM calls go through this |
-| `TAVILY_API_KEY` | Yes | Tavily API key — used by the research agent |
+| `OPENROUTER_API_KEY` | Yes | OpenRouter API key — all LLM calls and web search go through this |
 | `ZE_API_KEY` | Yes | Static bearer token for REST endpoints (`Authorization: Bearer <token>`) |
 
 ### Database

@@ -82,7 +82,7 @@ Graph state is persisted in Postgres via LangGraph `AsyncPostgresSaver`, so conf
 - Python **3.12+**
 - [uv](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Docker (for local Postgres)
-- API keys: [OpenRouter](https://openrouter.ai), [Tavily](https://tavily.com) (web search)
+- API key: [OpenRouter](https://openrouter.ai) (all LLM calls + web search)
 - A Telegram bot token from [@BotFather](https://t.me/BotFather)
 
 ### Run locally
@@ -94,7 +94,7 @@ cd ze
 make install
 
 cp .env.example .env
-# Fill in OPENROUTER_API_KEY, TAVILY_API_KEY, ZE_API_KEY,
+# Fill in OPENROUTER_API_KEY, ZE_API_KEY,
 # TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_CHAT_ID, etc.
 
 make db-up
@@ -127,8 +127,7 @@ Copy `.env.example` to `.env` before starting. Required variables:
 
 | Variable | Description |
 |---|---|
-| `OPENROUTER_API_KEY` | All LLM calls |
-| `TAVILY_API_KEY` | Research agent web search |
+| `OPENROUTER_API_KEY` | All LLM calls and web search (via OpenRouter plugins) |
 | `ZE_API_KEY` | Bearer token for REST endpoints |
 | `TELEGRAM_BOT_TOKEN` | From @BotFather |
 | `TELEGRAM_ALLOWED_CHAT_ID` | Your personal chat ID (integer) |
@@ -146,7 +145,7 @@ Full reference: [docs/configuration.md](docs/configuration.md).
 
 | Agent | Role |
 |---|---|
-| **research** | Web search (Tavily) + synthesis |
+| **research** | Web search (OpenRouter `openrouter:web_search`) + synthesis |
 | **companion** | Reasoning, brainstorming, writing help |
 | **calendar** | Google Calendar CRUD + availability |
 | **email** | Gmail read, draft, send, archive |

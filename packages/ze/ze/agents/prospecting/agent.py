@@ -24,10 +24,10 @@ You are Ze's prospecting engine. Given a brief, you autonomously:
 4. Generate the output the user requested (summary, draft outreach, or both).
 
 Research strategy — work through sources in this priority order:
-- web_search: identify companies in the target space, then find people at those companies
+- openrouter:web_search: identify companies in the target space, then find people at those companies
 - browser_extract on company websites: team/about pages often list names and roles
 - browser_extract on government/industry registries: ANAC (aviation), RNPC (companies),
-  sector-specific databases — search for these via web_search first
+  sector-specific databases — search for these via openrouter:web_search first
 - LinkedIn public profiles: Google "site:linkedin.com/in [name] [title] [country]",
   then browser_extract the result URL
 
@@ -55,7 +55,7 @@ class ProspectingAgent(BaseAgent):
     model = "anthropic/claude-sonnet-4-5"
     timeout = 180
     tools = [
-        "web_search",
+        "openrouter:web_search",
         "browser_extract",
         "add_prospect",
         "draft_outreach",

@@ -11,6 +11,21 @@ from ze_core.errors import AgentError, ToolBlockedError
 from ze_core.logging import get_logger
 from ze_core.orchestration.types import AgentContext, AgentResult, ToolCall
 
+# Schemas for OpenRouter server-side tools (executed by OpenRouter, not the client).
+_OPENROUTER_TOOL_SCHEMAS: dict[str, dict] = {
+    "openrouter:web_search": {
+        "name": "openrouter:web_search",
+        "description": "Search the web for current, up-to-date information.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+            },
+            "required": ["query"],
+        },
+    },
+}
+
 if TYPE_CHECKING:
     from ze_core.openrouter.client import OpenRouterClient
 
@@ -136,7 +151,10 @@ class BaseAgent(ABC):
         from ze_core.orchestration.tool import get_tool
 
         names = tool_names if tool_names is not None else self.tools
-        tool_schemas = [get_tool(n).llm_schema() for n in names]
+        tool_schemas = [
+            _OPENROUTER_TOOL_SCHEMAS[n] if n in _OPENROUTER_TOOL_SCHEMAS else get_tool(n).llm_schema()
+            for n in names
+        ]
         accumulated: list[ToolCall] = []
         _deps = deps or {}
 
@@ -184,14 +202,30 @@ class BaseAgent(ABC):
             })
 
             for tc in tool_calls:
-                merged = _merge_deps(tc["name"], tc["arguments"], _deps)
-                tool_call = await self.call_tool(tc["name"], ctx, **merged)
-                accumulated.append(tool_call)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc["id"],
-                    "content": _serialise_result(tool_call),
-                })
+                if tc["name"] in _OPENROUTER_TOOL_SCHEMAS:
+                    # Server tool — OpenRouter executes it; we just acknowledge.
+                    tool_call = ToolCall(
+                        tool_name=tc["name"],
+                        args=tc["arguments"],
+                        result="[handled by OpenRouter]",
+                        duration_ms=0,
+                        success=True,
+                    )
+                    accumulated.append(tool_call)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": "[search complete]",
+                    })
+                else:
+                    merged = _merge_deps(tc["name"], tc["arguments"], _deps)
+                    tool_call = await self.call_tool(tc["name"], ctx, **merged)
+                    accumulated.append(tool_call)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": _serialise_result(tool_call),
+                    })
 
         log.warning("agentic_loop_max_iterations", agent=self.name, max_iterations=max_iterations)
         text = await client.complete(

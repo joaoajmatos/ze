@@ -347,9 +347,9 @@ def test_llm_schema_basic_string_param():
 
 def test_llm_schema_excludes_complex_type_params():
     """Params typed as domain objects (e.g. client) must not appear in schema."""
-    from tavily import AsyncTavilyClient
+    from ze_core.openrouter.client import OpenRouterClient
 
-    async def _schema_with_client(query: str, client: AsyncTavilyClient) -> ToolCall: ...
+    async def _schema_with_client(query: str, client: OpenRouterClient) -> ToolCall: ...
     _schema_with_client.__doc__ = "Client excluded."
     spec = _make_schema_tool(_schema_with_client)
     schema = spec.llm_schema()
@@ -421,7 +421,7 @@ def test_llm_schema_all_complex_excluded_yields_empty_properties():
 
 def _make_loop_agent(settings) -> _ConcreteAgent:
     agent = _ConcreteAgent(settings=settings)
-    agent.tools = ["web_search"]
+    agent.tools = ["openrouter:web_search"]
     return agent
 
 
@@ -438,20 +438,16 @@ def make_loop_ctx() -> AgentContext:
 
 async def test_agentic_loop_returns_text_immediately(settings):
     """LLM returns text on first call — no tool calls, no iterations."""
-    import ze.tools.web  # noqa: ensure web_search is registered
-
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(return_value=("Answer.", None))
     agent = _make_loop_agent(settings)
-    from tavily import AsyncTavilyClient
 
     text, tool_calls = await agent.agentic_loop(
         make_loop_ctx(),
         client=client,
         messages=[{"role": "user", "content": "test"}],
         system="sys",
-        deps={"client": AsyncMock(spec=AsyncTavilyClient)},
-        tool_names=["web_search"],
+        tool_names=["openrouter:web_search"],
     )
     assert text == "Answer."
     assert tool_calls == []
@@ -459,19 +455,13 @@ async def test_agentic_loop_returns_text_immediately(settings):
 
 
 async def test_agentic_loop_one_tool_call_round_trip(settings):
-    """LLM calls web_search once, then returns text."""
-    import ze.tools.web  # noqa: ensure web_search is registered
-    from tavily import AsyncTavilyClient
-
+    """LLM calls openrouter:web_search once (server tool), then returns text."""
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(side_effect=[
-        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "test"}}]),
+        (None, [{"id": "c1", "name": "openrouter:web_search", "arguments": {"query": "test"}}]),
         ("Final answer.", None),
     ])
     client.complete = AsyncMock(return_value="Final answer.")
-
-    mock_tavily = AsyncMock(spec=AsyncTavilyClient)
-    mock_tavily.search = AsyncMock(return_value={"results": [{"title": "R", "url": "u", "content": "c"}]})
 
     agent = _make_loop_agent(settings)
     messages = [{"role": "user", "content": "test"}]
@@ -480,29 +470,22 @@ async def test_agentic_loop_one_tool_call_round_trip(settings):
         client=client,
         messages=messages,
         system="sys",
-        deps={"client": mock_tavily},
-        tool_names=["web_search"],
+        tool_names=["openrouter:web_search"],
     )
 
     assert text == "Final answer."
     assert len(tool_calls) == 1
-    assert tool_calls[0].tool_name == "web_search"
-    mock_tavily.search.assert_awaited_once_with("test", max_results=5)
+    assert tool_calls[0].tool_name == "openrouter:web_search"
+    assert tool_calls[0].success is True
 
 
 async def test_agentic_loop_appends_tool_turns_to_messages(settings):
-    """Tool call and result messages are appended to the messages list."""
-    import ze.tools.web  # noqa
-    from tavily import AsyncTavilyClient
-
+    """Server tool call and result messages are appended to the messages list."""
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(side_effect=[
-        (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "q"}}]),
+        (None, [{"id": "c1", "name": "openrouter:web_search", "arguments": {"query": "q"}}]),
         ("Done.", None),
     ])
-
-    mock_tavily = AsyncMock(spec=AsyncTavilyClient)
-    mock_tavily.search = AsyncMock(return_value={"results": []})
 
     agent = _make_loop_agent(settings)
     messages = [{"role": "user", "content": "q"}]
@@ -511,8 +494,7 @@ async def test_agentic_loop_appends_tool_turns_to_messages(settings):
         client=client,
         messages=messages,
         system="sys",
-        deps={"client": mock_tavily},
-        tool_names=["web_search"],
+        tool_names=["openrouter:web_search"],
     )
 
     # messages should now contain: user | assistant(tool_calls) | tool(result)
@@ -523,16 +505,10 @@ async def test_agentic_loop_appends_tool_turns_to_messages(settings):
 
 async def test_agentic_loop_forces_text_after_max_iterations(settings):
     """After max_iterations, falls back to plain complete() without tools."""
-    import ze.tools.web  # noqa
-    from tavily import AsyncTavilyClient
-
-    tool_call = (None, [{"id": "c1", "name": "web_search", "arguments": {"query": "q"}}])
+    tool_call = (None, [{"id": "c1", "name": "openrouter:web_search", "arguments": {"query": "q"}}])
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(return_value=tool_call)
     client.complete = AsyncMock(return_value="Forced final answer.")
-
-    mock_tavily = AsyncMock(spec=AsyncTavilyClient)
-    mock_tavily.search = AsyncMock(return_value={"results": []})
 
     agent = _make_loop_agent(settings)
     text, tool_calls = await agent.agentic_loop(
@@ -540,21 +516,17 @@ async def test_agentic_loop_forces_text_after_max_iterations(settings):
         client=client,
         messages=[{"role": "user", "content": "q"}],
         system="sys",
-        deps={"client": mock_tavily},
-        tool_names=["web_search"],
+        tool_names=["openrouter:web_search"],
         max_iterations=2,
     )
 
     assert text == "Forced final answer."
-    assert len(tool_calls) == 2  # two iterations of web_search
+    assert len(tool_calls) == 2
     client.complete.assert_awaited_once()
 
 
 async def test_agentic_loop_passes_schemas_to_client(settings):
     """Tool schemas are generated and forwarded to complete_with_tools."""
-    import ze.tools.web  # noqa
-    from tavily import AsyncTavilyClient
-
     received_tools: list = []
 
     async def _mock_cwt(messages, model, tools, system=None, **kwargs):
@@ -570,17 +542,15 @@ async def test_agentic_loop_passes_schemas_to_client(settings):
         client=client,
         messages=[{"role": "user", "content": "q"}],
         system="sys",
-        deps={"client": AsyncMock(spec=AsyncTavilyClient)},
-        tool_names=["web_search"],
+        tool_names=["openrouter:web_search"],
     )
 
     assert len(received_tools) == 1
-    assert received_tools[0]["name"] == "web_search"
+    assert received_tools[0]["name"] == "openrouter:web_search"
 
 
 async def test_agentic_loop_raises_agent_error_on_none_none_response(settings):
     """complete_with_tools returning (None, None) raises AgentError, not AssertionError."""
-    import ze.tools.web  # noqa
     from ze_core.errors import AgentError
 
     client = AsyncMock()
@@ -593,14 +563,12 @@ async def test_agentic_loop_raises_agent_error_on_none_none_response(settings):
             client=client,
             messages=[{"role": "user", "content": "q"}],
             system="sys",
-            deps={},
-            tool_names=["web_search"],
+            tool_names=["openrouter:web_search"],
         )
 
 
 async def test_agentic_loop_empty_string_raises_agent_error(settings):
     """Empty text + no tool calls from complete_with_tools raises AgentError, not returns ''."""
-    import ze.tools.web  # noqa
     from ze_core.errors import AgentError
 
     client = AsyncMock()
@@ -613,15 +581,12 @@ async def test_agentic_loop_empty_string_raises_agent_error(settings):
             client=client,
             messages=[{"role": "user", "content": "q"}],
             system="sys",
-            deps={},
-            tool_names=["web_search"],
+            tool_names=["openrouter:web_search"],
         )
 
 
 async def test_agentic_loop_forwards_max_tokens(settings):
     """max_tokens is forwarded to complete_with_tools."""
-    import ze.tools.web  # noqa
-
     received_kwargs: list[dict] = []
 
     async def _mock_cwt(messages, model, tools, system=None, **kwargs):
@@ -637,8 +602,7 @@ async def test_agentic_loop_forwards_max_tokens(settings):
         client=client,
         messages=[{"role": "user", "content": "q"}],
         system="sys",
-        deps={},
-        tool_names=["web_search"],
+        tool_names=["openrouter:web_search"],
         max_tokens=4000,
     )
 

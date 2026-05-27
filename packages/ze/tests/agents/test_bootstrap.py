@@ -50,11 +50,9 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze.workflow.scheduler import WorkflowScheduler
 
     client = AsyncMock()
-    tavily = MagicMock()
     bootstrap_agents(
         openrouter_client=client,
         settings=settings,
-        tavily_client=tavily,
         workflow_store=MM(spec=WorkflowStore),
         workflow_planner=MM(spec=WorkflowPlanner),
         workflow_scheduler=MM(spec=WorkflowScheduler),

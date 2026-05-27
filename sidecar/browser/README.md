@@ -154,7 +154,7 @@ browser:
   delay_ms: 2000
 ```
 
-If the sidecar is unreachable, Ze logs a warning and prospecting falls back to Tavily-only research; individual `browser_extract` calls return an error string the agent can skip.
+If the sidecar is unreachable, Ze logs a warning and prospecting falls back to web-search-only research; individual `browser_extract` calls return an error string the agent can skip.
 
 ---
 

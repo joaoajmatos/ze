@@ -42,7 +42,6 @@ injected as environment variables at runtime.
 ```bash
 fly secrets set \
   OPENROUTER_API_KEY=sk-or-... \
-  TAVILY_API_KEY=tvly-... \
   ZE_API_KEY=your-secret-key \
   DATABASE_URL_SYNC="postgresql+psycopg2://..." \
   TELEGRAM_BOT_TOKEN=... \

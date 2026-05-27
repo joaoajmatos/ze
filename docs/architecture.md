@@ -119,7 +119,7 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 
 | Agent | Key tools | Default model tier |
 |---|---|---|
-| `research` | Tavily search, URL fetch, synthesis | Full |
+| `research` | OpenRouter web search, synthesis | Full |
 | `companion` | None (pure reasoning + memory) | Full |
 | `calendar` | Google Calendar API (CRUD) | Haiku |
 | `email` | Gmail API (read, draft, send) | Haiku |

@@ -64,6 +64,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 | Layer | Choice | Reason |
 |---|---|---|
 | LLM gateway | OpenRouter only | Single billing, easy model swap |
+| Web search | OpenRouter `openrouter:web_search` server tool | No separate search API key; LLM decides when to search; billed via OpenRouter credits |
 | Embeddings | all-MiniLM-L6-v2 local | No API cost, fast, 384-dim |
 | Orchestration | LangGraph + AsyncPostgresSaver | Graph persistence survives restarts |
 | DB driver | asyncpg (runtime), psycopg2 (Alembic CLI) | asyncpg has no sync mode |
@@ -125,7 +126,6 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 ### `.env` (create from `.env.example`, never commit)
 ```
 OPENROUTER_API_KEY=sk-or-...
-TAVILY_API_KEY=tvly-...
 ZE_API_KEY=your-secret-key
 DATABASE_URL=postgresql://ze:ze@localhost:5432/ze
 DATABASE_URL_SYNC=postgresql+psycopg2://ze:ze@localhost:5432/ze
@@ -152,7 +152,7 @@ Hot-reloaded on SIGHUP without restart.
    Include `description`, `model`, `tools`, `timeout_seconds`, `intent_map`, `capabilities`,
    and optionally `model_simple` and `vision_capable`.
 3. Create `ze/agents/<name>/agent.py` — subclass `BaseAgent`, add `@register`.
-4. Add `ze/agents/<name>/tools.py`. Define `_AGENT_INSTRUCTIONS` at the top of `agent.py`.
+4. Add `ze/agents/<name>/tools.py` if the agent needs client-side Python tools. Define `_AGENT_INSTRUCTIONS` at the top of `agent.py`. Use `"openrouter:web_search"` in `tools` for web search — no Python tool needed.
 5. Write tests in `tests/agents/<name>/`.
 6. Wire the live instance in `ze/container.py` via `register_instance()`.
 7. Import the tools module at startup so `@tool` registration fires.
