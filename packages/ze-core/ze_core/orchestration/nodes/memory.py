@@ -84,6 +84,9 @@ async def write_memory(state: AgentState, config: dict) -> dict:
 
 
 async def synthesize(state: AgentState, config: dict) -> dict:
+    from ze_core.telemetry.context import set_agent_context
+    set_agent_context("synthesis")
+
     client: Any = config["configurable"]["openrouter_client"]
     cfg: Any = config["configurable"].get("settings")
 

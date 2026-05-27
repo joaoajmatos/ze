@@ -11,7 +11,9 @@ from ze.logging import configure_logging
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze_core.memory.types import MemoryContext, UserFact
 from ze.orchestration.nodes import context, execution, memory, routing
-from ze_core.orchestration.nodes.execution import await_confirmation
+from ze_core.orchestration.nodes.execution import await_confirmation, capability_check
+from ze_core.orchestration.nodes.memory import synthesize
+from ze_core.orchestration.nodes.routing import embed_route
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze.settings import Settings
 
@@ -112,7 +114,7 @@ async def test_embed_route_sets_envelope():
     mock_router = AsyncMock()
     mock_router.route = AsyncMock(return_value=make_envelope())
     cfg = make_config(router=mock_router)
-    result = await routing.embed_route(base_state(), cfg)
+    result = await embed_route(base_state(), cfg)
     assert "envelope" in result
     assert result["envelope"].primary_agent == "research"
 
@@ -122,7 +124,7 @@ async def test_embed_route_calls_router_with_prompt_and_session():
     mock_router.route = AsyncMock(return_value=make_envelope())
     cfg = make_config(router=mock_router)
     state = base_state(prompt="latest AI", session_id="sess-42")
-    await routing.embed_route(state, cfg)
+    await embed_route(state, cfg)
     mock_router.route.assert_awaited_once_with(prompt="latest AI", session_id="sess-42")
 
 
@@ -161,14 +163,14 @@ async def test_capability_check_execute():
     gate = MagicMock(spec=CapabilityGate)
     gate.evaluate.return_value = GateDecision.EXECUTE
     cfg = make_config(capability_gate=gate)
-    result = await execution.capability_check(base_state(), cfg)
+    result = await capability_check(base_state(), cfg)
     assert result["gate_decision"] == GateDecision.EXECUTE
 
 
 async def test_capability_check_blocked_when_no_envelope():
     gate = MagicMock(spec=CapabilityGate)
     cfg = make_config(capability_gate=gate)
-    result = await execution.capability_check(base_state(envelope=None), cfg)
+    result = await capability_check(base_state(envelope=None), cfg)
     assert result["gate_decision"] == GateDecision.BLOCKED
 
 
@@ -177,7 +179,7 @@ async def test_capability_check_passes_session_overrides():
     gate.evaluate.return_value = GateDecision.EXECUTE
     cfg = make_config(capability_gate=gate)
     overrides = {"research.read": "autonomous"}
-    await execution.capability_check(base_state(session_overrides=overrides), cfg)
+    await capability_check(base_state(session_overrides=overrides), cfg)
     gate.evaluate.assert_called_once_with(
         agent="research", intent="read", session_overrides=overrides
     )
@@ -194,7 +196,7 @@ async def test_execute_tool_single_agent(monkeypatch):
     monkeypatch.setitem(reg._instances, "research", mock_agent)
 
     ctx = AgentContext(session_id="s1", prompt="test", intent="read", memory=MemoryContext())
-    state = base_state(agent_context=ctx)
+    state = base_state(agent_context=ctx, gate_decision=GateDecision.EXECUTE)
     result = await execution.execute_tool(state, make_config())
     assert result["agent_result"].response == "found it"
     assert result["subtask_results"] == []
@@ -404,14 +406,14 @@ async def test_synthesize_merges_subtask_results():
         AgentResult(agent="companion", response="companion part"),
     ]
     state = base_state(subtask_results=subtask_results)
-    result = await memory.synthesize(state, cfg)
+    result = await synthesize(state, cfg)
     assert result["final_response"] == "synthesized response"
     client.complete.assert_awaited_once()
 
 
 async def test_synthesize_returns_empty_when_no_subtasks():
     cfg = make_config()
-    result = await memory.synthesize(base_state(subtask_results=[]), cfg)
+    result = await synthesize(base_state(subtask_results=[]), cfg)
     assert result == {}
 
 

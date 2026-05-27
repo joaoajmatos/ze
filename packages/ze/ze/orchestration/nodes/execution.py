@@ -6,7 +6,6 @@ from langchain_core.runnables import RunnableConfig
 from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import get_agent, get_agent_class
 from ze.agents.types import AgentContext, AgentResult
-from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.types import GateDecision
 from ze_core.errors import AgentTimeoutError
 from ze.logging import get_logger
@@ -15,23 +14,6 @@ from ze.settings import Settings
 from ze_core.telemetry.context import set_agent_context
 
 log = get_logger(__name__)
-
-
-async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
-    """Evaluate capability gate for the primary agent and intent."""
-    gate: CapabilityGate = config["configurable"]["capability_gate"]
-    envelope = state["envelope"]
-    primary = envelope.subtasks[0] if envelope and envelope.subtasks else None
-
-    if primary is None:
-        return {"gate_decision": GateDecision.BLOCKED}
-
-    decision = gate.evaluate(
-        agent=primary.agent,
-        intent=primary.intent,
-        session_overrides=state.get("session_overrides", {}),
-    )
-    return {"gate_decision": decision}
 
 
 async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:

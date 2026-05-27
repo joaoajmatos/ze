@@ -12,8 +12,6 @@ from ze_core.memory.extractor import gather_fact_proposals
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT as _SESSION_HISTORY_LIMIT
 from ze.orchestration.state import AgentState
-from ze.settings import Settings
-from ze_core.telemetry.context import set_agent_context
 
 log = get_logger(__name__)
 
@@ -110,44 +108,6 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         {"role": "assistant", "content": result.response},
     ]
     return {"messages": updated[-_SESSION_HISTORY_LIMIT:]}
-
-
-async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
-    """Merge multiple subtask results into a single coherent response via Haiku."""
-    from ze_core.openrouter.client import OpenRouterClient
-
-    set_agent_context("synthesis")
-    client: OpenRouterClient = config["configurable"]["openrouter_client"]
-    settings: Settings = config["configurable"]["settings"]
-
-    subtask_results = state.get("subtask_results", [])
-    if not subtask_results:
-        return {}
-
-    parts = "\n\n".join(f"[{r.agent}]: {r.response}" for r in subtask_results)
-    synthesis_prompt = (
-        "The following are responses from multiple agents for a compound user request.\n"
-        "Synthesize them into a single, coherent, well-structured response.\n\n"
-        f"User request: {state['prompt']}\n\n"
-        f"Agent responses:\n{parts}"
-    )
-
-    synthesis_model = settings.config.get("models", {}).get(
-        "synthesis", "anthropic/claude-haiku-4-5"
-    )
-
-    response = await client.complete(
-        messages=[{"role": "user", "content": synthesis_prompt}],
-        model=synthesis_model,
-    )
-
-    log.info(
-        "orchestration_synthesis_complete",
-        session_id=state["session_id"],
-        subtask_count=len(subtask_results),
-    )
-
-    return {"final_response": response}
 
 
 async def _write_contact_proposals(

@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 
-def graph_builder() -> Any:
+def graph_builder(node_overrides: dict[str, Callable] | None = None) -> Any:
     """Return a fully-wired but uncompiled StateGraph.
 
     All standard nodes and internal edges are added. The ``embed_route``
     conditional edge is intentionally omitted so callers can extend the
     graph (e.g. add a ``plan_sequential`` node) before wiring routing.
 
-    Call ``add_conditional_edges("embed_route", ...)`` on the returned
-    builder with your routing function and destination map, then compile:
+    Pass ``node_overrides`` to replace specific nodes with application-specific
+    implementations without touching LangGraph internals:
 
-        builder = graph_builder()
-        # optionally add extra nodes here
+        builder = graph_builder(node_overrides={
+            "fetch_context": my_fetch_context,
+            "write_memory": my_write_memory,
+        })
+        builder.add_node("my_extra_node", my_fn)
         builder.add_conditional_edges(
             "embed_route",
             after_embed_route,
@@ -33,18 +36,19 @@ def graph_builder() -> Any:
     from ze_core.orchestration.edges import after_capability_check, after_execute_tool
     from ze_core.orchestration.state import AgentState
 
+    ov = node_overrides or {}
     builder = StateGraph(AgentState)
 
-    builder.add_node("preprocess",         nodes.preprocess)
-    builder.add_node("embed_route",        nodes.embed_route)
-    builder.add_node("decompose",          nodes.decompose)
-    builder.add_node("fetch_context",      nodes.fetch_context)
-    builder.add_node("capability_check",   nodes.capability_check)
-    builder.add_node("execute_tool",       nodes.execute_tool)
-    builder.add_node("draft_response",     nodes.draft_response)
-    builder.add_node("await_confirmation", nodes.await_confirmation)
-    builder.add_node("synthesize",         nodes.synthesize)
-    builder.add_node("write_memory",       nodes.write_memory)
+    builder.add_node("preprocess",         ov.get("preprocess",         nodes.preprocess))
+    builder.add_node("embed_route",        ov.get("embed_route",        nodes.embed_route))
+    builder.add_node("decompose",          ov.get("decompose",          nodes.decompose))
+    builder.add_node("fetch_context",      ov.get("fetch_context",      nodes.fetch_context))
+    builder.add_node("capability_check",   ov.get("capability_check",   nodes.capability_check))
+    builder.add_node("execute_tool",       ov.get("execute_tool",       nodes.execute_tool))
+    builder.add_node("draft_response",     ov.get("draft_response",     nodes.draft_response))
+    builder.add_node("await_confirmation", ov.get("await_confirmation", nodes.await_confirmation))
+    builder.add_node("synthesize",         ov.get("synthesize",         nodes.synthesize))
+    builder.add_node("write_memory",       ov.get("write_memory",       nodes.write_memory))
 
     builder.set_entry_point("preprocess")
     builder.add_edge("preprocess", "embed_route")

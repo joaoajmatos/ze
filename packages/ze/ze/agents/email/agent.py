@@ -74,7 +74,6 @@ class EmailAgent(BaseAgent):
             messages=list(ctx.messages),
             system=system,
             deps={"credentials": self._creds, "email_channel": self._email_channel},
-            tool_names=["list_emails", "get_email", "draft_email", "send_email", "archive_email"],
         )
 
         contact_proposals = extract_email_contacts(loop_tool_calls)

@@ -66,7 +66,6 @@ class ResearchAgent(BaseAgent):
             messages=list(ctx.messages),
             system=system,
             deps={"client": self._tavily},
-            tool_names=["web_search"],
         )
 
         await self.emit(ctx, "research.summarising")

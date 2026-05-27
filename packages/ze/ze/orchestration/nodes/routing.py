@@ -9,14 +9,8 @@ from ze_core.routing.router import EmbeddingRouter
 from ze_core.telemetry.context import set_agent_context
 from ze.workflow.planner import WorkflowPlanner
 from ze_core.orchestration.nodes.routing import decompose as zc_decompose
-from ze_core.orchestration.nodes.routing import embed_route as zc_embed_route
 
 log = get_logger(__name__)
-
-
-async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
-    """Score the prompt against agent embeddings and produce a RoutingEnvelope."""
-    return await zc_embed_route(state, config)
 
 
 async def decompose(state: AgentState, config: RunnableConfig) -> dict:

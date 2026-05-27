@@ -70,7 +70,6 @@ class CalendarAgent(BaseAgent):
             messages=list(ctx.messages),
             system=system,
             deps={"credentials": self._creds},
-            tool_names=["list_events", "create_event", "update_event", "delete_event"],
         )
 
         contact_proposals = extract_calendar_contacts(loop_tool_calls)
