@@ -218,9 +218,11 @@ class Container:
         # 7. Instantiate enabled agents
         from ze_core.orchestration.registry import get_enabled_agents
 
+        from ze_core.db import DBPool
+
         internal_deps: dict[type, Any] = {
             Settings: settings,
-            asyncpg.Pool: pool,
+            DBPool: pool,
             OpenRouterClient: openrouter_client,
         }
         merged = {**internal_deps, **(deps or {})}

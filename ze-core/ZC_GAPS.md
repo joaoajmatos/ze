@@ -21,24 +21,10 @@ Install: `pip install 'ze-core[migrations]'` (adds alembic + psycopg2-binary).
 
 ---
 
-## 2. `decompose` Node is a Stub (Blocker)
+## 2. ~~`decompose` Node is a Stub~~ ✓ DONE
 
-`ze_core/orchestration/nodes/routing.py` line 67:
-
-```python
-async def decompose(state: AgentState, config: dict) -> dict:
-    return {}
-```
-
-Compound routing goes to this node but it does nothing — subtasks are never
-populated, so compound agents always receive an empty task list.
-
-`fallback.decompose()` already exists and produces the right `RoutingEnvelope`.
-The node just needs to call it.
-
-**Action:** Implement `decompose` to call `fallback.decompose()` using
-`config["configurable"]["router"]._client` and the agent registry, then store
-the result in `state["envelope"]`.
+Calls `fallback.decompose()` with the OpenRouter client, agent registry, and
+fallback model from router config. Result stored in `state["envelope"]`.
 
 ---
 
@@ -97,47 +83,25 @@ added to both `OpenRouterClient` and the `LLMClient` Protocol.
 
 ---
 
-## 6. `ze_core/__init__.py` Has No Public API
+## 6. ~~`ze_core/__init__.py` Has No Public API~~ ✓ DONE
 
-Currently just a docstring. A consumer doing `from ze_core import Container`
-gets an `ImportError`.
-
-**Action:** Re-export the primary public surface:
-
-```python
-from ze_core.container import Container
-from ze_core.orchestration import BaseAgent, agent
-from ze_core.orchestration.tool import ToolAccess, tool
-from ze_core.memory import MemoryStore, MemoryConsolidator
-from ze_core.settings import Settings
-from ze_core.openrouter.client import OpenRouterClient
-```
+Re-exports `Container`, `DBPool`, `BaseAgent`, `agent`, `ToolAccess`, `tool`,
+`MemoryStore`, `MemoryConsolidator`, `OpenRouterClient`, `Settings`.
 
 ---
 
-## 7. `asyncpg.Pool` as DI Key Forces Agent Hard-Dep on asyncpg
+## 7. ~~`asyncpg.Pool` as DI Key Forces Agent Hard-Dep on asyncpg~~ ✓ DONE
 
-The container adds `asyncpg.Pool: pool` to the dependency map. An agent that
-needs DB access must annotate `__init__(self, pool: asyncpg.Pool)`, which
-requires importing asyncpg in the agent module.
-
-Ze Core has `dependencies = []`, so this creates an implicit hard dependency
-that breaks `_resolve()` if asyncpg is not installed.
-
-**Action:** Either (a) document asyncpg as a required runtime dependency and
-add it to `pyproject.toml` extras, or (b) introduce a `DBPool` type alias /
-Protocol in `ze_core` that agents annotate against, keeping asyncpg an
-implementation detail of the container.
+`ze_core/db.py` introduces a `DBPool` Protocol. The container registers the
+real pool under `DBPool` as the DI key. Agents annotate `pool: DBPool` without
+importing asyncpg.
 
 ---
 
-## 8. `py.typed` Marker Missing
+## 8. ~~`py.typed` Marker Missing~~ ✓ DONE
 
-Without `ze_core/py.typed`, mypy and pyright treat the package as untyped and
-ignore all annotations.
-
-**Action:** `touch ze_core/py.typed` and add `"include": ["ze_core/py.typed"]`
-to hatch build config.
+`ze_core/py.typed` created. Added `include = ["ze_core/py.typed"]` to hatch
+build config in `pyproject.toml`.
 
 ---
 
@@ -146,10 +110,10 @@ to hatch build config.
 | # | Item | Severity | Effort |
 |---|------|----------|--------|
 | 1 | ~~Database schema (schema.sql / migration)~~ ✓ | Blocker | Small |
-| 2 | `decompose` node is a stub | Blocker | Small |
+| 2 | ~~`decompose` node is a stub~~ ✓ | Blocker | Small |
 | 3 | ~~Tool execution path~~ ✓ | High | Medium–Large |
 | 4 | ~~Interface ↔ graph bridge~~ ✓ | High | Small–Medium |
 | 5 | ~~`OpenRouterClient` / `LLMClient` mismatch~~ ✓ | Medium | Small |
-| 6 | `ze_core/__init__.py` public API | Medium | Small |
-| 7 | `asyncpg.Pool` DI key forces agent dep | Medium | Small |
-| 8 | `py.typed` marker missing | Low | Trivial |
+| 6 | ~~`ze_core/__init__.py` public API~~ ✓ | Medium | Small |
+| 7 | ~~`asyncpg.Pool` DI key forces agent dep~~ ✓ | Medium | Small |
+| 8 | ~~`py.typed` marker missing~~ ✓ | Low | Trivial |
