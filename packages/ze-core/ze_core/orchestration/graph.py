@@ -35,6 +35,7 @@ def graph_builder() -> Any:
 
     builder = StateGraph(AgentState)
 
+    builder.add_node("preprocess",         nodes.preprocess)
     builder.add_node("embed_route",        nodes.embed_route)
     builder.add_node("decompose",          nodes.decompose)
     builder.add_node("fetch_context",      nodes.fetch_context)
@@ -45,7 +46,8 @@ def graph_builder() -> Any:
     builder.add_node("synthesize",         nodes.synthesize)
     builder.add_node("write_memory",       nodes.write_memory)
 
-    builder.set_entry_point("embed_route")
+    builder.set_entry_point("preprocess")
+    builder.add_edge("preprocess", "embed_route")
 
     # embed_route and decompose routing conditionals are NOT wired here — see docstring.
 

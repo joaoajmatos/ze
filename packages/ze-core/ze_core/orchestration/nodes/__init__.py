@@ -6,6 +6,7 @@ from ze_core.orchestration.nodes.execution import (
     execute_tool,
 )
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
+from ze_core.orchestration.nodes.preprocessing import preprocess
 from ze_core.orchestration.nodes.routing import decompose, embed_route
 
 __all__ = [
@@ -16,6 +17,7 @@ __all__ = [
     "embed_route",
     "execute_tool",
     "fetch_context",
+    "preprocess",
     "synthesize",
     "write_memory",
 ]

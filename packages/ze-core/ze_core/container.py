@@ -49,6 +49,8 @@ class Container:
         *,
         session_overrides: dict[str, str] | None = None,
         input_modality: str = "text",
+        audio_data: bytes | None = None,
+        audio_mime: str | None = None,
         image_data: bytes | None = None,
         image_mime: str | None = None,
         messages: list[dict] | None = None,
@@ -72,6 +74,8 @@ class Container:
             "session_id": session_id,
             "session_overrides": session_overrides or {},
             "input_modality": input_modality,
+            "audio_data": audio_data,
+            "audio_mime": audio_mime,
             "image_data": image_data,
             "image_mime": image_mime,
             "image_caption": None,
@@ -134,36 +138,26 @@ class Container:
         session_overrides: dict[str, str] | None = None,
         messages: list[dict] | None = None,
     ) -> "InvokeResult":
-        """Run a conversation turn from raw (pre-normalisation) input.
+        """Run a conversation turn from raw transport input.
 
-        If a preprocessor is registered on the container it is called first to
-        convert audio/image bytes to a text prompt. Without a preprocessor the
-        text field of RawInput is used directly.
+        Audio and image bytes are passed directly into AgentState; the graph's
+        ``preprocess`` node handles transcription and vision captioning via
+        OpenRouterClient so no LLM calls are made here.
         """
-        from ze_core.interface.types import ProcessedInput, RawInput as _RawInput
-
-        if self.preprocessor is not None:
-            processed: ProcessedInput = await self.preprocessor.process(raw, self.openrouter_client)
-        else:
-            modality = (
-                "voice" if raw.audio else
-                "image" if raw.image else
-                "text"
-            )
-            processed = ProcessedInput(
-                prompt=raw.text or "",
-                input_modality=modality,
-                image_data=raw.image,
-                image_mime=raw.image_mime,
-            )
-
+        modality = (
+            "voice" if raw.audio else
+            "image" if raw.image else
+            "text"
+        )
         return await self.invoke(
-            prompt=processed.prompt,
+            prompt=raw.text or "",
             session_id=session_id,
             session_overrides=session_overrides,
-            input_modality=processed.input_modality,
-            image_data=processed.image_data,
-            image_mime=processed.image_mime,
+            input_modality=modality,
+            audio_data=raw.audio,
+            audio_mime=raw.audio_mime,
+            image_data=raw.image,
+            image_mime=raw.image_mime,
             messages=messages or [],
         )
 
@@ -259,6 +253,7 @@ class Container:
         openrouter_client = OpenRouterClient(
             api_key=settings.openrouter_api_key,
             base_url=settings.openrouter_base_url,
+            logger=log,
         )
 
         # 5. Discover agent modules

@@ -32,6 +32,9 @@ MODEL_SYNTHESIS: str = "anthropic/claude-haiku-4-5"
 MODEL_VISION_CAPTION: str = "google/gemini-flash-1.5"
 """Model used to caption images before embedding-based routing."""
 
+MODEL_WHISPER: str = "openai/whisper-1"
+"""Model used to transcribe audio before routing."""
+
 # ── Memory — context retrieval ────────────────────────────────────────────────
 
 MEMORY_FACTS_TOKEN_BUDGET: int = 200
