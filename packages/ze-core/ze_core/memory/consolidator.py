@@ -4,6 +4,8 @@ import json
 import time
 from typing import TYPE_CHECKING, Any
 
+from ze_core.telemetry.context import set_agent_context, set_flow_context
+
 from ze_core.defaults import (
     MEMORY_CONTRADICTED_TTL_DAYS,
     MEMORY_EPISODE_ARCHIVE_BATCH,
@@ -38,6 +40,9 @@ class MemoryConsolidator:
         self._settings = settings
 
     async def run(self) -> ConsolidationReport:
+        set_flow_context("memory_consolidation")
+        set_agent_context("memory_consolidation")
+
         start = time.monotonic()
         report = ConsolidationReport()
 

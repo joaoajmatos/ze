@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock
 from ze.agents.bootstrap import prepare_gate_registry
 from ze_core.errors import RoutingError
 from ze.logging import configure_logging
-from ze.routing.haiku_fallback import decompose
+from ze_core.orchestration.registry import get_enabled_agents
+from ze_core.routing.fallback import decompose as _decompose
 from ze_core.routing.types import RoutingEnvelope
 
 
@@ -34,6 +35,18 @@ def make_client(response: str) -> AsyncMock:
     client = AsyncMock()
     client.complete = AsyncMock(return_value=response)
     return client
+
+
+async def decompose(prompt, raw_scores, client, settings):
+    routing_cfg = settings.routing_config
+    fallback_model = routing_cfg.get("fallback_model", "anthropic/claude-haiku-4-5")
+    return await _decompose(
+        prompt=prompt,
+        raw_scores=raw_scores,
+        client=client,
+        agent_registry=get_enabled_agents(),
+        fallback_model=fallback_model,
+    )
 
 
 def single_subtask_response(agent="research", intent="read", prompt="find it") -> str:

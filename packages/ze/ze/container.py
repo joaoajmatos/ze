@@ -29,7 +29,7 @@ from ze.contacts.consolidator import ContactsConsolidator
 from ze.contacts.store import PersonStore
 from ze.proactive.contacts import ContactReviewNotifier
 from ze.proactive.prospecting import recover_stale_campaigns
-from ze.memory.consolidator import MemoryConsolidator
+from ze_core.memory.consolidator import MemoryConsolidator
 from ze_core.memory.postgres import PostgresMemoryStore
 from ze_core.persona.postgres import PostgresPersonaStore
 from ze.openrouter.client import OpenRouterClient
@@ -214,7 +214,7 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     # ── Memory consolidation ──────────────────────────────────────────────────
     memory_consolidator = MemoryConsolidator(
-        pool=pool,
+        store=memory_store,
         embedder=embedder,
         openrouter_client=openrouter_client,
         settings=settings,

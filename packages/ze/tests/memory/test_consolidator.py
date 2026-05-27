@@ -1,12 +1,9 @@
-"""Memory consolidator tests — ze wrapper over ze-core."""
-
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
-from ze.memory.consolidator import MemoryConsolidator
-from ze_core.memory.consolidator import MemoryConsolidator as CoreMemoryConsolidator
+from ze_core.memory.consolidator import MemoryConsolidator
 from ze_core.memory.postgres import PostgresMemoryStore
 from ze_core.memory.types import ConsolidationReport
 
@@ -45,23 +42,12 @@ def _client(response="{}"):
 
 
 def _consolidator(store=None, client=None, settings=None, embedder=None) -> MemoryConsolidator:
-    store = store or _store()
-    embedder = embedder or _embedder()
-    client = client or _client()
-    c = MemoryConsolidator(
-        pool=MagicMock(),
-        embedder=embedder,
-        openrouter_client=client,
+    return MemoryConsolidator(
+        store=store or _store(),
+        embedder=embedder or _embedder(),
+        openrouter_client=client or _client(),
         settings=settings,
     )
-    c._store = store
-    c._inner = CoreMemoryConsolidator(
-        store=store,
-        embedder=embedder,
-        openrouter_client=client,
-        settings=settings,
-    )
-    return c
 
 
 def _fact_row(key="k", value="v", confidence=1.0):
@@ -74,8 +60,8 @@ class TestRun:
         assert isinstance(report, ConsolidationReport)
 
     async def test_sets_telemetry_context(self):
-        with patch("ze.memory.consolidator.set_flow_context") as flow, patch(
-            "ze.memory.consolidator.set_agent_context"
+        with patch("ze_core.memory.consolidator.set_flow_context") as flow, patch(
+            "ze_core.memory.consolidator.set_agent_context"
         ) as agent:
             await _consolidator().run()
             flow.assert_called_once_with("memory_consolidation")
@@ -100,6 +86,6 @@ class TestSynthesiseProfile:
             fetch_recent_episode_summaries=AsyncMock(return_value=[]),
         )
         profile_json = '{"preferences":"p","habits":"h","topics":"t","relationships":"r","goals":"g"}'
-        result = await _consolidator(store=store, client=_client(response=profile_json)).synthesise_profile()
+        result = await _consolidator(store=store, client=_client(response=profile_json)).update_profile()
         assert result is True
         store.upsert_profile.assert_awaited_once()

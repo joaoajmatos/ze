@@ -12,7 +12,7 @@ from ze.agents.types import AgentContext, AgentResult
 from ze.openrouter.client import OpenRouterClient
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze.reminders.store import ReminderStore, fire_reminder
-from ze.routing.haiku_fallback import _extract_json_object
+from ze_core.routing.fallback import _extract_json_object
 from ze.settings import Settings
 from ze.workflow.scheduler import WorkflowScheduler
 
