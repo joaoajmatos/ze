@@ -7,11 +7,11 @@ from ze.agents.types import AgentContext
 from ze.contacts.store import PersonStore
 from ze.contacts.types import PersonContext
 from ze.logging import get_logger
-from ze.memory.store import MemoryStore
+from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze.orchestration.state import AgentState
 from ze.persona.store import PersonaStore
 from ze.settings import Settings
-from ze.telemetry.context import set_agent_context
+from ze_core.telemetry.context import set_agent_context
 
 log = get_logger(__name__)
 

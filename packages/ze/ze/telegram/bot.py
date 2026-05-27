@@ -17,7 +17,7 @@ from ze.telegram.commands import contacts_search, contacts_summary, costs_summar
 from ze.telegram.formatting import md_to_html, split_html
 from ze.telegram.keyboards import persona_keyboard, plan_confirmation_keyboard
 from ze.telegram.session import ActiveSessionStore
-from ze.telemetry.context import set_flow_context
+from ze_core.telemetry.context import set_flow_context
 from ze_core.interface.types import ConfirmationRequest, OutboundMessage, RawInput
 
 log = get_logger(__name__)

@@ -4,8 +4,8 @@ from uuid import uuid4
 
 import pytest
 
-from ze.goals.store import GoalStore, _goal_from_row, _milestone_from_row, _gate_from_row
-from ze.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus, VerificationGate, GateStatus
+from ze_core.goals.postgres import PostgresGoalStore as GoalStore, _goal_from_row, _milestone_from_row, _gate_from_row
+from ze_core.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus, VerificationGate, GateStatus
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

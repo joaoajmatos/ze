@@ -4,7 +4,7 @@ import base64
 import structlog
 
 from ze.openrouter.client import OpenRouterClient
-from ze.telemetry.context import set_agent_context, set_flow_context
+from ze_core.telemetry.context import set_agent_context, set_flow_context
 from ze.transcription.types import TranscriptionResult
 
 # Formats gpt-audio accepts in input_audio messages

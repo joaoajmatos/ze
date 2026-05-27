@@ -1,6 +1,6 @@
-from ze.capability.gate import CapabilityGate
 from ze.capability.sync import sync_gate_registry
-from ze.capability.types import GateDecision, Mode
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import GateDecision, Mode
 
 __all__ = [
     "CapabilityGate",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ze.goals.types import Goal, Milestone, VerificationGate
+from ze_core.goals.types import Goal, Milestone, VerificationGate
 from ze.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 from ze_core.goals.planner import GoalPlanner as _GoalPlanner

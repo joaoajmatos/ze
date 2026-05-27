@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from ze.capability.types import GateDecision
+from ze_core.capability.types import GateDecision
 from ze.contacts.types import PersonContext
-from ze.memory.types import MemoryContext
+from ze_core.memory.types import MemoryContext
 
 if TYPE_CHECKING:
     from ze.progress.reporter import ProgressReporter

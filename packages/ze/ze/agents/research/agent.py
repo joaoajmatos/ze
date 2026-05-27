@@ -3,7 +3,7 @@ from typing import AsyncIterator
 from tavily import AsyncTavilyClient
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import agent
+from ze_core.orchestration.registry import agent
 from ze.agents.research.tools import format_search_results
 from ze.agents.types import AgentContext, AgentResult
 from ze.openrouter.client import OpenRouterClient

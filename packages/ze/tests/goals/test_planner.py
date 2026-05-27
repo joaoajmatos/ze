@@ -6,7 +6,7 @@ import pytest
 
 from ze.errors import GoalPlanError
 from ze.goals.planner import GoalPlanner
-from ze.goals.types import Goal
+from ze_core.goals.types import Goal
 
 
 def make_planner(response: str = ""):

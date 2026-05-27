@@ -1,12 +1,12 @@
 from langchain_core.runnables import RunnableConfig
 
-from ze.capability.gate import CapabilityGate
-from ze.capability.types import GateDecision
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import GateDecision
 from ze.errors import WorkflowPlanError
 from ze.logging import get_logger
 from ze.orchestration.state import AgentState
-from ze.routing.router import EmbeddingRouter
-from ze.telemetry.context import set_agent_context
+from ze_core.routing.router import EmbeddingRouter
+from ze_core.telemetry.context import set_agent_context
 from ze.workflow.planner import WorkflowPlanner
 from ze_core.orchestration.nodes.routing import decompose as zc_decompose
 from ze_core.orchestration.nodes.routing import embed_route as zc_embed_route

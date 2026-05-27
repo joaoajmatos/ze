@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.notifier import ProactiveNotifier
 from ze.proactive.reminders import (
     CalendarReminderScheduler,
     _human_offset,

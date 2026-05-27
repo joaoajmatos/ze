@@ -1,6 +1,6 @@
 """Ze graph edges — ze-core defaults plus workflow and plan_sequential routing."""
 
-from ze.capability.types import GateDecision
+from ze_core.capability.types import GateDecision
 from ze.orchestration.state import AgentState
 from ze_core.orchestration.edges import (
     after_capability_check,

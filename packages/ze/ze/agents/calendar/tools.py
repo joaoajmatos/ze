@@ -3,7 +3,7 @@ import time
 
 import structlog
 
-from ze.agents.tool import ToolAccess, tool
+from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
 from ze.google.auth import GoogleCredentials
 

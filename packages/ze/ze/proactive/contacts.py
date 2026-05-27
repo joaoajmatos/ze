@@ -1,7 +1,7 @@
 from ze.contacts.store import PersonStore
 from ze.logging import get_logger
-from ze.proactive.notifier import ProactiveNotifier
-from ze.telemetry.context import set_flow_context
+from ze_core.proactive.notifier import ProactiveNotifier
+from ze_core.telemetry.context import set_flow_context
 from ze_core.interface.types import Action, Notification
 
 

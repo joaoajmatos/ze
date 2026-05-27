@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 from ze.proactive.briefing import MorningBriefing
-from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.notifier import ProactiveNotifier
 from ze.settings import Settings, get_settings
 
 

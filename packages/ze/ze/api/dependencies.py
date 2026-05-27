@@ -1,11 +1,11 @@
 from fastapi import Request
 from sentence_transformers import SentenceTransformer
 
-from ze.capability.gate import CapabilityGate
+from ze_core.capability.gate import CapabilityGate
 from ze.memory.consolidator import MemoryConsolidator
-from ze.memory.store import MemoryStore
+from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze.openrouter.client import OpenRouterClient
-from ze.routing.router import EmbeddingRouter
+from ze_core.routing.router import EmbeddingRouter
 from ze.settings import Settings, get_settings as _get_settings
 
 

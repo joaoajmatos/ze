@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze.persona.store import PersonaStore
-from ze.persona.types import PersonaState
+from ze_core.persona.types import PersonaState
 from ze.settings import Settings
 from ze_core.errors import UnknownDialError, UnknownProfileError
 

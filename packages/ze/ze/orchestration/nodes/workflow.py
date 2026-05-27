@@ -5,7 +5,7 @@ from langchain_core.runnables import RunnableConfig
 
 from ze.logging import get_logger
 from ze.orchestration.state import AgentState
-from ze.telemetry.context import set_agent_context
+from ze_core.telemetry.context import set_agent_context
 from ze.workflow.store import WorkflowStore
 from ze.workflow.types import StepResult, WorkflowStep
 

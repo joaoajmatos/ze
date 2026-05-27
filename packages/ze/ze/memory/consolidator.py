@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from ze_core.memory.consolidator import MemoryConsolidator as _CoreMemoryConsolidator
 from ze_core.memory.postgres import PostgresMemoryStore
 from ze_core.memory.types import ConsolidationReport
-from ze.telemetry.context import set_agent_context, set_flow_context
+from ze_core.telemetry.context import set_agent_context, set_flow_context
 
 if TYPE_CHECKING:
     from ze.openrouter.client import OpenRouterClient

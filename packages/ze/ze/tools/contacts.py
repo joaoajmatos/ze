@@ -4,7 +4,7 @@ from uuid import UUID
 
 import structlog
 
-from ze.agents.tool import ToolAccess, tool
+from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
 from ze.channels.types import ChannelHandle, ChannelType
 from ze.contacts.channel_store import ContactChannelStore

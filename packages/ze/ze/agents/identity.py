@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ze.memory.types import UserProfile
+    from ze_core.memory.types import UserProfile
 
 _VERBOSITY_CLAUSES = {
     "concise": " Keep responses brief — one to two paragraphs unless the user asks for more.",

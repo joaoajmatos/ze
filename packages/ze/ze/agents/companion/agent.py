@@ -5,7 +5,7 @@ from typing import AsyncIterator
 import asyncpg
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import agent
+from ze_core.orchestration.registry import agent
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.contacts.store import PersonStore
 from ze.openrouter.client import OpenRouterClient

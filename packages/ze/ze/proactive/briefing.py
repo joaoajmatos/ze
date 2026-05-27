@@ -1,9 +1,9 @@
 import asyncpg
 
 from ze.logging import get_logger
-from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.notifier import ProactiveNotifier
 from ze.settings import Settings
-from ze.telemetry.context import set_flow_context
+from ze_core.telemetry.context import set_flow_context
 
 
 class MorningBriefing:

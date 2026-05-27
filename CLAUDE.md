@@ -18,18 +18,18 @@ ze/                           # monorepo root
 │       ├── ze/
 │       │   ├── api/          # FastAPI app, Telegram webhook, REST routes
 │       │   ├── agents/       # @agent classes + tools (metadata on classes, not YAML)
-│       │   ├── capability/   # Thin re-export of ze_core.capability + test helpers
+│       │   ├── capability/   # sync_gate_registry + testing helpers; import gate from ze_core
 │       │   ├── channels/     # EmailChannel, ChannelRegistry
 │       │   ├── contacts/     # PersonStore, consolidator
 │       │   ├── google/       # Google OAuth2 (Calendar + Gmail)
-│       │   ├── memory/       # Re-exports ze_core memory store/types; Ze consolidator
+│       │   ├── memory/       # MemoryConsolidator adapter; import store/types from ze_core
 │       │   ├── openrouter/   # OpenRouterClient with cost-tracker integration
 │       │   ├── orchestration/# graph_builder wiring + Ze-only nodes (plan_sequential, workflow)
 │       │   ├── proactive/    # Briefing, reminders, insights, ProactiveScheduler jobs
 │       │   ├── persona/      # PersonaStore adapter over ze_core PostgresPersonaStore
-│       │   ├── routing/      # Re-exports ze_core router; ComplexityEstimator (Ze-only)
+│       │   ├── routing/      # haiku_fallback wiring; import router/types from ze_core
 │       │   ├── telegram/     # ZeBot, session store
-│       │   ├── telemetry/    # Re-exports ze_core cost store/tracker + reconciler adapter
+│       │   ├── telemetry/    # Import CostTracker/Reconciler from ze_core directly
 │       │   ├── tools/        # Shared @tool functions
 │       │   ├── transcription/# Voice → text (Whisper via OpenRouter)
 │       │   ├── workflow/     # WorkflowStore, planner, scheduler
@@ -91,6 +91,10 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.
   Never `asyncio.run()` inside a running event loop.
 - **Comments**: Default to none. Only add a comment when the *why* is non-obvious.
+- **ze-core imports**: Import framework types and services from `ze_core.*` directly
+  (e.g. `ze_core.capability.gate`, `ze_core.orchestration.registry`). Keep modules
+  under `ze/` only when they add Ze-specific behaviour (Telegram, consolidator
+  telemetry hooks, `GoalPlanner` model wiring, `PersonaStore` YAML profiles).
 
 ### Testing
 

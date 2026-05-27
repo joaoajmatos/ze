@@ -7,7 +7,7 @@ import pytest
 from ze_core.errors import GoalExecutionError
 from ze_core.goals.executor import GoalExecutor
 from ze_core.interface.types import Notification
-from ze.goals.types import (
+from ze_core.goals.types import (
     Goal,
     GoalLearning,
     GoalStatus,

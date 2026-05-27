@@ -5,7 +5,7 @@ import pytest
 from ze.agents.companion.agent import CompanionAgent
 from ze.agents.types import AgentContext, AgentResult
 from ze.logging import configure_logging
-from ze.memory.types import MemoryContext, UserFact
+from ze_core.memory.types import MemoryContext, UserFact
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ def setup_logging():
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 def test_companion_agent_is_registered():
-    from ze.agents.registry import _registry
+    from ze_core.orchestration.registry import _registry
     assert "companion" in _registry
 
 

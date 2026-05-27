@@ -8,8 +8,8 @@ from ze.api.schemas import (
     CapabilityModeUpdate,
     UpdateCapabilityResponse,
 )
-from ze.capability.gate import CapabilityGate
-from ze.capability.types import Mode
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import Mode
 from ze.settings import Settings
 from ze_core.orchestration.registry import get_registered_agents
 

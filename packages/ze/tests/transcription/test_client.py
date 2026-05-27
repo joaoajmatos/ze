@@ -58,7 +58,7 @@ async def test_transcribe_sends_input_audio_block():
 
 
 async def test_transcribe_sets_telemetry_context():
-    from ze.telemetry.context import get_cost_context
+    from ze_core.telemetry.context import get_cost_context
 
     openrouter = AsyncMock()
     openrouter.complete = AsyncMock(return_value="ok")

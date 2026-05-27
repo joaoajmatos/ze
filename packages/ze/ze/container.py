@@ -12,7 +12,7 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
 from ze.agents.bootstrap import bootstrap_agents, prepare_gate_registry
 from ze_browser import BrowserClient
-from ze.capability.gate import CapabilityGate
+from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.overrides import PostgresCapabilityOverrideStore
 from ze.channels.email import EmailChannel
 from ze.channels.registry import ChannelRegistry
@@ -20,9 +20,9 @@ from ze.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
 from ze_core.orchestration.registry import get_agent
-from ze.goals.executor import GoalExecutor
+from ze_core.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
-from ze.goals.store import GoalStore
+from ze_core.goals.postgres import PostgresGoalStore as GoalStore
 from ze.google.auth import GoogleCredentials
 from ze.logging import get_logger
 from ze.contacts.consolidator import ContactsConsolidator
@@ -39,11 +39,11 @@ from ze.reminders.store import ReminderStore, fire_reminder
 from ze.orchestration.workflow_graph import build_workflow_graph
 from ze.proactive.briefing import MorningBriefing
 from ze.proactive.insights import InsightEngine
-from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.notifier import ProactiveNotifier
 from ze_core.proactive.scheduler import ProactiveScheduler
 from ze.proactive.reminders import CalendarReminderScheduler
-from ze.routing.complexity import ComplexityEstimator
-from ze.routing.router import EmbeddingRouter
+from ze_core.routing.complexity import ComplexityEstimator
+from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.store import PostgresRoutingStore
 from ze_core.routing.types import RouterConfig
 from ze.settings import Settings, get_settings
@@ -54,8 +54,8 @@ from ze_core.interface.types import RawInput
 from ze.telegram.bot import ZeBot
 from ze.telegram.session import ActiveSessionStore
 from ze_core.interface.validation import validate_interface
-from ze.telemetry.reconciler import CostReconciler
-from ze.telemetry.tracker import CostTracker
+from ze_core.telemetry.reconciler import CostReconciler
+from ze_core.telemetry.tracker import CostTracker
 from ze_core.telemetry.postgres import PostgresCostStore
 from ze.transcription.client import TranscriptionClient
 from ze.workflow.planner import WorkflowPlanner

@@ -5,8 +5,9 @@ from langgraph.constants import END
 from langgraph.graph import StateGraph
 
 from ze.orchestration import edges
-from ze.orchestration.nodes import confirmation, context, execution, memory, routing
+from ze.orchestration.nodes import context, execution, memory, routing
 from ze_core.orchestration.graph import graph_builder
+from ze_core.orchestration.nodes.execution import await_confirmation
 
 
 def _wire_ze_nodes(builder: StateGraph) -> None:
@@ -18,7 +19,7 @@ def _wire_ze_nodes(builder: StateGraph) -> None:
         "capability_check": execution.capability_check,
         "execute_tool": execution.execute_tool,
         "draft_response": execution.draft_response,
-        "await_confirmation": confirmation.await_confirmation,
+        "await_confirmation": await_confirmation,
         "synthesize": memory.synthesize,
         "write_memory": memory.write_memory,
     }

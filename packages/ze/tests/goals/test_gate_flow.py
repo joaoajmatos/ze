@@ -7,8 +7,8 @@ from uuid import uuid4
 import pytest
 
 from ze.errors import GoalPlanError
-from ze.goals.executor import GoalExecutor
-from ze.goals.types import (
+from ze_core.goals.executor import GoalExecutor
+from ze_core.goals.types import (
     Goal,
     GoalStatus,
     GateStatus,

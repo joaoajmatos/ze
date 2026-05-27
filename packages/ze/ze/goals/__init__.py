@@ -1,4 +1,5 @@
-from ze.goals.types import (
+from ze.goals.planner import GoalPlanner
+from ze_core.goals.types import (
     Goal,
     GoalLearning,
     GoalStatus,
@@ -9,6 +10,7 @@ from ze.goals.types import (
 )
 
 __all__ = [
+    "GoalPlanner",
     "Goal",
     "GoalLearning",
     "GoalStatus",

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from ze.agents.identity import build_identity_block
-from ze.memory.types import UserProfile
+from ze_core.memory.types import UserProfile
 
 
 def make_profile(**overrides):

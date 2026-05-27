@@ -101,7 +101,7 @@ def test_put_capability_updates_mode(client, gate):
     assert resp.status_code == 200
     data = resp.json()
     assert data["research"]["read"] == "confirm"
-    from ze.capability.types import GateDecision
+    from ze_core.capability.types import GateDecision
     assert gate.evaluate("research", "read", {}) == GateDecision.AWAIT_CONFIRMATION
 
 

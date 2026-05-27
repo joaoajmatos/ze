@@ -8,7 +8,7 @@ from ze.agents.prospecting.agent import ProspectingAgent
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.contacts.types import PersonContext
 from ze.logging import configure_logging
-from ze.memory.types import MemoryContext
+from ze_core.memory.types import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ def setup_logging():
 # ── Registration ──────────────────────────────────────────────────────────────
 
 def test_prospecting_agent_is_registered():
-    from ze.agents.registry import _registry
+    from ze_core.orchestration.registry import _registry
     assert "prospecting" in _registry
 
 

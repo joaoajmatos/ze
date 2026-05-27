@@ -6,13 +6,13 @@ from langchain_core.runnables import RunnableConfig
 from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import get_agent, get_agent_class
 from ze.agents.types import AgentContext, AgentResult
-from ze.capability.gate import CapabilityGate
-from ze.capability.types import GateDecision
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import GateDecision
 from ze.errors import AgentTimeoutError
 from ze.logging import get_logger
 from ze.orchestration.state import AgentState
 from ze.settings import Settings
-from ze.telemetry.context import set_agent_context
+from ze_core.telemetry.context import set_agent_context
 
 log = get_logger(__name__)
 

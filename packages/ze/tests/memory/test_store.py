@@ -7,8 +7,18 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from ze.memory.store import MemoryStore, _cosine_similarity, _tokens, _vec
-from ze.memory.types import Episode, MemoryContext, UserFact, UserProfile
+from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore, _cosine_similarity
+
+
+def _tokens(text: str) -> int:
+    return len(text) // 4
+
+
+def _vec(embedding) -> str:
+    from ze_core.memory.postgres import _to_list
+
+    return "[" + ",".join(f"{x:.8f}" for x in _to_list(embedding)) + "]"
+from ze_core.memory.types import Episode, MemoryContext, UserFact, UserProfile
 
 
 def _conn():

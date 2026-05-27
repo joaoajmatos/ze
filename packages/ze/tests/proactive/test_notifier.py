@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 from ze.interface.telegram import TelegramInterface
-from ze.proactive.notifier import ProactiveNotifier, _split
+from ze_core.proactive.notifier import ProactiveNotifier, _split
 from ze_core.interface.types import Action, Notification
 
 

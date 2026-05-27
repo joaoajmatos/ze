@@ -1,6 +1,6 @@
 import pytest
 
-from ze.capability.types import GateDecision
+from ze_core.capability.types import GateDecision
 from ze.logging import configure_logging
 from ze.orchestration.edges import (
     after_capability_check,
@@ -8,7 +8,7 @@ from ze.orchestration.edges import (
     after_embed_route,
     after_execute_tool,
 )
-from ze.routing.types import RoutingEnvelope, SubTask
+from ze_core.routing.types import RoutingEnvelope, SubTask
 
 
 @pytest.fixture(autouse=True)

@@ -4,14 +4,15 @@ import numpy as np
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from ze.agents.types import AgentContext, AgentResult
-from ze.capability.gate import CapabilityGate
-from ze.capability.types import GateDecision
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import GateDecision
 from ze.errors import AgentTimeoutError
 from ze.logging import configure_logging
-from ze.memory.store import MemoryStore
-from ze.memory.types import MemoryContext, UserFact
-from ze.orchestration.nodes import confirmation, context, execution, memory, routing
-from ze.routing.types import RoutingEnvelope, SubTask
+from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
+from ze_core.memory.types import MemoryContext, UserFact
+from ze.orchestration.nodes import context, execution, memory, routing
+from ze_core.orchestration.nodes.execution import await_confirmation
+from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze.settings import Settings
 
 
@@ -189,7 +190,7 @@ async def test_execute_tool_single_agent(monkeypatch):
     mock_agent = AsyncMock()
     mock_agent.run = AsyncMock(return_value=mock_result)
 
-    import ze.agents.registry as reg
+    import ze_core.orchestration.registry as reg
     monkeypatch.setitem(reg._instances, "research", mock_agent)
 
     ctx = AgentContext(session_id="s1", prompt="test", intent="read", memory=MemoryContext())
@@ -208,7 +209,7 @@ async def test_execute_tool_compound_accumulates_results(monkeypatch):
     mock_companion = AsyncMock()
     mock_companion.run = AsyncMock(return_value=companion_result)
 
-    import ze.agents.registry as reg
+    import ze_core.orchestration.registry as reg
     monkeypatch.setitem(reg._instances, "research", mock_research)
     monkeypatch.setitem(reg._instances, "companion", mock_companion)
 
@@ -232,7 +233,7 @@ async def test_execute_tool_raises_timeout(monkeypatch):
     mock_agent = MagicMock()
     mock_agent.run = slow_run
 
-    import ze.agents.registry as reg
+    import ze_core.orchestration.registry as reg
     monkeypatch.setitem(reg._instances, "research", mock_agent)
 
     settings = make_settings()
@@ -249,8 +250,8 @@ async def test_execute_tool_raises_timeout(monkeypatch):
 # ── confirmation.await_confirmation ──────────────────────────────────────────
 
 async def test_await_confirmation_clears_pending_and_sets_execute():
-    from ze.capability.types import GateDecision
-    result = await confirmation.await_confirmation(base_state(), make_config())
+    from ze_core.capability.types import GateDecision
+    result = await await_confirmation(base_state(), make_config())
     assert result["pending_confirmation"] is False
     assert result["gate_decision"] == GateDecision.EXECUTE
 

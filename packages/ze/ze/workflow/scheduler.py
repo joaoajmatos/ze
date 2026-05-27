@@ -10,7 +10,7 @@ from apscheduler.triggers.date import DateTrigger
 
 from ze.logging import get_logger
 from ze.settings import Settings
-from ze.telemetry.context import set_flow_context
+from ze_core.telemetry.context import set_flow_context
 from ze.workflow.store import WorkflowStore
 from ze.workflow.types import Workflow
 

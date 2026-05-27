@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ze.capability.gate import CapabilityGate
-from ze.capability.types import Mode
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import Mode
 from ze_core.orchestration import registry as zc_registry
 
 

@@ -2,8 +2,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze.capability.gate import CapabilityGate
-from ze.capability.types import GateDecision, Mode
+from ze_core.capability.gate import CapabilityGate
+from ze_core.capability.types import GateDecision, Mode
 from ze.logging import configure_logging
 from ze.capability.testing import make_gate
 

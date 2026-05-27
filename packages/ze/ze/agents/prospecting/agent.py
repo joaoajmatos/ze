@@ -7,7 +7,7 @@ import ze.tools.browser  # noqa: F401 — registers browser_extract @tool
 import ze.tools.prospecting  # noqa: F401 — registers add_prospect, draft_outreach @tool
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import agent
+from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze_browser import BrowserClient

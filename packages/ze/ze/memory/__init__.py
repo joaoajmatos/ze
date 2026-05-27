@@ -1,6 +1,6 @@
 from ze.memory.consolidator import MemoryConsolidator
-from ze.memory.store import MemoryStore
-from ze.memory.types import (
+from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
+from ze_core.memory.types import (
     ConsolidationReport,
     Episode,
     MemoryContext,

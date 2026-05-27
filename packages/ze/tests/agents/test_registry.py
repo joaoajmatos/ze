@@ -1,12 +1,11 @@
 import pytest
 
-from ze.agents.registry import (
+from ze_core.orchestration.registry import (
     _instances,
     _registry,
+    agent as register,
     get_agent,
-    register,
     register_instance,
-    registered_names,
 )
 from ze.errors import UnknownAgentError
 from ze.logging import configure_logging
@@ -75,6 +74,6 @@ def test_registered_names_includes_known_agents():
     # research and companion agents are imported at module level via @register
     import ze.agents.research.agent  # noqa: F401
     import ze.agents.companion.agent  # noqa: F401
-    names = registered_names()
+    names = list(_registry)
     assert "research" in names
     assert "companion" in names

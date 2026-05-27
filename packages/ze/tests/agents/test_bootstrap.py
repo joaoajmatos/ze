@@ -5,7 +5,7 @@ import pytest
 
 from ze.agents.bootstrap import bootstrap_agents
 from ze.agents.companion.agent import CompanionAgent
-from ze.agents.registry import _instances, get_agent
+from ze_core.orchestration.registry import _instances, get_agent
 from ze.agents.research.agent import ResearchAgent
 from ze.logging import configure_logging
 from ze.settings import Settings, get_settings
@@ -40,10 +40,10 @@ def test_bootstrap_registers_companion_and_research(settings):
     from unittest.mock import MagicMock as MM
     from ze_browser import BrowserClient
     from ze.contacts.store import PersonStore
-    from ze.goals.executor import GoalExecutor
+    from ze_core.goals.executor import GoalExecutor
     from ze.goals.planner import GoalPlanner
-    from ze.goals.store import GoalStore
-    from ze.proactive.notifier import ProactiveNotifier
+    from ze_core.goals.postgres import PostgresGoalStore as GoalStore
+    from ze_core.proactive.notifier import ProactiveNotifier
     from ze.reminders.store import ReminderStore
     from ze.workflow.store import WorkflowStore
     from ze.workflow.planner import WorkflowPlanner

@@ -5,7 +5,7 @@ from ze.agents.research.agent import ResearchAgent
 from ze.agents.research.tools import format_search_results
 from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze.logging import configure_logging
-from ze.memory.types import MemoryContext, UserFact
+from ze_core.memory.types import MemoryContext, UserFact
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ def setup_logging():
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 def test_research_agent_is_registered():
-    from ze.agents.registry import _registry
+    from ze_core.orchestration.registry import _registry
     assert "research" in _registry
 
 

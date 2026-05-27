@@ -3,9 +3,9 @@ import time
 
 import structlog
 
-from ze.agents.tool import ToolAccess, tool
+from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
-from ze.memory.types import UserFact
+from ze_core.memory.types import UserFact
 from ze.openrouter.client import OpenRouterClient
 
 log = structlog.get_logger(__name__)

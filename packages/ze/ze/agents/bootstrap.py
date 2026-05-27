@@ -7,12 +7,12 @@ import asyncpg
 from tavily import AsyncTavilyClient
 
 from ze.errors import AgentConfigError
-from ze.goals.executor import GoalExecutor
+from ze_core.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
-from ze.goals.store import GoalStore
+from ze_core.goals.postgres import PostgresGoalStore as GoalStore
 from ze.google.auth import GoogleCredentials
 from ze.openrouter.client import OpenRouterClient
-from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.notifier import ProactiveNotifier
 from ze.reminders.store import ReminderStore
 from ze.settings import Settings
 from ze.workflow.planner import WorkflowPlanner
@@ -106,7 +106,7 @@ def bootstrap_agents(
 
 def validate_registry() -> None:
     """Cross-check declared tools and intent_map entries against registries."""
-    from ze.agents.tool import registered_tools
+    from ze_core.orchestration.tool import registered_tools
 
     tool_reg = registered_tools()
 

@@ -7,7 +7,7 @@ import pytest
 
 from ze.agents.goals.agent import GoalAgent
 from ze.agents.types import AgentContext
-from ze.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus
+from ze_core.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus
 from ze.logging import configure_logging
 
 

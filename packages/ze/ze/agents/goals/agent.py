@@ -7,16 +7,16 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import agent
+from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.errors import GoalPlanError
-from ze.goals.executor import GoalExecutor
+from ze_core.goals.executor import GoalExecutor
 from ze.goals.planner import GoalPlanner
-from ze.goals.store import GoalStore
-from ze.goals.types import Goal, GoalStatus, MilestoneStatus
+from ze_core.goals.postgres import PostgresGoalStore as GoalStore
+from ze_core.goals.types import Goal, GoalStatus, MilestoneStatus
 from ze.openrouter.client import OpenRouterClient
-from ze.proactive.notifier import ProactiveNotifier
+from ze_core.proactive.notifier import ProactiveNotifier
 from ze.settings import Settings
 from ze_core.interface.types import Action, Notification
 

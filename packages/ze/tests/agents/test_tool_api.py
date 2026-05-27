@@ -6,12 +6,15 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze.agents.base import BaseAgent
-from ze.agents.tool import ToolAccess, ToolSpec, _tool_registry, get_tool, registered_tools, tool
+import ze_core.orchestration.tool as _tool_mod
+from ze_core.orchestration.tool import ToolAccess, ToolSpec, get_tool, registered_tools, tool
+
+_tool_registry = _tool_mod._tools
 from ze.agents.types import AgentContext, AgentResult, ToolCall
-from ze.capability.types import GateDecision
+from ze_core.capability.types import GateDecision
 from ze.errors import AgentConfigError, ToolBlockedError, UnknownToolError
 from ze.logging import configure_logging
-from ze.memory.types import MemoryContext
+from ze_core.memory.types import MemoryContext
 from ze.settings import Settings
 
 
@@ -259,7 +262,7 @@ def test_format_memory_empty(settings):
 
 
 def test_format_memory_with_facts(settings):
-    from ze.memory.types import UserFact
+    from ze_core.memory.types import UserFact
     agent = make_agent(settings)
     ctx = AgentContext(
         session_id="s1", prompt="x", intent="read",
@@ -281,7 +284,7 @@ def test_validate_registry_passes_with_valid_config():
 
 def test_validate_registry_fails_on_unknown_tool():
     from ze.agents.bootstrap import validate_registry
-    from ze.agents.registry import _registry
+    from ze_core.orchestration.registry import _registry
 
     class _BadAgent(BaseAgent):
         name = "_bad_agent_unknown_tool"
@@ -300,7 +303,7 @@ def test_validate_registry_fails_on_unknown_tool():
 
 def test_validate_registry_fails_on_missing_capability_intent():
     from ze.agents.bootstrap import validate_registry
-    from ze.agents.registry import _registry
+    from ze_core.orchestration.registry import _registry
     from ze_core.capability.types import Mode
 
     class _BadIntentAgent(BaseAgent):
@@ -324,7 +327,7 @@ def test_validate_registry_fails_on_missing_capability_intent():
 
 def _make_schema_tool(fn):
     """Register fn as a tool and return its ToolSpec."""
-    from ze.agents.tool import ToolAccess, tool as tool_dec, get_tool
+    from ze_core.orchestration.tool import ToolAccess, tool as tool_dec, get_tool
     tool_dec(access=ToolAccess.READ, description=fn.__doc__ or "test")(fn)
     return get_tool(fn.__name__)
 

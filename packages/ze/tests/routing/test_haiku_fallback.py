@@ -6,7 +6,7 @@ from ze.agents.bootstrap import prepare_gate_registry
 from ze.errors import RoutingError
 from ze.logging import configure_logging
 from ze.routing.haiku_fallback import decompose
-from ze.routing.types import RoutingEnvelope
+from ze_core.routing.types import RoutingEnvelope
 
 
 @pytest.fixture(autouse=True)

@@ -6,7 +6,7 @@ from typing import AsyncIterator
 from uuid import UUID
 
 from ze.agents.base import BaseAgent
-from ze.agents.registry import agent
+from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze.errors import WorkflowPlanError

@@ -6,7 +6,7 @@ import pytest
 from ze.agents.email.agent import EmailAgent
 from ze.agents.types import AgentContext, AgentResult
 from ze.logging import configure_logging
-from ze.memory.types import MemoryContext
+from ze_core.memory.types import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ def setup_logging():
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 def test_email_agent_is_registered():
-    from ze.agents.registry import _registry
+    from ze_core.orchestration.registry import _registry
     assert "email" in _registry
 
 

@@ -3,7 +3,7 @@ from uuid import UUID
 
 import asyncpg
 
-from ze.agents.tool import ToolAccess, tool
+from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
 from ze.contacts.store import PersonStore
 from ze.contacts.types import Person, PersonSource
