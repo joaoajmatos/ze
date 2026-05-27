@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 from aiogram import Bot
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -44,7 +46,7 @@ from ze.routing.complexity import ComplexityEstimator
 from ze.routing.router import EmbeddingRouter
 from ze_core.routing.store import PostgresRoutingStore
 from ze_core.routing.types import RouterConfig
-from ze.settings import Settings
+from ze.settings import Settings, get_settings
 from ze.conversation import TurnResult, invoke_raw_turn, resume_turn
 from ze.interface.preprocessor import TelegramInputPreprocessor
 from ze.interface.telegram import TelegramInterface
@@ -59,31 +61,23 @@ from ze.transcription.client import TranscriptionClient
 from ze.workflow.planner import WorkflowPlanner
 from ze.workflow.scheduler import WorkflowScheduler
 from ze.workflow.store import WorkflowStore
+from ze_core.container import Container as CoreContainer
 
 log = get_logger(__name__)
 
 
-@dataclass
-class Container:
-    """Holds all shared resources for the Ze application lifetime."""
+@dataclass(kw_only=True)
+class ZeContainer(CoreContainer):
+    """Ze application container — ze-core graph stack plus Telegram, proactive, workflow."""
 
-    settings: Settings
-    pool: object
-    checkpointer_pool: object
-    embedder: object
-    openrouter_client: OpenRouterClient
-    router: EmbeddingRouter
-    capability_gate: CapabilityGate
-    memory_store: PostgresMemoryStore
+    # ── Ze-only resources (framework fields live on CoreContainer) ─────────────
     persona_store: PersonaStore
     person_store: PersonStore
-    memory_consolidator: MemoryConsolidator
     contacts_consolidator: ContactsConsolidator
     workflow_store: WorkflowStore
     workflow_planner: WorkflowPlanner
     workflow_scheduler: WorkflowScheduler
     proactive_scheduler: ProactiveScheduler
-    graph: object
     bot: Bot
     ze_bot: ZeBot
     notifier: ProactiveNotifier
@@ -95,8 +89,6 @@ class Container:
     contact_channel_store: ContactChannelStore
     goal_store: GoalStore
     goal_executor: GoalExecutor
-    interface: TelegramInterface
-    preprocessor: TelegramInputPreprocessor
 
     def make_graph_config(self, chat_id: int | str, **configurable_extra: object) -> dict:
         """LangGraph config for the main conversation graph."""
@@ -135,14 +127,31 @@ class Container:
         await self.proactive_scheduler.stop()
         await self.workflow_scheduler.stop()
         await self.bot.session.close()
-        await self.openrouter_client.aclose()
         await self.browser_client.close()
-        await dispose_checkpointer_pool(self.checkpointer_pool)
-        await self.pool.close()
-        log.info("container_closed")
+        await super().close()
+
+    @classmethod
+    async def from_config(
+        cls,
+        config_dir: Path | None = None,
+        *,
+        interface: Any | None = None,
+    ) -> ZeContainer:
+        """Build the Ze container; discovers agents via ``bootstrap_agents()``."""
+        get_settings.cache_clear()
+        settings = Settings(config_dir=config_dir) if config_dir else Settings()
+        container = await build_container(settings)
+        if interface is not None:
+            container.interface = interface
+            validate_interface(interface)
+        return container
 
 
-async def build_container(settings: Settings) -> Container:
+# Backward-compatible alias.
+Container = ZeContainer
+
+
+async def build_container(settings: Settings) -> ZeContainer:
     pool = await create_pool(settings)
     checkpointer_pool = await create_checkpointer_pool(settings)
     embedder = get_embedder()
@@ -470,7 +479,7 @@ async def build_container(settings: Settings) -> Container:
         preprocessor=preprocessor,
     )
 
-    container = Container(
+    container = ZeContainer(
         settings=settings,
         pool=pool,
         checkpointer_pool=checkpointer_pool,
@@ -479,15 +488,17 @@ async def build_container(settings: Settings) -> Container:
         router=router,
         capability_gate=capability_gate,
         memory_store=memory_store,
+        memory_consolidator=memory_consolidator,
+        graph=graph,
+        interface=interface,
+        preprocessor=preprocessor,
         persona_store=persona_store,
         person_store=person_store,
-        memory_consolidator=memory_consolidator,
         contacts_consolidator=contacts_consolidator,
         workflow_store=workflow_store,
         workflow_planner=workflow_planner,
         workflow_scheduler=workflow_scheduler,
         proactive_scheduler=proactive_scheduler,
-        graph=graph,
         bot=bot,
         ze_bot=ze_bot,
         notifier=notifier,
@@ -499,8 +510,6 @@ async def build_container(settings: Settings) -> Container:
         contact_channel_store=contact_channel_store,
         goal_store=goal_store,
         goal_executor=goal_executor,
-        interface=interface,
-        preprocessor=preprocessor,
     )
     ze_bot.bind_container(container)
     return container

@@ -55,23 +55,13 @@ Copy `.env.example` to `.env` and fill in every value before starting the server
 
 ## `config/config.yaml`
 
-This file controls routing, model assignments, persona, memory, proactive behaviour,
-and per-agent settings. It is read at startup; some sections hot-reload on `SIGHUP`.
+Structural settings only: model aliases, contacts consolidation, proactive crons.
+Secrets and deployment values stay in `.env`. Persona profiles live in
+`config/persona.yaml`. Agent metadata is declared on `@agent` classes under
+`ze/agents/*/agent.py` (no `agents:` block in YAML).
 
-### `routing:`
-
-Controls how the embedding router classifies incoming messages.
-
-```yaml
-routing:
-  threshold: 0.55         # Minimum cosine similarity to route directly to an agent
-  gap_threshold: 0.10     # Minimum gap between top two scores; below this → compound task
-  embedding_model: all-MiniLM-L6-v2   # Local sentence-transformer model name
-  fallback_model: anthropic/claude-haiku-4-5  # LLM used when embedding routing is ambiguous
-```
-
-- Raise `threshold` to make direct routing more conservative (more Haiku fallbacks).
-- Raise `gap_threshold` to decompose more messages as compound tasks.
+Optional `routing:` overrides (threshold, gap_threshold, fallback_model) use ze-core
+defaults when omitted — see `ze_core.routing.types.RouterConfig`.
 
 ### `models:`
 

@@ -4,11 +4,13 @@ from typing import Any
 
 import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from ze_core.settings import Settings as CoreSettings
 
 _ROOT = Path(__file__).parent.parent  # packages/ze/
 
 
 class Settings(BaseSettings):
+    """Ze application settings (env + YAML). Extends ze-core via ``to_core_settings()``."""
     model_config = SettingsConfigDict(
         env_file=_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -157,6 +159,24 @@ class Settings(BaseSettings):
             "custom_instructions": cfg.get("custom_instructions", ""),
             "dials": {},
         }
+
+    def to_core_settings(self) -> CoreSettings:
+        """Map to ze-core Settings for framework container helpers."""
+        return CoreSettings(
+            openrouter_api_key=self.openrouter_api_key,
+            database_url=self.database_url,
+            database_url_sync=self.database_url_sync,
+            openrouter_base_url=self.openrouter_base_url,
+            session_inactivity_minutes=self.session_inactivity_minutes,
+            consolidation_enabled=self.consolidation_enabled,
+            auto_migrate=False,
+            log_level=self.log_level,
+            config=self.config,
+        )
+
+
+# Backward-compatible alias used in migration docs.
+ZeSettings = Settings
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:

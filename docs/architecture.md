@@ -42,11 +42,11 @@ flowchart TD
 
 ## Routing
 
-**Module:** `ze/routing/`
+**Module:** `ze_core.routing` (re-exported from `ze/routing/`)
 
 Routing runs on every message before any LLM is involved.
 
-1. At startup, each enabled agent's description (from `config/agents/<name>.yaml`) is
+1. At startup, each enabled agent's description (from `@agent` class attributes) is
    embedded using the shared `all-MiniLM-L6-v2` instance.
 2. The incoming prompt is embedded at request time.
 3. Cosine similarity scores are computed against all agent embeddings.
@@ -56,19 +56,19 @@ Routing runs on every message before any LLM is involved.
    - All scores below `confidence_threshold` → Haiku fallback for classification.
 5. Every decision is written to the `routing_log` Postgres table.
 
-**Cost-aware routing** (`ze/routing/complexity.py`): agents that configure a `model_simple`
-tier in `config/config.yaml` automatically receive a cheaper model for requests the
-complexity classifier scores as simple. The classifier is purely in-process (heuristic
-signals: word count, question marks, conjunctions). No extra LLM call; no latency added.
+**Cost-aware routing** (`ze/routing/complexity.py`, Ze-only): agents with a `model_simple`
+class attribute receive a cheaper model when the in-process complexity classifier scores
+the request as simple (word count, question marks, conjunctions — no extra LLM call).
 
 ---
 
 ## Orchestration Graph
 
-**Module:** `ze/orchestration/`
+**Module:** `ze/orchestration/` (built on `ze_core.orchestration.graph.graph_builder`)
 
-The graph is compiled once at startup and stored on `app.state`. Each user message
-is a separate `graph.ainvoke()` call, keyed by `thread_id = chat_id`.
+The graph is compiled once at startup in `ZeContainer` and bound to `ZeBot`. Each user
+message is a separate `graph.ainvoke()` call, keyed by `thread_id = chat_id`. Ze adds
+`plan_sequential` and a separate `workflow_graph` for multi-step workflows.
 
 ### Nodes
 

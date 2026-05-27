@@ -1,57 +1,45 @@
+# Ze structural config — secrets and deployment values live in .env
+
 models:
-  router:         anthropic/claude-haiku-4-5   # routing fallback + fact dedup merges
-  synthesis:      anthropic/claude-haiku-4-5   # multi-agent response synthesis + episode summaries
-  profile:        anthropic/claude-haiku-4-5   # user profile synthesis
-  reminders:      anthropic/claude-haiku-4-5   # calendar reminder interval assessment
-  insights:       anthropic/claude-haiku-4-5   # weekly insight generation
-  whisper:        openai/gpt-audio             # voice transcription
-  vision_caption: google/gemini-flash-1.5      # cheap routing caption for images
+  router:         anthropic/claude-haiku-4-5
+  synthesis:      anthropic/claude-haiku-4-5
+  profile:        anthropic/claude-haiku-4-5
+  reminders:      anthropic/claude-haiku-4-5
+  insights:       anthropic/claude-haiku-4-5
+  whisper:        openai/gpt-audio
+  vision_caption: google/gemini-flash-1.5
 
-
-# Persona profiles live in persona.yaml (see packages/ze/config/persona.yaml).
+# Persona profiles: packages/ze/config/persona.yaml
 
 contacts:
   consolidation:
-    episode_batch_size: 10       # episodes per LLM extraction call
-    max_episodes_per_run: 50     # cap on episodes processed per nightly run
-    nightly_cron: "0 3 * * *"   # 3 AM UTC — after memory consolidation at 2 AM
-    review_cron: "30 8 * * *"   # 8:30 AM UTC — surface pending contacts for confirmation
+    episode_batch_size: 10
+    max_episodes_per_run: 50
+    nightly_cron: "0 3 * * *"
+    review_cron: "30 8 * * *"
   follow_up:
-    stale_days: 7                # nudge if a contact hasn't been mentioned in N days
-    max_nudges: 3                # max nudges to show in the morning briefing
+    stale_days: 7
+    max_nudges: 3
 
 proactive:
   briefing:
     enabled: true
-    cron: "0 8 * * *"               # 8 AM UTC daily
-    unreviewed_nudge_threshold: 5   # include nudge if unreviewed facts >= this
-
+    cron: "0 8 * * *"
+    unreviewed_nudge_threshold: 5
   alerts:
     workflow_failure_enabled: true
-    workflow_failure_cooldown_hours: 1  # min hours between repeated alerts per workflow
-
+    workflow_failure_cooldown_hours: 1
   calendar:
     sync_enabled: true
-    sync_cron: "45 7 * * *"   # 7:45 AM UTC — before briefing
+    sync_cron: "45 7 * * *"
     sync_days_ahead: 7
-
   insights:
     enabled: true
-    cron: "0 7 * * 0"           # Sunday 7 AM UTC — before the 8 AM briefing
-    lookback_days: 7            # evidence window (was memory.insights)
-    min_evidence: 3             # min facts + episodes to proceed
-    max_per_run: 3              # cap on insights pushed per weekly run
-    category_cooldown_days: 7   # suppress same category within this window
+    cron: "0 7 * * 0"
+    lookback_days: 7
+    min_evidence: 3
+    max_per_run: 3
+    category_cooldown_days: 7
 
-# Agent metadata lives on @agent classes under ze/agents/*/agent.py
-
-browser:
-  service_url: "http://ze-browser.internal:8080"
-  timeout_seconds: 20
-  max_text_chars: 8000
-  delay_ms: 2000
-
-prospecting:
-  max_iterations: 15
-  max_loop_tokens: 24000
-  stale_campaign_timeout_minutes: 60
+# Agent metadata: @agent classes under ze/agents/*/agent.py
+# Browser / prospecting tuning: env / Settings (browser_*, prospecting_*)

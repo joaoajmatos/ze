@@ -10,42 +10,39 @@ OpenRouter.
 ## Repository layout
 
 ```
-ze/
-├── ze/                       # Python package
-│   ├── api/                  # FastAPI app, Telegram webhook handler, REST routes
-│   ├── agents/               # BaseAgent ABC, registry, all agent implementations
-│   ├── capability/           # CapabilityGate — permission enforcement
-│   ├── channels/             # Channel ABC, ChannelRegistry, EmailChannel — outbound transport layer
-│   ├── contacts/             # ContactStore, ContactChannelStore — person tracking
-│   ├── google/               # Google OAuth2 token management (Calendar + Gmail)
-│   ├── memory/               # UserFact, Episode types, MemoryStore, consolidator
-│   ├── openrouter/           # OpenRouterClient (complete() + stream())
-│   ├── orchestration/        # LangGraph state machine (nodes/, edges, graph, state)
-│   ├── proactive/            # Scheduled pushes — briefing, reminders, alerts, insights
-│   ├── persona/              # PersonaStore — named profiles + runtime dial persistence
-│   ├── routing/              # EmbeddingRouter + haiku_fallback + ComplexityEstimator
-│   ├── telegram/             # ZeBot, keyboards, session store
-│   ├── telemetry/            # Cost tracking — CostTracker, CostReconciler, ContextVar attribution
-│   ├── tools/                # Shared tool utilities
-│   ├── transcription/        # TranscriptionClient — voice notes → text via Whisper
-│   ├── workflow/             # WorkflowStore, WorkflowPlanner, WorkflowScheduler
-│   ├── container.py          # Dependency wiring — builds all shared resources
-│   ├── db.py                 # asyncpg pool factory
-│   ├── embeddings.py         # SentenceTransformer singleton
-│   ├── errors.py             # Ze exception hierarchy
-│   ├── logging.py            # structlog JSON config
-│   └── settings.py           # Pydantic BaseSettings (single config source)
-├── config/
-│   └── config.yaml           # All structural config — routing, models, persona, memory, proactive, agents
-├── migrations/versions/      # Alembic raw-SQL migrations (no ORM)
-├── tests/                    # Mirrors ze/ structure
-├── specs/                    # All 27 design specs (read before modifying a module)
-├── docs/                     # Architecture, configuration, deployment, and authoring guides
-├── Dockerfile                # Production image
-├── docker-compose.yml        # Postgres (pgvector/pgvector:pg16) + backend
-├── fly.toml                  # Fly.io deployment config
-├── pyproject.toml            # Python project + dependencies
-└── Makefile                  # All dev commands (see `make help`)
+ze/                           # monorepo root
+├── packages/
+│   ├── ze-core/              # Framework — agents, routing, memory, orchestration graph, container
+│   │   └── ze_core/
+│   └── ze/                   # Ze application (Telegram, proactive, workflow, Google)
+│       ├── ze/
+│       │   ├── api/          # FastAPI app, Telegram webhook, REST routes
+│       │   ├── agents/       # @agent classes + tools (metadata on classes, not YAML)
+│       │   ├── capability/   # Thin re-export of ze_core.capability + test helpers
+│       │   ├── channels/     # EmailChannel, ChannelRegistry
+│       │   ├── contacts/     # PersonStore, consolidator
+│       │   ├── google/       # Google OAuth2 (Calendar + Gmail)
+│       │   ├── memory/       # Re-exports ze_core memory store/types; Ze consolidator
+│       │   ├── openrouter/   # OpenRouterClient with cost-tracker integration
+│       │   ├── orchestration/# graph_builder wiring + Ze-only nodes (plan_sequential, workflow)
+│       │   ├── proactive/    # Briefing, reminders, insights, ProactiveScheduler jobs
+│       │   ├── persona/      # PersonaStore adapter over ze_core PostgresPersonaStore
+│       │   ├── routing/      # Re-exports ze_core router; ComplexityEstimator (Ze-only)
+│       │   ├── telegram/     # ZeBot, session store
+│       │   ├── telemetry/    # Re-exports ze_core cost store/tracker + reconciler adapter
+│       │   ├── tools/        # Shared @tool functions
+│       │   ├── transcription/# Voice → text (Whisper via OpenRouter)
+│       │   ├── workflow/     # WorkflowStore, planner, scheduler
+│       │   ├── container.py  # ZeContainer(subclasses ze_core Container)
+│       │   └── settings.py   # Pydantic Settings + to_core_settings()
+│       ├── config/
+│       │   ├── config.yaml   # Models, contacts, proactive (secrets in .env)
+│       │   └── persona.yaml  # Persona profiles and dials
+│       ├── migrations/       # Alembic SQL migrations
+│       └── tests/
+├── specs/                    # Design specs (zc-* ze-core, numbered ze modules)
+├── docs/                     # architecture.md, configuration.md, ze-core-migration.md
+└── Makefile                  # make test, make test-core, make dev-poll, …
 ```
 
 ## Essential commands

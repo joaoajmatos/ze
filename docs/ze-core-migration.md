@@ -290,6 +290,15 @@ ZeBot calls these instead of hand-rolled `graph.ainvoke()` for normal turns and 
 
 **Phase 9 done when:** Ze is a thin application package on ze-core.
 
+**Implemented (2025-05):**
+
+- `ZeContainer` subclasses `ze_core.container.Container`; `Container` alias kept; `from_config()` → `build_container()` + `bootstrap_agents()`
+- `close()` delegates agent shutdown and pool teardown to ze-core after Ze schedulers stop
+- `Settings.to_core_settings()` bridges pydantic env settings to `ze_core.settings.Settings`
+- `config.yaml` trimmed (~45 lines): models, contacts, proactive; persona in `persona.yaml`; browser/prospecting via env
+- `.env.example` documents browser and prospecting env vars
+- Framework duplicates remain thin re-exports (`routing`, `memory`, `capability`, `telemetry`, `goals`); Ze keeps `openrouter` (cost tracker), `routing/complexity`, Telegram, proactive, workflow
+
 ---
 
 ## Suggested PR order (minimum viable path)
@@ -339,7 +348,7 @@ Update as PRs merge:
 | 6 Telemetry / persona | ✅ | | ze-core CostTracker/Reconciler + PostgresCostStore; persona.yaml + PostgresPersonaStore |
 | 7 Agents `@agent` | ✅ | | Class-level agent config; ze-core registry/tool/base |
 | 8 Orchestration | ✅ | | graph_builder + Ze node wiring; extended AgentState; ze_core checkpoint types |
-| 9 Container / cleanup | ⬜ | | |
+| 9 Container / cleanup | ✅ | | ZeContainer + Settings bridge; trimmed config.yaml |
 | Schema unified | ⬜ | | |
 
 Legend: ⬜ not started · 🟡 in progress · ✅ done
