@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from ze.api import dependencies
 from ze.api.routes import capabilities, memory, routing
-from ze.capability.testing import make_gate
+from ze.agents.testing import make_gate
 from ze.logging import configure_logging
 from ze.settings import Settings, get_settings
 

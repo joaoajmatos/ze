@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 import yaml
 
-from ze.capability.testing import make_gate
+from ze.agents.testing import make_gate
 
 
 @pytest.fixture

@@ -5,7 +5,7 @@ import pytest
 from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.types import GateDecision, Mode
 from ze.logging import configure_logging
-from ze.capability.testing import make_gate
+from ze.agents.testing import make_gate
 
 
 @pytest.fixture(autouse=True)
