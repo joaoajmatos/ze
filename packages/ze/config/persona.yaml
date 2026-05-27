@@ -1,7 +1,5 @@
-# Persona profiles — active name and dial overrides persist in Postgres (persona_state).
 profile: default
 
-# BCP 47 locale for progress message translations (en | pt)
 locale: en
 
 profiles:

@@ -9,8 +9,6 @@ models:
   whisper:        openai/gpt-audio
   vision_caption: google/gemini-flash-1.5
 
-# Persona profiles: packages/ze/config/persona.yaml
-
 contacts:
   consolidation:
     episode_batch_size: 10
@@ -40,6 +38,3 @@ proactive:
     min_evidence: 3
     max_per_run: 3
     category_cooldown_days: 7
-
-# Agent metadata: @agent classes under ze/agents/*/agent.py
-# Browser / prospecting tuning: env / Settings (browser_*, prospecting_*)
