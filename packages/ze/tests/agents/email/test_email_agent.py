@@ -44,13 +44,13 @@ def make_credentials(messages: list | None = None) -> MagicMock:
              .list.return_value
              .execute.return_value
     ) = {"messages": messages or []}
-    # stub getProfile for EmailChannel._resolve_user_email
+    # stub getProfile for GmailChannel._resolve_user_email
     (
         service.users.return_value
              .getProfile.return_value
              .execute.return_value
     ) = {"emailAddress": "ze@example.com"}
-    # stub messages.get for EmailChannel.send timestamp fetch
+    # stub messages.get for GmailChannel.send timestamp fetch
     (
         service.users.return_value
              .messages.return_value

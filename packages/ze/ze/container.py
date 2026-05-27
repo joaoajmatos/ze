@@ -14,7 +14,7 @@ from ze.agents.bootstrap import bootstrap_agents, prepare_gate_registry
 from ze_browser import BrowserClient
 from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.overrides import PostgresCapabilityOverrideStore
-from ze.channels.email import EmailChannel
+from ze.google.gmail import GmailChannel
 from ze_core.channels.registry import ChannelRegistry
 from ze.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
@@ -409,8 +409,8 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     google_credentials = GoogleCredentials.from_settings(settings)
 
-    email_channel = EmailChannel(credentials=google_credentials) if google_credentials else None
-    channel_registry = ChannelRegistry(channels=[email_channel] if email_channel else [])
+    gmail_channel = GmailChannel(credentials=google_credentials) if google_credentials else None
+    channel_registry = ChannelRegistry(channels=[gmail_channel] if gmail_channel else [])
 
     calendar_reminders = CalendarReminderScheduler(
         notifier=notifier,

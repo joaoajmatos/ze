@@ -7,7 +7,7 @@ import structlog
 
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
-from ze.channels.email import EmailChannel
+from ze.google.gmail import GmailChannel
 from ze_core.channels.types import ChannelType, Message
 from ze.google.auth import GoogleCredentials
 
@@ -123,7 +123,7 @@ async def draft_email(
 
 @tool(access=ToolAccess.WRITE, description="Send an email via Gmail. Use thread_id to reply in an existing thread.")
 async def send_email(
-    email_channel: EmailChannel,
+    gmail_channel: GmailChannel,
     to: str,
     subject: str,
     body: str,
@@ -139,7 +139,7 @@ async def send_email(
             body=body,
             thread_id=thread_id,
         )
-        sent = await email_channel.send(msg)
+        sent = await gmail_channel.send(msg)
         return ToolCall(
             tool_name="send_email",
             args=args,

@@ -1,10 +1,10 @@
 import base64
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from ze.channels.email import EmailChannel
+from ze.google.gmail import GmailChannel
 from ze_core.channels.types import ChannelType, Message, SentMessage, ThreadMessage
 from ze.errors import ChannelSendError
 
@@ -68,8 +68,8 @@ def _make_credentials(
     return creds
 
 
-def _channel(creds: MagicMock | None = None) -> EmailChannel:
-    return EmailChannel(credentials=creds or _make_credentials())
+def _channel(creds: MagicMock | None = None) -> GmailChannel:
+    return GmailChannel(credentials=creds or _make_credentials())
 
 
 # ── channel_type ──────────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ async def test_poll_replies_across_multiple_threads():
     ]
     creds = MagicMock()
     creds.gmail.return_value = service
-    ch = EmailChannel(credentials=creds)
+    ch = GmailChannel(credentials=creds)
 
     since = datetime(2026, 5, 25, 11, 0, 0, tzinfo=timezone.utc)
     replies = await ch.poll_replies(["t1", "t2"], since=since)

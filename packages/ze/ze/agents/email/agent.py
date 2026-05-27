@@ -4,7 +4,7 @@ from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
-from ze.channels.email import EmailChannel
+from ze.google.gmail import GmailChannel
 from ze.contacts.extractors import extract_email_contacts
 from ze.google.auth import GoogleCredentials
 from ze_core.openrouter.client import OpenRouterClient
@@ -62,7 +62,7 @@ class EmailAgent(BaseAgent):
         super().__init__(settings)
         self._client        = openrouter_client
         self._creds         = google_credentials
-        self._email_channel = EmailChannel(credentials=google_credentials)
+        self._gmail_channel = GmailChannel(credentials=google_credentials)
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         key = "email.drafting" if ctx.intent in ("create", "update") else "email.reading"
@@ -73,7 +73,7 @@ class EmailAgent(BaseAgent):
             client=self._client,
             messages=list(ctx.messages),
             system=system,
-            deps={"credentials": self._creds, "email_channel": self._email_channel},
+            deps={"credentials": self._creds, "gmail_channel": self._gmail_channel},
         )
 
         contact_proposals = extract_email_contacts(loop_tool_calls)

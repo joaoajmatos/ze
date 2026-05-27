@@ -14,7 +14,7 @@ from ze.google.auth import GoogleCredentials
 log = structlog.get_logger(__name__)
 
 
-class EmailChannel(Channel):
+class GmailChannel(Channel):
     def __init__(self, credentials: GoogleCredentials) -> None:
         self._creds = credentials
         self._user_email: str | None = None
@@ -50,7 +50,7 @@ class EmailChannel(Channel):
         except ChannelSendError:
             raise
         except Exception as exc:
-            log.warning("email_channel_send_failed", error=str(exc))
+            log.warning("gmail_channel_send_failed", error=str(exc))
             raise ChannelSendError(str(exc)) from exc
 
     async def get_thread(self, thread_id: str) -> Thread:

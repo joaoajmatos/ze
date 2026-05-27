@@ -385,7 +385,7 @@ store directly.
 
 | Channel | Class | Transport |
 |---|---|---|
-| `email` | `EmailChannel` (`ze/channels/email.py`) | Gmail API via `GoogleCredentials` |
+| `email` | `GmailChannel` (`ze/google/gmail.py`) | Gmail API via `GoogleCredentials` |
 
 See [docs/channels.md](channels.md) for the authoring guide for adding new channels.
 
