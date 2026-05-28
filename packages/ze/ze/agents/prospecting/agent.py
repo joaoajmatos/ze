@@ -4,7 +4,7 @@ from uuid import UUID
 import asyncpg
 
 import ze.tools.browser  # noqa: F401 — registers browser_extract @tool
-import ze.tools.prospecting  # noqa: F401 — registers add_prospect, draft_outreach @tool
+import ze.agents.prospecting.tools  # noqa: F401 — registers add_prospect, draft_outreach, log_outreach_event @tool
 
 from ze.agents.base import BaseAgent
 from ze_core.orchestration.registry import agent
@@ -59,6 +59,7 @@ class ProspectingAgent(BaseAgent):
         "browser_extract",
         "add_prospect",
         "draft_outreach",
+        "log_outreach_event",
     ]
     intent_map = {
         "read": "Research and enrich prospect candidates",

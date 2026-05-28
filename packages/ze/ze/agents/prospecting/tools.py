@@ -293,25 +293,24 @@ async def log_outreach_event(
                 person.id,
             )
 
-            if row:
-                ts_clause = f", {ts_col} = NOW()" if ts_col else ""
-                await conn.execute(
-                    f"UPDATE prospect_outreach SET status = $2, notes = $3{ts_clause} WHERE id = $1",
-                    row["id"],
-                    event_type,
-                    notes,
+            if not row:
+                duration_ms = int((time.monotonic() - start) * 1000)
+                return ToolCall(
+                    tool_name="log_outreach_event",
+                    args=args,
+                    result=f"{contact_name} is not in any outreach campaign",
+                    duration_ms=duration_ms,
+                    success=False,
+                    error="not a prospect",
                 )
-            else:
-                await conn.execute(
-                    """
-                    INSERT INTO prospect_outreach (contact_id, channel, status, notes)
-                    VALUES ($1, $2, $3, $4)
-                    """,
-                    person.id,
-                    channel,
-                    event_type,
-                    notes,
-                )
+
+            ts_clause = f", {ts_col} = NOW()" if ts_col else ""
+            await conn.execute(
+                f"UPDATE prospect_outreach SET status = $2, notes = $3{ts_clause} WHERE id = $1",
+                row["id"],
+                event_type,
+                notes,
+            )
 
         duration_ms = int((time.monotonic() - start) * 1000)
         return ToolCall(

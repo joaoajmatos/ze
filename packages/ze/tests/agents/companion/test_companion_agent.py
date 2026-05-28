@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze.agents.companion.agent import CompanionAgent
+from ze.agents.companion.agent import CompanionAgent, _detect_outreach_event
 from ze.agents.types import AgentContext, AgentResult
 from ze.logging import configure_logging
 from ze_core.memory.types import MemoryContext, UserFact
@@ -100,11 +100,18 @@ async def test_run_returns_response_string():
     assert result.response == "I am doing great, thank you!"
 
 
-async def test_run_includes_outreach_tool_call():
+async def test_run_no_outreach_in_prompt_returns_no_tool_calls():
     agent = make_agent()
-    result = await agent.run(make_ctx())
-    assert len(result.tool_calls) == 1
-    assert result.tool_calls[0].tool_name == "log_outreach_event"
+    result = await agent.run(make_ctx("how are you?"))
+    assert result.tool_calls == []
+
+
+async def test_run_outreach_for_non_prospect_returns_no_tool_calls():
+    # person_store returns no match → tool returns "not a prospect" (success=False)
+    # tool_calls list should still be empty (failed silent attempts are dropped)
+    agent = make_agent()
+    result = await agent.run(make_ctx("I sent an email to Carlos and he didn't reply"))
+    assert result.tool_calls == []
 
 
 async def test_run_sends_prompt_as_user_message():
@@ -187,6 +194,30 @@ async def test_stream_reconstructs_response():
     agent = make_agent(client=client)
     tokens = [t async for t in agent.stream(make_ctx())]
     assert " ".join(tokens) == "one two three"
+
+
+# ── _detect_outreach_event ────────────────────────────────────────────────────
+
+def test_detect_outreach_event_sent():
+    result = _detect_outreach_event("I sent an email to Carlos Mendes yesterday")
+    assert result is not None
+    assert result["event_type"] == "sent"
+    assert result["contact_name"] == "Carlos Mendes"
+    assert result["channel"] == "email"
+
+
+def test_detect_outreach_event_no_reply():
+    result = _detect_outreach_event("João hasn't responded to my message")
+    assert result is not None
+    assert result["event_type"] == "no_reply"
+
+
+def test_detect_outreach_event_no_match():
+    assert _detect_outreach_event("how are you doing today?") is None
+
+
+def test_detect_outreach_event_no_name():
+    assert _detect_outreach_event("i sent an email yesterday") is None
 
 
 # ── AgentContext ──────────────────────────────────────────────────────────────

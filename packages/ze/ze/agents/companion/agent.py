@@ -9,7 +9,7 @@ from ze.agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.contacts.store import PersonStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
-import ze.tools.prospecting  # noqa: F401 — registers log_outreach_event @tool
+import ze.agents.prospecting.tools  # noqa: F401 — registers log_outreach_event @tool
 from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\
@@ -23,10 +23,10 @@ or "I'm here to". Just respond naturally.
 """
 
 _EVENT_KEYWORDS: dict[str, list[str]] = {
-    "sent": ["sent", "emailed", "messaged", "reached out to", "contacted"],
-    "replied": ["replied", "responded", "got back", "wrote back"],
     "no_reply": ["no reply", "no response", "hasn't replied", "hasn't responded"],
     "bounced": ["bounced", "returned", "undeliverable"],
+    "replied": ["replied", "responded", "got back", "wrote back"],
+    "sent": ["sent", "emailed", "messaged", "reached out to", "contacted"],
 }
 
 _CHANNEL_KEYWORDS: dict[str, list[str]] = {
@@ -50,7 +50,7 @@ class CompanionAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 60
-    tools = ["log_outreach_event"]
+    tools = []
     intent_map = {"reason": "direct_completion"}
     capabilities = {
         "reason": Mode.AUTONOMOUS,
@@ -81,15 +81,13 @@ class CompanionAgent(BaseAgent):
             system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
         )
 
+        tool_calls = []
         outreach_tc = await self._attempt_log_outreach(ctx)
+        if outreach_tc is not None and outreach_tc.success:
+            tool_calls.append(outreach_tc)
 
         self._log.info("companion_agent_complete", session_id=ctx.session_id)
-
-        return AgentResult(
-            agent=self.name,
-            response=response,
-            tool_calls=[outreach_tc],
-        )
+        return AgentResult(agent=self.name, response=response, tool_calls=tool_calls)
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
         async for token in self._client.stream(
@@ -99,17 +97,10 @@ class CompanionAgent(BaseAgent):
         ):
             yield token
 
-    async def _attempt_log_outreach(self, ctx: AgentContext) -> ToolCall:
+    async def _attempt_log_outreach(self, ctx: AgentContext) -> ToolCall | None:
         event = _detect_outreach_event(ctx.prompt)
         if event is None:
-            return ToolCall(
-                tool_name="log_outreach_event",
-                args={},
-                result=None,
-                duration_ms=0,
-                success=False,
-                error="no outreach event detected",
-            )
+            return None
         return await self.call_tool(
             "log_outreach_event", ctx,
             contact_name=event["contact_name"],
