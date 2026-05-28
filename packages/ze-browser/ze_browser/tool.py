@@ -2,9 +2,8 @@ import asyncio
 import time
 
 from ze_core.orchestration.tool import ToolAccess, tool
-from ze.agents.types import ToolCall
-from ze_browser import BrowserClient
-from ze.settings import Settings
+from ze_core.orchestration.types import ToolCall
+from ze_browser.client import BrowserClient
 
 _BLOCKED_MSG = "[blocked or empty — skip this URL]"
 
@@ -20,9 +19,10 @@ _BLOCKED_MSG = "[blocked or empty — skip this URL]"
 async def browser_extract(
     url: str,
     browser_client: BrowserClient,
-    settings: Settings,
+    browser_delay_ms: int,
+    browser_max_text_chars: int,
 ) -> ToolCall:
-    await asyncio.sleep(settings.browser_delay_ms / 1000)
+    await asyncio.sleep(browser_delay_ms / 1000)
     start = time.monotonic()
     try:
         result = await browser_client.extract(url)
@@ -37,7 +37,7 @@ async def browser_extract(
                 success=True,
             )
 
-        text = result.text[: settings.browser_max_text_chars]
+        text = result.text[:browser_max_text_chars]
         return ToolCall(
             tool_name="browser_extract",
             args={"url": url},

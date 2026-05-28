@@ -9,23 +9,6 @@ from ze_core.contacts.types import Person
 from ze_browser import BrowserError, BrowserResult
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def make_settings(**overrides):
-    import pathlib
-    from ze.settings import Settings, get_settings
-    get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent.parent / "config"
-    defaults = dict(
-        openrouter_api_key="test-key",
-        database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
-    )
-    defaults.update(overrides)
-    return Settings(**defaults)
-
-
 def make_person(**overrides):
     now = datetime.utcnow()
     defaults = dict(
@@ -78,9 +61,12 @@ def make_person_store(existing: list | None = None):
 
 # ── browser_extract ───────────────────────────────────────────────────────────
 
+_DELAY_MS = 500
+_MAX_CHARS = 10_000
+
+
 async def test_browser_extract_tool_returns_text():
-    from ze.tools.browser import browser_extract
-    settings = make_settings()
+    from ze_browser.tool import browser_extract
 
     browser_client = AsyncMock()
     browser_client.extract = AsyncMock(return_value=BrowserResult(
@@ -90,11 +76,12 @@ async def test_browser_extract_tool_returns_text():
         status_code=200,
     ))
 
-    with patch("ze.tools.browser.asyncio.sleep"):
+    with patch("ze_browser.tool.asyncio.sleep"):
         tc = await browser_extract(
             url="https://example.com",
             browser_client=browser_client,
-            settings=settings,
+            browser_delay_ms=_DELAY_MS,
+            browser_max_text_chars=_MAX_CHARS,
         )
 
     assert tc.success is True
@@ -102,8 +89,7 @@ async def test_browser_extract_tool_returns_text():
 
 
 async def test_browser_extract_tool_truncates_text():
-    from ze.tools.browser import browser_extract
-    settings = make_settings()
+    from ze_browser.tool import browser_extract
 
     long_text = "x" * 20_000
     browser_client = AsyncMock()
@@ -114,19 +100,19 @@ async def test_browser_extract_tool_truncates_text():
         status_code=200,
     ))
 
-    with patch("ze.tools.browser.asyncio.sleep"):
+    with patch("ze_browser.tool.asyncio.sleep"):
         tc = await browser_extract(
             url="https://example.com",
             browser_client=browser_client,
-            settings=settings,
+            browser_delay_ms=_DELAY_MS,
+            browser_max_text_chars=_MAX_CHARS,
         )
 
-    assert len(tc.result) <= settings.browser_max_text_chars
+    assert len(tc.result) <= _MAX_CHARS
 
 
 async def test_browser_extract_blocked_returns_skip_msg():
-    from ze.tools.browser import browser_extract, _BLOCKED_MSG
-    settings = make_settings()
+    from ze_browser.tool import browser_extract, _BLOCKED_MSG
 
     browser_client = AsyncMock()
     browser_client.extract = AsyncMock(return_value=BrowserResult(
@@ -136,11 +122,12 @@ async def test_browser_extract_blocked_returns_skip_msg():
         status_code=403,
     ))
 
-    with patch("ze.tools.browser.asyncio.sleep"):
+    with patch("ze_browser.tool.asyncio.sleep"):
         tc = await browser_extract(
             url="https://example.com",
             browser_client=browser_client,
-            settings=settings,
+            browser_delay_ms=_DELAY_MS,
+            browser_max_text_chars=_MAX_CHARS,
         )
 
     assert tc.result == _BLOCKED_MSG
@@ -148,8 +135,7 @@ async def test_browser_extract_blocked_returns_skip_msg():
 
 
 async def test_browser_extract_tool_rate_limit():
-    from ze.tools.browser import browser_extract
-    settings = make_settings()
+    from ze_browser.tool import browser_extract
 
     browser_client = AsyncMock()
     browser_client.extract = AsyncMock(return_value=BrowserResult(
@@ -164,33 +150,35 @@ async def test_browser_extract_tool_rate_limit():
     async def mock_sleep(seconds):
         sleep_calls.append(seconds)
 
-    with patch("ze.tools.browser.asyncio.sleep", side_effect=mock_sleep):
+    with patch("ze_browser.tool.asyncio.sleep", side_effect=mock_sleep):
         await browser_extract(
             url="https://example.com",
             browser_client=browser_client,
-            settings=settings,
+            browser_delay_ms=_DELAY_MS,
+            browser_max_text_chars=_MAX_CHARS,
         )
         await browser_extract(
             url="https://example.com/2",
             browser_client=browser_client,
-            settings=settings,
+            browser_delay_ms=_DELAY_MS,
+            browser_max_text_chars=_MAX_CHARS,
         )
 
     assert len(sleep_calls) == 2
 
 
 async def test_browser_extract_error_returns_error_string():
-    from ze.tools.browser import browser_extract
-    settings = make_settings()
+    from ze_browser.tool import browser_extract
 
     browser_client = AsyncMock()
     browser_client.extract = AsyncMock(side_effect=BrowserError("service down"))
 
-    with patch("ze.tools.browser.asyncio.sleep"):
+    with patch("ze_browser.tool.asyncio.sleep"):
         tc = await browser_extract(
             url="https://example.com",
             browser_client=browser_client,
-            settings=settings,
+            browser_delay_ms=_DELAY_MS,
+            browser_max_text_chars=_MAX_CHARS,
         )
 
     assert tc.success is False

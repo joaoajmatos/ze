@@ -3,7 +3,7 @@ from uuid import UUID
 
 import asyncpg
 
-import ze.tools.browser  # noqa: F401 — registers browser_extract @tool
+import ze_browser.tool  # noqa: F401 — registers browser_extract @tool
 import ze.agents.prospecting.tools  # noqa: F401 — registers add_prospect, draft_outreach, log_outreach_event @tool
 
 from ze.agents.base import BaseAgent
@@ -111,6 +111,8 @@ class ProspectingAgent(BaseAgent):
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
         deps = {
             "browser_client": self._browser_client,
+            "browser_delay_ms": self._settings.browser_delay_ms,
+            "browser_max_text_chars": self._settings.browser_max_text_chars,
             "person_store": self._person_store,
             "pool": self._pool,
             "client": self._client,
