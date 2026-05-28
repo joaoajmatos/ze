@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze.contacts.types import Person
+from ze_core.contacts.types import Person
 from ze.telegram.keyboards import contact_confirmation_keyboard
 
 

@@ -1,6 +1,6 @@
-from ze.agents.types import ToolCall
 from ze.contacts.extractors import extract_calendar_contacts, extract_email_contacts
-from ze.contacts.types import SOURCE_WEIGHTS
+from ze_core.contacts.types import SOURCE_WEIGHTS
+from ze_core.orchestration.types import ToolCall
 
 
 def _email_tc(result: dict, success: bool = True) -> ToolCall:
@@ -22,8 +22,8 @@ def test_email_extracts_named_sender():
     proposals = extract_email_contacts([tc])
 
     assert len(proposals) == 1
-    assert proposals[0]["name"] == "João Silva"
-    assert proposals[0]["contact_info"]["email"] == "joao@example.com"
+    assert proposals[0].name == "João Silva"
+    assert proposals[0].contact_info["email"] == "joao@example.com"
 
 
 def test_email_extracts_bare_address():
@@ -31,8 +31,8 @@ def test_email_extracts_bare_address():
     proposals = extract_email_contacts([tc])
 
     assert len(proposals) == 1
-    assert proposals[0]["contact_info"]["email"] == "joao@example.com"
-    assert proposals[0]["name"]  # derived from local-part
+    assert proposals[0].contact_info["email"] == "joao@example.com"
+    assert proposals[0].name  # derived from local-part
 
 
 def test_email_deduplicates_same_sender():
@@ -68,21 +68,21 @@ def test_email_weight_matches_source_weight():
     tc = _email_tc({"from": "x@example.com"})
     proposals = extract_email_contacts([tc])
 
-    assert proposals[0]["confidence"] == SOURCE_WEIGHTS["email"]
+    assert proposals[0].confidence == SOURCE_WEIGHTS["email"]
 
 
 def test_email_proposals_are_unconfirmed():
     tc = _email_tc({"from": "x@example.com"})
     proposals = extract_email_contacts([tc])
 
-    assert proposals[0]["confirmed"] is False
+    assert proposals[0].confirmed is False
 
 
 def test_email_relationship_label():
     tc = _email_tc({"from": "x@example.com"})
     proposals = extract_email_contacts([tc])
 
-    assert proposals[0]["relationship"] == "email contact"
+    assert proposals[0].relationship == "email contact"
 
 
 # ── extract_calendar_contacts ─────────────────────────────────────────────────
@@ -98,8 +98,8 @@ def test_calendar_extracts_attendees():
     proposals = extract_calendar_contacts([tc])
 
     assert len(proposals) == 1
-    assert proposals[0]["name"] == "Maria Costa"
-    assert proposals[0]["contact_info"]["email"] == "maria@example.com"
+    assert proposals[0].name == "Maria Costa"
+    assert proposals[0].contact_info["email"] == "maria@example.com"
 
 
 def test_calendar_excludes_self():
@@ -124,7 +124,7 @@ def test_calendar_derives_name_from_email_when_no_display_name():
     tc = _events_tc([event])
     proposals = extract_calendar_contacts([tc])
 
-    assert proposals[0]["name"] == "John Doe"
+    assert proposals[0].name == "John Doe"
 
 
 def test_calendar_skips_failed_tool_calls():
@@ -140,7 +140,7 @@ def test_calendar_handles_create_event_result():
     proposals = extract_calendar_contacts([tc])
 
     assert len(proposals) == 1
-    assert proposals[0]["name"] == "Bob"
+    assert proposals[0].name == "Bob"
 
 
 def test_calendar_weight_matches_source_weight():
@@ -148,7 +148,7 @@ def test_calendar_weight_matches_source_weight():
     tc = _events_tc([event])
     proposals = extract_calendar_contacts([tc])
 
-    assert proposals[0]["confidence"] == SOURCE_WEIGHTS["calendar"]
+    assert proposals[0].confidence == SOURCE_WEIGHTS["calendar"]
 
 
 def test_calendar_proposals_are_unconfirmed():
@@ -156,7 +156,7 @@ def test_calendar_proposals_are_unconfirmed():
     tc = _events_tc([event])
     proposals = extract_calendar_contacts([tc])
 
-    assert proposals[0]["confirmed"] is False
+    assert proposals[0].confirmed is False
 
 
 def test_calendar_skips_events_without_attendees():

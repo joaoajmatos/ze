@@ -16,7 +16,7 @@ from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.overrides import PostgresCapabilityOverrideStore
 from ze.google.gmail import GmailChannel
 from ze_core.channels.registry import ChannelRegistry
-from ze.contacts.channel_store import ContactChannelStore
+from ze_core.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze.embeddings import get_embedder
 from ze_core.orchestration.registry import get_agent
@@ -25,8 +25,8 @@ from ze_core.goals.planner import GoalPlanner
 from ze_core.goals.postgres import PostgresGoalStore as GoalStore
 from ze.google.auth import GoogleCredentials
 from ze.logging import get_logger
-from ze.contacts.consolidator import ContactsConsolidator
-from ze.contacts.store import PersonStore
+from ze_core.contacts.consolidator import ContactsConsolidator
+from ze_core.contacts.store import PersonStore
 from ze.proactive.contacts import ContactReviewNotifier
 from ze.proactive.prospecting import recover_stale_campaigns
 from ze_core.memory.consolidator import MemoryConsolidator

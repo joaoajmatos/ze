@@ -3,7 +3,7 @@ from uuid import UUID
 import asyncpg
 
 from ze_core.channels.types import ChannelHandle, ChannelType
-from ze.logging import get_logger
+from ze_core.logging import get_logger
 
 
 def _handle_from_row(row: asyncpg.Record) -> ChannelHandle:

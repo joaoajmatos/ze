@@ -1,4 +1,4 @@
-from ze.contacts.store import PersonStore
+from ze_core.contacts.store import PersonStore
 from ze.logging import get_logger
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze_core.telemetry.context import set_flow_context

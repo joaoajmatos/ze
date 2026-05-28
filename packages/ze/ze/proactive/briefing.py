@@ -1,4 +1,4 @@
-from ze.contacts.store import PersonStore
+from ze_core.contacts.store import PersonStore
 from ze.logging import get_logger
 from ze.proactive.push_log_store import PushLogStore
 from ze.settings import Settings

@@ -11,7 +11,7 @@ from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze.agents.types import AgentContext, AgentResult
 from ze_browser import BrowserClient
-from ze.contacts.store import PersonStore
+from ze_core.contacts.store import PersonStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 

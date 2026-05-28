@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from ze.agents.types import ToolCall
-from ze.contacts.types import Person
+from ze_core.contacts.types import Person
 from ze_browser import BrowserError, BrowserResult
 
 

@@ -288,6 +288,7 @@ async def test_write_memory_no_crash_if_no_agent_context():
 
 async def test_write_contact_proposals_writes_email_to_channel_store():
     from ze_core.channels.types import ChannelType
+    from ze_core.contacts.types import ContactProposal
     from ze.orchestration.nodes.memory import _write_contact_proposals
 
     person_store = AsyncMock()
@@ -300,14 +301,14 @@ async def test_write_contact_proposals_writes_email_to_channel_store():
     channel_store = AsyncMock()
     channel_store.upsert = AsyncMock()
 
-    proposals = [{
-        "name": "Alice",
-        "classification": "professional",
-        "relationship": "email contact",
-        "contact_info": {"email": "alice@example.com"},
-        "confidence": 0.7,
-        "confirmed": False,
-    }]
+    proposals = [ContactProposal(
+        name="Alice",
+        classification="professional",
+        relationship="email contact",
+        contact_info={"email": "alice@example.com"},
+        confidence=0.7,
+        confirmed=False,
+    )]
 
     await _write_contact_proposals(
         person_store, proposals, "test prompt",
@@ -322,6 +323,7 @@ async def test_write_contact_proposals_writes_email_to_channel_store():
 
 
 async def test_write_contact_proposals_skips_channel_write_when_no_email():
+    from ze_core.contacts.types import ContactProposal
     from ze.orchestration.nodes.memory import _write_contact_proposals
 
     person_store = AsyncMock()
@@ -334,12 +336,7 @@ async def test_write_contact_proposals_skips_channel_write_when_no_email():
     channel_store = AsyncMock()
     channel_store.upsert = AsyncMock()
 
-    proposals = [{
-        "name": "Bob",
-        "contact_info": {},
-        "confidence": 0.7,
-        "confirmed": False,
-    }]
+    proposals = [ContactProposal(name="Bob", contact_info={}, confidence=0.7, confirmed=False)]
 
     await _write_contact_proposals(
         person_store, proposals, "test prompt",
@@ -350,6 +347,7 @@ async def test_write_contact_proposals_skips_channel_write_when_no_email():
 
 
 async def test_write_contact_proposals_works_without_channel_store():
+    from ze_core.contacts.types import ContactProposal
     from ze.orchestration.nodes.memory import _write_contact_proposals
 
     person_store = AsyncMock()
@@ -359,14 +357,13 @@ async def test_write_contact_proposals_works_without_channel_store():
     person_store.upsert = AsyncMock(return_value=stored_person)
     person_store.add_source = AsyncMock()
 
-    proposals = [{"name": "Carol", "contact_info": {"email": "carol@x.com"}, "confidence": 0.8}]
-    # Should not raise even with no channel store
+    proposals = [ContactProposal(name="Carol", contact_info={"email": "carol@x.com"}, confidence=0.8)]
     await _write_contact_proposals(person_store, proposals, "prompt")
 
 
 async def test_write_contact_proposals_writes_channel_for_existing_contact():
     from ze_core.channels.types import ChannelType
-    from ze.contacts.types import Person
+    from ze_core.contacts.types import ContactProposal, Person
     from ze.orchestration.nodes.memory import _write_contact_proposals
     from datetime import datetime, timezone
 
@@ -382,7 +379,7 @@ async def test_write_contact_proposals_writes_channel_for_existing_contact():
     channel_store = AsyncMock()
     channel_store.upsert = AsyncMock()
 
-    proposals = [{"name": "Alice", "contact_info": {"email": "alice@example.com"}, "confidence": 0.7}]
+    proposals = [ContactProposal(name="Alice", contact_info={"email": "alice@example.com"}, confidence=0.7)]
     await _write_contact_proposals(
         person_store, proposals, "prompt",
         contact_channel_store=channel_store,

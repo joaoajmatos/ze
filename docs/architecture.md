@@ -343,13 +343,13 @@ cost records attributed to `flow_type="transcription"`, `agent="whisper"`.
 
 ## Communication Channels
 
-**Module:** `ze/channels/`
+**Module:** `ze_core/channels/`
 
 The channel abstraction decouples agents from transport details. Every outbound
 message Ze sends to a real person goes through a `Channel` implementation —
 agents never call Gmail (or any future transport) directly.
 
-### Core types (`ze/channels/types.py`)
+### Core types (`ze_core/channels/types.py`)
 
 | Type | Purpose |
 |---|---|
@@ -359,7 +359,7 @@ agents never call Gmail (or any future transport) directly.
 | `SentMessage` | Return value from `send()` — `message_id`, `thread_id`, `sent_at` |
 | `Thread` / `ThreadMessage` | Full thread history, used by `get_thread()` and `poll_replies()` |
 
-### `Channel` ABC (`ze/channels/base.py`)
+### `Channel` ABC (`ze_core/channels/base.py`)
 
 Every channel must implement three methods:
 
@@ -369,12 +369,12 @@ Every channel must implement three methods:
 | `get_thread` | `(thread_id: str) → Thread` | Fetch a full thread by ID |
 | `poll_replies` | `(thread_ids, since) → list[ThreadMessage]` | Return inbound messages since a given datetime |
 
-### `ChannelRegistry` (`ze/channels/registry.py`)
+### `ChannelRegistry` (`ze_core/channels/registry.py`)
 
 A dict-backed registry keyed by `ChannelType`. Built in `container.py` and
 injected into agents. Raises `ChannelNotFoundError` for unregistered types.
 
-### Contact channel handles (`ze/contacts/channel_store.py`)
+### Contact channel handles (`ze_core/contacts/channel_store.py`)
 
 `ContactChannelStore` stores per-contact channel handles in the `contact_channels`
 table. Agents use the `get_contact_channels` and `set_contact_channel` tools

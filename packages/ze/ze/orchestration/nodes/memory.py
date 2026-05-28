@@ -5,8 +5,8 @@ from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentResult
 from ze_core.channels.types import ChannelHandle, ChannelType
-from ze.contacts.channel_store import ContactChannelStore
-from ze.contacts.types import Person, PersonSource, SOURCE_WEIGHTS
+from ze_core.contacts.channel_store import ContactChannelStore
+from ze_core.contacts.types import ContactProposal, Person, PersonSource, SOURCE_WEIGHTS
 from ze.logging import get_logger
 from ze_core.memory.extractor import gather_fact_proposals
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
@@ -112,22 +112,20 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
 async def _write_contact_proposals(
     person_store,
-    proposals: list[dict],
+    proposals: list[ContactProposal],
     prompt: str,
     contact_channel_store: ContactChannelStore | None = None,
 ) -> None:
     """Persist contact proposals from agents. Fires as a background task."""
     for proposal in proposals:
-        name = (proposal.get("name") or "").strip()
-        if not name:
+        if not proposal.name:
             continue
         try:
-            existing = await person_store.get_by_name(name)
-            source_type = proposal.get("source_type", "conversation")
+            existing = await person_store.get_by_name(proposal.name)
             source = PersonSource(
                 person_id=None,  # type: ignore[arg-type]  — replaced below
-                source_type=source_type,
-                weight=proposal.get("confidence", SOURCE_WEIGHTS["conversation"]),
+                source_type=proposal.source_type,
+                weight=proposal.confidence,
                 raw_context=prompt[:300],
             )
             if existing:
@@ -137,14 +135,14 @@ async def _write_contact_proposals(
                 contact_id = best.id
             else:
                 person = Person(
-                    name=name,
-                    classification=proposal.get("classification", "unknown"),
-                    classification_confidence=float(proposal.get("confidence", 0.8)),
-                    relationship_to_user=proposal.get("relationship", ""),
-                    contact_info=proposal.get("contact_info") or {},
-                    confirmed=proposal.get("confirmed", True),
+                    name=proposal.name,
+                    classification=proposal.classification,
+                    classification_confidence=proposal.confidence,
+                    relationship_to_user=proposal.relationship,
+                    contact_info=proposal.contact_info,
+                    confirmed=proposal.confirmed,
                     dismissed=False,
-                    confidence=proposal.get("confidence", SOURCE_WEIGHTS["conversation"]),
+                    confidence=proposal.confidence,
                 )
                 stored = await person_store.upsert(person)
                 source.person_id = stored.id
@@ -155,17 +153,16 @@ async def _write_contact_proposals(
                 await _write_channel_handles(contact_channel_store, contact_id, proposal)
 
         except Exception as exc:
-            log.warning("contact_proposal_write_failed", name=name, error=str(exc))
+            log.warning("contact_proposal_write_failed", name=proposal.name, error=str(exc))
 
 
 async def _write_channel_handles(
     store: ContactChannelStore,
     contact_id,
-    proposal: dict,
+    proposal: ContactProposal,
 ) -> None:
     """Write any channel handles from a contact proposal into contact_channels."""
-    contact_info: dict = proposal.get("contact_info") or {}
-    email_addr = contact_info.get("email", "").strip().lower()
+    email_addr = proposal.contact_info.get("email", "").strip().lower()
     if email_addr:
         try:
             await store.upsert(contact_id, ChannelHandle(

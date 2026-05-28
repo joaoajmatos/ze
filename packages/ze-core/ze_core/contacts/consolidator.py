@@ -2,17 +2,21 @@ from __future__ import annotations
 
 import json
 import time
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import asyncpg
 
-from ze.contacts.store import PersonStore
-from ze.contacts.types import ContactsConsolidationReport, Person, PersonSource, SOURCE_WEIGHTS
-from ze.logging import get_logger
-from ze_core.openrouter.client import OpenRouterClient
-from ze.settings import Settings
+from ze_core.contacts.store import PersonStore
+from ze_core.contacts.types import ContactProposal, Person, PersonSource, SOURCE_WEIGHTS
+from ze_core.logging import get_logger
 from ze_core.telemetry.context import set_agent_context, set_flow_context
+
+_MODEL_DEFAULT = "anthropic/claude-haiku-4-5"
+_BATCH_SIZE_DEFAULT = 10
+_MAX_EPISODES_DEFAULT = 50
 
 _EXTRACT_SYSTEM = """\
 Extract named individuals from AI assistant conversation transcripts.
@@ -34,11 +38,14 @@ Rules:
 - Return [] if no named individuals are found
 """
 
-_DEFAULTS = {
-    "episode_batch_size": 10,
-    "max_episodes_per_run": 50,
-    "nightly_cron": "0 3 * * *",
-}
+
+@dataclass
+class ContactsConsolidationReport:
+    episodes_scanned: int = 0
+    candidates_extracted: int = 0
+    contacts_created: int = 0
+    contacts_updated: int = 0
+    duration_ms: int = 0
 
 
 class ContactsConsolidator:
@@ -46,8 +53,8 @@ class ContactsConsolidator:
         self,
         pool: asyncpg.Pool,
         person_store: PersonStore,
-        openrouter_client: OpenRouterClient,
-        settings: Settings,
+        openrouter_client: Any,
+        settings: Any = None,
     ) -> None:
         self._pool = pool
         self._store = person_store
@@ -61,9 +68,7 @@ class ContactsConsolidator:
         start = time.monotonic()
         self._log.info("contacts_consolidation_start")
 
-        cfg = self._cfg()
-        batch_size = int(cfg["episode_batch_size"])
-        max_episodes = int(cfg["max_episodes_per_run"])
+        batch_size, max_episodes = self._batch_config()
 
         episodes = await self._load_unprocessed(max_episodes)
         if not episodes:
@@ -72,7 +77,6 @@ class ContactsConsolidator:
 
         report = ContactsConsolidationReport(episodes_scanned=len(episodes))
 
-        # Process in batches — each batch is one LLM call
         for i in range(0, len(episodes), batch_size):
             batch = episodes[i : i + batch_size]
             candidates = await self._extract_candidates(batch)
@@ -107,15 +111,12 @@ class ContactsConsolidator:
                 limit,
             )
 
-    async def _extract_candidates(self, batch: list[asyncpg.Record]) -> list[dict]:
+    async def _extract_candidates(self, batch: list[asyncpg.Record]) -> list[ContactProposal]:
         block = _format_batch(batch)
-        model = self._settings.config.get("models", {}).get(
-            "synthesis", "anthropic/claude-haiku-4-5"
-        )
         try:
             raw = await self._client.complete(
                 messages=[{"role": "user", "content": block}],
-                model=model,
+                model=self._synthesis_model(),
                 system=_EXTRACT_SYSTEM,
                 max_tokens=800,
             )
@@ -123,48 +124,52 @@ class ContactsConsolidator:
             if not isinstance(parsed, list):
                 self._log.warning("contacts_extract_bad_shape", raw=raw[:200])
                 return []
-            return [c for c in parsed if isinstance(c, dict) and "name" in c]
+            return [
+                ContactProposal(
+                    name=str(c.get("name", "")).strip(),
+                    classification=_safe_classification(c.get("classification")),
+                    relationship=str(c.get("relationship", ""))[:500],
+                    contact_info={k: str(v) for k, v in (c.get("contact_info") or {}).items() if v},
+                    confidence=float(c.get("confidence", 0.5)),
+                    confirmed=False,
+                    source_type="conversation",
+                    raw_context=str(c.get("context", ""))[:500],
+                )
+                for c in parsed
+                if isinstance(c, dict) and c.get("name")
+            ]
         except Exception as exc:
             self._log.warning("contacts_extract_failed", error=str(exc))
             return []
 
-    async def _store_candidate(self, candidate: dict) -> bool:
+    async def _store_candidate(self, candidate: ContactProposal) -> bool:
         """Upsert a candidate into the person store. Returns True if newly created."""
-        name = (candidate.get("name") or "").strip()
-        if not name:
+        if not candidate.name:
             return False
 
-        confidence = float(candidate.get("confidence", 0.5))
-        # Clamp to research weight — consolidator never produces conversation-weight contacts
-        weight = min(confidence, SOURCE_WEIGHTS["conversation"])
-        source_type = "conversation"
+        weight = min(candidate.confidence, SOURCE_WEIGHTS["conversation"])
 
-        existing = await self._store.get_by_name(name)
+        existing = await self._store.get_by_name(candidate.name)
         source = PersonSource(
             person_id=UUID(int=0),  # placeholder, replaced below
-            source_type=source_type,
+            source_type=candidate.source_type,
             weight=weight,
-            raw_context=str(candidate.get("context", ""))[:500],
+            raw_context=candidate.raw_context,
         )
 
         if existing:
-            # Add this episode's observation as a new source on the best match
             best = existing[0]
             source.person_id = best.id  # type: ignore[assignment]
             await self._store.add_source(best.id, source)  # type: ignore[arg-type]
             return False
         else:
             person = Person(
-                name=name,
-                classification=_safe_classification(candidate.get("classification")),
-                classification_confidence=confidence,
-                relationship_to_user=str(candidate.get("relationship", ""))[:500],
-                contact_info={
-                    k: str(v)
-                    for k, v in (candidate.get("contact_info") or {}).items()
-                    if v
-                },
-                notes=str(candidate.get("context", ""))[:500],
+                name=candidate.name,
+                classification=candidate.classification,
+                classification_confidence=candidate.confidence,
+                relationship_to_user=candidate.relationship,
+                contact_info=candidate.contact_info,
+                notes=candidate.raw_context,
                 confirmed=False,
                 dismissed=False,
                 confidence=weight,
@@ -181,9 +186,26 @@ class ContactsConsolidator:
                 episode_ids,
             )
 
-    def _cfg(self) -> dict:
-        cfg = self._settings.contacts_config.get("consolidation", {})
-        return {k: cfg.get(k, v) for k, v in _DEFAULTS.items()}
+    def _batch_config(self) -> tuple[int, int]:
+        if self._settings is None:
+            return _BATCH_SIZE_DEFAULT, _MAX_EPISODES_DEFAULT
+        cfg = getattr(self._settings, "contacts_config", None)
+        if cfg is None and isinstance(self._settings, dict):
+            cfg = self._settings.get("contacts", {})
+        consolidation = (cfg or {}).get("consolidation", {}) if cfg else {}
+        batch_size = int(consolidation.get("episode_batch_size", _BATCH_SIZE_DEFAULT))
+        max_episodes = int(consolidation.get("max_episodes_per_run", _MAX_EPISODES_DEFAULT))
+        return batch_size, max_episodes
+
+    def _synthesis_model(self) -> str:
+        if self._settings is None:
+            return _MODEL_DEFAULT
+        cfg = getattr(self._settings, "config", None)
+        if cfg is not None:
+            return cfg.get("models", {}).get("synthesis", _MODEL_DEFAULT)
+        if isinstance(self._settings, dict):
+            return self._settings.get("models", {}).get("synthesis", _MODEL_DEFAULT)
+        return _MODEL_DEFAULT
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

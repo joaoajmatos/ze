@@ -3,13 +3,8 @@
 ## Purpose
 
 Contacts and channel handles are framework-level primitives: who people are and
-how to reach them. Ze is a single-user assistant today, but the contacts model is
-not Ze-specific — it belongs in ze-core alongside memory and channels.
-
-This spec migrates `PersonStore`, contact types, and `ContactChannelStore` from
-`ze/contacts/` into `ze_core/contacts/`. Ze-specific behaviour — contact extraction
-from episodes (`ContactsConsolidator`) and tool-call parsing (`extractors.py`) —
-stays in `ze/`.
+how to reach them. This spec defines ze-core's ownership of the contact layer and
+the clean API for contact extraction.
 
 The channel abstraction (`Channel` ABC, `ChannelRegistry`, `ChannelType`,
 `ChannelHandle`) is already in `ze_core/channels/` (Phase 18). This spec adds the
@@ -20,59 +15,85 @@ contacts side of that relationship.
 ## Out of Scope
 
 - New contact fields or schema changes.
-- Moving `ContactsConsolidator` — it depends on `OpenRouterClient`, Ze `Settings`,
-  and the Ze-specific `episodes` table; it stays in `ze/contacts/`.
-- Moving `extractors.py` — it depends on `ze.agents.types.ToolCall` and Ze-specific
-  tool names (`get_email`, `list_events`); it stays in `ze/contacts/`.
 - Moving `EmailChannel` — Gmail-specific transport; it stays in `ze/`.
 
 ---
 
 ## Repository Layout
 
-### Before
-
 ```
 packages/
 ├── ze-core/ze_core/
-│   └── channels/
-│       ├── base.py          # Channel ABC
-│       ├── registry.py      # ChannelRegistry
-│       └── types.py         # ChannelType, ChannelHandle, Message, Thread, …
-└── ze/ze/
-    └── contacts/
-        ├── types.py         # Person, PersonSource, PersonRelationship, …
-        ├── store.py         # PersonStore
-        ├── channel_store.py # ContactChannelStore
-        ├── consolidator.py  # ContactsConsolidator  ← stays
-        └── extractors.py    # extract_email_contacts ← stays
-```
-
-### After
-
-```
-packages/
-├── ze-core/ze_core/
-│   ├── channels/            # unchanged
+│   ├── channels/            # Channel ABC, ChannelRegistry, types
 │   └── contacts/
 │       ├── __init__.py
 │       ├── types.py         # Person, PersonSource, PersonRelationship,
 │       │                    # PersonCandidate, PersonContext, StaleFollowUpNudge,
-│       │                    # SOURCE_WEIGHTS
+│       │                    # ContactProposal, SOURCE_WEIGHTS
 │       ├── store.py         # PersonStore
-│       └── channel_store.py # ContactChannelStore
+│       ├── channel_store.py # ContactChannelStore
+│       └── consolidator.py  # ContactsConsolidator, ContactsConsolidationReport
 └── ze/ze/
     └── contacts/
-        ├── __init__.py      # re-exports from ze_core.contacts (compat shim)
-        ├── consolidator.py  # unchanged
-        └── extractors.py    # unchanged
+        ├── __init__.py      # empty
+        └── extractors.py    # Ze-specific tool-call parsers (email, calendar)
 ```
 
 ---
 
-## Types (`ze_core/contacts/types.py`)
+## Contact Extraction API
 
-Moved verbatim from `ze/contacts/types.py`. No changes to field names or defaults.
+There are two distinct mechanisms for populating contacts — they are not redundant:
+
+### 1. Rule-based inline extractors (`ze/contacts/extractors.py`)
+
+Parse structured tool call outputs from Ze's email and calendar agents:
+
+- `extract_email_contacts(tool_calls)` — reads `From:` headers from `get_email` results
+- `extract_calendar_contacts(tool_calls)` — reads attendee lists from `list_events` / `create_event` results
+
+These run synchronously after each agent turn, produce `list[ContactProposal]`,
+and feed directly into `AgentResult.contact_proposals`. They live in `ze/` because
+they filter on Ze-specific tool names (`"get_email"`, `"list_events"`).
+
+### 2. LLM background consolidator (`ze_core/contacts/consolidator.py`)
+
+`ContactsConsolidator` runs nightly. It scans all episodes where
+`contacts_extracted = false`, calls an LLM to extract named people from
+conversation text, and upserts them into `PersonStore`.
+
+This is the catch-all for agents that don't have structured tool output to parse
+(e.g. research agent, companion agent). It lives in ze-core because all its
+dependencies are ze-core primitives.
+
+The former `extract_contacts` LLM tool (inline per-turn extraction for the companion
+agent) was removed — it was redundant with the consolidator and added an unnecessary
+LLM call on every companion turn.
+
+### `ContactProposal` — the shared output type
+
+Both mechanisms produce `ContactProposal` (defined in `ze_core/contacts/types.py`):
+
+```python
+@dataclass
+class ContactProposal:
+    name: str
+    classification: str = "unknown"    # "personal" | "professional" | "unknown"
+    relationship: str = ""
+    contact_info: dict[str, str] = field(default_factory=dict)
+    confidence: float = 0.5
+    confirmed: bool = False
+    source_type: str = "conversation"
+    raw_context: str = ""
+```
+
+`AgentResult.contact_proposals: list[ContactProposal]` carries proposals out of
+agents. The `write_memory` orchestration node persists them via `PersonStore` and
+writes any email handles to `ContactChannelStore`.
+
+---
+
+## Types (`ze_core/contacts/types.py`)
 
 ```python
 SOURCE_WEIGHTS: dict[str, float] = {
@@ -84,176 +105,96 @@ SOURCE_WEIGHTS: dict[str, float] = {
 }
 
 @dataclass
-class Person:
-    name: str
-    aliases: list[str]
-    classification: str             # "personal" | "professional" | "unknown"
-    classification_confidence: float
-    relationship_to_user: str
-    contact_info: dict[str, str]    # unstructured; structured handles go in contact_channels
-    notes: str
-    confirmed: bool
-    dismissed: bool
-    confidence: float               # max(source.weight) across all sources
-    id: UUID | None
-    first_seen: datetime | None
-    last_mentioned: datetime | None
-    created_at: datetime | None
-    updated_at: datetime | None
-
+class Person: ...           # stored contact record
 @dataclass
-class PersonSource:
-    person_id: UUID
-    source_type: str   # "conversation" | "manual" | "email" | "calendar" | "research"
-    weight: float
-    raw_context: str
-    id: UUID | None
-    created_at: datetime | None
-
+class PersonSource: ...     # provenance entry per contact
 @dataclass
-class PersonRelationship:
-    person_a_id: UUID
-    person_b_id: UUID
-    relationship_description: str
-    confidence: float
-    source_type: str
-    id: UUID | None
-    created_at: datetime | None
-
+class PersonRelationship: ...  # person-to-person link
 @dataclass
-class PersonCandidate:
-    """Intermediate type produced by extraction — not yet persisted as a Person."""
-    name: str
-    inferred_classification: str
-    inferred_relationship: str
-    raw_context: str
-    source_type: str
-
+class PersonCandidate: ...  # intermediate extraction result (not yet persisted)
 @dataclass
-class PersonContext:
-    people: list[Person]
-    token_estimate: int
-
+class PersonContext: ...    # ranked contacts for agent context injection
 @dataclass
-class StaleFollowUpNudge:
-    name: str
-    days_ago: int
-```
-
-`ContactsConsolidationReport` is not moved — it is a Ze consolidator output type
-and stays in `ze/contacts/consolidator.py`.
-
----
-
-## `PersonStore` (`ze_core/contacts/store.py`)
-
-Moved verbatim from `ze/contacts/store.py`. The only import change is the logger:
-
-```python
-# before
-from ze.logging import get_logger
-
-# after
-from ze_core.logging import get_logger
-```
-
-All SQL, row-mapping helpers (`_person_from_row`, `_source_from_row`), and method
-signatures are unchanged.
-
----
-
-## `ContactChannelStore` (`ze_core/contacts/channel_store.py`)
-
-Moved verbatim from `ze/contacts/channel_store.py`. Already imports from
-`ze_core.channels.types` — only the logger import changes:
-
-```python
-# before
-from ze.logging import get_logger
-
-# after
-from ze_core.logging import get_logger
+class StaleFollowUpNudge: ...  # proactive: contact not mentioned recently
+@dataclass
+class ContactProposal: ...  # typed extraction output (see above)
 ```
 
 ---
 
-## Compat Shim (`ze/contacts/__init__.py`)
-
-To avoid updating every callsite in `ze/` at once, `ze/contacts/__init__.py` re-exports
-all public names from `ze_core.contacts`:
+## `ContactsConsolidator` (`ze_core/contacts/consolidator.py`)
 
 ```python
-from ze_core.contacts.types import (
-    SOURCE_WEIGHTS,
-    Person,
-    PersonCandidate,
-    PersonContext,
-    PersonRelationship,
-    PersonSource,
-    StaleFollowUpNudge,
-)
+class ContactsConsolidator:
+    def __init__(
+        self,
+        pool: asyncpg.Pool,
+        person_store: PersonStore,
+        openrouter_client: Any,
+        settings: Any = None,   # duck-typed: Settings or dict
+    ) -> None: ...
+
+    async def run(self) -> ContactsConsolidationReport: ...
+```
+
+Reads `contacts.consolidation` config from `settings` if present:
+
+| Parameter | Default |
+|-----------|---------|
+| `episode_batch_size` | 10 |
+| `max_episodes_per_run` | 50 |
+| synthesis model | `anthropic/claude-haiku-4-5` |
+
+---
+
+## Imports in `ze/`
+
+```python
+from ze_core.contacts.types import Person, ContactProposal, SOURCE_WEIGHTS
 from ze_core.contacts.store import PersonStore
 from ze_core.contacts.channel_store import ContactChannelStore
-
-__all__ = [
-    "SOURCE_WEIGHTS",
-    "Person",
-    "PersonCandidate",
-    "PersonContext",
-    "PersonRelationship",
-    "PersonSource",
-    "StaleFollowUpNudge",
-    "PersonStore",
-    "ContactChannelStore",
-]
+from ze_core.contacts.consolidator import ContactsConsolidator, ContactsConsolidationReport
+from ze.contacts.extractors import extract_email_contacts, extract_calendar_contacts
 ```
 
-Callers in `ze/` that already import from `ze.contacts.*` continue to work without
-change. The individual submodule files (`ze/contacts/store.py`,
-`ze/contacts/types.py`, `ze/contacts/channel_store.py`) are deleted — they are
-replaced by the shim.
-
-New code in `ze/` should import from `ze_core.contacts` directly.
-
 ---
 
-## Container
+## Schema Ownership
 
-`ze/container.py` wires `PersonStore` and `ContactChannelStore`. The import path
-changes from `ze.contacts.store` / `ze.contacts.channel_store` to
-`ze_core.contacts.store` / `ze_core.contacts.channel_store`. The wiring logic and
-constructor arguments are unchanged.
+Contact tables are defined in ze-core's migration chain (`zc005`):
 
----
+- `contacts` — primary person record
+- `contact_sources` — source provenance per person
+- `contact_relationships` — person-to-person links
+- `contact_channels` — reachable handles per person
 
-## No Migration Required
+Ze's migration adds one Ze-specific column to ze-core's `episodes` table:
 
-This phase is a pure code reorganisation. The database schema (`contacts`,
-`contact_sources`, `contact_relationships`, `contact_channels` tables) is
-unchanged.
+```sql
+ALTER TABLE episodes
+    ADD COLUMN IF NOT EXISTS contacts_extracted BOOLEAN NOT NULL DEFAULT FALSE;
+```
+
+This column is only read by `ContactsConsolidator` to track which episodes have
+been processed. It belongs in ze's migration because no ze-core code reads it.
 
 ---
 
 ## Testing
 
-- Existing tests in `tests/contacts/test_store.py` and
-  `tests/contacts/test_channel_store.py` update their import paths to
-  `ze_core.contacts.*` and otherwise remain unchanged.
-- No new test files are needed — this is a move, not a behaviour change.
-- The compat shim is not tested separately; its correctness is validated
-  transitively by any test that imports from `ze.contacts`.
+- `tests/contacts/test_store.py` — `PersonStore` CRUD, row mapping
+- `tests/contacts/test_channel_store.py` — `ContactChannelStore` CRUD
+- `tests/contacts/test_consolidator.py` — consolidator batch processing, LLM mocked
+- `tests/contacts/test_extractors.py` — rule-based extractor parsing, no LLM
 
 ---
 
 ## What This Enables
 
-After this phase:
-
-- ze-core owns the full contact primitive: who people are (`PersonStore`, types)
-  and how to reach them (`ContactChannelStore`, `ChannelHandle`) — symmetric with
-  how ze-core owns memory.
-- A future ze-core-based app gets contacts and channels for free, supplying only
-  its own extractors and consolidator.
-- `ze_core/channels/` and `ze_core/contacts/` form a coherent framework layer:
-  channel handles belong to contacts, contacts are persisted by `PersonStore`,
-  sends go through `ChannelRegistry`.
+- ze-core owns the full contact primitive: who people are and how to reach them —
+  symmetric with how ze-core owns memory.
+- `ContactProposal` is the single typed contract between extraction (any source)
+  and persistence (`write_memory` node → `PersonStore`).
+- Adding a new Ze agent that surfaces contacts: produce `list[ContactProposal]` in
+  `AgentResult`, or write a new extractor in `ze/contacts/extractors.py`. The
+  consolidator covers everything else automatically.

@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from ze.contacts.types import Person
+from ze_core.contacts.types import Person
 from ze.telegram.commands import contacts_search, contacts_summary
 
 

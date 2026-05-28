@@ -2,8 +2,8 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from ze.contacts.store import PersonStore, _person_from_row, _source_from_row
-from ze.contacts.types import Person, PersonRelationship, PersonSource
+from ze_core.contacts.store import PersonStore, _person_from_row, _source_from_row
+from ze_core.contacts.types import Person, PersonRelationship, PersonSource
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

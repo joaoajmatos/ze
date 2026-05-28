@@ -5,8 +5,8 @@ import asyncpg
 
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze.agents.types import ToolCall
-from ze.contacts.store import PersonStore
-from ze.contacts.types import Person, PersonSource
+from ze_core.contacts.store import PersonStore
+from ze_core.contacts.types import Person, PersonSource
 from ze.logging import get_logger
 from ze_core.openrouter.client import OpenRouterClient
 

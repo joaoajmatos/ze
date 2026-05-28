@@ -4,7 +4,7 @@ from datetime import datetime as dt
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ze.contacts.store import PersonStore
+    from ze_core.contacts.store import PersonStore
     from ze_core.persona.postgres import PostgresPersonaStore as PersonaStore
 
 _NAMED_AGENTS = {"companion", "research", "calendar", "email", "whisper", "routing", "memory"}
@@ -148,7 +148,7 @@ async def contacts_summary(person_store: "PersonStore") -> str:
     if not rows:
         return "No contacts yet. Ze will add people as you mention them."
 
-    from ze.contacts.store import _person_from_row
+    from ze_core.contacts.store import _person_from_row
     people = [_person_from_row(r) for r in rows]
     lines = [f"\U0001f4c7 <b>Your contacts</b> ({len(people)})"]
     for person in people:

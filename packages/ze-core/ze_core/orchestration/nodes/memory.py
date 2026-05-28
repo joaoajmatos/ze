@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from ze_core.contacts.types import ContactProposal
 from ze_core.logging import get_logger
 from ze_core.memory.extractor import gather_fact_proposals
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
@@ -119,12 +120,11 @@ async def synthesize(state: AgentState, config: dict) -> dict:
     return {"final_response": response}
 
 
-async def _write_contact_proposals(person_store: Any, proposals: list, prompt: str) -> None:
+async def _write_contact_proposals(person_store: Any, proposals: list[ContactProposal], prompt: str) -> None:
     for proposal in proposals:
-        name = (proposal.get("name") or "").strip()
-        if not name:
+        if not proposal.name:
             continue
         try:
             await person_store.upsert_from_proposal(proposal, prompt)
         except Exception as exc:
-            log.warning("contact_proposal_write_failed", name=name, error=str(exc))
+            log.warning("contact_proposal_write_failed", name=proposal.name, error=str(exc))

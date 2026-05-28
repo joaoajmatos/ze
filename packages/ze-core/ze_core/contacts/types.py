@@ -18,7 +18,7 @@ class Person:
     aliases: list[str] = field(default_factory=list)
     classification: str = "unknown"          # "personal" | "professional" | "unknown"
     classification_confidence: float = 0.0
-    relationship_to_user: str = ""           # free text Ze infers from context
+    relationship_to_user: str = ""
     contact_info: dict[str, str] = field(default_factory=dict)
     notes: str = ""
     confirmed: bool = False
@@ -45,7 +45,7 @@ class PersonSource:
 class PersonRelationship:
     person_a_id: UUID
     person_b_id: UUID
-    relationship_description: str            # free text: "works at same company as João"
+    relationship_description: str
     confidence: float = 0.5
     source_type: str = "manual"
     id: UUID | None = None
@@ -75,9 +75,13 @@ class StaleFollowUpNudge:
 
 
 @dataclass
-class ContactsConsolidationReport:
-    episodes_scanned: int = 0
-    candidates_extracted: int = 0
-    contacts_created: int = 0
-    contacts_updated: int = 0
-    duration_ms: int = 0
+class ContactProposal:
+    """Typed output of any contact extraction step (extractors, consolidator, agents)."""
+    name: str
+    classification: str = "unknown"        # "personal" | "professional" | "unknown"
+    relationship: str = ""
+    contact_info: dict[str, str] = field(default_factory=dict)
+    confidence: float = 0.5
+    confirmed: bool = False
+    source_type: str = "conversation"
+    raw_context: str = ""

@@ -70,13 +70,13 @@ def bootstrap_agents(
     if notifier is not None:
         _dep_map[ProactiveNotifier] = notifier
     if person_store is not None:
-        from ze.contacts.store import PersonStore
+        from ze_core.contacts.store import PersonStore
         _dep_map[PersonStore] = person_store
     if browser_client is not None:
         from ze_browser import BrowserClient
         _dep_map[BrowserClient] = browser_client
     if contact_channel_store is not None:
-        from ze.contacts.channel_store import ContactChannelStore
+        from ze_core.contacts.channel_store import ContactChannelStore
         _dep_map[ContactChannelStore] = contact_channel_store
     if goal_store is not None:
         _dep_map[GoalStore] = goal_store

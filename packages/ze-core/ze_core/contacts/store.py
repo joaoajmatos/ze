@@ -3,14 +3,14 @@ from uuid import UUID
 
 import asyncpg
 
-from ze.contacts.types import (
+from ze_core.contacts.types import (
     Person,
     PersonContext,
     PersonRelationship,
     PersonSource,
     StaleFollowUpNudge,
 )
-from ze.logging import get_logger
+from ze_core.logging import get_logger
 
 
 def _tokens(text: str) -> int:

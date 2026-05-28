@@ -4,8 +4,8 @@ from langchain_core.runnables import RunnableConfig
 from sentence_transformers import SentenceTransformer
 
 from ze.agents.types import AgentContext
-from ze.contacts.store import PersonStore
-from ze.contacts.types import PersonContext
+from ze_core.contacts.store import PersonStore
+from ze_core.contacts.types import PersonContext
 from ze.logging import get_logger
 from ze_core.memory.postgres import PostgresMemoryStore as MemoryStore
 from ze.orchestration.state import AgentState

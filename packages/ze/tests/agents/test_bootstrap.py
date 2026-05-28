@@ -39,7 +39,7 @@ def settings(tmp_path):
 def test_bootstrap_registers_companion_and_research(settings):
     from unittest.mock import MagicMock as MM
     from ze_browser import BrowserClient
-    from ze.contacts.store import PersonStore
+    from ze_core.contacts.store import PersonStore
     from ze_core.goals.executor import GoalExecutor
     from ze_core.goals.planner import GoalPlanner
     from ze_core.goals.postgres import PostgresGoalStore as GoalStore
