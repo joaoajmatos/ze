@@ -1,11 +1,14 @@
 from ze_core.contacts.store import PersonStore
 from ze.logging import get_logger
+from ze_core.proactive.job import proactive_job
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze_core.telemetry.context import set_flow_context
 from ze_core.interface.types import Action, Notification
 
 
+@proactive_job
 class ContactReviewNotifier:
+    job_id = "contact_review"
     def __init__(
         self,
         person_store: PersonStore,

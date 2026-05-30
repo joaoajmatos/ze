@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Awaitable, Callable
+from typing import TYPE_CHECKING, Awaitable, Callable
 
 from ze_core.logging import get_logger
+
+if TYPE_CHECKING:
+    from ze_core.proactive.job import ProactiveJob
 
 log = get_logger(__name__)
 
@@ -24,6 +27,10 @@ class ProactiveScheduler:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         self._scheduler = AsyncIOScheduler()
         self._started = False
+
+    def register(self, job: "ProactiveJob", cron: str) -> None:
+        """Register a ProactiveJob instance on a cron schedule."""
+        self.add_cron_job(fn=job.run, cron=cron, job_id=job.job_id)
 
     def add_cron_job(
         self,

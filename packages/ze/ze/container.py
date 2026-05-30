@@ -421,14 +421,8 @@ async def build_container(settings: Settings) -> ZeContainer:
             person_store=person_store,
             notifier=notifier,
         )
-        review_cron = settings.contacts_config.get(
-            "consolidation", {}
-        ).get("review_cron", "30 8 * * *")
-        proactive_scheduler.add_cron_job(
-            fn=contact_review.run,
-            cron=review_cron,
-            job_id="contact_review",
-        )
+        review_cron = settings.contacts_config.get("consolidation", {}).get("review_cron", "30 8 * * *")
+        proactive_scheduler.register(contact_review, cron=review_cron)
         log.info("contact_review_scheduled", cron=review_cron)
 
         proactive_scheduler.add_cron_job(
@@ -450,13 +444,8 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     briefing_cfg = proactive_cfg.get("briefing", {})
     if briefing_cfg.get("enabled", True):
-        briefing_cron = briefing_cfg.get("cron", "0 8 * * *")
-        proactive_scheduler.add_cron_job(
-            fn=morning_briefing.run,
-            cron=briefing_cron,
-            job_id="morning_briefing",
-        )
-        log.info("briefing_scheduled", cron=briefing_cron)
+        proactive_scheduler.register(morning_briefing, cron=briefing_cfg.get("cron", "0 8 * * *"))
+        log.info("briefing_scheduled", cron=briefing_cfg.get("cron", "0 8 * * *"))
 
     google_credentials = GoogleCredentials.from_settings(settings)
 
@@ -489,11 +478,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     insights_proactive_cfg = proactive_cfg.get("insights", {})
     if insights_proactive_cfg.get("enabled", True):
-        proactive_scheduler.add_cron_job(
-            fn=insight_engine.run,
-            cron=insights_proactive_cfg.get("cron", "0 7 * * 0"),
-            job_id="insight_generation",
-        )
+        proactive_scheduler.register(insight_engine, cron=insights_proactive_cfg.get("cron", "0 7 * * 0"))
         log.info("insights_scheduled")
 
     await proactive_scheduler.start()

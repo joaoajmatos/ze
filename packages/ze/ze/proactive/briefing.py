@@ -4,11 +4,14 @@ from ze.proactive.push_log_store import PushLogStore
 from ze.settings import Settings
 from ze_core.workflow.store import WorkflowStore
 from ze_core.memory.postgres import PostgresMemoryStore
+from ze_core.proactive.job import proactive_job
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze_core.telemetry.context import set_flow_context
 
 
+@proactive_job
 class MorningBriefing:
+    job_id = "morning_briefing"
     def __init__(
         self,
         notifier: ProactiveNotifier,
