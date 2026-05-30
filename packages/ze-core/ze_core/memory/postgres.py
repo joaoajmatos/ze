@@ -36,8 +36,9 @@ def _cosine_similarity(a: Any, b: Any) -> float:
     return dot / (norm_a * norm_b)
 
 
-def _to_list(embedding: Any) -> list:
-    return embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
+def _to_list(embedding: Any) -> str:
+    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
+    return "[" + ",".join(str(v) for v in vals) + "]"
 
 
 def _parse_update_count(status: Any) -> int:

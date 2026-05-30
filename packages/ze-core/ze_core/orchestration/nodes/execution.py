@@ -4,6 +4,8 @@ import asyncio
 import base64
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
+
 from ze_core.capability.types import GateDecision
 from ze_core.errors import AgentTimeoutError
 from ze_core.logging import get_logger
@@ -14,7 +16,7 @@ from ze_core.orchestration.types import AgentContext, AgentResult
 log = get_logger(__name__)
 
 
-async def capability_check(state: AgentState, config: dict) -> dict:
+async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
     from ze_core.capability.gate import CapabilityGate
 
     gate: CapabilityGate = config["configurable"]["capability_gate"]
@@ -32,7 +34,7 @@ async def capability_check(state: AgentState, config: dict) -> dict:
     return {"gate_decision": decision}
 
 
-async def execute_tool(state: AgentState, config: dict) -> dict:
+async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     envelope = state.get("envelope")
     base_ctx = state.get("agent_context")
 
@@ -56,7 +58,7 @@ async def execute_tool(state: AgentState, config: dict) -> dict:
     )
 
 
-async def draft_response(state: AgentState, config: dict) -> dict:
+async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
     envelope = state.get("envelope")
     base_ctx = state.get("agent_context")
 
@@ -77,7 +79,7 @@ async def draft_response(state: AgentState, config: dict) -> dict:
     return {"agent_result": result, "pending_confirmation": True}
 
 
-async def await_confirmation(state: AgentState, config: dict) -> dict:
+async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
     log.info(
         "orchestration_confirmation_received",
         session_id=state["session_id"],

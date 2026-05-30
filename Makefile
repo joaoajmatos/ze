@@ -26,8 +26,8 @@ help:
 	@echo "    migrate        Apply all pending migrations (upgrade heads)"
 	@echo "    migrate-down   Roll back one migration step"
 	@echo "    migrate-status Show current migration revision"
-	@echo "    migrate-history List all migrations
-    migrate-stamp   Stamp existing DB to squashed heads (run once after squash)"
+	@echo "    migrate-history List all migrations"
+	@echo "    migrate-stamp   Stamp existing DB to squashed heads (run once after squash)"
 	@echo ""
 	@echo "  Development"
 	@echo "    dev            Start dev server (uvicorn --reload, REST API only)"

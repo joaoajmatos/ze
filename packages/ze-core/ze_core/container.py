@@ -361,6 +361,8 @@ class Container:
                     ("ze_core.memory.types", "UserFact"),
                     ("ze_core.memory.types", "Episode"),
                     ("ze_core.memory.types", "UserProfile"),
+                    ("ze_core.contacts.types", "Person"),
+                    ("ze_core.contacts.types", "PersonContext"),
                 ]
             )
             checkpointer = AsyncPostgresSaver(checkpointer_pool, serde=serde)

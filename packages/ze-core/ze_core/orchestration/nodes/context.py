@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
+
 from ze_core.logging import get_logger
 from ze_core.memory.types import MemoryContext
 from ze_core.orchestration.state import AgentState
@@ -14,7 +16,7 @@ SESSION_HISTORY_LIMIT = 10
 _DEFAULT_INACTIVITY_MINUTES = 30
 
 
-async def fetch_context(state: AgentState, config: dict) -> dict:
+async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     store: Any = config["configurable"]["memory_store"]
     embedder: Any = config["configurable"]["embedder"]
     cfg: Any = config["configurable"].get("settings")

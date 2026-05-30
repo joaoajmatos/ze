@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from langchain_core.runnables import RunnableConfig
 from ze_core.capability.types import GateDecision
 from ze_core.errors import WorkflowPlanError
 from ze_core.logging import get_logger
@@ -9,7 +10,7 @@ from ze_core.telemetry.context import set_agent_context
 log = get_logger(__name__)
 
 
-async def embed_route(state: AgentState, config: dict) -> dict:
+async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     from ze_core.routing.router import EmbeddingRouter
 
     router: EmbeddingRouter = config["configurable"]["router"]
@@ -28,7 +29,7 @@ async def embed_route(state: AgentState, config: dict) -> dict:
     return {"envelope": envelope}
 
 
-async def decompose(state: AgentState, config: dict) -> dict:
+async def decompose(state: AgentState, config: RunnableConfig) -> dict:
     from ze_core.orchestration.registry import get_enabled_agents
     from ze_core.routing import fallback
     from ze_core.routing.router import EmbeddingRouter
@@ -69,7 +70,7 @@ async def decompose(state: AgentState, config: dict) -> dict:
     return {"envelope": new_envelope}
 
 
-async def plan_sequential(state: AgentState, config: dict) -> dict:
+async def plan_sequential(state: AgentState, config: RunnableConfig) -> dict:
     """Call WorkflowPlanner to produce an ordered step list, then pre-check each step
     against the capability gate to identify any steps requiring user approval."""
     from ze_core.capability.gate import CapabilityGate

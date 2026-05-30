@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
+
 from ze_core.channels.types import ChannelHandle, ChannelType
 from ze_core.contacts.types import ContactProposal, Person, PersonSource
 from ze_core.logging import get_logger
@@ -14,7 +16,7 @@ from ze_core.orchestration.types import AgentResult
 log = get_logger(__name__)
 
 
-async def write_memory(state: AgentState, config: dict) -> dict:
+async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     store: Any = config["configurable"]["memory_store"]
     embedder: Any = config["configurable"]["embedder"]
     ctx = state.get("agent_context")
@@ -91,7 +93,7 @@ async def write_memory(state: AgentState, config: dict) -> dict:
     return {"messages": updated[-SESSION_HISTORY_LIMIT:]}
 
 
-async def synthesize(state: AgentState, config: dict) -> dict:
+async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
     from ze_core.telemetry.context import set_agent_context
     set_agent_context("synthesis")
 

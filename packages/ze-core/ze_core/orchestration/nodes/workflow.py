@@ -4,6 +4,8 @@ import asyncio
 import json
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
+
 from ze_core.defaults import MODEL_WORKFLOW_VERIFY
 from ze_core.logging import get_logger
 from ze_core.orchestration.state import AgentState
@@ -14,7 +16,7 @@ from ze_core.workflow.types import StepResult, WorkflowStep
 log = get_logger(__name__)
 
 
-def _resolve_verify_model(config: dict) -> str:
+def _resolve_verify_model(config: RunnableConfig) -> str:
     cfg = config["configurable"].get("settings")
     if cfg is None:
         return MODEL_WORKFLOW_VERIFY
@@ -26,7 +28,7 @@ def _resolve_verify_model(config: dict) -> str:
     return models.get("workflow_verify", MODEL_WORKFLOW_VERIFY)
 
 
-async def load_workflow_step(state: AgentState, config: dict) -> dict:
+async def load_workflow_step(state: AgentState, config: RunnableConfig) -> dict:
     """Set prompt to the current step's task and reset all per-step state."""
     steps: list[WorkflowStep] = state["workflow_steps"]
     idx: int = state.get("current_step_index", 0)
@@ -50,7 +52,7 @@ async def load_workflow_step(state: AgentState, config: dict) -> dict:
     }
 
 
-async def verify_step(state: AgentState, config: dict) -> dict:
+async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
     """Validate step output; append StepResult and advance index."""
     store: WorkflowStore = config["configurable"]["workflow_store"]
     client: Any = config["configurable"]["openrouter_client"]
@@ -110,7 +112,7 @@ async def verify_step(state: AgentState, config: dict) -> dict:
     }
 
 
-async def workflow_synthesize(state: AgentState, config: dict) -> dict:
+async def workflow_synthesize(state: AgentState, config: RunnableConfig) -> dict:
     """Merge all step outputs into a final response and mark execution complete."""
     store: WorkflowStore = config["configurable"]["workflow_store"]
     client: Any = config["configurable"]["openrouter_client"]
@@ -144,7 +146,7 @@ async def workflow_synthesize(state: AgentState, config: dict) -> dict:
     return {"final_response": response}
 
 
-async def workflow_failed(state: AgentState, config: dict) -> dict:
+async def workflow_failed(state: AgentState, config: RunnableConfig) -> dict:
     """Record execution failure and build a user-facing error message."""
     store: WorkflowStore = config["configurable"]["workflow_store"]
 

@@ -1,3 +1,5 @@
+import json
+
 import asyncpg
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
@@ -12,12 +14,19 @@ _CHECKPOINTER_CONN_KWARGS = {
 }
 
 
+async def _init_conn(conn: asyncpg.Connection) -> None:
+    # asyncpg 0.29+ no longer auto-decodes jsonb; register codecs explicitly.
+    await conn.set_type_codec("jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog")
+    await conn.set_type_codec("json", encoder=json.dumps, decoder=json.loads, schema="pg_catalog")
+
+
 async def create_pool(settings: Settings) -> asyncpg.Pool:
     pool = await asyncpg.create_pool(
         dsn=settings.database_url,
         min_size=2,
         max_size=10,
         command_timeout=30,
+        init=_init_conn,
     )
     assert pool is not None  # create_pool returns Pool | None with min_size set
     return pool

@@ -168,6 +168,8 @@ async def build_container(settings: Settings) -> ZeContainer:
             ("ze_core.memory.types", "UserFact"),
             ("ze_core.memory.types", "Episode"),
             ("ze_core.memory.types", "UserProfile"),
+            ("ze_core.contacts.types", "Person"),
+            ("ze_core.contacts.types", "PersonContext"),
             ("asyncpg.pgproto.pgproto", "UUID"),
         ]
     )
@@ -433,6 +435,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         log.info("stale_campaign_recovery_scheduled")
 
     # ── Proactive push ────────────────────────────────────────────────────────
+    proactive_cfg = settings.proactive_config
     push_log_store = PushLogStore(pool=pool)
     morning_briefing = MorningBriefing(
         notifier=notifier,

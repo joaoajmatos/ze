@@ -11,6 +11,8 @@ again to restore the production webhook.
 
 import asyncio
 
+from aiogram.exceptions import TelegramNetworkError
+
 from ze.container import build_container
 from ze.logging import configure_logging, get_logger
 from ze.settings import get_settings
@@ -63,7 +65,7 @@ async def main() -> None:
     container = await build_container(settings)
     try:
         await _poll(container)
-    except asyncio.CancelledError:
+    except (asyncio.CancelledError, TelegramNetworkError):
         pass
     finally:
         await container.close()

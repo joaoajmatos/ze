@@ -3,6 +3,8 @@ from __future__ import annotations
 import base64
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
+
 from ze_core.defaults import MODEL_VISION_CAPTION, MODEL_WHISPER
 from ze_core.logging import get_logger
 from ze_core.openrouter.client import _normalise_audio_format
@@ -11,7 +13,7 @@ from ze_core.orchestration.state import AgentState
 log = get_logger(__name__)
 
 
-async def preprocess(state: AgentState, config: dict) -> dict:
+async def preprocess(state: AgentState, config: RunnableConfig) -> dict:
     """Normalise multimodal input before routing.
 
     - Audio → transcribed to text via openrouter_client.transcribe(); audio bytes
