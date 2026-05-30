@@ -3,8 +3,8 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from ze_core.contacts.consolidator import ContactsConsolidator, _format_batch, _safe_classification
-from ze_core.contacts.types import Person
+from ze_personal.contacts.consolidator import ContactsConsolidator, _format_batch, _safe_classification
+from ze_personal.contacts.types import Person
 from ze.settings import Settings
 
 

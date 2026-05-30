@@ -74,9 +74,8 @@ async def plan_sequential(state: AgentState, config: RunnableConfig) -> dict:
     """Call WorkflowPlanner to produce an ordered step list, then pre-check each step
     against the capability gate to identify any steps requiring user approval."""
     from ze_core.capability.gate import CapabilityGate
-    from ze_core.workflow.planner import WorkflowPlanner
 
-    planner: WorkflowPlanner = config["configurable"]["workflow_planner"]
+    planner = config["configurable"]["workflow_planner"]
     gate: CapabilityGate = config["configurable"]["capability_gate"]
     session_overrides: dict = state.get("session_overrides") or {}
 

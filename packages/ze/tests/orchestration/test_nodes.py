@@ -284,8 +284,8 @@ async def test_write_memory_no_crash_if_no_agent_context():
 
 async def test_write_contact_proposals_writes_email_to_channel_store():
     from ze_core.channels.types import ChannelType
-    from ze_core.contacts.types import ContactProposal
-    from ze.orchestration.contact_hooks import _write_contact_proposals
+    from ze_personal.contacts.types import ContactProposal
+    from ze_personal.graph.memory_hooks import _write_contact_proposals
 
     person_store = AsyncMock()
     person_store.get_by_name = AsyncMock(return_value=[])
@@ -319,8 +319,8 @@ async def test_write_contact_proposals_writes_email_to_channel_store():
 
 
 async def test_write_contact_proposals_skips_channel_write_when_no_email():
-    from ze_core.contacts.types import ContactProposal
-    from ze.orchestration.contact_hooks import _write_contact_proposals
+    from ze_personal.contacts.types import ContactProposal
+    from ze_personal.graph.memory_hooks import _write_contact_proposals
 
     person_store = AsyncMock()
     person_store.get_by_name = AsyncMock(return_value=[])
@@ -343,8 +343,8 @@ async def test_write_contact_proposals_skips_channel_write_when_no_email():
 
 
 async def test_write_contact_proposals_works_without_channel_store():
-    from ze_core.contacts.types import ContactProposal
-    from ze.orchestration.contact_hooks import _write_contact_proposals
+    from ze_personal.contacts.types import ContactProposal
+    from ze_personal.graph.memory_hooks import _write_contact_proposals
 
     person_store = AsyncMock()
     person_store.get_by_name = AsyncMock(return_value=[])
@@ -359,8 +359,8 @@ async def test_write_contact_proposals_works_without_channel_store():
 
 async def test_write_contact_proposals_writes_channel_for_existing_contact():
     from ze_core.channels.types import ChannelType
-    from ze_core.contacts.types import ContactProposal, Person
-    from ze.orchestration.contact_hooks import _write_contact_proposals
+    from ze_personal.contacts.types import ContactProposal, Person
+    from ze_personal.graph.memory_hooks import _write_contact_proposals
     from datetime import datetime, timezone
 
     existing = Person(
@@ -413,8 +413,8 @@ async def test_synthesize_returns_empty_when_no_subtasks():
 # ── routing.plan_sequential ───────────────────────────────────────────────────
 
 async def test_plan_sequential_identifies_high_risk_steps():
-    from ze_core.workflow.planner import WorkflowPlanner
-    from ze_core.workflow.types import WorkflowStep
+    from ze_personal.workflow.planner import WorkflowPlanner
+    from ze_personal.workflow.types import WorkflowStep
 
     steps = [
         WorkflowStep(task="Research AI news", agent_hint="research", intent="read"),
@@ -443,8 +443,8 @@ async def test_plan_sequential_identifies_high_risk_steps():
 
 
 async def test_plan_sequential_empty_high_risk_when_all_autonomous():
-    from ze_core.workflow.planner import WorkflowPlanner
-    from ze_core.workflow.types import WorkflowStep
+    from ze_personal.workflow.planner import WorkflowPlanner
+    from ze_personal.workflow.types import WorkflowStep
 
     steps = [
         WorkflowStep(task="Look up AI news", agent_hint="research", intent="read"),
@@ -468,7 +468,7 @@ async def test_plan_sequential_empty_high_risk_when_all_autonomous():
 
 async def test_plan_sequential_returns_error_on_plan_failure():
     from ze_core.errors import WorkflowPlanError
-    from ze_core.workflow.planner import WorkflowPlanner
+    from ze_personal.workflow.planner import WorkflowPlanner
 
     planner = AsyncMock(spec=WorkflowPlanner)
     planner.plan = AsyncMock(side_effect=WorkflowPlanError("malformed plan"))
@@ -485,8 +485,8 @@ async def test_plan_sequential_returns_error_on_plan_failure():
 
 
 async def test_plan_sequential_uses_agent_hint_for_gate_check():
-    from ze_core.workflow.planner import WorkflowPlanner
-    from ze_core.workflow.types import WorkflowStep
+    from ze_personal.workflow.planner import WorkflowPlanner
+    from ze_personal.workflow.types import WorkflowStep
 
     steps = [WorkflowStep(task="Do something", agent_hint=None, intent="execute")]
     planner = AsyncMock(spec=WorkflowPlanner)

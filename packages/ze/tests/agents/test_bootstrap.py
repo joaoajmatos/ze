@@ -39,15 +39,15 @@ def settings(tmp_path):
 def test_bootstrap_registers_companion_and_research(settings):
     from unittest.mock import MagicMock as MM
     from ze_browser import BrowserClient
-    from ze_core.contacts.store import PersonStore
-    from ze_core.goals.executor import GoalExecutor
-    from ze_core.goals.planner import GoalPlanner
-    from ze_core.goals.postgres import PostgresGoalStore as GoalStore
+    from ze_personal.contacts.store import PersonStore
+    from ze_personal.goals.executor import GoalExecutor
+    from ze_personal.goals.planner import GoalPlanner
+    from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
     from ze_core.proactive.notifier import ProactiveNotifier
     from ze.reminders.store import ReminderStore
-    from ze_core.workflow.store import WorkflowStore
-    from ze_core.workflow.planner import WorkflowPlanner
-    from ze_core.workflow.scheduler import WorkflowScheduler
+    from ze_personal.workflow.store import WorkflowStore
+    from ze_personal.workflow.planner import WorkflowPlanner
+    from ze_personal.workflow.scheduler import WorkflowScheduler
 
     client = AsyncMock()
     bootstrap_agents(

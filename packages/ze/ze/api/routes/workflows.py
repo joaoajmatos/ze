@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from ze.api.dependencies import get_workflow_store
-from ze_core.workflow.store import WorkflowStore
+from ze_personal.workflow.store import WorkflowStore
 
 router = APIRouter(tags=["workflows"])
 

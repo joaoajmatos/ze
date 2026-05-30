@@ -16,26 +16,26 @@ from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.overrides import PostgresCapabilityOverrideStore
 from ze.google.gmail import GmailChannel
 from ze_core.channels.registry import ChannelRegistry
-from ze_core.contacts.channel_store import ContactChannelStore
+from ze_personal.contacts.channel_store import ContactChannelStore
 from ze.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze_core.embeddings import get_embedder
 from ze_core.orchestration.registry import get_agent
-from ze_core.goals.executor import GoalExecutor
-from ze_core.goals.planner import GoalPlanner
-from ze_core.goals.postgres import PostgresGoalStore as GoalStore
+from ze_personal.goals.executor import GoalExecutor
+from ze_personal.goals.planner import GoalPlanner
+from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
 from ze.google.auth import GoogleCredentials
 from ze.logging import get_logger
-from ze_core.contacts.consolidator import ContactsConsolidator
-from ze_core.contacts.store import PersonStore
+from ze_personal.contacts.consolidator import ContactsConsolidator
+from ze_personal.contacts.store import PersonStore
 from ze.jobs.contacts import ContactReviewNotifier
 from ze.jobs.prospecting import recover_stale_campaigns
 from ze_core.memory.consolidator import MemoryConsolidator
 from ze_core.memory.postgres import PostgresMemoryStore
-from ze_core.persona.postgres import PostgresPersonaStore
+from ze_personal.persona.postgres import PostgresPersonaStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.orchestration.graph import build_graph
-from ze.orchestration.workflow import build_workflow_graph
-from ze.orchestration.contact_hooks import contact_proposal_hook
+from ze_personal.graph.workflow import build_workflow_graph
+from ze_personal.graph.memory_hooks import contact_proposal_hook
 from ze_core.progress import ProgressTranslations
 from ze.reminders.store import ReminderStore, fire_reminder
 from ze.jobs.briefing import MorningBriefing
@@ -60,10 +60,10 @@ from ze_core.interface.validation import validate_interface
 from ze_core.telemetry.reconciler import CostReconciler
 from ze_core.telemetry.tracker import CostTracker
 from ze_core.telemetry.postgres import PostgresCostStore
-from ze_core.workflow.planner import WorkflowPlanner
-from ze_core.workflow.postgres import PostgresWorkflowStore
-from ze_core.workflow.store import WorkflowStore
-from ze_core.workflow.scheduler import WorkflowScheduler
+from ze_personal.workflow.planner import WorkflowPlanner
+from ze_personal.workflow.postgres import PostgresWorkflowStore
+from ze_personal.workflow.store import WorkflowStore
+from ze_personal.workflow.scheduler import WorkflowScheduler
 from ze_core.container import Container as CoreContainer
 
 log = get_logger(__name__)
@@ -94,7 +94,7 @@ class ZeContainer(CoreContainer):
     goal_executor: GoalExecutor
 
     def _build_config(self, session_id: str, **configurable_extra: object) -> dict:
-        from ze_core.persona.identity import build_identity_block
+        from ze_personal.persona.identity import build_identity_block
         configurable: dict = {
             "thread_id": str(session_id),
             "router": self.router,
@@ -173,8 +173,8 @@ async def build_container(settings: Settings) -> ZeContainer:
             ("ze_core.memory.types", "UserFact"),
             ("ze_core.memory.types", "Episode"),
             ("ze_core.memory.types", "UserProfile"),
-            ("ze_core.contacts.types", "Person"),
-            ("ze_core.contacts.types", "PersonContext"),
+            ("ze_personal.contacts.types", "Person"),
+            ("ze_personal.contacts.types", "PersonContext"),
             ("asyncpg.pgproto.pgproto", "UUID"),
         ]
     )

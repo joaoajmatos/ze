@@ -9,32 +9,12 @@ from ze_core.db import DBPool
 from ze_core.errors import (
     ChannelError,
     ChannelNotFoundError,
-    GoalError,
-    GoalExecutionError,
-    GoalPlanError,
     OpenRouterError,
-    PersonaError,
     RateLimitError,
-    UnknownDialError,
-    UnknownProfileError,
 )
-from ze_core.goals import (
-    Goal,
-    GoalExecutor,
-    GoalLearning,
-    GoalPlanner,
-    GoalStatus,
-    GateStatus,
-    Milestone,
-    MilestoneStatus,
-    VerificationGate,
-)
-from ze_core.goals.store import GoalStore
-from ze_core.goals.postgres import PostgresGoalStore
 from ze_core.interface.base import InputPreprocessor
 from ze_core.interface.types import Action, Notification, ProcessedInput, RawInput
 from ze_core.memory import MemoryConsolidator, MemoryStore
-from ze_core.persona import PersonaState, PersonaStore, PostgresPersonaStore
 from ze_core.proactive import ProactiveNotifier, ProactiveScheduler
 from ze_core.telemetry import (
     CostContext,
@@ -77,28 +57,6 @@ __all__ = [
     "RateLimitError",
     "Container",
     "DBPool",
-    # Goals
-    "Goal",
-    "GoalExecutor",
-    "GoalLearning",
-    "GoalPlanner",
-    "GoalStatus",
-    "GateStatus",
-    "Milestone",
-    "MilestoneStatus",
-    "VerificationGate",
-    "GoalStore",
-    "PostgresGoalStore",
-    "GoalError",
-    "GoalExecutionError",
-    "GoalPlanError",
-    # Persona
-    "PersonaState",
-    "PersonaStore",
-    "PostgresPersonaStore",
-    "PersonaError",
-    "UnknownDialError",
-    "UnknownProfileError",
     # Proactive
     "ProactiveNotifier",
     "ProactiveScheduler",

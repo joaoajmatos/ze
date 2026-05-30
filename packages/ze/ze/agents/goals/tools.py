@@ -6,10 +6,10 @@ from uuid import UUID
 
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze_core.errors import GoalPlanError
-from ze_core.goals.executor import GoalExecutor
-from ze_core.goals.planner import GoalPlanner
-from ze_core.goals.postgres import PostgresGoalStore as GoalStore
-from ze_core.goals.types import Goal, GoalStatus, MilestoneStatus
+from ze_personal.goals.executor import GoalExecutor
+from ze_personal.goals.planner import GoalPlanner
+from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
+from ze_personal.goals.types import Goal, GoalStatus, MilestoneStatus
 from ze_core.interface.types import Action, Notification
 from ze_core.proactive.notifier import ProactiveNotifier
 

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze.telegram.commands import _fmt_tokens, _fmt_usd, costs_summary, memory_summary, parse_persona_command, persona_summary
-from ze_core.persona.types import PersonaState
+from ze_personal.persona.types import PersonaState
 
 
 # ── Formatting helpers ────────────────────────────────────────────────────────

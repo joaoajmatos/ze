@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 
 from ze_core.orchestration.tool import ToolAccess, tool
 from ze_core.errors import WorkflowPlanError
-from ze_core.workflow.planner import WorkflowPlanner
-from ze_core.workflow.store import WorkflowStore
-from ze_core.workflow.types import Workflow
-from ze_core.workflow.scheduler import WorkflowScheduler
+from ze_personal.workflow.planner import WorkflowPlanner
+from ze_personal.workflow.store import WorkflowStore
+from ze_personal.workflow.types import Workflow
+from ze_personal.workflow.scheduler import WorkflowScheduler
 
 
 @tool(access=ToolAccess.READ, description="List all stored workflows with their status and schedule.")

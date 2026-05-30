@@ -6,17 +6,17 @@ from typing import Any, get_type_hints
 import asyncpg
 
 from ze_core.errors import AgentConfigError
-from ze_core.goals.executor import GoalExecutor
-from ze_core.goals.planner import GoalPlanner
-from ze_core.goals.postgres import PostgresGoalStore as GoalStore
+from ze_personal.goals.executor import GoalExecutor
+from ze_personal.goals.planner import GoalPlanner
+from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
 from ze.google.auth import GoogleCredentials
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze.reminders.store import ReminderStore
 from ze.settings import Settings
-from ze_core.workflow.planner import WorkflowPlanner
-from ze_core.workflow.store import WorkflowStore
-from ze_core.workflow.scheduler import WorkflowScheduler
+from ze_personal.workflow.planner import WorkflowPlanner
+from ze_personal.workflow.store import WorkflowStore
+from ze_personal.workflow.scheduler import WorkflowScheduler
 from ze_core.orchestration.registry import (
     get_registered_agents,
     register_instance,
@@ -70,13 +70,13 @@ def bootstrap_agents(
     if notifier is not None:
         _dep_map[ProactiveNotifier] = notifier
     if person_store is not None:
-        from ze_core.contacts.store import PersonStore
+        from ze_personal.contacts.store import PersonStore
         _dep_map[PersonStore] = person_store
     if browser_client is not None:
         from ze_browser import BrowserClient
         _dep_map[BrowserClient] = browser_client
     if contact_channel_store is not None:
-        from ze_core.contacts.channel_store import ContactChannelStore
+        from ze_personal.contacts.channel_store import ContactChannelStore
         _dep_map[ContactChannelStore] = contact_channel_store
     if goal_store is not None:
         _dep_map[GoalStore] = goal_store
@@ -129,7 +129,7 @@ def validate_registry() -> None:
 
 def _import_agent_modules() -> None:
     """Import shared tools then every agent sub-package that has an agent.py."""
-    importlib.import_module("ze_core.contacts.tools")
+    importlib.import_module("ze_personal.contacts.tools")
     importlib.import_module("ze_browser.tool")
     for path in sorted(_AGENTS_DIR.iterdir()):
         if path.is_dir() and (path / "agent.py").exists():

@@ -1,4 +1,4 @@
-from ze_core.contacts.store import PersonStore
+from ze_personal.contacts.store import PersonStore
 from ze.logging import get_logger
 from ze_core.proactive.job import proactive_job
 from ze_core.proactive.notifier import ProactiveNotifier

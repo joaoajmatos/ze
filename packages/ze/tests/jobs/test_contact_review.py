@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from ze_core.contacts.types import Person, PersonSource
+from ze_personal.contacts.types import Person, PersonSource
 from ze.jobs.contacts import ContactReviewNotifier
 
 

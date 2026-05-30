@@ -39,7 +39,7 @@ def make_client(
 
 
 def make_ctx(prompt: str = "find AI news", memory: MemoryContext | None = None) -> AgentContext:
-    from ze_core.persona.identity import build_identity_block
+    from ze_personal.persona.identity import build_identity_block
     return AgentContext(
         session_id="s1",
         prompt=prompt,

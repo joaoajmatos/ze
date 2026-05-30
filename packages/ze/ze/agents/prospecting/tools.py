@@ -3,8 +3,8 @@ from uuid import UUID
 import asyncpg
 
 from ze_core.orchestration.tool import ToolAccess, tool
-from ze_core.contacts.store import PersonStore
-from ze_core.contacts.types import Person, PersonSource
+from ze_personal.contacts.store import PersonStore
+from ze_personal.contacts.types import Person, PersonSource
 from ze_core.openrouter.client import OpenRouterClient
 
 _VALID_EVENT_TYPES = frozenset({"sent", "replied", "bounced"})

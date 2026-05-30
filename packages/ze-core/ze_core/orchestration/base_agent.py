@@ -83,6 +83,8 @@ class BaseAgent(ABC):
         return "\n".join(lines) if lines else "(none)"
 
     def _format_contacts(self, ctx: AgentContext) -> str:
+        if ctx.contacts is None:
+            return ""
         lines = []
         for p in ctx.contacts.people:
             line = f"- {p.name}: {p.relationship_to_user}"

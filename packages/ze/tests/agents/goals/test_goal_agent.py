@@ -7,7 +7,7 @@ import pytest
 from ze.agents.goals.agent import GoalAgent
 from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_core.capability.types import GateDecision
-from ze_core.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus
+from ze_personal.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus
 from ze_core.memory.types import MemoryContext
 from ze.logging import configure_logging
 

@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ze_core.capability.types import GateDecision
-from ze_core.contacts.types import ContactProposal, PersonContext
 from ze_core.memory.types import MemoryContext  # re-exported for AgentContext consumers
 from ze_core.progress.reporter import ProgressReporter
 
@@ -27,7 +26,7 @@ class AgentContext:
     intent: str
     gate_decision: GateDecision = GateDecision.EXECUTE
     memory: MemoryContext = field(default_factory=MemoryContext)
-    contacts: PersonContext = field(default_factory=PersonContext)
+    contacts: Any = None
     tool_calls: list[ToolCall] = field(default_factory=list)
     messages: list[dict] = field(default_factory=list)
     persona: dict = field(default_factory=dict)
@@ -43,5 +42,5 @@ class AgentResult:
     tool_calls: list[ToolCall] = field(default_factory=list)
     tokens_used: int = 0
     memory_proposals: list = field(default_factory=list)
-    contact_proposals: list[ContactProposal] = field(default_factory=list)
+    contact_proposals: list = field(default_factory=list)
     extensions: dict[str, Any] = field(default_factory=dict)

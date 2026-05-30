@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from ze_core.channels.types import ChannelHandle, ChannelType
-from ze_core.contacts.channel_store import ContactChannelStore, _handle_from_row
+from ze_personal.contacts.channel_store import ContactChannelStore, _handle_from_row
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

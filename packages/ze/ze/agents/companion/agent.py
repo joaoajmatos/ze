@@ -6,7 +6,7 @@ import asyncpg
 from ze_core.orchestration.base_agent import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze_core.orchestration.types import AgentContext, AgentResult, ToolCall
-from ze_core.contacts.store import PersonStore
+from ze_personal.contacts.store import PersonStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze.settings import Settings
 import ze.agents.prospecting.tools  # noqa: F401 — registers log_outreach_event @tool

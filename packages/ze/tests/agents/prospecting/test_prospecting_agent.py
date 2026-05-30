@@ -6,7 +6,7 @@ import pytest
 
 from ze.agents.prospecting.agent import ProspectingAgent
 from ze_core.orchestration.types import AgentContext, AgentResult, ToolCall
-from ze_core.contacts.types import PersonContext
+from ze_personal.contacts.types import PersonContext
 from ze.logging import configure_logging
 from ze_core.memory.types import MemoryContext
 
