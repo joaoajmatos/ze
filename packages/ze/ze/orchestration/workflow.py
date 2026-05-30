@@ -1,3 +1,8 @@
+"""Workflow graph nodes, edge functions, and graph builder.
+
+Transitional location — will move to ze_personal/graph/workflow.py in the
+ze-personal package once that package is created (arch-package-reorg step 4).
+"""
 from __future__ import annotations
 
 import asyncio
@@ -6,8 +11,9 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
+from ze_core.capability.types import GateDecision
 from ze_core.defaults import MODEL_WORKFLOW_VERIFY
-from ze_core.logging import get_logger
+from ze.logging import get_logger
 from ze_core.orchestration.state import AgentState
 from ze_core.telemetry.context import set_agent_context
 from ze_core.workflow.store import WorkflowStore
@@ -16,17 +22,7 @@ from ze_core.workflow.types import StepResult, WorkflowStep
 log = get_logger(__name__)
 
 
-def _resolve_verify_model(config: RunnableConfig) -> str:
-    cfg = config["configurable"].get("settings")
-    if cfg is None:
-        return MODEL_WORKFLOW_VERIFY
-    models = (
-        cfg.get("models", {})
-        if isinstance(cfg, dict)
-        else getattr(cfg, "config", {}).get("models", {})
-    )
-    return models.get("workflow_verify", MODEL_WORKFLOW_VERIFY)
-
+# ── Graph nodes ───────────────────────────────────────────────────────────────
 
 async def load_workflow_step(state: AgentState, config: RunnableConfig) -> dict:
     """Set prompt to the current step's task and reset all per-step state."""
@@ -165,6 +161,89 @@ async def workflow_failed(state: AgentState, config: RunnableConfig) -> dict:
 
     log.warning("workflow_failed", execution_id=str(execution_id), error=error_msg)
     return {"final_response": f"Workflow failed: {error_msg}"}
+
+
+# ── Edge functions ────────────────────────────────────────────────────────────
+
+def after_capability_check_workflow(state: AgentState) -> str:
+    """In workflow mode all steps execute directly — workflow creation was the gate."""
+    decision = state.get("gate_decision")
+    if decision == GateDecision.BLOCKED:
+        return "workflow_failed"
+    return "execute_tool"
+
+
+def after_verify_step(state: AgentState) -> str:
+    step_results = state.get("workflow_step_results") or []
+    if step_results and not step_results[-1].success:
+        return "workflow_failed"
+    steps = state.get("workflow_steps") or []
+    if state.get("current_step_index", 0) >= len(steps):
+        return "workflow_synthesize"
+    return "load_workflow_step"
+
+
+# ── Graph builder ─────────────────────────────────────────────────────────────
+
+def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
+    """Build and compile the workflow execution graph."""
+    from langgraph.constants import END
+
+    from ze_core.orchestration.graph import graph_builder
+    from ze_core.orchestration.state import build_state_type
+
+    state_type = build_state_type(plugins or [])
+    builder = graph_builder(state_type=state_type)
+
+    builder.add_node("load_workflow_step", load_workflow_step)
+    builder.add_node("verify_step",        verify_step)
+    builder.add_node("workflow_synthesize", workflow_synthesize)
+    builder.add_node("workflow_failed",    workflow_failed)
+
+    builder.set_entry_point("load_workflow_step")
+
+    builder.add_edge("load_workflow_step", "embed_route")
+    builder.add_edge("embed_route",        "fetch_context")
+    builder.add_edge("fetch_context",      "capability_check")
+    builder.add_conditional_edges(
+        "capability_check",
+        after_capability_check_workflow,
+        {"execute_tool": "execute_tool", "workflow_failed": "workflow_failed"},
+    )
+    builder.add_edge("execute_tool",  "write_memory")
+    builder.add_edge("write_memory",  "verify_step")
+    builder.add_conditional_edges(
+        "verify_step",
+        after_verify_step,
+        {
+            "load_workflow_step":  "load_workflow_step",
+            "workflow_synthesize": "workflow_synthesize",
+            "workflow_failed":     "workflow_failed",
+        },
+    )
+    builder.add_edge("workflow_synthesize", END)
+    builder.add_edge("workflow_failed",     END)
+
+    for plugin in (plugins or []):
+        for name, fn in plugin.graph_nodes().items():
+            builder.add_node(name, fn)
+        plugin.graph_edges(builder)
+
+    return builder.compile(checkpointer=checkpointer)
+
+
+# ── Private helpers ───────────────────────────────────────────────────────────
+
+def _resolve_verify_model(config: RunnableConfig) -> str:
+    cfg = config["configurable"].get("settings")
+    if cfg is None:
+        return MODEL_WORKFLOW_VERIFY
+    models = (
+        cfg.get("models", {})
+        if isinstance(cfg, dict)
+        else getattr(cfg, "config", {}).get("models", {})
+    )
+    return models.get("workflow_verify", MODEL_WORKFLOW_VERIFY)
 
 
 def _fail_step(

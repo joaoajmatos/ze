@@ -71,6 +71,11 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     if person_store is not None:
         contact_context = await person_store.get_context(prompt_for_ctx)
 
+    extensions: dict = {}
+    identity_builder = config["configurable"].get("identity_builder")
+    if identity_builder is not None:
+        extensions["identity_builder"] = identity_builder
+
     agent_context = AgentContext(
         session_id=state["session_id"],
         prompt=prompt_for_ctx,
@@ -79,6 +84,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         contacts=contact_context,
         messages=messages,
         persona=active_persona,
+        extensions=extensions,
     )
 
     return {

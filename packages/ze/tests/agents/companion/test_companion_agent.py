@@ -36,12 +36,14 @@ def make_client(response: str = "I'm here to help.") -> AsyncMock:
 
 
 def make_ctx(prompt: str = "how are you?", memory: MemoryContext | None = None) -> AgentContext:
+    from ze_core.persona.identity import build_identity_block
     return AgentContext(
         session_id="s1",
         prompt=prompt,
         intent="reason",
         memory=memory or MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
+        extensions={"identity_builder": build_identity_block},
     )
 
 

@@ -33,7 +33,9 @@ from ze_core.memory.consolidator import MemoryConsolidator
 from ze_core.memory.postgres import PostgresMemoryStore
 from ze_core.persona.postgres import PostgresPersonaStore
 from ze_core.openrouter.client import OpenRouterClient
-from ze_core.orchestration.graph import build_graph, build_workflow_graph
+from ze_core.orchestration.graph import build_graph
+from ze.orchestration.workflow import build_workflow_graph
+from ze.orchestration.contact_hooks import contact_proposal_hook
 from ze_core.progress import ProgressTranslations
 from ze.reminders.store import ReminderStore, fire_reminder
 from ze.jobs.briefing import MorningBriefing
@@ -92,6 +94,7 @@ class ZeContainer(CoreContainer):
     goal_executor: GoalExecutor
 
     def _build_config(self, session_id: str, **configurable_extra: object) -> dict:
+        from ze_core.persona.identity import build_identity_block
         configurable: dict = {
             "thread_id": str(session_id),
             "router": self.router,
@@ -105,6 +108,8 @@ class ZeContainer(CoreContainer):
             "workflow_planner": self.workflow_planner,
             "contact_channel_store": self.contact_channel_store,
             "interface": self.interface,
+            "identity_builder": build_identity_block,
+            "memory_hooks": [contact_proposal_hook],
         }
         configurable.update(configurable_extra)
         return {"configurable": configurable}

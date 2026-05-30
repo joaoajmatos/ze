@@ -11,7 +11,6 @@ from ze_core.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
 from ze_core.errors import AgentError, ToolBlockedError
 from ze_core.logging import get_logger
 from ze_core.orchestration.types import AgentContext, AgentResult, ToolCall
-from ze_core.persona.identity import build_identity_block
 
 # Schemas for OpenRouter server-side tools (executed by OpenRouter, not the client).
 _OPENROUTER_TOOL_SCHEMAS: dict[str, dict] = {
@@ -98,14 +97,19 @@ class BaseAgent(ABC):
         ctx: AgentContext,
         **extra: str,
     ) -> str:
-        identity = build_identity_block(
-            ctx.persona,
-            self._format_memory(ctx),
-            profile=ctx.memory.profile,
-            contacts_context=self._format_contacts(ctx),
-        )
+        identity_builder = ctx.extensions.get("identity_builder")
+        if identity_builder is not None:
+            identity = identity_builder(
+                ctx.persona,
+                self._format_memory(ctx),
+                profile=ctx.memory.profile,
+                contacts_context=self._format_contacts(ctx),
+            )
+            prefix = f"{identity}\n\n"
+        else:
+            prefix = ""
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
-        return f"{identity}\n\n{rendered}"
+        return f"{prefix}{rendered}"
 
     # ── Tool execution ────────────────────────────────────────────────────────
 
