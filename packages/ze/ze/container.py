@@ -35,7 +35,6 @@ from ze_personal.persona.postgres import PostgresPersonaStore
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.orchestration.graph import build_graph
 from ze_personal.graph.workflow import build_workflow_graph
-from ze_personal.graph.memory_hooks import contact_proposal_hook
 from ze_core.progress import ProgressTranslations
 from ze.reminders.store import ReminderStore, fire_reminder
 from ze.jobs.briefing import MorningBriefing
@@ -94,7 +93,10 @@ class ZeContainer(CoreContainer):
     goal_executor: GoalExecutor
 
     def _build_config(self, session_id: str, **configurable_extra: object) -> dict:
-        from ze_personal.persona.identity import build_identity_block
+        plugin_services: dict = {}
+        for plugin in self.plugins:
+            plugin_services.update(plugin.configurable_services())
+
         configurable: dict = {
             "thread_id": str(session_id),
             "router": self.router,
@@ -108,8 +110,7 @@ class ZeContainer(CoreContainer):
             "workflow_planner": self.workflow_planner,
             "contact_channel_store": self.contact_channel_store,
             "interface": self.interface,
-            "identity_builder": build_identity_block,
-            "memory_hooks": [contact_proposal_hook],
+            **plugin_services,
         }
         configurable.update(configurable_extra)
         return {"configurable": configurable}
@@ -240,7 +241,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         config=RouterConfig(),
         estimator=estimator,
     )
-    workflow_graph = build_workflow_graph(checkpointer=checkpointer)
     override_store = PostgresCapabilityOverrideStore(pool=pool)
     capability_gate = CapabilityGate(override_store=override_store)
     await capability_gate.load_persistent_overrides()
@@ -357,7 +357,10 @@ async def build_container(settings: Settings) -> ZeContainer:
         goal_executor=goal_executor,
     )
 
-    graph = build_graph(checkpointer=checkpointer)
+    from ze_personal.plugin import PersonalPlugin
+    plugins = [PersonalPlugin()]
+    graph = build_graph(checkpointer=checkpointer, plugins=plugins)
+    workflow_graph = build_workflow_graph(checkpointer=checkpointer, plugins=plugins)
 
     now = datetime.now(timezone.utc)
     unsent_reminders = await reminder_store.list_all_unsent()
@@ -556,6 +559,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         contact_channel_store=contact_channel_store,
         goal_store=goal_store,
         goal_executor=goal_executor,
+        plugins=plugins,
     )
     ze_bot.bind_container(container)
     return container
