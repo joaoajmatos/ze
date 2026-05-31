@@ -12,34 +12,39 @@ OpenRouter.
 ```
 ze/                           # monorepo root
 ├── packages/
-│   ├── ze-core/              # Framework — routing, memory, orchestration, goals, telemetry, …
+│   ├── ze-core/              # Pure infrastructure — routing, memory, orchestration, telemetry, …
 │   │   └── ze_core/
 │   │       ├── capability/   # CapabilityGate, PostgresCapabilityOverrideStore, modes
 │   │       ├── channels/     # Channel ABC, ChannelRegistry, types
-│   │       ├── contacts/     # PersonStore, ContactChannelStore, consolidator, extractors, tools
-│   │       ├── goals/        # GoalStore, GoalPlanner, GoalExecutor, types
+│   │       ├── interface/    # AppInterface ABC, InputPreprocessor, validation, types
 │   │       ├── memory/       # PostgresMemoryStore, consolidator, extractor, types
 │   │       ├── openrouter/   # OpenRouterClient, types
 │   │       ├── orchestration/# graph_builder, BaseAgent, @agent, @tool, registry, nodes, state
-│   │       ├── persona/      # PostgresPersonaStore, identity builder, types
+│   │       ├── plugin.py     # ZePlugin ABC (container + graph extension seam)
 │   │       ├── proactive/    # ProactiveScheduler, ProactiveNotifier, ProactiveJob
 │   │       ├── progress/     # ProgressReporter, translations
 │   │       ├── routing/      # EmbeddingRouter, ComplexityEstimator, fallback, store
 │   │       ├── telemetry/    # CostTracker, CostReconciler, PostgresCostStore, ContextVar
-│   │       ├── workflow/     # WorkflowStore, planner, scheduler, types
 │   │       ├── container.py  # Base Container with DI wiring and invoke/resume entry points
 │   │       └── embeddings.py # Shared all-MiniLM-L6-v2 singleton
+│   ├── ze-personal/          # Personal-assistant domain layer (ZePlugin)
+│   │   └── ze_personal/
+│   │       ├── contacts/     # PersonStore, ContactChannelStore, consolidator, extractors, tools
+│   │       ├── goals/        # GoalStore, GoalPlanner, GoalExecutor, types
+│   │       ├── graph/        # workflow.py (execution nodes), memory_hooks.py (contact extraction)
+│   │       ├── persona/      # PostgresPersonaStore, identity builder, types
+│   │       ├── workflow/     # WorkflowStore, planner, scheduler, types
+│   │       └── plugin.py     # PersonalPlugin(ZePlugin) — wires domain services into graphs
 │   ├── ze/                   # Ze application (Telegram, Google, jobs, reminders)
 │   │   ├── ze/
-│   │   │   ├── agents/       # @agent classes + tools; all imports from ze_core
+│   │   │   ├── agents/       # @agent classes + tools; imports from ze_core + ze_personal
 │   │   │   ├── api/          # FastAPI app, Telegram webhook, REST routes
 │   │   │   ├── google/       # Google OAuth2 (Calendar + Gmail), GmailChannel
-│   │   │   ├── telegram/     # ZeBot, TelegramAppInterface (ze_core AppInterface)
 │   │   │   ├── jobs/         # Proactive cron jobs: briefing, insights, calendar sync, contacts
 │   │   │   ├── reminders/    # ReminderStore, CalendarReminderService, CalendarReminderStore
-│   │   │   ├── telegram/     # ZeBot, session store, commands, formatting, keyboards
-│   │   │   ├── container.py  # ZeContainer (subclasses ze_core Container)
-│   │   │   └── settings.py   # Pydantic Settings + to_core_settings()
+│   │   │   ├── telegram/     # ZeBot, TelegramAppInterface (ze_core AppInterface), commands
+│   │   │   ├── container.py  # ZeContainer (subclasses ze_core Container, registers PersonalPlugin)
+│   │   │   └── settings.py   # Pydantic Settings
 │   │   ├── config/
 │   │   │   ├── config.yaml   # Models, contacts, proactive schedules (secrets in .env)
 │   │   │   └── persona.yaml  # Persona profiles and dials
@@ -49,6 +54,15 @@ ze/                           # monorepo root
 ├── specs/                    # Design specs (zc-* ze-core, numbered ze modules)
 ├── docs/                     # architecture.md, configuration.md, …
 └── Makefile                  # make test, make test-core, make dev-poll, …
+```
+
+### Package dependency graph
+
+```
+ze-browser  (no ze deps)
+ze-core     (no ze deps)
+ze-personal → ze-core
+ze          → ze-core, ze-personal, ze-browser
 ```
 
 ## Essential commands
@@ -98,10 +112,9 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.
   Never `asyncio.run()` inside a running event loop.
 - **Comments**: Default to none. Only add a comment when the *why* is non-obvious.
-- **ze-core imports**: Import framework types and services from `ze_core.*` directly
-  (e.g. `ze_core.capability.gate`, `ze_core.orchestration.registry`). Keep modules
-  under `ze/` only when they add Ze-specific behaviour (Telegram, consolidator
-  telemetry hooks, `GoalPlanner` model wiring, `PersonaStore` YAML profiles).
+- **Imports**: Infrastructure types from `ze_core.*` (orchestration, routing, memory,
+  telemetry). Domain types from `ze_personal.*` (contacts, goals, workflow, persona).
+  Ze-specific behaviour (Telegram, Google, jobs) stays in `ze/`.
 
 ### Testing
 
@@ -201,3 +214,4 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 17 | Prospecting agent — autonomous target research, browser sidecar, outreach drafting | Done |
 | 18 | Communication channel abstraction — `Channel` ABC, `EmailChannel`, contact channel handles | Done |
 | 19 | Goal Engine — autonomous multi-week goal execution, verification gates, milestone loop | Done |
+| 20 | Package architecture reorg — ze_core pure infra, ze-personal domain layer, ZePlugin ABC | Done |
