@@ -1,3 +1,3 @@
-from ze.telegram.app_interface import TelegramAppInterface
+from ze.telegram.interface import TelegramAppInterface
 
 __all__ = ["TelegramAppInterface"]

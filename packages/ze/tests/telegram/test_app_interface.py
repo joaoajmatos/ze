@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze.telegram.app_interface import TelegramAppInterface
+from ze.telegram.interface import TelegramAppInterface
 from ze_core.interface.types import ConfirmationRequest, Notification, OutboundMessage
 
 

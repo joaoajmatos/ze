@@ -9,7 +9,7 @@ from aiogram.types import CallbackQuery, ForceReply, Message
 from ze_core.conversation import extract_response, make_graph_input_from_raw_text
 from ze.errors import ImageDownloadError
 from ze_core.errors import UnknownDialError, UnknownProfileError
-from ze.telegram.app_interface import TelegramAppInterface
+from ze.telegram.interface import TelegramAppInterface
 from ze.logging import bind_context, get_logger, unbind_context
 from ze_core.progress import ProgressReporter, ProgressTranslations
 from ze.telegram.commands import contacts_search, contacts_summary, costs_summary, memory_summary, parse_persona_command, persona_summary
