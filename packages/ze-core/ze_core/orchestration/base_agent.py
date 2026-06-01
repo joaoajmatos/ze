@@ -99,7 +99,7 @@ class BaseAgent(ABC):
         ctx: AgentContext,
         **extra: str,
     ) -> str:
-        identity_builder = ctx.extensions.get("identity_builder")
+        identity_builder = ctx.identity_builder
         if identity_builder is not None:
             identity = identity_builder(
                 ctx.persona,

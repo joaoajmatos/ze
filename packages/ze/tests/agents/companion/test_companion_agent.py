@@ -43,7 +43,7 @@ def make_ctx(prompt: str = "how are you?", memory: MemoryContext | None = None) 
         intent="reason",
         memory=memory or MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
-        extensions={"identity_builder": build_identity_block},
+        identity_builder=build_identity_block,
     )
 
 

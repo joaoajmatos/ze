@@ -12,6 +12,7 @@ which makes it hard to catch without exercising the full flow in dev.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -236,16 +237,21 @@ def test_full_agent_state_dict_round_trips(serde: JsonPlusSerializer) -> None:
         )
 
 
-def test_non_serializable_in_extensions_raises(serde: JsonPlusSerializer) -> None:
-    """Regression: storing a function in AgentContext.extensions must fail loudly."""
-    def _some_builder() -> str:
+def test_non_serializable_identity_builder_raises(serde: JsonPlusSerializer) -> None:
+    """Regression: AgentContext with identity_builder set must not be checkpointed.
+
+    identity_builder is a runtime-only callable. Stored contexts always have it
+    as None. If someone accidentally checkpoints a context with it set, the serde
+    must fail loudly here in CI rather than at runtime in production.
+    """
+    def _some_builder(persona: dict, memory_context: str, *, profile: Any, contacts_context: str) -> str:
         return "identity"
 
     ctx = AgentContext(
         session_id="s",
         prompt="p",
         intent="read",
-        extensions={"identity_builder": _some_builder},
+        identity_builder=_some_builder,
     )
     with pytest.raises((TypeError, Exception)):
         serde.dumps_typed(ctx)

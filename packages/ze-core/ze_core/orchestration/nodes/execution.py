@@ -69,8 +69,6 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         return {"error": "Missing routing envelope or agent context"}
 
     subtask = envelope.subtasks[0]
-    identity_builder = config["configurable"].get("identity_builder")
-    extensions = {"identity_builder": identity_builder} if identity_builder is not None else {}
     ctx = AgentContext(
         session_id=base_ctx.session_id,
         prompt=subtask.prompt,
@@ -81,7 +79,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         persona=base_ctx.persona,
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
-        extensions=extensions,
+        identity_builder=config["configurable"].get("identity_builder"),
     )
     result = await _run_with_timeout(subtask.agent, ctx)
     return {"agent_result": result, "pending_confirmation": True}
@@ -130,7 +128,6 @@ async def _execute_single(
     reporter: Any = None,
     identity_builder: Any = None,
 ) -> dict:
-    extensions = {"identity_builder": identity_builder} if identity_builder is not None else {}
     ctx = AgentContext(
         session_id=base_ctx.session_id,
         prompt=subtask.prompt,
@@ -142,7 +139,7 @@ async def _execute_single(
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         reporter=reporter,
-        extensions=extensions,
+        identity_builder=identity_builder,
     )
     result = await _run_with_timeout(subtask.agent, ctx, token_queue=token_queue)
     return {"agent_result": result, "subtask_results": []}
@@ -157,8 +154,6 @@ async def _execute_compound(
     reporter: Any = None,
     identity_builder: Any = None,
 ) -> dict:
-    extensions = {"identity_builder": identity_builder} if identity_builder is not None else {}
-
     def _make_ctx(subtask: Any) -> AgentContext:
         return AgentContext(
             session_id=base_ctx.session_id,
@@ -171,7 +166,7 @@ async def _execute_compound(
             model=subtask.model or None,
             messages=_build_messages(state, subtask.agent, base_ctx),
             reporter=reporter,
-            extensions=extensions,
+            identity_builder=identity_builder,
         )
 
     if is_sequential:

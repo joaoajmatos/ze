@@ -46,7 +46,7 @@ def make_ctx(prompt: str = "find AI news", memory: MemoryContext | None = None) 
         intent="read",
         memory=memory or MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
-        extensions={"identity_builder": build_identity_block},
+        identity_builder=build_identity_block,
     )
 
 
