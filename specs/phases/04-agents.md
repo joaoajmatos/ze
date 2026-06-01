@@ -1,5 +1,14 @@
 # Agents — Spec
 
+> **Status:** Deprecated — superseded by [`core/01-agent.md`](../core/01-agent.md)
+>
+> This spec describes the original YAML-based agent registration pattern
+> (`@register("name")`, `intent_map.py`, per-agent YAML config files). The current
+> implementation uses the `@agent` decorator with class attributes. See
+> `core/01-agent.md` for the authoritative spec.
+
+---
+
 ## Purpose
 
 Define the five sub-agents of Ze. Each agent is an isolated module with its own

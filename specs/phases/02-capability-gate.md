@@ -1,5 +1,13 @@
 # Capability Gate — Spec
 
+> **Status:** Deprecated — superseded by [`core/03-capability-gate.md`](../core/03-capability-gate.md)
+>
+> This spec describes the original YAML-based capability system (Phase 2). The current
+> implementation uses class attributes on `@agent` classes (no `capabilities.yaml`).
+> See `core/03-capability-gate.md` for the authoritative spec.
+
+---
+
 ## Purpose
 
 Authorise or restrict agent tool execution based on per-agent, per-intent

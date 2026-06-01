@@ -4,20 +4,20 @@
 
 | Feature | Status |
 |---------|--------|
-| `ze-browser` sidecar service (Playwright + FastAPI) | 🔲 Pending |
+| `ze-browser` sidecar service (Playwright + FastAPI) | ✅ Done |
 | `ze-browser` Python package — `BrowserClient` (`httpx`) | ✅ Done |
-| `browser_extract` tool — with stealth + rate limiting | 🔲 Pending |
-| `add_prospect` tool | 🔲 Pending |
-| `draft_outreach` tool — WRITE, saves draft to DB directly | 🔲 Pending |
-| `log_outreach_event` tool | 🔲 Pending |
-| Migration 014 — `prospect_campaigns` + `prospect_outreach` tables | 🔲 Pending |
-| `BaseAgent.agentic_loop()` — `max_history_tokens` param | 🔲 Pending |
-| `ProspectingAgent` — agentic research loop with token budget | 🔲 Pending |
-| Stale campaign recovery — startup + cron check | 🔲 Pending |
-| Companion wiring — `log_outreach_event` tool | 🔲 Pending |
-| Container wiring + config | 🔲 Pending |
-| `ze-browser` Fly.io deployment config | 🔲 Pending |
-| Tests | 🔲 Pending |
+| `browser_extract` tool — with stealth + rate limiting | ✅ Done |
+| `add_prospect` tool | ✅ Done |
+| `draft_outreach` tool — WRITE, saves draft to DB directly | ✅ Done |
+| `log_outreach_event` tool | ✅ Done |
+| Migration 014 — `prospect_campaigns` + `prospect_outreach` tables | ✅ Done |
+| `BaseAgent.agentic_loop()` — `max_history_tokens` param | ✅ Done |
+| `ProspectingAgent` — agentic research loop with token budget | ✅ Done |
+| Stale campaign recovery — startup + cron check | ✅ Done |
+| Companion wiring — `log_outreach_event` tool | ✅ Done |
+| Container wiring + config | ✅ Done |
+| `ze-browser` Fly.io deployment config | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

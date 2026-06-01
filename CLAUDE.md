@@ -165,7 +165,7 @@ Hot-reloaded on SIGHUP without restart.
 
 ## Adding a new agent
 
-1. Write a spec in `specs/` first.
+1. Write a spec in `specs/phases/` first (use `specs/TEMPLATE.md`; see `specs/README.md` for the index).
 2. Create `ze/agents/<name>/agent.py` — decorate with `@agent` from `ze_core.orchestration.registry`, subclass `BaseAgent` from `ze_core.orchestration.base_agent`. Put `description`, `model`, `capabilities`, `intent_map`, `tools`, and `timeout` as class attributes. Define `_AGENT_INSTRUCTIONS` at the top.
 3. Add `ze/agents/<name>/tools.py` if the agent needs Python tools. Use `@tool` from `ze_core.orchestration.tool`. Use `"openrouter:web_search"` in `tools` for web search — no Python tool needed.
 4. Write tests in `tests/agents/<name>/`.
