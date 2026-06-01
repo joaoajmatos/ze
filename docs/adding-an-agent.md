@@ -7,7 +7,7 @@ This guide explains how to author a new agent. Read it alongside the existing ag
 
 ## Before you start
 
-1. Write a spec in `specs/` first. No implementation begins without one.
+1. Write a spec in `specs/phases/` first (use `specs/TEMPLATE.md`). No implementation begins without one.
 2. Resolve any open questions in the spec before writing code.
 
 ---

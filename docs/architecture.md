@@ -99,7 +99,7 @@ the same `thread_id` to resume from the checkpoint.
 
 ## Agents
 
-**Module:** `ze/agents/`
+**Modules:** `ze/agents/` (research, companion, calendar, email, reminders, prospecting) · `ze_personal/agents/` (goals, workflow)
 
 All agents subclass `BaseAgent` (`ze_core.orchestration.base_agent`) and register via `@agent` (`ze_core.orchestration.registry`). Each agent owns:
 
@@ -114,14 +114,16 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 
 ### Agent roster
 
-| Agent | Key tools | Default model tier |
-|---|---|---|
-| `research` | OpenRouter web search, synthesis | Full |
-| `companion` | None (pure reasoning + memory) | Full |
-| `calendar` | Google Calendar API (CRUD) | Haiku |
-| `email` | Gmail API (read, draft, send) | Haiku |
-| `workflow` | APScheduler, file ops, external API calls | Full |
-| `goals` | Goal lifecycle (create, status, pause, abandon) | Full |
+| Agent | Key tools | Package | Default model tier |
+|---|---|---|---|
+| `research` | OpenRouter web search, synthesis | `ze` | Full |
+| `companion` | Pure reasoning + memory | `ze` | Full |
+| `calendar` | Google Calendar API (CRUD) | `ze` | Haiku |
+| `email` | Gmail API (read, draft, send) | `ze` | Haiku |
+| `reminders` | NL time parsing, APScheduler firing | `ze` | Haiku |
+| `prospecting` | Browser extraction, outreach drafting | `ze` | Full |
+| `workflow` | APScheduler, multi-step plan execution | `ze_personal` | Full |
+| `goals` | Goal lifecycle (create, status, pause, abandon) | `ze_personal` | Full |
 
 See [docs/goals.md](goals.md) for conversational usage and gate behaviour.
 
@@ -257,7 +259,7 @@ See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and confi
 
 ## Goal Engine
 
-**Module:** `ze_core.goals` · **Agent:** `ze/agents/goals/`
+**Module:** `ze_personal.goals` · **Agent:** `ze_personal/agents/goals/`
 
 Goals address multi-week objectives that neither workflows nor per-action capability
 gates fit well: Ze works in the background and checks in at **verification gates**
@@ -276,10 +278,10 @@ gates fit well: Ze works in the background and checks in at **verification gates
 
 | Component | Module | Responsibility |
 |---|---|---|
-| `GoalStore` | `ze_core/goals/store.py` | Postgres CRUD for goals, milestones, gates, learnings |
-| `GoalPlanner` | `ze_core/goals/planner.py` | LLM decomposition into milestones + gate placement |
-| `GoalExecutor` | `ze_core/goals/executor.py` | `advance()` loop, gate firing, milestone dispatch |
-| `GoalAgent` | `ze/agents/goals/agent.py` | Conversational create / status / pause / abandon |
+| `GoalStore` | `ze_personal/goals/postgres.py` | Postgres CRUD for goals, milestones, gates, learnings |
+| `GoalPlanner` | `ze_personal/goals/planner.py` | LLM decomposition into milestones + gate placement |
+| `GoalExecutor` | `ze_personal/goals/executor.py` | `advance()` loop, gate firing, milestone dispatch |
+| `GoalAgent` | `ze_personal/agents/goals/agent.py` | Conversational create / status / pause / abandon |
 
 Goals sit **above** workflows: a goal spans weeks; a workflow execution is what can
 happen inside a single milestone. `GoalExecutor` dispatches milestones through the same
@@ -305,13 +307,13 @@ While status is `AWAITING_GATE`, the sweep no-ops until the user responds on Tel
 Redirect gates use `ForceReply` for free-text instructions, then re-plan remaining
 milestones via `GoalPlanner`.
 
-See [docs/goals.md](goals.md) for usage. Implementation detail: [specs/28-goal-engine.md](../specs/28-goal-engine.md).
+See [docs/goals.md](goals.md) for usage. Implementation detail: [specs/phases/28-goal-engine.md](../specs/phases/28-goal-engine.md).
 
 ---
 
 ## Multimodal input
 
-**Module:** `ze/interface/` (preprocessing) · `ze_core.openrouter` (transcription client)
+**Module:** `ze_core/interface/` (preprocessing) · `ze/telegram/interface.py` (`TelegramInputPreprocessor`) · `ze_core.openrouter` (transcription client)
 
 Ze accepts three input types from Telegram, all handled before the graph runs:
 
@@ -372,11 +374,11 @@ Every channel must implement three methods:
 A dict-backed registry keyed by `ChannelType`. Built in `container.py` and
 injected into agents. Raises `ChannelNotFoundError` for unregistered types.
 
-### Contact channel handles (`ze_core/contacts/channel_store.py`)
+### Contact channel handles (`ze_personal/contacts/channel_store.py`)
 
 `ContactChannelStore` stores per-contact channel handles in the `contact_channels`
 table. Agents use the `get_contact_channels` and `set_contact_channel` tools
-(in `ze_core/contacts/tools.py`) to read and write this data — they never query the
+(in `ze_personal/contacts/tools.py`) to read and write this data — they never query the
 store directly.
 
 ### Currently implemented channels
@@ -481,4 +483,4 @@ Migrations live in `migrations/versions/` as raw SQL Alembic files (no ORM).
   model config, and intent map.
 - **Dependency injection throughout.** Every module accepts dependencies as constructor
   arguments. No module reads from globals or `os.environ` directly except `ze/settings.py`.
-- **Spec-first development.** No module is implemented without a reviewed spec in `specs/`.
+- **Spec-first development.** No module is implemented without a reviewed spec in `specs/phases/`.

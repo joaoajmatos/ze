@@ -26,7 +26,7 @@ flowchart TD
 
 ## What happens during a conversation
 
-**Facts** (`ze/memory/store.py`)
+**Facts** (`ze_core/memory/store.py`)
 
 After each `execute_tool` or `draft_response` node, the `write_memory` graph node
 fires (fire-and-forget). The agent may propose new user facts — short declarative
@@ -36,7 +36,7 @@ Facts are never stored silently. Ze sends a Telegram message asking the user to
 confirm, reject, or edit the proposed fact. Only `reviewed = true` facts enter the
 long-term store.
 
-**Episodes** (`ze/memory/store.py`)
+**Episodes** (`ze_core/memory/store.py`)
 
 A summary of the conversation turn (what was asked, what Ze did, what was decided)
 is written automatically as an episode after every run. Episodes don't require user
@@ -53,7 +53,7 @@ into every system prompt — not just similar facts, but a synthesised portrait.
 
 ## Nightly consolidation (2 AM UTC)
 
-**Module:** `ze/memory/consolidator.py`  
+**Module:** `ze_core/memory/consolidator.py`  
 **Config:** `memory.consolidation.*` in `config/config.yaml`
 
 Three tasks run in sequence every night:
@@ -120,7 +120,7 @@ facts exist.
 
 ## Weekly insights (Sunday 7 AM UTC)
 
-**Module:** `ze/proactive/insights.py`  
+**Module:** `ze/jobs/insights.py`  
 **Config:** `proactive.insights.*` in `config/config.yaml`
 
 Every Sunday Ze looks back over the past 7 days of facts and episodes and generates
@@ -146,7 +146,7 @@ episodes exist in the lookback window.
 
 ## Morning briefing (8 AM UTC daily)
 
-**Module:** `ze/proactive/briefing.py`  
+**Module:** `ze/jobs/briefing.py`  
 **Config:** `proactive.briefing.*` in `config/config.yaml`
 
 A daily digest pushed to Telegram. No LLM call — it's a templated summary of stats:
@@ -164,7 +164,7 @@ of everything Ze knows.
 
 ## Calendar sync and reminders (7:45 AM UTC daily)
 
-**Module:** `ze/proactive/reminders.py`  
+**Module:** `ze/jobs/calendar.py`  
 **Config:** `proactive.calendar.*` in `config/config.yaml`
 
 Each morning `CalendarReminderScheduler` syncs Google Calendar events up to
@@ -183,7 +183,7 @@ with same-day reminders are captured.
 
 ## Workflow failure alerts (immediate)
 
-**Module:** `ze/workflow/scheduler.py` + `ze/proactive/notifier.py`
+**Module:** `ze_personal/workflow/scheduler.py` + `ze_core/proactive/notifier.py`
 
 When a scheduled workflow step fails, Ze pushes an alert immediately — no waiting
 for the morning briefing. A `workflow_failure_cooldown_hours` (default: 1h) prevents
@@ -193,7 +193,7 @@ alert spam for repeatedly-failing workflows.
 
 ## Goal advance sweep (every 15 minutes)
 
-**Module:** `ze/goals/executor.py` · registered in `ze/container.py`  
+**Module:** `ze_personal/goals/executor.py` · registered in `ze/container.py`  
 **Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *`
 
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
@@ -210,7 +210,7 @@ The sweep is lightweight — it returns early when there is no actionable next s
 Gate responses are handled immediately in `ZeBot` (not on the cron tick): approving
 or redirecting calls `advance` again from the callback handler.
 
-See [docs/goals.md](goals.md) and [specs/28-goal-engine.md](../specs/28-goal-engine.md).
+See [docs/goals.md](goals.md) and [specs/phases/28-goal-engine.md](../specs/phases/28-goal-engine.md).
 
 ---
 
@@ -218,14 +218,14 @@ See [docs/goals.md](goals.md) and [specs/28-goal-engine.md](../specs/28-goal-eng
 
 | Time (UTC) | Job | Module |
 |---|---|---|
-| 7:00 AM Sun | Weekly insight generation | `ze/proactive/insights.py` |
-| 7:45 AM daily | Calendar sync + reminder scheduling | `ze/proactive/reminders.py` |
-| 8:00 AM daily | Morning briefing | `ze/proactive/briefing.py` |
-| 2:00 AM daily | Memory consolidation + profile synthesis | `ze/memory/consolidator.py` |
-| Every 15 min | Goal advance sweep | `ze/goals/executor.py` (via `container.py`) |
-| Immediate | Workflow failure alerts | `ze/proactive/notifier.py` |
-| Immediate | Calendar event reminders (when they fire) | `ze/proactive/reminders.py` |
-| Immediate | Goal verification gates + milestone progress | `ze/proactive/notifier.py` |
+| 7:00 AM Sun | Weekly insight generation | `ze/jobs/insights.py` |
+| 7:45 AM daily | Calendar sync + reminder scheduling | `ze/jobs/calendar.py` |
+| 8:00 AM daily | Morning briefing | `ze/jobs/briefing.py` |
+| 2:00 AM daily | Memory consolidation + profile synthesis | `ze_core/memory/consolidator.py` |
+| Every 15 min | Goal advance sweep | `ze_personal/goals/executor.py` (via `ze/container.py`) |
+| Immediate | Workflow failure alerts | `ze_core/proactive/notifier.py` |
+| Immediate | Calendar event reminders (when they fire) | `ze/jobs/calendar.py` |
+| Immediate | Goal verification gates + milestone progress | `ze_core/proactive/notifier.py` |
 
 All scheduled jobs use APScheduler with Postgres as the job store, so jobs survive
 process restarts. Cron expressions are configurable in `config/config.yaml`.

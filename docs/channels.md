@@ -8,7 +8,7 @@ This guide explains how to implement a new outbound communication channel
 
 ## Before you start
 
-1. Write a spec in `specs/` first. No implementation begins without one.
+1. Write a spec in `specs/phases/` first (use `specs/TEMPLATE.md`). No implementation begins without one.
 2. Confirm the transport API supports the three required operations:
    **send**, **get_thread**, and **poll_replies**.
 
@@ -16,7 +16,7 @@ This guide explains how to implement a new outbound communication channel
 
 ## 1. Add the `ChannelType` enum value
 
-In `ze/channels/types.py`, add a new value to `ChannelType`:
+In `ze_core/channels/types.py`, add a new value to `ChannelType`:
 
 ```python
 class ChannelType(StrEnum):
@@ -35,8 +35,8 @@ change it after the first migration.
 Create `ze/channels/<name>.py` and implement the `Channel` ABC:
 
 ```python
-from ze.channels.base import Channel
-from ze.channels.types import ChannelType, Message, SentMessage, Thread, ThreadMessage
+from ze_core.channels.base import Channel
+from ze_core.channels.types import ChannelType, Message, SentMessage, Thread, ThreadMessage
 
 class LinkedInChannel(Channel):
     def __init__(self, credentials: LinkedInCredentials) -> None:
@@ -78,7 +78,7 @@ class LinkedInChannel(Channel):
 Wrap transport exceptions in `ze/errors.py` types before they surface:
 
 ```python
-from ze.errors import ChannelSendError, ChannelNotFoundError
+from ze_core.errors import ChannelSendError, ChannelNotFoundError
 
 try:
     result = await transport.send(...)
@@ -159,7 +159,7 @@ LinkedIn handles once contacts have them stored.
 ## Checklist
 
 - [ ] Spec written and reviewed
-- [ ] `ChannelType` enum value added to `ze/channels/types.py`
+- [ ] `ChannelType` enum value added to `ze_core/channels/types.py`
 - [ ] `ze/channels/<name>.py` — `Channel` subclass with all three methods
 - [ ] Transport errors wrapped as `ChannelSendError` (never raw)
 - [ ] Channel instantiated and added to `ChannelRegistry` in `ze/container.py`
