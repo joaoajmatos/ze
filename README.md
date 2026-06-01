@@ -135,7 +135,7 @@ Copy `.env.example` to `.env` before starting. Required variables:
 | `PUBLIC_URL` | HTTPS base URL in production (e.g. `https://ze.fly.dev`) |
 | `TELEGRAM_WEBHOOK_SECRET` | Webhook verification secret (production) |
 
-Agent capabilities live under `agents.<name>.capabilities` in `config/config.yaml`. Config hot-reloads on `SIGHUP` without restart.
+Agent capabilities (`autonomous`, `confirm`, `draft_only`, `disabled`) are declared as `Mode` class attributes on each `@agent` class — not in YAML. Config hot-reloads on `SIGHUP` without restart.
 
 Full reference: [docs/configuration.md](docs/configuration.md).
 
@@ -154,7 +154,7 @@ Full reference: [docs/configuration.md](docs/configuration.md).
 | **prospecting** | Target research, enrichment, outreach drafts |
 | **goals** | Multi-week autonomous objectives with milestones |
 
-Each agent is configured in `config/config.yaml` (`enabled`, `model`, `tools`, `timeout_seconds`, `intent_map`, `capabilities`). To add one, see [docs/adding-an-agent.md](docs/adding-an-agent.md).
+Agent configuration (`model`, `capabilities`, `intent_map`, `tools`, `timeout`) lives as class attributes on the `@agent` class — no YAML involved. To add one, see [docs/adding-an-agent.md](docs/adding-an-agent.md).
 
 ---
 
@@ -187,7 +187,7 @@ make db-reset       # drop and recreate database
 make docker-up      # Postgres + backend via docker-compose
 ```
 
-**Conventions:** domain types are dataclasses (not Pydantic outside the API layer), constructor injection everywhere, structlog for logging, typed errors from `ze/errors.py`. Tests mirror `ze/` under `tests/` with mocked DB and LLM clients. See [CLAUDE.md](CLAUDE.md) for the full contributor guide.
+**Conventions:** domain types are dataclasses (not Pydantic outside the API layer), constructor injection everywhere, structlog for logging, typed errors from `ze_core.errors`. Tests live in each package's `tests/` directory and use mocked DB and LLM clients. See [CLAUDE.md](CLAUDE.md) for the full contributor guide.
 
 ---
 
@@ -195,28 +195,27 @@ make docker-up      # Postgres + backend via docker-compose
 
 ```
 ze/
-├── ze/                    # Application package
-│   ├── api/               # FastAPI, webhook handler, REST routes
-│   ├── agents/            # Agent registry and implementations
-│   ├── orchestration/     # LangGraph graph, nodes, state
-│   ├── routing/           # Embedding router + complexity estimator
-│   ├── memory/            # Facts, episodes, consolidation
-│   ├── telegram/          # ZeBot, keyboards, session store
-│   ├── proactive/         # Briefings, reminders, insights
-│   ├── goals/             # Goal store, planner, executor
-│   ├── workflow/          # Workflow store and scheduler
-│   └── container.py       # Dependency wiring
+├── packages/
+│   ├── ze-core/           # Pure infrastructure — routing, memory, orchestration, telemetry
+│   ├── ze-personal/       # Domain layer — goals, workflows, persona, contacts
+│   ├── ze/                # Application — Telegram, Google, agents, API, jobs
+│   └── ze-browser/        # Browser sidecar client (httpx + Playwright)
 ├── config/
-│   └── config.yaml        # Structural config (agents, routing, persona, …)
-├── migrations/versions/   # Alembic SQL migrations
-├── tests/                 # Test suite (mirrors ze/)
-├── specs/                 # Design specs per module
+│   ├── config.yaml        # Routing, models, persona, memory, proactive schedules
+│   └── persona.yaml       # Named persona profiles and dials
+├── migrations/versions/   # Alembic SQL migrations (raw SQL, no ORM)
+├── specs/
+│   ├── phases/            # Feature and phase implementation specs
+│   ├── core/              # ze-core module specs
+│   └── arch/              # Architecture decision records
 ├── docs/                  # Architecture, deployment, guides
 ├── Dockerfile
 ├── docker-compose.yml
 ├── fly.toml
 └── Makefile
 ```
+
+Package dependency graph: `ze-browser` and `ze-core` have no ze deps; `ze-personal → ze-core`; `ze → ze-core, ze-personal, ze-browser`. See [docs/package-architecture.md](docs/package-architecture.md).
 
 ---
 
@@ -237,14 +236,16 @@ Step-by-step setup: [docs/deployment.md](docs/deployment.md).
 
 | Doc | Topic |
 |---|---|
-| [docs/architecture.md](docs/architecture.md) | System design, graph flow, modules |
+| [docs/architecture.md](docs/architecture.md) | System design, graph flow, all modules |
+| [docs/package-architecture.md](docs/package-architecture.md) | Monorepo split, ZePlugin extension point, where new code belongs |
 | [docs/configuration.md](docs/configuration.md) | Env vars and YAML reference |
-| [docs/deployment.md](docs/deployment.md) | Fly.io setup and operations |
-| [docs/workflows.md](docs/workflows.md) | Workflow modes and scheduling |
-| [docs/goals.md](docs/goals.md) | Long-running goals and gates |
+| [docs/memory.md](docs/memory.md) | Facts, episodes, profile synthesis, inspection endpoints |
 | [docs/scheduled-jobs.md](docs/scheduled-jobs.md) | Proactive jobs and memory lifecycle |
+| [docs/goals.md](docs/goals.md) | Long-running goals and verification gates |
+| [docs/workflows.md](docs/workflows.md) | Workflow modes and scheduling |
 | [docs/adding-an-agent.md](docs/adding-an-agent.md) | Authoring a new agent |
-| [docs/channels.md](docs/channels.md) | Outbound communication channels |
+| [docs/channels.md](docs/channels.md) | Adding an outbound communication channel |
+| [docs/deployment.md](docs/deployment.md) | Fly.io setup and operations |
 | [docs/eval.md](docs/eval.md) | MCP eval server for agent testing |
 | [specs/](specs/) | Module-level design specs (source of truth) |
 
