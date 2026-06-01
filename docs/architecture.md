@@ -154,8 +154,9 @@ flowchart LR
     C --> D[Weekly insights\npatterns + tensions]
 ```
 
-See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle, schedule,
-and configuration of every background job.
+See [docs/memory.md](memory.md) for a deep-dive on facts, episodes, profile synthesis,
+and how to inspect memory. See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full
+lifecycle, schedule, and configuration of every background job.
 
 ---
 
@@ -430,6 +431,11 @@ The bot uses aiogram 3.x in webhook mode (production) or long-polling (local dev
   verification gates (separate from orchestration `confirm:` payloads).
 
 Voice notes and photos are supported — see the Multimodal input section below.
+
+---
+
+See [docs/package-architecture.md](package-architecture.md) for a full breakdown of the
+monorepo split, what belongs in each package, and how the ZePlugin extension point works.
 
 ---
 

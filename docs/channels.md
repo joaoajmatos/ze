@@ -1,8 +1,8 @@
 # Ze — Adding a New Channel
 
 This guide explains how to implement a new outbound communication channel
-(e.g. LinkedIn DM, WhatsApp). Read it alongside the existing `EmailChannel`
-(`ze/channels/email.py`) as a working example.
+(e.g. LinkedIn DM, WhatsApp). Read it alongside the existing `GmailChannel`
+(`ze/google/gmail.py`) as a working example.
 
 ---
 
