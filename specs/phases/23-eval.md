@@ -19,6 +19,7 @@
 | Expanded scenario suite (calendar, email, goals, workflow, contacts, prospecting) | ✅ Done |
 | `make eval`, `eval-judge`, `eval-report`, `eval-diff` targets | ✅ Done |
 | Tool call assertions (`expected_tools` in scenarios, `tools_correct` metric) | ✅ Done |
+| Outcome verification (`verify` blocks, DB checks via asyncpg, auto-cleanup) | ✅ Done |
 
 ---
 
@@ -262,6 +263,52 @@ that every listed tool name appears in the successful calls. The result is store
 **Current coverage:** 33 of 85 scenarios have `expected_tools`. Scenarios where
 the correct behaviour is to *not* call tools (e.g. graceful error handling,
 ambiguous routing) intentionally omit `expected_tools`.
+
+---
+
+## Outcome Verification
+
+`evals/verifier.py` connects directly to Ze's Postgres database via `asyncpg`
+and runs declarative checks after each scenario executes. This closes the gap
+between tool assertions (did Ze *call* the tool?) and actual persistence (did
+the data land in the DB?).
+
+```yaml
+verify:
+  - table: user_reminders
+    where:
+      label__icontains: dentist   # ILIKE '%dentist%'
+      sent: false                 # exact boolean match
+    expect: exists                # 'exists' or 'not_exists'
+    cleanup: true                 # delete matching rows after check (default: true)
+```
+
+After checking, matching rows are deleted so eval runs don't contaminate each other.
+`make eval-clean` handles any leftovers from interrupted runs.
+
+### Supported condition operators
+
+| Suffix | SQL | Example |
+|--------|-----|---------|
+| *(none)* | `= $n` | `status: planning` |
+| `__icontains` | `ILIKE '%value%'` | `label__icontains: dentist` |
+
+Boolean values (`true`/`false`) are rendered as `= TRUE` / `= FALSE` without a parameter.
+
+### Verified tables
+
+| Table | Scenarios | What's checked |
+|-------|-----------|---------------|
+| `user_reminders` | reminders_create_absolute, _relative, _multi_turn | label, sent=false |
+| `workflows` | workflow_create_simple, _multi_step_approval | description keyword |
+| `goals` | goals_create_simple, _multi_turn_define_and_confirm | objective keyword |
+| `user_facts` | memory_store_explicit_fact, _recall_stored_fact | value keyword, contradicted=false |
+| `contacts` | contacts_add_explicitly, _multi_turn_add_and_recall | name keyword |
+
+Calendar and email scenarios do not have `verify` blocks because they write to
+Google's APIs, not Ze's database.
+
+**Current coverage:** 11 of 85 scenarios have `verify` blocks.
 
 ---
 

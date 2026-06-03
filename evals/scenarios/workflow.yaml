@@ -3,6 +3,10 @@
   description: Create a recurring workflow — tests workflow planning and scheduling
   expected_agent: workflow
   expected_tools: [create_workflow]
+  verify:
+    - table: workflows
+      where: {description__icontains: email}
+      expect: exists
   tags: [routing, workflow]
   criteria:
     - Should route to the workflow agent
@@ -49,6 +53,10 @@
 - id: workflow_multi_step_approval
   description: "Multi-turn: Ze proposes a workflow plan, user approves before execution"
   expected_tools: [create_workflow]
+  verify:
+    - table: workflows
+      where: {description__icontains: calendar}
+      expect: exists
   turns:
     - prompt: "Set up a workflow that checks my calendar each morning and sends me a briefing."
       description: "Turn 1: workflow creation request"

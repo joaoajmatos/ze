@@ -183,6 +183,24 @@ the response's `tool_calls` with `success: true`. This check is objective and
 free — no LLM judge needed. Omit it for scenarios where not calling tools is
 correct behaviour (graceful errors, companion responses, ambiguous routing).
 
+You can also add a `verify` block to check Ze's database directly after the
+scenario runs:
+
+```yaml
+  verify:
+    - table: user_reminders
+      where:
+        label__icontains: dentist   # ILIKE '%dentist%' — case-insensitive substring
+        sent: false                 # exact boolean match
+      expect: exists                # 'exists' or 'not_exists'
+      cleanup: true                 # delete matching rows after check (default: true)
+```
+
+Verified rows are deleted after the check so eval runs don't contaminate each
+other. Requires `DATABASE_URL` in your environment (same as Ze). Tables you can
+verify against: `user_reminders`, `workflows`, `goals`, `user_facts`, `contacts`.
+Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify` blocks.
+
 ### Multi-turn scenario
 
 Use `turns` instead of `prompt` to send a sequence of messages in the same session:

@@ -28,6 +28,8 @@ import httpx
 import yaml
 
 from evals.judge import DEFAULT_JUDGE_MODEL, judge
+from evals.verifier import outcome_correct as _outcome_correct
+from evals.verifier import run_verification
 
 _SCENARIOS_DIR = Path(__file__).parent / "scenarios"
 _RESULTS_DIR = Path(__file__).parent / "results"
@@ -130,9 +132,9 @@ def _fmt_score(val: int | None) -> str:
 
 def _print_header(use_judge: bool) -> None:
     if use_judge:
-        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Qual':5}  {'Tone':5}  {'T.Use':5}  Pass"
+        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Outcome':8}  {'Qual':5}  {'Tone':5}  {'T.Use':5}  Pass"
     else:
-        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  Error"
+        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Outcome':8}"
     print(header)
     print("─" * len(header))
 
@@ -142,6 +144,7 @@ def _print_row(
     agent_used: str | None,
     routing: bool | None,
     tools: bool | None,
+    outcome: bool | None,
     judge_score: dict | None,
     error: str | None,
 ) -> None:
@@ -149,9 +152,10 @@ def _print_row(
     agent = (agent_used or "?")[:_W_AGENT]
     route_sym = _sym(routing)
     tools_sym = _sym(tools)
+    outcome_sym = _sym(outcome)
 
     if error:
-        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {'ERR':6}  {tools_sym:6}  {error[:50]}")
+        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {'ERR':6}  {tools_sym:6}  {outcome_sym:8}  {error[:40]}")
         return
 
     if judge_score:
@@ -159,9 +163,9 @@ def _print_row(
         t = _fmt_score(judge_score.get("tone"))
         tu = _fmt_score(judge_score.get("tool_use"))
         p = _TICK if judge_score.get("pass") else _CROSS
-        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {q:5}  {t:5}  {tu:5}  {p}")
+        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {outcome_sym:8}  {q:5}  {t:5}  {tu:5}  {p}")
     else:
-        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}")
+        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {outcome_sym:8}")
 
 
 def _print_summary(run: dict) -> None:
@@ -183,6 +187,12 @@ def _print_summary(run: dict) -> None:
             print(f"  Tools correct:       {t['tools_correct']}/{tl_total} ({100*t['tools_correct']//tl_total}%)")
         if t.get("tools_unchecked", 0) > 0:
             print(f"  Tools unchecked:     {t['tools_unchecked']}")
+
+        oc_total = t.get("outcome_correct", 0) + t.get("outcome_wrong", 0)
+        if oc_total > 0:
+            print(f"  Outcome correct:     {t['outcome_correct']}/{oc_total} ({100*t['outcome_correct']//oc_total}%)")
+        if t.get("outcome_unchecked", 0) > 0:
+            print(f"  Outcome unchecked:   {t['outcome_unchecked']}")
 
     if t.get("judged", 0) > 0:
         print()
@@ -208,12 +218,16 @@ def _print_summary(run: dict) -> None:
             tl_c = stats.get("tools_correct", 0)
             tl_w = stats.get("tools_wrong", 0)
             tl_total_a = tl_c + tl_w
+            oc_c = stats.get("outcome_correct", 0)
+            oc_w = stats.get("outcome_wrong", 0)
+            oc_total_a = oc_c + oc_w
             rt_str = f"  routing {rt_c}/{rt_total_a}" if rt_total_a > 0 else ""
             tl_str = f"  tools {tl_c}/{tl_total_a}" if tl_total_a > 0 else ""
+            oc_str = f"  outcome {oc_c}/{oc_total_a}" if oc_total_a > 0 else ""
             judge_str = f"  passed {passed}/{judged}" if judged > 0 else ""
             q = stats.get("avg_quality")
             q_str = f"  quality {q:.1f}" if q else ""
-            print(f"    {agent:<14} {stats['total']:3} scenarios{rt_str}{tl_str}{judge_str}{q_str}")
+            print(f"    {agent:<14} {stats['total']:3} scenarios{rt_str}{tl_str}{oc_str}{judge_str}{q_str}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -264,9 +278,20 @@ async def run(args: argparse.Namespace) -> dict:
         agent_used = ze_result.get("agent_used") if not error else None
 
         tools: bool | None = None
+        outcome: bool | None = None
+        verify_results: list[dict] = []
         if not error:
             routing = _routing_correct(scenario, agent_used)
             tools = _tools_correct(scenario, ze_result)
+
+            if scenario.get("verify"):
+                vr = await run_verification(scenario["verify"])
+                verify_results = [
+                    {"table": r.table, "where": r.where, "expect": r.expect,
+                     "actual_count": r.actual_count, "passed": r.passed, "error": r.error}
+                    for r in vr
+                ]
+                outcome = _outcome_correct(vr)
 
             if use_judge and scenario.get("criteria"):
                 # For multi-turn, judge the final response
@@ -293,7 +318,7 @@ async def run(args: argparse.Namespace) -> dict:
                 except Exception as exc:
                     judge_score = {"error": str(exc)}
 
-        _print_row(sid, agent_used, routing, tools, judge_score if judge_score and "error" not in judge_score else None, error)
+        _print_row(sid, agent_used, routing, tools, outcome, judge_score if judge_score and "error" not in judge_score else None, error)
 
         agent_key = agent_used or scenario.get("expected_agent") or "unknown"
         if agent_key not in by_agent:
@@ -301,6 +326,7 @@ async def run(args: argparse.Namespace) -> dict:
                 "total": 0,
                 "routing_correct": 0, "routing_wrong": 0,
                 "tools_correct": 0, "tools_wrong": 0,
+                "outcome_correct": 0, "outcome_wrong": 0,
                 "judged": 0, "passed": 0, "quality_sum": 0,
             }
         by_agent[agent_key]["total"] += 1
@@ -312,6 +338,10 @@ async def run(args: argparse.Namespace) -> dict:
             by_agent[agent_key]["tools_correct"] += 1
         elif tools is False:
             by_agent[agent_key]["tools_wrong"] += 1
+        if outcome is True:
+            by_agent[agent_key]["outcome_correct"] += 1
+        elif outcome is False:
+            by_agent[agent_key]["outcome_wrong"] += 1
         if judge_score and "error" not in judge_score:
             by_agent[agent_key]["judged"] += 1
             if judge_score.get("pass"):
@@ -325,6 +355,8 @@ async def run(args: argparse.Namespace) -> dict:
             "agent_used": agent_used,
             "routing_correct": routing,
             "tools_correct": tools,
+            "outcome_correct": outcome,
+            "verify_results": verify_results,
             "judge": judge_score,
             "error": error,
         })
@@ -355,6 +387,9 @@ async def run(args: argparse.Namespace) -> dict:
             "tools_correct": sum(1 for r in results if r["tools_correct"] is True),
             "tools_wrong": sum(1 for r in results if r["tools_correct"] is False),
             "tools_unchecked": sum(1 for r in results if r["tools_correct"] is None),
+            "outcome_correct": sum(1 for r in results if r["outcome_correct"] is True),
+            "outcome_wrong": sum(1 for r in results if r["outcome_correct"] is False),
+            "outcome_unchecked": sum(1 for r in results if r["outcome_correct"] is None),
             "judged": len(judged_results),
             "passed": sum(1 for r in judged_results if r["judge"].get("pass")),
             "avg_quality": sum(quality_vals) / len(quality_vals) if quality_vals else None,

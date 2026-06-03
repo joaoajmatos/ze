@@ -141,6 +141,17 @@ eval-clean:
 		"DELETE FROM checkpoint_writes WHERE thread_id LIKE 'eval-%';"
 	docker compose exec -T postgres psql -U ze -d ze -c \
 		"DELETE FROM checkpoints WHERE thread_id LIKE 'eval-%';"
+	@echo "Removing eval-created rows from outcome-verified tables..."
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM user_reminders WHERE label ILIKE '%dentist%' OR label ILIKE '%build pipeline%' OR label ILIKE '%vitamins%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM workflows WHERE description ILIKE '%email%digest%' OR description ILIKE '%calendar%briefing%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM goals WHERE objective ILIKE '%books%' OR objective ILIKE '%rust%' OR objective ILIKE '%cli%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM user_facts WHERE value ILIKE '%dark mode%' OR value ILIKE '%rust%';"
+	docker compose exec -T postgres psql -U ze -d ze -c \
+		"DELETE FROM contacts WHERE name ILIKE '%pedro%' OR name ILIKE '%maria%';"
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 .PHONY: test test-core test-all

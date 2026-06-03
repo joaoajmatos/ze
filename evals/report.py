@@ -50,6 +50,12 @@ def print_summary(run: dict) -> None:
         print(f"  Tool call accuracy:  {t['tools_correct']}/{tl_total} ({tl_pct})")
     if t.get("tools_unchecked", 0) > 0:
         print(f"  Tools unchecked:     {t['tools_unchecked']}")
+    oc_total = t.get("outcome_correct", 0) + t.get("outcome_wrong", 0)
+    oc_pct = f"{100*t['outcome_correct']//oc_total}%" if oc_total > 0 else "n/a"
+    if oc_total > 0:
+        print(f"  Outcome accuracy:    {t['outcome_correct']}/{oc_total} ({oc_pct})")
+    if t.get("outcome_unchecked", 0) > 0:
+        print(f"  Outcome unchecked:   {t['outcome_unchecked']}")
 
     if t.get("judged", 0) > 0:
         print()
@@ -73,14 +79,18 @@ def print_summary(run: dict) -> None:
             tl_c = stats.get("tools_correct", 0)
             tl_w = stats.get("tools_wrong", 0)
             tl_t = tl_c + tl_w
+            oc_c = stats.get("outcome_correct", 0)
+            oc_w = stats.get("outcome_wrong", 0)
+            oc_t = oc_c + oc_w
             rt_str = f"  route {rt_c}/{rt_t}" if rt_t > 0 else ""
             tl_str = f"  tools {tl_c}/{tl_t}" if tl_t > 0 else ""
+            oc_str = f"  outcome {oc_c}/{oc_t}" if oc_t > 0 else ""
             judged = stats.get("judged", 0)
             passed = stats.get("passed", 0)
             judge_str = f"  passed {passed}/{judged}" if judged > 0 else ""
             q = stats.get("avg_quality")
             q_str = f"  quality {q:.1f}" if q else ""
-            print(f"    {agent:<16} {stats['total']:3}{rt_str}{tl_str}{judge_str}{q_str}")
+            print(f"    {agent:<16} {stats['total']:3}{rt_str}{tl_str}{oc_str}{judge_str}{q_str}")
 
     # Failures
     failures = [r for r in run.get("results", []) if r.get("routing_correct") is False or (r.get("judge") and not r["judge"].get("pass") and "error" not in r["judge"])]
@@ -144,6 +154,15 @@ def print_diff(old: dict, new: dict) -> None:
         new_tl_pct = nt_tl / nt_tl_t if nt_tl_t > 0 else None
         print(f"  Tool call accuracy: {ot_tl}/{ot_tl_t} → {nt_tl}/{nt_tl_t}{pct_delta(old_tl_pct, new_tl_pct)}")
 
+    ot_oc = ot.get("outcome_correct", 0)
+    nt_oc = nt.get("outcome_correct", 0)
+    ot_oc_t = ot_oc + ot.get("outcome_wrong", 0)
+    nt_oc_t = nt_oc + nt.get("outcome_wrong", 0)
+    if nt_oc_t > 0 or ot_oc_t > 0:
+        old_oc_pct = ot_oc / ot_oc_t if ot_oc_t > 0 else None
+        new_oc_pct = nt_oc / nt_oc_t if nt_oc_t > 0 else None
+        print(f"  Outcome accuracy:   {ot_oc}/{ot_oc_t} → {nt_oc}/{nt_oc_t}{pct_delta(old_oc_pct, new_oc_pct)}")
+
     if nt.get("judged", 0) > 0 or ot.get("judged", 0) > 0:
         print(f"  Passed:             {ot.get('passed', '-')}/{ot.get('judged', '-')} → {nt.get('passed', '-')}/{nt.get('judged', '-')}")
         print(f"  Avg quality:        {ot.get('avg_quality') or '-'} → {nt.get('avg_quality') or '-'}{_delta(ot.get('avg_quality'), nt.get('avg_quality'))}")
@@ -164,11 +183,13 @@ def print_diff(old: dict, new: dict) -> None:
         old_pass = (
             or_.get("routing_correct") is not False
             and or_.get("tools_correct") is not False
+            and or_.get("outcome_correct") is not False
             and (not or_.get("judge") or or_["judge"].get("pass", True))
         )
         new_pass = (
             nr.get("routing_correct") is not False
             and nr.get("tools_correct") is not False
+            and nr.get("outcome_correct") is not False
             and (not nr.get("judge") or nr["judge"].get("pass", True))
         )
 

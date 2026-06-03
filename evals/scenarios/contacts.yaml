@@ -24,6 +24,10 @@
   prompt: "Remember that my colleague Pedro works at Acme Corp and his email is pedro@acme.io."
   description: Explicit contact addition via conversation — tests fact extraction and storage
   expected_agent: companion
+  verify:
+    - table: contacts
+      where: {name__icontains: pedro}
+      expect: exists
   tags: [routing, contacts, memory]
   criteria:
     - Should acknowledge the contact details
@@ -55,6 +59,10 @@
 
 - id: contacts_multi_turn_add_and_recall
   description: "Multi-turn: add a contact, then ask about them"
+  verify:
+    - table: contacts
+      where: {name__icontains: maria}
+      expect: exists
   turns:
     - prompt: "My lawyer is Maria Santos, she's at marias@lawfirm.pt."
       description: "Turn 1: add a new contact"

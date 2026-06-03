@@ -2,6 +2,10 @@
   prompt: "Just so you know, I prefer dark mode in all my tools."
   description: User explicitly states a preference — Ze should acknowledge and store it
   expected_agent: companion
+  verify:
+    - table: user_facts
+      where: {value__icontains: dark mode, contradicted: false}
+      expect: exists
   tags: [companion, memory]
   criteria:
     - Should acknowledge the preference naturally, not robotically ("Got it, I'll remember that.")
@@ -10,6 +14,10 @@
 
 - id: memory_recall_stored_fact
   description: "Multi-turn: store a fact then ask Ze to recall it"
+  verify:
+    - table: user_facts
+      where: {value__icontains: rust, contradicted: false}
+      expect: exists
   turns:
     - prompt: "My favourite programming language is Rust."
       description: "Turn 1: declare a preference"
