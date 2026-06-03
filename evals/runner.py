@@ -21,6 +21,7 @@ import asyncio
 import json
 import os
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -28,6 +29,7 @@ import httpx
 import yaml
 
 from evals.judge import DEFAULT_JUDGE_MODEL, judge
+from evals.metrics import fetch_session_metrics
 from evals.verifier import outcome_correct as _outcome_correct
 from evals.verifier import run_verification
 
@@ -130,11 +132,17 @@ def _fmt_score(val: int | None) -> str:
     return str(val) if val is not None else _DASH
 
 
+def _fmt_latency(ms: int | None) -> str:
+    if ms is None:
+        return _DASH
+    return f"{ms / 1000:.1f}s"
+
+
 def _print_header(use_judge: bool) -> None:
     if use_judge:
-        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Outcome':8}  {'Qual':5}  {'Tone':5}  {'T.Use':5}  Pass"
+        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Outcome':8}  {'Latency':8}  {'Qual':5}  {'Tone':5}  {'T.Use':5}  Pass"
     else:
-        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Outcome':8}"
+        header = f"{'Scenario':<{_W_ID}}  {'Agent':<{_W_AGENT}}  {'Route':6}  {'Tools':6}  {'Outcome':8}  {'Latency':8}"
     print(header)
     print("─" * len(header))
 
@@ -145,6 +153,7 @@ def _print_row(
     routing: bool | None,
     tools: bool | None,
     outcome: bool | None,
+    latency_ms: int | None,
     judge_score: dict | None,
     error: str | None,
 ) -> None:
@@ -153,9 +162,10 @@ def _print_row(
     route_sym = _sym(routing)
     tools_sym = _sym(tools)
     outcome_sym = _sym(outcome)
+    lat = _fmt_latency(latency_ms)
 
     if error:
-        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {'ERR':6}  {tools_sym:6}  {outcome_sym:8}  {error[:40]}")
+        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {'ERR':6}  {tools_sym:6}  {outcome_sym:8}  {lat:8}  {error[:35]}")
         return
 
     if judge_score:
@@ -163,9 +173,9 @@ def _print_row(
         t = _fmt_score(judge_score.get("tone"))
         tu = _fmt_score(judge_score.get("tool_use"))
         p = _TICK if judge_score.get("pass") else _CROSS
-        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {outcome_sym:8}  {q:5}  {t:5}  {tu:5}  {p}")
+        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {outcome_sym:8}  {lat:8}  {q:5}  {t:5}  {tu:5}  {p}")
     else:
-        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {outcome_sym:8}")
+        print(f"{sid:<{_W_ID}}  {agent:<{_W_AGENT}}  {route_sym:6}  {tools_sym:6}  {outcome_sym:8}  {lat:8}")
 
 
 def _print_summary(run: dict) -> None:
@@ -205,6 +215,24 @@ def _print_summary(run: dict) -> None:
         if t.get("avg_tool_use"):
             print(f"  Avg tool use:        {t['avg_tool_use']:.1f}/5")
 
+    lats = run.get("totals", {}).get("latency_values", [])
+    if lats:
+        lats_s = sorted(lats)
+        avg_lat = sum(lats_s) / len(lats_s)
+        p95_lat = lats_s[int(len(lats_s) * 0.95)]
+        print()
+        print(f"  Latency (wall-clock)")
+        print(f"    avg: {avg_lat/1000:.1f}s   p95: {p95_lat/1000:.1f}s   max: {lats_s[-1]/1000:.1f}s")
+
+    tok = run.get("totals", {})
+    if tok.get("total_tokens", 0) > 0:
+        n = tok.get("total", 1)
+        print()
+        print(f"  Tokens (from llm_cost_log)")
+        print(f"    total: {tok['total_tokens']:,}   avg/scenario: {tok['total_tokens']//n:,}")
+        if tok.get("prompt_tokens") and tok.get("completion_tokens"):
+            print(f"    prompt: {tok['prompt_tokens']:,}   completion: {tok['completion_tokens']:,}")
+
     by_agent = run.get("by_agent", {})
     if by_agent:
         print()
@@ -227,7 +255,9 @@ def _print_summary(run: dict) -> None:
             judge_str = f"  passed {passed}/{judged}" if judged > 0 else ""
             q = stats.get("avg_quality")
             q_str = f"  quality {q:.1f}" if q else ""
-            print(f"    {agent:<14} {stats['total']:3} scenarios{rt_str}{tl_str}{oc_str}{judge_str}{q_str}")
+            avg_lat_a = stats.get("avg_latency_ms")
+            lat_str = f"  avg {avg_lat_a/1000:.1f}s" if avg_lat_a else ""
+            print(f"    {agent:<14} {stats['total']:3} scenarios{rt_str}{tl_str}{oc_str}{judge_str}{q_str}{lat_str}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -268,18 +298,22 @@ async def run(args: argparse.Namespace) -> dict:
         ze_result: dict = {}
         judge_score: dict | None = None
         routing: bool | None = None
+        latency_ms: int | None = None
 
+        t_start = time.monotonic()
         try:
             ze_result = await _run_turns(scenario, session_id, ze_url, ze_key)
             error = ze_result.get("error")
         except Exception as exc:
             error = str(exc)
+        latency_ms = int((time.monotonic() - t_start) * 1000)
 
         agent_used = ze_result.get("agent_used") if not error else None
 
         tools: bool | None = None
         outcome: bool | None = None
         verify_results: list[dict] = []
+        scenario_metrics: dict = {}
         if not error:
             routing = _routing_correct(scenario, agent_used)
             tools = _tools_correct(scenario, ze_result)
@@ -292,6 +326,17 @@ async def run(args: argparse.Namespace) -> dict:
                     for r in vr
                 ]
                 outcome = _outcome_correct(vr)
+
+            sm = await fetch_session_metrics(session_id)
+            if sm:
+                scenario_metrics = {
+                    "prompt_tokens": sm.prompt_tokens,
+                    "completion_tokens": sm.completion_tokens,
+                    "total_tokens": sm.total_tokens,
+                    "llm_duration_ms": sm.llm_duration_ms,
+                    "llm_calls": sm.llm_calls,
+                    "models": sm.models,
+                }
 
             if use_judge and scenario.get("criteria"):
                 # For multi-turn, judge the final response
@@ -318,7 +363,7 @@ async def run(args: argparse.Namespace) -> dict:
                 except Exception as exc:
                     judge_score = {"error": str(exc)}
 
-        _print_row(sid, agent_used, routing, tools, outcome, judge_score if judge_score and "error" not in judge_score else None, error)
+        _print_row(sid, agent_used, routing, tools, outcome, latency_ms, judge_score if judge_score and "error" not in judge_score else None, error)
 
         agent_key = agent_used or scenario.get("expected_agent") or "unknown"
         if agent_key not in by_agent:
@@ -328,6 +373,7 @@ async def run(args: argparse.Namespace) -> dict:
                 "tools_correct": 0, "tools_wrong": 0,
                 "outcome_correct": 0, "outcome_wrong": 0,
                 "judged": 0, "passed": 0, "quality_sum": 0,
+                "latency_sum_ms": 0, "total_tokens": 0,
             }
         by_agent[agent_key]["total"] += 1
         if routing is True:
@@ -342,6 +388,9 @@ async def run(args: argparse.Namespace) -> dict:
             by_agent[agent_key]["outcome_correct"] += 1
         elif outcome is False:
             by_agent[agent_key]["outcome_wrong"] += 1
+        if latency_ms is not None:
+            by_agent[agent_key]["latency_sum_ms"] += latency_ms
+        by_agent[agent_key]["total_tokens"] += scenario_metrics.get("total_tokens", 0)
         if judge_score and "error" not in judge_score:
             by_agent[agent_key]["judged"] += 1
             if judge_score.get("pass"):
@@ -357,6 +406,8 @@ async def run(args: argparse.Namespace) -> dict:
             "tools_correct": tools,
             "outcome_correct": outcome,
             "verify_results": verify_results,
+            "latency_ms": latency_ms,
+            "metrics": scenario_metrics,
             "judge": judge_score,
             "error": error,
         })
@@ -371,7 +422,11 @@ async def run(args: argparse.Namespace) -> dict:
         if stats["judged"] > 0:
             stats["avg_quality"] = stats["quality_sum"] / stats["judged"]
         del stats["quality_sum"]
+        if stats["total"] > 0 and stats.get("latency_sum_ms", 0) > 0:
+            stats["avg_latency_ms"] = stats["latency_sum_ms"] // stats["total"]
+        stats.pop("latency_sum_ms", None)
 
+    latency_vals = [r["latency_ms"] for r in results if r.get("latency_ms") is not None]
     run_data = {
         "run_id": run_id,
         "timestamp": ts.isoformat(),
@@ -395,6 +450,10 @@ async def run(args: argparse.Namespace) -> dict:
             "avg_quality": sum(quality_vals) / len(quality_vals) if quality_vals else None,
             "avg_tone": sum(tone_vals) / len(tone_vals) if tone_vals else None,
             "avg_tool_use": sum(tool_vals) / len(tool_vals) if tool_vals else None,
+            "latency_values": latency_vals,
+            "total_tokens": sum(r.get("metrics", {}).get("total_tokens", 0) for r in results),
+            "prompt_tokens": sum(r.get("metrics", {}).get("prompt_tokens", 0) for r in results),
+            "completion_tokens": sum(r.get("metrics", {}).get("completion_tokens", 0) for r in results),
         },
         "by_agent": by_agent,
         "results": results,

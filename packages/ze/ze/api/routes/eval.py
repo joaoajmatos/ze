@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException, Request, status
+from ze_core.telemetry.context import set_flow_context
 
 from ze.api.schemas import EvalChatRequest, EvalChatResponse, EvalRoutingInfo, EvalToolCall
 from ze.logging import get_logger
@@ -28,6 +29,10 @@ async def eval_chat(
     x_ze_api_key: str | None = Header(default=None),
 ) -> EvalChatResponse:
     _check_api_key(x_ze_api_key, request.app.state.settings)
+
+    # Set telemetry context so llm_cost_log captures this eval session.
+    # bot.invoke() prepends "eval-", so the stored session_id = f"eval-{body.session_id}".
+    set_flow_context("eval", session_id=body.session_id)
 
     ze_bot = request.app.state.ze_bot
     try:

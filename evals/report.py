@@ -68,6 +68,23 @@ def print_summary(run: dict) -> None:
         if t.get("avg_tool_use"):
             print(f"  Avg tool use:        {t['avg_tool_use']:.2f}/5")
 
+    lats = t.get("latency_values", [])
+    if lats:
+        lats_s = sorted(lats)
+        avg_lat = sum(lats_s) / len(lats_s)
+        p95_lat = lats_s[int(len(lats_s) * 0.95)]
+        print()
+        print(f"  Latency (wall-clock)")
+        print(f"    avg: {avg_lat/1000:.1f}s   p95: {p95_lat/1000:.1f}s   max: {lats_s[-1]/1000:.1f}s")
+
+    if t.get("total_tokens", 0) > 0:
+        n = t.get("total", 1)
+        print()
+        print(f"  Tokens (from llm_cost_log)")
+        print(f"    total: {t['total_tokens']:,}   avg/scenario: {t['total_tokens']//n:,}")
+        if t.get("prompt_tokens") and t.get("completion_tokens"):
+            print(f"    prompt: {t['prompt_tokens']:,}   completion: {t['completion_tokens']:,}")
+
     by_agent = run.get("by_agent", {})
     if by_agent:
         print()
@@ -90,7 +107,9 @@ def print_summary(run: dict) -> None:
             judge_str = f"  passed {passed}/{judged}" if judged > 0 else ""
             q = stats.get("avg_quality")
             q_str = f"  quality {q:.1f}" if q else ""
-            print(f"    {agent:<16} {stats['total']:3}{rt_str}{tl_str}{oc_str}{judge_str}{q_str}")
+            avg_lat_a = stats.get("avg_latency_ms")
+            lat_str = f"  avg {avg_lat_a/1000:.1f}s" if avg_lat_a else ""
+            print(f"    {agent:<16} {stats['total']:3}{rt_str}{tl_str}{oc_str}{judge_str}{q_str}{lat_str}")
 
     # Failures
     failures = [r for r in run.get("results", []) if r.get("routing_correct") is False or (r.get("judge") and not r["judge"].get("pass") and "error" not in r["judge"])]
@@ -167,6 +186,33 @@ def print_diff(old: dict, new: dict) -> None:
         print(f"  Passed:             {ot.get('passed', '-')}/{ot.get('judged', '-')} → {nt.get('passed', '-')}/{nt.get('judged', '-')}")
         print(f"  Avg quality:        {ot.get('avg_quality') or '-'} → {nt.get('avg_quality') or '-'}{_delta(ot.get('avg_quality'), nt.get('avg_quality'))}")
         print(f"  Avg tone:           {ot.get('avg_tone') or '-'} → {nt.get('avg_tone') or '-'}{_delta(ot.get('avg_tone'), nt.get('avg_tone'))}")
+
+    def _avg_latency(t: dict) -> float | None:
+        lats = t.get("latency_values", [])
+        return sum(lats) / len(lats) if lats else None
+
+    old_avg_lat = _avg_latency(ot)
+    new_avg_lat = _avg_latency(nt)
+    if old_avg_lat is not None or new_avg_lat is not None:
+        def _fmt_lat(v: float | None) -> str:
+            return f"{v/1000:.1f}s" if v is not None else "-"
+        lat_delta = ""
+        if old_avg_lat is not None and new_avg_lat is not None:
+            diff = (new_avg_lat - old_avg_lat) / 1000
+            if abs(diff) >= 0.1:
+                sign = "+" if diff > 0 else ""
+                lat_delta = f" ({sign}{diff:.1f}s)"
+        print(f"  Avg latency:        {_fmt_lat(old_avg_lat)} → {_fmt_lat(new_avg_lat)}{lat_delta}")
+
+    if ot.get("total_tokens", 0) > 0 or nt.get("total_tokens", 0) > 0:
+        old_tok = ot.get("total_tokens", 0)
+        new_tok = nt.get("total_tokens", 0)
+        tok_delta = ""
+        if old_tok and new_tok:
+            diff = new_tok - old_tok
+            sign = "+" if diff > 0 else ""
+            tok_delta = f" ({sign}{diff:,})"
+        print(f"  Total tokens:       {old_tok:,} → {new_tok:,}{tok_delta}")
 
     # Per-scenario regressions
     old_by_id = {r["scenario_id"]: r for r in old.get("results", [])}

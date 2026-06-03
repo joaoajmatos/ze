@@ -250,6 +250,40 @@ Results are saved to `evals/results/<timestamp>.json`. The judge uses
 
 ---
 
+## Latency and token tracking
+
+Every scenario run captures two latency signals automatically — no extra config needed:
+
+| Signal | Source | What it measures |
+|--------|--------|-----------------|
+| Wall-clock latency | `time.monotonic()` | End-to-end HTTP round-trip including graph execution |
+| LLM duration | `llm_cost_log.duration_ms` | Cumulative LLM API time only (excludes DB, tool calls) |
+
+The summary output shows:
+
+```
+  Latency (wall-clock)
+    avg: 3.2s   p95: 7.8s   max: 12.1s
+
+  Tokens (from llm_cost_log)
+    total: 48,320   avg/scenario: 568
+    prompt: 41,200   completion: 7,120
+```
+
+LLM-level metrics (tokens, `llm_duration_ms`) are available when `DATABASE_URL`
+is set in your environment and Ze is running with Postgres. Token counts are
+available immediately; `cost_usd` is backfilled asynchronously every 15 min by
+`CostReconciler` and is not used by the runner.
+
+`make eval-diff` shows latency and token deltas between runs:
+
+```
+  Avg latency:        3.2s → 2.9s (-0.3s)
+  Total tokens:       48,320 → 45,100 (-3,220)
+```
+
+---
+
 ## Scenario coverage
 
 | File | Scenarios | Focus |

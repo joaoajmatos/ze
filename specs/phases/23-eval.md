@@ -20,6 +20,7 @@
 | `make eval`, `eval-judge`, `eval-report`, `eval-diff` targets | ✅ Done |
 | Tool call assertions (`expected_tools` in scenarios, `tools_correct` metric) | ✅ Done |
 | Outcome verification (`verify` blocks, DB checks via asyncpg, auto-cleanup) | ✅ Done |
+| Latency and token tracking (wall-clock timing, `llm_cost_log` metrics, p95/avg/max) | ✅ Done |
 
 ---
 
@@ -309,6 +310,55 @@ Calendar and email scenarios do not have `verify` blocks because they write to
 Google's APIs, not Ze's database.
 
 **Current coverage:** 11 of 85 scenarios have `verify` blocks.
+
+---
+
+## Latency and Token Tracking
+
+Each scenario run records two orthogonal latency signals:
+
+| Signal | Source | What it measures |
+|--------|--------|-----------------|
+| `latency_ms` | `time.monotonic()` wall-clock | End-to-end HTTP round-trip including Ze graph execution |
+| `llm_duration_ms` | `llm_cost_log.duration_ms` via `evals/metrics.py` | Cumulative LLM API time only (excludes DB, tool calls, routing) |
+
+Wall-clock latency is always available. LLM-level metrics require:
+1. A live Postgres connection (`DATABASE_URL` in env)
+2. `set_flow_context("eval", session_id=...)` called in `eval.py` before `ze_bot.invoke()` — this tags `llm_cost_log` rows with the eval session_id
+
+### `evals/metrics.py`
+
+Queries `llm_cost_log` for a given session and returns `SessionMetrics`:
+
+```python
+@dataclass
+class SessionMetrics:
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    llm_duration_ms: int
+    llm_calls: int
+    models: list[str]
+```
+
+`fetch_session_metrics(session_id)` handles the double-prefix automatically:
+`bot.invoke()` prepends `"eval-"`, so the stored session_id is `eval-{session_id}`.
+
+### Cost note
+
+`cost_usd` in `llm_cost_log` is backfilled by `CostReconciler` every 15 minutes.
+Token counts and duration are available immediately. The eval runner uses token
+counts rather than cost_usd to avoid timing dependencies.
+
+### Aggregation
+
+The runner collects:
+- `latency_values` — raw per-scenario wall-clock ms (used for avg/p95/max)
+- `total_tokens`, `prompt_tokens`, `completion_tokens` — summed across the run
+- Per-agent `avg_latency_ms` — computed from `latency_sum_ms / total`
+
+`evals/report.py` displays these in `print_summary()` and shows latency/token
+deltas in `print_diff()`.
 
 ---
 
