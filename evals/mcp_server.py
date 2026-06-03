@@ -29,14 +29,14 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+from evals.runner import load_scenarios
+
 _ZE_EVAL_URL = os.getenv("ZE_EVAL_URL", "http://localhost:8000")
 _ZE_API_KEY = os.getenv("ZE_API_KEY", "")
-_SCENARIOS_DIR = Path(__file__).parent / "scenarios"
 _HEADERS = {"x-ze-api-key": _ZE_API_KEY}
 
 mcp = FastMCP("Ze Eval")
@@ -45,14 +45,7 @@ mcp = FastMCP("Ze Eval")
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _load_all_scenarios() -> list[dict]:
-    scenarios: list[dict] = []
-    for path in sorted(_SCENARIOS_DIR.glob("*.yaml")):
-        import yaml  # noqa: PLC0415
-        items = yaml.safe_load(path.read_text()) or []
-        for item in items:
-            item.setdefault("file", path.stem)
-            scenarios.append(item)
-    return scenarios
+    return load_scenarios()
 
 
 def _find_scenario(scenario_id: str) -> dict | None:

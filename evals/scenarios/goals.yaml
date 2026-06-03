@@ -1,0 +1,79 @@
+- id: goals_create_simple
+  prompt: "I want to read 12 books this year. Can you help me set that as a goal?"
+  description: Create a new goal — Ze should initiate goal setup with milestones
+  expected_agent: goals
+  tags: [routing, goals]
+  criteria:
+    - Should route to the goals agent
+    - Should acknowledge the goal and offer to track it
+    - Should suggest a concrete milestone breakdown (e.g. 1 book/month)
+    - Should not just confirm without any structure or next step
+
+- id: goals_list_active
+  prompt: "What goals am I currently working on?"
+  description: List active goals — tests goal retrieval
+  expected_agent: goals
+  tags: [routing, goals]
+  criteria:
+    - Should route to the goals agent
+    - If goals exist, should list them with current status
+    - If no goals, should say so and invite the user to set one
+    - Should not confuse goals with reminders or calendar events
+
+- id: goals_check_progress
+  prompt: "How am I doing on my fitness goal?"
+  description: Progress check on a specific goal — requires goal lookup by label
+  expected_agent: goals
+  tags: [routing, goals]
+  criteria:
+    - Should route to the goals agent
+    - Should attempt to find a goal matching "fitness"
+    - Should report milestone progress if the goal exists
+    - If no matching goal found, should say so and offer to create one
+
+- id: goals_update_milestone
+  prompt: "I finished reading my third book of the year."
+  description: Mark a milestone as complete via conversation — implicit goal update
+  expected_agent: goals
+  tags: [routing, goals]
+  criteria:
+    - Should route to the goals agent (or companion with goal memory)
+    - Should acknowledge the achievement
+    - Should update or note progress toward the reading goal
+    - Should not ignore the milestone update
+
+- id: goals_add_verification
+  prompt: "Set a goal for me to launch my side project by end of Q3 and check in with me weekly."
+  description: Goal with a verification cadence — tests scheduled check-in setup
+  expected_agent: goals
+  tags: [routing, goals]
+  criteria:
+    - Should route to the goals agent
+    - Should set the goal with the Q3 deadline
+    - Should acknowledge or set up a weekly check-in cadence
+    - Should confirm the goal structure back to the user
+
+- id: goals_close_completed
+  prompt: "I finished my running challenge. Mark it as done."
+  description: Close a completed goal — tests goal state transition
+  expected_agent: goals
+  tags: [routing, goals]
+  criteria:
+    - Should route to the goals agent
+    - Should find the running challenge goal and mark it complete
+    - Should congratulate the user appropriately (but not excessively)
+    - If goal not found, should list active goals and ask which to close
+
+- id: goals_multi_turn_define_and_confirm
+  description: "Multi-turn: vague goal request → Ze asks clarifying questions → user confirms"
+  turns:
+    - prompt: "Help me set a learning goal."
+      description: "Turn 1: vague goal — Ze should ask what to learn"
+    - prompt: "I want to get comfortable with Rust by building a small CLI tool."
+      description: "Turn 2: user clarifies — Ze should structure the goal"
+  expected_agent: goals
+  tags: [routing, goals, multi_turn]
+  criteria:
+    - Turn 1 should ask for specifics (what, by when, how Ze can help)
+    - Turn 2 should create a concrete goal with milestones (e.g. learn basics, build CLI, test)
+    - Ze should not create an empty goal from turn 1 alone

@@ -1,8 +1,12 @@
 # Ze Eval — Using the Eval System
 
-Ze's eval system lets any LLM-powered IDE (Claude Code, Cursor, Codex) interactively
-send messages to Ze, inspect routing decisions, and evaluate whether Ze responded
-correctly. The IDE's LLM is the judge — there is no fixed scoring function.
+Ze has two complementary eval modes:
+
+- **CLI runner** (`make eval`) — standalone, no IDE required. Runs all scenarios,
+  measures routing accuracy, and optionally runs an LLM quality judge. Results are
+  stored in `evals/results/` as JSON so you can track trends and detect regressions.
+- **MCP server** (`make eval-server`) — interactive mode for Claude Code / Cursor.
+  The IDE's LLM acts as the judge and can run arbitrary prompts or named scenarios.
 
 ---
 
@@ -198,6 +202,29 @@ Run `ze_list_scenarios()` to confirm it appears.
 
 ---
 
+## CLI runner
+
+```bash
+make eval                      # routing accuracy only — cheap, no LLM judge
+make eval-judge                # + LLM quality scores (costs tokens)
+make eval-report               # show last run summary
+make eval-diff                 # compare last two runs (regression detection)
+
+# Fine-grained control
+uv run python -m evals.runner --tag routing          # filter by tag
+uv run python -m evals.runner --judge --tag calendar # judge calendar scenarios only
+uv run python -m evals.report --compare              # same as eval-diff
+```
+
+Results are saved to `evals/results/<timestamp>.json`. The judge uses
+`OPENROUTER_API_KEY` from your `.env` and scores each response on:
+- **quality** (1–5): Does Ze actually answer the question?
+- **tone** (1–5): Is the tone appropriate and in character?
+- **tool_use** (1–5 or null): Did Ze use tools correctly?
+- **pass** (bool): Would a real user be satisfied?
+
+---
+
 ## Scenario coverage
 
 | File | Scenarios | Focus |
@@ -209,10 +236,17 @@ Run `ze_list_scenarios()` to confirm it appears.
 | `reminders.yaml` | 7 | Create/list/cancel reminders, edge cases, multi-turn |
 | `memory.yaml` | 6 | Fact storage, recall, contradiction handling, hallucination |
 | `edge_cases.yaml` | 8 | Emoji-only, code paste, language switch, very long, topic switch |
+| `calendar.yaml` | 9 | Read, create, delete, free slots, credential errors, multi-turn |
+| `email.yaml` | 8 | Read, compose, reply, summarise, credential errors, multi-turn |
+| `goals.yaml` | 7 | Create, list, progress check, milestone update, verification cadence |
+| `workflow.yaml` | 6 | Create, list, pause, manual trigger, approval flow, error inquiry |
+| `contacts.yaml` | 6 | Lookup, list, add, update, company search, multi-turn |
+| `prospecting.yaml` | 6 | Company research, outreach draft, lead qualification, target lists |
 
 Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 `memory`, `edge_case`, `multi_turn`, `emotional`, `safety`, `compound`,
-`graceful_degradation`, `honesty`, `tone`, `conciseness`, `capabilities`.
+`graceful_degradation`, `honesty`, `tone`, `conciseness`, `capabilities`,
+`calendar`, `email`, `goals`, `workflow`, `contacts`, `prospecting`.
 
 ---
 

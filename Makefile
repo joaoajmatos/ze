@@ -35,6 +35,10 @@ help:
 	@echo "    dev-eval       Start REST API without Telegram webhook (for running evals)"
 	@echo ""
 	@echo "  Eval (requires 'make dev-eval' running)"
+	@echo "    eval           Run full eval suite — routing accuracy only (cheap)"
+	@echo "    eval-judge     Run eval suite with LLM quality judge (costs tokens)"
+	@echo "    eval-report    Show last eval run summary"
+	@echo "    eval-diff      Compare last two eval runs (regression detection)"
 	@echo "    eval-server    Start MCP eval server (for Claude Code / Cursor / Codex)"
 	@echo "    eval-clean     Delete eval-namespaced rows from DB"
 	@echo ""
@@ -108,7 +112,19 @@ dev-eval:
 	PUBLIC_URL= LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
-.PHONY: eval-server eval-clean
+.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean
+
+eval:
+	uv run python -m evals.runner
+
+eval-judge:
+	uv run python -m evals.runner --judge
+
+eval-report:
+	uv run python -m evals.report
+
+eval-diff:
+	uv run python -m evals.report --compare
 
 eval-server:
 	uv run python evals/mcp_server.py

@@ -12,7 +12,12 @@
 | Scenario library (`evals/scenarios/`) | ✅ Done |
 | Claude Code MCP configuration (`.claude/settings.local.json`) | ✅ Done |
 | `make eval-server` Makefile target | ✅ Done |
-| This spec + `docs/eval.md` | ✅ Done |
+| CLI runner (`evals/runner.py`) | ✅ Done |
+| LLM judge (`evals/judge.py`) | ✅ Done |
+| Report / diff tool (`evals/report.py`) | ✅ Done |
+| Persistent results (`evals/results/`) | ✅ Done |
+| Expanded scenario suite (calendar, email, goals, workflow, contacts, prospecting) | ✅ Done |
+| `make eval`, `eval-judge`, `eval-report`, `eval-diff` targets | ✅ Done |
 
 ---
 
@@ -35,10 +40,6 @@ than a fixed rubric and naturally improves as the judge model improves.
 - Voice and image eval (text-only via `POST /eval/chat`).
 - Confirmation flow simulation — if Ze pauses for confirmation, `pending_confirmation`
   is returned in the response but no auto-resume is performed.
-- Persistent result storage — results are returned in-process; callers decide whether
-  to store them (e.g. by pasting into a document or writing to a file).
-- CI gating — the eval is a developer tool, not a CI check. It requires a running
-  Ze server with a real database and OpenRouter access.
 - Multi-user eval or isolated eval environments — Ze's database state (memory, routing
   log) is shared with the real user session. Eval threads are namespaced with
   `eval-<session_id>` thread IDs to limit contamination, but not fully isolated.
@@ -59,11 +60,25 @@ ze/
 evals/
 ├── __init__.py
 ├── client.py                    # ZeEvalClient (async httpx wrapper)
-├── mcp_server.py                # FastMCP stdio server
+├── judge.py                     # LLM-as-judge via OpenRouter (optional, --judge flag)
+├── mcp_server.py                # FastMCP stdio server (interactive IDE mode)
+├── report.py                    # CLI report and run-diff tool
+├── runner.py                    # CLI eval runner (primary automation path)
+├── results/                     # Persisted run JSON files (gitignored)
 └── scenarios/
+    ├── calendar.yaml            # Calendar read/write/delete/free-slot
     ├── companion.yaml
+    ├── contacts.yaml            # Contact lookup, add, update, search
+    ├── edge_cases.yaml
+    ├── email.yaml               # Email read/compose/reply/summarise
+    ├── goals.yaml               # Goal create/list/progress/milestone
+    ├── memory.yaml
+    ├── persona.yaml
+    ├── prospecting.yaml         # Company research, outreach drafting
+    ├── reminders.yaml
+    ├── research.yaml
     ├── routing.yaml
-    └── persona.yaml
+    └── workflow.yaml            # Workflow create/list/pause/trigger
 .claude/
 └── settings.local.json          # MCP server wiring for Claude Code
 ```
@@ -72,6 +87,29 @@ evals/
 
 ## Data Flow
 
+### CLI runner (primary)
+
+```
+make eval / make eval-judge
+        │
+evals/runner.py  ──── HTTP POST /eval/chat ────► ze/api/routes/eval.py
+        │                                                  │
+        │                                         LangGraph graph
+        │                                                  │
+        │                                    EvalChatResponse (JSON)
+        │◄──────────────────────────────────────────────────┘
+        │
+        ├─ routing_correct check (always)
+        │
+        └─ [--judge] evals/judge.py ──► OpenRouter LLM
+                                              │
+                                    JudgeScore {quality, tone, tool_use, pass, reasoning}
+                                              │
+                          evals/results/<timestamp>.json
+```
+
+### Interactive IDE mode
+
 ```
 IDE LLM (Claude Code / Cursor / Codex)
         │
@@ -79,22 +117,9 @@ IDE LLM (Claude Code / Cursor / Codex)
         ▼
 evals/mcp_server.py  ──── HTTP POST /eval/chat ────► ze/api/routes/eval.py
                                                               │
-                                                     ZeBot.invoke(prompt, session_id)
-                                                              │
-                                                     graph.ainvoke(state, config)
-                                                              │
-                                                      ┌───────────────┐
-                                                      │  LangGraph    │
-                                                      │  embed_route  │
-                                                      │  fetch_context│
-                                                      │  execute_tool │
-                                                      │  write_memory │
-                                                      └───────────────┘
+                                                     LangGraph graph
                                                               │
                                               EvalChatResponse (JSON)
-                                                  response, agent_used,
-                                                  routing, confidence,
-                                                  raw_scores, error
                                                               │
         ◄─────────────────────────────────────────────────────┘
         │
@@ -174,6 +199,41 @@ Add new scenarios by creating or editing YAML files. No code changes required.
 
 ---
 
+## CLI Runner
+
+`evals/runner.py` is the primary eval path. It does not require Claude Code.
+
+```bash
+make eval                      # routing accuracy only (cheap)
+make eval-judge                # + LLM quality scores (costs tokens)
+make eval-report               # show last run summary
+make eval-diff                 # compare last two runs
+
+uv run python -m evals.runner --tag routing        # filter by tag
+uv run python -m evals.runner --judge --tag calendar
+uv run python -m evals.report --compare
+```
+
+Each run saves a JSON file to `evals/results/<timestamp>.json` with:
+- Per-scenario: `routing_correct`, `agent_used`, Ze's raw response, judge scores
+- Aggregate: totals, per-agent breakdown, average quality/tone/tool_use
+
+### Judge scores (when `--judge` is set)
+
+The judge calls OpenRouter with the scenario criteria and Ze's response:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `quality` | int 1–5 | Does Ze actually answer the question? |
+| `tone` | int 1–5 | Is the tone appropriate and in character? |
+| `tool_use` | int 1–5 or null | Did Ze use tools correctly? null if no tools involved |
+| `pass` | bool | Would a real user be satisfied? |
+| `reasoning` | str | One or two sentence explanation |
+
+Default judge model: `anthropic/claude-haiku-4-5`. Override with `--judge-model`.
+
+---
+
 ## Resolved Decisions
 
 **Why not a fixed LLM judge?**
@@ -182,11 +242,18 @@ library doesn't know Ze's persona, current memory state, or instruction changes.
 Delegating judgement to the calling LLM means evaluation improves automatically
 as Ze's instructions change, and the evaluator can reason about context.
 
-**Why MCP rather than a CLI?**
+**Why is the judge optional?**
+Routing accuracy is objective and cheap to compute. Running the full LLM judge on
+every commit would be expensive and slow. The default `make eval` target gives fast
+pass/fail signal on routing; `make eval-judge` is run on demand before significant
+changes or releases.
+
+**Why MCP rather than CLI only?**
 An MCP server integrates directly into the IDE conversation. The evaluating LLM
 can interleave tool calls (run a scenario, read the output, form a hypothesis,
 run another scenario to test it) in the same context window where it is also
 reading Ze's source code. This makes eval-then-fix loops possible in one session.
+The CLI runner complements this for headless / CI use.
 
 **Why not Telegram simulation?**
 Constructing aiogram `Update` objects is brittle and tightly coupled to aiogram
