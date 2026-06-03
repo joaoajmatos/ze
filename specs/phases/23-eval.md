@@ -19,7 +19,7 @@
 | Expanded scenario suite (calendar, email, goals, workflow, contacts, prospecting) | ✅ Done |
 | `make eval`, `eval-judge`, `eval-report`, `eval-diff` targets | ✅ Done |
 | Tool call assertions (`expected_tools` in scenarios, `tools_correct` metric) | ✅ Done |
-| Tool call **argument** assertions (`args` in `expected_tools`, operator syntax) | 🔲 Planned |
+| Tool call **argument** assertions (`args` in `expected_tools`, operator syntax) | ✅ Done |
 | Outcome verification (`verify` blocks, DB checks via asyncpg, auto-cleanup) | ✅ Done |
 | Latency and token tracking (wall-clock timing, `llm_cost_log` metrics, p95/avg/max) | ✅ Done |
 

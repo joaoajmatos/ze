@@ -2,7 +2,10 @@
   prompt: "Create a workflow: every Monday morning, summarise my unread emails and send me a digest."
   description: Create a recurring workflow — tests workflow planning and scheduling
   expected_agent: workflow
-  expected_tools: [create_workflow]
+  expected_tools:
+    - name: create_workflow
+      args:
+        description__icontains: email
   verify:
     - table: workflows
       where: {description__icontains: email}
@@ -52,7 +55,10 @@
 
 - id: workflow_multi_step_approval
   description: "Multi-turn: Ze proposes a workflow plan, user approves before execution"
-  expected_tools: [create_workflow]
+  expected_tools:
+    - name: create_workflow
+      args:
+        description__icontains: calendar
   verify:
     - table: workflows
       where: {description__icontains: calendar}
