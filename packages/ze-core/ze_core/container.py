@@ -10,6 +10,7 @@ from typing import Any, get_type_hints
 
 from ze_core.errors import AgentConfigError, RoutingError
 from ze_core.logging import get_logger
+from ze_core.orchestration.types import AbortToken
 
 log = get_logger(__name__)
 
@@ -29,6 +30,7 @@ class Container:
     interface: Any = None
     preprocessor: Any = None  # InputPreprocessor | None
     plugins: list = field(default_factory=list)  # list[ZePlugin]
+    _abort_tokens: dict = field(default_factory=dict)  # thread_id → AbortToken
 
     def _build_config(self, session_id: str, **extra: Any) -> dict:
         """Build the LangGraph configurable dict for a session."""
@@ -97,44 +99,58 @@ class Container:
             "final_response": None,
             "error": None,
         }
-        config = self._build_config(session_id)
+        abort_token = AbortToken()
+        self._abort_tokens[session_id] = abort_token
+        config = self._build_config(session_id, abort_token=abort_token)
 
-        state = await self.graph.ainvoke(graph_input, config)
+        try:
+            state = await self.graph.ainvoke(graph_input, config)
 
-        if state.get("error"):
-            return InvokeResult(session_id=session_id, error=state["error"])
+            if state.get("error"):
+                return InvokeResult(session_id=session_id, error=state["error"])
 
-        if state.get("pending_confirmation"):
-            agent_result = state.get("agent_result")
-            draft = agent_result.response if agent_result is not None else ""
-            request = ConfirmationRequest(
-                content=draft or "",
-                options=["Approve", "Cancel"],
-                timeout_seconds=getattr(self.settings, "confirm_timeout_seconds", None),
-            )
+            if state.get("pending_confirmation"):
+                agent_result = state.get("agent_result")
+                draft = agent_result.response if agent_result is not None else ""
+                request = ConfirmationRequest(
+                    content=draft or "",
+                    options=["Approve", "Cancel"],
+                    timeout_seconds=getattr(self.settings, "confirm_timeout_seconds", None),
+                )
 
-            if self.interface is None:
-                return InvokeResult(session_id=session_id, confirmation_pending=True)
+                if self.interface is None:
+                    return InvokeResult(session_id=session_id, confirmation_pending=True)
 
-            style = getattr(type(self.interface), "confirmation_style", None)
+                style = getattr(type(self.interface), "confirmation_style", None)
 
-            if style == "async":
-                await self.interface.send_confirmation(request)
-                return InvokeResult(session_id=session_id, confirmation_pending=True)
+                if style == "async":
+                    await self.interface.send_confirmation(request)
+                    return InvokeResult(session_id=session_id, confirmation_pending=True)
 
-            # inline — block until user responds
-            decision = await self.interface.confirm(request)
-            if not decision.approved:
-                cancelled = decision.edited_content or draft or ""
-                return InvokeResult(session_id=session_id, response=cancelled)
+                # inline — block until user responds
+                decision = await self.interface.confirm(request)
+                if not decision.approved:
+                    cancelled = decision.edited_content or draft or ""
+                    return InvokeResult(session_id=session_id, response=cancelled)
 
-            # Resume the graph after approval
-            state = await self.graph.ainvoke(None, config)
+                # Resume the graph after approval
+                state = await self.graph.ainvoke(None, config)
 
-        response = state.get("final_response") or ""
-        if self.interface and response:
-            await self.interface.send(OutboundMessage(content=response))
-        return InvokeResult(session_id=session_id, response=response)
+            response = state.get("final_response") or ""
+            if self.interface and response:
+                await self.interface.send(OutboundMessage(content=response))
+            return InvokeResult(session_id=session_id, response=response)
+        finally:
+            self._abort_tokens.pop(session_id, None)
+
+    async def abort_invocation(self, thread_id: str, reason: str | None = None) -> None:
+        """Signal the agentic loop running under thread_id to stop cleanly.
+
+        No-op if thread_id has no active invocation (already completed or never started).
+        """
+        token = self._abort_tokens.get(thread_id)
+        if token is not None:
+            token.abort(reason)
 
     async def invoke_raw(
         self,

@@ -45,6 +45,7 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     reporter = config["configurable"].get("reporter")
     token_queue: asyncio.Queue | None = config["configurable"].get("token_queue")
     identity_builder = config["configurable"].get("identity_builder")
+    abort_token = config["configurable"].get("abort_token")
 
     if envelope.is_compound:
         return await _execute_compound(
@@ -52,12 +53,14 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
             is_sequential=envelope.is_sequential,
             reporter=reporter,
             identity_builder=identity_builder,
+            abort_token=abort_token,
         )
     return await _execute_single(
         envelope.subtasks[0], base_ctx, gate_decision, state,
         token_queue=token_queue,
         reporter=reporter,
         identity_builder=identity_builder,
+        abort_token=abort_token,
     )
 
 
@@ -80,6 +83,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         identity_builder=config["configurable"].get("identity_builder"),
+        abort_token=config["configurable"].get("abort_token"),
     )
     result = await _run_with_timeout(subtask.agent, ctx)
     return {"agent_result": result, "pending_confirmation": True}
@@ -127,6 +131,7 @@ async def _execute_single(
     token_queue: asyncio.Queue | None = None,
     reporter: Any = None,
     identity_builder: Any = None,
+    abort_token: Any = None,
 ) -> dict:
     ctx = AgentContext(
         session_id=base_ctx.session_id,
@@ -140,6 +145,7 @@ async def _execute_single(
         messages=_build_messages(state, subtask.agent, base_ctx),
         reporter=reporter,
         identity_builder=identity_builder,
+        abort_token=abort_token,
     )
     result = await _run_with_timeout(subtask.agent, ctx, token_queue=token_queue)
     return {"agent_result": result, "subtask_results": []}
@@ -153,6 +159,7 @@ async def _execute_compound(
     is_sequential: bool = False,
     reporter: Any = None,
     identity_builder: Any = None,
+    abort_token: Any = None,
 ) -> dict:
     def _make_ctx(subtask: Any) -> AgentContext:
         return AgentContext(
@@ -167,6 +174,7 @@ async def _execute_compound(
             messages=_build_messages(state, subtask.agent, base_ctx),
             reporter=reporter,
             identity_builder=identity_builder,
+            abort_token=abort_token,
         )
 
     if is_sequential:

@@ -15,7 +15,7 @@ from ze_core.interface.types import (
     InvokeResult,
     OutboundMessage,
 )
-from ze_core.orchestration.types import AgentResult
+from ze_core.orchestration.types import AbortToken, AgentResult
 
 
 # ── Fixtures / helpers ────────────────────────────────────────────────────────
@@ -239,6 +239,60 @@ class TestResume:
         await c.resume("thread-99")
         config = c.graph.ainvoke.call_args[0][1]
         assert config["configurable"]["thread_id"] == "thread-99"
+
+
+# ── Container.abort_invocation() ─────────────────────────────────────────────
+
+class TestAbortInvocation:
+    async def test_abort_token_in_config_during_invoke(self):
+        captured_config = {}
+
+        async def _capture_and_return(graph_input, config):
+            captured_config.update(config)
+            return _state("ok")
+
+        graph = MagicMock()
+        graph.ainvoke = AsyncMock(side_effect=_capture_and_return)
+        c = Container(
+            settings=MagicMock(confirm_timeout_seconds=60),
+            pool=None, checkpointer_pool=None, embedder=None,
+            openrouter_client=None, router=None, capability_gate=None,
+            memory_store=None, memory_consolidator=None, graph=graph,
+        )
+        await c.invoke("q", "s1")
+
+        token = captured_config["configurable"]["abort_token"]
+        assert isinstance(token, AbortToken)
+
+    async def test_token_removed_after_invoke_completes(self):
+        c = _container([_state("ok")])
+        await c.invoke("q", "sess-x")
+        assert "sess-x" not in c._abort_tokens
+
+    async def test_token_removed_after_invoke_error(self):
+        c = _container([_state(error="boom")])
+        await c.invoke("q", "sess-y")
+        assert "sess-y" not in c._abort_tokens
+
+    async def test_abort_invocation_sets_token(self):
+        token = AbortToken()
+        c = _container([_state("ok")])
+        c._abort_tokens["active-thread"] = token
+
+        await c.abort_invocation("active-thread", reason="user cancelled")
+
+        assert token.is_set
+        assert token.reason == "user cancelled"
+
+    async def test_abort_invocation_no_op_for_unknown_thread(self):
+        c = _container([_state("ok")])
+        await c.abort_invocation("no-such-thread")  # should not raise
+
+    async def test_abort_invocation_no_op_after_completion(self):
+        c = _container([_state("ok")])
+        await c.invoke("q", "sess-z")
+        # Token already cleaned up — abort should be silently ignored
+        await c.abort_invocation("sess-z", reason="too late")
 
 
 # ── Container.from_config() — interface validation ───────────────────────────
