@@ -112,6 +112,7 @@ class TestRunDelegate:
             tools = []
             async def run(self, ctx: AgentContext) -> AgentResult:
                 received["prompt"] = ctx.prompt
+                received["messages"] = ctx.messages
                 return AgentResult(agent="echo_agent", response="ok")
 
         register_instance("echo_agent", _E())
@@ -123,6 +124,7 @@ class TestRunDelegate:
         )
 
         assert received["prompt"] == "extra info\n\ndo X"
+        assert received["messages"] == [{"role": "user", "content": "extra info\n\ndo X"}]
 
     async def test_no_context_uses_task_as_prompt(self):
         received = {}

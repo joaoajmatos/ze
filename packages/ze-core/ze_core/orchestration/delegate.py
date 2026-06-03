@@ -100,7 +100,7 @@ async def run_delegate(
         contacts=ctx.contacts,
         persona=ctx.persona,
         model=None,
-        messages=[{"role": "user", "content": task}],
+        messages=[{"role": "user", "content": prompt}],
         reporter=ctx.reporter,
         identity_builder=ctx.identity_builder,
         abort_token=ctx.abort_token,
