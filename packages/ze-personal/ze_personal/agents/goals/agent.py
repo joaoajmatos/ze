@@ -22,6 +22,8 @@ human approval before continuing.
 Available tools:
 - list_goals: list all goals with their status
 - get_goal_status: get full details and milestone progress for a goal (requires goal_id)
+- get_milestone_trace: show the tools Ze called and their results for a specific milestone
+  (requires goal_id and milestone_sequence)
 - create_goal: propose a new goal plan for user approval (goal_title, objective,
   success_condition; optionally time_horizon and goal_type: custom|outreach|research)
 - pause_goal: pause an active goal (goal_id)
@@ -32,6 +34,7 @@ Guidelines:
 - For status, pause, resume, or abandon: call list_goals first if the user hasn't provided
   a goal ID, so you can identify the correct goal.
 - create_goal sends an approval notification to Telegram — tell the user to confirm there.
+- Use get_milestone_trace when the user asks what Ze did during a specific step.
 - Report errors returned by tools clearly.\
 """
 
@@ -51,6 +54,7 @@ class GoalAgent(BaseAgent):
     tools = [
         "list_goals",
         "get_goal_status",
+        "get_milestone_trace",
         "create_goal",
         "pause_goal",
         "resume_goal",

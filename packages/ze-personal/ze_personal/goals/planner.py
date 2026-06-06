@@ -77,6 +77,13 @@ def _normalize_and_validate(
     return milestones, gates
 
 
+_GATE_NARRATIVE_SYSTEM = """\
+You summarize completed work at a goal checkpoint. Be concise and specific.
+Write 2-4 sentences covering: what was accomplished, any notable findings or blockers,
+and why this is a natural pause point. Write in plain language as if briefing the goal owner.
+Output only the narrative — no headers, no bullet points.\
+"""
+
 _SENTINEL_GOAL_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 
@@ -185,6 +192,29 @@ class GoalPlanner:
             milestones, gates, min_sequence=next_sequence,
         )
         return milestones, gates
+
+    async def synthesize_gate_narrative(
+        self,
+        goal: Goal,
+        completed: list[Milestone],
+        gate_title: str,
+    ) -> str:
+        """Synthesize a 2-4 sentence narrative for a gate notification."""
+        milestone_lines = "\n".join(
+            f"  {m.sequence}. {m.title}: {(m.output or '')[:300]}"
+            for m in completed
+        ) or "  (none)"
+        prompt = (
+            f"Goal: {goal.title}\n"
+            f"Success condition: {goal.success_condition}\n"
+            f"Checkpoint: {gate_title}\n\n"
+            f"Completed milestones:\n{milestone_lines}"
+        )
+        return await self._client.complete(
+            messages=[{"role": "user", "content": prompt}],
+            model=self._model,
+            system=_GATE_NARRATIVE_SYSTEM,
+        )
 
     async def extract_learning(self, milestone_title: str, output: str) -> str:
         """Extract a one-sentence learning from milestone output."""

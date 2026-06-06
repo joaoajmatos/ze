@@ -162,6 +162,33 @@ async def resume_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) ->
     return {"title": goal.title, "status": "active"}
 
 
+@tool(access=ToolAccess.READ, description="Return the execution trace for a specific milestone — what tools Ze called and what they returned.")
+async def get_milestone_trace(store: GoalStore, goal_id: str, milestone_sequence: int) -> str:
+    try:
+        uid = UUID(goal_id)
+    except ValueError:
+        return f"Invalid goal ID: {goal_id!r}"
+
+    milestones = await store.list_milestones(uid)
+    target = next((m for m in milestones if m.sequence == milestone_sequence), None)
+    if target is None:
+        return f"No milestone with sequence {milestone_sequence} found for goal {goal_id}."
+
+    traces = await store.list_traces(target.id)
+    if not traces:
+        return "No execution trace recorded for this milestone."
+
+    lines = [f"Execution trace for milestone {milestone_sequence}: {target.title}\n"]
+    for t in traces:
+        status = "OK" if t.success else f"FAILED ({t.error})"
+        lines.append(f"  [{t.seq}] {t.tool_name} ({t.duration_ms}ms) — {status}")
+        if t.args:
+            import json as _json
+            lines.append(f"       args: {_json.dumps(t.args)[:200]}")
+        lines.append(f"       result: {t.result[:300]}")
+    return "\n".join(lines)
+
+
 @tool(access=ToolAccess.WRITE, description="Abandon a goal permanently by its ID.")
 async def abandon_goal(store: GoalStore, goal_id: str) -> dict:
     try:

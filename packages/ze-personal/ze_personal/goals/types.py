@@ -81,3 +81,18 @@ class GoalLearning:
     source: str
     id: UUID | None = None
     created_at: datetime | None = None
+
+
+@dataclass
+class ExecutionTrace:
+    milestone_id: UUID
+    goal_id: UUID
+    seq: int
+    tool_name: str
+    args: dict
+    result: str
+    duration_ms: int
+    success: bool
+    error: str | None = None
+    id: UUID | None = None
+    created_at: datetime | None = None

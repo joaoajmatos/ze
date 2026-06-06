@@ -6,7 +6,7 @@ import pytest
 from ze_personal.agents.goals.agent import GoalAgent
 from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_core.capability.types import GateDecision
-from ze_personal.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus
+from ze_personal.goals.types import ExecutionTrace, Goal, GoalStatus, Milestone, MilestoneStatus
 from ze_core.memory.types import MemoryContext
 
 
@@ -262,3 +262,95 @@ async def test_stream_yields_response():
     client = make_client("Goals: Find leads.")
     tokens = [t async for t in make_agent(client=client).stream(make_ctx())]
     assert "".join(tokens) == "Goals: Find leads."
+
+
+# ── get_milestone_trace tool ──────────────────────────────────────────────────
+
+async def test_get_milestone_trace_returns_formatted_output():
+    import ze_personal.agents.goals.tools  # noqa
+
+    gid = uuid4()
+    mid = uuid4()
+    milestone = Milestone(
+        id=mid, goal_id=gid, title="Research targets",
+        description="Find leads", sequence=2,
+        status=MilestoneStatus.COMPLETED,
+    )
+    trace = ExecutionTrace(
+        id=uuid4(), milestone_id=mid, goal_id=gid,
+        seq=0, tool_name="search_web",
+        args={"query": "target companies"},
+        result="Found 5 companies",
+        duration_ms=300,
+        success=True,
+    )
+
+    store = make_store()
+    store.list_milestones = AsyncMock(return_value=[milestone])
+    store.list_traces = AsyncMock(return_value=[trace])
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "get_milestone_trace",
+                 "arguments": {"goal_id": str(gid), "milestone_sequence": 2}}]),
+        ("Step 2 used search_web and found 5 companies.", None),
+    ])
+    client.complete = AsyncMock(return_value="ok")
+
+    result = await make_agent(client=client, store=store).run(
+        make_ctx("what did Ze do in step 2?")
+    )
+
+    store.list_milestones.assert_called_once_with(gid)
+    store.list_traces.assert_called_once_with(mid)
+    assert result.response
+
+
+async def test_get_milestone_trace_returns_no_trace_message():
+    import ze_personal.agents.goals.tools  # noqa
+
+    gid = uuid4()
+    mid = uuid4()
+    milestone = Milestone(
+        id=mid, goal_id=gid, title="Step 1", description="d", sequence=1,
+        status=MilestoneStatus.COMPLETED,
+    )
+
+    store = make_store()
+    store.list_milestones = AsyncMock(return_value=[milestone])
+    store.list_traces = AsyncMock(return_value=[])
+
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(side_effect=[
+        (None, [{"id": "c1", "name": "get_milestone_trace",
+                 "arguments": {"goal_id": str(gid), "milestone_sequence": 1}}]),
+        ("No execution trace available.", None),
+    ])
+    client.complete = AsyncMock(return_value="ok")
+
+    result = await make_agent(client=client, store=store).run(make_ctx())
+
+    # The tool should have returned the "no trace" message
+    tool_call = next(tc for tc in result.tool_calls if tc.tool_name == "get_milestone_trace")
+    assert "No execution trace recorded" in str(tool_call.result)
+
+
+async def test_get_milestone_trace_handles_invalid_goal_id():
+    import ze_personal.agents.goals.tools  # noqa
+    from ze_personal.agents.goals.tools import get_milestone_trace
+
+    store = make_store()
+    result = await get_milestone_trace(store=store, goal_id="not-a-uuid", milestone_sequence=1)
+    assert "Invalid goal ID" in result
+
+
+async def test_get_milestone_trace_handles_missing_sequence():
+    import ze_personal.agents.goals.tools  # noqa
+    from ze_personal.agents.goals.tools import get_milestone_trace
+
+    gid = uuid4()
+    store = make_store()
+    store.list_milestones = AsyncMock(return_value=[])
+
+    result = await get_milestone_trace(store=store, goal_id=str(gid), milestone_sequence=99)
+    assert "No milestone with sequence 99" in result

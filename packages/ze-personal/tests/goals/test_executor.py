@@ -67,6 +67,10 @@ def store():
     s.replace_pending_gates = AsyncMock(return_value=[])
     s.resolve_gate = AsyncMock()
     s.get_gate = AsyncMock(return_value=None)
+    s.save_traces = AsyncMock()
+    s.reset_consecutive_failures = AsyncMock()
+    s.increment_consecutive_failures = AsyncMock(return_value=1)
+    s.increment_replan_count = AsyncMock(return_value=1)
     return s
 
 
@@ -75,6 +79,7 @@ def planner():
     p = AsyncMock()
     p.extract_learning = AsyncMock(return_value="Key insight.")
     p.replan_remaining = AsyncMock(return_value=([], []))
+    p.synthesize_gate_narrative = AsyncMock(return_value="Work was completed successfully.")
     return p
 
 
@@ -88,6 +93,7 @@ def agent_mock():
     a = AsyncMock()
     result = MagicMock()
     result.response = "Milestone output"
+    result.tool_calls = []
     a.run = AsyncMock(return_value=result)
     return a
 
@@ -243,3 +249,198 @@ async def test_handle_gate_stopped(executor, store, push):
     store.resolve_gate.assert_called_with(gate.id, GateStatus.STOPPED)
     store.update_status.assert_called_with(goal.id, GoalStatus.ABANDONED)
     push.assert_called_once()
+
+
+# ── _build_milestone_prompt ───────────────────────────────────────────────────
+
+def test_build_milestone_prompt_no_prior_steps():
+    from ze_personal.goals.executor import _build_milestone_prompt
+
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    prompt = _build_milestone_prompt(m1, goal, [m1])
+
+    assert "[GOAL CONTEXT]" in prompt
+    assert "Test Goal" in prompt
+    assert "(no prior steps)" in prompt
+    assert "[YOUR TASK]" in prompt
+    assert "Do step 1" in prompt
+
+
+def test_build_milestone_prompt_with_completed_steps():
+    from ze_personal.goals.executor import _build_milestone_prompt
+
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
+    m1.output = "Research complete"
+    m2 = _milestone(2, MilestoneStatus.PENDING, goal_id=goal.id)
+
+    prompt = _build_milestone_prompt(m2, goal, [m1, m2])
+
+    assert "Research complete" in prompt
+    assert "(no prior steps)" not in prompt
+    assert "step 2 of 2" in prompt
+
+
+def test_build_milestone_prompt_truncates_older_steps():
+    from ze_personal.goals.executor import _build_milestone_prompt
+
+    goal = _goal()
+    milestones = []
+    for i in range(1, 6):
+        m = _milestone(i, MilestoneStatus.COMPLETED if i < 5 else MilestoneStatus.PENDING, goal_id=goal.id)
+        m.output = "x" * 600
+        milestones.append(m)
+
+    pending = milestones[-1]
+    prompt = _build_milestone_prompt(pending, goal, milestones)
+
+    # Older steps (seq 1) are capped at 100 chars; recent ones (seq 2,3,4) at 500
+    # The 600-char output should be truncated in both cases
+    assert "x" * 501 not in prompt  # no output exceeds 500 chars
+    assert "[YOUR TASK]" in prompt
+
+
+def test_build_milestone_prompt_includes_learnings():
+    from ze_personal.goals.executor import _build_milestone_prompt
+
+    goal = _goal(learnings="Key insight from last week")
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    prompt = _build_milestone_prompt(m1, goal, [m1])
+
+    assert "Key insight from last week" in prompt
+
+
+def test_build_milestone_prompt_no_learnings_shows_placeholder():
+    from ze_personal.goals.executor import _build_milestone_prompt
+
+    goal = _goal()  # learnings=""
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    prompt = _build_milestone_prompt(m1, goal, [m1])
+
+    assert "(none yet)" in prompt
+
+
+# ── Adaptive replan ───────────────────────────────────────────────────────────
+
+async def test_adaptive_replan_triggers_at_two_consecutive_failures(executor, store, push, agent_mock, planner):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.increment_consecutive_failures = AsyncMock(return_value=2)
+    store.increment_replan_count = AsyncMock(return_value=1)
+    planner.replan_remaining = AsyncMock(return_value=([_milestone(1, goal_id=goal.id)], []))
+    agent_mock.run = AsyncMock(side_effect=Exception("timeout"))
+
+    with patch("ze_personal.goals.executor.asyncio.create_task"):
+        await executor.advance(goal.id)
+
+    planner.replan_remaining.assert_called_once()
+    store.replace_pending_milestones.assert_called_once()
+    # First push is the "Two steps failed" message
+    first_notif = push.call_args_list[0].args[0]
+    assert "two steps failed" in first_notif.content.lower() or "adapting" in first_notif.content.lower()
+
+
+async def test_adaptive_replan_not_triggered_at_one_failure(executor, store, push, agent_mock, planner):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.increment_consecutive_failures = AsyncMock(return_value=1)
+    agent_mock.run = AsyncMock(side_effect=Exception("timeout"))
+
+    with patch("ze_personal.goals.executor.asyncio.create_task"):
+        await executor.advance(goal.id)
+
+    planner.replan_remaining.assert_not_called()
+
+
+async def test_adaptive_replan_cap_pauses_goal_after_second_replan(executor, store, push, agent_mock):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.increment_consecutive_failures = AsyncMock(return_value=2)
+    store.increment_replan_count = AsyncMock(return_value=2)  # already replanned once
+    agent_mock.run = AsyncMock(side_effect=Exception("still failing"))
+
+    await executor.advance(goal.id)
+
+    store.update_status.assert_called_with(goal.id, GoalStatus.PAUSED)
+    notif = push.call_args.args[0]
+    assert "paused" in notif.content.lower()
+
+
+async def test_success_resets_consecutive_failures(executor, store, push, agent_mock):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+
+    with patch("ze_personal.goals.executor.asyncio.create_task"):
+        await executor.advance(goal.id)
+
+    store.reset_consecutive_failures.assert_called_once_with(goal.id)
+
+
+# ── Gate narrative ────────────────────────────────────────────────────────────
+
+async def test_gate_uses_synthesized_narrative(executor, store, push, planner):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
+    m2 = _milestone(2, MilestoneStatus.PENDING, goal_id=goal.id)
+    gate = _gate(after_seq=1, goal_id=goal.id)
+
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1, m2])
+    store.get_pending_gate = AsyncMock(return_value=gate)
+    planner.synthesize_gate_narrative = AsyncMock(return_value="The first phase is complete.")
+
+    await executor.advance(goal.id)
+
+    planner.synthesize_gate_narrative.assert_called_once()
+    notif = push.call_args.args[0]
+    assert "The first phase is complete." in notif.content
+
+
+async def test_gate_falls_back_to_bullet_list_on_narrative_timeout(executor, store, push, planner):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
+    m1.output = "Research done"
+    m2 = _milestone(2, MilestoneStatus.PENDING, goal_id=goal.id)
+    gate = _gate(after_seq=1, goal_id=goal.id)
+
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1, m2])
+    store.get_pending_gate = AsyncMock(return_value=gate)
+    planner.synthesize_gate_narrative = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    await executor.advance(goal.id)
+
+    notif = push.call_args.args[0]
+    # Fallback uses bullet list
+    assert "Step 1" in notif.content
+
+
+async def test_gate_falls_back_to_bullet_list_on_narrative_error(executor, store, push, planner):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
+    m1.output = "Research done"
+    m2 = _milestone(2, MilestoneStatus.PENDING, goal_id=goal.id)
+    gate = _gate(after_seq=1, goal_id=goal.id)
+
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1, m2])
+    store.get_pending_gate = AsyncMock(return_value=gate)
+    planner.synthesize_gate_narrative = AsyncMock(side_effect=RuntimeError("LLM down"))
+
+    await executor.advance(goal.id)
+
+    notif = push.call_args.args[0]
+    assert "Step 1" in notif.content

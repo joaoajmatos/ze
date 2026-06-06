@@ -4,6 +4,7 @@ from typing import Protocol
 from uuid import UUID
 
 from ze_personal.goals.types import (
+    ExecutionTrace,
     Goal,
     GoalLearning,
     GoalStatus,
@@ -85,3 +86,17 @@ class GoalStore(Protocol):
     async def add_learning(self, learning: GoalLearning) -> None: ...
 
     async def list_learnings(self, goal_id: UUID) -> list[GoalLearning]: ...
+
+    # ── Execution traces ───────────────────────────────────────────────────────
+
+    async def save_traces(self, traces: list[ExecutionTrace]) -> None: ...
+
+    async def list_traces(self, milestone_id: UUID) -> list[ExecutionTrace]: ...
+
+    # ── Failure counters ───────────────────────────────────────────────────────
+
+    async def increment_consecutive_failures(self, goal_id: UUID) -> int: ...
+
+    async def reset_consecutive_failures(self, goal_id: UUID) -> None: ...
+
+    async def increment_replan_count(self, goal_id: UUID) -> int: ...

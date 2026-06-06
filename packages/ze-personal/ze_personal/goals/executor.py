@@ -7,9 +7,11 @@ from typing import Callable
 from uuid import UUID
 
 from ze_core.errors import GoalExecutionError
+from ze_core.orchestration.types import ToolCall
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.store import GoalStore
 from ze_personal.goals.types import (
+    ExecutionTrace,
     Goal,
     GoalLearning,
     GoalStatus,
@@ -30,6 +32,64 @@ _DONE_MILESTONE_STATUSES = frozenset({MilestoneStatus.COMPLETED, MilestoneStatus
 _PAYLOAD_APPROVE   = "goal:approve:{gate_id}"
 _PAYLOAD_STOP      = "goal:stop:{gate_id}"
 _PAYLOAD_REDIRECT  = "goal:redirect:{gate_id}"
+
+_TRACE_RESULT_MAX = 2000
+
+
+def _build_milestone_prompt(
+    milestone: Milestone,
+    goal: Goal,
+    all_milestones: list[Milestone],
+) -> str:
+    completed = sorted(
+        [m for m in all_milestones if m.status == MilestoneStatus.COMPLETED],
+        key=lambda m: m.sequence,
+    )
+    total = len(all_milestones)
+
+    if completed:
+        lines = []
+        cutoff = len(completed) - 3
+        for m in completed:
+            if m.sequence > (completed[cutoff].sequence if cutoff >= 0 else -1):
+                out = (m.output or "")[:500]
+            else:
+                out = (m.output or "")[:100]
+            lines.append(f"  {m.sequence}. {m.title}: {out}")
+        prior_outputs_block = "\n".join(lines)
+    else:
+        prior_outputs_block = "(no prior steps)"
+
+    return (
+        f"[GOAL CONTEXT]\n"
+        f"Goal: {goal.title}\n"
+        f"Objective: {goal.objective}\n"
+        f"Success condition: {goal.success_condition}\n"
+        f"Time horizon: {goal.time_horizon or 'not specified'}\n\n"
+        f"Progress so far (step {milestone.sequence} of {total}):\n"
+        f"{prior_outputs_block}\n\n"
+        f"Learnings from this goal:\n"
+        f"{goal.learnings or '(none yet)'}\n\n"
+        f"[YOUR TASK]\n"
+        f"{milestone.description}"
+    )
+
+
+def _to_traces(milestone: Milestone, tool_calls: list[ToolCall]) -> list[ExecutionTrace]:
+    return [
+        ExecutionTrace(
+            milestone_id=milestone.id,
+            goal_id=milestone.goal_id,
+            seq=i,
+            tool_name=tc.tool_name,
+            args=tc.args,
+            result=str(tc.result)[:_TRACE_RESULT_MAX],
+            duration_ms=tc.duration_ms,
+            success=tc.success,
+            error=tc.error,
+        )
+        for i, tc in enumerate(tool_calls)
+    ]
 
 
 class GoalExecutor:
@@ -100,8 +160,10 @@ class GoalExecutor:
         log.info("milestone_started", goal_id=str(goal_id), sequence=next_milestone.sequence, title=next_milestone.title)
 
         try:
-            output = await self._execute_milestone(next_milestone)
+            output, tool_calls = await self._execute_milestone(next_milestone, goal, milestones)
             await self._store.update_milestone(next_milestone.id, MilestoneStatus.COMPLETED, output=output)
+            asyncio.create_task(self._store.save_traces(_to_traces(next_milestone, tool_calls)))
+            await self._store.reset_consecutive_failures(goal_id)
             log.info("milestone_completed", goal_id=str(goal_id), sequence=next_milestone.sequence)
         except GoalExecutionError as exc:
             error_msg = str(exc)
@@ -112,6 +174,20 @@ class GoalExecutor:
                 content=f"Milestone {next_milestone.sequence} ({next_milestone.title}) failed: {error_msg}",
                 source="milestone_completion",
             ))
+
+            failures = await self._store.increment_consecutive_failures(goal_id)
+            if failures >= 2:
+                replan_count = await self._store.increment_replan_count(goal_id)
+                if replan_count > 1:
+                    await self._store.update_status(goal_id, GoalStatus.PAUSED)
+                    await self._push(Notification(
+                        content="Multiple steps have failed after replanning. The goal is paused — send new instructions or abandon it.",
+                        urgency="high",
+                    ))
+                    return
+                await self._trigger_adaptive_replan(goal, milestones)
+                return
+
             await self._push(Notification(
                 content=(
                     f"Milestone <b>{_html.escape(next_milestone.title)}</b> failed.\n"
@@ -250,7 +326,12 @@ class GoalExecutor:
             return False
         return prior[0].status in _DONE_MILESTONE_STATUSES
 
-    async def _execute_milestone(self, milestone: Milestone) -> str:
+    async def _execute_milestone(
+        self,
+        milestone: Milestone,
+        goal: Goal,
+        all_milestones: list[Milestone],
+    ) -> tuple[str, list[ToolCall]]:
         agent_name = milestone.agent_hint or "companion"
         try:
             agent = self._get_agent(agent_name)
@@ -261,9 +342,11 @@ class GoalExecutor:
         from ze_core.capability.types import GateDecision
         from ze_core.orchestration.types import AgentContext
 
+        prompt = _build_milestone_prompt(milestone, goal, all_milestones)
+
         ctx = AgentContext(
             session_id=f"goal:{milestone.goal_id}",
-            prompt=milestone.description,
+            prompt=prompt,
             intent=milestone.intent,
             gate_decision=GateDecision.EXECUTE,
         )
@@ -276,7 +359,55 @@ class GoalExecutor:
             raise GoalExecutionError(
                 f"Milestone {milestone.sequence} ({milestone.title}) failed: {exc}"
             ) from exc
-        return result.response
+        return result.response, result.tool_calls
+
+    async def _trigger_adaptive_replan(
+        self,
+        goal: Goal,
+        milestones: list[Milestone],
+    ) -> None:
+        goal_id = goal.id
+        await self._push(Notification(
+            content="Two steps failed in a row — I'm adapting the plan based on what I've learned so far.",
+            urgency="high",
+        ))
+
+        completed = [m for m in milestones if m.status == MilestoneStatus.COMPLETED]
+        next_seq = max((m.sequence for m in completed), default=0) + 1
+
+        try:
+            new_milestones, new_gates = await self._planner.replan_remaining(
+                goal, completed, feedback="", next_seq=next_seq
+            )
+        except Exception as exc:
+            log.warning("adaptive_replan_failed", goal_id=str(goal_id), error=str(exc))
+            await self._push(Notification(
+                content=f"Could not adapt the plan: {_html.escape(str(exc))}. The goal is paused.",
+                format="html",
+                urgency="high",
+            ))
+            await self._store.update_status(goal_id, GoalStatus.PAUSED)
+            return
+
+        for m in new_milestones:
+            m.goal_id = goal_id
+        for g in new_gates:
+            g.goal_id = goal_id
+
+        await self._store.replace_pending_milestones(goal_id, new_milestones)
+        await self._store.replace_pending_gates(goal_id, new_gates)
+
+        plan_lines = "\n".join(
+            f"{i + 1}. {m.title}" for i, m in enumerate(new_milestones[:5])
+        )
+        await self._push(Notification(
+            content=f"Adapted plan:\n{plan_lines}",
+            urgency="high",
+        ))
+
+        await self._store.reset_consecutive_failures(goal_id)
+        log.info("adaptive_replan_complete", goal_id=str(goal_id), new_milestones=len(new_milestones))
+        asyncio.create_task(self.advance(goal_id))
 
     async def _fire_gate(
         self,
@@ -285,19 +416,27 @@ class GoalExecutor:
         completed: list[Milestone],
         pending: list[Milestone],
     ) -> None:
-        context_lines = [f"• {m.title}: {m.output[:150]}" for m in completed] or ["• No milestones completed yet."]
         plan_lines = [f"• {m.title}" for m in pending[:5]]
-
-        context_summary = "\n".join(context_lines)
         plan_summary = "\n".join(plan_lines)
 
+        try:
+            narrative = await asyncio.wait_for(
+                self._planner.synthesize_gate_narrative(goal, completed, gate.title),
+                timeout=30.0,
+            )
+        except (asyncio.TimeoutError, Exception) as exc:
+            log.warning("gate_narrative_failed", error=str(exc))
+            context_lines = [f"• {m.title}: {m.output[:150]}" for m in completed] or ["• No milestones completed yet."]
+            narrative = "\n".join(context_lines)
+
+        context_summary = narrative
         await self._store.fire_gate(gate.id, context_summary, plan_summary)
         await self._store.update_status(goal.id, GoalStatus.AWAITING_GATE)
 
         gate_id_str = str(gate.id)
         content = (
-            f"<b>{_html.escape(goal.title)}</b> — checkpoint\n\n"
-            f"<b>What was done:</b>\n{_html.escape(context_summary)}\n\n"
+            f"<b>{_html.escape(goal.title)}</b> — checkpoint: {_html.escape(gate.title)}\n\n"
+            f"{_html.escape(narrative)}\n\n"
             f"<b>What comes next:</b>\n{_html.escape(plan_summary)}\n\n"
             "Approve to continue, or send new instructions."
         )

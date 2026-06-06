@@ -4,7 +4,10 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_core.db import DBPool
+import json
+
 from ze_personal.goals.types import (
+    ExecutionTrace,
     Goal,
     GoalLearning,
     GoalStatus,
@@ -319,3 +322,79 @@ class PostgresGoalStore:
                 goal_id,
             )
         return [_learning_from_row(r) for r in rows]
+
+    # ── Execution traces ───────────────────────────────────────────────────────
+
+    async def save_traces(self, traces: list[ExecutionTrace]) -> None:
+        if not traces:
+            return
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                for t in traces:
+                    await conn.execute(
+                        """
+                        INSERT INTO goal_execution_traces
+                            (milestone_id, goal_id, seq, tool_name, args, result, duration_ms, success, error)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        """,
+                        t.milestone_id, t.goal_id, t.seq, t.tool_name,
+                        json.dumps(t.args), t.result, t.duration_ms, t.success, t.error,
+                    )
+
+    async def list_traces(self, milestone_id: UUID) -> list[ExecutionTrace]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM goal_execution_traces WHERE milestone_id = $1 ORDER BY seq ASC",
+                milestone_id,
+            )
+        return [
+            ExecutionTrace(
+                id=r["id"],
+                milestone_id=r["milestone_id"],
+                goal_id=r["goal_id"],
+                seq=r["seq"],
+                tool_name=r["tool_name"],
+                args=json.loads(r["args"]) if isinstance(r["args"], str) else dict(r["args"]),
+                result=r["result"],
+                duration_ms=r["duration_ms"],
+                success=r["success"],
+                error=r["error"],
+                created_at=r["created_at"],
+            )
+            for r in rows
+        ]
+
+    # ── Failure counters ───────────────────────────────────────────────────────
+
+    async def increment_consecutive_failures(self, goal_id: UUID) -> int:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE goals
+                SET consecutive_failures = consecutive_failures + 1, updated_at = NOW()
+                WHERE id = $1
+                RETURNING consecutive_failures
+                """,
+                goal_id,
+            )
+        return row["consecutive_failures"] if row else 0
+
+    async def reset_consecutive_failures(self, goal_id: UUID) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE goals SET consecutive_failures = 0, updated_at = NOW() WHERE id = $1",
+                goal_id,
+            )
+
+    async def increment_replan_count(self, goal_id: UUID) -> int:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE goals
+                SET replan_count = replan_count + 1, updated_at = NOW()
+                WHERE id = $1
+                RETURNING replan_count
+                """,
+                goal_id,
+            )
+        return row["replan_count"] if row else 0
