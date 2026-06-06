@@ -6,6 +6,27 @@ from enum import StrEnum
 from uuid import UUID
 
 
+class SuggestionStatus(StrEnum):
+    PENDING   = "pending"
+    ACCEPTED  = "accepted"
+    DISMISSED = "dismissed"
+    EXPIRED   = "expired"
+
+
+@dataclass
+class GoalSuggestion:
+    id: UUID
+    title: str
+    objective: str
+    rationale: str
+    source_type: str
+    source_ref: str
+    status: SuggestionStatus
+    suggested_at: datetime
+    resolved_at: datetime | None = None
+    created_goal_id: UUID | None = None
+
+
 class GoalStatus(StrEnum):
     PLANNING      = "planning"
     ACTIVE        = "active"
