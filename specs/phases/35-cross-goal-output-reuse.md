@@ -212,7 +212,7 @@ Milestone(
     agent_hint=item.get("agent_hint"),
     intent=item.get("intent", "execute"),
     status=MilestoneStatus.PENDING,
-    reuse_hint=item.get("reuse_hint") or "",   # new
+    reuse_hint=(item.get("reuse_hint") or "")[:300],   # truncated; LLM can over-generate
 )
 ```
 
@@ -254,6 +254,11 @@ def _build_milestone_prompt(
     )
     if milestone.reuse_hint:
         prompt += f"\n\n[PRIOR WORK FROM OTHER GOALS]\n{milestone.reuse_hint}"
+        log.info(
+            "goal_reuse_hint_used",
+            goal_id=str(milestone.goal_id),
+            milestone_title=milestone.title,
+        )
     return prompt
 ```
 
@@ -275,11 +280,15 @@ async def create_goal(
 ) -> dict:
     goal = Goal(...)
 
-    prior_work = await store.list_completed_milestone_summaries(
-        days=90,
-        limit=20,
-        exclude_goal_id=None,   # goal not yet saved, no ID to exclude
-    )
+    try:
+        prior_work = await store.list_completed_milestone_summaries(
+            days=90,
+            limit=20,
+            exclude_goal_id=None,   # goal not yet saved, no ID to exclude
+        )
+    except Exception as exc:
+        log.warning("goal_prior_work_query_failed", error=str(exc))
+        prior_work = []
 
     try:
         milestones, gates = await planner.plan(goal, prior_work=prior_work or None)
@@ -294,11 +303,22 @@ The query runs before `store.create_goal(goal)` so the goal has no ID yet — `e
 
 Three call sites in `executor.py` call `replan_remaining`. Each must query prior work and pass it:
 
+All three replan paths use the same helper to avoid repetition:
+
+```python
+async def _fetch_prior_work(self, exclude_goal_id: UUID) -> list[PriorMilestoneOutput]:
+    try:
+        return await self._store.list_completed_milestone_summaries(
+            days=90, limit=20, exclude_goal_id=exclude_goal_id,
+        )
+    except Exception as exc:
+        log.warning("goal_prior_work_query_failed", error=str(exc))
+        return []
+```
+
 **`_apply_steer`** (user steering a running goal):
 ```python
-prior_work = await self._store.list_completed_milestone_summaries(
-    days=90, limit=20, exclude_goal_id=goal_id,
-)
+prior_work = await self._fetch_prior_work(goal_id)
 new_milestones, new_gates = await self._planner.replan_remaining(
     goal, completed, instruction, next_seq, prior_work=prior_work or None,
 )
@@ -306,9 +326,7 @@ new_milestones, new_gates = await self._planner.replan_remaining(
 
 **`_trigger_adaptive_replan`** (consecutive failure replan):
 ```python
-prior_work = await self._store.list_completed_milestone_summaries(
-    days=90, limit=20, exclude_goal_id=goal_id,
-)
+prior_work = await self._fetch_prior_work(goal_id)
 new_milestones, new_gates = await self._planner.replan_remaining(
     goal, completed_milestones, "", next_sequence, prior_work=prior_work or None,
 )
@@ -316,9 +334,7 @@ new_milestones, new_gates = await self._planner.replan_remaining(
 
 **`handle_gate_redirected`** (user redirect at a gate):
 ```python
-prior_work = await self._store.list_completed_milestone_summaries(
-    days=90, limit=20, exclude_goal_id=goal_id,
-)
+prior_work = await self._fetch_prior_work(goal_id)
 new_milestones, new_gates = await self._planner.replan_remaining(
     goal, completed, feedback, next_seq, prior_work=prior_work or None,
 )
@@ -361,13 +377,13 @@ No new tables. No index needed — `reuse_hint` is read only during milestone ex
 
 | Condition | Behaviour |
 |-----------|-----------|
-| `list_completed_milestone_summaries` raises (DB error) | Exception propagates to `create_goal` tool; tool returns `{"error": ...}`. Does not silently swallow. |
+| `list_completed_milestone_summaries` raises (DB error) | Caught by `_fetch_prior_work` helper (executor) or try/except in `create_goal` tool. Logs `goal_prior_work_query_failed` and falls back to `prior_work=[]`. Goal creation and replanning always continue — the cross-goal query is never load-bearing. |
 | No prior work found (empty list) | `prior_work=None` passed to planner; prompt unchanged; planner behaves as today |
 | LLM returns `reuse_hint` for a milestone where no overlap exists | Advisory only — agent is not obligated to use it. Worst case: agent spends 5s checking a trace that isn't useful |
 | LLM sets `reuse_hint` on every milestone indiscriminately | The prompt instructs specificity; if this happens in practice, tighten the system prompt instruction |
 | Prior milestone output is stale (> 60 days, rapidly-changing domain) | `completed_days_ago` is in the hint; LLM notes staleness. Agent can re-run if it judges the data outdated |
 | `goal_execution_traces` is empty for the referenced milestone | `get_milestone_trace` tool returns empty result; agent proceeds without prior output |
-| `reuse_hint` is very long (LLM over-generates) | `_parse_plan` can truncate: `item.get("reuse_hint", "")[:300]` |
+| `reuse_hint` is very long (LLM over-generates) | `_parse_plan` hard-truncates to 300 chars: `(item.get("reuse_hint") or "")[:300]` |
 
 ---
 
@@ -380,6 +396,10 @@ No new tables. No index needed — `reuse_hint` is read only during milestone ex
 - **`exclude_goal_id` in replanning**: when replanning a running goal, we exclude the current goal's milestones to avoid Ze treating its own completed steps as external prior work. The goal's own prior milestones are already surfaced in the `completed_summary` section of `replan_remaining()`.
 - **No change to `ze_core`**: `_build_milestone_prompt` is defined in `ze_personal/goals/executor.py`, not in `ze_core`. The `reuse_hint` field on `Milestone` is a `ze_personal` type. Nothing in `ze_core` needs to change.
 - **Backward compatibility**: `reuse_hint` defaults to `""`. Existing milestones (DB rows without the column before migration) get `DEFAULT ''`. The `_build_milestone_prompt` check `if milestone.reuse_hint:` is a no-op for the empty string.
+- **Observability**: two structured log events provide the minimum signal to validate the feature in practice. `goal_reuse_hint_set` (logged in `_parse_plan` when hint is non-empty) records `goal_id`, `milestone_title`, `prior_goal_title`, and `completed_days_ago`. `goal_reuse_hint_used` (logged in `_build_milestone_prompt`) records `goal_id` and `milestone_title`. If `goal_reuse_hint_set` fires but `goal_reuse_hint_used` never fires, the hint was never stored (parse regression). If both fire at zero rate after several goals are planned, the feature is a no-op — check whether prior work is actually being returned by the store query.
+- **Over-hinting monitor (T3)**: if more than 30% of milestones in a newly-planned goal have non-empty `reuse_hint`, the planner is over-hinting. Tighten the `_PLAN_SYSTEM` instruction to "only set reuse_hint when the prior output would directly substitute for executing this milestone, not merely inform it."
+- **Baseline planning quality (T4)**: the prior work instructions in `_PLAN_SYSTEM` change the prompt for all goals where prior work is present. If milestone descriptions regress in length or specificity after this phase ships, isolate by comparing prompt-with-prior-work vs. prompt-without on the same goal and check if the extra instruction is displacing planning tokens.
+- **Silent reuse is a deliberate design choice**: Ze never notifies the user that it is considering prior work. The reuse hint is visible only to the agent. This is intentional — announcing every potential reuse check would be noisy. If the user notices stale data in an output, they can ask Ze to re-run the milestone fresh; no special affordance is needed for the single-user context.
 
 ---
 
@@ -403,10 +423,15 @@ No new tables. No index needed — `reuse_hint` is read only during milestone ex
 | `_apply_steer` passes prior_work to `replan_remaining` | `tests/goals/test_executor.py` |
 | `_trigger_adaptive_replan` passes prior_work to `replan_remaining` | `tests/goals/test_executor.py` |
 | `handle_gate_redirected` passes prior_work to `replan_remaining` | `tests/goals/test_executor.py` |
+| `create_goal` tool continues normally when `list_completed_milestone_summaries` raises | `tests/agents/goals/test_goal_agent.py` |
+| `_fetch_prior_work` returns empty list and logs warning on store failure | `tests/goals/test_executor.py` |
+| `_parse_plan` truncates `reuse_hint` at 300 chars | `tests/goals/test_planner.py` |
+| `_build_milestone_prompt` emits `goal_reuse_hint_used` log when hint is set | `tests/goals/test_executor.py` |
 
 ---
 
 ## Open Questions
 
-- [ ] **Hint truncation**: should `_parse_plan` truncate `reuse_hint` at a fixed length (e.g. 300 chars) to prevent over-generated hints from bloating the milestone prompt? Low risk given the system prompt instructs brevity — add if it proves necessary in practice.
-- [ ] **Should `list_completed_milestone_summaries` be called inside `GoalPlanner` directly?** Alternative: planner accepts the store as a constructor arg and queries it internally. This would centralise the prior work logic. Rejected for now: planner is currently stateless (takes a client + model), and having it call the store mixes concerns. The call site pattern (tool/executor queries, passes to planner) is more testable.
+- [x] **Hint truncation**: should `_parse_plan` truncate `reuse_hint`? → **Yes, hard-truncate to 300 chars** in `_parse_plan`. LLMs reliably over-generate narrative even when instructed to be brief; 300 chars is enough to name the prior goal and describe the overlap.
+- [x] **Should `list_completed_milestone_summaries` be called inside `GoalPlanner` directly?** → **No.** Planner is stateless (client + model). Mixing in store calls blurs the boundary. Call-site pattern (tool/executor queries, passes to planner) is more testable and keeps the planner pure.
+- [x] **Silent reuse vs. one-line transparency to the user**: should Ze announce when it's considering prior work? → **Silent reuse.** The hint is advisory context for the agent, not a decision that needs user acknowledgement. Announcing every potential reuse check would add noise for a single-user assistant. If the user gets a result that seems stale, they can ask Ze to redo the step — no special affordance needed.
