@@ -120,7 +120,7 @@ CREATE TABLE user_facts (
     confidence  FLOAT NOT NULL DEFAULT 1.0,
     reviewed    BOOLEAN NOT NULL DEFAULT false,
     contradicted BOOLEAN NOT NULL DEFAULT false,
-    embedding   VECTOR(384),        -- all-MiniLM-L6-v2, 384 dims
+    embedding   VECTOR(384),        -- paraphrase-multilingual-MiniLM-L12-v2, 384 dims
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

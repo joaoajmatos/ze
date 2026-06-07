@@ -197,7 +197,7 @@ User message (Telegram Bot API)
 | Module | Package | Purpose |
 |--------|---------|---------|
 | `ze_core/openrouter/` | `ze-core` | All LLM calls via OpenRouter |
-| `ze_core/embeddings.py` | `ze-core` | Shared all-MiniLM-L6-v2 singleton |
+| `ze_core/embeddings.py` | `ze-core` | Shared paraphrase-multilingual-MiniLM-L12-v2 singleton |
 | `ze_core/telemetry/` | `ze-core` | Cost tracking, context vars |
 | `ze/settings.py` | `ze` | Pydantic BaseSettings, secrets |
 | `ze/errors.py` | — | Base exception hierarchy (re-exported via ze_core.errors) |

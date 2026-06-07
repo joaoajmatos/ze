@@ -117,7 +117,7 @@ fly ssh console
 ### Scale
 
 The default config uses one shared-cpu-1x machine with 1 GB RAM. The embedding
-model (`all-MiniLM-L6-v2`) loads into ~200 MB RAM at startup.
+model (`paraphrase-multilingual-MiniLM-L12-v2`) loads into ~450 MB RAM at startup.
 
 ```bash
 fly scale memory 2048   # upgrade to 2 GB if needed
@@ -267,7 +267,7 @@ fly ssh console -C "python -m alembic current"
 
 **Machine OOM (out of memory)**
 
-The embedding model uses ~200 MB. If other memory pressure exists, upgrade:
+The embedding model uses ~450 MB. If other memory pressure exists, upgrade:
 ```bash
 fly scale memory 2048
 ```

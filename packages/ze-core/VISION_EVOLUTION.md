@@ -251,7 +251,7 @@ The routing primitive takes an incoming message and decides which agent handles 
 without involving an LLM in the common case.
 
 At startup, each registered agent's `description` string is embedded using a shared
-local embedding model (default: `all-MiniLM-L6-v2`, loaded once, never reconfigured).
+local embedding model (default: `paraphrase-multilingual-MiniLM-L12-v2`, loaded once, never reconfigured).
 When a message arrives, it is embedded and scored against all agent embeddings by
 cosine similarity.
 

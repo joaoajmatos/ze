@@ -113,7 +113,7 @@ class Episode:
     prompt: str
     response: str           # raw LLM response, stored at write time
     summary: str | None     # generated lazily by Haiku, cached in DB
-    embedding: np.ndarray   # 384-dim, all-MiniLM-L6-v2
+    embedding: np.ndarray   # 384-dim, paraphrase-multilingual-MiniLM-L12-v2
     created_at: datetime
     relevance: float = field(default=0.0)  # populated at retrieval, never persisted
 
@@ -149,7 +149,7 @@ CREATE TABLE episodes (
     prompt      TEXT NOT NULL,
     response    TEXT NOT NULL,
     summary     TEXT,                       -- NULL until lazily generated
-    embedding   VECTOR(384),               -- all-MiniLM-L6-v2 dimension
+    embedding   VECTOR(384),               -- paraphrase-multilingual-MiniLM-L12-v2 dimension
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX ON episodes USING ivfflat (embedding vector_cosine_ops)

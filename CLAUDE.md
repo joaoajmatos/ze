@@ -85,7 +85,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 |---|---|---|
 | LLM gateway | OpenRouter only | Single billing, easy model swap |
 | Web search | OpenRouter `openrouter:web_search` server tool | No separate search API key; LLM decides when to search; billed via OpenRouter credits |
-| Embeddings | paraphrase-multilingual-MiniLM-L12-v2 local | No API cost, fast, 384-dim |
+| Embeddings | paraphrase-multilingual-MiniLM-L12-v2 local | No API cost, multilingual, 384-dim |
 | Orchestration | LangGraph + AsyncPostgresSaver | Graph persistence survives restarts |
 | DB driver | asyncpg (runtime), psycopg2 (Alembic CLI) | asyncpg has no sync mode |
 | Config | Pydantic BaseSettings + YAML files | Secrets in .env, structure in YAML |

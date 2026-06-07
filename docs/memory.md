@@ -68,7 +68,7 @@ No user action is required.
 
 Before every agent execution, `fetch_context` runs:
 
-1. **Semantic search** — embeds the current prompt with `all-MiniLM-L6-v2` and runs a
+1. **Semantic search** — embeds the current prompt with `paraphrase-multilingual-MiniLM-L12-v2` and runs a
    pgvector cosine similarity search over both `user_facts` and `episodes`. Returns
    the top-k most relevant results as `MemoryContext`.
 2. **Profile injection** — calls `store.get_profile()` and attaches the current

@@ -97,7 +97,7 @@ Read from `config/models.yaml`:
 routing:
   threshold: 0.55        # minimum score to route confidently
   gap_threshold: 0.10    # minimum spread between top two agents
-  embedding_model: all-MiniLM-L6-v2
+  embedding_model: paraphrase-multilingual-MiniLM-L12-v2
   fallback_model: anthropic/claude-haiku-4-5
 ```
 

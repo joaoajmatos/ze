@@ -54,7 +54,7 @@ Already enabled via `CREATE EXTENSION IF NOT EXISTS vector` in migration 001. Ze
 Feeds go down, move, or return 404. Already handled by design: `fetch()` returns `[]` on any error and logs a warning. A failing source silently produces zero articles — no crash, no user-visible error.
 
 **PT4 — Embedding latency at upsert time**
-`all-MiniLM-L6-v2` is already loaded as a singleton at startup. Embedding 50 articles inline takes ~5–10 ms each on CPU, so ~500 ms total per source. In a background job that runs every 30 minutes, this is acceptable. No background embedding queue needed.
+`paraphrase-multilingual-MiniLM-L12-v2` is already loaded as a singleton at startup. Embedding 50 articles inline takes ~15–25 ms each on CPU, so ~1 s total per source. In a background job that runs every 30 minutes, this is acceptable. No background embedding queue needed.
 
 ---
 

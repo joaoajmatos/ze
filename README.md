@@ -47,7 +47,7 @@ flowchart TD
     IRC -->|no| ER
     INJ --> ER
 
-    ER[embed_route<br/>all-MiniLM-L6-v2]
+    ER[embed_route<br/>multilingual-MiniLM-L12-v2]
     ER -->|single| FC[fetch_context<br/>pgvector + profile]
     ER -->|compound| DEC[decompose<br/>claude-haiku]
     DEC -->|parallel| FC
@@ -76,7 +76,7 @@ Two independent approval systems sit on top of this:
 
 ### Agents
 
-Routing is handled by local `all-MiniLM-L6-v2` embeddings over each agent's description; ambiguous or compound requests fall back to a small Haiku decomposer. Cost-aware routing downgrades simple requests to a cheaper model with no extra LLM call.
+Routing is handled by local `paraphrase-multilingual-MiniLM-L12-v2` embeddings over each agent's description; ambiguous or compound requests fall back to a small Haiku decomposer. Cost-aware routing downgrades simple requests to a cheaper model with no extra LLM call.
 
 | Agent | Does | Default posture |
 |---|---|---|
@@ -272,7 +272,7 @@ ze         → ze-core, ze-personal, ze-browser
 | Orchestration | LangGraph · AsyncPostgresSaver |
 | Bot | aiogram 3.x |
 | LLM gateway | OpenRouter (Sonnet / Haiku) |
-| Embeddings | `all-MiniLM-L6-v2` (local, 384-dim, no API cost) |
+| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (local, 384-dim, multilingual, no API cost) |
 | Database | PostgreSQL 16 + pgvector |
 | Scheduler | APScheduler 3.x (Postgres job store) |
 | Migrations | Alembic (raw SQL, no ORM) |

@@ -46,7 +46,7 @@ make it impossible to reuse or test the infrastructure layer in isolation.
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
 | `proactive/` | `ProactiveScheduler`, `ProactiveNotifier`, `ProactiveJob` |
 | `progress/` | `ProgressReporter`, locale translations |
-| `embeddings.py` | Shared `all-MiniLM-L6-v2` singleton |
+| `embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton |
 | `container.py` | Base `Container` with DI wiring, plugin support, `invoke`/`resume` |
 | `plugin.py` | `ZePlugin` ABC |
 | `errors.py` | Typed exception hierarchy |

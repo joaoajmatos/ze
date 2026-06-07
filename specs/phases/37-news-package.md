@@ -49,7 +49,7 @@ in `config.yaml`; the `NewsSource` ABC is identical for both.
 - Maintain a `SourceRegistry` populated at startup from `config.yaml`.
 - Periodically fetch and store articles from all registered sources via `NewsFetchJob`.
 - Deduplicate articles by URL; prune articles older than the configured retention window.
-- Embed article titles + summaries with `all-MiniLM-L6-v2` for semantic retrieval.
+- Embed article titles + summaries with `paraphrase-multilingual-MiniLM-L12-v2` for semantic retrieval.
 - Expose a `NewsStore` for semantic and keyword search, consumed by `NewsAgent`.
 - Answer natural-language news queries via `NewsAgent`.
 - Expose a `NewsPlugin(ZePlugin)` that wires all of the above into the Ze container.
@@ -257,7 +257,7 @@ class NewsStore:
 ```
 
 Embeddings are computed over `f"{article.title}. {article.summary}"` using the shared
-`all-MiniLM-L6-v2` singleton from `ze_core.embeddings`. Embedding is computed in
+`paraphrase-multilingual-MiniLM-L12-v2` singleton from `ze_core.embeddings`. Embedding is computed in
 `upsert` before the DB write. Semantic search uses cosine similarity via `pgvector`'s
 `<=>` operator, same pattern as `EmbeddingRouter`.
 
@@ -395,7 +395,7 @@ articles from local sources; `get_headlines(tags=["global"])` returns global one
 | `ze_core.orchestration.registry.agent` | `@agent` decorator |
 | `ze_core.orchestration.tool.tool` | `@tool` decorator |
 | `ze_core.proactive.job.ProactiveJob` | Scheduled fetch job |
-| `ze_core.embeddings` | Shared `all-MiniLM-L6-v2` singleton |
+| `ze_core.embeddings` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton |
 | `ze_core.openrouter` | LLM calls in `NewsAgent` |
 | `httpx` | RSS feed fetching (already a dep via ze-core) |
 | `feedparser` | RSS/Atom parsing — new dep for `ze-news` only |
@@ -437,7 +437,7 @@ articles from local sources; `get_headlines(tags=["global"])` returns global one
   other lightweight agents. Configurable via `news.model` in `config.yaml`. News queries
   are summarisation tasks — a reasoning-grade model is unnecessary.
 - [x] **Should `NewsFetchJob` embed articles in the background or inline in `upsert`?**
-  → Inline. `all-MiniLM-L6-v2` is CPU-local; embedding 50 articles takes ~500 ms total
+  → Inline. `paraphrase-multilingual-MiniLM-L12-v2` is CPU-local; embedding 50 articles takes ~1 s total
   — acceptable in a background job that runs every 30 minutes. No background queue needed.
 - [x] **Morning briefing integration.** → Scoped into Phase 37 implementation window,
   not deferred. Add `NewsStore.get_recent(tags=["global"], limit=5)` call to

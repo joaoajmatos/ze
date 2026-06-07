@@ -18,7 +18,7 @@ flowchart TD
     V([Voice note]) --> TR[TranscriptionClient\nWhisper] --> R
     P([Photo]) --> VC[vision_caption\nif no text] --> R
 
-    R[embed_route\nall-MiniLM-L6-v2]
+    R[embed_route\nmultilingual-MiniLM-L12-v2]
     R -->|confident + single agent| C[fetch_context\npgvector search]
     R -->|ambiguous / compound| D[decompose\nclaude-haiku]
     D --> C
@@ -44,7 +44,7 @@ flowchart TD
 Routing runs on every message before any LLM is involved.
 
 1. At startup, each enabled agent's description (from `@agent` class attributes) is
-   embedded using the shared `all-MiniLM-L6-v2` instance.
+   embedded using the shared `paraphrase-multilingual-MiniLM-L12-v2` instance.
 2. The incoming prompt is embedded at request time.
 3. Cosine similarity scores are computed against all agent embeddings.
 4. **Routing outcomes:**
@@ -463,7 +463,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze/settings.py` | Pydantic `BaseSettings` — Ze secrets + `to_core_settings()` bridge |
 | `ze/errors.py` | Exception hierarchy — re-exports `ze_core.errors` typed exceptions |
 | `ze/logging.py` | structlog JSON logger — `chat_id` and agent bound at request time |
-| `ze_core/embeddings.py` | Shared `SentenceTransformer` singleton — loaded once at startup |
+| `ze_core/embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton — loaded once at startup |
 | `ze/db.py` | asyncpg pool factory — lifespan-managed, injected via `Depends()` |
 | `ze/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all Ze resources |
 | `ze_core/persona/` | `PostgresPersonaStore` — named profiles, dial overrides, DB persistence |
