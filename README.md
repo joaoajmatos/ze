@@ -4,12 +4,12 @@
 
 **A self-hosted personal AI assistant that works like a trustworthy human one — not a chatbot.**
 
-You talk to it on Telegram. It routes every message to the right specialist, remembers you across conversations, asks before doing anything risky, runs multi-week goals on its own, and reaches out when there's something worth saying. All inference goes through [OpenRouter](https://openrouter.ai) — bring your own keys, run it yourself, own your data.
+You talk to it through a native Flutter app. It routes every message to the right specialist, remembers you across conversations, asks before doing anything risky, runs multi-week goals on its own, and reaches out when there's something worth saying. All inference goes through [OpenRouter](https://openrouter.ai) — bring your own keys, run it yourself, own your data.
 
 <p>
   <a href="https://github.com/joaoajmatos/ze/actions/workflows/ci.yml"><img src="https://github.com/joaoajmatos/ze/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.12+-blue.svg" alt="Python 3.12+">
-  <img src="https://img.shields.io/badge/interface-Telegram-26A5E4.svg" alt="Telegram">
+  <img src="https://img.shields.io/badge/interface-Flutter-54C5F8.svg" alt="Flutter">
   <img src="https://img.shields.io/badge/LLM-OpenRouter-000000.svg" alt="OpenRouter">
   <img src="https://img.shields.io/badge/deploy-Fly.io-7B3FE8.svg" alt="Fly.io">
   <img src="https://img.shields.io/badge/license-Unlicense-green.svg" alt="Unlicense">
@@ -23,13 +23,13 @@ You talk to it on Telegram. It routes every message to the right specialist, rem
 
 Most AI assistants are stateless text boxes. Ze is built on the opposite premise: a good assistant is **someone you trust with standing authority**. That shapes every design decision.
 
-- **It asks before acting.** Every agent action carries an explicit permission mode. Sending an email or deleting a calendar event pauses for a Yes / No / Edit confirmation — unless you've deliberately granted autonomy for that action.
+- **It asks before acting.** Every agent action carries an explicit permission mode. Sending an email or deleting a calendar event pauses for a confirmation — unless you've deliberately granted autonomy for that action.
 - **It remembers, and it earns that memory.** Facts are stored semantically and only become ground truth once *you* approve them. Episodes accrue automatically. Every night Ze dedupes, expires, and re-synthesises a portrait of you that gets injected into every prompt.
 - **It works in the background for weeks.** Hand it an objective and it decomposes the goal into milestones, executes them on a schedule, and checks in at verification gates — not after every keystroke. You can steer it mid-flight just by talking.
 - **It reaches out first.** Morning briefings, calendar reminders, weekly insights, workflow-failure alerts, and even *proactive goal suggestions* grounded in what it's learned about you.
 - **It's yours.** Self-hosted on Fly.io with your own Postgres. No SaaS backend, no shared model, no telemetry leaving your box.
 
-Ze is deliberately **single-user** — locked to one Telegram chat ID.
+Ze is deliberately **single-user** — locked to one authenticated client.
 
 ---
 
@@ -39,10 +39,8 @@ Every message runs through a [LangGraph](https://langchain-ai.github.io/langgrap
 
 ```mermaid
 flowchart TD
-    T([Text]) --> PRE
-    V([Voice]) --> PRE[preprocess<br/>Whisper / vision caption]
-    P([Photo]) --> PRE
-    PRE --> IRC{active goals?}
+    A([Flutter app]) -->|WebSocket /ws| PRE
+    PRE[preprocess<br/>Whisper / vision caption] --> IRC{active goals?}
     IRC -->|yes| INJ[inject_routing_context<br/>goal hints]
     IRC -->|no| ER
     INJ --> ER
@@ -57,17 +55,19 @@ flowchart TD
     CG -->|EXECUTE| EX[agent.run<br/>ReAct loop]
     CG -->|CONFIRM / DRAFT| DR[draft_response] --> AC[await_confirmation<br/>graph paused]
     CG -->|BLOCKED| ENDX
-    AC -->|Yes / Edit| EX
+    AC -->|Approve / Edit| EX
     EX -->|compound| SY[synthesize] --> WM
     EX -->|simple| WM[write_memory]
-    WM --> R([Telegram reply])
+    WM --> R([response frame via WebSocket])
 ```
+
+Proactive notifications (briefings, reminders, alerts) are pushed via **ntfy** when the app is in the background.
 
 Two independent approval systems sit on top of this:
 
-| System | Granularity | Trigger | Buttons |
+| System | Granularity | Trigger | Actions |
 |---|---|---|---|
-| **Capability gate** | Per agent action | A risky tool call in a normal turn | `Yes / No / Edit` |
+| **Capability gate** | Per agent action | A risky tool call in a normal turn | `Approve / Deny / Edit` |
 | **Verification gate** | Per milestone batch | A long-running goal reaches a checkpoint | `Approve / Stop / Redirect` |
 
 ---
@@ -88,8 +88,9 @@ Routing is handled by local `paraphrase-multilingual-MiniLM-L12-v2` embeddings o
 | `workflow` | Named recurring or on-demand multi-step tasks (APScheduler) | Read auto · manage **confirm** |
 | `goals` | Conversational lifecycle for multi-week autonomous objectives | Read auto · writes **confirm** |
 | `prospecting` | Target research via a Playwright browser sidecar + outreach drafting | Autonomous |
+| `news` | Headlines and topic search from curated RSS sources, personalised to your interests | Autonomous |
 
-`goals` and `workflow` ship from the `ze-personal` domain package via the `ZePlugin` extension point; the rest live in `ze`.
+`goals` and `workflow` ship from `ze-personal`; `news` from `ze-news`; the rest live in `ze-api`.
 
 ### The Goal Engine
 
@@ -111,7 +112,7 @@ A background sweep advances active goals every 15 minutes.
 
 Two layers in Postgres + pgvector, plus a derived portrait.
 
-- **Facts** (`user_facts`) — proposed after each turn, but only ground truth once **you approve them** in Telegram. Never silently merged or expired.
+- **Facts** (`user_facts`) — proposed after each turn, but only ground truth once **you approve them**. Never silently merged or expired.
 - **Episodes** — every turn's prompt + response, embedded automatically, no approval needed.
 - **Profile** — a structured portrait (preferences, habits, topics, relationships, goals) synthesised nightly and injected into every system prompt.
 - **Nightly consolidation** (≈2 AM UTC) — dedup near-identical facts, expire contradicted/stale ones, archive old episodes, re-synthesise the profile.
@@ -123,9 +124,10 @@ Two layers in Postgres + pgvector, plus a derived portrait.
 - **Persona dials** — named profiles (`default`, `stoic`, `playful`) with TARS-style numeric dials (`humor`, `directness`, `formality`, `depth`), tunable live and persisted across restarts.
 - **Contacts** — people extracted from email, calendar, and conversation; nightly consolidation and a morning review nudge; nothing stored without confirmation.
 - **Cost telemetry** — per-flow and per-agent token tracking, reconciled against OpenRouter billing every 15 minutes.
-- **Agent harness** — a ReAct tool loop with a per-turn tool-call cap, cross-agent delegation, and mid-run abort via `/cancel`.
+- **Agent harness** — a ReAct tool loop with a per-turn tool-call cap, cross-agent delegation, and mid-run abort.
 - **REST API** — memory, costs, capabilities, workflows, and routing log, all behind `ZE_API_KEY`.
-- **Live progress** — per-agent status messages in Telegram during long runs.
+- **Server-driven UI** — agents emit component descriptors consumed by the Flutter client; the server controls layout without app updates.
+- **News** — curated RSS sources fetched on a schedule, ranked by your interest profile, surfaced via the news agent.
 
 ---
 
@@ -142,6 +144,7 @@ Ze runs a fleet of background jobs (all configurable in `config.yaml`):
 | Weekly insights | `0 7 * * 0` |
 | Goal weekly narrative | `0 18 * * 0` |
 | Goal suggestions | `0 19 * * 0` |
+| News fetch | configurable |
 | Goal advance sweep | every 15 min |
 | Cost reconciliation | every 15 min |
 | Workflow failure alerts | on failure |
@@ -150,7 +153,7 @@ Ze runs a fleet of background jobs (all configurable in `config.yaml`):
 
 ## Quick start
 
-**Prerequisites:** Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker, an [OpenRouter](https://openrouter.ai) API key, and a Telegram bot token from [@BotFather](https://t.me/BotFather).
+**Prerequisites:** Python 3.12+, [uv](https://docs.astral.sh/uv/), Docker, an [OpenRouter](https://openrouter.ai) API key, and a running ntfy instance (or ntfy.sh topic) for push notifications.
 
 ```bash
 git clone https://github.com/joaoajmatos/ze.git
@@ -158,17 +161,16 @@ cd ze
 
 make install
 
-cp packages/ze/.env.example packages/ze/.env
-# Fill in OPENROUTER_API_KEY, ZE_API_KEY, TELEGRAM_BOT_TOKEN,
-# and TELEGRAM_ALLOWED_CHAT_ID at minimum.
+cp packages/ze-api/.env.example packages/ze-api/.env
+# Fill in OPENROUTER_API_KEY, ZE_API_KEY, DATABASE_URL at minimum.
 
 make db-up
 make migrate
 
-make dev-poll   # Telegram long-polling — message your bot and go
+make dev   # REST API + WebSocket on :8000
 ```
 
-`make dev-poll` needs no public URL and is the normal local dev mode. `make dev` starts only the REST API on `:8000`. Production uses webhooks — see [docs/deployment.md](docs/deployment.md).
+The Flutter app (`packages/ze-app`) connects to the WebSocket at `ws://<host>:8000/ws?token=<ZE_API_KEY>`.
 
 **Optional — Google Calendar + Gmail:**
 
@@ -178,41 +180,27 @@ make google-auth
 
 ---
 
-## Telegram commands
-
-| Command | Description |
-|---|---|
-| `/new` | Start a fresh conversation thread (memory is kept) |
-| `/cancel` | Abort the in-progress task |
-| `/costs` | Token usage and cost breakdown |
-| `/memory` | Inspect stored facts, episodes, and profile |
-| `/persona` | Show or switch profile, tune dials live, or reset |
-| `/contacts` | Browse or search tracked contacts |
-
-Everything else is just a normal message — Ze routes it automatically. Confirmations, goal gates, and contact prompts appear as inline keyboards.
-
----
-
 ## Configuration
 
 | Layer | File | What |
 |---|---|---|
-| Secrets | `packages/ze/.env` | API keys, DB URLs, Telegram token + chat ID |
-| Structure | `packages/ze/config/config.yaml` | Models, routing, memory, proactive schedules |
-| Persona | `packages/ze/config/persona.yaml` | Named profiles and default dials |
+| Secrets | `packages/ze-api/.env` | API keys, DB URLs |
+| Structure | `packages/ze-api/config/config.yaml` | Models, routing, memory, proactive schedules |
+| Persona | `packages/ze-api/config/persona.yaml` | Named profiles and default dials |
 
 Minimum required environment variables:
 
 | Variable | Description |
 |---|---|
 | `OPENROUTER_API_KEY` | All LLM calls, web search, and transcription |
-| `ZE_API_KEY` | Bearer token for REST endpoints (`make generate-ze-api-key`) |
+| `ZE_API_KEY` | Bearer token for REST and WebSocket (`make generate-ze-api-key`) |
 | `DATABASE_URL` | asyncpg URL — `postgresql://ze:ze@localhost:5432/ze` for local Docker |
 | `DATABASE_URL_SYNC` | psycopg2 URL used by Alembic for migrations |
-| `TELEGRAM_BOT_TOKEN` | From @BotFather |
-| `TELEGRAM_ALLOWED_CHAT_ID` | Your personal chat ID — all other senders are ignored |
+| `NTFY_BASE_URL` | ntfy server URL (e.g. `https://ntfy.sh`) |
+| `NTFY_TOPIC` | ntfy topic for push delivery |
+| `NTFY_TOKEN` | Bearer token (required for ntfy.sh) |
 
-`PUBLIC_URL` and `TELEGRAM_WEBHOOK_SECRET` are required only for production webhooks. Agent config (`model`, `capabilities`, `tools`, `timeout`) lives as class attributes on each `@agent`, not in YAML. `config.yaml` is hot-reloaded on `SIGHUP`. Full reference: [docs/configuration.md](docs/configuration.md).
+`PUBLIC_URL` is required only for production deployments. Agent config (`model`, `capabilities`, `tools`, `timeout`) lives as class attributes on each `@agent`, not in YAML. `config.yaml` is hot-reloaded on `SIGHUP`. Full reference: [docs/configuration.md](docs/configuration.md).
 
 ---
 
@@ -221,7 +209,7 @@ Minimum required environment variables:
 ```bash
 make help            # full target list
 
-make test            # fast ze tests (skips embedding model load)
+make test            # fast ze-api tests (skips embedding model load)
 make test-core       # ze-core tests only
 make test-all        # everything, including slow embedding tests
 make lint            # ruff
@@ -233,34 +221,46 @@ make eval            # run the agent eval suite
 make eval-server     # MCP eval server for Cursor / Claude Code (see docs/eval.md)
 ```
 
-**Conventions:** dataclasses for domain types (no Pydantic outside `ze/api/`), constructor injection throughout, structlog for logging, typed errors from `ze_core.errors`, async everywhere. Tests mock the DB and LLM boundaries. See [CLAUDE.md](CLAUDE.md) for the full contributor guide.
+**Conventions:** dataclasses for domain types (no Pydantic outside `ze_api/api/`), constructor injection throughout, structlog for logging, typed errors from `ze_core.errors`, async everywhere. Tests mock the DB and LLM boundaries. See [CLAUDE.md](CLAUDE.md) for the full contributor guide.
 
 ---
 
 ## Architecture
 
-Ze is a uv-workspace monorepo of four packages with a strict one-way dependency graph:
+Ze is a uv-workspace monorepo with a strict one-way dependency graph:
 
 ```
 ze/
 ├── packages/
-│   ├── ze-core/        # Pure infrastructure — routing, memory, orchestration, telemetry
-│   ├── ze-personal/    # Domain layer — goals, workflows, persona, contacts
-│   ├── ze/             # Application — Telegram, Google, agents, API, jobs
-│   └── ze-browser/     # Playwright browser sidecar client
-├── specs/              # Spec-first design docs (phases, core modules, ADRs)
-├── docs/               # Guides and architecture reference
+│   ├── ze-core/          # Pure infrastructure — routing, memory, orchestration, telemetry
+│   ├── ze-personal/      # Domain layer — goals, workflows, persona, contacts
+│   ├── ze-google/        # Google OAuth2 credentials (no Ze deps)
+│   ├── ze-calendar/      # Calendar, reminders, timezone domain
+│   ├── ze-browser/       # Playwright browser sidecar client
+│   ├── ze-news/          # News fetching, RSS sources, news agent
+│   ├── ze-notifications/ # Push notification abstraction (ntfy)
+│   ├── ze-components/    # Server-driven UI component descriptors
+│   ├── ze-api/           # Deployment unit — FastAPI, WebSocket, REST, jobs
+│   └── ze-app/           # Flutter client app
+├── specs/                # Spec-first design docs (phases, core modules, ADRs)
+├── docs/                 # Guides and architecture reference
 └── Makefile
 ```
 
 ```
-ze-browser (no ze deps)
-ze-core    (no ze deps)
-ze-personal → ze-core
-ze         → ze-core, ze-personal, ze-browser
+ze-browser      (no ze deps)
+ze-core         (no ze deps)
+ze-notifications(no ze deps)
+ze-components   (no ze deps)
+ze-google       (no ze deps)
+ze-personal   → ze-core
+ze-calendar   → ze-core, ze-google, ze-personal
+ze-news       → ze-core
+ze-api        → ze-core, ze-personal, ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components
+ze-app          (Flutter — connects to ze-api over WebSocket)
 ```
 
-`ze-core` knows nothing about the personal-assistant domain; `ze-personal` contributes its agents, graph nodes, and scheduled jobs through the `ZePlugin` ABC without the core ever depending on it. See [docs/package-architecture.md](docs/package-architecture.md).
+`ze-core` knows nothing about the personal-assistant domain; `ze-personal`, `ze-calendar`, and `ze-news` contribute agents, graph nodes, and scheduled jobs through the `ZePlugin` ABC without the core ever depending on them. See [docs/package-architecture.md](docs/package-architecture.md).
 
 ---
 
@@ -270,7 +270,8 @@ ze         → ze-core, ze-personal, ze-browser
 |---|---|
 | Runtime | Python 3.12 · FastAPI · uvicorn |
 | Orchestration | LangGraph · AsyncPostgresSaver |
-| Bot | aiogram 3.x |
+| Client | Flutter (iOS / Android / macOS / web) |
+| Transport | WebSocket (`/ws`) + ntfy push notifications |
 | LLM gateway | OpenRouter (Sonnet / Haiku) |
 | Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (local, 384-dim, multilingual, no API cost) |
 | Database | PostgreSQL 16 + pgvector |
@@ -287,7 +288,7 @@ Runs on [Fly.io](https://fly.io) with an attached Postgres database; GitHub Acti
 
 ```bash
 fly deploy
-fly secrets set OPENROUTER_API_KEY=sk-or-... TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=...
+fly secrets set OPENROUTER_API_KEY=sk-or-... NTFY_TOKEN=... ZE_API_KEY=...
 ```
 
 Step-by-step: [docs/deployment.md](docs/deployment.md).
@@ -298,10 +299,10 @@ Step-by-step: [docs/deployment.md](docs/deployment.md).
 
 Ze is **single-user by design** — there is no multi-user isolation. Before exposing it:
 
-1. Set `TELEGRAM_ALLOWED_CHAT_ID` to your chat ID; every other sender is silently ignored.
-2. Generate a strong `ZE_API_KEY` (`make generate-ze-api-key`).
-3. Keep `.env` out of version control; use `fly secrets` in production.
-4. Review agent `capabilities` — prefer `confirm` or `draft_only` for write actions.
+1. Generate a strong `ZE_API_KEY` (`make generate-ze-api-key`) — this gates both REST and WebSocket.
+2. Keep `.env` out of version control; use `fly secrets` in production.
+3. Review agent `capabilities` — prefer `confirm` or `draft_only` for write actions.
+4. Use a non-guessable ntfy topic; set a token for ntfy.sh topics.
 
 Do not deploy Ze as a shared service without substantial hardening.
 
@@ -329,4 +330,4 @@ Design specs (one per module, spec-first development) live in [`specs/`](specs/)
 
 ## License
 
-[The Unlicense](LICENSE) — public domain.
+[The Unlicense](UNLICENSE) — public domain.

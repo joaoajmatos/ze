@@ -4,8 +4,8 @@
 
 Ze is a single-user personal AI assistant. A Python/FastAPI backend with a LangGraph
 orchestration layer routes user messages to specialised agents (research, companion,
-calendar, email, workflow). Users interact via a Telegram bot. All LLM calls go through
-OpenRouter.
+calendar, email, workflow). Users interact via a native Flutter app over WebSocket.
+Push notifications are delivered via ntfy. All LLM calls go through OpenRouter.
 
 ## Repository layout
 
@@ -45,34 +45,43 @@ ze/                           # monorepo root
 │   │       ├── jobs/         # CalendarReminderJob
 │   │       ├── timezone/     # TimezoneService, world_time @tool
 │   │       └── plugin.py     # CalendarPlugin(ZePlugin) — registers agents
-│   ├── ze-api/               # Deployment unit — HTTP/WebSocket API, Telegram bot, wires all plugins
+│   ├── ze-api/               # Deployment unit — HTTP/WebSocket API, wires all plugins
 │   │   ├── ze_api/
 │   │   │   ├── agents/       # email, companion, research, prospecting agents + bootstrap
 │   │   │   ├── api/          # FastAPI app, WebSocket endpoint, REST routes
 │   │   │   ├── google/       # GmailChannel (imports GoogleCredentials from ze_google)
+│   │   │   ├── interface/    # NativeAppInterface (WebSocket + ntfy delivery)
 │   │   │   ├── jobs/         # Proactive cron jobs: briefing, insights, contacts, goal jobs
-│   │   │   ├── container.py  # ZeContainer (registers PersonalPlugin + CalendarPlugin)
+│   │   │   ├── container.py  # ZeContainer (registers PersonalPlugin + CalendarPlugin + NewsPlugin)
 │   │   │   └── settings.py   # Pydantic Settings
 │   │   ├── config/
 │   │   │   ├── config.yaml   # Models, contacts, proactive schedules (secrets in .env)
 │   │   │   └── persona.yaml  # Persona profiles and dials
 │   │   ├── migrations/       # Alembic SQL migrations
 │   │   └── tests/
-│   └── ze-browser/           # Browser sidecar client (BrowserClient + tool)
+│   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
+│   ├── ze-news/              # News fetching, RSS sources, NewsAgent, NewsPlugin
+│   ├── ze-notifications/     # Push notification abstraction (ntfy)
+│   ├── ze-components/        # Server-driven UI component descriptors
+│   └── ze-app/               # Flutter client app (iOS / Android / macOS / web)
 ├── specs/                    # Design specs (zc-* ze-core, numbered ze modules)
 ├── docs/                     # architecture.md, configuration.md, …
-└── Makefile                  # make test, make test-core, make dev-poll, …
+└── Makefile                  # make test, make test-core, make dev, …
 ```
 
 ### Package dependency graph
 
 ```
-ze-browser    (no ze deps)
-ze-core       (no ze deps)
-ze-personal → ze-core
-ze-google     (no ze deps)
-ze-calendar → ze-core, ze-google, ze-personal
-ze-api      → ze-core, ze-personal, ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components
+ze-browser      (no ze deps)
+ze-core         (no ze deps)
+ze-notifications(no ze deps)
+ze-components   (no ze deps)
+ze-google       (no ze deps)
+ze-personal   → ze-core
+ze-calendar   → ze-core, ze-google, ze-personal
+ze-news       → ze-core
+ze-api        → ze-core, ze-personal, ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components
+ze-app          (Flutter — connects to ze-api over WebSocket)
 ```
 
 ## Essential commands
@@ -81,11 +90,10 @@ ze-api      → ze-core, ze-personal, ze-calendar, ze-google, ze-browser, ze-new
 make help            # full target list
 make db-up           # start Postgres via Docker
 make migrate         # apply migrations (requires db-up first)
-make dev-poll        # Telegram long-polling — interact via Telegram locally (primary dev mode)
-make dev             # uvicorn --reload on :8000 — REST API only, no Telegram
+make dev             # uvicorn --reload on :8000 — REST API + WebSocket (primary dev mode)
 make test            # tests, fast (skips embedding model load)
 make test-all        # all tests including slow ones
-make dev-eval        # start REST API without Telegram webhook (use this before running evals)
+make dev-eval        # start REST API without background jobs (use this before running evals)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
 ```
 
@@ -100,32 +108,33 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 | DB driver | asyncpg (runtime), psycopg2 (Alembic CLI) | asyncpg has no sync mode |
 | Config | Pydantic BaseSettings + YAML files | Secrets in .env, structure in YAML |
 | Migrations | Alembic raw SQL, no ORM | Explicit schema control |
-| Bot interface | aiogram 3.x (Telegram) | Async-native, no separate frontend to maintain |
+| Client interface | Flutter + WebSocket | Native cross-platform app, server-driven UI via component descriptors |
+| Push notifications | ntfy | Self-hostable, no vendor lock-in, deep-link support |
 
 ## Coding conventions
 
 ### Python
 
-- **Types**: dataclasses for domain types, Pydantic only in `ze/api/schemas.py`.
+- **Types**: dataclasses for domain types, Pydantic only in `ze_api/api/schemas.py`.
   Never use Pydantic models inside domain modules — use `types.py` dataclasses.
 - **File naming**: `types.py` everywhere (never `models.py` — avoids ORM confusion).
-- **DI**: Constructor injection in all classes; FastAPI `Depends()` only in `ze/api/`.
+- **DI**: Constructor injection in all classes; FastAPI `Depends()` only in `ze_api/api/`.
   No module-level globals that hold mutable state (except the `lru_cache` singletons
   in `settings.py` and `embeddings.py`).
 - **OpenAPI**: Every REST route must declare `response_model`, `summary`, and
   `description`; request/query params use Pydantic or annotated `Query`. See
   `specs/phases/07-api.md`.
 - **Logging**: Always use `get_logger(__name__)`. Never use `print()` or stdlib
-  `logging` directly. Bind `chat_id` at webhook request time via `bind_context()`.
-- **Errors**: Raise from `ze/errors.py`. Never raise bare `Exception` or `ValueError`
-  in domain code — always use a typed subclass of `ZeError`.
+  `logging` directly.
+- **Errors**: Raise from `ze_api/errors.py` or `ze_core/errors.py`. Never raise bare
+  `Exception` or `ValueError` in domain code — always use a typed subclass of `ZeError`.
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.
   Never `asyncio.run()` inside a running event loop.
 - **Comments**: Default to none. Only add a comment when the *why* is non-obvious.
 - **Imports**: Infrastructure types from `ze_core.*` (orchestration, routing, memory,
   telemetry). Domain types from `ze_personal.*` (contacts, goals, workflow, persona).
   Calendar/reminder domain from `ze_calendar.*`. Google credentials from `ze_google.*`.
-  Ze-specific behaviour (Telegram, API, jobs) stays in `ze_api/`.
+  Ze-specific behaviour (API, interface, jobs) stays in `ze_api/`.
 
 ### Testing
 
@@ -140,16 +149,16 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - Slow tests (embedding model): mark with `@pytest.mark.slow`, skipped by default via
   `make test`. Run with `make test-all`.
 
-### Telegram bot
+### Native app interface
 
-- All bot logic lives in `ze/telegram/`. The FastAPI router (`ze/api/telegram.py`)
-  handles HTTP only; it delegates to `ZeBot` for all bot-level behaviour.
-- `ZeBot` is constructed in the lifespan and stored on `app.state.bot`. Never
-  instantiate it outside the lifespan.
-- Inline keyboard payloads use the `confirm:<decision>` format. Keep payloads
-  under 64 bytes (Telegram callback data limit).
-- ForceReply state is tracked in `ActiveSessionStore` alongside active graph
-  invocations. Clear it on any terminal state (done, expired, error).
+- The `NativeAppInterface` in `ze_api/interface/native.py` handles all outbound delivery:
+  WebSocket frames when the client is connected, ntfy push notifications otherwise.
+- The WebSocket endpoint lives at `/ws`. One connection at a time — a new connection
+  displaces the previous one with close code `4000`.
+- On connect, unread messages are replayed from `MessageStore` before new frames flow.
+- Confirmation requests are sent as `{"type": "confirmation", ...}` frames; the client
+  replies with `{"type": "confirm", "id": "...", "choice": "approve"|"deny"|"edit"}`.
+- `ConnectionManager` is on `app.state.connection_manager`; never instantiate it outside the lifespan.
 
 ## Configuration files
 
@@ -159,9 +168,9 @@ OPENROUTER_API_KEY=sk-or-...
 ZE_API_KEY=your-secret-key
 DATABASE_URL=postgresql://ze:ze@localhost:5432/ze
 DATABASE_URL_SYNC=postgresql+psycopg2://ze:ze@localhost:5432/ze
-TELEGRAM_BOT_TOKEN=your-bot-token
-TELEGRAM_WEBHOOK_SECRET=your-webhook-secret
-TELEGRAM_ALLOWED_CHAT_ID=your-telegram-chat-id
+NTFY_BASE_URL=https://ntfy.sh
+NTFY_TOPIC=ze-your-topic
+NTFY_TOKEN=your-ntfy-token
 PUBLIC_URL=https://ze.fly.dev
 LOG_LEVEL=INFO
 CONFIRM_TIMEOUT_SECONDS=900
@@ -199,14 +208,14 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 - Graph state: `AgentState` in `ze_core/orchestration/state.py`.
 - Dependencies injected via `config["configurable"]` at invocation time (not build time).
 - No token streaming to the client — the graph runs to completion, then the full
-  response is sent via the Telegram Bot API. `graph.ainvoke()` is used (not `astream_events`).
+  response is sent as a WebSocket frame via `NativeAppInterface`. `graph.ainvoke()` is used (not `astream_events`).
 - Confirmation resume: `graph.ainvoke(None, config)` with same `thread_id`.
 
 ## Phase status
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Routing, research + companion agents, orchestration, API, Telegram bot | Done |
+| 1 | Routing, research + companion agents, orchestration, API | Done |
 | 2 | Memory — contradiction detection, episode summarisation, semantic retrieval | Done |
 | 3 | Calendar + email agents, Google OAuth2 | Done |
 | 4 | Workflow agent, multi-step planning, Postgres-persisted scheduler | Done |
@@ -216,22 +225,23 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | Done |
 | 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | Done |
 | 10 | Multimodal input — voice transcription + image/vision support | Done |
-| 11 | Persona profiles + dials — named profiles, TARS-style numeric dials, `/persona` command | Done |
+| 11 | Persona profiles + dials — named profiles, TARS-style numeric dials | Done |
 | 12 | Contacts — person tracking, extraction from email/calendar/conversation, confirmation flow | Done |
 | 13 | Reminders agent — NL time parsing, APScheduler firing, startup replay | Done |
-| 14 | Progress messages — per-agent Telegram status messages, locale keys, atomic delete | Done |
-| 15 | Telegram commands — `/costs`, `/memory`, `/contacts` introspection commands | Done |
+| 14 | Progress messages — per-agent status messages, locale keys, atomic delete | Done |
+| 15 | Introspection commands — costs, memory, contacts | Done |
 | 16 | Agentic tool loop — LLM-driven ReAct loop in `BaseAgent`, calendar + email migrated | Done |
 | 17 | Prospecting agent — autonomous target research, browser sidecar, outreach drafting | Done |
 | 18 | Communication channel abstraction — `Channel` ABC, `EmailChannel`, contact channel handles | Done |
 | 19 | Goal Engine — autonomous multi-week goal execution, verification gates, milestone loop | Done |
 | 20 | Package architecture reorg — ze_core pure infra, ze-personal domain layer, ZePlugin ABC | Done |
 | 21 | Agent harness — hook points, step-level abort, multi-agent handoffs | Done |
-| 22 | Harness adoption — tool-call cap hook, research delegation, `/cancel` command | Done |
+| 22 | Harness adoption — tool-call cap hook, research delegation, cancel command | Done |
 | 23 | Goal engine v2 — milestone context injection, execution traces, adaptive replanning, enriched gate narrative | Done |
 | 24 | Goal collaboration — goal-aware routing, conversational steering, post-goal retrospective, weekly narrative job | Done |
-| 25 | Proactive goal suggestions — weekly LLM-generated goal proposals via Telegram | Done |
-| 26 | Stuck goal detection — idle milestone/gate alerts, Telegram recovery actions | Done |
+| 25 | Proactive goal suggestions — weekly LLM-generated goal proposals | Done |
+| 26 | Stuck goal detection — idle milestone/gate alerts, recovery actions | Done |
 | 27 | Cross-goal output reuse — prior milestone summaries injected into planner and executor prompts | Done |
 | 28 | Cross-goal learning promotion — generalizable facts extracted from goal learnings and promoted to user memory on completion | Done |
 | 44 | Calendar package split — ze-google (credentials), ze-calendar (agents, reminders, timezone), ze renamed to ze-api | Done |
+| 45 | Native app interface — Flutter client, WebSocket transport, ntfy push notifications, ze-notifications + ze-components packages | Done |
