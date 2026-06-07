@@ -5,11 +5,7 @@ milestones, executing work in the background, and pausing at **verification gate
 for your approval before continuing. A single workflow run handles one batch of
 steps; a goal spans days or weeks with meaningful check-ins in between.
 
-See [specs/phases/28-goal-engine.md](../specs/phases/28-goal-engine.md) for the base
-implementation spec, [specs/phases/31-goal-engine-v2.md](../specs/phases/31-goal-engine-v2.md)
-for v2, and [specs/phases/32-goal-collaboration.md](../specs/phases/32-goal-collaboration.md)
-for collaboration. See [docs/architecture.md](architecture.md#goal-engine) for how goals connect
-to workflows, the scheduler, and Telegram.
+See the spec series for implementation detail: [28-goal-engine](../specs/phases/28-goal-engine.md) · [31-goal-engine-v2](../specs/phases/31-goal-engine-v2.md) · [32-goal-collaboration](../specs/phases/32-goal-collaboration.md) · [33-goal-suggestions](../specs/phases/33-goal-suggestions.md) · [34-stuck-goal-detection](../specs/phases/34-stuck-goal-detection.md) · [35-cross-goal-output-reuse](../specs/phases/35-cross-goal-output-reuse.md) · [36-cross-goal-learning-promotion](../specs/phases/36-cross-goal-learning-promotion.md). See [docs/architecture.md](architecture.md#goal-engine) for how goals connect to workflows, the scheduler, and Telegram.
 
 ---
 
@@ -47,11 +43,14 @@ You can also manage goals conversationally:
 |---|---|
 | *"List my goals"* | Active and awaiting-gate goals with one-line summaries |
 | *"What's the status of goal X?"* | Milestone progress, pending gate, latest learnings |
+| *"Steer my prospecting goal towards warm leads only"* | Re-plan remaining milestones with new instructions |
 | *"Pause my prospecting goal"* | Stop advancing until you resume |
 | *"Abandon the conference prep goal"* | Mark abandoned; no further work |
 
-`GoalAgent` handles create / inspect / pause / resume / abandon. It does **not**
+`GoalAgent` handles create / inspect / steer / pause / resume / abandon. It does **not**
 execute milestones — that is `GoalExecutor`'s job.
+
+**Steering** (`steer_goal` tool) enqueues a free-text instruction that is applied before the next milestone runs: Ze re-plans the remaining milestones around the instruction and continues. Steering only works while the goal is `ACTIVE`; if the goal is `AWAITING_GATE`, resolve the gate first.
 
 ### `/goals` command
 
@@ -141,25 +140,74 @@ in the spec (title, done list, planned list, keyboard).
 
 ---
 
+## On completion
+
+When all milestones finish, `GoalExecutor` runs three things automatically:
+
+1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Sent to Telegram as the completion message.
+2. **Learning promotion** — generalizable facts extracted from the goal's `GoalLearning` records are submitted to `MemoryStore.propose_facts()` as `reviewed=False`. They enter the normal memory pipeline (dedup via nightly consolidation) and are visible in `/memory`. Only facts that describe the user's preferences or patterns are promoted; goal-specific research findings are excluded.
+3. **Retrospective stored** — the narrative is saved to `goals.retrospective_text` and becomes available to the weekly goal narrative job and future goal suggestion synthesis.
+
+---
+
+## Proactive goal features
+
+### Weekly goal narrative (Sunday 6 PM UTC)
+
+Ze pushes a one-paragraph update per active goal summarising what was completed that week, any pending gate, and what comes next. Driven by `GoalNarrativeJob` in `ze/jobs/goal_narrative.py`.
+
+### Weekly goal suggestions (Sunday 7 PM UTC)
+
+Ze analyses recent memory facts, episodes, and retrospectives to propose one new goal. Sent to Telegram with **Accept** / **Dismiss** buttons. Accepted suggestions pre-fill a goal creation flow. Driven by `GoalSuggestionJob` in `ze/jobs/goal_suggestion.py`.
+
+### Stuck goal detection (Tuesday 9 AM UTC)
+
+Ze checks for goals that have had no milestone progress or gate resolution in a configurable window (default: 48 h for milestones, 72 h for gates). Stuck goals get a Telegram alert with **Resume** / **Abandon** / **Redirect** actions. Driven by `StuckGoalJob` in `ze/jobs/stuck_goals.py`.
+
+---
+
+## Cross-goal awareness
+
+### Output reuse
+
+When planning a new goal (or replanning after a redirect), `GoalPlanner.plan()` receives a window of recently completed milestone outputs across all other goals. If the planner identifies genuine overlap, it sets a `reuse_hint` on the affected milestone. At execution time the agent sees the hint and can call `get_milestone_trace` to retrieve the prior output before re-running the work. The reuse decision is always advisory — the agent decides whether the prior output is fresh enough to use.
+
+### Learning promotion
+
+See [On completion](#on-completion) above. Generalizable learnings from completed goals flow into user memory, where they are available to all future agents — not just the goal engine.
+
+---
+
 ## Data model
 
 ```
 goals
-  id, title, objective, success_condition, status, type, time_horizon, learnings, ...
+  id, title, objective, success_condition, status, type, time_horizon,
+  learnings, retrospective_text, last_stuck_alert_at, ...
 
 goal_milestones
-  id, goal_id, sequence, title, description, intent, agent_hint, status, output, ...
+  id, goal_id, sequence, title, description, intent, agent_hint,
+  status, output, reuse_hint, completed_at, ...
 
 goal_gates
-  id, goal_id, after_sequence, status, context_summary, plan_summary, user_feedback, ...
+  id, goal_id, after_sequence, status, context_summary, plan_summary,
+  user_feedback, fired_at, resolved_at, ...
 
 goal_learnings
   id, goal_id, content, source, created_at
+
+goal_execution_traces
+  id, goal_id, milestone_id, seq, tool_name, args, result,
+  duration_ms, success, error, created_at
+
+goal_suggestions
+  id, title, objective, rationale, source_type, source_ref,
+  status, suggested_at, resolved_at, created_goal_id
 ```
 
 Statuses: `planning` → (approve) → `active` ↔ `awaiting_gate` / `paused` → `completed` | `abandoned`.
 
-Migration: `migrations/versions/016_goals.py`.
+`reuse_hint` on milestones is set by the planner when a prior goal's output may be reusable; empty string means no hint.
 
 ---
 
@@ -179,4 +227,5 @@ The advance sweep cron is fixed in `ze/container.py` (`*/15 * * * *`, job id
 - Milestones run **sequentially** within a goal; the sweep processes one advance per goal per tick.
 - Goals do not replace workflows — use workflows for recurring or one-shot automation.
 - Success is not auto-detected; Ze marks complete when all milestones finish; you confirm at gates along the way.
-- Prospecting-as-a-goal (reusing `ProspectingAgent` inside milestones) is planned but not yet wired.
+- Steering only applies to remaining pending milestones; completed milestones are never re-run.
+- Promoted facts from learning promotion enter memory as `reviewed=False` and go through the normal consolidation cycle before being treated as canonical.

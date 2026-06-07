@@ -210,7 +210,39 @@ The sweep is lightweight — it returns early when there is no actionable next s
 Gate responses are handled immediately in `ZeBot` (not on the cron tick): approving
 or redirecting calls `advance` again from the callback handler.
 
-See [docs/goals.md](goals.md) and [specs/phases/28-goal-engine.md](../specs/phases/28-goal-engine.md).
+See [docs/goals.md](goals.md) for the full goal engine documentation.
+
+---
+
+## Weekly goal narrative (Sunday 6 PM UTC)
+
+**Module:** `ze/jobs/goal_narrative.py`  
+**Cron:** `0 18 * * 0` (configurable via `proactive.goal_narrative.cron`)
+
+For each active goal, Ze synthesises a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Pushed to Telegram. Skips goals that had no activity in the past 7 days.
+
+---
+
+## Weekly goal suggestions (Sunday 7 PM UTC)
+
+**Module:** `ze/jobs/goal_suggestion.py`  
+**Cron:** `0 19 * * 0` (configurable via `proactive.goal_suggestion.cron`)
+
+Analyses recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. Sent to Telegram with **Accept** / **Dismiss** buttons. Accepted suggestions open a goal creation flow. Suppressed if there are already 3+ active goals or if the last suggestion was dismissed within 7 days.
+
+---
+
+## Stuck goal detection (Tuesday 9 AM UTC)
+
+**Module:** `ze/jobs/stuck_goals.py`  
+**Cron:** `0 9 * * 2` (configurable via `proactive.stuck_goals.cron`)
+
+Checks all active goals for inactivity:
+
+- **Milestone stuck**: no milestone progress for 48 h on an `ACTIVE` goal.
+- **Gate stuck**: a gate in `AWAITING_APPROVAL` for 72 h with no user response.
+
+For each stuck goal, Ze pushes a Telegram alert describing the blockage with **Resume** / **Abandon** / **Redirect** inline actions. `last_stuck_alert_at` on the goal prevents duplicate alerts within the same window.
 
 ---
 
@@ -218,11 +250,16 @@ See [docs/goals.md](goals.md) and [specs/phases/28-goal-engine.md](../specs/phas
 
 | Time (UTC) | Job | Module |
 |---|---|---|
+| 2:00 AM daily | Memory consolidation + profile synthesis | `ze_core/memory/consolidator.py` |
+| 3:00 AM daily | Contacts consolidation (dedup + merge) | `ze_personal/contacts/consolidator.py` |
 | 7:00 AM Sun | Weekly insight generation | `ze/jobs/insights.py` |
 | 7:45 AM daily | Calendar sync + reminder scheduling | `ze/jobs/calendar.py` |
 | 8:00 AM daily | Morning briefing | `ze/jobs/briefing.py` |
-| 2:00 AM daily | Memory consolidation + profile synthesis | `ze_core/memory/consolidator.py` |
-| Every 15 min | Goal advance sweep | `ze_personal/goals/executor.py` (via `ze/container.py`) |
+| 8:30 AM daily | Contact review suggestions | `ze/jobs/contacts.py` |
+| 6:00 PM Sun | Weekly goal narrative | `ze/jobs/goal_narrative.py` |
+| 7:00 PM Sun | Weekly goal suggestions | `ze/jobs/goal_suggestion.py` |
+| 9:00 AM Tue | Stuck goal detection | `ze/jobs/stuck_goals.py` |
+| Every 15 min | Goal advance sweep | `ze_personal/goals/executor.py` |
 | Immediate | Workflow failure alerts | `ze_core/proactive/notifier.py` |
 | Immediate | Calendar event reminders (when they fire) | `ze/jobs/calendar.py` |
 | Immediate | Goal verification gates + milestone progress | `ze_core/proactive/notifier.py` |

@@ -123,7 +123,7 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `reminders` | NL time parsing, APScheduler firing | `ze` | Haiku |
 | `prospecting` | Browser extraction, outreach drafting | `ze` | Full |
 | `workflow` | APScheduler, multi-step plan execution | `ze_personal` | Full |
-| `goals` | Goal lifecycle (create, status, pause, abandon) | `ze_personal` | Full |
+| `goals` | Goal lifecycle (create, status, steer, pause, resume, abandon) | `ze_personal` | Full |
 
 See [docs/goals.md](goals.md) for conversational usage and gate behaviour.
 
@@ -248,9 +248,16 @@ Ze pushes messages to Telegram on a schedule, without the user prompting anythin
 | Calendar sync | 7:45 AM UTC daily | Pull upcoming events, schedule reminder jobs |
 | Morning briefing | 8 AM UTC daily | Digest: unreviewed facts, upcoming workflows, recent failures |
 | Nightly consolidation | 2 AM UTC | Dedup facts, expire stale, archive episodes, re-synthesise profile |
+| Contacts consolidation | 3 AM UTC | Dedup and merge contact records |
+| Calendar sync + reminders | 7:45 AM UTC | Sync calendar events, schedule reminder jobs |
+| Morning briefing | 8 AM UTC | Push daily digest to Telegram |
+| Insight generation | 7 AM UTC Sunday | Weekly insight synthesis pushed to Telegram |
+| Goal narrative | 6 PM UTC Sunday | One-paragraph weekly progress update per active goal |
+| Goal suggestions | 7 PM UTC Sunday | Proactive new goal proposal based on memory + retrospectives |
+| Stuck goal detection | 9 AM UTC Tuesday | Alert on idle milestones (48 h) or unresolved gates (72 h) |
+| Goal advance sweep | Every 15 min | Advance all `ACTIVE` goals via `GoalExecutor` |
 | Workflow failure alerts | Immediate | Push when a scheduled step fails |
 | Calendar reminders | When they fire | Event-specific reminders, interval assessed by Haiku |
-| Goal advance sweep | Every 15 min | Advance all `ACTIVE` goals via `GoalExecutor` |
 | Goal milestone progress | After each milestone | Short completion line pushed to Telegram |
 
 All scheduled jobs use APScheduler with Postgres as the job store (survives restarts).
@@ -279,10 +286,10 @@ gates fit well: Ze works in the background and checks in at **verification gates
 
 | Component | Module | Responsibility |
 |---|---|---|
-| `GoalStore` | `ze_personal/goals/postgres.py` | Postgres CRUD for goals, milestones, gates, learnings |
-| `GoalPlanner` | `ze_personal/goals/planner.py` | LLM decomposition into milestones + gate placement |
-| `GoalExecutor` | `ze_personal/goals/executor.py` | `advance()` loop, gate firing, milestone dispatch |
-| `GoalAgent` | `ze_personal/agents/goals/agent.py` | Conversational create / status / pause / abandon |
+| `GoalStore` | `ze_personal/goals/postgres.py` | Postgres CRUD for goals, milestones, gates, learnings, traces, suggestions |
+| `GoalPlanner` | `ze_personal/goals/planner.py` | LLM decomposition, replanning, retrospective synthesis, learning promotion, suggestion generation |
+| `GoalExecutor` | `ze_personal/goals/executor.py` | `advance()` loop, gate firing, milestone dispatch, learning promotion on completion |
+| `GoalAgent` | `ze_personal/agents/goals/agent.py` | Conversational create / status / steer / pause / resume / abandon |
 
 Goals sit **above** workflows: a goal spans weeks; a workflow execution is what can
 happen inside a single milestone. `GoalExecutor` dispatches milestones through the same
@@ -308,7 +315,7 @@ While status is `AWAITING_GATE`, the sweep no-ops until the user responds on Tel
 Redirect gates use `ForceReply` for free-text instructions, then re-plan remaining
 milestones via `GoalPlanner`.
 
-See [docs/goals.md](goals.md) for usage. Implementation detail: [specs/phases/28-goal-engine.md](../specs/phases/28-goal-engine.md).
+See [docs/goals.md](goals.md) for usage including steering, proactive suggestions, stuck detection, cross-goal output reuse, and learning promotion.
 
 ---
 
@@ -481,10 +488,12 @@ Migrations live in `migrations/versions/` as raw SQL Alembic files (no ORM).
 | `cost_records` | Per-call token usage and estimated cost |
 | `persona_state` | Single-row table: active profile name + dial overrides (JSONB) |
 | `contact_channels` | Per-contact channel handles (type, handle string, preferred flag, verified flag) |
-| `goals` | Long-running objectives (status, type, time horizon, synthesised learnings) |
-| `goal_milestones` | Ordered milestones per goal with execution output |
+| `goals` | Long-running objectives (status, type, time horizon, retrospective, learnings) |
+| `goal_milestones` | Ordered milestones per goal with execution output and `reuse_hint` |
 | `goal_gates` | Verification gates between milestone sequences |
 | `goal_learnings` | Per-milestone insights appended during execution |
+| `goal_execution_traces` | Tool call trace per milestone (name, args, result, duration) |
+| `goal_suggestions` | Proactive goal proposals with accept/dismiss lifecycle |
 
 ---
 
