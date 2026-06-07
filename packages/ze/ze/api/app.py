@@ -5,7 +5,8 @@ from fastapi import FastAPI
 
 from ze.api.openapi import OPENAPI_TAGS
 from ze.api.routes import capabilities, costs, eval, memory, routing, workflows
-from ze.api.telegram import router as telegram_router
+from ze.api.ws import router as ws_router
+from ze.api.messages import router as messages_router
 from ze.container import build_container
 from ze.logging import configure_logging, get_logger
 from ze.settings import get_settings
@@ -29,8 +30,10 @@ async def lifespan(app: FastAPI):
     app.state.capability_gate = container.capability_gate
     app.state.memory_store = container.memory_store
     app.state.memory_consolidator = container.memory_consolidator
-    app.state.ze_bot = container.ze_bot
     app.state.workflow_store = container.workflow_store
+    app.state.message_store = container.message_store
+    app.state.connection_manager = container.connection_manager
+    app.state.container = container
 
     log.info("ze_startup_complete")
     yield
@@ -45,7 +48,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description=(
             "Personal AI assistant API. REST endpoints manage capabilities, memory, "
-            "and routing logs. Chat is handled by the Telegram bot."
+            "and routing logs. Chat is handled via WebSocket at /ws."
         ),
         lifespan=lifespan,
         openapi_tags=OPENAPI_TAGS,
@@ -56,7 +59,8 @@ def create_app() -> FastAPI:
     app.include_router(routing.router, prefix="/routing")
     app.include_router(workflows.router, prefix="/workflows")
     app.include_router(costs.router, prefix="/costs")
-    app.include_router(telegram_router)
+    app.include_router(ws_router)
+    app.include_router(messages_router)
     app.include_router(eval.router)
 
     return app

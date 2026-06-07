@@ -2,7 +2,7 @@
 
 > **Package:** `ze_core` (message types + store), `ze` (WebSocket endpoint, NativeAppInterface)
 > **Phase:** 42
-> **Status:** Pending
+> **Status:** Done
 > **Depends on:** Phase 40 ([40-notifications.md](40-notifications.md)), Phase 1 (AppInterface ABC), Phase 7 (ProactiveNotifier)
 
 ---
@@ -11,14 +11,14 @@
 
 | Feature | Status |
 |---------|--------|
-| Message types | 🔲 Pending |
-| `PostgresMessageStore` | 🔲 Pending |
-| `NativeAppInterface` | 🔲 Pending |
-| WebSocket endpoint + `ConnectionManager` | 🔲 Pending |
-| `NtfyNotifier` (via `ze-notifications`) | ���� Pending |
-| `GET /api/messages` REST endpoint | 🔲 Pending |
-| Migration | 🔲 Pending |
-| Tests | 🔲 Pending |
+| Message types | ✅ Done |
+| `PostgresMessageStore` | ✅ Done |
+| `NativeAppInterface` | ✅ Done |
+| WebSocket endpoint + `ConnectionManager` | ✅ Done |
+| `NtfyNotifier` (via `ze-notifications`) | ✅ Done |
+| `GET /api/messages` REST endpoint | ✅ Done |
+| Migration | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

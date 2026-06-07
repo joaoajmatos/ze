@@ -5,6 +5,20 @@ from uuid import UUID as UUIDType
 from pydantic import BaseModel, ConfigDict, RootModel
 
 
+# ── REST: messages ────────────────────────────────────────────────────────────
+
+class MessageSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUIDType
+    role: Literal["user", "assistant"]
+    text: str | None
+    components: list[dict[str, Any]]
+    read: bool
+    thread_id: str | None
+    created_at: datetime
+
+
 # ── REST: capabilities ────────────────────────────────────────────────────────
 
 CapabilityMode = Literal["autonomous", "confirm", "draft_only", "disabled"]

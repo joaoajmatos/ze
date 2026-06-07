@@ -32,12 +32,6 @@ class Settings(BaseSettings):
     confirm_timeout_seconds: int = 900
     session_inactivity_minutes: int = 30
 
-    # ── Telegram ──────────────────────────────────────────────────────────────
-    telegram_bot_token: str = ""
-    telegram_webhook_secret: str = ""
-    telegram_allowed_chat_id: int = 0
-    public_url: str = ""
-
     # ── Google OAuth2 ────────────────────────────────────────────────────────
     google_client_id: str = ""
     google_client_secret: str = ""
