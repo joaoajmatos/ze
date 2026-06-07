@@ -191,10 +191,24 @@ with code 4000 ("replaced by new connection").
 ### Client → Server frames
 
 ```json
-{ "type": "message", "text": "...", "thread_id": null }
+{ "type": "message", "text": "...", "thread_id": null, "context": null }
 { "type": "ack",     "ids": ["<uuid>", "..."] }
 { "type": "ping" }
 ```
+
+`context` is an optional object carrying the screen the user was on when they sent the
+message. It is injected into the agent's prompt as additional context. Shape:
+
+```json
+{ "screen": "goals", "goal_id": "abc-123" }
+{ "screen": "news" }
+{ "screen": "reminders" }
+{ "screen": "chat" }
+```
+
+The backend treats `context` as opaque metadata — it is forwarded to the routing layer
+and injected into `AgentContext.extensions["screen_context"]`. Agents may read it from
+their context to tailor their response. Unrecognised keys are ignored.
 
 ### Server → Client frames
 
@@ -203,7 +217,13 @@ with code 4000 ("replaced by new connection").
 { "type": "typing" }
 { "type": "error",    "detail": "..." }
 { "type": "pong" }
+{ "type": "refresh",  "screen": "goals" }
 ```
+
+`refresh` is emitted by the backend after a tool call mutates data owned by a named
+screen. The app re-fetches that screen's data. `screen` matches the same values used in
+the `context` field above. Multiple `refresh` frames may be emitted in one turn if
+multiple screens are affected.
 
 ### `ConnectionManager`
 
