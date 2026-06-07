@@ -215,3 +215,186 @@ async def test_briefing_omits_headlines_when_store_returns_empty():
 
     text = notifier.push.call_args[0][0]
     assert "Headlines" not in text
+
+
+def make_briefing_with_personalization(
+    *,
+    notifier=None,
+    news_store=None,
+    memory_store=None,
+    goal_store=None,
+    dedup=False,
+):
+    push_log = MagicMock()
+    push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
+    push_log.list_workflow_failures_within_hours = AsyncMock(return_value=[])
+    push_log.log = AsyncMock()
+
+    memory = memory_store or MagicMock()
+    if not isinstance(memory, MagicMock) or not hasattr(memory.count_unreviewed_facts, "_mock_name"):
+        memory = MagicMock()
+    memory.count_unreviewed_facts = AsyncMock(return_value=0)
+
+    workflow_store = MagicMock()
+    workflow_store.list_enabled_scheduled = AsyncMock(return_value=[])
+
+    person_store = MagicMock()
+    person_store.list_stale_for_follow_up = AsyncMock(return_value=[])
+
+    b = MorningBriefing(
+        notifier=notifier or make_notifier(),
+        push_log_store=push_log,
+        memory_store=memory_store or memory,
+        workflow_store=workflow_store,
+        person_store=person_store,
+        settings=make_settings(),
+        news_store=news_store,
+        goal_store=goal_store,
+    )
+    return b
+
+
+async def test_briefing_personalized_shows_relevant_and_discovery():
+    notifier = make_notifier()
+
+    relevant_articles = [
+        Article(
+            url="https://bbc.com/1",
+            source_key="bbc_tech",
+            title="AI Chip Breakthrough",
+            summary="New chip doubles performance.",
+            published_at=datetime(2026, 6, 7, 8, 0, tzinfo=timezone.utc),
+            tags=["global", "tech"],
+        )
+    ]
+    discovery_articles = [
+        Article(
+            url="https://bbc.com/2",
+            source_key="bbc_world",
+            title="Global Summit Concludes",
+            summary="Leaders reached an agreement.",
+            published_at=datetime(2026, 6, 7, 7, 0, tzinfo=timezone.utc),
+            tags=["global"],
+        )
+    ]
+
+    news_store = MagicMock()
+    news_store.get_personalized = AsyncMock(return_value=(relevant_articles, discovery_articles))
+
+    memory_store = MagicMock()
+    memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
+    # No facts → fact_count=0 → header says "Headlines:" (not "For you:")
+    memory_store.list_recent_facts = AsyncMock(return_value=[])
+
+    b = make_briefing_with_personalization(
+        notifier=notifier,
+        news_store=news_store,
+        memory_store=memory_store,
+    )
+    await b.run()
+
+    text = notifier.push.call_args[0][0]
+    assert "AI Chip Breakthrough" in text
+    assert "Outside your usual" in text
+    assert "Global Summit Concludes" in text
+
+
+async def test_briefing_personalized_shows_only_relevant_when_no_discovery():
+    notifier = make_notifier()
+
+    relevant_articles = [
+        Article(
+            url="https://bbc.com/1",
+            source_key="bbc_tech",
+            title="AI Chip Breakthrough",
+            summary="New chip doubles performance.",
+            published_at=datetime(2026, 6, 7, 8, 0, tzinfo=timezone.utc),
+            tags=["global", "tech"],
+        )
+    ]
+
+    news_store = MagicMock()
+    news_store.get_personalized = AsyncMock(return_value=(relevant_articles, []))
+
+    memory_store = MagicMock()
+    memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
+    memory_store.list_recent_facts = AsyncMock(return_value=[])
+
+    b = make_briefing_with_personalization(
+        notifier=notifier,
+        news_store=news_store,
+        memory_store=memory_store,
+    )
+    await b.run()
+
+    text = notifier.push.call_args[0][0]
+    assert "AI Chip Breakthrough" in text
+    assert "Outside your usual" not in text
+
+
+async def test_briefing_personalized_header_when_sufficient_facts():
+    from ze_core.memory.types import UserFact
+
+    notifier = make_notifier()
+    relevant_articles = [
+        Article(
+            url="https://bbc.com/1",
+            source_key="bbc_tech",
+            title="AI News",
+            summary="AI advances.",
+            published_at=datetime(2026, 6, 7, 8, 0, tzinfo=timezone.utc),
+            tags=["global"],
+        )
+    ]
+    news_store = MagicMock()
+    news_store.get_personalized = AsyncMock(return_value=(relevant_articles, []))
+
+    facts = [
+        UserFact(key=f"interest_{i}", value=f"topic_{i}")
+        for i in range(6)
+    ]
+    memory_store = MagicMock()
+    memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
+    memory_store.list_recent_facts = AsyncMock(return_value=facts)
+
+    b = make_briefing_with_personalization(
+        notifier=notifier,
+        news_store=news_store,
+        memory_store=memory_store,
+    )
+    await b.run()
+
+    text = notifier.push.call_args[0][0]
+    assert "For you (based on your interests)" in text
+
+
+async def test_briefing_personalized_fallback_on_get_personalized_error():
+    notifier = make_notifier()
+    articles = [
+        Article(
+            url="https://bbc.com/1",
+            source_key="bbc_world",
+            title="Fallback Headline",
+            summary="Fallback.",
+            published_at=datetime(2026, 6, 7, 8, 0, tzinfo=timezone.utc),
+            tags=["global"],
+        )
+    ]
+    news_store = MagicMock()
+    news_store.get_personalized = AsyncMock(side_effect=Exception("db error"))
+    news_store.get_recent = AsyncMock(return_value=articles)
+
+    memory_store = MagicMock()
+    memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
+    memory_store.list_recent_facts = AsyncMock(return_value=[])
+
+    b = make_briefing_with_personalization(
+        notifier=notifier,
+        news_store=news_store,
+        memory_store=memory_store,
+    )
+    await b.run()
+
+    text = notifier.push.call_args[0][0]
+    assert "Fallback Headline" in text
+    news_store.get_recent.assert_awaited_once()

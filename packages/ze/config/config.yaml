@@ -54,7 +54,13 @@ news:
   fetch_schedule: "*/30 * * * *"
   retention_days: 7
   model: "openai/gpt-4o-mini"
-  briefing_limit: 5
+  briefing_limit: 8
+  personalization:
+    enabled: true
+    explore_ratio: 0.2
+    candidate_multiplier: 3
+    briefing_limit: 8
+    min_facts: 5
   sources:
     - key: bbc_world
       type: rss

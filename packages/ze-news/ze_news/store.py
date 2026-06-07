@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import math
+import re
 from datetime import datetime, timezone
 
 import asyncpg
 from sentence_transformers import SentenceTransformer
 
 from ze_core.logging import get_logger
-from ze_news.types import Article
+from ze_news.types import Article, PersonalizationContext
 
 log = get_logger(__name__)
+
+_MIN_FACTS_DEFAULT = 5
 
 
 def _to_pgvector(embedding: object) -> str:
@@ -122,6 +126,79 @@ class NewsStore:
             async with self._pool.acquire() as conn:
                 rows = await conn.fetch(sql, limit)
         return [_row_to_article(r) for r in rows]
+
+    async def get_personalized(
+        self,
+        ctx: PersonalizationContext,
+        limit: int = 20,
+        tags: list[str] | None = None,
+        min_facts: int = _MIN_FACTS_DEFAULT,
+    ) -> tuple[list[Article], list[Article]]:
+        if not ctx.interest_text.strip() or ctx.fact_count < min_facts:
+            articles = await self.get_recent(limit=limit, tags=tags)
+            return articles, []
+
+        candidates = await self.get_recent(limit=limit * 3, tags=tags)
+        candidates = self._apply_exclusions(candidates, ctx.exclusions)
+
+        interest_vec = self._embedder.encode(ctx.interest_text)
+        scored = self._score_articles(candidates, interest_vec)
+        scored.sort(key=lambda x: x[1], reverse=True)
+
+        n_relevant = math.ceil((1 - ctx.explore_ratio) * limit)
+        relevant_articles = [a for a, _ in scored[:n_relevant]]
+
+        remaining = [a for a, _ in scored[n_relevant:]]
+        n_discovery = limit - len(relevant_articles)
+        discovery_articles = sorted(
+            remaining[:n_discovery],
+            key=lambda a: a.published_at,
+            reverse=True,
+        )
+
+        return relevant_articles, discovery_articles
+
+    def _score_articles(
+        self,
+        articles: list[Article],
+        interest_vec: object,
+    ) -> list[tuple[Article, float]]:
+        import numpy as np
+
+        iv = np.array(interest_vec, dtype=float)
+        iv_norm = np.linalg.norm(iv)
+
+        results = []
+        for article in articles:
+            text = f"{article.title}. {article.summary}"
+            emb = self._embedder.encode(text)
+            av = np.array(emb, dtype=float)
+            av_norm = np.linalg.norm(av)
+            if iv_norm == 0 or av_norm == 0:
+                score = 0.0
+            else:
+                score = float(np.dot(iv, av) / (iv_norm * av_norm))
+            results.append((article, score))
+        return results
+
+    def _apply_exclusions(
+        self,
+        articles: list[Article],
+        exclusions: list[str],
+    ) -> list[Article]:
+        if not exclusions:
+            return articles
+        patterns = [
+            re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
+            for term in exclusions
+        ]
+        return [
+            a for a in articles
+            if not any(
+                p.search(a.title) or p.search(a.summary)
+                for p in patterns
+            )
+        ]
 
     async def prune(self, older_than_days: int) -> int:
         async with self._pool.acquire() as conn:

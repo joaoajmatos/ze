@@ -48,6 +48,8 @@ def bootstrap_agents(
     pool: asyncpg.Pool | None = None,
     campaign_store=None,
     plugins: list | None = None,
+    memory_store=None,
+    news_store=None,
 ) -> None:
     """Instantiate and register all enabled agents. Called once at app startup."""
     if google_credentials is None:
@@ -91,6 +93,21 @@ def bootstrap_agents(
     if campaign_store is not None:
         from ze.prospecting.store import ProspectCampaignStore
         _dep_map[ProspectCampaignStore] = campaign_store
+    if memory_store is not None:
+        from ze_core.memory.postgres import PostgresMemoryStore
+        _dep_map[PostgresMemoryStore] = memory_store
+    if goal_store is not None and news_store is not None:
+        try:
+            from ze_news.types import GoalTitleProvider
+            _dep_map[GoalTitleProvider] = goal_store
+        except ImportError:
+            pass
+    if news_store is not None:
+        try:
+            from ze_news.store import NewsStore
+            _dep_map[NewsStore] = news_store
+        except ImportError:
+            pass
 
     # Import plugin agent modules first so their @agent decorators register before the ze/ scan.
     for plugin in (plugins or []):

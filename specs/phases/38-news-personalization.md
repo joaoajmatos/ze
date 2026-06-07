@@ -2,7 +2,7 @@
 
 > **Package:** `ze-news` (scoring layer), `ze` (briefing wiring)
 > **Phase:** 38
-> **Status:** Pending
+> **Status:** Done
 > **Depends on:** Phase 37 ([37-news-package.md](37-news-package.md)), Phase 3 ([03-memory.md](03-memory.md)), Phase 19 ([28-goal-engine.md](28-goal-engine.md))
 
 ---
@@ -11,12 +11,12 @@
 
 | Feature | Status |
 |---------|--------|
-| `PersonalizationContext` type | 🔲 Pending |
-| `NewsStore.get_personalized()` | 🔲 Pending |
-| `get_headlines` tool updated | 🔲 Pending |
-| `NewsAgent` passes memory context | 🔲 Pending |
-| `MorningBriefing` personalized headlines | 🔲 Pending |
-| Tests | 🔲 Pending |
+| `PersonalizationContext` type | ✅ Done |
+| `NewsStore.get_personalized()` | ✅ Done |
+| `get_headlines` tool updated | ✅ Done |
+| `NewsAgent` passes memory context | ✅ Done |
+| `MorningBriefing` personalized headlines | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

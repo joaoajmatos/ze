@@ -400,6 +400,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         goal_executor=goal_executor,
         campaign_store=campaign_store,
         plugins=plugins,
+        memory_store=memory_store,
+        news_store=news_store,
     )
     register_hook(ToolCallCapHook(max_tool_calls=settings.max_tool_calls_per_turn))
     log.info("tool_call_cap_hook_registered", max_tool_calls=settings.max_tool_calls_per_turn)
@@ -498,6 +500,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         person_store=person_store,
         settings=settings,
         news_store=news_store,
+        goal_store=goal_store,
     )
     briefing_cfg = proactive_cfg.get("briefing", {})
     if briefing_cfg.get("enabled", True):
