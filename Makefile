@@ -2,11 +2,11 @@
 
 .DEFAULT_GOAL := help
 
-ZE      := packages/ze
+ZE      := packages/ze-api
 ZE_CORE := packages/ze-core
 
 DB_SYNC_URL  ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
-ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze.migrate
+ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze_api.migrate
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -103,13 +103,13 @@ migrate-stamp:
 .PHONY: dev dev-poll dev-eval
 
 dev:
-	LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+	LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
 
 dev-poll:
-	LOG_FILE=$(ZE)/logs/ze.log uv run python -m ze.dev_poll
+	LOG_FILE=$(ZE)/logs/ze.log uv run python -m ze_api.dev_poll
 
 dev-eval:
-	PUBLIC_URL= LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze.api.app:app --reload --host 0.0.0.0 --port 8000
+	PUBLIC_URL= LOG_FILE=$(ZE)/logs/ze.log uv run uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
 .PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean
@@ -162,8 +162,11 @@ test:
 test-core:
 	uv run pytest $(ZE_CORE)/tests -q
 
+test-calendar:
+	uv run pytest packages/ze-calendar/tests -q
+
 test-all:
-	uv run pytest $(ZE)/tests $(ZE_CORE)/tests -q
+	uv run pytest $(ZE)/tests $(ZE_CORE)/tests packages/ze-calendar/tests -q
 
 # ── Code generation ───────────────────────────────────────────────────────────
 .PHONY: generate-components
@@ -175,7 +178,7 @@ generate-components:
 .PHONY: lint
 
 lint:
-	uv run ruff check $(ZE)/ze $(ZE)/tests $(ZE_CORE)/ze_core $(ZE_CORE)/tests
+	uv run ruff check $(ZE)/ze_api $(ZE)/tests $(ZE_CORE)/ze_core $(ZE_CORE)/tests packages/ze-calendar/ze_calendar packages/ze-google/ze_google
 
 # ── Docker ────────────────────────────────────────────────────────────────────
 .PHONY: docker-up docker-down docker-build
