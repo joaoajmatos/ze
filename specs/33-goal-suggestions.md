@@ -11,16 +11,16 @@
 
 | Feature | Status |
 |---------|--------|
-| `GoalSuggestion` type + `SuggestionStatus` enum | 🔲 Pending |
-| `GoalSuggestionStore` (DB-backed) | 🔲 Pending |
-| Migration: `goal_suggestions` table | 🔲 Pending |
-| `GoalPlanner.generate_suggestion()` with confidence gate | 🔲 Pending |
-| `GoalSuggestionJob` (weekly cron) | 🔲 Pending |
-| Telegram callback handler (`goal_suggest:*`) | 🔲 Pending |
-| Accept flow → `GoalStore.save()` | 🔲 Pending |
-| Dismiss flow | 🔲 Pending |
-| "Tell me more" flow | 🔲 Pending |
-| Tests | 🔲 Pending |
+| `GoalSuggestion` type + `SuggestionStatus` enum | ✅ Done |
+| `GoalSuggestionStore` (DB-backed) | ✅ Done |
+| Migration: `goal_suggestions` table | ✅ Done |
+| `GoalPlanner.generate_suggestion()` with confidence gate | ✅ Done |
+| `GoalSuggestionJob` (weekly cron) | ✅ Done |
+| Telegram callback handler (`goal_suggest:*`) | ✅ Done |
+| Accept flow → `GoalStore.save()` | ✅ Done |
+| Dismiss flow | ✅ Done |
+| "Tell me more" flow | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

@@ -543,3 +543,37 @@ async def test_retrospective_failure_falls_back_to_success_condition(executor, s
 
     notif = push.call_args.args[0]
     assert goal.success_condition in notif.content
+
+
+async def test_push_retrospective_calls_save_retrospective(executor, store, push, planner):
+    goal = _goal()
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[
+        _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
+    ])
+    store.list_learnings = AsyncMock(return_value=[])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.save_retrospective = AsyncMock()
+    planner.synthesize_retrospective = AsyncMock(return_value="Accomplished the goal successfully.")
+
+    await executor.advance(goal.id)
+
+    store.save_retrospective.assert_called_once_with(goal.id, "Accomplished the goal successfully.")
+
+
+async def test_push_retrospective_still_pushes_when_save_retrospective_fails(executor, store, push, planner):
+    goal = _goal()
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[
+        _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
+    ])
+    store.list_learnings = AsyncMock(return_value=[])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.save_retrospective = AsyncMock(side_effect=RuntimeError("DB write failed"))
+    planner.synthesize_retrospective = AsyncMock(return_value="Accomplished the goal successfully.")
+
+    await executor.advance(goal.id)
+
+    push.assert_called_once()
+    notif = push.call_args.args[0]
+    assert "Accomplished the goal successfully." in notif.content

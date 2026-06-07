@@ -62,16 +62,19 @@ class GoalSuggestionJob:
             log.info("goal_suggestion_no_signal")
             return
 
-        # 4. Persist; week_key prevents concurrent double-save
+        # 4. Check first-ness before saving (after save the record exists and would match)
+        is_first = not await self._suggestion_store.was_suggested_recently(days=3650)
+
+        # 5. Persist; week_key prevents concurrent double-save
         week_key = datetime.now(timezone.utc).strftime("%G-W%V")
         saved = await self._suggestion_store.save(suggestion, week_key)
         if not saved:
             log.info("goal_suggestion_week_conflict")
             return
 
-        # 5. Push Telegram message; on failure immediately expire the record
+        # 6. Push Telegram message; on failure immediately expire the record
         try:
-            await self._push(suggestion)
+            await self._push(suggestion, is_first=is_first)
         except Exception as exc:
             log.error("goal_suggestion_push_failed", error=str(exc))
             await self._suggestion_store.mark_expired(suggestion.id)
@@ -79,8 +82,7 @@ class GoalSuggestionJob:
 
         log.info("goal_suggestion_sent", suggestion_id=str(suggestion.id))
 
-    async def _push(self, suggestion: GoalSuggestion) -> None:
-        is_first = not await self._suggestion_store.was_suggested_recently(days=3650)
+    async def _push(self, suggestion: GoalSuggestion, *, is_first: bool = False) -> None:
         short_id = suggestion.id.hex[:8]
 
         prefix = _FIRST_SUGGESTION_INTRO if is_first else ""

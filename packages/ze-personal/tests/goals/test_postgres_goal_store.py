@@ -181,3 +181,61 @@ async def test_replan_count_has_no_reset_method():
     """replan_count is a lifetime counter — no reset path should exist."""
     store = PostgresGoalStore.__dict__
     assert "reset_replan_count" not in store
+
+
+# ── save_retrospective ────────────────────────────────────────────────────────
+
+async def test_save_retrospective_executes_update():
+    pool, conn = _make_pool()
+    store = PostgresGoalStore(pool)
+    gid = uuid4()
+
+    await store.save_retrospective(gid, "Goal completed successfully. Key learning: X.")
+
+    conn.execute.assert_called_once()
+    sql, arg1, arg2 = conn.execute.call_args.args
+    assert "retrospective_text" in sql
+    assert arg1 == gid
+    assert "Goal completed successfully" in arg2
+
+
+# ── list_retrospectives ───────────────────────────────────────────────────────
+
+async def test_list_retrospectives_queries_completed_goals_with_retro_text():
+    pool, conn = _make_pool(fetch=[])
+    store = PostgresGoalStore(pool)
+
+    await store.list_retrospectives(days=60)
+
+    conn.fetch.assert_called_once()
+    sql = conn.fetch.call_args.args[0]
+    assert "completed" in sql
+    assert "retrospective_text IS NOT NULL" in sql
+
+
+async def test_list_retrospectives_returns_empty_when_no_rows():
+    pool, _ = _make_pool(fetch=[])
+    store = PostgresGoalStore(pool)
+    result = await store.list_retrospectives(days=60)
+    assert result == []
+
+
+# ── list_active_goal_titles ───────────────────────────────────────────────────
+
+async def test_list_active_goal_titles_returns_titles():
+    rows = [{"title": "Learn Spanish"}, {"title": "Run a marathon"}]
+    pool, conn = _make_pool(fetch=rows)
+    store = PostgresGoalStore(pool)
+
+    titles = await store.list_active_goal_titles()
+
+    assert titles == ["Learn Spanish", "Run a marathon"]
+    sql = conn.fetch.call_args.args[0]
+    assert "active" in sql
+
+
+async def test_list_active_goal_titles_returns_empty_when_no_active_goals():
+    pool, _ = _make_pool(fetch=[])
+    store = PostgresGoalStore(pool)
+    titles = await store.list_active_goal_titles()
+    assert titles == []
