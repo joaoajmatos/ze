@@ -66,6 +66,8 @@ explicitly deferred before implementation begins.
 | 36 | [Cross-Goal Learning Promotion](phases/36-cross-goal-learning-promotion.md) | ✅ Done |
 | 37 | [News Package](phases/37-news-package.md) | ✅ Done |
 | 38 | [News Personalization](phases/38-news-personalization.md) | 🔲 Pending |
+| 39 | [News Credibility](phases/39-news-credibility.md) | 🔲 Pending |
+| 40 | [Native UI Foundation](phases/40-native-ui-foundation.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
