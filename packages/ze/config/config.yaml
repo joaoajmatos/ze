@@ -68,3 +68,19 @@ news:
       type: rss
       url: "https://hnrss.org/frontpage"
       tags: [global, tech, hacker-news]
+    - key: jornal_leiria
+      type: rss
+      url: "https://www.jornaldeleiria.pt/rss-feed"
+      tags: [local, pt, leiria]
+    - key: regiao_leiria
+      type: rss
+      url: "https://www.regiaodeleiria.pt/feed/"
+      tags: [local, pt, leiria]
+    - key: dn
+      type: rss
+      url: "https://www.dn.pt/feed/"
+      tags: [local, pt, national]
+    - key: observador
+      type: rss
+      url: "https://observador.pt/feed/"
+      tags: [local, pt, national]
