@@ -5,8 +5,8 @@
 ZE      := packages/ze
 ZE_CORE := packages/ze-core
 
-DB_SYNC_URL ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
-ALEMBIC     := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m alembic
+DB_SYNC_URL  ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
+ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze.migrate
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -85,19 +85,19 @@ db-reset:
 	docker compose exec -T postgres psql -U ze -c "CREATE DATABASE ze"
 
 migrate:
-	$(ALEMBIC) upgrade heads
+	$(ZE_MIGRATE) upgrade
 
 migrate-down:
-	$(ALEMBIC) downgrade -1
+	$(ZE_MIGRATE) downgrade
 
 migrate-status:
-	$(ALEMBIC) current
+	$(ZE_MIGRATE) current
 
 migrate-history:
-	$(ALEMBIC) history --verbose
+	$(ZE_MIGRATE) history
 
 migrate-stamp:
-	$(ALEMBIC) stamp --purge zc004 ze001
+	$(ZE_MIGRATE) stamp --purge zc004 ze001
 
 # ── Development ───────────────────────────────────────────────────────────────
 .PHONY: dev dev-poll dev-eval

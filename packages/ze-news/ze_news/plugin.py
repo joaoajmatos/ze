@@ -27,7 +27,8 @@ class NewsPlugin(ZePlugin):
     def jobs(self) -> list:
         return [self._fetch_job]
 
-    def migrations_path(self) -> Path | None:
+    @classmethod
+    def migrations_path(cls) -> Path | None:
         return Path(__file__).parent / "migrations"
 
     def configurable_services(self) -> dict[str, Any]:

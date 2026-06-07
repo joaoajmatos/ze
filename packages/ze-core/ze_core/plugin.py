@@ -9,6 +9,13 @@ if TYPE_CHECKING:
     from ze_core.orchestration.base_agent import BaseAgent
     from ze_core.proactive.job import ProactiveJob
 
+# Auto-populated by ZePlugin.__init_subclass__ when plugin modules are imported.
+_registry: list[type["ZePlugin"]] = []
+
+
+def get_plugin_registry() -> list[type["ZePlugin"]]:
+    return list(_registry)
+
 
 class ZePlugin(ABC):
     """Extension point for domain packages.
@@ -21,6 +28,10 @@ class ZePlugin(ABC):
     All methods have default no-op implementations — only override what you need.
     """
 
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        _registry.append(cls)
+
     # ── Container level ───────────────────────────────────────────────────────
 
     def agents(self) -> list[type[BaseAgent]]:
@@ -29,7 +40,9 @@ class ZePlugin(ABC):
     def jobs(self) -> list[ProactiveJob]:
         return []
 
-    def migrations_path(self) -> Path | None:
+    @classmethod
+    def migrations_path(cls) -> Path | None:
+        """Return the path to this plugin's Alembic versions directory, or None."""
         return None
 
     # ── Graph level ───────────────────────────────────────────────────────────

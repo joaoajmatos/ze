@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Callable
 
 from ze_core.plugin import ZePlugin
@@ -16,6 +17,10 @@ class PersonalPlugin(ZePlugin):
     - inject_goal_routing_context: pre-route node that enriches routing state with
       active goal context so goal-related messages route correctly.
     """
+
+    @classmethod
+    def migrations_path(cls) -> Path | None:
+        return Path(__file__).parent / "migrations"
 
     def configurable_services(self) -> dict[str, Any]:
         from ze_personal.persona.identity import build_identity_block
