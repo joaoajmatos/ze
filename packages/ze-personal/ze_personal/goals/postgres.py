@@ -14,6 +14,7 @@ from ze_personal.goals.types import (
     GateStatus,
     Milestone,
     MilestoneStatus,
+    PriorMilestoneOutput,
     StuckGoal,
     VerificationGate,
 )
@@ -41,6 +42,7 @@ def _goal_from_row(row) -> Goal:
 
 
 def _milestone_from_row(row) -> Milestone:
+    keys = row.keys()
     return Milestone(
         id=row["id"],
         goal_id=row["goal_id"],
@@ -51,6 +53,7 @@ def _milestone_from_row(row) -> Milestone:
         intent=row["intent"],
         status=MilestoneStatus(row["status"]),
         output=row["output"],
+        reuse_hint=row["reuse_hint"] if "reuse_hint" in keys else "",
         completed_at=row["completed_at"],
         created_at=row["created_at"],
     )
@@ -564,3 +567,44 @@ class PostgresGoalStore:
                 "UPDATE goals SET last_stuck_alert_at = NOW(), updated_at = NOW() WHERE id = $1",
                 goal_id,
             )
+
+    # ── Cross-goal output reuse ────────────────────────────────────────────────
+
+    async def list_completed_milestone_summaries(
+        self,
+        days: int = 90,
+        limit: int = 20,
+        exclude_goal_id: UUID | None = None,
+    ) -> list[PriorMilestoneOutput]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT
+                    m.id            AS milestone_id,
+                    m.goal_id,
+                    g.title         AS goal_title,
+                    m.title         AS milestone_title,
+                    m.output,
+                    GREATEST(0, EXTRACT(EPOCH FROM (NOW() - m.completed_at)) / 86400)::int AS completed_days_ago
+                FROM goal_milestones m
+                JOIN goals g ON g.id = m.goal_id
+                WHERE m.status = 'completed'
+                  AND m.output != ''
+                  AND m.completed_at > NOW() - ($1 * INTERVAL '1 day')
+                  AND ($2::uuid IS NULL OR m.goal_id != $2)
+                ORDER BY m.completed_at DESC
+                LIMIT $3
+                """,
+                days, exclude_goal_id, limit,
+            )
+        return [
+            PriorMilestoneOutput(
+                goal_id=r["goal_id"],
+                goal_title=r["goal_title"],
+                milestone_id=r["milestone_id"],
+                milestone_title=r["milestone_title"],
+                output_snippet=r["output"][:200],
+                completed_days_ago=r["completed_days_ago"],
+            )
+            for r in rows
+        ]

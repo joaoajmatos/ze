@@ -12,6 +12,7 @@ from ze_personal.goals.types import (
     GateStatus,
     Milestone,
     MilestoneStatus,
+    PriorMilestoneOutput,
     StuckGoal,
     VerificationGate,
 )
@@ -122,3 +123,12 @@ class GoalStore(Protocol):
     ) -> list[StuckGoal]: ...
 
     async def mark_stuck_alerted(self, goal_id: UUID) -> None: ...
+
+    # ── Cross-goal output reuse ────────────────────────────────────────────────
+
+    async def list_completed_milestone_summaries(
+        self,
+        days: int = 90,
+        limit: int = 20,
+        exclude_goal_id: UUID | None = None,
+    ) -> list[PriorMilestoneOutput]: ...
