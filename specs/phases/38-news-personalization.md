@@ -111,8 +111,8 @@ class PersonalizationContext:
 
 `interest_text` is built by the caller (the agent or briefing job) from live memory
 at query time — it is never stored. It is a plain string, not a pre-computed embedding,
-so the store can embed it fresh on each call using the shared `all-MiniLM-L6-v2`
-singleton. This keeps the store stateless with respect to user data.
+so the store can embed it fresh on each call using the shared
+`paraphrase-multilingual-MiniLM-L12-v2` singleton. This keeps the store stateless with respect to user data.
 
 ---
 
@@ -322,12 +322,10 @@ This preserves the package boundary: `ze-news → ze-core` only.
   different ratios — the briefing might use 0.2 while an explicit "show me headlines"
   query uses 0.0 (pure relevance). Pass it via `PersonalizationContext` so callers
   control it.
-- **Cross-lingual embedding.** `all-MiniLM-L6-v2` is English-dominant. Five of seven
-  configured sources publish in Portuguese. Cosine similarity against an English
-  interest_text is unreliable for Portuguese articles. At implementation time, evaluate
-  switching to `paraphrase-multilingual-MiniLM-L12-v2` (same 384-dim interface,
-  multilingual training). If model change is too costly, apply tag-based pre-filter:
-  articles tagged `local` are served as discovery-only (no scoring), not penalised.
+- **Multilingual embedding.** Ze uses `paraphrase-multilingual-MiniLM-L12-v2` (384-dim,
+  same pgvector schema). This model handles Portuguese and English content in the same
+  embedding space, making cosine similarity meaningful for local PT sources. Migration
+  `zc010` NULLs stale embeddings computed with the old `all-MiniLM-L6-v2` model.
 - **Personalization indicator in briefing.** When `get_personalized()` is used (not
   the fallback path), the briefing header should say *"📰 For you (based on your
   interests):"* rather than *"📰 Headlines:"*. One line — makes the feature visible
