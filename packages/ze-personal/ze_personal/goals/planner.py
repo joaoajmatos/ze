@@ -150,6 +150,39 @@ Respond ONLY in JSON — no explanation, no markdown:
 }\
 """
 
+_PROMOTION_SYSTEM = """\
+You are extracting generalizable user facts from the learnings of a completed goal.
+
+A generalizable fact is something true about the USER — their preferences, habits,
+strategies, decision-making patterns — that applies beyond this specific goal and
+would be useful context for future tasks.
+
+A goal-specific learning is NOT a generalizable fact:
+  - research about a third-party company, product, or person
+  - factual findings about the external world
+  - contact details or relationship data
+  - anything that is only relevant to this goal's subject matter
+
+Rules:
+1. Only extract facts that generalise — user preferences, communication style,
+   decision patterns, domain strategies that reflect how the user works.
+2. Every fact must be a statement about the USER, not about a third party or the
+   external world. The subject of each value must be the user ("prefers...",
+   "tends to...", "works best when..."). If the subject is not the user, omit it.
+3. Each fact must be written as a short, atomic key-value pair.
+4. Produce at most 5 facts. If fewer than 1 generalizable fact exists, return an empty list.
+5. Do not fabricate or over-interpret. If a learning is ambiguous, omit it.
+
+Return JSON:
+{
+  "facts": [
+    {"key": "...", "value": "..."},
+    ...
+  ]
+}
+If nothing is promotable, return: {"facts": []}\
+"""
+
 _PROPER_NOUN_RE = re.compile(r"[A-Z][a-z]+|\d{4}|\bQ[1-4]\b")
 
 
@@ -352,6 +385,35 @@ class GoalPlanner:
             model=self._model,
             system=_GATE_NARRATIVE_SYSTEM,
         )
+
+    async def promote_learnings(
+        self,
+        goal: Goal,
+        learnings: list[GoalLearning],
+    ) -> list[UserFact]:
+        """Extract generalizable user facts from goal learnings. Returns [] on any error."""
+        learnings_text = "\n".join(
+            f"  - [{l.source}] {l.content}" for l in learnings
+        )
+        prompt = (
+            f"Goal: {goal.title}\n"
+            f"Objective: {goal.objective}\n\n"
+            f"Learnings from this goal:\n{learnings_text}"
+        )
+        raw = await self._client.complete(
+            messages=[{"role": "user", "content": prompt}],
+            model=self._model,
+            system=_PROMOTION_SYSTEM,
+        )
+        try:
+            data = json.loads(raw)
+            return [
+                UserFact(key=f["key"], value=f["value"], agent="goals", reviewed=False)
+                for f in data.get("facts", [])
+                if isinstance(f.get("key"), str) and isinstance(f.get("value"), str)
+            ][:5]
+        except Exception:
+            return []
 
     async def extract_learning(self, milestone_title: str, output: str) -> str:
         """Extract a one-sentence learning from milestone output."""

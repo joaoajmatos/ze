@@ -7,6 +7,7 @@ from typing import Callable
 from uuid import UUID
 
 from ze_core.errors import GoalExecutionError
+from ze_core.memory.store import MemoryStore
 from ze_core.orchestration.types import ToolCall
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.store import GoalStore
@@ -108,20 +109,25 @@ class GoalExecutor:
         goal_planner: GoalPlanner,
         push: Callable[[Notification], None],
         agent_getter: Callable[[str], object],
+        memory_store: MemoryStore | None = None,
     ) -> None:
         """
         Args:
-            goal_store:   GoalStore implementation.
-            goal_planner: GoalPlanner for decomposition and replanning.
-            push:         Async callable that delivers a Notification to the user.
-                          Corresponds to AppInterface.push() — must not raise.
-            agent_getter: Callable that looks up a registered agent by name.
-                          Returns an object with an async run(ctx) method.
+            goal_store:    GoalStore implementation.
+            goal_planner:  GoalPlanner for decomposition and replanning.
+            push:          Async callable that delivers a Notification to the user.
+                           Corresponds to AppInterface.push() — must not raise.
+            agent_getter:  Callable that looks up a registered agent by name.
+                           Returns an object with an async run(ctx) method.
+            memory_store:  MemoryStore for promoting generalizable learnings to user
+                           memory on goal completion. Optional — promotion is skipped
+                           when None.
         """
         self._store = goal_store
         self._planner = goal_planner
         self._push = push
         self._get_agent = agent_getter
+        self._memory = memory_store
         self._advance_locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._steer_queues: dict[UUID, asyncio.Queue] = defaultdict(asyncio.Queue)
 
@@ -353,6 +359,24 @@ class GoalExecutor:
             format="html",
             urgency="high",
         ))
+        asyncio.create_task(self._promote_learnings(goal, learnings))
+
+    async def _promote_learnings(self, goal: Goal, learnings: list[GoalLearning]) -> None:
+        if self._memory is None or not learnings:
+            return
+        try:
+            facts = await self._planner.promote_learnings(goal, learnings)
+        except Exception as exc:
+            log.warning("goal_learning_promotion_failed", error=str(exc))
+            return
+        if not facts:
+            log.info("goal_learning_promotion_none", goal_id=str(goal.id))
+            return
+        try:
+            await self._memory.propose_facts(facts)
+            log.info("goal_learning_promoted", goal_id=str(goal.id), count=len(facts))
+        except Exception as exc:
+            log.warning("goal_learning_promotion_write_failed", error=str(exc))
 
     async def _fetch_prior_work(self, exclude_goal_id: UUID) -> list[PriorMilestoneOutput]:
         try:

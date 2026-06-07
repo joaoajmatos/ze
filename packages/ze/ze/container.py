@@ -351,6 +351,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         goal_planner=goal_planner,
         push=notifier.push_notification,
         agent_getter=get_agent,
+        memory_store=memory_store,
     )
     proactive_scheduler = ProactiveScheduler()
     reminder_store = ReminderStore(pool=pool)
