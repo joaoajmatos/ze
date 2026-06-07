@@ -2,7 +2,7 @@
 
 > **Package:** `ze_personal`, `ze_core` (migration only)
 > **Phase:** 23
-> **Status:** Pending
+> **Status:** Done
 
 ---
 
@@ -10,12 +10,12 @@
 
 | Feature | Status |
 |---------|--------|
-| Milestone context injection | 🔲 Pending |
-| Execution trace store (migration + store) | 🔲 Pending |
-| Execution trace exposure (tool) | 🔲 Pending |
-| Adaptive replanning trigger | 🔲 Pending |
-| Enriched gate narrative | 🔲 Pending |
-| Tests | 🔲 Pending |
+| Milestone context injection | ✅ Done |
+| Execution trace store (migration + store) | ✅ Done |
+| Execution trace exposure (tool) | ✅ Done |
+| Adaptive replanning trigger | ✅ Done |
+| Enriched gate narrative | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

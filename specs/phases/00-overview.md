@@ -123,6 +123,11 @@ User message (Telegram Bot API)
 | 18    | Communication channel abstraction — `Channel` ABC, `EmailChannel`, contact channel handles. | ✅ Done |
 | 19    | Goal Engine — autonomous multi-week goal execution, verification gates, milestone loop.      | ✅ Done |
 | 20    | Package architecture reorg — ze_core pure infra, ze-personal domain layer, ZePlugin ABC.   | ✅ Done |
+| 21    | Agent harness — hook points, step-level abort, multi-agent handoffs.                        | ✅ Done |
+| 22    | Harness adoption — tool-call cap hook, research delegation, `/cancel` command.              | ✅ Done |
+| 23    | Goal engine v2 — milestone context, execution traces, adaptive replanning, gate narrative.  | ✅ Done |
+| 24    | Goal collaboration — goal-aware routing, steering, retrospective, weekly narrative.         | ✅ Done |
+| 25    | Proactive goal suggestions — weekly LLM-generated goal proposals via Telegram.              | ✅ Done |
 
 ## Spec Index
 
@@ -160,6 +165,10 @@ User message (Telegram Bot API)
 | `27-channels.md` | Channel ABC, EmailChannel, contact handles | 18 |
 | `28-goal-engine.md` | Goal decomposition, milestones, verification gates | 19 |
 | `29-progress-messages.md` | Per-agent progress status messages | 14 |
+| `30-agent-harness.md` | Harness hooks, step abort, multi-agent handoffs | 21 |
+| `31-goal-engine-v2.md` | Milestone context, traces, replanning, gate narrative | 23 |
+| `32-goal-collaboration.md` | Goal-aware routing, steering, retrospective, weekly narrative | 24 |
+| `33-goal-suggestions.md` | Proactive weekly goal suggestions via Telegram | 25 |
 
 ### Ze Core specs (`core/`)
 

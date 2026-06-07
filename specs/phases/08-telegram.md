@@ -25,7 +25,7 @@ sends responses back via the Telegram Bot API. Confirmation flows use inline key
 - Does not support group chats — single-user only, `chat_id` must match
   `TELEGRAM_ALLOWED_CHAT_ID` or the message is silently ignored.
 - Does not handle documents, video, stickers, or GIFs — text, voice, and photos
-  only (see `specs/19-multimodal-input.md`).
+  only (see `19-multimodal-input.md`).
 
 ## Module Location
 

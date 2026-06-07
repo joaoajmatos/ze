@@ -280,4 +280,4 @@ per-agent Python `intent_map.py` — that would be a duplicate of the YAML.
   secret, access token exchanged at startup and refreshed on 401. Single OAuth2
   flow run once via local CLI script. Covers both Calendar and Gmail.
 - [x] Phase 4: Workflow manager agent implemented. Execution delegated to the
-  workflow graph (see `specs/12-workflow.md`). Dynamic plan approval flow not yet started.
+  workflow graph (see `12-workflow.md`). Dynamic plan approval flow not yet started.

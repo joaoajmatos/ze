@@ -7,7 +7,7 @@ Design and implementation specs for the Ze personal AI assistant.
 ```
 specs/
 ├── TEMPLATE.md       ← template for new specs
-├── phases/           ← feature and phase implementation specs (00–29)
+├── phases/           ← feature and phase implementation specs (00–33)
 ├── core/             ← ze-core infrastructure layer specs
 └── arch/             ← architecture decision records
 ```
@@ -57,7 +57,10 @@ explicitly deferred before implementation begins.
 | 27 | [Channels](phases/27-channels.md) | ✅ Done |
 | 28 | [Goal Engine](phases/28-goal-engine.md) | ✅ Done |
 | 29 | [Progress Messages](phases/29-progress-messages.md) | ✅ Done |
-| 30 | [Agent Harness](phases/30-agent-harness.md) | 🔲 Pending |
+| 30 | [Agent Harness](phases/30-agent-harness.md) | ✅ Done |
+| 31 | [Goal Engine v2](phases/31-goal-engine-v2.md) | ✅ Done |
+| 32 | [Goal Collaboration](phases/32-goal-collaboration.md) | ✅ Done |
+| 33 | [Proactive Goal Suggestions](phases/33-goal-suggestions.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

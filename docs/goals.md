@@ -5,8 +5,10 @@ milestones, executing work in the background, and pausing at **verification gate
 for your approval before continuing. A single workflow run handles one batch of
 steps; a goal spans days or weeks with meaningful check-ins in between.
 
-See [specs/28-goal-engine.md](../specs/28-goal-engine.md) for the full implementation
-spec. See [docs/architecture.md](architecture.md#goal-engine) for how goals connect
+See [specs/phases/28-goal-engine.md](../specs/phases/28-goal-engine.md) for the base
+implementation spec, [specs/phases/31-goal-engine-v2.md](../specs/phases/31-goal-engine-v2.md)
+for v2, and [specs/phases/32-goal-collaboration.md](../specs/phases/32-goal-collaboration.md)
+for collaboration. See [docs/architecture.md](architecture.md#goal-engine) for how goals connect
 to workflows, the scheduler, and Telegram.
 
 ---

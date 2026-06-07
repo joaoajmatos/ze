@@ -299,7 +299,7 @@ The CLI adapter:
 | Spec | Relationship |
 |---|---|
 | `zc-07-container.md` | `invoke()`, `invoke_raw()`, `resume()` — graph entry points |
-| `specs/19-multimodal-input.md` | Ze Telegram handlers + Whisper/vision (application layer) |
+| `phases/19-multimodal-input.md` | Ze Telegram handlers + Whisper/vision (application layer) |
 | `zc-05-orchestration.md` | `AgentState.input_modality`, `image_data`, vision caption in `embed_route` |
 
 ---

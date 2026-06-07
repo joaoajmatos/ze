@@ -104,7 +104,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
   in `settings.py` and `embeddings.py`).
 - **OpenAPI**: Every REST route must declare `response_model`, `summary`, and
   `description`; request/query params use Pydantic or annotated `Query`. See
-  `specs/07-api.md`.
+  `specs/phases/07-api.md`.
 - **Logging**: Always use `get_logger(__name__)`. Never use `print()` or stdlib
   `logging` directly. Bind `chat_id` at webhook request time via `bind_context()`.
 - **Errors**: Raise from `ze/errors.py`. Never raise bare `Exception` or `ValueError`

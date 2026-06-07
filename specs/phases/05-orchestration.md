@@ -285,7 +285,7 @@ execute_tool → write_memory → verify_step → [loop | workflow_synthesize | 
 - `verify_step` does programmatic output validation and advances `current_step_index`.
 - `thread_id` is set to `str(workflow_execution_id)`, not the Telegram chat ID.
 
-See `specs/12-workflow.md` for the full workflow system spec.
+See `12-workflow.md` for the full workflow system spec.
 
 ## Open Questions
 

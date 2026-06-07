@@ -41,7 +41,7 @@ no new credentials or HTTP clients.
 - Streaming transcription or real-time audio input.
 - Group chat photo or voice handling (single-user system, already enforced).
 - Whisper cost tracking in `CostTracker` — audio is billed per minute, not tokens.
-  Logged via structlog; a follow-up to `specs/17-cost-telemetry.md` will add
+  Logged via structlog; a follow-up to `17-cost-telemetry.md` will add
   `audio_seconds` support.
 - Image generation or editing.
 - OCR — text visible in images reaches the model only via the vision model's
@@ -352,7 +352,7 @@ async def transcribe(self, audio_bytes: bytes, audio_format: str) -> Transcripti
 is billed per minute, not tokens). `cost_usd` from the reconciler will reflect the
 actual audio-duration cost as reported by OpenRouter — no local pricing table needed.
 
-Add the new attribution row to the table in `specs/17-cost-telemetry.md`:
+Add the new attribution row to the table in `17-cost-telemetry.md`:
 
 | Module | What is set |
 |--------|-------------|

@@ -2,8 +2,8 @@
 
 > **Package:** `ze_personal` (planner, store, types), `ze` (job, Telegram callback)
 > **Phase:** 25
-> **Status:** Pending
-> **Depends on:** Phase 24 (32-goal-collaboration.md), Phase 23 (31-goal-engine-v2.md)
+> **Status:** Done
+> **Depends on:** Phase 24 ([32-goal-collaboration.md](32-goal-collaboration.md)), Phase 23 ([31-goal-engine-v2.md](31-goal-engine-v2.md))
 
 ---
 

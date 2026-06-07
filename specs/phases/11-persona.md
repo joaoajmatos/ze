@@ -117,7 +117,7 @@ calendar). The `CalendarAgent._system_prompt()` helper is removed.
 
 | File | Change |
 |---|---|
-| `specs/11-persona.md` | New — this spec |
+| `phases/11-persona.md` | New — this spec |
 | `config/persona.yaml` | New — default persona config |
 | `ze/agents/identity.py` | New — `build_identity_block()` |
 | `ze/settings.py` | Add `persona_config` property |

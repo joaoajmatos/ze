@@ -387,7 +387,7 @@ callback query.
 
 | File | Change |
 |---|---|
-| `specs/25-persona-profiles.md` | New — this spec |
+| `phases/25-persona-profiles.md` | New — this spec |
 | `config/config.yaml` | Extend `persona:` with `profile:` and `profiles:` map |
 | `ze/persona/__init__.py` | New — empty |
 | `ze/persona/types.py` | New — `PersonaState` dataclass |

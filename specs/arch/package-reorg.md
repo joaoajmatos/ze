@@ -187,7 +187,7 @@ Class name `TelegramAppInterface` is unchanged. Aligns with:
 4. Scaffold `ze-personal` package; move domain modules; move tests; update imports.
 5. Implement `PersonalPlugin`; register in `ze/container.py`; run full test suite.
 6. Rename `ze/telegram/app_interface.py` → `ze/telegram/interface.py`; update imports.
-7. Update CLAUDE.md, `specs/00-overview.md`.
+7. Update CLAUDE.md, `phases/00-overview.md`.
 
 ---
 

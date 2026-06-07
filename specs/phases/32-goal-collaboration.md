@@ -2,8 +2,8 @@
 
 > **Package:** `ze_core` (state, routing node), `ze_personal` (plugin, executor, planner, tools), `ze` (job)
 > **Phase:** 24
-> **Status:** Pending
-> **Depends on:** Phase 23 (31-goal-engine-v2.md)
+> **Status:** Done
+> **Depends on:** Phase 23 ([31-goal-engine-v2.md](31-goal-engine-v2.md))
 
 ---
 
@@ -11,12 +11,12 @@
 
 | Feature | Status |
 |---------|--------|
-| Goal-aware routing (`routing_hints` state field + pre-route node) | 🔲 Pending |
-| `embed_route` consumes `routing_hints` | 🔲 Pending |
-| Conversational steering (steer queue + `steer_goal` tool) | 🔲 Pending |
-| Post-goal retrospective | 🔲 Pending |
-| Weekly progress narrative job | 🔲 Pending |
-| Tests | 🔲 Pending |
+| Goal-aware routing (`routing_hints` state field + pre-route node) | ✅ Done |
+| `embed_route` consumes `routing_hints` | ✅ Done |
+| Conversational steering (steer queue + `steer_goal` tool) | ✅ Done |
+| Post-goal retrospective | ✅ Done |
+| Weekly progress narrative job | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 
