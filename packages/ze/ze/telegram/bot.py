@@ -229,6 +229,10 @@ class ZeBot:
                 await self._handle_suggestion_callback(query, data)
                 return
 
+            if data.startswith("goal_stuck:"):
+                await self._handle_stuck_callback(query, data)
+                return
+
             if data.startswith("goal:"):
                 await self._handle_goal_callback(chat_id, query)
                 return
@@ -668,6 +672,114 @@ class ZeBot:
             ],
         ])
         await query.message.answer(text, parse_mode="HTML", reply_markup=keyboard)
+
+    async def _handle_stuck_callback(self, query: CallbackQuery, data: str) -> None:
+        parts = data.split(":", 2)
+        if len(parts) != 3:
+            await query.answer()
+            return
+
+        _, action, goal_id_hex = parts
+        try:
+            goal_id = UUID(goal_id_hex)
+        except ValueError:
+            await query.answer("Invalid goal reference.")
+            return
+
+        if not self._goal_store:
+            await query.answer()
+            return
+
+        goal = await self._goal_store.get_goal(goal_id)
+        if goal is None:
+            await query.answer("Goal not found.")
+            return
+
+        if action == "redirect":
+            await self._stuck_redirect(query, goal)
+        elif action == "pause":
+            await self._stuck_pause(query, goal)
+        elif action == "abandon":
+            await self._stuck_abandon(query, goal)
+        elif action == "gate_approve":
+            await self._stuck_gate_approve(query, goal)
+        elif action == "gate_stop":
+            await self._stuck_gate_stop(query, goal)
+        else:
+            await query.answer()
+
+    async def _stuck_redirect(self, query: CallbackQuery, goal) -> None:
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+        from ze_personal.goals.types import GoalStatus
+        await query.message.answer(
+            f"Send me your instructions for <b>{_html.escape(goal.title)}</b> "
+            f"and I'll redirect it right away.",
+            parse_mode="HTML",
+        )
+
+    async def _stuck_pause(self, query: CallbackQuery, goal) -> None:
+        from ze_personal.goals.types import GoalStatus
+        if goal.status not in (GoalStatus.ACTIVE, GoalStatus.AWAITING_GATE):
+            await query.answer("Already resolved.", show_alert=False)
+            return
+        await self._goal_store.update_status(goal.id, GoalStatus.PAUSED)
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+        await query.message.answer(
+            f"Paused <b>{_html.escape(goal.title)}</b>. "
+            f"Resume it any time by telling me.",
+            parse_mode="HTML",
+        )
+
+    async def _stuck_abandon(self, query: CallbackQuery, goal) -> None:
+        from ze_personal.goals.types import GoalStatus
+        if goal.status in (GoalStatus.COMPLETED, GoalStatus.ABANDONED):
+            await query.answer("Already resolved.", show_alert=False)
+            return
+        await self._goal_store.update_status(goal.id, GoalStatus.ABANDONED)
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+        await query.message.answer(
+            f"Abandoned <b>{_html.escape(goal.title)}</b>.",
+            parse_mode="HTML",
+        )
+
+    async def _stuck_gate_approve(self, query: CallbackQuery, goal) -> None:
+        if not self._goal_executor or not self._goal_store:
+            await query.answer()
+            return
+        gate = await self._goal_store.get_pending_gate(goal.id)
+        if gate is None:
+            await query.answer("Gate already resolved.", show_alert=False)
+            return
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+        asyncio.create_task(
+            self._goal_executor.handle_gate_approved(gate.id)
+        )
+        await query.message.answer(
+            f"Approved — Ze will continue <b>{_html.escape(goal.title)}</b>.",
+            parse_mode="HTML",
+        )
+
+    async def _stuck_gate_stop(self, query: CallbackQuery, goal) -> None:
+        if not self._goal_executor or not self._goal_store:
+            await query.answer()
+            return
+        gate = await self._goal_store.get_pending_gate(goal.id)
+        if gate is None:
+            await query.answer("Gate already resolved.", show_alert=False)
+            return
+        await query.answer()
+        await query.message.edit_reply_markup(reply_markup=None)
+        asyncio.create_task(
+            self._goal_executor.handle_gate_stopped(gate.id)
+        )
+        await query.message.answer(
+            f"Stopped <b>{_html.escape(goal.title)}</b>.",
+            parse_mode="HTML",
+        )
 
     async def _handle_goal_plan_callback(self, chat_id: int, query: CallbackQuery) -> None:
         data = query.data or ""

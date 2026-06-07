@@ -41,6 +41,7 @@ from ze.reminders.store import ReminderStore, fire_reminder
 from ze.jobs.briefing import MorningBriefing
 from ze.jobs.goal_narrative import GoalNarrativeJob
 from ze.jobs.goal_suggestion import GoalSuggestionJob
+from ze.jobs.stuck_goals import StuckGoalJob
 from ze_personal.goals.suggestion_store import GoalSuggestionStore
 from ze_core.proactive.push_log_store import PushLogStore
 from ze.jobs.insights import InsightEngine
@@ -95,6 +96,7 @@ class ZeContainer(CoreContainer):
     goal_narrative: GoalNarrativeJob
     goal_suggestion: GoalSuggestionJob
     goal_suggestion_store: GoalSuggestionStore
+    stuck_goals: StuckGoalJob
     browser_client: BrowserClient
     channel_registry: ChannelRegistry
     contact_channel_store: ContactChannelStore
@@ -535,6 +537,15 @@ async def build_container(settings: Settings) -> ZeContainer:
         proactive_scheduler.register(goal_suggestion, cron=goal_suggestion_cfg.get("cron", "0 19 * * 0"))
         log.info("goal_suggestion_scheduled", cron=goal_suggestion_cfg.get("cron", "0 19 * * 0"))
 
+    stuck_goals = StuckGoalJob(
+        notifier=notifier,
+        goal_store=goal_store,
+    )
+    stuck_goals_cfg = proactive_cfg.get("stuck_goals", {})
+    if stuck_goals_cfg.get("enabled", True):
+        proactive_scheduler.register(stuck_goals, cron=stuck_goals_cfg.get("cron", "0 9 * * 2"))
+        log.info("stuck_goals_scheduled", cron=stuck_goals_cfg.get("cron", "0 9 * * 2"))
+
     await proactive_scheduler.start()
 
     if settings.telegram_bot_token and settings.public_url:
@@ -601,6 +612,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         goal_narrative=goal_narrative,
         goal_suggestion=goal_suggestion,
         goal_suggestion_store=goal_suggestion_store,
+        stuck_goals=stuck_goals,
         browser_client=browser_client,
         channel_registry=channel_registry,
         contact_channel_store=contact_channel_store,

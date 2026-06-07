@@ -12,6 +12,7 @@ from ze_personal.goals.types import (
     GateStatus,
     Milestone,
     MilestoneStatus,
+    StuckGoal,
     VerificationGate,
 )
 
@@ -111,3 +112,13 @@ class GoalStore(Protocol):
         ...
 
     async def list_active_goal_titles(self) -> list[str]: ...
+
+    # ── Stuck goal detection ───────────────────────────────────────────────────
+
+    async def list_stuck(
+        self,
+        idle_days: int,
+        alert_cooldown_days: int,
+    ) -> list[StuckGoal]: ...
+
+    async def mark_stuck_alerted(self, goal_id: UUID) -> None: ...

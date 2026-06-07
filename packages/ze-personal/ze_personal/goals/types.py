@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from typing import Literal
 from uuid import UUID
 
 
@@ -61,6 +62,7 @@ class Goal:
     time_horizon: str = ""
     learnings: str = ""
     retrospective_text: str | None = None
+    last_stuck_alert_at: datetime | None = None
     id: UUID | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -118,3 +120,12 @@ class ExecutionTrace:
     error: str | None = None
     id: UUID | None = None
     created_at: datetime | None = None
+
+
+@dataclass
+class StuckGoal:
+    goal: Goal
+    kind: Literal["active", "awaiting_gate"]
+    idle_days: int
+    last_milestone_title: str | None
+    gate: VerificationGate | None

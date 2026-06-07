@@ -14,6 +14,7 @@ from ze_personal.goals.types import (
     GateStatus,
     Milestone,
     MilestoneStatus,
+    StuckGoal,
     VerificationGate,
 )
 from ze_core.logging import get_logger
@@ -22,6 +23,7 @@ log = get_logger(__name__)
 
 
 def _goal_from_row(row) -> Goal:
+    keys = row.keys()
     return Goal(
         id=row["id"],
         title=row["title"],
@@ -31,7 +33,8 @@ def _goal_from_row(row) -> Goal:
         status=GoalStatus(row["status"]),
         type=row["type"],
         learnings=row["learnings"],
-        retrospective_text=row["retrospective_text"] if "retrospective_text" in row.keys() else None,
+        retrospective_text=row["retrospective_text"] if "retrospective_text" in keys else None,
+        last_stuck_alert_at=row["last_stuck_alert_at"] if "last_stuck_alert_at" in keys else None,
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -432,3 +435,132 @@ class PostgresGoalStore:
                 "SELECT title FROM goals WHERE status IN ('active', 'planning', 'awaiting_gate', 'paused')"
             )
         return [r["title"] for r in rows]
+
+    # ── Stuck goal detection ───────────────────────────────────────────────────
+
+    async def list_stuck(
+        self,
+        idle_days: int,
+        alert_cooldown_days: int,
+    ) -> list[StuckGoal]:
+        async with self._pool.acquire() as conn:
+            active_rows = await conn.fetch(
+                """
+                SELECT
+                    g.id, g.title, g.objective, g.success_condition, g.time_horizon,
+                    g.status, g.type, g.learnings, g.retrospective_text,
+                    g.last_stuck_alert_at, g.created_at, g.updated_at,
+                    MAX(m.completed_at) AS last_milestone_at,
+                    (
+                        SELECT title FROM goal_milestones
+                        WHERE goal_id = g.id
+                          AND status IN ('completed', 'skipped')
+                        ORDER BY completed_at DESC NULLS LAST
+                        LIMIT 1
+                    ) AS last_milestone_title
+                FROM goals g
+                LEFT JOIN goal_milestones m
+                    ON m.goal_id = g.id AND m.status IN ('completed', 'skipped')
+                WHERE g.status = 'active'
+                  AND (
+                      g.last_stuck_alert_at IS NULL
+                      OR g.last_stuck_alert_at < now() - ($2 || ' days')::interval
+                  )
+                GROUP BY g.id
+                HAVING
+                    (
+                        MAX(m.completed_at) IS NULL
+                        AND g.created_at < now() - ($1 || ' days')::interval
+                    )
+                    OR MAX(m.completed_at) < now() - ($1 || ' days')::interval
+                ORDER BY COALESCE(MAX(m.completed_at), g.created_at) ASC
+                """,
+                str(idle_days), str(alert_cooldown_days),
+            )
+
+            gate_rows = await conn.fetch(
+                """
+                SELECT
+                    g.id, g.title, g.objective, g.success_condition, g.time_horizon,
+                    g.status, g.type, g.learnings, g.retrospective_text,
+                    g.last_stuck_alert_at, g.created_at, g.updated_at,
+                    vg.id AS gate_id,
+                    vg.goal_id AS gate_goal_id,
+                    vg.after_sequence,
+                    vg.title AS gate_title,
+                    vg.status AS gate_status,
+                    vg.context_summary,
+                    vg.plan_summary,
+                    vg.user_feedback,
+                    vg.fired_at,
+                    vg.resolved_at,
+                    vg.created_at AS gate_created_at,
+                    EXTRACT(DAY FROM now() - vg.fired_at)::int AS gate_idle_days,
+                    (
+                        SELECT title FROM goal_milestones
+                        WHERE goal_id = g.id
+                          AND status IN ('completed', 'skipped')
+                        ORDER BY completed_at DESC NULLS LAST
+                        LIMIT 1
+                    ) AS last_milestone_title
+                FROM goals g
+                JOIN goal_gates vg
+                    ON vg.goal_id = g.id AND vg.status IN ('pending', 'awaiting_approval')
+                WHERE g.status = 'awaiting_gate'
+                  AND vg.fired_at < now() - ($1 || ' days')::interval
+                  AND (
+                      g.last_stuck_alert_at IS NULL
+                      OR g.last_stuck_alert_at < now() - ($2 || ' days')::interval
+                  )
+                ORDER BY vg.fired_at ASC
+                """,
+                str(idle_days), str(alert_cooldown_days),
+            )
+
+        results: list[StuckGoal] = []
+
+        for r in active_rows:
+            goal = _goal_from_row(r)
+            last_at = r["last_milestone_at"]
+            ref_dt = last_at if last_at is not None else goal.created_at
+            idle = int((datetime.now(timezone.utc) - ref_dt.replace(tzinfo=timezone.utc) if ref_dt.tzinfo is None else datetime.now(timezone.utc) - ref_dt).days)
+            results.append(StuckGoal(
+                goal=goal,
+                kind="active",
+                idle_days=idle,
+                last_milestone_title=r["last_milestone_title"],
+                gate=None,
+            ))
+
+        for r in gate_rows:
+            goal = _goal_from_row(r)
+            gate = VerificationGate(
+                id=r["gate_id"],
+                goal_id=r["gate_goal_id"],
+                after_sequence=r["after_sequence"],
+                title=r["gate_title"],
+                status=GateStatus(r["gate_status"]),
+                context_summary=r["context_summary"],
+                plan_summary=r["plan_summary"],
+                user_feedback=r["user_feedback"],
+                fired_at=r["fired_at"],
+                resolved_at=r["resolved_at"],
+                created_at=r["gate_created_at"],
+            )
+            results.append(StuckGoal(
+                goal=goal,
+                kind="awaiting_gate",
+                idle_days=r["gate_idle_days"],
+                last_milestone_title=r["last_milestone_title"],
+                gate=gate,
+            ))
+
+        results.sort(key=lambda sg: sg.idle_days, reverse=True)
+        return results
+
+    async def mark_stuck_alerted(self, goal_id: UUID) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE goals SET last_stuck_alert_at = NOW(), updated_at = NOW() WHERE id = $1",
+                goal_id,
+            )

@@ -359,7 +359,7 @@ class TestDelegateInAgenticLoop:
 
         await a.agentic_loop(ctx, client, messages, system="s")
 
-        names = [s["name"] for s in captured_schemas]
+        names = [s["function"]["name"] for s in captured_schemas]
         assert DELEGATE_TOOL_NAME in names
 
     async def test_loop_calls_delegate_when_llm_requests(self):
