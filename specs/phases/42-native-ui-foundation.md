@@ -1,9 +1,9 @@
 # Native UI Foundation — Spec
 
-> **Package:** `ze_core` (message types + store), `ze` (WebSocket endpoint, ntfy client, NativeAppInterface)
-> **Phase:** 40
+> **Package:** `ze_core` (message types + store), `ze` (WebSocket endpoint, NativeAppInterface)
+> **Phase:** 42
 > **Status:** Pending
-> **Depends on:** Phase 1 (AppInterface ABC), Phase 7 (ProactiveNotifier)
+> **Depends on:** Phase 40 ([40-notifications.md](40-notifications.md)), Phase 1 (AppInterface ABC), Phase 7 (ProactiveNotifier)
 
 ---
 
@@ -15,7 +15,7 @@
 | `PostgresMessageStore` | 🔲 Pending |
 | `NativeAppInterface` | 🔲 Pending |
 | WebSocket endpoint + `ConnectionManager` | 🔲 Pending |
-| `NtfyClient` | 🔲 Pending |
+| `NtfyNotifier` (via `ze-notifications`) | ���� Pending |
 | `GET /api/messages` REST endpoint | 🔲 Pending |
 | Migration | 🔲 Pending |
 | Tests | 🔲 Pending |
@@ -86,9 +86,7 @@ packages/ze/
     api/
       ws.py             ← WebSocket endpoint, ConnectionManager
       messages.py       ← GET /api/messages REST endpoint
-    notifications/
-      __init__.py
-      ntfy.py           ← NtfyClient
+    # ntfy implementation moved to ze-notifications package (Phase 42)
     interface/
       native.py         ← NativeAppInterface(AppInterface)
 ```
@@ -230,35 +228,11 @@ class ConnectionManager:
 
 ---
 
-## NtfyClient
+## Notifier
 
-```python
-# ze/notifications/ntfy.py
-
-@dataclass
-class NtfyConfig:
-    base_url: str       # e.g. "https://ntfy.sh" or self-hosted URL
-    topic: str          # e.g. "ze-joao"
-    token: str | None   # optional Bearer token for private topics
-
-class NtfyClient:
-    def __init__(self, config: NtfyConfig, session: aiohttp.ClientSession) -> None: ...
-
-    async def push(
-        self,
-        title: str,
-        body: str,
-        priority: Literal[1, 2, 3, 4, 5] = 3,
-        tags: list[str] | None = None,
-    ) -> None:
-        """
-        POST to ntfy. Silently logs and returns on HTTP errors — Ze never
-        fails a user-facing operation because ntfy is unavailable.
-        """
-        ...
-```
-
-Priority mapping: 1 = min, 3 = default, 5 = urgent (used for stuck goal alerts, etc.).
+`NtfyNotifier` and the `Notifier` Protocol are defined in the `ze-notifications` package
+(Phase 42). `NativeAppInterface` accepts a `Notifier` — the Protocol — not the concrete
+implementation directly. See [42-notifications.md](42-notifications.md).
 
 ---
 
@@ -385,7 +359,8 @@ NTFY_TOKEN=                  # optional; leave empty for public topics
 | `ze_core.messages.store.MessageStore` | Persistence for all messages |
 | `ze_core.proactive.ProactiveNotifier` | Calls `send_message` on proactive fire |
 | `fastapi.WebSocket` | WebSocket transport |
-| `aiohttp.ClientSession` | ntfy HTTP client |
+| `ze_notifications.notifier.Notifier` | Push notification Protocol (Phase 42) |
+| `aiohttp.ClientSession` | ntfy HTTP client (via `ze-notifications`) |
 | `asyncpg.Pool` | Postgres connection for `PostgresMessageStore` |
 
 ---

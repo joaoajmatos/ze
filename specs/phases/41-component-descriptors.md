@@ -3,7 +3,7 @@
 > **Package:** `ze-components` (new package, no ze deps) + `ze` (hook wiring, AgentState propagation)
 > **Phase:** 41
 > **Status:** Pending
-> **Depends on:** Phase 40 ([40-native-ui-foundation.md](40-native-ui-foundation.md)), Phase 21 ([30-agent-harness.md](30-agent-harness.md))
+> **Depends on:** Phase 42 ([42-native-ui-foundation.md](42-native-ui-foundation.md)), Phase 21 ([30-agent-harness.md](30-agent-harness.md))
 
 ---
 

@@ -67,8 +67,10 @@ explicitly deferred before implementation begins.
 | 37 | [News Package](phases/37-news-package.md) | ✅ Done |
 | 38 | [News Personalization](phases/38-news-personalization.md) | 🔲 Pending |
 | 39 | [News Credibility](phases/39-news-credibility.md) | 🔲 Pending |
-| 40 | [Native UI Foundation](phases/40-native-ui-foundation.md) | 🔲 Pending |
+| 40 | [Notifications](phases/40-notifications.md) | 🔲 Pending |
 | 41 | [Component Descriptors](phases/41-component-descriptors.md) | 🔲 Pending |
+| 42 | [Native UI Foundation](phases/42-native-ui-foundation.md) | 🔲 Pending |
+| 43 | [Flutter App](phases/43-flutter-app.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
