@@ -147,18 +147,36 @@ episodes exist in the lookback window.
 ## Morning briefing (8 AM UTC daily)
 
 **Module:** `ze/jobs/briefing.py`  
-**Config:** `proactive.briefing.*` in `config/config.yaml`
+**Config:** `proactive.briefing.*` and `news.personalization.*` in `config/config.yaml`
 
-A daily digest pushed to Telegram. No LLM call — it's a templated summary of stats:
+A daily digest pushed to Telegram. No LLM call — it's a templated summary of stats and headlines:
 
 - **Unreviewed facts** — facts Ze proposed that you haven't confirmed or rejected yet.
   If the count is at or above `unreviewed_nudge_threshold` (default: 5), the briefing
   includes a direct nudge to review them.
 - **Upcoming workflows** — scheduled workflow runs in the next 24 hours.
 - **Recent failures** — any workflow runs that failed in the past 24 hours.
+- **Personalised headlines** — when the `ze-news` plugin is enabled, the briefing appends
+  a news section. With enough user facts (≥ `news.personalization.min_facts`, default 5),
+  articles are ranked by cosine similarity against a snapshot of the user's interest
+  vector built from stored facts and active goal titles. The section is split into two
+  clearly labelled buckets:
 
-The briefing is intentionally minimal. It surfaces what needs attention, not a summary
-of everything Ze knows.
+  ```
+  📰 For you (based on your interests):
+    • Article title (source)
+
+  🔭 Outside your usual:
+    • Article title (source)
+  ```
+
+  The discovery bucket (`explore_ratio`, default 20%) is ranked by recency, not by
+  interest score, so the user always sees genuinely fresh off-profile content. Below
+  the fact threshold, or when personalization is disabled, the section falls back to
+  a plain recency-ordered list under `📰 Headlines:`.
+
+The briefing is deduplicated — it will not fire if one was already sent within the past
+20 hours.
 
 ---
 
@@ -246,6 +264,23 @@ For each stuck goal, Ze pushes a Telegram alert describing the blockage with **R
 
 ---
 
+## News fetch (every 30 minutes)
+
+**Module:** `ze_news/jobs/fetch.py`  
+**Config:** `news.fetch_schedule` in `config/config.yaml`
+
+When the `ze-news` plugin is loaded, a fetch job runs on a configurable cron (default
+`*/30 * * * *`). For each enabled source in `news.sources`, it fetches the RSS feed,
+embeds each new article title + summary using the shared
+`paraphrase-multilingual-MiniLM-L12-v2` model, and upserts into the `news_articles`
+table. Duplicate URLs are skipped. Old articles are pruned after `news.retention_days`
+(default: 7 days).
+
+Sources are tagged at configuration time (e.g. `global`, `local`, `tech`, `pt`). Tags
+are used for filtering by the `get_headlines` tool and the morning briefing.
+
+---
+
 ## Full schedule at a glance
 
 | Time (UTC) | Job | Module |
@@ -254,12 +289,13 @@ For each stuck goal, Ze pushes a Telegram alert describing the blockage with **R
 | 3:00 AM daily | Contacts consolidation (dedup + merge) | `ze_personal/contacts/consolidator.py` |
 | 7:00 AM Sun | Weekly insight generation | `ze/jobs/insights.py` |
 | 7:45 AM daily | Calendar sync + reminder scheduling | `ze/jobs/calendar.py` |
-| 8:00 AM daily | Morning briefing | `ze/jobs/briefing.py` |
+| 8:00 AM daily | Morning briefing (with personalised headlines) | `ze/jobs/briefing.py` |
 | 8:30 AM daily | Contact review suggestions | `ze/jobs/contacts.py` |
 | 6:00 PM Sun | Weekly goal narrative | `ze/jobs/goal_narrative.py` |
 | 7:00 PM Sun | Weekly goal suggestions | `ze/jobs/goal_suggestion.py` |
 | 9:00 AM Tue | Stuck goal detection | `ze/jobs/stuck_goals.py` |
 | Every 15 min | Goal advance sweep | `ze_personal/goals/executor.py` |
+| Every 30 min | News article fetch + embed | `ze_news/jobs/fetch.py` |
 | Immediate | Workflow failure alerts | `ze_core/proactive/notifier.py` |
 | Immediate | Calendar event reminders (when they fire) | `ze/jobs/calendar.py` |
 | Immediate | Goal verification gates + milestone progress | `ze_core/proactive/notifier.py` |

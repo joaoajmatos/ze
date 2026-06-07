@@ -122,6 +122,7 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `email` | Gmail API (read, draft, send) | `ze` | Haiku |
 | `reminders` | NL time parsing, APScheduler firing | `ze` | Haiku |
 | `prospecting` | Browser extraction, outreach drafting | `ze` | Full |
+| `news` | `get_headlines` (personalised), `search_news` (semantic) | `ze_news` | Mini |
 | `workflow` | APScheduler, multi-step plan execution | `ze_personal` | Full |
 | `goals` | Goal lifecycle (create, status, steer, pause, resume, abandon) | `ze_personal` | Full |
 

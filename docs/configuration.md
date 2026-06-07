@@ -209,6 +209,56 @@ proactive:
 
 Disable any proactive feature by setting `enabled: false` or toggling the relevant flag.
 
+### `news:`
+
+Controls the `ze-news` plugin: RSS ingestion, personalisation, and briefing integration.
+The plugin is loaded when `news.enabled: true` and at least one source is configured.
+
+```yaml
+news:
+  enabled: true
+  fetch_schedule: "*/30 * * * *"   # Cron for the RSS fetch job (default: every 30 min)
+  retention_days: 7                 # Hard-delete articles older than N days
+  model: "openai/gpt-4o-mini"      # Model used by the news agent
+  briefing_limit: 8                 # Total headlines in the morning briefing
+
+  personalization:
+    enabled: true
+    explore_ratio: 0.2             # Fraction of results reserved for off-profile discovery
+    candidate_multiplier: 3        # Over-fetch multiplier before exclusion filtering (limit * 3)
+    briefing_limit: 8              # Total articles in the briefing (overrides news.briefing_limit)
+    min_facts: 5                   # Min user facts required before scoring; below this → recency fallback
+
+  sources:
+    - key: bbc_world
+      type: rss
+      url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+      tags: [global, general]
+```
+
+**`personalization.explore_ratio`** — `0.0` = fully interest-ranked (filter bubble, not
+recommended). `1.0` = all discovery, equivalent to plain recency. Default `0.2` means
+one in five briefing headlines is deliberately off-profile.
+
+**`personalization.min_facts`** — Below this threshold Ze doesn't have enough signal
+to rank meaningfully; cosine similarities over 1–3 facts are noisy. The briefing falls
+back to plain recency ordering and labels the section `📰 Headlines:` instead of
+`📰 For you (based on your interests):`.
+
+**`briefing_limit`** must be ≥ 8 for the 80/20 split to produce at least 2 discovery
+articles. At `limit=5`, `ceil(0.2 × 5) = 1` — a single discovery article is not
+meaningful serendipity.
+
+**Source tags** are arbitrary strings. The `get_headlines` tool and the briefing
+both accept a `tags` filter. Useful conventions already in use: `global`, `local`,
+`tech`, `pt`, `leiria`, `hacker-news`.
+
+**Preference signals** require no new UI. When the user says *"Ze, I don't care about
+football"* in conversation, memory stores `UserFact(key="not interested in", value="football")`.
+On the next `_build_personalization_ctx()` call, "football" appears in `exclusions` and is
+filtered from both buckets using word-boundary regex (so "sport" won't falsely exclude
+articles about "transport").
+
 ### `agents:`
 
 Per-agent configuration. Each agent block controls:
