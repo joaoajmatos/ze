@@ -11,7 +11,10 @@ from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
 from ze_personal.goals.types import Goal, GoalStatus, MilestoneStatus
 from ze_core.interface.types import Action, Notification
+from ze_core.logging import get_logger
 from ze_core.proactive.notifier import ProactiveNotifier
+
+log = get_logger(__name__)
 
 
 @tool(access=ToolAccess.WRITE, description="Redirect a running goal with new instructions. Ze will finish its current step and then replan the remaining milestones incorporating your direction.")
@@ -97,7 +100,17 @@ async def create_goal(
     )
 
     try:
-        milestones, gates = await planner.plan(goal)
+        prior_work = await store.list_completed_milestone_summaries(
+            days=90,
+            limit=20,
+            exclude_goal_id=None,
+        )
+    except Exception as exc:
+        log.warning("goal_prior_work_query_failed", error=str(exc))
+        prior_work = []
+
+    try:
+        milestones, gates = await planner.plan(goal, prior_work=prior_work or None)
     except GoalPlanError as exc:
         return {"error": f"Couldn't plan the goal: {exc}"}
 
