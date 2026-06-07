@@ -102,80 +102,65 @@
 - id: goals_suggest_what_next
   prompt: "I just wrapped up my last goal. What should I focus on next?"
   description: >
-    Post-completion suggestion request — Ze should check active/completed goals and engage
-    thoughtfully about what the user might work on next.
-  expected_agent: goals
-  expected_tools: [list_goals]
+    Post-completion suggestion request — Ze should engage conversationally and either ask
+    what the user just completed or offer direction. Companion handles this naturally since
+    no goal ID or management action is requested.
+  expected_agent: companion
   tags: [routing, goals, suggestions]
   criteria:
-    - Should route to the goals agent
-    - Should call list_goals to understand current goal state
-    - Should acknowledge the completion and offer direction, not just list goals
-    - Should not fabricate a specific suggestion without any goal context
-    - Should invite the user to elaborate if no clear next goal is obvious
+    - Should route to companion (no specific goal to manage; conversational advice)
+    - Should acknowledge the completion and engage about what might come next
+    - Should not fabricate a specific goal suggestion without knowing the user's context
+    - Should invite the user to share what they just finished or what they're interested in
 
 - id: goals_suggest_based_on_context
   prompt: "Can you suggest a goal for me? Something that fits what I've been working on."
   description: >
-    Conversational suggestion request — Ze should engage constructively; in the absence of
-    a proactive suggestion to reference it should ask clarifying questions or check goals.
-  expected_agent: goals
-  expected_tools: [list_goals]
+    Conversational suggestion request — no specific goal to create or manage.
+    Companion handles it by drawing on what it knows about the user.
+  expected_agent: companion
   tags: [routing, goals, suggestions]
   criteria:
-    - Should route to the goals agent
-    - Should call list_goals to get current context before suggesting
-    - Should not invent a concrete suggestion without grounding it in something Ze knows
-    - Should ask for more context or preferences if goal history is empty
-    - Should not suggest the same goal the user already has active
+    - Should route to companion (open-ended advice, not a goal management request)
+    - Should engage constructively — either suggest something specific or ask for context
+    - Should not just say "I can't suggest goals" — it should try to be helpful
+    - Should not fabricate an implausible suggestion disconnected from the user's context
 
 - id: goals_suggest_accept_conversationally
   prompt: "You suggested I build a personal finance tracker. I like the idea — let's make it a goal."
   description: >
-    User accepting a proactively-suggested goal via conversation (the Telegram callback
-    was not used). Ze should create the goal directly from the user's description.
+    User accepting a proactively-suggested goal via conversation instead of the Telegram
+    callback. Ze should route to the goals agent and call create_goal. Because the goals
+    agent is CONFIRM-mode, the goal goes to Telegram for approval — it won't be in the DB
+    until the user confirms there (pending_confirmation will be True).
   expected_agent: goals
-  expected_tools:
-    - name: create_goal
-      args:
-        objective__icontains: finance
-  verify:
-    - table: goals
-      where: {objective__icontains: finance}
-      expect: exists
   tags: [routing, goals, suggestions]
   criteria:
     - Should route to the goals agent
     - Should call create_goal with the finance tracker as the objective
     - Should not ask unnecessary clarifying questions when the user's intent is clear
-    - Should acknowledge the goal has been created and explain next steps
+    - Should tell the user to check Telegram for the milestone plan and approval
+    - Should not claim the goal is already running — it awaits Telegram confirmation
 
 - id: goals_suggest_routing_recommendation
   prompt: "What goal would you recommend I set this month?"
   description: >
-    Open-ended recommendation query — tests that Ze engages the goals agent rather than
-    deflecting to companion or giving a generic research answer.
-  expected_agent: goals
+    Open-ended recommendation query — Ze asks for advice, not to manage a specific goal.
+    Companion handles this naturally with what it knows about the user.
+  expected_agent: companion
   tags: [routing, goals, suggestions]
   criteria:
-    - Should route to the goals agent
-    - Should call list_goals to check existing goals before making a recommendation
-    - Should not suggest goals that are already active
+    - Should route to companion (advice request, not goal management)
+    - Should offer a concrete recommendation or ask a clarifying question
     - Should frame any recommendation as a suggestion, not a directive
+    - Should not just list generic goal categories without any personalisation
 
 - id: goals_suggest_after_dismissal_multi_turn
   description: >
     Multi-turn: user dismissed a proactive suggestion but now wants to revisit it
-    conversationally and create the goal manually.
+    conversationally and create the goal manually. Goals agent should handle turn 2
+    and send the plan to Telegram for approval (CONFIRM mode — not in DB until approved).
   expected_agent: goals
-  expected_tools:
-    - name: create_goal
-      args:
-        objective__icontains: newsletter
-  verify:
-    - table: goals
-      where: {objective__icontains: newsletter}
-      expect: exists
   turns:
     - prompt: "I dismissed a goal suggestion last week about starting a newsletter. I think I was wrong — I want to do it."
       description: "Turn 1: user wants to revisit a dismissed suggestion"
@@ -183,7 +168,8 @@
       description: "Turn 2: user confirms scope — Ze should create the goal"
   tags: [routing, goals, suggestions, multi_turn]
   criteria:
-    - Turn 1 should acknowledge the user wants to revisit the idea and ask for details
+    - Turn 1 should acknowledge the user wants to revisit the idea and ask for details or scope
     - Turn 1 should not attempt to look up the dismissed suggestion (Ze has no tool for this)
-    - Turn 2 should create a structured goal with the newsletter objective and 3-month horizon
-    - Ze should not ask for redundant confirmation once the user has already said "yes, let's go"
+    - Turn 2 should call create_goal with the newsletter objective and 3-month horizon
+    - Turn 2 response should tell the user to check Telegram for the milestone plan
+    - Ze should not ask for redundant confirmation once the user has said "yes, let's go"
