@@ -36,9 +36,10 @@ async def test_upsert_new_article():
     conn.execute.return_value = "INSERT 0 1"
 
     article = _make_article()
-    count = await store.upsert([article])
+    new_articles = await store.upsert([article])
 
-    assert count == 1
+    assert len(new_articles) == 1
+    assert new_articles[0].url == article.url
     conn.execute.assert_called_once()
 
 
@@ -46,14 +47,14 @@ async def test_upsert_duplicate_skipped():
     store, conn = _make_store()
     conn.execute.return_value = "INSERT 0 0"
 
-    count = await store.upsert([_make_article()])
-    assert count == 0
+    new_articles = await store.upsert([_make_article()])
+    assert new_articles == []
 
 
 async def test_upsert_empty_list():
     store, conn = _make_store()
-    count = await store.upsert([])
-    assert count == 0
+    new_articles = await store.upsert([])
+    assert new_articles == []
     conn.execute.assert_not_called()
 
 

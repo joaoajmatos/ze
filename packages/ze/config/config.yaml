@@ -61,6 +61,12 @@ news:
     candidate_multiplier: 3
     briefing_limit: 8
     min_facts: 5
+  credibility:
+    enabled: true
+    llm_scoring: true
+    model: "openai/gpt-4o-mini"
+    flag_in_briefing: true
+    briefing_summary: true
   sources:
     - key: bbc_world
       type: rss

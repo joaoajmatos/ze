@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 import re
 from datetime import datetime, timezone
@@ -8,7 +9,13 @@ import asyncpg
 from sentence_transformers import SentenceTransformer
 
 from ze_core.logging import get_logger
-from ze_news.types import Article, PersonalizationContext
+from ze_news.types import (
+    Article,
+    CredibilityFlag,
+    CredibilityReport,
+    FLAG_CONFIDENCE,
+    PersonalizationContext,
+)
 
 log = get_logger(__name__)
 
@@ -20,7 +27,61 @@ def _to_pgvector(embedding: object) -> str:
     return "[" + ",".join(str(v) for v in vals) + "]"
 
 
+def _deserialize_credibility(raw: str | None) -> CredibilityReport | None:
+    if raw is None:
+        return None
+    try:
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        flags = [
+            CredibilityFlag(
+                type=f["type"],
+                label=f.get("label", f["type"]),
+                detail=f.get("detail", ""),
+                source=f.get("source", "llm"),
+                confidence=f.get("confidence", FLAG_CONFIDENCE.get(f["type"], "low")),
+                lang=f.get("lang", "any"),
+            )
+            for f in data.get("flags", [])
+        ]
+        analyzed_at = None
+        if data.get("analyzed_at"):
+            try:
+                analyzed_at = datetime.fromisoformat(data["analyzed_at"].replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                pass
+        return CredibilityReport(
+            flags=flags,
+            status=data.get("status", "complete"),
+            analyzed_at=analyzed_at,
+            model=data.get("model"),
+            prompt_version=data.get("prompt_version"),
+        )
+    except Exception:
+        return None
+
+
+def _serialize_credibility(report: CredibilityReport) -> str:
+    return json.dumps({
+        "flags": [
+            {
+                "type": f.type,
+                "label": f.label,
+                "detail": f.detail,
+                "source": f.source,
+                "confidence": f.confidence,
+                "lang": f.lang,
+            }
+            for f in report.flags
+        ],
+        "status": report.status,
+        "analyzed_at": report.analyzed_at.isoformat() if report.analyzed_at else None,
+        "model": report.model,
+        "prompt_version": report.prompt_version,
+    })
+
+
 def _row_to_article(row: asyncpg.Record) -> Article:
+    credibility_raw = row["credibility_analysis"] if "credibility_analysis" in row.keys() else None
     return Article(
         url=row["url"],
         source_key=row["source_key"],
@@ -28,6 +89,7 @@ def _row_to_article(row: asyncpg.Record) -> Article:
         summary=row["summary"],
         published_at=row["published_at"],
         tags=list(row["tags"] or []),
+        credibility=_deserialize_credibility(credibility_raw),
     )
 
 
@@ -36,11 +98,12 @@ class NewsStore:
         self._pool = pool
         self._embedder = embedder
 
-    async def upsert(self, articles: list[Article]) -> int:
+    async def upsert(self, articles: list[Article]) -> list[Article]:
+        """Upsert articles. Returns the list of newly inserted articles."""
         if not articles:
-            return 0
+            return []
 
-        new_count = 0
+        new_articles: list[Article] = []
         async with self._pool.acquire() as conn:
             for article in articles:
                 text = f"{article.title}. {article.summary}"
@@ -63,9 +126,22 @@ class NewsStore:
                     vec,
                 )
                 if status == "INSERT 0 1":
-                    new_count += 1
+                    new_articles.append(article)
 
-        return new_count
+        return new_articles
+
+    async def update_credibility(self, url: str, report: CredibilityReport) -> None:
+        """Write a CredibilityReport to news_articles.credibility_analysis."""
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE news_articles
+                   SET credibility_analysis = $2::jsonb
+                 WHERE url = $1
+                """,
+                url,
+                _serialize_credibility(report),
+            )
 
     async def search(
         self,
@@ -76,29 +152,25 @@ class NewsStore:
         embedding = self._embedder.encode(query)
         vec = _to_pgvector(embedding)
 
-        tag_filter = "AND tags && $4::text[]" if tags else ""
-        params: list = [vec, limit]
         if tags:
-            params.append(tags)
-
-        sql = f"""
-            SELECT url, source_key, title, summary, published_at, tags
-            FROM news_articles
-            WHERE TRUE {tag_filter}
-            ORDER BY embedding <=> $1::vector, published_at DESC
-            LIMIT $2
-        """
-        if tags:
-            sql = f"""
-                SELECT url, source_key, title, summary, published_at, tags
+            sql = """
+                SELECT url, source_key, title, summary, published_at, tags, credibility_analysis
                 FROM news_articles
                 WHERE tags && $3::text[]
                 ORDER BY embedding <=> $1::vector, published_at DESC
                 LIMIT $2
             """
-
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(sql, vec, limit, *(params[2:]))
+            async with self._pool.acquire() as conn:
+                rows = await conn.fetch(sql, vec, limit, tags)
+        else:
+            sql = """
+                SELECT url, source_key, title, summary, published_at, tags, credibility_analysis
+                FROM news_articles
+                ORDER BY embedding <=> $1::vector, published_at DESC
+                LIMIT $2
+            """
+            async with self._pool.acquire() as conn:
+                rows = await conn.fetch(sql, vec, limit)
         return [_row_to_article(r) for r in rows]
 
     async def get_recent(
@@ -108,7 +180,7 @@ class NewsStore:
     ) -> list[Article]:
         if tags:
             sql = """
-                SELECT url, source_key, title, summary, published_at, tags
+                SELECT url, source_key, title, summary, published_at, tags, credibility_analysis
                 FROM news_articles
                 WHERE tags && $2::text[]
                 ORDER BY published_at DESC
@@ -118,7 +190,7 @@ class NewsStore:
                 rows = await conn.fetch(sql, limit, tags)
         else:
             sql = """
-                SELECT url, source_key, title, summary, published_at, tags
+                SELECT url, source_key, title, summary, published_at, tags, credibility_analysis
                 FROM news_articles
                 ORDER BY published_at DESC
                 LIMIT $1

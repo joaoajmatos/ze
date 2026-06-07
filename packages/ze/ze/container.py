@@ -374,10 +374,15 @@ async def build_container(settings: Settings) -> ZeContainer:
         ]
         news_registry = build_registry(news_source_configs)
         news_store = NewsStore(pool=pool, embedder=embedder)
+        news_credibility_cfg = news_cfg.get("credibility", {})
         news_fetch_job = NewsFetchJob(
             registry=news_registry,
             store=news_store,
             retention_days=int(news_cfg.get("retention_days", 7)),
+            client=openrouter_client if news_credibility_cfg.get("enabled", False) else None,
+            credibility_enabled=news_credibility_cfg.get("enabled", False),
+            credibility_llm_enabled=news_credibility_cfg.get("llm_scoring", True),
+            credibility_model=news_credibility_cfg.get("model", "openai/gpt-4o-mini"),
         )
         news_plugin = NewsPlugin(registry=news_registry, store=news_store, fetch_job=news_fetch_job)
         plugins.append(news_plugin)

@@ -45,6 +45,9 @@ class MorningBriefing:
         self._explore_ratio = float(news_personalization_cfg.get("explore_ratio", 0.2))
         self._personalization_enabled = news_personalization_cfg.get("enabled", True)
         self._min_facts = int(news_personalization_cfg.get("min_facts", 5))
+        news_credibility_cfg = news_cfg.get("credibility", {})
+        self._credibility_flag_in_briefing = news_credibility_cfg.get("flag_in_briefing", True)
+        self._credibility_briefing_summary = news_credibility_cfg.get("briefing_summary", True)
 
     async def run(self) -> None:
         set_flow_context("morning_briefing")
@@ -128,8 +131,20 @@ class MorningBriefing:
             header = "📰 For you (based on your interests):" if personalized else "📰 Headlines:"
             lines.append("")
             lines.append(header)
+            flagged_count = 0
             for article in relevant:
-                lines.append(f"  • {article.title} ({article.source_key})")
+                line = f"  • {article.title} ({article.source_key})"
+                if self._credibility_flag_in_briefing and article.credibility and article.credibility.is_briefing_worthy:
+                    flag_labels = ", ".join(f.label.lower() for f in article.credibility.high_confidence_flags)
+                    line += f"  🔍 {flag_labels}"
+                    flagged_count += 1
+                lines.append(line)
+            if (
+                self._credibility_briefing_summary
+                and flagged_count > 0
+                and flagged_count < len(relevant) * 0.5
+            ):
+                lines.append(f"  ({flagged_count} of {len(relevant)} articles flagged for potentially misleading patterns)")
 
         if discovery:
             lines.append("")

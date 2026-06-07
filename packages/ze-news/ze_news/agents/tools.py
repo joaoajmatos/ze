@@ -61,10 +61,25 @@ async def get_headlines(
 
 
 def _article_dict(a) -> dict:
-    return {
+    result: dict = {
         "title": a.title,
         "url": a.url,
         "source": a.source_key,
         "published_at": a.published_at.isoformat(),
         "tags": a.tags,
+        "credibility": None,
     }
+    if a.credibility is not None:
+        result["credibility"] = {
+            "flags": [
+                {
+                    "type": f.type,
+                    "label": f.label,
+                    "detail": f.detail,
+                    "confidence": f.confidence,
+                }
+                for f in a.credibility.flags
+            ],
+            "status": a.credibility.status,
+        }
+    return result
