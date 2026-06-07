@@ -2,7 +2,7 @@
 
 > **Package:** `ze-app` (new Flutter package)
 > **Phase:** 43
-> **Status:** Pending
+> **Status:** Done
 > **Depends on:** Phase 40 ([40-notifications.md](40-notifications.md)), Phase 41 ([41-component-descriptors.md](41-component-descriptors.md)), Phase 42 ([42-native-ui-foundation.md](42-native-ui-foundation.md))
 
 ---
@@ -11,24 +11,24 @@
 
 | Feature | Status |
 |---------|--------|
-| Package scaffold + dependencies | 🔲 Pending |
-| `ze-app://` deep link scheme registration | 🔲 Pending |
-| WebSocket client + reconnect | 🔲 Pending |
-| Message store (local session cache + REST history) | 🔲 Pending |
-| Onboarding flow | 🔲 Pending |
-| Bottom navigation + More panel | 🔲 Pending |
-| Chat screen + states (connecting/disconnected/empty) | 🔲 Pending |
-| Contextual overlay (FAB + Cmd+K) | 🔲 Pending |
-| `RefreshFrame` handler + Riverpod invalidation | 🔲 Pending |
-| Goals screen | 🔲 Pending |
-| Reminders screen | 🔲 Pending |
-| Contacts screen | 🔲 Pending |
-| Costs screen | 🔲 Pending |
-| News / Finance / Legal placeholder screens | 🔲 Pending |
-| Component renderer registry | 🔲 Pending |
-| All 8 component widgets | 🔲 Pending |
-| Settings screen | 🔲 Pending |
-| `make generate-components` Dart output | 🔲 Pending |
+| Package scaffold + dependencies | ✅ Done |
+| `ze-app://` deep link scheme registration | ✅ Done |
+| WebSocket client + reconnect | ✅ Done |
+| Message store (local session cache + REST history) | ✅ Done |
+| Onboarding flow | ✅ Done |
+| Bottom navigation + More panel | ✅ Done |
+| Chat screen + states (connecting/disconnected/empty) | ✅ Done |
+| Contextual overlay (FAB + Cmd+K) | ✅ Done |
+| `RefreshFrame` handler + Riverpod invalidation | ✅ Done |
+| Goals screen | ✅ Done |
+| Reminders screen | ✅ Done |
+| Contacts screen | ✅ Done |
+| Costs screen | ✅ Done |
+| News / Finance / Legal placeholder screens | ✅ Done |
+| Component renderer registry | ✅ Done |
+| All 8 component widgets | ✅ Done |
+| Settings screen | ✅ Done |
+| `make generate-components` Dart output | ✅ Done |
 
 ---
 

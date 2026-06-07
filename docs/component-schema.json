@@ -1,0 +1,355 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ze Component Descriptors",
+  "$defs": {
+    "ListItem": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "subtext": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "TimelineEvent": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "time",
+        "title"
+      ]
+    },
+    "ProgressStep": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ]
+    },
+    "ConfirmAction": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ]
+    },
+    "FormField": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "field_type": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "options": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ]
+    },
+    "TableComponent": {
+      "type": "object",
+      "properties": {
+        "headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "headers",
+        "rows"
+      ]
+    },
+    "MetricComponent": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "trend": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ]
+    },
+    "ListComponent": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "subtext": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ]
+          }
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "TimelineComponent": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "time",
+              "title"
+            ]
+          }
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "events"
+      ]
+    },
+    "ProgressComponent": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label"
+            ]
+          }
+        }
+      },
+      "required": [
+        "title",
+        "steps"
+      ]
+    },
+    "ConfirmComponent": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "style": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        }
+      },
+      "required": [
+        "prompt",
+        "actions"
+      ]
+    },
+    "FormComponent": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "field_type": {
+                "type": "string"
+              },
+              "placeholder": {
+                "type": "string"
+              },
+              "options": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ]
+          }
+        }
+      },
+      "required": [
+        "title",
+        "fields"
+      ]
+    },
+    "CardComponent": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/TableComponent"
+    },
+    {
+      "$ref": "#/$defs/MetricComponent"
+    },
+    {
+      "$ref": "#/$defs/ListComponent"
+    },
+    {
+      "$ref": "#/$defs/TimelineComponent"
+    },
+    {
+      "$ref": "#/$defs/ProgressComponent"
+    },
+    {
+      "$ref": "#/$defs/ConfirmComponent"
+    },
+    {
+      "$ref": "#/$defs/FormComponent"
+    },
+    {
+      "$ref": "#/$defs/CardComponent"
+    }
+  ]
+}

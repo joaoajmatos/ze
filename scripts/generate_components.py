@@ -6,7 +6,7 @@ Usage:
 
 Outputs:
     docs/component-schema.json
-    packages/ze-flutter/lib/src/components/  (Dart files, if ze-flutter exists)
+    packages/ze-app/lib/src/components/  (Dart files, if ze-app exists)
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from ze_components.schema import export_json_schema
 from ze_components.types import COMPONENT_TYPES, SUB_ITEM_TYPES
 
 _DOCS_DIR = repo_root / "docs"
-_FLUTTER_DIR = repo_root / "packages" / "ze-flutter" / "lib" / "src" / "components"
+_FLUTTER_DIR = repo_root / "packages" / "ze-app" / "lib" / "src" / "components"
 
 _DART_TYPE_MAP = {
     "string": "String",
@@ -128,8 +128,8 @@ def main() -> None:
     schema_path.write_text(json.dumps(schema, indent=2))
     print(f"JSON schema → {schema_path}")
 
-    # Dart @freezed classes (only if ze-flutter package exists)
-    if _FLUTTER_DIR.parent.parent.parent.exists():
+    # Dart @freezed classes (only if ze-app package exists)
+    if _FLUTTER_DIR.parent.parent.parent.parent.exists():
         _FLUTTER_DIR.mkdir(parents=True, exist_ok=True)
         from ze_components.schema import _dataclass_schema
 
@@ -140,7 +140,7 @@ def main() -> None:
         _emit_dart_dispatcher(_FLUTTER_DIR)
         print(f"Dart classes → {_FLUTTER_DIR}")
     else:
-        print("ze-flutter not found — skipping Dart codegen")
+        print("ze-app not found — skipping Dart codegen")
 
 
 if __name__ == "__main__":
