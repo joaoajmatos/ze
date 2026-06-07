@@ -2,7 +2,7 @@
 
 > **Package:** `ze_personal` (types, store, planner, executor, tools)
 > **Phase:** 27
-> **Status:** Pending
+> **Status:** Done
 > **Depends on:** Phase 26 ([34-stuck-goal-detection.md](34-stuck-goal-detection.md))
 
 ---
@@ -11,16 +11,16 @@
 
 | Feature | Status |
 |---------|--------|
-| `PriorMilestoneOutput` type | 🔲 Pending |
-| `reuse_hint` field on `Milestone` | 🔲 Pending |
-| `GoalStore.list_completed_milestone_summaries()` | 🔲 Pending |
-| `GoalPlanner.plan()` cross-goal context injection | 🔲 Pending |
-| `GoalPlanner.replan_remaining()` cross-goal context injection | 🔲 Pending |
-| `_build_milestone_prompt` prior work section | 🔲 Pending |
-| `create_goal` tool queries and passes prior work | 🔲 Pending |
-| Executor replan paths query and pass prior work | 🔲 Pending |
-| Migration: `reuse_hint` column | 🔲 Pending |
-| Tests | 🔲 Pending |
+| `PriorMilestoneOutput` type | ✅ Done |
+| `reuse_hint` field on `Milestone` | ✅ Done |
+| `GoalStore.list_completed_milestone_summaries()` | ✅ Done |
+| `GoalPlanner.plan()` cross-goal context injection | ✅ Done |
+| `GoalPlanner.replan_remaining()` cross-goal context injection | ✅ Done |
+| `_build_milestone_prompt` prior work section | ✅ Done |
+| `create_goal` tool queries and passes prior work | ✅ Done |
+| Executor replan paths query and pass prior work | ✅ Done |
+| Migration: `reuse_hint` column | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 
