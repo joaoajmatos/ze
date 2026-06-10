@@ -71,6 +71,9 @@ def store():
     s.reset_consecutive_failures = AsyncMock()
     s.increment_consecutive_failures = AsyncMock(return_value=1)
     s.increment_replan_count = AsyncMock(return_value=1)
+    s.list_learnings = AsyncMock(return_value=[])
+    s.save_retrospective = AsyncMock()
+    s.list_completed_milestone_summaries = AsyncMock(return_value=[])
     return s
 
 
@@ -80,6 +83,9 @@ def planner():
     p.extract_learning = AsyncMock(return_value="Key insight.")
     p.replan_remaining = AsyncMock(return_value=([], []))
     p.synthesize_gate_narrative = AsyncMock(return_value="Work was completed successfully.")
+    p.synthesize_retrospective = AsyncMock(return_value="Goal completed successfully.")
+    p.promote_learnings = AsyncMock(return_value=[])
+    p.extract_procedure = AsyncMock(return_value=None)
     return p
 
 
@@ -514,6 +520,7 @@ async def test_completion_pushes_retrospective(executor, store, push, planner):
     goal = _goal()
     store.get_goal = AsyncMock(return_value=goal)
     store.list_milestones = AsyncMock(side_effect=[
+        [_milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)],  # stuck check
         [_milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)],  # pending check → none
         [_milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)],  # retrospective fetch
     ])
@@ -577,3 +584,98 @@ async def test_push_retrospective_still_pushes_when_save_retrospective_fails(exe
     push.assert_called_once()
     notif = push.call_args.args[0]
     assert "Accomplished the goal successfully." in notif.content
+
+
+# ── Task state sync ───────────────────────────────────────────────────────────
+
+@pytest.fixture
+def memory_store():
+    m = AsyncMock()
+    m.upsert_task_state = AsyncMock()
+    return m
+
+
+@pytest.fixture
+def executor_with_memory(store, planner, push, agent_getter, memory_store):
+    return GoalExecutor(
+        goal_store=store,
+        goal_planner=planner,
+        push=push,
+        agent_getter=agent_getter,
+        memory_store=memory_store,
+    )
+
+
+async def test_task_state_written_on_milestone_start(executor_with_memory, store, memory_store):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+
+    with patch("ze_personal.goals.executor.asyncio.create_task"):
+        await executor_with_memory.advance(goal.id)
+
+    memory_store.upsert_task_state.assert_called()
+    call_args = memory_store.upsert_task_state.call_args_list
+    statuses = [c.args[0].status for c in call_args]
+    assert "in_progress" in statuses
+
+
+async def test_task_state_written_as_completed_when_no_pending(executor_with_memory, store, memory_store, push, planner):
+    goal = _goal()
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[
+        _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
+    ])
+    store.list_learnings = AsyncMock(return_value=[])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    planner.synthesize_retrospective = AsyncMock(return_value="Done.")
+
+    await executor_with_memory.advance(goal.id)
+
+    memory_store.upsert_task_state.assert_called()
+    call_args = memory_store.upsert_task_state.call_args_list
+    statuses = [c.args[0].status for c in call_args]
+    assert "completed" in statuses
+
+
+async def test_task_state_written_as_blocked_on_double_failure(executor_with_memory, store, memory_store, push, planner):
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    store.increment_consecutive_failures = AsyncMock(return_value=2)
+    store.increment_replan_count = AsyncMock(return_value=2)
+
+    # Agent raises so milestone is skipped/failed
+    from ze_core.errors import GoalExecutionError
+    from ze_core.orchestration.types import AgentContext, AgentResult
+
+    failing_agent = AsyncMock()
+    failing_agent.run = AsyncMock(side_effect=GoalExecutionError("tool failed"))
+    executor_with_memory._get_agent = lambda name: failing_agent
+
+    with patch("ze_personal.goals.executor.asyncio.create_task"):
+        await executor_with_memory.advance(goal.id)
+
+    memory_store.upsert_task_state.assert_called()
+    call_args = memory_store.upsert_task_state.call_args_list
+    statuses = [c.args[0].status for c in call_args]
+    assert "blocked" in statuses
+
+
+async def test_task_state_sync_skipped_when_no_memory_store(executor, store, push, planner):
+    """The default executor fixture has no memory_store — no error should occur."""
+    goal = _goal()
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[
+        _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
+    ])
+    store.list_learnings = AsyncMock(return_value=[])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    planner.synthesize_retrospective = AsyncMock(return_value="Done.")
+
+    # Must not raise
+    await executor.advance(goal.id)

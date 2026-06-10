@@ -8,7 +8,8 @@ import pytest
 
 from ze_core.errors import GoalPlanError
 from ze_personal.goals.planner import GoalPlanner
-from ze_personal.goals.types import Goal, GoalStatus, MilestoneStatus, GateStatus
+from ze_personal.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus, GateStatus
+from uuid import uuid4
 
 
 def _make_goal(**kwargs) -> Goal:
@@ -19,6 +20,17 @@ def _make_goal(**kwargs) -> Goal:
         time_horizon="6 weeks",
     )
     return Goal(**{**defaults, **kwargs})
+
+
+def _milestone_obj(seq: int, title: str, status: MilestoneStatus) -> Milestone:
+    return Milestone(
+        id=uuid4(),
+        goal_id=uuid4(),
+        title=title,
+        description=f"Do {title}",
+        sequence=seq,
+        status=status,
+    )
 
 
 def _valid_plan_json(start_seq: int = 1) -> str:
@@ -120,3 +132,66 @@ async def test_plan_uses_learnings_in_prompt(planner, client):
     messages = call_kwargs.kwargs.get("messages") or call_kwargs.args[0]
     content = messages[0]["content"]
     assert "Previous attempt" in content
+
+
+# ── extract_procedure ─────────────────────────────────────────────────────────
+
+async def test_extract_procedure_returns_procedure(planner, client):
+    from ze_personal.goals.types import MilestoneStatus
+
+    procedure_json = json.dumps({
+        "name": "Discovery interview loop",
+        "trigger": "User wants to run discovery interviews",
+        "preconditions": ["Target list available"],
+        "steps": ["Research targets", "Draft outreach", "Send outreach"],
+        "success_criteria": ["All interviews completed"],
+    })
+    client.complete = AsyncMock(return_value=procedure_json)
+
+    goal = _make_goal()
+    milestones = [
+        _milestone_obj(1, "Research targets", MilestoneStatus.COMPLETED),
+        _milestone_obj(2, "Draft outreach", MilestoneStatus.COMPLETED),
+        _milestone_obj(3, "Send outreach", MilestoneStatus.COMPLETED),
+    ]
+
+    from ze_memory.types import Procedure
+    result = await planner.extract_procedure(goal, milestones)
+
+    assert result is not None
+    assert isinstance(result, Procedure)
+    assert result.name == "Discovery interview loop"
+    assert len(result.steps) == 3
+
+
+async def test_extract_procedure_returns_none_when_no_completed_milestones(planner, client):
+    from ze_personal.goals.types import MilestoneStatus
+
+    goal = _make_goal()
+    milestones = [_milestone_obj(1, "Pending step", MilestoneStatus.PENDING)]
+
+    result = await planner.extract_procedure(goal, milestones)
+    assert result is None
+    client.complete.assert_not_called()
+
+
+async def test_extract_procedure_returns_none_on_llm_failure(planner, client):
+    from ze_personal.goals.types import MilestoneStatus
+
+    client.complete = AsyncMock(side_effect=RuntimeError("LLM error"))
+    goal = _make_goal()
+    milestones = [_milestone_obj(1, "Step A", MilestoneStatus.COMPLETED)]
+
+    result = await planner.extract_procedure(goal, milestones)
+    assert result is None
+
+
+async def test_extract_procedure_returns_none_when_name_missing(planner, client):
+    from ze_personal.goals.types import MilestoneStatus
+
+    client.complete = AsyncMock(return_value=json.dumps({"steps": ["a", "b"]}))
+    goal = _make_goal()
+    milestones = [_milestone_obj(1, "Step A", MilestoneStatus.COMPLETED)]
+
+    result = await planner.extract_procedure(goal, milestones)
+    assert result is None

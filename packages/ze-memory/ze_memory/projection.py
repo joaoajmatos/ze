@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_memory.types import (
+    Entity,
     Episode,
     Event,
     Fact,
@@ -85,6 +86,10 @@ def events_from_rows(rows: list[Any]) -> list[Event]:
     return [_event_from_row(row) for row in rows]
 
 
+def entities_from_rows(rows: list[Any]) -> list[Entity]:
+    return [_entity_from_row(row) for row in rows]
+
+
 def token_estimate(ctx: MemoryContext) -> int:
     fact_tokens = sum(len(f.value) // 4 for f in ctx.facts)
     episode_tokens = sum(len(e.summary or e.response[:200]) // 4 for e in ctx.episodes)
@@ -149,6 +154,16 @@ def _event_from_row(row: Any) -> Event:
         summary=row.get("summary"),
         outcome=row.get("outcome"),
         source_episode_id=row.get("source_episode_id"),
+    )
+
+
+def _entity_from_row(row: Any) -> Entity:
+    return Entity(
+        id=row["id"],
+        entity_type=row["entity_type"],
+        canonical_name=row["canonical_name"],
+        aliases=_load_json(row["aliases"]),
+        attrs=_load_json(row["attrs"]),
     )
 
 

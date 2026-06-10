@@ -101,10 +101,12 @@ async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
     asyncio.create_task(store.record_step(execution_id, step_result))
 
     prior = list(state.get("workflow_step_results") or [])
+    next_idx = idx + 1
+    asyncio.create_task(_sync_workflow_task_state(config, state, steps, next_idx, "in_progress"))
     log.info("workflow_step_complete", step_index=idx, task=step.task[:60])
     return {
         "workflow_step_results": prior + [step_result],
-        "current_step_index": idx + 1,
+        "current_step_index": next_idx,
     }
 
 
@@ -138,6 +140,7 @@ async def workflow_synthesize(state: AgentState, config: RunnableConfig) -> dict
     if execution_id:
         asyncio.create_task(store.finish_execution(execution_id, "completed"))
 
+    asyncio.create_task(_sync_workflow_task_state(config, state, state.get("workflow_steps") or [], len(step_results), "completed"))
     log.info("workflow_complete", execution_id=str(execution_id), steps=len(step_results))
     return {"final_response": response}
 
@@ -159,6 +162,7 @@ async def workflow_failed(state: AgentState, config: RunnableConfig) -> dict:
     if execution_id:
         asyncio.create_task(store.finish_execution(execution_id, "failed", error=error_msg))
 
+    asyncio.create_task(_sync_workflow_task_state(config, state, state.get("workflow_steps") or [], -1, "blocked", blocked_by=[error_msg]))
     log.warning("workflow_failed", execution_id=str(execution_id), error=error_msg)
     return {"final_response": f"Workflow failed: {error_msg}"}
 
@@ -244,6 +248,40 @@ def _resolve_verify_model(config: RunnableConfig) -> str:
         else getattr(cfg, "config", {}).get("models", {})
     )
     return models.get("workflow_verify", MODEL_WORKFLOW_VERIFY)
+
+
+async def _sync_workflow_task_state(
+    config: RunnableConfig,
+    state: AgentState,
+    steps: list[WorkflowStep],
+    next_idx: int,
+    status: str,
+    blocked_by: list[str] | None = None,
+) -> None:
+    """Write workflow execution progress to memory_task_state if a memory store is wired."""
+    memory_store = config["configurable"].get("memory_store")
+    if memory_store is None:
+        return
+    workflow_id = state.get("workflow_id")
+    if workflow_id is None:
+        return
+    from ze_memory.types import TaskState
+    from uuid import UUID
+    try:
+        open_steps = [s.task for s in steps[next_idx:]] if next_idx >= 0 else []
+        next_action = open_steps[0] if open_steps else None
+        await memory_store.upsert_task_state(TaskState(
+            id=None,
+            task_id=UUID(str(workflow_id)) if not isinstance(workflow_id, UUID) else workflow_id,
+            goal_id=None,
+            status=status,
+            open_steps=open_steps,
+            blocked_by=blocked_by or [],
+            last_action=steps[next_idx - 1].task if next_idx > 0 and next_idx - 1 < len(steps) else None,
+            next_action=next_action,
+        ))
+    except Exception as exc:
+        log.warning("workflow_task_state_sync_failed", workflow_id=str(workflow_id), error=str(exc))
 
 
 def _fail_step(

@@ -38,7 +38,7 @@ def _to_list(embedding: Any) -> str:
 # ── orchestration-level policies ──────────────────────────────────────────────
 
 class CompanionPolicy:
-    """Companion agent: facts + recent episodes + profile facets."""
+    """Companion agent: facts + recent episodes + profile facets + entities."""
 
     async def retrieve(self, request: RetrievalRequest, store: Any) -> MemoryContext:
         emb = _to_list(request.query_embedding)
@@ -74,13 +74,28 @@ class CompanionPolicy:
                 "SELECT key, value, stability, confidence, source_refs, updated_at"
                 " FROM memory_profile_facets ORDER BY confidence DESC LIMIT 30"
             )
+            entity_rows = await conn.fetch(
+                """
+                SELECT id, entity_type, canonical_name, aliases, attrs
+                FROM memory_entities
+                ORDER BY
+                  CASE WHEN embedding IS NOT NULL
+                       THEN embedding <=> $1::vector ELSE 1 END ASC,
+                  updated_at DESC
+                LIMIT 20
+                """,
+                emb,
+            )
 
-        from ze_memory.projection import budget_episodes, budget_facts, facets_from_rows, token_estimate
+        from ze_memory.projection import (
+            budget_episodes, budget_facts, entities_from_rows, facets_from_rows, token_estimate,
+        )
 
         facts = budget_facts(fact_rows, DEFAULT_FACT_BUDGET_TOKENS)
         episodes = budget_episodes(episode_rows, DEFAULT_EPISODE_BUDGET_TOKENS)
         profile = facets_from_rows(profile_rows, DEFAULT_PROFILE_BUDGET_TOKENS)
-        ctx = MemoryContext(facts=facts, episodes=episodes, profile=profile)
+        entities = entities_from_rows(entity_rows)
+        ctx = MemoryContext(facts=facts, episodes=episodes, profile=profile, entities=entities)
         ctx.token_estimate = token_estimate(ctx)
         return ctx
 
@@ -257,7 +272,7 @@ class RemindersPolicy:
 
 
 class EmailPolicy:
-    """Email agent: facts + recent episodes for conversation context."""
+    """Email agent: facts + recent episodes + entities for correspondence context."""
 
     async def retrieve(self, request: RetrievalRequest, store: Any) -> MemoryContext:
         emb = _to_list(request.query_embedding)
@@ -285,12 +300,26 @@ class EmailPolicy:
                 """,
                 emb,
             )
+            entity_rows = await conn.fetch(
+                """
+                SELECT id, entity_type, canonical_name, aliases, attrs
+                FROM memory_entities
+                WHERE entity_type = 'person'
+                ORDER BY
+                  CASE WHEN embedding IS NOT NULL
+                       THEN embedding <=> $1::vector ELSE 1 END ASC,
+                  updated_at DESC
+                LIMIT 10
+                """,
+                emb,
+            )
 
-        from ze_memory.projection import budget_episodes, budget_facts, token_estimate
+        from ze_memory.projection import budget_episodes, budget_facts, entities_from_rows, token_estimate
 
         facts = budget_facts(fact_rows, DEFAULT_FACT_BUDGET_TOKENS)
         episodes = budget_episodes(episode_rows, DEFAULT_EPISODE_BUDGET_TOKENS)
-        ctx = MemoryContext(facts=facts, episodes=episodes)
+        entities = entities_from_rows(entity_rows)
+        ctx = MemoryContext(facts=facts, episodes=episodes, entities=entities)
         ctx.token_estimate = token_estimate(ctx)
         return ctx
 
@@ -473,13 +502,20 @@ class MemoryUIPolicy:
                 "SELECT key, value, stability, confidence, source_refs, updated_at"
                 " FROM memory_profile_facets ORDER BY confidence DESC"
             )
+            entity_rows = await conn.fetch(
+                "SELECT id, entity_type, canonical_name, aliases, attrs"
+                " FROM memory_entities ORDER BY updated_at DESC LIMIT 50"
+            )
 
-        from ze_memory.projection import budget_episodes, budget_facts, facets_from_rows, token_estimate
+        from ze_memory.projection import (
+            budget_episodes, budget_facts, entities_from_rows, facets_from_rows, token_estimate,
+        )
 
         facts = budget_facts(fact_rows, DEFAULT_FACT_BUDGET_TOKENS * 3)
         episodes = budget_episodes(episode_rows, DEFAULT_EPISODE_BUDGET_TOKENS)
         profile = facets_from_rows(profile_rows, DEFAULT_PROFILE_BUDGET_TOKENS)
-        ctx = MemoryContext(facts=facts, episodes=episodes, profile=profile)
+        entities = entities_from_rows(entity_rows)
+        ctx = MemoryContext(facts=facts, episodes=episodes, profile=profile, entities=entities)
         ctx.token_estimate = token_estimate(ctx)
         return ctx
 

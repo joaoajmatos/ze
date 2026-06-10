@@ -713,3 +713,83 @@ class TestTruncateMessages:
         original_len = len(messages)
         _truncate_messages(messages, max_tokens=1)
         assert len(messages) == original_len
+
+
+# ── _fetch_tool_executor_context / ToolExecutorPolicy ─────────────────────────
+
+class TestToolExecutorContextFetch:
+    """agentic_loop prepends memory context to system when ctx.memory_store is set."""
+
+    def _make_ctx_with_memory(self, memory_store=None):
+        ctx = AgentContext(
+            session_id="s1",
+            prompt="Do the task",
+            intent="execute",
+            gate_decision=GateDecision.EXECUTE,
+        )
+        ctx.memory_store = memory_store
+        return ctx
+
+    async def test_no_prepend_when_memory_store_is_none(self):
+        a = _agent()
+        client = AsyncMock()
+        client.complete_with_tools = AsyncMock(return_value=("done", None))
+
+        captured_systems = []
+
+        async def _capture(**kwargs):
+            captured_systems.append(kwargs.get("system", ""))
+            return "done", None
+
+        client.complete_with_tools = _capture
+
+        ctx = self._make_ctx_with_memory(memory_store=None)
+        await a.agentic_loop(ctx, client, [{"role": "user", "content": "hi"}], system="BASE")
+
+        assert captured_systems[0] == "BASE"
+
+    async def test_prepends_facts_when_memory_store_set(self):
+        from ze_memory.types import Fact, MemoryContext
+
+        a = _agent()
+
+        memory_ctx = MemoryContext(
+            facts=[Fact(predicate="preferred_language", value="Python", confidence=1.0)],
+        )
+        memory_store = AsyncMock()
+        memory_store.retrieve = AsyncMock(return_value=memory_ctx)
+
+        captured_systems = []
+
+        async def _capture(**kwargs):
+            captured_systems.append(kwargs.get("system", ""))
+            return "done", None
+
+        client = AsyncMock()
+        client.complete_with_tools = _capture
+
+        ctx = self._make_ctx_with_memory(memory_store=memory_store)
+
+        with patch("ze_core.embeddings.get_embedder") as mock_embedder:
+            mock_embedder.return_value.encode = MagicMock(return_value=[0.1] * 384)
+            await a.agentic_loop(ctx, client, [{"role": "user", "content": "hi"}], system="BASE")
+
+        assert len(captured_systems) > 0
+        assert "preferred_language" in captured_systems[0] or "Relevant facts" in captured_systems[0]
+
+    async def test_memory_store_failure_does_not_abort_loop(self):
+        a = _agent()
+
+        memory_store = AsyncMock()
+        memory_store.retrieve = AsyncMock(side_effect=RuntimeError("DB down"))
+
+        client = AsyncMock()
+        client.complete_with_tools = AsyncMock(return_value=("done", None))
+
+        ctx = self._make_ctx_with_memory(memory_store=memory_store)
+
+        with patch("ze_core.embeddings.get_embedder") as mock_embedder:
+            mock_embedder.return_value.encode = MagicMock(return_value=[0.1] * 384)
+            result, _ = await a.agentic_loop(ctx, client, [{"role": "user", "content": "hi"}], system="BASE")
+
+        assert result == "done"

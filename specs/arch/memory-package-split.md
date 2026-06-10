@@ -2,7 +2,7 @@
 
 > **Package:** `ze_memory` (new package)
 > **Phase:** N/A
-> **Status:** Done (extraction + core types); write paths for Entity/Event/Procedure/TaskState are follow-on work
+> **Status:** Done
 
 ---
 
@@ -375,17 +375,17 @@ Unknown modules fall back to `CompanionPolicy` with a warning log.
 
 ---
 
-## Write Paths — Current vs. Planned
+## Write Paths
 
-| Memory type | Written today | Planned writer |
-|---|---|---|
-| `Fact` | fact extractor after every turn | — |
-| `Episode` | `write_memory` node after every turn | — |
-| `ProfileFacet` | `ProfileSynthesizer` on consolidation schedule | — |
-| `Event` | nothing | event extractor (conversation-extracted occurrences) |
-| `Entity` | nothing | contacts consolidator on contact confirmation |
-| `Procedure` | nothing | workflow/goal agents on task completion |
-| `TaskState` | nothing | `GoalExecutor` and `WorkflowAgent` during execution |
+| Memory type | Writer |
+|---|---|
+| `Fact` | fact extractor after every turn; `GoalExecutor._promote_learnings()` on goal completion |
+| `Episode` | `write_memory` node after every turn |
+| `ProfileFacet` | `ProfileSynthesizer` on consolidation schedule |
+| `Event` | event extractor (`gather_event_proposals`) after every turn via `write_memory` node |
+| `Entity` | `PersonStore.confirm()` → `upsert_entity()` when a contact is confirmed |
+| `Procedure` | `GoalExecutor._extract_and_store_procedure()` on goal completion |
+| `TaskState` | `GoalExecutor._sync_task_state()` at milestone start/complete/pause/block; `verify_step` / `workflow_synthesize` / `workflow_failed` graph nodes during workflow execution |
 
 ---
 
