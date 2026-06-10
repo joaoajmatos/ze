@@ -15,11 +15,13 @@ from ze_memory.defaults import (
     MODEL_SYNTHESIS,
 )
 from ze_memory.errors import InvalidRetrievalRequestError, StoreError
+from ze_memory.extractor import parse_fact_response, raw_to_facts
 from ze_memory.graph.predicates import (
     BELONGS_TO_GOAL,
     DESCRIBES,
     MENTIONS,
     PARTICIPATES_IN,
+    PROMOTES_TO,
     SOURCED_FROM,
 )
 from ze_memory.graph.store import GraphStore
@@ -45,6 +47,15 @@ from ze_memory.types import (
 )
 
 log = get_logger(__name__)
+
+_EVENT_OUTCOME_SYSTEM = (
+    "You extract generalizable declarative facts from an event outcome. "
+    "Only extract durable learnings: preferences, decisions, patterns, or capabilities — "
+    "not ephemeral or event-specific details. "
+    "Return a JSON array — no markdown, just the array. "
+    'Each item: {"predicate": "snake_case_label", "value": "the generalizable fact", "confidence": 0.0-1.0}. '
+    "If no generalizable facts can be extracted, return []."
+)
 
 
 def _to_list(embedding: Any) -> str:
@@ -232,6 +243,10 @@ class PostgresMemoryStore:
                     asyncio.create_task(
                         self._link_event_participants(row["id"], event.participants)
                     )
+                if self._graph_store is not None and event.outcome:
+                    asyncio.create_task(
+                        self._promote_event_outcome(row["id"], event.outcome)
+                    )
             except Exception as exc:
                 log.warning("memory_propose_event_failed", title=event.title, error=str(exc))
 
@@ -367,7 +382,7 @@ class PostgresMemoryStore:
 
     # ── internal ──────────────────────────────────────────────────────────────
 
-    async def _write_fact_with_contradiction_check(self, fact: Fact) -> None:
+    async def _write_fact_with_contradiction_check(self, fact: Fact) -> UUID | None:
         threshold = self._memory_config().get("contradiction_threshold", CONTRADICTION_THRESHOLD)
         value_emb = self._embedder.encode(fact.value)
         emb_list = _to_list(value_emb)
@@ -418,6 +433,7 @@ class PostgresMemoryStore:
 
         if self._graph_store is not None:
             asyncio.create_task(self._link_fact_relationships(fact, fact_id))
+        return fact_id
 
     # ── graph relationship helpers ─────────────────────────────────────────────
 
@@ -539,6 +555,37 @@ class PostgresMemoryStore:
             ))
         except Exception as exc:
             log.warning("graph_link_task_state_failed", task_state_id=str(task_state_id), error=str(exc))
+
+    async def _promote_event_outcome(self, event_id: UUID, outcome: str) -> None:
+        """Extract generalizable facts from an event outcome and link them via PROMOTES_TO edges."""
+        if self._client is None or self._graph_store is None:
+            return
+        try:
+            raw = await self._client.complete(
+                messages=[{"role": "user", "content": f"Event outcome: {outcome}"}],
+                model=self._synthesis_model(),
+                system=_EVENT_OUTCOME_SYSTEM,
+                max_tokens=300,
+            )
+            facts = raw_to_facts(parse_fact_response(raw))
+            for fact in facts:
+                try:
+                    fact_id = await self._write_fact_with_contradiction_check(fact)
+                    if fact_id is not None:
+                        await self._graph_store.upsert_relationship(Relationship(
+                            source_id=event_id,
+                            source_type="event",
+                            predicate=PROMOTES_TO,
+                            target_id=fact_id,
+                            target_type="fact",
+                            creation_method="extracted",
+                            confidence=fact.confidence,
+                        ))
+                except Exception as exc:
+                    log.warning("graph_promote_event_outcome_fact_failed", error=str(exc))
+            log.info("graph_promote_event_outcome_done", event_id=str(event_id), facts=len(facts))
+        except Exception as exc:
+            log.warning("graph_promote_event_outcome_failed", event_id=str(event_id), error=str(exc))
 
     async def _generate_summary(self, episode_id: Any, prompt: str, response: str) -> str | None:
         try:

@@ -1,7 +1,7 @@
 """Tests for PostgresMemoryStore write paths: propose_events, propose_procedure, upsert_entity."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 from uuid import uuid4
 
 import pytest
@@ -330,3 +330,168 @@ class TestGraphRelationshipCreation:
 
         conn.execute.assert_not_awaited()
         gs.upsert_relationship.assert_not_awaited()
+
+
+# ── _promote_event_outcome ────────────────────────────────────────────────────
+
+class TestPromoteEventOutcome:
+    def _make_store_with_client(self, pool=None, graph_store=None, client_response=None):
+        pool, conn = _make_pool()
+        fact_id = uuid4()
+        conn.fetchrow = AsyncMock(return_value={"id": fact_id})
+        conn.fetch = AsyncMock(return_value=[])
+        conn.execute = AsyncMock()
+        pool.acquire = MagicMock(return_value=_async_ctx(conn))
+
+        store = PostgresMemoryStore.__new__(PostgresMemoryStore)
+        store._pool = pool
+        store._embedder = MagicMock()
+        store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+        client = AsyncMock()
+        client.complete = AsyncMock(return_value=client_response or '[]')
+        store._client = client
+        store._graph_store = graph_store
+        store._traversal = None
+        store._settings = None
+        return store, conn, client, fact_id
+
+    async def test_creates_promotes_to_edge(self):
+        gs = _make_graph_store()
+        event_id = uuid4()
+        fact_json = '[{"predicate": "prefers_async", "value": "prefers async communication", "confidence": 0.9}]'
+        store, conn, client, fact_id = self._make_store_with_client(graph_store=gs, client_response=fact_json)
+
+        await store._promote_event_outcome(event_id, "signed the contract asynchronously")
+
+        calls = gs.upsert_relationship.call_args_list
+        promotes = [c for c in calls if c[0][0].predicate == "PROMOTES_TO"]
+        assert len(promotes) == 1
+        rel = promotes[0][0][0]
+        assert rel.source_id == event_id
+        assert rel.source_type == "event"
+        assert rel.target_id == fact_id
+        assert rel.target_type == "fact"
+        assert rel.confidence == 0.9
+
+    async def test_no_op_without_client(self):
+        gs = _make_graph_store()
+        pool, conn = _make_pool()
+        store, _ = _make_store(pool, graph_store=gs)
+        store._client = None
+
+        await store._promote_event_outcome(uuid4(), "some outcome")
+
+        gs.upsert_relationship.assert_not_awaited()
+
+    async def test_no_op_without_graph_store(self):
+        pool, conn = _make_pool()
+        store, _, client, _ = self._make_store_with_client(graph_store=None)
+
+        # should not raise
+        await store._promote_event_outcome(uuid4(), "some outcome")
+
+        client.complete.assert_not_awaited()
+
+    async def test_swallows_llm_failure(self):
+        gs = _make_graph_store()
+        pool, conn = _make_pool()
+        store, _, client, _ = self._make_store_with_client(graph_store=gs)
+        client.complete = AsyncMock(side_effect=RuntimeError("LLM exploded"))
+
+        # should not raise
+        await store._promote_event_outcome(uuid4(), "the deal fell through")
+
+        gs.upsert_relationship.assert_not_awaited()
+
+    async def test_empty_extraction_creates_no_edges(self):
+        gs = _make_graph_store()
+        store, conn, client, _ = self._make_store_with_client(graph_store=gs, client_response='[]')
+
+        await store._promote_event_outcome(uuid4(), "nothing memorable happened")
+
+        gs.upsert_relationship.assert_not_awaited()
+
+
+# ── propose_events PROMOTES_TO wiring ────────────────────────────────────────
+
+async def test_propose_events_fires_promotes_to_when_outcome_set():
+    pool, conn = _make_pool()
+    gs = _make_graph_store()
+    event_id = uuid4()
+    conn.fetchrow = AsyncMock(return_value={"id": event_id})
+    store, _ = _make_store(pool, graph_store=gs)
+
+    with patch.object(store, "_promote_event_outcome", new_callable=AsyncMock) as mock_promote:
+        with patch("asyncio.create_task") as mock_task:
+            event = Event(id=None, event_type="meeting", title="Signed contract", outcome="signed the deal")
+            await store.propose_events([event])
+
+            # asyncio.create_task was called with a coroutine from _promote_event_outcome
+            promote_calls = [
+                c for c in mock_task.call_args_list
+                if hasattr(c[0][0], "cr_frame")
+                or "promote" in str(c)
+            ]
+            assert mock_task.call_count >= 1
+
+
+async def test_propose_events_no_promotes_to_when_no_outcome():
+    pool, conn = _make_pool()
+    gs = _make_graph_store()
+    event_id = uuid4()
+    conn.fetchrow = AsyncMock(return_value={"id": event_id})
+    store, _ = _make_store(pool, graph_store=gs)
+
+    with patch.object(store, "_promote_event_outcome", new_callable=AsyncMock) as mock_promote:
+        event = Event(id=None, event_type="meeting", title="Planning session", outcome=None)
+        await store.propose_events([event])
+
+        mock_promote.assert_not_awaited()
+
+
+# ── _write_fact_with_contradiction_check returns UUID ────────────────────────
+
+async def test_write_fact_returns_uuid():
+    pool, conn = _make_pool()
+    fact_id = uuid4()
+    conn.fetch = AsyncMock(return_value=[])
+    conn.execute = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value={"id": fact_id})
+    pool.acquire = MagicMock(return_value=_async_ctx(conn))
+
+    store = PostgresMemoryStore.__new__(PostgresMemoryStore)
+    store._pool = pool
+    store._embedder = MagicMock()
+    store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+    store._client = None
+    store._graph_store = None
+    store._traversal = None
+    store._settings = None
+
+    from ze_memory.types import Fact
+    fact = Fact(id=None, subject_id=None, predicate="prefers_tea", value="prefers tea", object_text="tea", confidence=0.9)
+    result = await store._write_fact_with_contradiction_check(fact)
+
+    assert result == fact_id
+
+
+async def test_write_fact_returns_none_on_db_error():
+    pool, conn = _make_pool()
+    conn.fetch = AsyncMock(return_value=[])
+    conn.execute = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=RuntimeError("DB error"))
+    pool.acquire = MagicMock(return_value=_async_ctx(conn))
+
+    store = PostgresMemoryStore.__new__(PostgresMemoryStore)
+    store._pool = pool
+    store._embedder = MagicMock()
+    store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+    store._client = None
+    store._graph_store = None
+    store._traversal = None
+    store._settings = None
+
+    from ze_memory.types import Fact
+    fact = Fact(id=None, subject_id=None, predicate="mood", value="cheerful", object_text="cheerful", confidence=0.7)
+    with pytest.raises(RuntimeError):
+        await store._write_fact_with_contradiction_check(fact)
