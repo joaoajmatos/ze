@@ -243,3 +243,45 @@ class TestBoundedExpansionPolicy:
         result = await policy.expand([])
         store.expand.assert_not_awaited()
         assert result.is_empty()
+
+
+# ── _build_traversal (config-driven construction) ─────────────────────────────
+
+class TestBuildTraversal:
+    def _make_gs(self):
+        gs = MagicMock()
+        gs.upsert_relationship = AsyncMock()
+        return gs
+
+    def test_none_graph_store_returns_none(self):
+        from ze_memory.retriever import PostgresMemoryStore
+        assert PostgresMemoryStore._build_traversal(None, None) is None
+
+    def test_enabled_true_returns_policy(self):
+        from ze_memory.retriever import PostgresMemoryStore
+        settings = {"memory": {"graph": {"enabled": True, "max_hops": 2, "max_relationships": 15}}}
+        result = PostgresMemoryStore._build_traversal(self._make_gs(), settings)
+        assert isinstance(result, BoundedExpansionPolicy)
+        assert result._max_hops == 2
+        assert result._limit == 15
+
+    def test_enabled_false_returns_none(self):
+        from ze_memory.retriever import PostgresMemoryStore
+        settings = {"memory": {"graph": {"enabled": False}}}
+        result = PostgresMemoryStore._build_traversal(self._make_gs(), settings)
+        assert result is None
+
+    def test_defaults_when_no_config(self):
+        from ze_memory.retriever import PostgresMemoryStore
+        result = PostgresMemoryStore._build_traversal(self._make_gs(), None)
+        assert isinstance(result, BoundedExpansionPolicy)
+        assert result._max_hops == 1
+        assert result._limit == 20
+
+    def test_reads_from_settings_object_with_config_attr(self):
+        from ze_memory.retriever import PostgresMemoryStore
+        settings = MagicMock()
+        settings.config = {"memory": {"graph": {"enabled": True, "max_hops": 3, "max_relationships": 10}}}
+        result = PostgresMemoryStore._build_traversal(self._make_gs(), settings)
+        assert result._max_hops == 3
+        assert result._limit == 10

@@ -10,6 +10,12 @@ models:
   vision_caption:   google/gemini-flash-1.5
   workflow_verify:  anthropic/claude-haiku-4-5-20251001
 
+memory:
+  graph:
+    enabled: true
+    max_hops: 1
+    max_relationships: 20
+
 contacts:
   consolidation:
     episode_batch_size: 10

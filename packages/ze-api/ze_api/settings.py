@@ -98,6 +98,10 @@ class Settings(BaseSettings):
         return self.config.get("memory", {}).get("consolidation", {})
 
     @property
+    def graph_config(self) -> dict[str, Any]:
+        return self.config.get("memory", {}).get("graph", {})
+
+    @property
     def contacts_config(self) -> dict[str, Any]:
         return self.config.get("contacts", {})
 

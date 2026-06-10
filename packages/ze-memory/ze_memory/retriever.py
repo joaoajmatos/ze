@@ -91,7 +91,7 @@ class PostgresMemoryStore:
         self._settings = settings
         self._registry = policy_registry or DefaultPolicyRegistry()
         self._graph_store = graph_store
-        self._traversal = BoundedExpansionPolicy(graph_store) if graph_store is not None else None
+        self._traversal = self._build_traversal(graph_store, settings)
 
     # ── MemoryStore protocol ──────────────────────────────────────────────────
 
@@ -657,6 +657,27 @@ class PostgresMemoryStore:
                     facet.get("stability", "dynamic"),
                     facet.get("confidence", 0.8),
                 )
+
+    @staticmethod
+    def _build_traversal(
+        graph_store: GraphStore | None,
+        settings: Any,
+    ) -> BoundedExpansionPolicy | None:
+        if graph_store is None:
+            return None
+        graph_cfg: dict = {}
+        cfg = getattr(settings, "config", None)
+        if isinstance(cfg, dict):
+            graph_cfg = cfg.get("memory", {}).get("graph", {})
+        elif isinstance(settings, dict):
+            graph_cfg = settings.get("memory", {}).get("graph", {})
+        if not graph_cfg.get("enabled", True):
+            return None
+        return BoundedExpansionPolicy(
+            graph_store=graph_store,
+            max_hops=int(graph_cfg.get("max_hops", 1)),
+            limit=int(graph_cfg.get("max_relationships", 20)),
+        )
 
     def _memory_config(self) -> dict:
         if self._settings is None:
