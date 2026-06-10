@@ -3,22 +3,16 @@ from unittest.mock import AsyncMock
 
 from ze_personal.agents.research.agent import ResearchAgent
 from ze_core.orchestration.types import AgentContext, AgentResult
-from ze_api.logging import configure_logging
+from ze_core.settings import Settings
 from ze_memory.types import MemoryContext, Fact
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def make_settings():
-    import pathlib
-    from ze_api.settings import Settings, get_settings
-    get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent.parent / "config"
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
     )
 
 
@@ -55,11 +49,6 @@ def make_agent(client=None) -> ResearchAgent:
         openrouter_client=client or make_client(),
         settings=make_settings(),
     )
-
-
-@pytest.fixture(autouse=True)
-def setup_logging():
-    configure_logging()
 
 
 # ── Registry ──────────────────────────────────────────────────────────────────

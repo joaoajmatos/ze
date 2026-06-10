@@ -1,23 +1,18 @@
-import pathlib
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_personal.contacts.types import StaleFollowUpNudge
 from ze_personal.jobs.briefing import MorningBriefing
 from ze_core.proactive.push_log_store import PushLogEntry
-from ze_api.settings import Settings, get_settings
+from ze_core.settings import Settings
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze_news.types import Article
 
 
 def make_settings():
-    get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent / "config"
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
     )
 
 

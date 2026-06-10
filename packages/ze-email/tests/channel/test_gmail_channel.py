@@ -6,7 +6,7 @@ import pytest
 
 from ze_email.channel.gmail import GmailChannel
 from ze_core.channels.types import ChannelType, Message, SentMessage, ThreadMessage
-from ze_api.errors import ChannelSendError
+from ze_core.errors import ChannelSendError
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

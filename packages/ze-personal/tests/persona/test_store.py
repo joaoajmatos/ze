@@ -1,4 +1,3 @@
-import pathlib
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
@@ -6,21 +5,16 @@ import pytest
 
 from ze_personal.persona.postgres import PostgresPersonaStore as PersonaStore
 from ze_personal.persona.types import PersonaState
-from ze_api.settings import Settings
+from ze_core.settings import Settings
 from ze_core.errors import UnknownDialError, UnknownProfileError
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def make_settings():
-    from ze_api.settings import get_settings
-    get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent / "config"
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
     )
 
 

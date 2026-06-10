@@ -1,24 +1,18 @@
-import pathlib
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from ze_personal.contacts.consolidator import ContactsConsolidator, _format_batch, _safe_classification
 from ze_personal.contacts.types import Person
-from ze_api.settings import Settings
+from ze_core.settings import Settings
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def make_settings():
-    from ze_api.settings import get_settings
-    get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent / "config"
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
     )
 
 

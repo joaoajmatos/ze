@@ -6,23 +6,17 @@ import pytest
 from ze_prospecting.agents.agent import ProspectingAgent
 from ze_prospecting.types import ProspectingSettings
 from ze_core.orchestration.types import AgentContext, AgentResult
+from ze_core.settings import Settings
 from ze_personal.contacts.types import PersonContext
-from ze_api.logging import configure_logging
 from ze_memory.types import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def make_settings():
-    import pathlib
-    from ze_api.settings import Settings, get_settings
-    get_settings.cache_clear()
-    real_config = pathlib.Path(__file__).parent.parent.parent.parent / "config"
     return Settings(
         openrouter_api_key="test-key",
         database_url="postgresql://ze:ze@localhost:5432/ze",
-        database_url_sync="postgresql+psycopg2://ze:ze@localhost:5432/ze",
-        config_dir=real_config,
     )
 
 
@@ -62,17 +56,12 @@ def make_agent(
         person_store = AsyncMock()
     return ProspectingAgent(
         openrouter_client=client,
-        settings=make_settings().to_core_settings(),
+        settings=make_settings(),
         prospecting_settings=ProspectingSettings(),
         browser_client=browser_client,
         person_store=person_store,
         campaign_store=campaign_store or make_campaign_store(),
     )
-
-
-@pytest.fixture(autouse=True)
-def setup_logging():
-    configure_logging()
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
