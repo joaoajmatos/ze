@@ -2,7 +2,7 @@ import json
 import pytest
 from unittest.mock import AsyncMock
 
-from ze_api.agents.bootstrap import prepare_gate_registry
+from ze_api.bootstrap import prepare_gate_registry
 from ze_core.errors import RoutingError
 from ze_api.logging import configure_logging
 from ze_core.orchestration.registry import get_enabled_agents

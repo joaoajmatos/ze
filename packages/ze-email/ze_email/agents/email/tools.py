@@ -3,7 +3,7 @@ import base64
 from email.mime.text import MIMEText
 
 from ze_core.orchestration.tool import ToolAccess, tool
-from ze_api.google.gmail import GmailChannel
+from ze_email.channel.gmail import GmailChannel
 from ze_core.channels.types import ChannelType, Message
 from ze_google.auth import GoogleCredentials
 
@@ -89,8 +89,6 @@ async def archive_email(
         ).execute()
     )
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _build_raw(to: str, subject: str, body: str) -> str:
     msg = MIMEText(body, "plain")

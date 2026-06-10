@@ -4,11 +4,11 @@ from ze_core.orchestration.base_agent import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze_core.capability.types import Mode
 from ze_core.orchestration.types import AgentContext, AgentResult
-from ze_api.google.gmail import GmailChannel
+from ze_email.channel.gmail import GmailChannel
 from ze_personal.contacts.extractors import extract_email_contacts
 from ze_google.auth import GoogleCredentials
 from ze_core.openrouter.client import OpenRouterClient
-from ze_api.settings import Settings
+from ze_core.settings import Settings
 
 _AGENT_INSTRUCTIONS = """\
 You manage the user's Gmail inbox.
@@ -59,9 +59,9 @@ class EmailAgent(BaseAgent):
         google_credentials: GoogleCredentials,
         settings: Settings,
     ) -> None:
-        self._settings      = settings
-        self._client        = openrouter_client
-        self._creds         = google_credentials
+        self._settings = settings
+        self._client = openrouter_client
+        self._creds = google_credentials
         self._gmail_channel = GmailChannel(credentials=google_credentials)
 
     async def run(self, ctx: AgentContext) -> AgentResult:

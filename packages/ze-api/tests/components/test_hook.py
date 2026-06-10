@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import ze_components.tools  # noqa: F401
-from ze_api.components.hook import ComponentCollectionHook
+from ze_api.hooks import ComponentCollectionHook
 from ze_components import context as ctx
 from ze_components.types import CardComponent
 from ze_core.orchestration.hooks import LoopEndEvent, LoopStartEvent

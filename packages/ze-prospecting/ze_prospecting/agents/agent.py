@@ -1,7 +1,7 @@
-from typing import AsyncIterator
-
 import ze_browser.tool  # noqa: F401 — registers browser_extract @tool
-import ze_api.agents.prospecting.tools  # noqa: F401 — registers add_prospect, draft_outreach, log_outreach_event @tool
+import ze_prospecting.agents.tools  # noqa: F401 — registers add_prospect, draft_outreach, log_outreach_event @tool
+
+from typing import AsyncIterator
 
 from ze_core.orchestration.base_agent import BaseAgent
 from ze_core.orchestration.registry import agent
@@ -10,8 +10,9 @@ from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_browser import BrowserClient
 from ze_personal.contacts.store import PersonStore
 from ze_core.openrouter.client import OpenRouterClient
-from ze_api.settings import Settings
-from ze_api.prospecting.store import ProspectCampaignStore
+from ze_core.settings import Settings
+from ze_prospecting.store import ProspectCampaignStore
+from ze_prospecting.types import ProspectingSettings
 
 _AGENT_INSTRUCTIONS = """\
 You are Ze's prospecting engine. Given a brief, you autonomously:
@@ -72,11 +73,13 @@ class ProspectingAgent(BaseAgent):
         self,
         openrouter_client: OpenRouterClient,
         settings: Settings,
+        prospecting_settings: ProspectingSettings,
         browser_client: BrowserClient,
         person_store: PersonStore,
         campaign_store: ProspectCampaignStore,
     ) -> None:
         self._settings = settings
+        self._prospecting_settings = prospecting_settings
         self._client = openrouter_client
         self._browser_client = browser_client
         self._person_store = person_store
@@ -100,8 +103,8 @@ class ProspectingAgent(BaseAgent):
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
         deps = {
             "browser_client": self._browser_client,
-            "browser_delay_ms": self._settings.browser_delay_ms,
-            "browser_max_text_chars": self._settings.browser_max_text_chars,
+            "browser_delay_ms": self._prospecting_settings.browser_delay_ms,
+            "browser_max_text_chars": self._prospecting_settings.browser_max_text_chars,
             "person_store": self._person_store,
             "campaign_store": self._campaign_store,
             "client": self._client,
@@ -118,8 +121,8 @@ class ProspectingAgent(BaseAgent):
                 system=system,
                 deps=deps,
                 tool_names=tool_names,
-                max_iterations=self._settings.prospecting_max_iterations,
-                max_history_tokens=self._settings.prospecting_max_loop_tokens,
+                max_iterations=self._prospecting_settings.max_iterations,
+                max_history_tokens=self._prospecting_settings.max_loop_tokens,
                 max_tokens=4000,
             )
 

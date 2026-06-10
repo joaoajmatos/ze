@@ -8,7 +8,7 @@ import structlog
 
 from ze_core.channels.base import Channel
 from ze_core.channels.types import ChannelType, Message, SentMessage, Thread, ThreadMessage
-from ze_api.errors import ChannelSendError
+from ze_core.errors import ChannelSendError
 from ze_google.auth import GoogleCredentials
 
 log = structlog.get_logger(__name__)
@@ -90,8 +90,6 @@ class GmailChannel(Channel):
             self._user_email = profile["emailAddress"]
         return self._user_email
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _build_raw(to: str, subject: str, body: str) -> str:
     msg = MIMEText(body, "plain")

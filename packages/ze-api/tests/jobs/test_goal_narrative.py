@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze_api.jobs.goal_narrative import GoalNarrativeJob
+from ze_personal.jobs.goal_narrative import GoalNarrativeJob
 from ze_personal.goals.types import Goal, GoalStatus, Milestone, MilestoneStatus, VerificationGate, GateStatus
 
 

@@ -72,8 +72,8 @@ def test_register_instance_overwrites_previous():
 
 def test_registered_names_includes_known_agents():
     # research and companion agents are imported at module level via @register
-    import ze_api.agents.research.agent  # noqa: F401
-    import ze_api.agents.companion.agent  # noqa: F401
+    import ze_personal.agents.research.agent  # noqa: F401
+    import ze_personal.agents.companion.agent  # noqa: F401
     names = list(_registry)
     assert "research" in names
     assert "companion" in names

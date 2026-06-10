@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 from ze_personal.contacts.types import Person, PersonSource
-from ze_api.jobs.contacts import ContactReviewNotifier
+from ze_personal.jobs.contacts import ContactReviewNotifier
 
 
 def _make_person(**kwargs) -> Person:

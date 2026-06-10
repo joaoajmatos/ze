@@ -85,3 +85,12 @@ class ZePlugin(ABC):
         @agent registry when bootstrap resolves instances.
         """
         return []
+
+    def register_proactive_jobs(
+        self,
+        scheduler: Any,
+        settings: Any,
+        *,
+        consolidation_enabled: bool = True,
+    ) -> None:
+        """Register plugin cron jobs on the proactive scheduler."""

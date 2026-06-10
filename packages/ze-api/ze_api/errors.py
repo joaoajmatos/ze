@@ -1,7 +1,6 @@
 """Ze application exceptions."""
 
-from ze_core.errors import ZeCoreError as ZeError
-from ze_core.errors import ChannelError
+from ze_core.errors import ChannelError, ChannelSendError, ZeCoreError as ZeError
 
 # ── Capability ────────────────────────────────────────────────────────────────
 
@@ -29,7 +28,3 @@ class ImageDownloadError(ZeError):
     """Failed to download image bytes from Telegram's file server."""
 
 
-# ── Channels ───────────────────────────────────────────────────────────────────
-
-class ChannelSendError(ChannelError):
-    """Channel transport failed during send."""

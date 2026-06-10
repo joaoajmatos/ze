@@ -17,7 +17,7 @@ def make_gate(
     Saves and restores the live agent registry so other tests are not affected.
     Call ``gate._restore_registry()`` in fixture teardown (see capability conftest).
     """
-    from ze_api.agents.bootstrap import reload_agent_modules
+    from ze_api.bootstrap import reload_agent_modules
 
     reload_agent_modules()
     backup_registry = dict(zc_registry._registry)

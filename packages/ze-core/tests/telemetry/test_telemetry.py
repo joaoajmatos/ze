@@ -256,12 +256,23 @@ class TestCostTracker:
 # ── TestCostReconciler ────────────────────────────────────────────────────────
 
 class TestCostReconciler:
-    async def test_no_rows_returns_early(self):
+    async def test_skips_db_when_no_pending_writes(self):
         store = AsyncMock(spec=PostgresCostStore)
+        store.has_pending_writes = False
+        client = AsyncMock()
+        reconciler = CostReconciler(store=store, openrouter_client=client)
+        await reconciler.run()
+        store.fetch_pending.assert_not_awaited()
+        client.fetch_generation_cost.assert_not_awaited()
+
+    async def test_no_rows_marks_clean_and_returns_early(self):
+        store = AsyncMock(spec=PostgresCostStore)
+        store.has_pending_writes = True
         store.fetch_pending = AsyncMock(return_value=[])
         client = AsyncMock()
         reconciler = CostReconciler(store=store, openrouter_client=client)
         await reconciler.run()
+        store.mark_clean.assert_called_once()
         client.fetch_generation_cost.assert_not_awaited()
 
     async def test_fetches_cost_and_updates_row(self):

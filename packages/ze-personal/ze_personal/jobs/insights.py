@@ -4,10 +4,10 @@ from datetime import date, timedelta
 
 import asyncpg
 
-from ze_api.logging import get_logger
+from ze_core.logging import get_logger
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.proactive.notifier import ProactiveNotifier
-from ze_api.settings import Settings
+from ze_core.settings import Settings
 from ze_core.proactive.job import proactive_job
 from ze_core.telemetry.context import set_agent_context, set_flow_context
 
@@ -49,13 +49,13 @@ class InsightEngine:
         """Weekly job: generate insights from recent evidence and push any novel ones."""
         set_flow_context("insight_generation")
         set_agent_context("insights")
-        insight_mem_cfg = self._settings.memory_insights_config
+        insight_mem_cfg = self._settings.config.get("proactive", {}).get("insights", {})
         lookback_days = int(insight_mem_cfg.get("lookback_days", 7))
         min_evidence = int(insight_mem_cfg.get("min_evidence", 3))
         max_per_run = int(insight_mem_cfg.get("max_per_run", 3))
 
         cooldown_days = int(
-            self._settings.proactive_config.get("insights", {}).get("category_cooldown_days", 7)
+            self._settings.config.get("proactive", {}).get("insights", {}).get("category_cooldown_days", 7)
         )
         model = self._settings.config.get("models", {}).get(
             "insights", "anthropic/claude-haiku-4-5"

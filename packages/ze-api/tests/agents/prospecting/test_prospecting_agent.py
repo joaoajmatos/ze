@@ -3,7 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from ze_api.agents.prospecting.agent import ProspectingAgent
+from ze_prospecting.agents.agent import ProspectingAgent
+from ze_prospecting.types import ProspectingSettings
 from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_personal.contacts.types import PersonContext
 from ze_api.logging import configure_logging
@@ -61,7 +62,8 @@ def make_agent(
         person_store = AsyncMock()
     return ProspectingAgent(
         openrouter_client=client,
-        settings=make_settings(),
+        settings=make_settings().to_core_settings(),
+        prospecting_settings=ProspectingSettings(),
         browser_client=browser_client,
         person_store=person_store,
         campaign_store=campaign_store or make_campaign_store(),
@@ -213,7 +215,7 @@ async def test_agentic_loop_protects_last_4_messages():
 # ── recover_stale_campaigns ───────────────────────────────────────────────────
 
 async def test_recover_stale_campaigns():
-    from ze_api.jobs.prospecting import recover_stale_campaigns
+    from ze_prospecting.jobs.campaigns import recover_stale_campaigns
     from unittest.mock import AsyncMock, MagicMock
 
     pool = MagicMock()
@@ -225,7 +227,7 @@ async def test_recover_stale_campaigns():
 
 
 async def test_recover_stale_campaigns_logs_when_rows_updated():
-    from ze_api.jobs.prospecting import recover_stale_campaigns
+    from ze_prospecting.jobs.campaigns import recover_stale_campaigns
 
     pool = MagicMock()
     pool.execute = AsyncMock(return_value="UPDATE 3")

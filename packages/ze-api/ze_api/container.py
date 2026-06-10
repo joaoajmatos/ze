@@ -9,13 +9,12 @@ from typing import Any
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
-from ze_api.agents.bootstrap import bootstrap_agents, prepare_gate_registry
+from ze_api.bootstrap import bootstrap_agents, prepare_gate_registry
 from ze_browser import BrowserClient
 from ze_notifications.ntfy import NtfyConfig, NtfyNotifier
 from ze_notifications.notifier import Notifier as PushNotifier
 from ze_core.capability.gate import CapabilityGate
 from ze_core.capability.overrides import PostgresCapabilityOverrideStore
-from ze_api.google.gmail import GmailChannel
 from ze_core.channels.registry import ChannelRegistry
 from ze_personal.contacts.channel_store import ContactChannelStore
 from ze_api.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
@@ -29,9 +28,6 @@ from ze_google.auth import GoogleCredentials
 from ze_api.logging import get_logger
 from ze_personal.contacts.consolidator import ContactsConsolidator
 from ze_personal.contacts.store import PersonStore
-from ze_api.jobs.contacts import ContactReviewNotifier
-from ze_api.jobs.prospecting import recover_stale_campaigns
-from ze_api.prospecting.store import ProspectCampaignStore
 from ze_memory.consolidator import MemoryConsolidator
 from ze_memory.graph import PostgresGraphStore
 from ze_memory.retriever import PostgresMemoryStore
@@ -41,13 +37,8 @@ from ze_core.orchestration.graph import build_graph
 from ze_personal.graph.workflow import build_workflow_graph
 from ze_core.progress import ProgressTranslations
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
-from ze_api.jobs.briefing import MorningBriefing
-from ze_api.jobs.goal_narrative import GoalNarrativeJob
-from ze_api.jobs.goal_suggestion import GoalSuggestionJob
-from ze_api.jobs.stuck_goals import StuckGoalJob
 from ze_personal.goals.suggestion_store import GoalSuggestionStore
 from ze_core.proactive.push_log_store import PushLogStore
-from ze_api.jobs.insights import InsightEngine
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze_core.proactive.scheduler import ProactiveScheduler
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
@@ -72,8 +63,12 @@ from ze_personal.workflow.store import WorkflowStore
 from ze_personal.workflow.scheduler import WorkflowScheduler
 from ze_core.container import Container as CoreContainer
 from ze_core.orchestration.hooks import register_hook
-from ze_api.hooks import ToolCallCapHook
-from ze_api.components.hook import ComponentCollectionHook
+from ze_api.hooks import ComponentCollectionHook, ToolCallCapHook
+from ze_personal.plugin import PersonalPlugin
+from ze_calendar.plugin import CalendarPlugin
+from ze_email.plugin import EmailPlugin
+from ze_prospecting.plugin import ProspectingPlugin
+from ze_prospecting.types import ProspectingSettings
 import ze_components.tools  # noqa: F401 — registers all render tools at import time
 
 log = get_logger(__name__)
@@ -83,7 +78,6 @@ log = get_logger(__name__)
 class ZeContainer(CoreContainer):
     """Ze application container — ze-core graph stack plus WebSocket, proactive, workflow."""
 
-    # ── Ze-only resources ──────────────────────────────────────────────────────
     persona_store: Any
     person_store: PersonStore
     contacts_consolidator: ContactsConsolidator
@@ -92,19 +86,15 @@ class ZeContainer(CoreContainer):
     workflow_scheduler: WorkflowScheduler
     proactive_scheduler: ProactiveScheduler
     notifier: ProactiveNotifier
-    morning_briefing: MorningBriefing
     calendar_reminders: CalendarReminderJob
-    insight_engine: InsightEngine
-    goal_narrative: GoalNarrativeJob
-    goal_suggestion: GoalSuggestionJob
     goal_suggestion_store: GoalSuggestionStore
-    stuck_goals: StuckGoalJob
     browser_client: BrowserClient
     channel_registry: ChannelRegistry
     contact_channel_store: ContactChannelStore
     goal_store: GoalStore
     goal_executor: GoalExecutor
-    campaign_store: ProspectCampaignStore
+    prospecting_plugin: ProspectingPlugin
+    personal_plugin: PersonalPlugin
     push_notifier: NtfyNotifier | None
     message_store: PostgresMessageStore
     connection_manager: ConnectionManager
@@ -145,18 +135,16 @@ class ZeContainer(CoreContainer):
         *,
         config_extra: dict | None = None,
     ) -> TurnResult:
-        """Run one conversation turn from transport-layer input."""
         return await invoke_raw_turn(self, session_id, raw, config_extra=config_extra)
 
     async def resume_turn(self, config: dict) -> TurnResult:
-        """Resume after capability confirmation (LangGraph interrupt)."""
         return await resume_turn(self, config)
 
     async def close(self) -> None:
         await self.proactive_scheduler.stop()
         await self.workflow_scheduler.stop()
         await self.browser_client.close()
-        await self.campaign_store.fail_all_running()
+        await self.prospecting_plugin.campaign_store.fail_all_running()
         if self.push_notifier is not None:
             await self.push_notifier._session.close()
         await super().close()
@@ -177,7 +165,6 @@ class ZeContainer(CoreContainer):
         return container
 
 
-# Backward-compatible alias.
 Container = ZeContainer
 
 
@@ -185,6 +172,14 @@ async def build_container(settings: Settings) -> ZeContainer:
     pool = await create_pool(settings)
     checkpointer_pool = await create_checkpointer_pool(settings)
     embedder = get_embedder()
+    core_settings = settings.to_core_settings()
+    prospecting_settings = ProspectingSettings(
+        max_iterations=settings.prospecting_max_iterations,
+        max_loop_tokens=settings.prospecting_max_loop_tokens,
+        stale_timeout_minutes=settings.prospecting_stale_timeout_minutes,
+        browser_delay_ms=settings.browser_delay_ms,
+        browser_max_text_chars=settings.browser_max_text_chars,
+    )
 
     serde = JsonPlusSerializer(
         allowed_msgpack_modules=[
@@ -232,7 +227,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         timeout=settings.browser_timeout_seconds,
     )
 
-    # ── Ntfy push notifier ────────────────────────────────────────────────────
     push_notifier: NtfyNotifier | None = None
     if settings.ntfy_topic:
         import aiohttp as _aiohttp
@@ -245,11 +239,9 @@ async def build_container(settings: Settings) -> ZeContainer:
         push_notifier = NtfyNotifier(config=_ntfy_config, session=_ntfy_session)
         log.info("ntfy_notifier_registered", topic=settings.ntfy_topic)
 
-    # ── Message store + WebSocket connection manager ──────────────────────────
     message_store = PostgresMessageStore(pool=pool)
     connection_manager = ConnectionManager()
 
-    # ── Native app interface ──────────────────────────────────────────────────
     interface = NativeAppInterface(
         message_store=message_store,
         connection_manager=connection_manager,
@@ -370,7 +362,6 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
 
     contact_channel_store = ContactChannelStore(pool=pool)
-    campaign_store = ProspectCampaignStore(pool=pool)
     goal_store = GoalStore(pool=pool)
     goal_planner = GoalPlanner(client=openrouter_client, model=settings.workflow_plan_model, memory_store=memory_store)
     goal_executor = GoalExecutor(
@@ -382,13 +373,17 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     proactive_scheduler = ProactiveScheduler()
     reminder_store = ReminderStore(pool=pool)
+    push_log_store = PushLogStore(pool=pool)
+    goal_suggestion_store = GoalSuggestionStore(pool=pool)
 
-    from ze_personal.plugin import PersonalPlugin
-    from ze_calendar.plugin import CalendarPlugin
-    plugins = [PersonalPlugin(), CalendarPlugin()]
+    google_credentials = GoogleCredentials.from_settings(settings)
+    prospecting_plugin = ProspectingPlugin(pool=pool, prospecting_settings=prospecting_settings)
+    email_plugin = EmailPlugin(google_credentials=google_credentials)
 
     news_cfg = settings.config.get("news", {})
     news_store = None
+    news_fetch_job = None
+    news_source_configs = []
     if news_cfg.get("enabled", True) and news_cfg.get("sources"):
         from ze_news.jobs.fetch import NewsFetchJob
         from ze_news.plugin import NewsPlugin
@@ -412,6 +407,25 @@ async def build_container(settings: Settings) -> ZeContainer:
             credibility_llm_enabled=news_credibility_cfg.get("llm_scoring", True),
             credibility_model=news_credibility_cfg.get("model", "openai/gpt-4o-mini"),
         )
+
+    personal_plugin = PersonalPlugin(
+        notifier=notifier,
+        push_log_store=push_log_store,
+        memory_store=memory_store,
+        workflow_store=workflow_store,
+        person_store=person_store,
+        settings=core_settings,
+        goal_store=goal_store,
+        goal_planner=goal_planner,
+        suggestion_store=goal_suggestion_store,
+        openrouter_client=openrouter_client,
+        pool=pool,
+        news_store=news_store,
+    )
+
+    plugins: list = [personal_plugin, CalendarPlugin(), email_plugin, prospecting_plugin]
+    if news_store is not None:
+        from ze_news.plugin import NewsPlugin
         news_plugin = NewsPlugin(registry=news_registry, store=news_store, fetch_job=news_fetch_job)
         plugins.append(news_plugin)
         log.info("news_plugin_registered", sources=len(news_source_configs))
@@ -419,6 +433,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     bootstrap_agents(
         openrouter_client=openrouter_client,
         settings=settings,
+        google_credentials=google_credentials,
         pool=pool,
         workflow_store=workflow_store,
         workflow_planner=workflow_planner,
@@ -431,7 +446,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         goal_store=goal_store,
         goal_planner=goal_planner,
         goal_executor=goal_executor,
-        campaign_store=campaign_store,
+        campaign_store=prospecting_plugin.campaign_store,
+        prospecting_settings=prospecting_settings,
         plugins=plugins,
         memory_store=memory_store,
         news_store=news_store,
@@ -467,7 +483,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             scheduled=len(unsent_reminders) - overdue_count,
         )
 
-    await recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes)
+    await prospecting_plugin.recover_stale_on_startup()
     log.info("stale_campaigns_checked")
 
     cost_reconciler = CostReconciler(store=cost_store, openrouter_client=openrouter_client)
@@ -511,41 +527,15 @@ async def build_container(settings: Settings) -> ZeContainer:
         )
         log.info("contacts_consolidation_scheduled", cron=contacts_cron)
 
-        contact_review = ContactReviewNotifier(
-            person_store=person_store,
-            notifier=notifier,
+    for plugin in plugins:
+        plugin.register_proactive_jobs(
+            proactive_scheduler,
+            core_settings,
+            consolidation_enabled=settings.consolidation_enabled,
         )
-        review_cron = settings.contacts_config.get("consolidation", {}).get("review_cron", "30 8 * * *")
-        proactive_scheduler.register(contact_review, cron=review_cron)
-        log.info("contact_review_scheduled", cron=review_cron)
-
-        proactive_scheduler.add_cron_job(
-            fn=lambda: recover_stale_campaigns(pool, settings.prospecting_stale_timeout_minutes),
-            cron="*/15 * * * *",
-            job_id="recover_stale_campaigns",
-        )
-        log.info("stale_campaign_recovery_scheduled")
 
     proactive_cfg = settings.proactive_config
-    push_log_store = PushLogStore(pool=pool)
-    morning_briefing = MorningBriefing(
-        notifier=notifier,
-        push_log_store=push_log_store,
-        memory_store=memory_store,
-        workflow_store=workflow_store,
-        person_store=person_store,
-        settings=settings,
-        news_store=news_store,
-        goal_store=goal_store,
-    )
-    briefing_cfg = proactive_cfg.get("briefing", {})
-    if briefing_cfg.get("enabled", True):
-        proactive_scheduler.register(morning_briefing, cron=briefing_cfg.get("cron", "0 8 * * *"))
-        log.info("briefing_scheduled", cron=briefing_cfg.get("cron", "0 8 * * *"))
-
-    google_credentials = GoogleCredentials.from_settings(settings)
-
-    gmail_channel = GmailChannel(credentials=google_credentials) if google_credentials else None
+    gmail_channel = email_plugin.gmail_channel
     channel_registry = ChannelRegistry(channels=[gmail_channel] if gmail_channel else [])
 
     calendar_reminder_store = CalendarReminderStore(pool=pool)
@@ -567,58 +557,12 @@ async def build_container(settings: Settings) -> ZeContainer:
         proactive_scheduler.register(calendar_reminders, cron=calendar_cfg.get("sync_cron", "45 7 * * *"))
         log.info("calendar_reminders_scheduled")
 
-    insight_engine = InsightEngine(
-        notifier=notifier,
-        pool=pool,
-        openrouter_client=openrouter_client,
-        settings=settings,
-    )
-    insights_proactive_cfg = proactive_cfg.get("insights", {})
-    if insights_proactive_cfg.get("enabled", True):
-        proactive_scheduler.register(insight_engine, cron=insights_proactive_cfg.get("cron", "0 7 * * 0"))
-        log.info("insights_scheduled")
-
-    goal_narrative = GoalNarrativeJob(
-        notifier=notifier,
-        push_log_store=push_log_store,
-        goal_store=goal_store,
-        goal_planner=goal_planner,
-    )
-    goal_narrative_cfg = proactive_cfg.get("goal_narrative", {})
-    if goal_narrative_cfg.get("enabled", True):
-        proactive_scheduler.register(goal_narrative, cron=goal_narrative_cfg.get("cron", "0 18 * * 0"))
-        log.info("goal_narrative_scheduled", cron=goal_narrative_cfg.get("cron", "0 18 * * 0"))
-
-    goal_suggestion_store = GoalSuggestionStore(pool=pool)
-    goal_suggestion = GoalSuggestionJob(
-        notifier=notifier,
-        goal_store=goal_store,
-        suggestion_store=goal_suggestion_store,
-        planner=goal_planner,
-        memory_store=memory_store,
-    )
-    goal_suggestion_cfg = proactive_cfg.get("goal_suggestion", {})
-    if goal_suggestion_cfg.get("enabled", True):
-        proactive_scheduler.register(goal_suggestion, cron=goal_suggestion_cfg.get("cron", "0 19 * * 0"))
-        log.info("goal_suggestion_scheduled", cron=goal_suggestion_cfg.get("cron", "0 19 * * 0"))
-
-    stuck_goals = StuckGoalJob(
-        notifier=notifier,
-        goal_store=goal_store,
-    )
-    stuck_goals_cfg = proactive_cfg.get("stuck_goals", {})
-    if stuck_goals_cfg.get("enabled", True):
-        proactive_scheduler.register(stuck_goals, cron=stuck_goals_cfg.get("cron", "0 9 * * 2"))
-        log.info("stuck_goals_scheduled", cron=stuck_goals_cfg.get("cron", "0 9 * * 2"))
-
-    if news_store is not None:
+    if news_store is not None and news_fetch_job is not None:
         fetch_cron = news_cfg.get("fetch_schedule", "*/30 * * * *")
         proactive_scheduler.register(news_fetch_job, cron=fetch_cron)
         log.info("news_fetch_scheduled", cron=fetch_cron, sources=len(news_source_configs))
 
     await proactive_scheduler.start()
-
-    locale = settings.persona_config.get("locale", "en")
 
     container = ZeContainer(
         settings=settings,
@@ -640,19 +584,15 @@ async def build_container(settings: Settings) -> ZeContainer:
         workflow_scheduler=workflow_scheduler,
         proactive_scheduler=proactive_scheduler,
         notifier=notifier,
-        morning_briefing=morning_briefing,
         calendar_reminders=calendar_reminders,
-        insight_engine=insight_engine,
-        goal_narrative=goal_narrative,
-        goal_suggestion=goal_suggestion,
         goal_suggestion_store=goal_suggestion_store,
-        stuck_goals=stuck_goals,
         browser_client=browser_client,
         channel_registry=channel_registry,
         contact_channel_store=contact_channel_store,
         goal_store=goal_store,
         goal_executor=goal_executor,
-        campaign_store=campaign_store,
+        prospecting_plugin=prospecting_plugin,
+        personal_plugin=personal_plugin,
         push_notifier=push_notifier,
         message_store=message_store,
         connection_manager=connection_manager,

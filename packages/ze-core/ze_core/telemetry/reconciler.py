@@ -23,9 +23,13 @@ class CostReconciler:
         self._client = openrouter_client
 
     async def run(self) -> None:
+        if not self._store.has_pending_writes:
+            return
+
         rows = await self._store.fetch_pending(_BATCH_SIZE, _MIN_AGE_SECONDS)
 
         if not rows:
+            self._store.mark_clean()
             return
 
         log.info("cost_reconcile_start", count=len(rows))

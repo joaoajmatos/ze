@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze_api.agents.email.agent import EmailAgent
+from ze_email.agents.email.agent import EmailAgent
 from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_api.logging import configure_logging
 from ze_memory.types import MemoryContext
@@ -111,7 +111,7 @@ async def test_run_returns_response_from_agentic_loop():
 
 async def test_run_lists_emails_when_llm_requests():
     """LLM calls list_emails once then returns text."""
-    import ze_api.agents.email.tools  # noqa: ensure email tools registered
+    import ze_email.agents.email.tools  # noqa: ensure email tools registered
 
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(side_effect=[
@@ -136,7 +136,7 @@ async def test_run_lists_emails_when_llm_requests():
 
 async def test_run_list_then_get_in_single_turn():
     """LLM lists emails to find ID, then fetches full content — two tool rounds."""
-    import ze_api.agents.email.tools  # noqa
+    import ze_email.agents.email.tools  # noqa
 
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(side_effect=[
@@ -176,7 +176,7 @@ async def test_run_list_then_get_in_single_turn():
 
 async def test_run_sends_email_when_llm_requests():
     """LLM calls send_email directly."""
-    import ze_api.agents.email.tools  # noqa
+    import ze_email.agents.email.tools  # noqa
     import base64
     from email.mime.text import MIMEText
 
@@ -221,7 +221,7 @@ async def test_run_no_tool_calls_when_llm_answers_directly():
 
 
 async def test_run_handles_list_emails_failure_gracefully():
-    import ze_api.agents.email.tools  # noqa
+    import ze_email.agents.email.tools  # noqa
 
     service = MagicMock()
     (

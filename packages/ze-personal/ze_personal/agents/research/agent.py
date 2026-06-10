@@ -4,7 +4,7 @@ from ze_core.orchestration.base_agent import BaseAgent
 from ze_core.orchestration.registry import agent
 from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_core.openrouter.client import OpenRouterClient
-from ze_api.settings import Settings
+from ze_core.settings import Settings
 from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\

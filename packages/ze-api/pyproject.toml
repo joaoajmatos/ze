@@ -7,6 +7,8 @@ dependencies = [
     "ze-core",
     "ze-memory",
     "ze-personal",
+    "ze-email",
+    "ze-prospecting",
     "ze-browser",
     "ze-news",
     "ze-notifications",
@@ -49,6 +51,8 @@ dev = [
 ze-core          = { workspace = true }
 ze-memory        = { workspace = true }
 ze-personal      = { workspace = true }
+ze-email         = { workspace = true }
+ze-prospecting   = { workspace = true }
 ze-browser       = { workspace = true }
 ze-news          = { workspace = true }
 ze-notifications = { workspace = true }

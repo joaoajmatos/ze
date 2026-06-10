@@ -148,3 +148,7 @@ class ChannelError(ZeCoreError):
 
 class ChannelNotFoundError(ChannelError):
     """No channel registered for the requested channel type."""
+
+
+class ChannelSendError(ChannelError):
+    """Channel transport failed during send."""

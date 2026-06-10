@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "ze-core",
     "ze-memory",
+    "asyncpg>=0.30",
 ]
 
 [dependency-groups]

@@ -11,6 +11,16 @@ log = get_logger(__name__)
 class PostgresCostStore:
     def __init__(self, pool: Any) -> None:
         self._pool = pool
+        # Conservative default: assume there may be rows left over from a previous
+        # process run so the reconciler always queries on first startup.
+        self._has_pending_writes: bool = True
+
+    @property
+    def has_pending_writes(self) -> bool:
+        return self._has_pending_writes
+
+    def mark_clean(self) -> None:
+        self._has_pending_writes = False
 
     async def write(self, rec: CostRecord) -> None:
         try:
@@ -35,6 +45,8 @@ class PostgresCostStore:
                     rec.generation_id,
                     rec.audio_seconds,
                 )
+            if rec.generation_id is not None:
+                self._has_pending_writes = True
         except Exception as exc:
             log.warning("cost_write_failed", error=str(exc))
 

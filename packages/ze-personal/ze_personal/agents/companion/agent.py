@@ -8,8 +8,7 @@ from ze_core.orchestration.registry import agent
 from ze_core.orchestration.types import AgentContext, AgentResult, ToolCall
 from ze_personal.contacts.store import PersonStore
 from ze_core.openrouter.client import OpenRouterClient
-from ze_api.settings import Settings
-import ze_api.agents.prospecting.tools  # noqa: F401 — registers log_outreach_event @tool
+from ze_core.settings import Settings
 from ze_core.capability.types import Mode
 
 _AGENT_INSTRUCTIONS = """\

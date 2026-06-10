@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze_api.jobs.insights import InsightEngine
+from ze_personal.jobs.insights import InsightEngine
 from ze_core.proactive.notifier import ProactiveNotifier
 
 

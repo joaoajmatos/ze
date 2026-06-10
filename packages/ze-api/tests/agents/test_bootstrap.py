@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze_api.agents.bootstrap import bootstrap_agents
-from ze_api.agents.companion.agent import CompanionAgent
+from ze_api.bootstrap import bootstrap_agents
+from ze_personal.agents.companion.agent import CompanionAgent
 from ze_core.orchestration.registry import _instances, get_agent
-from ze_api.agents.research.agent import ResearchAgent
+from ze_personal.agents.research.agent import ResearchAgent
 from ze_api.logging import configure_logging
 from ze_api.settings import Settings, get_settings
 
@@ -49,7 +49,8 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_personal.workflow.planner import WorkflowPlanner
     from ze_personal.workflow.scheduler import WorkflowScheduler
 
-    from ze_api.prospecting.store import ProspectCampaignStore
+    from ze_prospecting.store import ProspectCampaignStore
+    from ze_prospecting.types import ProspectingSettings
 
     client = AsyncMock()
     bootstrap_agents(
@@ -67,6 +68,7 @@ def test_bootstrap_registers_companion_and_research(settings):
         goal_executor=MM(spec=GoalExecutor),
         pool=MagicMock(),
         campaign_store=MM(spec=ProspectCampaignStore),
+        prospecting_settings=ProspectingSettings(),
     )
 
     assert isinstance(get_agent("companion"), CompanionAgent)

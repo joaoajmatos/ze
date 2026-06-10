@@ -1,6 +1,5 @@
 import pytest
 from ze_api.settings import Settings, get_settings
-from ze_api.agents.bootstrap import _import_agent_modules
 from ze_core.orchestration.registry import get_registered_agents
 
 
@@ -46,13 +45,9 @@ def test_agent_configs_empty_after_yaml_removal():
 
 def test_agents_registered_via_agent_decorator():
     import importlib
-    from ze_personal.plugin import PersonalPlugin
-    from ze_calendar.plugin import CalendarPlugin
-    for path in PersonalPlugin().agent_module_paths():
+    from ze_api.bootstrap import _DEFAULT_AGENT_MODULE_PATHS
+    for path in _DEFAULT_AGENT_MODULE_PATHS:
         importlib.import_module(path)
-    for path in CalendarPlugin().agent_module_paths():
-        importlib.import_module(path)
-    _import_agent_modules()
     agents = get_registered_agents()
     assert "research" in agents
     assert "companion" in agents

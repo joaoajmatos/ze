@@ -178,7 +178,7 @@ async def test_browser_extract_error_returns_error_string():
 # ── add_prospect ──────────────────────────────────────────────────────────────
 
 async def test_add_prospect_new_person():
-    from ze_api.agents.prospecting.tools import add_prospect
+    from ze_prospecting.agents.tools import add_prospect
 
     person_store = make_person_store(existing=[])
     cs = make_campaign_store()
@@ -206,7 +206,7 @@ async def test_add_prospect_new_person():
 
 
 async def test_add_prospect_duplicate_adds_source():
-    from ze_api.agents.prospecting.tools import add_prospect
+    from ze_prospecting.agents.tools import add_prospect
 
     existing_person = make_person(name="Maria Santos")
     person_store = make_person_store(existing=[existing_person])
@@ -235,7 +235,7 @@ async def test_add_prospect_duplicate_adds_source():
 
 
 async def test_add_prospect_stores_enrichment_notes():
-    from ze_api.agents.prospecting.tools import add_prospect
+    from ze_prospecting.agents.tools import add_prospect
 
     person_store = make_person_store(existing=[])
     upserted: list[Person] = []
@@ -268,7 +268,7 @@ async def test_add_prospect_stores_enrichment_notes():
 # ── draft_outreach ────────────────────────────────────────────────────────────
 
 async def test_draft_outreach_tool():
-    from ze_api.agents.prospecting.tools import draft_outreach
+    from ze_prospecting.agents.tools import draft_outreach
 
     person = make_person(name="João Silva")
     person_store = make_person_store(existing=[person])
@@ -296,7 +296,7 @@ async def test_draft_outreach_tool():
 
 
 async def test_draft_outreach_no_contact_returns_error():
-    from ze_api.agents.prospecting.tools import draft_outreach
+    from ze_prospecting.agents.tools import draft_outreach
 
     person_store = make_person_store(existing=[])
     cs = make_campaign_store()
@@ -318,7 +318,7 @@ async def test_draft_outreach_no_contact_returns_error():
 # ── log_outreach_event ────────────────────────────────────────────────────────
 
 async def test_log_outreach_event_sent():
-    from ze_api.agents.prospecting.tools import log_outreach_event
+    from ze_prospecting.agents.tools import log_outreach_event
 
     person = make_person(name="Maria Santos")
     person_store = make_person_store(existing=[person])
@@ -339,7 +339,7 @@ async def test_log_outreach_event_sent():
 
 
 async def test_log_outreach_event_no_campaign_row_returns_not_a_prospect():
-    from ze_api.agents.prospecting.tools import log_outreach_event
+    from ze_prospecting.agents.tools import log_outreach_event
 
     person = make_person(name="Unknown Contact")
     person_store = make_person_store(existing=[person])
@@ -360,7 +360,7 @@ async def test_log_outreach_event_no_campaign_row_returns_not_a_prospect():
 
 
 async def test_log_outreach_event_ambiguous_returns_clarification():
-    from ze_api.agents.prospecting.tools import log_outreach_event
+    from ze_prospecting.agents.tools import log_outreach_event
 
     matches = [
         make_person(name="João Silva"),
@@ -383,7 +383,7 @@ async def test_log_outreach_event_ambiguous_returns_clarification():
 
 
 async def test_log_outreach_event_invalid_event_type_rejected():
-    from ze_api.agents.prospecting.tools import log_outreach_event
+    from ze_prospecting.agents.tools import log_outreach_event
 
     person_store = make_person_store(existing=[make_person(name="Maria Santos")])
     cs = make_campaign_store()

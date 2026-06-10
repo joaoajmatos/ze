@@ -1,5 +1,5 @@
 from ze_personal.contacts.store import PersonStore
-from ze_api.logging import get_logger
+from ze_core.logging import get_logger
 from ze_core.proactive.job import proactive_job
 from ze_core.proactive.notifier import ProactiveNotifier
 from ze_core.telemetry.context import set_flow_context

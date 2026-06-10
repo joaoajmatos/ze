@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from ze_personal.contacts.store import PersonStore
-from ze_api.logging import get_logger
+from ze_core.logging import get_logger
 from ze_core.proactive.push_log_store import PushLogStore
-from ze_api.settings import Settings
+from ze_core.settings import Settings
 from ze_personal.workflow.store import WorkflowStore
 from ze_memory.retriever import PostgresMemoryStore
 from ze_core.proactive.job import proactive_job
@@ -36,7 +36,7 @@ class MorningBriefing:
         self._news = news_store
         self._goal_store = goal_store
         self._log = get_logger(__name__)
-        follow_up_cfg = settings.contacts_config.get("follow_up", {})
+        follow_up_cfg = self._settings.config.get("contacts", {}).get("follow_up", {})
         self._stale_days = int(follow_up_cfg.get("stale_days", 7))
         self._max_nudges = int(follow_up_cfg.get("max_nudges", 3))
         news_cfg = settings.config.get("news", {})
@@ -64,7 +64,7 @@ class MorningBriefing:
         )
 
         threshold = int(
-            self._settings.proactive_config.get("briefing", {}).get("unreviewed_nudge_threshold", 5)
+            self._settings.config.get("proactive", {}).get("briefing", {}).get("unreviewed_nudge_threshold", 5)
         )
 
         lines = ["Good morning! Here's your Ze briefing.", ""]

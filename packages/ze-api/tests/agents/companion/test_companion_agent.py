@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze_api.agents.companion.agent import CompanionAgent, _detect_outreach_event
+from ze_personal.agents.companion.agent import CompanionAgent, _detect_outreach_event
 from ze_core.orchestration.types import AgentContext, AgentResult
 from ze_api.logging import configure_logging
 from ze_memory.types import MemoryContext, Fact

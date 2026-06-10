@@ -1,6 +1,5 @@
 import importlib
 import inspect
-from pathlib import Path
 from typing import Any, get_type_hints
 
 import asyncpg
@@ -22,12 +21,25 @@ from ze_core.orchestration.registry import (
 
 _dep_map: dict[type, Any] = {}
 
-_AGENTS_DIR = Path(__file__).parent
+_DEFAULT_AGENT_MODULE_PATHS = [
+    "ze_personal.contacts.tools",
+    "ze_browser.tool",
+    "ze_personal.agents.goals.agent",
+    "ze_personal.agents.workflow.agent",
+    "ze_personal.agents.research.agent",
+    "ze_personal.agents.companion.agent",
+    "ze_calendar.agents.calendar.agent",
+    "ze_calendar.agents.reminders.agent",
+    "ze_email.agents.email.tools",
+    "ze_email.agents.email.agent",
+    "ze_prospecting.agents.tools",
+    "ze_prospecting.agents.agent",
+]
 
 
-def prepare_gate_registry(settings: Settings) -> None:
+def prepare_gate_registry(settings: Settings, plugins: list | None = None) -> None:
     """Import agent modules so @agent registers classes in ze-core."""
-    _import_agent_modules()
+    del settings, plugins
 
 
 def bootstrap_agents(
@@ -48,6 +60,7 @@ def bootstrap_agents(
     goal_executor=None,
     pool: asyncpg.Pool | None = None,
     campaign_store=None,
+    prospecting_settings=None,
     plugins: list | None = None,
     memory_store=None,
     news_store=None,
@@ -59,7 +72,7 @@ def bootstrap_agents(
     _dep_map.clear()
     _dep_map[OpenRouterClient] = openrouter_client
     _dep_map[Settings] = settings
-    _dep_map[CoreSettings] = settings  # ze_calendar agents annotate with ze_core.settings.Settings
+    _dep_map[CoreSettings] = settings.to_core_settings()
     _dep_map[GoogleCredentials] = google_credentials
 
     if workflow_store is not None:
@@ -93,8 +106,11 @@ def bootstrap_agents(
     if pool is not None:
         _dep_map[asyncpg.Pool] = pool
     if campaign_store is not None:
-        from ze_api.prospecting.store import ProspectCampaignStore
+        from ze_prospecting.store import ProspectCampaignStore
         _dep_map[ProspectCampaignStore] = campaign_store
+    if prospecting_settings is not None:
+        from ze_prospecting.types import ProspectingSettings
+        _dep_map[ProspectingSettings] = prospecting_settings
     if memory_store is not None:
         from ze_memory.retriever import PostgresMemoryStore
         _dep_map[PostgresMemoryStore] = memory_store
@@ -111,12 +127,10 @@ def bootstrap_agents(
         except ImportError:
             pass
 
-    # Import plugin agent modules first so their @agent decorators register before the ze/ scan.
-    for plugin in (plugins or []):
-        for module_path in plugin.agent_module_paths():
-            importlib.import_module(module_path)
+    for module_path in _plugin_agent_module_paths(plugins):
+        importlib.import_module(module_path)
 
-    prepare_gate_registry(settings)
+    prepare_gate_registry(settings, plugins)
 
     for name, cls in get_registered_agents().items():
         if not getattr(cls, "enabled", True):
@@ -140,9 +154,9 @@ def validate_registry() -> None:
 
         for tool_name in declared_tools:
             if tool_name.startswith("openrouter:"):
-                continue  # server tool — handled by OpenRouter, not registered locally
+                continue
             if tool_name == "delegate_to_agent":
-                continue  # built-in harness tool — not in @tool registry by design
+                continue
             if tool_name not in tool_reg:
                 raise AgentConfigError(
                     f"Agent {name!r} declares unknown tool {tool_name!r}. "
@@ -158,31 +172,38 @@ def validate_registry() -> None:
                     )
 
 
-def _import_agent_modules() -> None:
-    """Import shared tools then every agent sub-package that has an agent.py."""
-    importlib.import_module("ze_personal.contacts.tools")
-    importlib.import_module("ze_browser.tool")
-    for path in sorted(_AGENTS_DIR.iterdir()):
-        if path.is_dir() and (path / "agent.py").exists():
-            importlib.import_module(f"ze_api.agents.{path.name}.agent")
+def _plugin_agent_module_paths(plugins: list | None) -> list[str]:
+    paths: list[str] = list(_DEFAULT_AGENT_MODULE_PATHS)
+    for plugin in (plugins or []):
+        paths.extend(plugin.agent_module_paths())
+    return paths
 
 
-def reload_agent_modules() -> None:
+def _import_agent_modules(plugins: list | None = None) -> None:
+    """Import shared tools and plugin agent modules."""
+    for module_path in _DEFAULT_AGENT_MODULE_PATHS:
+        importlib.import_module(module_path)
+
+
+def reload_agent_modules(plugins: list | None = None) -> None:
     """Force @agent registration after tests replace the ze-core registry."""
     import sys
 
     from ze_core.orchestration.registry import _instances, _registry
-    from ze_calendar.plugin import CalendarPlugin
+    from ze_core.orchestration.tool import clear_tool_registry
+
+    module_paths = (
+        _plugin_agent_module_paths(plugins)
+        if plugins is not None
+        else _DEFAULT_AGENT_MODULE_PATHS
+    )
 
     _registry.clear()
     _instances.clear()
-    for path in sorted(_AGENTS_DIR.iterdir()):
-        if path.is_dir() and (path / "agent.py").exists():
-            sys.modules.pop(f"ze_api.agents.{path.name}.agent", None)
-    for module_path in CalendarPlugin().agent_module_paths():
+    clear_tool_registry()
+    for module_path in module_paths:
         sys.modules.pop(module_path, None)
-    _import_agent_modules()
-    for module_path in CalendarPlugin().agent_module_paths():
+    for module_path in module_paths:
         importlib.import_module(module_path)
 
 

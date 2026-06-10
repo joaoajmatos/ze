@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_personal.contacts.types import StaleFollowUpNudge
-from ze_api.jobs.briefing import MorningBriefing
+from ze_personal.jobs.briefing import MorningBriefing
 from ze_core.proactive.push_log_store import PushLogEntry
 from ze_api.settings import Settings, get_settings
 from ze_core.proactive.notifier import ProactiveNotifier

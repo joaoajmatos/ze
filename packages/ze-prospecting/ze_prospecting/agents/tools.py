@@ -4,7 +4,7 @@ from ze_core.orchestration.tool import ToolAccess, tool
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import Person, PersonSource
 from ze_core.openrouter.client import OpenRouterClient
-from ze_api.prospecting.store import ProspectCampaignStore
+from ze_prospecting.store import ProspectCampaignStore
 
 _VALID_EVENT_TYPES = frozenset({"sent", "replied", "bounced"})
 
