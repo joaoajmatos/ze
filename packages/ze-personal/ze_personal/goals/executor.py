@@ -364,6 +364,23 @@ class GoalExecutor:
             urgency="high",
         ))
         asyncio.create_task(self._promote_learnings(goal, learnings))
+        asyncio.create_task(self._extract_and_store_procedure(goal, milestones))
+
+    async def _extract_and_store_procedure(self, goal: Goal, milestones: list[Milestone]) -> None:
+        if self._memory is None:
+            return
+        try:
+            procedure = await self._planner.extract_procedure(goal, milestones)
+        except Exception as exc:
+            log.warning("goal_procedure_extraction_failed", goal_id=str(goal.id), error=str(exc))
+            return
+        if procedure is None:
+            return
+        try:
+            await self._memory.propose_procedure(procedure)
+            log.info("goal_procedure_stored", goal_id=str(goal.id), name=procedure.name)
+        except Exception as exc:
+            log.warning("goal_procedure_store_failed", goal_id=str(goal.id), error=str(exc))
 
     async def _promote_learnings(self, goal: Goal, learnings: list[GoalLearning]) -> None:
         if self._memory is None or not learnings:

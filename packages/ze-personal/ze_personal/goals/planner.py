@@ -7,7 +7,8 @@ from uuid import UUID, uuid4
 
 from ze_core import defaults
 from ze_core.errors import GoalPlanError
-from ze_memory.types import Episode, Fact
+from typing import Any
+from ze_memory.types import Episode, Fact, Procedure, RetrievalRequest
 from ze_personal.goals.types import (
     Goal,
     GateStatus,
@@ -183,6 +184,26 @@ Return JSON:
 If nothing is promotable, return: {"facts": []}\
 """
 
+_PROCEDURE_SYSTEM = """\
+You are extracting a reusable procedure from a completed goal execution.
+
+A procedure captures HOW the goal was accomplished — the generalizable sequence of steps
+that could be reused for a similar goal in the future. Focus on the method, not the
+specific subject matter.
+
+Return JSON:
+{
+  "name": "short verb-phrase name for the procedure",
+  "trigger": "when would this procedure be useful? (one sentence)",
+  "preconditions": ["what must be true before starting?"],
+  "steps": ["step 1", "step 2", ...],
+  "success_criteria": ["how do you know it worked?"]
+}
+
+If the goal was too specific or opportunistic to generalise into a reusable procedure,
+return: {"name": null}\
+"""
+
 _PROPER_NOUN_RE = re.compile(r"[A-Z][a-z]+|\d{4}|\bQ[1-4]\b")
 
 
@@ -230,9 +251,11 @@ class GoalPlanner:
         self,
         client: OpenRouterClient,
         model: str = defaults.MODEL_GOAL_PLAN,
+        memory_store: Any = None,
     ) -> None:
         self._client = client
         self._model = model
+        self._memory = memory_store
 
     async def plan(
         self,
@@ -248,6 +271,13 @@ class GoalPlanner:
         )
         if goal.learnings:
             prompt += f"\nLearnings so far:\n{goal.learnings}"
+        procedures = await self._fetch_procedures(goal.title)
+        if procedures:
+            lines = [
+                f"  - [{p.name}] {p.trigger}\n    Steps: {'; '.join(p.steps[:3])}"
+                for p in procedures
+            ]
+            prompt += "\n\nREUSABLE PROCEDURES FROM PAST GOALS:\n" + "\n".join(lines)
         if prior_work:
             lines = [
                 f"  - \"{p.goal_title}\" → \"{p.milestone_title}\" "
@@ -421,6 +451,60 @@ class GoalPlanner:
                 if isinstance(f.get("key"), str) and isinstance(f.get("value"), str)
             ][:5]
         except Exception:
+            return []
+
+    async def extract_procedure(
+        self,
+        goal: Goal,
+        milestones: list[Milestone],
+    ) -> Procedure | None:
+        """Derive a reusable procedure from a completed goal. Returns None if not generalisable."""
+        completed = [m for m in milestones if m.status == MilestoneStatus.COMPLETED]
+        if not completed:
+            return None
+        steps = [f"{m.sequence}. {m.title}" for m in completed]
+        prompt = (
+            f"Goal: {goal.title}\n"
+            f"Objective: {goal.objective}\n\n"
+            f"Completed milestones:\n" + "\n".join(steps)
+        )
+        try:
+            raw = await self._client.complete(
+                messages=[{"role": "user", "content": prompt}],
+                model=self._model,
+                system=_PROCEDURE_SYSTEM,
+            )
+            data = json.loads(raw)
+            if not data.get("name"):
+                return None
+            return Procedure(
+                id=None,
+                name=data["name"],
+                trigger=data.get("trigger", ""),
+                preconditions=data.get("preconditions", []),
+                steps=data.get("steps", [step.split(". ", 1)[-1] for step in steps]),
+                success_criteria=data.get("success_criteria", []),
+            )
+        except Exception as exc:
+            log.warning("goal_procedure_extraction_failed", goal_id=str(goal.id), error=str(exc))
+            return None
+
+    async def _fetch_procedures(self, query: str) -> list[Procedure]:
+        if self._memory is None:
+            return []
+        try:
+            from ze_core.embeddings import get_embedder
+            embedding = get_embedder().encode(query)
+            request = RetrievalRequest(
+                module="planner",
+                agent="planner",
+                query_text=query,
+                query_embedding=embedding,
+            )
+            ctx = await self._memory.retrieve(request)
+            return ctx.procedures
+        except Exception as exc:
+            log.warning("planner_procedure_fetch_failed", error=str(exc))
             return []
 
     async def extract_learning(self, milestone_title: str, output: str) -> str:

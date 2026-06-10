@@ -28,6 +28,7 @@ from ze_memory.types import (
     Event,
     Fact,
     MemoryContext,
+    Procedure,
     ProfileFacet,
     RetrievalRequest,
     TaskState,
@@ -179,6 +180,32 @@ class PostgresMemoryStore:
                     )
             except Exception as exc:
                 log.warning("memory_propose_event_failed", title=event.title, error=str(exc))
+
+    async def propose_procedure(self, procedure: Procedure) -> None:
+        try:
+            emb_list = (
+                _to_list(self._embedder.encode(f"{procedure.trigger} {procedure.name}"))
+                if self._embedder is not None else None
+            )
+            async with self._pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO memory_procedures
+                      (name, trigger, preconditions, steps, success_criteria,
+                       version, source_refs, embedding)
+                    VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7::jsonb, $8::vector)
+                    """,
+                    procedure.name,
+                    procedure.trigger,
+                    json.dumps(procedure.preconditions),
+                    json.dumps(procedure.steps),
+                    json.dumps(procedure.success_criteria),
+                    procedure.version,
+                    json.dumps([str(r) for r in procedure.source_refs]),
+                    emb_list,
+                )
+        except Exception as exc:
+            log.warning("memory_propose_procedure_failed", name=procedure.name, error=str(exc))
 
     async def upsert_entity(self, entity: Entity) -> UUID:
         emb_list = (

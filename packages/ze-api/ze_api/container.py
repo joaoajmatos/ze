@@ -368,7 +368,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     contact_channel_store = ContactChannelStore(pool=pool)
     campaign_store = ProspectCampaignStore(pool=pool)
     goal_store = GoalStore(pool=pool)
-    goal_planner = GoalPlanner(client=openrouter_client, model=settings.workflow_plan_model)
+    goal_planner = GoalPlanner(client=openrouter_client, model=settings.workflow_plan_model, memory_store=memory_store)
     goal_executor = GoalExecutor(
         goal_store=goal_store,
         goal_planner=goal_planner,
