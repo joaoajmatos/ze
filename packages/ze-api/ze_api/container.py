@@ -305,6 +305,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             "embedder": embedder,
             "settings": settings,
             "workflow_store": workflow_store,
+            "workflow_planner": workflow_planner,
         }
     }
 
