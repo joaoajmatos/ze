@@ -2,7 +2,7 @@
 
 # Ze
 
-**Not a chatbot. An autonomous AI that works for you.**
+**Not a chatbot.**
 
 Ze doesn't wait to be asked. It knows you, acts on your behalf, and operates in the background for days or weeks at a time — researching, planning, executing, and checking in only when it matters. Self-hosted, single-user, yours entirely.
 
@@ -90,7 +90,7 @@ Routing is handled by local `paraphrase-multilingual-MiniLM-L12-v2` embeddings o
 | `prospecting` | Target research via a Playwright browser sidecar + outreach drafting | Autonomous |
 | `news` | Headlines and topic search from curated RSS sources, personalised to your interests | Autonomous |
 
-`goals` and `workflow` ship from `ze-personal`; `news` from `ze-news`; the rest live in `ze-api`.
+`goals` and `workflow` ship from `ze-personal`; `email` from `ze-email`; `calendar` and `reminders` from `ze-calendar`; `prospecting` from `ze-prospecting`; `news` from `ze-news`; `research` and `companion` from `ze-personal`.
 
 ### The Goal Engine
 
@@ -221,7 +221,7 @@ make eval            # run the agent eval suite
 make eval-server     # MCP eval server for Cursor / Claude Code (see docs/eval.md)
 ```
 
-**Conventions:** dataclasses for domain types (no Pydantic outside `ze_api/api/`), constructor injection throughout, structlog for logging, typed errors from `ze_core.errors`, async everywhere. Tests mock the DB and LLM boundaries. See [CLAUDE.md](CLAUDE.md) for the full contributor guide.
+**Conventions:** dataclasses for domain types (no Pydantic outside `ze_api/api/`), constructor injection throughout, structlog for logging, typed errors from `ze_core.errors`, async everywhere. Tests mock the DB and LLM boundaries. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
 
 ---
 
@@ -233,9 +233,11 @@ Ze is a uv-workspace monorepo with a strict one-way dependency graph:
 ze/
 ├── packages/
 │   ├── ze-core/          # Pure infrastructure — routing, memory, orchestration, telemetry
-│   ├── ze-personal/      # Domain layer — goals, workflows, persona, contacts
+│   ├── ze-personal/      # Domain layer — goals, workflows, persona, contacts, research + companion agents
 │   ├── ze-google/        # Google OAuth2 credentials (no Ze deps)
+│   ├── ze-email/         # Gmail channel + email agent
 │   ├── ze-calendar/      # Calendar, reminders, timezone domain
+│   ├── ze-prospecting/   # Prospecting agent, campaign store, browser sidecar usage
 │   ├── ze-browser/       # Playwright browser sidecar client
 │   ├── ze-news/          # News fetching, RSS sources, news agent
 │   ├── ze-notifications/ # Push notification abstraction (ntfy)
@@ -255,19 +257,29 @@ graph TD
     comp[ze-components]
     google[ze-google]
     personal[ze-personal]
+    email[ze-email]
     calendar[ze-calendar]
+    prospecting[ze-prospecting]
     news[ze-news]
     api[ze-api]
     app[ze-app<br/><i>Flutter</i>]
 
     personal --> core
+    email --> core
+    email --> google
+    email --> personal
     calendar --> core
     calendar --> google
     calendar --> personal
+    prospecting --> core
+    prospecting --> browser
+    prospecting --> personal
     news --> core
     api --> core
     api --> personal
+    api --> email
     api --> calendar
+    api --> prospecting
     api --> google
     api --> browser
     api --> news
