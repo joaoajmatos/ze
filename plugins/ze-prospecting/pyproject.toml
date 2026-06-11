@@ -4,14 +4,14 @@ version = "0.1.0"
 description = "Prospecting agent, campaign store, and recovery jobs for Ze."
 requires-python = ">=3.12"
 dependencies = [
-    "ze-core",
+    "ze-sdk",
     "ze-browser",
     "ze-personal",
     "asyncpg>=0.30",
 ]
 
 [tool.uv.sources]
-ze-core     = { workspace = true }
+ze-sdk      = { workspace = true }
 ze-browser  = { workspace = true }
 ze-personal = { workspace = true }
 

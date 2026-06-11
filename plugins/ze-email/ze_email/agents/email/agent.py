@@ -7,7 +7,7 @@ from ze_agents.types import AgentContext, AgentResult
 from ze_email.channel.gmail import GmailChannel
 from ze_personal.contacts.extractors import extract_email_contacts
 from ze_google.auth import GoogleCredentials
-from ze_core.openrouter.client import OpenRouterClient
+from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 
 _AGENT_INSTRUCTIONS = """\
@@ -55,7 +55,7 @@ class EmailAgent(BaseAgent):
 
     def __init__(
         self,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         google_credentials: GoogleCredentials,
         settings: Settings,
     ) -> None:

@@ -6,7 +6,7 @@ import pytest
 from ze_email.agents.email.agent import EmailAgent
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.settings import Settings
-from ze_memory.types import MemoryContext
+from ze_sdk.memory import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

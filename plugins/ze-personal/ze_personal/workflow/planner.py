@@ -5,8 +5,8 @@ import json
 from ze_core import defaults
 from ze_agents.errors import WorkflowPlanError
 from ze_agents.logging import get_logger
-from ze_core.openrouter.client import OpenRouterClient
-from ze_memory.types import Procedure
+from ze_agents.client import LLMClient
+from ze_sdk.memory import Procedure
 from ze_personal.workflow.types import StepResult, WorkflowStep
 
 log = get_logger(__name__)
@@ -63,7 +63,7 @@ Output ONLY a JSON object — no explanation, no markdown:
 
 
 class WorkflowPlanner:
-    def __init__(self, openrouter_client: OpenRouterClient) -> None:
+    def __init__(self, openrouter_client: LLMClient) -> None:
         self._client = openrouter_client
 
     async def plan(self, description: str) -> list[WorkflowStep]:

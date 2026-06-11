@@ -265,7 +265,7 @@ async def test_handle_gate_redirected_passes_none_when_no_prior_work():
 
 # ── _promote_learnings ────────────────────────────────────────────────────────
 
-from ze_memory.types import Fact
+from ze_sdk.memory import Fact
 from ze_personal.goals.types import GoalLearning
 
 

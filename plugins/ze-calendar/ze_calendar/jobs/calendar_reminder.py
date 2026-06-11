@@ -1,6 +1,6 @@
 from typing import Any
 
-from ze_core.proactive.job import proactive_job
+from ze_sdk.proactive import proactive_job
 from ze_calendar.reminders.calendar import CalendarReminderService
 
 

@@ -9,7 +9,7 @@ import pytest
 
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.types import Goal, GoalStatus, GoalSuggestion, SuggestionStatus
-from ze_memory.types import Episode, Fact
+from ze_sdk.memory import Episode, Fact
 
 
 def _client(response: str = "{}"):

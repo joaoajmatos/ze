@@ -224,7 +224,7 @@ class PersonStore:
         return person
 
     async def _write_entity(self, person: Person) -> None:
-        from ze_memory.types import Entity
+        from ze_sdk.memory import Entity
         attrs: dict[str, str] = {}
         if person.relationship_to_user:
             attrs["relationship"] = person.relationship_to_user

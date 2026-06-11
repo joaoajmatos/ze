@@ -5,8 +5,8 @@ from typing import AsyncIterator
 import ze_news.agents.tools  # noqa: F401 — registers @tool decorators
 
 from ze_agents.types import Mode
-from ze_memory.retriever import PostgresMemoryStore
-from ze_core.openrouter.client import OpenRouterClient
+from ze_sdk.memory import PostgresMemoryStore
+from ze_agents.client import LLMClient
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult

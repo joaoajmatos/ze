@@ -3,7 +3,7 @@ from typing import AsyncIterator
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import AgentContext, AgentResult
-from ze_core.openrouter.client import OpenRouterClient
+from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_agents.types import Mode
 
@@ -48,7 +48,7 @@ class ResearchAgent(BaseAgent):
 
     def __init__(
         self,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         settings: Settings,
     ) -> None:
         self._settings = settings

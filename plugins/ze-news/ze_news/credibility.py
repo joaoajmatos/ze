@@ -15,7 +15,7 @@ from ze_news.types import (
 )
 
 if TYPE_CHECKING:
-    from ze_core.openrouter.client import OpenRouterClient
+    from ze_agents.client import LLMClient
     from ze_news.types import Article
 
 log = get_logger(__name__)

@@ -4,7 +4,7 @@ import asyncpg
 
 from ze_agents.logging import get_logger
 from ze_agents.plugin import ZePlugin
-from ze_core.proactive.scheduler import ProactiveScheduler
+from ze_sdk.proactive import ProactiveScheduler
 from ze_agents.settings import Settings
 from ze_prospecting.jobs.campaigns import recover_stale_campaigns
 from ze_prospecting.store import ProspectCampaignStore

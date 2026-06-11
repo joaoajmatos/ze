@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from ze_core.db import DBPool
+from ze_sdk import DBPool
 from ze_agents.logging import get_logger
 from ze_personal.goals.types import GoalSuggestion, SuggestionStatus
 

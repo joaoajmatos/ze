@@ -12,21 +12,34 @@ Push notifications are delivered via ntfy. All LLM calls go through OpenRouter.
 ```
 ze/                           # monorepo root
 ├── core/                     # Shared infrastructure — no domain knowledge
-│   ├── ze-core/              # Pure infrastructure — routing, memory, orchestration, telemetry, …
+│   ├── ze-core/              # Engine — routing, orchestration, telemetry, DI container
 │   │   └── ze_core/
 │   │       ├── capability/   # CapabilityGate, PostgresCapabilityOverrideStore, modes
-│   │       ├── channels/     # Channel ABC, ChannelRegistry, types
-│   │       ├── interface/    # AppInterface ABC, InputPreprocessor, validation, types
-│   │       ├── memory/       # PostgresMemoryStore, consolidator, extractor, types
-│   │       ├── openrouter/   # OpenRouterClient, types
-│   │       ├── orchestration/# graph_builder, BaseAgent, @agent, @tool, registry, nodes, state
-│   │       ├── plugin.py     # ZePlugin ABC (container + graph extension seam)
-│   │       ├── proactive/    # ProactiveScheduler, ProactiveNotifier, ProactiveJob
-│   │       ├── progress/     # ProgressReporter, translations
+│   │       ├── openrouter/   # OpenRouterClient (engine internal — use LLMClient Protocol in plugins)
+│   │       ├── orchestration/# graph_builder, graph nodes, AgentState, edges
 │   │       ├── routing/      # EmbeddingRouter, ComplexityEstimator, fallback, store
 │   │       ├── telemetry/    # CostTracker, CostReconciler, PostgresCostStore, ContextVar
 │   │       ├── container.py  # Base Container with DI wiring and invoke/resume entry points
 │   │       └── embeddings.py # Shared paraphrase-multilingual-MiniLM-L12-v2 singleton
+│   ├── ze-agents/            # Developer API — BaseAgent, @agent, @tool, ZePlugin, shared types
+│   │   └── ze_agents/
+│   │       ├── channels/     # Channel ABC, ChannelRegistry, types
+│   │       ├── interface/    # AppInterface ABC, InputPreprocessor, validation, types
+│   │       ├── progress/     # ProgressReporter, translations
+│   │       ├── base_agent.py # BaseAgent ABC with agentic_loop
+│   │       ├── client.py     # LLMClient Protocol
+│   │       ├── db.py         # DBPool Protocol
+│   │       ├── errors.py     # Full ZeError hierarchy
+│   │       ├── hooks.py      # HarnessHook ABC
+│   │       ├── plugin.py     # ZePlugin ABC
+│   │       ├── registry.py   # @agent decorator + AgentRegistry
+│   │       ├── settings.py   # Settings dataclass
+│   │       └── tool.py       # @tool decorator, ToolAccess
+│   ├── ze-proactive/         # Job scheduling framework
+│   │   └── ze_proactive/     # ProactiveJob, ProactiveScheduler, ProactiveNotifier, PushLogStore
+│   ├── ze-sdk/               # Public SDK surface — flat re-export layer for plugin authors
+│   │   └── ze_sdk/           # ze_sdk, ze_sdk.types, ze_sdk.proactive, ze_sdk.channels,
+│   │                         # ze_sdk.memory, ze_sdk.errors
 │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
 │   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
 │   ├── ze-google/            # Shared Google OAuth2 credentials (no Ze deps)
@@ -87,17 +100,20 @@ ze/                           # monorepo root
 
 ```
 ze-browser      (no ze deps)             core/
-ze-core         (no ze deps)             core/
+ze-agents       (no ze deps)             core/
+ze-proactive  → ze-agents                core/
 ze-notifications(no ze deps)             core/
 ze-components   (no ze deps)             core/
 ze-google       (no ze deps)             core/
-ze-memory     → ze-core                  core/
-ze-personal   → ze-core, ze-memory       plugins/
-ze-email      → ze-core, ze-google, ze-personal            plugins/
-ze-prospecting→ ze-core, ze-browser, ze-personal           plugins/
-ze-calendar   → ze-core, ze-google, ze-personal            plugins/
-ze-news       → ze-core                  plugins/
-ze-api        → ze-core, ze-memory, ze-personal, ze-email, ze-prospecting, ze-calendar,
+ze-memory     → ze-agents                core/
+ze-sdk        → ze-agents, ze-proactive, ze-memory         core/  ← plugin entry point
+ze-core       → ze-agents                core/  ← engine; never a plugin dep
+ze-personal   → ze-sdk                   plugins/
+ze-email      → ze-sdk, ze-google, ze-personal             plugins/
+ze-prospecting→ ze-sdk, ze-browser, ze-personal            plugins/
+ze-calendar   → ze-sdk, ze-google, ze-personal             plugins/
+ze-news       → ze-sdk                   plugins/
+ze-api        → ze-core, ze-sdk, ze-personal, ze-email, ze-prospecting, ze-calendar,
                   ze-google, ze-browser, ze-news, ze-notifications, ze-components   apps/
 ze-app          (Flutter — connects to ze-api over WebSocket)                       apps/
 ```
@@ -144,15 +160,16 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
   `specs/phases/07-api.md`.
 - **Logging**: Always use `get_logger(__name__)`. Never use `print()` or stdlib
   `logging` directly.
-- **Errors**: Raise from `ze_api/errors.py` or `ze_core/errors.py`. Never raise bare
+- **Errors**: Raise from `ze_api/errors.py` or `ze_sdk/errors.py`. Never raise bare
   `Exception` or `ValueError` in domain code — always use a typed subclass of `ZeError`.
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.
   Never `asyncio.run()` inside a running event loop.
 - **Comments**: Default to none. Only add a comment when the *why* is non-obvious.
-- **Imports**: Infrastructure types from `ze_core.*` (orchestration, routing, memory,
-  telemetry). Domain types from `ze_personal.*` (contacts, goals, workflow, persona).
+- **Imports**: Plugin code imports from `ze_sdk.*` (agent API, types, proactive, memory,
+  channels, errors). Domain types from `ze_personal.*` (contacts, goals, workflow, persona).
   Calendar/reminder domain from `ze_calendar.*`. Google credentials from `ze_google.*`.
-  Ze-specific behaviour (API, interface, jobs) stays in `ze_api/`.
+  Engine internals (`ze_core.*`) are for `ze_api/` and `ze_core/` only — never import
+  `ze_core` from a plugin package.
 
 ### Testing
 
@@ -206,11 +223,11 @@ Hot-reloaded on SIGHUP without restart.
 1. Write a spec in `specs/phases/` first (use `specs/TEMPLATE.md`; see `specs/README.md` for the index).
 2. Create the agent in the appropriate package — `ze_personal/agents/`, `ze_email/agents/`,
    `ze_prospecting/agents/`, or `ze_calendar/agents/` — decorate with `@agent` from
-   `ze_core.orchestration.registry`, subclass `BaseAgent` from `ze_core.orchestration.base_agent`.
+   `ze_sdk`, subclass `BaseAgent` from `ze_sdk`.
    Put `description`, `model`, `capabilities`, `intent_map`, `tools`, and `timeout` as class
    attributes. Define `_AGENT_INSTRUCTIONS` at the top.
 3. Add a `tools.py` alongside the agent if it needs Python tools. Use `@tool` from
-   `ze_core.orchestration.tool`. Use `"openrouter:web_search"` in `tools` for web search —
+   `ze_sdk`. Use `"openrouter:web_search"` in `tools` for web search —
    no Python tool needed.
 4. Add the module paths to the package's `ZePlugin.agent_module_paths()` — tools module
    first, then the agent module. The bootstrapper imports these at startup to fire `@agent`
@@ -288,3 +305,5 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 44 | Calendar package split — ze-google (credentials), ze-calendar (agents, reminders, timezone), ze renamed to ze-api | Done |
 | 45 | Native app interface — Flutter client, WebSocket transport, ntfy push notifications, ze-notifications + ze-components packages | Done |
 | 46 | Accountability layer — weekly narrative, cost anomaly detection, confirmation persistence + replay + ntfy + timeout, `/status` command | Done |
+| 48 | Core split — ze-agents (developer API), ze-proactive (job framework) extracted from ze-core | Done |
+| 49 | Ze SDK — `ze-sdk` flat re-export layer; plugins import from `ze_sdk.*`, no direct ze-core dep | Done |

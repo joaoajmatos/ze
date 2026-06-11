@@ -179,7 +179,7 @@ async def test_replan_with_empty_prior_work_omits_prior_work_block():
 
 import json as _json
 
-from ze_memory.types import Fact
+from ze_sdk.memory import Fact
 from ze_personal.goals.types import GoalLearning
 
 

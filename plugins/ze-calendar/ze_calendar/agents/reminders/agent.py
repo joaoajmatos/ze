@@ -7,8 +7,8 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import Mode
 from ze_agents.types import AgentContext, AgentResult
-from ze_core.openrouter.client import OpenRouterClient
-from ze_core.proactive.notifier import ProactiveNotifier
+from ze_agents.client import LLMClient
+from ze_sdk.proactive import ProactiveNotifier
 from ze_agents.settings import Settings
 from ze_calendar.reminders.store import ReminderStore
 from ze_personal.workflow.scheduler import WorkflowScheduler
@@ -56,7 +56,7 @@ class RemindersAgent(BaseAgent):
 
     def __init__(
         self,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         reminder_store: ReminderStore,
         workflow_scheduler: WorkflowScheduler,
         notifier: ProactiveNotifier,

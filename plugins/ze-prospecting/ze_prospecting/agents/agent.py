@@ -9,7 +9,7 @@ from ze_agents.types import Mode
 from ze_agents.types import AgentContext, AgentResult
 from ze_browser import BrowserClient
 from ze_personal.contacts.store import PersonStore
-from ze_core.openrouter.client import OpenRouterClient
+from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_prospecting.store import ProspectCampaignStore
 from ze_prospecting.types import ProspectingSettings
@@ -71,7 +71,7 @@ class ProspectingAgent(BaseAgent):
 
     def __init__(
         self,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         settings: Settings,
         prospecting_settings: ProspectingSettings,
         browser_client: BrowserClient,

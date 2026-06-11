@@ -1,8 +1,7 @@
 from ze_personal.contacts.store import PersonStore
 from ze_agents.logging import get_logger
-from ze_core.proactive.job import proactive_job
-from ze_core.proactive.notifier import ProactiveNotifier
-from ze_core.telemetry.context import set_flow_context
+from ze_sdk.proactive import proactive_job
+from ze_sdk.proactive import ProactiveNotifier
 from ze_agents.interface.types import Action, Notification
 
 
@@ -19,7 +18,6 @@ class ContactReviewNotifier:
         self._log = get_logger(__name__)
 
     async def run(self) -> None:
-        set_flow_context("contact_review")
         pending = await self._person_store.get_pending()
         if not pending:
             self._log.debug("contact_review_nothing_pending")

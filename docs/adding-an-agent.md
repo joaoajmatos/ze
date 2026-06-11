@@ -35,8 +35,8 @@ Tools are async functions decorated with `@tool`. The decorator registers them i
 global tool registry when the module is imported.
 
 ```python
-from ze_core.orchestration.tool import tool, ToolAccess
-from ze_core.orchestration.types import ToolCall
+from ze_sdk import tool, ToolAccess
+from ze_sdk.types import ToolCall
 
 @tool(access=ToolAccess.READ, description="Search the web for current information.")
 async def web_search(query: str, client: SomeClient, max_results: int = 5) -> ToolCall:
@@ -79,11 +79,9 @@ via parameters. They do not import from global state or access `self`.
 ## 3. Write the agent (`agent.py`)
 
 ```python
-from ze_core.orchestration.base_agent import BaseAgent
-from ze_core.orchestration.registry import agent
-from ze_core.orchestration.types import AgentContext, AgentResult
-from ze_core.capability.types import Mode
-from ze_core.openrouter.client import OpenRouterClient
+from ze_sdk import agent, BaseAgent
+from ze_sdk.types import AgentContext, AgentResult, Mode
+from ze_agents.client import LLMClient
 from ze_api.settings import Settings
 
 _AGENT_INSTRUCTIONS = """
@@ -116,7 +114,7 @@ class MyAgent(BaseAgent):
         "create": Mode.CONFIRM,
     }
 
-    def __init__(self, openrouter_client: OpenRouterClient, settings: Settings) -> None:
+    def __init__(self, openrouter_client: LLMClient, settings: Settings) -> None:
         self._client = openrouter_client
         self._settings = settings
 

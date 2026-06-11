@@ -9,8 +9,8 @@ from ze_agents.types import AgentContext, AgentResult
 from ze_personal.goals.executor import GoalExecutor
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
-from ze_core.openrouter.client import OpenRouterClient
-from ze_core.proactive.notifier import ProactiveNotifier
+from ze_agents.client import LLMClient
+from ze_sdk.proactive import ProactiveNotifier
 import ze_personal.agents.goals.tools  # noqa: F401
 
 _AGENT_INSTRUCTIONS = """\
@@ -81,7 +81,7 @@ class GoalAgent(BaseAgent):
 
     def __init__(
         self,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         goal_store: GoalStore,
         goal_planner: GoalPlanner,
         goal_executor: GoalExecutor,

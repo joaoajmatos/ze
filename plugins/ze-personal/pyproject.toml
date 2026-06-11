@@ -8,8 +8,7 @@ version = "0.1.0"
 description = "Ze personal assistant domain layer — contacts, goals, workflow, persona"
 requires-python = ">=3.11"
 dependencies = [
-    "ze-core",
-    "ze-memory",
+    "ze-sdk",
     "asyncpg>=0.30",
 ]
 
@@ -23,8 +22,7 @@ dev = [
 ]
 
 [tool.uv.sources]
-ze-core   = { workspace = true }
-ze-memory = { workspace = true }
+ze-sdk = { workspace = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

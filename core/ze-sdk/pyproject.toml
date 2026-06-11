@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ze-sdk"
+version = "0.1.0"
+description = "Public API surface for Ze plugin development"
+requires-python = ">=3.11"
+dependencies = [
+    "ze-agents",
+    "ze-proactive",
+    "ze-memory",
+]
+
+[tool.uv.sources]
+ze-agents    = { workspace = true }
+ze-proactive = { workspace = true }
+ze-memory    = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["ze_sdk"]
+include = ["ze_sdk/py.typed"]

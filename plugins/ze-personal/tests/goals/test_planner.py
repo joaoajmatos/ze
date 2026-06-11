@@ -155,7 +155,7 @@ async def test_extract_procedure_returns_procedure(planner, client):
         _milestone_obj(3, "Send outreach", MilestoneStatus.COMPLETED),
     ]
 
-    from ze_memory.types import Procedure
+    from ze_sdk.memory import Procedure
     result = await planner.extract_procedure(goal, milestones)
 
     assert result is not None

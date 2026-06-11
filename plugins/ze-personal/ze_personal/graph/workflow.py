@@ -14,8 +14,6 @@ from langchain_core.runnables import RunnableConfig
 from ze_agents.types import GateDecision
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.logging import get_logger
-from ze_core.orchestration.state import AgentState
-from ze_core.telemetry.context import set_agent_context
 from ze_personal.workflow.store import WorkflowStore
 from ze_personal.workflow.types import StepResult, WorkflowStep
 
@@ -24,7 +22,7 @@ log = get_logger(__name__)
 
 # ── Graph nodes ───────────────────────────────────────────────────────────────
 
-async def load_workflow_step(state: AgentState, config: RunnableConfig) -> dict:
+async def load_workflow_step(state: dict[str, Any], config: RunnableConfig) -> dict:
     """Set prompt to the current step's task and reset all per-step state."""
     steps: list[WorkflowStep] = state["workflow_steps"]
     idx: int = state.get("current_step_index", 0)
@@ -48,7 +46,7 @@ async def load_workflow_step(state: AgentState, config: RunnableConfig) -> dict:
     }
 
 
-async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
+async def verify_step(state: dict[str, Any], config: RunnableConfig) -> dict:
     """Validate step output; append StepResult and advance index."""
     store: WorkflowStore = config["configurable"]["workflow_store"]
     client: Any = config["configurable"]["openrouter_client"]
@@ -70,7 +68,6 @@ async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
         return _fail_step(store, execution_id, state, idx, step.task, "", "Step produced empty output")
 
     if step.verify:
-        set_agent_context("workflow_verify")
         try:
             raw = await client.complete(
                 messages=[{
@@ -110,7 +107,7 @@ async def verify_step(state: AgentState, config: RunnableConfig) -> dict:
     }
 
 
-async def workflow_synthesize(state: AgentState, config: RunnableConfig) -> dict:
+async def workflow_synthesize(state: dict[str, Any], config: RunnableConfig) -> dict:
     """Merge all step outputs into a final response and mark execution complete."""
     store: WorkflowStore = config["configurable"]["workflow_store"]
     client: Any = config["configurable"]["openrouter_client"]
@@ -126,7 +123,6 @@ async def workflow_synthesize(state: AgentState, config: RunnableConfig) -> dict
     )
 
     if parts:
-        set_agent_context("workflow_synthesize")
         response = await client.complete(
             messages=[{
                 "role": "user",
@@ -146,7 +142,7 @@ async def workflow_synthesize(state: AgentState, config: RunnableConfig) -> dict
     return {"final_response": response}
 
 
-async def workflow_failed(state: AgentState, config: RunnableConfig) -> dict:
+async def workflow_failed(state: dict[str, Any], config: RunnableConfig) -> dict:
     """Record execution failure and build a user-facing error message."""
     store: WorkflowStore = config["configurable"]["workflow_store"]
 
@@ -170,7 +166,7 @@ async def workflow_failed(state: AgentState, config: RunnableConfig) -> dict:
 
 # ── Edge functions ────────────────────────────────────────────────────────────
 
-def after_capability_check_workflow(state: AgentState) -> str:
+def after_capability_check_workflow(state: dict[str, Any]) -> str:
     """In workflow mode all steps execute directly — workflow creation was the gate."""
     decision = state.get("gate_decision")
     if decision == GateDecision.BLOCKED:
@@ -178,7 +174,7 @@ def after_capability_check_workflow(state: AgentState) -> str:
     return "execute_tool"
 
 
-def after_verify_step(state: AgentState) -> str:
+def after_verify_step(state: dict[str, Any]) -> str:
     step_results = state.get("workflow_step_results") or []
     if step_results and not step_results[-1].success:
         return "workflow_failed"
@@ -253,7 +249,7 @@ def _resolve_verify_model(config: RunnableConfig) -> str:
 
 async def _extract_and_store_workflow_procedure(
     config: RunnableConfig,
-    state: AgentState,
+    state: dict[str, Any],
     step_results: list[StepResult],
 ) -> None:
     """Extract a reusable procedure from a completed workflow and store it with a graph link."""
@@ -283,7 +279,7 @@ async def _extract_and_store_workflow_procedure(
 
 async def _sync_workflow_task_state(
     config: RunnableConfig,
-    state: AgentState,
+    state: dict[str, Any],
     steps: list[WorkflowStep],
     next_idx: int,
     status: str,
@@ -296,7 +292,7 @@ async def _sync_workflow_task_state(
     workflow_id = state.get("workflow_id")
     if workflow_id is None:
         return
-    from ze_memory.types import TaskState
+    from ze_sdk.memory import TaskState
     from uuid import UUID
     try:
         open_steps = [s.task for s in steps[next_idx:]] if next_idx >= 0 else []
@@ -318,7 +314,7 @@ async def _sync_workflow_task_state(
 def _fail_step(
     store: WorkflowStore,
     execution_id: Any,
-    state: AgentState,
+    state: dict[str, Any],
     idx: int,
     task: str,
     output: str,

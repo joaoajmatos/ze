@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_core.orchestration.state import AgentState
 from ze_personal.goals.types import GoalStatus, MilestoneStatus
 
 
-async def inject_goal_routing_context(state: AgentState, config: RunnableConfig) -> dict:
+async def inject_goal_routing_context(state: dict[str, Any], config: RunnableConfig) -> dict:
     """Pre-route node: enrich state with active goal context for the embedding router."""
     goal_store = config["configurable"].get("goal_store")
     if goal_store is None:

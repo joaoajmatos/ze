@@ -7,8 +7,8 @@ from typing import Callable
 from uuid import UUID
 
 from ze_agents.errors import GoalExecutionError
-from ze_memory.store import MemoryStore
-from ze_memory.types import TaskState
+from ze_sdk.memory import MemoryStore
+from ze_sdk.memory import TaskState
 from ze_agents.types import ToolCall
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.store import GoalStore

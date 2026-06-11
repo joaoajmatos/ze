@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Calendar, reminders, and timezone domain logic for Ze."
 requires-python = ">=3.12"
 dependencies = [
-    "ze-core",
+    "ze-sdk",
     "ze-google",
     "ze-personal",
     "apscheduler>=3.10",
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-ze-core     = { workspace = true }
+ze-sdk      = { workspace = true }
 ze-google   = { workspace = true }
 ze-personal = { workspace = true }
 

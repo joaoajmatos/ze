@@ -6,7 +6,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import Mode
 from ze_agents.types import AgentContext, AgentResult
-from ze_core.openrouter.client import OpenRouterClient
+from ze_agents.client import LLMClient
 from ze_personal.workflow.planner import WorkflowPlanner
 from ze_personal.workflow.store import WorkflowStore
 from ze_personal.workflow.scheduler import WorkflowScheduler
@@ -65,7 +65,7 @@ class WorkflowManagerAgent(BaseAgent):
 
     def __init__(
         self,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         workflow_store: WorkflowStore,
         workflow_planner: WorkflowPlanner,
         workflow_scheduler: WorkflowScheduler,

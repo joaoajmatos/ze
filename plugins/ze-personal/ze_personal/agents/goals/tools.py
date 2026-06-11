@@ -12,7 +12,7 @@ from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
 from ze_personal.goals.types import Goal, GoalStatus, MilestoneStatus
 from ze_agents.interface.types import Action, Notification
 from ze_agents.logging import get_logger
-from ze_core.proactive.notifier import ProactiveNotifier
+from ze_sdk.proactive import ProactiveNotifier
 
 log = get_logger(__name__)
 

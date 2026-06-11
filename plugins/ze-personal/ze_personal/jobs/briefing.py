@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from ze_personal.contacts.store import PersonStore
 from ze_agents.logging import get_logger
-from ze_core.proactive.push_log_store import PushLogStore
+from ze_sdk.proactive import PushLogStore
 from ze_agents.settings import Settings
 from ze_personal.workflow.store import WorkflowStore
-from ze_memory.retriever import PostgresMemoryStore
-from ze_core.proactive.job import proactive_job
-from ze_core.proactive.notifier import ProactiveNotifier
-from ze_core.telemetry.context import set_flow_context
+from ze_sdk.memory import PostgresMemoryStore
+from ze_sdk.proactive import proactive_job
+from ze_sdk.proactive import ProactiveNotifier
 
 _EXCLUSION_KEYS = ("not interested", "don't like", "avoid", "no ")
 
@@ -50,7 +49,6 @@ class MorningBriefing:
         self._credibility_briefing_summary = news_credibility_cfg.get("briefing_summary", True)
 
     async def run(self) -> None:
-        set_flow_context("morning_briefing")
 
         if await self._push_log.was_sent_within_hours("morning_brief", 20):
             self._log.info("briefing_skipped_dedup")

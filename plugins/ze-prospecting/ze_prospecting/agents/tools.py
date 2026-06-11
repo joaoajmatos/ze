@@ -3,7 +3,7 @@ from uuid import UUID
 from ze_agents.tool import ToolAccess, tool
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import Person, PersonSource
-from ze_core.openrouter.client import OpenRouterClient
+from ze_agents.client import LLMClient
 from ze_prospecting.store import ProspectCampaignStore
 
 _VALID_EVENT_TYPES = frozenset({"sent", "replied", "bounced"})

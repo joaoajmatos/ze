@@ -7,11 +7,10 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.logging import get_logger
-from ze_core.proactive.push_log_store import PushLogStore
+from ze_sdk.proactive import PushLogStore
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
-from ze_core.openrouter.client import OpenRouterClient
-from ze_core.proactive.notifier import ProactiveNotifier
-from ze_core.telemetry.context import set_agent_context, set_flow_context
+from ze_agents.client import LLMClient
+from ze_sdk.proactive import ProactiveNotifier
 
 log = get_logger(__name__)
 
@@ -92,7 +91,7 @@ class CalendarReminderService:
         notifier: ProactiveNotifier,
         store: CalendarReminderStore,
         push_log_store: PushLogStore,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         scheduler: Any,  # WorkflowScheduler — avoids circular import
         settings: Any,   # ze_api.settings.Settings — not imported to avoid circular dep
     ) -> None:
@@ -105,8 +104,6 @@ class CalendarReminderService:
 
     async def sync(self, credentials: Any) -> None:
         """Fetch upcoming calendar events and schedule reminders for them."""
-        set_flow_context("calendar_sync")
-        set_agent_context("reminders")
         if credentials is None:
             log.info("reminder_sync_skipped_no_credentials")
             return

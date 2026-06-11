@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 from ze_core import defaults
 from ze_agents.errors import GoalPlanError
 from typing import Any
-from ze_memory.types import Episode, Fact, Procedure, RetrievalRequest
+from ze_sdk.memory import Episode, Fact, Procedure, RetrievalRequest
 from ze_personal.goals.types import (
     Goal,
     GateStatus,
@@ -22,7 +22,7 @@ from ze_personal.goals.types import (
     VerificationGate,
 )
 from ze_agents.logging import get_logger
-from ze_core.openrouter.client import OpenRouterClient
+from ze_agents.client import LLMClient
 
 log = get_logger(__name__)
 

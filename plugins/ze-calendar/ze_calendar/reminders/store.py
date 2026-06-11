@@ -7,7 +7,7 @@ from uuid import UUID
 import asyncpg
 
 from ze_agents.logging import get_logger
-from ze_core.proactive.notifier import ProactiveNotifier
+from ze_sdk.proactive import ProactiveNotifier
 
 log = get_logger(__name__)
 

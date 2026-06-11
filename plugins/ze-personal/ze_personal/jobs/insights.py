@@ -5,11 +5,10 @@ from datetime import date, timedelta
 import asyncpg
 
 from ze_agents.logging import get_logger
-from ze_core.openrouter.client import OpenRouterClient
-from ze_core.proactive.notifier import ProactiveNotifier
+from ze_agents.client import LLMClient
+from ze_sdk.proactive import ProactiveNotifier
 from ze_agents.settings import Settings
-from ze_core.proactive.job import proactive_job
-from ze_core.telemetry.context import set_agent_context, set_flow_context
+from ze_sdk.proactive import proactive_job
 
 _VALID_CATEGORIES = {"pattern", "trend", "goal", "tension"}
 
@@ -36,7 +35,7 @@ class InsightEngine:
         self,
         notifier: ProactiveNotifier,
         pool: asyncpg.Pool,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         settings: Settings,
     ) -> None:
         self._notifier = notifier
@@ -47,8 +46,6 @@ class InsightEngine:
 
     async def run(self) -> None:
         """Weekly job: generate insights from recent evidence and push any novel ones."""
-        set_flow_context("insight_generation")
-        set_agent_context("insights")
         insight_mem_cfg = self._settings.config.get("proactive", {}).get("insights", {})
         lookback_days = int(insight_mem_cfg.get("lookback_days", 7))
         min_evidence = int(insight_mem_cfg.get("min_evidence", 3))

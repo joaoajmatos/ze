@@ -5,7 +5,7 @@ import pytest
 from ze_personal.agents.workflow.agent import WorkflowManagerAgent
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.types import GateDecision
-from ze_memory.types import MemoryContext
+from ze_sdk.memory import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

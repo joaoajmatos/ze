@@ -8,7 +8,7 @@ import pytest
 
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import Person
-from ze_memory.types import Entity
+from ze_sdk.memory import Entity
 
 
 def _make_person(**kwargs) -> Person:

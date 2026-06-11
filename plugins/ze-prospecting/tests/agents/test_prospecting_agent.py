@@ -8,7 +8,7 @@ from ze_prospecting.types import ProspectingSettings
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.settings import Settings
 from ze_personal.contacts.types import PersonContext
-from ze_memory.types import MemoryContext
+from ze_sdk.memory import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

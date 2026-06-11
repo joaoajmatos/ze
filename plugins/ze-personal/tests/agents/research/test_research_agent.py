@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from ze_personal.agents.research.agent import ResearchAgent
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.settings import Settings
-from ze_memory.types import MemoryContext, Fact
+from ze_sdk.memory import MemoryContext, Fact
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

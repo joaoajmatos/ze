@@ -7,12 +7,12 @@ import asyncpg
 
 from ze_agents.logging import get_logger
 from ze_agents.plugin import ZePlugin
-from ze_core.proactive.notifier import ProactiveNotifier
-from ze_core.proactive.push_log_store import PushLogStore
-from ze_core.proactive.scheduler import ProactiveScheduler
+from ze_sdk.proactive import ProactiveNotifier
+from ze_sdk.proactive import PushLogStore
+from ze_sdk.proactive import ProactiveScheduler
 from ze_agents.settings import Settings
-from ze_core.openrouter.client import OpenRouterClient
-from ze_memory.retriever import PostgresMemoryStore
+from ze_agents.client import LLMClient
+from ze_sdk.memory import PostgresMemoryStore
 from ze_personal.contacts.store import PersonStore
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
@@ -29,7 +29,7 @@ from ze_personal.jobs.stuck_goals import StuckGoalJob
 from ze_personal.workflow.store import WorkflowStore
 
 if TYPE_CHECKING:
-    from ze_memory.store import MemoryStore
+    from ze_sdk.memory import MemoryStore
 
 log = get_logger(__name__)
 
@@ -59,7 +59,7 @@ class PersonalPlugin(ZePlugin):
         goal_store: GoalStore,
         goal_planner: GoalPlanner,
         suggestion_store: GoalSuggestionStore,
-        openrouter_client: OpenRouterClient,
+        openrouter_client: LLMClient,
         pool: asyncpg.Pool,
         news_store: Any | None = None,
     ) -> None:

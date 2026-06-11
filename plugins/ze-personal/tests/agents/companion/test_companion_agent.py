@@ -5,7 +5,7 @@ import pytest
 from ze_personal.agents.companion.agent import CompanionAgent, _detect_outreach_event
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.settings import Settings
-from ze_memory.types import MemoryContext, Fact
+from ze_sdk.memory import MemoryContext, Fact
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

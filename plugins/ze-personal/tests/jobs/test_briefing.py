@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 from ze_personal.contacts.types import StaleFollowUpNudge
 from ze_personal.jobs.briefing import MorningBriefing
-from ze_core.proactive.push_log_store import PushLogEntry
+from ze_sdk.proactive import PushLogEntry
 from ze_agents.settings import Settings
-from ze_core.proactive.notifier import ProactiveNotifier
+from ze_sdk.proactive import ProactiveNotifier
 from ze_news.types import Article
 
 
@@ -328,7 +328,7 @@ async def test_briefing_personalized_shows_only_relevant_when_no_discovery():
 
 
 async def test_briefing_personalized_header_when_sufficient_facts():
-    from ze_memory.types import Fact
+    from ze_sdk.memory import Fact
 
     notifier = make_notifier()
     relevant_articles = [

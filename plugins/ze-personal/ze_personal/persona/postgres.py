@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ze_core import defaults
-from ze_core.db import DBPool
+from ze_sdk import DBPool
 from ze_agents.errors import UnknownDialError, UnknownProfileError
 from ze_agents.logging import get_logger
 from ze_personal.persona.types import PersonaState
