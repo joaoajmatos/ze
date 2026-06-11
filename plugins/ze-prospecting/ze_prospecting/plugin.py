@@ -42,8 +42,13 @@ class ProspectingPlugin(ZePlugin):
         if not consolidation_enabled:
             return
         timeout = self._prospecting_settings.stale_timeout_minutes
+        pool = self._pool
+
+        async def _recover_stale_campaigns() -> None:
+            await recover_stale_campaigns(pool, timeout)
+
         scheduler.add_cron_job(
-            fn=lambda: recover_stale_campaigns(self._pool, timeout),
+            fn=_recover_stale_campaigns,
             cron="*/15 * * * *",
             job_id="recover_stale_campaigns",
         )
