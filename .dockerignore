@@ -1,0 +1,15 @@
+.git
+.github
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.pyc
+**/.venv
+apps/ze-app
+sidecar
+specs
+docs
+eval
+*.md
+!apps/ze-api/README.md

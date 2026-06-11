@@ -17,8 +17,12 @@ services:
 
   backend:
     build:
-      context: apps/ze-api
+      context: .
+      dockerfile: apps/ze-api/Dockerfile
     env_file: apps/ze-api/.env
+    environment:
+      DATABASE_URL: postgresql://ze:ze@postgres:5432/ze
+      DATABASE_URL_SYNC: postgresql+psycopg2://ze:ze@postgres:5432/ze
     ports:
       - "8000:8000"
     depends_on:

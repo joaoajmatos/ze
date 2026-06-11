@@ -1,4 +1,5 @@
 # Production image for Ze backend (Fly.io / docker-compose).
+# Build context: repository root (see docker-compose.yml).
 # syntax=docker/dockerfile:1
 
 FROM python:3.12-slim-bookworm
@@ -13,14 +14,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-COPY ze ./ze
-COPY config ./config
-COPY migrations ./migrations
-COPY alembic.ini ./
+COPY core/ core/
+COPY plugins/ plugins/
+COPY apps/ze-api/ apps/ze-api/
 
-RUN uv sync --no-dev
+RUN uv sync --no-dev --package ze-api
 
 ENV PATH="/app/.venv/bin:$PATH"
+WORKDIR /app/apps/ze-api
+
 EXPOSE 8000
 
-CMD ["uvicorn", "ze.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "ze_api.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
