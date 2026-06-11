@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -29,7 +29,12 @@ class ConnectionManager:
     def connected(self) -> bool:
         return self._ws is not None
 
-    async def connect(self, ws: WebSocket, message_store: Any) -> None:
+    async def connect(
+        self,
+        ws: WebSocket,
+        message_store: Any,
+        confirmation_store: Any | None = None,
+    ) -> None:
         async with self._lock:
             if self._ws is not None:
                 try:
@@ -47,6 +52,25 @@ class ConnectionManager:
                 except Exception:
                     self._ws = None
                     break
+
+        # Replay any pending confirmation that survived the reconnect.
+        if confirmation_store is not None:
+            try:
+                pending = await confirmation_store.get_any_pending()
+                if pending is not None:
+                    async with self._lock:
+                        if self._ws is not None:
+                            try:
+                                await self._ws.send_json({
+                                    "type": "confirm_request",
+                                    "id": pending["request_id"],
+                                    "prompt": pending["prompt"],
+                                    "actions": pending["actions"],
+                                })
+                            except Exception as exc:
+                                log.warning("ws_confirmation_replay_failed", error=str(exc))
+            except Exception as exc:
+                log.warning("ws_confirmation_replay_error", error=str(exc))
 
     async def disconnect(self) -> None:
         async with self._lock:
@@ -102,8 +126,9 @@ async def websocket_endpoint(request: Request, ws: WebSocket, token: str | None 
     conn_mgr: ConnectionManager = request.app.state.connection_manager
     msg_store = request.app.state.message_store
     container = request.app.state.container
+    confirmation_store = getattr(request.app.state, "confirmation_store", None)
 
-    await conn_mgr.connect(ws, msg_store)
+    await conn_mgr.connect(ws, msg_store, confirmation_store)
     log.info("ws_connected")
 
     pending_config: dict | None = None
@@ -136,7 +161,8 @@ async def websocket_endpoint(request: Request, ws: WebSocket, token: str | None 
 
                 try:
                     pending_config = await _handle_message(
-                        ws, data, container, msg_store, conn_mgr, pending_config
+                        ws, data, container, msg_store, conn_mgr, pending_config,
+                        confirmation_store=confirmation_store,
                     )
                 finally:
                     conn_mgr.clear_busy()
@@ -155,6 +181,8 @@ async def _handle_message(
     msg_store: Any,
     conn_mgr: ConnectionManager,
     pending_config: dict | None,
+    *,
+    confirmation_store: Any | None = None,
 ) -> dict | None:
     text: str = data.get("text", "")
     thread_id: str | None = data.get("thread_id") or None
@@ -198,7 +226,10 @@ async def _handle_message(
 
     if outcome.interrupted:
         request_id = str(uuid4())
-        await conn_mgr.send_frame({
+        effective_thread_id = _extract_thread_id(outcome.config) or thread_id or ""
+        confirm_timeout = getattr(container.settings, "confirm_timeout_seconds", 900)
+
+        frame = {
             "type": "confirm_request",
             "id": request_id,
             "prompt": outcome.draft or "",
@@ -206,10 +237,44 @@ async def _handle_message(
                 {"label": "Approve", "payload": "yes"},
                 {"label": "Cancel", "payload": "no"},
             ],
-        })
+        }
+
+        # Persist so reconnecting clients receive the confirm_request again.
+        if confirmation_store is not None and effective_thread_id:
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=confirm_timeout)
+            await confirmation_store.save(
+                thread_id=effective_thread_id,
+                request_id=request_id,
+                prompt=outcome.draft or "",
+                actions=frame["actions"],
+                expires_at=expires_at,
+            )
+
+        await conn_mgr.send_frame(frame)
+
+        # Push ntfy in case the app is backgrounded.
+        notifier = getattr(container, "notifier", None)
+        if notifier is not None:
+            asyncio.create_task(_push_confirmation_ntfy(notifier, outcome.draft or ""))
+
+        # Start timeout watchdog.
+        if confirmation_store is not None and effective_thread_id:
+            asyncio.create_task(_confirmation_timeout(
+                confirmation_store,
+                conn_mgr,
+                notifier,
+                effective_thread_id,
+                confirm_timeout,
+            ))
+
         return outcome.config
 
     if outcome.response:
+        # Clear any pending confirmation for this thread if the graph continued.
+        effective_thread_id = _extract_thread_id(outcome.config) or thread_id or ""
+        if confirmation_store is not None and effective_thread_id:
+            await confirmation_store.clear(effective_thread_id)
+
         components = outcome.final_state.get("components", [])
         await container.interface.send_with_thread(
             outcome.response,
@@ -218,6 +283,43 @@ async def _handle_message(
         )
 
     return None
+
+
+async def _push_confirmation_ntfy(notifier: Any, prompt: str) -> None:
+    try:
+        text = f"Ze needs your approval:\n{prompt}" if prompt else "Ze needs your approval."
+        await notifier.push(text, urgency="high")
+    except Exception as exc:
+        log.warning("ws_confirmation_ntfy_failed", error=str(exc))
+
+
+async def _confirmation_timeout(
+    confirmation_store: Any,
+    conn_mgr: ConnectionManager,
+    notifier: Any | None,
+    thread_id: str,
+    timeout_seconds: int,
+) -> None:
+    await asyncio.sleep(timeout_seconds)
+    cleared = await confirmation_store.clear(thread_id)
+    if not cleared:
+        # User already responded or row was already gone.
+        return
+
+    log.info("confirmation_timeout_elapsed", thread_id=thread_id)
+    timeout_msg = (
+        "I waited for your approval but the window elapsed — "
+        "let me know if you'd like me to try again."
+    )
+    await conn_mgr.send_frame({
+        "type": "message",
+        "message": {"role": "assistant", "text": timeout_msg, "components": []},
+    })
+    if notifier is not None:
+        try:
+            await notifier.push(timeout_msg, urgency="low")
+        except Exception as exc:
+            log.warning("ws_timeout_ntfy_failed", error=str(exc))
 
 
 async def _handle_command(
@@ -243,6 +345,16 @@ async def _handle_command(
             await conn_mgr.send_frame({"type": "message", "message": {"role": "assistant", "text": summary, "components": []}})
         except Exception as exc:
             log.warning("ws_costs_command_failed", error=str(exc))
+        return pending_config
+
+    if name == "status":
+        from ze_api.api.routes.costs import _build_status_summary
+        period_days = int(data.get("period_days", 1))
+        try:
+            summary = await _build_status_summary(container, period_days=period_days)
+            await conn_mgr.send_frame({"type": "message", "message": {"role": "assistant", "text": summary, "components": []}})
+        except Exception as exc:
+            log.warning("ws_status_command_failed", error=str(exc))
         return pending_config
 
     log.warning("ws_unknown_command", name=name)

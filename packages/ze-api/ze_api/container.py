@@ -52,6 +52,7 @@ from ze_api.settings import Settings, get_settings
 from ze_core.conversation import TurnResult, invoke_raw_turn, resume_turn
 from ze_api.interface.native import NativeAppInterface
 from ze_api.api.ws import ConnectionManager
+from ze_api.api.pending_confirmations import PendingConfirmationStore
 from ze_core.interface.types import RawInput
 from ze_core.interface.validation import validate_interface
 from ze_core.telemetry.reconciler import CostReconciler
@@ -99,6 +100,7 @@ class ZeContainer(CoreContainer):
     message_store: PostgresMessageStore
     connection_manager: ConnectionManager
     component_hook: ComponentCollectionHook
+    confirmation_store: PendingConfirmationStore
 
     def _build_config(self, session_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}
@@ -241,6 +243,7 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     message_store = PostgresMessageStore(pool=pool)
     connection_manager = ConnectionManager()
+    confirmation_store = PendingConfirmationStore(pool=pool)
 
     interface = NativeAppInterface(
         message_store=message_store,
@@ -597,6 +600,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         message_store=message_store,
         connection_manager=connection_manager,
         component_hook=component_hook,
+        confirmation_store=confirmation_store,
         plugins=plugins,
     )
     return container

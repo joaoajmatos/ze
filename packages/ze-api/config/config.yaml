@@ -54,6 +54,14 @@ proactive:
   stuck_goals:
     enabled: true
     cron: "0 9 * * 2"
+  accountability:
+    enabled: true
+    schedule: "0 9 * * 1"          # Monday 09:00 weekly narrative
+    cost_anomaly_schedule: "0 */6 * * *"  # every 6 hours
+    anomaly_threshold: 4.0          # multiplier above baseline to alert
+    anomaly_min_samples: 5          # min historical runs to establish baseline
+    anomaly_retention_days: 30      # how long to keep anomaly records
+    stall_days: 3                   # milestone idle days before counted as stalled
 
 news:
   enabled: true

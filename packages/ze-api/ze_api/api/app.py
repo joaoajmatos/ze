@@ -33,6 +33,7 @@ async def lifespan(app: FastAPI):
     app.state.workflow_store = container.workflow_store
     app.state.message_store = container.message_store
     app.state.connection_manager = container.connection_manager
+    app.state.confirmation_store = container.confirmation_store
     app.state.container = container
 
     log.info("ze_startup_complete")

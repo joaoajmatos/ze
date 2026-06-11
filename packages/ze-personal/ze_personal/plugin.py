@@ -17,8 +17,11 @@ from ze_personal.contacts.store import PersonStore
 from ze_personal.goals.planner import GoalPlanner
 from ze_personal.goals.postgres import PostgresGoalStore as GoalStore
 from ze_personal.goals.suggestion_store import GoalSuggestionStore
+from ze_personal.accountability.store import AccountabilityStore
+from ze_personal.jobs.accountability import AccountabilityJob
 from ze_personal.jobs.briefing import MorningBriefing
 from ze_personal.jobs.contacts import ContactReviewNotifier
+from ze_personal.jobs.cost_anomaly import CostAnomalyJob
 from ze_personal.jobs.goal_narrative import GoalNarrativeJob
 from ze_personal.jobs.goal_suggestion import GoalSuggestionJob
 from ze_personal.jobs.insights import InsightEngine
@@ -110,6 +113,19 @@ class PersonalPlugin(ZePlugin):
             notifier=notifier,
             goal_store=goal_store,
         )
+        accountability_store = AccountabilityStore(pool=pool)
+        self.accountability = AccountabilityJob(
+            notifier=notifier,
+            push_log_store=push_log_store,
+            accountability_store=accountability_store,
+            goal_store=goal_store,
+            pool=pool,
+        )
+        self.cost_anomaly = CostAnomalyJob(
+            notifier=notifier,
+            accountability_store=accountability_store,
+            pool=pool,
+        )
 
     @classmethod
     def migrations_path(cls) -> Path | None:
@@ -143,6 +159,8 @@ class PersonalPlugin(ZePlugin):
             self.goal_narrative,
             self.goal_suggestion,
             self.stuck_goals,
+            self.accountability,
+            self.cost_anomaly,
         ]
 
     @property
@@ -203,3 +221,28 @@ class PersonalPlugin(ZePlugin):
                 cron=stuck_goals_cfg.get("cron", "0 9 * * 2"),
             )
             log.info("stuck_goals_scheduled", cron=stuck_goals_cfg.get("cron", "0 9 * * 2"))
+
+        acc_cfg = proactive_cfg.get("accountability", {})
+        if acc_cfg.get("enabled", True):
+            scheduler.register(
+                self.accountability,
+                cron=acc_cfg.get("schedule", "0 9 * * 1"),
+            )
+            log.info("accountability_scheduled", cron=acc_cfg.get("schedule", "0 9 * * 1"))
+
+            # Update cost anomaly thresholds from config before registering.
+            anomaly_threshold = float(acc_cfg.get("anomaly_threshold", 4.0))
+            min_samples = int(acc_cfg.get("anomaly_min_samples", 5))
+            retention_days = int(acc_cfg.get("anomaly_retention_days", 30))
+            self.cost_anomaly._threshold = anomaly_threshold
+            self.cost_anomaly._min_samples = min_samples
+            self.cost_anomaly._retention_days = retention_days
+            # Update stall_days on accountability job.
+            stall_days = int(acc_cfg.get("stall_days", 3))
+            self.accountability._stall_days = stall_days
+
+            scheduler.register(
+                self.cost_anomaly,
+                cron=acc_cfg.get("cost_anomaly_schedule", "0 */6 * * *"),
+            )
+            log.info("cost_anomaly_scheduled", cron=acc_cfg.get("cost_anomaly_schedule", "0 */6 * * *"))

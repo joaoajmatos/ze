@@ -12,10 +12,16 @@ log = get_logger(__name__)
 
 _MODE_TO_DECISION: dict[Mode, GateDecision] = {
     Mode.AUTONOMOUS: GateDecision.EXECUTE,
-    Mode.CONFIRM:    GateDecision.AWAIT_CONFIRMATION,
+    Mode.CONFIRM:    GateDecision.AWAIT_CONFIRMATION,  # → draft_response node → graph pause → await_confirmation
     Mode.DRAFT_ONLY: GateDecision.DRAFT,
     Mode.DISABLED:   GateDecision.BLOCKED,
 }
+# DRAFT/EXECUTE boundary: Mode.CONFIRM produces AWAIT_CONFIRMATION which routes the graph
+# through draft_response (agent runs in DRAFT mode) then pauses at await_confirmation.
+# The user receives a confirm_request WS frame (persisted in pending_confirmations table).
+# On approval, the graph resumes via graph.ainvoke(None, config) and re-runs with EXECUTE.
+# Changes to the intent_map that shift an agent from CONFIRM to AUTONOMOUS bypass this flow
+# entirely — no confirmation, no audit trail. Review capability_configs carefully.
 
 # Maximum GateDecision that a session override may reach for each base mode.
 # DISABLED is handled before this table is consulted.

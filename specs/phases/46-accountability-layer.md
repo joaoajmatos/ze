@@ -11,14 +11,14 @@
 
 | Feature | Status |
 |---------|--------|
-| `AccountabilityJob` — weekly narrative | 🔲 Pending |
-| `AccountabilityStore` — anomaly log table | 🔲 Pending |
-| Cost anomaly detection in `ProactiveScheduler` | 🔲 Pending |
-| Confirmation persistence + reconnect replay (bug fix) | 🔲 Pending |
-| Confirmation timeout handling | 🔲 Pending |
-| Confirmation ntfy on background | 🔲 Pending |
-| `/status` introspection command | 🔲 Pending |
-| Tests | 🔲 Pending |
+| `AccountabilityJob` — weekly narrative | ✅ Done |
+| `AccountabilityStore` — anomaly log table | ✅ Done |
+| Cost anomaly detection in `ProactiveScheduler` | ✅ Done |
+| Confirmation persistence + reconnect replay (bug fix) | ✅ Done |
+| Confirmation timeout handling | ✅ Done |
+| Confirmation ntfy on background | ✅ Done |
+| `/status` introspection command | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

@@ -149,3 +149,73 @@ async def test_connection_manager_push_clears_ws_on_send_error():
     await mgr.push(msg)
 
     assert not mgr.connected
+
+
+# ── Confirmation persistence and replay ───────────────────────────────────────
+
+async def test_connect_replays_pending_confirmation():
+    mgr = ConnectionManager()
+    ws = _make_ws()
+
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+
+    confirmation_store = AsyncMock()
+    confirmation_store.get_any_pending = AsyncMock(return_value={
+        "thread_id": "t1",
+        "request_id": "req-123",
+        "prompt": "Delete 50 emails?",
+        "actions": [{"label": "Approve", "payload": "yes"}],
+    })
+
+    await mgr.connect(ws, store, confirmation_store)
+
+    frames = [call[0][0] for call in ws.send_json.call_args_list]
+    confirm_frames = [f for f in frames if f.get("type") == "confirm_request"]
+    assert len(confirm_frames) == 1
+    assert confirm_frames[0]["id"] == "req-123"
+    assert confirm_frames[0]["prompt"] == "Delete 50 emails?"
+
+
+async def test_connect_no_replay_when_no_pending_confirmation():
+    mgr = ConnectionManager()
+    ws = _make_ws()
+
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+
+    confirmation_store = AsyncMock()
+    confirmation_store.get_any_pending = AsyncMock(return_value=None)
+
+    await mgr.connect(ws, store, confirmation_store)
+
+    frames = [call[0][0] for call in ws.send_json.call_args_list]
+    confirm_frames = [f for f in frames if f.get("type") == "confirm_request"]
+    assert len(confirm_frames) == 0
+
+
+async def test_connect_handles_confirmation_store_error_gracefully():
+    mgr = ConnectionManager()
+    ws = _make_ws()
+
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+
+    confirmation_store = AsyncMock()
+    confirmation_store.get_any_pending = AsyncMock(side_effect=RuntimeError("db down"))
+
+    # Should not raise
+    await mgr.connect(ws, store, confirmation_store)
+    assert mgr.connected
+
+
+async def test_connect_works_without_confirmation_store():
+    mgr = ConnectionManager()
+    ws = _make_ws()
+
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+
+    # confirmation_store=None (default) must not raise
+    await mgr.connect(ws, store, confirmation_store=None)
+    assert mgr.connected
