@@ -6,7 +6,7 @@ Usage:
 
 Outputs:
     docs/component-schema.json
-    packages/ze-app/lib/src/components/  (Dart files, if ze-app exists)
+    apps/ze-app/lib/src/components/  (Dart files, if ze-app exists)
 """
 from __future__ import annotations
 
@@ -14,16 +14,16 @@ import json
 import sys
 from pathlib import Path
 
-# Add packages to path so we can import ze_components
+# Add core packages to path so we can import ze_components
 repo_root = Path(__file__).parent.parent
-sys.path.insert(0, str(repo_root / "packages" / "ze-components"))
-sys.path.insert(0, str(repo_root / "packages" / "ze-core"))
+sys.path.insert(0, str(repo_root / "core" / "ze-components"))
+sys.path.insert(0, str(repo_root / "core" / "ze-core"))
 
 from ze_components.schema import export_json_schema
 from ze_components.types import COMPONENT_TYPES, SUB_ITEM_TYPES
 
 _DOCS_DIR = repo_root / "docs"
-_FLUTTER_DIR = repo_root / "packages" / "ze-app" / "lib" / "src" / "components"
+_FLUTTER_DIR = repo_root / "apps" / "ze-app" / "lib" / "src" / "components"
 
 _DART_TYPE_MAP = {
     "string": "String",
