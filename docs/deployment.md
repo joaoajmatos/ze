@@ -3,7 +3,7 @@
 Ze runs on [Fly.io](https://fly.io) as a single-machine app with an attached
 Postgres database. GitHub Actions handles CI and automated deploys on push to `main`.
 
-The deployment unit is `packages/ze-api/`. The `fly.toml` and `Dockerfile` both live
+The deployment unit is `apps/ze-api/`. The `fly.toml` and `Dockerfile` both live
 there.
 
 ---
@@ -12,7 +12,7 @@ there.
 
 - [flyctl](https://fly.io/docs/hands-on/install-flyctl/) installed and authenticated
 - A Fly.io account
-- All environment variables from `packages/ze-api/.env.example` ready
+- All environment variables from `apps/ze-api/.env.example` ready
 
 ---
 
@@ -21,7 +21,7 @@ there.
 ### 1. Create the Fly app
 
 ```bash
-cd packages/ze-api
+cd apps/ze-api
 fly launch --no-deploy
 ```
 
@@ -166,10 +166,10 @@ Two workflows live in `.github/workflows/`:
 - `pytest` with fast tests only (embedding model tests excluded)
 
 **`deploy-backend.yml`** — runs on merge to `main` when application code changes
-(path filter: `packages/ze-api/**`, `packages/ze-core/**`, `packages/ze-memory/**`,
-`packages/ze-personal/**`, etc.):
+(path filter: `apps/ze-api/**`, `core/ze-core/**`, `core/ze-memory/**`,
+`plugins/ze-personal/**`, etc.):
 - Runs CI first
-- Calls `fly deploy --remote-only` from `packages/ze-api/` using a scoped deploy token
+- Calls `fly deploy --remote-only` from `apps/ze-api/` using a scoped deploy token
 
 ### One-time GitHub setup
 

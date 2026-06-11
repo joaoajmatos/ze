@@ -161,7 +161,7 @@ cd ze
 
 make install
 
-cp packages/ze-api/.env.example packages/ze-api/.env
+cp apps/ze-api/.env.example apps/ze-api/.env
 # Fill in OPENROUTER_API_KEY, ZE_API_KEY, DATABASE_URL at minimum.
 
 make db-up
@@ -170,7 +170,7 @@ make migrate
 make dev   # REST API + WebSocket on :8000
 ```
 
-The Flutter app (`packages/ze-app`) connects to the WebSocket at `ws://<host>:8000/ws?token=<ZE_API_KEY>`.
+The Flutter app (`apps/ze-app`) connects to the WebSocket at `ws://<host>:8000/ws?token=<ZE_API_KEY>`.
 
 **Optional — Google Calendar + Gmail:**
 
@@ -184,9 +184,9 @@ make google-auth
 
 | Layer | File | What |
 |---|---|---|
-| Secrets | `packages/ze-api/.env` | API keys, DB URLs |
-| Structure | `packages/ze-api/config/config.yaml` | Models, routing, memory, proactive schedules |
-| Persona | `packages/ze-api/config/persona.yaml` | Named profiles and default dials |
+| Secrets | `apps/ze-api/.env` | API keys, DB URLs |
+| Structure | `apps/ze-api/config/config.yaml` | Models, routing, memory, proactive schedules |
+| Persona | `apps/ze-api/config/persona.yaml` | Named profiles and default dials |
 
 Minimum required environment variables:
 
@@ -231,17 +231,20 @@ Ze is a uv-workspace monorepo with a strict one-way dependency graph:
 
 ```
 ze/
-├── packages/
+├── core/
 │   ├── ze-core/          # Pure infrastructure — routing, memory, orchestration, telemetry
-│   ├── ze-personal/      # Domain layer — goals, workflows, persona, contacts, research + companion agents
+│   ├── ze-memory/        # Memory — facts, episodes, graph, retrieval
 │   ├── ze-google/        # Google OAuth2 credentials (no Ze deps)
+│   ├── ze-browser/       # Playwright browser sidecar client
+│   ├── ze-notifications/ # Push notification abstraction (ntfy)
+│   └── ze-components/    # Server-driven UI component descriptors
+├── plugins/
+│   ├── ze-personal/      # Domain layer — goals, workflows, persona, contacts, research + companion agents
 │   ├── ze-email/         # Gmail channel + email agent
 │   ├── ze-calendar/      # Calendar, reminders, timezone domain
 │   ├── ze-prospecting/   # Prospecting agent, campaign store, browser sidecar usage
-│   ├── ze-browser/       # Playwright browser sidecar client
-│   ├── ze-news/          # News fetching, RSS sources, news agent
-│   ├── ze-notifications/ # Push notification abstraction (ntfy)
-│   ├── ze-components/    # Server-driven UI component descriptors
+│   └── ze-news/          # News fetching, RSS sources, news agent
+├── apps/
 │   ├── ze-api/           # Deployment unit — FastAPI, WebSocket, REST, jobs
 │   └── ze-app/           # Flutter client app
 ├── specs/                # Spec-first design docs (phases, core modules, ADRs)

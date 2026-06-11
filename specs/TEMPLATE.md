@@ -43,7 +43,8 @@
 ## Module Location
 
 ```
-packages/<package>/
+core/<package>/        # if shared infrastructure
+plugins/<package>/    # if a ZePlugin domain extension
   <module>/
     __init__.py
     types.py
@@ -82,7 +83,7 @@ packages/<package>/
 <!-- Key dataclasses. Use ze convention: dataclasses in types.py, no Pydantic in domain. -->
 
 ```python
-# packages/<package>/<module>/types.py
+# {core,plugins}/<package>/<module>/types.py
 
 @dataclass
 class Foo:

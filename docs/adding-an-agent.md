@@ -21,7 +21,7 @@ This guide explains how to author a new agent. Read it alongside the existing ag
 ## 1. Create the directory and files
 
 ```
-packages/<pkg>/<pkg_module>/agents/<name>/
+plugins/<pkg>/<pkg_module>/agents/<name>/
     __init__.py
     agent.py        ← agent class + _AGENT_INSTRUCTIONS
     tools.py        ← tool functions (omit if the agent has no Python tools)
@@ -211,7 +211,7 @@ registered — the discrepancy is caught before the app accepts traffic.
 ## 6. Write tests
 
 ```
-packages/<pkg>/tests/agents/<name>/
+plugins/<pkg>/tests/agents/<name>/
     __init__.py
     test_agent.py
     test_tools.py

@@ -5,7 +5,7 @@ Ze maintains persistent, multi-layered memory through the `ze-memory` package
 complementary layers. An optional graph layer adds typed relationships between
 memory objects for richer context retrieval.
 
-**Package:** `packages/ze-memory/ze_memory/`  
+**Package:** `core/ze-memory/ze_memory/`  
 **Main store:** `ze_memory.retriever.PostgresMemoryStore`
 
 ---
@@ -395,7 +395,7 @@ memory:
 | `memory_task_state` | Goal/workflow in-flight progress checkpoints |
 | `memory_profile_facets` | Structured user portrait — key/value facets with confidence |
 
-Migrations: `packages/ze-api/migrations/versions/` (raw SQL, Alembic).
+Migrations: `apps/ze-api/migrations/versions/` (raw SQL, Alembic).
 
 ---
 

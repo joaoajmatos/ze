@@ -111,7 +111,7 @@ The registry is keyed by `channel_type` — duplicate types raise at constructio
 ## 4. Write a migration if needed
 
 If the new channel requires credentials or config stored in the database, add
-a migration in `packages/ze-api/migrations/versions/` following the existing
+a migration in `apps/ze-api/migrations/versions/` following the existing
 raw-SQL pattern.
 
 The `contact_channels` table already supports any `ChannelType` value — no
@@ -122,7 +122,7 @@ schema change is needed just to store handles for the new channel.
 ## 5. Write tests
 
 ```
-packages/ze-api/tests/channels/
+apps/ze-api/tests/channels/
     test_<name>_channel.py
 ```
 

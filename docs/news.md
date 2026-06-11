@@ -33,7 +33,7 @@ SourceRegistry ──► RssSource.fetch() ──► NewsFetchJob
 ## Package layout
 
 ```
-packages/ze-news/
+plugins/ze-news/
   ze_news/
     types.py          ← Article, CredibilityFlag, CredibilityReport, PersonalizationContext
     store.py          ← NewsStore: upsert, get_recent, get_personalized, search, update_credibility

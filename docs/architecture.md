@@ -438,7 +438,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 
 ## Database schema
 
-Migrations live in `packages/ze-api/migrations/versions/` as raw SQL Alembic files (no ORM).
+Migrations live in `apps/ze-api/migrations/versions/` as raw SQL Alembic files (no ORM).
 
 | Table | Purpose |
 |---|---|

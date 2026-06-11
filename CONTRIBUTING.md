@@ -16,7 +16,7 @@ make install       # install all packages in dev mode via uv
 make db-up         # start Postgres (Docker)
 make migrate       # apply all migrations
 
-cp packages/ze-api/.env.example packages/ze-api/.env
+cp apps/ze-api/.env.example apps/ze-api/.env
 # Fill in OPENROUTER_API_KEY, ZE_API_KEY, DATABASE_URL at minimum.
 
 make dev           # API + WebSocket on :8000
@@ -88,7 +88,7 @@ See [docs/adding-an-agent.md](docs/adding-an-agent.md) for the full authoring gu
 ## Adding a database migration
 
 ```bash
-# Edit the new SQL file directly in packages/ze-api/migrations/versions/
+# Edit the new SQL file directly in apps/ze-api/migrations/versions/
 # Follow the existing naming convention: NNN_description.py
 make migrate
 ```

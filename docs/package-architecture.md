@@ -1,27 +1,32 @@
 # Ze — Package Architecture
 
-Ze is a monorepo split into thirteen packages with a strict one-way dependency graph.
+Ze is a monorepo organised into three directories with a strict one-way dependency graph.
 Understanding the split makes it clear where new code belongs and how the pieces fit.
 
 ---
 
-## Packages
+## Layout
 
 ```
-packages/
-├── ze-core/          # Pure infrastructure — no domain knowledge
-├── ze-memory/        # Memory package — facts, episodes, graph, retrieval
-├── ze-personal/      # Personal-assistant domain layer
-├── ze-email/         # Gmail channel + email agent (ZePlugin)
-├── ze-prospecting/     # Prospecting agent, campaign store, recovery job (ZePlugin)
-├── ze-calendar/      # Calendar + reminders domain (ZePlugin)
-├── ze-google/        # Shared Google OAuth2 credentials (no Ze deps)
-├── ze-news/          # News ingestion, ranking, credibility (ZePlugin)
-├── ze-browser/       # Browser sidecar HTTP client
-├── ze-notifications/ # Push notification abstraction (ntfy)
-├── ze-components/    # Server-driven UI component descriptors
-├── ze-api/           # Deployment unit — HTTP/WebSocket API, wires all plugins
-└── ze-app/           # Flutter client app (iOS / Android / macOS / web)
+ze/
+├── core/             # Shared infrastructure — no domain knowledge
+│   ├── ze-core/      # Pure infrastructure — no domain knowledge
+│   ├── ze-memory/    # Memory package — facts, episodes, graph, retrieval
+│   ├── ze-browser/   # Browser sidecar HTTP client
+│   ├── ze-google/    # Shared Google OAuth2 credentials (no Ze deps)
+│   ├── ze-notifications/ # Push notification abstraction (ntfy)
+│   └── ze-components/    # Server-driven UI component descriptors
+├── plugins/          # ZePlugin domain extensions
+│   ├── ze-personal/  # Personal-assistant domain layer
+│   ├── ze-email/     # Gmail channel + email agent (ZePlugin)
+│   ├── ze-prospecting/   # Prospecting agent, campaign store, recovery job (ZePlugin)
+│   ├── ze-calendar/  # Calendar + reminders domain (ZePlugin)
+│   ├── ze-news/      # News ingestion, ranking, credibility (ZePlugin)
+│   ├── ze-finance/   # Finance domain (ZePlugin) — in progress
+│   └── ze-legal/     # Legal domain (ZePlugin) — in progress
+└── apps/             # Deployment units
+    ├── ze-api/       # HTTP/WebSocket API, wires all plugins
+    └── ze-app/       # Flutter client app (iOS / Android / macOS / web)
 ```
 
 ### Dependency graph
