@@ -77,6 +77,7 @@ explicitly deferred before implementation begins.
 | 48 | [Ze Core Split](phases/48-core-split.md) | 🔲 Pending |
 | 49 | [Ze SDK](phases/49-ze-sdk.md) | 🔲 Pending |
 | 50 | [News Preference Model](phases/50-news-preferences.md) | 🔲 Pending |
+| 51 | [Onboarding Platform](phases/51-onboarding.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
