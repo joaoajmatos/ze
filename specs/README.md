@@ -73,6 +73,7 @@ explicitly deferred before implementation begins.
 | 43 | [Flutter App](phases/43-flutter-app.md) | ✅ Done |
 | 44 | [Calendar Package Split](phases/44-package-split-google-calendar-api.md) | ✅ Done |
 | 46 | [Accountability Layer](phases/46-accountability-layer.md) | 🔲 Pending |
+| 47 | [Plugin Framework](phases/47-plugin-framework.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
