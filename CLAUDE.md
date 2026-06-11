@@ -125,9 +125,14 @@ make help            # full target list
 make db-up           # start Postgres via Docker
 make migrate         # apply migrations (requires db-up first)
 make dev             # uvicorn --reload on :8000 — REST API + WebSocket (primary dev mode)
-make test            # tests, fast (skips embedding model load)
-make test-all        # all tests including slow ones
-make dev-eval        # start REST API without background jobs (use this before running evals)
+make logs            # tail the server log file
+make test            # tests, fast (skips slow embedding tests)
+make test-all        # all tests across all packages, including slow ones
+make test-personal   # ze-personal tests only
+make test-calendar   # ze-calendar tests only
+make lint            # ruff lint across all packages
+make format          # ruff format + fix across all packages
+make dev-eval        # start dev server without background jobs (use before running evals)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
 ```
 
@@ -182,7 +187,9 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - Embedder in tests: use `make_embedder(agent_vecs, prompt_vec)` pattern (dict-keyed,
   sorted alphabetically) to match production load order.
 - Slow tests (embedding model): mark with `@pytest.mark.slow`, skipped by default via
-  `make test`. Run with `make test-all`.
+  `-m 'not slow'` in `make test`. Run with `make test-all`.
+- Per-package test targets: `make test-core`, `make test-personal`, `make test-prospecting`,
+  `make test-email`, `make test-calendar`, `make test-news`.
 
 ### Native app interface
 
