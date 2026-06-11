@@ -10,7 +10,10 @@ Understanding the split makes it clear where new code belongs and how the pieces
 ```
 ze/
 ├── core/             # Shared infrastructure — no domain knowledge
-│   ├── ze-core/      # Pure infrastructure — no domain knowledge
+│   ├── ze-agents/    # Developer API — BaseAgent, @agent, @tool, ZePlugin, shared types
+│   ├── ze-proactive/ # Job scheduling framework — ProactiveScheduler, ProactiveNotifier
+│   ├── ze-sdk/       # Public SDK surface — flat re-export layer for plugin authors
+│   ├── ze-core/      # Engine — routing, orchestration, telemetry, DI container
 │   ├── ze-memory/    # Memory package — facts, episodes, graph, retrieval
 │   ├── ze-browser/   # Browser sidecar HTTP client
 │   ├── ze-google/    # Shared Google OAuth2 credentials (no Ze deps)
@@ -33,61 +36,119 @@ ze/
 
 ```
 ze-browser        ←  no ze deps
-ze-core           ←  no ze deps
+ze-agents         ←  no ze deps               ← developer API (BaseAgent, @agent, @tool, ZePlugin, types)
+ze-proactive      ←  ze-agents                ← job scheduling framework
 ze-notifications  ←  no ze deps
 ze-components     ←  no ze deps
 ze-google         ←  no ze deps
-ze-memory         ←  ze-core
-ze-personal       ←  ze-core, ze-memory
-ze-email          ←  ze-core, ze-google, ze-personal
-ze-prospecting    ←  ze-core, ze-browser, ze-personal
-ze-calendar       ←  ze-core, ze-google, ze-personal
-ze-news           ←  ze-core
-ze-api            ←  ze-core, ze-memory, ze-personal, ze-email, ze-prospecting,
+ze-memory         ←  ze-agents
+ze-sdk            ←  ze-agents, ze-proactive, ze-memory   ← plugin entry point
+ze-core           ←  ze-agents                            ← engine; never a plugin dep
+ze-personal       ←  ze-sdk
+ze-email          ←  ze-sdk, ze-google, ze-personal
+ze-prospecting    ←  ze-sdk, ze-browser, ze-personal
+ze-calendar       ←  ze-sdk, ze-google, ze-personal
+ze-news           ←  ze-sdk
+ze-api            ←  ze-core, ze-sdk, ze-personal, ze-email, ze-prospecting,
                       ze-calendar, ze-google, ze-browser, ze-news, ze-notifications,
                       ze-components
 ze-app            ←  connects to ze-api over WebSocket (no Python deps)
 ```
 
-This is a hard rule: `ze-core` never imports from any other Ze package. `ze-memory`
-and `ze-personal` never import from `ze-api`. Violations break the abstraction and
-make it impossible to reuse or test the infrastructure layer in isolation.
+Hard rules:
+- `ze-agents` never imports from any other Ze package — it is the stable API foundation.
+- `ze-core` never imports from domain packages. It depends on `ze-agents` for the developer API types.
+- Plugin packages (`ze-personal`, `ze-email`, etc.) never import `ze-core` directly — use `ze-sdk`.
+- `ze-memory` and `ze-personal` never import from `ze-api`. Violations break the abstraction.
 
 ---
 
-## ze-core — Pure Infrastructure
+## ze-agents — Developer API
 
-`ze_core` owns every primitive that is not specific to "Ze the personal assistant":
+`ze_agents` is the stable authoring API. It has no Ze dependencies — only stdlib and
+`structlog`. Plugin authors import everything they need from `ze_sdk`, which re-exports
+`ze_agents` symbols.
 
 | Module | What it provides |
 |--------|-----------------|
-| `orchestration/` | LangGraph graph builder, `BaseAgent`, `@agent` decorator, node implementations, `AgentState`, `AgentContext`, hooks |
-| `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `RoutingFallback` |
-| `capability/` | `CapabilityGate`, `Mode`, `GateDecision`, `PostgresCapabilityOverrideStore` |
-| `channels/` | `Channel` ABC, `ChannelRegistry`, `ChannelType`, `Message`, `SentMessage` |
-| `interface/` | `AppInterface` ABC, `InputPreprocessor`, validation |
-| `messages/` | `PostgresMessageStore`, `Message` types — conversation message persistence |
-| `openrouter/` | `OpenRouterClient`, streaming, transcription |
-| `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
-| `proactive/` | `ProactiveScheduler`, `ProactiveNotifier`, `ProactiveJob`, `PushLogStore` |
+| `base_agent.py` | `BaseAgent` ABC with `agentic_loop`, `call_tool`, `emit`, `_build_system_prompt` |
+| `registry.py` | `@agent` decorator + `AgentRegistry` |
+| `tool.py` | `@tool` decorator, `ToolAccess` enum |
+| `plugin.py` | `ZePlugin` ABC — container and graph extension seam |
+| `types.py` | `AgentContext`, `AgentResult`, `ToolCall`, `GateDecision`, `Mode`, `AbortToken` |
+| `client.py` | `LLMClient` Protocol — the interface `BaseAgent` calls; `OpenRouterClient` satisfies it |
+| `db.py` | `DBPool` Protocol — structural type for asyncpg pools |
+| `channels/` | `Channel` ABC, `ChannelRegistry`, `ChannelType`, `Message`, `SentMessage`, `Thread` |
+| `interface/` | `AppInterface` ABC, `InputPreprocessor`, `Action`, `Notification` |
 | `progress/` | `ProgressReporter`, locale translations |
+| `hooks.py` | `HarnessHook` ABC — step-level abort, pre/post tool hooks |
+| `errors.py` | Typed `ZeError` exception hierarchy |
+| `logging.py` | `get_logger(__name__)` wrapper |
+| `settings.py` | `Settings` dataclass — config bridge |
+| `defaults.py` | Framework-level constants (model names, thresholds) |
+
+---
+
+## ze-proactive — Job Scheduling Framework
+
+`ze_proactive` owns the scheduling and notification plumbing for background jobs.
+Depends on `ze-agents` only.
+
+| Module | What it provides |
+|--------|-----------------|
+| `job.py` | `ProactiveJob` Protocol, `@proactive_job` decorator |
+| `scheduler.py` | `ProactiveScheduler` — APScheduler wrapper |
+| `notifier.py` | `ProactiveNotifier` — push delivery via ntfy/WebSocket |
+| `push_log_store.py` | `PushLogStore`, `PushLogEntry` — delivery audit log |
+
+---
+
+## ze-sdk — Public SDK Surface
+
+`ze_sdk` is a flat re-export layer over `ze-agents`, `ze-proactive`, and `ze-memory`.
+Plugin authors list `ze-sdk` as their only Ze dependency and import everything from it.
+`ze-core` never appears in a plugin's dependency list.
+
+| Module | What it re-exports |
+|--------|-----------------|
+| `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `get_logger`, `Settings`, `DBPool` |
+| `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `GateDecision`, `Mode`, `AbortToken`, `Action`, `Notification` |
+| `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushLogStore`, `PushLogEntry` |
+| `ze_sdk.channels` | `Channel`, `ChannelType`, `ChannelHandle`, `Message`, `SentMessage`, `Thread`, `ThreadMessage`, `ChannelSendError` |
+| `ze_sdk.memory` | `MemoryContext`, `Fact`, `Episode`, `Procedure`, `Entity`, `TaskState`, `RetrievalRequest`, `MemoryStore`, `PostgresMemoryStore` |
+| `ze_sdk.errors` | Full `ZeError` hierarchy |
+
+---
+
+## ze-core — Engine
+
+`ze_core` owns the LangGraph engine, routing infrastructure, telemetry, and DI
+container. It depends on `ze-agents` for the developer API types but never on domain
+packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instead.
+
+| Module | What it provides |
+|--------|-----------------|
+| `orchestration/` | LangGraph graph builder, node implementations, `AgentState` (graph-private), edges |
+| `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `RoutingFallback` |
+| `capability/` | `CapabilityGate`, `PostgresCapabilityOverrideStore` |
+| `messages/` | `PostgresMessageStore` — conversation message persistence |
+| `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
+| `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
 | `conversation.py` | `invoke_raw_turn`, `resume_turn` — entry points for the WS handler |
 | `embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton |
 | `container.py` | Base `Container` with DI wiring, plugin support |
-| `plugin.py` | `ZePlugin` ABC |
-| `errors.py` | Typed exception hierarchy |
 
-**Rule of thumb:** if you could imagine shipping `ze-core` as a standalone
-"AI assistant framework" library and the feature would still make sense — it belongs
-in `ze-core`. If it only makes sense for Ze's personal assistant use-case, it
-belongs elsewhere.
+**Rule of thumb:** `ze-core` owns everything that powers the engine at runtime but
+that plugin authors should never need to import. If the symbol belongs in the stable
+authoring API, it goes in `ze-agents`. If it's a job framework primitive, it goes in
+`ze-proactive`.
 
 ---
 
 ## ze-memory — Memory Package
 
 `ze_memory` owns all memory persistence, retrieval, and consolidation logic. It
-depends on `ze-core` for logging and settings abstractions.
+depends on `ze-agents` for logging and settings abstractions.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -108,8 +169,9 @@ depends on `ze-core` for logging and settings abstractions.
 
 ## ze-personal — Domain Layer
 
-`ze_personal` owns all personal-assistant domain logic. It depends on `ze-core` and
-`ze-memory` but knows nothing about Google APIs or HTTP.
+`ze_personal` owns all personal-assistant domain logic. It depends on `ze-sdk`
+(which brings in ze-agents, ze-proactive, and ze-memory) and knows nothing about
+Google APIs or HTTP.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -130,7 +192,7 @@ depends on `ze-core` for logging and settings abstractions.
 
 ## ze-email — Email Domain
 
-`ze_email` owns the Gmail channel and email agent. It depends on `ze-core`, `ze-google`,
+`ze_email` owns the Gmail channel and email agent. It depends on `ze-sdk`, `ze-google`,
 and `ze-personal` (for contact extraction from email tool calls).
 
 | Module | What it provides |
@@ -145,7 +207,7 @@ and `ze-personal` (for contact extraction from email tool calls).
 ## ze-prospecting — Prospecting Domain
 
 `ze_prospecting` owns autonomous prospect research, campaign persistence, and stale
-campaign recovery. It depends on `ze-core`, `ze-browser`, and `ze-personal`.
+campaign recovery. It depends on `ze-sdk`, `ze-browser`, and `ze-personal`.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -159,7 +221,7 @@ campaign recovery. It depends on `ze-core`, `ze-browser`, and `ze-personal`.
 
 ## ze-calendar — Calendar Domain
 
-`ze_calendar` owns the calendar and reminders domain. It depends on `ze-core`,
+`ze_calendar` owns the calendar and reminders domain. It depends on `ze-sdk`,
 `ze-google` (for credentials), and `ze-personal`.
 
 | Module | What it provides |
@@ -189,7 +251,7 @@ imported by any package that needs Google OAuth2.
 ## ze-news — News Package
 
 `ze_news` owns news ingestion, personalised ranking, and credibility analysis.
-Depends on `ze-core` only.
+Depends on `ze-sdk` only.
 
 | Module | What it provides |
 |--------|-----------------|
@@ -272,10 +334,13 @@ communicates with `ze-api` via WebSocket at `/ws`. It has no Python dependencies
 
 ## The ZePlugin Extension Point
 
-`ZePlugin` is the seam that lets domain packages inject behaviour into `ze-core`
-without `ze-core` knowing about it.
+`ZePlugin` is the seam that lets domain packages inject behaviour into the engine
+without `ze-core` knowing about them. It lives in `ze_agents.plugin` and is imported
+via `ze_sdk`.
 
 ```python
+from ze_sdk import ZePlugin
+
 class ZePlugin(ABC):
     # Container-level hooks
     def agents(self) -> list[type[BaseAgent]]: ...
@@ -331,7 +396,9 @@ are merged before the graph is compiled.
 
 | New code | Package |
 |----------|---------|
-| New infrastructure primitive (router, gate, store type) | `ze-core` |
+| New stable authoring API type or protocol | `ze-agents` (re-export from `ze_sdk`) |
+| New job scheduling primitive | `ze-proactive` (re-export from `ze_sdk.proactive`) |
+| New engine primitive (routing, graph node, telemetry) | `ze-core` |
 | New memory layer or retrieval policy | `ze-memory` |
 | New domain concept tied to personal assistant | `ze-personal` |
 | New Google integration credential | `ze-google` |
@@ -348,8 +415,9 @@ are merged before the graph is compiled.
 | Headless browser interaction | `ze-browser` |
 
 When in doubt: ask whether the code has a runtime dependency on `ze-personal` or
-application config. If yes, it belongs in `ze-api`. If it depends only on `ze-core`
-abstractions, it can live in `ze-personal`.
+application config. If yes, it belongs in `ze-api`. If it is part of the stable
+authoring API, it belongs in `ze-agents` (accessible via `ze_sdk`). If it is
+a domain concept, it belongs in `ze-personal` or the appropriate plugin package.
 
 ---
 

@@ -191,7 +191,7 @@ with same-day reminders are captured.
 
 ## Workflow failure alerts (immediate)
 
-**Module:** `ze_personal/workflow/scheduler.py` + `ze_core/proactive/notifier.py`
+**Module:** `ze_personal/workflow/scheduler.py` + `ze_proactive/notifier.py`
 
 When a scheduled workflow step fails, Ze pushes an alert immediately — no waiting
 for the morning briefing. A `workflow_failure_cooldown_hours` (default: 1h) prevents
@@ -378,9 +378,9 @@ are used for filtering by the `get_headlines` tool and the morning briefing.
 | Every 15 min | Cost reconciliation | `ze_core/telemetry/reconciler.py` |
 | Every 15 min | Stale campaign recovery | `ze_prospecting/jobs/campaigns.py` |
 | Every 30 min | News article fetch + embed | `ze_news/jobs/fetch.py` |
-| Immediate | Workflow failure alerts | `ze_core/proactive/notifier.py` |
+| Immediate | Workflow failure alerts | `ze_proactive/notifier.py` |
 | Immediate | Calendar event reminders (when they fire) | `ze_calendar/jobs/calendar_reminder.py` |
-| Immediate | Goal verification gates + milestone progress | `ze_core/proactive/notifier.py` |
+| Immediate | Goal verification gates + milestone progress | `ze_proactive/notifier.py` |
 
 All scheduled jobs use APScheduler (via `WorkflowScheduler` or `ProactiveScheduler`)
 with Postgres as the job store, so jobs survive process restarts. Cron expressions

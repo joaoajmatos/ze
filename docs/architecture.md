@@ -105,7 +105,7 @@ See [docs/native-interface.md](native-interface.md) for the full WebSocket proto
 
 **Modules:** `ze_personal/agents/` (research, companion, goals, workflow) · `ze_email/agents/` (email) · `ze_prospecting/agents/` (prospecting) · `ze_calendar/agents/` (calendar, reminders) · `ze_news/agents/` (news)
 
-All agents subclass `BaseAgent` (`ze_core.orchestration.base_agent`) and register via `@agent` (`ze_core.orchestration.registry`). Each agent owns:
+All agents subclass `BaseAgent` (`ze_agents.base_agent`) and register via `@agent` (`ze_agents.registry`). Plugin code imports these via `ze_sdk`. Each agent owns:
 
 - A system prompt (`_AGENT_INSTRUCTIONS` string at the top of `agent.py`).
 - Class attributes: `description`, `model`, `capabilities`, `intent_map`, `tools`, `timeout`.
@@ -251,7 +251,7 @@ Modes can be overridden at runtime via `PUT /capabilities` (persisted in DB via
 
 ## Proactive Ze
 
-**Modules:** `ze_core.proactive` (scheduler, notifier) · `ze_personal/jobs/` · `ze_prospecting/jobs/` · `ze_calendar/jobs/` · `ze_news/jobs/`
+**Modules:** `ze_proactive` (scheduler, notifier) · `ze_personal/jobs/` · `ze_prospecting/jobs/` · `ze_calendar/jobs/` · `ze_news/jobs/`
 
 Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompting:
 
@@ -332,7 +332,7 @@ See [docs/goals.md](goals.md) for usage including steering, proactive suggestion
 
 ## Multimodal input
 
-**Module:** `ze_core/interface/` (preprocessing) · `ze_core.openrouter` (transcription client)
+**Module:** `ze_agents/interface/` (preprocessing) · `ze_core.openrouter` (transcription client)
 
 Ze accepts three input types from the Flutter app, all handled before the graph runs:
 
@@ -354,13 +354,13 @@ receive only the routing caption as text.
 
 ## Communication Channels
 
-**Module:** `ze_core/channels/`
+**Module:** `ze_agents/channels/`
 
 The channel abstraction decouples agents from transport details. Every outbound
 message Ze sends to a real person goes through a `Channel` implementation —
 agents never call Gmail (or any future transport) directly.
 
-### Core types (`ze_core/channels/types.py`)
+### Core types (`ze_agents/channels/types.py`)
 
 | Type | Purpose |
 |---|---|
@@ -370,7 +370,7 @@ agents never call Gmail (or any future transport) directly.
 | `SentMessage` | Return value from `send()` — `message_id`, `thread_id`, `sent_at` |
 | `Thread` / `ThreadMessage` | Full thread history, used by `get_thread()` and `poll_replies()` |
 
-### `Channel` ABC (`ze_core/channels/base.py`)
+### `Channel` ABC (`ze_agents/channels/base.py`)
 
 Every channel must implement three methods:
 
@@ -424,7 +424,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | Module | Purpose |
 |---|---|
 | `ze_api/settings.py` | Pydantic `BaseSettings` — Ze secrets + `to_core_settings()` bridge |
-| `ze_core/errors.py` | Exception hierarchy — typed `ZeError` subclasses |
+| `ze_agents/errors.py` | Exception hierarchy — typed `ZeError` subclasses (re-exported via `ze_sdk.errors`) |
 | `ze_api/logging.py` | structlog JSON logger — bound at request time |
 | `ze_core/embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton — loaded once at startup |
 | `ze_api/db.py` | asyncpg pool factory — lifespan-managed |

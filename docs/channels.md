@@ -16,7 +16,7 @@ This guide explains how to implement a new outbound communication channel
 
 ## 1. Add the `ChannelType` enum value
 
-In `ze_core/channels/types.py`, add a new value to `ChannelType`:
+In `ze_agents/channels/types.py`, add a new value to `ChannelType`:
 
 ```python
 class ChannelType(StrEnum):
@@ -36,8 +36,7 @@ Create the channel in the appropriate domain package (e.g. `ze_email/channel/gma
 and implement the `Channel` ABC:
 
 ```python
-from ze_core.channels.base import Channel
-from ze_core.channels.types import ChannelType, Message, SentMessage, Thread, ThreadMessage
+from ze_sdk.channels import Channel, ChannelType, Message, SentMessage, Thread, ThreadMessage
 
 class LinkedInChannel(Channel):
     def __init__(self, credentials: LinkedInCredentials) -> None:
@@ -76,10 +75,10 @@ class LinkedInChannel(Channel):
 
 ### Error handling
 
-Wrap transport exceptions in `ze_core.errors` types before they surface:
+Wrap transport exceptions in `ze_sdk.errors` types before they surface:
 
 ```python
-from ze_core.errors import ChannelSendError, ChannelNotFoundError
+from ze_sdk.errors import ChannelSendError, ChannelNotFoundError
 
 try:
     result = await transport.send(...)
@@ -161,7 +160,7 @@ LinkedIn handles once contacts have them stored.
 ## Checklist
 
 - [ ] Spec written and reviewed
-- [ ] `ChannelType` enum value added to `ze_core/channels/types.py`
+- [ ] `ChannelType` enum value added to `ze_agents/channels/types.py`
 - [ ] Channel module in the domain package — `Channel` subclass with all three methods
 - [ ] Transport errors wrapped as `ChannelSendError` (never raw)
 - [ ] Channel exposed via the package's `ZePlugin` and added to `ChannelRegistry` in `ze_api/container.py`
