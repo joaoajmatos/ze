@@ -7,7 +7,7 @@ Design and implementation specs for the Ze personal AI assistant.
 ```
 specs/
 ├── TEMPLATE.md       ← template for new specs
-├── phases/           ← feature and phase implementation specs (00–34)
+├── phases/           ← feature and phase implementation specs (00–46)
 ├── core/             ← ze-core infrastructure layer specs
 └── arch/             ← architecture decision records
 ```
@@ -65,12 +65,14 @@ explicitly deferred before implementation begins.
 | 35 | [Cross-Goal Output Reuse](phases/35-cross-goal-output-reuse.md) | ✅ Done |
 | 36 | [Cross-Goal Learning Promotion](phases/36-cross-goal-learning-promotion.md) | ✅ Done |
 | 37 | [News Package](phases/37-news-package.md) | ✅ Done |
-| 38 | [News Personalization](phases/38-news-personalization.md) | 🔲 Pending |
-| 39 | [News Credibility](phases/39-news-credibility.md) | 🔲 Pending |
-| 40 | [Notifications](phases/40-notifications.md) | 🔲 Pending |
-| 41 | [Component Descriptors](phases/41-component-descriptors.md) | 🔲 Pending |
-| 42 | [Native UI Foundation](phases/42-native-ui-foundation.md) | 🔲 Pending |
-| 43 | [Flutter App](phases/43-flutter-app.md) | 🔲 Pending |
+| 38 | [News Personalization](phases/38-news-personalization.md) | ✅ Done |
+| 39 | [News Credibility](phases/39-news-credibility.md) | ✅ Done |
+| 40 | [Notifications](phases/40-notifications.md) | ✅ Done |
+| 41 | [Component Descriptors](phases/41-component-descriptors.md) | ✅ Done |
+| 42 | [Native UI Foundation](phases/42-native-ui-foundation.md) | ✅ Done |
+| 43 | [Flutter App](phases/43-flutter-app.md) | ✅ Done |
+| 44 | [Calendar Package Split](phases/44-package-split-google-calendar-api.md) | ✅ Done |
+| 46 | [Accountability Layer](phases/46-accountability-layer.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
