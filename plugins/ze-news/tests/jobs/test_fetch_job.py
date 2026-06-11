@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -28,6 +29,7 @@ async def test_run_fetches_and_upserts():
     registry = SourceRegistry([source])
 
     store = MagicMock()
+    store.last_fetched_at = AsyncMock(return_value=None)
     store.upsert = AsyncMock(return_value=[article])
     store.prune = AsyncMock(return_value=0)
 
@@ -46,6 +48,7 @@ async def test_run_skips_empty_source():
 
     registry = SourceRegistry([source])
     store = MagicMock()
+    store.last_fetched_at = AsyncMock(return_value=None)
     store.upsert = AsyncMock(return_value=[])
     store.prune = AsyncMock(return_value=0)
 
@@ -53,6 +56,46 @@ async def test_run_skips_empty_source():
     await job.run()
 
     store.upsert.assert_not_called()
+
+
+async def test_run_skips_recently_fetched_source():
+    source = MagicMock()
+    source.key = "test_src"
+    source.fetch = AsyncMock(return_value=[_make_article()])
+
+    registry = SourceRegistry([source])
+    store = MagicMock()
+    store.last_fetched_at = AsyncMock(
+        return_value=datetime.now(timezone.utc) - timedelta(minutes=10),
+    )
+    store.upsert = AsyncMock(return_value=[])
+    store.prune = AsyncMock(return_value=0)
+
+    job = NewsFetchJob(registry=registry, store=store, min_fetch_interval_minutes=30)
+    await job.run()
+
+    source.fetch.assert_not_called()
+    store.upsert.assert_not_called()
+
+
+async def test_run_fetches_when_source_is_stale():
+    article = _make_article()
+    source = MagicMock()
+    source.key = "test_src"
+    source.fetch = AsyncMock(return_value=[article])
+
+    registry = SourceRegistry([source])
+    store = MagicMock()
+    store.last_fetched_at = AsyncMock(
+        return_value=datetime.now(timezone.utc) - timedelta(minutes=45),
+    )
+    store.upsert = AsyncMock(return_value=[article])
+    store.prune = AsyncMock(return_value=0)
+
+    job = NewsFetchJob(registry=registry, store=store, min_fetch_interval_minutes=30)
+    await job.run()
+
+    source.fetch.assert_called_once()
 
 
 async def test_run_continues_after_source_failure():
@@ -67,6 +110,7 @@ async def test_run_continues_after_source_failure():
 
     registry = SourceRegistry([failing, good])
     store = MagicMock()
+    store.last_fetched_at = AsyncMock(return_value=None)
     store.upsert = AsyncMock(return_value=[article])
     store.prune = AsyncMock(return_value=0)
 

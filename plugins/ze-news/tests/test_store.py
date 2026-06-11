@@ -75,6 +75,18 @@ async def test_get_recent_with_tags():
     assert ["local"] in args
 
 
+async def test_last_fetched_at_queries_source():
+    store, conn = _make_store()
+    ts = datetime(2026, 6, 11, 12, 0, tzinfo=timezone.utc)
+    conn.fetchval = AsyncMock(return_value=ts)
+
+    result = await store.last_fetched_at("bbc_world")
+
+    assert result == ts
+    conn.fetchval.assert_called_once()
+    assert conn.fetchval.call_args[0][1] == "bbc_world"
+
+
 async def test_prune_returns_count():
     store, conn = _make_store()
     conn.execute.return_value = "DELETE 3"

@@ -288,20 +288,12 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     prepare_gate_registry(settings)
     estimator = ComplexityEstimator()
-    router = EmbeddingRouter(
-        embedder=embedder,
-        openrouter_client=openrouter_client,
-        routing_store=PostgresRoutingStore(pool),
-        config=RouterConfig(),
-        estimator=estimator,
-    )
     override_store = PostgresCapabilityOverrideStore(pool=pool)
     capability_gate = CapabilityGate(override_store=override_store)
     await capability_gate.load_persistent_overrides()
 
     workflow_graph_config = {
         "configurable": {
-            "router": router,
             "capability_gate": capability_gate,
             "memory_store": memory_store,
             "persona_store": persona_store,
@@ -418,6 +410,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             credibility_enabled=news_credibility_cfg.get("enabled", False),
             credibility_llm_enabled=news_credibility_cfg.get("llm_scoring", True),
             credibility_model=news_credibility_cfg.get("model", "openai/gpt-4o-mini"),
+            min_fetch_interval_minutes=int(news_cfg.get("min_fetch_interval_minutes", 30)),
         )
 
     personal_plugin = PersonalPlugin(
@@ -464,6 +457,14 @@ async def build_container(settings: Settings) -> ZeContainer:
         memory_store=memory_store,
         news_store=news_store,
     )
+    router = EmbeddingRouter(
+        embedder=embedder,
+        openrouter_client=openrouter_client,
+        routing_store=PostgresRoutingStore(pool),
+        config=RouterConfig(),
+        estimator=estimator,
+    )
+    workflow_graph_config["configurable"]["router"] = router
     component_hook = ComponentCollectionHook()
     register_hook(component_hook)
     log.info("component_collection_hook_registered")

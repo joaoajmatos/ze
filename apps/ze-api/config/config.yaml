@@ -66,6 +66,7 @@ proactive:
 news:
   enabled: true
   fetch_schedule: "*/30 * * * *"
+  min_fetch_interval_minutes: 30
   retention_days: 7
   model: "openai/gpt-4o-mini"
   briefing_limit: 8

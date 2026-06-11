@@ -115,7 +115,7 @@ class NewsStore:
                     INSERT INTO news_articles
                         (url, source_key, title, summary, published_at, tags, embedding)
                     VALUES ($1, $2, $3, $4, $5, $6, $7::vector)
-                    ON CONFLICT (url) DO NOTHING
+                    ON CONFLICT (url) DO UPDATE SET fetched_at = now()
                     """,
                     article.url,
                     article.source_key,
@@ -129,6 +129,18 @@ class NewsStore:
                     new_articles.append(article)
 
         return new_articles
+
+    async def last_fetched_at(self, source_key: str) -> datetime | None:
+        """When this source was last synced (max article fetched_at)."""
+        async with self._pool.acquire() as conn:
+            return await conn.fetchval(
+                """
+                SELECT MAX(fetched_at)
+                FROM news_articles
+                WHERE source_key = $1
+                """,
+                source_key,
+            )
 
     async def update_credibility(self, url: str, report: CredibilityReport) -> None:
         """Write a CredibilityReport to news_articles.credibility_analysis."""

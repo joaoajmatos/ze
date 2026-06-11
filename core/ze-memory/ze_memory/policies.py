@@ -552,6 +552,7 @@ _POLICY_MAP: dict[str, Any] = {
     # orchestration-level (dispatched by agent name)
     "companion":    CompanionPolicy(),
     "research":     ResearchPolicy(),
+    "news":         ResearchPolicy(),
     "goals":        GoalsPolicy(),
     "workflow":     WorkflowPolicy(),
     "calendar":     CalendarPolicy(),
