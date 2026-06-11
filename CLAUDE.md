@@ -122,17 +122,36 @@ ze-app          (Flutter — connects to ze-api over WebSocket)                 
 
 ```bash
 make help            # full target list
+
+# Setup
+make install         # Python workspace deps (uv sync)
+make app-get         # Flutter app deps (flutter pub get)
+make app-gen         # Flutter code generation (freezed / riverpod / json)
+
+# Database
 make db-up           # start Postgres via Docker
 make migrate         # apply migrations (requires db-up first)
-make dev             # uvicorn --reload on :8000 — REST API + WebSocket (primary dev mode)
+
+# Development
+make dev             # backend only — uvicorn --reload on :8000
+make app             # Flutter macOS app (connects to localhost:8000)
+make dev-full        # backend + macOS app together; Ctrl-C stops both
 make logs            # tail the server log file
-make test            # tests, fast (skips slow embedding tests)
-make test-all        # all tests across all packages, including slow ones
+
+# Testing
+make test            # ze-api tests, fast (skips slow embedding tests)
+make test-all        # all packages, including slow ones
 make test-personal   # ze-personal tests only
 make test-calendar   # ze-calendar tests only
-make lint            # ruff lint across all packages
-make format          # ruff format + fix across all packages
-make dev-eval        # start dev server without background jobs (use before running evals)
+make app-test        # Flutter unit tests
+make app-analyze     # flutter analyze
+
+# Code quality
+make lint            # ruff lint across all Python packages
+make format          # ruff format + fix across all Python packages
+
+# Evals
+make dev-eval        # backend without background jobs (use before running evals)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
 ```
 

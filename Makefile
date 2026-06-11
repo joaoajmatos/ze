@@ -4,6 +4,7 @@
 
 ZE      := apps/ze-api
 ZE_CORE := core/ze-core
+ZE_APP  := apps/ze-app
 
 LOG_FILE     ?= $(ZE)/logs/ze.log
 DB_SYNC_URL  ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
@@ -16,7 +17,9 @@ help:
 	@echo "  Ze — available targets"
 	@echo ""
 	@echo "  Setup"
-	@echo "    install              Install all workspace dependencies"
+	@echo "    install              Install Python workspace dependencies (uv sync)"
+	@echo "    app-get              Install Flutter app dependencies (flutter pub get)"
+	@echo "    app-gen              Run Flutter code generation (freezed / riverpod / json)"
 	@echo "    google-auth          One-time Google OAuth2 flow (Calendar + Gmail)"
 	@echo "    generate-ze-api-key  Generate or refresh ZE_API_KEY in .env"
 	@echo ""
@@ -31,9 +34,17 @@ help:
 	@echo "    migrate-stamp    Stamp existing DB to squashed heads (run once after squash)"
 	@echo ""
 	@echo "  Development"
-	@echo "    dev              Start dev server (uvicorn --reload, REST + WebSocket on :8000)"
-	@echo "    dev-eval         Start dev server without background jobs (use before running evals)"
+	@echo "    dev              Start backend only (uvicorn --reload on :8000)"
+	@echo "    app              Start Flutter app on macOS (connects to localhost:8000)"
+	@echo "    app-ios          Start Flutter app on iOS simulator"
+	@echo "    dev-full         Start backend + macOS app together (Ctrl-C stops both)"
+	@echo "    dev-eval         Start backend without background jobs (use before evals)"
 	@echo "    logs             Tail the server log file (LOG_FILE=$(LOG_FILE))"
+	@echo ""
+	@echo "  App testing & quality"
+	@echo "    app-test         Run Flutter unit tests"
+	@echo "    app-analyze      Run flutter analyze"
+	@echo "    app-build        Build Flutter macOS release bundle"
 	@echo ""
 	@echo "  Eval (requires 'make dev-eval' running)"
 	@echo "    eval             Run full eval suite — routing accuracy only (cheap)"
@@ -68,10 +79,16 @@ help:
 	@echo ""
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
-.PHONY: install google-auth generate-ze-api-key
+.PHONY: install app-get app-gen google-auth generate-ze-api-key
 
 install:
 	uv sync
+
+app-get:
+	cd $(ZE_APP) && flutter pub get
+
+app-gen:
+	cd $(ZE_APP) && flutter pub run build_runner build --delete-conflicting-outputs
 
 google-auth:
 	uv run python $(ZE)/scripts/google_auth.py
@@ -113,10 +130,26 @@ migrate-stamp:
 	$(ZE_MIGRATE) stamp --purge zc004 ze001
 
 # ── Development ───────────────────────────────────────────────────────────────
-.PHONY: dev dev-eval logs
+.PHONY: dev app app-ios dev-full dev-eval logs
 
 dev:
 	LOG_FILE=$(LOG_FILE) uv run uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
+
+app:
+	cd $(ZE_APP) && flutter run -d macos
+
+app-ios:
+	cd $(ZE_APP) && flutter run -d iphone
+
+# Starts the backend in the background, waits for :8000 to be ready, then runs
+# the Flutter macOS app in the foreground. Ctrl-C stops Flutter and kills the backend.
+dev-full:
+	@trap 'kill %1 2>/dev/null; exit 0' INT TERM; \
+	LOG_FILE=$(LOG_FILE) uv run uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000 & \
+	until nc -z localhost 8000 2>/dev/null; do sleep 1; done; \
+	echo "Backend ready — starting Flutter app (macOS)..."; \
+	cd $(ZE_APP) && flutter run -d macos; \
+	kill %1 2>/dev/null
 
 dev-eval:
 	PUBLIC_URL= LOG_FILE=$(LOG_FILE) uv run uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
@@ -200,6 +233,18 @@ test-all:
 		plugins/ze-calendar/tests \
 		plugins/ze-news/tests \
 		-q
+
+# ── App testing & quality ─────────────────────────────────────────────────────
+.PHONY: app-test app-analyze app-build
+
+app-test:
+	cd $(ZE_APP) && flutter test
+
+app-analyze:
+	cd $(ZE_APP) && flutter analyze
+
+app-build:
+	cd $(ZE_APP) && flutter build macos
 
 # ── Code generation ───────────────────────────────────────────────────────────
 .PHONY: generate-components
