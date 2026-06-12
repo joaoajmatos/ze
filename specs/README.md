@@ -78,6 +78,7 @@ explicitly deferred before implementation begins.
 | 49 | [Ze SDK](phases/49-ze-sdk.md) | 🔲 Pending |
 | 50 | [News Preference Model](phases/50-news-preferences.md) | 🔲 Pending |
 | 51 | [Onboarding Platform](phases/51-onboarding.md) | 🔲 Pending |
+| 52 | [Session-Grouped Episode Consolidation](phases/52-session-grouped-consolidation.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
