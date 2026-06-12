@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 from ze_news.agents.agent import NewsAgent, _format_candidates
+from ze_news.agents.tools import get_headlines
 from ze_news.types import Article, PersonalizationContext
+from ze_agents.settings import Settings as CoreSettings
 from ze_agents.types import AgentContext, AgentResult
 
 
@@ -26,6 +28,13 @@ def make_ctx(prompt: str = "whats in the news regarding AI?") -> AgentContext:
     )
 
 
+def make_settings() -> CoreSettings:
+    return CoreSettings(
+        openrouter_api_key="test-key",
+        database_url="postgresql://ze:ze@localhost:5432/ze",
+    )
+
+
 def make_agent(articles: list[Article] | None = None) -> NewsAgent:
     news_store = AsyncMock()
     news_store.search = AsyncMock(return_value=articles or [])
@@ -34,6 +43,7 @@ def make_agent(articles: list[Article] | None = None) -> NewsAgent:
         memory_store=AsyncMock(),
         goal_provider=AsyncMock(),
         news_store=news_store,
+        settings=make_settings(),
     )
     agent._preference_builder = AsyncMock()
     agent._preference_builder.build = AsyncMock(return_value=PersonalizationContext())
@@ -101,3 +111,33 @@ def test_format_candidates_includes_source_date_url():
     assert "source: example" in text
     assert "2026-06-11" in text
     assert "https://example.com/a1" in text
+
+
+async def test_run_diagnostic_query_sets_diagnostic_deps():
+    agent = make_agent()
+    captured: dict = {}
+
+    async def fake_loop(ctx, *, client, messages, system, deps, **kwargs):
+        captured["deps"] = deps
+        captured["system"] = system
+        return "Because of your stored preferences.", []
+
+    with patch.object(agent, "agentic_loop", side_effect=fake_loop):
+        await agent.run(make_ctx("why do you keep suggesting bananas?"))
+
+    assert captured["deps"]["_diagnostic_query"] is True
+    assert "diagnostics or preference management" in captured["system"]
+
+
+async def test_get_headlines_skips_for_diagnostic_query():
+    news_store = AsyncMock()
+    result = await get_headlines(
+        news_store=news_store,
+        _personalization_ctx=PersonalizationContext(),
+        _diagnostic_query=True,
+    )
+
+    assert result["relevant"] == []
+    assert result["discovery"] == []
+    assert "Diagnostic" in result["note"]
+    news_store.get_personalized.assert_not_called()

@@ -36,12 +36,18 @@ class NewsPreferenceBuilder:
         fact_days: int = 365,
         fact_limit: int = 100,
         min_confidence: float = 0.65,
+        explore_ratio: float = 0.2,
+        max_per_topic: int = 2,
+        candidate_multiplier: int = 4,
     ) -> None:
         self._memory_store = memory_store
         self._goal_provider = goal_provider
         self._fact_days = fact_days
         self._fact_limit = fact_limit
         self._min_confidence = min_confidence
+        self._explore_ratio = explore_ratio
+        self._max_per_topic = max_per_topic
+        self._candidate_multiplier = candidate_multiplier
 
     async def build(self, query_text: str) -> PersonalizationContext:
         facts = await self._list_facts()
@@ -111,9 +117,12 @@ class NewsPreferenceBuilder:
         return PersonalizationContext(
             interest_text=interest_text,
             exclusions=exclusions,
+            explore_ratio=self._explore_ratio,
             fact_count=len(include_preferences),
             query_text=query_text,
             preferences=preferences,
+            max_per_topic=self._max_per_topic,
+            candidate_multiplier=self._candidate_multiplier,
         )
 
     async def _list_facts(self) -> list[Any]:
@@ -185,9 +194,13 @@ class NewsPreferenceBuilder:
         ]
 
 
-def _is_diagnostic_query(text: str) -> bool:
+def is_diagnostic_query(text: str) -> bool:
     lowered = text.lower()
     return any(pattern in lowered for pattern in _DIAGNOSTIC_PATTERNS)
+
+
+def _is_diagnostic_query(text: str) -> bool:
+    return is_diagnostic_query(text)
 
 
 def _extract_exclusion(text: str) -> str | None:

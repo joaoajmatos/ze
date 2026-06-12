@@ -9,10 +9,11 @@ from ze_sdk.memory import PostgresMemoryStore
 from ze_agents.client import LLMClient
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
+from ze_agents.settings import Settings as CoreSettings
 from ze_agents.types import AgentContext, AgentResult, ToolCall
-from ze_news.preferences import NewsPreferenceBuilder
+from ze_news.preferences import NewsPreferenceBuilder, is_diagnostic_query
 from ze_news.store import NewsStore
-from ze_news.types import GoalTitleProvider, PersonalizationContext
+from ze_news.types import GoalTitleProvider, PersonalizationContext, PersonalizationSettings
 
 _AGENT_INSTRUCTIONS = """\
 You are Ze's news capability. You answer questions about current events and headlines
@@ -96,14 +97,24 @@ class NewsAgent(BaseAgent):
         memory_store: PostgresMemoryStore,
         goal_provider: GoalTitleProvider,
         news_store: NewsStore,
+        settings: CoreSettings,
     ) -> None:
         self._client = client
         self._memory_store = memory_store
         self._goal_provider = goal_provider
         self._news_store = news_store
+        self._personalization_settings = PersonalizationSettings.from_config(
+            settings.config.get("news", {})
+        )
         self._preference_builder = NewsPreferenceBuilder(
             memory_store=memory_store,
             goal_provider=goal_provider,
+            fact_days=self._personalization_settings.fact_days,
+            fact_limit=self._personalization_settings.fact_limit,
+            min_confidence=self._personalization_settings.min_confidence,
+            explore_ratio=self._personalization_settings.explore_ratio,
+            max_per_topic=self._personalization_settings.max_per_topic,
+            candidate_multiplier=self._personalization_settings.candidate_multiplier,
         )
 
     async def run(self, ctx: AgentContext) -> AgentResult:
@@ -123,6 +134,8 @@ class NewsAgent(BaseAgent):
         deps = {
             "news_store": self._news_store,
             "_personalization_ctx": personalization_ctx,
+            "_diagnostic_query": is_diagnostic_query(ctx.prompt),
+            "_min_preferences": self._personalization_settings.min_preferences,
         }
         system = self._build_system_prompt(
             _AGENT_INSTRUCTIONS,

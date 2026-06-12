@@ -41,12 +41,24 @@ async def get_headlines(
     tags: list[str] | None = None,
     personalized: bool = True,
     _personalization_ctx: PersonalizationContext | None = None,
+    _diagnostic_query: bool = False,
+    _min_preferences: int = 2,
 ) -> dict:
+    if _diagnostic_query:
+        return {
+            "relevant": [],
+            "discovery": [],
+            "note": (
+                "Diagnostic or preference-management query — answer from stored "
+                "preferences, not headlines."
+            ),
+        }
     if personalized and _personalization_ctx is not None:
         relevant, discovery = await news_store.get_personalized(
             ctx=_personalization_ctx,
             limit=limit,
             tags=tags,
+            min_facts=_min_preferences,
         )
         return {
             "relevant": [_article_dict(a) for a in relevant],

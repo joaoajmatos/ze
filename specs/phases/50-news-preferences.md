@@ -2,7 +2,7 @@
 
 > **Package:** `ze-news`, `ze-memory`
 > **Phase:** 50
-> **Status:** Pending
+> **Status:** Done
 > **Depends on:** Phase 38 ([38-news-personalization.md](38-news-personalization.md)), Phase 39 ([39-news-credibility.md](39-news-credibility.md)), Core Memory ([../core/06-memory.md](../core/06-memory.md))
 
 ---
@@ -11,11 +11,11 @@
 
 | Feature | Status |
 | ------- | ------ |
-| News preference signal model | 🔲 Pending |
-| Context builder replacement | 🔲 Pending |
-| News exclusions and saturation controls | 🔲 Pending |
-| Memory/profile integration | 🔲 Pending |
-| Tests | 🔲 Pending |
+| News preference signal model | ✅ Done |
+| Context builder replacement | ✅ Done |
+| News exclusions and saturation controls | ✅ Done |
+| Memory/profile integration | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

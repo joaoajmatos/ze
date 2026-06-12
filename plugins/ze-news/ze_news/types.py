@@ -97,6 +97,35 @@ class NewsPreference:
 
 
 @dataclass
+class PersonalizationSettings:
+    enabled: bool = True
+    explore_ratio: float = 0.2
+    min_preferences: int = 2
+    max_per_topic: int = 2
+    candidate_multiplier: int = 4
+    fact_days: int = 365
+    fact_limit: int = 100
+    min_confidence: float = 0.65
+
+    @classmethod
+    def from_config(cls, news_cfg: dict) -> PersonalizationSettings:
+        cfg = news_cfg.get("personalization", {})
+        min_preferences = cfg.get("min_preferences")
+        if min_preferences is None:
+            min_preferences = cfg.get("min_facts", 2)
+        return cls(
+            enabled=bool(cfg.get("enabled", True)),
+            explore_ratio=float(cfg.get("explore_ratio", 0.2)),
+            min_preferences=int(min_preferences),
+            max_per_topic=int(cfg.get("max_per_topic", 2)),
+            candidate_multiplier=int(cfg.get("candidate_multiplier", 4)),
+            fact_days=int(cfg.get("fact_days", 365)),
+            fact_limit=int(cfg.get("fact_limit", 100)),
+            min_confidence=float(cfg.get("min_confidence", 0.65)),
+        )
+
+
+@dataclass
 class PersonalizationContext:
     interest_text: str = ""
     exclusions: list[str] = field(default_factory=list)
@@ -105,6 +134,7 @@ class PersonalizationContext:
     query_text: str = ""
     preferences: list[NewsPreference] = field(default_factory=list)
     max_per_topic: int = 2
+    candidate_multiplier: int = 4
 
 
 @runtime_checkable

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_personal.contacts.types import StaleFollowUpNudge
@@ -32,14 +33,19 @@ def make_briefing(
     notifier=None,
     settings=None,
     news_store=None,
+    memory_store=None,
 ):
     push_log = MagicMock()
     push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
     push_log.list_workflow_failures_within_hours = AsyncMock(return_value=failures or [])
     push_log.log = AsyncMock()
 
-    memory = MagicMock()
+    memory = memory_store or MagicMock()
     memory.count_unreviewed_facts = AsyncMock(return_value=unreviewed)
+    if not hasattr(memory, "list_recent_facts"):
+        memory.list_recent_facts = AsyncMock(return_value=[])
+    if not hasattr(memory, "get_profile"):
+        memory.get_profile = AsyncMock(return_value=[])
 
     workflow_store = MagicMock()
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=workflows or [])
@@ -178,7 +184,7 @@ async def test_briefing_includes_headlines_when_news_store_present():
         ),
     ]
     news_store = MagicMock()
-    news_store.get_recent = AsyncMock(return_value=articles)
+    news_store.get_personalized = AsyncMock(return_value=(articles, []))
 
     b, _ = make_briefing(notifier=notifier, news_store=news_store)
     await b.run()
@@ -188,7 +194,7 @@ async def test_briefing_includes_headlines_when_news_store_present():
     assert "Global Summit Concludes" in text
     assert "AI Chip Breakthrough" in text
     assert "bbc_world" in text
-    news_store.get_recent.assert_awaited_once()
+    news_store.get_personalized.assert_awaited_once()
 
 
 async def test_briefing_omits_headlines_when_news_store_absent():
@@ -203,7 +209,7 @@ async def test_briefing_omits_headlines_when_news_store_absent():
 async def test_briefing_omits_headlines_when_store_returns_empty():
     notifier = make_notifier()
     news_store = MagicMock()
-    news_store.get_recent = AsyncMock(return_value=[])
+    news_store.get_personalized = AsyncMock(return_value=([], []))
 
     b, _ = make_briefing(notifier=notifier, news_store=news_store)
     await b.run()
@@ -278,8 +284,8 @@ async def test_briefing_personalized_shows_relevant_and_discovery():
 
     memory_store = MagicMock()
     memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
-    # No facts → fact_count=0 → header says "Headlines:" (not "For you:")
     memory_store.list_recent_facts = AsyncMock(return_value=[])
+    memory_store.get_profile = AsyncMock(return_value=[])
 
     b = make_briefing_with_personalization(
         notifier=notifier,
@@ -314,6 +320,7 @@ async def test_briefing_personalized_shows_only_relevant_when_no_discovery():
     memory_store = MagicMock()
     memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
     memory_store.list_recent_facts = AsyncMock(return_value=[])
+    memory_store.get_profile = AsyncMock(return_value=[])
 
     b = make_briefing_with_personalization(
         notifier=notifier,
@@ -328,8 +335,6 @@ async def test_briefing_personalized_shows_only_relevant_when_no_discovery():
 
 
 async def test_briefing_personalized_header_when_sufficient_facts():
-    from ze_sdk.memory import Fact
-
     notifier = make_notifier()
     relevant_articles = [
         Article(
@@ -345,12 +350,18 @@ async def test_briefing_personalized_header_when_sufficient_facts():
     news_store.get_personalized = AsyncMock(return_value=(relevant_articles, []))
 
     facts = [
-        Fact(predicate=f"interest_{i}", value=f"topic_{i}")
+        SimpleNamespace(
+            predicate="news_interest",
+            value=f"topic_{i}",
+            confidence=0.9,
+            contradicted=False,
+        )
         for i in range(6)
     ]
     memory_store = MagicMock()
     memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
     memory_store.list_recent_facts = AsyncMock(return_value=facts)
+    memory_store.get_profile = AsyncMock(return_value=[])
 
     b = make_briefing_with_personalization(
         notifier=notifier,
@@ -361,6 +372,34 @@ async def test_briefing_personalized_header_when_sufficient_facts():
 
     text = notifier.push.call_args[0][0]
     assert "For you (based on your interests)" in text
+
+
+async def test_briefing_ignores_activity_facts_for_personalization():
+    notifier = make_notifier()
+    news_store = MagicMock()
+    news_store.get_personalized = AsyncMock(return_value=([], []))
+
+    memory_store = MagicMock()
+    memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
+    memory_store.list_recent_facts = AsyncMock(return_value=[
+        SimpleNamespace(
+            predicate="activity_programming",
+            value="programming the AI assistant",
+            confidence=0.9,
+            contradicted=False,
+        ),
+    ])
+    memory_store.get_profile = AsyncMock(return_value=[])
+
+    b = make_briefing_with_personalization(
+        notifier=notifier,
+        news_store=news_store,
+        memory_store=memory_store,
+    )
+    await b.run()
+
+    ctx = news_store.get_personalized.await_args.kwargs["ctx"]
+    assert "programming" not in ctx.interest_text
 
 
 async def test_briefing_personalized_fallback_on_get_personalized_error():
@@ -382,6 +421,7 @@ async def test_briefing_personalized_fallback_on_get_personalized_error():
     memory_store = MagicMock()
     memory_store.count_unreviewed_facts = AsyncMock(return_value=0)
     memory_store.list_recent_facts = AsyncMock(return_value=[])
+    memory_store.get_profile = AsyncMock(return_value=[])
 
     b = make_briefing_with_personalization(
         notifier=notifier,

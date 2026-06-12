@@ -236,7 +236,8 @@ class NewsStore:
                 articles = self._apply_exclusions(articles, ctx.exclusions)
                 return articles, []
 
-            candidates = await self.get_recent(limit=limit * 4, tags=tags)
+            multiplier = max(ctx.candidate_multiplier, 1)
+            candidates = await self.get_recent(limit=limit * multiplier, tags=tags)
             candidates = self._apply_exclusions(candidates, ctx.exclusions)
             scored = self._score_candidates(candidates, ctx)
             scored.sort(key=lambda x: x[1], reverse=True)
@@ -366,10 +367,15 @@ class NewsStore:
     ) -> list[Article]:
         if not exclusions:
             return articles
-        patterns = [
-            re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
-            for term in exclusions
-        ]
+        patterns: list[re.Pattern[str]] = []
+        seen: set[str] = set()
+        for term in exclusions:
+            for pattern in _exclusion_term_patterns(term):
+                key = pattern.pattern
+                if key in seen:
+                    continue
+                seen.add(key)
+                patterns.append(pattern)
         return [
             a for a in articles
             if not any(
@@ -433,3 +439,29 @@ def _article_topic(article: Article) -> str:
         return article.tags[0].lower()
     title = article.title.strip().lower()
     return title.split()[0] if title else article.source_key.lower()
+
+
+def _exclusion_term_patterns(term: str) -> list[re.Pattern[str]]:
+    """Word-boundary patterns for an exclusion term and simple singular/plural variants."""
+    term = term.strip()
+    if not term:
+        return []
+
+    variants: list[str] = [term]
+    lower = term.lower()
+    if lower.endswith("ies") and len(lower) > 4:
+        variants.append(lower[:-3] + "y")
+    elif lower.endswith("es") and len(lower) > 3 and not lower.endswith("ss"):
+        variants.append(lower[:-2])
+    elif lower.endswith("s") and len(lower) > 2 and not lower.endswith("ss"):
+        variants.append(lower[:-1])
+    else:
+        variants.append(lower + "s")
+        if lower.endswith("y") and len(lower) > 2:
+            variants.append(lower[:-1] + "ies")
+
+    return [
+        re.compile(r"\b" + re.escape(variant) + r"\b", re.IGNORECASE)
+        for variant in variants
+        if variant
+    ]

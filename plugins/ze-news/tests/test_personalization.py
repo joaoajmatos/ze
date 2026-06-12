@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze_news.preferences import NewsPreferenceBuilder
-from ze_news.store import NewsStore
+from ze_news.store import NewsStore, _exclusion_term_patterns
 from ze_news.types import Article, NewsPreference, PersonalizationContext
 
 
@@ -120,6 +120,67 @@ async def test_preference_builder_diagnostic_query_is_not_positive_interest():
     assert not any(p.source == "query" and "bananas" in p.topic for p in ctx.preferences)
 
 
+async def test_preference_builder_ignores_low_confidence_facts():
+    memory_store = MagicMock()
+    memory_store.list_recent_facts = AsyncMock(return_value=[
+        SimpleNamespace(
+            predicate="news_interest",
+            value="AI",
+            confidence=0.4,
+            contradicted=False,
+        ),
+    ])
+    memory_store.get_profile = AsyncMock(return_value=[])
+    goals = MagicMock()
+    goals.list_active_goal_titles = AsyncMock(return_value=[])
+
+    ctx = await NewsPreferenceBuilder(memory_store, goals, min_confidence=0.65).build(
+        "headlines"
+    )
+
+    assert not any(p.source == "fact" and p.topic == "AI" for p in ctx.preferences)
+
+
+async def test_preference_builder_ignores_contradicted_facts():
+    memory_store = MagicMock()
+    memory_store.list_recent_facts = AsyncMock(return_value=[
+        SimpleNamespace(
+            predicate="news_interest",
+            value="AI",
+            confidence=0.9,
+            contradicted=True,
+        ),
+    ])
+    memory_store.get_profile = AsyncMock(return_value=[])
+    goals = MagicMock()
+    goals.list_active_goal_titles = AsyncMock(return_value=[])
+
+    ctx = await NewsPreferenceBuilder(memory_store, goals).build("headlines")
+
+    assert not any(p.source == "fact" for p in ctx.preferences)
+
+
+async def test_preference_builder_goal_weight_lower_than_explicit_news():
+    memory_store = MagicMock()
+    memory_store.list_recent_facts = AsyncMock(return_value=[
+        SimpleNamespace(
+            predicate="news_interest",
+            value="AI",
+            confidence=0.9,
+            contradicted=False,
+        ),
+    ])
+    memory_store.get_profile = AsyncMock(return_value=[])
+    goals = MagicMock()
+    goals.list_active_goal_titles = AsyncMock(return_value=["Launch Ze"])
+
+    ctx = await NewsPreferenceBuilder(memory_store, goals).build("headlines")
+
+    fact_weight = next(p.weight for p in ctx.preferences if p.source == "fact")
+    goal_weight = next(p.weight for p in ctx.preferences if p.source == "goal")
+    assert fact_weight > goal_weight
+
+
 async def test_preference_builder_includes_profile_and_goals():
     memory_store = MagicMock()
     memory_store.list_recent_facts = AsyncMock(return_value=[])
@@ -207,6 +268,22 @@ def test_apply_exclusions_case_insensitive():
     ]
     result = store._apply_exclusions(articles, ["football"])
     assert len(result) == 1
+
+
+def test_apply_exclusions_plural_term_matches_singular_title():
+    store, _ = _make_store()
+    articles = [
+        _make_article(title="Banana harvest improves"),
+        _make_article(title="Economy grows", url="https://example.com/2"),
+    ]
+    result = store._apply_exclusions(articles, ["bananas"])
+    assert len(result) == 1
+    assert result[0].title == "Economy grows"
+
+
+def test_exclusion_patterns_do_not_match_substrings():
+    patterns = _exclusion_term_patterns("sport")
+    assert not any(p.search("New transport routes announced") for p in patterns)
 
 
 # ── get_personalized fallback ────────────────────────────────────────────────

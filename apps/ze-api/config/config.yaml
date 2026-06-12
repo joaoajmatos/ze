@@ -79,7 +79,12 @@ news:
   personalization:
     enabled: true
     explore_ratio: 0.2
-    candidate_multiplier: 3
+    min_preferences: 2
+    max_per_topic: 2
+    candidate_multiplier: 4
+    fact_days: 365
+    fact_limit: 100
+    min_confidence: 0.65
     briefing_limit: 8
     min_facts: 5
   credibility:

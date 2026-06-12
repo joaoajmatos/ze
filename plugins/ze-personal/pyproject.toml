@@ -9,6 +9,7 @@ description = "Ze personal assistant domain layer — contacts, goals, workflow,
 requires-python = ">=3.11"
 dependencies = [
     "ze-sdk",
+    "ze-news",
     "asyncpg>=0.30",
 ]
 
@@ -23,6 +24,7 @@ dev = [
 
 [tool.uv.sources]
 ze-sdk = { workspace = true }
+ze-news = { workspace = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
