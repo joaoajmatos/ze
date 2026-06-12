@@ -13,6 +13,7 @@ from ze_core.messages.types import Message
 class MessageStore(Protocol):
     async def save(self, message: Message) -> None: ...
     async def list_since(self, since: datetime, limit: int = 100) -> list[Message]: ...
+    async def list_by_thread(self, thread_id: str, limit: int = 200) -> list[Message]: ...
     async def mark_read(self, ids: list[UUID]) -> None: ...
     async def list_unread(self) -> list[Message]: ...
 
@@ -49,6 +50,21 @@ class PostgresMessageStore:
                 LIMIT $2
                 """,
                 since,
+                limit,
+            )
+        return [_row_to_message(r) for r in rows]
+
+    async def list_by_thread(self, thread_id: str, limit: int = 200) -> list[Message]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT id, role, text, components, read, thread_id, created_at
+                FROM messages
+                WHERE thread_id = $1
+                ORDER BY created_at ASC
+                LIMIT $2
+                """,
+                thread_id,
                 limit,
             )
         return [_row_to_message(r) for r in rows]

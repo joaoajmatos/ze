@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ze_api.api.openapi import OPENAPI_TAGS
-from ze_api.api.routes import capabilities, costs, eval, memory, routing, workflows
+from ze_api.api.routes import capabilities, costs, eval, memory, routing, sessions, workflows
 from ze_api.api.ws import router as ws_router
 from ze_api.api.messages import router as messages_router
 from ze_api.container import build_container
@@ -43,6 +43,7 @@ async def lifespan(app: FastAPI):
     app.state.memory_consolidator = container.memory_consolidator
     app.state.workflow_store = container.workflow_store
     app.state.message_store = container.message_store
+    app.state.session_store = container.session_store
     app.state.connection_manager = container.connection_manager
     app.state.confirmation_store = container.confirmation_store
     app.state.onboarding_coordinator = container.onboarding_coordinator
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.include_router(routing.router, prefix="/routing")
     app.include_router(workflows.router, prefix="/workflows")
     app.include_router(costs.router, prefix="/costs")
+    app.include_router(sessions.router)
     app.include_router(ws_router)
     app.include_router(messages_router)
     app.include_router(eval.router)

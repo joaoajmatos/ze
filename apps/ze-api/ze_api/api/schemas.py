@@ -5,6 +5,18 @@ from uuid import UUID as UUIDType
 from pydantic import BaseModel, ConfigDict, RootModel
 
 
+# ── REST: sessions ────────────────────────────────────────────────────────────
+
+class SessionSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    title: str | None
+    preview: str | None
+    created_at: datetime
+    last_active_at: datetime
+
+
 # ── REST: messages ────────────────────────────────────────────────────────────
 
 class MessageSchema(BaseModel):

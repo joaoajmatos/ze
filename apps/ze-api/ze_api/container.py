@@ -20,6 +20,7 @@ from ze_personal.contacts.channel_store import ContactChannelStore
 from ze_api.db import create_checkpointer_pool, create_pool, dispose_checkpointer_pool
 from ze_core.embeddings import get_embedder
 from ze_core.messages.store import PostgresMessageStore
+from ze_api.sessions.store import PostgresSessionStore
 from ze_agents.registry import get_agent
 from ze_personal.goals.executor import GoalExecutor
 from ze_personal.goals.planner import GoalPlanner
@@ -105,6 +106,7 @@ class ZeContainer(CoreContainer):
     personal_plugin: PersonalPlugin
     push_notifier: NtfyNotifier | None
     message_store: PostgresMessageStore
+    session_store: PostgresSessionStore
     connection_manager: ConnectionManager
     component_hook: ComponentCollectionHook
     confirmation_store: PendingConfirmationStore
@@ -260,6 +262,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         log.info("ntfy_notifier_registered", topic=settings.ntfy_topic)
 
     message_store = PostgresMessageStore(pool=pool)
+    session_store = PostgresSessionStore(pool=pool)
     connection_manager = ConnectionManager()
     confirmation_store = PendingConfirmationStore(pool=pool)
 
@@ -639,6 +642,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         personal_plugin=personal_plugin,
         push_notifier=push_notifier,
         message_store=message_store,
+        session_store=session_store,
         connection_manager=connection_manager,
         component_hook=component_hook,
         confirmation_store=confirmation_store,

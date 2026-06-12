@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:ze_app/src/config/app_config.dart';
 import 'package:ze_app/src/messages/message.dart';
 import 'package:ze_app/src/messages/message_repository.dart';
@@ -20,21 +21,31 @@ class WsState {
     this.messages = const [],
     this.overlayMessages = const [],
     this.isThinking = false,
+    this.currentThreadId = 'app-main',
   });
 
   final WsStatus status;
   final List<Message> messages;
   final List<Message> overlayMessages;
   final bool isThinking;
+  final String currentThreadId;
 
   bool get isConnected => status == WsStatus.connected;
 
-  WsState copyWith({WsStatus? status, List<Message>? messages, List<Message>? overlayMessages, bool? isThinking}) => WsState(
-    status: status ?? this.status,
-    messages: messages ?? this.messages,
-    overlayMessages: overlayMessages ?? this.overlayMessages,
-    isThinking: isThinking ?? this.isThinking,
-  );
+  WsState copyWith({
+    WsStatus? status,
+    List<Message>? messages,
+    List<Message>? overlayMessages,
+    bool? isThinking,
+    String? currentThreadId,
+  }) =>
+      WsState(
+        status: status ?? this.status,
+        messages: messages ?? this.messages,
+        overlayMessages: overlayMessages ?? this.overlayMessages,
+        isThinking: isThinking ?? this.isThinking,
+        currentThreadId: currentThreadId ?? this.currentThreadId,
+      );
 }
 
 class WsClientNotifier extends StateNotifier<WsState> {
@@ -48,7 +59,8 @@ class WsClientNotifier extends StateNotifier<WsState> {
   late ZeWebSocketClient _client;
   late MessageRepository _repo;
   StreamSubscription<InboundFrame>? _sub;
-  static const String _threadId = 'app-main';
+
+  String get _threadId => state.currentThreadId;
 
   Future<void> _init() async {
     await _client.connect();
@@ -65,13 +77,21 @@ class WsClientNotifier extends StateNotifier<WsState> {
   void _handleFrame(InboundFrame frame) {
     switch (frame) {
       case MessageFrame(message: final m):
-        _repo.add(m);
-        state = state.copyWith(messages: _repo.messages, isThinking: false, status: WsStatus.connected);
+        if (m.threadId == null || m.threadId == _threadId) {
+          _repo.add(m);
+          state = state.copyWith(messages: _repo.messages, isThinking: false, status: WsStatus.connected);
+        }
       case TypingFrame():
         state = state.copyWith(isThinking: true);
       case EditFrame(id: final id, text: final text, components: final comps):
-        final existing = _repo.messages.firstWhere((m) => m.id == id, orElse: () => Message(id: id, role: MessageRole.assistant, text: text, createdAt: DateTime.now()));
-        _repo.update(id, Message(id: id, role: existing.role, text: text ?? existing.text, createdAt: existing.createdAt, components: comps));
+        final existing = _repo.messages.firstWhere(
+          (m) => m.id == id,
+          orElse: () => Message(id: id, role: MessageRole.assistant, text: text, createdAt: DateTime.now()),
+        );
+        _repo.update(
+          id,
+          Message(id: id, role: existing.role, text: text ?? existing.text, createdAt: existing.createdAt, components: comps),
+        );
         state = state.copyWith(messages: _repo.messages);
       case RefreshFrame():
         break;
@@ -84,7 +104,13 @@ class WsClientNotifier extends StateNotifier<WsState> {
 
   void sendMessage(String text, {Map<String, String>? context}) {
     _client.send(SendMessageFrame(text: text, threadId: _threadId, context: context));
-    final msg = Message(id: 'local_${DateTime.now().millisecondsSinceEpoch}', role: MessageRole.user, text: text, createdAt: DateTime.now());
+    final msg = Message(
+      id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+      role: MessageRole.user,
+      text: text,
+      createdAt: DateTime.now(),
+      threadId: _threadId,
+    );
     _repo.add(msg);
     state = state.copyWith(messages: _repo.messages, isThinking: true);
   }
@@ -107,6 +133,30 @@ class WsClientNotifier extends StateNotifier<WsState> {
       values: values,
     ));
     state = state.copyWith(isThinking: true);
+  }
+
+  /// Start a fresh conversation thread. Clears messages and generates a new thread ID.
+  void newSession() {
+    final threadId = 'app-${const Uuid().v4()}';
+    _repo.clear();
+    state = state.copyWith(
+      messages: const [],
+      currentThreadId: threadId,
+      isThinking: false,
+    );
+  }
+
+  /// Switch to a previously recorded session, loading its message history.
+  Future<void> switchSession(String threadId) async {
+    _repo.clear();
+    state = state.copyWith(
+      messages: const [],
+      currentThreadId: threadId,
+      isThinking: false,
+    );
+    final msgs = await _repo.loadForThread(_config, threadId);
+    _repo.addAll(msgs);
+    state = state.copyWith(messages: _repo.messages);
   }
 
   void _refresh() => state = state.copyWith(messages: _repo.messages);

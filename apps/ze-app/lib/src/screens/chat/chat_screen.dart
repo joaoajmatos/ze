@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ze_app/src/ws/providers.dart';
 import 'package:ze_app/src/screens/chat/message_bubble.dart';
 import 'package:ze_app/src/screens/chat/chat_input.dart';
@@ -17,11 +18,21 @@ class ChatScreen extends ConsumerWidget {
         title: const Text('Ze'),
         actions: [
           IconButton(
+            tooltip: 'Conversations',
+            icon: const Icon(Icons.history),
+            onPressed: () => context.push('/sessions'),
+          ),
+          IconButton(
+            tooltip: 'New conversation',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => ref.read(wsClientProvider.notifier).newSession(),
+          ),
+          IconButton(
             tooltip: 'Setup',
             icon: const Icon(Icons.checklist),
             onPressed: () => ref.read(wsClientProvider.notifier).sendCommand('onboarding'),
           ),
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () => Navigator.pushNamed(context, '/settings')),
+          IconButton(icon: const Icon(Icons.more_vert), onPressed: () => context.push('/settings')),
         ],
       ),
       body: Column(

@@ -40,6 +40,16 @@ class MessageRepository {
     addAll(data.map((e) => Message.fromJson(e as Map<String, dynamic>)).toList());
   }
 
+  Future<List<Message>> loadForThread(AppConfig config, String threadId) async {
+    final uri = Uri.parse('${config.serverUrl}/api/messages').replace(
+      queryParameters: {'thread_id': threadId, 'limit': '200'},
+    );
+    final response = await http.get(uri, headers: {'X-API-Key': config.apiKey});
+    if (response.statusCode != 200) return [];
+    final data = jsonDecode(response.body) as List<dynamic>;
+    return data.map((e) => Message.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<void> loadEarlier(AppConfig config, DateTime before) async {
     final uri = Uri.parse('${config.serverUrl}/api/messages').replace(
       queryParameters: {

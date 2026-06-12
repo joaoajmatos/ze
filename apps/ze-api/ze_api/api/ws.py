@@ -129,6 +129,7 @@ async def websocket_endpoint(ws: WebSocket, token: str | None = None) -> None:
     msg_store = ws.app.state.message_store
     container = ws.app.state.container
     confirmation_store = getattr(ws.app.state, "confirmation_store", None)
+    session_store = getattr(ws.app.state, "session_store", None)
 
     await conn_mgr.connect(ws, msg_store, confirmation_store)
     log.info("ws_connected")
@@ -174,6 +175,7 @@ async def websocket_endpoint(ws: WebSocket, token: str | None = None) -> None:
                     pending_config = await _handle_message(
                         ws, data, container, msg_store, conn_mgr, pending_config,
                         confirmation_store=confirmation_store,
+                        session_store=session_store,
                     )
                 finally:
                     conn_mgr.clear_busy()
@@ -194,6 +196,7 @@ async def _handle_message(
     pending_config: dict | None,
     *,
     confirmation_store: Any | None = None,
+    session_store: Any | None = None,
 ) -> dict | None:
     text: str = data.get("text", "")
     thread_id: str | None = data.get("thread_id") or None
@@ -215,6 +218,13 @@ async def _handle_message(
         await msg_store.save(user_msg)
     except Exception as exc:
         log.warning("ws_save_user_msg_failed", error=str(exc))
+
+    if session_store is not None and thread_id:
+        title = text[:60].strip() if text else None
+        try:
+            await session_store.upsert(thread_id, title=title)
+        except Exception as exc:
+            log.warning("ws_session_upsert_failed", error=str(exc))
 
     await conn_mgr.send_frame({"type": "typing"})
 
@@ -285,6 +295,13 @@ async def _handle_message(
         effective_thread_id = _extract_thread_id(outcome.config) or thread_id or ""
         if confirmation_store is not None and effective_thread_id:
             await confirmation_store.clear(effective_thread_id)
+
+        if session_store is not None and effective_thread_id:
+            preview = outcome.response[:120].strip() if outcome.response else None
+            try:
+                await session_store.upsert(effective_thread_id, preview=preview)
+            except Exception as exc:
+                log.warning("ws_session_preview_update_failed", error=str(exc))
 
         components = outcome.final_state.get("components", [])
         await container.interface.send_with_thread(

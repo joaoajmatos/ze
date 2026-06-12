@@ -10,6 +10,7 @@ import 'package:ze_app/src/screens/contacts/contacts_screen.dart';
 import 'package:ze_app/src/screens/costs/costs_screen.dart';
 import 'package:ze_app/src/screens/settings/settings_screen.dart';
 import 'package:ze_app/src/screens/onboarding/onboarding_flow.dart';
+import 'package:ze_app/src/screens/sessions/sessions_screen.dart';
 import 'package:ze_app/src/navigation/scaffold_with_nav.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -28,6 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => ScaffoldWithNav(child: child),
         routes: [
           GoRoute(path: '/', builder: (_, __) => const ChatScreen()),
+          GoRoute(path: '/sessions', builder: (_, __) => const SessionsScreen()),
           GoRoute(path: '/goals', builder: (_, __) => const GoalsScreen()),
           GoRoute(path: '/news', builder: (_, __) => const NewsScreen()),
           GoRoute(path: '/reminders', builder: (_, __) => const RemindersScreen()),
