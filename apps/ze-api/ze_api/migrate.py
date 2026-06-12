@@ -21,7 +21,12 @@ import os
 from pathlib import Path
 from typing import Any
 
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import engine_from_config, pool
 import ze_core
+
+from ze_api.errors import MigrationReadinessError
 
 # Ordered list of plugin modules to import before collecting migration paths.
 # Importing triggers __init_subclass__ registration in ze_agents.plugin._registry.
@@ -117,6 +122,45 @@ def heads(database_url: str | None = None) -> None:
 def stamp(database_url: str | None = None, *revisions: str, purge: bool = False) -> None:
     from alembic import command
     command.stamp(_build_config(_resolve_url(database_url)), list(revisions), purge=purge)
+
+
+def assert_schema_ready(database_url: str | None = None) -> None:
+    """Fail if the database is not stamped at every configured Alembic head."""
+    resolved_url = _resolve_url(database_url)
+    cfg = _build_config(resolved_url)
+    expected_heads = set(ScriptDirectory.from_config(cfg).get_heads())
+
+    section = dict(cfg.get_section(cfg.config_ini_section, {}) or {})
+    section["sqlalchemy.url"] = resolved_url
+    engine = engine_from_config(
+        section,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+    try:
+        with engine.connect() as connection:
+            current_heads = set(
+                MigrationContext.configure(connection).get_current_heads()
+            )
+    finally:
+        engine.dispose()
+
+    if current_heads == expected_heads:
+        return
+
+    missing = sorted(expected_heads - current_heads)
+    unexpected = sorted(current_heads - expected_heads)
+    details: list[str] = [
+        "Database schema is not at the expected Alembic heads.",
+        "Run `make migrate` before starting the server.",
+        f"Expected heads: {sorted(expected_heads)}.",
+        f"Current heads: {sorted(current_heads)}.",
+    ]
+    if missing:
+        details.append(f"Missing heads: {missing}.")
+    if unexpected:
+        details.append(f"Unexpected heads: {unexpected}.")
+    raise MigrationReadinessError(" ".join(details))
 
 
 if __name__ == "__main__":

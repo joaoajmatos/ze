@@ -12,6 +12,12 @@ class CapabilityConfigError(CapabilityError):
     """capabilities.yaml could not be loaded or is invalid."""
 
 
+# ── Migrations ────────────────────────────────────────────────────────────────
+
+class MigrationReadinessError(ZeError):
+    """Database migrations are not at the expected Alembic heads."""
+
+
 # ── Memory ────────────────────────────────────────────────────────────────────
 
 class MemoryError(ZeError):

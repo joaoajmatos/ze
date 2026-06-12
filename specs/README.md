@@ -73,7 +73,7 @@ explicitly deferred before implementation begins.
 | 43 | [Flutter App](phases/43-flutter-app.md) | ✅ Done |
 | 44 | [Calendar Package Split](phases/44-package-split-google-calendar-api.md) | ✅ Done |
 | 46 | [Accountability Layer](phases/46-accountability-layer.md) | ✅ Done |
-| 47 | [Plugin Framework](phases/47-plugin-framework.md) | 🔄 In Progress (schema validation + tool namespacing deferred) |
+| 47 | [Plugin Framework](phases/47-plugin-framework.md) | 🔄 In Progress (tool namespacing deferred) |
 | 48 | [Ze Core Split](phases/48-core-split.md) | ✅ Done |
 | 49 | [Ze SDK](phases/49-ze-sdk.md) | ✅ Done |
 | 50 | [News Preference Model](phases/50-news-preferences.md) | 🔲 Pending |

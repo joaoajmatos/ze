@@ -30,6 +30,8 @@ async def lifespan(app: FastAPI):
         ze_migrate.upgrade(settings.database_url_sync)
         log.info("ze_auto_migrate_done")
 
+    ze_migrate.assert_schema_ready(settings.database_url_sync)
+
     container = await build_container(settings)
 
     app.state.settings = settings

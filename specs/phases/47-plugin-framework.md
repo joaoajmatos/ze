@@ -2,7 +2,7 @@
 
 > **Packages:** `ze_core` (plugin ABC), `ze_api` (bootstrapper, container)
 > **Phase:** 47
-> **Status:** In Progress (DI auto-discovery shipped; schema validation + tool namespacing deferred)
+> **Status:** In Progress (DI auto-discovery + schema validation shipped; tool namespacing deferred)
 
 ---
 
@@ -18,9 +18,9 @@
 | Missing module paths moved into plugin `agent_module_paths()` | ✅ Done |
 | Entry point discovery in bootstrapper (auto-instantiate from entry points) | ✅ Done — `discover_plugins()` reads entry points, instantiates via `_resolve()` |
 | Plugin-scoped DI via extended `_resolve()` (plugin constructor from `_dep_map`) | ✅ Done — `_resolve()` handles Optional types and default params; all plugin constructors take only dep_map types |
-| Schema readiness validation | 🔲 Deferred — see Open Questions |
-| Tool registry namespacing | 🔲 Deferred — breaking change, see Open Questions |
-| Tests | ✅ All 171 existing tests passing |
+| Schema readiness validation | ✅ Done — startup compares DB Alembic heads against combined ze-core/ze-api/plugin migration heads |
+| Tool registry namespacing | 🔲 Deferred — keep fail-fast bare-name registry until a concrete duplicate-name need appears |
+| Tests | ✅ Focused startup and migration readiness coverage added |
 
 ---
 
@@ -168,26 +168,19 @@ type-annotated. If a required type is absent from `_dep_map`, startup aborts wit
 
 ### Schema readiness validation
 
-Before calling `startup()` on any plugin, the bootstrapper checks Alembic migration
-state for plugins that declare `migrations_path()`:
+Before building the application container, startup checks the database's Alembic
+state against the combined ze-core, ze-api, and plugin migration heads collected
+by `ze_api.migrate`:
 
 ```python
-async def _check_schema_readiness(plugins: list[ZePlugin], settings: Settings) -> None:
-    for plugin in plugins:
-        path = plugin.migrations_path()
-        if path is None:
-            continue
-        current = _alembic_current_heads(settings.database_url_sync, path)
-        expected = _alembic_head_revision(path)
-        if current != expected:
-            raise PluginConfigError(
-                f"Plugin {type(plugin).__name__!r} schema is not up to date. "
-                f"Run `make migrate` before starting the server. "
-                f"Expected {expected!r}, got {current!r}."
-            )
+def assert_schema_ready(database_url: str | None = None) -> None:
+    expected_heads = set(ScriptDirectory.from_config(cfg).get_heads())
+    current_heads = set(MigrationContext.configure(connection).get_current_heads())
+    if current_heads != expected_heads:
+        raise MigrationReadinessError("Run `make migrate` before starting the server.")
 ```
 
-Startup aborts hard. A plugin with unapplied migrations must never serve requests.
+Startup aborts hard. A service with unapplied migrations must never serve requests.
 
 ### Tool namespacing (`ze_core/orchestration/tool.py`)
 
@@ -209,8 +202,9 @@ def tool(*, access: ToolAccess | str, description: str, plugin: str = "") -> Cal
 The `plugin` parameter is set automatically when tools are imported via a plugin's
 `agent_module_paths()` — the bootstrapper sets a context variable before importing
 each plugin's tool modules. Agents declare tools by full namespaced key
-(`"ze_email.send_email"`). LLM schemas use only the short name (`send_email`) in
-the `name` field passed to the model — the mapping is resolved internally.
+(`"ze_email.send_email"`) if/when namespacing is implemented. LLM schemas should
+continue to use only the short name (`send_email`) in the `name` field passed to
+the model — the mapping is resolved internally.
 
 Tools that pre-date namespacing (imported directly without a plugin context) register
 under their bare name and emit a deprecation warning.
@@ -220,26 +214,27 @@ under their bare name and emit a deprecation warning.
 ## Startup Sequence
 
 ```
-1.  Build _dep_map (pool, openrouter_client, settings, etc.) — same as today.
-2.  discover_plugins()
+1.  Load settings and configure logging.
+2.  If `auto_migrate` is enabled, run `ze_api.migrate.upgrade()`.
+3.  Run `ze_api.migrate.assert_schema_ready()` — abort if the DB is not at all
+    configured Alembic heads.
+4.  Build _dep_map (pool, openrouter_client, settings, etc.) — same as today.
+5.  discover_plugins()
     a. Load each entry point, instantiate via _resolve(), log.
     b. Collect agent_module_paths() from each plugin.
-3.  Import all agent modules (fires @agent and @tool registration).
-4.  validate_registry() — cross-check tools and intent_map.
-5.  _check_schema_readiness() — abort if any plugin has unapplied migrations.
-6.  Instantiate agent objects via _resolve(); register_instance() for each.
-7.  Build EmbeddingRouter, CapabilityGate, MemoryStore, LangGraph graph.
-8.  Build ZeContainer.
-9.  Call plugin.startup(container) for each plugin, in discovery order.
+6.  Import all agent modules (fires @agent and @tool registration).
+7.  validate_registry() — cross-check tools and intent_map.
+8.  Instantiate agent objects via _resolve(); register_instance() for each.
+9.  Build EmbeddingRouter, CapabilityGate, MemoryStore, LangGraph graph.
+10. Build ZeContainer.
+11. Call plugin.startup(container) for each plugin, in discovery order.
     (FastAPI lifespan yields here — server is now accepting requests.)
-10. [shutdown] Call plugin.shutdown() in reverse order, then container.close().
+12. [shutdown] Call plugin.shutdown() in reverse order, then container.close().
 ```
 
-Steps 9's `startup()` calls are sequential and ordered — a plugin that depends on
-another's side-effects (e.g. a scheduler started in step 9a) can rely on earlier
-plugins having completed startup. If ordering across plugins matters, it is
-determined by the order of entry points (alphabetical within a package by default;
-overridable via `depends_on` on the plugin class — see Open Questions).
+Step 11's `startup()` calls are sequential and ordered for deterministic logging and
+shutdown symmetry. Startup hooks must not depend on other plugins' startup
+side-effects unless a concrete dependency contract is introduced in a future phase.
 
 ---
 
@@ -312,21 +307,18 @@ Existing plugins in order of migration:
 
 ---
 
-## Open Questions
+## Resolved Decisions
 
-- [ ] **Full plugin auto-instantiation via entry points.** Currently container.py still
-  constructs plugin instances manually. To eliminate this, each plugin's `__init__`
-  must take only "primitive" deps (pool, openrouter_client, settings) and construct
-  its own stores/services internally. This is a large refactor of every plugin class —
-  deferred to a follow-up.
-- [ ] **Plugin dependency ordering.** If `PluginB.startup()` depends on a side-effect
-  from `PluginA.startup()`, declaration order may not be correct. Document that
-  `startup()` must not depend on other plugins' `startup()` side-effects; add
-  `depends_on` only if a concrete case arises.
-- [ ] **Alembic schema check implementation.** Running Alembic in-process vs. subprocess.
-  In-process is cleaner but couples ze-api to alembic internals. Deferred pending
-  a concrete plugin that needs it.
-- [ ] **Tool namespacing rollout.** Agents currently declare tools by bare name
-  (`"send_email"`). Switching to namespaced keys (`"ze_email.send_email"`) is a
-  breaking change to every agent's `tools` class attribute. Deferred — prefer one
-  grep-and-replace commit when ready.
+- **Full plugin auto-instantiation via entry points.** Resolved: shipped. `discover_plugins()`
+  reads `ze.plugins` entry points and instantiates plugin classes via `_resolve()` using
+  the typed dependency map.
+- **Plugin dependency ordering.** Resolved: do not introduce ordering metadata in this
+  phase. `startup()` hooks must not depend on another plugin's startup side-effects;
+  add an explicit dependency contract only when a concrete case appears.
+- **Alembic schema check implementation.** Resolved: use the in-process Alembic API.
+  `ze_api.migrate.assert_schema_ready()` reuses the same combined migration config as
+  `make migrate` and fails startup before container/plugin initialization when the DB
+  is not stamped at every configured head.
+- **Tool namespacing rollout.** Resolved: defer namespacing. The current bare-name
+  registry already fails fast on duplicate tool names, so this is a future compatibility
+  feature for allowing duplicate local tool names across plugins, not a phase blocker.
