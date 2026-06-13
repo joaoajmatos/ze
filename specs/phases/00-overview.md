@@ -221,7 +221,8 @@ Agent capabilities (permission modes) are declared as class attributes on each
   uses `openrouter:web_search` server tool — no separate search API key.
 - **Google API auth.** OAuth2 (Calendar + Gmail). Refresh token stored as
   `GOOGLE_REFRESH_TOKEN` Fly.io secret. Access token exchanged at startup and on 401.
-- **Mobile interface.** Delivered natively through Telegram. No separate mobile app.
+- **Web interface.** Delivered as a React SPA (`apps/ze-web`). Desktop distribution via
+  Tauri is deferred. Telegram has been removed.
 - **Capabilities.** Declared as `Mode` class attributes on `@agent` classes. No
   external YAML file for permission config.
 - **Package structure.** Monorepo with `ze-core` (pure infra), `ze-personal` (domain),

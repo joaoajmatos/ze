@@ -29,16 +29,16 @@ push notifications, and session continuity for free — but it also owns the UI,
 format constraints (64-byte callback payloads, message size limits, no custom rendering),
 and makes it impossible to display structured agent output as native components.
 
-This phase replaces the Telegram interface with a backend foundation that a native Flutter
-app can connect to. It introduces three things:
+This phase replaces the Telegram interface with a backend foundation that a web or native
+client can connect to. It introduces three things:
 
 1. **Message persistence** — every user and agent message is written to Postgres so the
    app can load history on open, and proactive messages are never lost.
 2. **WebSocket endpoint** — real-time bidirectional channel between the app and the backend.
 3. **ntfy integration** — lightweight push notifications for when the app is backgrounded.
 
-The Flutter app itself is out of scope here. This phase delivers the backend contract
-that the Flutter app will consume.
+The React web client itself is out of scope here (Phase 43). This phase delivers the
+backend contract that the client will consume.
 
 ---
 
@@ -58,7 +58,7 @@ that the Flutter app will consume.
 
 ## Out of Scope
 
-- Flutter client implementation.
+- React web client implementation (Phase 43).
 - Component descriptors and structured rendering — those are Phase 41. The `components`
   field exists in the schema but is stored as raw JSONB and ignored by the backend until
   Phase 41.

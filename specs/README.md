@@ -70,7 +70,7 @@ explicitly deferred before implementation begins.
 | 40 | [Notifications](phases/40-notifications.md) | ✅ Done |
 | 41 | [Component Descriptors](phases/41-component-descriptors.md) | ✅ Done |
 | 42 | [Native UI Foundation](phases/42-native-ui-foundation.md) | ✅ Done |
-| 43 | [Flutter App](phases/43-flutter-app.md) | ✅ Done |
+| 43 | [React Web App](phases/43-react-web-app.md) | 🔄 Planned |
 | 44 | [Calendar Package Split](phases/44-package-split-google-calendar-api.md) | ✅ Done |
 | 46 | [Accountability Layer](phases/46-accountability-layer.md) | ✅ Done |
 | 47 | [Plugin Framework](phases/47-plugin-framework.md) | 🔄 In Progress (tool namespacing deferred) |

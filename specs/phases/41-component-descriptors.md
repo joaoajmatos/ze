@@ -39,8 +39,9 @@ message history. At the end of the agent loop, a `ComponentCollectionHook` drain
 `ContextVar` and makes the collected descriptors available to the graph, which forwards
 them to `NativeAppInterface.send_message()`.
 
-A code generation script turns Python component dataclasses into Dart `@freezed` classes,
-keeping Python and Flutter in sync from a single source of truth.
+A code generation script turns Python component dataclasses into TypeScript discriminated
+union types, keeping the Python backend and React frontend in sync from a single source
+of truth.
 
 ---
 
@@ -54,8 +55,8 @@ keeping Python and Flutter in sync from a single source of truth.
 - Drain collected components after each agent invocation via a `ComponentCollectionHook`
   (using the existing `on_loop_start` / `on_loop_end` harness hook points).
 - Propagate components through `AgentState` to `NativeAppInterface.send_message()`.
-- Provide a code generation script that emits Dart `@freezed` classes and a JSON schema
-  document from the Python component type definitions.
+- Provide a code generation script that emits TypeScript discriminated union types and a
+  JSON schema document from the Python component type definitions.
 
 ---
 
@@ -668,8 +669,8 @@ Whether to unify these in a future phase is an open question, deferred.
 
 ```
 Python dataclasses (ze_components/types.py)
-  → JSON schema    (docs/component-schema.json)     via scripts/generate_components.py
-  → Dart @freezed  (ze-flutter/lib/src/components/)  via scripts/generate_components.py
+  → JSON schema       (docs/component-schema.json)            via scripts/generate_components.py
+  → TypeScript types  (apps/ze-web/src/components/types.ts)   via scripts/generate_components.py
 ```
 
 ### `scripts/generate_components.py`
@@ -677,52 +678,52 @@ Python dataclasses (ze_components/types.py)
 1. Imports `COMPONENT_TYPES`, `SUB_ITEM_TYPES` from `ze_components.types`.
 2. Calls `_dataclass_schema()` from `ze_components.schema` for each type.
 3. Writes `docs/component-schema.json` with `$defs` per type, discriminated on `type`.
-4. Emits one Dart `@freezed` class file per component type.
-5. Emits `component_descriptor.dart` with a `componentFromJson()` factory dispatching on
-   the `type` field.
+4. Emits `apps/ze-web/src/components/types.ts` with TypeScript interfaces for each
+   component and sub-item type, plus a `ComponentDescriptor` discriminated union.
 
 ### `Makefile` target
 
 ```makefile
 generate-components:
 	uv run scripts/generate_components.py
-	cd packages/ze-flutter && dart run build_runner build --delete-conflicting-outputs
 ```
 
-### Generated Dart shape (illustrative)
+### Generated TypeScript shape (illustrative)
 
-```dart
-// ze-flutter/lib/src/components/table_component.dart
-@freezed
-class TableComponent with _$TableComponent {
-  const factory TableComponent({
-    required List<String> headers,
-    required List<List<String>> rows,
-    String? title,
-    String? caption,
-    @Default('table') String type,
-  }) = _TableComponent;
+```ts
+// apps/ze-web/src/components/types.ts — generated, do not edit
 
-  factory TableComponent.fromJson(Map<String, dynamic> json) =>
-      _$TableComponentFromJson(json);
+export interface TableComponent {
+  type: 'table';
+  headers: string[];
+  rows: string[][];
+  title?: string;
+  caption?: string;
 }
+
+export interface MetricComponent {
+  type: 'metric';
+  label: string;
+  value: string;
+  trend?: string;
+  note?: string;
+}
+
+// ... all 8 component types
+
+export type ComponentDescriptor =
+  | TableComponent
+  | MetricComponent
+  | ListComponent
+  | TimelineComponent
+  | ProgressComponent
+  | ConfirmComponent
+  | FormComponent
+  | CardComponent;
 ```
 
-```dart
-// ze-flutter/lib/src/components/component_descriptor.dart
-ComponentDescriptor componentFromJson(Map<String, dynamic> json) =>
-  switch (json['type'] as String) {
-    'table'    => TableComponent.fromJson(json),
-    'metric'   => MetricComponent.fromJson(json),
-    'list'     => ListComponent.fromJson(json),
-    'timeline' => TimelineComponent.fromJson(json),
-    'progress' => ProgressComponent.fromJson(json),
-    'confirm'  => ConfirmComponent.fromJson(json),
-    'form'     => FormComponent.fromJson(json),
-    'card'     => CardComponent.fromJson(json),
-    _          => throw FormatException('Unknown component type: ${json['type']}'),
-  };
-```
+The discriminated union on `type` enables exhaustive `switch` in the React
+`componentRenderer()` factory and catches unknown types at compile time.
 
 ---
 
