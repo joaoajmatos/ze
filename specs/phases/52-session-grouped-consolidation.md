@@ -2,7 +2,7 @@
 
 > **Package:** `ze-memory` (`ze_memory/`)
 > **Phase:** 52
-> **Status:** Pending
+> **Status:** Done
 
 ---
 
@@ -13,9 +13,10 @@
 | `session_id` index on `memory_episodes` | ✅ Done (migration 009) |
 | `current_session_id` on `RetrievalRequest` | ✅ Done |
 | Current-session episode exclusion in retrieval policies | ✅ Done |
-| Session-grouped archival in `MemoryConsolidator` | 🔲 Pending |
-| Session-level summary episode | 🔲 Pending |
-| Config knobs | 🔲 Pending |
+| Session-grouped archival in `MemoryConsolidator` | ✅ Done |
+| Session-level summary episode | ✅ Done |
+| Config knobs | ✅ Done |
+| Tests | ✅ Done |
 
 ---
 

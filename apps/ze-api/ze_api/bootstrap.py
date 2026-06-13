@@ -306,6 +306,16 @@ def _resolve_annotation(annotation: Any, dep_map: dict) -> tuple[bool, Any]:
     return False, None
 
 
+def _hint_namespace(cls: type, dep_map: dict) -> dict[str, Any]:
+    module = sys.modules.get(cls.__module__)
+    globalns = dict(vars(module)) if module is not None else {}
+    for typ in dep_map:
+        name = getattr(typ, "__name__", None)
+        if name:
+            globalns[name] = typ
+    return globalns
+
+
 def _resolve(cls: type, dep_map: dict | None = None) -> object:
     """Instantiate cls by matching __init__ parameter types against dep_map.
 
@@ -314,9 +324,10 @@ def _resolve(cls: type, dep_map: dict | None = None) -> object:
     annotations, including GoogleCredentials | None patterns used in plugins.
     """
     effective = dep_map if dep_map is not None else _dep_map
+    globalns = _hint_namespace(cls, effective)
 
     try:
-        hints = get_type_hints(cls.__init__)
+        hints = get_type_hints(cls.__init__, globalns=globalns, localns=globalns)
     except Exception as exc:
         raise AgentConfigError(
             f"Cannot resolve type hints for {cls.__name__}.__init__: {exc}"

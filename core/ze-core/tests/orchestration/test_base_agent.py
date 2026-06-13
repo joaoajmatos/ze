@@ -8,6 +8,8 @@ from ze_agents.errors import AgentAbortedError, AgentError, HookAbort, ToolBlock
 from ze_agents.registry import agent, clear_registry
 from ze_agents.base_agent import (
     BaseAgent,
+    _canonical_openrouter_tool_name,
+    _is_openrouter_server_tool,
     _merge_deps,
     _serialise_result,
     _truncate_messages,
@@ -442,6 +444,60 @@ class TestAgenticLoop:
         assert calls[0].tool_name == "tool_a"
         assert calls[1].tool_name == "tool_b"
 
+    @pytest.mark.parametrize(
+        "returned_name,expected_name",
+        [
+            ("openrouter:web_search", "openrouter:web_search"),
+            ("openrouter", "openrouter:web_search"),
+            ("openrouter_web_search", "openrouter:web_search"),
+            ("openrouter_chat_completion", "openrouter:chat_completion"),
+        ],
+    )
+    async def test_openrouter_server_tool_variants(self, returned_name, expected_name):
+        a = _agent()
+        a.tools = ["openrouter:web_search"]
+        client = self._client([
+            (None, [{"id": "c1", "name": returned_name, "arguments": {"query": "AI news"}}]),
+            ("done", None),
+        ])
+        messages = [{"role": "user", "content": "search"}]
+
+        text, calls = await a.agentic_loop(_ctx(), client, messages, system="sys")
+
+        assert text == "done"
+        assert len(calls) == 1
+        assert calls[0].tool_name == expected_name
+        assert calls[0].success is True
+
+
+# ── OpenRouter server tool helpers ────────────────────────────────────────────
+
+class TestOpenRouterServerTools:
+    @pytest.mark.parametrize(
+        "name,expected",
+        [
+            ("openrouter:web_search", True),
+            ("openrouter", True),
+            ("openrouter_web_search", True),
+            ("openrouter_chat_completion", True),
+            ("lookup", False),
+        ],
+    )
+    def test_is_openrouter_server_tool(self, name, expected):
+        assert _is_openrouter_server_tool(name) is expected
+
+    @pytest.mark.parametrize(
+        "name,expected",
+        [
+            ("openrouter:web_search", "openrouter:web_search"),
+            ("openrouter", "openrouter:web_search"),
+            ("openrouter_web_search", "openrouter:web_search"),
+            ("openrouter_chat_completion", "openrouter:chat_completion"),
+        ],
+    )
+    def test_canonical_openrouter_tool_name(self, name, expected):
+        assert _canonical_openrouter_tool_name(name) == expected
+
 
 # ── agentic_loop hooks ────────────────────────────────────────────────────────
 
@@ -639,6 +695,10 @@ class TestMergeDeps:
 
         result = _merge_deps("simple", {"x": "v"}, {"unknown_dep": "should_not_appear"})
         assert "unknown_dep" not in result
+
+    def test_openrouter_server_tool_skips_registry_lookup(self):
+        result = _merge_deps("openrouter", {"query": "test"}, {"client": object()})
+        assert result == {"query": "test"}
 
 
 # ── _serialise_result ────────────────────────────────────────────────────────

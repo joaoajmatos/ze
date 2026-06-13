@@ -42,8 +42,8 @@ class Settings(BaseSettings):
 
     # ── Workflow ──────────────────────────────────────────────────────────────
     scheduler_enabled: bool = True
-    workflow_plan_model: str = "anthropic/claude-haiku-4-5-20251001"
-    workflow_verify_model: str = "anthropic/claude-haiku-4-5-20251001"
+    workflow_plan_model: str = "anthropic/claude-3.5-haiku"
+    workflow_verify_model: str = "anthropic/claude-3.5-haiku"
 
     # ── Memory consolidation ──────────────────────────────────────────────────
     consolidation_enabled: bool = True

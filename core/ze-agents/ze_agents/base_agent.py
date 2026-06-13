@@ -27,6 +27,24 @@ _OPENROUTER_TOOL_SCHEMAS: dict[str, dict] = {
 log = get_logger(__name__)
 
 
+def _is_openrouter_server_tool(name: str) -> bool:
+    """Return True for OpenRouter-native tools that are not in the local @tool registry."""
+    if name in _OPENROUTER_TOOL_SCHEMAS:
+        return True
+    return name == "openrouter" or name.startswith(("openrouter:", "openrouter_"))
+
+
+def _canonical_openrouter_tool_name(name: str) -> str:
+    """Normalize variant OpenRouter tool names returned by the API."""
+    if name in _OPENROUTER_TOOL_SCHEMAS:
+        return name
+    if name.startswith("openrouter_"):
+        return name.replace("_", ":", 1)
+    if name == "openrouter":
+        return "openrouter:web_search"
+    return name
+
+
 class BaseAgent(ABC):
     name: str
     description: str
@@ -296,9 +314,10 @@ class BaseAgent(ABC):
             })
 
             for tc in tool_calls:
-                if tc["name"] in _OPENROUTER_TOOL_SCHEMAS:
+                if _is_openrouter_server_tool(tc["name"]):
+                    canonical = _canonical_openrouter_tool_name(tc["name"])
                     tool_call = ToolCall(
-                        tool_name=tc["name"],
+                        tool_name=canonical,
                         args=tc["arguments"],
                         result="[handled by OpenRouter]",
                         duration_ms=0,
@@ -375,6 +394,9 @@ def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
     """Inject internal deps into tool kwargs for params the LLM cannot provide."""
     import inspect
     from ze_agents.tool import get_tool
+
+    if _is_openrouter_server_tool(tool_name):
+        return dict(llm_args)
 
     spec = get_tool(tool_name)
     merged = dict(llm_args)

@@ -20,10 +20,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS memory_episodes_session_id_idx
-            ON memory_episodes (session_id, created_at DESC)
-    """)
+    with op.get_context().autocommit_block():
+        op.execute("""
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS memory_episodes_session_id_idx
+                ON memory_episodes (session_id, created_at DESC)
+        """)
 
 
 def downgrade() -> None:

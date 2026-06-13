@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncpg
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -346,6 +347,14 @@ async def build_container(settings: Settings) -> ZeContainer:
         from ze_prospecting.types import ProspectingSettings
         agent_deps[ProspectCampaignStore] = prospecting_plugin.campaign_store
         agent_deps[ProspectingSettings] = prospecting_plugin._prospecting_settings
+
+    from ze_calendar.plugin import CalendarPlugin
+    calendar_plugin = next(
+        (p for p in plugins if isinstance(p, CalendarPlugin)), None
+    )
+    if calendar_plugin is not None:
+        from ze_calendar.reminders.store import ReminderStore
+        agent_deps[ReminderStore] = calendar_plugin.reminder_store
 
     agent_deps[BrowserClient] = browser_client
 
