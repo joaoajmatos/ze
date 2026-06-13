@@ -74,11 +74,11 @@ def _format_candidates(articles: list) -> str:
 class NewsAgent(BaseAgent):
     name = "news"
     description = """
-      Answers questions about current events and headlines using a curated local news store.
-      Use for digest-style queries: "what's in the news?", "any tech headlines?",
-      "what happened in Portugal this week?", "latest headlines", "news briefing".
-      Do NOT use for breaking news fact-checks or queries requiring real-time accuracy
-      — use the research agent with web search for those.
+      News headlines and daily briefings from curated sources.
+      Use for: "what's in the news today", "any headlines", "morning news briefing",
+      "latest news", "news digest", "what's happening in the world", "tech news today",
+      "give me a news summary", "what's trending", "top stories today".
+      For news digest and headline summaries only — not for factual research or web search.
     """
     model = "openai/gpt-4o-mini"
     vision_capable = False

@@ -38,9 +38,11 @@ Guidelines:
 class WorkflowManagerAgent(BaseAgent):
     name = "workflow"
     description = """
-      Manages stored workflows and recurring scheduled tasks. Use when the user wants
-      to create, list, enable, disable, delete, or manually run a named workflow or
-      recurring automated task.
+      Named automation workflows and recurring scheduled tasks.
+      Use for: "create a workflow that does X every day", "automate X on a schedule",
+      "list my workflows", "run the X workflow now", "trigger the X automation",
+      "enable/disable the Y workflow", "delete the Z automation", "set up a recurring task".
+      Not for one-off reminders (use reminders), long-term goals, or calendar events.
     """
     model = "anthropic/claude-sonnet-4-5"
     vision_capable = True

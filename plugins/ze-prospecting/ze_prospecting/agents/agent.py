@@ -46,10 +46,11 @@ Final output format:
 class ProspectingAgent(BaseAgent):
     name = "prospecting"
     description = """
-      Find people matching a target profile, enrich their contact details, and
-      generate outreach materials. Use when the user wants to build a prospect
-      list, find contacts in an industry or geography, or prepare outreach for
-      a campaign.
+      Sales prospecting, lead research, and outreach campaign materials.
+      Use for: "find leads in the X industry", "prospect for customers in Y",
+      "build a target list of companies in Z", "research potential clients",
+      "draft outreach email for X company", "qualify this lead", "enrich contact details",
+      "start a prospecting campaign", "find contacts at X". Not for general web research.
     """
     model = "anthropic/claude-sonnet-4-5"
     timeout = 180

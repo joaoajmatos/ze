@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException, Request, status
+from ze_agents.interface.types import RawInput
 from ze_core.telemetry.context import set_flow_context
 
 from ze_api.api.schemas import EvalChatRequest, EvalChatResponse, EvalRoutingInfo, EvalToolCall
@@ -31,14 +32,18 @@ async def eval_chat(
     _check_api_key(x_ze_api_key, request.app.state.settings)
 
     # Set telemetry context so llm_cost_log captures this eval session.
-    # bot.invoke() prepends "eval-", so the stored session_id = f"eval-{body.session_id}".
+    # session_id is prefixed with "eval-" so eval threads don't collide with real ones.
     set_flow_context("eval", session_id=body.session_id)
 
-    ze_bot = request.app.state.ze_bot
+    container = request.app.state.container
+    session_id = f"eval-{body.session_id}"
     try:
-        final_state = await ze_bot.invoke(body.prompt, body.session_id)
+        outcome = await container.invoke_raw_turn(
+            session_id,
+            RawInput(text=body.prompt),
+        )
     except Exception as exc:
-        log.exception("eval_graph_error", session_id=body.session_id, error=str(exc))
+        log.exception("eval_graph_error", session_id=session_id, error=str(exc))
         return EvalChatResponse(
             session_id=body.session_id,
             response=None,
@@ -48,6 +53,17 @@ async def eval_chat(
             error=str(exc),
         )
 
+    if outcome.error:
+        return EvalChatResponse(
+            session_id=body.session_id,
+            response=None,
+            agent_used=None,
+            routing=None,
+            pending_confirmation=False,
+            error=outcome.error,
+        )
+
+    final_state = outcome.final_state
     envelope = final_state.get("envelope")
     routing = None
     if envelope is not None:
@@ -88,7 +104,7 @@ async def eval_chat(
         response=response_text,
         agent_used=envelope.primary_agent if envelope else None,
         routing=routing,
-        pending_confirmation=bool(final_state.get("pending_confirmation")),
+        pending_confirmation=outcome.interrupted,
         error=final_state.get("error"),
         tool_calls=tool_calls,
         tokens_used=tokens_used,

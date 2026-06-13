@@ -33,8 +33,11 @@ Guidelines:
 class EmailAgent(BaseAgent):
     name = "email"
     description = """
-      Manages Gmail messages. Use for reading, drafting, sending, or archiving emails,
-      searching your inbox, or composing replies.
+      Gmail inbox and email management.
+      Use for: "do I have any emails from X", "check my inbox", "what's in my email",
+      "draft an email to X about Y", "send an email to X", "reply to X's email",
+      "forward this email", "summarise my email thread", "archive this email",
+      "search my inbox for X". Not for calendar events, reminders, or chat.
     """
     model = "anthropic/claude-haiku-4-5"
     vision_capable = True

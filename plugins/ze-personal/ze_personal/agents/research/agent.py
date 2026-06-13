@@ -23,13 +23,13 @@ delegate to the calendar agent using delegate_to_agent rather than guessing.\
 class ResearchAgent(BaseAgent):
     name = "research"
     description = """
-      Handles web searches, fact-finding, summarisation, and research synthesis.
-      Use when the user explicitly says "research", "look up", "find out", "search for",
-      or asks about current events, factual lookups, topic deep-dives, company or
-      organisation history, news, or anything requiring information retrieval from the web.
-      Also use for factual comparisons ("what are the differences between X and Y"),
-      technical how-things-work questions, and any query where accurate sourced information
-      matters more than reasoning or conversation.
+      Web search and technical fact-finding using live information retrieval.
+      Use for: factual comparisons ("what are the differences between X and Y"),
+      technical deep-dives ("how does async/await work", "how does X work internally"),
+      coding questions ("how do I implement X in Python", "why does X happen in JavaScript"),
+      "look up X", "search for X", "find out about X", "what is X", recent events
+      needing accurate sourced answers, and any query requiring verified facts from the web.
+      Not for calendar, email, reminders, or news digest summaries.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"

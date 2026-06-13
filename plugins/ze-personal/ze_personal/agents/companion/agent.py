@@ -40,10 +40,12 @@ _CHANNEL_KEYWORDS: dict[str, list[str]] = {
 class CompanionAgent(BaseAgent):
     name = "companion"
     description = """
-      Handles reasoning, thinking, brainstorming, analysis, and open-ended conversation.
-      Use for thinking through problems, getting a second opinion, exploring ideas,
-      writing assistance, or any task that does not require external tools or live data.
-      Do NOT use for queries that involve researching, searching, or looking things up.
+      Chat, conversation, and reasoning that needs no external tools or live data.
+      Use for: greetings ("hey", "how are you doing"), emotional check-ins ("I'm feeling
+      stressed"), brainstorming, writing help, "explain X to me", "help me think through X",
+      "what can you do", "what do you know about me", "tell me something interesting",
+      and open-ended questions with no specific domain. Not for web search, calendar,
+      email, reminders, news, or any query that needs fetching live data.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"

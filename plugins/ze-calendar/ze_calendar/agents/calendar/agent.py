@@ -32,8 +32,11 @@ Guidelines:
 class CalendarAgent(BaseAgent):
     name = "calendar"
     description = """
-      Manages Google Calendar events. Use for creating, reading, updating, or deleting
-      calendar events, checking availability, finding free time, or setting reminders.
+      Google Calendar events, meetings, and appointments.
+      Use for: "what's on my calendar today", "what do I have tomorrow", "what's this week",
+      "add a meeting with X on Friday at 3pm", "schedule a call", "create an event",
+      "find a free time slot", "am I free on Thursday", "delete my dentist appointment",
+      "update my 2pm meeting". Not for one-off personal reminders or email.
     """
     model = "anthropic/claude-haiku-4-5"
     vision_capable = True

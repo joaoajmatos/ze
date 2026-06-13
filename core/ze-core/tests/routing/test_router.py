@@ -63,7 +63,7 @@ class _FakeEmbedder:
         self._agent_vecs = agent_vecs  # name → vector
         self._prompt_vec = prompt_vec
 
-    def encode(self, input_: str | list[str]):
+    def encode(self, input_: str | list[str], **kwargs):
         if isinstance(input_, list):
             names = list(self._agent_vecs.keys())
             return _FakeArray([self._agent_vecs[n] for n in names])

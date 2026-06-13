@@ -48,10 +48,12 @@ Guidelines:
 class GoalAgent(BaseAgent):
     name = "goals"
     description = """
-      Creates and manages long-running goals that Ze executes autonomously over days or weeks.
-      Use when the user describes a multi-step objective with a time horizon.
-      Also use for inspecting, pausing, resuming, or abandoning active goals.
-      Do NOT use for one-shot tasks — use the workflow agent for those.
+      Long-term goals and multi-week objectives that Ze executes autonomously.
+      Use for: "I want to achieve X over the next month", "help me reach my goal of X",
+      "create a goal to X", "set up a project to accomplish X", "show my active goals",
+      "how is my goal progressing", "what's the status of my X goal",
+      "pause my goal", "resume my goal", "abandon my goal", "steer my goal".
+      Not for one-shot reminders, scheduled automations, or calendar events.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"

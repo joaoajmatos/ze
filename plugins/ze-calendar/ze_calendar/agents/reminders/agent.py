@@ -34,10 +34,11 @@ Guidelines:
 class RemindersAgent(BaseAgent):
     name = "reminders"
     description = """
-      Sets, lists, and cancels one-off time-based reminders. Use when the user asks
-      to be reminded about something at a specific future time or after a delay,
-      or wants to see, check, or cancel their reminders.
-      Do NOT use for recurring tasks — use the workflow agent for those.
+      One-off personal reminders and time-based alerts.
+      Use for: "remind me to X at Y time", "remind me to call the dentist on Friday at 10am",
+      "remind me in 3 hours to check X", "set an alarm for tomorrow morning",
+      "what reminders do I have", "list my reminders", "cancel my reminder about X".
+      Not for recurring automations (use workflow), calendar events, or goals.
     """
     model = "anthropic/claude-haiku-4-5"
     vision_capable = False
