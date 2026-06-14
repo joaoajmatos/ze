@@ -5,6 +5,12 @@ from uuid import UUID as UUIDType
 from pydantic import BaseModel, ConfigDict, RootModel
 
 
+# ── REST: health ──────────────────────────────────────────────────────────────
+
+class HealthResponse(BaseModel):
+    status: Literal["ok"]
+
+
 # ── REST: sessions ────────────────────────────────────────────────────────────
 
 class SessionSchema(BaseModel):
@@ -146,6 +152,41 @@ class RoutingLogEntry(BaseModel):
 
 class ErrorDetail(BaseModel):
     detail: str | list[dict[str, Any]]
+
+
+# ── REST: web data screens ────────────────────────────────────────────────────
+
+class GoalListItem(BaseModel):
+    id: UUIDType
+    objective: str
+    status: str
+    created_at: datetime
+
+
+class ReminderListItem(BaseModel):
+    id: UUIDType
+    label: str
+    fire_at: datetime
+    fired: bool
+
+
+class ContactListItem(BaseModel):
+    id: UUIDType
+    name: str
+    email: str | None = None
+    notes: str | None = None
+
+
+class AgentCostBucket(BaseModel):
+    usd: float
+    tokens: int
+
+
+class WebCostSummaryResponse(BaseModel):
+    total_usd: float
+    total_tokens: int
+    by_agent: dict[str, AgentCostBucket]
+    period: str
 
 
 # ── REST: eval ────────────────────────────────────────────────────────────────

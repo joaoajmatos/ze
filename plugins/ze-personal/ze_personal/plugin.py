@@ -146,11 +146,13 @@ class PersonalPlugin(ZePlugin):
         from ze_personal.goals.planner import GoalPlanner
         from ze_personal.goals.executor import GoalExecutor
         from ze_personal.workflow.planner import WorkflowPlanner
+        from ze_news.types import GoalTitleProvider
 
         return {
             PersonStore: self.person_store,
             ContactChannelStore: self.contact_channel_store,
             PostgresGoalStore: self.goal_store,
+            GoalTitleProvider: self.goal_store,
             GoalPlanner: self.goal_planner,
             GoalExecutor: self.goal_executor,
             WorkflowPlanner: self.workflow_planner,

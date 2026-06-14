@@ -179,6 +179,18 @@ class PersonStore:
                 )
         return [_person_from_row(r) for r in rows]
 
+    async def list_confirmed(self) -> list[Person]:
+        """Return all confirmed, non-dismissed contacts for display."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT * FROM contacts
+                WHERE confirmed = true AND dismissed = false
+                ORDER BY name ASC
+                """
+            )
+        return [_person_from_row(r) for r in rows]
+
     async def get_pending(self) -> list[tuple[Person, list[PersonSource]]]:
         """Return unconfirmed, non-dismissed candidates with their sources."""
         async with self._pool.acquire() as conn:

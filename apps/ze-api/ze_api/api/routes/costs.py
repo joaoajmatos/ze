@@ -5,10 +5,61 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query
 
 from ze_api.api.dependencies import get_pool
+from ze_api.api.schemas import AgentCostBucket, WebCostSummaryResponse
 
 router = APIRouter(tags=["costs"])
+web_router = APIRouter(tags=["costs"])
 
 _VALID_GROUP_BY = {"flow_type", "agent", "model", "session_id"}
+_WEB_SUMMARY_DAYS = 30
+
+
+@web_router.get(
+    "/api/costs/summary",
+    response_model=WebCostSummaryResponse,
+    summary="Web cost summary",
+    description=(
+        "Aggregate LLM token usage and cost by agent for the web client costs screen. "
+        f"Defaults to the last {_WEB_SUMMARY_DAYS} days."
+    ),
+)
+async def web_cost_summary(pool=Depends(get_pool)) -> WebCostSummaryResponse:
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT agent,
+                   SUM(total_tokens)::int AS total_tokens,
+                   SUM(cost_usd)          AS cost_usd
+            FROM llm_cost_log
+            WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
+            GROUP BY agent
+            ORDER BY SUM(cost_usd) DESC NULLS LAST
+            """,
+            _WEB_SUMMARY_DAYS,
+        )
+        totals = await conn.fetchrow(
+            """
+            SELECT SUM(total_tokens)::int AS total_tokens,
+                   SUM(cost_usd)          AS total_cost_usd
+            FROM llm_cost_log
+            WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
+            """,
+            _WEB_SUMMARY_DAYS,
+        )
+
+    by_agent = {
+        row["agent"]: AgentCostBucket(
+            usd=float(row["cost_usd"] or 0),
+            tokens=row["total_tokens"] or 0,
+        )
+        for row in rows
+    }
+    return WebCostSummaryResponse(
+        total_usd=float(totals["total_cost_usd"] or 0),
+        total_tokens=int(totals["total_tokens"] or 0),
+        by_agent=by_agent,
+        period=f"Last {_WEB_SUMMARY_DAYS} days",
+    )
 
 
 @router.get(

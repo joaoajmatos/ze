@@ -75,17 +75,8 @@ class NewsPlugin(ZePlugin):
         if self._store is None:
             return {}
         from ze_news.store import NewsStore
-        from ze_news.types import GoalTitleProvider
 
-        deps: dict = {NewsStore: self._store}
-        try:
-            from ze_personal.goals.postgres import PostgresGoalStore
-            goal_store = accumulated.get(PostgresGoalStore)
-            if goal_store is not None:
-                deps[GoalTitleProvider] = goal_store
-        except ImportError:
-            pass
-        return deps
+        return {NewsStore: self._store}
 
     def configurable_services(self) -> dict[str, Any]:
         if self._store is None:

@@ -68,6 +68,8 @@ class ZeContainer(CoreContainer):
     persona_store: Any
     workflow_store: WorkflowStore
     goal_store: Any  # PostgresGoalStore — accessed by routes; populated from agent_deps
+    reminder_store: Any  # ReminderStore — accessed by routes; populated from agent_deps
+    person_store: Any  # PersonStore — accessed by routes; populated from agent_deps
     workflow_scheduler: WorkflowScheduler
     proactive_scheduler: ProactiveScheduler
     browser_client: BrowserClient
@@ -318,12 +320,22 @@ async def build_container(settings: Settings) -> ZeContainer:
     for plugin in plugins:
         agent_deps.update(plugin.agent_deps(agent_deps))
 
-    # ZeContainer needs direct access to goal_store for REST routes.
+    # ZeContainer needs direct access to plugin stores for REST routes.
     try:
         from ze_personal.goals.postgres import PostgresGoalStore
         goal_store = agent_deps.get(PostgresGoalStore)
     except ImportError:
         goal_store = None
+    try:
+        from ze_calendar.reminders.store import ReminderStore
+        reminder_store = agent_deps.get(ReminderStore)
+    except ImportError:
+        reminder_store = None
+    try:
+        from ze_personal.contacts.store import PersonStore
+        person_store = agent_deps.get(PersonStore)
+    except ImportError:
+        person_store = None
 
     bootstrap_agents(deps=agent_deps, plugins=plugins)
 
@@ -358,6 +370,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         persona_store=persona_store,
         workflow_store=workflow_store,
         goal_store=goal_store,
+        reminder_store=reminder_store,
+        person_store=person_store,
         workflow_scheduler=workflow_scheduler,
         proactive_scheduler=ProactiveScheduler(),
         browser_client=browser_client,

@@ -52,6 +52,16 @@ class ReminderStore:
             )
         return [_to_reminder(r) for r in rows]
 
+    async def list_all(self, limit: int = 100) -> list[Reminder]:
+        """Return reminders ordered by fire_at descending — used by the web client."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, label, fire_at, created_at, sent, sent_at "
+                "FROM user_reminders ORDER BY fire_at DESC LIMIT $1",
+                limit,
+            )
+        return [_to_reminder(r) for r in rows]
+
     async def get(self, reminder_id: UUID) -> Reminder | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
