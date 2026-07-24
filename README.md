@@ -236,28 +236,21 @@ Every package has a README. Conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Documentation
 
-Full index: [docs/README.md](docs/README.md)
+Full index (grouped by audience): [docs/README.md](docs/README.md)
 
 | Doc | Topic |
 |---|---|
 | [ze-doctrine.md](specs/arch/ze-doctrine.md) | What kind of mind Ze is — the constitutional layer |
-| [cognitive-architecture.md](docs/cognitive-architecture.md) | The seven cognitive functions mapped onto packages |
+| [cognitive-architecture.md](docs/cognitive-architecture.md) | Seven cognitive functions mapped onto packages |
 | [architecture.md](docs/architecture.md) | System design, graph flow |
 | [package-architecture.md](docs/package-architecture.md) | Monorepo, `ZePlugin`, dependency rules |
-| [frontend.md](docs/frontend.md) | ze-web — FSD layout, `@ze/client`, plugin UI |
-| [native-interface.md](docs/native-interface.md) | WebSocket protocol, frames, ntfy push |
-| [extending-ze.md](docs/extending-ze.md) | Agents, plugins, jobs, channels |
-| [channels.md](docs/channels.md) | Outbound communication channels |
-| [ingestion.md](docs/ingestion.md) | Ingestion pipeline — fetchers, processors, extractors, plugin hooks |
-| [memory.md](docs/memory.md) | Facts, episodes, graph, retrieval policies |
-| [dreaming.md](docs/dreaming.md) | Offline sleep/dream memory improvement loop |
-| [goals.md](docs/goals.md) | Goal engine |
-| [sdk.md](docs/sdk.md) | `ze_sdk` reference |
-| [testing.md](docs/testing.md) | Running tests across Python packages and ze-web |
-| [data-portability.md](docs/data-portability.md) | Export, import, and deletion — `DataDomain` contract |
+| [sdk.md](docs/sdk.md) / [extending-ze.md](docs/extending-ze.md) | SDK reference and how to add agents, plugins, jobs |
+| [memory.md](docs/memory.md) / [dreaming.md](docs/dreaming.md) | Memory store and offline sleep/dream loop |
+| [goals.md](docs/goals.md) / [workflows.md](docs/workflows.md) | Goal engine and multi-step workflows |
+| [frontend.md](docs/frontend.md) / [native-interface.md](docs/native-interface.md) | ze-web and WebSocket / ntfy protocol |
+| [configuration.md](docs/configuration.md) / [deployment.md](docs/deployment.md) | Config keys and Fly.io deploy |
+| [testing.md](docs/testing.md) / [eval.md](docs/eval.md) | Package tests and MCP evals |
 | [specs/](specs/) | Design specs — where Ze is going next |
-
-Deploy: [docs/deployment.md](docs/deployment.md)
 
 ---
 
