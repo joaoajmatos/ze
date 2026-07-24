@@ -1,7 +1,7 @@
 # Extending Ze
 
 Ze is extended through **plugins** — self-contained domain packages that contribute
-agents, proactive jobs, channels, and graph behaviour without touching the engine.
+agents, proactive jobs, channels, and graph behavior without touching the engine.
 This guide covers the full lifecycle of building an extension: from deciding where code
 belongs to wiring it into the running app.
 
@@ -57,7 +57,7 @@ New server-driven UI component?
   → ze-components
 ```
 
-See [docs/package-architecture.md](package-architecture.md) for the full decision table and the criteria for when a new package is actually warranted.
+See [docs/package-architecture.md](package-architecture.md) for the full decision table and the criteria for when a new package is warranted.
 
 ---
 
@@ -308,7 +308,7 @@ the `locales/{locale}.yaml` convention. Agents call `await self.emit(ctx, "my_ag
 to send the message to the client.
 
 The app-level `config/locales/` files are an override layer — add entries there only
-to customise a plugin's messages for a specific deployment without touching plugin code.
+to customize a plugin's messages for a specific deployment without touching plugin code.
 
 ### 4. Add to `ze-api` dependencies
 

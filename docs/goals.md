@@ -67,7 +67,7 @@ Ze returns a summary of active and awaiting-gate goals with milestone progress a
 Gates are the multi-step equivalent of the per-action capability gate. Ze batches
 meaningful work, then surfaces a checkpoint message:
 
-- What Ze has completed (summarised milestone outputs).
+- What Ze has completed (summarized milestone outputs).
 - What Ze plans next (milestones up to the next gate).
 
 Options: **Proceed** · **Stop** · **Redirect**.
@@ -78,9 +78,9 @@ Options: **Proceed** · **Stop** · **Redirect**.
 | **Stop** | Goal abandoned |
 | **Redirect** | You send free-text instructions; Ze re-plans remaining milestones and continues |
 
-Gate responses are handled conversationally — the user replies via the app or by
-typing in the chat. Redirect instructions are sent as a follow-up message after
-choosing to redirect.
+The user responds to gates conversationally — replying via the app or by typing in
+the chat. Redirect instructions follow as a message after the user chooses to
+redirect.
 
 Gate placement (enforced by the planner prompt):
 
@@ -99,7 +99,7 @@ Gate placement (enforced by the planner prompt):
 
 - The scheduler fires `goal_advance_sweep` (every 15 minutes for all active goals).
 - You approve a gate or finish a redirect.
-- The initial plan is approved after creation.
+- You approve the initial plan after creation.
 
 ```mermaid
 flowchart TD
@@ -114,9 +114,10 @@ flowchart TD
     G -->|no| H[mark COMPLETED\nnotify]
 ```
 
-Each milestone is dispatched through the normal agent registry (like workflow steps):
-natural-language `description` + optional `agent_hint`. Completed milestones feed
-gate context summaries; learnings are extracted and stored per milestone.
+`GoalExecutor` dispatches each milestone through the normal agent registry (like
+workflow steps): natural-language `description` + optional `agent_hint`. Completed
+milestones feed gate context summaries; Ze extracts and stores learnings per
+milestone.
 
 ### Progress notifications
 
@@ -131,9 +132,9 @@ Gate checkpoints use a richer format (title, done list, planned list, options).
 When all milestones finish, `GoalExecutor` runs three things automatically:
 
 1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Sent via `ProactiveNotifier` as the completion message.
-2. **Procedure promotion** — reusable procedures extracted during the goal are submitted to `MemoryStore.propose_procedure()` so later goals can retrieve them. If a procedure is still provisional while the goal is active, Ze can reuse it inside the same goal before completion.
-3. **Learning promotion** — generalizable facts extracted from the goal's `GoalLearning` records are submitted to `MemoryStore.propose_facts()` as `reviewed=False`. They enter the normal memory pipeline (dedup via nightly consolidation) and are visible at `GET /memory/facts`. Only facts that describe the user's preferences or patterns are promoted; goal-specific research findings are excluded.
-4. **Retrospective stored** — the narrative is saved to `goals.retrospective_text` and becomes available to the weekly goal narrative job and future goal suggestion synthesis.
+2. **Procedure promotion** — Ze submits reusable procedures extracted during the goal to `MemoryStore.propose_procedure()` so later goals can retrieve them. If a procedure is still provisional while the goal is active, Ze can reuse it inside the same goal before completion.
+3. **Learning promotion** — Ze submits generalizable facts extracted from the goal's `GoalLearning` records to `MemoryStore.propose_facts()` as `reviewed=False`. They enter the normal memory pipeline (dedup via nightly consolidation) and appear at `GET /memory/facts`. Ze promotes only facts that describe the user's preferences or patterns; it excludes goal-specific research findings.
+4. **Retrospective stored** — Ze saves the narrative to `goals.retrospective_text`, making it available to the weekly goal narrative job and future goal suggestion synthesis.
 
 ---
 
@@ -141,15 +142,15 @@ When all milestones finish, `GoalExecutor` runs three things automatically:
 
 ### Weekly goal narrative (Sunday 6 PM UTC)
 
-Ze pushes a one-paragraph update per active goal summarising what was completed that week, any pending gate, and what comes next. Driven by `GoalNarrativeJob` in `ze_automation/jobs/goal_narrative.py`.
+Ze pushes a one-paragraph update per active goal summarizing what was completed that week, any pending gate, and what comes next. `GoalNarrativeJob` (`ze_automation/jobs/goal_narrative.py`) drives this.
 
 ### Weekly goal suggestions (Sunday 7 PM UTC)
 
-Ze analyses recent memory facts, episodes, and retrospectives to propose one new goal. Sent via `ProactiveNotifier` with **Accept** / **Dismiss** options. Accepted suggestions pre-fill a goal creation flow. Driven by `GoalSuggestionJob` in `ze_automation/jobs/goal_suggestion.py`.
+Ze analyzes recent memory facts, episodes, and retrospectives to propose one new goal. Sent via `ProactiveNotifier` with **Accept** / **Dismiss** options. Accepted suggestions pre-fill a goal creation flow. `GoalSuggestionJob` (`ze_automation/jobs/goal_suggestion.py`) drives this.
 
 ### Stuck goal detection (Tuesday 9 AM UTC)
 
-Ze checks for goals that have had no milestone progress or gate resolution in a configurable window (default: 48 h for milestones, 72 h for gates). Stuck goals get a push notification with **Resume** / **Abandon** / **Redirect** options. Driven by `StuckGoalJob` in `ze_automation/jobs/stuck_goals.py`.
+Ze checks for goals that have had no milestone progress or gate resolution in a configurable window (default: 48 h for milestones, 72 h for gates). Stuck goals get a push notification with **Resume** / **Abandon** / **Redirect** options. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
 
 ---
 
@@ -169,11 +170,11 @@ Procedure extraction is not limited to goal completion. As Ze learns a repeatabl
 
 The contract is:
 
-1. Ze may extract a provisional procedure once a milestone cluster looks stable enough to generalise.
+1. Ze may extract a provisional procedure once a milestone cluster looks stable enough to generalize.
 2. That procedure is available to later milestones in the same goal and to `GoalPlanner.replan_remaining()`.
-3. On goal completion, any still-relevant procedure is promoted into `MemoryStore.propose_procedure()` so future goals can reuse it too.
+3. On goal completion, Ze promotes any still-relevant procedure into `MemoryStore.propose_procedure()` so future goals can reuse it too.
 
-This closes the gap between "Ze learned a procedure" and "Ze can actually use it again before the goal ends".
+This closes the gap between "Ze learned a procedure" and "Ze can use it again before the goal ends".
 
 ---
 
@@ -206,16 +207,16 @@ goal_suggestions
 
 Statuses: `planning` → (approve) → `active` ↔ `awaiting_gate` / `paused` → `completed` | `abandoned`.
 
-`reuse_hint` on milestones is set by the planner when a prior goal's output may be reusable; empty string means no hint.
+The planner sets `reuse_hint` on milestones when a prior goal's output may be reusable; empty string means no hint.
 
 ---
 
 ## Configuration
 
-Goal capabilities are declared on the `@agent` class in `ze_automation/agents/goals/agent.py`.
+The `@agent` class in `ze_automation/agents/goals/agent.py` declares goal capabilities.
 Intent capabilities default to `confirm` for create, update, and delete; read is autonomous.
 
-The advance sweep cron is fixed in `ze_api/container.py` (`*/15 * * * *`, job id
+`ze_api/container.py` fixes the advance sweep cron (`*/15 * * * *`, job id
 `goal_advance_sweep`). Proactive job crons are configurable via `proactive.*` in
 `config/config.yaml`. See [docs/scheduled-jobs.md](scheduled-jobs.md).
 
@@ -226,6 +227,6 @@ The advance sweep cron is fixed in `ze_api/container.py` (`*/15 * * * *`, job id
 - Milestones run **sequentially** within a goal; the sweep processes one advance per goal per tick.
 - Goals do not replace workflows — use workflows for recurring or one-shot automation.
 - Success is not auto-detected; Ze marks complete when all milestones finish; you confirm at gates along the way.
-- Steering only applies to remaining pending milestones; completed milestones are never re-run.
+- Steering only applies to remaining pending milestones; Ze never re-runs completed milestones.
 - Promoted facts from learning promotion enter memory as `reviewed=False` and go through the normal consolidation cycle before being treated as canonical.
 - Procedures can be reused within the same goal once extracted; if you only see them at the end, the spec is incomplete.

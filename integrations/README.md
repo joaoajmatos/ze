@@ -33,8 +33,8 @@ ze-trading212  ←  no ze deps
 | New broker / trading API client | create `ze-<broker>/` here |
 | Any other third-party API wrapper | create `ze-<service>/` here |
 
-Integration packages are consumed by `plugins/` (which have domain knowledge) and
-by `apps/ze-api` (which wires everything together).
+`plugins/` (which have domain knowledge) and `apps/ze-api` (which wires everything
+together) consume integration packages.
 
 ## Integration contract
 

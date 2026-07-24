@@ -139,8 +139,8 @@ class PersonalizationContext:
 
 No new UI is needed. When the user says *"Ze, I don't care about football"*, memory
 stores a `UserFact(key="not interested in", value="football")`. On the next context
-build, "football" appears in `exclusions` and is filtered from both buckets using
-word-boundary regex — so "sport" won't falsely exclude "transport" articles.
+build, "football" appears in `exclusions`, and word-boundary regex filters it from
+both buckets — so "sport" won't falsely exclude "transport" articles.
 
 ### Briefing rendering
 
@@ -159,7 +159,7 @@ word-boundary regex — so "sport" won't falsely exclude "transport" articles.
   falls back to `📰 Headlines:`.
 - Discovery articles never show inline credibility labels (to avoid double-negative
   framing). Their flags are available via the news agent.
-- The summary line is shown only when flagged articles are fewer than 50% of the
+- The summary line appears only when flagged articles are fewer than 50% of the
   relevant bucket — at higher density the count conveys no useful signal.
 
 ---
@@ -195,15 +195,15 @@ JSON report with verdicts for all 10 pattern types. The LLM:
   verdict — making every flag self-auditable.
 - Defaults to `"uncertain"` when evidence is ambiguous — the system prefers false
   negatives over false positives.
-- Reviews heuristic flags and can `"clear"` them if assessed as false positives on the
-  full article context.
+- Reviews heuristic flags and can `"clear"` them if it assesses them as false
+  positives on the full article context.
 
-Articles that reach the 8 AM briefing before scoring completes are rendered without
-flags (graceful degradation). No placeholder is shown.
+If scoring has not finished by the 8 AM briefing, those articles render without
+flags (graceful degradation) and show no placeholder.
 
 ### Flag taxonomy
 
-Flags belong to one of two confidence tiers, which control where they are rendered.
+Flags belong to one of two confidence tiers, which control where they appear.
 
 **High-confidence** (clear linguistic signatures, low false-positive risk):
 
@@ -236,24 +236,24 @@ Flags belong to one of two confidence tiers, which control where they are render
 single flag of type `betteridge`, `clickbait`, or `headline_mismatch`. A lone
 `vague_attribution` flag does not show inline — it requires corroborating signal.
 
-The 🔍 icon is used throughout (not ⚠️). It signals observation, not condemnation.
+Ze uses the 🔍 icon throughout (not ⚠️). It signals observation, not condemnation.
 Labels are descriptive, not evaluative: "Sources unnamed" rather than "Phantom sources."
 
 ### Prompt versioning
 
-The LLM scoring prompt's SHA-256 (first 12 characters) is stored on every
+Ze stores the LLM scoring prompt's SHA-256 (first 12 characters) on every
 `CredibilityReport` as `prompt_version`. When the prompt changes, only articles whose
 stored version differs from the current one need re-scoring. Treat prompt changes as
-schema changes: they alter the semantics of stored flag types. Articles can be re-scored
-by running the scoring pipeline directly against the database — no REST endpoint is
-exposed for this currently.
+schema changes: they alter the semantics of stored flag types. You can re-score
+articles by running the scoring pipeline directly against the database — no REST
+endpoint exists for this yet.
 
 ### Semantic dedup (optional)
 
-URL is the primary dedup key. When `news.nli_dedup_enabled: true`, newly inserted
-articles are compared against recent neighbours (cosine on title+summary embeddings,
-then mutual NLI entailment on summaries). Duplicates of an existing story are deleted
-from `news_articles` so the briefing does not surface the same event twice under
+URL is the primary dedup key. When `news.nli_dedup_enabled: true`, Ze compares newly
+inserted articles against recent neighbours (cosine on title+summary embeddings, then
+mutual NLI entailment on summaries) and deletes duplicates of an existing story from
+`news_articles`, so the briefing does not surface the same event twice under
 different URLs.
 
 ---

@@ -89,7 +89,7 @@ Verification runs three checks in order:
 1. **Tool success** — any tool call that returned `success=False` fails the step immediately.
 2. **Non-empty output** — an empty agent result fails the step.
 3. **Criteria check** — if `verify` is set, Haiku evaluates the output against the
-   criteria string. A Haiku failure (e.g. timeout) is logged as a warning but does
+   criteria string. Ze logs a Haiku failure (e.g. timeout) as a warning but does
    not fail the step — the check is non-blocking.
 
 ### Synthesis
@@ -102,7 +102,7 @@ For scheduled workflows running unattended, this is the only message the user se
 
 If a step fails, `workflow_failed` records the failure in `workflow_executions`, sends
 an immediate push notification (subject to `workflow_failure_cooldown_hours`), and stops.
-Subsequent steps are not attempted.
+Ze does not attempt subsequent steps.
 
 ---
 
@@ -113,13 +113,13 @@ standing desks under £500, create a comparison table, and email it to me"* — 
 generates a plan at runtime rather than routing the message to a single agent:
 
 1. `WorkflowPlanner` decomposes the message into an ordered step list.
-2. If any step has `WRITE` access tools and the capability is `confirm`, the plan is
-   shown for approval before execution starts.
+2. If any step has `WRITE` access tools and the capability is `confirm`, Ze shows
+   the plan for approval before execution starts.
 3. The plan executes through the same workflow graph, but `workflow_id` is `None`
    in `workflow_executions` (dynamic plans are not stored).
 
-The distinction between "this should be a dynamic plan" and "this should route to a
-single agent" is made by the embedding router's gap threshold — if the request scores
+The embedding router's gap threshold decides between "this should be a dynamic plan" and
+"this should route to a single agent" — if the request scores
 near-equally across multiple agents, Haiku decomposes rather than picking one.
 
 ---
@@ -154,14 +154,15 @@ workflow_executions
 `WorkflowScheduler` wraps APScheduler with a Postgres job store. On startup it
 loads all `enabled = true`, `schedule IS NOT NULL` workflows and registers
 `CronTrigger` jobs. APScheduler itself holds no persistent state — the Postgres
-records are the source of truth. On restart, all active jobs are re-registered
-from the database.
+records are the source of truth. On restart, `WorkflowScheduler` re-registers
+all active jobs from the database.
 
 Adding, disabling, or deleting a workflow updates both the `workflows` table and
 the live APScheduler job registry atomically.
 
-`next_run_at` is computed from the cron expression after each run and written to
-Postgres, so the morning briefing can report upcoming scheduled jobs accurately.
+`WorkflowScheduler` computes `next_run_at` from the cron expression after each run
+and writes it to Postgres, so the morning briefing can report upcoming scheduled
+jobs accurately.
 
 ---
 

@@ -95,7 +95,7 @@ See [browser.md](browser.md) for Docker Compose, health checks, and deployment.
 
 Structural settings only: model aliases, memory graph, contacts consolidation, proactive
 crons, and news. Secrets and deployment values stay in `.env`. Persona profiles live in
-`config/persona.yaml`. Agent metadata is declared as class attributes on `@agent`
+`config/persona.yaml`. Agent metadata lives as class attributes on `@agent`
 classes — there is no `agents:` block in YAML.
 
 Optional `routing:` overrides (threshold, gap_threshold) use ze-core defaults when
@@ -144,21 +144,22 @@ models:
 **Fail-fast validation** — startup raises `AgentConfigError` if `models.default` is
 missing/empty, or if any `models.overrides` key isn't a recognized agent name or step
 key (`router_fallback`, `synthesis`, `session_title`, `workflow_verify`, `insights`,
-`reminders`). A typo'd override key is caught immediately at boot, not silently ignored.
+`reminders`). Startup catches a typo'd override key immediately at boot, instead of
+ignoring it silently.
 
-**Known limitation**: the `reminders` key is shared between the `RemindersAgent`
-(per-turn model) and the calendar reminder interval assessor
-(`ze_calendar/reminders/calendar.py::_assess_intervals`) — they're different call
-sites but use the same override key today, so pinning one pins both. Not split into
-distinct keys yet since both reasonably want the same behavior; a future spec can
-split them if that assumption proves wrong.
+**Known limitation**: the `RemindersAgent` (per-turn model) and the calendar reminder
+interval assessor (`ze_calendar/reminders/calendar.py::_assess_intervals`) share the
+`reminders` key — they're different call sites but use the same override key today, so
+pinning one pins both. Ze doesn't split them into distinct keys yet, since both
+reasonably want the same behavior; a future spec can split them if that assumption
+proves wrong.
 
 `models.embedding`, `models.whisper`, and `models.vision_caption` are capability-specific
 pins, entirely outside the default/override resolution chain — changing `models.default`
-never affects them. `whisper` is used by the preprocessing node to convert voice input to
-text before routing. `vision_caption` is called during preprocessing when a photo arrives
-without a text caption so the embedding router has text to score. All three are invoked
-via OpenRouter (except `embedding`, which is a local model).
+never affects them. The preprocessing node uses `whisper` to convert voice input to text
+before routing. Preprocessing calls `vision_caption` when a photo arrives without a text
+caption, so the embedding router has text to score. OpenRouter serves all three, except
+`embedding`, which runs as a local model.
 
 ### `memory:`
 
@@ -342,12 +343,12 @@ profiles:
 ```
 
 **Profiles** are named personality presets. Add as many as you like under `profiles:`.
-The `profile:` key sets the YAML default; the active profile is overridden at runtime
-by the DB value in `persona_state` (set conversationally) and survives restarts.
+The `profile:` key sets the YAML default; the DB value in `persona_state` (set
+conversationally) overrides the active profile at runtime and survives restarts.
 
 **Dials** are continuous `[0.0, 1.0]` values. Each dial maps to a prose clause injected
 into the identity block only at the extremes (below `0.2` or above `0.8`). The neutral
-band `[0.2, 0.8)` is intentionally silent.
+band `[0.2, 0.8)` adds no clause.
 
 | Dial | Low (< 0.2) effect | High (≥ 0.8) effect |
 |---|---|---|
@@ -359,8 +360,8 @@ band `[0.2, 0.8)` is intentionally silent.
 **`custom_instructions`** is free-form text appended to every system prompt for that
 profile — useful for "Always respond in European Portuguese" or "Use my name João."
 
-Profile switches and dial overrides are persisted in the `persona_state` DB table and
-survive restarts. The YAML values serve as defaults when no DB override exists.
+Ze persists profile switches and dial overrides in the `persona_state` DB table, and
+they survive restarts. The YAML values serve as defaults when no DB override exists.
 
 ---
 
@@ -378,7 +379,7 @@ Both require Google OAuth2 credentials.
    This opens a browser, completes the OAuth flow, and prints the refresh token.
 5. Set `GOOGLE_REFRESH_TOKEN` in `.env` (locally) or as a Fly secret (production).
 
-Calendar and email agents are enabled automatically whenever `GOOGLE_REFRESH_TOKEN`
+Ze enables calendar and email agents automatically whenever `GOOGLE_REFRESH_TOKEN`
 is set — there are no `calendar.enabled` / `email.enabled` YAML flags.
 
 ---

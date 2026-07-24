@@ -22,7 +22,7 @@ messages, reminders, costs, and more. A `manifest.json` at the root records the
 export timestamp and the schema revision set, which is used to validate the archive
 at import time.
 
-Nothing is omitted or summarised. Every stored row is included verbatim.
+Nothing is omitted or summarized. Every stored row is included verbatim.
 
 ---
 
@@ -46,13 +46,13 @@ To import:
 
 1. Click **Import data** and select your `.zip` export file.
 2. Ze validates the archive, then restores all importable domains inside a single
-   transaction. If anything fails, the transaction is rolled back and the instance is
-   left untouched.
-3. On success, Ze reports how many domains and rows were restored.
+   transaction. If anything fails, Ze rolls back the transaction and leaves the
+   instance untouched.
+3. On success, Ze reports how many domains and rows it restored.
 
 ### What is not imported
 
-LangGraph checkpoint blobs are exported for completeness but are not re-inserted on
+Ze exports LangGraph checkpoint blobs for completeness but does not re-insert them on
 import. A restored instance starts with no in-flight conversation graphs — this is the
 correct state after a restore.
 

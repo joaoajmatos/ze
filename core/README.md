@@ -52,7 +52,7 @@ The plugin entry point (`ze-sdk`) lives in [`packages/ze-sdk`](../packages/ze-sd
 
 | New code | Package |
 |----------|---------|
-| New agent execution primitive (`BaseAgent` hook, `@tool` behaviour) | `ze-agents` |
+| New agent execution primitive (`BaseAgent` hook, `@tool` behavior) | `ze-agents` |
 | New plugin seam (`ZePlugin` hook, channel type, signal contract) | `ze-plugin` |
 | New infrastructure primitive (router, gate, graph node) | `ze-core` |
 | New memory retrieval policy, graph predicate, or consolidation strategy | `ze-memory` |
@@ -68,7 +68,7 @@ workflows, contacts, persona), it does not belong here.
 
 ## Signal pipeline
 
-Cross-domain correlation is fed by plugin-emitted signals:
+Plugin-emitted signals feed cross-domain correlation:
 
 ```
 plugins (SignalSource)  →  ze-api (collect + dedupe)  →  ze-memory (admission + ingest)

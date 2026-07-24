@@ -40,7 +40,7 @@ Authorization: Bearer <ZE_API_KEY>
 GET /ws?token=<ZE_API_KEY>
 ```
 
-Connections without a valid key are closed with code `4001`.
+The server closes connections without a valid key with code `4001`.
 
 ---
 
@@ -166,13 +166,13 @@ the same `thread_id`.
 
 ### Persistence across disconnects
 
-The `confirm_request` payload is saved to the `pending_confirmations` Postgres table
-at the moment it is sent. On the next WebSocket reconnect, after replaying unread
-messages, the server checks `pending_confirmations` for any non-expired row and
-re-sends the `confirm_request` frame. The user can approve or cancel even if they
-closed and reopened the app.
+The server saves the `confirm_request` payload to the `pending_confirmations` Postgres
+table at the moment it sends the frame. On the next WebSocket reconnect, after
+replaying unread messages, the server checks `pending_confirmations` for any
+non-expired row and re-sends the `confirm_request` frame. The user can approve or
+cancel even if they closed and reopened the app.
 
-The row is cleared when:
+Ze clears the row when:
 - The user responds (approve or cancel).
 - The timeout elapses (see below).
 
@@ -185,14 +185,14 @@ the app closed.
 ### Timeout
 
 A `CONFIRM_TIMEOUT_SECONDS` (default: 900 s / 15 min) watchdog runs in the background
-from the moment the `confirm_request` is sent. If the window elapses with no user
-response, Ze sends:
+from the moment the server sends the `confirm_request`. If the window elapses with no
+user response, Ze sends:
 
 ```
 "I waited for your approval but the window elapsed — let me know if you'd like me to try again."
 ```
 
-The `pending_confirmations` row is deleted. If the app is still connected the message
+Ze deletes the `pending_confirmations` row. If the app is still connected the message
 appears in-chat; otherwise it goes via ntfy (urgency `low`).
 
 ---
@@ -213,8 +213,8 @@ The client should queue or display this as feedback.
 ## Unread message replay
 
 `MessageStore` (`ze_core/conversation/messages/store.py`) persists all outbound messages (assistant
-and Ze's proactive pushes) to Postgres. On WebSocket connect, all messages with
-`read = false` are replayed in order before new messages flow. The client marks them
+and Ze's proactive pushes) to Postgres. On WebSocket connect, the server replays all
+messages with `read = false` in order before new messages flow. The client marks them
 read via `ack` frames.
 
 **REST fallback** — `GET /api/v0/messages` returns the same unread list for scenarios where the
@@ -263,8 +263,8 @@ making it available to agents via `ctx.config`.
 
 ## Connection manager
 
-`ConnectionManager` (`ze_api/api/ws.py`) is instantiated once at startup and stored
-on `app.state.connection_manager`. It exposes:
+The app instantiates `ConnectionManager` (`ze_api/api/ws.py`) once at startup and
+stores it on `app.state.connection_manager`. It exposes:
 
 | Method | Description |
 |---|---|

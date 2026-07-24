@@ -141,7 +141,7 @@ class TaskState:
 
 ### `ProfileFacet`
 
-A single structured dimension of the user portrait, synthesised nightly.
+A single structured dimension of the user portrait, synthesized nightly.
 
 ```python
 @dataclass
@@ -157,7 +157,7 @@ class ProfileFacet:
 
 ### `Entity`
 
-Named entities (people, projects, tools, organisations) referenced in memory.
+Named entities (people, projects, tools, organizations) referenced in memory.
 
 ```python
 @dataclass
@@ -199,10 +199,10 @@ After each agent run, the `write_memory` graph node fires (fire-and-forget). The
 `gather_fact_proposals` extractor (`ze_memory/extractor.py`) asks an LLM to extract
 declarative facts from the turn. These are written via `store.propose_facts(proposals)`:
 
-- Facts are written with `reviewed = False` and `contradicted = False`.
+- The store writes facts with `reviewed = False` and `contradicted = False`.
 - Before inserting, the store checks for exact-predicate matches, then runs an NLI
   semantic contradiction pass (`nli_write_time_check`, default `true`) on same-subject
-  candidates with cosine ≥ `nli_lower_cosine_bound` (0.60). Hits are marked
+  candidates with cosine ≥ `nli_lower_cosine_bound` (0.60). It marks hits
   `contradicted = true`. Controlled by `memory.nli_*` keys in `config.yaml`.
 - The `POST /memory/facts/review` REST endpoint exposes review/edit/reject for the
   native app.
@@ -211,8 +211,8 @@ declarative facts from the turn. These are written via `store.propose_facts(prop
 
 ### Episodes (automatic, no approval)
 
-After every agent run, `write_memory` calls `store.write_episode()`. The episode is
-embedded and written to `memory_episodes`. The graph layer asynchronously scans the
+After every agent run, `write_memory` calls `store.write_episode()`, which embeds the
+episode and writes it to `memory_episodes`. The graph layer asynchronously scans the
 episode text for known entity names and creates `MENTIONS` edges.
 
 ### Session summaries (automatic, near-real-time)
@@ -227,19 +227,19 @@ the eager summary already exists.
 
 ### Events
 
-Written explicitly by agents (e.g. calendar agent writes events when syncing). Events
-with `outcome` text automatically trigger LLM-based fact promotion with `PROMOTES_TO`
-graph edges.
+Agents write events explicitly (e.g. the calendar agent writes events when syncing).
+Events with `outcome` text automatically trigger LLM-based fact promotion with
+`PROMOTES_TO` graph edges.
 
 ### Procedures
 
-Written when Ze detects a reusable multi-step pattern. Linked to the goal/workflow
-that produced them via `USES_PROCEDURE` graph edges.
+Ze writes a procedure when it detects a reusable multi-step pattern, and links it to
+the goal or workflow that produced it via `USES_PROCEDURE` graph edges.
 
 ### Task state
 
-Upserted by `GoalExecutor` and workflow nodes to track in-flight progress. Linked to
-its goal via `BELONGS_TO_GOAL` graph edges.
+`GoalExecutor` and workflow nodes upsert task state to track in-flight progress, and
+link it to its goal via `BELONGS_TO_GOAL` graph edges.
 
 ---
 
@@ -252,25 +252,25 @@ Before every agent execution, `fetch_context` runs:
 2. **Semantic search** — pgvector cosine similarity over `memory_facts`,
    `memory_episodes` (raw turns, current session excluded), and
    `memory_session_summaries` (closed-session narratives) against the current prompt
-   embedding. Sessions with a summary row are excluded from the raw episode query via
-   subquery so the caller never receives both fragments and summary for the same session.
-   Token-budgeted results are projected via `budget_facts` and `budget_episodes`.
+   embedding. A subquery excludes sessions with a summary row from the raw episode query
+   so the caller never receives both fragments and summary for the same session.
+   `budget_facts` and `budget_episodes` project the token-budgeted results.
 3. **NLI retrieval re-rank** (when `memory.nli_retrieval_rerank: true`) — orchestration
    policies return cosine-ranked results on turn 1 with no added latency. A background
    task (`build_retrieval_cache`) fetches `K × nli_rerank_candidate_multiplier`
    fact/summary candidates, NLI-reranks them, and writes ranked ID lists to
    `memory_retrieval_cache` keyed by `(session_id, query_hash)`. On turn 2+ with the
-   same query in the same session, facts and session summaries are re-fetched by cached
-   ID order and re-budgeted. Episodes, profile, entities, events, and task state stay
-   from the policy unchanged. Mid-execution modules (`planner`, `tool_executor`) and
-   introspection modules (`profile`, `memory_ui`) skip the cache. See
-   `ze_memory/retrieval_rerank.py` and `ze_core/nli.py` (`NLIClient`).
-4. **Profile injection** — all `memory_profile_facets` rows are fetched (highest
-   confidence first) and included in the context.
-5. **Graph augmentation** — when `memory.graph.enabled: true` (default), entity and
-   fact seed IDs from the retrieved context are expanded one hop via
-   `BoundedExpansionPolicy`. Neighbour entities, facts, episodes, and procedures are
-   appended to the context. Failures are silently swallowed — the base context is
+   same query in the same session, Ze re-fetches facts and session summaries by cached
+   ID order and re-budgets them. Episodes, profile, entities, events, and task state
+   stay as the policy returned them, unchanged. Mid-execution modules (`planner`,
+   `tool_executor`) and introspection modules (`profile`, `memory_ui`) skip the cache.
+   See `ze_memory/retrieval_rerank.py` and `ze_core/nli.py` (`NLIClient`).
+4. **Profile injection** — Ze fetches all `memory_profile_facets` rows (highest
+   confidence first) and includes them in the context.
+5. **Graph augmentation** — when `memory.graph.enabled: true` (default),
+   `BoundedExpansionPolicy` expands entity and fact seed IDs from the retrieved
+   context one hop. It appends neighbor entities, facts, episodes, and procedures
+   to the context. Failures are silently swallowed — the base context is
    always returned.
 6. **Identity block assembly** — `build_identity_block()` from `ze_personal.persona`
    assembles the system prompt identity section from the persona profile + memory
@@ -321,8 +321,8 @@ The graph layer stores typed relationships between memory objects in the
 ### Traversal
 
 `BoundedExpansionPolicy` expands from seed IDs up to `max_hops` hops (default: 1),
-returning at most `max_relationships` (default: 20) neighbours. Results are merged into
-the base `MemoryContext` by `enrich_context()`.
+returning at most `max_relationships` (default: 20) neighbors. `enrich_context()`
+merges the results into the base `MemoryContext`.
 
 ```yaml
 memory:
@@ -350,7 +350,7 @@ before LLM merge in the `0.85–0.95` band):
 | Similarity | Action |
 |---|---|
 | > 0.95 | Silent merge — keep newer, mark older `contradicted = true`. No LLM call. |
-| 0.85–0.95 | NLI entailment ≥ `nli_entailment_threshold` → LLM merge (Haiku synthesises one value, marks both `contradicted = true`). NLI contradiction → mark older `contradicted`. Neutral → skip. |
+| 0.85–0.95 | NLI entailment ≥ `nli_entailment_threshold` → LLM merge (Haiku synthesizes one value, marks both `contradicted = true`). NLI contradiction → mark older `contradicted`. Neutral → skip. |
 | 0.60–0.85 | NLI contradiction ≥ `nli_contradiction_threshold` → mark older `contradicted` (`max(created_at)` wins). Otherwise skip. |
 | < 0.60 | No action — unrelated enough to skip NLI. |
 
@@ -370,8 +370,8 @@ Episodes older than `episode_recency_days` (14d default) are candidates for arch
 Sessions that already have an entry in `memory_session_summaries` skip the LLM call —
 the consolidator deletes their raw rows directly. Sessions without an eager summary
 are archived via the existing batch path: when at least `episode_min_archive_batch`
-(10 default) candidates exist, Haiku summarises the batch into one archive row and
-the originals are deleted.
+(10 default) candidates exist, Haiku summarizes the batch into one archive row and
+the consolidator deletes the originals.
 
 ### 4. Profile facet synthesis
 
@@ -476,12 +476,11 @@ Migrations: `core/ze-memory/ze_memory/migrations/versions/` (raw SQL, Alembic me
 
 - **Reviewed facts are never auto-merged or auto-expired.** Only the user can modify them.
 - **Embeddings are stored at write time only.** At query time they are dropped from context
-  objects so `AgentState` stays JSON-serialisable for the LangGraph checkpointer.
+  objects so `AgentState` stays JSON-serializable for the LangGraph checkpointer.
 - **Graph augmentation is best-effort.** Failures silently fall back to the base context
   — the store always returns something useful.
-- **Memory is editorial, not automatic.** Facts require user approval opportunity;
-  agents propose, users decide. Episodes are automatic because they archive away within
-  ~2 weeks.
+- **Memory is editorial, not automatic.** Facts require user approval; agents propose,
+  users decide. Episodes are automatic because they archive away within ~2 weeks.
 
 ---
 

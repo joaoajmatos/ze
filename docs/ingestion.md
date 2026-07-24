@@ -62,9 +62,9 @@ Every stage emits a progress key so the user sees live status during long operat
 
 ### 2. Fetch
 
-For URL inputs, the pipeline walks the fetcher list in order; the first fetcher whose `url_patterns` match the URL is used. The fallback is always `WebFetcher`.
+For URL inputs, the pipeline walks the fetcher list in order and uses the first fetcher whose `url_patterns` match the URL. The fallback is always `WebFetcher`.
 
-For file inputs, the bytes are wrapped directly in `RawContent` — no network call.
+For file inputs, the pipeline wraps the bytes directly in `RawContent` — no network call.
 
 ### 3. Process
 
@@ -86,11 +86,11 @@ All `Extractor`s whose `content_types` includes the classified type (or is empty
 - `facts`, `entities`, `tags` — union, deduplicated by exact string match
 - `metadata` — dict merge (later extractor keys overwrite on conflict)
 
-If an extractor raises, its result is skipped and the error is logged. At least `LLMExtractor` always runs, so the merge never produces an empty result.
+If an extractor raises, the pipeline skips its result and logs the error. At least `LLMExtractor` always runs, so the merge never produces an empty result.
 
 ### 5. Store
 
-`IngestionStore` writes to `ingested_content` — the authoritative archive. The raw processed text, summary, facts, entities, tags, and metadata are all stored.
+`IngestionStore` writes the raw processed text, summary, facts, entities, tags, and metadata to `ingested_content` — the authoritative archive.
 
 ### 6. Sink
 
@@ -156,7 +156,7 @@ class MyPlugin(ZePlugin):
         return [NotionFetcher()]
 ```
 
-Plugin fetchers are placed after `YtDlpFetcher` (if installed) but before `BrowserFetcher` and `WebFetcher`.
+The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but before `BrowserFetcher` and `WebFetcher`.
 
 ---
 
@@ -171,7 +171,7 @@ Plugin fetchers are placed after `YtDlpFetcher` (if installed) but before `Brows
 
 Both tools drive the full `IngestionPipeline` and return a summary of what was ingested (content type, fact count, tags).
 
-Progress messages are emitted at each stage, so the user sees live feedback during long steps like video transcription.
+The pipeline emits progress messages at each stage, so the user sees live feedback during long steps like video transcription.
 
 ---
 

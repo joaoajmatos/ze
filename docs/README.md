@@ -15,11 +15,11 @@
 | [scheduled-jobs.md](scheduled-jobs.md) | Background job schedule, memory lifecycle, proactive push pipeline |
 | [goals.md](goals.md) | Goal Engine — conversational usage, milestone execution, verification gates |
 | [workflows.md](workflows.md) | Workflow agent — multi-step plans, scheduling, step execution |
-| [news.md](news.md) | News package — RSS ingestion, personalised ranking, credibility analysis |
+| [news.md](news.md) | News package — RSS ingestion, personalized ranking, credibility analysis |
 | [channels.md](channels.md) | Adding a new outbound communication channel (LinkedIn, WhatsApp, etc.) |
 | [browser.md](browser.md) | Browser sidecar — Docker Compose, health checks, local dev, Fly deploy |
 | [deployment.md](deployment.md) | Fly.io deployment, GitHub Actions CI, environment setup |
 | [eval.md](eval.md) | End-to-end eval system via MCP — running evals, LLM-as-judge |
 | [finance.md](finance.md) | Finance plugin — data sources, privacy model, CSV import, spending categories, signals, data deletion, future risk engine |
-| [ingestion.md](ingestion.md) | Content ingestion pipeline — how content is classified, fetched, processed, extracted, and sunk to memory; plugin extension points; ze-yt video integration |
+| [ingestion.md](ingestion.md) | Content ingestion pipeline — how Ze classifies, fetches, processes, extracts, and sinks content to memory; plugin extension points; ze-yt video integration |
 | [data-portability.md](data-portability.md) | Data export, import, and deletion — ZIP format, schema matching, `DataDomain` contract |

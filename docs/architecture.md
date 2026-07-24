@@ -7,7 +7,7 @@ Ze is a single-user, self-hosted AI assistant. The primary interface is a native
 backend (`ze-api`). When the app is not connected, Ze delivers messages via
 **ntfy push notifications**.
 
-All LLM calls go through OpenRouter. No direct Anthropic or OpenAI API calls are made.
+All LLM calls go through OpenRouter. Ze makes no direct Anthropic or OpenAI API calls.
 
 At a high level, the system is split into:
 
@@ -75,19 +75,19 @@ flowchart TD
 
 **Module:** `ze_core.routing`
 
-Routing proper runs on every message after preprocessing. The router itself uses local
+Routing runs on every message after preprocessing. The router itself uses local
 embeddings and simple heuristics; `preprocess` may still call OpenRouter first for voice
 transcription or image captioning.
 
-1. At startup, each enabled agent's description (from `@agent` class attributes) is
-   embedded using the shared `paraphrase-multilingual-MiniLM-L12-v2` instance.
-2. The incoming prompt is embedded at request time.
-3. Cosine similarity scores are computed against all agent embeddings.
+1. At startup, Ze embeds each enabled agent's description (from `@agent` class
+   attributes) using the shared `paraphrase-multilingual-MiniLM-L12-v2` instance.
+2. Ze embeds the incoming prompt at request time.
+3. Ze computes cosine similarity scores against all agent embeddings.
 4. **Routing outcomes:**
    - Score above `confidence_threshold` and gap above `gap_threshold` → route directly.
    - Gap below `gap_threshold` (two agents nearly tied) → compound task, Haiku decomposes.
    - All scores below `confidence_threshold` → Haiku fallback for classification.
-5. Every decision is written to the `routing_log` Postgres table.
+5. Ze writes every decision to the `routing_log` Postgres table.
 
 **Cost-aware routing** (`ze_core.routing.complexity`): agents with a `model_simple`
 class attribute receive a cheaper model when the in-process complexity classifier scores
@@ -99,14 +99,14 @@ the request as simple (word count, question marks, conjunctions — no extra LLM
 
 **Module:** `ze_core.orchestration`
 
-The conversation graph is compiled once at startup in `ZeContainer` and bound to
+`ZeContainer` compiles the conversation graph once at startup and binds it to
 `NativeAppInterface`. Each user message is a separate `graph.ainvoke()` call, keyed by
 `thread_id`. Ze also compiles a separate `workflow_graph` for multi-step workflow
 execution.
 
 At the top level, the runtime graph now includes a preprocessing node for multimodal
 input, a correlation node for inline connection surfacing, and a `plan_sequential`
-branch for compound routing results. Plugin graph nodes and edges are layered in at
+branch for compound routing results. Ze layers plugin graph nodes and edges in at
 startup.
 
 ### Graph input factory
@@ -119,13 +119,13 @@ are initialized in one place. Plugin-specific fields belong in plugin
 
 ### Checkpoint serialization
 
-LangGraph persists `AgentState` via `JsonPlusSerializer` + msgpack. Custom
-dataclasses and enums must be registered so checkpoints can be deserialized safely.
+LangGraph persists `AgentState` via `JsonPlusSerializer` + msgpack. Register custom
+dataclasses and enums so checkpoints can deserialize safely.
 
 Ze builds the allowlist automatically in `build_checkpoint_serde()` (`ze_core/checkpoint_serde.py`):
 
-1. **Core modules** — `ze_core.routing.types`, `ze_agents.types`, `ze_memory.types`
-   are scanned for dataclasses and enums on every startup.
+1. **Core modules** — Ze scans `ze_core.routing.types`, `ze_agents.types`,
+   `ze_memory.types` for dataclasses and enums on every startup.
 2. **Plugin modules** — each `ZePlugin` may override `checkpoint_serde_modules()` to
    return its `types.py` module paths (e.g. `ze_automation.workflow.types`). Ze scans
    those modules the same way — no manual list in `ze_api/container.py`.
@@ -166,7 +166,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 | Node | Module | Responsibility |
 |---|---|---|
-| `preprocess` | `nodes/preprocessing.py` | Normalise audio/image input before routing |
+| `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
 | `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes |
@@ -183,7 +183,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 `AgentState` (`ze_core/orchestration/state.py`) is a `TypedDict` that flows through the graph.
 It holds the prompt, routing envelope, memory context, gate decision, agent results,
-conversation history, and workflow state. It must remain JSON-serialisable at all times
+conversation history, and workflow state. It must remain JSON-serializable at all times
 because `AsyncPostgresSaver` checkpoints it to Postgres on every pause.
 
 ### Human-in-the-loop
@@ -208,8 +208,8 @@ All agents subclass `BaseAgent` (`ze_agents.base_agent`) and register via `@agen
 - Class attributes: `description`, `model`, `intents`, `tools`, `timeout`.
 - Optionally a `tools.py` with Python `@tool` functions for local tool execution.
 
-Agents cannot call each other directly. Compound coordination is handled by the
-orchestration graph (or via the `delegate_to_agent` harness tool for explicit hand-offs).
+Agents cannot call each other directly. The orchestration graph handles compound
+coordination (or the `delegate_to_agent` harness tool, for explicit hand-offs).
 
 See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 
@@ -223,12 +223,12 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `email` | Gmail API (read, draft, send) | `ze-email` | Haiku |
 | `reminders` | NL time parsing, APScheduler firing | `ze-calendar` | Haiku |
 | `prospecting` | Browser extraction, outreach drafting | `ze-prospecting` | Full |
-| `news` | `get_headlines` (personalised), `search_news` (semantic) | `ze-news` | Mini |
-| `finance` | CSV/Trading212 ingestion, categorisation, recurring detection | `ze-finance` | Haiku |
+| `news` | `get_headlines` (personalized), `search_news` (semantic) | `ze-news` | Mini |
+| `finance` | CSV/Trading212 ingestion, categorization, recurring detection | `ze-finance` | Haiku |
 | `workflow` | APScheduler, multi-step plan execution | `ze-automation` | Full |
 | `goals` | Goal lifecycle (create, status, steer, pause, resume, abandon) | `ze-automation` | Full |
 
-See [docs/goals.md](goals.md) for conversational usage and gate behaviour.
+See [docs/goals.md](goals.md) for conversational usage and gate behavior.
 
 ---
 
@@ -248,7 +248,7 @@ See [docs/onboarding.md](onboarding.md) for the walkthrough and [docs/package-ar
 
 **Package:** `ze-ingestion`
 
-The ingestion pipeline normalises web pages, PDFs, audio, images, and text into a
+The ingestion pipeline normalizes web pages, PDFs, audio, images, and text into a
 common content model, extracts structured information, and sinks it into memory and
 follow-up workflows.
 
@@ -274,8 +274,7 @@ for the deeper design notes.
 **Packages:** `ze-browser` · `ze-notifications`
 
 The browser client is a thin HTTP wrapper around a Playwright sidecar used for
-extraction and browser-backed tools. Push delivery is abstracted behind
-`ze-notifications`, with ntfy as the current implementation.
+extraction and browser-backed tools. `ze-notifications` abstracts push delivery, with ntfy as the current implementation.
 
 See [browser.md](browser.md) for local dev and operations,
 [core/ze-browser/README.md](../core/ze-browser/README.md),
@@ -288,7 +287,7 @@ See [browser.md](browser.md) for local dev and operations,
 
 **Package:** `ze-finance`
 
-Finance is a separate domain plugin for transaction ingestion, categorisation,
+Finance is a separate domain plugin for transaction ingestion, categorization,
 recurring detection, and snapshot jobs. It has its own privacy model and LLM routing
 constraints.
 
@@ -326,7 +325,7 @@ Five memory layers, all backed by Postgres + pgvector:
   Ze executes a multi-step task successfully and surfaced back into the active goal
   while the goal is still running when a stable method emerges.
 - **Profile facets** (`memory_profile_facets`) — a structured, key-value portrait of the
-  user synthesised nightly from facts and episodes.
+  user synthesized nightly from facts and episodes.
 
 **Graph layer** (`ze_memory.graph`) — optional relationship layer (`memory_relationships`)
 that connects entities, facts, episodes, and events via typed predicates. On retrieval,
@@ -349,7 +348,7 @@ flowchart LR
 **Dream phase** (`ze_memory.dream`) — a two-pass offline memory improvement loop running nightly after consolidation:
 
 - **Sleep pass (NREM-like):** replays high-priority episodes, compresses sessions, decays stale traces, detects schema and policy clusters from structural analysis. No LLM calls.
-- **Dream pass (REM-like):** synthesises clusters into insights, procedures, hindsight facts, and plan stress-tests using a haiku-class generator. All outputs land in a staging buffer (`memory_dream_artifacts`).
+- **Dream pass (REM-like):** synthesizes clusters into insights, procedures, hindsight facts, and plan stress-tests using a haiku-class generator. All outputs land in a staging buffer (`memory_dream_artifacts`).
 - **Scoring pipeline:** every staged artifact passes NLI groundedness gate + embedding novelty gate + retrievability gate, then two adversarial LLM critic calls (sonnet-class, different framings). Both critics must pass.
 - **Morning integration:** artifacts with sufficient session diversity and temporal spread auto-promote to `memory_facts` / `memory_procedures` with `provenance=synthesized`, `valid_until`, and `dream_run_id` lineage for per-run rollback. Borderline cases go to a review queue surfaced in the morning briefing.
 - **Expiry:** synthesized facts that go uncorroborated by raw episodes for 90 days (`valid_until`) are automatically contradicted on the next integration run.
@@ -362,7 +361,7 @@ the full lifecycle, schedule, and configuration of every background job.
 
 ## System prompt structure
 
-Every agent's system prompt is assembled from two sections by `BaseAgent._build_system_prompt()`:
+`BaseAgent._build_system_prompt()` assembles every agent's system prompt from two sections:
 
 ```mermaid
 flowchart TD
@@ -372,11 +371,11 @@ flowchart TD
             i1["Ze's name and role"]
             i2["Personality traits · verbosity"]
             i3["Custom instructions"]
-            i4["User profile facets (synthesised)"]
+            i4["User profile facets (synthesized)"]
             i5["Memory context (top-k facts + episodes)"]
         end
         subgraph ag["Agent Instructions"]
-            a1["Task-specific behavioural rules"]
+            a1["Task-specific behavioral rules"]
             a2["Tool usage guidelines"]
             a3["Operational constraints"]
         end
@@ -399,7 +398,7 @@ set the identity or inject memory themselves.
 
 **Personality dials** translate numeric values into prose clauses appended to the traits
 sentence. Only extreme values (below 0.2 or above 0.8) emit a clause; the neutral band
-is silent. Four built-in dials: `humor`, `directness`, `formality`, `depth`.
+emits nothing. Four built-in dials: `humor`, `directness`, `formality`, `depth`.
 
 **Runtime switching** — `PostgresPersonaStore` (`ze_personal/persona/postgres.py`) reads
 the active profile from the `persona_state` DB table and merges any per-session dial
@@ -421,14 +420,14 @@ awareness of the user without needing to query memory themselves.
 Every agent action has an explicit permission mode defined as a class attribute on the
 `@agent` class, keyed by `agent.intent`:
 
-| Mode | Behaviour |
+| Mode | Behavior |
 |---|---|
 | `autonomous` | Execute immediately |
 | `confirm` | Pause graph, send `confirm_request` frame to app. 15-min timeout. |
 | `draft_only` | Generate response, never execute without a config change |
 | `disabled` | Block, return error message |
 
-Modes can be overridden at runtime via `PUT /capabilities` (persisted in DB via
+Override modes at runtime via `PUT /capabilities` (persisted in DB via
 `PostgresCapabilityOverrideStore`). `config.yaml` hot-reloads on `SIGHUP`.
 
 ---
@@ -444,7 +443,7 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Weekly insights | Sunday 7 AM UTC | 1–3 observations from the past week's facts + episodes |
 | Calendar sync | 7:45 AM UTC daily | Pull upcoming events, schedule reminder jobs |
 | Morning briefing | 8 AM UTC daily | Digest: unreviewed facts, upcoming workflows, recent failures |
-| Nightly consolidation | 2 AM UTC | Dedup facts, expire stale, archive episodes, re-synthesise profile |
+| Nightly consolidation | 2 AM UTC | Dedup facts, expire stale, archive episodes, re-synthesize profile |
 | Contacts consolidation | 3 AM UTC | Dedup and merge contact records |
 | Contact review suggestions | 8:30 AM UTC daily | Push pending contact review nudges |
 | Goal narrative | 6 PM UTC Sunday | One-paragraph weekly progress update per active goal |
@@ -478,7 +477,7 @@ gates fit well: Ze works in the background and checks in at **verification gates
 |---|---|
 | `Goal` | Stated objective, success condition, time horizon |
 | `Milestone` | Ordered unit of work executed by an existing agent |
-| `VerificationGate` | Pause point — summarise done/planned work, wait for approval |
+| `VerificationGate` | Pause point — summarize done/planned work, wait for approval |
 | `GoalLearning` | Insight captured at each milestone boundary |
 
 ### Components
@@ -520,7 +519,7 @@ See [docs/goals.md](goals.md) for usage including steering, proactive suggestion
 
 **Module:** `ze_core.orchestration.nodes.preprocessing` · `ze_core.openrouter` (transcription client)
 
-Ze accepts three input types from the web app. The preprocessing node normalises them
+Ze accepts three input types from the web app. The preprocessing node normalizes them
 before routing:
 
 | Input | Handler | Processing |
@@ -556,7 +555,7 @@ patterns do not require frontend changes.
 | `col` | Layout | Vertical stack; `variant` controls surface style (`default\|card\|section`) |
 | `row` | Layout | Horizontal stack with configurable gap and alignment |
 | `text` | Content | Styled string — `heading\|subheading\|body\|label\|caption\|code` |
-| `badge` | Content | Small coloured label |
+| `badge` | Content | Small colored label |
 | `divider` | Content | Horizontal rule |
 | `spacer` | Content | Blank gap |
 | `button` | Interactive | Tappable action; emits `action` string back to backend as a message |
@@ -626,7 +625,7 @@ See [docs/channels.md](channels.md) for the authoring guide for adding new chann
 
 **Module:** `ze_core.telemetry`
 
-`CostTracker` is injected into `OpenRouterClient`. On every completion call, it records:
+Ze injects `CostTracker` into `OpenRouterClient`. On every completion call, it records:
 
 - Agent name, flow type, model, input tokens, output tokens, estimated cost.
 - Attribution context propagates through the async call chain via a Python `ContextVar`
@@ -654,8 +653,8 @@ configurable lookback window, grouped by any single dimension:
 except `/api/v0/health` and `/api/v0/version` (public).
 
 All routes declare an explicit camelCase `operation_id` which drives named method
-generation in `@ze/client`. The OpenAPI spec is self-contained (no running server
-needed for codegen — extracted at Python import time by `scripts/codegen.ts`).
+generation in `@ze/client`. The OpenAPI spec is self-contained: `scripts/codegen.ts` extracts it at Python
+import time, so codegen needs no running server.
 
 ### Public routes
 
@@ -773,7 +772,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 
 ## Database schema
 
-Migrations are owned by individual packages (`core/`, `plugins/`). `ze-api` provides
+Individual packages (`core/`, `plugins/`) own migrations. `ze-api` provides
 the Alembic runner harness (`migrations/env.py`) and meta-migrator (`migrate.py`) only —
 it owns no tables and no revision files.
 

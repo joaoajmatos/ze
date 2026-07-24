@@ -210,7 +210,7 @@ Pass `**extra` to use `.format()` placeholders in `_AGENT_INSTRUCTIONS`.
 
 #### `await self.agentic_loop(ctx, client, messages, system, deps=None, tool_names=None, max_iterations=6, max_tokens=2000) -> tuple[str, list[ToolCall]]`
 
-Drives an LLM ReAct loop: the model picks tools, ze dispatches them through `call_tool`, results are appended to `messages`, and the loop repeats until the model produces a text response.
+Drives an LLM ReAct loop: the model picks tools, ze dispatches them through `call_tool`, appends results to `messages`, and repeats until the model produces a text response.
 
 - `client` — the `LLMClient` injected via `__init__`.
 - `messages` — conversation history. Pass `ctx.messages` for full history.
@@ -229,7 +229,7 @@ Executes a single registered tool with capability enforcement and hook dispatch.
 
 #### `await self.emit(ctx, key, **kwargs)`
 
-Sends a progress message to the client using a locale translation key. No-op when no reporter is attached (e.g. in tests).
+Sends a progress message to the client using a locale translation key. No-op when the agent has no reporter attached (e.g. in tests).
 
 #### `self._model(ctx) -> str`
 

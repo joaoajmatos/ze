@@ -41,8 +41,8 @@ TRADING212_DEMO=false   # set true to use the demo environment
 
 The `Trading212DataSource` wraps `ze_trading212.Trading212Client` and maps the
 raw API responses to Ze's domain types (`Position`, `Transaction`, `Account`).
-It is wired automatically via the Phase 63 integration framework — no manual
-changes to `container.py` are needed.
+The Phase 63 integration framework wires it automatically — you don't need to
+change `container.py` manually.
 
 Data fetched on each sync:
 - Account info and cash balance (`/equity/account/info`, `/equity/account/cash`)
@@ -53,7 +53,7 @@ Source ID: `trading212`
 
 ### CSV (Bank Statements)
 
-Any bank that exports CSV statements is supported. Place the export file in the
+Ze supports any bank that exports CSV statements. Place the export file in the
 directory configured as `finance.csv_import_dir` (default: `data/finance/imports/`).
 
 Ze detects the file's `source_id` from the filename prefix (e.g.
@@ -61,13 +61,13 @@ Ze detects the file's `source_id` from the filename prefix (e.g.
 source, Ze infers the column mapping via LLM (see [CSV Import](#csv-import)).
 Subsequent imports from the same source reuse the cached mapping.
 
-**Supported formats:** UTF-8 or UTF-8-BOM, comma or semicolon delimited.
-Single amount column (positive/negative) or separate debit/credit columns are
-both handled.
+**Supported formats:** UTF-8 or UTF-8-BOM, comma or semicolon delimited. Ze
+handles a single amount column (positive/negative) or separate debit/credit
+columns.
 
 ### Ingestion pipeline (PDF and CSV via chat)
 
-CSV files and PDF bank statements can also be submitted directly through Ze's
+You can also submit CSV files and PDF bank statements directly through Ze's
 ingestion pipeline — paste a URL, upload a file, or tell Ze to "learn from this statement."
 
 `FinanceIngestionExtractor` intercepts content classified as `pdf`, `plain_text`, or
@@ -79,10 +79,10 @@ the default `LLMExtractor`.
 - **CSV statements** — `CsvSchemaInferrer` detects column layout (cached per source after the first run), then `CsvDataSource` parses rows into `Transaction` objects.
 
 In both cases the transactions land in the same `finance_transactions` table as
-Trading212 and batch CSV imports — fully queryable, categorisable, and covered by
+Trading212 and batch CSV imports — fully queryable, categorizable, and covered by
 the `finance.transactions` DataDomain for export and deletion.
 
-A summary and per-transaction facts are also pushed to `ze-memory`, so Ze can
+Ze also pushes a summary and per-transaction facts to `ze-memory`, so it can
 reference them conversationally without touching raw financial rows.
 
 ---
@@ -94,7 +94,7 @@ protection layers that cannot be overridden by global configuration.
 
 ### LLM provider pinning
 
-All LLM calls in `ze-finance` are pinned to **Anthropic** via OpenRouter,
+Ze pins all LLM calls in `ze-finance` to **Anthropic** via OpenRouter,
 regardless of the global model setting in `config.yaml`. This applies to:
 
 - `FinanceAgent` — the conversational interface
@@ -105,7 +105,7 @@ regardless of the global model setting in `config.yaml`. This applies to:
 Anthropic's API does not train on user data submitted via the API. No financial
 data is ever routed to another provider.
 
-### Data minimisation
+### Data minimization
 
 Raw financial rows are never placed in LLM context. Tools aggregate data locally
 in Python and expose only summaries to the model.
@@ -117,7 +117,7 @@ in Python and expose only summaries to the model.
 | Account cash balance | Transaction history |
 | A list of positions (only when explicitly requested) | CSV mapping parameters |
 
-The categorisation pass (see below) is the only place description strings reach
+The categorization pass (see below) is the only place description strings reach
 the LLM — and only when the user has opted in. Amounts, dates, and account
 identifiers are never included in that call.
 
@@ -127,7 +127,7 @@ identifiers are never included in that call.
 
 ### Column mapping inference
 
-Bank CSV exports are not standardised. Ze handles this by inferring the column
+Bank CSV exports are not standardized. Ze handles this by inferring the column
 mapping on the first import from each bank source.
 
 **How it works:**
@@ -195,7 +195,7 @@ Ze first checks the transaction description against a built-in keyword ruleset:
 Matching is case-insensitive substring matching. The first matching rule wins.
 Transactions that match no rule are assigned `category: "Other"`.
 
-### LLM categorisation (opt-in)
+### LLM categorization (opt-in)
 
 When `finance.llm_categorization: true` is set, transactions classified as
 "Other" by the keyword pass are batched and sent to Anthropic haiku for
@@ -226,7 +226,7 @@ finance:
 ## Recurring Expense Detection
 
 Ze can automatically surface subscriptions, rent, utility bills, and other fixed
-charges from transaction history — without the user having to categorise them
+charges from transaction history — without the user having to categorize them
 manually.
 
 ### Opt-in
@@ -244,12 +244,12 @@ Detection is purely algorithmic — no LLM involved, no description text sent
 anywhere. The steps:
 
 1. Filter to spending transactions (`withdrawal`, `fee`).
-2. Normalise the description: lowercase, strip digits and punctuation, collapse
+2. Normalize the description: lowercase, strip digits and punctuation, collapse
    whitespace. This groups `"Netflix 1234"` and `"Netflix 5678"` under the same key.
    When `finance.nli_merchant_merge_enabled: true`, alias descriptions within the
    same account and currency (e.g. `NETFLIX.COM` / `Netflix`) are merged via embedding
    cosine prefilter + NLI entailment before grouping.
-3. Group by `(normalised description, currency, account)`.
+3. Group by `(normalized description, currency, account)`.
 4. For each group, compute the gaps in days between consecutive occurrences.
 5. Reject the group if any gap falls outside ±40% of the median gap — this filters
    erratic patterns (e.g. charges that appear weekly some months and monthly others).
@@ -291,8 +291,8 @@ Detected candidates have three states:
 | `confirmed` | User said "yes, track this" |
 | `dismissed` | User said "ignore this" |
 
-When new candidates are found, Ze sends a push notification listing them. Opening
-the chat presents a `render_confirm` card per item:
+When Ze finds new candidates, it sends a push notification listing them. When the
+user opens the chat, Ze shows a `render_confirm` card for each item:
 
 > *"Is this a subscription you want to track?"*  
 > Netflix — EUR 15.99/monthly  **[Yes, track it]** **[Ignore]**
@@ -315,9 +315,9 @@ The `RecurringDetectionJob` runs on the 1st of each month at 09:00 (configurable
 Before running detection on an account, it checks the age of the most recent
 transaction:
 
-- **CSV-sourced accounts** (`source_id` starts with `csv:`): if no new transactions
-  have been seen for more than `finance.recurring_staleness_days` (default 35) days,
-  Ze skips detection and sends a push nudge:
+- **CSV-sourced accounts** (`source_id` starts with `csv:`): if Ze has not seen a new
+  transaction in more than `finance.recurring_staleness_days` (default 35) days, it
+  skips detection and sends a push nudge:
 
   > "I haven't seen new transactions for 'Revolut' in 40 days. Upload a fresh bank
   > statement so I can keep your recurring expense list up to date."
@@ -350,7 +350,7 @@ channel (WebSocket if connected, ntfy push otherwise).
 
 | Signal | Trigger | Severity |
 |---|---|---|
-| `finance.pnl_swing` | Total unrealised P&L changed > 5% vs previous snapshot | medium |
+| `finance.pnl_swing` | Total unrealized P&L changed > 5% vs previous snapshot | medium |
 | `finance.large_transaction` | Single transaction ≥ threshold in its native currency | low |
 
 ### Large transaction threshold
@@ -362,9 +362,9 @@ against the transaction's native currency value with **no FX conversion**. A
 This is intentional: the threshold is nominal, not FX-adjusted. It requires no
 FX rate data at signal-emission time and is predictable. The signal payload
 includes the currency explicitly so the notification reads "€620 at Booking.com"
-rather than an FX-normalised figure.
+rather than an FX-normalized figure.
 
-Currency-normalised thresholds will follow when multi-currency support is
+Currency-normalized thresholds will follow when multi-currency support is
 introduced.
 
 ---
@@ -442,9 +442,9 @@ finance:
 
 ## Future: Risk Engine (ze-risk)
 
-Ze-finance is designed as the substrate for a full factor-based risk engine,
-inspired by [RiskOS](https://github.com/joaoajmatos/riskos). The risk layer
-is a separate plugin (`ze-risk`) that imports from `ze_finance.risk.types`.
+Ze-finance serves as the substrate for a full factor-based risk engine, inspired
+by [RiskOS](https://github.com/joaoajmatos/riskos). The risk layer is a separate
+plugin (`ze-risk`) that imports from `ze_finance.risk.types`.
 
 ### Factor taxonomy
 
@@ -471,15 +471,15 @@ Ze-finance already defines the full factor taxonomy as a stub in
 - **Scenario modelling** — stress-test the portfolio against historical presets
   (2022 rate shock, AI correction, crypto deleveraging, geopolitical escalation,
   etc.) and custom factor shocks.
-- **LP-optimised rebalancing** — suggest cash-neutral trades that minimise
+- **LP-optimized rebalancing** — suggest cash-neutral trades that minimize
   modelled scenario loss, subject to turnover and concentration constraints.
 - **Signal ingestion** — yfinance (prices), FRED (macro), CoinGecko (crypto),
   RSS headlines, and geopolitical feeds (GDELT, ACLED) as factor signal sources.
 
 ### Notional field
 
-`Position.notional` is the aggregation unit for the risk engine. It is
-always populated at ingestion time (quantity × current price). The risk engine
+`Position.notional` is the aggregation unit for the risk engine. Ze always
+populates it at ingestion time (quantity × current price). The risk engine
 never aggregates on quantity — shares, crypto units, and cash are not comparable
 across asset classes. If you extend the DataSource protocol with a new broker,
 always populate `notional`.

@@ -116,8 +116,8 @@ registry.inbound_channels()          # all InboundChannel instances
 registry.get_inbound_by_id("gmail:joao@gmail.com")  # instance lookup
 ```
 
-The registry is built in `ZeContainer` after plugins are instantiated (channels
-come from `plugin.channels()`) but before agents are bootstrapped (so agents
+`ZeContainer` builds the registry after it instantiates plugins (channels
+come from `plugin.channels()`) but before it bootstraps agents (so agents
 can receive it via DI).
 
 ---
@@ -156,7 +156,7 @@ Automated sender detection is header-based (no LLM):
 - `Precedence: bulk` or `Precedence: list`
 - Configurable extra patterns via `messaging.automated_senders` in `config.yaml`
 
-Episodes are written with `agent="messenger"` so session consolidation excludes
+Ze writes episodes with `agent="messenger"` so session consolidation excludes
 them from conversation grouping.
 
 ### `MessagingSignalSource`
@@ -174,7 +174,7 @@ skips signals already seen, so restarting the polling job never double-counts.
 A thread belongs to exactly one of Ze's channel instances — the one that
 received or sent the first message in that thread.
 
-**`ThreadChannelMap`** is the single source of truth. It is populated by:
+**`ThreadChannelMap`** is the single source of truth. The following populate it:
 - `InboundMessageProcessor.process()` — for every polled message with a `thread_id`
 - `send_email` tool — after every successful send
 
@@ -195,7 +195,7 @@ received or sent the first message in that thread.
 | `is_default_outbound` | Used by send routing when no thread context |
 | `poll_enabled` | False to pause polling without disconnecting |
 
-One default outbound per channel type is enforced by `UserChannelStore.set_default_outbound()`.
+`UserChannelStore.set_default_outbound()` enforces one default outbound per channel type.
 
 ---
 
@@ -230,8 +230,8 @@ Sample `GET` response:
 ## Adding a new channel
 
 Adding ProtonMail, WhatsApp, Slack, or any other channel only requires work in
-a new integration package. No changes to `ze-messenger`, `ze-personal`, or
-`ze-api` are needed.
+a new integration package. `ze-messenger`, `ze-personal`, and `ze-api` need no
+changes.
 
 ### 1. Create the integration package
 
@@ -303,7 +303,7 @@ class ProtonPlugin(ZePlugin):
 ```
 
 The polling job, message processor, signal source, thread map, and REST API all
-pick it up automatically — no further wiring required.
+pick it up automatically — you need no further wiring.
 
 ### 4. Automated sender classification
 

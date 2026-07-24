@@ -1,6 +1,6 @@
 # Ze — Adding a New Agent
 
-This guide explains how to author a new agent. Read it alongside the existing agents
+This guide explains how to write a new agent. Read it alongside the existing agents
 (`ze_personal/agents/research/`, `ze_email/agents/email/`) as working examples.
 
 ---
@@ -70,9 +70,9 @@ async def send_email(to: str, subject: str, body: str, client: GmailClient) -> T
 
 ### Tool parameters
 
-All dependencies (API clients, settings) are passed as keyword arguments from the
-agent's `run()` method — tools are pure functions that receive everything they need
-via parameters. They do not import from global state or access `self`.
+The agent's `run()` method passes all dependencies (API clients, settings) as keyword
+arguments — tools are pure functions that receive everything they need via
+parameters. They do not import from global state or access `self`.
 
 ---
 
@@ -209,7 +209,7 @@ Values can be a single string or a list — list entries are chosen randomly on 
 
 The `ZePlugin` base class auto-loads `locales/{locale}.yaml` from within the plugin
 package at startup — no override needed as long as the file exists. The app-level
-`config/locales/` files are an override layer for deployment-specific customisation.
+`config/locales/` files are an override layer for deployment-specific customization.
 
 **Emitting from tools:** pass `reporter` through the agent's deps dict so tools can
 emit mid-operation without exposing it to the LLM:
@@ -264,7 +264,7 @@ def agent_module_paths(self) -> list[str]:
     ]
 ```
 
-Ze fails hard at startup if an agent declares a tool in `tools = [...]` that isn't
+Ze refuses to start if an agent declares a tool in `tools = [...]` that isn't
 registered — the discrepancy is caught before the app accepts traffic.
 
 **All `__init__` parameters must be type-annotated** — `bootstrap.py` uses

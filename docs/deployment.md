@@ -40,8 +40,8 @@ set `DATABASE_URL_SYNC` manually (see step 3).
 
 ### 3. Set secrets
 
-Set every required env var as a Fly secret. Secrets are encrypted at rest and
-injected as environment variables at runtime.
+Set every required env var as a Fly secret. Fly encrypts secrets at rest and
+injects them as environment variables at runtime.
 
 ```bash
 fly secrets set \
@@ -131,8 +131,8 @@ fly ssh console
 
 The default config uses one shared-cpu-1x machine with 1 GB RAM. Two local models
 load at startup: the embedding model (`paraphrase-multilingual-MiniLM-L12-v2`, ~450 MB)
-and the NLI cross-encoder (`cross-encoder/nli-deberta-v3-small`, ~90 MB). Both are
-pre-downloaded in the Docker build (`apps/ze-api/Dockerfile`).
+and the NLI cross-encoder (`cross-encoder/nli-deberta-v3-small`, ~90 MB). The Docker
+build (`apps/ze-api/Dockerfile`) pre-downloads both.
 
 ```bash
 fly scale memory 2048   # upgrade to 2 GB if needed
@@ -192,7 +192,7 @@ Two workflows live in `.github/workflows/`:
 2. Add it as a GitHub Actions secret named `FLY_API_TOKEN`:
    - Repo → Settings → Secrets and variables → Actions → New repository secret
 
-No other secrets are needed in GitHub — all runtime secrets live in Fly.
+GitHub needs no other secrets — all runtime secrets live in Fly.
 
 ---
 
@@ -262,7 +262,7 @@ fly scale memory 2048
 
 **Google Calendar / Gmail 401 errors**
 
-The refresh token has been revoked. Re-run `scripts/google_auth.py` locally,
+Google revoked the refresh token. Re-run `scripts/google_auth.py` locally,
 get a new refresh token, and update the secret:
 ```bash
 fly secrets set GOOGLE_REFRESH_TOKEN=new-token

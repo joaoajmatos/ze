@@ -52,7 +52,7 @@ make web           # React web app on :5173
 4. **Open a PR** against `main`. The PR description should say *why* the change is needed,
    not just what it does.
 
-5. PRs that break tests or lint will not be merged.
+5. We will not merge PRs that break tests or lint.
 
 ---
 
@@ -111,7 +111,7 @@ Migrations are raw SQL (no ORM). Keep them idempotent where possible.
 ## What not to send
 
 - Changes to `.env` or any file containing secrets.
-- New dependencies added without a clear reason — `uv add` changes to `pyproject.toml` should be justified in the PR description.
+- New dependencies added without a clear reason — justify `uv add` changes to `pyproject.toml` in the PR description.
 - Refactors unrelated to the stated goal of the PR.
 - Comments that describe *what* the code does rather than *why*.
 

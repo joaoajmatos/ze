@@ -10,16 +10,16 @@
 
 ## Why a second taxonomy
 
-Ze is organised by **domain** (calendar, news, finance, memory, automation…). That is the
-right axis for ownership, dependencies, and migrations. But domains are not the axis along
-which a *mind* is complete or incomplete. A system can have excellent domain packages and
-still be missing an entire cognitive function — and you will not see it, because no package
-is "missing"; a *capability* is.
+Ze is organized by **domain** (calendar, news, finance, memory, automation…). That is the
+right axis for ownership, dependencies, and migrations. But domains are not the axis that shows
+whether a *mind* is complete. A system can have excellent domain packages and still be missing
+an entire cognitive function — and it stays invisible, because no package is "missing";
+a *capability* is.
 
-So we overlay a functional taxonomy. A subsystem is not primarily "the news plugin"; it is
+So we add a functional taxonomy alongside it. A subsystem is not primarily "the news plugin"; it is
 **perception that happens to be sourced from news**. Reading Ze this way makes one thing
-immediately obvious: Ze perceives, remembers, reflects, and acts well — and its **executive
-function is under-built**. That is the hole the doctrine's "active concerns" spine is meant
+immediately clear: Ze perceives, remembers, reflects, and acts well — but its **executive
+function is under-built**. That is the gap the doctrine's "active concerns" spine is meant
 to fill.
 
 The seven functions below are from the external architecture review and are adopted verbatim
@@ -53,8 +53,8 @@ is the right discipline — perception is already relevance-filtered rather than
 
 **State:** the deepest function in the system. Genuinely multi-layer.
 **Gap:** "project" and "social" memory are *implicit* — they live scattered across contacts,
-goals, and episodes rather than as first-class structures. This under-building is the same
-hole seen from the memory side: there is no durable "state of project X" or "state of
+goals, and episodes rather than as first-class structures. This is the same gap seen from the
+memory side: there is no durable "state of project X" or "state of
 relationship with Y" that the executive layer can read.
 
 ### 3. Executive function — deciding what to do and following through
@@ -75,10 +75,10 @@ a real life and never become formal goals:
 - a project quietly drifting because a dependency stalled,
 - a "I should look into X" mentioned once and never closed.
 
-There is no primitive that *holds* these, no continuous *prioritisation* across them, and no
+There is no primitive that *holds* these, no continuous *prioritization* across them, and no
 *interruption-handling* policy that decides when an open loop is worth surfacing. Goals are a
-special, expensive case of active concerns; the general case is unbuilt. **Closing this is the
-most likely subject of the next phase.**
+special, expensive case of active concerns; the general case is unbuilt. **Closing this gap is
+the most likely subject of the next phase.**
 
 ### 4. Social cognition — modelling people and calibrating interaction
 
@@ -88,10 +88,10 @@ most likely subject of the next phase.**
 |---|---|
 | 🟡 | `ze-personal` persona (tone/dials, interaction style), contacts (`PersonStore`, channel handles), messenger. |
 
-**State:** interaction *style toward the user* is well-modelled (persona dials, identity
-block). Modelling of **third parties** — who matters to the user, the state and cadence of
+**State:** interaction *style toward the user* is well-modeled (persona dials, identity
+block). Modeling of **third parties** — who matters to the user, the state and cadence of
 each relationship, boundaries per person — is thin. Contacts are a directory, not a
-relationship model. This is the "social memory" gap from function 2, seen from the behavioural
+relationship model. This is the "social memory" gap from function 2, seen from the behavioral
 side.
 
 ### 5. Reflection — revising the model when not acting

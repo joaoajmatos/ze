@@ -50,9 +50,9 @@ with Ze exclusively over the `/eval/chat` HTTP endpoint.
 
 ## Quick start (Claude Code)
 
-The MCP server definition is committed in `.claude/settings.json` and available
-to anyone who clones the repo. You only need to supply your API key once via a
-local override file that is gitignored.
+The repo commits the MCP server definition in `.claude/settings.json`, so it's
+available to anyone who clones the repo. You only need to supply your API key
+once, via a local override file that git ignores.
 
 1. **Create `.claude/settings.local.json`** in the repo root with your key:
    ```json
@@ -66,7 +66,7 @@ local override file that is gitignored.
      }
    }
    ```
-   This file is gitignored — it will never be committed.
+   Git ignores this file — it will never be committed.
 
 2. **Start a new Claude Code session** (quit and reopen, or open a new terminal
    and run `claude` again). MCP servers start when the session starts; Claude Code
@@ -226,7 +226,7 @@ scenario runs:
       cleanup: true                 # delete matching rows after check (default: true)
 ```
 
-Verified rows are deleted after the check so eval runs don't contaminate each
+Ze deletes verified rows after the check so eval runs don't contaminate each
 other. Requires `DATABASE_URL` in your environment (same as Ze). Tables you can
 verify against: `user_reminders`, `workflows`, `goals`, `memory_facts`, `contacts`.
 Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify` blocks.
@@ -251,7 +251,7 @@ Use `turns` instead of `prompt` to send a sequence of messages in the same sessi
 ```
 
 All turns in a multi-turn scenario share the same `session_id`, so LangGraph
-conversation history is maintained between them.
+maintains conversation history between them.
 
 Run `ze_list_scenarios()` to confirm it appears.
 
@@ -271,7 +271,7 @@ uv run python eval/run.py --judge --tag calendar # judge calendar scenarios only
 uv run python eval/run.py report --compare       # same as eval-diff
 ```
 
-Results are saved to `eval/results/<timestamp>.json`. The judge uses
+Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 `OPENROUTER_API_KEY` from your `.env` and scores each response on:
 - **quality** (1–5): Does Ze actually answer the question?
 - **tone** (1–5): Is the tone appropriate and in character?
@@ -302,8 +302,8 @@ The summary output shows:
 
 LLM-level metrics (tokens, `llm_duration_ms`) are available when `DATABASE_URL`
 is set in your environment and Ze is running with Postgres. Token counts are
-available immediately; `cost_usd` is backfilled asynchronously every 15 min by
-`CostReconciler` and is not used by the runner.
+available immediately; `CostReconciler` backfills `cost_usd` asynchronously
+every 15 min, and the runner does not use it.
 
 `make eval-diff` shows latency and token deltas between runs:
 
@@ -358,7 +358,7 @@ Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 
 ## Notes
 
-- Eval threads are namespaced as `eval-<session_id>` to avoid contaminating the
+- Ze namespaces eval threads as `eval-<session_id>` to avoid contaminating the
   user's real conversation history, but they share the same database. Ze may surface
   user memory in eval responses.
 - If `pending_confirmation` is `true`, Ze would normally pause for user approval.

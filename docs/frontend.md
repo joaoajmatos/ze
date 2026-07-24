@@ -76,7 +76,7 @@ Import from the public API: `import { Button, ListPage } from "@/shared/ui"`.
 
 ## Configuration
 
-Server URL and API key are stored in `localStorage` via `shared/config/app-config.ts`. Set during onboarding or in Settings. No `VITE_*` env vars.
+`shared/config/app-config.ts` stores the server URL and API key in `localStorage`. Set them during onboarding or in Settings. No `VITE_*` env vars.
 
 ## Commands
 

@@ -8,7 +8,7 @@ not a chat bot with plugins.
 After any refactor, model swap, or agent churn, Ze must still know **who you are, what is
 true, what is open, and what is drifting.** That continuity *is* the product.
 
-The spine is the **world-state** — four faces, bounded to your neighbourhood:
+The spine is the **world-state** — four faces, bounded to your neighborhood:
 
 1. **Self-model** — who Ze is to you (role, tone, boundaries)
 2. **User-model** — who you are (values, patterns, relationships)

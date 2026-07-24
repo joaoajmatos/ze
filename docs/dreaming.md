@@ -68,7 +68,7 @@ flowchart TB
 
 ## How it works
 
-1. **Wake** — Ze captures experiences with provenance. Every new episode is tagged
+1. **Wake** — Ze captures experiences with provenance. Ze tags every new episode
    asynchronously with `replay_score`, `source` (`ze_observed` or `user_asserted`), and
    a sensitive-entity flag. Tagging does not block the conversation write path.
 
@@ -76,7 +76,7 @@ flowchart TB
    sessions, deduplicates facts, decays stale traces, and detects schema and policy
    clusters. No LLM calls in this phase.
 
-3. **Dream (REM)** — For each cluster candidate, a generator synthesises insights,
+3. **Dream (REM)** — For each cluster candidate, a generator synthesizes insights,
    procedures, hindsight facts, or plan stress-tests. All outputs land in a staging
    buffer (`memory_dream_artifacts`) with `status=pending`.
 
@@ -218,22 +218,21 @@ source episode excerpts and approve/reject/revise actions.
 ## Safety model
 
 - **Staging buffer** — no synthetic output touches live memory until all gates pass.
-- **Provenance** — `provenance=synthesized` facts are hedged in retrieval context
+- **Provenance** — Ze hedges `provenance=synthesized` facts in retrieval context
   ("Ze inferred this from a pattern").
-- **Source tagging** — episodes are classified `ze_observed` or `user_asserted` at write
+- **Source tagging** — Ze classifies episodes as `ze_observed` or `user_asserted` at write
   time. Classification uses three layers: (1) agent-name allowlist (email, calendar,
   workflow, reminders, news, prospecting, finance, goal, automation); (2) tool-result
   markers in the stored prompt/response; (3) response-phrase detection for research
   summaries. `user_asserted` episodes score lower and cap at 1 toward `support_count`.
 - **Sensitive exclusion** — episodes linked to sensitive entities skip all dream passes.
-- **Session contamination** — summaries that included synthetic facts are flagged
-  `dream_influenced` and excluded from dream source selection until corroborated or
-  rolled back.
-- **Synthetic expiry** — synthesized facts past `valid_until` (default 90 days) that
-  have never been corroborated by a raw episode are contradicted on the next morning
-  integration run.
+- **Session contamination** — Ze flags summaries that included synthetic facts as
+  `dream_influenced` and excludes them from dream source selection until corroborated
+  or rolled back.
+- **Synthetic expiry** — the next morning integration run contradicts synthesized facts
+  past `valid_until` (default 90 days) that no raw episode has corroborated.
 - **Rollback** — `POST /runs/{run_id}/rollback` bulk-contradicts all facts from a run
-  and flags contaminated session summaries for re-summarisation.
+  and flags contaminated session summaries for re-summarization.
 - **Quality audit** — `GET /api/v0/memory/facts/quality` returns a diagnostic snapshot
   (provenance distribution, avg confidence, contradicted/unreviewed/expired counts) for
   assessing source pool health before trusting synthesis output.

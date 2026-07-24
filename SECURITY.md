@@ -25,7 +25,7 @@ Include:
 
 ## Responsible disclosure
 
-Please give reasonable time to address the issue before public disclosure. Once a fix is released, you're welcome to publish a write-up — coordinating the timing is appreciated.
+Please give us reasonable time to address the issue before public disclosure. Once we release a fix, you're welcome to publish a write-up — please coordinate the timing with us.
 
 ## Security model
 

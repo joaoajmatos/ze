@@ -30,7 +30,7 @@ It isn't there yet. But 100+ shipped phases in, the infrastructure is real and i
 
 ## Where it is now
 
-Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-domain architecture. Routing uses local embeddings — zero LLM calls until an agent actually needs to act. All LLM traffic goes through OpenRouter. Graph state is checkpointed in Postgres and survives restarts.
+Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-domain architecture. Routing uses local embeddings — zero LLM calls until an agent needs to act. All LLM traffic goes through OpenRouter. Graph state is checkpointed in Postgres and survives restarts.
 
 - **ze-web** — React SPA (Feature-Sliced Design); REST types and client generated from OpenAPI via `@ze/client`.
 
@@ -42,11 +42,11 @@ Goals are the heavyweight end of a larger idea: Ze holding your **active concern
 
 ### Memory
 
-Facts and episodes extracted after each turn, consolidated nightly, profile synthesised weekly. Goal learnings promoted to long-term memory on completion. `pgvector` for retrieval.
+Facts and episodes extracted after each turn, consolidated nightly, profile synthesized weekly. Goal learnings promoted to long-term memory on completion. `pgvector` for retrieval.
 
 ### Dreaming
 
-Every night Ze runs an offline memory improvement loop — sleep pass then dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using only structural analysis (no LLM calls). The dream pass then synthesises those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
+Every night Ze runs an offline memory improvement loop — sleep pass then dream pass. The sleep pass replays high-priority episodes, compresses old sessions, deduplicates facts, and identifies schema and policy clusters using only structural analysis (no LLM calls). The dream pass then synthesizes those clusters into insights, procedures, and plan stress-tests using a haiku-class generator.
 
 Nothing synthetic goes straight to memory. Every artifact passes three cheap pre-gates (NLI groundedness, embedding novelty, retrievability) and two adversarial LLM critic calls at sonnet-class before reaching a morning integration step that enforces session-diversity and temporal-spread requirements. Promoted facts carry full lineage for per-run rollback. Borderline cases surface in the morning briefing for review. Synthetic facts that go uncorroborated for 90 days are automatically expired.
 
@@ -99,7 +99,7 @@ flowchart TB
     CE --> PUSH
 ```
 
-Conversations write what Ze learns from talking. Ingestion (`ze-ingestion`) feeds knowledge from any URL, PDF, YouTube video, or file — extracted facts land in the same store. Domain plugins emit `SignalSource` events that are scored for relevance, written to the memory graph, and fed into the correlation engine. Goals promote learnings on completion. Every inflow compounds.
+Conversations write what Ze learns from talking. Ingestion (`ze-ingestion`) feeds knowledge from any URL, PDF, YouTube video, or file — extracted facts land in the same store. Domain plugins emit `SignalSource` events; Ze scores them for relevance, writes them to the memory graph, and feeds them into the correlation engine. Goals promote learnings on completion. Every inflow compounds.
 
 The design intent is that Ze gets sharper without being explicitly fed. Drop a PDF in. Share a video. The facts join everything else Ze already knows.
 
@@ -126,7 +126,7 @@ Research, companion, calendar, messenger, reminders, workflow, goals, prospectin
 | `workflow` | Recurring multi-step tasks | Read auto · manage confirm |
 | `goals` | Multi-week autonomous objectives | Read auto · writes confirm |
 | `prospecting` | Browser-sidecar research + outreach | Autonomous |
-| `news` | Personalised RSS headlines + search | Autonomous |
+| `news` | Personalized RSS headlines + search | Autonomous |
 | `ingestion` | URL / PDF / video / audio / text → memory | Autonomous |
 
 </details>

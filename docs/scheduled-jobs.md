@@ -1,7 +1,7 @@
 # Ze — Scheduled Jobs & Memory Lifecycle
 
 Ze isn't only reactive. A set of background jobs run on a daily and weekly cadence
-to keep memory clean, synthesise a portrait of the user, surface insights, and push
+to keep memory clean, synthesize a portrait of the user, surface insights, and push
 proactive messages — all without the user prompting anything.
 
 This document explains what runs, when, and how each piece feeds into the next.
@@ -10,7 +10,7 @@ This document explains what runs, when, and how each piece feeds into the next.
 
 ## The memory lifecycle
 
-Every conversation leaves a trace. Over time those traces accumulate into something
+Every conversation leaves a record. Over time those records build into something
 richer:
 
 ```mermaid
@@ -38,7 +38,7 @@ flow.
 
 **Episodes** (`ze_memory/retriever.py`)
 
-A raw record of the conversation turn (prompt + response) is written automatically as
+Ze automatically writes a raw record of the conversation turn (prompt + response) as
 an episode after every run. Episodes don't require user approval.
 
 **Session summaries** (`ze_memory/session_summary.py`)
@@ -46,18 +46,18 @@ an episode after every run. Episodes don't require user approval.
 `SessionSummariser` runs every 10 minutes. When a session has been inactive for ≥ 30
 minutes, Haiku generates a single narrative summary of the full session and writes it
 to `memory_session_summaries`. If the user returns and adds more turns before the
-session is archived, the summary is regenerated on the next tick. Raw episodes are
-kept until nightly archival removes them — at that point the LLM call is skipped
-because the eager summary already exists.
+session is archived, Ze regenerates the summary on the next tick. Raw episodes stay
+until nightly archival removes them — at that point Ze skips the LLM call because
+the eager summary already exists.
 
 **Memory injection**
 
 On the _next_ conversation, `fetch_context` runs pgvector semantic searches over
 facts, raw episodes (current session only), and session summaries (closed sessions),
 injecting the top-k most relevant results into the agent's system prompt as
-`memory_context`. Sessions with a summary are excluded from the raw episode query so
-the agent never sees both fragments and the narrative for the same session. The user
-profile is also injected into every system prompt.
+`memory_context`. Ze excludes sessions with a summary from the raw episode query so
+the agent never sees both fragments and the narrative for the same session. Ze also
+injects the user profile into every system prompt.
 
 ---
 
@@ -102,8 +102,8 @@ automatically.
 
 Raw episodes accumulate quickly. Episodes older than `episode_recency_days` (default:
 14d) are candidates for archival. When a batch of at least `episode_min_archive_batch`
-(default: 10) candidates exists, Haiku summarises them into a single archive row and
-the originals are deleted. This keeps the episodes table lean without losing history.
+(default: 10) candidates exists, Haiku summarizes them into a single archive row and
+Ze deletes the originals. This keeps the episodes table lean without losing history.
 
 ### 4. Profile facet synthesis (end of every consolidation pass)
 
@@ -113,8 +113,8 @@ default: 50) and produces a structured list of `ProfileFacet` objects upserted i
 `memory_profile_facets` by key.
 
 Profile facets are key-value pairs with stability (`stable` | `dynamic`) and confidence
-scores. The current facets are available at `GET /memory/profile` and are injected into
-every agent's system prompt. Agents see the full synthesised portrait, not individual facts.
+scores. The current facets are available at `GET /memory/profile`, and Ze injects them
+into every agent's system prompt. Agents see the full synthesized portrait, not individual facts.
 
 Profile synthesis is skipped if fewer than `profile.min_facts` (default: 3) reviewed
 facts exist.
@@ -134,7 +134,7 @@ When `dream.enabled: true`, the sleep pass runs nightly (default cron `0 3 * * *
 4. **Retrieval-cache expiry** — delete `memory_retrieval_cache` rows older than 1 day
    (Phase 79 session-cached NLI rerank; see [memory.md](memory.md)).
 
-Journal entries are written to `memory_dream_journal` and surfaced in the morning briefing.
+Ze writes journal entries to `memory_dream_journal` and surfaces them in the morning briefing.
 See [dreaming.md](dreaming.md) for the full wake/sleep/dream pipeline.
 
 ---
@@ -152,13 +152,13 @@ noticed:
 >
 > *"Your last three research sessions all circled back to distributed systems. Looks like that's becoming a recurring thread."*
 >
-> *"You said you wanted to practise Portuguese more, but I haven't seen that come up in our conversations for a couple of weeks."*
+> *"You said you wanted to practice Portuguese more, but I haven't seen that come up in our conversations for a couple of weeks."*
 
 Insight categories: `pattern` | `trend` | `goal` | `tension`.
 
 The same category won't fire again within `category_cooldown_days` (default: 7d) to
-avoid repetition. Insights are pushed via `ProactiveNotifier` (WebSocket or ntfy) before the 8 AM
-morning briefing, so they feel like a natural start to the week.
+avoid repetition. Ze pushes insights via `ProactiveNotifier` (WebSocket or ntfy) before
+the 8 AM morning briefing, so they feel like a natural start to the week.
 
 Insight generation is skipped if fewer than `min_evidence` (default: 3) facts +
 episodes exist in the lookback window.
@@ -177,11 +177,11 @@ A daily digest pushed via `ProactiveNotifier`. No LLM call — it's a templated 
   includes a direct nudge to review them.
 - **Upcoming workflows** — scheduled workflow runs in the next 24 hours.
 - **Recent failures** — any workflow runs that failed in the past 24 hours.
-- **Personalised headlines** — when the `ze-news` plugin is enabled, the briefing appends
+- **Personalized headlines** — when the `ze-news` plugin is enabled, the briefing appends
   a news section. With enough user facts (≥ `news.personalization.min_facts`, default 5),
-  articles are ranked by cosine similarity against a snapshot of the user's interest
-  vector built from stored facts and active goal titles. The section is split into two
-  clearly labelled buckets:
+  Ze ranks articles by cosine similarity against a snapshot of the user's interest
+  vector built from stored facts and active goal titles. The section splits into two
+  clearly labeled buckets:
 
   ```
   📰 For you (based on your interests):
@@ -191,7 +191,7 @@ A daily digest pushed via `ProactiveNotifier`. No LLM call — it's a templated 
     • Article title (source)
   ```
 
-  The discovery bucket (`explore_ratio`, default 20%) is ranked by recency, not by
+  Ze ranks the discovery bucket (`explore_ratio`, default 20%) by recency, not by
   interest score, so the user always sees genuinely fresh off-profile content. Below
   the fact threshold, or when personalization is disabled, the section falls back to
   a plain recency-ordered list under `📰 Headlines:`.
@@ -209,14 +209,14 @@ The briefing is deduplicated — it will not fire if one was already sent within
 Each morning `CalendarReminderService` syncs Google Calendar events up to
 `sync_days_ahead` (default: 7) days ahead. For each event, Haiku assesses the
 appropriate reminder interval (e.g. 15 minutes before a video call vs. 1 hour before
-a flight). `WorkflowScheduler` one-shot `DateTrigger` jobs are created accordingly.
+a flight). `WorkflowScheduler` creates one-shot `DateTrigger` jobs accordingly.
 
 When a reminder fires, Ze pushes the event title and time via `ProactiveNotifier`.
 A startup replay pass re-registers any reminders that were scheduled before the last
 restart and haven't fired yet.
 
-Calendar sync runs at 7:45 AM — before the 8 AM briefing — so upcoming events
-with same-day reminders are captured.
+Calendar sync runs at 7:45 AM — before the 8 AM briefing — so Ze captures upcoming
+events with same-day reminders.
 
 ---
 
@@ -243,10 +243,10 @@ The advance loop either:
 - Runs the next pending **milestone** via the normal agent registry, stores output and
   a learning, and pushes a short progress line (e.g. *"✅ Draft target list done (2/8)"*).
 
-Goals in `AWAITING_GATE`, `PAUSED`, `PLANNING`, `COMPLETED`, or `ABANDONED` are skipped.
-The sweep is lightweight — it returns early when there is no actionable next step.
+The sweep skips goals in `AWAITING_GATE`, `PAUSED`, `PLANNING`, `COMPLETED`, or
+`ABANDONED`. It is lightweight — it returns early when there is no actionable next step.
 
-Gate responses are handled conversationally (not on the cron tick): approving
+Ze handles gate responses conversationally, not on the cron tick: approving
 or redirecting calls `advance` again from the conversation handler.
 
 See [docs/goals.md](goals.md) for the full goal engine documentation.
@@ -258,7 +258,7 @@ See [docs/goals.md](goals.md) for the full goal engine documentation.
 **Module:** `ze_automation/jobs/goal_narrative.py`  
 **Cron:** `0 18 * * 0` (configurable via `proactive.goal_narrative.cron`)
 
-For each active goal, Ze synthesises a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Pushed via `ProactiveNotifier`. Skips goals that had no activity in the past 7 days.
+For each active goal, Ze synthesizes a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Pushed via `ProactiveNotifier`. Skips goals that had no activity in the past 7 days.
 
 ---
 
@@ -267,7 +267,7 @@ For each active goal, Ze synthesises a one-paragraph weekly update: what was com
 **Module:** `ze_automation/jobs/goal_suggestion.py`  
 **Cron:** `0 19 * * 0` (configurable via `proactive.goal_suggestion.cron`)
 
-Analyses recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. Sent via `ProactiveNotifier` with **Accept** / **Dismiss** options. Accepted suggestions open a goal creation flow. Suppressed if there are already 3+ active goals or if the last suggestion was dismissed within 7 days.
+Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. Sent via `ProactiveNotifier` with **Accept** / **Dismiss** options. Accepted suggestions open a goal creation flow. Suppressed if there are already 3+ active goals or if the last suggestion was dismissed within 7 days.
 
 ---
 
@@ -332,10 +332,10 @@ The same data is available on-demand via the `/status` WebSocket command (see [n
 
 Silently scans recent LLM runs and alerts if any single run cost significantly more than that agent's historical baseline:
 
-- **Baseline**: median cost-per-run over the past 30 days. Uses median (not mean) to resist distortion from the very anomalies we are trying to detect.
-- **Minimum samples**: at least `anomaly_min_samples` (default: 5) historical runs are required before an agent can have a baseline. New agents are silently skipped.
+- **Baseline**: median cost-per-run over the past 30 days. Uses median (not mean) to resist distortion from the very anomalies this check aims to detect.
+- **Minimum samples**: the job requires at least `anomaly_min_samples` (default: 5) historical runs before an agent can have a baseline. It silently skips new agents.
 - **Threshold**: `anomaly_threshold` × baseline (default: 4.0×). A run at 4.01× fires an alert; one at 3.99× does not.
-- **Deduplication**: session IDs already logged in `accountability_anomalies` within the past 24 hours are skipped so a single run never fires twice.
+- **Deduplication**: the job skips session IDs already logged in `accountability_anomalies` within the past 24 hours, so a single run never fires twice.
 
 Alert format (ntfy, urgency `high`):
 
@@ -346,7 +346,7 @@ The prospecting agent spent $0.31 on one run — 5.0× its usual $0.06.
 Date: 2026-06-09
 ```
 
-Anomaly records are written to the `accountability_anomalies` table and automatically pruned after `anomaly_retention_days` (default: 30 days).
+Ze writes anomaly records to the `accountability_anomalies` table and prunes them automatically after `anomaly_retention_days` (default: 30 days).
 
 The threshold is a conservative first guess — calibrate after 30 days of live data.
 
@@ -403,11 +403,11 @@ When the `ze-news` plugin is loaded, a fetch job runs on a configurable cron (de
 `*/30 * * * *`). For each enabled source in `news.sources`, it fetches the RSS feed,
 embeds each new article title + summary using the shared
 `paraphrase-multilingual-MiniLM-L12-v2` model, and upserts into the `news_articles`
-table. Duplicate URLs are skipped. Old articles are pruned after `news.retention_days`
+table. It skips duplicate URLs and prunes old articles after `news.retention_days`
 (default: 7 days).
 
-Sources are tagged at configuration time (e.g. `global`, `local`, `tech`, `pt`). Tags
-are used for filtering by the `get_headlines` tool and the morning briefing.
+Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt`). The
+`get_headlines` tool and the morning briefing use these tags for filtering.
 
 ---
 
@@ -421,7 +421,7 @@ are used for filtering by the `get_headlines` tool and the morning briefing.
 | Every 10 min | Session summary generation | `ze_memory/session_summary.py` |
 | 7:00 AM Sun | Weekly insight generation | `ze_personal/jobs/insights.py` |
 | 7:45 AM daily | Calendar sync + reminder scheduling | `ze_calendar/jobs/calendar_reminder.py` |
-| 8:00 AM daily | Morning briefing (with personalised headlines) | `ze_personal/jobs/briefing.py` |
+| 8:00 AM daily | Morning briefing (with personalized headlines) | `ze_personal/jobs/briefing.py` |
 | 8:30 AM daily | Contact review suggestions | `ze_personal/jobs/contacts.py` |
 | 6:00 PM Sun | Weekly goal narrative | `ze_automation/jobs/goal_narrative.py` |
 | 7:00 PM Sun | Weekly goal suggestions | `ze_automation/jobs/goal_suggestion.py` |

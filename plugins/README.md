@@ -1,7 +1,7 @@
 # plugins/
 
 Domain plugin packages. Each plugin implements `ZePlugin` and contributes agents,
-stores, background jobs, and migrations to the Ze graph. Plugins are discovered
+stores, background jobs, and migrations to the Ze graph. Ze discovers plugins
 automatically via `[project.entry-points."ze.plugins"]` in each package's
 `pyproject.toml` — no manual registration in `ze-api`.
 
@@ -21,7 +21,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-email](ze-email/) | Gmail channel and email agent |
 | [ze-calendar](ze-calendar/) | Calendar, reminders, and timezone domain |
 | [ze-prospecting](ze-prospecting/) | Autonomous prospect research, campaign store, outreach drafting |
-| [ze-news](ze-news/) | News ingestion, personalised ranking, credibility analysis, news agent |
+| [ze-news](ze-news/) | News ingestion, personalized ranking, credibility analysis, news agent |
 | [ze-finance](ze-finance/) | Finance domain — portfolio positions, bank transactions, spending summaries, proactive P&L alerts |
 
 ## Dependency graph
@@ -64,5 +64,5 @@ class ZePlugin(ABC):
     # … graph extension hooks
 ```
 
-A plugin earns its own package when it has its own Postgres tables, contributes at
+A plugin warrants its own package when it has its own Postgres tables, contributes at
 least one agent or job, and can be disabled without breaking the rest of Ze.

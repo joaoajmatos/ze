@@ -17,7 +17,7 @@ Reusable onboarding logic lives in `core/ze-onboarding`:
 
 Deployment adapters live in `apps/ze-api`:
 
-- `ze_api.api.websocket.onboarding.send_onboarding_view()` serialises onboarding views
+- `ze_api.api.websocket.onboarding.send_onboarding_view()` serializes onboarding views
   into WebSocket `message` frames.
 - `ze_api.api.websocket.component_submit.handle_component_submit()` routes onboarding
   submissions back into the coordinator.
@@ -97,7 +97,7 @@ class NewsPlugin(ZePlugin):
         return NewsOnboardingProvider()
 ```
 
-Providers should be deterministic. If the same submission is processed twice, it should
+Providers should be deterministic. Processing the same submission twice must
 produce equivalent seeds and follow-up steps.
 
 ## Seed Model
@@ -164,7 +164,7 @@ submission for compatibility.
 ## Reset Scopes
 
 `ResetService` supports previewing and executing scoped resets. Execution requires
-`confirm: "RESET"` and should be exposed only through high-friction UI.
+`confirm: "RESET"`. Expose execution only through high-friction UI.
 
 - `memory`: learned memory tables and legacy memory tables.
 - `personal_state`: memory plus messages, pending confirmations, contacts, goals,

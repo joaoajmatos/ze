@@ -1,7 +1,7 @@
 # Ze — Package Architecture
 
-Ze is a monorepo organised into five top-level directories with a strict one-way dependency graph.
-Understanding the split makes it clear where new code belongs and how the pieces fit.
+Ze is a monorepo organized into five top-level directories with a strict one-way dependency graph.
+The split makes clear where new code belongs and how the pieces fit together.
 
 ---
 
@@ -311,8 +311,8 @@ and workflows are always present. It depends on `ze-agents`, `ze-proactive`, and
 | `runtime/contracts.py` | `AutomationPlanner`, `AutomationStore` protocols |
 | `migrations/versions/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability) |
 
-Agent registration is exposed via `ze_automation.agent_module_paths()`, imported in
-`ze-api`'s container alongside plugin paths from `ZePlugin.agent_module_paths()`.
+`ze_automation` exposes agent registration via `ze_automation.agent_module_paths()`,
+imported in `ze-api`'s container alongside plugin paths from `ZePlugin.agent_module_paths()`.
 
 ---
 
@@ -409,7 +409,7 @@ dependencies and is consumed by `ze-finance`.
 
 ## ze-news — News Package
 
-`ze_news` owns news ingestion, personalised ranking, and credibility analysis.
+`ze_news` owns news ingestion, personalized ranking, and credibility analysis.
 Depends on `ze-sdk` only.
 
 | Module | What it provides |
@@ -428,14 +428,14 @@ Depends on `ze-sdk` only.
 
 `ze_finance` owns portfolio positions, bank transactions, spending summaries,
 recurring detection, and proactive P&L alerts. It depends on `ze-sdk` and
-`ze-trading212`, and its finance-specific LLM calls are pinned to Anthropic via
+`ze-trading212`, and pins its finance-specific LLM calls to Anthropic via
 OpenRouter.
 
 | Module | What it provides |
 |--------|-----------------|
 | `agents/finance/` | `FinanceAgent` and its finance tools |
-| `categoriser.py` | `CategoryInferrer` — keyword rules + optional LLM categorisation |
-| `jobs/snapshot.py` | `DailySnapshotJob` — syncs data sources, categorises, emits signals |
+| `categoriser.py` | `CategoryInferrer` — keyword rules + optional LLM categorization |
+| `jobs/snapshot.py` | `DailySnapshotJob` — syncs data sources, categorizes, emits signals |
 | `jobs/recurring.py` | `RecurringDetectionJob` — recurring-charge detection and nudges |
 | `plugin.py` | `FinancePlugin(ZePlugin)` — registers agent, jobs, signal source, and data domains |
 | `recurring/` | Recurring expense types, detector, and store |
@@ -564,7 +564,7 @@ make web-test      # vitest
 
 ## The ZePlugin Extension Point
 
-`ZePlugin` is the seam that lets domain packages inject behaviour into the engine
+`ZePlugin` is the seam that lets domain packages inject behavior into the engine
 without `ze-core` knowing about them. It lives in `ze_agents.plugin` and is imported
 via `ze_sdk`.
 
@@ -609,9 +609,9 @@ Five plugins are registered in `ze_api/container.py`:
 3. Add the package to `apps/ze-api/pyproject.toml` dependencies.
 4. Override plugin hooks as needed — all methods have no-op defaults.
 
-Plugins are discovered via entry points, topologically sorted by `depends_on`, and
-instantiated through the shared dep map. Graph state extensions, memory policies,
-checkpoint serde modules, REST stores, and proactive jobs are collected from each
+Ze discovers plugins via entry points, sorts them topologically by `depends_on`, and
+instantiates them through the shared dep map. It collects graph state extensions,
+memory policies, checkpoint serde modules, REST stores, and proactive jobs from each
 plugin at startup — no manual list in `build_graph()`.
 
 If your plugin constructor requires a new shared service type (e.g. a domain store
@@ -657,7 +657,7 @@ onboarding), it belongs in `ze-personal`.
 ## When to create a new package
 
 Most features do not need a new package. The default answer is **no** — add code to
-an existing package. A new package earns its existence only when it satisfies specific
+an existing package. A new package is warranted only when it meets specific
 criteria.
 
 ### Signals that a new package is warranted
@@ -670,12 +670,12 @@ APNs tomorrow) without touching any domain code.
 
 **Zero or very narrow upward dependencies.** A package that depends on everything
 can never be extracted cleanly. The new package should sit at a natural layer
-boundary with a clear, minimal import surface. If you find yourself importing from
-`ze-api` or `ze-personal` inside the new package, it probably belongs in one of them
+boundary with a clear, minimal import surface. If the new package imports from
+`ze-api` or `ze-personal`, it probably belongs in one of them
 instead.
 
 **A coherent, named domain.** `ze-calendar` exists because calendar + reminders is
-a recognisable product subsystem with its own agents, store, jobs, and Google API
+a recognizable product subsystem with its own agents, store, jobs, and Google API
 surface. `ze-memory` exists because memory is a foundational concern that multiple
 packages depend on and that has its own migration history, types, and retrieval
 semantics. "I have five new files" is not a domain.
@@ -705,8 +705,8 @@ be a plugin-backed package.
 
 ### The subsystem model
 
-Ze thinks of each non-core package as a **subsystem**: a self-contained slice of
-functionality with its own agents, stores, jobs, and migration path, stitched into
+Ze treats each non-core package as a **subsystem**: a self-contained slice of
+functionality with its own agents, stores, jobs, and migration path, wired into
 the graph through `ZePlugin`.
 
 A subsystem should be able to answer "yes" to all three of these:
