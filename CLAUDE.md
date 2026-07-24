@@ -489,3 +489,11 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 `graphify-out/` is gitignored — local/cache only.
 
 When the user types `/graphify`, follow the graphify skill before other exploration.
+
+## Documentation style
+
+Public-facing docs (root READMEs, `VISION.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+`docs/*.md`) follow Orwell's six rules plus an ASD-STE100-inspired plain-English
+discipline — active voice, short sentences, no needless words, American spelling.
+Does not apply to `specs/`, `CLAUDE.md`, or `AGENTS.md`. See the `doc-style` skill
+(`.claude/skills/doc-style/SKILL.md`) before drafting or editing these files.
