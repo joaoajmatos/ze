@@ -61,8 +61,8 @@ def graph_builder(
     from ze_core.orchestration.edges import (
         after_await_confirmation,
         after_capability_check,
-        after_correlate,
         after_execute_tool,
+        after_surface_loops,
     )
     from ze_core.orchestration.state import AgentState
 
@@ -78,6 +78,7 @@ def graph_builder(
     )
     builder.add_node("execute_tool", ov.get("execute_tool", nodes.execute_tool))
     builder.add_node("correlate", ov.get("correlate", nodes.correlate))
+    builder.add_node("surface_loops", ov.get("surface_loops", nodes.surface_loops))
     builder.add_node("draft_response", ov.get("draft_response", nodes.draft_response))
     builder.add_node(
         "await_confirmation", ov.get("await_confirmation", nodes.await_confirmation)
@@ -111,9 +112,10 @@ def graph_builder(
         after_execute_tool,
         {"correlate": "correlate"},
     )
+    builder.add_edge("correlate", "surface_loops")
     builder.add_conditional_edges(
-        "correlate",
-        after_correlate,
+        "surface_loops",
+        after_surface_loops,
         {"synthesize": "synthesize", "record_trace": "record_trace"},
     )
     builder.add_edge("draft_response", "await_confirmation")

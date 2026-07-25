@@ -22,6 +22,7 @@ log = get_logger(__name__)
 class CorrelationStack:
     hypothesis_store: PostgresHypothesisStore
     correlation_engine: CorrelationEngine
+    relevance_model: RelevanceModel
 
 
 def build_correlation_stack(shared: Any, settings: Any) -> CorrelationStack:
@@ -37,6 +38,7 @@ def build_correlation_stack(shared: Any, settings: Any) -> CorrelationStack:
     return CorrelationStack(
         hypothesis_store=hypothesis_store,
         correlation_engine=correlation_engine,
+        relevance_model=relevance_model,
     )
 
 

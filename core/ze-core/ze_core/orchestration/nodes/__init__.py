@@ -6,6 +6,7 @@ from ze_core.orchestration.nodes.execution import (
     draft_response,
     execute_tool,
 )
+from ze_core.orchestration.nodes.loop_surfacing import surface_loops
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
 from ze_core.orchestration.nodes.preprocessing import preprocess
 from ze_core.orchestration.nodes.routing import decompose, embed_route, plan_sequential
@@ -23,6 +24,7 @@ __all__ = [
     "plan_sequential",
     "preprocess",
     "record_trace",
+    "surface_loops",
     "synthesize",
     "write_memory",
 ]

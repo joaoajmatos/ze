@@ -107,9 +107,13 @@ async def test_get_loop_returns_evidence_and_entities():
 async def test_confirm_close_drop_persist_across_relist():
     loop = _loop()
     store = AsyncMock()
-    store.transition = AsyncMock(
-        side_effect=lambda loop_id, state: _loop(id=loop_id, state=LoopState(state))
-    )
+
+    async def _transition(loop_id, state):
+        target = LoopState(state)
+        confirmed_at = datetime.now(timezone.utc) if target == LoopState.ACTIVE else None
+        return _loop(id=loop_id, state=target, confirmed_at=confirmed_at)
+
+    store.transition = AsyncMock(side_effect=_transition)
     store.list_evidence = AsyncMock(return_value=[])
     store.set_dismissed_evidence_fingerprint = AsyncMock()
     app, _ = _make_app(store)

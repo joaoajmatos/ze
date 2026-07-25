@@ -39,6 +39,8 @@ class OpenLoop:
     state: LoopState = LoopState.SUSPECTED
     goal_id: UUID | None = None
     dismissed_evidence_fingerprint: str | None = None
+    drift_deadline: datetime | None = None
+    drift_rationale: str | None = None
     id: UUID | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -50,3 +52,11 @@ class OpenLoop:
 class EvidenceRef:
     evidence_type: str  # "fact" | "episode"
     evidence_id: UUID
+
+
+@dataclass
+class DriftingLoopMention:
+    loop_id: UUID
+    title: str
+    mention_text: str
+    evidence: list[EvidenceRef]

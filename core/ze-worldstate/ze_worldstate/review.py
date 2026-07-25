@@ -4,6 +4,7 @@ from uuid import UUID
 
 from ze_logging import get_logger
 
+from ze_worldstate import drift
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopState, OpenLoop
@@ -12,8 +13,17 @@ log = get_logger(__name__)
 
 
 async def confirm_loop(loop_store: LoopStore, loop_id: UUID) -> OpenLoop:
-    """Only valid from `suspected` (FR-007, FR-015)."""
-    return await loop_store.transition(loop_id, LoopState.ACTIVE.value)
+    """Only valid from `suspected` (FR-007, FR-015).
+
+    Sets `drift_deadline` at the moment of confirmation (research.md §1) —
+    no `implied_window_days` signal exists on this path, so the default window
+    always applies here.
+    """
+    loop = await loop_store.transition(loop_id, LoopState.ACTIVE.value)
+    deadline = drift.compute_drift_deadline(loop.confirmed_at)
+    await loop_store.set_drift_deadline(loop_id, deadline)
+    loop.drift_deadline = deadline
+    return loop
 
 
 async def close_loop(loop_store: LoopStore, loop_id: UUID) -> OpenLoop:

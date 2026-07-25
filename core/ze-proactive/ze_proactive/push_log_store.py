@@ -50,6 +50,18 @@ class PushLogStore:
             )
         log.debug("push_log_recorded", event_type=event_type)
 
+    async def list_recent_payloads(self, event_type: str, hours: float) -> list[str]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT payload FROM push_log WHERE event_type = $1 "
+                "AND payload IS NOT NULL "
+                "AND sent_at > NOW() - ($2 * INTERVAL '1 hour') "
+                "ORDER BY sent_at DESC",
+                event_type,
+                hours,
+            )
+        return [r["payload"] for r in rows]
+
     async def list_workflow_failures_within_hours(
         self, hours: int = 24
     ) -> list[PushLogEntry]:

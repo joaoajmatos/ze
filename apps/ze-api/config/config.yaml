@@ -168,6 +168,23 @@ correlation:
       episode_lookback_days: 30
       cache_ttl_minutes: 30
 
+worldstate:
+  drift:
+    enabled: true
+    window_days: 7             # default implied window when extraction gate omits one
+    cron: "0 5 * * *"
+  push:
+    enabled: true
+    cron: "0 */4 * * *"
+    budget:
+      max_pushes_per_day: 3
+    inline_cooldown_hours: 12
+    thresholds:
+      tau_confidence: 0.5
+      tau_relevance: 0.5
+      novelty_similarity_max: 0.85
+      grounding_threshold: 0.5
+
 news:
   enabled: true
   fetch_schedule: "*/30 * * * *"

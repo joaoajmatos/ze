@@ -21,6 +21,8 @@ def _row(**overrides) -> dict:
         "confidence": 0.3,
         "goal_id": None,
         "dismissed_evidence_fingerprint": None,
+        "drift_deadline": None,
+        "drift_rationale": None,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
         "confirmed_at": None,
@@ -67,6 +69,7 @@ async def test_list_filters_by_states():
     [
         ("suspected", "active"),
         ("suspected", "dropped"),
+        ("active", "drifting"),
         ("active", "closed"),
         ("active", "dropped"),
         ("drifting", "closed"),
@@ -87,14 +90,14 @@ async def test_transition_allows_phase_a_matrix(from_state, to_state):
     assert result.state == LoopState(to_state)
 
 
-async def test_transition_rejects_active_to_drifting():
+async def test_transition_rejects_drifting_to_active():
     loop_id = uuid4()
-    get_row = _row(id=loop_id, state="active")
+    get_row = _row(id=loop_id, state="drifting")
     pool, conn = make_pool(fetchrow=get_row)
     store = PostgresLoopStore(pool=pool)
 
     with pytest.raises(InvalidLoopTransitionError):
-        await store.transition(loop_id, "drifting")
+        await store.transition(loop_id, "active")
 
 
 async def test_transition_raises_not_found():
@@ -122,7 +125,8 @@ async def test_link_entity_and_evidence_insert_relationship_rows():
     await store.link_entity(uuid4(), uuid4())
     await store.link_evidence(uuid4(), "fact", uuid4())
 
-    assert conn.execute.await_count == 2
+    # link_entity: 1 insert. link_evidence: 1 insert + 1 updated_at bump (drift signal).
+    assert conn.execute.await_count == 3
 
 
 async def test_count_evidence_links():

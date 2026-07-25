@@ -4,8 +4,9 @@ from uuid import UUID
 
 from ze_logging import get_logger
 
+from ze_worldstate import drift
 from ze_worldstate.store import LoopStore
-from ze_worldstate.types import OpenLoop
+from ze_worldstate.types import LoopState, OpenLoop
 
 log = get_logger(__name__)
 
@@ -39,7 +40,6 @@ async def cascade_from_evidence(
             )
         await loop_store.set_confidence(loop.id, new_confidence)
         loop.confidence = new_confidence
-        updated.append(loop)
         log.info(
             "open_loop_confidence_decayed",
             loop_id=str(loop.id),
@@ -47,4 +47,19 @@ async def cascade_from_evidence(
             evidence_type=evidence_type,
             evidence_id=str(evidence_id),
         )
+
+        if loop.state == LoopState.ACTIVE:
+            rationale = drift.compose_contradiction_rationale(evidence_type, evidence_id)
+            transitioned = await loop_store.transition(loop.id, LoopState.DRIFTING.value)
+            await loop_store.set_drift_rationale(loop.id, rationale)
+            transitioned.drift_rationale = rationale
+            loop = transitioned
+            log.info(
+                "open_loop_drifted_from_contradiction",
+                loop_id=str(loop.id),
+                evidence_type=evidence_type,
+                evidence_id=str(evidence_id),
+            )
+
+        updated.append(loop)
     return updated

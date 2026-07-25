@@ -29,6 +29,7 @@ def register_all_proactive_jobs(
     automation: Any,
     correlation: Any,
     worldstate: Any = None,
+    loop_surfacer: Any = None,
     shared: Any,
     plugins: list,
     notifier: ProactiveNotifier,
@@ -57,7 +58,13 @@ def register_all_proactive_jobs(
         push_log_store=push_log_store,
     )
     if worldstate is not None:
-        register_worldstate_jobs(scheduler, settings, worldstate)
+        register_worldstate_jobs(
+            scheduler,
+            settings,
+            worldstate,
+            loop_surfacer=loop_surfacer,
+            notifier=notifier,
+        )
     for plugin in plugins:
         plugin.register_proactive_jobs(
             scheduler,

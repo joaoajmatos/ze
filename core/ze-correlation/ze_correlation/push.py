@@ -22,6 +22,85 @@ _PUSH_LOG_KEY = "correlation_push"
 _NOVELTY_LOOKBACK_HOURS = 48.0
 
 
+# ── Extracted push-bar primitives (research.md §4) ────────────────────────────
+#
+# Free functions, parameterized on primitive values instead of `Hypothesis`, so
+# both `CorrelationPushConsumer` (below) and `ze_worldstate.surfacing.LoopSurfacer`
+# call exactly one implementation of each bar condition (FR-007).
+
+
+def passes_confidence(confidence: float, tau: float) -> bool:
+    return confidence >= tau
+
+
+def passes_relevance(relevance: float, tau: float) -> bool:
+    return relevance >= tau
+
+
+async def passes_novelty(
+    summary: str,
+    recent_summaries: list[str],
+    embedder: Any,
+    max_similarity: float,
+) -> bool:
+    if embedder is None or not recent_summaries:
+        return True
+    try:
+        new_vec = embedder.encode(summary)
+        for other in recent_summaries:
+            existing_vec = embedder.encode(other)
+            similarity = float(
+                np.dot(new_vec, existing_vec)
+                / (np.linalg.norm(new_vec) * np.linalg.norm(existing_vec) + 1e-9)
+            )
+            if similarity > max_similarity:
+                log.info(
+                    "push_bar_novelty_failed",
+                    similarity=similarity,
+                    threshold=max_similarity,
+                )
+                return False
+    except Exception as exc:
+        log.warning("push_bar_novelty_check_failed", error=str(exc))
+    return True
+
+
+async def passes_grounding(
+    summary: str,
+    evidence_labels: list[str],
+    nli_client: NLIClient | None,
+    threshold: float,
+) -> bool:
+    if nli_client is None or not evidence_labels:
+        return True
+    try:
+        pairs = [(label, summary) for label in evidence_labels]
+        scores = await nli_client.scores(pairs)
+        grounded = nli_client.grounding_score(summary, evidence_labels, scores=scores)
+        if grounded < threshold:
+            log.info(
+                "push_bar_grounding_failed", grounded=grounded, threshold=threshold
+            )
+            return False
+    except Exception as exc:
+        log.warning("push_bar_grounding_check_failed", error=str(exc))
+    return True
+
+
+async def within_budget(
+    push_log: Any,
+    event_key: str,
+    max_per_day: int,
+    window_hours: float = 24.0,
+) -> bool:
+    try:
+        count = await push_log.count_sent_within_hours(event_key, window_hours)
+        return count < max_per_day
+    except Exception as exc:
+        log.warning("push_bar_budget_check_failed", error=str(exc))
+        return True
+
+
 class CorrelationPushConsumer:
     """Picks recently admitted signals, correlates them, and pushes qualifying hypotheses."""
 
@@ -112,9 +191,9 @@ class CorrelationPushConsumer:
         log.info("correlation_pushed", hypothesis_id=str(hypothesis.id))
 
     async def _passes_push_bar(self, hypothesis: Hypothesis) -> bool:
-        if hypothesis.confidence < self._cfg.tau_push:
+        if not passes_confidence(hypothesis.confidence, self._cfg.tau_push):
             return False
-        if hypothesis.relevance < self._cfg.tau_relevance:
+        if not passes_relevance(hypothesis.relevance, self._cfg.tau_relevance):
             return False
         if not await self._passes_novelty(hypothesis):
             return False
@@ -125,31 +204,11 @@ class CorrelationPushConsumer:
         return True
 
     async def _passes_grounding(self, hypothesis: Hypothesis) -> bool:
-        if self._nli is None:
-            return True
         labels = [ref.label for ref in hypothesis.evidence if ref.label]
-        if not labels:
-            return True
-        try:
-            pairs = [(label, hypothesis.summary) for label in labels]
-            scores = await self._nli.scores(pairs)
-            grounded = self._nli.grounding_score(
-                hypothesis.summary, labels, scores=scores
-            )
-            threshold = float(
-                nli_config(self._settings).get("nli_grounding_threshold", 0.30)
-            )
-            if grounded < threshold:
-                log.info(
-                    "correlation_push_grounding_failed",
-                    hypothesis_id=str(hypothesis.id),
-                    grounded=grounded,
-                    threshold=threshold,
-                )
-                return False
-        except Exception as exc:
-            log.warning("correlation_push_grounding_check_failed", error=str(exc))
-        return True
+        threshold = float(
+            nli_config(self._settings).get("nli_grounding_threshold", 0.30)
+        )
+        return await passes_grounding(hypothesis.summary, labels, self._nli, threshold)
 
     async def _passes_novelty(self, hypothesis: Hypothesis) -> bool:
         if self._embedder is None:
@@ -160,33 +219,20 @@ class CorrelationPushConsumer:
                     _NOVELTY_LOOKBACK_HOURS
                 )
             )
-            if not recent_summaries:
-                return True
-            new_vec = self._embedder.encode(hypothesis.summary)
-            for summary in recent_summaries:
-                existing_vec = self._embedder.encode(summary)
-                similarity = float(
-                    np.dot(new_vec, existing_vec)
-                    / (np.linalg.norm(new_vec) * np.linalg.norm(existing_vec) + 1e-9)
-                )
-                if similarity > self._cfg.novelty_similarity_max:
-                    log.info(
-                        "correlation_push_novelty_failed",
-                        similarity=similarity,
-                        threshold=self._cfg.novelty_similarity_max,
-                    )
-                    return False
         except Exception as exc:
-            log.warning("correlation_push_novelty_check_failed", error=str(exc))
-        return True
+            log.warning("correlation_push_novelty_fetch_failed", error=str(exc))
+            return True
+        return await passes_novelty(
+            hypothesis.summary,
+            recent_summaries,
+            self._embedder,
+            self._cfg.novelty_similarity_max,
+        )
 
     async def _within_budget(self) -> bool:
-        try:
-            count = await self._push_log.count_sent_within_hours(_PUSH_LOG_KEY, 24.0)
-            return count < self._cfg.max_pushes_per_day
-        except Exception as exc:
-            log.warning("correlation_push_budget_check_failed", error=str(exc))
-            return True
+        return await within_budget(
+            self._push_log, _PUSH_LOG_KEY, self._cfg.max_pushes_per_day
+        )
 
 
 class _PushConfig:

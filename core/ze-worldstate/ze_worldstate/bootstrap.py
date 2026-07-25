@@ -11,11 +11,14 @@ from ze_logging import get_logger
 from ze_memory.entity_anchor import match_entities_in_query
 from ze_memory.graph.store import GraphStore, PostgresGraphStore
 
+from ze_worldstate.jobs.drift_sweep import DriftSweepJob
+from ze_worldstate.jobs.push_sweep import PushSweepJob
 from ze_worldstate.jobs.stale_suspicion import (
     DEFAULT_STALE_WINDOW_DAYS,
     StaleSuspicionJob,
 )
 from ze_worldstate.store import LoopStore, PostgresLoopStore
+from ze_worldstate.surfacing import LoopSurfacer
 
 log = get_logger(__name__)
 
@@ -25,6 +28,7 @@ class WorldstateStack:
     loop_store: PostgresLoopStore
     graph_store: GraphStore
     entity_resolver: Any
+    pool: Any
     deps: dict[type, Any] = field(default_factory=dict)
 
 
@@ -47,22 +51,67 @@ def build_worldstate_stack(shared: Any, settings: Any) -> WorldstateStack:
         loop_store=loop_store,
         graph_store=graph_store,
         entity_resolver=entity_resolver,
+        pool=pool,
         deps=deps,
     )
 
 
+def build_loop_surfacer(
+    stack: WorldstateStack,
+    push_log: Any,
+    relevance_model: Any = None,
+    embedder: Any = None,
+) -> LoopSurfacer:
+    """Constructed in `ze_api/container.py` once `push_log_store` (and, for the
+    push path, the correlation stack's `RelevanceModel`) exist — both are built
+    after `build_worldstate_stack` runs."""
+    return LoopSurfacer(
+        loop_store=stack.loop_store,
+        graph_store=stack.graph_store,
+        push_log=push_log,
+        pool=stack.pool,
+        relevance_model=relevance_model,
+        embedder=embedder,
+    )
+
+
 def register_proactive_jobs(
-    scheduler: Any, settings: Any, stack: WorldstateStack
+    scheduler: Any,
+    settings: Any,
+    stack: WorldstateStack,
+    *,
+    loop_surfacer: Any = None,
+    notifier: Any = None,
 ) -> None:
     cfg = getattr(settings, "config", None) or {}
     worldstate_cfg = cfg.get("worldstate", {}) if isinstance(cfg, dict) else {}
     stale_cfg = worldstate_cfg.get("stale_suspicion", {})
-    if not stale_cfg.get("enabled", True):
-        return
-    window_days = int(stale_cfg.get("window_days", DEFAULT_STALE_WINDOW_DAYS))
-    job = StaleSuspicionJob(loop_store=stack.loop_store, window_days=window_days)
-    scheduler.register(job, cron=stale_cfg.get("cron", "0 4 * * *"))
-    log.info("stale_suspicion_job_scheduled", window_days=window_days)
+    if stale_cfg.get("enabled", True):
+        window_days = int(stale_cfg.get("window_days", DEFAULT_STALE_WINDOW_DAYS))
+        job = StaleSuspicionJob(loop_store=stack.loop_store, window_days=window_days)
+        scheduler.register(job, cron=stale_cfg.get("cron", "0 4 * * *"))
+        log.info("stale_suspicion_job_scheduled", window_days=window_days)
+
+    drift_cfg = worldstate_cfg.get("drift", {})
+    if drift_cfg.get("enabled", True):
+        drift_job = DriftSweepJob(loop_store=stack.loop_store)
+        scheduler.register(drift_job, cron=drift_cfg.get("cron", "0 5 * * *"))
+        log.info("drift_sweep_job_scheduled")
+
+    push_cfg = worldstate_cfg.get("push", {})
+    if push_cfg.get("enabled", True) and loop_surfacer is not None and notifier is not None:
+        push_job = PushSweepJob(
+            loop_store=stack.loop_store,
+            surfacer=loop_surfacer,
+            notifier=notifier,
+            max_pushes_per_day=int(
+                push_cfg.get("budget", {}).get("max_pushes_per_day", 3)
+            ),
+            inline_cooldown_hours=float(push_cfg.get("inline_cooldown_hours", 12.0)),
+            thresholds=push_cfg.get("thresholds", {}),
+        )
+        scheduler.register(push_job, cron=push_cfg.get("cron", "0 */4 * * *"))
+        log.info("push_sweep_job_scheduled")
 
 
 def worldstate_data_domains(pool: asyncpg.Pool) -> list[DataDomain]:

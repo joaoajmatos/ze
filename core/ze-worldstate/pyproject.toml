@@ -14,6 +14,7 @@ dependencies = [
     "ze-memory",
     "ze-data",
     "ze-components",
+    "ze-correlation",
     "asyncpg==0.31.0",
 ]
 
@@ -38,6 +39,7 @@ ze-memory     = { workspace = true }
 ze-data       = { workspace = true }
 ze-sdk        = { workspace = true }
 ze-components = { workspace = true }
+ze-correlation = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ze_worldstate"]

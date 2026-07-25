@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -13,8 +14,8 @@ from ze_worldstate.types import (
 )
 
 
-def _loop(state=LoopState.SUSPECTED) -> OpenLoop:
-    return OpenLoop(
+def _loop(state=LoopState.SUSPECTED, **overrides) -> OpenLoop:
+    defaults = dict(
         id=uuid4(),
         title="Renew passport",
         claim_kind=LoopClaimKind.SUSPICION,
@@ -22,16 +23,23 @@ def _loop(state=LoopState.SUSPECTED) -> OpenLoop:
         confidence=0.3,
         state=state,
     )
+    defaults.update(overrides)
+    return OpenLoop(**defaults)
 
 
 async def test_confirm_loop_transitions_suspected_to_active():
     loop_store = AsyncMock()
-    active_loop = _loop(state=LoopState.ACTIVE)
+    active_loop = _loop(
+        state=LoopState.ACTIVE, confirmed_at=datetime.now(timezone.utc)
+    )
     loop_store.transition = AsyncMock(return_value=active_loop)
+    loop_store.set_drift_deadline = AsyncMock()
 
     result = await review.confirm_loop(loop_store, uuid4())
     loop_store.transition.assert_awaited_once()
+    loop_store.set_drift_deadline.assert_awaited_once()
     assert result.state == LoopState.ACTIVE
+    assert result.drift_deadline is not None
 
 
 async def test_close_loop_transitions_to_closed():

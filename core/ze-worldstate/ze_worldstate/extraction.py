@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
 
+from ze_worldstate import drift
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.store import LoopStore
@@ -40,12 +42,17 @@ Also decide whether the user is *explicitly declaring* the commitment themselves
 ("remind me I need to...", "I need to...", "I have to...") as opposed to it being
 merely implied/inferred from context.
 
+Also decide, only when `is_loop` is true, whether the text implies a specific
+timeframe by which the commitment should be resolved (e.g. "by Friday", "next
+week") — if so, express it as a whole number of days from now; otherwise omit it.
+
 Respond with a JSON object only:
 {
   "is_loop": true|false,
   "title": "short human-readable title, or empty string",
   "explicit_declaration": true|false,
-  "resolves_existing": true|false
+  "resolves_existing": true|false,
+  "implied_window_days": <integer, optional>
 }
 `resolves_existing` is true only when the text reports an existing commitment as
 done/finished — in that case `is_loop` should be false and `title` is the short
@@ -54,7 +61,13 @@ description of the commitment that was resolved.
 
 
 class _ExtractionGateResult:
-    __slots__ = ("is_loop", "title", "explicit_declaration", "resolves_existing")
+    __slots__ = (
+        "is_loop",
+        "title",
+        "explicit_declaration",
+        "resolves_existing",
+        "implied_window_days",
+    )
 
     def __init__(
         self,
@@ -62,11 +75,13 @@ class _ExtractionGateResult:
         title: str,
         explicit_declaration: bool,
         resolves_existing: bool,
+        implied_window_days: int | None = None,
     ) -> None:
         self.is_loop = is_loop
         self.title = title
         self.explicit_declaration = explicit_declaration
         self.resolves_existing = resolves_existing
+        self.implied_window_days = implied_window_days
 
 
 async def _run_extraction_gate(
@@ -86,11 +101,15 @@ async def _run_extraction_gate(
         log.warning("loop_extraction_gate_failed", error=str(exc))
         return None
 
+    raw_window = parsed.get("implied_window_days")
+    implied_window_days = int(raw_window) if isinstance(raw_window, (int, float)) else None
+
     return _ExtractionGateResult(
         is_loop=bool(parsed.get("is_loop")),
         title=str(parsed.get("title") or "").strip(),
         explicit_declaration=bool(parsed.get("explicit_declaration")),
         resolves_existing=bool(parsed.get("resolves_existing")),
+        implied_window_days=implied_window_days,
     )
 
 
@@ -122,7 +141,9 @@ async def _create_declared_loop(
     evidence_refs: list[EvidenceRef],
     entity_ids: list[UUID],
     loop_store: LoopStore,
+    implied_window_days: int | None = None,
 ) -> OpenLoop:
+    confirmed_at = datetime.now(timezone.utc)
     loop = OpenLoop(
         title=title,
         claim_kind=LoopClaimKind.PRIORITY,
@@ -131,8 +152,12 @@ async def _create_declared_loop(
         else prov,
         confidence=_DECLARED_CONFIDENCE,
         state=LoopState.ACTIVE,
+        confirmed_at=confirmed_at,
+        drift_deadline=drift.compute_drift_deadline(confirmed_at, implied_window_days),
     )
     created = await loop_store.create(loop)
+    await loop_store.set_drift_deadline(created.id, loop.drift_deadline)
+    created.drift_deadline = loop.drift_deadline
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
     return created
 
@@ -195,7 +220,12 @@ async def propose_loop_candidates(
 
     if gate.explicit_declaration:
         created = await _create_declared_loop(
-            gate.title, prov, evidence_refs, entity_ids, loop_store
+            gate.title,
+            prov,
+            evidence_refs,
+            entity_ids,
+            loop_store,
+            implied_window_days=gate.implied_window_days,
         )
         return [created]
 

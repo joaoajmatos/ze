@@ -148,7 +148,7 @@ ze-components     (no ze deps)             core/
 ze-memory       → ze-agents                core/
 ze-eval           (no ze deps — HTTP only) core/  ← eval infrastructure
 ze-automation   → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
-ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components  core/  ← open loops; wired by ze-api directly
+ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation  core/  ← open loops; wired by ze-api directly
 ze-core         → ze-agents, ze-communication, ze-plugin  core/  ← engine; never a plugin dep
 ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
 ze-google       → ze-communication         integrations/  ← GmailChannel now lives here
@@ -462,6 +462,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 106 | Memory Retrieval Relevance — real cosine similarity + configurable relevance floor across all `ze-memory` policies; entity-anchored retrieval (`entity_anchor.py`, one-hop `GraphStore.expand()` from query-text entity matches); composite ranking (`composite.py`, similarity × recency decay × confidence) before token budgeting; synchronous live NLI rerank (`retrieval_rerank.live_rerank`) distinct from the async session cache; Mind panel shows real relevance, not extraction confidence | Done |
 | 108 | Workflow Revision Audit — append-only `workflow_revisions` log (`zc026`) on every workflow create/step-edit (agent tool + REST), before/after steps, human-readable diff summary, actor context (agent session/message id or API); `GET /api/v0/workflows/{id}/revisions`; "Change History" section on workflow detail page with "View conversation" deep link and a link from the 107b definition-changed banner | Done |
 | 109 | Open-Loop Substrate — new core `ze-worldstate` package: `OpenLoop` (`suspected`→`active`→`drifting`→`closed`\|`dropped`), honest provenance, continuous confidence with evidence-linked decay cascade, entity-overlap/embedding dedup, stale-suspicion expiry job; loops reuse `ze-memory`'s `memory_relationships`/`GraphStore` (new `open_loop` bucket) rather than a parallel model; wired into all four inflows (conversation, email, calendar, ingestion); `GET/POST /api/v0/loops` REST surface; `widgets/loop-review` | Done |
+| 110 | Open-Loop Drift Detection & Surfacing (Phase B) — `drift_deadline`/`drift_rationale` columns (`zw002`), scheduled `DriftSweepJob` + immediate contradiction path (`decay.py`) moving `active`→`drifting`; `ze_core` `surface_loops` node (entity-overlap inline mentions, no gating); `ze-worldstate → ze-correlation` dependency reusing extracted push-bar functions (`ze_correlation/push.py`) via `LoopSurfacer.passes_push_bar` + `PushSweepJob`, sibling `push_log` budget and inline-then-push cooldown | Done |
 
 ## graphify
 

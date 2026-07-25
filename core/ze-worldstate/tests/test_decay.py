@@ -64,3 +64,46 @@ async def test_no_affected_loops_returns_empty():
 
     result = await cascade_from_evidence("fact", uuid4(), loop_store)
     assert result == []
+
+
+async def test_active_loop_contradiction_transitions_to_drifting():
+    loop = _loop(confidence=0.6)
+    loop.state = LoopState.ACTIVE
+    drifted = OpenLoop(
+        id=loop.id,
+        title=loop.title,
+        claim_kind=loop.claim_kind,
+        provenance=loop.provenance,
+        confidence=loop.confidence,
+        state=LoopState.DRIFTING,
+    )
+    loop_store = AsyncMock()
+    loop_store.list_by_evidence = AsyncMock(return_value=[loop])
+    loop_store.count_evidence_links = AsyncMock(return_value=1)
+    loop_store.set_confidence = AsyncMock()
+    loop_store.transition = AsyncMock(return_value=drifted)
+    loop_store.set_drift_rationale = AsyncMock()
+
+    evidence_id = uuid4()
+    result = await cascade_from_evidence("fact", evidence_id, loop_store)
+
+    loop_store.transition.assert_awaited_once_with(loop.id, LoopState.DRIFTING.value)
+    loop_store.set_drift_rationale.assert_awaited_once()
+    assert result[0].state == LoopState.DRIFTING
+    assert result[0].drift_rationale is not None
+    assert str(evidence_id) in result[0].drift_rationale
+
+
+async def test_suspected_loop_contradiction_does_not_transition():
+    loop = _loop(confidence=0.6)
+    assert loop.state == LoopState.SUSPECTED
+    loop_store = AsyncMock()
+    loop_store.list_by_evidence = AsyncMock(return_value=[loop])
+    loop_store.count_evidence_links = AsyncMock(return_value=1)
+    loop_store.set_confidence = AsyncMock()
+    loop_store.transition = AsyncMock()
+
+    result = await cascade_from_evidence("fact", uuid4(), loop_store)
+
+    loop_store.transition.assert_not_awaited()
+    assert result[0].state == LoopState.SUSPECTED

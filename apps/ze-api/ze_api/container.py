@@ -116,6 +116,7 @@ class ZeContainer(CoreContainer):
     loop_store: LoopStore
     loop_graph_store: Any
     loop_entity_resolver: Any
+    loop_surfacer: Any
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}
@@ -142,6 +143,7 @@ class ZeContainer(CoreContainer):
             "loop_store": self.loop_store,
             "loop_graph_store": self.loop_graph_store,
             "loop_entity_resolver": self.loop_entity_resolver,
+            "loop_surfacer": self.loop_surfacer,
             **plugin_services,
         }
         configurable["memory_hooks"] = [
@@ -264,6 +266,15 @@ async def build_container(settings: Settings) -> ZeContainer:
         interface=interface, notification_store=notification_store
     )
     push_log_store = PushLogStore(pool=pool)
+
+    from ze_worldstate.bootstrap import build_loop_surfacer
+
+    loop_surfacer = build_loop_surfacer(
+        worldstate,
+        push_log_store,
+        getattr(correlation, "relevance_model", None),
+        shared.embedder,
+    )
 
     persona_cfg = settings.persona_config
     persona_store = PostgresPersonaStore(
@@ -465,6 +476,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_store=worldstate.loop_store,
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
+        loop_surfacer=loop_surfacer,
     )
 
     webhook_dispatcher._container = container
@@ -532,6 +544,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         automation=automation,
         correlation=correlation,
         worldstate=worldstate,
+        loop_surfacer=loop_surfacer,
         shared=shared,
         plugins=plugins,
         notifier=notifier,

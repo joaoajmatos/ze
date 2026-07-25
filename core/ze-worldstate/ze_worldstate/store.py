@@ -18,11 +18,11 @@ from ze_worldstate.types import (
 
 log = get_logger(__name__)
 
-# Phase A transition matrix — active -> drifting is Phase B (automatic detection),
-# not producible here even though `drifting` must exist as a valid target state.
+# active -> drifting is only ever driven by drift.py/decay.py (Phase B automatic
+# detection), never by this generic `transition()` call site used for user actions.
 _ALLOWED_TRANSITIONS: dict[LoopState, set[LoopState]] = {
     LoopState.SUSPECTED: {LoopState.ACTIVE, LoopState.DROPPED},
-    LoopState.ACTIVE: {LoopState.CLOSED, LoopState.DROPPED},
+    LoopState.ACTIVE: {LoopState.DRIFTING, LoopState.CLOSED, LoopState.DROPPED},
     LoopState.DRIFTING: {LoopState.CLOSED, LoopState.DROPPED},
     LoopState.CLOSED: set(),
     LoopState.DROPPED: set(),
@@ -39,6 +39,8 @@ def _loop_from_row(row) -> OpenLoop:
         confidence=row["confidence"],
         goal_id=row["goal_id"],
         dismissed_evidence_fingerprint=row["dismissed_evidence_fingerprint"],
+        drift_deadline=row["drift_deadline"],
+        drift_rationale=row["drift_rationale"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
         confirmed_at=row["confirmed_at"],
@@ -74,6 +76,12 @@ class LoopStore(Protocol):
     async def count_evidence_links(self, loop_id: UUID) -> int: ...
 
     async def list_evidence(self, loop_id: UUID) -> list[EvidenceRef]: ...
+
+    async def set_drift_deadline(self, loop_id: UUID, deadline: datetime) -> None: ...
+
+    async def set_drift_rationale(self, loop_id: UUID, rationale: str) -> None: ...
+
+    async def list_drift_candidates(self) -> list[OpenLoop]: ...
 
 
 class PostgresLoopStore:
@@ -201,6 +209,9 @@ class PostgresLoopStore:
                 evidence_id,
                 evidence_type,
             )
+            await conn.execute(
+                "UPDATE open_loops SET updated_at = now() WHERE id = $1", loop_id
+            )
 
     async def set_confidence(self, loop_id: UUID, confidence: float) -> None:
         async with self._pool.acquire() as conn:
@@ -269,3 +280,35 @@ class PostgresLoopStore:
             EvidenceRef(evidence_type=r["target_type"], evidence_id=r["target_id"])
             for r in rows
         ]
+
+    async def set_drift_deadline(self, loop_id: UUID, deadline: datetime) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE open_loops SET drift_deadline = $2, updated_at = now()"
+                " WHERE id = $1",
+                loop_id,
+                deadline,
+            )
+
+    async def set_drift_rationale(self, loop_id: UUID, rationale: str) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE open_loops SET drift_rationale = $2, updated_at = now()"
+                " WHERE id = $1",
+                loop_id,
+                rationale,
+            )
+
+    async def list_drift_candidates(self) -> list[OpenLoop]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT * FROM open_loops
+                WHERE state = $1
+                  AND drift_deadline IS NOT NULL
+                  AND drift_deadline <= now()
+                  AND updated_at <= confirmed_at
+                """,
+                LoopState.ACTIVE.value,
+            )
+        return [_loop_from_row(r) for r in rows]

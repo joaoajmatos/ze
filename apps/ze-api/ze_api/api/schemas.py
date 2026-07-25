@@ -997,6 +997,7 @@ class LoopListItem(BaseModel):
     claim_kind: str
     provenance: str
     confidence: float
+    drift_rationale: str | None
     created_at: str | None
     updated_at: str | None
 

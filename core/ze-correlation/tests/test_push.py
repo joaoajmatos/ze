@@ -8,7 +8,14 @@ from uuid import UUID, uuid4
 
 
 from ze_correlation.job import CorrelationJob
-from ze_correlation.push import CorrelationPushConsumer
+from ze_correlation.push import (
+    CorrelationPushConsumer,
+    passes_confidence,
+    passes_grounding,
+    passes_novelty,
+    passes_relevance,
+    within_budget,
+)
 from ze_correlation.types import EvidenceRef, Hypothesis
 
 UTC = timezone.utc
@@ -328,3 +335,65 @@ async def test_correlation_job_delegates_to_consumer():
     assert job.job_id == "correlation_scan"
     await job.run()
     consumer.run_once.assert_awaited_once()
+
+
+# ── extracted push-bar primitives (research.md §4) ────────────────────────────
+
+
+def test_passes_confidence():
+    assert passes_confidence(0.6, 0.5) is True
+    assert passes_confidence(0.4, 0.5) is False
+
+
+def test_passes_relevance():
+    assert passes_relevance(0.6, 0.5) is True
+    assert passes_relevance(0.4, 0.5) is False
+
+
+async def test_passes_novelty_no_embedder_is_permissive():
+    assert await passes_novelty("summary", ["other"], None, 0.85) is True
+
+
+async def test_passes_novelty_no_recent_summaries_is_permissive():
+    embedder = MagicMock()
+    assert await passes_novelty("summary", [], embedder, 0.85) is True
+
+
+async def test_passes_novelty_rejects_similar_summary():
+    import numpy as np
+
+    embedder = MagicMock()
+    embedder.encode = MagicMock(return_value=np.array([1.0, 0.0, 0.0]))
+    result = await passes_novelty(
+        "A connects to B", ["A connects to B almost identically"], embedder, 0.85
+    )
+    assert result is False
+
+
+async def test_passes_grounding_no_nli_is_permissive():
+    assert await passes_grounding("summary", ["label"], None, 0.3) is True
+
+
+async def test_passes_grounding_no_evidence_labels_is_permissive():
+    nli = AsyncMock()
+    assert await passes_grounding("summary", [], nli, 0.3) is True
+
+
+async def test_passes_grounding_rejects_below_threshold():
+    nli = AsyncMock()
+    nli.scores = AsyncMock(return_value=[{"entailment": 0.1}])
+    nli.grounding_score = MagicMock(return_value=0.1)
+    result = await passes_grounding("summary", ["label"], nli, 0.3)
+    assert result is False
+
+
+async def test_within_budget_true_when_under_max():
+    push_log = MagicMock()
+    push_log.count_sent_within_hours = AsyncMock(return_value=1)
+    assert await within_budget(push_log, "some_key", 3) is True
+
+
+async def test_within_budget_false_when_at_max():
+    push_log = MagicMock()
+    push_log.count_sent_within_hours = AsyncMock(return_value=3)
+    assert await within_budget(push_log, "some_key", 3) is False
