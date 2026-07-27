@@ -175,3 +175,14 @@ class ChannelNotFoundError(ChannelError):
 
 class ChannelSendError(ChannelError):
     """Channel transport failed during send."""
+
+
+# ── Claims ────────────────────────────────────────────────────────────────────
+
+
+class ClaimError(ZeCoreError):
+    """Base class for claim-topology errors."""
+
+
+class MissingDecayParameterError(ClaimError):
+    """Caller omitted a parameter its decay_profile requires."""

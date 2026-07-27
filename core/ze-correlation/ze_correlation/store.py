@@ -6,6 +6,7 @@ from uuid import UUID
 
 from ze_logging import get_logger
 
+from ze_agents.claims import ClaimKind, Provenance
 from ze_correlation.types import EvidenceRef, Hypothesis
 
 log = get_logger(__name__)
@@ -24,7 +25,7 @@ class PostgresHypothesisStore:
                 "id": str(e.id),
                 "label": e.label,
                 "external_ref": e.external_ref,
-                "origin": e.origin,
+                "origin": e.origin.value if hasattr(e.origin, "value") else e.origin,
                 "retrieved_at": e.retrieved_at.isoformat(),
                 "ingested_at": e.ingested_at.isoformat() if e.ingested_at else None,
             }
@@ -35,8 +36,8 @@ class PostgresHypothesisStore:
                 """
                 INSERT INTO correlation_hypothesis
                   (id, summary, narrative, relation, confidence, relevance,
-                   evidence, entities, surfaced, feedback, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11)
+                   evidence, entities, surfaced, feedback, created_at, claim_kind)
+                VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12)
                 ON CONFLICT (id) DO NOTHING
                 """,
                 hypothesis.id,
@@ -50,8 +51,17 @@ class PostgresHypothesisStore:
                 hypothesis.surfaced,
                 hypothesis.feedback,
                 hypothesis.created_at,
+                hypothesis.claim_kind.value,
             )
         log.info("hypothesis_saved", hypothesis_id=str(hypothesis.id))
+
+    async def set_confidence(self, hypothesis_id: UUID, confidence: float) -> None:
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            await conn.execute(
+                "UPDATE correlation_hypothesis SET confidence = $1 WHERE id = $2",
+                confidence,
+                hypothesis_id,
+            )
 
     async def get(self, hypothesis_id: UUID) -> Hypothesis | None:
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
@@ -90,6 +100,16 @@ class PostgresHypothesisStore:
             )
         return [r["summary"] for r in rows]
 
+    async def list_decay_candidates(self, window_days: int) -> list[Hypothesis]:
+        """Hypotheses created more than `window_days` ago (TIME_LINEAR decay window)."""
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            rows = await conn.fetch(
+                "SELECT * FROM correlation_hypothesis"
+                " WHERE created_at < now() - ($1 || ' days')::interval",
+                str(window_days),
+            )
+        return [_row_to_hypothesis(r) for r in rows]
+
     async def set_feedback(
         self,
         hypothesis_id: UUID,
@@ -111,7 +131,7 @@ def _row_to_hypothesis(row: object) -> Hypothesis:
             id=UUID(e["id"]),
             label=e["label"],
             external_ref=e.get("external_ref"),
-            origin=e["origin"],
+            origin=Provenance(e["origin"]),
             retrieved_at=datetime.fromisoformat(e["retrieved_at"]),
             ingested_at=datetime.fromisoformat(e["ingested_at"])
             if e.get("ingested_at")
@@ -132,4 +152,5 @@ def _row_to_hypothesis(row: object) -> Hypothesis:
         created_at=row["created_at"],  # type: ignore[index]
         surfaced=row["surfaced"],  # type: ignore[index]
         feedback=row["feedback"],  # type: ignore[index]
+        claim_kind=ClaimKind(row["claim_kind"]),  # type: ignore[index]
     )

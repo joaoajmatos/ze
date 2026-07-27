@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
+from ze_agents.claims import ClaimKind, Provenance
+
 
 @dataclass
 class EvidenceRef:
@@ -12,7 +14,7 @@ class EvidenceRef:
     id: UUID
     label: str  # short human label, e.g. "Fable 5 ban (Jun 12)"
     external_ref: str | None  # source url/id when the evidence is a signal-event
-    origin: Literal["graph_recall", "live_search", "prompt_supplied"]
+    origin: Provenance
     retrieved_at: datetime  # when this piece entered the neighbourhood
     ingested_at: datetime | None = (
         None  # when it first entered memory (graph_recall only)
@@ -30,5 +32,6 @@ class Hypothesis:
     evidence: list[EvidenceRef]
     entities: list[UUID]  # seed entity IDs
     created_at: datetime
+    claim_kind: ClaimKind  # INFERENCE | SUSPICION only, never FACT (FR-007)
     surfaced: bool = False  # True when shown inline or pushed
     feedback: Literal["useful", "not_relevant", "muted"] | None = None

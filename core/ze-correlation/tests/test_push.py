@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
 
 
+from ze_agents.claims import ClaimKind
 from ze_correlation.job import CorrelationJob
 from ze_correlation.push import (
     CorrelationPushConsumer,
@@ -71,6 +72,7 @@ def _make_hypothesis(
         evidence=[],
         entities=[uuid4()],
         created_at=datetime.now(UTC),
+        claim_kind=ClaimKind.SUSPICION,
         surfaced=False,
     )
 
@@ -256,6 +258,7 @@ async def test_low_grounding_rejected():
         evidence=evidence,
         entities=[uuid4()],
         created_at=datetime.now(UTC),
+        claim_kind=ClaimKind.SUSPICION,
     )
     settings = _make_settings()
     settings.config["memory"] = {"nli_grounding_threshold": 0.30}

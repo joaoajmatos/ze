@@ -10,6 +10,7 @@ from ze_correlation import (
     CorrelationPushConsumer,
     PostgresHypothesisStore,
 )
+from ze_correlation.jobs.hypothesis_decay import HypothesisDecayJob
 from ze_memory.relevance import RelevanceModel
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
@@ -71,3 +72,13 @@ def register_proactive_jobs(
         job_id=CorrelationJob.job_id,
     )
     log.info("correlation_push_job_scheduled", cron=_push_schedule)
+
+    _decay_cfg = raw_cfg.get("correlation", {}).get("hypothesis_decay", {})
+    _decay_schedule = _decay_cfg.get("schedule", "0 3 * * *")
+    decay_job = HypothesisDecayJob(hypothesis_store=stack.hypothesis_store)
+    scheduler.add_cron_job(
+        fn=decay_job.run,
+        cron=_decay_schedule,
+        job_id=HypothesisDecayJob.job_id,
+    )
+    log.info("hypothesis_decay_job_scheduled", cron=_decay_schedule)

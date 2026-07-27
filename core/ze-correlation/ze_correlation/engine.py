@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 
 from ze_logging import get_logger
 
+from ze_agents.claims import ClaimKind
 from ze_correlation.prompts import CORRELATION_SYSTEM, build_correlation_user_message
 from ze_correlation.store import PostgresHypothesisStore
 from ze_correlation.types import EvidenceRef, Hypothesis
@@ -192,6 +193,7 @@ class CorrelationEngine:
             evidence=evidence,
             entities=working_seeds,
             created_at=now,
+            claim_kind=ClaimKind.SUSPICION,
             surfaced=False,
         )
 
