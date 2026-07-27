@@ -1,12 +1,12 @@
 # Aperture Decision — What Ze's Executive Layer Optimises For
 
-> **Status:** Open (decision brief — not yet decided)
-> **Scope:** `ze-automation` and a likely-new executive/world-state package; downstream:
-> correlation, briefings, proactive surface.
+> **Status:** Ratified — Option A (open loops first) shipped as `core/ze-worldstate`
+> (Phase 109 substrate, Phase 110 drift detection & surfacing).
+> **Scope:** `core/ze-worldstate`; downstream: correlation, briefings, proactive surface.
 > **Constrained by:** `specs/arch/ze-doctrine.md`. The spine (world-state) is settled; this
-> brief only decides which **projection** of it the product is built around first.
-> **Blocks:** the executive-layer phase spec (`speckit-specify`) and, indirectly, the
-> contribution seam (`specs/arch/contribution-seam.md`).
+> brief decided which **projection** of it the product is built around first.
+> **Enables:** the contribution seam (`specs/arch/contribution-seam.md`) now has a second
+> real client to extract from — see that document's open question on timing.
 
 ---
 
@@ -129,7 +129,7 @@ Choose the aperture that best satisfies, in order:
 
 ---
 
-## Recommendation (for ratification, not yet ratified)
+## Recommendation (ratified)
 
 **Build Option A first, with Option B's intervention discipline designed in from day one.**
 
@@ -145,23 +145,34 @@ graph would violate this and strand the path to B.
 
 ---
 
-## What resolves this (next step)
+## What resolved this (delivered)
 
-This brief is spec-ready once the owner ratifies (or amends) the recommendation. The follow-on
-is a single `speckit-specify` on **the open-loop primitive**: its schema, lifecycle, implicit
-extraction path, drift detection, and surfacing policy. That spec should treat the intervention
-discipline as a first-class requirement, not a later add-on.
+Delivered across two phases, per `specs/phases/109-open-loop-substrate/` and
+`specs/phases/110-open-loop-drift-surfacing/`: schema and lifecycle
+(`suspected → active → drifting → closed | dropped`), implicit extraction across all four
+inflows (conversation, email, calendar, ingestion), drift detection (scheduled sweep + immediate
+contradiction path), and surfacing policy (entity-overlap inline mentions with no gating, plus
+a push path reusing the correlation engine's push-bar mechanics). The intervention discipline
+was treated as a first-class requirement throughout, not a later add-on.
 
 ---
 
-## Open Questions
+## Open Questions — resolved
 
-- [ ] **Ratify A-first, or override toward B-first?** The owner's call; this brief recommends A.
-- [ ] **Loop granularity** — one loop per promise/decision, or hierarchical (loops containing
-  sub-loops, with goals as the top of the hierarchy)?
-- [ ] **Extraction trust** — implicitly-opened loops are inferences until corroborated (per the
-  doctrine, perception may assert facts but "there is an open loop" is closer to an inference).
-  Do loops start as suspicions needing confirmation, or as low-confidence facts?
-- [ ] **Where it lives** — a new `ze-executive`/`ze-worldstate` package, or a promotion inside
-  `ze-automation` alongside goals? (Interacts with the contribution-seam brief.)
-- [ ] **Relationship to `memory_task_state` and goals** — reuse, extend, or supersede?
+- [x] **Ratify A-first, or override toward B-first?** Ratified A-first; shipped as
+  `core/ze-worldstate`.
+- [x] **Loop granularity** — flat, one loop per implicitly-detected item (promise, decision,
+  drifting project); no sub-loop hierarchy was built. Goals remain a separate, un-unified
+  concept (see `specs/phases/110-open-loop-drift-surfacing/spec.md` FR-014) — this is now a
+  tracked follow-up, not an open design question here (see `contribution-seam.md`'s open
+  questions and the loop/goal reconciliation gap noted in project memory).
+- [x] **Extraction trust** — loops open in `suspected` state (`LoopState.SUSPECTED` in
+  `ze_worldstate/types.py`), i.e. as low-confidence claims requiring corroboration before
+  `active`, consistent with the doctrine's inference posture for perception-opened loops.
+- [x] **Where it lives** — a new core package, `core/ze-worldstate` (not a promotion inside
+  `ze-automation`), depending on `ze-agents`, `ze-proactive`, `ze-memory`, `ze-data`,
+  `ze-components`, `ze-correlation`. Wired into `ze-api` directly, same pattern as
+  `ze-automation`.
+- [x] **Relationship to `memory_task_state` and goals** — neither reused nor superseded;
+  open loops are a parallel primitive, deliberately not unified with goals (FR-014). This
+  is flagged as unfinished business in the cognitive-architecture follow-up, not resolved here.

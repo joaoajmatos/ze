@@ -1,12 +1,17 @@
 # Contribution Seam — How the Seven Functions Write to the Spine
 
-> **Status:** Proposed (design-only — no implementation until the executive layer needs it)
+> **Status:** Partially ratified. The `Contribution` **type** (claim_kind/provenance/confidence
+> + target_face/source_function/evidence) and its two retrofitted producers (`OpenLoop`,
+> `Signal`) are ready to build now — see "Resolved" and "Phased rollout" below. The
+> **arbitration mechanism** (a real conflict-resolution step, as opposed to a validated write
+> path) remains design-only until reflection becomes a third client.
 > **Scope:** `ze-plugin` (the seam itself), `ze-memory` / world-state (the target),
 > `ze-core` governance (arbitration); every function-owning package downstream.
-> **Constrained by:** `specs/arch/ze-doctrine.md` §The contribution model.
-> **Relationship to the aperture:** the executive layer chosen in
-> `specs/arch/aperture-decision.md` is the **first new function** that should be built on this
-> seam rather than writing to tables directly.
+> **Constrained by:** `specs/arch/ze-doctrine.md` §The contribution model;
+> `specs/arch/claim-topology.md` for the shared claim vocabulary the `Contribution` type builds on.
+> **Relationship to the aperture:** the executive layer (`core/ze-worldstate`, ratified in
+> `specs/arch/aperture-decision.md`) already exists and is one of the seam's two concrete
+> producers.
 
 ---
 
@@ -61,7 +66,7 @@ like" and how far each is from the seam today.
 
 | Function | Contributes | Today | Distance to seam |
 |---|---|---|---|
-| Perception | facts, candidate loops | `SignalSource` (partial — signals only) | **Closest** — generalise the existing hook |
+| Perception | facts, candidate loops | `SignalSource` (Protocol, registration hook only) producing `Signal` (no `claim_kind`, no real `confidence` — just `magnitude`) | **Resolved design, not yet wired** — `Signal` becomes a `Contribution` subtype (see below); `SignalSource` stays as-is, it was already the right registration mechanism |
 | Memory | nothing new (custodian) | direct table writes | Memory is the *target*, not a contributor — mostly exempt |
 | Executive | priorities, open-loop state | does not exist yet | **Built on the seam from day one** (aperture) |
 | Social cognition | identity/relationship claims | contacts writes directly | Migrate after executive |
@@ -72,6 +77,40 @@ like" and how far each is from the seam today.
 Two functions are special: **memory is the target** (contributions land in it), and
 **governance is the arbiter** (it evaluates contributions). The seam is really about the other
 five *producing* into memory via governance.
+
+---
+
+## Resolved: `Signal` is a `Contribution` subtype, not a parallel type
+
+This was the open question "does `Contribution` replace `Signal`, or is `Signal` a
+`Contribution` subtype?" It matters more than it looks, because today `Signal` is not actually
+a contribution to the shared world-state at all — it is a **private pull channel** between
+perception plugins and exactly two privileged consumers (`ze-correlation`, `ze-worldstate`),
+who poll `signal_sources()` and then write their *own* derived claims (hypotheses, loops) to
+the spine. Perception itself never lands a fact on the shared world-state through this path.
+That is in tension with the doctrine's "nothing holds a competing private truth" — `Signal` is
+quietly a competing private truth today, just a short-lived one, invisible because nobody reads
+it as history.
+
+**Resolution:** `Signal` becomes a `Contribution` subtype:
+
+- `claim_kind` is always `FACT` — perception's sole licensed claim-kind (doctrine's
+  contribution model table).
+- `provenance` and a real `confidence` come from the shared `ze_agents.claims` vocabulary
+  (`specs/arch/claim-topology.md`), not a bespoke field.
+- `magnitude` (relevance) stays a distinct field alongside `confidence` — they are different
+  concepts (how much this matters vs. how sure we are it's true) and claim-topology's mapping
+  pass confirmed conflating them would be a regression, not a simplification.
+- The `SignalSource` Protocol is **not replaced** — it was already the correct shape for "how a
+  plugin registers as a perception source." It simply now returns `Contribution`-typed objects
+  instead of the current bespoke `Signal`.
+
+**Explicitly deferred, not part of this resolution:** rewiring `ze-correlation` and
+`ze-worldstate` to consume contributions via a shared seam/queue instead of polling
+`signal_sources()` directly. That is a real behavior change to two live consumers and belongs
+in a follow-up phase once the loop-extraction migration (below) has proven the seam holds up
+end-to-end — not something to change at the same time as the type definition. Until that
+follow-up, `Signal` is a `Contribution` in shape only; the delivery mechanism is unchanged.
 
 ---
 
@@ -96,14 +135,24 @@ five *producing* into memory via governance.
 
 ## Phased rollout sketch (not a commitment)
 
-The seam must be **extracted from two real clients, not invented before one.** Suggested order:
+The seam must be **extracted from two real clients, not invented before one.** Both trigger
+conditions have now fired — the executive layer shipped (Phases 109–110) and its loop
+extraction is an admitted "direct-write proto-contribution" (FR-017); perception's `Signal` has
+also now been resolved to a `Contribution` subtype (above). Updated order:
 
-1. **Executive layer ships (aperture, Option A).** It writes open-loop contributions — the
-   *second* concrete client after `SignalSource`.
-2. **Extract the `Contribution` contract** from the two clients (perception signals + executive
-   loops). Generalise `SignalSource`; do not design in the abstract.
+1. ~~Executive layer ships (aperture, Option A).~~ **Done** — `core/ze-worldstate`, Phases
+   109–110.
+2. **Define the `Contribution` type and retrofit its two existing producers to it**
+   (`specs/arch/claim-topology.md` covers the shared claim vocabulary this depends on):
+   - `OpenLoop`'s extraction path keeps its current direct-write mechanics; it just now produces
+     typed `Contribution`s instead of ad hoc loop-store calls.
+   - `Signal` gains the shape resolved above.
+   - **No consumer is rewired yet** — `ze-correlation` and `ze-worldstate` keep polling
+     `signal_sources()` exactly as before; only the object shape changes.
 3. **Migrate reflection onto it.** Highest safety payoff: mechanically forbids dream/correlation
-   from writing facts. The dream staging buffer becomes a contribution queue.
+   from writing facts. The dream staging buffer becomes a contribution queue. This is the first
+   *third* client, and the point at which generalizing the arbitration mechanism (not just the
+   type) actually earns its cost.
 4. **Migrate social cognition** (relationship claims) and **action** (result records) as
    convenience allows. Low urgency.
 5. **Add genuine arbitration** only once two functions demonstrably collide on the same
@@ -131,9 +180,15 @@ Memory and governance are never "migrated" — they are the target and the arbit
 
 ## Open Questions
 
-- [ ] **Trigger to build.** Confirm the seam is extracted *after* the executive layer exists
-  (this brief's assumption), not before.
+- [x] **Trigger to build.** Confirmed fired: executive layer (`ze-worldstate`) exists, and
+  perception's `Signal` has a resolved `Contribution` design. The *type* is now due; the
+  *arbitration mechanism* is still gated on reflection becoming a third client (step 3 above).
 - [ ] **Sync vs staged per function** — resolve which functions arbitrate inline vs via a queue.
-- [ ] **Does `Contribution` replace `Signal`, or is `Signal` a `Contribution` subtype?**
-- [ ] **Confidence source** — the doctrine's open question on calibrated confidence applies here;
-  the seam needs a usable `confidence` value from every function.
+  Perception/executive likely sync (both already write inline in their current call paths);
+  reflection likely staged (the dream staging buffer already is one).
+- [x] **Does `Contribution` replace `Signal`, or is `Signal` a `Contribution` subtype?**
+  Resolved above: subtype. `SignalSource` (the registration Protocol) is unchanged.
+- [ ] **Confidence source** — resolved in *shape* by `specs/arch/claim-topology.md` (one
+  `Confidence` value type, shared decay function); still open in *calibration* — LLM
+  self-rating vs. corroboration count vs. feedback remains unresolved system-wide, per the
+  doctrine's own open question.

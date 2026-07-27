@@ -257,9 +257,11 @@ will resolve which projection to build first. This document does not pre-empt it
 - **The correlation engine's doctrine is promoted to system-level.** Bounded, grounded,
   provenance-honest, agency-preserving — these are no longer properties of one engine; they
   are properties of Ze.
-- **A world-state / active-concerns layer becomes a first-class gap to close.** It is the
-  missing executive organ (see `docs/cognitive-architecture.md`). This is the most likely
-  subject of the next phase.
+- **A world-state / active-concerns layer was the first-class gap to close.** It was the
+  missing executive organ (see `docs/cognitive-architecture.md`); `core/ze-worldstate`
+  (Phases 109–110) closes the first slice of it. What remains — cross-concern prioritisation,
+  loop/goal reconciliation, calibrated confidence — is tracked in this document's Open
+  Questions, not this Consequences list.
 - **Reflection (dream/consolidation/insights) is re-justified by a single test:** does it
   improve the world-state? Anything that does not is a candidate for removal, not expansion.
 - **Every future spec inherits a checklist:** which claim kinds does it produce? Is provenance
@@ -270,10 +272,22 @@ will resolve which projection to build first. This document does not pre-empt it
 
 ## Open Questions
 
-- [ ] **Aperture** — open-loops-first vs. life-graph-with-intervention-first. Deferred to the
-  next-phase iteration; both are valid projections of the agreed spine.
-- [ ] **World-state materialisation** — is "active concerns" a new store/table, a derived view
-  over existing memory + goals, or a hybrid? To be decided in the next-phase spec.
-- [ ] **Confidence calibration** — the epistemic ontology assumes a usable confidence signal
-  per claim; its source and calibration (LLM self-rating vs. corroboration count vs. feedback)
-  is unresolved beyond the correlation engine's local scheme.
+- [x] **Aperture** — resolved: open-loops-first (Option A), ratified in
+  `specs/arch/aperture-decision.md` and shipped as `core/ze-worldstate` (Phases 109–110).
+  Life-graph-with-intervention remains the long-run limit this grows into by accretion, not a
+  separate build.
+- [x] **World-state materialisation** — resolved as a hybrid: a new store (`open_loops`,
+  migration `zw001`) that reuses `ze-memory`'s existing graph/relationship tables
+  (`memory_relationships`/`GraphStore`, new `open_loop` bucket) for dedup and neighbourhood
+  expansion, rather than a parallel model. See `core/ze-worldstate/ze_worldstate/store.py`.
+- [ ] **Confidence calibration** — still unresolved. `ze-worldstate` added its own confidence
+  decay cascade for open loops (`ze_worldstate/decay.py`), which means there are now at least
+  three local confidence schemes in the system (correlation self-rating, fact confidence,
+  open-loop decay) with no shared calibration. This is now the sharpest remaining instance of
+  the governance gap named in `docs/cognitive-architecture.md` §7, and arguably deserves
+  attention before a fourth scheme accumulates.
+- [ ] **Contribution seam timing** — `specs/arch/contribution-seam.md`'s own rollout plan says
+  extraction happens once the executive layer ships as a second real client after
+  `SignalSource`. That condition is now met, but Phase 110 explicitly declined to build the
+  seam (direct calls instead), citing the same document's design-only caveat. Whether to
+  extract now or continue deferring is an open decision — see that document.

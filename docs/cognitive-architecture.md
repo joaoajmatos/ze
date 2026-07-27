@@ -63,22 +63,26 @@ relationship with Y" that the executive layer can read.
 
 | Maturity | Where it lives today |
 |---|---|
-| 🟡🔴 | `ze-automation`: goals (heavyweight, explicit, multi-week), workflows (multi-step plans), scheduler. Follow-through exists **only** for things explicitly promoted to a goal or workflow. |
+| 🟡 | `ze-automation`: goals (heavyweight, explicit, multi-week), workflows (multi-step plans), scheduler. `core/ze-worldstate` (Phases 109–110): open loops — the lightweight, implicitly-opened active concerns (`suspected → active → drifting → closed\|dropped`), extracted from all four inflows, with drift detection and hedged, push-bar-gated surfacing. |
 
-**State: this is the primary gap, and it is the doctrine's spine ("active concerns").** What
-exists handles the *heavyweight* end: objectives you deliberately declare. What is missing is
-the **lightweight, ambient executive layer** — the hundreds of small open loops that make up
-a real life and never become formal goals:
+**State: the primary gap is partially closed.** What exists now handles both ends: goals for
+objectives deliberately declared, and open loops for the ambient, never-formalized concerns
+that make up most of a real life:
 
 - a promise made in an email thread,
 - a decision left pending,
 - a project quietly drifting because a dependency stalled,
 - a "I should look into X" mentioned once and never closed.
 
-There is no primitive that *holds* these, no continuous *prioritization* across them, and no
-*interruption-handling* policy that decides when an open loop is worth surfacing. Goals are a
-special, expensive case of active concerns; the general case is unbuilt. **Closing this gap is
-the most likely subject of the next phase.**
+**What is still missing:**
+- **No continuous prioritization across everything open at once.** Loops have drift state and
+  goals have milestones, but nothing ranks "what deserves attention right now" across both —
+  the doctrine's "Priority" claim-kind has no general implementation yet.
+- **Loops and goals are deliberately un-unified** (`specs/phases/110-open-loop-drift-surfacing/spec.md`
+  FR-014). There is no shared query surface for "everything open right now" spanning both
+  stores. Whether and how to reconcile them is an open follow-up, not yet specced.
+- **Interruption-handling exists per-mechanism (push-bar), not as a single policy** across
+  loops, goals, and correlation hypotheses competing for the same attention budget.
 
 ### 4. Social cognition — modelling people and calibrating interaction
 
@@ -153,16 +157,15 @@ flowchart LR
     S[Social cognition] <--> WS
     G[Governance] -.arbitrates every write.-> WS
     style WS fill:#2d2d2d,stroke:#888,color:#fff
-    style X stroke-dasharray: 5 5
 ```
 
 - **The world-state is the hub** (doctrine §"The one commitment"). Every function reads from
   and writes to it; nothing holds a competing private truth.
-- **The dashed node (Executive) is the under-built one.** Perception, Memory, Reflection,
-  Action, and Governance all currently orbit a hub whose "active concerns" face is mostly
-  empty. They are feeding and acting on a model that has no strong representation of *what is
-  open and what deserves attention* — which is exactly why the system reads as "rich substrate,
-  thin product" from the outside.
+- **Executive is no longer empty, but is not yet load-bearing across the whole hub.**
+  `core/ze-worldstate` gives the "active concerns" face a real, if narrow, representation
+  (open loops). What's still missing is *cross-concern* prioritization — ranking attention
+  across loops, goals, and correlation hypotheses together — so the system still reads as
+  "several attention mechanisms" rather than one executive function.
 - **Governance arbitrates every write** to the hub, in the doctrine's precedence order
   (governance > user-stated > fact > inference > suspicion).
 
@@ -198,23 +201,44 @@ keeps its domain identity; the function is an annotation.
 | Decide where code lives, what depends on what, who owns a table | **Domain** (`package-architecture.md`) — unchanged. |
 | Decide whether Ze *as a mind* is complete, and what to build next | **Function** (this doc). |
 
-The one place the function taxonomy will likely become *structural* is executive function:
-"active concerns" has no natural domain home today (it is not calendar, not goals-as-they-exist,
-not memory), so closing that gap probably means a new package or a promotion within
-`ze-automation`. That is a next-phase decision, tracked as an open question in the doctrine.
+The one place the function taxonomy became *structural* is executive function: "active
+concerns" got its own domain home, `core/ze-worldstate`, rather than a promotion within
+`ze-automation` — see `specs/arch/aperture-decision.md` (ratified) for the resolved decision.
 
 ---
 
 ## What this implies for sequencing (not a commitment)
 
-The doctrine defers the aperture decision; this lens only sharpens what the candidates cost:
+The aperture decision is resolved (open loops, ratified). A 2026-07 review session went
+further: it found the seven-function lens itself was fraying at the seams — six independently
+scheduled proactive job families (automation, correlation, worldstate, memory consolidation,
+dream, notifications) had each grown their own confidence scheme, provenance vocabulary, and
+staleness-sweep logic, instead of sharing one. `specs/arch/claim-topology.md` and
+`specs/arch/contribution-seam.md` exist to arrest that before it compounds further. With those
+scoped, the remaining gap list, in priority order:
 
-1. **Executive function is the single highest-leverage gap.** It is the doctrine's spine, the
-   consumer that justifies existing reflection investment, and the thing whose absence most
-   explains the "product-thin" read. Any aperture (open-loops or life-graph) routes through it.
+1. **Cross-concern prioritization + loop/goal reconciliation + one attention budget** — three
+   gaps that turned out to be one problem. Loops have drift state, goals have milestones,
+   correlation has confidence, but nothing ranks "what deserves attention right now" across all
+   three (the doctrine's `Priority` claim-kind has no implementation anywhere); loops and goals
+   have no shared query surface (deliberately un-unified per
+   `specs/phases/110-open-loop-drift-surfacing/spec.md` FR-014); and correlation and worldstate
+   each track their *own* daily push budget against the shared `push_log` rather than one
+   arbitrated system-wide interruption budget. Scoped together in
+   `specs/arch/attention-arbitration.md`. **Depends on** `claim-topology.md` shipping first — a
+   shared confidence scale is what makes ranking *across* mechanisms possible instead of only
+   within one.
 2. **Social cognition and project/social memory are the same gap seen twice** — a first-class
-   representation of *people and projects as evolving states*. Likely the second priority.
-3. **Confidence-as-a-uniform-signal (governance) unblocks honest surfacing everywhere** and is
-   cheap relative to its leverage.
-4. Perception, Action, and Reflection need **consumers, not more capability.** Resist expanding
-   them until executive function can use what they already produce.
+   representation of *people and projects as evolving states*, not a directory. No design brief
+   exists yet; likely the next priority after item 1, and structurally similar to it (it will
+   probably also turn out to be "one shared representation crossing several existing stores"
+   rather than a new package).
+3. **Confidence calibration's *source*, not its shape.** `claim-topology.md` fixes the
+   mechanical half (one decay function, one type) but not whether a confidence value comes from
+   LLM self-rating, corroboration counting, or user feedback — that still varies by producer
+   and is unresolved system-wide, per the doctrine's own open question.
+4. **Reflection as the contribution seam's third client.** Migrating dream/correlation onto
+   `Contribution` mechanically enforces "reflection never emits a fact" instead of relying on
+   convention. Sequenced after item 1 ships, per `contribution-seam.md`'s phased rollout.
+5. Perception, Action need **consumers, not more capability** — largely satisfied once item 1
+   ships. Perception's "sensors" (location/device/ambient) gap remains explicitly not urgent.
