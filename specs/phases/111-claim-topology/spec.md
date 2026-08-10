@@ -4,7 +4,7 @@
 
 **Created**: 2026-07-27
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Implement the shared claim topology proposed in specs/arch/claim-topology.md: a single ClaimKind/Provenance/Confidence vocabulary in core/ze-agents (ze_agents/claims.py), with a shared, parameterized confidence-decay function, retrofitted into the four existing claim producers — OpenLoop (core/ze-worldstate, becomes the reference/rename source), Hypothesis/EvidenceRef (core/ze-correlation, including fixing the currently-missing decay job so hypothesis confidence actually ages), memory_facts (core/ze-memory, replacing its bespoke -0.03/30-day linear decay with the shared decay profile), and Signal (core/ze-plugin, adding claim_kind and real confidence fields it currently lacks entirely, keeping magnitude as a separate relevance concept). Also extract the shared staleness-sweep utility duplicated across ze-worldstate and ze-automation into core/ze-proactive. No new tables; only add the missing claim_kind column to correlation_hypothesis and memory_facts via package-owned Alembic migrations. No consumer behavior changes beyond the decay fix."
 
