@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
+from ze_agents.claims import ClaimKind
 from ze_agents.types import RetrievalRequest as RetrievalRequest  # noqa: F401 — re-export
 
 
@@ -42,6 +43,8 @@ class Signal:
     title: str
     summary: str
     occurred_at: datetime
+    claim_kind: ClaimKind
+    confidence: float  # distinct from magnitude (relevance) — see FR-012
     entities: list[EntityRef] = field(default_factory=list)
     magnitude: float = 0.0
     payload: dict[str, Any] = field(default_factory=dict)

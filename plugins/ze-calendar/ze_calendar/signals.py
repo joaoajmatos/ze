@@ -10,6 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+from ze_agents.claims import ClaimKind
 from ze_memory.types import Signal
 
 
@@ -47,6 +48,8 @@ class CalendarSignalSource:
                     title=reminder.event_title,
                     summary=f"Upcoming: {reminder.event_title} ({reminder.label})",
                     occurred_at=fire_at,
+                    claim_kind=ClaimKind.FACT,
+                    confidence=1.0,
                     magnitude=0.0,
                 )
             )

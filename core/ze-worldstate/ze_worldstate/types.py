@@ -5,6 +5,22 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
+from ze_agents.claims import ClaimKind
+
+LoopClaimKind = ClaimKind
+
+
+class LoopProvenance:
+    """Plain string-constant namespace, NOT an Enum — see FR-003 / research.md §3.
+
+    Core-owned inflow values only; plugin-owned values (e.g. "email", "calendar")
+    are supplied directly by the plugin, never declared here.
+    """
+
+    CONVERSATION = "conversation"
+    INGESTION = "ingestion"
+    USER_DECLARED = "user_declared"
+
 
 class LoopState(StrEnum):
     SUSPECTED = "suspected"
@@ -14,27 +30,11 @@ class LoopState(StrEnum):
     DROPPED = "dropped"
 
 
-class LoopClaimKind(StrEnum):
-    IDENTITY = "identity"
-    FACT = "fact"
-    INFERENCE = "inference"
-    SUSPICION = "suspicion"
-    PRIORITY = "priority"
-
-
-class LoopProvenance(StrEnum):
-    CONVERSATION = "conversation"
-    EMAIL = "email"
-    CALENDAR = "calendar"
-    INGESTION = "ingestion"
-    USER_DECLARED = "user_declared"
-
-
 @dataclass
 class OpenLoop:
     title: str
     claim_kind: LoopClaimKind
-    provenance: LoopProvenance
+    provenance: str
     confidence: float
     state: LoopState = LoopState.SUSPECTED
     goal_id: UUID | None = None

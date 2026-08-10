@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_logging import get_logger
+from ze_agents.claims import ClaimKind
 from ze_agents.tasks import fire_and_forget
 from ze_memory.consolidation_store import _cosine_similarity
 
@@ -522,7 +523,7 @@ class PostgresMemoryStore:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 "SELECT id, source, external_ref, title, summary, occurred_at,"
-                "       magnitude, payload, expires_at, created_at"
+                "       claim_kind, confidence, magnitude, payload, expires_at, created_at"
                 " FROM memory_signals WHERE id = ANY($1::uuid[])",
                 ids,
             )
@@ -535,6 +536,8 @@ class PostgresMemoryStore:
                 title=row["title"],
                 summary=row["summary"],
                 occurred_at=row["occurred_at"],
+                claim_kind=ClaimKind(row["claim_kind"]),
+                confidence=row["confidence"],
                 magnitude=row["magnitude"],
                 payload=dict(row["payload"] or {}),
                 expires_at=row["expires_at"],
@@ -727,12 +730,15 @@ class PostgresMemoryStore:
                 conn, fact, value_emb, emb_list, nli_cfg
             )
 
+            claim_kind = (
+                ClaimKind.INFERENCE if fact.provenance == "synthesized" else ClaimKind.FACT
+            )
             row = await conn.fetchrow(
                 "INSERT INTO memory_facts"
                 " (subject_id, predicate, object_text, object_id, value,"
                 "  confidence, reviewed, contradicted,"
-                "  source_episode_id, source_refs, embedding, agent)"
-                " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::vector, $12)"
+                "  source_episode_id, source_refs, embedding, agent, claim_kind)"
+                " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::vector, $12, $13)"
                 " RETURNING id",
                 fact.subject_id,
                 fact.predicate,
@@ -746,6 +752,7 @@ class PostgresMemoryStore:
                 json.dumps([str(r) for r in fact.source_refs]),
                 emb_list,
                 fact.agent,
+                claim_kind.value,
             )
             fact_id: UUID = row["id"]
 
@@ -1235,8 +1242,8 @@ class PostgresMemoryStore:
                     """
                     INSERT INTO memory_signals
                       (id, source, external_ref, title, summary, occurred_at,
-                       magnitude, payload, expires_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
+                       claim_kind, confidence, magnitude, payload, expires_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11)
                     RETURNING id
                     """,
                     signal.id,
@@ -1245,6 +1252,8 @@ class PostgresMemoryStore:
                     signal.title,
                     signal.summary,
                     signal.occurred_at,
+                    signal.claim_kind.value,
+                    signal.confidence,
                     signal.magnitude,
                     json.dumps(signal.payload),
                     signal.expires_at,

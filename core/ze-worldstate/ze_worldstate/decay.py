@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from ze_agents.claims import CONFIDENCE_FLOOR, DecayProfile, decay  # noqa: F401 — re-export
 from ze_logging import get_logger
 
 from ze_worldstate import drift
@@ -9,10 +10,6 @@ from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopState, OpenLoop
 
 log = get_logger(__name__)
-
-# A dropped-to-floor loop still exists for the user to see why it faded
-# (Edge Cases) — never exactly 0.0 (research.md §4).
-CONFIDENCE_FLOOR = 0.05
 
 
 async def cascade_from_evidence(
@@ -31,13 +28,13 @@ async def cascade_from_evidence(
     updated: list[OpenLoop] = []
     for loop in affected:
         total_evidence = await loop_store.count_evidence_links(loop.id)
-        if total_evidence <= 1:
-            new_confidence = CONFIDENCE_FLOOR
-        else:
-            remaining = total_evidence - 1
-            new_confidence = max(
-                CONFIDENCE_FLOOR, loop.confidence * remaining / total_evidence
-            )
+        remaining = total_evidence - 1
+        new_confidence = decay(
+            loop.confidence,
+            DecayProfile.EVIDENCE_WEIGHTED,
+            remaining_evidence=remaining,
+            total_evidence=total_evidence,
+        )
         await loop_store.set_confidence(loop.id, new_confidence)
         loop.confidence = new_confidence
         log.info(

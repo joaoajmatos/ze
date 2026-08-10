@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from ze_agents.claims import ClaimKind
 from ze_agents.errors import AgentConfigError
 from ze_memory.types import EntityRef, Signal
 from ze_api.container import collect_plugin_signal_sources
@@ -24,6 +25,8 @@ def _make_signal(source: str, entity_names: list[str] = ()) -> Signal:
         title=f"{source} signal",
         summary="test",
         occurred_at=datetime(2026, 6, 17, 8, 0, tzinfo=timezone.utc),
+        claim_kind=ClaimKind.FACT,
+        confidence=1.0,
         entities=[EntityRef(name=n, entity_type="org") for n in entity_names],
         magnitude=0.0,
     )

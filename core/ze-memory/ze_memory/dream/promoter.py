@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
+from ze_agents.claims import DecayProfile, decay
 from ze_logging import get_logger
 from ze_memory.dream.types import ArtifactStatus, ArtifactType
 
@@ -187,11 +188,11 @@ class DreamPromoter:
                 INSERT INTO memory_facts (
                     predicate, value, embedding, confidence, reviewed,
                     provenance, valid_until, dream_run_id, derived_from,
-                    corroborated, creation_method, agent
+                    corroborated, creation_method, agent, claim_kind
                 ) VALUES (
                     'synthesized_insight', $1, $2::vector, 0.7, false,
                     'synthesized', $3, $4, $5,
-                    false, 'synthesized', 'dream'
+                    false, 'synthesized', 'dream', 'inference'
                 )
                 RETURNING id
                 """,
@@ -313,24 +314,33 @@ class DreamPromoter:
     async def _run_confidence_decay(self) -> None:
         """Decrement confidence on non-corroborated synthetic facts older than 30 days."""
         async with self._pool.acquire() as conn:
-            await conn.execute(
+            rows = await conn.fetch(
                 """
-                UPDATE memory_facts SET
-                    confidence = GREATEST(0.0, confidence - 0.03),
-                    reviewed = CASE
-                        WHEN GREATEST(0.0, confidence - 0.03) < 0.50 THEN false
-                        ELSE reviewed
-                    END,
-                    contradicted = CASE
-                        WHEN GREATEST(0.0, confidence - 0.03) < 0.25 THEN true
-                        ELSE contradicted
-                    END
+                SELECT id, confidence, reviewed, contradicted
+                FROM memory_facts
                 WHERE provenance = 'synthesized'
                   AND corroborated = false
                   AND created_at < now() - interval '30 days'
                   AND contradicted = false
                 """
             )
+            for row in rows:
+                new_confidence = decay(
+                    row["confidence"], DecayProfile.TIME_LINEAR, elapsed_days=30.0
+                )
+                reviewed = row["reviewed"] if new_confidence >= 0.50 else False
+                contradicted = row["contradicted"] if new_confidence >= 0.25 else True
+                await conn.execute(
+                    """
+                    UPDATE memory_facts SET
+                        confidence = $2, reviewed = $3, contradicted = $4
+                    WHERE id = $1
+                    """,
+                    row["id"],
+                    new_confidence,
+                    reviewed,
+                    contradicted,
+                )
 
     async def _expire_stale_synthetic_facts(self) -> None:
         """Contradict synthesized facts that have passed their valid_until deadline."""

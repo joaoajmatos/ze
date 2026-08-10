@@ -137,7 +137,7 @@ async def _link_evidence_and_entities(
 
 async def _create_declared_loop(
     title: str,
-    prov: LoopProvenance,
+    prov: str,
     evidence_refs: list[EvidenceRef],
     entity_ids: list[UUID],
     loop_store: LoopStore,
@@ -186,7 +186,7 @@ async def propose_loop_candidates(
     directly (e.g. from a future non-conversational declared-loop caller) always
     takes this path too.
     """
-    prov = LoopProvenance(provenance)
+    prov = provenance
     entity_ids = await _resolve_entities(entity_resolver, text)
 
     if prov == LoopProvenance.USER_DECLARED:

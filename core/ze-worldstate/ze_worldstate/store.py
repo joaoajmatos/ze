@@ -11,7 +11,6 @@ from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
     EvidenceRef,
     LoopClaimKind,
-    LoopProvenance,
     LoopState,
     OpenLoop,
 )
@@ -35,7 +34,7 @@ def _loop_from_row(row) -> OpenLoop:
         title=row["title"],
         state=LoopState(row["state"]),
         claim_kind=LoopClaimKind(row["claim_kind"]),
-        provenance=LoopProvenance(row["provenance"]),
+        provenance=row["provenance"],
         confidence=row["confidence"],
         goal_id=row["goal_id"],
         dismissed_evidence_fingerprint=row["dismissed_evidence_fingerprint"],
@@ -101,7 +100,7 @@ class PostgresLoopStore:
                 loop.title,
                 loop.state.value,
                 loop.claim_kind.value,
-                loop.provenance.value,
+                loop.provenance,
                 loop.confidence,
                 loop.goal_id,
                 loop.dismissed_evidence_fingerprint,
@@ -112,7 +111,7 @@ class PostgresLoopStore:
             "open_loop_created",
             loop_id=str(result.id),
             state=result.state.value,
-            provenance=result.provenance.value,
+            provenance=result.provenance,
         )
         return result
 

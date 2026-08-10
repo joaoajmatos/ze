@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
+from ze_agents.claims import ClaimKind
 from ze_memory.types import EntityRef, Signal
 from ze_news.types import Article
 
@@ -23,6 +24,8 @@ class ArticleSignalAdapter:
             title=article.title,
             summary=article.summary,
             occurred_at=article.published_at,
+            claim_kind=ClaimKind.FACT,
+            confidence=1.0,
             entities=entities,
             magnitude=0.0,
         )

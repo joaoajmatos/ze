@@ -17,7 +17,7 @@ def _loop_to_list_item(loop: OpenLoop) -> dict:
         "title": loop.title,
         "state": loop.state.value,
         "claim_kind": loop.claim_kind.value,
-        "provenance": loop.provenance.value,
+        "provenance": loop.provenance,
         "confidence": loop.confidence,
         "drift_rationale": loop.drift_rationale,
         "created_at": loop.created_at.isoformat() if loop.created_at else None,

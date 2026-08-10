@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from ze_agents.claims import ClaimKind
 from ze_memory.types import EntityRef
 
 from ze_news.signals import ArticleSignalAdapter, NewsSignalSource
@@ -60,6 +61,13 @@ def test_expires_at_is_none_on_ingest():
     adapter = ArticleSignalAdapter()
     signal = adapter.to_signal(_make_article())
     assert signal.expires_at is None
+
+
+def test_claim_kind_is_fact_and_confidence_distinct_from_magnitude():
+    adapter = ArticleSignalAdapter()
+    signal = adapter.to_signal(_make_article())
+    assert signal.claim_kind == ClaimKind.FACT
+    assert signal.confidence != signal.magnitude
 
 
 # ── entity refs from tags ─────────────────────────────────────────────────────

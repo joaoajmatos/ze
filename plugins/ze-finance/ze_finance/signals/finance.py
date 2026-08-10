@@ -4,7 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
+from ze_agents.claims import ClaimKind
 from ze_logging import get_logger
+from ze_memory.types import Signal
 
 log = get_logger(__name__)
 
@@ -21,7 +23,7 @@ class FinanceSignalSource:
 
     def __init__(self, large_tx_threshold: Decimal = Decimal("500")) -> None:
         self._threshold = large_tx_threshold
-        self._pending: list[dict] = []
+        self._pending: list[Signal] = []
         self._previous_pnl: Decimal | None = None
 
     def check_pnl_swing(self, current_pnl: Decimal) -> None:
@@ -30,19 +32,22 @@ class FinanceSignalSource:
                 abs((current_pnl - self._previous_pnl) / self._previous_pnl) * 100
             )
             if change_pct > Decimal("5"):
+                signal_id = uuid.uuid4()
                 self._pending.append(
-                    {
-                        "id": str(uuid.uuid4()),
-                        "source": self.source_key,
-                        "signal_type": "finance.pnl_swing",
-                        "title": "Portfolio P&L swing detected",
-                        "summary": (
+                    Signal(
+                        id=signal_id,
+                        source=self.source_key,
+                        external_ref=str(signal_id),
+                        title="Portfolio P&L swing detected",
+                        summary=(
                             f"Unrealised P&L changed by {change_pct:.1f}% "
                             f"from {self._previous_pnl:.2f} to {current_pnl:.2f}."
                         ),
-                        "severity": "medium",
-                        "occurred_at": datetime.now(timezone.utc).isoformat(),
-                    }
+                        occurred_at=datetime.now(timezone.utc),
+                        claim_kind=ClaimKind.FACT,
+                        confidence=1.0,
+                        payload={"signal_type": "finance.pnl_swing", "severity": "medium"},
+                    )
                 )
         self._previous_pnl = current_pnl
 
@@ -50,23 +55,26 @@ class FinanceSignalSource:
         for tx in transactions:
             notional = tx.quantity * tx.price
             if notional >= self._threshold:
+                signal_id = uuid.uuid4()
                 self._pending.append(
-                    {
-                        "id": str(uuid.uuid4()),
-                        "source": self.source_key,
-                        "signal_type": "finance.large_transaction",
-                        "title": f"Large transaction: {tx.notes or tx.transaction_type.value}",
-                        "summary": (
+                    Signal(
+                        id=signal_id,
+                        source=self.source_key,
+                        external_ref=str(signal_id),
+                        title=f"Large transaction: {tx.notes or tx.transaction_type.value}",
+                        summary=(
                             f"{notional:.2f} {tx.currency} — {tx.notes or tx.transaction_type.value}"
                         ),
-                        "severity": "low",
-                        "occurred_at": tx.settled_at.isoformat()
+                        occurred_at=tx.settled_at
                         if tx.settled_at
-                        else datetime.now(timezone.utc).isoformat(),
-                    }
+                        else datetime.now(timezone.utc),
+                        claim_kind=ClaimKind.FACT,
+                        confidence=1.0,
+                        payload={"signal_type": "finance.large_transaction", "severity": "low"},
+                    )
                 )
 
-    async def poll(self, since: datetime) -> list[dict]:
+    async def poll(self, since: datetime) -> list[Signal]:
         result = self._pending
         self._pending = []
         return result

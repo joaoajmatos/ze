@@ -86,8 +86,29 @@ async def test_all_four_inflow_provenances_create_suspected_loops():
             graph_store=graph_store,
         )
         assert len(result) == 1
-        assert result[0].provenance == LoopProvenance(provenance)
+        assert result[0].provenance == provenance
         assert result[0].state == LoopState.SUSPECTED
+
+
+async def test_unrecognized_provenance_string_does_not_raise():
+    """A plugin-owned inflow string never in the old 5-value whitelist must be
+    accepted as-is — FR-003, quickstart.md §3."""
+    llm = _llm({"is_loop": True, "title": "Follow up"})
+    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+
+    result = await propose_loop_candidates(
+        "some triggering text",
+        "a_future_plugins_own_channel",
+        [],
+        llm,
+        embedder,
+        loop_store,
+        entity_resolver,
+        graph_store=graph_store,
+    )
+    assert len(result) == 1
+    assert result[0].provenance == "a_future_plugins_own_channel"
+    assert result[0].state == LoopState.SUSPECTED
 
 
 async def test_user_declared_creates_active_high_confidence_directly():

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from ze_agents.claims import ClaimKind
 from ze_communication.types import ChannelType, InboundMessage
 from ze_messenger.signals import MessagingSignalSource
 
@@ -51,3 +52,5 @@ async def test_signal_has_correct_fields():
     assert "alice@example.com" in [e.name for e in s.entities]
     assert s.magnitude == 0.0
     assert s.payload["thread_id"] == "thread1"
+    assert s.claim_kind == ClaimKind.FACT
+    assert s.confidence != s.magnitude
