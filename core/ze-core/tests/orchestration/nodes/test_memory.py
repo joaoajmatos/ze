@@ -172,6 +172,116 @@ class TestWriteMemory:
         assert any(m["content"] == "synthesized" for m in result["messages"])
 
 
+class TestWriteMemoryCompaction:
+    def _big_existing(self, n: int = 9, big_at: int = 0, size: int = 100_000) -> list[dict]:
+        msgs = []
+        for i in range(n):
+            content = "x" * size if i == big_at else f"m{i}"
+            msgs.append({"role": "user" if i % 2 == 0 else "assistant", "content": content})
+        return msgs
+
+    def _compacting_ctx(self) -> AgentContext:
+        return AgentContext(
+            session_id="s1",
+            prompt="hi",
+            intent="read",
+            memory=MemoryContext(),
+            messages=[],
+            model="unknown/model",  # forces DEFAULT_CONTEXT_WINDOW_TOKENS
+        )
+
+    async def test_under_budget_history_unchanged_no_compaction(self):
+        existing = [
+            {"role": "user", "content": f"m{i}"}
+            for i in range(SESSION_HISTORY_LIMIT - 1)
+        ]
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": existing,
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1"))
+        updated = existing + [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "resp"},
+        ]
+        assert result["messages"] == updated[-SESSION_HISTORY_LIMIT:]
+        assert result["compaction_span"] is None
+
+    async def test_over_budget_history_triggers_compaction(self):
+        existing = self._big_existing()
+        client = AsyncMock()
+        client.complete = AsyncMock(return_value="condensed summary")
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": existing,
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1", client=client))
+        updated = existing + [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "resp"},
+        ]
+        older_span = updated[:-SESSION_HISTORY_LIMIT]
+        tail = updated[-SESSION_HISTORY_LIMIT:]
+
+        client.complete.assert_awaited_once()
+        assert result["messages"][0] == {
+            "role": "system",
+            "content": "condensed summary",
+            "compaction_summary": True,
+        }
+        assert result["messages"][1:] == tail
+        assert result["compaction_span"] == (0, len(older_span) - 1)
+
+    async def test_repeated_compaction_on_already_compacted_thread(self):
+        prior_summary = {
+            "role": "system",
+            "content": "old summary",
+            "compaction_summary": True,
+        }
+        existing = [prior_summary] + self._big_existing(n=9)
+        client = AsyncMock()
+        client.complete = AsyncMock(return_value="new condensed summary")
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": existing,
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1", client=client))
+        assert result["compaction_span"] is not None
+        assert result["messages"][0]["compaction_summary"] is True
+
+    async def test_compaction_llm_failure_falls_back_to_trim(self):
+        existing = self._big_existing()
+        client = AsyncMock()
+        client.complete = AsyncMock(side_effect=RuntimeError("timeout"))
+        state = {
+            "session_id": "s1",
+            "agent_context": self._compacting_ctx(),
+            "agent_result": AgentResult(agent="a", response="resp"),
+            "subtask_results": [],
+            "messages": existing,
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1", client=client))
+        updated = existing + [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "resp"},
+        ]
+        assert result["messages"] == updated[-SESSION_HISTORY_LIMIT:]
+        assert result["compaction_span"] is None
+
+
 class TestSynthesize:
     async def test_merges_subtask_responses(self):
         client = AsyncMock()

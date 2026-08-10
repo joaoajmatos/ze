@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass, field
 from datetime import timezone as _tz
 from typing import Any
 from uuid import UUID
@@ -9,12 +10,104 @@ from langchain_core.runnables import RunnableConfig
 
 from ze_logging import get_logger
 from ze_agents.types import AgentContext, RetrievalRequest
+from ze_core.orchestration.nodes.loop_surfacing import _extract_seeds
 from ze_core.orchestration.state import AgentState
 
 log = get_logger(__name__)
 
 SESSION_HISTORY_LIMIT = 10
 _DEFAULT_INACTIVITY_MINUTES = 30
+
+
+@dataclass
+class ResumeRecap:
+    session_narrative: str | None
+    open_loop_lines: list[str] = field(default_factory=list)
+    in_flight_goal_lines: list[str] = field(default_factory=list)
+    in_flight_workflow_lines: list[str] = field(default_factory=list)
+    gap_minutes: float = 0.0
+
+    def has_content(self) -> bool:
+        return bool(
+            self.session_narrative
+            or self.open_loop_lines
+            or self.in_flight_goal_lines
+            or self.in_flight_workflow_lines
+        )
+
+    def render(self) -> str:
+        lines = ["[Resuming after a gap — outstanding context, not visible to the user]"]
+        if self.session_narrative:
+            lines.append(f"Last session: {self.session_narrative}")
+        if self.open_loop_lines:
+            lines.append("Still open:")
+            lines.extend(f"- {line}" for line in self.open_loop_lines)
+        if self.in_flight_goal_lines:
+            lines.append("In-flight goals:")
+            lines.extend(f"- {line}" for line in self.in_flight_goal_lines)
+        if self.in_flight_workflow_lines:
+            lines.append("In-flight workflows:")
+            lines.extend(f"- {line}" for line in self.in_flight_workflow_lines)
+        return "\n".join(lines)
+
+
+async def _assemble_resume_recap(
+    session_id: str,
+    memory_context: Any,
+    config: RunnableConfig,
+    gap_minutes: float,
+) -> ResumeRecap | None:
+    configurable = config["configurable"]
+
+    session_narrative: str | None = None
+    memory_store = configurable.get("memory_store")
+    if memory_store is not None and hasattr(memory_store, "get_session_summary"):
+        try:
+            summary = await memory_store.get_session_summary(session_id)
+            session_narrative = summary.summary if summary is not None else None
+        except Exception as exc:
+            log.warning("resume_recap_session_summary_failed", error=str(exc))
+
+    open_loop_lines: list[str] = []
+    surfacer = configurable.get("loop_surfacer")
+    if surfacer is not None:
+        try:
+            entity_ids = _extract_seeds(memory_context)
+            if entity_ids:
+                mentions = await surfacer.inline_candidates(entity_ids)
+                open_loop_lines = [m.mention_text for m in mentions]
+        except Exception as exc:
+            log.warning("resume_recap_loop_surfacing_failed", error=str(exc))
+
+    in_flight_goal_lines: list[str] = []
+    goal_store = configurable.get("goal_store")
+    if goal_store is not None:
+        try:
+            active_goals = await goal_store.list_active()
+            in_flight_goal_lines = [f"{g.title}: {g.objective}" for g in active_goals]
+        except Exception as exc:
+            log.warning("resume_recap_goal_listing_failed", error=str(exc))
+
+    in_flight_workflow_lines: list[str] = []
+    workflow_store = configurable.get("workflow_store")
+    if workflow_store is not None:
+        try:
+            workflows = await workflow_store.list_all()
+            for wf in workflows:
+                executions = await workflow_store.list_executions(wf.id, limit=1)
+                if executions and executions[0].status == "running":
+                    in_flight_workflow_lines.append(wf.name)
+        except Exception as exc:
+            log.warning("resume_recap_workflow_listing_failed", error=str(exc))
+
+    recap = ResumeRecap(
+        session_narrative=session_narrative,
+        open_loop_lines=open_loop_lines,
+        in_flight_goal_lines=in_flight_goal_lines,
+        in_flight_workflow_lines=in_flight_workflow_lines,
+        gap_minutes=gap_minutes,
+    )
+    return recap if recap.has_content() else None
 
 
 async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
@@ -61,9 +154,16 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
 
     now = time.time()
     last_active = state.get("last_active_at")
+    recap: ResumeRecap | None = None
+    resume_recap_applied = False
     if last_active and (now - last_active) > (inactivity_minutes * 60):
         history: list[dict] = []
         log.info("session_expired", session_id=state["session_id"])
+        gap_minutes = (now - last_active) / 60
+        recap = await _assemble_resume_recap(
+            state["session_id"], memory_context, config, gap_minutes
+        )
+        resume_recap_applied = recap is not None
     else:
         history = list(state.get("messages") or [])
 
@@ -95,6 +195,8 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         persona=active_persona,
         timezone=tz,
     )
+    if recap is not None:
+        agent_context.resume_recap = recap.render()
 
     user_message_id = config["configurable"].get("user_message_id")
     if user_message_id is not None:
@@ -128,6 +230,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         "memory_context": memory_context,
         "agent_context": agent_context,
         "last_active_at": now,
+        "resume_recap_applied": resume_recap_applied,
     }
 
 

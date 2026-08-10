@@ -161,6 +161,8 @@ class BaseAgent(ABC):
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
         if ctx.screen_context_note:
             rendered = f"{ctx.screen_context_note}\n\n{rendered}"
+        if ctx.resume_recap:
+            rendered = f"{ctx.resume_recap}\n\n{rendered}"
         return f"{datetime_line}{prefix}{rendered}"
 
     # ── Tool execution ────────────────────────────────────────────────────────

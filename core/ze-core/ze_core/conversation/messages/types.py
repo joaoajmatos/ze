@@ -36,6 +36,12 @@ class ToolCallTrace:
 
 
 @dataclass
+class CompactionTrace:
+    span_start: int
+    span_end: int
+
+
+@dataclass
 class MessageTrace:
     agent: str
     routing_method: str  # "embedding" | "haiku" | "fallback"
@@ -46,3 +52,5 @@ class MessageTrace:
     memory_chunks: list[MemoryChunkTrace] = field(default_factory=list)
     tool_calls: list[ToolCallTrace] = field(default_factory=list)
     total_duration_ms: int = 0
+    compaction: CompactionTrace | None = None
+    resume_recap_applied: bool = False

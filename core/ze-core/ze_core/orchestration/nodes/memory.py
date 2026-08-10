@@ -8,12 +8,33 @@ from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
+from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
 
 log = get_logger(__name__)
+
+_COMPACTION_TOKEN_BUDGET_FRACTION = 0.7
+
+_COMPACTION_SYSTEM = (
+    "You are compacting an in-progress conversation for a personal AI assistant. "
+    "Condense the older portion of the conversation below into compact reference "
+    "notes the assistant can act on — not a narrative topic recap. Preserve: "
+    "decisions made, constraints or preferences stated, outstanding tasks or open "
+    "questions, and outcomes of prior actions. Do not add information not present "
+    "in the source. Be concise."
+)
+
+
+def _estimate_tokens(messages: list[dict]) -> int:
+    chars = sum(len(str(m.get("content", ""))) for m in messages)
+    return chars // 4
+
+
+def _format_transcript(messages: list[dict]) -> str:
+    return "\n".join(f"{m.get('role', 'user')}: {m.get('content', '')}" for m in messages)
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
@@ -113,7 +134,53 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         {"role": "user", "content": user_content},
         {"role": "assistant", "content": result.response},
     ]
-    return {"messages": updated[-SESSION_HISTORY_LIMIT:]}
+
+    older_span = (
+        updated[:-SESSION_HISTORY_LIMIT] if len(updated) > SESSION_HISTORY_LIMIT else []
+    )
+    if older_span and _should_compact(updated, ctx, config):
+        tail = updated[-SESSION_HISTORY_LIMIT:]
+        summary_message = await _compact(older_span, ctx, config)
+        if summary_message is not None:
+            return {
+                "messages": [summary_message] + tail,
+                "compaction_span": (0, len(older_span) - 1),
+            }
+
+    return {"messages": updated[-SESSION_HISTORY_LIMIT:], "compaction_span": None}
+
+
+def _should_compact(updated: list[dict], ctx: Any, config: RunnableConfig) -> bool:
+    cfg: Any = config["configurable"].get("settings")
+    app_config: dict = {}
+    if cfg is not None:
+        app_config = cfg if isinstance(cfg, dict) else getattr(cfg, "config", {})
+    model = ctx.model or resolve_model("synthesis", MODEL_SYNTHESIS, app_config)
+    context_window = get_context_window(model)
+    return _estimate_tokens(updated) >= context_window * _COMPACTION_TOKEN_BUDGET_FRACTION
+
+
+async def _compact(older_span: list[dict], ctx: Any, config: RunnableConfig) -> dict | None:
+    client: Any = config["configurable"].get("openrouter_client")
+    cfg: Any = config["configurable"].get("settings")
+    app_config: dict = {}
+    if cfg is not None:
+        app_config = cfg if isinstance(cfg, dict) else getattr(cfg, "config", {})
+    model = ctx.model or resolve_model("synthesis", MODEL_SYNTHESIS, app_config)
+
+    try:
+        summary_text = await client.complete(
+            messages=[
+                {"role": "system", "content": _COMPACTION_SYSTEM},
+                {"role": "user", "content": _format_transcript(older_span)},
+            ],
+            model=model,
+        )
+    except Exception as exc:
+        log.warning("write_memory_compaction_failed", error=str(exc))
+        return None
+
+    return {"role": "system", "content": summary_text, "compaction_summary": True}
 
 
 async def synthesize(state: AgentState, config: RunnableConfig) -> dict:

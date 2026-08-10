@@ -5,6 +5,7 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 
 from ze_core.conversation.messages.types import (
+    CompactionTrace,
     MemoryChunkTrace,
     MessageTrace,
     ToolCallTrace,
@@ -32,6 +33,13 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         else [s.agent for s in envelope.subtasks]
     )
 
+    compaction_span = state.get("compaction_span")
+    compaction = (
+        CompactionTrace(span_start=0, span_end=compaction_span[1])
+        if compaction_span is not None
+        else None
+    )
+
     trace = MessageTrace(
         agent=envelope.primary_agent,
         routing_method=envelope.routing_method,
@@ -42,6 +50,8 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         memory_chunks=memory_chunks,
         tool_calls=tool_calls,
         total_duration_ms=total_duration_ms,
+        compaction=compaction,
+        resume_recap_applied=bool(state.get("resume_recap_applied")),
     )
     return {"message_trace": trace}
 

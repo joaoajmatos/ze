@@ -4,7 +4,19 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from ze_core.conversation.messages.types import CompactionTrace
 from ze_core.orchestration.nodes.trace import _extract_memory_chunks, record_trace
+
+
+def _envelope():
+    return SimpleNamespace(
+        primary_agent="companion",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.1,
+        is_compound=False,
+        subtasks=[],
+    )
 
 
 def _fact(relevance_score=None, confidence=1.0):
@@ -77,3 +89,61 @@ async def test_record_trace_produces_empty_memory_chunks_not_missing_trace():
     trace = result["message_trace"]
     assert trace is not None
     assert trace.memory_chunks == []
+
+
+async def test_record_trace_compaction_span_none_leaves_trace_compaction_none():
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+        "compaction_span": None,
+    }
+    result = await record_trace(state, config={})
+    assert result["message_trace"].compaction is None
+
+
+async def test_record_trace_compaction_span_populates_compaction_trace():
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+        "compaction_span": (0, 7),
+    }
+    result = await record_trace(state, config={})
+    assert result["message_trace"].compaction == CompactionTrace(span_start=0, span_end=7)
+
+
+async def test_record_trace_resume_recap_applied_passthrough_true():
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+        "resume_recap_applied": True,
+    }
+    result = await record_trace(state, config={})
+    assert result["message_trace"].resume_recap_applied is True
+
+
+async def test_record_trace_resume_recap_applied_defaults_false_when_absent():
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+    }
+    result = await record_trace(state, config={})
+    assert result["message_trace"].resume_recap_applied is False
+
+
+async def test_record_trace_compaction_and_resume_recap_compose_in_same_trace():
+    """FR-011/FR-012 — both fields populate independently on the same turn."""
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+        "compaction_span": (0, 12),
+        "resume_recap_applied": True,
+    }
+    result = await record_trace(state, config={})
+    trace = result["message_trace"]
+    assert trace.compaction == CompactionTrace(span_start=0, span_end=12)
+    assert trace.resume_recap_applied is True

@@ -106,6 +106,10 @@ class AgentContext:
     # screen_context_note is runtime-only; injected by fetch_context when the client
     # sends a WsScreenContext (e.g. viewing a specific workflow execution). Never checkpoint.
     screen_context_note: str | None = field(default=None, repr=False)
+    # resume_recap is runtime-only; injected by fetch_context's resume-recap branch
+    # on a long-gap turn. Rendered into the system prompt, never appended to
+    # messages — must never surface as a visible chat message. Never checkpoint.
+    resume_recap: str | None = field(default=None, repr=False)
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

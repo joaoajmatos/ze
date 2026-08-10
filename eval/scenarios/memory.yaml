@@ -132,6 +132,49 @@
     - Turn 2 should mention the billing system migration
     - Should not claim to have no information about Sasha
 
+- id: session_continuity_compaction_preserves_early_fact
+  description: >
+    Phase 112 SC-002: plant a fact early in a long single thread, force enough
+    filler turns for mid-session compaction to trigger (70% of the routed
+    model's context window), then ask a recall question — the reply should
+    still reflect the planted fact and the turn should complete without a
+    context-capacity error. Inspect the recall turn's
+    GET /api/v0/messages/{id}/trace for a non-null `compaction` span covering
+    the planted-fact message's index.
+  turns:
+    - prompt: "Please remember this for later: my flight number is ZE482, departing Lisbon at 14:20."
+      description: "Turn 1: plant an early fact"
+    - prompt: "Write a detailed 400-word explanation of how TCP congestion control works."
+      description: "Turn 2: filler — accumulate history toward the compaction threshold"
+    - prompt: "Write a detailed 400-word explanation of how DNS resolution works end to end."
+      description: "Turn 3: filler"
+    - prompt: "Write a detailed 400-word explanation of how HTTP/2 multiplexing works."
+      description: "Turn 4: filler"
+    - prompt: "Write a detailed 400-word explanation of how TLS handshakes work."
+      description: "Turn 5: filler"
+    - prompt: "Write a detailed 400-word explanation of how BGP routing works."
+      description: "Turn 6: filler"
+    - prompt: "Write a detailed 400-word explanation of how load balancers distribute traffic."
+      description: "Turn 7: filler"
+    - prompt: "Write a detailed 400-word explanation of how content delivery networks work."
+      description: "Turn 8: filler"
+    - prompt: "Write a detailed 400-word explanation of how database indexing works."
+      description: "Turn 9: filler"
+    - prompt: "Write a detailed 400-word explanation of how garbage collection works in managed runtimes."
+      description: "Turn 10: filler"
+    - prompt: "Write a detailed 400-word explanation of how consensus algorithms like Raft work."
+      description: "Turn 11: filler"
+    - prompt: "Write a detailed 400-word explanation of how virtual memory and paging work."
+      description: "Turn 12: filler"
+    - prompt: "What's my flight number, and what time does it depart?"
+      description: "Turn 13: recall the planted fact after enough turns to have likely forced compaction"
+  expected_agent: companion
+  tags: [companion, memory, session-continuity]
+  criteria:
+    - Turn 13 should correctly state flight ZE482 departing Lisbon at 14:20
+    - Turn 13 should not claim to have no memory of the flight
+    - The turn should complete without an error about context length or capacity
+
 - id: memory_defaults_enabled_no_regression
   description: >
     Phase 106 SC-004: with relevance-floor/entity-anchor/composite/live-rerank
