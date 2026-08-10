@@ -138,7 +138,7 @@ Existing monorepo packages (see plan.md's Project Structure) — no new package 
 - [X] T031 Run the quickstart.md §1 grep checks — exactly one `class ClaimKind`/`class Provenance` definition (`core/ze-agents/ze_agents/claims.py`), zero `class LoopClaimKind` hits in `ze-worldstate`, zero `EMAIL`/`CALENDAR` hits in `ze_worldstate/types.py`, `LoopProvenance` is a plain class not a `StrEnum` (SC-002)
 - [X] T032 Run the quickstart.md §2 grep check — exactly one inline `cutoff = now - timedelta(...)`-shaped computation across the repo, inside `core/ze-proactive/ze_proactive/staleness.py`, with none of the three sweep call sites computing a stale cutoff inline anymore (SC-003)
 - [ ] T033 Run the quickstart.md §5–7 live-DB validation against a migrated dev database — create a backdated `Hypothesis`, run `HypothesisDecayJob`, confirm `confidence` drops from `0.8` to `0.77` with the `hypothesis_confidence_decayed` log line (SC-001), confirm zero `NULL` `claim_kind` rows in `correlation_hypothesis`/`memory_facts` post-migration (SC-006)
-- [ ] T034 Update `specs/phases/111-claim-topology/spec.md`'s `**Status**: Draft` line to `Implemented` in the same commit as the final implementation task, per this repo's Spec Status Audit convention
+- [X] T034 Update `specs/phases/111-claim-topology/spec.md`'s `**Status**: Draft` line to `Implemented` in the same commit as the final implementation task, per this repo's Spec Status Audit convention
 
 ---
 
