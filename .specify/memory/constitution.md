@@ -26,7 +26,13 @@ The dependency direction is absolute: `core/` packages have no domain knowledge,
 `plugins/` extend via `ZePlugin` and import only from `ze_sdk.*` (never `ze_core.*`,
 never `ze_plugin.*` directly), `integrations/` wrap external services with no Ze
 domain knowledge, and `apps/` are the only composition roots. New capabilities that
-belong to a domain go in a plugin, not the engine.
+belong to a domain go in a plugin, not the engine. A value belongs in a core-owned
+closed enum only if a governing doctrine/ADR mandates that exact closed set (e.g. claim
+kinds, confidence decay profiles, the doctrine's four epistemic provenance categories).
+A value that names which plugin or channel produced something is plugin-domain
+vocabulary and must never be hardcoded into a core enum — it travels as a string or a
+plugin-local enum the plugin owns (see `specs/arch/plugin-domain-vocabulary.md`),
+never requiring a core-package change to add a new plugin's value.
 
 ### IV. Typed, Explicit Python
 Dataclasses for domain types (`types.py`, never `models.py`); Pydantic only in
@@ -78,4 +84,4 @@ This constitution supersedes ad-hoc practice. Amendments are made via an ADR in
 removed or justified in the plan's Complexity Tracking section. Runtime development
 guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-09
+**Version**: 1.1.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-27
