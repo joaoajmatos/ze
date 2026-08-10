@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ze_logging import get_logger
+from ze_proactive.staleness import is_stale
 from ze_sdk.proactive import proactive_job
 
 from ze_worldstate import drift
@@ -20,6 +21,8 @@ class DriftSweepJob:
     async def run(self) -> None:
         candidates = await self._loop_store.list_drift_candidates()
         for loop in candidates:
+            if not is_stale(loop.drift_deadline, window_days=0):
+                continue
             if not drift.is_drift_eligible(loop):
                 continue
             rationale = drift.compose_absence_rationale(loop)

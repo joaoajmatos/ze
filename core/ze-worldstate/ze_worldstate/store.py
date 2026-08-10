@@ -305,7 +305,6 @@ class PostgresLoopStore:
                 SELECT * FROM open_loops
                 WHERE state = $1
                   AND drift_deadline IS NOT NULL
-                  AND drift_deadline <= now()
                   AND updated_at <= confirmed_at
                 """,
                 LoopState.ACTIVE.value,

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_sdk import DBPool
+from ze_proactive.staleness import is_stale
 import json
 
 from ze_automation.goals.types import (
@@ -575,18 +576,11 @@ class PostgresGoalStore:
                 WHERE g.status = 'active'
                   AND (
                       g.last_stuck_alert_at IS NULL
-                      OR g.last_stuck_alert_at < now() - ($2 || ' days')::interval
+                      OR g.last_stuck_alert_at < now() - ($1 || ' days')::interval
                   )
                 GROUP BY g.id
-                HAVING
-                    (
-                        MAX(m.completed_at) IS NULL
-                        AND g.created_at < now() - ($1 || ' days')::interval
-                    )
-                    OR MAX(m.completed_at) < now() - ($1 || ' days')::interval
                 ORDER BY COALESCE(MAX(m.completed_at), g.created_at) ASC
                 """,
-                str(idle_days),
                 str(alert_cooldown_days),
             )
 
@@ -619,14 +613,12 @@ class PostgresGoalStore:
                 JOIN goal_gates vg
                     ON vg.goal_id = g.id AND vg.status IN ('pending', 'awaiting_approval')
                 WHERE g.status = 'awaiting_gate'
-                  AND vg.fired_at < now() - ($1 || ' days')::interval
                   AND (
                       g.last_stuck_alert_at IS NULL
-                      OR g.last_stuck_alert_at < now() - ($2 || ' days')::interval
+                      OR g.last_stuck_alert_at < now() - ($1 || ' days')::interval
                   )
                 ORDER BY vg.fired_at ASC
                 """,
-                str(idle_days),
                 str(alert_cooldown_days),
             )
 
@@ -636,13 +628,10 @@ class PostgresGoalStore:
             goal = _goal_from_row(r)
             last_at = r["last_milestone_at"]
             ref_dt = last_at if last_at is not None else goal.created_at
-            idle = int(
-                (
-                    datetime.now(timezone.utc) - ref_dt.replace(tzinfo=timezone.utc)
-                    if ref_dt.tzinfo is None
-                    else datetime.now(timezone.utc) - ref_dt
-                ).days
-            )
+            ref_dt = ref_dt.replace(tzinfo=timezone.utc) if ref_dt.tzinfo is None else ref_dt
+            if not is_stale(ref_dt, idle_days):
+                continue
+            idle = int((datetime.now(timezone.utc) - ref_dt).days)
             results.append(
                 StuckGoal(
                     goal=goal,
@@ -654,6 +643,12 @@ class PostgresGoalStore:
             )
 
         for r in gate_rows:
+            fired_at = r["fired_at"]
+            fired_at = (
+                fired_at.replace(tzinfo=timezone.utc) if fired_at.tzinfo is None else fired_at
+            )
+            if not is_stale(fired_at, idle_days):
+                continue
             goal = _goal_from_row(r)
             gate = VerificationGate(
                 id=r["gate_id"],
