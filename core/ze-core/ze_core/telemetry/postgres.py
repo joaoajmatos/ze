@@ -73,3 +73,20 @@ class PostgresCostStore:
                 cost_usd,
                 row_id,
             )
+
+    async def fetch_session_usage(self, session_id: str) -> list[dict]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT model, prompt_tokens, completion_tokens"
+                " FROM llm_cost_log WHERE session_id = $1",
+                session_id,
+            )
+        return [dict(row) for row in rows]
+
+    async def fetch_daily_usage(self) -> list[dict]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT model, prompt_tokens, completion_tokens"
+                " FROM llm_cost_log WHERE created_at >= CURRENT_DATE"
+            )
+        return [dict(row) for row in rows]

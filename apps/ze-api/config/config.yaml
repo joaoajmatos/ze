@@ -30,6 +30,12 @@ routing:
   # At 0.03 gap, clear single-agent queries route via embedding without haiku overhead.
   gap_threshold: 0.03
 
+# Opt-in spend ceiling, token-estimated in real time inside capability_check.
+# Absent/null limits = current (telemetry-only) behavior, zero change.
+budget:
+  session_limit_usd: null    # e.g. 2.00
+  daily_limit_usd: null      # e.g. 10.00
+
 memory:
   nli_contradiction_threshold: 0.60
   nli_entailment_threshold: 0.70

@@ -174,6 +174,24 @@ class TestPostgresCostStore:
         assert 0.0042 in call_args
         assert "row-1" in call_args
 
+    async def test_fetch_session_usage_queries_by_session_id(self):
+        rows = [{"model": "m1", "prompt_tokens": 10, "completion_tokens": 5}]
+        pool, conn = _make_pool(rows)
+        store = PostgresCostStore(pool)
+        result = await store.fetch_session_usage("s1")
+        assert result == rows
+        sql = conn.fetch.call_args[0][0]
+        assert "session_id = $1" in sql
+
+    async def test_fetch_daily_usage_queries_by_current_date(self):
+        rows = [{"model": "m1", "prompt_tokens": 10, "completion_tokens": 5}]
+        pool, conn = _make_pool(rows)
+        store = PostgresCostStore(pool)
+        result = await store.fetch_daily_usage()
+        assert result == rows
+        sql = conn.fetch.call_args[0][0]
+        assert "CURRENT_DATE" in sql
+
 
 # ── TestSQLiteCostStore ───────────────────────────────────────────────────────
 
@@ -230,6 +248,36 @@ class TestSQLiteCostStore:
     async def test_write_before_setup_logs_warning(self):
         store = SQLiteCostStore(":memory:")
         await store.write(_make_rec())  # must not raise
+
+    async def test_fetch_session_usage_returns_matching_rows(self):
+        store = SQLiteCostStore(":memory:")
+        await store.setup()
+        await store.write(_make_rec(session_id="s1", model="m1", prompt_tokens=10))
+        await store.write(_make_rec(session_id="s2", model="m2", prompt_tokens=20))
+        rows = await store.fetch_session_usage("s1")
+        assert len(rows) == 1
+        assert rows[0]["model"] == "m1"
+        assert rows[0]["prompt_tokens"] == 10
+        await store.aclose()
+
+    async def test_fetch_session_usage_before_setup_returns_empty(self):
+        store = SQLiteCostStore(":memory:")
+        rows = await store.fetch_session_usage("s1")
+        assert rows == []
+
+    async def test_fetch_daily_usage_returns_todays_rows(self):
+        store = SQLiteCostStore(":memory:")
+        await store.setup()
+        await store.write(_make_rec(model="today-model", prompt_tokens=5))
+        rows = await store.fetch_daily_usage()
+        assert len(rows) == 1
+        assert rows[0]["model"] == "today-model"
+        await store.aclose()
+
+    async def test_fetch_daily_usage_before_setup_returns_empty(self):
+        store = SQLiteCostStore(":memory:")
+        rows = await store.fetch_daily_usage()
+        assert rows == []
 
 
 # ── TestCostTracker ───────────────────────────────────────────────────────────

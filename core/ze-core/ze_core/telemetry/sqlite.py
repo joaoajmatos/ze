@@ -82,3 +82,26 @@ class SQLiteCostStore:
         if self._conn is not None:
             await self._conn.close()
             self._conn = None
+
+    async def fetch_session_usage(self, session_id: str) -> list[dict]:
+        if self._conn is None:
+            return []
+        cursor = await self._conn.execute(
+            "SELECT model, prompt_tokens, completion_tokens"
+            " FROM llm_cost_log WHERE session_id = ?",
+            (session_id,),
+        )
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
+    async def fetch_daily_usage(self) -> list[dict]:
+        if self._conn is None:
+            return []
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        cursor = await self._conn.execute(
+            "SELECT model, prompt_tokens, completion_tokens"
+            " FROM llm_cost_log WHERE created_at >= ?",
+            (today,),
+        )
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]

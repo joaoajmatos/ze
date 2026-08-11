@@ -39,9 +39,18 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
         gate.evaluate(agent=st.agent, intent=st.intent, session_overrides=overrides)
         for st in subtasks
     ]
+
+    state_updates: dict[str, Any] = {}
+    budget_checker = config["configurable"].get("budget_checker")
+    if budget_checker is not None:
+        status = await budget_checker.check(session_id=state["session_id"])
+        if not status.within_budget:
+            decisions.append(GateDecision.AWAIT_CONFIRMATION)
+            state_updates["budget_status"] = status
+
     # Take the strictest (most restrictive) decision across all subtasks.
     decision = min(decisions, key=lambda d: _GATE_RANK.get(d, 0))
-    return {"gate_decision": decision}
+    return {"gate_decision": decision, **state_updates}
 
 
 async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
@@ -111,6 +120,16 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         embed_fn=_embed_fn(config),
     )
     result = await _run_with_timeout(subtask.agent, ctx)
+
+    budget_status = state.get("budget_status")
+    if budget_status is not None and not budget_status.within_budget:
+        result.response = (
+            f"{result.response}\n\n"
+            f"(This would push {budget_status.scope} spend to an estimated "
+            f"${budget_status.current_spend_usd:.2f}, at or over your configured "
+            f"${budget_status.limit_usd:.2f} limit. Approve to continue anyway.)"
+        )
+
     return {"agent_result": result, "pending_confirmation": True}
 
 

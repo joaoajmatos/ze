@@ -31,6 +31,7 @@ from ze_core.bootstrap import (
     register_harness_hooks,
 )
 from ze_core.container import Container as CoreContainer
+from ze_core.telemetry.budget import SpendBudgetChecker, SpendBudgetConfig
 from ze_core.conversation import TurnResult, invoke_raw_turn, resume_turn
 from ze_core.conversation.confirmations import PendingConfirmationStore
 from ze_core.conversation.messages import PostgresMessageStore
@@ -117,6 +118,7 @@ class ZeContainer(CoreContainer):
     loop_graph_store: Any
     loop_entity_resolver: Any
     loop_surfacer: Any
+    budget_checker: SpendBudgetChecker | None = None
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}
@@ -144,6 +146,7 @@ class ZeContainer(CoreContainer):
             "loop_graph_store": self.loop_graph_store,
             "loop_entity_resolver": self.loop_entity_resolver,
             "loop_surfacer": self.loop_surfacer,
+            "budget_checker": self.budget_checker,
             **plugin_services,
         }
         configurable["memory_hooks"] = [
@@ -417,6 +420,21 @@ async def build_container(settings: Settings) -> ZeContainer:
     component_hook = register_harness_hooks(settings)
     graph = build_graph(checkpointer=checkpointer, plugins=plugins)
 
+    budget_cfg = settings.config.get("budget", {}) or {}
+    session_limit_usd = budget_cfg.get("session_limit_usd")
+    daily_limit_usd = budget_cfg.get("daily_limit_usd")
+    budget_checker = (
+        SpendBudgetChecker(
+            cost_store=shared.cost_store,
+            config=SpendBudgetConfig(
+                session_limit_usd=session_limit_usd,
+                daily_limit_usd=daily_limit_usd,
+            ),
+        )
+        if session_limit_usd is not None or daily_limit_usd is not None
+        else None
+    )
+
     all_domains = (
         engine_data_domains(pool)
         + automation_data_domains(pool)
@@ -441,6 +459,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         openrouter_client=shared.openrouter_client,
         router=router,
         capability_gate=shared.capability_gate,
+        budget_checker=budget_checker,
         memory_store=shared.memory_store,
         memory_consolidator=shared.memory_consolidator,
         graph=graph,

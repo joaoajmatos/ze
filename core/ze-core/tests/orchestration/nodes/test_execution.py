@@ -112,6 +112,62 @@ class TestCapabilityCheck:
         result = await capability_check(state, _config(gate))
         assert result["gate_decision"] == GateDecision.BLOCKED
 
+    async def test_budget_exceeded_downgrades_execute_to_await_confirmation(self):
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+        from ze_core.telemetry.budget import BudgetStatus
+
+        cls = _make_agent_class("alpha")
+        cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        agent(cls)
+        register_instance("alpha", object.__new__(cls))
+        gate = CapabilityGate()
+
+        budget_checker = AsyncMock()
+        budget_checker.check = AsyncMock(
+            return_value=BudgetStatus(
+                within_budget=False,
+                scope="session",
+                current_spend_usd=5.0,
+                limit_usd=2.0,
+            )
+        )
+
+        config = _config(gate)
+        config["configurable"]["budget_checker"] = budget_checker
+        state = {
+            "envelope": _envelope("alpha"),
+            "session_overrides": {},
+            "session_id": "s1",
+        }
+
+        result = await capability_check(state, config)
+
+        assert result["gate_decision"] == GateDecision.AWAIT_CONFIRMATION
+        assert result["budget_status"].scope == "session"
+        budget_checker.check.assert_awaited_once_with(session_id="s1")
+
+    async def test_no_budget_checker_is_a_regression_noop(self):
+        """budget_checker absent from configurable behaves exactly as before (FR-007)."""
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+
+        cls = _make_agent_class("alpha")
+        cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        agent(cls)
+        register_instance("alpha", object.__new__(cls))
+        gate = CapabilityGate()
+
+        state = {
+            "envelope": _envelope("alpha"),
+            "session_overrides": {},
+            "session_id": "s1",
+        }
+        result = await capability_check(state, _config(gate))
+
+        assert result["gate_decision"] == GateDecision.EXECUTE
+        assert "budget_status" not in result
+
 
 # ── execute_tool ──────────────────────────────────────────────────────────────
 
@@ -253,6 +309,28 @@ class TestDraftResponse:
         }
         await draft_response(state, {"configurable": {}})
         assert received_decision["decision"] == GateDecision.DRAFT
+
+    async def test_budget_status_appends_spend_and_limit_to_draft_text(self):
+        from ze_core.telemetry.budget import BudgetStatus
+
+        _register_and_wire("a", response="draft text")
+        state = {
+            "envelope": _envelope("a"),
+            "agent_context": _ctx("a"),
+            "image_data": None,
+            "budget_status": BudgetStatus(
+                within_budget=False,
+                scope="daily",
+                current_spend_usd=12.34,
+                limit_usd=10.0,
+            ),
+        }
+        result = await draft_response(state, {"configurable": {}})
+        response = result["agent_result"].response
+        assert "draft text" in response
+        assert "12.34" in response
+        assert "10.00" in response
+        assert "daily" in response
 
 
 # ── await_confirmation ────────────────────────────────────────────────────────
