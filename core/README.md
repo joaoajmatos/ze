@@ -15,10 +15,14 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | Package | Description |
 |---------|-------------|
 | [ze-agents](ze-agents/) | Developer API — `BaseAgent`, `@agent`, `@tool`, shared types, harness hooks |
+| [ze-logging](ze-logging/) | Structured logging — `structlog` configuration, `get_logger`, context binding |
+| [ze-communication](ze-communication/) | Channel contract — `Channel`/`InboundChannel` ABCs, message types, `ChannelRegistry` |
 | [ze-plugin](ze-plugin/) | Plugin framework — `ZePlugin`, channels, signals, `ZeIntegration` protocol |
 | [ze-proactive](ze-proactive/) | Job scheduling — `ProactiveScheduler`, `ProactiveJob`, push log |
 | [ze-core](ze-core/) | LangGraph orchestration, routing, capability gate, OpenRouter, telemetry |
 | [ze-memory](ze-memory/) | Memory persistence and retrieval — facts, episodes, graph, consolidation |
+| [ze-automation](ze-automation/) | Goal + workflow engines, accountability — planners, executors, schedulers |
+| [ze-worldstate](ze-worldstate/) | Open-loop substrate — active concerns, drift detection, evidence-linked confidence |
 | [ze-correlation](ze-correlation/) | Cross-domain hypothesis formation from the memory graph |
 | [ze-browser](ze-browser/) | HTTP client for the Playwright browser sidecar |
 | [ze-notifications](ze-notifications/) | Push notification abstraction (ntfy) |
@@ -26,6 +30,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-onboarding](ze-onboarding/) | Plugin-extensible onboarding coordinator and reset domain types |
 | [ze-data](ze-data/) | Data management — `DataDomain` descriptor and `DataPortabilityService` |
 | [ze-ingestion](ze-ingestion/) | Content ingestion pipeline — fetch, process, extract, and archive any external content |
+| [ze-seed](ze-seed/) | Dev data seeder — curated narrative fixtures for local development |
 | [ze-eval](ze-eval/) | Eval infrastructure — runner, judge, verifier, MCP server |
 
 ## Dependency graph
@@ -33,9 +38,13 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 ```
 ze-onboarding     ←  ze-agents
 ze-agents         ←  ze-onboarding
+ze-logging        ←  no ze deps
+ze-communication  ←  ze-agents
 ze-plugin         ←  ze-agents
 ze-proactive      ←  ze-agents
 ze-memory         ←  ze-agents
+ze-automation     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data, ze-components
+ze-worldstate     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation
 ze-correlation    ←  ze-agents, ze-memory
 ze-browser        ←  no ze deps
 ze-notifications  ←  no ze deps
@@ -43,6 +52,7 @@ ze-components     ←  no ze deps
 ze-eval           ←  no ze deps
 ze-data           ←  no ze deps
 ze-ingestion      ←  ze-agents, ze-memory, ze-browser
+ze-seed           ←  ze-memory, ze-automation, ze-core, ze-logging, ze-onboarding
 ze-core           ←  ze-agents, ze-plugin
 ```
 
@@ -62,6 +72,10 @@ The plugin entry point (`ze-sdk`) lives in [`packages/ze-sdk`](../packages/ze-sd
 | New setup-flow primitive or onboarding provider contract | `ze-onboarding` |
 | New browser sidecar endpoint client | `ze-browser` |
 | New eval runner, judge, or verifier | `ze-eval` |
+| New outbound/inbound channel contract | `ze-communication` |
+| New goal, workflow, or accountability primitive | `ze-automation` |
+| New open-loop lifecycle, extraction, or surfacing logic | `ze-worldstate` |
+| New dev fixture / seed domain | `ze-seed` |
 
 If the code has any dependency on personal-assistant domain concepts (goals,
 workflows, contacts, persona), it does not belong here.

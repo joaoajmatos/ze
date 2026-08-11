@@ -24,7 +24,7 @@ An honest attempt at building a personal AI that does more than answer questions
 
 The objective: an assistant that holds context across weeks, works in the background, and connects things that happen in separate parts of your life — calendar, email, news, long-running projects. Not a chat window that resets. Something closer to Jarvis. That's the whole brief.
 
-It isn't there yet. But 100+ shipped phases in, the infrastructure is real and it's getting closer.
+It isn't there yet. But 110+ shipped phases in, the infrastructure is real and it's getting closer.
 
 ---
 
@@ -36,9 +36,15 @@ Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-do
 
 ### Goal engine
 
-The most developed piece of Ze's executive function. Hand Ze an objective and it decomposes into milestones, dispatches them to specialist agents on a schedule, pauses at verification gates with a progress narrative, replans on failure, and writes a retrospective when it finishes. Steer mid-flight by talking — no slash commands. Background sweep runs every 15 minutes regardless of whether you're online.
+Hand Ze an objective and it decomposes into milestones, dispatches them to specialist agents on a schedule, pauses at verification gates with a progress narrative, replans on failure, and writes a retrospective when it finishes. Steer mid-flight by talking — no slash commands. Background sweep runs every 15 minutes regardless of whether you're online.
 
-Goals are the heavyweight end of a larger idea: Ze holding your **active concerns** — what's open, promised, planned, and drifting — and acting on them over time. The spine everything attaches to is Ze's model of you and those concerns, not any single engine. See [the doctrine](specs/arch/ze-doctrine.md).
+Goals are the heavyweight, declared end of Ze's executive function. Most real commitments never get declared as a goal.
+
+### Open loops
+
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops — `suspected → active → drifting → closed | dropped` — extracted from conversation, email, calendar, and ingestion. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear a salience bar shared with the correlation engine's daily budget.
+
+Goals and open loops are Ze's two hands of executive function today: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](specs/arch/ze-doctrine.md) and [cognitive architecture](docs/cognitive-architecture.md).
 
 ### Memory
 
@@ -111,7 +117,7 @@ Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insig
 
 ### Agents
 
-Research, companion, calendar, messenger, reminders, workflow, goals, prospecting, news, ingestion. Each runs in a ReAct loop via `BaseAgent`; tool access is gated per-agent.
+Research, companion, calendar, messenger, reminders, workflow, goals, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`; tool access is gated per-agent.
 
 <details>
 <summary>Agent reference</summary>
@@ -128,6 +134,7 @@ Research, companion, calendar, messenger, reminders, workflow, goals, prospectin
 | `prospecting` | Browser-sidecar research + outreach | Autonomous |
 | `news` | Personalized RSS headlines + search | Autonomous |
 | `ingestion` | URL / PDF / video / audio / text → memory | Autonomous |
+| `finance` | Portfolio, spending, recurring expenses (Trading212 + CSV) | Read auto · recurring review confirms |
 
 </details>
 
@@ -147,17 +154,17 @@ Research, companion, calendar, messenger, reminders, workflow, goals, prospectin
 | `ui_contributions()` | Nav items, settings sections, plugin pages in ze-web |
 | `rest_routes()` | Plugin-owned REST routers under `/api/v0/` |
 
-The hooks compose. A finance plugin registers a `TransactionExtractor` so that ingesting a bank statement produces structured transaction facts — which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news. That chain is the whole point.
+The hooks compose. The finance plugin registers a `TransactionExtractor` so that ingesting a bank statement produces structured transaction facts — which land in memory, which surface in retrieval, which the correlation engine can cross with calendar and news. That chain is the whole point.
 
 ---
 
 ## Where it's going
 
-Ze's spine is its model of you and your active concerns — what's true, what's open, and what's drifting. The conceptual direction is deepening the **executive layer** that acts on it: lightweight tracking of open loops, not only heavyweight declared goals. See [the doctrine](specs/arch/ze-doctrine.md) and [cognitive architecture](docs/cognitive-architecture.md).
+Executive function now has two hands — goals and open loops — but nothing yet ranks what deserves attention across both, plus the correlation engine's hypotheses, against one shared attention budget. That cross-concern prioritization is the near-term target (`specs/arch/attention-arbitration.md`).
 
-Concretely, the goal engine still needs to carry a full personal project across weeks with minimal intervention — research, plan, execute, verify, iterate, report. That's the near-term executive target.
+Concretely, the goal engine still needs to carry a full personal project across weeks with minimal intervention — research, plan, execute, verify, iterate, report.
 
-Beyond that: finance and legal plugins, richer correlation reasoning, deeper signal coverage.
+Beyond that: a first-class model of people and projects as evolving states (contacts today are a directory, not a relationship model), one calibrated confidence scale across the system's several independent decay schemes, and deeper signal coverage as more domain plugins land.
 
 ---
 
@@ -171,9 +178,13 @@ flowchart TD
     PRE --> ER[embed_route]
     ER --> FC[fetch_context]
     FC --> CG[capability_check]
-    CG -->|EXECUTE| EX[agent.run]
+    CG -->|EXECUTE| EX[execute_tool]
     CG -->|CONFIRM| AC[await_confirmation]
-    EX --> WM[write_memory]
+    EX --> CO[correlate]
+    CO --> SL[surface_loops]
+    SL --> SY[synthesize]
+    SY --> RT[record_trace]
+    RT --> WM[write_memory]
     WM --> R([response + components])
 ```
 
@@ -185,12 +196,13 @@ See [docs/architecture.md](docs/architecture.md) for the full flow and node-by-n
 
 ```
 apps/           ze-api · ze-web
-plugins/        personal · messenger · calendar · news · prospecting · finance* · legal*
+plugins/        personal · messenger · calendar · news · prospecting · finance
 core/           ze-core · ze-agents · ze-automation · ze-communication · ze-plugin
-                ze-memory · ze-proactive · ze-seed · ze-correlation · ze-data · ze-ingestion
-                ze-browser · ze-notifications · ze-components · ze-logging · …
+                ze-worldstate · ze-memory · ze-proactive · ze-correlation · ze-data
+                ze-ingestion · ze-onboarding · ze-seed · ze-browser · ze-notifications
+                ze-components · ze-logging · …
 packages/       ze-sdk · ze-client · ze-ui
-integrations/   ze-google (GmailChannel) · ze-yt · …
+integrations/   ze-google (GmailChannel) · ze-trading212 · ze-yt
 specs/          one spec per phase, written before the code
 ```
 
