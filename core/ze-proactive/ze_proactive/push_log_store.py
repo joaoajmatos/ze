@@ -50,6 +50,36 @@ class PushLogStore:
             )
         log.debug("push_log_recorded", event_type=event_type)
 
+    async def try_claim(
+        self, event_type: str, idempotency_key: str, payload: str | None = None
+    ) -> bool:
+        """Insert with idempotency_key; return True if this call won the claim.
+
+        Returns False (never raises) if (event_type, idempotency_key) was already
+        claimed by another writer — the expected "lost the race" path.
+        """
+        try:
+            async with self._pool.acquire() as conn:
+                await conn.execute(
+                    "INSERT INTO push_log (event_type, payload, idempotency_key) "
+                    "VALUES ($1, $2, $3)",
+                    event_type,
+                    payload,
+                    idempotency_key,
+                )
+            return True
+        except asyncpg.UniqueViolationError:
+            return False
+
+    async def release_claim(self, event_type: str, idempotency_key: str) -> None:
+        """Roll back a claim whose guarded notification was never delivered."""
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM push_log WHERE event_type = $1 AND idempotency_key = $2",
+                event_type,
+                idempotency_key,
+            )
+
     async def list_recent_payloads(self, event_type: str, hours: float) -> list[str]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -37,7 +38,8 @@ def _job(
 
     surfacer = AsyncMock()
     surfacer.passes_push_bar = AsyncMock(return_value=passes)
-    surfacer.log_push = AsyncMock()
+    surfacer.claim_push = AsyncMock(return_value=True)
+    surfacer.release_push_claim = AsyncMock()
 
     notifier = AsyncMock()
     notifier.push = AsyncMock()
@@ -53,7 +55,7 @@ async def test_clears_all_bars_pushes_exactly_once():
     await job.run()
 
     mocks["notifier"].push.assert_awaited_once()
-    mocks["surfacer"].log_push.assert_awaited_once_with(loop.id, loop.drift_rationale)
+    mocks["surfacer"].claim_push.assert_awaited_once_with(loop.id, loop.drift_rationale)
 
 
 async def test_failing_push_bar_produces_no_push():
@@ -93,3 +95,59 @@ async def test_loop_deleted_between_selection_and_send_gets_no_push():
     await job.run()
 
     mocks["notifier"].push.assert_not_awaited()
+
+
+async def test_already_claimed_push_is_skipped_not_errored():
+    loop = _loop()
+    job, mocks = _job([loop], passes=True)
+    mocks["surfacer"].claim_push = AsyncMock(return_value=False)
+
+    await job.run()  # must not raise
+
+    mocks["notifier"].push.assert_not_awaited()
+
+
+async def test_concurrent_sweeps_on_same_loop_push_exactly_once():
+    """Two concurrent PushSweepJob.run() calls against a loop that qualifies for
+    exactly one push must result in exactly one notifier.push() call total —
+    the DB claim (mocked here as a shared, mutually-exclusive gate), not the
+    pre-check, is the arbiter of exclusivity."""
+    loop = _loop()
+    job_a, mocks_a = _job([loop], passes=True)
+    job_b, mocks_b = _job([loop], passes=True)
+
+    claimed_ids: set = set()
+
+    async def _shared_claim(loop_id, rationale):
+        if loop_id in claimed_ids:
+            return False
+        claimed_ids.add(loop_id)
+        return True
+
+    mocks_a["surfacer"].claim_push = AsyncMock(side_effect=_shared_claim)
+    mocks_b["surfacer"].claim_push = AsyncMock(side_effect=_shared_claim)
+
+    await asyncio.gather(job_a.run(), job_b.run())
+
+    total_pushes = (
+        mocks_a["notifier"].push.await_count + mocks_b["notifier"].push.await_count
+    )
+    assert total_pushes == 1
+
+
+async def test_notifier_failure_after_claim_rolls_back_claim():
+    """(remediation for analysis finding G1) A notifier failure after a
+    successful claim must release the claim so a future sweep can retry, and
+    must not abort processing of other loops in the same sweep."""
+    loop_a = _loop()
+    loop_b = _loop()
+    job, mocks = _job([loop_a, loop_b], passes=True)
+    mocks["loop_store"].get = AsyncMock(side_effect=[loop_a, loop_b])
+    mocks["notifier"].push = AsyncMock(
+        side_effect=[RuntimeError("ntfy down"), None]
+    )
+
+    await job.run()  # must not raise
+
+    mocks["surfacer"].release_push_claim.assert_awaited_once_with(loop_a.id)
+    assert mocks["notifier"].push.await_count == 2

@@ -122,8 +122,19 @@ class LoopSurfacer:
 
         return True
 
-    async def log_push(self, loop_id: UUID, rationale: str) -> None:
-        await self._push_log.log(PUSH_EVENT_KEY, payload=rationale)
+    async def claim_push(self, loop_id: UUID, rationale: str) -> bool:
+        """Claim the push slot for this loop. Returns True if this call may notify.
+
+        The DB write is the arbiter of exclusivity — two concurrent callers can
+        never both win the claim for the same loop_id.
+        """
+        return await self._push_log.try_claim(
+            PUSH_EVENT_KEY, idempotency_key=str(loop_id), payload=rationale
+        )
+
+    async def release_push_claim(self, loop_id: UUID) -> None:
+        """Roll back a claim whose notification was never delivered."""
+        await self._push_log.release_claim(PUSH_EVENT_KEY, idempotency_key=str(loop_id))
 
     async def _entity_names(self, loop_id: UUID) -> list[str]:
         if self._pool is None:

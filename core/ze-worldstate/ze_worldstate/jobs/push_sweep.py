@@ -68,7 +68,19 @@ class PushSweepJob:
             if current is None or current.state != LoopState.DRIFTING:
                 continue
 
+            claimed = await self._surfacer.claim_push(loop.id, loop.drift_rationale)
+            if not claimed:
+                log.info("open_loop_push_already_claimed", loop_id=str(loop.id))
+                continue
+
             body = format_hedged_mention(loop.title, loop.drift_rationale)
-            await self._notifier.push(body, urgency="normal")
-            await self._surfacer.log_push(loop.id, loop.drift_rationale)
+            try:
+                await self._notifier.push(body, urgency="normal")
+            except Exception as exc:
+                await self._surfacer.release_push_claim(loop.id)
+                log.warning(
+                    "open_loop_push_notify_failed", loop_id=str(loop.id), error=str(exc)
+                )
+                continue
+
             log.info("open_loop_pushed", loop_id=str(loop.id))
