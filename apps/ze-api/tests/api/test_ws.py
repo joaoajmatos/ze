@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 
 from ze_agents.errors import OnboardingError
 from ze_api.api.websocket.component_submit import handle_component_submit
+from ze_api.api.websocket.confirmation import handle_confirm, send_confirmation_request
 from ze_api.api.websocket.connection import ConnectionManager
+from ze_api.api.websocket.endpoint import _track_gate, _untrack_gate
 from ze_api.api.websocket.onboarding import send_onboarding_view
 from ze_api.api.websocket.serializers import message_to_dict
 from ze_onboarding import OnboardingView
@@ -364,3 +366,79 @@ async def test_component_submit_falls_back_to_graph_on_unknown_session():
     assert message_data["thread_id"] == "thread-1"
     assert "[component_submit:agent.form]" in message_data["text"]
     assert '"field": "value"' in message_data["text"]
+
+
+# ── Multiple concurrent confirmation gates on one thread ──────────────────────
+
+
+def _make_outcome(thread_id: str, draft: str = "Approve?") -> MagicMock:
+    outcome = MagicMock()
+    outcome.draft = draft
+    outcome.config = {"configurable": {"thread_id": thread_id}}
+    return outcome
+
+
+def _make_gate_container() -> AsyncMock:
+    container = AsyncMock()
+    container.settings.confirm_timeout_seconds = 900
+    container.notifier = None
+    return container
+
+
+async def test_two_gates_on_same_thread_both_tracked_independently():
+    """Two confirmation-triggering turns on one thread, neither answered yet."""
+    thread_id = "thread-1"
+    mgr = ConnectionManager()
+    ws = _make_ws()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+    await mgr.connect(ws, store)
+    ws.send_json.reset_mock()
+
+    confirmation_store = AsyncMock()
+    confirmation_store.save = AsyncMock()
+
+    container = _make_gate_container()
+
+    pending_configs: dict[str, dict] = {}
+    thread_pending_requests: dict[str, set[str]] = {}
+
+    request_id_a, config_a = await send_confirmation_request(
+        mgr, container, _make_outcome(thread_id, "Approve A?"), thread_id,
+        confirmation_store=confirmation_store,
+    )
+    _track_gate(pending_configs, thread_pending_requests, request_id_a, thread_id, config_a)
+
+    request_id_b, config_b = await send_confirmation_request(
+        mgr, container, _make_outcome(thread_id, "Approve B?"), thread_id,
+        confirmation_store=confirmation_store,
+    )
+    _track_gate(pending_configs, thread_pending_requests, request_id_b, thread_id, config_b)
+
+    assert request_id_a != request_id_b
+
+    frames = [call[0][0] for call in ws.send_json.call_args_list]
+    confirm_frames = [f for f in frames if f.get("type") == "confirm_request"]
+    assert len(confirm_frames) == 2
+    assert {f["id"] for f in confirm_frames} == {request_id_a, request_id_b}
+
+    assert set(pending_configs.keys()) == {request_id_a, request_id_b}
+    assert thread_pending_requests[thread_id] == {request_id_a, request_id_b}
+
+    # Resolving gate A (deny) must not affect gate B's tracked config.
+    result = await handle_confirm(
+        ws,
+        {"type": "confirm", "id": request_id_a, "choice": "deny"},
+        container,
+        mgr,
+        pending_configs.get(request_id_a),
+        thread_id=thread_id,
+        confirmation_store=confirmation_store,
+    )
+    assert result is None
+    _untrack_gate(pending_configs, thread_pending_requests, request_id_a, thread_id)
+
+    confirmation_store.clear.assert_awaited_once_with(thread_id, request_id_a)
+    assert request_id_a not in pending_configs
+    assert pending_configs[request_id_b] == config_b
+    assert thread_pending_requests[thread_id] == {request_id_b}

@@ -280,7 +280,7 @@ class TestConfirmationApproveFlow:
         )
 
         container.resume_turn.assert_awaited_once_with(pending_config)
-        assert result is None  # pending_config cleared
+        assert result is None  # gate resolved
 
     async def test_approve_sends_typing_before_resume(self):
         ws = _make_ws()
@@ -483,11 +483,12 @@ class TestConfirmationTimeoutFlow:
             None,
             "thread-timeout",
             0,
+            "req-timeout",
             container=container,
             graph_config=graph_config,
         )
 
-        confirmation_store.clear.assert_awaited_once_with("thread-timeout")
+        confirmation_store.clear.assert_awaited_once_with("thread-timeout", "req-timeout")
         container.abort_pending_checkpoint.assert_awaited_once_with(graph_config)
 
     async def test_timeout_sends_message_to_user(self):

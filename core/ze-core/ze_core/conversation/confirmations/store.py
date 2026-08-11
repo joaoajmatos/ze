@@ -30,8 +30,8 @@ class PendingConfirmationStore:
                     INSERT INTO pending_confirmations
                         (thread_id, request_id, prompt, actions, expires_at)
                     VALUES ($1, $2, $3, $4, $5)
-                    ON CONFLICT (thread_id) DO UPDATE
-                        SET request_id = EXCLUDED.request_id,
+                    ON CONFLICT (request_id) DO UPDATE
+                        SET thread_id  = EXCLUDED.thread_id,
                             prompt     = EXCLUDED.prompt,
                             actions    = EXCLUDED.actions,
                             expires_at = EXCLUDED.expires_at,
@@ -66,13 +66,34 @@ class PendingConfirmationStore:
             log.warning("confirmation_get_all_failed", error=str(exc))
             return []
 
-    async def get_pending_for_thread(self, thread_id: str) -> dict | None:
-        """Return a non-expired pending confirmation for the given thread, or None."""
+    async def get_pending_for_thread(self, thread_id: str) -> list[dict]:
+        """Return all non-expired pending confirmations for the given thread."""
+        try:
+            async with self._pool.acquire() as conn:
+                rows = await conn.fetch(
+                    "SELECT * FROM pending_confirmations WHERE thread_id = $1 AND expires_at > NOW()",
+                    thread_id,
+                )
+            return [
+                {
+                    "thread_id": row["thread_id"],
+                    "request_id": row["request_id"],
+                    "prompt": row["prompt"],
+                    "actions": row["actions"],
+                }
+                for row in rows
+            ]
+        except Exception as exc:
+            log.warning("confirmation_get_failed", error=str(exc))
+            return []
+
+    async def get_pending(self, request_id: str) -> dict | None:
+        """Return the non-expired pending confirmation for request_id, or None."""
         try:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow(
-                    "SELECT * FROM pending_confirmations WHERE thread_id = $1 AND expires_at > NOW()",
-                    thread_id,
+                    "SELECT * FROM pending_confirmations WHERE request_id = $1 AND expires_at > NOW()",
+                    request_id,
                 )
             if row is None:
                 return None
@@ -86,13 +107,14 @@ class PendingConfirmationStore:
             log.warning("confirmation_get_failed", error=str(exc))
             return None
 
-    async def clear(self, thread_id: str) -> bool:
-        """Delete the row for thread_id. Returns True if a row was deleted."""
+    async def clear(self, thread_id: str, request_id: str) -> bool:
+        """Delete the row matching both thread_id and request_id. Returns True if deleted."""
         try:
             async with self._pool.acquire() as conn:
                 result = await conn.execute(
-                    "DELETE FROM pending_confirmations WHERE thread_id = $1",
+                    "DELETE FROM pending_confirmations WHERE thread_id = $1 AND request_id = $2",
                     thread_id,
+                    request_id,
                 )
             return result == "DELETE 1"
         except Exception as exc:

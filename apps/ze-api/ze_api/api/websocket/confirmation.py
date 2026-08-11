@@ -31,7 +31,7 @@ async def handle_confirm(
     confirmation_store: Any | None = None,
     session_store: Any | None = None,
     msg_store: Any | None = None,
-) -> dict | None:
+) -> tuple[str, dict] | None:
     choice = data.get("choice", "")
     request_id = data.get("id", "")
 
@@ -42,12 +42,12 @@ async def handle_confirm(
         return None
 
     if confirmation_store is not None and thread_id:
-        await confirmation_store.clear(thread_id)
+        await confirmation_store.clear(thread_id, request_id)
 
     if choice == "approve":
         if not conn_mgr.try_set_busy(thread_id):
             await conn_mgr.send_frame({"type": "error", "detail": "busy"}, thread_id)
-            return pending_config
+            return request_id, pending_config
         try:
             await conn_mgr.send_frame({"type": "typing"}, thread_id)
             with bound_turn_context(thread_id):
@@ -114,11 +114,12 @@ async def confirmation_timeout(
     notifier: Any | None,
     thread_id: str,
     timeout_seconds: int,
+    request_id: str = "",
     container: Any | None = None,
     graph_config: dict | None = None,
 ) -> None:
     await asyncio.sleep(timeout_seconds)
-    cleared = await confirmation_store.clear(thread_id)
+    cleared = await confirmation_store.clear(thread_id, request_id)
     if not cleared:
         return
 
@@ -155,8 +156,8 @@ async def send_confirmation_request(
     thread_id: str,
     *,
     confirmation_store: Any | None = None,
-) -> dict:
-    """Persist, notify, and frame a confirmation request; returns graph config."""
+) -> tuple[str, dict]:
+    """Persist, notify, and frame a confirmation request; returns (request_id, graph config)."""
     request_id = str(uuid4())
     effective_thread_id = extract_thread_id(outcome.config) or thread_id or ""
     confirm_timeout = getattr(container.settings, "confirm_timeout_seconds", 900)
@@ -198,9 +199,10 @@ async def send_confirmation_request(
                 notifier,
                 effective_thread_id,
                 confirm_timeout,
+                request_id,
                 container=container,
                 graph_config=outcome.config,
             )
         )
 
-    return outcome.config
+    return request_id, outcome.config

@@ -29,17 +29,17 @@ async def handle_message(
     *,
     confirmation_store: Any | None = None,
     session_store: Any | None = None,
-) -> dict | None:
+) -> tuple[str, dict] | None:
     text: str = data.get("text", "")
     thread_id: str | None = data.get("thread_id") or None
     context: dict | None = data.get("context") or None
 
     if not text:
-        return pending_config
+        return None
 
     if not thread_id:
         await conn_mgr.send_frame({"type": "error", "detail": "thread_id required"})
-        return pending_config
+        return None
 
     pending_gate_id = conn_mgr.take_pending_gate_redirect(thread_id)
     if pending_gate_id is not None:
@@ -122,7 +122,11 @@ async def handle_message(
     if outcome.response:
         effective_thread_id = extract_thread_id(outcome.config) or thread_id or ""
         if confirmation_store is not None and effective_thread_id:
-            await confirmation_store.clear(effective_thread_id)
+            # This turn completed with a direct response, superseding any gate(s)
+            # left open on this thread — their checkpoints can no longer be resumed.
+            stale = await confirmation_store.get_pending_for_thread(effective_thread_id)
+            for row in stale:
+                await confirmation_store.clear(effective_thread_id, row["request_id"])
 
         if session_store is not None and effective_thread_id:
             preview = outcome.response[:120].strip() if outcome.response else None

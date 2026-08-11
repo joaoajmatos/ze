@@ -25,7 +25,7 @@ async def handle_component_submit(
     *,
     confirmation_store: Any | None = None,
     session_store: Any | None = None,
-) -> dict | None:
+) -> tuple[str, dict] | None:
     step_id = str(data.get("step_id") or data.get("component_id") or "")
     values = data.get("values") or {}
     if not step_id or not isinstance(values, dict):

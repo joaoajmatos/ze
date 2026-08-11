@@ -17,6 +17,31 @@ from ze_logging import get_logger
 log = get_logger(__name__)
 
 
+def _track_gate(
+    pending_configs: dict[str, dict],
+    thread_pending_requests: dict[str, set[str]],
+    request_id: str,
+    thread_id: str,
+    config: dict,
+) -> None:
+    pending_configs[request_id] = config
+    thread_pending_requests.setdefault(thread_id, set()).add(request_id)
+
+
+def _untrack_gate(
+    pending_configs: dict[str, dict],
+    thread_pending_requests: dict[str, set[str]],
+    request_id: str,
+    thread_id: str,
+) -> None:
+    pending_configs.pop(request_id, None)
+    ids = thread_pending_requests.get(thread_id)
+    if ids is not None:
+        ids.discard(request_id)
+        if not ids:
+            thread_pending_requests.pop(thread_id, None)
+
+
 async def websocket_endpoint(
     ws: WebSocket,
     token: str | None = None,
@@ -58,9 +83,12 @@ async def websocket_endpoint(
         except Exception as exc:
             log.warning("ws_onboarding_autostart_failed", error=str(exc))
 
-    # Per-thread LangGraph configs for in-flight confirmations.
-    # Keyed by thread_id; each value is the graph config needed to resume.
+    # LangGraph configs for in-flight confirmations, keyed by request_id so a
+    # second gate opened on the same thread before the first resolves can
+    # never overwrite or be popped by the other's resolution/timeout.
     pending_configs: dict[str, dict] = {}
+    # Derived index: thread_id -> {request_id, ...} of gates open on that thread.
+    thread_pending_requests: dict[str, set[str]] = {}
 
     try:
         while True:
@@ -94,6 +122,7 @@ async def websocket_endpoint(
                 )
                 if new_pending is None and first_pending is not None:
                     pending_configs.clear()
+                    thread_pending_requests.clear()
 
             elif frame_type == "component_submit":
                 thread_id = data.get("thread_id") or ""
@@ -114,14 +143,19 @@ async def websocket_endpoint(
                         container,
                         conn_mgr,
                         msg_store,
-                        pending_configs.get(thread_id),
+                        None,
                         confirmation_store=confirmation_store,
                         session_store=session_store,
                     )
                     if result is not None:
-                        pending_configs[thread_id] = result
-                    else:
-                        pending_configs.pop(thread_id, None)
+                        new_request_id, new_config = result
+                        _track_gate(
+                            pending_configs,
+                            thread_pending_requests,
+                            new_request_id,
+                            thread_id,
+                            new_config,
+                        )
                 finally:
                     conn_mgr.clear_busy(thread_id)
 
@@ -132,21 +166,31 @@ async def websocket_endpoint(
                         {"type": "error", "detail": "thread_id required in confirm"}
                     )
                     continue
+                request_id = data.get("id") or ""
                 result = await handle_confirm(
                     ws,
                     data,
                     container,
                     conn_mgr,
-                    pending_configs.get(thread_id),
+                    pending_configs.get(request_id),
                     thread_id=thread_id,
                     confirmation_store=confirmation_store,
                     session_store=session_store,
                     msg_store=msg_store,
                 )
+                if request_id:
+                    _untrack_gate(
+                        pending_configs, thread_pending_requests, request_id, thread_id
+                    )
                 if result is not None:
-                    pending_configs[thread_id] = result
-                else:
-                    pending_configs.pop(thread_id, None)
+                    new_request_id, new_config = result
+                    _track_gate(
+                        pending_configs,
+                        thread_pending_requests,
+                        new_request_id,
+                        thread_id,
+                        new_config,
+                    )
 
             elif frame_type == "action":
                 await handle_action(ws, data, container, conn_mgr)
@@ -174,6 +218,7 @@ async def websocket_endpoint(
                         msg_store,
                         conn_mgr,
                         pending_configs,
+                        thread_pending_requests,
                         thread_id,
                         confirmation_store=confirmation_store,
                         session_store=session_store,
@@ -194,6 +239,7 @@ async def _run_message_task(
     msg_store: object,
     conn_mgr: ConnectionManager,
     pending_configs: dict[str, dict],
+    thread_pending_requests: dict[str, set[str]],
     thread_id: str,
     *,
     confirmation_store: object | None,
@@ -207,14 +253,19 @@ async def _run_message_task(
             container,
             msg_store,
             conn_mgr,
-            pending_configs.get(thread_id),
+            None,
             confirmation_store=confirmation_store,
             session_store=session_store,
         )
         if result is not None:
-            pending_configs[thread_id] = result
-        else:
-            pending_configs.pop(thread_id, None)
+            new_request_id, new_config = result
+            _track_gate(
+                pending_configs,
+                thread_pending_requests,
+                new_request_id,
+                thread_id,
+                new_config,
+            )
     except Exception as exc:
         log.exception("ws_message_task_error", thread_id=thread_id, error=str(exc))
         await conn_mgr.send_frame(
