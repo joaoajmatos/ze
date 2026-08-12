@@ -20,6 +20,8 @@ from ze_automation.bootstrap import (
 )
 from ze_worldstate.bootstrap import build_worldstate_stack, worldstate_data_domains
 from ze_worldstate.store import LoopStore
+from ze_skills.bootstrap import build_skills_stack
+from ze_skills.store import SkillStore
 from ze_browser import BrowserClient
 from ze_components.hook import ComponentCollectionHook
 from ze_core.nli import LocalNLIClient
@@ -118,6 +120,7 @@ class ZeContainer(CoreContainer):
     loop_graph_store: Any
     loop_entity_resolver: Any
     loop_surfacer: Any
+    skill_store: SkillStore
     budget_checker: SpendBudgetChecker | None = None
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
@@ -227,8 +230,10 @@ async def build_container(settings: Settings) -> ZeContainer:
     automation = build_automation_stack(shared, settings)
     correlation = build_correlation_stack(shared, settings)
     worldstate = build_worldstate_stack(shared, settings)
+    skills_stack = build_skills_stack(shared, settings)
     shared.dep_map.update(automation.deps)
     shared.dep_map.update(worldstate.deps)
+    shared.dep_map.update(skills_stack.deps)
 
     async def _worldstate_contradiction_hook(fact_id) -> None:
         from ze_worldstate.decay import cascade_from_evidence
@@ -496,6 +501,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         loop_surfacer=loop_surfacer,
+        skill_store=skills_stack.skill_store,
     )
 
     webhook_dispatcher._container = container

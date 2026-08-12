@@ -87,3 +87,7 @@ def get_notification_store(request: Request):
 
 def get_loop_store(request: Request):
     return request.app.state.container.loop_store
+
+
+def get_skill_store(request: Request):
+    return request.app.state.container.skill_store

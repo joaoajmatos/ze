@@ -42,6 +42,15 @@ class CompactionTrace:
 
 
 @dataclass
+class SkillUsageTrace:
+    skill_id: str
+    name: str
+    source: str  # "bundled" | "imported"
+    trigger: str  # "automatic" | "explicit"
+    similarity: float | None = None  # set only when trigger == "automatic"
+
+
+@dataclass
 class MessageTrace:
     agent: str
     routing_method: str  # "embedding" | "haiku" | "fallback"
@@ -54,3 +63,4 @@ class MessageTrace:
     total_duration_ms: int = 0
     compaction: CompactionTrace | None = None
     resume_recap_applied: bool = False
+    skills_used: list[SkillUsageTrace] = field(default_factory=list)
