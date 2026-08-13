@@ -1300,6 +1300,10 @@ export type LoopDetail = {
      */
     confidence: number;
     /**
+     * Drift Rationale
+     */
+    drift_rationale: string | null;
+    /**
      * Created At
      */
     created_at: string | null;
@@ -1385,6 +1389,10 @@ export type LoopListItem = {
      * Confidence
      */
     confidence: number;
+    /**
+     * Drift Rationale
+     */
+    drift_rationale: string | null;
     /**
      * Created At
      */
@@ -1719,32 +1727,6 @@ export type MessageTraceResponse = {
 };
 
 /**
- * SkillUsageTraceResponse
- */
-export type SkillUsageTraceResponse = {
-    /**
-     * Skill Id
-     */
-    skill_id: string;
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Source
-     */
-    source: string;
-    /**
-     * Trigger
-     */
-    trigger: string;
-    /**
-     * Similarity
-     */
-    similarity?: number | null;
-};
-
-/**
  * MessageTracesResponse
  */
 export type MessageTracesResponse = {
@@ -2022,6 +2004,228 @@ export type SessionSearchResult = {
      * Rank
      */
     rank: number;
+};
+
+/**
+ * SkillDetailResponse
+ */
+export type SkillDetailResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Source
+     */
+    source: 'bundled' | 'imported';
+    /**
+     * Origin Url
+     */
+    origin_url: string | null;
+    /**
+     * Bundling Plugin
+     */
+    bundling_plugin: string | null;
+    /**
+     * Status
+     */
+    status: 'pending_review' | 'active' | 'disabled' | 'rejected';
+    /**
+     * Has Unsupported Scripts
+     */
+    has_unsupported_scripts: boolean;
+    /**
+     * Created At
+     */
+    created_at: string | null;
+    /**
+     * Approved At
+     */
+    approved_at: string | null;
+    /**
+     * Last Checked At
+     */
+    last_checked_at: string | null;
+    /**
+     * Last Check Error
+     */
+    last_check_error: string | null;
+    /**
+     * Instructions
+     */
+    instructions: string;
+    /**
+     * Allowed Tools
+     */
+    allowed_tools: Array<string> | null;
+    /**
+     * Reference Files
+     */
+    reference_files: Array<SkillReferenceFileSummary>;
+    /**
+     * Previous Version
+     */
+    previous_version?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+/**
+ * SkillImportRequest
+ */
+export type SkillImportRequest = {
+    /**
+     * Url
+     */
+    url: string;
+};
+
+/**
+ * SkillListResponse
+ */
+export type SkillListResponse = {
+    /**
+     * Skills
+     */
+    skills: Array<SkillResponse>;
+};
+
+/**
+ * SkillReferenceFileResponse
+ */
+export type SkillReferenceFileResponse = {
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Content Type
+     */
+    content_type: string;
+    /**
+     * Content
+     */
+    content: string;
+};
+
+/**
+ * SkillReferenceFileSummary
+ */
+export type SkillReferenceFileSummary = {
+    /**
+     * Filename
+     */
+    filename: string;
+    /**
+     * Content Type
+     */
+    content_type: string;
+};
+
+/**
+ * SkillResponse
+ */
+export type SkillResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Slug
+     */
+    slug: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Source
+     */
+    source: 'bundled' | 'imported';
+    /**
+     * Origin Url
+     */
+    origin_url: string | null;
+    /**
+     * Bundling Plugin
+     */
+    bundling_plugin: string | null;
+    /**
+     * Status
+     */
+    status: 'pending_review' | 'active' | 'disabled' | 'rejected';
+    /**
+     * Has Unsupported Scripts
+     */
+    has_unsupported_scripts: boolean;
+    /**
+     * Created At
+     */
+    created_at: string | null;
+    /**
+     * Approved At
+     */
+    approved_at: string | null;
+    /**
+     * Last Checked At
+     */
+    last_checked_at: string | null;
+    /**
+     * Last Check Error
+     */
+    last_check_error: string | null;
+};
+
+/**
+ * SkillSource
+ */
+export type SkillSource = 'bundled' | 'imported';
+
+/**
+ * SkillStatus
+ */
+export type SkillStatus = 'pending_review' | 'active' | 'disabled' | 'rejected';
+
+/**
+ * SkillUsageTraceResponse
+ */
+export type SkillUsageTraceResponse = {
+    /**
+     * Skill Id
+     */
+    skill_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Similarity
+     */
+    similarity?: number | null;
 };
 
 /**
@@ -4390,6 +4594,279 @@ export type DropLoopResponses = {
 };
 
 export type DropLoopResponse = DropLoopResponses[keyof DropLoopResponses];
+
+export type ListSkillsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: SkillStatus | null;
+        /**
+         * Source
+         */
+        source?: SkillSource | null;
+    };
+    url: '/api/v0/skills';
+};
+
+export type ListSkillsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListSkillsError = ListSkillsErrors[keyof ListSkillsErrors];
+
+export type ListSkillsResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillListResponse;
+};
+
+export type ListSkillsResponse = ListSkillsResponses[keyof ListSkillsResponses];
+
+export type DeleteSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}';
+};
+
+export type DeleteSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteSkillError = DeleteSkillErrors[keyof DeleteSkillErrors];
+
+export type DeleteSkillResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteSkillResponse = DeleteSkillResponses[keyof DeleteSkillResponses];
+
+export type GetSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}';
+};
+
+export type GetSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetSkillError = GetSkillErrors[keyof GetSkillErrors];
+
+export type GetSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type GetSkillResponse = GetSkillResponses[keyof GetSkillResponses];
+
+export type GetSkillReferenceFileData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+        /**
+         * Filename
+         */
+        filename: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/reference-files/{filename}';
+};
+
+export type GetSkillReferenceFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetSkillReferenceFileError = GetSkillReferenceFileErrors[keyof GetSkillReferenceFileErrors];
+
+export type GetSkillReferenceFileResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillReferenceFileResponse;
+};
+
+export type GetSkillReferenceFileResponse = GetSkillReferenceFileResponses[keyof GetSkillReferenceFileResponses];
+
+export type ImportSkillData = {
+    body: SkillImportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v0/skills/import';
+};
+
+export type ImportSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ImportSkillError = ImportSkillErrors[keyof ImportSkillErrors];
+
+export type ImportSkillResponses = {
+    /**
+     * Successful Response
+     */
+    201: SkillDetailResponse;
+};
+
+export type ImportSkillResponse = ImportSkillResponses[keyof ImportSkillResponses];
+
+export type ApproveSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/approve';
+};
+
+export type ApproveSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApproveSkillError = ApproveSkillErrors[keyof ApproveSkillErrors];
+
+export type ApproveSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type ApproveSkillResponse = ApproveSkillResponses[keyof ApproveSkillResponses];
+
+export type RejectSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/reject';
+};
+
+export type RejectSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RejectSkillError = RejectSkillErrors[keyof RejectSkillErrors];
+
+export type RejectSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type RejectSkillResponse = RejectSkillResponses[keyof RejectSkillResponses];
+
+export type DisableSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/disable';
+};
+
+export type DisableSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DisableSkillError = DisableSkillErrors[keyof DisableSkillErrors];
+
+export type DisableSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type DisableSkillResponse = DisableSkillResponses[keyof DisableSkillResponses];
+
+export type EnableSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/enable';
+};
+
+export type EnableSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EnableSkillError = EnableSkillErrors[keyof EnableSkillErrors];
+
+export type EnableSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type EnableSkillResponse = EnableSkillResponses[keyof EnableSkillResponses];
 
 export type ListChannelsData = {
     body?: never;

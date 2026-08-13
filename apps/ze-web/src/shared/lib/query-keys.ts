@@ -28,6 +28,9 @@ export const queryKeys = {
   unreadNotificationCount: ["unread-notification-count"] as const,
   loops: (state?: string) => ["loops", state ?? ""] as const,
   loopDetail: (loopId: string) => ["loop-detail", loopId] as const,
+  skills: (status?: string, source?: string) =>
+    ["skills", status ?? "", source ?? ""] as const,
+  skillDetail: (skillId: string) => ["skill-detail", skillId] as const,
 };
 
 const CORE_REFRESH_SCREEN_MAP: Record<string, readonly string[]> = {

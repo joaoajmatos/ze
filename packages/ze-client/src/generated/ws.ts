@@ -79,15 +79,15 @@ export type Success = boolean;
 export type ToolCalls = ToolCallTraceResponse[];
 export type TotalDurationMs = number;
 export type SkillId = string;
-export type SkillName = string;
-export type SkillSource = string;
-export type SkillTrigger = string;
-export type SkillSimilarity = number | null;
+export type Name1 = string;
+export type Source1 = string;
+export type Trigger = string;
+export type Similarity = number | null;
 export type SkillsUsed = SkillUsageTraceResponse[];
 export type Type10 = "notification";
 export type Id4 = string;
 export type EventType = string;
-export type Source1 = string;
+export type Source2 = string;
 export type Title = string;
 export type Body = string;
 export type TargetType = string | null;
@@ -123,7 +123,7 @@ export type Type14 = "action";
 export type Payload = string;
 export type ThreadId11 = string | null;
 export type Type15 = "command";
-export type Name1 = "cancel" | "costs" | "capabilities" | "status" | "onboarding" | "reset" | "reset_preview";
+export type Name2 = "cancel" | "costs" | "capabilities" | "status" | "onboarding" | "reset" | "reset_preview";
 export type Type16 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
@@ -293,10 +293,10 @@ export interface ToolCallTraceResponse {
  */
 export interface SkillUsageTraceResponse {
   skill_id: SkillId;
-  name: SkillName;
-  source: SkillSource;
-  trigger: SkillTrigger;
-  similarity?: SkillSimilarity;
+  name: Name1;
+  source: Source1;
+  trigger: Trigger;
+  similarity?: Similarity;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -306,7 +306,7 @@ export interface WsNotificationFrame {
   type: Type10;
   id: Id4;
   event_type: EventType;
-  source: Source1;
+  source: Source2;
   title: Title;
   body: Body;
   target_type: TargetType;
@@ -367,7 +367,7 @@ export interface WsActionFrame {
  */
 export interface WsCommandFrame {
   type: Type15;
-  name: Name1;
+  name: Name2;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

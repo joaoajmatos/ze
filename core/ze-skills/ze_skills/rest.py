@@ -123,3 +123,17 @@ async def approve(store: SkillStore, skill_id: UUID) -> dict:
 async def reject(store: SkillStore, skill_id: UUID) -> dict:
     skill = await review.reject_skill(store, skill_id)
     return await _detail(store, skill)
+
+
+async def disable(store: SkillStore, skill_id: UUID) -> dict:
+    skill = await review.disable_skill(store, skill_id)
+    return await _detail(store, skill)
+
+
+async def enable(store: SkillStore, skill_id: UUID) -> dict:
+    skill = await review.enable_skill(store, skill_id)
+    return await _detail(store, skill)
+
+
+async def remove(store: SkillStore, skill_id: UUID) -> None:
+    await review.remove_skill(store, skill_id)

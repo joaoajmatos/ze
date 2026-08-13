@@ -20,7 +20,11 @@ from ze_automation.bootstrap import (
 )
 from ze_worldstate.bootstrap import build_worldstate_stack, worldstate_data_domains
 from ze_worldstate.store import LoopStore
-from ze_skills.bootstrap import build_skill_matcher, build_skills_stack
+from ze_skills.bootstrap import (
+    build_skill_matcher,
+    build_skills_stack,
+    register_bundled_skills,
+)
 from ze_skills.store import SkillStore
 from ze_browser import BrowserClient
 from ze_components.hook import ComponentCollectionHook
@@ -425,6 +429,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     import_automation_agents()
     import_ingestion_agents()
     bootstrap_agents(deps=agent_deps, plugins=plugins)
+    await register_bundled_skills(skills_stack.skill_store, plugins)
 
     router = build_router(shared)
     component_hook = register_harness_hooks(settings)

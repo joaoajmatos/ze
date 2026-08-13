@@ -11,6 +11,7 @@ import {
   Server,
   Briefcase,
   Settings,
+  PenTool,
 } from "lucide-react";
 import { redirectHintPath } from "@/shared/lib/redirect-hint";
 
@@ -31,6 +32,7 @@ export const navRoutes: NavRouteMeta[] = [
   { path: "brain-memory", label: "Memory", icon: Brain, showInMobileNav: false },
   { path: "brain-graph", label: "Graph", icon: Network, showInMobileNav: false },
   { path: "data", label: "Data", icon: Database, showInMobileNav: false },
+  { path: "skills", label: "Skills", icon: PenTool, showInMobileNav: false },
 ];
 
 /** Work sub-routes — rendered inside the collapsible Work group. */
@@ -45,7 +47,7 @@ export const knowledgeNavRoutes: NavRouteMeta[] = navRoutes.filter(
 
 /** System sub-routes — rendered inside the collapsible System group. */
 export const systemNavRoutes: NavRouteMeta[] = navRoutes.filter(
-  (r) => r.path === "costs" || r.path === "data",
+  (r) => r.path === "costs" || r.path === "data" || r.path === "skills",
 );
 
 export { Library as KnowledgeIcon, Server as SystemIcon, Briefcase as WorkIcon };

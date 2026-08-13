@@ -102,3 +102,99 @@ async def test_reject_skill_raises_not_found_when_missing():
 
     with pytest.raises(SkillNotFoundError):
         await review.reject_skill(store, uuid4())
+
+
+@pytest.mark.asyncio
+async def test_disable_skill_transitions_active_to_disabled():
+    skill_id = uuid4()
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE)
+    disabled = _skill(id=skill_id, status=SkillStatus.DISABLED)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.transition = AsyncMock(return_value=disabled)
+
+    result = await review.disable_skill(store, skill_id)
+
+    assert result.status == SkillStatus.DISABLED
+    store.transition.assert_awaited_once_with(
+        skill_id, SkillStatus.ACTIVE, SkillStatus.DISABLED
+    )
+    store.add_review.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_disable_skill_raises_invalid_transition_when_not_active():
+    skill_id = uuid4()
+    pending = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=pending)
+    store.transition = AsyncMock(return_value=None)
+
+    with pytest.raises(InvalidSkillTransitionError):
+        await review.disable_skill(store, skill_id)
+
+
+@pytest.mark.asyncio
+async def test_enable_skill_transitions_disabled_to_active_no_new_review():
+    skill_id = uuid4()
+    disabled = _skill(id=skill_id, status=SkillStatus.DISABLED)
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=disabled)
+    store.transition = AsyncMock(return_value=active)
+
+    result = await review.enable_skill(store, skill_id)
+
+    assert result.status == SkillStatus.ACTIVE
+    store.transition.assert_awaited_once_with(
+        skill_id, SkillStatus.DISABLED, SkillStatus.ACTIVE
+    )
+    store.add_review.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_enable_skill_rejected_when_drifted_to_pending_review():
+    skill_id = uuid4()
+    drifted = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=drifted)
+    store.transition = AsyncMock(return_value=None)
+
+    with pytest.raises(InvalidSkillTransitionError):
+        await review.enable_skill(store, skill_id)
+
+
+@pytest.mark.asyncio
+async def test_remove_skill_deletes_imported_skill():
+    skill_id = uuid4()
+    imported = _skill(id=skill_id, source=SkillSource.IMPORTED)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=imported)
+    store.delete = AsyncMock(return_value=True)
+
+    await review.remove_skill(store, skill_id)
+
+    store.delete.assert_awaited_once_with(skill_id)
+
+
+@pytest.mark.asyncio
+async def test_remove_skill_rejects_bundled_skill():
+    skill_id = uuid4()
+    bundled = _skill(id=skill_id, source=SkillSource.BUNDLED, status=SkillStatus.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=bundled)
+    store.delete = AsyncMock()
+
+    with pytest.raises(InvalidSkillTransitionError):
+        await review.remove_skill(store, skill_id)
+
+    store.delete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_remove_skill_raises_not_found_when_missing():
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=None)
+
+    with pytest.raises(SkillNotFoundError):
+        await review.remove_skill(store, uuid4())

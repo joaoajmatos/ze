@@ -108,6 +108,15 @@ class ZePlugin(ABC):
         """Fully-qualified module paths to import at bootstrap to trigger @agent registration."""
         return []
 
+    def bundled_skill_paths(self) -> list[str]:
+        """Filesystem paths to this plugin's bundled `SKILL.md` files.
+
+        Loaded and registered at startup with `source=bundled`, `status=active`
+        (no review gate — developer-authored, ships with the plugin). Default:
+        none.
+        """
+        return []
+
     def agent_deps(self, accumulated: dict[type, Any]) -> dict[type, Any]:
         """Return types this plugin contributes to the agent dep-map.
 

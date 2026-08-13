@@ -141,3 +141,67 @@ async def reject_skill(
     except InvalidSkillTransitionError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
     return SkillDetailResponse.model_validate(skill)
+
+
+@router.post(
+    "/{skill_id}/disable",
+    response_model=SkillDetailResponse,
+    operation_id="disableSkill",
+    summary="Disable an active skill",
+    description="Transition an active skill to disabled (FR-013), removing it from "
+    "the matcher's active set immediately.",
+)
+async def disable_skill(
+    skill_id: UUID,
+    store: SkillStore = Depends(get_skill_store),
+) -> SkillDetailResponse:
+    try:
+        skill = await skills_rest.disable(store, skill_id)
+    except SkillNotFoundError:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    except InvalidSkillTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return SkillDetailResponse.model_validate(skill)
+
+
+@router.post(
+    "/{skill_id}/enable",
+    response_model=SkillDetailResponse,
+    operation_id="enableSkill",
+    summary="Re-enable a disabled skill",
+    description="Transition a disabled skill back to active (FR-013). No re-review "
+    "required since content hasn't changed; rejected if the skill drifted to "
+    "pending_review in the meantime.",
+)
+async def enable_skill(
+    skill_id: UUID,
+    store: SkillStore = Depends(get_skill_store),
+) -> SkillDetailResponse:
+    try:
+        skill = await skills_rest.enable(store, skill_id)
+    except SkillNotFoundError:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    except InvalidSkillTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return SkillDetailResponse.model_validate(skill)
+
+
+@router.delete(
+    "/{skill_id}",
+    status_code=204,
+    operation_id="deleteSkill",
+    summary="Remove an imported skill",
+    description="Permanently remove an imported skill (FR-014), cascading its "
+    "SkillReview/ReferenceFile rows. Bundled skills can't be removed this way — "
+    "uninstall the owning plugin instead.",
+)
+async def delete_skill(
+    skill_id: UUID,
+    store: SkillStore = Depends(get_skill_store),
+) -> None:
+    try:
+        await skills_rest.remove(store, skill_id)
+    except SkillNotFoundError:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    except InvalidSkillTransitionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))

@@ -251,48 +251,48 @@ lists/filters them correctly and each state transition works.
 
 ### Tests for User Story 3
 
-- [ ] T040 [P] [US3] Unit tests for disable/enable/remove transitions in
+- [X] T040 [P] [US3] Unit tests for disable/enable/remove transitions in
       `core/ze-skills/tests/test_review.py` (extend) — `active → disabled`, `disabled →
       active` (no new `SkillReview` row per FR-013), `disabled → active` rejected if status
       drifted to `pending_review` in the meantime, `remove_skill` cascades and rejects on
       `source == bundled`
-- [ ] T041 [P] [US3] REST route tests for disable/enable/delete in
+- [X] T041 [P] [US3] REST route tests for disable/enable/delete in
       `apps/ze-api/tests/api/routes/test_skills.py` (extend) — 409 on invalid-state
       transitions, 403/422 on deleting a bundled skill
-- [ ] T042 [P] [US3] Unit tests for bundled-skill startup registration in
+- [X] T042 [P] [US3] Unit tests for bundled-skill startup registration in
       `core/ze-agents/tests/test_bootstrap.py` (extend) — each `ZePlugin.bundled_skill_paths()`
       entry is loaded and registered via `SkillStore` with `source=bundled`,
       `bundling_plugin` set to the owning plugin's identifier, `status=active` with no review
       gate; re-running startup against an already-registered bundled skill is idempotent
       (no duplicate row, matches `(slug, source)` uniqueness from T010)
-- [ ] T043 [P] [US3] Vitest tests for `apps/ze-web/src/widgets/skill-management/ui/
+- [X] T043 [P] [US3] Vitest tests for `apps/ze-web/src/widgets/skill-management/ui/
       SkillManagementList.test.tsx` — renders mixed-state list, triggers transitions,
       import form submission
 
 ### Implementation for User Story 3
 
-- [ ] T044 [US3] Implement `disable_skill`, `enable_skill`, `remove_skill` in
+- [X] T044 [US3] Implement `disable_skill`, `enable_skill`, `remove_skill` in
       `core/ze-skills/ze_skills/review.py` (conditional transitions per FR-013; `remove_skill`
       cascades `ReferenceFile`/`SkillReview` rows and raises for `source == bundled`, FR-014)
-- [ ] T045 [US3] Add `disable()`, `enable()`, `remove()` wrappers to
+- [X] T045 [US3] Add `disable()`, `enable()`, `remove()` wrappers to
       `core/ze-skills/ze_skills/rest.py`
-- [ ] T046 [US3] Add `POST /api/v0/skills/{id}/disable`, `POST /api/v0/skills/{id}/enable`,
+- [X] T046 [US3] Add `POST /api/v0/skills/{id}/disable`, `POST /api/v0/skills/{id}/enable`,
       `DELETE /api/v0/skills/{id}` routes to
       `apps/ze-api/ze_api/api/routes/skills.py` per contracts/skills-api.md
-- [ ] T047 [P] [US3] Implement `ZePlugin.bundled_skill_paths() -> list[str]` (default `[]`) in
+- [X] T047 [P] [US3] Implement `ZePlugin.bundled_skill_paths() -> list[str]` (default `[]`) in
       `core/ze-plugin/ze_plugin/plugin.py`
-- [ ] T048 [US3] Import bundled-skill modules at startup in
+- [X] T048 [US3] Import bundled-skill modules at startup in
       `core/ze-agents/ze_agents/bootstrap.py` (mirrors `_plugin_agent_module_paths`) — for
       each plugin's `bundled_skill_paths()`, load and register the skill via `SkillStore` with
       `source=bundled`, `bundling_plugin=<plugin identifier>`, `status=active` (no review gate
       for developer-authored skills, consistent with FR-007)
-- [ ] T049 [P] [US3] Create `apps/ze-web/src/entities/skill/api/useSkillsQuery.ts`,
+- [X] T049 [P] [US3] Create `apps/ze-web/src/entities/skill/api/useSkillsQuery.ts`,
       `useSkillImportMutation.ts`, `useSkillTransitionMutation.ts` (approve/reject/disable/
       enable/remove), and `apps/ze-web/src/entities/skill/index.ts` barrel export
-- [ ] T050 [US3] Create `apps/ze-web/src/widgets/skill-management/ui/SkillManagementList.tsx`
+- [X] T050 [US3] Create `apps/ze-web/src/widgets/skill-management/ui/SkillManagementList.tsx`
       — list with source/status columns, import-from-URL action, per-row transition buttons
       (mirrors `widgets/loop-review` shape)
-- [ ] T051 [US3] Create `apps/ze-web/src/pages/skills/` management page and register its route
+- [X] T051 [US3] Create `apps/ze-web/src/pages/skills/` management page and register its route
       in `apps/ze-web/src/shared/config/nav-routes.ts` + `apps/ze-web/src/app/router/routes.ts`
 
 **Checkpoint**: User Stories 1, 2, AND 3 all work independently — quickstart.md Scenario 6

@@ -403,3 +403,148 @@ async def test_get_reference_file_404_when_skill_missing():
         )
 
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_disable_skill_success():
+    skill_id = uuid4()
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE)
+    disabled = _skill(id=skill_id, status=SkillStatus.DISABLED)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.transition = AsyncMock(return_value=disabled)
+    _default_store_mocks(store)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/skills/{skill_id}/disable",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "disabled"
+
+
+@pytest.mark.asyncio
+async def test_disable_skill_409_when_not_active():
+    skill_id = uuid4()
+    pending = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=pending)
+    store.transition = AsyncMock(return_value=None)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/skills/{skill_id}/disable",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_enable_skill_success():
+    skill_id = uuid4()
+    disabled = _skill(id=skill_id, status=SkillStatus.DISABLED)
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=disabled)
+    store.transition = AsyncMock(return_value=active)
+    _default_store_mocks(store)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/skills/{skill_id}/enable",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_enable_skill_409_when_not_disabled():
+    skill_id = uuid4()
+    drifted = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=drifted)
+    store.transition = AsyncMock(return_value=None)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/skills/{skill_id}/enable",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_delete_skill_success_returns_204():
+    skill_id = uuid4()
+    imported = _skill(id=skill_id, source=SkillSource.IMPORTED)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=imported)
+    store.delete = AsyncMock(return_value=True)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.delete(
+            f"/api/v0/skills/{skill_id}",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 204
+    store.delete.assert_awaited_once_with(skill_id)
+
+
+@pytest.mark.asyncio
+async def test_delete_skill_422_when_bundled():
+    skill_id = uuid4()
+    bundled = _skill(id=skill_id, source=SkillSource.BUNDLED, status=SkillStatus.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=bundled)
+    store.delete = AsyncMock()
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.delete(
+            f"/api/v0/skills/{skill_id}",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 422
+    store.delete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_delete_skill_404_when_missing():
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=None)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.delete(
+            f"/api/v0/skills/{uuid4()}",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 404
