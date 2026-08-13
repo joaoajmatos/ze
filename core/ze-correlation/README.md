@@ -31,11 +31,9 @@ A graph node in `ze-core` runs inline correlation during `fetch_context`. `Corre
 
 ## Dependencies
 
-```mermaid
-graph LR
-    correlation[ze-correlation] --> agents[ze-agents]
-    correlation --> memory[ze-memory]
-```
+![ze-correlation package dependencies](../../docs/diagrams/core/ze-correlation/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-correlation/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 

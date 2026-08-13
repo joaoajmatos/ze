@@ -45,29 +45,9 @@ export/import/delete workflow.
 
 ## System Flow
 
-```mermaid
-flowchart TD
-    T([Text]) --> PZ[preprocess]
-    V([Voice note]) --> PZ
-    P([Photo]) --> PZ
-    PZ --> R[embed_route\nmultilingual-MiniLM-L12-v2]
-    R -->|confident + single agent| C[fetch_context\npgvector search]
-    R -->|ambiguous / compound| D[decompose\nclaude-haiku]
-    D --> C
-    C --> E[capability_check]
-    E -->|EXECUTE| F[execute_tool]
-    E -->|DRAFT| G[draft_response]
-    E -->|CONFIRM| H[await_confirmation\ngraph paused]
-    H -->|user replies| F
-    F --> I{compound?}
-    G --> I
-    F --> X[correlate]
-    X --> I
-    I -->|yes| J[synthesize]
-    I -->|no| K[write_memory]
-    J --> K
-    K --> L([Response via\nWebSocket / ntfy])
-```
+![Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a capability check that executes, drafts, or pauses for confirmation, converging on a compound check before the response](diagrams/docs/turn-lifecycle.svg)
+
+<sub>[Interactive version](diagrams/docs/turn-lifecycle.html)</sub>
 
 ---
 
@@ -337,13 +317,9 @@ token budgets, and returns a `MemoryContext` object.
 
 Memory accumulates into progressively richer representations through a nightly pipeline:
 
-```mermaid
-flowchart LR
-    A[Facts + Episodes + Events] --> B[Nightly consolidation\ndedup · expire · archive]
-    B --> C[Dream phase\nsleep pass → dream pass]
-    C --> D[Profile facet synthesis\nstructured portrait]
-    D --> E[Weekly insights\npatterns + tensions]
-```
+![Process diagram showing facts, episodes, and events flowing through nightly consolidation, the sleep/dream phase, profile facet synthesis, and weekly insights](diagrams/docs/memory-maintenance.svg)
+
+<sub>[Interactive version](diagrams/docs/memory-maintenance.html)</sub>
 
 **Dream phase** (`ze_memory.dream`) — a two-pass offline memory improvement loop running nightly after consolidation:
 
@@ -363,25 +339,9 @@ the full lifecycle, schedule, and configuration of every background job.
 
 `BaseAgent._build_system_prompt()` assembles every agent's system prompt from two sections:
 
-```mermaid
-flowchart TD
-    subgraph prompt["System Prompt (assembled per request)"]
-        direction TB
-        subgraph id["Identity Block"]
-            i1["Ze's name and role"]
-            i2["Personality traits · verbosity"]
-            i3["Custom instructions"]
-            i4["User profile facets (synthesized)"]
-            i5["Memory context (top-k facts + episodes)"]
-        end
-        subgraph ag["Agent Instructions"]
-            a1["Task-specific behavioral rules"]
-            a2["Tool usage guidelines"]
-            a3["Operational constraints"]
-        end
-        id --> ag
-    end
-```
+![Nested diagram showing the system prompt container holding an identity block panel and an agent instructions panel](diagrams/docs/system-prompt.svg)
+
+<sub>[Interactive version](diagrams/docs/system-prompt.html)</sub>
 
 The identity block ensures Ze sounds like the same assistant regardless of which
 agent handles the request. Agents only define `_AGENT_INSTRUCTIONS` — they never

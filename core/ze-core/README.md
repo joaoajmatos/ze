@@ -36,11 +36,9 @@ Agent execution (`BaseAgent`, `@agent`, `@tool`), plugin framework (`ZePlugin`, 
 
 ## Dependencies
 
-```mermaid
-graph LR
-    core[ze-core] --> agents[ze-agents]
-    core --> plugin[ze-plugin]
-```
+![ze-core package dependencies](../../docs/diagrams/core/ze-core/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-core/dependencies.html)</sub>
 
 Third-party: `langgraph`, `openrouter`, `numpy`, `structlog`.
 

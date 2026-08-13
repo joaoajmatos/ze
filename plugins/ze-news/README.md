@@ -38,11 +38,9 @@ from ze_news.plugin import NewsPlugin
 
 ## Dependencies
 
-```mermaid
-graph LR
-    news[ze-news] --> sdk[ze-sdk]
-    news --> memory[ze-memory]
-```
+![ze-news plugin dependencies](../../docs/diagrams/plugins/ze-news/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/plugins/ze-news/dependencies.html)</sub>
 
 ## Testing
 

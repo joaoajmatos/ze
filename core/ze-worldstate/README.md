@@ -43,16 +43,9 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 ## Dependencies
 
-```mermaid
-graph LR
-    worldstate[ze-worldstate] --> agents[ze-agents]
-    worldstate --> logging[ze-logging]
-    worldstate --> proactive[ze-proactive]
-    worldstate --> memory[ze-memory]
-    worldstate --> data[ze-data]
-    worldstate --> components[ze-components]
-    worldstate --> correlation[ze-correlation]
-```
+![ze-worldstate package dependencies](../../docs/diagrams/core/ze-worldstate/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-worldstate/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 

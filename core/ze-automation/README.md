@@ -38,15 +38,9 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 
 ## Dependencies
 
-```mermaid
-graph LR
-    automation[ze-automation] --> agents[ze-agents]
-    automation --> logging[ze-logging]
-    automation --> proactive[ze-proactive]
-    automation --> memory[ze-memory]
-    automation --> data[ze-data]
-    automation --> components[ze-components]
-```
+![ze-automation package dependencies](../../docs/diagrams/core/ze-automation/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-automation/dependencies.html)</sub>
 
 Third-party: `asyncpg`, `apscheduler`.
 

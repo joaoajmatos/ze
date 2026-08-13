@@ -62,48 +62,9 @@ The design is drawn from neuroscience (NREM/REM ordering, targeted memory reacti
 
 Memory isn't a single inflow. Everything feeds the same substrate:
 
-```mermaid
-flowchart TB
-    subgraph inputs["Inflows"]
-        CT["Conversation turns"]
-        IC["Ingested content"]
-        DE["Domain events\n(calendar, news, …)"]
-    end
+![Architecture diagram showing conversation, ingestion, and domain-event inflows feeding extraction, an admission gate for signals, and a central memory graph that feeds retrieval and a correlation engine](docs/diagrams/root/memory-inflow.svg)
 
-    subgraph extraction["Extraction"]
-        FE["Facts + episodes"]
-        EF["Extracted facts"]
-        SIG["Signals"]
-    end
-
-    subgraph memory["Memory"]
-        AG["Admission gate"]
-        MG["Memory graph"]
-        RET["Retrieval"]
-    end
-
-    subgraph out["Consumers"]
-        AGT["Every agent turn"]
-        CE["Correlation engine"]
-        PUSH["Push when salience is high"]
-    end
-
-    CT --> FE
-    IC --> EF
-    DE --> SIG
-
-    FE --> MG
-    EF --> MG
-    SIG --> AG
-    AG --> MG
-
-    MG --> RET
-    RET --> AGT
-
-    AG --> CE
-    MG -.->|graph seeds| CE
-    CE --> PUSH
-```
+<sub>[Interactive version](docs/diagrams/root/memory-inflow.html)</sub>
 
 Conversations write what Ze learns from talking. Ingestion (`ze-ingestion`) feeds knowledge from any URL, PDF, YouTube video, or file — extracted facts land in the same store. Domain plugins emit `SignalSource` events; Ze scores them for relevance, writes them to the memory graph, and feeds them into the correlation engine. Goals promote learnings on completion. Every inflow compounds.
 
@@ -172,21 +133,9 @@ Beyond that: a first-class model of people and projects as evolving states (cont
 
 Every turn runs through a LangGraph graph checkpointed in Postgres.
 
-```mermaid
-flowchart TD
-    A([ze-web]) -->|WebSocket /ws| PRE[preprocess]
-    PRE --> ER[embed_route]
-    ER --> FC[fetch_context]
-    FC --> CG[capability_check]
-    CG -->|EXECUTE| EX[execute_tool]
-    CG -->|CONFIRM| AC[await_confirmation]
-    EX --> CO[correlate]
-    CO --> SL[surface_loops]
-    SL --> SY[synthesize]
-    SY --> RT[record_trace]
-    RT --> WM[write_memory]
-    WM --> R([response + components])
-```
+![Flowchart showing a message moving from ze-web through preprocess, embed_route, fetch_context, and a capability_check decision that either executes a tool or pauses for confirmation, then through correlate, surface_loops, synthesize, and a combined record_trace/write_memory step back to the response](docs/diagrams/root/graph-flow.svg)
+
+<sub>[Interactive version](docs/diagrams/root/graph-flow.html)</sub>
 
 See [docs/architecture.md](docs/architecture.md) for the full flow and node-by-node detail.
 

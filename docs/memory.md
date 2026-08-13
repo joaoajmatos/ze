@@ -12,7 +12,13 @@ memory objects for richer context retrieval.
 
 ## Data types
 
-All types are plain dataclasses defined in `ze_memory/types.py`.
+All types are plain dataclasses defined in `ze_memory/types.py`. The four types below
+carry real foreign keys into `Entity`; the diagram shows how they relate before the
+full field listing for each type follows.
+
+![ER diagram showing Entity as the central referenced type, with Fact pointing to it via subject and optional object, Fact pointing to Episode as its source, Episode mentioning entities, and Event linking to participant entities](diagrams/docs/memory-types-er.svg)
+
+<sub>[Interactive version](diagrams/docs/memory-types-er.html)</sub>
 
 ### `Fact`
 

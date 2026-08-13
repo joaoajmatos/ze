@@ -50,12 +50,9 @@ is discovered automatically by `ze_api/migrate.py`.
 
 ## Dependencies
 
-```mermaid
-graph LR
-    ingestion[ze-ingestion] --> agents[ze-agents]
-    ingestion --> memory[ze-memory]
-    ingestion --> browser[ze-browser]
-```
+![ze-ingestion package dependencies](../../docs/diagrams/core/ze-ingestion/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-ingestion/dependencies.html)</sub>
 
 Third-party: `httpx`, `beautifulsoup4`, `pypdf`.
 

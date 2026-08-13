@@ -13,16 +13,9 @@ This document explains what runs, when, and how each piece feeds into the next.
 Every conversation leaves a record. Over time those records build into something
 richer:
 
-```mermaid
-flowchart TD
-    A([Conversations]) --> B[User facts + Episodes\nstored per graph run]
-    B --> G[Session summary\nevery 10 min\nwhen session closes]
-    G --> C[Nightly consolidation\n2 AM UTC\ndedup · expire · archive]
-    B --> C
-    C --> D[User profile synthesis\nend of each consolidation pass]
-    D --> E[Weekly insight generation\nSunday 7 AM UTC]
-    E --> F([Morning briefing\n8 AM UTC daily])
-```
+![Process diagram showing conversations producing facts and episodes, which feed a periodic session summary and nightly consolidation, then user profile synthesis, weekly insight generation, and the morning briefing](diagrams/docs/scheduled-jobs.svg)
+
+<sub>[Interactive version](diagrams/docs/scheduled-jobs.html)</sub>
 
 ---
 

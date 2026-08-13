@@ -36,10 +36,9 @@ from ze_personal.plugin import PersonalPlugin
 
 ## Dependencies
 
-```mermaid
-graph LR
-    personal[ze-personal] --> sdk[ze-sdk]
-```
+![ze-personal plugin dependencies](../../docs/diagrams/plugins/ze-personal/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/plugins/ze-personal/dependencies.html)</sub>
 
 ## Testing
 

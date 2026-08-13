@@ -13,56 +13,9 @@ learning loop that improves retention, abstraction, and robustness.
 
 ## Overview
 
-```mermaid
-flowchart TB
-  subgraph Wake["Wake Phase"]
-    U["User interaction"]
-    T["Tool use / outcomes"]
-    E["Episodic capture"]
-    S["Salience scoring"]
-    U --> E
-    T --> E
-    E --> S
-  end
+![Cycle diagram showing the wake phase capturing episodic traces into short-term memory, which the sleep phase compresses and dreams into candidates that morning integration validates into long-term memory, looping back to inform the next wake phase](diagrams/docs/dream-pipeline.svg)
 
-  subgraph ShortTerm["Short-Term Memory"]
-    STM["Episodic buffer\nrecent traces + provenance"]
-  end
-
-  subgraph Sleep["Sleep Phase"]
-    R["NREM replay\nrehearse important episodes"]
-    P["Compression\nmerge, dedupe, summarize"]
-    D["REM dreaming\nsynthesis + stress-tests"]
-    C["Critic\nNLI gates + adversarial review"]
-  end
-
-  subgraph LongTerm["Long-Term Memory"]
-    LM["Semantic memory\nstable facts and abstractions"]
-    PM["Policy / skill memory\nheuristics and strategies"]
-    FM["Forgetting / decay\nlow-value or stale traces"]
-  end
-
-  subgraph Morning["Morning Integration"]
-    J["Dream journal\nwhat changed and why"]
-    V["Validation\naccept / reject / revise"]
-  end
-
-  S --> STM
-  STM --> R
-  R --> P
-  P --> LM
-  P --> PM
-  P --> D
-  D --> C
-  C --> V
-  V --> LM
-  V --> PM
-  V --> FM
-  C --> J
-  J --> U
-```
-
-![Ze Dream Memory Cycle](assets/dream-memory-cycle.svg)
+<sub>[Interactive version](diagrams/docs/dream-pipeline.html)</sub>
 
 ---
 

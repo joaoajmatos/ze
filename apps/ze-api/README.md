@@ -38,27 +38,13 @@ Collects plugin signal sources via `collect_plugin_signal_sources()` in `contain
 | `migrate.py` | Alembic meta-migrator — discovers all package migration chains |
 | `migrations/env.py` | Alembic runner harness (no owned tables) |
 
-Agents and proactive jobs live in plugin packages (`ze-personal`, `ze-email`, `ze-calendar`, etc.) — not in `ze-api`. Core package jobs (automation, memory, correlation) are registered via package bootstrap modules — see [specs/phases/076-ze-api-shell-cleanup/spec.md](../../specs/phases/076-ze-api-shell-cleanup/spec.md).
+Agents and proactive jobs live in plugin packages (`ze-personal`, `ze-messenger`, `ze-calendar`, etc.) — not in `ze-api`. Core package jobs (automation, memory, correlation) are registered via package bootstrap modules — see [specs/phases/076-ze-api-shell-cleanup/spec.md](../../specs/phases/076-ze-api-shell-cleanup/spec.md).
 
 ## Dependencies
 
-```mermaid
-graph LR
-    api[ze-api] --> core[ze-core]
-    api --> sdk[ze-sdk]
-    api --> memory[ze-memory]
-    api --> correlation[ze-correlation]
-    api --> personal[ze-personal]
-    api --> email[ze-email]
-    api --> calendar[ze-calendar]
-    api --> prospecting[ze-prospecting]
-    api --> google[ze-google]
-    api --> browser[ze-browser]
-    api --> news[ze-news]
-    api --> notif[ze-notifications]
-    api --> comp[ze-components]
-    api --> onboarding[ze-onboarding]
-```
+![ze-api dependency graph](../../docs/diagrams/apps/ze-api/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/apps/ze-api/dependencies.html)</sub>
 
 ## Running
 

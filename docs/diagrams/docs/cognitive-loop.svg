@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1080 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cogloop-title cogloop-desc">
+      <title id="cogloop-title">The cognitive loop around Ze's world-state hub</title>
+      <desc id="cogloop-desc">Loop diagram showing Perception, Memory, Executive, and Action cycling clockwise around a central World-State hub, each writing back to it, with Reflection and Social cognition as bidirectional satellites and Governance arbitrating every write to the hub.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-soft" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#8a8a8a"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Ring flow (approximated circular arcs, clockwise) -->
+      <path d="M580,172 A200,200 0 0,1 700,308" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M700,372 A200,200 0 0,1 580,508" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M500,508 A200,200 0 0,1 380,372" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M380,308 A200,200 0 0,1 500,172" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Write-back spokes (dashed, station -> hub) -->
+      <line x1="540" y1="172" x2="540" y2="279" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)"/>
+      <line x1="660" y1="340" x2="656" y2="340" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)"/>
+      <line x1="540" y1="508" x2="540" y2="401" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)"/>
+      <line x1="420" y1="340" x2="424" y2="340" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)"/>
+
+      <!-- Satellite spokes -->
+      <line x1="726" y1="182" x2="596" y2="298" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)" marker-start="url(#arrow-soft)"/>
+      <line x1="354" y1="182" x2="484" y2="298" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)" marker-start="url(#arrow-soft)"/>
+      <line x1="540" y1="622" x2="540" y2="401" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- Spoke label: Governance -->
+      <rect x="500" y="500" width="112" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="556" y="509" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ARBITRATES WRITE</text>
+
+      <!-- Ring stations -->
+      <rect x="460" y="108" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="460" y="108" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="540" y="136" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Perception</text>
+      <text x="540" y="150" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">news · email · calendar</text>
+
+      <rect x="660" y="308" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="660" y="308" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="740" y="336" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Memory</text>
+      <text x="740" y="350" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">facts · episodes · graph</text>
+
+      <rect x="460" y="508" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="460" y="508" width="160" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="540" y="536" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Executive</text>
+      <text x="540" y="550" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">goals + open loops</text>
+
+      <rect x="260" y="308" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="260" y="308" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="340" y="336" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Action</text>
+      <text x="340" y="350" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">tools · agents</text>
+
+      <!-- Satellites -->
+      <rect x="690" y="122" width="140" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="690" y="122" width="140" height="56" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="760" y="153" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Reflection</text>
+
+      <rect x="250" y="122" width="140" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="250" y="122" width="140" height="56" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="320" y="153" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Social cognition</text>
+
+      <rect x="470" y="622" width="140" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="470" y="622" width="140" height="56" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.35)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="540" y="654" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Governance</text>
+
+      <!-- Hub -->
+      <rect x="430" y="285" width="220" height="110" rx="8" fill="#0a0a0a"/>
+      <text x="540" y="333" fill="#f7f6f4" font-size="13" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">World-State</text>
+      <text x="540" y="350" fill="#bdbdbd" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">self · user · bounded world</text>
+      <text x="540" y="362" fill="#bdbdbd" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">· active concerns</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="700" x2="1040" y2="700" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="716" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="728" width="14" height="10" rx="2" fill="#0a0a0a"/>
+      <text x="60" y="736" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Hub — accumulated state</text>
+      <rect x="260" y="728" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="280" y="736" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Focal — not yet load-bearing</text>
+      <line x1="530" y1="733" x2="558" y2="733" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-soft)"/>
+      <text x="566" y="736" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Write-back to hub</text>
+    </svg>

@@ -32,10 +32,9 @@ Plugins self-register via `[project.entry-points."ze.plugins"]`. `bootstrap.py` 
 
 ## Dependencies
 
-```mermaid
-graph LR
-    plugin[ze-plugin] --> agents[ze-agents]
-```
+![ze-plugin package dependencies](../../docs/diagrams/core/ze-plugin/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-plugin/dependencies.html)</sub>
 
 ## Usage
 

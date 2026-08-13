@@ -101,18 +101,9 @@ Gate placement (enforced by the planner prompt):
 - You approve a gate or finish a redirect.
 - You approve the initial plan after creation.
 
-```mermaid
-flowchart TD
-    A[advance] --> B{status ACTIVE?}
-    B -->|no| Z([return])
-    B -->|yes| C{gate due before next milestone?}
-    C -->|yes| D[fire gate → ProactiveNotifier\nstatus AWAITING_GATE]
-    C -->|no| E[run milestone via agent registry]
-    E --> F[store output + learning\nnotify progress]
-    F --> G{more milestones?}
-    G -->|yes| A
-    G -->|no| H[mark COMPLETED\nnotify]
-```
+![Flowchart showing a goal advancing: if not active it returns, if a gate is due it fires the gate and awaits confirmation, otherwise it runs the milestone, stores output and learning, and checks for more milestones, looping back or marking the goal complete](diagrams/docs/goal-milestone-loop.svg)
+
+<sub>[Interactive version](diagrams/docs/goal-milestone-loop.html)</sub>
 
 `GoalExecutor` dispatches each milestone through the normal agent registry (like
 workflow steps): natural-language `description` + optional `agent_hint`. Completed

@@ -146,18 +146,9 @@ the doctrine's arbitration precedence.
 Reading the functions in order gives the loop the doctrine implies — a cycle around a shared
 spine, not a pipeline with a start and end:
 
-```mermaid
-flowchart LR
-    P[Perception] --> M[Memory]
-    M --> WS[(World-State\nself · user · bounded world · active concerns)]
-    WS --> X[Executive\nprioritise · follow through]
-    X --> A[Action]
-    A --> P
-    R[Reflection] <--> WS
-    S[Social cognition] <--> WS
-    G[Governance] -.arbitrates every write.-> WS
-    style WS fill:#2d2d2d,stroke:#888,color:#fff
-```
+![Loop diagram showing Perception, Memory, Executive, and Action cycling clockwise around a central World-State hub, with Reflection and Social cognition as bidirectional satellites and Governance arbitrating every write](diagrams/docs/cognitive-loop.svg)
+
+<sub>[Interactive version](diagrams/docs/cognitive-loop.html)</sub>
 
 - **The world-state is the hub** (doctrine §"The one commitment"). Every function reads from
   and writes to it; nothing holds a competing private truth.

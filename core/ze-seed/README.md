@@ -40,14 +40,9 @@ cd apps/ze-api && uv run python -m ze_seed apply
 
 ## Dependencies
 
-```mermaid
-graph LR
-    seed[ze-seed] --> memory[ze-memory]
-    seed --> automation[ze-automation]
-    seed --> core[ze-core]
-    seed --> logging[ze-logging]
-    seed --> onboarding[ze-onboarding]
-```
+![ze-seed package dependencies](../../docs/diagrams/core/ze-seed/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-seed/dependencies.html)</sub>
 
 Third-party: `pyyaml`.
 

@@ -31,14 +31,9 @@ Every plugin's `pyproject.toml` lists `ze-sdk` as its sole Ze dependency. The SD
 
 ## Dependencies
 
-```mermaid
-graph LR
-    sdk[ze-sdk] --> agents[ze-agents]
-    sdk --> plugin[ze-plugin]
-    sdk --> proactive[ze-proactive]
-    sdk --> memory[ze-memory]
-    sdk --> onboarding[ze-onboarding]
-```
+![ze-sdk dependency graph](../../docs/diagrams/packages/ze-sdk/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/packages/ze-sdk/dependencies.html)</sub>
 
 ## Usage
 

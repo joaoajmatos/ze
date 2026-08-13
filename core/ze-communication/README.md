@@ -31,10 +31,9 @@ Concrete channels live outside this package: `GmailChannel` in `ze-google`, for 
 
 ## Dependencies
 
-```mermaid
-graph LR
-    communication[ze-communication] --> agents[ze-agents]
-```
+![ze-communication package dependencies](../../docs/diagrams/core/ze-communication/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-communication/dependencies.html)</sub>
 
 No third-party dependencies beyond the standard library.
 

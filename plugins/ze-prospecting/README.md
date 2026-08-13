@@ -33,12 +33,9 @@ from ze_prospecting.plugin import ProspectingPlugin
 
 ## Dependencies
 
-```mermaid
-graph LR
-    prospecting[ze-prospecting] --> sdk[ze-sdk]
-    prospecting --> browser[ze-browser]
-    prospecting --> personal[ze-personal]
-```
+![ze-prospecting plugin dependencies](../../docs/diagrams/plugins/ze-prospecting/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/plugins/ze-prospecting/dependencies.html)</sub>
 
 ## Configuration
 

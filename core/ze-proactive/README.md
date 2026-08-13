@@ -28,10 +28,9 @@ Plugins register jobs in `ZePlugin.register_proactive_jobs()`. `ze-api` starts t
 
 ## Dependencies
 
-```mermaid
-graph LR
-    proactive[ze-proactive] --> agents[ze-agents]
-```
+![ze-proactive package dependencies](../../docs/diagrams/core/ze-proactive/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-proactive/dependencies.html)</sub>
 
 Third-party: `asyncpg`.
 

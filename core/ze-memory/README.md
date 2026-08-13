@@ -38,12 +38,17 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 | `synthesizer.py` | User profile synthesis from facts and episodes |
 | `types.py` | Memory domain types (`Fact`, `Episode`, `Signal`, …) |
 
+`Entity` is the aggregate root every other type ultimately links back to — facts, episodes, signals, and events all reference one or more entities:
+
+![ze-memory core domain types](../../docs/diagrams/core/ze-memory/memory-domain-types.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-memory/memory-domain-types.html)</sub>
+
 ## Dependencies
 
-```mermaid
-graph LR
-    memory[ze-memory] --> agents[ze-agents]
-```
+![ze-memory package dependencies](../../docs/diagrams/core/ze-memory/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-memory/dependencies.html)</sub>
 
 Third-party: `asyncpg`, `numpy`.
 

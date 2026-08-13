@@ -50,22 +50,9 @@ You can also manage workflows conversationally:
 
 For a workflow with N steps, the graph runs through the following loop for each step:
 
-```mermaid
-flowchart TD
-    A[load_workflow_step] --> B[embed_route]
-    B --> C[fetch_context]
-    C --> D[capability_check]
-    D -->|EXECUTE| E[execute_tool]
-    D -->|CONFIRM| F[await_confirmation]
-    F --> E
-    E --> G[write_memory]
-    G --> H{verify_step}
-    H -->|passed, more steps| A
-    H -->|passed, last step| I[workflow_synthesize]
-    H -->|failed| J[workflow_failed]
-    I --> K([END])
-    J --> K
-```
+![Flowchart showing a workflow step loading, routing, fetching context, then a capability check that executes or pauses for confirmation, writing memory and verifying the step, which loops back, synthesizes, or fails, ending at END](diagrams/docs/workflow-graph.svg)
+
+<sub>[Interactive version](diagrams/docs/workflow-graph.html)</sub>
 
 `load_workflow_step` resets per-step state and sets `prompt` to the step's task.
 The graph then routes normally — `embed_route` picks the right agent, memory is

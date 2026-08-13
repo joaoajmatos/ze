@@ -27,10 +27,9 @@ Plugins return an `OnboardingProvider` from `ZePlugin.onboarding()`. `ze-api` ow
 
 ## Dependencies
 
-```mermaid
-graph LR
-    onboarding[ze-onboarding] --> agents[ze-agents]
-```
+![ze-onboarding package dependencies](../../docs/diagrams/core/ze-onboarding/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-onboarding/dependencies.html)</sub>
 
 ## Usage
 

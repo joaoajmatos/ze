@@ -34,12 +34,9 @@ from ze_calendar.plugin import CalendarPlugin
 
 ## Dependencies
 
-```mermaid
-graph LR
-    calendar[ze-calendar] --> sdk[ze-sdk]
-    calendar --> google[ze-google]
-    calendar --> personal[ze-personal]
-```
+![ze-calendar plugin dependencies](../../docs/diagrams/plugins/ze-calendar/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/plugins/ze-calendar/dependencies.html)</sub>
 
 ## Testing
 

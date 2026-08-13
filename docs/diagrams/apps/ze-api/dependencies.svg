@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1172 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
+<title id="dependencies-title">ze-api dependencies</title>
+<desc id="dependencies-desc">ze-api is the sole deployment unit, wiring in 14 core-engine and infrastructure packages, 6 domain plugins, and 2 external integrations.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f7f6f4"/>
+<path d="M 200,222.0 H 212.0 Q 220.0,222.0 220.0,214.0 V 130.0 Q 220.0,122.0 228.0,122.0 H 240" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M 200,222.0 H 212.0 Q 220.0,222.0 220.0,230.0 V 258.0 Q 220.0,266.0 228.0,266.0 H 240" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/><path d="M 200,222.0 H 212.0 Q 220.0,222.0 220.0,230.0 V 358.0 Q 220.0,366.0 228.0,366.0 H 240" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+      <rect x="48" y="162.0" width="152" height="120" rx="6" fill="#f7f6f4"/>
+      <rect x="48" y="162.0" width="152" height="120" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="56" y="168.0" width="32" height="12" rx="2" fill="transparent" stroke="#8052ff" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="72" y="177.0" fill="#8052ff" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="124.0" y="226.0" fill="#0a0a0a" font-size="13" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-api</text>
+    
+<rect x="240" y="40" width="884" height="164" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/><rect x="256" y="52" width="130" height="12" rx="2" fill="#f7f6f4"/><text x="264" y="61" fill="rgba(10,10,10,0.45)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">CORE ENGINE &amp; INFRA</text>
+      <rect x="256" y="68" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="256" y="68" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="322.0" y="88.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-core</text>
+    
+      <rect x="400" y="68" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="400" y="68" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="466.0" y="88.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-automation</text>
+    
+      <rect x="544" y="68" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="544" y="68" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="610.0" y="88.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-worldstate</text>
+    
+      <rect x="688" y="68" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="688" y="68" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="754.0" y="88.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-correlation</text>
+    
+      <rect x="832" y="68" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="832" y="68" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="898.0" y="88.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-data</text>
+    
+      <rect x="976" y="68" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="976" y="68" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1042.0" y="88.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-logging</text>
+    
+      <rect x="256" y="112" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="256" y="112" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="322.0" y="132.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-memory</text>
+    
+      <rect x="400" y="112" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="400" y="112" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="466.0" y="132.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-onboarding</text>
+    
+      <rect x="544" y="112" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="544" y="112" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="610.0" y="132.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-seed</text>
+    
+      <rect x="688" y="112" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="688" y="112" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="754.0" y="132.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-skills</text>
+    
+      <rect x="832" y="112" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="832" y="112" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="898.0" y="132.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-ingestion</text>
+    
+      <rect x="976" y="112" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="976" y="112" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1042.0" y="132.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-components</text>
+    
+      <rect x="256" y="156" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="256" y="156" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="322.0" y="176.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-notifications</text>
+    
+      <rect x="400" y="156" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="400" y="156" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="466.0" y="176.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-browser</text>
+    <rect x="240" y="228" width="884" height="76" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/><rect x="256" y="240" width="100" height="12" rx="2" fill="#f7f6f4"/><text x="264" y="249" fill="rgba(10,10,10,0.45)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DOMAIN PLUGINS</text>
+      <rect x="256" y="256" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="256" y="256" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="322.0" y="276.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-personal</text>
+    
+      <rect x="400" y="256" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="400" y="256" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="466.0" y="276.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-messenger</text>
+    
+      <rect x="544" y="256" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="544" y="256" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="610.0" y="276.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-calendar</text>
+    
+      <rect x="688" y="256" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="688" y="256" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="754.0" y="276.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-prospecting</text>
+    
+      <rect x="832" y="256" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="832" y="256" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="898.0" y="276.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-news</text>
+    
+      <rect x="976" y="256" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="976" y="256" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1042.0" y="276.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-finance</text>
+    <rect x="240" y="328" width="884" height="76" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/><rect x="256" y="340" width="88" height="12" rx="2" fill="#f7f6f4"/><text x="264" y="349" fill="rgba(10,10,10,0.45)" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em">INTEGRATIONS</text>
+      <rect x="256" y="356" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="256" y="356" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="322.0" y="376.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-google</text>
+    
+      <rect x="400" y="356" width="132" height="32" rx="6" fill="#f7f6f4"/>
+      <rect x="400" y="356" width="132" height="32" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="466.0" y="376.0" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-yt</text>
+    
+
+<line x1="30" y1="452" x2="1142" y2="452" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+<text x="30" y="468" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="140" y="460" width="12" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1"/>
+<text x="158" y="470" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Deployment unit</text>
+<rect x="320" y="460" width="12" height="12" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+<text x="338" y="470" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Ze package (zoned by role)</text>
+
+</svg>

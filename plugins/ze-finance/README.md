@@ -53,11 +53,9 @@ from ze_finance.plugin import FinancePlugin
 
 ## Dependencies
 
-```mermaid
-graph LR
-    finance[ze-finance] --> sdk[ze-sdk]
-    finance --> trading212[ze-trading212]
-```
+![ze-finance plugin dependencies](../../docs/diagrams/plugins/ze-finance/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/plugins/ze-finance/dependencies.html)</sub>
 
 ## Configuration
 

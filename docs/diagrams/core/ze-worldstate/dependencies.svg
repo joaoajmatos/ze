@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 560 784" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
+<title id="dependencies-title">ze-worldstate dependencies</title>
+<desc id="dependencies-desc">core/ze-worldstate is the open-loop substrate, depending on ze-agents, ze-components, ze-correlation, ze-data, ze-logging, ze-memory, ze-proactive, and ze-sdk.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f7f6f4"/>
+<path d="M 200,358.44444444444446 H 262.0 Q 270.0,358.44444444444446 270.0,350.44444444444446 V 88.0 Q 270.0,80.0 278.0,80.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,362.8888888888889 H 262.0 Q 270.0,362.8888888888889 270.0,354.8888888888889 V 172.0 Q 270.0,164.0 278.0,164.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,367.3333333333333 H 262.0 Q 270.0,367.3333333333333 270.0,359.3333333333333 V 256.0 Q 270.0,248.0 278.0,248.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,371.77777777777777 H 262.0 Q 270.0,371.77777777777777 270.0,363.77777777777777 V 340.0 Q 270.0,332.0 278.0,332.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,376.22222222222223 H 262.0 Q 270.0,376.22222222222223 270.0,384.22222222222223 V 408.0 Q 270.0,416.0 278.0,416.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,380.6666666666667 H 262.0 Q 270.0,380.6666666666667 270.0,388.6666666666667 V 492.0 Q 270.0,500.0 278.0,500.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,385.1111111111111 H 262.0 Q 270.0,385.1111111111111 270.0,393.1111111111111 V 576.0 Q 270.0,584.0 278.0,584.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,389.55555555555554 H 262.0 Q 270.0,389.55555555555554 270.0,397.55555555555554 V 660.0 Q 270.0,668.0 278.0,668.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+      <rect x="48" y="334.0" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="48" y="334.0" width="32" height="12" rx="2" fill="transparent" stroke="#8052ff" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="64" y="343.0" fill="#8052ff" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="40" y="354.0" width="160" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="40" y="354.0" width="160" height="40" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="120.0" y="378.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-worldstate</text>
+    
+
+      <rect x="348" y="40" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="40" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="49" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="60" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="60" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="84.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-agents</text>
+    
+
+      <rect x="348" y="124" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="124" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="133" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="144" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="144" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="168.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-components</text>
+    
+
+      <rect x="348" y="208" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="208" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="217" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="228" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="228" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="252.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-correlation</text>
+    
+
+      <rect x="348" y="292" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="292" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="301" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="312" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="312" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="336.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-data</text>
+    
+
+      <rect x="348" y="376" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="376" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="385" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="396" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="396" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="420.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-logging</text>
+    
+
+      <rect x="348" y="460" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="460" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="469" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="480" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="480" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="504.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-memory</text>
+    
+
+      <rect x="348" y="544" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="544" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="553" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="564" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="564" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="588.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-proactive</text>
+    
+
+      <rect x="348" y="628" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="628" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="637" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SDK</text>
+      <rect x="340" y="648" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="648" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="672.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-sdk</text>
+    
+<line x1="30" y1="736" x2="530" y2="736" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+<text x="30" y="752" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="744" width="12" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1"/>
+<text x="138" y="754" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">This package</text>
+<rect x="280" y="744" width="12" height="12" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+<text x="298" y="754" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Dependency</text>
+</svg>

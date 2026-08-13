@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Scheduled jobs pipeline</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Process · Ze scheduled jobs</p>
+    <h1>From conversation to morning briefing</h1>
+    <svg viewBox="0 0 1280 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sched-title sched-desc">
+      <title id="sched-title">Scheduled jobs pipeline from conversation to morning briefing</title>
+      <desc id="sched-desc">Process diagram showing conversations producing facts and episodes, which feed a periodic session summary and nightly consolidation, then user profile synthesis, weekly insight generation, and finally the morning briefing.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <line x1="220" y1="164" x2="244" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="444" y1="164" x2="448" y2="164" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <line x1="628" y1="164" x2="652" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="832" y1="164" x2="856" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="1036" y1="164" x2="1060" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <line x1="334" y1="188" x2="334" y2="248" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M424,272 H480 Q488,272 488,264 V196 Q488,188 496,188 H538" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- Conversations (pill) -->
+      <rect x="40" y="140" width="180" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="40" y="140" width="180" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="130" y="169" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Conversations</text>
+
+      <!-- Facts + Episodes -->
+      <rect x="244" y="140" width="180" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="244" y="140" width="180" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="334" y="161" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Facts + Episodes</text>
+      <text x="334" y="175" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">stored per graph run</text>
+
+      <!-- Session summary (mini row) -->
+      <rect x="244" y="248" width="180" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="244" y="248" width="180" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="334" y="269" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Session summary</text>
+      <text x="334" y="283" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">every 10 min, on close</text>
+
+      <!-- Nightly consolidation (focal) -->
+      <rect x="448" y="140" width="180" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="448" y="140" width="180" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="538" y="161" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Nightly consolidation</text>
+      <text x="538" y="175" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2 AM UTC · dedup · expire</text>
+
+      <!-- User profile synthesis -->
+      <rect x="652" y="140" width="180" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="652" y="140" width="180" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="742" y="161" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">User profile synthesis</text>
+      <text x="742" y="175" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">end of consolidation pass</text>
+
+      <!-- Weekly insight generation -->
+      <rect x="856" y="140" width="180" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="856" y="140" width="180" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="946" y="161" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Weekly insight generation</text>
+      <text x="946" y="175" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Sunday 7 AM UTC</text>
+
+      <!-- Morning briefing (pill, end) -->
+      <rect x="1060" y="140" width="180" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="1060" y="140" width="180" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="1150" y="161" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Morning briefing</text>
+      <text x="1150" y="175" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">8 AM UTC daily</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="324" x2="1240" y2="324" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="340" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="352" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="360" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Nightly batch job</text>
+      <rect x="220" y="352" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="240" y="360" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Continuous / entry-exit</text>
+    </svg>
+  </div>
+</body>
+</html>

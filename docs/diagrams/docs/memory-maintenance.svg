@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mem-maint-title mem-maint-desc">
+      <title id="mem-maint-title">Nightly memory maintenance pipeline</title>
+      <desc id="mem-maint-desc">Process diagram showing facts, episodes, and events flowing through nightly consolidation, the sleep/dream phase, profile facet synthesis, and finally weekly insights.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <line x1="184" y1="164" x2="216" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="360" y1="164" x2="392" y2="164" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <line x1="536" y1="164" x2="568" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="712" y1="164" x2="744" y2="164" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Node 1 -->
+      <rect x="40" y="136" width="144" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="40" y="136" width="144" height="56" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="112" y="161" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Facts + Episodes</text>
+      <text x="112" y="174" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">+ Events</text>
+
+      <!-- Node 2 -->
+      <rect x="216" y="136" width="144" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="216" y="136" width="144" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="288" y="158" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Nightly</text>
+      <text x="288" y="171" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">consolidation</text>
+      <text x="288" y="184" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dedup · expire</text>
+
+      <!-- Node 3 (focal) -->
+      <rect x="392" y="136" width="144" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="392" y="136" width="144" height="56" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="464" y="158" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Dream phase</text>
+      <text x="464" y="171" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">sleep pass →</text>
+      <text x="464" y="184" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dream pass</text>
+
+      <!-- Node 4 -->
+      <rect x="568" y="136" width="144" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="568" y="136" width="144" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="640" y="158" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Profile facet</text>
+      <text x="640" y="171" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">synthesis</text>
+      <text x="640" y="184" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">structured portrait</text>
+
+      <!-- Node 5 -->
+      <rect x="744" y="136" width="176" height="56" rx="24" fill="#f7f6f4"/>
+      <rect x="744" y="136" width="176" height="56" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="832" y="158" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Weekly insights</text>
+      <text x="832" y="171" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">patterns +</text>
+      <text x="832" y="184" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">tensions</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="248" x2="920" y2="248" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="264" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="276" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="284" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Offline generator (haiku-class)</text>
+      <rect x="300" y="276" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="320" y="284" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Structural / input · output</text>
+    </svg>

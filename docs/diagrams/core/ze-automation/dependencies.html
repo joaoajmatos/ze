@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ze-automation dependencies</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+:root {{
+  --color-paper: #f7f6f4;
+  --color-ink: #0a0a0a;
+  --color-muted: #6b6b6b;
+  --color-accent: #8052ff;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+}}
+body {{ font-family: var(--font-sans); background: var(--color-paper); color: var(--color-ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }}
+.frame {{ max-width: 720px; width: 100%; }}
+.eyebrow {{ font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 0.5rem; }}
+h1 {{ font-family: var(--font-serif); font-size: clamp(1.4rem, 2vw + 0.7rem, 1.75rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; color: var(--color-ink); margin-bottom: 1.5rem; }}
+svg {{ width: 100%; display: block; }}
+
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Architecture · Core Package</p>
+<h1>ze-automation dependencies</h1>
+<svg viewBox="0 0 560 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
+<title id="dependencies-title">ze-automation dependencies</title>
+<desc id="dependencies-desc">core/ze-automation owns the goal and workflow automation stack, depending on ze-agents, ze-components, ze-data, ze-logging, ze-memory, ze-proactive, and ze-sdk.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#f7f6f4"/>
+<path d="M 200,317.0 H 262.0 Q 270.0,317.0 270.0,309.0 V 88.0 Q 270.0,80.0 278.0,80.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,322.0 H 262.0 Q 270.0,322.0 270.0,314.0 V 172.0 Q 270.0,164.0 278.0,164.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,327.0 H 262.0 Q 270.0,327.0 270.0,319.0 V 256.0 Q 270.0,248.0 278.0,248.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,332.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,337.0 H 262.0 Q 270.0,337.0 270.0,345.0 V 408.0 Q 270.0,416.0 278.0,416.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,342.0 H 262.0 Q 270.0,342.0 270.0,350.0 V 492.0 Q 270.0,500.0 278.0,500.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M 200,347.0 H 262.0 Q 270.0,347.0 270.0,355.0 V 576.0 Q 270.0,584.0 278.0,584.0 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+      <rect x="48" y="292.0" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="48" y="292.0" width="32" height="12" rx="2" fill="transparent" stroke="#8052ff" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="64" y="301.0" fill="#8052ff" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="40" y="312.0" width="160" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="40" y="312.0" width="160" height="40" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="120.0" y="336.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-automation</text>
+    
+
+      <rect x="348" y="40" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="40" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="49" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="60" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="60" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="84.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-agents</text>
+    
+
+      <rect x="348" y="124" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="124" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="133" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="144" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="144" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="168.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-components</text>
+    
+
+      <rect x="348" y="208" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="208" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="217" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="228" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="228" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="252.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-data</text>
+    
+
+      <rect x="348" y="292" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="292" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="301" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="312" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="312" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="336.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-logging</text>
+    
+
+      <rect x="348" y="376" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="376" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="385" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="396" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="396" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="420.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-memory</text>
+    
+
+      <rect x="348" y="460" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="460" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="469" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="480" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="480" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="504.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-proactive</text>
+    
+
+      <rect x="348" y="544" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="544" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="553" fill="#0a0a0a" fill-opacity="0.8" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SDK</text>
+      <rect x="340" y="564" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="564" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424.0" y="588.0" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-sdk</text>
+    
+<line x1="30" y1="652" x2="530" y2="652" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+<text x="30" y="668" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="660" width="12" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1"/>
+<text x="138" y="670" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">This package</text>
+<rect x="280" y="660" width="12" height="12" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+<text x="298" y="670" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Dependency</text>
+</svg>
+</div>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sysprompt-title sysprompt-desc">
+      <title id="sysprompt-title">System prompt composed per request from an identity block and agent instructions</title>
+      <desc id="sysprompt-desc">Nested diagram showing the system prompt container holding two labeled panels: an identity block with name, personality, custom instructions, synthesized profile facets, and memory context; and agent instructions with behavioral rules, tool usage guidelines, and operational constraints.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Outer: System Prompt -->
+      <rect x="40" y="64" width="880" height="360" rx="8" fill="rgba(10,10,10,0.015)" stroke="rgba(10,10,10,0.30)" stroke-width="1"/>
+      <rect x="56" y="68" width="272" height="14" rx="2" fill="#f7f6f4"/>
+      <text x="60" y="79" fill="rgba(10,10,10,0.45)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">SYSTEM PROMPT · PER REQUEST</text>
+
+      <!-- Inner: Identity Block -->
+      <rect x="72" y="112" width="380" height="288" rx="8" fill="rgba(10,10,10,0.025)" stroke="#6b6b6b" stroke-width="1"/>
+      <rect x="88" y="116" width="112" height="14" rx="2" fill="#f7f6f4"/>
+      <text x="92" y="127" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" letter-spacing="0.12em">IDENTITY BLOCK</text>
+
+      <!-- Inner: Agent Instructions -->
+      <rect x="488" y="112" width="380" height="288" rx="8" fill="rgba(128,82,255,0.05)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="504" y="116" width="152" height="14" rx="2" fill="#f7f6f4"/>
+      <text x="508" y="127" fill="#8052ff" font-size="7.5" font-family="'Geist Mono', monospace" letter-spacing="0.12em">AGENT INSTRUCTIONS</text>
+
+      <!-- Connector -->
+      <line x1="452" y1="256" x2="488" y2="256" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Identity rows -->
+      <rect x="88" y="148" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.15)" stroke-width="0.8"/>
+      <text x="100" y="170" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Ze's name and role</text>
+
+      <rect x="88" y="192" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.15)" stroke-width="0.8"/>
+      <text x="100" y="214" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Personality traits · verbosity</text>
+
+      <rect x="88" y="236" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.15)" stroke-width="0.8"/>
+      <text x="100" y="258" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Custom instructions</text>
+
+      <rect x="88" y="280" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.15)" stroke-width="0.8"/>
+      <text x="100" y="302" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">User profile facets (synthesized)</text>
+
+      <rect x="88" y="324" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.15)" stroke-width="0.8"/>
+      <text x="100" y="346" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Memory context (top-k facts + episodes)</text>
+
+      <!-- Agent instructions rows -->
+      <rect x="504" y="148" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(128,82,255,0.30)" stroke-width="0.8"/>
+      <text x="516" y="170" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Task-specific behavioral rules</text>
+
+      <rect x="504" y="192" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(128,82,255,0.30)" stroke-width="0.8"/>
+      <text x="516" y="214" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Tool usage guidelines</text>
+
+      <rect x="504" y="236" width="348" height="36" rx="4" fill="#ffffff" stroke="rgba(128,82,255,0.30)" stroke-width="0.8"/>
+      <text x="516" y="258" fill="#0a0a0a" font-size="10.5" font-family="'Inter', sans-serif">Operational constraints</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="440" x2="920" y2="440" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="456" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="464" width="14" height="10" rx="2" fill="rgba(10,10,10,0.025)" stroke="#6b6b6b" stroke-width="1"/>
+      <text x="60" y="472" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Static per-user identity</text>
+      <rect x="240" y="464" width="14" height="10" rx="2" fill="rgba(128,82,255,0.05)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="260" y="472" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Per-agent, assembled at dispatch</text>
+    </svg>

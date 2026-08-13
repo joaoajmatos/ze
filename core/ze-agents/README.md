@@ -38,10 +38,9 @@ Imported by `ze-plugin`, `ze-core`, and `ze-onboarding`. Re-exported to plugin a
 
 ## Dependencies
 
-```mermaid
-graph LR
-    agents[ze-agents] --> onboarding[ze-onboarding]
-```
+![ze-agents package dependencies](../../docs/diagrams/core/ze-agents/dependencies.svg)
+
+<sub>[Interactive version](../../docs/diagrams/core/ze-agents/dependencies.html)</sub>
 
 No other Ze package dependencies. Third-party: `structlog`, `pyyaml`, `typing_extensions`.
 

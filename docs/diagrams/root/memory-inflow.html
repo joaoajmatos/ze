@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · How Ze gets sharper</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f7f6f4;
+      --color-ink:     #0a0a0a;
+      --color-muted:   #6b6b6b;
+      --color-accent:  #8052ff;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1280px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Ze</p>
+    <h1>How Ze gets sharper</h1>
+    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mem-inflow-title mem-inflow-desc">
+      <title id="mem-inflow-title">How Ze gets sharper — memory inflow architecture</title>
+      <desc id="mem-inflow-desc">Architecture diagram showing conversation, ingestion, and domain-event inflows feeding extraction, an admission gate for signals, and a central memory graph, which in turn feeds retrieval for every agent turn and a correlation engine that pushes when salience is high.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Zone: Inflows -->
+      <rect x="288" y="64" width="712" height="104" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <rect x="596" y="68" width="96" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="644" y="77" fill="rgba(10,10,10,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">INFLOWS</text>
+
+      <!-- Arrows (behind boxes) -->
+      <path d="M404,152 V168 Q404,176 412,176 H456 Q464,176 464,184 V196" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M644,152 V168 Q644,176 636,176 H612 Q604,176 604,184 V196" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="884" y1="152" x2="884" y2="196" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M534,244 V304 Q534,312 542,312 H656 Q664,312 664,320 V380" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <line x1="884" y1="244" x2="884" y2="288" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M824,336 V352 Q824,360 816,360 H712 Q704,360 704,368 V380" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <line x1="884" y1="336" x2="884" y2="472" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M684,428 V444 Q684,452 676,452 H612 Q604,452 604,460 V472" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <path d="M844,404 H928 Q936,404 936,412 V488 Q936,496 928,496 H984" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <path d="M884,520 V536 Q884,544 876,544 H812 Q804,544 804,552 V564" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M604,520 V536 Q604,544 612,544 H656 Q664,544 664,552 V564" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Arrow label: graph seeds -->
+      <rect x="940" y="434" width="60" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="970" y="443" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SEEDS</text>
+
+      <!-- Node: Conversation turns -->
+      <rect x="304" y="104" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="304" y="104" width="200" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="404" y="129" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Conversation turns</text>
+      <text x="404" y="143" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">chat input</text>
+
+      <!-- Node: Ingested content -->
+      <rect x="544" y="104" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="544" y="104" width="200" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="644" y="129" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Ingested content</text>
+      <text x="644" y="143" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">url · pdf · video</text>
+
+      <!-- Node: Domain events -->
+      <rect x="784" y="104" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="784" y="104" width="200" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="884" y="129" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Domain events</text>
+      <text x="884" y="143" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">calendar · news</text>
+
+      <!-- Node: Extraction -->
+      <rect x="424" y="196" width="220" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="424" y="196" width="220" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="534" y="221" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Extraction</text>
+      <text x="534" y="235" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">facts + episodes</text>
+
+      <!-- Node: Signals -->
+      <rect x="784" y="196" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="784" y="196" width="200" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="884" y="221" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Signals</text>
+      <text x="884" y="235" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">SignalSource events</text>
+
+      <!-- Node: Admission gate -->
+      <rect x="784" y="288" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="784" y="288" width="200" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="884" y="313" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Admission gate</text>
+      <text x="884" y="327" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">relevance score</text>
+
+      <!-- Node: Memory graph (focal) -->
+      <rect x="624" y="380" width="220" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="624" y="380" width="220" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="734" y="405" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Memory graph</text>
+      <text x="734" y="419" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">pgvector store</text>
+
+      <!-- Node: Retrieval -->
+      <rect x="504" y="472" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="504" y="472" width="200" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="604" y="497" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Retrieval</text>
+      <text x="604" y="511" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">composite rank</text>
+
+      <!-- Node: Correlation engine -->
+      <rect x="784" y="472" width="200" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="784" y="472" width="200" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="884" y="497" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Correlation engine</text>
+      <text x="884" y="511" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">cross-domain</text>
+
+      <!-- Node: Consumers -->
+      <rect x="624" y="564" width="220" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="624" y="564" width="220" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="734" y="589" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Consumers</text>
+      <text x="734" y="603" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">agent turns + push</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="636" x2="1240" y2="636" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="652" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="664" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="672" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Memory graph (focal store)</text>
+
+      <rect x="270" y="664" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="290" y="672" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Gated admission</text>
+
+      <rect x="450" y="664" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="470" y="672" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Inflow / consumer</text>
+
+      <line x1="640" y1="669" x2="668" y2="669" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <text x="676" y="672" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Graph seeds correlation</text>
+    </svg>
+  </div>
+</body>
+</html>
