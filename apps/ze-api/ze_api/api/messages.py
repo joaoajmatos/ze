@@ -69,6 +69,16 @@ def _trace_to_response(trace) -> MessageTraceResponse:
             for t in trace.tool_calls
         ],
         total_duration_ms=trace.total_duration_ms,
+        skills_used=[
+            {
+                "skill_id": s.skill_id,
+                "name": s.name,
+                "source": s.source,
+                "trigger": s.trigger,
+                "similarity": s.similarity,
+            }
+            for s in getattr(trace, "skills_used", [])
+        ],
     )
 
 

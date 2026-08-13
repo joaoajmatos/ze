@@ -163,7 +163,28 @@ class BaseAgent(ABC):
             rendered = f"{ctx.screen_context_note}\n\n{rendered}"
         if ctx.resume_recap:
             rendered = f"{ctx.resume_recap}\n\n{rendered}"
+        skills_block = self._format_active_skills(ctx)
+        if skills_block:
+            rendered = f"{skills_block}\n\n{rendered}"
         return f"{datetime_line}{prefix}{rendered}"
+
+    def _format_active_skills(self, ctx: AgentContext) -> str:
+        """Render each active skill's instructions (and any reference-file content,
+        FR-022) as a system-prompt preamble block. No-op when no skills matched."""
+        skills = getattr(ctx, "active_skills", None)
+        if not skills:
+            return ""
+        blocks: list[str] = []
+        for skill in skills:
+            name = getattr(skill, "name", "")
+            instructions = getattr(skill, "instructions", "")
+            block = f"[Skill: {name}]\n{instructions}"
+            for ref in getattr(skill, "reference_files", None) or []:
+                filename = getattr(ref, "filename", "")
+                content = getattr(ref, "content", "")
+                block += f"\n\n[Reference: {filename}]\n{content}"
+            blocks.append(block)
+        return "\n\n".join(blocks)
 
     # ── Tool execution ────────────────────────────────────────────────────────
 
@@ -288,6 +309,13 @@ class BaseAgent(ABC):
         from ze_agents.tool import get_tool
 
         names = tool_names if tool_names is not None else self.tools
+        skill_tool_names = getattr(ctx, "skill_tool_names", None)
+        if skill_tool_names is not None:
+            # A skill's `allowed_tools` only ever narrows — never unions — the
+            # agent's own tool list (FR-008). Naming a tool the agent doesn't
+            # have has no effect since it's absent from `names` already.
+            allowed = set(skill_tool_names)
+            names = [n for n in names if n in allowed]
         tool_schemas = [
             _OPENROUTER_TOOL_SCHEMAS[n]
             if n in _OPENROUTER_TOOL_SCHEMAS

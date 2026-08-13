@@ -8,6 +8,7 @@ from ze_core.conversation.messages.types import (
     CompactionTrace,
     MemoryChunkTrace,
     MessageTrace,
+    SkillUsageTrace,
     ToolCallTrace,
 )
 from ze_core.orchestration.state import AgentState
@@ -52,8 +53,31 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         total_duration_ms=total_duration_ms,
         compaction=compaction,
         resume_recap_applied=bool(state.get("resume_recap_applied")),
+        skills_used=_extract_skills_used(state.get("skill_matches")),
     )
     return {"message_trace": trace}
+
+
+def _extract_skills_used(skill_matches: Any) -> list[SkillUsageTrace]:
+    if not skill_matches:
+        return []
+    result: list[SkillUsageTrace] = []
+    for m in skill_matches:
+        skill = getattr(m, "skill", None)
+        if skill is None:
+            continue
+        source = getattr(skill, "source", None)
+        trigger = getattr(m, "trigger", None)
+        result.append(
+            SkillUsageTrace(
+                skill_id=str(getattr(skill, "id", "")),
+                name=getattr(skill, "name", ""),
+                source=source.value if hasattr(source, "value") else str(source),
+                trigger=trigger.value if hasattr(trigger, "value") else str(trigger),
+                similarity=getattr(m, "similarity", None),
+            )
+        )
+    return result
 
 
 def _extract_memory_chunks(memory_context: Any) -> list[MemoryChunkTrace]:

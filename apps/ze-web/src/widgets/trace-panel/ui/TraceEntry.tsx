@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { MemorySection } from "./MemorySection";
 import { RoutingSection } from "./RoutingSection";
+import { SkillsSection } from "./SkillsSection";
 import { ToolsSection } from "./ToolsSection";
 
 interface TraceEntryProps {
@@ -48,6 +49,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEnt
           <RoutingSection trace={trace} live={live} />
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
+          <SkillsSection skillsUsed={trace.skills_used} live={live} />
         </div>
       )}
     </div>

@@ -53,6 +53,7 @@ def make_graph_input(
         "routing_hints": None,
         "correlations": [],
         "message_trace": None,
+        "skill_matches": None,
     }
 
 

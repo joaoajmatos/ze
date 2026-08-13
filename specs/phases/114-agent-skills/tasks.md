@@ -178,26 +178,26 @@ message, confirm both the behavior and a `skills_used` trace entry appear.
 
 ### Tests for User Story 2
 
-- [ ] T027 [P] [US2] Unit tests for `SkillMatcher` in
+- [X] T027 [P] [US2] Unit tests for `SkillMatcher` in
       `core/ze-skills/tests/test_matching.py` — embedding-similarity match above/below
       `match_threshold`, `/skill-name` explicit-invocation parsing and precedence, combined
       automatic + explicit matches in one turn (each producing a `SkillMatch`), mocked embedder
-- [ ] T028 [P] [US2] Unit tests for tool-narrowing intersection logic in
+- [X] T028 [P] [US2] Unit tests for tool-narrowing intersection logic in
       `core/ze-agents/tests/test_base_agent.py` (extend existing suite) — agent `tools`
       intersected with a skill's `allowed_tools` (never unioned, FR-008), multiple matched
       skills' restrictions intersected together, restriction naming a tool the agent lacks
       has no effect (spec Edge Cases)
-- [ ] T029 [P] [US2] Unit test for `match_skills` orchestration node in
+- [X] T029 [P] [US2] Unit test for `match_skills` orchestration node in
       `core/ze-core/tests/orchestration/test_skills_node.py` — populates
       `AgentContext.active_skills`/`skill_tool_names`, no-op when no skills active
-- [ ] T030 [US2] Integration-style trace test extending
+- [X] T030 [US2] Integration-style trace test extending
       `apps/ze-api/tests/api/routes/test_messages.py` (or equivalent existing trace test file)
       — `skills_used` present on `GET /api/v0/messages/{id}/trace` and empty array when no
       skill matched
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Implement `SkillMatcher` in `core/ze-skills/ze_skills/matching.py` —
+- [X] T031 [US2] Implement `SkillMatcher` in `core/ze-skills/ze_skills/matching.py` —
       embeds each active skill's `name + description` once (cache invalidated on
       approve/disable/enable/content-change), cosine-similarity against the turn's routing
       embedding via the injected embedder (`EmbeddingRouter` pattern), applies
@@ -205,34 +205,34 @@ message, confirm both the behavior and a `skills_used` trace entry appear.
       regex-parses `/skill-name` tokens from the raw message and resolves against active
       skills' slugs, producing a `SkillMatch` with `trigger="explicit"`; combines both sets
       for the turn (FR-019a, FR-019b)
-- [ ] T032 [US2] Add `active_skills: list[Skill]` and `skill_tool_names: list[str] | None`
+- [X] T032 [US2] Add `active_skills: list[Skill]` and `skill_tool_names: list[str] | None`
       fields to `AgentContext` in `core/ze-agents/ze_agents/types.py`
-- [ ] T033 [US2] Create `match_skills(state, config)` node in
+- [X] T033 [US2] Create `match_skills(state, config)` node in
       `core/ze-core/ze_core/orchestration/nodes/skills.py` — reads `SkillMatcher` from
       `config["configurable"]["skill_matcher"]` (mirrors `surface_loops`/`loop_surfacer`),
       populates `AgentContext.active_skills`/`skill_tool_names` from the turn's `SkillMatch`
       list and stores that list on state for `record_trace` to consume; wire
       `add_node("match_skills", ...)` after `embed_route` in
       `core/ze-core/ze_core/orchestration/graph.py`
-- [ ] T034 [US2] Update `record_trace` in
+- [X] T034 [US2] Update `record_trace` in
       `core/ze-core/ze_core/orchestration/nodes/trace.py` to populate
       `MessageTrace.skills_used` from the turn's `SkillMatch` list (name, source, trigger,
       similarity)
-- [ ] T035 [US2] In `core/ze-agents/ze_agents/base_agent.py`: `_build_system_prompt` prepends
+- [X] T035 [US2] In `core/ze-agents/ze_agents/base_agent.py`: `_build_system_prompt` prepends
       each active skill's instructions (and referenced reference-file content per FR-022) to
       the system prompt; `agentic_loop`'s tool-name resolution intersects
       `AgentContext.skill_tool_names` with the agent's own `tools` when present, never unions
       (FR-008)
-- [ ] T036 [US2] Pass `skill_matcher` into the orchestration `configurable` dict at invocation
+- [X] T036 [US2] Pass `skill_matcher` into the orchestration `configurable` dict at invocation
       time in `apps/ze-api/ze_api/container.py` (or the graph-invocation call site), sourced
       from `build_skills_stack`
-- [ ] T037 [US2] Add `skills_used: list[SkillUsageTrace]` to the `trace_update` WS frame
+- [X] T037 [US2] Add `skills_used: list[SkillUsageTrace]` to the `trace_update` WS frame
       payload and `MessageTraceResponse` schema in `apps/ze-api/ze_api/api/schemas.py` (the
       dataclass field is included automatically via existing `**asdict(trace)`, per
       research.md §9 — verify no manual allowlist filters it out)
-- [ ] T038 [US2] Add `skills.match_threshold: 0.5` and `skills` block scaffolding to
+- [X] T038 [US2] Add `skills.match_threshold: 0.5` and `skills` block scaffolding to
       `apps/ze-api/config/config.yaml` per data-model.md Config additions
-- [ ] T039 [P] [US2] Extend `apps/ze-web/src/widgets/mind-panel/` trace panel component to
+- [X] T039 [P] [US2] Extend `apps/ze-web/src/widgets/mind-panel/` trace panel component to
       render `skills_used` entries (name, source, trigger badge) alongside existing trace
       sections
 

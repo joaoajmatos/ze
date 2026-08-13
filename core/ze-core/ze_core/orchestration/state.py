@@ -65,6 +65,11 @@ class AgentState(TypedDict):
     # ── Trace (Phase 89 — populated by record_trace node) ────────────────────
     message_trace: Any | None  # MessageTrace; saved to DB after message is persisted
 
+    # ── Skills (Phase 114 — populated by match_skills node) ──────────────────
+    skill_matches: (
+        Any | None
+    )  # list[SkillMatch] (ze_skills, kept untyped — no ze_core dep)
+
 
 def build_state_type(plugins: list[ZePlugin]) -> type:
     """Return a TypedDict class that merges AgentState with all plugin state extensions.

@@ -87,6 +87,9 @@ contacts:
 onboarding:
   enabled: true
   auto_start_on_empty_profile: true
+
+skills:
+  match_threshold: 0.5   # relevance floor for automatic /-less skill matching (US2)
   require_review: true
   reset:
     allow_full_dev_from_app: false

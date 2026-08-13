@@ -110,6 +110,14 @@ class AgentContext:
     # on a long-gap turn. Rendered into the system prompt, never appended to
     # messages — must never surface as a visible chat message. Never checkpoint.
     resume_recap: str | None = field(default=None, repr=False)
+    # active_skills / skill_tool_names are populated by the `match_skills` orchestration
+    # node from the turn's `SkillMatch` list (core/ze-skills). `active_skills` holds the
+    # matched `Skill` objects (name/description/instructions injected into the system
+    # prompt); `skill_tool_names`, when not None, is the intersection of every matched
+    # skill's `allowed_tools` and must only ever narrow — never union — an agent's own
+    # `tools` (FR-008). Never checkpoint: skills are re-matched fresh on resume.
+    active_skills: list[Any] = field(default_factory=list, repr=False)
+    skill_tool_names: list[str] | None = field(default=None, repr=False)
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

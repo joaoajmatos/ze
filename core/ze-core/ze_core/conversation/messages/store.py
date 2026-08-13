@@ -12,6 +12,7 @@ from ze_core.conversation.messages.types import (
     Message,
     MessageTrace,
     MemoryChunkTrace,
+    SkillUsageTrace,
     ToolCallTrace,
 )
 
@@ -189,6 +190,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         memory_chunks=[MemoryChunkTrace(**c) for c in data.get("memory_chunks", [])],
         tool_calls=[ToolCallTrace(**t) for t in data.get("tool_calls", [])],
         total_duration_ms=data.get("total_duration_ms", 0),
+        skills_used=[SkillUsageTrace(**s) for s in data.get("skills_used", [])],
     )
 
 

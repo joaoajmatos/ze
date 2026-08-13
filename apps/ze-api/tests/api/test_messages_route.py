@@ -14,13 +14,14 @@ from ze_api.api.messages import router
 from ze_core.conversation.messages.types import (
     MemoryChunkTrace,
     MessageTrace,
+    SkillUsageTrace,
     ToolCallTrace,
 )
 
 API_KEY = "test-key"
 
 
-def _trace() -> MessageTrace:
+def _trace(skills_used: list[SkillUsageTrace] | None = None) -> MessageTrace:
     return MessageTrace(
         agent="companion",
         routing_method="embedding",
@@ -35,6 +36,7 @@ def _trace() -> MessageTrace:
             )
         ],
         total_duration_ms=100,
+        skills_used=skills_used or [],
     )
 
 
@@ -90,3 +92,60 @@ async def test_get_message_traces_empty_ids():
     assert resp.status_code == 200
     assert resp.json()["traces"] == []
     store.get_traces.assert_not_called()
+
+
+# ── GET /messages/{id}/trace — skills_used (Phase 114, User Story 2) ────────────
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_includes_skills_used():
+    message_id = uuid4()
+    skill_usage = SkillUsageTrace(
+        skill_id="skill-1",
+        name="Pirate Speak",
+        source="imported",
+        trigger="automatic",
+        similarity=0.82,
+    )
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=_trace(skills_used=[skill_usage]))
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/messages/{message_id}/trace",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["skills_used"] == [
+        {
+            "skill_id": "skill-1",
+            "name": "Pirate Speak",
+            "source": "imported",
+            "trigger": "automatic",
+            "similarity": 0.82,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_skills_used_empty_when_no_skill_matched():
+    message_id = uuid4()
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=_trace())
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/messages/{message_id}/trace",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["skills_used"] == []

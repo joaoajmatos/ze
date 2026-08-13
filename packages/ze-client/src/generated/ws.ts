@@ -78,6 +78,12 @@ export type DurationMs = number;
 export type Success = boolean;
 export type ToolCalls = ToolCallTraceResponse[];
 export type TotalDurationMs = number;
+export type SkillId = string;
+export type SkillName = string;
+export type SkillSource = string;
+export type SkillTrigger = string;
+export type SkillSimilarity = number | null;
+export type SkillsUsed = SkillUsageTraceResponse[];
 export type Type10 = "notification";
 export type Id4 = string;
 export type EventType = string;
@@ -259,6 +265,7 @@ export interface WsTraceUpdateFrame {
   memory_chunks: MemoryChunks;
   tool_calls: ToolCalls;
   total_duration_ms: TotalDurationMs;
+  skills_used?: SkillsUsed;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -279,6 +286,17 @@ export interface ToolCallTraceResponse {
   result_snippet: ResultSnippet;
   duration_ms: DurationMs;
   success: Success;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "SkillUsageTraceResponse".
+ */
+export interface SkillUsageTraceResponse {
+  skill_id: SkillId;
+  name: SkillName;
+  source: SkillSource;
+  trigger: SkillTrigger;
+  similarity?: SkillSimilarity;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

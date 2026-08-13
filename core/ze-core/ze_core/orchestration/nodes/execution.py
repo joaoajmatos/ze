@@ -118,6 +118,8 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         identity_builder=config["configurable"].get("identity_builder"),
         abort_token=config["configurable"].get("abort_token"),
         embed_fn=_embed_fn(config),
+        active_skills=base_ctx.active_skills,
+        skill_tool_names=base_ctx.skill_tool_names,
     )
     result = await _run_with_timeout(subtask.agent, ctx)
 
@@ -211,6 +213,8 @@ async def _execute_single(
         abort_token=abort_token,
         embed_fn=embed_fn,
         token_sink=token_sink,
+        active_skills=base_ctx.active_skills,
+        skill_tool_names=base_ctx.skill_tool_names,
     )
     result = await _run_with_timeout(subtask.agent, ctx, token_queue=token_queue)
     components: list = []
@@ -263,6 +267,8 @@ async def _execute_compound(
             identity_builder=identity_builder,
             abort_token=abort_token,
             embed_fn=embed_fn,
+            active_skills=base_ctx.active_skills,
+            skill_tool_names=base_ctx.skill_tool_names,
         )
 
     if is_sequential:

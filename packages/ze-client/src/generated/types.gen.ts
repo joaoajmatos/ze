@@ -1712,6 +1712,36 @@ export type MessageTraceResponse = {
      * Total Duration Ms
      */
     total_duration_ms: number;
+    /**
+     * Skills Used
+     */
+    skills_used?: Array<SkillUsageTraceResponse>;
+};
+
+/**
+ * SkillUsageTraceResponse
+ */
+export type SkillUsageTraceResponse = {
+    /**
+     * Skill Id
+     */
+    skill_id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Source
+     */
+    source: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Similarity
+     */
+    similarity?: number | null;
 };
 
 /**

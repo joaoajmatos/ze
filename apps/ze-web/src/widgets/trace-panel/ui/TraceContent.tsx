@@ -15,6 +15,7 @@ const EMPTY_TRACE: Omit<WsTraceUpdateFrame, "type" | "message_id"> = {
   memory_chunks: [],
   tool_calls: [],
   total_duration_ms: 0,
+  skills_used: [],
 };
 
 interface TraceContentProps {

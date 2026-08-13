@@ -82,6 +82,14 @@ class ToolCallTraceResponse(BaseModel):
     success: bool
 
 
+class SkillUsageTraceResponse(BaseModel):
+    skill_id: str
+    name: str
+    source: str
+    trigger: str
+    similarity: float | None = None
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -92,6 +100,7 @@ class MessageTraceResponse(BaseModel):
     memory_chunks: list[MemoryChunkTraceResponse]
     tool_calls: list[ToolCallTraceResponse]
     total_duration_ms: int
+    skills_used: list[SkillUsageTraceResponse] = []
 
 
 class MessageTraceEntry(BaseModel):
@@ -629,6 +638,7 @@ class WsTraceUpdateFrame(BaseModel):
     memory_chunks: list[MemoryChunkTraceResponse]
     tool_calls: list[ToolCallTraceResponse]
     total_duration_ms: int
+    skills_used: list[SkillUsageTraceResponse] = []
 
 
 class WsNotificationFrame(BaseModel):
