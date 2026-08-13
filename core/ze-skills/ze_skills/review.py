@@ -2,11 +2,25 @@ from __future__ import annotations
 
 from uuid import UUID
 
+import httpx
+
 from ze_logging import get_logger
 
-from ze_skills.errors import InvalidSkillTransitionError, SkillNotFoundError
+from ze_skills.errors import (
+    InvalidSkillTransitionError,
+    SkillNotFoundError,
+    SkillParseError,
+)
+from ze_skills.importer import fetch_skill_source
 from ze_skills.store import SkillStore
-from ze_skills.types import Skill, SkillReview, SkillSource, SkillStatus
+from ze_skills.types import (
+    ReferenceFile,
+    Skill,
+    SkillReview,
+    SkillSource,
+    SkillStatus,
+    compute_content_hash,
+)
 
 log = get_logger(__name__)
 
@@ -126,3 +140,66 @@ async def remove_skill(store: SkillStore, skill_id: UUID) -> None:
 
     await store.delete(skill_id)
     log.info("skill_removed", skill_id=str(skill_id))
+
+
+async def refresh_skill(
+    store: SkillStore, skill_id: UUID, http_client: httpx.AsyncClient | None = None
+) -> Skill:
+    """Re-fetch an imported skill's `origin_url` and compare content hashes
+    (FR-015). On a mismatch, reverts `status` to `pending_review`, replaces
+    the stored content and reference files, and preserves the prior approved
+    `SkillReview` for comparison (FR-016, via `rest._detail`). On an
+    unreachable source, records `last_check_error` without changing `status`
+    (spec Edge Cases — a dead source doesn't deactivate a working skill).
+    `last_checked_at` always updates. Raises `InvalidSkillTransitionError` for
+    `source == bundled` (no `origin_url` to refresh)."""
+    skill = await store.get(skill_id)
+    if skill is None:
+        raise SkillNotFoundError(f"Skill {skill_id} not found")
+
+    if skill.source == SkillSource.BUNDLED:
+        raise InvalidSkillTransitionError(
+            f"Cannot refresh skill {skill_id}: bundled skills have no origin_url"
+        )
+
+    try:
+        fetched = await fetch_skill_source(skill.origin_url, client=http_client)
+    except SkillParseError as exc:
+        log.info("skill_refresh_unreachable", skill_id=str(skill_id), error=str(exc))
+        updated = await store.mark_checked(skill_id, error=str(exc))
+        return updated if updated is not None else skill
+
+    parsed = fetched.parsed
+    new_hash = compute_content_hash(
+        parsed.name, parsed.description, parsed.instructions, parsed.allowed_tools
+    )
+    if new_hash == skill.content_hash:
+        updated = await store.mark_checked(skill_id, error=None)
+        return updated if updated is not None else skill
+
+    updated = await store.apply_content_change(
+        skill_id,
+        name=parsed.name,
+        description=parsed.description,
+        instructions=parsed.instructions,
+        allowed_tools=parsed.allowed_tools,
+        has_unsupported_scripts=parsed.has_unsupported_scripts,
+        content_hash=new_hash,
+        new_status=SkillStatus.PENDING_REVIEW,
+    )
+    if updated is None:
+        raise SkillNotFoundError(f"Skill {skill_id} not found")
+
+    await store.delete_reference_files(skill_id)
+    for ref in fetched.reference_files:
+        await store.add_reference_file(
+            ReferenceFile(
+                skill_id=skill_id,
+                filename=ref.filename,
+                content=ref.content,
+                content_type=ref.content_type,
+            )
+        )
+
+    log.info("skill_content_changed_on_refresh", skill_id=str(skill_id))
+    return updated

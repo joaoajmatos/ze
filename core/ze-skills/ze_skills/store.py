@@ -81,7 +81,26 @@ class SkillStore(Protocol):
 
     async def delete(self, skill_id: UUID) -> bool: ...
 
+    async def mark_checked(
+        self, skill_id: UUID, *, error: str | None
+    ) -> Skill | None: ...
+
+    async def apply_content_change(
+        self,
+        skill_id: UUID,
+        *,
+        name: str,
+        description: str,
+        instructions: str,
+        allowed_tools: list[str] | None,
+        has_unsupported_scripts: bool,
+        content_hash: str,
+        new_status: SkillStatus,
+    ) -> Skill | None: ...
+
     async def add_reference_file(self, file: ReferenceFile) -> ReferenceFile: ...
+
+    async def delete_reference_files(self, skill_id: UUID) -> None: ...
 
     async def list_reference_files(self, skill_id: UUID) -> list[ReferenceFile]: ...
 
@@ -223,6 +242,62 @@ class PostgresSkillStore:
             log.info("skill_deleted", skill_id=str(skill_id))
         return deleted
 
+    async def mark_checked(self, skill_id: UUID, *, error: str | None) -> Skill | None:
+        """Update `last_checked_at`/`last_check_error` without touching `status` —
+        used for the unchanged-content and unreachable-source recheck branches."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE skills
+                SET last_checked_at = now(), last_check_error = $2
+                WHERE id = $1
+                RETURNING *
+                """,
+                skill_id,
+                error,
+            )
+        return _skill_from_row(row) if row else None
+
+    async def apply_content_change(
+        self,
+        skill_id: UUID,
+        *,
+        name: str,
+        description: str,
+        instructions: str,
+        allowed_tools: list[str] | None,
+        has_unsupported_scripts: bool,
+        content_hash: str,
+        new_status: SkillStatus,
+    ) -> Skill | None:
+        """Persist a recheck-detected content change: overwrite the content
+        fields, revert `status` to `new_status`, clear any prior check error,
+        and stamp `last_checked_at` (FR-015)."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE skills
+                SET name = $2, description = $3, instructions = $4,
+                    allowed_tools = $5, has_unsupported_scripts = $6,
+                    content_hash = $7, status = $8,
+                    last_checked_at = now(), last_check_error = NULL
+                WHERE id = $1
+                RETURNING *
+                """,
+                skill_id,
+                name,
+                description,
+                instructions,
+                allowed_tools,
+                has_unsupported_scripts,
+                content_hash,
+                new_status.value,
+            )
+        result = _skill_from_row(row) if row else None
+        if result is not None:
+            log.info("skill_content_changed", skill_id=str(skill_id))
+        return result
+
     async def add_reference_file(self, file: ReferenceFile) -> ReferenceFile:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -238,6 +313,12 @@ class PostgresSkillStore:
                 file.content_type,
             )
         return _reference_file_from_row(row)
+
+    async def delete_reference_files(self, skill_id: UUID) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM skill_reference_files WHERE skill_id = $1", skill_id
+            )
 
     async def list_reference_files(self, skill_id: UUID) -> list[ReferenceFile]:
         async with self._pool.acquire() as conn:

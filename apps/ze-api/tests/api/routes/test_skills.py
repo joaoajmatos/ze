@@ -548,3 +548,139 @@ async def test_delete_skill_404_when_missing():
         )
 
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_changed_content_returns_pending_review():
+    skill_id = uuid4()
+    active = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        origin_url="http://example.com/SKILL.md",
+        instructions="Old instructions",
+    )
+    reverted = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.apply_content_change = AsyncMock(return_value=reverted)
+    store.delete_reference_files = AsyncMock()
+    store.add_reference_file = AsyncMock()
+    _default_store_mocks(store)
+    app, _ = _make_app(store)
+
+    fetched = FetchedSkill(
+        parsed=ParsedSkill(
+            name="Pirate Speak",
+            description="Ends every response with Arrr!",
+            instructions="New instructions",
+            allowed_tools=None,
+            has_unsupported_scripts=False,
+        ),
+        reference_files=[],
+    )
+
+    with patch("ze_skills.review.fetch_skill_source", AsyncMock(return_value=fetched)):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                f"/api/v0/skills/{skill_id}/refresh",
+                headers={"Authorization": f"Bearer {API_KEY}"},
+            )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "pending_review"
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_unchanged_content_returns_200_no_status_change():
+    skill_id = uuid4()
+    fetched = FetchedSkill(
+        parsed=ParsedSkill(
+            name="Pirate Speak",
+            description='Ends every response with "Arrr!"',
+            instructions='Always end with "Arrr!"',
+            allowed_tools=None,
+            has_unsupported_scripts=False,
+        ),
+        reference_files=[],
+    )
+    active = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        origin_url="http://example.com/SKILL.md",
+        name=fetched.parsed.name,
+        description=fetched.parsed.description,
+        instructions=fetched.parsed.instructions,
+    )
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.mark_checked = AsyncMock(return_value=active)
+    _default_store_mocks(store)
+    app, _ = _make_app(store)
+
+    with patch("ze_skills.review.fetch_skill_source", AsyncMock(return_value=fetched)):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                f"/api/v0/skills/{skill_id}/refresh",
+                headers={"Authorization": f"Bearer {API_KEY}"},
+            )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "active"
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_unreachable_source_returns_200_with_check_error():
+    skill_id = uuid4()
+    active = _skill(
+        id=skill_id, status=SkillStatus.ACTIVE, origin_url="http://example.com/SKILL.md"
+    )
+    checked = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        origin_url="http://example.com/SKILL.md",
+        last_check_error="Failed to fetch: HTTP 500",
+    )
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.mark_checked = AsyncMock(return_value=checked)
+    _default_store_mocks(store)
+    app, _ = _make_app(store)
+
+    with patch(
+        "ze_skills.review.fetch_skill_source",
+        AsyncMock(side_effect=SkillParseError("Failed to fetch: HTTP 500")),
+    ):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                f"/api/v0/skills/{skill_id}/refresh",
+                headers={"Authorization": f"Bearer {API_KEY}"},
+            )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "active"
+    assert resp.json()["last_check_error"] == "Failed to fetch: HTTP 500"
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_422_when_bundled():
+    skill_id = uuid4()
+    bundled = _skill(id=skill_id, source=SkillSource.BUNDLED, status=SkillStatus.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=bundled)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/skills/{skill_id}/refresh",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 422

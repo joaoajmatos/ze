@@ -93,6 +93,9 @@ skills:
   require_review: true
   reset:
     allow_full_dev_from_app: false
+  recheck:
+    enabled: true
+    cron: "0 6 * * *"    # daily source-content recheck (US4)
 
 proactive:
   briefing:

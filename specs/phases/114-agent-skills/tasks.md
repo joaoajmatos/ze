@@ -312,44 +312,44 @@ conversation until re-approved.
 
 ### Tests for User Story 4
 
-- [ ] T052 [P] [US4] Unit tests for `refresh_skill()` content-hash comparison in
+- [X] T052 [P] [US4] Unit tests for `refresh_skill()` content-hash comparison in
       `core/ze-skills/tests/test_review.py` (extend) — changed content → `pending_review`
       revert with prior version retrievable, unchanged content → no status change,
       unreachable source → `last_check_error` set, `active` unchanged, no exception raised
       (spec Edge Cases)
-- [ ] T053 [P] [US4] Unit tests for `SkillRecheckJob` in
+- [X] T053 [P] [US4] Unit tests for `SkillRecheckJob` in
       `core/ze-skills/tests/jobs/test_recheck.py` — sweeps all imported skills regardless of
       `active`/`disabled` status, calls the same refresh logic per skill, mocked `httpx`
-- [ ] T054 [US4] REST route test for `POST /api/v0/skills/{id}/refresh` in
+- [X] T054 [US4] REST route test for `POST /api/v0/skills/{id}/refresh` in
       `apps/ze-api/tests/api/routes/test_skills.py` (extend) — 200 with `pending_review` on
       change, 200 unchanged on no-op, 200 with `last_check_error` on unreachable source, 422
       on `source == bundled`
 
 ### Implementation for User Story 4
 
-- [ ] T055 [US4] Implement `refresh_skill()` in `core/ze-skills/ze_skills/review.py` —
+- [X] T055 [US4] Implement `refresh_skill()` in `core/ze-skills/ze_skills/review.py` —
       re-fetches `origin_url` via `fetch_skill_source()`, recomputes `content_hash`; on
       mismatch, transitions `active|disabled|rejected → pending_review` and preserves the
       previously-approved `SkillReview` for comparison (FR-015, FR-016); on fetch failure,
       sets `last_check_error` and updates `last_checked_at` without changing `status` (spec
       Edge Cases); always updates `last_checked_at` on success too; rejects for
       `source == bundled`
-- [ ] T056 [US4] Add `refresh()` wrapper to `core/ze-skills/ze_skills/rest.py` and
+- [X] T056 [US4] Add `refresh()` wrapper to `core/ze-skills/ze_skills/rest.py` and
       `POST /api/v0/skills/{id}/refresh` route to
       `apps/ze-api/ze_api/api/routes/skills.py`
-- [ ] T057 [US4] Extend `GET /api/v0/skills/{id}` detail response/schema to include
+- [X] T057 [US4] Extend `GET /api/v0/skills/{id}` detail response/schema to include
       `previous_version` (from the latest approved `SkillReview`) when
       `status == pending_review` and a prior approval exists (FR-016)
-- [ ] T058 [US4] Implement `SkillRecheckJob` (`@proactive_job`) in
+- [X] T058 [US4] Implement `SkillRecheckJob` (`@proactive_job`) in
       `core/ze-skills/ze_skills/jobs/recheck.py` — daily cron sweep over all `source=imported`
       skills calling `refresh_skill()` per skill, cron read from `skills.recheck.cron`
       (default `"0 6 * * *"`)
-- [ ] T059 [US4] Add `register_proactive_jobs(scheduler, settings, stack)` to
+- [X] T059 [US4] Add `register_proactive_jobs(scheduler, settings, stack)` to
       `core/ze-skills/ze_skills/bootstrap.py` wiring `SkillRecheckJob`, honoring
       `skills.recheck.enabled`
-- [ ] T060 [US4] Call `ze_skills` job registration from
+- [X] T060 [US4] Call `ze_skills` job registration from
       `apps/ze-api/ze_api/compose.py`'s proactive job fan-out
-- [ ] T061 [US4] Add `skills.recheck.enabled`/`skills.recheck.cron` to
+- [X] T061 [US4] Add `skills.recheck.enabled`/`skills.recheck.cron` to
       `apps/ze-api/config/config.yaml` (already scaffolded in T038 — extend with recheck
       block)
 

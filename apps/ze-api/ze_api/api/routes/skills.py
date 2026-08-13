@@ -186,6 +186,29 @@ async def enable_skill(
     return SkillDetailResponse.model_validate(skill)
 
 
+@router.post(
+    "/{skill_id}/refresh",
+    response_model=SkillDetailResponse,
+    operation_id="refreshSkill",
+    summary="Manually recheck an imported skill's source",
+    description="Re-fetch an imported skill's origin_url and compare content hashes "
+    "(FR-015). On a change, reverts to pending_review with the prior version kept "
+    "for comparison (FR-016). An unreachable source sets last_check_error without "
+    "deactivating the skill.",
+)
+async def refresh_skill(
+    skill_id: UUID,
+    store: SkillStore = Depends(get_skill_store),
+) -> SkillDetailResponse:
+    try:
+        skill = await skills_rest.refresh(store, skill_id)
+    except SkillNotFoundError:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    except InvalidSkillTransitionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return SkillDetailResponse.model_validate(skill)
+
+
 @router.delete(
     "/{skill_id}",
     status_code=204,

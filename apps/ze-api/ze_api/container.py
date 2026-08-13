@@ -581,6 +581,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         correlation=correlation,
         worldstate=worldstate,
         loop_surfacer=loop_surfacer,
+        skills_stack=skills_stack,
         shared=shared,
         plugins=plugins,
         notifier=notifier,

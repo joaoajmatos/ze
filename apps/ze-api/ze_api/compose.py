@@ -18,6 +18,7 @@ from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
+from ze_skills.bootstrap import register_proactive_jobs as register_skills_jobs
 from ze_worldstate.bootstrap import register_proactive_jobs as register_worldstate_jobs
 
 
@@ -30,6 +31,7 @@ def register_all_proactive_jobs(
     correlation: Any,
     worldstate: Any = None,
     loop_surfacer: Any = None,
+    skills_stack: Any = None,
     shared: Any,
     plugins: list,
     notifier: ProactiveNotifier,
@@ -65,6 +67,8 @@ def register_all_proactive_jobs(
             loop_surfacer=loop_surfacer,
             notifier=notifier,
         )
+    if skills_stack is not None:
+        register_skills_jobs(scheduler, settings, skills_stack)
     for plugin in plugins:
         plugin.register_proactive_jobs(
             scheduler,

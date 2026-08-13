@@ -6,6 +6,7 @@ from typing import Any
 
 from ze_logging import get_logger
 
+from ze_skills.jobs.recheck import SkillRecheckJob
 from ze_skills.parser import parse_skill_md
 from ze_skills.store import PostgresSkillStore, SkillStore
 from ze_skills.types import Skill, SkillSource, SkillStatus
@@ -87,3 +88,17 @@ async def register_bundled_skills(store: SkillStore, plugins: list[Any]) -> None
                 slug=created.slug,
                 plugin=plugin_name,
             )
+
+
+def register_proactive_jobs(scheduler: Any, settings: Any, stack: SkillsStack) -> None:
+    """Wire `SkillRecheckJob` onto the scheduler, honoring `skills.recheck.enabled`
+    (default on) and `skills.recheck.cron` (default daily at 06:00)."""
+    cfg = getattr(settings, "config", None) or {}
+    skills_cfg = cfg.get("skills", {}) if isinstance(cfg, dict) else {}
+    recheck_cfg = skills_cfg.get("recheck", {})
+    if not recheck_cfg.get("enabled", True):
+        return
+
+    job = SkillRecheckJob(skill_store=stack.skill_store)
+    scheduler.register(job, cron=recheck_cfg.get("cron", "0 6 * * *"))
+    log.info("skill_recheck_job_scheduled")

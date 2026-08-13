@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
 import pytest
 
 from ze_skills import review
-from ze_skills.errors import InvalidSkillTransitionError, SkillNotFoundError
+from ze_skills.errors import (
+    InvalidSkillTransitionError,
+    SkillNotFoundError,
+    SkillParseError,
+)
+from ze_skills.importer import FetchedReferenceFile, FetchedSkill
+from ze_skills.parser import ParsedSkill
 from ze_skills.types import Skill, SkillSource, SkillStatus
 
 
@@ -198,3 +204,115 @@ async def test_remove_skill_raises_not_found_when_missing():
 
     with pytest.raises(SkillNotFoundError):
         await review.remove_skill(store, uuid4())
+
+
+def _fetched(name="Pirate Speak", description="Ends with Arrr!", instructions="Arrr!"):
+    return FetchedSkill(
+        parsed=ParsedSkill(
+            name=name,
+            description=description,
+            instructions=instructions,
+            allowed_tools=None,
+            has_unsupported_scripts=False,
+        ),
+        reference_files=[FetchedReferenceFile("notes.md", "notes", "text/markdown")],
+    )
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_changed_content_reverts_to_pending_review():
+    skill_id = uuid4()
+    active = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        origin_url="http://example.com/SKILL.md",
+        instructions="Old instructions",
+    )
+    reverted = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.apply_content_change = AsyncMock(return_value=reverted)
+    store.delete_reference_files = AsyncMock()
+    store.add_reference_file = AsyncMock()
+
+    with patch.object(
+        review, "fetch_skill_source", AsyncMock(return_value=_fetched())
+    ):
+        result = await review.refresh_skill(store, skill_id)
+
+    assert result.status == SkillStatus.PENDING_REVIEW
+    store.apply_content_change.assert_awaited_once()
+    kwargs = store.apply_content_change.call_args.kwargs
+    assert kwargs["new_status"] == SkillStatus.PENDING_REVIEW
+    store.delete_reference_files.assert_awaited_once_with(skill_id)
+    store.add_reference_file.assert_awaited_once()
+    store.mark_checked.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_unchanged_content_no_status_change():
+    skill_id = uuid4()
+    fetched = _fetched()
+    active = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        origin_url="http://example.com/SKILL.md",
+        name=fetched.parsed.name,
+        description=fetched.parsed.description,
+        instructions=fetched.parsed.instructions,
+    )
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.mark_checked = AsyncMock(return_value=active)
+
+    with patch.object(review, "fetch_skill_source", AsyncMock(return_value=fetched)):
+        result = await review.refresh_skill(store, skill_id)
+
+    assert result.status == SkillStatus.ACTIVE
+    store.mark_checked.assert_awaited_once_with(skill_id, error=None)
+    store.apply_content_change.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_unreachable_source_sets_check_error():
+    skill_id = uuid4()
+    active = _skill(
+        id=skill_id, status=SkillStatus.ACTIVE, origin_url="http://example.com/SKILL.md"
+    )
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.mark_checked = AsyncMock(return_value=active)
+
+    with patch.object(
+        review,
+        "fetch_skill_source",
+        AsyncMock(side_effect=SkillParseError("Failed to fetch: connection refused")),
+    ):
+        result = await review.refresh_skill(store, skill_id)
+
+    assert result.status == SkillStatus.ACTIVE
+    store.mark_checked.assert_awaited_once()
+    args, kwargs = store.mark_checked.call_args
+    assert args[0] == skill_id
+    assert "connection refused" in kwargs["error"]
+    store.apply_content_change.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_rejects_bundled_skill():
+    skill_id = uuid4()
+    bundled = _skill(id=skill_id, source=SkillSource.BUNDLED, status=SkillStatus.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=bundled)
+
+    with pytest.raises(InvalidSkillTransitionError):
+        await review.refresh_skill(store, skill_id)
+
+
+@pytest.mark.asyncio
+async def test_refresh_skill_raises_not_found_when_missing():
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=None)
+
+    with pytest.raises(SkillNotFoundError):
+        await review.refresh_skill(store, uuid4())

@@ -137,3 +137,10 @@ async def enable(store: SkillStore, skill_id: UUID) -> dict:
 
 async def remove(store: SkillStore, skill_id: UUID) -> None:
     await review.remove_skill(store, skill_id)
+
+
+async def refresh(
+    store: SkillStore, skill_id: UUID, http_client: httpx.AsyncClient | None = None
+) -> dict:
+    skill = await review.refresh_skill(store, skill_id, http_client=http_client)
+    return await _detail(store, skill)
