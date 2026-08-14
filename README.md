@@ -42,7 +42,11 @@ Goals are the heavyweight, declared end of Ze's executive function. Most real co
 
 ### Open loops
 
-Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops — `suspected → active → drifting → closed | dropped` — extracted from conversation, email, calendar, and ingestion. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear a salience bar shared with the correlation engine's daily budget.
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear a salience bar shared with the correlation engine's daily budget.
+
+![State machine showing an open loop moving from suspected to active to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped](docs/diagrams/root/open-loops.svg)
+
+<sub>[Interactive version](docs/diagrams/root/open-loops.html)</sub>
 
 Goals and open loops are Ze's two hands of executive function today: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](specs/arch/ze-doctrine.md) and [cognitive architecture](docs/cognitive-architecture.md).
 

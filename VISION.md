@@ -8,12 +8,14 @@ not a chat bot with plugins.
 After any refactor, model swap, or agent churn, Ze must still know **who you are, what is
 true, what is open, and what is drifting.** That continuity *is* the product.
 
-The spine is the **world-state** — four faces, bounded to your neighborhood:
+The spine is the **world-state** — four faces, bounded to your neighborhood: self-model
+(who Ze is to you), user-model (who you are), bounded world-model (the people, projects,
+and events you care about), and active concerns (what is open, promised, planned, or
+drifting).
 
-1. **Self-model** — who Ze is to you (role, tone, boundaries)
-2. **User-model** — who you are (values, patterns, relationships)
-3. **Bounded world-model** — the people, projects, and events you care about
-4. **Active concerns** — what is open, promised, planned, or drifting
+![The world-state spine holds four bounded faces of you and your context, with persona, agents, and memory as replaceable organs attached to it.](docs/diagrams/root/world-state-spine.svg)
+
+<sub>[Interactive version](docs/diagrams/root/world-state-spine.html)</sub>
 
 Everything else (persona, agents, goals, LLMs, memory tables, orchestration) is a
 replaceable organ attached to that spine.

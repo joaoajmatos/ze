@@ -253,6 +253,10 @@ link it to its goal via `BELONGS_TO_GOAL` graph edges.
 
 Before every agent execution, `fetch_context` runs:
 
+![Flowchart of the six-step fetch_context retrieval pipeline, including the config-gated NLI rerank and graph augmentation branches, from policy lookup through identity block assembly.](diagrams/docs/memory-retrieval.svg)
+
+<sub>[Interactive version](diagrams/docs/memory-retrieval.html)</sub>
+
 1. **Policy lookup** — `DefaultPolicyRegistry.for_module(request.module)` returns the
    appropriate retrieval policy for the calling context.
 2. **Semantic search** — pgvector cosine similarity over `memory_facts`,

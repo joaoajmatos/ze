@@ -4,9 +4,9 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 
 ## Layers
 
-```
-app → pages → widgets → features → entities → shared
-```
+![Layer stack showing ze-web's six Feature-Sliced Design layers in strict one-way import order, from shared at the foundation up to app at the top](diagrams/docs/frontend-layers.svg)
+
+<sub>[Interactive version](diagrams/docs/frontend-layers.html)</sub>
 
 | Layer | Purpose | Name by | Example |
 |-------|---------|---------|---------|

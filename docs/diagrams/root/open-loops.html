@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Open loop lifecycle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f7f6f4;
+      --color-ink:     #0a0a0a;
+      --color-muted:   #6b6b6b;
+      --color-accent:  #8052ff;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1280px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">State machine · Ze worldstate</p>
+    <h1>Open loop lifecycle</h1>
+    <svg viewBox="0 0 1040 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="open-loops-title open-loops-desc">
+      <title id="open-loops-title">Open loop lifecycle</title>
+      <desc id="open-loops-desc">State machine showing an open loop moving from suspected to active to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0a0a0a"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Annotation callout: confidence decay -->
+      <text x="1000" y="40" fill="#0a0a0a" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="end">confidence decays on its own</text>
+      <path d="M900,46 Q700,60 520,104" fill="none" stroke="rgba(10,10,10,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+      <circle cx="520" cy="104" r="2" fill="#0a0a0a"/>
+
+      <!-- Initial marker -->
+      <circle cx="96" cy="136" r="6" fill="#0a0a0a"/>
+      <line x1="104" y1="136" x2="160" y2="136" stroke="#0a0a0a" stroke-width="1.2" marker-end="url(#arrow-ink)"/>
+
+      <!-- suspected -> active -->
+      <line x1="336" y1="136" x2="432" y2="136" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="352" y="116" width="64" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="384" y="125" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EVIDENCE</text>
+
+      <!-- active -> drifting (focal, guarded) -->
+      <line x1="608" y1="136" x2="768" y2="136" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="640" y="100" width="96" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="688" y="109" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CONTRADICTION</text>
+      <rect x="624" y="116" width="128" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="688" y="125" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">OR MISSED DEADLINE</text>
+
+      <!-- drifting -> closed -->
+      <path d="M800,168 V192 Q800,200 792,200 H712 Q704,200 704,208 V320" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="720" y="180" width="64" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="752" y="189" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RESOLVED</text>
+
+      <!-- drifting -> dropped -->
+      <line x1="920" y1="168" x2="920" y2="320" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="928" y="240" width="72" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="932" y="249" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">DISCARDED</text>
+
+      <!-- closed -> end -->
+      <line x1="704" y1="384" x2="704" y2="404" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <circle cx="704" cy="416" r="8" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="704" cy="416" r="5" fill="#0a0a0a"/>
+
+      <!-- dropped -> end -->
+      <line x1="920" y1="384" x2="920" y2="404" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <circle cx="920" cy="416" r="8" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="920" cy="416" r="5" fill="#0a0a0a"/>
+
+      <!-- Node: suspected -->
+      <rect x="160" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="160" y="104" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="248" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">suspected</text>
+      <text x="248" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">extracted, unconfirmed</text>
+
+      <!-- Node: active -->
+      <rect x="432" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="432" y="104" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="520" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">active</text>
+      <text x="520" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">confirmed, tracked</text>
+
+      <!-- Node: drifting -->
+      <rect x="768" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="768" y="104" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="856" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">drifting</text>
+      <text x="856" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">confidence declining</text>
+
+      <!-- Node: closed -->
+      <rect x="616" y="320" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="616" y="320" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="704" y="349" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">closed</text>
+      <text x="704" y="365" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">resolved</text>
+
+      <!-- Node: dropped -->
+      <rect x="832" y="320" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="832" y="320" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="920" y="349" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">dropped</text>
+      <text x="920" y="365" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no longer relevant</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="452" x2="1000" y2="452" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="468" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <circle cx="48" cy="484" r="5" fill="#0a0a0a"/>
+      <text x="64" y="487" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Initial state</text>
+
+      <circle cx="196" cy="484" r="7" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="196" cy="484" r="4" fill="#0a0a0a"/>
+      <text x="212" y="487" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Terminal state</text>
+
+      <line x1="360" y1="484" x2="384" y2="484" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="392" y="487" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Guarded transition</text>
+    </svg>
+  </div>
+</body>
+</html>

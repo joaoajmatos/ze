@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Frontend Feature-Sliced Design layers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Layer stack · ze-web architecture</p>
+    <h1>Feature-Sliced Design layers</h1>
+    <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="frontend-layers-title frontend-layers-desc">
+      <title id="frontend-layers-title">ze-web Feature-Sliced Design layers, bottom to top</title>
+      <desc id="frontend-layers-desc">Layer stack showing ze-web's six Feature-Sliced Design layers in strict one-way import order — shared utilities at the foundation, then entities, features, widgets, and pages, with app bootstrap and routing at the top — where each layer may import only from layers strictly below it.</desc>
+      <defs>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+        <marker id="arrow-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- direction indicator, left margin -->
+      <text x="76" y="92" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">COMPOSED</text>
+      <line x1="76" y1="436" x2="76" y2="104" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-accent)"/>
+      <text x="76" y="452" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">FOUNDATION</text>
+
+      <!-- one-way import arrows, right margin (adjacent layers only) -->
+      <line x1="760" y1="128" x2="760" y2="180" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-muted)"/>
+      <line x1="760" y1="184" x2="760" y2="236" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-muted)"/>
+      <line x1="760" y1="240" x2="760" y2="292" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-muted)"/>
+      <line x1="760" y1="296" x2="760" y2="348" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-muted)"/>
+      <line x1="760" y1="352" x2="760" y2="404" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-muted)"/>
+      <rect x="768" y="262" width="60" height="12" fill="#f7f6f4"/>
+      <text x="776" y="271" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">IMPORTS ↓</text>
+
+      <!-- Layer: app (top, L6) -->
+      <rect x="120" y="100" width="600" height="56" fill="#f7f6f4"/>
+      <text x="140" y="116" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L6</text>
+      <text x="140" y="132" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">app</text>
+      <text x="140" y="148" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">bootstrap, router, providers</text>
+      <text x="700" y="132" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">app/router/routes.ts</text>
+
+      <!-- Layer: pages (L5) -->
+      <rect x="120" y="156" width="600" height="56" fill="#efeeeb"/>
+      <text x="140" y="172" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L5</text>
+      <text x="140" y="188" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">pages</text>
+      <text x="140" y="204" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">thin route entry, composes widgets</text>
+      <text x="700" y="188" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">pages/goals</text>
+
+      <!-- Layer: widgets (L4) -->
+      <rect x="120" y="212" width="600" height="56" fill="#f7f6f4"/>
+      <text x="140" y="228" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L4</text>
+      <text x="140" y="244" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">widgets</text>
+      <text x="140" y="260" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">composite screen sections</text>
+      <text x="700" y="244" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">widgets/goals-overview</text>
+
+      <!-- Layer: features (L3) -->
+      <rect x="120" y="268" width="600" height="56" fill="#efeeeb"/>
+      <text x="140" y="284" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L3</text>
+      <text x="140" y="300" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">features</text>
+      <text x="140" y="316" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">one user interaction</text>
+      <text x="700" y="300" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">features/export-user-data</text>
+
+      <!-- Layer: entities (L2) -->
+      <rect x="120" y="324" width="600" height="56" fill="#f7f6f4"/>
+      <text x="140" y="340" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L2</text>
+      <text x="140" y="356" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">entities</text>
+      <text x="140" y="372" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">one business noun, read queries</text>
+      <text x="700" y="356" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">entities/goal</text>
+
+      <!-- Layer: shared (bottom, L1, focal foundation) -->
+      <rect x="120" y="380" width="600" height="56" fill="rgba(128,82,255,0.08)"/>
+      <text x="140" y="396" fill="#8052ff" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L1</text>
+      <text x="140" y="412" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">shared</text>
+      <text x="140" y="428" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">UI kit, utils — no business logic</text>
+      <text x="700" y="412" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">shared/ui · shared/api/ws-client</text>
+
+      <!-- hairline dividers between layers (shared's top edge carries the accent border instead) -->
+      <line x1="120" y1="156" x2="720" y2="156" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="120" y1="212" x2="720" y2="212" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="120" y1="268" x2="720" y2="268" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="120" y1="324" x2="720" y2="324" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+
+      <!-- focal border around shared (foundation layer) -->
+      <rect x="120" y="380" width="600" height="56" fill="none" stroke="#8052ff" stroke-width="1.2"/>
+
+      <!-- outer silhouette -->
+      <rect x="120" y="100" width="600" height="336" fill="none" stroke="#0a0a0a" stroke-width="1"/>
+
+      <!-- Legend -->
+      <line x1="120" y1="480" x2="920" y2="480" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="120" y="496" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="120" y="508" width="14" height="10" rx="2" fill="#efeeeb" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="140" y="516" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Stacked layer — imports only from layers below</text>
+      <rect x="560" y="508" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="580" y="516" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Foundation layer — every other layer depends on it</text>
+    </svg>
+  </div>
+</body>
+</html>

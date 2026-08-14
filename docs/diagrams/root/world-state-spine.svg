@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1280 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="world-state-spine-title world-state-spine-desc">
+      <title id="world-state-spine-title">The world-state spine and its replaceable organs</title>
+      <desc id="world-state-spine-desc">Nested diagram showing the world-state as one bounded container holding four faces — self-model, user-model, bounded world-model, and active concerns — with persona, agents, and memory attached outside it as replaceable organs.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Connectors: organs attach to the spine (drawn before boxes) -->
+      <line x1="432" y1="584" x2="432" y2="528" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <line x1="640" y1="584" x2="640" y2="528" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <line x1="848" y1="584" x2="848" y2="528" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- Outer container: World-state (the spine, focal) -->
+      <rect x="360" y="104" width="560" height="424" rx="8" fill="rgba(128,82,255,0.04)" stroke="#8052ff" stroke-width="1.4"/>
+      <rect x="376" y="98" width="112" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="432" y="107" fill="#8052ff" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">WORLD-STATE</text>
+
+      <!-- Inner face: Self-model -->
+      <rect x="392" y="168" width="236" height="152" rx="6" fill="#f7f6f4"/>
+      <rect x="392" y="168" width="236" height="152" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="510" y="240" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Self-model</text>
+      <text x="510" y="256" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">role · tone · boundaries</text>
+
+      <!-- Inner face: User-model -->
+      <rect x="652" y="168" width="236" height="152" rx="6" fill="#f7f6f4"/>
+      <rect x="652" y="168" width="236" height="152" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="770" y="240" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">User-model</text>
+      <text x="770" y="256" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">values · patterns · relationships</text>
+
+      <!-- Inner face: Bounded world-model -->
+      <rect x="392" y="344" width="236" height="152" rx="6" fill="#f7f6f4"/>
+      <rect x="392" y="344" width="236" height="152" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="510" y="416" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Bounded world-model</text>
+      <text x="510" y="432" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">people · projects · events</text>
+
+      <!-- Inner face: Active concerns -->
+      <rect x="652" y="344" width="236" height="152" rx="6" fill="#f7f6f4"/>
+      <rect x="652" y="344" width="236" height="152" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="770" y="416" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Active concerns</text>
+      <text x="770" y="432" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">open · promised · drifting</text>
+
+      <!-- Organ: Persona -->
+      <rect x="352" y="584" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="352" y="584" width="160" height="64" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="432" y="612" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Persona</text>
+      <text x="432" y="628" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">tone · dials</text>
+
+      <!-- Organ: Agents -->
+      <rect x="560" y="584" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="560" y="584" width="160" height="64" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="640" y="612" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Agents</text>
+      <text x="640" y="628" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">goals · tools</text>
+
+      <!-- Organ: Memory -->
+      <rect x="768" y="584" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="768" y="584" width="160" height="64" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="848" y="612" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Memory</text>
+      <text x="848" y="628" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">facts · episodes</text>
+
+      <!-- Legend -->
+      <line x1="360" y1="680" x2="920" y2="680" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="360" y="696" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="360" y="708" width="14" height="10" rx="2" fill="rgba(128,82,255,0.04)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="380" y="716" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">World-state (the spine)</text>
+
+      <rect x="576" y="708" width="14" height="10" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="596" y="716" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">One of the four faces</text>
+
+      <rect x="760" y="708" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="780" y="716" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Replaceable organ</text>
+    </svg>
