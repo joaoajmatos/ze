@@ -501,3 +501,13 @@ Public-facing docs (root READMEs, `VISION.md`, `CONTRIBUTING.md`, `SECURITY.md`,
 discipline — active voice, short sentences, no needless words, American spelling.
 Does not apply to `specs/`, `CLAUDE.md`, or `AGENTS.md`. See the `doc-style` skill
 (`.claude/skills/doc-style/SKILL.md`) before drafting or editing these files.
+
+### Diagrams in docs
+
+When drafting or editing `docs/*.md`, ask whether a reader would learn more from
+a visual than from prose — architecture, request/data flow, state machines,
+sequence interactions, layered systems, timelines. If yes, use the `diagram-design`
+skill (`.claude/skills/diagram-design/SKILL.md`) to produce a branded SVG/HTML
+diagram instead of hand-rolled ASCII box-drawing art. Don't diagram what a short
+paragraph already says clearly — see the skill's own density guidance (§1–2)
+before adding one.
