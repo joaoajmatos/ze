@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Claim vocabulary comparison</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:756px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.4rem,2.2vw + .7rem,1.9rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:.5rem; }
+    p.sub { font-family:var(--font-sans); font-size:.85rem; color:var(--color-muted); margin-bottom:1.5rem; max-width:56ch; }
+    svg { width:100%; min-width:560px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Comparison matrix · specs/arch/claim-topology.md</p>
+    <h1>Four producers, one doctrine, four vocabularies</h1>
+    <p class="sub">OpenLoop is the only producer that implements the doctrine's claim-kind and provenance taxonomy. The other three are missing fields, using bespoke math, or — in Hypothesis's case — carrying a confidence value that never decays.</p>
+    <svg viewBox="0 0 756 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="claim-vocab-title claim-vocab-desc">
+      <title id="claim-vocab-title">Claim vocabulary comparison across four producers</title>
+      <desc id="claim-vocab-desc">Matrix comparing SignalSource, OpenLoop, Hypothesis, and memory_facts on confidence, claim-kind, and provenance, showing only OpenLoop implements the doctrine's shared vocabulary, with Hypothesis's frozen confidence flagged as a live bug.</desc>
+      <defs></defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Header row -->
+      <rect x="12" y="72" width="208" height="52" rx="6" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="116" y="96" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Producer</text>
+      <text x="116" y="112" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">vocabulary used</text>
+
+      <rect x="232" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="306" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Confidence</text>
+      <text x="306" y="108" fill="rgba(255,255,255,0.85)" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">how sure?</text>
+
+      <rect x="396" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="470" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Claim-kind</text>
+      <text x="470" y="108" fill="rgba(255,255,255,0.85)" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">what kind of claim?</text>
+
+      <rect x="560" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="634" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Provenance</text>
+      <text x="634" y="108" fill="rgba(255,255,255,0.85)" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">where from?</text>
+
+      <!-- Row 0: ze-plugin / Signal -->
+      <rect x="12" y="140" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="162" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">ze-plugin</text>
+      <text x="208" y="162" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">Signal</text>
+
+      <rect x="232" y="140" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="306" y="162" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">none</text>
+
+      <rect x="396" y="140" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="162" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">none</text>
+
+      <rect x="560" y="140" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="162" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">source: str</text>
+
+      <!-- Row 1: ze-worldstate / OpenLoop (reference — all full) -->
+      <rect x="12" y="180" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="202" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">ze-worldstate</text>
+      <text x="208" y="202" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">OpenLoop</text>
+
+      <rect x="232" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="306" y="202" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">confidence: float</text>
+
+      <rect x="396" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="202" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">LoopClaimKind</text>
+
+      <rect x="560" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="202" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">LoopProvenance</text>
+
+      <!-- Row 2: ze-correlation / Hypothesis -->
+      <rect x="12" y="220" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="242" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">ze-correlation</text>
+      <text x="208" y="242" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">Hypothesis</text>
+
+      <rect x="232" y="220" width="148" height="36" rx="4" fill="rgba(128,82,255,0.07)" stroke="#8052ff" stroke-width="1.4"/>
+      <text x="306" y="238" fill="#8052ff" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">confidence: float</text>
+      <text x="306" y="250" fill="rgba(128,82,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">frozen — never decays</text>
+
+      <rect x="396" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="242" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">none (implicit)</text>
+
+      <rect x="560" y="220" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="242" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">EvidenceRef.origin</text>
+
+      <!-- Row 3: ze-memory / memory_facts -->
+      <rect x="12" y="260" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="282" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">ze-memory</text>
+      <text x="208" y="282" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">memory_facts</text>
+
+      <rect x="232" y="260" width="148" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="306" y="282" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">confidence: float</text>
+
+      <rect x="396" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="282" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">none (implicit)</text>
+
+      <rect x="560" y="260" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="282" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">provenance + source</text>
+
+      <!-- Legend -->
+      <line x1="12" y1="308" x2="708" y2="308" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="12" y="324" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+
+      <rect x="120" y="317" width="14" height="12" rx="2" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="140" y="326" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Matches doctrine</text>
+
+      <rect x="272" y="317" width="14" height="12" rx="2" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="292" y="326" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Has field, bespoke</text>
+
+      <rect x="424" y="317" width="14" height="12" rx="2" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="444" y="326" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Informal / partial</text>
+
+      <rect x="576" y="317" width="14" height="12" rx="2" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="596" y="326" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Missing</text>
+
+      <rect x="664" y="317" width="14" height="12" rx="2" fill="rgba(128,82,255,0.07)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="684" y="326" fill="#8052ff" font-size="8.5" font-family="'Inter', sans-serif">Live bug</text>
+    </svg>
+  </div>
+</body>
+</html>

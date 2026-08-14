@@ -67,12 +67,21 @@ Near-duplicate facts dilute retrieval precision and waste token budget. The
 consolidator scans all unreviewed facts, computes pairwise cosine similarity, and
 merges candidates above the configured thresholds:
 
+![Graduated four-band ladder showing that fact pairs above 0.95 cosine similarity are silently merged with no LLM call, pairs between 0.85 and 0.95 go through NLI entailment then an LLM merge, pairs between 0.60 and 0.85 get an NLI contradiction check only, and pairs below 0.60 are skipped entirely with no NLI call.](diagrams/docs/dedup-threshold-ladder.svg)
+
+<sub>[Interactive version](diagrams/docs/dedup-threshold-ladder.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Similarity | Action |
 |---|---|
 | > 0.95 (`merge_silent_threshold`) | Silent merge — keep the newer fact, mark the older `contradicted = true`. No LLM call. |
 | 0.85–0.95 (`merge_llm_threshold`) | NLI entailment confirms paraphrase → LLM merge (Haiku synthesises one value, marks both `contradicted = true`). NLI contradiction → mark older contradicted. |
 | 0.60–0.85 | NLI contradiction ≥ `nli_contradiction_threshold` → mark older `contradicted`. Otherwise skip. |
 | < 0.60 | No action — skip NLI. |
+
+</details>
 
 **Reviewed facts are never auto-merged.** A reviewed fact represents an explicit
 user decision; touching it automatically would violate that contract.
@@ -406,6 +415,17 @@ Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt
 
 ## Full schedule at a glance
 
+The pipeline diagram at the top of this document shows how conversations flow into
+the morning briefing; the board below shows every scheduled job, grouped by cadence
+tier instead of literal clock position.
+
+![Board diagram grouping every scheduled job into four cadence tiers — fixed daily UTC times from 2 AM consolidation through 8:30 AM contact review, fixed weekly times from Sunday morning insights through Tuesday stuck-goal detection, continuous fixed-interval jobs from every 10 minutes to every 6 hours, and event-driven jobs that fire immediately on failure or trigger — with the weekly accountability narrative and cost anomaly detection called out as the two most consequential jobs.](diagrams/docs/job-cadence-board.svg)
+
+<sub>[Interactive version](diagrams/docs/job-cadence-board.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Time (UTC) | Job | Module |
 |---|---|---|
 | 2:00 AM daily | Memory consolidation + profile synthesis | `ze_memory/consolidator.py` |
@@ -429,6 +449,8 @@ Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt
 | Immediate | Workflow failure alerts | `ze_proactive/notifier.py` |
 | Immediate | Calendar event reminders (when they fire) | `ze_calendar/jobs/calendar_reminder.py` |
 | Immediate | Goal verification gates + milestone progress | `ze_proactive/notifier.py` |
+
+</details>
 
 All scheduled jobs use APScheduler (via `WorkflowScheduler` or `ProactiveScheduler`)
 with Postgres as the job store, so jobs survive process restarts. Cron expressions

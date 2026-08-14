@@ -8,6 +8,9 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 
 <sub>[Interactive version](diagrams/docs/frontend-layers.html)</sub>
 
+<details>
+<summary>Table</summary>
+
 | Layer | Purpose | Name by | Example |
 |-------|---------|---------|---------|
 | `shared` | UI kit, utilities, API wiring — no business logic | — | `shared/ui` (primitives + layout), `shared/api/ws-client` |
@@ -16,6 +19,8 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 | `widgets` | Composite screen sections | UI block role | `widgets/goals-overview` |
 | `pages` | Thin route entry — composes widgets | route segment | `pages/goals` |
 | `app` | Bootstrap, router, providers | — | `app/router/routes.ts` |
+
+</details>
 
 **Import rule:** a slice imports only from layers below it, via public `index.ts` exports. Enforced by `make lint-web` (`@feature-sliced/eslint-config`).
 

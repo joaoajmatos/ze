@@ -11,11 +11,20 @@ See the spec series for implementation detail: [28-goal-engine](../specs/phases/
 
 ## Goals vs workflows vs reminders
 
+![Ascending staircase diagram showing three automation primitives — reminder, workflow, and goal — ordered left to right by increasing time horizon and upward by decreasing per-action involvement](diagrams/docs/goals-primitives-spectrum.svg)
+
+<sub>[Interactive version](diagrams/docs/goals-primitives-spectrum.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Primitive | Time horizon | User involvement | Example |
 |---|---|---|---|
 | **Reminder** | Minutes to hours | Ze nudges you at the right time | "Remind me 15 min before the call" |
 | **Workflow** | One run (minutes) | Confirm high-risk steps per action | "Every Monday, email me AI news" |
 | **Goal** | Days to weeks | Approve at checkpoints (gates), not every action | "Run 15 discovery interviews in 6 weeks" |
+
+</details>
 
 Workflows execute a fixed step list in one session. Goals sit above them: Ze plans
 milestones once (with gates between batches), then `GoalExecutor` advances work on a

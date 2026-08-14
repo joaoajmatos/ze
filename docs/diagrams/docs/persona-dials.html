@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Persona dials</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1000px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:760px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Continuous controls · Ze persona</p>
+    <h1>Persona dials — four sliders, effect only at the extremes</h1>
+    <svg viewBox="0 0 960 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="persona-dials-title persona-dials-desc">
+      <title id="persona-dials-title">Persona dial ranges and their low/high effects</title>
+      <desc id="persona-dials-desc">Four horizontal sliders — humor, directness, formality, and depth — each running 0.0 to 1.0, with a neutral band between 0.2 and 0.8 that adds no clause, and labeled effects at the low end below 0.2 and the high end at or above 0.8 for each dial.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Row: humor -->
+      <text x="40" y="76" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif">humor</text>
+      <line x1="280" y1="80" x2="880" y2="80" stroke="#6b6b6b" stroke-width="1.4"/>
+      <circle cx="280" cy="80" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="880" cy="80" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="400" y1="68" x2="400" y2="92" stroke="#8052ff" stroke-width="1.2"/>
+      <line x1="760" y1="68" x2="760" y2="92" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="400" y="60" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.2</text>
+      <text x="760" y="60" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.8</text>
+      <text x="280" y="104" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="start">No humor</text>
+      <text x="880" y="104" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="end">Openly funny</text>
+
+      <!-- Row: directness -->
+      <text x="40" y="176" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif">directness</text>
+      <line x1="280" y1="180" x2="880" y2="180" stroke="#6b6b6b" stroke-width="1.4"/>
+      <circle cx="280" cy="180" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="880" cy="180" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="400" y1="168" x2="400" y2="192" stroke="#8052ff" stroke-width="1.2"/>
+      <line x1="760" y1="168" x2="760" y2="192" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="400" y="160" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.2</text>
+      <text x="760" y="160" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.8</text>
+      <text x="280" y="204" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="start">Socratic / exploratory</text>
+      <text x="880" y="204" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="end">Conclusions first, no preamble</text>
+
+      <!-- Row: formality -->
+      <text x="40" y="276" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif">formality</text>
+      <line x1="280" y1="280" x2="880" y2="280" stroke="#6b6b6b" stroke-width="1.4"/>
+      <circle cx="280" cy="280" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="880" cy="280" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="400" y1="268" x2="400" y2="292" stroke="#8052ff" stroke-width="1.2"/>
+      <line x1="760" y1="268" x2="760" y2="292" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="400" y="260" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.2</text>
+      <text x="760" y="260" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.8</text>
+      <text x="280" y="304" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="start">Casual, first names</text>
+      <text x="880" y="304" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="end">Formal and precise</text>
+
+      <!-- Row: depth -->
+      <text x="40" y="376" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif">depth</text>
+      <line x1="280" y1="380" x2="880" y2="380" stroke="#6b6b6b" stroke-width="1.4"/>
+      <circle cx="280" cy="380" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="880" cy="380" r="4" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <line x1="400" y1="368" x2="400" y2="392" stroke="#8052ff" stroke-width="1.2"/>
+      <line x1="760" y1="368" x2="760" y2="392" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="400" y="360" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.2</text>
+      <text x="760" y="360" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0.8</text>
+      <text x="280" y="404" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="start">Surface level</text>
+      <text x="880" y="404" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif" text-anchor="end">Full elaboration with examples</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="428" x2="920" y2="428" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="444" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <line x1="180" y1="440" x2="204" y2="440" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="212" y="443" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Threshold — clause injected past this tick</text>
+      <text x="560" y="443" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Band [0.2, 0.8) is neutral — no prose clause added</text>
+    </svg>
+  </div>
+</body>
+</html>

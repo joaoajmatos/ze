@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · ze_core graph node split</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Before / after · specs/arch/package-reorg.md</p>
+    <h1>ze_core graph node split</h1>
+    <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="graph-node-split-title graph-node-split-desc">
+      <title id="graph-node-split-title">ze_core graph node split at Phase 20 package reorganisation</title>
+      <desc id="graph-node-split-desc">Before/after diagram showing all fourteen ze_core orchestration graph nodes as they existed before Phase 20, then splitting so ten infrastructure nodes stay in ze_core while four workflow-domain nodes — load_workflow_step, verify_step, workflow_synthesize, and workflow_failed — move out to the new ze_personal package.</desc>
+      <defs>
+        <marker id="arrow-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Before box: ze_core pre-Phase-20, all 14 nodes -->
+      <rect x="80" y="140" width="320" height="340" fill="#efeeeb" stroke="#0a0a0a" stroke-width="1"/>
+      <rect x="100" y="156" width="86" height="16" rx="2" fill="transparent" stroke="rgba(10,10,10,0.40)" stroke-width="0.8"/>
+      <text x="143" y="167" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PRE-PHASE 20</text>
+      <text x="100" y="192" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">ze_core (before)</text>
+      <text x="100" y="208" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">14 orchestration graph nodes, one package</text>
+      <text x="100" y="234" fill="#0a0a0a" font-size="9" font-family="'Geist Mono', monospace">
+        <tspan x="100" dy="0">transcribe / caption</tspan>
+        <tspan x="100" dy="15">embed_route</tspan>
+        <tspan x="100" dy="15">decompose</tspan>
+        <tspan x="100" dy="15">fetch_context</tspan>
+        <tspan x="100" dy="15">capability_check</tspan>
+        <tspan x="100" dy="15">execute_tool</tspan>
+        <tspan x="100" dy="15">draft_response</tspan>
+        <tspan x="100" dy="15">await_confirmation</tspan>
+        <tspan x="100" dy="15">write_memory</tspan>
+        <tspan x="100" dy="15">synthesize</tspan>
+        <tspan x="100" dy="15" fill="#8052ff">load_workflow_step</tspan>
+        <tspan x="100" dy="15" fill="#8052ff">verify_step</tspan>
+        <tspan x="100" dy="15" fill="#8052ff">workflow_synthesize</tspan>
+        <tspan x="100" dy="15" fill="#8052ff">workflow_failed</tspan>
+      </text>
+
+      <!-- Connector A: before -> ze_core (after), straight (same y as destination center) -->
+      <line x1="400" y1="230" x2="620" y2="230" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-muted)"/>
+      <rect x="480" y="212" width="60" height="12" fill="#f7f6f4"/>
+      <text x="510" y="221" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">STAYS</text>
+
+      <!-- Connector B: before -> ze_personal (after), straight (same y as destination center) -->
+      <line x1="400" y1="445" x2="620" y2="445" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="478" y="427" width="64" height="12" fill="#f7f6f4"/>
+      <text x="510" y="436" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MOVES</text>
+
+      <!-- After box: ze_core, 10 infra nodes stay -->
+      <rect x="620" y="120" width="300" height="220" fill="#efeeeb" stroke="#0a0a0a" stroke-width="1"/>
+      <rect x="640" y="136" width="60" height="16" rx="2" fill="transparent" stroke="rgba(10,10,10,0.40)" stroke-width="0.8"/>
+      <text x="670" y="147" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">STAYS</text>
+      <text x="640" y="172" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">ze_core (after)</text>
+      <text x="640" y="188" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">10 nodes — zero domain knowledge</text>
+      <text x="640" y="212" fill="#0a0a0a" font-size="9" font-family="'Geist Mono', monospace">
+        <tspan x="640" dy="0">transcribe / caption</tspan>
+        <tspan x="640" dy="15">embed_route</tspan>
+        <tspan x="640" dy="15">decompose</tspan>
+        <tspan x="640" dy="15">fetch_context</tspan>
+        <tspan x="640" dy="15">capability_check</tspan>
+        <tspan x="640" dy="15">execute_tool</tspan>
+        <tspan x="640" dy="15">draft_response</tspan>
+        <tspan x="640" dy="15">await_confirmation</tspan>
+        <tspan x="640" dy="15">write_memory (base)</tspan>
+        <tspan x="640" dy="15">synthesize</tspan>
+      </text>
+
+      <!-- After box: ze_personal, 4 workflow-domain nodes move (focal) -->
+      <rect x="620" y="370" width="300" height="150" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="640" y="386" width="66" height="16" rx="2" fill="transparent" stroke="#8052ff" stroke-width="0.8"/>
+      <text x="673" y="397" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MOVES</text>
+      <text x="640" y="422" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">ze_personal</text>
+      <text x="640" y="438" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">4 nodes — workflow domain</text>
+      <text x="640" y="462" fill="#0a0a0a" font-size="9" font-family="'Geist Mono', monospace">
+        <tspan x="640" dy="0">load_workflow_step</tspan>
+        <tspan x="640" dy="15">verify_step</tspan>
+        <tspan x="640" dy="15">workflow_synthesize</tspan>
+        <tspan x="640" dy="15">workflow_failed</tspan>
+      </text>
+
+      <!-- Legend -->
+      <line x1="80" y1="540" x2="920" y2="540" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="80" y="556" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="80" y="568" width="14" height="10" rx="2" fill="#efeeeb" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="100" y="576" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Pure infrastructure — zero domain knowledge, stays in ze_core</text>
+      <rect x="560" y="568" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="580" y="576" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Domain-specific — moves to ze_personal, wired via ZePlugin</text>
+    </svg>
+  </div>
+</body>
+</html>

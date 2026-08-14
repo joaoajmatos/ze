@@ -131,12 +131,21 @@ For each registered inbound channel:
 
 Classifies each message and gates which memory paths activate:
 
+![Decision matrix showing four sender classes — known contact, replied-to thread, unknown human, and automated sender — against four gated outcomes: episode write, async fact extraction, signal emission, and push notification. Known contacts and replied-to threads unlock all four. Unknown humans only get an episode written, with facts, signal, and notification suppressed. Automated senders get nothing at all.](diagrams/docs/channel-sender-matrix.svg)
+
+<sub>[Interactive version](diagrams/docs/channel-sender-matrix.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Sender class | Criteria | Episode | Facts | Signal | Notification |
 |---|---|---|---|---|---|
 | **Known contact** | Handle in `contact_channels` | ✅ | ✅ async | ✅ | ✅ |
 | **Replied-to** | Thread in `thread_channel_map` | ✅ | ✅ async | ✅ | ✅ |
 | **Unknown human** | Not in contacts, not replied-to | ✅ | ❌ | ❌ | ❌ |
 | **Automated** | Matches automated sender patterns | ❌ | ❌ | ❌ | ❌ |
+
+</details>
 
 Automated sender detection is header-based (no LLM):
 - Address prefixes: `noreply@`, `no-reply@`, `notifications@`, `postmaster@`,

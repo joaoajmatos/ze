@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="goals-primitives-spectrum-title goals-primitives-spectrum-desc">
+      <title id="goals-primitives-spectrum-title">Reminder, workflow, and goal primitives ranked by time horizon and user involvement</title>
+      <desc id="goals-primitives-spectrum-desc">Ascending staircase diagram showing three automation primitives — reminder, workflow, and goal — ordered left to right by increasing time horizon and upward by decreasing per-action involvement: reminders nudge at the right time over minutes to hours, workflows run a fixed step list in one session with confirmation on high-risk steps, and goals span days to weeks with approval only at checkpoints.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- axis captions -->
+      <text x="60" y="44" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">&#8593; LESS INVOLVEMENT PER ACTION</text>
+      <line x1="60" y1="424" x2="940" y2="424" stroke="rgba(10,10,10,0.16)" stroke-width="0.8"/>
+      <text x="500" y="444" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">TIME HORIZON &#8594;</text>
+
+      <!-- connectors -->
+      <path d="M320,376 H352 Q360,376 360,368 V256 Q360,248 368,248 H380" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <path d="M620,248 H652 Q660,248 660,240 V128 Q660,120 668,120 H680" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- Node: Reminder -->
+      <rect x="80" y="328" width="240" height="96" rx="8" fill="#f7f6f4"/>
+      <rect x="80" y="328" width="240" height="96" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <rect x="228" y="336" width="84" height="14" rx="2" fill="transparent" stroke="#6b6b6b" stroke-width="0.8"/>
+      <text x="270" y="346" fill="#6b6b6b" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MIN&#8211;HOURS</text>
+      <text x="100" y="352" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Reminder</text>
+      <text x="100" y="374" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif">Ze nudges you at the</text>
+      <text x="100" y="388" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif">right time</text>
+      <text x="100" y="408" fill="#6b6b6b" font-size="9" font-family="'Instrument Serif', serif" font-style="italic">&#8220;Remind me 15 min before the call&#8221;</text>
+
+      <!-- Node: Workflow -->
+      <rect x="380" y="200" width="240" height="96" rx="8" fill="#f7f6f4"/>
+      <rect x="380" y="200" width="240" height="96" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <rect x="536" y="208" width="76" height="14" rx="2" fill="transparent" stroke="#6b6b6b" stroke-width="0.8"/>
+      <text x="574" y="218" fill="#6b6b6b" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ONE RUN</text>
+      <text x="400" y="224" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Workflow</text>
+      <text x="400" y="246" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif">Confirm high-risk steps</text>
+      <text x="400" y="260" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif">per action</text>
+      <text x="400" y="280" fill="#6b6b6b" font-size="9" font-family="'Instrument Serif', serif" font-style="italic">&#8220;Every Monday, email me AI news&#8221;</text>
+
+      <!-- Node: Goal (focal) -->
+      <rect x="680" y="72" width="240" height="96" rx="8" fill="#f7f6f4"/>
+      <rect x="680" y="72" width="240" height="96" rx="8" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="812" y="80" width="92" height="14" rx="2" fill="transparent" stroke="#8052ff" stroke-width="0.8"/>
+      <text x="858" y="90" fill="#8052ff" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DAYS&#8211;WEEKS</text>
+      <text x="700" y="96" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Goal</text>
+      <text x="700" y="118" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif">Approve at checkpoints,</text>
+      <text x="700" y="132" fill="#0a0a0a" font-size="10" font-family="'Inter', sans-serif">not every action</text>
+      <text x="700" y="152" fill="#6b6b6b" font-size="9" font-family="'Instrument Serif', serif" font-style="italic">&#8220;Run 15 discovery interviews in 6 weeks&#8221;</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="452" x2="920" y2="452" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="468" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="180" y="459" width="16" height="12" rx="2" fill="transparent" stroke="#6b6b6b" stroke-width="0.8"/>
+      <text x="204" y="468" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Time-horizon tag</text>
+      <rect x="380" y="459" width="16" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="404" y="468" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Widest autonomy — GoalExecutor advances on a schedule</text>
+    </svg>

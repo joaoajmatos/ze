@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 920 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="matrix-title matrix-desc">
+      <title id="matrix-title">InboundMessageProcessor sender classification matrix gating memory and notification paths</title>
+      <desc id="matrix-desc">Decision matrix showing four sender classes — known contact, replied-to thread, unknown human, and automated sender — against four gated outcomes: episode write, async fact extraction, signal emission, and push notification. Known contacts and replied-to threads unlock all four. Unknown humans only get an episode written, with facts, signal, and notification suppressed. Automated senders get nothing at all.</desc>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Component header cell -->
+      <rect x="12" y="72" width="208" height="52" rx="6" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="116" y="96" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Sender class</text>
+      <text x="116" y="112" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">classification criteria</text>
+
+      <!-- Role banners -->
+      <rect x="232" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="306" y="94" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Episode</text>
+      <text x="306" y="110" fill="#ffffff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.85">write_episode</text>
+
+      <rect x="396" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="470" y="94" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Facts</text>
+      <text x="470" y="110" fill="#ffffff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.85">propose_facts</text>
+
+      <rect x="560" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="634" y="94" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Signal</text>
+      <text x="634" y="110" fill="#ffffff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.85">MessagingSignalSource</text>
+
+      <rect x="724" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+      <text x="798" y="94" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Notification</text>
+      <text x="798" y="110" fill="#ffffff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.85">ProactiveNotifier</text>
+
+      <!-- Row 0: Known contact -->
+      <rect x="12" y="140" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="162" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Known contact</text>
+      <text x="208" y="162" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">contact_channels</text>
+
+      <rect x="232" y="140" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="306" y="162" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <rect x="396" y="140" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="158" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <text x="470" y="171" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">async</text>
+      <rect x="560" y="140" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="162" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <rect x="724" y="140" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="798" y="162" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+
+      <!-- Row 1: Replied-to -->
+      <rect x="12" y="180" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="202" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Replied-to thread</text>
+      <text x="208" y="202" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">thread_channel_map</text>
+
+      <rect x="232" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="306" y="202" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <rect x="396" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="198" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <text x="470" y="211" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">async</text>
+      <rect x="560" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="202" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <rect x="724" y="180" width="148" height="36" rx="4" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="798" y="202" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+
+      <!-- Row 2: Unknown human (focal cell at Episode) -->
+      <rect x="12" y="220" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="242" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Unknown human</text>
+      <text x="208" y="242" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">no match</text>
+
+      <rect x="232" y="220" width="148" height="36" rx="4" fill="rgba(128,82,255,0.07)" stroke="#8052ff" stroke-width="1.4"/>
+      <text x="306" y="238" fill="#8052ff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">✅</text>
+      <text x="306" y="251" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" opacity="0.85">logged, not surfaced</text>
+      <rect x="396" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="242" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+      <rect x="560" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="242" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+      <rect x="724" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="798" y="242" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+
+      <!-- Row 3: Automated -->
+      <rect x="12" y="260" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="24" y="282" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Automated</text>
+      <text x="208" y="282" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">sender patterns</text>
+
+      <rect x="232" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="306" y="282" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+      <rect x="396" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="470" y="282" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+      <rect x="560" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="634" y="282" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+      <rect x="724" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="798" y="282" fill="#8a8a8a" font-size="11" font-family="'Inter', sans-serif" text-anchor="middle">❌</text>
+
+      <!-- Legend -->
+      <line x1="12" y1="316" x2="908" y2="316" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="12" y="332" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="12" y="344" width="14" height="10" rx="2" fill="rgba(10,10,10,0.06)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="32" y="352" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Gate open</text>
+      <rect x="172" y="344" width="14" height="10" rx="2" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+      <text x="192" y="352" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Gate closed</text>
+      <rect x="332" y="344" width="14" height="10" rx="2" fill="rgba(128,82,255,0.07)" stroke="#8052ff" stroke-width="1.4"/>
+      <text x="352" y="352" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Unknown humans still get an episode — the only gate never fully closed</text>
+    </svg>

@@ -31,13 +31,17 @@ as the functional vocabulary.
 
 Legend: 🟢 substantial · 🟡 partial · 🔴 gap.
 
+![Horizontal bar chart rating all seven cognitive functions — perception, memory, executive function, social cognition, reflection, action, governance — as substantial, partial, or a gap, showing executive function and social cognition as the two functions still rated partial while the rest are substantial](diagrams/docs/cognitive-maturity-matrix.svg)
+
+<sub>[Interactive version](diagrams/docs/cognitive-maturity-matrix.html)</sub>
+
 ### 1. Perception — turning the outside world into signals
 
 > *calendar, email, web, documents, finance, news, sensors*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟢 | `ze-calendar`, `ze-messenger`, `ze-news`, `ze-finance`, `ze-browser`, `ze-ingestion` (web/PDF/audio/image → common content model), `ze-communication` (inbound channels), signal admission (Phase 55/56). |
+Maturity: 🟢 substantial — `ze-calendar`, `ze-messenger`, `ze-news`, `ze-finance`, `ze-browser`,
+`ze-ingestion` (web/PDF/audio/image → common content model), `ze-communication` (inbound
+channels), signal admission (Phase 55/56).
 
 **State:** strong and broad. The admission gate (`relevance_to_user + intrinsic_magnitude`)
 is the right discipline — perception is already relevance-filtered rather than firehose.
@@ -47,9 +51,9 @@ is the right discipline — perception is already relevance-filtered rather than
 
 > *episodic, semantic, procedural, social, project, temporal*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟢 | `ze-memory`: facts (semantic), episodes (episodic), procedures (procedural), events, profile facets, the relationship **graph**, temporal via `as_of`/timeline (Phase 93), consolidation + dream. |
+Maturity: 🟢 substantial — `ze-memory`: facts (semantic), episodes (episodic), procedures
+(procedural), events, profile facets, the relationship **graph**, temporal via
+`as_of`/timeline (Phase 93), consolidation + dream.
 
 **State:** the deepest function in the system. Genuinely multi-layer.
 **Gap:** "project" and "social" memory are *implicit* — they live scattered across contacts,
@@ -61,9 +65,11 @@ relationship with Y" that the executive layer can read.
 
 > *goals, plans, scheduling, follow-through, interruption handling*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟡 | `ze-automation`: goals (heavyweight, explicit, multi-week), workflows (multi-step plans), scheduler. `core/ze-worldstate` (Phases 109–110): open loops — the lightweight, implicitly-opened active concerns (`suspected → active → drifting → closed\|dropped`), extracted from all four inflows, with drift detection and hedged, push-bar-gated surfacing. |
+Maturity: 🟡 partial — `ze-automation`: goals (heavyweight, explicit, multi-week), workflows
+(multi-step plans), scheduler. `core/ze-worldstate` (Phases 109–110): open loops — the
+lightweight, implicitly-opened active concerns (`suspected → active → drifting →
+closed|dropped`), extracted from all four inflows, with drift detection and hedged,
+push-bar-gated surfacing.
 
 **State: the primary gap is partially closed.** What exists now handles both ends: goals for
 objectives deliberately declared, and open loops for the ambient, never-formalized concerns
@@ -88,9 +94,8 @@ that make up most of a real life:
 
 > *tone, relationship memory, boundaries, interaction style*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟡 | `ze-personal` persona (tone/dials, interaction style), contacts (`PersonStore`, channel handles), messenger. |
+Maturity: 🟡 partial — `ze-personal` persona (tone/dials, interaction style), contacts
+(`PersonStore`, channel handles), messenger.
 
 **State:** interaction *style toward the user* is well-modeled (persona dials, identity
 block). Modeling of **third parties** — who matters to the user, the state and cadence of
@@ -102,9 +107,9 @@ side.
 
 > *consolidation, model revision, conflict detection, uncertainty tracking*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟢 | `ze-memory` dream (sleep→dream two-pass), nightly consolidation, weekly insights, NLI contradiction detection (Phase 79), correlation engine (hypotheses with uncertainty). |
+Maturity: 🟢 substantial — `ze-memory` dream (sleep→dream two-pass), nightly consolidation,
+weekly insights, NLI contradiction detection (Phase 79), correlation engine (hypotheses with
+uncertainty).
 
 **State:** rich — arguably *ahead* of what currently consumes it. The doctrine resolves the
 "is dreaming premature?" question: reflection is justified **iff it improves the world-state.**
@@ -117,9 +122,9 @@ the reflection investment.
 
 > *messaging, scheduling, drafting, research, workflows, tool use*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟢 | Agent roster (research, companion, calendar, email, reminders, prospecting, news, finance, goals, workflow), `@tool` system, agentic loop, channels for outbound messaging, server-driven UI for surfacing. |
+Maturity: 🟢 substantial — Agent roster (research, companion, calendar, email, reminders,
+prospecting, news, finance, goals, workflow), `@tool` system, agentic loop, channels for
+outbound messaging, server-driven UI for surfacing.
 
 **State:** mature and extensible. Action is not the bottleneck. Per the doctrine, agents are
 *replaceable executors that propose changes to the world-state* — they are organs, and the
@@ -129,9 +134,9 @@ roster will churn for years without threatening continuity.
 
 > *permissioning, provenance, reversibility, confidence thresholds, user corrections*
 
-| Maturity | Where it lives today |
-|---|---|
-| 🟢🟡 | Capability gate (autonomous/confirm/draft_only/disabled), confirmation persistence + timeout, provenance tags in memory + correlation, memory review flows (propose→user reviews), dream rollback lineage, data portability/delete. |
+Maturity: 🟢🟡 mostly substantial — Capability gate (autonomous/confirm/draft_only/disabled),
+confirmation persistence + timeout, provenance tags in memory + correlation, memory review
+flows (propose→user reviews), dream rollback lineage, data portability/delete.
 
 **State:** strong on permissioning and provenance. **Gap:** *confidence* is not yet a
 uniform, system-wide signal — it exists per-subsystem (correlation self-rating, fact

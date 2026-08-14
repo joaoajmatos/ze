@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="plugin-ui-tiers-title plugin-ui-tiers-desc">
+      <title id="plugin-ui-tiers-title">Ze plugin UI extension tiers, foundation to opt-in</title>
+      <desc id="plugin-ui-tiers-desc">Layer stack showing Ze's three plugin UI extension tiers — server-driven UI as the always-available foundation requiring no frontend deploy, a manifest-driven generic shell above it also requiring no deploy, and optional frontend modules at the top requiring a bundled deploy — where higher tiers are opt-in and lower tiers must always suffice for common cases.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- direction indicator, left margin -->
+      <text x="76" y="92" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">OPT-IN</text>
+      <line x1="76" y1="356" x2="76" y2="104" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-accent)"/>
+      <text x="76" y="372" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">FOUNDATION</text>
+
+      <!-- Layer: Tier 3 — frontend modules (top) -->
+      <rect x="120" y="100" width="620" height="88" fill="#f7f6f4"/>
+      <text x="140" y="120" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">T3</text>
+      <text x="140" y="140" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Frontend modules</text>
+      <text x="140" y="158" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">npm workspace package per plugin</text>
+      <text x="140" y="172" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">writes: TypeScript / React routes</text>
+      <rect x="620" y="112" width="100" height="16" rx="2" fill="transparent" stroke="rgba(10,10,10,0.30)" stroke-width="0.8"/>
+      <text x="670" y="123" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DEPLOY: YES</text>
+      <text x="720" y="158" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">charts, drag-drop, canvas editors</text>
+
+      <!-- Layer: Tier 2 — manifest + generic shell (middle) -->
+      <rect x="120" y="188" width="620" height="88" fill="#efeeeb"/>
+      <text x="140" y="208" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">T2</text>
+      <text x="140" y="228" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Manifest + generic shell</text>
+      <text x="140" y="246" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">UiContribution + REST page endpoints</text>
+      <text x="140" y="260" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">writes: Python declarations + optional REST handlers</text>
+      <rect x="620" y="200" width="100" height="16" rx="2" fill="transparent" stroke="rgba(10,10,10,0.30)" stroke-width="0.8"/>
+      <text x="670" y="211" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DEPLOY: NO</text>
+      <text x="720" y="246" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">nav items, settings, PluginPage</text>
+
+      <!-- Layer: Tier 1 — server-driven UI (bottom, focal foundation) -->
+      <rect x="120" y="276" width="620" height="88" fill="rgba(128,82,255,0.08)"/>
+      <text x="140" y="296" fill="#8052ff" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">T1</text>
+      <text x="140" y="316" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Server-driven UI (SDUI)</text>
+      <text x="140" y="334" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">primitive trees (@ze/ui)</text>
+      <text x="140" y="348" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">writes: Python builders / render tools</text>
+      <rect x="620" y="288" width="100" height="16" rx="2" fill="transparent" stroke="#8052ff" stroke-width="0.8"/>
+      <text x="670" y="299" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DEPLOY: NO</text>
+      <text x="720" y="334" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">chat inline UI, onboarding forms</text>
+
+      <!-- hairline dividers between layers -->
+      <line x1="120" y1="188" x2="740" y2="188" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="120" y1="276" x2="740" y2="276" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+
+      <!-- focal border around Tier 1 (foundation layer) -->
+      <rect x="120" y="276" width="620" height="88" fill="none" stroke="#8052ff" stroke-width="1.2"/>
+
+      <!-- outer silhouette -->
+      <rect x="120" y="100" width="620" height="264" fill="none" stroke="#0a0a0a" stroke-width="1"/>
+
+      <!-- Legend -->
+      <line x1="120" y1="408" x2="920" y2="408" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="120" y="424" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="120" y="436" width="14" height="10" rx="2" fill="#efeeeb" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="140" y="444" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Stacked tier — opt-in, used only when the tier below can't express the need</text>
+      <rect x="640" y="436" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="660" y="444" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Foundation tier — must always suffice for common cases</text>
+    </svg>

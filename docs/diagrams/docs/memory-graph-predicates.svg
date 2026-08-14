@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1240 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="predicates-title predicates-desc">
+      <title id="predicates-title">Typed relationship predicates connecting memory object types in the memory_relationships graph table</title>
+      <desc id="predicates-desc">Node and edge diagram of the memory graph layer's seven predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, and Procedure USES_PROCEDURE Goal or Workflow. Entity is the central referenced type in the first cluster; Goal or Workflow is the fan-in target in the second.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Edges (behind boxes) -->
+      <!-- Entity -> Fact : DESCRIBES -->
+      <path d="M500,128 H632 Q640,128 640,136 V180" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <!-- Fact -> Episode : SOURCED_FROM -->
+      <path d="M640,236 V280 Q640,288 632,288 H500" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Episode -> Entity : MENTIONS (straight, shared x) -->
+      <line x1="420" y1="260" x2="420" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Event -> Entity : PARTICIPATES_IN -->
+      <path d="M280,208 V128 Q280,128 288,128 H340" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Event -> Fact : PROMOTES_TO (offset attach point, x=680, to avoid overlapping SOURCED_FROM's x=640 column) -->
+      <path d="M200,236 V372 Q200,380 208,380 H672 Q680,380 680,372 V236" fill="none" stroke="#6b6b6b" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <!-- TaskState -> Goal/Workflow : BELONGS_TO_GOAL -->
+      <path d="M860,156 V224 Q860,224 868,224 H1000" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Procedure -> Goal/Workflow : USES_PROCEDURE -->
+      <path d="M860,316 V248 Q860,248 868,248 H1000" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- Edge labels -->
+      <rect x="590" y="106" width="76" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="628" y="115" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.02em">DESCRIBES</text>
+
+      <rect x="548" y="264" width="94" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="595" y="273" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">SOURCED_FROM</text>
+
+      <rect x="428" y="202" width="72" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="464" y="211" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.02em">MENTIONS</text>
+
+      <rect x="216" y="108" width="112" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="272" y="117" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">PARTICIPATES_IN</text>
+
+      <rect x="214" y="292" width="98" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="263" y="301" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">PROMOTES_TO</text>
+
+      <rect x="878" y="196" width="108" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="932" y="205" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">BELONGS_TO_GOAL</text>
+
+      <rect x="878" y="256" width="108" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="932" y="265" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.01em">USES_PROCEDURE</text>
+
+      <!-- Node: Entity (focal, aggregate root) -->
+      <rect x="340" y="100" width="160" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="100" width="160" height="56" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="420" y="124" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Entity</text>
+      <text x="420" y="140" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_entities</text>
+
+      <!-- Node: Fact -->
+      <rect x="560" y="180" width="160" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="560" y="180" width="160" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="640" y="204" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Fact</text>
+      <text x="640" y="220" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_facts</text>
+
+      <!-- Node: Episode -->
+      <rect x="340" y="260" width="160" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="260" width="160" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="420" y="284" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Episode</text>
+      <text x="420" y="300" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_episodes</text>
+
+      <!-- Node: Event -->
+      <rect x="120" y="180" width="160" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="120" y="180" width="160" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="200" y="204" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Event</text>
+      <text x="200" y="220" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_events</text>
+
+      <!-- Node: TaskState -->
+      <rect x="780" y="100" width="160" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="780" y="100" width="160" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="860" y="124" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">TaskState</text>
+      <text x="860" y="140" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_task_state</text>
+
+      <!-- Node: Procedure -->
+      <rect x="780" y="316" width="160" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="780" y="316" width="160" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="860" y="338" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Procedure</text>
+      <text x="860" y="354" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_procedures</text>
+
+      <!-- Node: Goal / Workflow (fan-in target) -->
+      <rect x="1000" y="208" width="160" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="1000" y="208" width="160" height="56" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="1080" y="232" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Goal / Workflow</text>
+      <text x="1080" y="248" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">goals · workflows</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="404" x2="1200" y2="404" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="420" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="432" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="440" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Central referenced entity</text>
+      <rect x="300" y="432" width="14" height="10" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="320" y="440" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Standard memory type</text>
+      <line x1="540" y1="437" x2="568" y2="437" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <text x="576" y="440" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Written on Event.outcome extraction</text>
+    </svg>

@@ -100,6 +100,13 @@ fields live on the metadata side table.
 
 ## Artifact types
 
+![Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or memory_procedures, borderline cases fall back to review, and hindsight facts always require a user decision](diagrams/docs/dream-artifact-routing.svg)
+
+<sub>[Interactive version](diagrams/docs/dream-artifact-routing.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Type | Auto-promote? | Destination |
 |------|---------------|-------------|
 | `schema_candidate` | No (input to synthesis) | Staging only |
@@ -108,6 +115,8 @@ fields live on the metadata side table.
 | `synthesized_procedure` | Yes, if gates + support pass | `memory_procedures` |
 | `hindsight_fact` | Never — always `needs_review` | User decision |
 | `plan_stress_test` | Yes, if gates + support pass | `memory_procedures` (risk heuristic) |
+
+</details>
 
 Counterfactual and perturbation artifact types are reserved in the enum but not invoked
 until 78c.

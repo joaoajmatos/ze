@@ -59,6 +59,13 @@ touching `ze_core`.
 
 `ze_core/orchestration/` retains only nodes that have zero domain knowledge:
 
+![ze_core graph node split at Phase 20 package reorganisation](../../docs/diagrams/specs/arch/graph-node-split.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/graph-node-split.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Node | Stays in `ze_core` | Reason |
 |---|---|---|
 | `transcribe` / `caption` | Yes | Multimodal preprocessing |
@@ -75,6 +82,8 @@ touching `ze_core`.
 | `verify_step` | No → `ze_personal` | Workflow domain |
 | `workflow_synthesize` | No → `ze_personal` | Workflow domain |
 | `workflow_failed` | No → `ze_personal` | Workflow domain |
+
+</details>
 
 The contact extraction that currently runs inside `write_memory` becomes a **memory
 hook** — a callable registered by `ze_personal` and invoked post-write. The persona

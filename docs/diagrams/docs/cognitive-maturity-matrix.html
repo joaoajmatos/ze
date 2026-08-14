@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Cognitive function maturity matrix</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:960px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:640px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Bar chart · Ze cognitive architecture</p>
+    <h1>The seven functions, at a glance</h1>
+    <svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="maturity-title maturity-desc">
+      <title id="maturity-title">Cognitive function maturity matrix</title>
+      <desc id="maturity-desc">Horizontal bar chart rating all seven cognitive functions — perception, memory, executive function, social cognition, reflection, action, governance — as substantial, partial, or a gap, showing executive function and social cognition as the two functions still rated partial while the rest are substantial.</desc>
+      <defs></defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Scale header -->
+      <line x1="412" y1="60" x2="412" y2="440" stroke="rgba(10,10,10,0.08)" stroke-width="0.8"/>
+      <line x1="624" y1="60" x2="624" y2="440" stroke="rgba(10,10,10,0.08)" stroke-width="0.8"/>
+      <line x1="836" y1="60" x2="836" y2="440" stroke="rgba(10,10,10,0.14)" stroke-width="0.8"/>
+      <text x="306" y="52" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">GAP</text>
+      <text x="518" y="52" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">PARTIAL</text>
+      <text x="730" y="52" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">SUBSTANTIAL</text>
+
+      <!-- Row 1: Perception -->
+      <text x="40" y="90" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">01</text>
+      <text x="182" y="94" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Perception</text>
+      <rect x="200" y="76" width="636" height="28" rx="4" fill="rgba(21,132,110,0.12)" stroke="#15846e" stroke-width="1"/>
+      <circle cx="856" cy="90" r="6" fill="#15846e"/>
+      <text x="200" y="118" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">ze-calendar · ze-messenger · ze-news · ze-finance · ze-browser · ze-ingestion</text>
+
+      <!-- Row 2: Memory -->
+      <text x="40" y="146" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">02</text>
+      <text x="182" y="150" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Memory</text>
+      <rect x="200" y="132" width="636" height="28" rx="4" fill="rgba(21,132,110,0.12)" stroke="#15846e" stroke-width="1"/>
+      <circle cx="856" cy="146" r="6" fill="#15846e"/>
+      <text x="200" y="174" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">ze-memory: facts · episodes · procedures · graph · temporal · dream</text>
+
+      <!-- Row 3: Executive function -->
+      <text x="40" y="202" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">03</text>
+      <text x="182" y="206" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Executive function</text>
+      <rect x="200" y="188" width="424" height="28" rx="4" fill="rgba(255,184,41,0.14)" stroke="#ffb829" stroke-width="1"/>
+      <circle cx="856" cy="202" r="6" fill="#ffb829"/>
+      <text x="200" y="230" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">ze-automation goals/workflows · ze-worldstate open loops</text>
+
+      <!-- Row 4: Social cognition -->
+      <text x="40" y="258" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">04</text>
+      <text x="182" y="262" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Social cognition</text>
+      <rect x="200" y="244" width="424" height="28" rx="4" fill="rgba(255,184,41,0.14)" stroke="#ffb829" stroke-width="1"/>
+      <circle cx="856" cy="258" r="6" fill="#ffb829"/>
+      <text x="200" y="286" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">ze-personal persona (tone/dials) · contacts (PersonStore) · messenger</text>
+
+      <!-- Row 5: Reflection -->
+      <text x="40" y="314" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">05</text>
+      <text x="182" y="318" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Reflection</text>
+      <rect x="200" y="300" width="636" height="28" rx="4" fill="rgba(21,132,110,0.12)" stroke="#15846e" stroke-width="1"/>
+      <circle cx="856" cy="314" r="6" fill="#15846e"/>
+      <text x="200" y="342" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">dream · consolidation · weekly insights · NLI · correlation engine</text>
+
+      <!-- Row 6: Action -->
+      <text x="40" y="370" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">06</text>
+      <text x="182" y="374" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Action</text>
+      <rect x="200" y="356" width="636" height="28" rx="4" fill="rgba(21,132,110,0.12)" stroke="#15846e" stroke-width="1"/>
+      <circle cx="856" cy="370" r="6" fill="#15846e"/>
+      <text x="200" y="398" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">agent roster · @tool system · channels · server-driven UI</text>
+
+      <!-- Row 7: Governance (mixed) -->
+      <text x="40" y="426" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">07</text>
+      <text x="182" y="430" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="end">Governance</text>
+      <rect x="200" y="412" width="424" height="28" fill="rgba(21,132,110,0.12)"/>
+      <rect x="624" y="412" width="106" height="28" fill="rgba(255,184,41,0.14)"/>
+      <rect x="200" y="412" width="530" height="28" rx="4" fill="none" stroke="#15846e" stroke-width="1"/>
+      <circle cx="856" cy="426" r="6" fill="#15846e"/>
+      <circle cx="856" cy="426" r="6" fill="none" stroke="#ffb829" stroke-width="1.6" stroke-dasharray="2,2"/>
+      <text x="200" y="454" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace">capability gate · provenance tags · confirmation persistence · dream rollback</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="490" x2="920" y2="490" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="506" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <circle cx="48" cy="522" r="6" fill="#15846e"/>
+      <text x="64" y="526" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Substantial</text>
+      <circle cx="200" cy="522" r="6" fill="#ffb829"/>
+      <text x="216" y="526" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Partial</text>
+      <circle cx="320" cy="522" r="6" fill="#ef4444"/>
+      <text x="336" y="526" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Gap (unbuilt)</text>
+      <text x="600" y="526" fill="#6b6b6b" font-size="8.5" font-family="'Instrument Serif', serif" font-style="italic">Bar length and dot color both carry maturity — position is the primary signal.</text>
+    </svg>
+  </div>
+</body>
+</html>

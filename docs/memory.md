@@ -318,6 +318,13 @@ The graph layer stores typed relationships between memory objects in the
 
 ### Predicates
 
+![Node and edge diagram of the memory graph layer's seven predicates: Entity DESCRIBES Fact, Fact SOURCED_FROM Episode, Episode MENTIONS Entity, Event PARTICIPATES_IN Entity, Event PROMOTES_TO Fact, TaskState BELONGS_TO_GOAL Goal or Workflow, and Procedure USES_PROCEDURE Goal or Workflow.](diagrams/docs/memory-graph-predicates.svg)
+
+<sub>[Interactive version](diagrams/docs/memory-graph-predicates.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Predicate | Meaning |
 |---|---|
 | `DESCRIBES` | Entity → Fact |
@@ -327,6 +334,8 @@ The graph layer stores typed relationships between memory objects in the
 | `PROMOTES_TO` | Event → Fact (from outcome extraction) |
 | `BELONGS_TO_GOAL` | TaskState → Goal |
 | `USES_PROCEDURE` | Procedure → Goal/Workflow |
+
+</details>
 
 ### Traversal
 
@@ -357,12 +366,21 @@ Scans all unreviewed facts, computes pairwise cosine similarity, then applies NL
 classification for pairs in the `0.60 ≤ cosine < 0.95` gap (and confirms paraphrases
 before LLM merge in the `0.85–0.95` band):
 
+![Graduated four-band ladder showing that fact pairs above 0.95 cosine similarity are silently merged with no LLM call, pairs between 0.85 and 0.95 go through NLI entailment then an LLM merge, pairs between 0.60 and 0.85 get an NLI contradiction check only, and pairs below 0.60 are skipped entirely with no NLI call.](diagrams/docs/dedup-threshold-ladder.svg)
+
+<sub>[Interactive version](diagrams/docs/dedup-threshold-ladder.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Similarity | Action |
 |---|---|
 | > 0.95 | Silent merge — keep newer, mark older `contradicted = true`. No LLM call. |
 | 0.85–0.95 | NLI entailment ≥ `nli_entailment_threshold` → LLM merge (Haiku synthesizes one value, marks both `contradicted = true`). NLI contradiction → mark older `contradicted`. Neutral → skip. |
 | 0.60–0.85 | NLI contradiction ≥ `nli_contradiction_threshold` → mark older `contradicted` (`max(created_at)` wins). Otherwise skip. |
 | < 0.60 | No action — unrelated enough to skip NLI. |
+
+</details>
 
 Reviewed facts are **never** touched by consolidation.
 

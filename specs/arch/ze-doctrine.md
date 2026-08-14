@@ -37,6 +37,13 @@ world-state: the living model of the user and their active concerns.**
 
 Everything else is an organ attached to that spine and is, in principle, replaceable:
 
+![Architecture diagram showing World-State as the central spine with six organs attached to it — persona, agents and tools, goals, the LLM, memory tables, and the orchestration graph — each annotated with why it is replaceable without breaking continuity.](../../docs/diagrams/specs/arch/organs-spine.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/organs-spine.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Organ | Replaceable because |
 |---|---|
 | Personality / persona | It is literally dials and YAML today; it is presentation, not self. |
@@ -45,6 +52,8 @@ Everything else is an organ attached to that spine and is, in principle, replace
 | The LLM(s) | Swapped via OpenRouter config; the model is rented cognition. |
 | Memory *tables* | Storage of the world-state's history, not the world-state itself. |
 | The orchestration graph | Mechanism for updating and acting on the world-state. |
+
+</details>
 
 None of these is the point. The point is that after any of them is torn out and rebuilt, Ze
 must still know **who you are, what is true, what is open, and what is drifting.** That
@@ -83,6 +92,13 @@ A companion that treats every stored string as equally true is a liability. Ze d
 is allowed to reach the user. This is the answer to "what is the difference between a fact, an
 inference, a suspicion, a priority, and an identity claim?"
 
+![Layer-stack diagram ordering the five claim kinds — identity claim, fact, inference, suspicion, and priority — from slow-decaying, high-confidence identity claims at the top to fast-decaying, low-confidence suspicions, each annotated with its typical source, revision rule, and surfacing posture; priority sits apart as a cross-cutting ordering concern rather than a point on the decay axis.](../../docs/diagrams/specs/arch/claim-ladder.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/claim-ladder.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Kind | What it is | Typical source | How it is revised | Surfacing posture |
 |---|---|---|---|---|
 | **Identity claim** | A stable truth about who the user *is* ("is a solo developer", "values directness") | Onboarding, repeated corroboration, explicit statement | Slowly; requires strong, repeated counter-evidence. Protected against churn. | Stated as known, rarely re-litigated. |
@@ -90,6 +106,8 @@ inference, a suspicion, a priority, and an identity claim?"
 | **Inference** | A conclusion Ze derived, not observed ("this project is stalling") | Reflection, correlation, consolidation | Falls when its supporting facts fall; must cite the facts it rests on. | Hedged; "it looks like…", never asserted as fact. |
 | **Suspicion** | A low-confidence hunch worth holding but not acting on ("these two events may be linked") | Correlation, dream synthesis | Cheap to hold, cheap to drop; promoted only on corroboration. | Offered as a question, with uncertainty explicit. Never a verdict. |
 | **Priority** | A judgment about what deserves attention now ("the tax deadline outranks the newsletter") | Executive layer over active concerns | Recomputed continuously as state changes. | Drives *ordering* of what Ze surfaces, not its truth. |
+
+</details>
 
 Two properties are mandatory on **every** claim, regardless of kind:
 
@@ -124,6 +142,13 @@ organ/spine distinction into two levels:
 Each function contributes to the spine in a characteristic way, and — this is a governance
 rule, not a convention — **may only produce the claim-kinds its function licenses:**
 
+![Permission matrix mapping the seven cognitive functions — perception, memory, executive, social cognition, reflection, action, and governance — against the five claim kinds, showing which kinds each function is licensed to produce, forbidden from producing, or only retrieves and annotates without originating; the reflection-versus-fact intersection is flagged as the doctrine's load-bearing prohibition: reflection may never emit a fact.](../../docs/diagrams/specs/arch/function-claim-matrix.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/function-claim-matrix.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Function | Writes to (spine face) | May produce | May **not** produce |
 |---|---|---|---|
 | Perception | world-model, active concerns | facts (with provenance) | inferences dressed as facts |
@@ -133,6 +158,8 @@ rule, not a convention — **may only produce the claim-kinds its function licen
 | Reflection | any face (as proposals) | inferences, suspicions | **facts** |
 | Action | new perceptible facts (side effects) | records of what it did | claims about intent it was not given |
 | Governance | metadata on every claim | confidence, consent, provenance, corrections | domain content |
+
+</details>
 
 The load-bearing rule: **reflection may never emit a fact.** The dream and correlation engines
 *conclude*; they do not *observe*. Everything they produce is an inference or suspicion,

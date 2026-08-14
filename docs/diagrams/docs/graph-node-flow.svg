@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1480 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="graphnode-title graphnode-desc">
+      <title id="graphnode-title">Orchestration graph, node by node</title>
+      <desc id="graphnode-desc">Flowchart of the twelve LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and a compound check that either loops plan_sequential for the next subtask or proceeds to synthesize, write_memory, and the response.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- ===== Arrows (drawn before nodes) ===== -->
+      <!-- Row1 straight connectors -->
+      <line x1="216" y1="144" x2="248" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="416" y1="144" x2="448" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="616" y1="144" x2="648" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="816" y1="144" x2="848" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="1016" y1="144" x2="1048" y2="144" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <line x1="1216" y1="144" x2="1248" y2="144" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- embed_route -> decompose (vertical) -->
+      <line x1="532" y1="168" x2="532" y2="248" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- decompose -> fetch_context (elbow) -->
+      <path d="M616,272 V232 Q616,224 624,224 H664 Q672,224 672,216 V168" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- capability_check -> await_confirmation (vertical, dashed) -->
+      <line x1="932" y1="176" x2="932" y2="248" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <!-- capability_check -> draft_response (elbow) -->
+      <path d="M974,162 V204 Q974,212 982,212 H1124 Q1132,212 1132,220 V248" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- draft_response -> await_confirmation (straight, adjacent) -->
+      <line x1="1048" y1="272" x2="1016" y2="272" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- await_confirmation -> execute_tool (loop back, dashed elbow) -->
+      <path d="M1016,264 H1032 Q1040,264 1040,256 V152 Q1040,144 1048,144" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- correlate -> compound? (vertical, accent) -->
+      <line x1="1332" y1="168" x2="1332" y2="240" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <!-- compound? -> plan_sequential (vertical, "MORE") -->
+      <line x1="1332" y1="304" x2="1332" y2="376" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- compound? -> synthesize (elbow, "DONE") -->
+      <path d="M1248,272 H1132 Q1132,272 1132,280 V376" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- synthesize -> write_memory -->
+      <line x1="1048" y1="400" x2="1016" y2="400" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- write_memory -> Response -->
+      <line x1="848" y1="400" x2="816" y2="400" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- plan_sequential self-loop -->
+      <path d="M1296,376 Q1296,352 1332,352 Q1368,352 1368,372" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+
+      <!-- edge labels -->
+      <rect x="404" y="122" width="80" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="444" y="131" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CONFIDENT</text>
+      <rect x="486" y="200" width="88" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="530" y="209" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">COMPOUND</text>
+      <rect x="984" y="122" width="80" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1024" y="131" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">EXECUTE</text>
+      <rect x="900" y="204" width="66" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="932" y="213" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CONFIRM</text>
+      <rect x="1090" y="196" width="60" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1120" y="205" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">DRAFT</text>
+      <rect x="980" y="220" width="60" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1010" y="229" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">RESUME</text>
+      <rect x="1284" y="200" width="46" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1307" y="209" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">MORE</text>
+      <rect x="1148" y="266" width="44" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1170" y="275" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">DONE</text>
+      <rect x="1338" y="336" width="52" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1364" y="345" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PER STEP</text>
+
+      <!-- ===== Nodes ===== -->
+      <!-- Input (start pill) -->
+      <rect x="48" y="120" width="168" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="48" y="120" width="168" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="132" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Input</text>
+      <text x="132" y="155" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">thread_id turn</text>
+
+      <!-- preprocess -->
+      <rect x="248" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="248" y="120" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="332" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">preprocess</text>
+      <text x="332" y="155" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">preprocessing.py</text>
+
+      <!-- embed_route -->
+      <rect x="448" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="448" y="120" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="532" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">embed_route</text>
+      <text x="532" y="155" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">routing.py</text>
+
+      <!-- fetch_context -->
+      <rect x="648" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="648" y="120" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="732" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">fetch_context</text>
+      <text x="732" y="155" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">context.py</text>
+
+      <!-- capability_check (diamond) -->
+      <polygon points="932,112 1016,144 932,176 848,144" fill="#f7f6f4"/>
+      <polygon points="932,112 1016,144 932,176 848,144" fill="rgba(128,82,255,0.06)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="932" y="141" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">capability_</text>
+      <text x="932" y="153" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">check</text>
+
+      <!-- execute_tool -->
+      <rect x="1048" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1048" y="120" width="168" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="1132" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">execute_tool</text>
+      <text x="1132" y="155" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">execution.py</text>
+
+      <!-- correlate -->
+      <rect x="1248" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1248" y="120" width="168" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="1332" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">correlate</text>
+      <text x="1332" y="155" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">correlation.py</text>
+
+      <!-- decompose (row2) -->
+      <rect x="448" y="248" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="448" y="248" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="532" y="269" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">decompose</text>
+      <text x="532" y="283" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">routing.py · haiku</text>
+
+      <!-- await_confirmation (row2, dashed) -->
+      <rect x="848" y="248" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="848" y="248" width="168" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="932" y="269" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">await_</text>
+      <text x="932" y="281" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">confirmation</text>
+
+      <!-- draft_response (row2) -->
+      <rect x="1048" y="248" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1048" y="248" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1132" y="269" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">draft_response</text>
+      <text x="1132" y="283" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">draft.py</text>
+
+      <!-- compound? diamond (row2) -->
+      <polygon points="1332,240 1416,272 1332,304 1248,272" fill="#f7f6f4"/>
+      <polygon points="1332,240 1416,272 1332,304 1248,272" fill="rgba(128,82,255,0.06)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="1332" y="276" fill="#0a0a0a" font-size="10.5" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">compound?</text>
+
+      <!-- plan_sequential (row3) -->
+      <rect x="1248" y="376" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1248" y="376" width="168" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="1332" y="397" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">plan_</text>
+      <text x="1332" y="409" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">sequential</text>
+
+      <!-- synthesize (row3) -->
+      <rect x="1048" y="376" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1048" y="376" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1132" y="397" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">synthesize</text>
+      <text x="1132" y="411" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">synthesis.py</text>
+
+      <!-- write_memory (row3) -->
+      <rect x="848" y="376" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="848" y="376" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="932" y="397" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">write_memory</text>
+      <text x="932" y="411" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory.py</text>
+
+      <!-- Response (end pill, row3) -->
+      <rect x="648" y="376" width="168" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="648" y="376" width="168" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="732" y="397" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Response</text>
+      <text x="732" y="411" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">WebSocket / ntfy</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="500" x2="1440" y2="500" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="516" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="528" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="536" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Primary action path</text>
+      <rect x="260" y="528" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="280" y="536" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Graph pauses / loops back</text>
+      <rect x="530" y="528" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="550" y="536" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Entry / exit</text>
+      <text x="740" y="536" fill="#6b6b6b" font-size="8.5" font-family="'Instrument Serif', serif" font-style="italic">Twelve nodes, one graph — compiled once, invoked per message.</text>
+    </svg>

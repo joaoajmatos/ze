@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1084 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="function-claim-matrix-title function-claim-matrix-desc">
+  <title id="function-claim-matrix-title">Cognitive functions vs. claim kinds they may produce</title>
+  <desc id="function-claim-matrix-desc">Permission matrix mapping the seven cognitive functions — perception, memory, executive, social cognition, reflection, action, and governance — against the five claim kinds, showing which kinds each function is licensed to produce, forbidden from producing, or only retrieves and annotates without originating; the reflection-versus-fact intersection is flagged as the doctrine's load-bearing prohibition: reflection may never emit a fact.</desc>
+  <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style></defs>
+  <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+  <!-- Header: component column -->
+  <rect x="12" y="72" width="208" height="52" rx="6" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="116" y="96" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Function</text>
+  <text x="116" y="112" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">vs. claim kind</text>
+
+  <!-- Header: role banners -->
+  <rect x="232" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+  <text x="306" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Identity</text>
+  <text x="306" y="108" fill="rgba(255,255,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">slow decay</text>
+
+  <rect x="396" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+  <text x="470" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Fact</text>
+  <text x="470" y="108" fill="rgba(255,255,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">grounded</text>
+
+  <rect x="560" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+  <text x="634" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Inference</text>
+  <text x="634" y="108" fill="rgba(255,255,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">derived</text>
+
+  <rect x="724" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+  <text x="798" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Suspicion</text>
+  <text x="798" y="108" fill="rgba(255,255,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">hunch</text>
+
+  <rect x="888" y="72" width="148" height="52" rx="6" fill="#0a0a0a"/>
+  <text x="962" y="92" fill="#ffffff" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Priority</text>
+  <text x="962" y="108" fill="rgba(255,255,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ordering</text>
+
+  <!-- Row 0: Perception (y=140) -->
+  <rect x="12" y="140" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="162" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Perception</text>
+  <text x="208" y="162" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">world-model, concerns</text>
+  <rect x="232" y="140" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="162" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="396" y="140" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="470" y="162" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Facts</text>
+  <rect x="560" y="140" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="162" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="724" y="140" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="162" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="140" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="162" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+
+  <!-- Row 1: Memory (y=180) -->
+  <rect x="12" y="180" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="202" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Memory</text>
+  <text x="208" y="202" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">custodian, all faces</text>
+  <rect x="232" y="180" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="202" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">retrieves</text>
+  <rect x="396" y="180" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="470" y="202" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">retrieves</text>
+  <rect x="560" y="180" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="202" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">retrieves</text>
+  <rect x="724" y="180" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="202" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">retrieves</text>
+  <rect x="888" y="180" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="202" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">retrieves</text>
+
+  <!-- Row 2: Executive (y=220) -->
+  <rect x="12" y="220" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="242" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Executive</text>
+  <text x="208" y="242" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">active concerns</text>
+  <rect x="232" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="242" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="396" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="470" y="242" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">Forbidden</text>
+  <rect x="560" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="242" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="724" y="220" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="242" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="220" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="242" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Priorities</text>
+
+  <!-- Row 3: Social cognition (y=260) -->
+  <rect x="12" y="260" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="282" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Social cognition</text>
+  <text x="208" y="282" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">user-, world-model</text>
+  <rect x="232" y="260" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="282" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Identity claims</text>
+  <rect x="396" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="470" y="282" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="560" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="282" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="724" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="282" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="260" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="282" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+
+  <!-- Row 4: Reflection (y=300) — focal cell at Fact -->
+  <rect x="12" y="300" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="322" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Reflection</text>
+  <text x="208" y="322" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">any face, proposal</text>
+  <rect x="232" y="300" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="322" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="396" y="300" width="148" height="36" rx="4" fill="rgba(128,82,255,0.07)" stroke="#8052ff" stroke-width="1.4"/>
+  <text x="470" y="318" fill="#8052ff" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">NEVER</text>
+  <text x="470" y="330" fill="rgba(128,82,255,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">may never emit a fact</text>
+  <rect x="560" y="300" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="322" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Inferences</text>
+  <rect x="724" y="300" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="322" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Suspicions</text>
+  <rect x="888" y="300" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="322" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+
+  <!-- Row 5: Action (y=340) -->
+  <rect x="12" y="340" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="362" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Action</text>
+  <text x="208" y="362" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">perceptible facts</text>
+  <rect x="232" y="340" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="362" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="396" y="340" width="148" height="36" rx="4" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="470" y="362" fill="#0a0a0a" font-size="10" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Records</text>
+  <rect x="560" y="340" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="362" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="724" y="340" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="362" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+  <rect x="888" y="340" width="148" height="36" rx="4" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="362" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">—</text>
+
+  <!-- Row 6: Governance (y=380) -->
+  <rect x="12" y="380" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+  <text x="24" y="402" fill="#0a0a0a" font-size="11" font-family="'Inter', sans-serif">Governance</text>
+  <text x="208" y="402" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">metadata, every claim</text>
+  <rect x="232" y="380" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="306" y="402" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">metadata</text>
+  <rect x="396" y="380" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="470" y="402" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">metadata</text>
+  <rect x="560" y="380" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="634" y="402" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">metadata</text>
+  <rect x="724" y="380" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="798" y="402" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">metadata</text>
+  <rect x="888" y="380" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="962" y="402" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">metadata</text>
+
+  <!-- Legend -->
+  <line x1="12" y1="436" x2="1072" y2="436" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="12" y="452" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+  <rect x="12" y="462" width="14" height="12" rx="2" fill="rgba(10,10,10,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="32" y="472" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Licensed to produce</text>
+  <rect x="192" y="462" width="14" height="12" rx="2" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="212" y="472" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Retrieves / annotates only</text>
+  <rect x="392" y="462" width="14" height="12" rx="2" fill="#f7f6f4" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
+  <text x="412" y="472" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Not licensed</text>
+  <rect x="552" y="462" width="14" height="12" rx="2" fill="rgba(128,82,255,0.07)" stroke="#8052ff" stroke-width="1.4"/>
+  <text x="572" y="472" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Load-bearing prohibition</text>
+</svg>

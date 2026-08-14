@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1080 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="organs-spine-title organs-spine-desc">
+  <title id="organs-spine-title">World-state spine with six replaceable organs</title>
+  <desc id="organs-spine-desc">Architecture diagram showing World-State as the central spine with six organs attached to it — persona, agents and tools, goals, the LLM, memory tables, and the orchestration graph — each annotated with why it is replaceable without breaking continuity.</desc>
+  <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+  <!-- Trunk (the spine) -->
+  <line x1="540" y1="96" x2="540" y2="420" stroke="rgba(10,10,10,0.18)" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Connectors: trunk -> organs (drawn before organ boxes) -->
+  <line x1="540" y1="162" x2="320" y2="162" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="174" x2="760" y2="174" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="282" x2="320" y2="282" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="294" x2="760" y2="294" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="402" x2="320" y2="402" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="414" x2="760" y2="414" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- Root node: World-State (focal) -->
+  <rect x="460" y="40" width="160" height="56" rx="8" fill="#f7f6f4"/>
+  <rect x="460" y="40" width="160" height="56" rx="8" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.4"/>
+  <text x="540" y="66" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">World-State</text>
+  <text x="540" y="82" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">the spine — must remain continuous</text>
+
+  <!-- Organ: Personality / persona (row 1, left) -->
+  <rect x="100" y="136" width="220" height="64" rx="6" fill="#f7f6f4"/>
+  <rect x="100" y="136" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="210" y="162" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Personality / persona</text>
+  <text x="210" y="180" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">presentation, not self</text>
+
+  <!-- Organ: Agents & tools (row 1, right) -->
+  <rect x="760" y="136" width="220" height="64" rx="6" fill="#f7f6f4"/>
+  <rect x="760" y="136" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="870" y="162" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Agents &amp; tools</text>
+  <text x="870" y="180" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">interchangeable executors</text>
+
+  <!-- Organ: Goals (row 2, left) -->
+  <rect x="100" y="256" width="220" height="64" rx="6" fill="#f7f6f4"/>
+  <rect x="100" y="256" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="210" y="282" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Goals</text>
+  <text x="210" y="300" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one narrow unit of concern</text>
+
+  <!-- Organ: The LLM(s) (row 2, right) -->
+  <rect x="760" y="256" width="220" height="64" rx="6" fill="#f7f6f4"/>
+  <rect x="760" y="256" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="870" y="282" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">The LLM(s)</text>
+  <text x="870" y="300" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">rented cognition, swapped via config</text>
+
+  <!-- Organ: Memory tables (row 3, left) -->
+  <rect x="100" y="376" width="220" height="64" rx="6" fill="#f7f6f4"/>
+  <rect x="100" y="376" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="210" y="402" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Memory tables</text>
+  <text x="210" y="420" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">storage, not the interpretation</text>
+
+  <!-- Organ: The orchestration graph (row 3, right) -->
+  <rect x="760" y="376" width="220" height="64" rx="6" fill="#f7f6f4"/>
+  <rect x="760" y="376" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="870" y="402" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Orchestration graph</text>
+  <text x="870" y="420" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">mechanism, not the model</text>
+
+  <!-- Legend -->
+  <line x1="40" y1="480" x2="1040" y2="480" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="40" y="496" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+  <rect x="40" y="508" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+  <text x="60" y="516" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Spine — must remain continuous across every refactor</text>
+  <rect x="480" y="508" width="14" height="10" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="500" y="516" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Organ — replaceable, in principle</text>
+</svg>

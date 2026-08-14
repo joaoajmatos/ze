@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Claim-kind ladder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1080px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:.5rem; }
+    p.sub { font-family:var(--font-sans); font-size:.9rem; color:var(--color-muted); margin-bottom:1.5rem; max-width:680px; }
+    svg { width:100%; min-width:820px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Epistemic ontology · Ze doctrine</p>
+    <h1>The claim-kind ladder</h1>
+    <p class="sub">Every claim carries a kind, and the kind sets how fast it decays and how confidently it may be surfaced. Identity claims sit at the slow, high-confidence end; suspicions sit at the fast, low-confidence end. Priority is a cross-cutting ordering concern, not a point on the decay axis.</p>
+    <svg viewBox="0 0 1080 820" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="claim-ladder-title claim-ladder-desc">
+      <title id="claim-ladder-title">Claim-kind ladder ordered by decay speed</title>
+      <desc id="claim-ladder-desc">Layer-stack diagram ordering the five claim kinds — identity claim, fact, inference, suspicion, and priority — from slow-decaying, high-confidence identity claims at the top to fast-decaying, low-confidence suspicions, each annotated with its typical source, revision rule, and surfacing posture; priority sits apart as a cross-cutting ordering concern rather than a point on the decay axis.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <line x1="24" y1="100" x2="24" y2="560" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="24" y="92" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SLOW</text>
+      <text x="24" y="576" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FAST</text>
+
+      <rect x="60" y="100" width="960" height="464" rx="8" fill="none" stroke="#0a0a0a" stroke-width="1"/>
+
+      <rect x="60" y="100" width="960" height="116" fill="#ffffff"/>
+      <rect x="60" y="216" width="960" height="116" fill="#efeeeb"/>
+      <rect x="60" y="332" width="960" height="116" fill="#ffffff"/>
+      <rect x="60" y="448" width="960" height="116" fill="#efeeeb"/>
+
+      <line x1="60" y1="216" x2="1020" y2="216" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="60" y1="332" x2="1020" y2="332" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="60" y1="448" x2="1020" y2="448" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+
+      <rect x="60" y="100" width="4" height="116" fill="#8052ff"/>
+      <rect x="60" y="448" width="4" height="116" fill="#8052ff"/>
+
+      <text x="76" y="134" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Identity claim</text>
+      <text x="76" y="154" fill="#6b6b6b" font-size="11" font-family="'Inter', sans-serif">Stable truth about who the user is</text>
+      <text x="580" y="134" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SOURCE</text>
+      <text x="650" y="134" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Onboarding, repeated corroboration</text>
+      <text x="580" y="162" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">REVISED</text>
+      <text x="650" y="162" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Slowly — strong, repeated counter-evidence</text>
+      <text x="580" y="190" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">POSTURE</text>
+      <text x="650" y="190" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Stated as known, rarely re-litigated</text>
+
+      <text x="76" y="250" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Fact</text>
+      <text x="76" y="270" fill="#6b6b6b" font-size="11" font-family="'Inter', sans-serif">Discrete, grounded statement</text>
+      <text x="580" y="250" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SOURCE</text>
+      <text x="650" y="250" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Conversation, calendar, email, ingestion</text>
+      <text x="580" y="278" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">REVISED</text>
+      <text x="650" y="278" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Superseded by newer facts; expires; NLI</text>
+      <text x="580" y="306" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">POSTURE</text>
+      <text x="650" y="306" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Stated plainly, provenance available</text>
+
+      <text x="76" y="366" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Inference</text>
+      <text x="76" y="386" fill="#6b6b6b" font-size="11" font-family="'Inter', sans-serif">A conclusion Ze derived, not observed</text>
+      <text x="580" y="366" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SOURCE</text>
+      <text x="650" y="366" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Reflection, correlation, consolidation</text>
+      <text x="580" y="394" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">REVISED</text>
+      <text x="650" y="394" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Falls when its supporting facts fall</text>
+      <text x="580" y="422" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">POSTURE</text>
+      <text x="650" y="422" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Hedged — "it looks like…", never asserted</text>
+
+      <text x="76" y="482" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Suspicion</text>
+      <text x="76" y="502" fill="#6b6b6b" font-size="11" font-family="'Inter', sans-serif">Low-confidence hunch, not acted on</text>
+      <text x="580" y="482" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SOURCE</text>
+      <text x="650" y="482" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Correlation, dream synthesis</text>
+      <text x="580" y="510" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">REVISED</text>
+      <text x="650" y="510" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Cheap to hold, cheap to drop</text>
+      <text x="580" y="538" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">POSTURE</text>
+      <text x="650" y="538" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Offered as a question, never a verdict</text>
+
+      <rect x="60" y="592" width="960" height="116" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+      <rect x="812" y="602" width="156" height="16" rx="2" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.20)" stroke-width="0.8"/>
+      <text x="890" y="613" fill="#6b6b6b" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CROSS-CUTTING · ORDERING</text>
+      <text x="76" y="642" fill="#0a0a0a" font-size="14" font-weight="600" font-family="'Inter', sans-serif">Priority</text>
+      <text x="76" y="662" fill="#6b6b6b" font-size="11" font-family="'Inter', sans-serif">What deserves attention now</text>
+      <text x="580" y="642" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">SOURCE</text>
+      <text x="650" y="642" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Executive layer over active concerns</text>
+      <text x="580" y="670" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">REVISED</text>
+      <text x="650" y="670" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Recomputed continuously as state changes</text>
+      <text x="580" y="698" fill="#8a8a8a" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.08em">POSTURE</text>
+      <text x="650" y="698" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace">Drives ordering of what surfaces, not truth</text>
+
+      <line x1="40" y1="748" x2="1040" y2="748" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="764" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="776" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="784" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Endpoints of the decay spectrum</text>
+      <rect x="360" y="776" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.25)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="380" y="784" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Cross-cutting — not on the decay axis</text>
+    </svg>
+  </div>
+</body>
+</html>

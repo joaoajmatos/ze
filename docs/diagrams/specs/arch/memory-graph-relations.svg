@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="memory-graph-rel-title memory-graph-rel-desc">
+  <title id="memory-graph-rel-title">Memory graph relation types connecting entity, fact, episode, event, procedure, task state, and goal</title>
+  <desc id="memory-graph-rel-desc">Graph schema diagram showing seven memory node types linked by seven explicit relations: entity describes fact, fact sourced from episode, episode mentions entity, event participates in entity, event promotes fact, procedure uses procedure into task state, and task state belongs to goal.</desc>
+  <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+  <!-- Zone dividers / group labels -->
+  <text x="40" y="52" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DECLARATIVE MEMORY GRAPH</text>
+  <text x="40" y="452" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">PROCEDURAL / GOAL CHAIN</text>
+
+  <!-- ===== Edges (drawn before boxes) ===== -->
+
+  <!-- event -> entity: bend at y=140, attach at event bottom x=500 -->
+  <path d="M 500,144 V 160 Q 500,168 492,168 H 288 Q 280,168 280,176 V 180" fill="none" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="352" y="158" width="88" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="396" y="167" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PARTICIPATES_IN</text>
+
+  <!-- event -> fact: bend at y=140, attach at event bottom x=580 -->
+  <path d="M 580,144 V 160 Q 580,168 588,168 H 792 Q 800,168 800,176 V 180" fill="none" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="620" y="158" width="64" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="652" y="167" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PROMOTES</text>
+
+  <!-- entity -> fact: straight horizontal at y=212 -->
+  <line x1="360" y1="212" x2="720" y2="212" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+  <rect x="504" y="192" width="72" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="540" y="201" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">DESCRIBES</text>
+
+  <!-- fact -> episode: bend at y=352, attach at fact bottom x=800 -->
+  <path d="M 800,244 V 336 Q 800,344 792,344 H 628" fill="none" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="666" y="330" width="88" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="710" y="339" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">SOURCED_FROM</text>
+
+  <!-- episode -> entity: bend at y=352, attach at episode left x=460 -->
+  <path d="M 460,352 H 288 Q 280,352 280,344 V 244" fill="none" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="322" y="330" width="64" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="354" y="339" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">MENTIONS</text>
+
+  <!-- procedure -> task_state: straight horizontal -->
+  <line x1="360" y1="492" x2="460" y2="492" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="362" y="472" width="96" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="410" y="481" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">USES_PROCEDURE</text>
+
+  <!-- task_state -> goal: straight horizontal -->
+  <line x1="620" y1="492" x2="720" y2="492" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow)"/>
+  <rect x="614" y="472" width="112" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="670" y="481" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">BELONGS_TO_GOAL</text>
+
+  <!-- ===== Nodes ===== -->
+
+  <!-- event (top center, feeds the cluster) -->
+  <rect x="460" y="80" width="160" height="64" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.30)" stroke-width="1"/>
+  <text x="472" y="98" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE</text>
+  <text x="540" y="118" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Event</text>
+  <text x="540" y="134" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">memory_events</text>
+
+  <!-- entity (left, aggregate root of the declarative cluster) -->
+  <rect x="200" y="180" width="160" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+  <text x="212" y="198" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE · ROOT</text>
+  <text x="280" y="218" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Entity</text>
+  <text x="280" y="234" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">memory_entities</text>
+
+  <!-- fact (right) -->
+  <rect x="720" y="180" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="732" y="198" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE</text>
+  <text x="800" y="218" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Fact</text>
+  <text x="800" y="234" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">memory_facts</text>
+
+  <!-- episode (bottom center of the declarative cluster) -->
+  <rect x="460" y="320" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="472" y="338" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE</text>
+  <text x="540" y="358" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Episode</text>
+  <text x="540" y="374" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">memory_episodes</text>
+
+  <!-- procedure (bottom row, left) -->
+  <rect x="200" y="460" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="212" y="478" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE</text>
+  <text x="280" y="498" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Procedure</text>
+  <text x="280" y="514" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">memory_procedures</text>
+
+  <!-- task_state (bottom row, center) -->
+  <rect x="460" y="460" width="160" height="64" rx="6" fill="rgba(10,10,10,0.05)" stroke="#6b6b6b" stroke-width="1"/>
+  <text x="472" y="478" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE · STATE</text>
+  <text x="540" y="498" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Task state</text>
+  <text x="540" y="514" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">memory_task_state</text>
+
+  <!-- goal (bottom row, right) -->
+  <rect x="720" y="460" width="160" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="732" y="478" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.12em">NODE</text>
+  <text x="800" y="498" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Goal</text>
+  <text x="800" y="514" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">goals</text>
+
+  <!-- Legend -->
+  <line x1="40" y1="540" x2="960" y2="540" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <rect x="40" y="548" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+  <text x="60" y="556" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Aggregate root (entity)</text>
+  <text x="320" y="556" fill="#6b6b6b" font-size="8.5" font-family="'Geist Mono', monospace" letter-spacing="0.04em">RELATION LABELS = predicate vocabulary (config/config.yaml)</text>
+</svg>

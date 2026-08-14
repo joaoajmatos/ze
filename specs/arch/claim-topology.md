@@ -25,12 +25,21 @@ seam-shaped producers, `SignalSource` and loop extraction) found that the doctri
 taxonomy — claim-kind, provenance, confidence-with-decay — has been implemented **four
 times, four different ways**, instead of once:
 
+![Matrix comparing SignalSource, OpenLoop, Hypothesis, and memory_facts on confidence, claim-kind, and provenance, showing only OpenLoop implements the doctrine's shared vocabulary, with Hypothesis's frozen confidence flagged as a live bug.](../../docs/diagrams/specs/arch/claim-vocabulary-matrix.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/claim-vocabulary-matrix.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Producer | Type | Confidence | Claim-kind | Provenance |
 |---|---|---|---|---|
 | `ze-plugin` (`SignalSource`) | `Signal` | **none** — only `magnitude: float` (relevance, not confidence) | none | `source: str` (plugin key) |
 | `ze-worldstate` (loops) | `OpenLoop` | `confidence: float`, evidence-weighted decay, floor 0.05 | `LoopClaimKind` — **verbatim doctrine enum**: identity/fact/inference/suspicion/priority | `LoopProvenance`: conversation/email/calendar/ingestion/user_declared |
 | `ze-correlation` (hypotheses) | `Hypothesis` / `EvidenceRef` | `confidence: float`, **no decay job — frozen at generation time** | none on `Hypothesis` (implicit by type) | `EvidenceRef.origin: Literal["graph_recall","live_search","prompt_supplied"]` — missing `"synthesized"` |
 | `ze-memory` (facts) | `memory_facts` row | `confidence: float`, linear decay (-0.03/30 days, only if `synthesized` + uncorroborated), hard cliffs at 0.50/0.25 | none (implicit — facts are always "fact" by table identity) | `provenance: str` (`raw`/`synthesized`) + separate `source: str` (`user_asserted`/`ze_observed`) |
+
+</details>
 
 Only one of the four (`OpenLoop`) actually implements the doctrine's claim-kind taxonomy. The
 other three either have no confidence field, no claim-kind field, a differently-named

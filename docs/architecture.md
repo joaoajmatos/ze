@@ -144,6 +144,13 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 ### Nodes
 
+![Flowchart of the twelve LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and a compound check that either loops plan_sequential for the next subtask or proceeds to synthesize, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
+
+<sub>[Interactive version](diagrams/docs/graph-node-flow.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Node | Module | Responsibility |
 |---|---|---|
 | `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
@@ -158,6 +165,8 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `synthesize` | `nodes/synthesis.py` | Merge subtask results into one response |
 | `write_memory` | `nodes/memory.py` | Propose facts/episodes (fire-and-forget) |
 | `plan_sequential` | `nodes/routing.py` | Execute compound routing plans one step at a time |
+
+</details>
 
 ### State
 
@@ -713,6 +722,13 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 
 ## Cross-cutting modules
 
+![Sequence diagram of the twelve cross-cutting modules loaded in order at ze-api startup, from settings and logging through embeddings, the database pool, plugin and agent bootstrap, proactive job registration, the ZeContainer wiring step, persona storage, the Gmail channel, and finally the native WebSocket interface](diagrams/docs/boot-chain.svg)
+
+<sub>[Interactive version](diagrams/docs/boot-chain.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Module | Purpose |
 |---|---|
 | `ze_api/settings.py` | `ZeApiSettings` — shell secrets + YAML accessors + `to_core_settings()` bridge |
@@ -727,6 +743,8 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_personal/persona/` | `PostgresPersonaStore` — named profiles, dial overrides, DB persistence |
 | `ze_google/gmail_channel.py` | `GmailChannel` — Gmail API channel (owned by `ze-google`) |
 | `ze_api/interface/native.py` | `NativeAppInterface` — WebSocket frame delivery + ntfy fallback |
+
+</details>
 
 ---
 

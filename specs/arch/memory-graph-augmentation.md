@@ -38,6 +38,13 @@ project.
 
 The graph layer must support a small, explicit set of relationship types:
 
+![Graph schema diagram showing seven memory node types linked by seven explicit relations: entity describes fact, fact sourced from episode, episode mentions entity, event participates in entity, event promotes fact, procedure uses procedure into task state, and task state belongs to goal.](../../docs/diagrams/specs/arch/memory-graph-relations.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/memory-graph-relations.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Relation | Connects | Purpose |
 |---|---|---|
 | `entity -> fact` | entities to declarative facts | Attach facts to the thing they describe |
@@ -47,6 +54,8 @@ The graph layer must support a small, explicit set of relationship types:
 | `procedure -> task_state` | procedures to current or recent task execution | Reuse playbooks and execution state |
 | `task_state -> goal` | task state to goals | Keep active work anchored to intent |
 | `event -> fact` | decisions or outcomes to declarative memory | Promote durable learnings from lived events |
+
+</details>
 
 The exact predicate names may differ, but the relationship semantics above are part of
 the contract.

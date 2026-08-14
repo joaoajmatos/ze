@@ -22,11 +22,20 @@ This document defines the **invariants** for plugin-contributed UI. Phase 87 des
 Plugin UI contributions fall into three tiers. **Higher tiers are opt-in; lower tiers must
 always suffice for common cases.**
 
+![Ze plugin UI extension tiers, foundation to opt-in](../../docs/diagrams/specs/arch/plugin-ui-tiers.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/plugin-ui-tiers.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Tier | Mechanism | Plugin author writes | Frontend deploy needed? |
 |------|-----------|----------------------|-------------------------|
 | **1 — SDUI** | Primitive trees (`@ze/ui`) | Python builders / render tools | No |
 | **2 — Manifest + generic shell** | `UiContribution` + REST page endpoints | Python declarations + optional REST handlers | No |
 | **3 — Frontend modules** | npm workspace package per plugin | TypeScript/React routes | Yes (bundled at build time) |
+
+</details>
 
 ### Tier 1 — Server-driven UI (existing)
 

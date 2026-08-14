@@ -56,12 +56,21 @@ lineage, and critic-gated promotion path that no published production memory sys
 Wake  →  Sleep (NREM)  →  Dream (REM)  →  Morning Integration
 ```
 
+![Architecture diagram of Ze's dream memory pipeline showing the Wake, Sleep, Dream, and Morning phases in sequence, each with its biological analogue and whether it makes LLM calls, looping back nightly from morning integration to the next wake phase](../../docs/diagrams/specs/arch/dream-four-phase-pipeline.svg)
+
+<sub>[Interactive version](../../docs/diagrams/specs/arch/dream-four-phase-pipeline.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Phase | Biological analogue | What happens | LLM calls |
 |-------|---------------------|--------------|-----------|
 | **Wake** | Experience capture | Tag episodes with `replay_score`, `source`, `has_sensitive_entity` at write time | None |
 | **Sleep** | NREM replay + consolidation | Replay top episodes, compress sessions, dedup facts, decay stale traces, detect schema/policy clusters | None |
 | **Dream** | REM recombination | Synthesise insights, procedures, hindsight facts, plan stress-tests into staging buffer | Haiku generator |
 | **Morning** | Waking integration | Three gates + two-critic pipeline; auto-promote, review queue, or forget | Sonnet critic + NLI |
+
+</details>
 
 No phase writes synthetic outputs directly to live memory. All dream products live in
 `memory_dream_artifacts` until gates pass, support thresholds are met, or the user

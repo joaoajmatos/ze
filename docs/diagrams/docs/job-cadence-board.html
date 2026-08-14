@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Job cadence board</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:960px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Reference · Ze scheduled jobs</p>
+    <h1>The full job schedule, grouped by cadence tier</h1>
+    <svg viewBox="0 0 1280 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cadence-title cadence-desc">
+      <title id="cadence-title">Ze's job schedule grouped into daily, weekly, continuous, and event-driven cadence tiers</title>
+      <desc id="cadence-desc">Board diagram grouping every scheduled job into four cadence tiers — fixed daily UTC times from 2 AM consolidation through 8:30 AM contact review, fixed weekly times from Sunday morning insights through Tuesday stuck-goal detection, continuous fixed-interval jobs from every 10 minutes to every 6 hours, and event-driven jobs that fire immediately on failure or trigger — with the weekly accountability narrative and cost anomaly detection called out as the two most consequential jobs.</desc>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Lane 1: DAILY -->
+      <text x="56" y="122" fill="#6b6b6b" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DAILY · UTC CLOCK</text>
+      <line x1="56" y1="128" x2="1240" y2="128" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+
+      <rect x="56" y="142" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="56" y="142" width="216" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="68" y="160" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">02:00</text>
+      <text x="68" y="176" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Memory consolidation + profile synthesis</text>
+
+      <rect x="292" y="142" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="292" y="142" width="216" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="304" y="160" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">03:00</text>
+      <text x="304" y="176" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Dream sleep pass + contacts consolidation</text>
+
+      <rect x="528" y="142" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="528" y="142" width="216" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="540" y="160" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">07:45</text>
+      <text x="540" y="176" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Calendar sync + reminder scheduling</text>
+
+      <rect x="764" y="142" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="764" y="142" width="216" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="776" y="160" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">08:00</text>
+      <text x="776" y="176" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Morning briefing (personalized headlines)</text>
+
+      <rect x="1000" y="142" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1000" y="142" width="216" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1012" y="160" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">08:30</text>
+      <text x="1012" y="176" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Contact review suggestions</text>
+
+      <!-- Lane 2: WEEKLY -->
+      <text x="56" y="222" fill="#6b6b6b" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.14em">WEEKLY · DAY + TIME</text>
+      <line x1="56" y1="228" x2="1240" y2="228" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+
+      <rect x="56" y="242" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="56" y="242" width="216" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="68" y="260" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">SUN 07:00</text>
+      <text x="68" y="276" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Weekly insight generation</text>
+
+      <rect x="292" y="242" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="292" y="242" width="216" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="304" y="260" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">SUN 18:00</text>
+      <text x="304" y="276" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Weekly goal narrative</text>
+
+      <rect x="528" y="242" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="528" y="242" width="216" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="540" y="260" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">SUN 19:00</text>
+      <text x="540" y="276" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Weekly goal suggestions</text>
+
+      <!-- focal: weekly accountability narrative -->
+      <rect x="764" y="242" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="764" y="242" width="216" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="776" y="260" fill="#8052ff" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">MON 09:00</text>
+      <text x="776" y="276" fill="#0a0a0a" font-size="9" font-weight="600" font-family="'Inter', sans-serif">Weekly accountability narrative</text>
+
+      <rect x="1000" y="242" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1000" y="242" width="216" height="48" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="1012" y="260" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">TUE 09:00</text>
+      <text x="1012" y="276" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Stuck goal detection</text>
+
+      <!-- Lane 3: CONTINUOUS -->
+      <text x="56" y="322" fill="#6b6b6b" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.14em">CONTINUOUS · FIXED INTERVAL</text>
+      <line x1="56" y1="328" x2="1240" y2="328" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+
+      <rect x="56" y="342" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="56" y="342" width="216" height="48" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.25)" stroke-width="1"/>
+      <text x="68" y="360" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">10 MIN</text>
+      <text x="68" y="376" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Session summary generation</text>
+
+      <rect x="292" y="342" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="292" y="342" width="216" height="48" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.25)" stroke-width="1"/>
+      <text x="304" y="360" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">15 MIN</text>
+      <text x="304" y="376" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Goal sweep · cost reconciliation · campaigns</text>
+
+      <rect x="528" y="342" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="528" y="342" width="216" height="48" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.25)" stroke-width="1"/>
+      <text x="540" y="360" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">30 MIN</text>
+      <text x="540" y="376" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">News article fetch + embed</text>
+
+      <rect x="764" y="342" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="764" y="342" width="216" height="48" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.25)" stroke-width="1"/>
+      <text x="776" y="360" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">HOURLY</text>
+      <text x="776" y="376" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Checkpoint pruning</text>
+
+      <!-- focal: cost anomaly detection -->
+      <rect x="1000" y="342" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="1000" y="342" width="216" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="1012" y="360" fill="#8052ff" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">6 HOURS</text>
+      <text x="1012" y="376" fill="#0a0a0a" font-size="9" font-weight="600" font-family="'Inter', sans-serif">Cost anomaly detection</text>
+
+      <!-- Lane 4: IMMEDIATE -->
+      <text x="56" y="422" fill="#6b6b6b" font-size="9" font-weight="500" font-family="'Geist Mono', monospace" letter-spacing="0.14em">IMMEDIATE · EVENT-DRIVEN</text>
+      <line x1="56" y1="428" x2="1240" y2="428" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+
+      <rect x="56" y="442" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="56" y="442" width="216" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="68" y="460" fill="#6b6b6b" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">ON FAILURE</text>
+      <text x="68" y="476" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Workflow failure alerts</text>
+
+      <rect x="292" y="442" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="292" y="442" width="216" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="304" y="460" fill="#6b6b6b" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">ON FIRE</text>
+      <text x="304" y="476" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Calendar event reminders</text>
+
+      <rect x="528" y="442" width="216" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="528" y="442" width="216" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="540" y="460" fill="#6b6b6b" font-size="11" font-weight="600" font-family="'Geist Mono', monospace">ON TICK</text>
+      <text x="540" y="476" fill="#6b6b6b" font-size="9" font-family="'Inter', sans-serif">Goal gates + milestone progress</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="510" x2="1240" y2="510" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="526" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="538" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="546" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Notable — accountability + anomaly detection</text>
+      <rect x="380" y="538" width="14" height="10" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="400" y="546" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Fixed daily / weekly clock time</text>
+      <rect x="680" y="538" width="14" height="10" rx="2" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.25)" stroke-width="1"/>
+      <text x="700" y="546" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Fixed-interval sweep</text>
+      <rect x="900" y="538" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="920" y="546" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Event-driven, no schedule</text>
+    </svg>
+  </div>
+</body>
+</html>

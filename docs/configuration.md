@@ -350,12 +350,21 @@ conversationally) overrides the active profile at runtime and survives restarts.
 into the identity block only at the extremes (below `0.2` or above `0.8`). The neutral
 band `[0.2, 0.8)` adds no clause.
 
+![Four horizontal sliders — humor, directness, formality, and depth — each running 0.0 to 1.0, with a neutral band between 0.2 and 0.8 that adds no clause, and labeled effects at the low and high ends](diagrams/docs/persona-dials.svg)
+
+<sub>[Interactive version](diagrams/docs/persona-dials.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | Dial | Low (< 0.2) effect | High (≥ 0.8) effect |
 |---|---|---|
 | `humor` | No humor | Openly funny |
 | `directness` | Socratic / exploratory | Conclusions first, no preamble |
 | `formality` | Casual, first names | Formal and precise |
 | `depth` | Surface level | Full elaboration with examples |
+
+</details>
 
 **`custom_instructions`** is free-form text appended to every system prompt for that
 profile — useful for "Always respond in European Portuguese" or "Use my name João."

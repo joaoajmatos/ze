@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1120 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dream-4phase-title dream-4phase-desc">
+  <title id="dream-4phase-title">Four-phase dream pipeline: Wake, Sleep, Dream, Morning</title>
+  <desc id="dream-4phase-desc">Architecture diagram of Ze's dream memory pipeline showing the Wake, Sleep, Dream, and Morning phases in sequence, each with its biological analogue and whether it makes LLM calls, looping back nightly from morning integration to the next wake phase.</desc>
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+  <!-- Sequential arrows: Wake -> Sleep -> Dream -> Morning (same y, straight lines) -->
+  <line x1="280" y1="156" x2="308" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="548" y1="156" x2="576" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="816" y1="156" x2="844" y2="156" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+  <!-- Nightly loop-back: Morning -> Wake (dashed) -->
+  <path d="M964,222 V254 Q964,262 956,262 H168 Q160,262 160,254 V222" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <rect x="500" y="256" width="124" height="12" rx="2" fill="#f7f6f4"/>
+  <text x="562" y="265" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">NIGHTLY CRON (03:00)</text>
+
+  <!-- Node: Wake -->
+  <rect x="40" y="90" width="240" height="132" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="160" y="116" fill="#0a0a0a" font-size="13" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Wake</text>
+  <text x="160" y="132" fill="#6b6b6b" font-size="11" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="middle">Experience capture</text>
+  <line x1="56" y1="142" x2="264" y2="142" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="160" y="156" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Tag replay_score, source,</text>
+  <text x="160" y="168" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">sensitive flag at write time</text>
+  <rect x="56" y="186" width="208" height="22" rx="4" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+  <text x="160" y="201" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">LLM CALLS: NONE</text>
+
+  <!-- Node: Sleep -->
+  <rect x="308" y="90" width="240" height="132" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="428" y="116" fill="#0a0a0a" font-size="13" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Sleep</text>
+  <text x="428" y="132" fill="#6b6b6b" font-size="11" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="middle">NREM replay + consolidation</text>
+  <line x1="324" y1="142" x2="532" y2="142" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="428" y="156" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Replay, compress, dedup,</text>
+  <text x="428" y="168" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">decay, detect clusters</text>
+  <rect x="324" y="186" width="208" height="22" rx="4" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+  <text x="428" y="201" fill="#0a0a0a" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">LLM CALLS: NONE</text>
+
+  <!-- Node: Dream -->
+  <rect x="576" y="90" width="240" height="132" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="696" y="116" fill="#0a0a0a" font-size="13" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Dream</text>
+  <text x="696" y="132" fill="#6b6b6b" font-size="11" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="middle">REM recombination</text>
+  <line x1="592" y1="142" x2="800" y2="142" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="696" y="156" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Synthesize insights, procs,</text>
+  <text x="696" y="168" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">hindsight facts, stress tests</text>
+  <rect x="592" y="186" width="208" height="22" rx="4" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+  <text x="696" y="201" fill="#8052ff" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">LLM CALLS: HAIKU GENERATOR</text>
+
+  <!-- Node: Morning -->
+  <rect x="844" y="90" width="240" height="132" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+  <text x="964" y="116" fill="#0a0a0a" font-size="13" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Morning</text>
+  <text x="964" y="132" fill="#6b6b6b" font-size="11" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="middle">Waking integration</text>
+  <line x1="860" y1="142" x2="1068" y2="142" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="964" y="156" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">3 gates + 2-critic pipeline;</text>
+  <text x="964" y="168" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">promote, review, or forget</text>
+  <rect x="860" y="186" width="208" height="22" rx="4" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+  <text x="964" y="201" fill="#8052ff" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">LLM CALLS: SONNET + NLI</text>
+
+  <!-- Legend -->
+  <line x1="40" y1="300" x2="1080" y2="300" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+  <text x="40" y="316" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+  <rect x="40" y="328" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+  <text x="60" y="336" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Structural — no LLM calls</text>
+  <rect x="320" y="328" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+  <text x="340" y="336" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">LLM generator or critic call</text>
+  <line x1="620" y1="333" x2="648" y2="333" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+  <text x="656" y="336" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Nightly cron loop</text>
+</svg>

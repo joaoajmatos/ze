@@ -110,12 +110,21 @@ data is ever routed to another provider.
 Raw financial rows are never placed in LLM context. Tools aggregate data locally
 in Python and expose only summaries to the model.
 
+![Trust boundary diagram showing four pairs of finance data: aggregated summaries such as total notional, spending totals, cash balance, and requested position lists cross the boundary to the LLM, while the underlying raw data stays in the database and is never sent](diagrams/docs/finance-llm-visibility.svg)
+
+<sub>[Interactive version](diagrams/docs/finance-llm-visibility.html)</sub>
+
+<details>
+<summary>Table</summary>
+
 | What the LLM sees | What stays in the DB |
 |---|---|
 | Total notional, total P&L, account count | Individual position quantities and prices |
 | Spending totals per category | Individual transaction amounts and descriptions |
 | Account cash balance | Transaction history |
 | A list of positions (only when explicitly requested) | CSV mapping parameters |
+
+</details>
 
 The categorization pass (see below) is the only place description strings reach
 the LLM — and only when the user has opted in. Amounts, dates, and account
