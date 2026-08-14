@@ -30,12 +30,19 @@ class FetchedReferenceFile:
 
 
 @dataclass
+class FetchedScriptFile:
+    filename: str
+    content: bytes
+
+
+@dataclass
 class FetchedSkill:
-    """Result of `fetch_skill_source()` — the parsed `SKILL.md` plus any
-    non-script supporting reference files found alongside it (FR-022)."""
+    """Result of `fetch_skill_source()` — parsed `SKILL.md`, non-script
+    reference files, and any bundled script bytes."""
 
     parsed: ParsedSkill
     reference_files: list[FetchedReferenceFile] = field(default_factory=list)
+    script_files: list[FetchedScriptFile] = field(default_factory=list)
 
 
 def _content_type_for(filename: str) -> str:
@@ -75,6 +82,7 @@ def _parse_zip_archive(content: bytes, url: str) -> FetchedSkill:
     parsed = parse_skill_md(skill_md_text)
 
     reference_files: list[FetchedReferenceFile] = []
+    script_files: list[FetchedScriptFile] = []
     has_script_file = False
     for name in archive.namelist():
         if name == skill_md_name or name.endswith("/"):
@@ -84,11 +92,13 @@ def _parse_zip_archive(content: bytes, url: str) -> FetchedSkill:
             continue
         if _is_script(basename):
             has_script_file = True
+            script_files.append(
+                FetchedScriptFile(filename=name, content=archive.read(name))
+            )
             continue
         try:
             file_content = archive.read(name).decode("utf-8")
         except UnicodeDecodeError:
-            # Binary supporting file — not injectable as context text; skip storing.
             continue
         reference_files.append(
             FetchedReferenceFile(
@@ -99,9 +109,13 @@ def _parse_zip_archive(content: bytes, url: str) -> FetchedSkill:
         )
 
     if has_script_file:
-        parsed.has_unsupported_scripts = True
+        parsed.has_scripts = True
 
-    return FetchedSkill(parsed=parsed, reference_files=reference_files)
+    return FetchedSkill(
+        parsed=parsed,
+        reference_files=reference_files,
+        script_files=script_files,
+    )
 
 
 async def fetch_skill_source(

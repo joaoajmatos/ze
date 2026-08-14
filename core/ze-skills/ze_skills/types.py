@@ -79,7 +79,9 @@ class Skill:
     bundling_plugin: str | None = None
     status: SkillStatus = SkillStatus.PENDING_REVIEW
     allowed_tools: list[str] | None = None
-    has_unsupported_scripts: bool = False
+    has_scripts: bool = False
+    executable_approved: bool = False
+    executable_approved_at: datetime | None = None
     content_hash: str = ""
     id: UUID | None = None
     created_at: datetime | None = None
@@ -95,6 +97,14 @@ class Skill:
             self.content_hash = compute_content_hash(
                 self.name, self.description, self.instructions, self.allowed_tools
             )
+
+
+@dataclass
+class SkillScript:
+    filename: str
+    content: bytes
+    skill_id: UUID | None = None
+    id: UUID | None = None
 
 
 @dataclass

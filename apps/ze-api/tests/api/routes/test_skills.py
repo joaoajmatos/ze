@@ -39,6 +39,10 @@ def _skill(**overrides) -> Skill:
 def _make_app(store=None) -> tuple[FastAPI, AsyncMock]:
     app = FastAPI()
     skill_store = store or AsyncMock()
+    if isinstance(skill_store.list_scripts, AsyncMock):
+        current = skill_store.list_scripts.return_value
+        if not isinstance(current, list):
+            skill_store.list_scripts.return_value = []
     container = SimpleNamespace(skill_store=skill_store)
     app.state.container = container
 
@@ -49,6 +53,8 @@ def _make_app(store=None) -> tuple[FastAPI, AsyncMock]:
 
 def _default_store_mocks(store: AsyncMock) -> None:
     store.list_reference_files = AsyncMock(return_value=[])
+    store.list_scripts = AsyncMock(return_value=[])
+    store.add_script = AsyncMock()
     store.get_latest_review = AsyncMock(return_value=None)
 
 
@@ -67,7 +73,7 @@ async def test_import_skill_success_returns_201():
             description='Ends every response with "Arrr!"',
             instructions='Always end with "Arrr!"',
             allowed_tools=None,
-            has_unsupported_scripts=False,
+            has_scripts=False,
         ),
         reference_files=[],
     )
@@ -105,7 +111,7 @@ async def test_import_skill_with_reference_files_persists_them():
             description="desc",
             instructions="instructions",
             allowed_tools=None,
-            has_unsupported_scripts=False,
+            has_scripts=False,
         ),
         reference_files=[
             FetchedReferenceFile(
@@ -574,7 +580,7 @@ async def test_refresh_skill_changed_content_returns_pending_review():
             description="Ends every response with Arrr!",
             instructions="New instructions",
             allowed_tools=None,
-            has_unsupported_scripts=False,
+            has_scripts=False,
         ),
         reference_files=[],
     )
@@ -601,7 +607,7 @@ async def test_refresh_skill_unchanged_content_returns_200_no_status_change():
             description='Ends every response with "Arrr!"',
             instructions='Always end with "Arrr!"',
             allowed_tools=None,
-            has_unsupported_scripts=False,
+            has_scripts=False,
         ),
         reference_files=[],
     )
@@ -684,3 +690,32 @@ async def test_refresh_skill_422_when_bundled():
         )
 
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_approve_executables_sets_flag():
+    skill_id = uuid4()
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE, has_scripts=True)
+    approved = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        has_scripts=True,
+        executable_approved=True,
+    )
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.set_executable_approved = AsyncMock(return_value=approved)
+    _default_store_mocks(store)
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.post(
+            f"/api/v0/skills/{skill_id}/approve-executables",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["executable_approved"] is True
+    store.set_executable_approved.assert_awaited_once()

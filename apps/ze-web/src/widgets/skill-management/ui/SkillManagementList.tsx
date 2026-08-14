@@ -8,12 +8,23 @@ import {
 } from "@/entities/skill";
 import { Button, Input, ListPage } from "@/shared/ui";
 
+type SkillRow = SkillResponse & {
+  has_scripts?: boolean;
+  has_unsupported_scripts?: boolean;
+  executable_approved?: boolean;
+  script_filenames?: string[];
+};
+
 const STATUS_LABEL: Record<string, string> = {
   pending_review: "Pending review",
   active: "Active",
   disabled: "Disabled",
   rejected: "Rejected",
 };
+
+function skillHasScripts(skill: SkillRow): boolean {
+  return Boolean(skill.has_scripts ?? skill.has_unsupported_scripts);
+}
 
 function StatusBadge({ status }: { status: string }) {
   const tone =
@@ -43,6 +54,9 @@ function SourceBadge({ source }: { source: string }) {
 
 function SkillRow({ skill }: { skill: SkillResponse }) {
   const transition = useSkillTransitionMutation();
+  const row = skill as SkillRow;
+  const hasScripts = skillHasScripts(row);
+  const executablesApproved = Boolean(row.executable_approved);
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 px-4 py-3">
@@ -53,6 +67,15 @@ function SkillRow({ skill }: { skill: SkillResponse }) {
           <span className="truncate text-sm font-medium">{skill.name}</span>
         </div>
         <p className="mt-1 truncate text-xs text-smoke">{skill.description}</p>
+        {hasScripts && (
+          <p className="mt-1 text-xs text-amber-spark">
+            Contains scripts
+            {row.script_filenames?.length ? `: ${row.script_filenames.join(", ")}` : ""}.
+            {executablesApproved
+              ? " Executables approved."
+              : " Instructions approval does not run them."}
+          </p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {skill.status === "pending_review" && (
@@ -76,14 +99,28 @@ function SkillRow({ skill }: { skill: SkillResponse }) {
           </>
         )}
         {skill.status === "active" && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={transition.isPending}
-            onClick={() => transition.mutate({ skillId: skill.id, kind: "disable" })}
-          >
-            Disable
-          </Button>
+          <>
+            {hasScripts && !executablesApproved && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={transition.isPending}
+                onClick={() =>
+                  transition.mutate({ skillId: skill.id, kind: "approve-executables" })
+                }
+              >
+                Approve executables
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={transition.isPending}
+              onClick={() => transition.mutate({ skillId: skill.id, kind: "disable" })}
+            >
+              Disable
+            </Button>
+          </>
         )}
         {skill.status === "disabled" && (
           <Button

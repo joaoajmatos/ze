@@ -123,6 +123,27 @@ async def approve_skill(
 
 
 @router.post(
+    "/{skill_id}/approve-executables",
+    response_model=SkillDetailResponse,
+    operation_id="approveSkillExecutables",
+    summary="Approve skill scripts for execution",
+    description="Separate from instructions approval. Sets executable_approved "
+    "only when the skill is active and has_scripts is true (FR-012, SC-005).",
+)
+async def approve_skill_executables(
+    skill_id: UUID,
+    store: SkillStore = Depends(get_skill_store),
+) -> SkillDetailResponse:
+    try:
+        skill = await skills_rest.approve_executables(store, skill_id)
+    except SkillNotFoundError:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    except InvalidSkillTransitionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return SkillDetailResponse.model_validate(skill)
+
+
+@router.post(
     "/{skill_id}/reject",
     response_model=SkillDetailResponse,
     operation_id="rejectSkill",

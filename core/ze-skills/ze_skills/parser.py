@@ -12,7 +12,8 @@ _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
 # Agent Skills format convention: bundled executable scripts live under a
 # `scripts/` directory and are referenced from the instructions body (markdown
 # links, backtick paths) or declared explicitly via a `scripts:` frontmatter
-# list. Neither is executable in this phase (FR-009) — detected, not run.
+# list. Detected as `has_scripts`; running them requires a separate executable
+# approval (Phase 115).
 _SCRIPT_REF_RE = re.compile(
     r"scripts?/[^\s)\]`\"']+\.(?:py|sh|js|ts|rb|pl)", re.IGNORECASE
 )
@@ -28,7 +29,7 @@ class ParsedSkill:
     description: str
     instructions: str
     allowed_tools: list[str] | None
-    has_unsupported_scripts: bool
+    has_scripts: bool
 
 
 def parse_skill_md(text: str) -> ParsedSkill:
@@ -80,7 +81,7 @@ def parse_skill_md(text: str) -> ParsedSkill:
     instructions = body.strip()
 
     raw_scripts = frontmatter.get("scripts")
-    has_unsupported_scripts = bool(raw_scripts) or bool(
+    has_scripts = bool(raw_scripts) or bool(
         _SCRIPT_REF_RE.search(instructions)
     )
 
@@ -89,5 +90,5 @@ def parse_skill_md(text: str) -> ParsedSkill:
         description=description.strip(),
         instructions=instructions,
         allowed_tools=allowed_tools,
-        has_unsupported_scripts=has_unsupported_scripts,
+        has_scripts=has_scripts,
     )

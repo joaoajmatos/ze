@@ -73,10 +73,12 @@ async def test_fetch_zip_archive_with_reference_files():
     result = await fetch_skill_source("http://example.com/skill.zip", client=client)
 
     assert result.parsed.name == "Pirate Speak"
-    assert result.parsed.has_unsupported_scripts is True
+    assert result.parsed.has_scripts is True
     filenames = [f.filename for f in result.reference_files]
     assert "reference.md" in filenames
     assert not any("helper.py" in f for f in filenames)
+    assert result.script_files
+    assert result.script_files[0].content == b"print('should not be stored')"
 
 
 @pytest.mark.asyncio

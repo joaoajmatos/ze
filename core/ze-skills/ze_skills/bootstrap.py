@@ -70,7 +70,7 @@ async def register_bundled_skills(store: SkillStore, plugins: list[Any]) -> None
                 source=SkillSource.BUNDLED,
                 bundling_plugin=plugin_name,
                 allowed_tools=parsed.allowed_tools,
-                has_unsupported_scripts=parsed.has_unsupported_scripts,
+                has_scripts=parsed.has_scripts,
                 status=SkillStatus.ACTIVE,
             )
             existing = await store.get_by_slug_source(skill.slug, SkillSource.BUNDLED)

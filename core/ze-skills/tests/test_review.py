@@ -213,7 +213,7 @@ def _fetched(name="Pirate Speak", description="Ends with Arrr!", instructions="A
             description=description,
             instructions=instructions,
             allowed_tools=None,
-            has_unsupported_scripts=False,
+            has_scripts=False,
         ),
         reference_files=[FetchedReferenceFile("notes.md", "notes", "text/markdown")],
     )
@@ -244,6 +244,7 @@ async def test_refresh_skill_changed_content_reverts_to_pending_review():
     assert kwargs["new_status"] == SkillStatus.PENDING_REVIEW
     store.delete_reference_files.assert_awaited_once_with(skill_id)
     store.add_reference_file.assert_awaited_once()
+    store.delete_scripts.assert_awaited_once_with(skill_id)
     store.mark_checked.assert_not_called()
 
 
@@ -314,3 +315,62 @@ async def test_refresh_skill_raises_not_found_when_missing():
 
     with pytest.raises(SkillNotFoundError):
         await review.refresh_skill(store, uuid4())
+
+
+@pytest.mark.asyncio
+async def test_approve_skill_does_not_set_executable_approved():
+    skill_id = uuid4()
+    pending = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW, has_scripts=True)
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE, has_scripts=True)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=pending)
+    store.transition = AsyncMock(return_value=active)
+    store.add_review = AsyncMock()
+    store.set_executable_approved = AsyncMock()
+
+    await review.approve_skill(store, skill_id)
+
+    store.set_executable_approved.assert_not_called()
+    assert active.executable_approved is False
+
+
+@pytest.mark.asyncio
+async def test_approve_skill_executables_sets_flag_when_active_with_scripts():
+    skill_id = uuid4()
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE, has_scripts=True)
+    approved = _skill(
+        id=skill_id,
+        status=SkillStatus.ACTIVE,
+        has_scripts=True,
+        executable_approved=True,
+    )
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+    store.set_executable_approved = AsyncMock(return_value=approved)
+
+    result = await review.approve_skill_executables(store, skill_id)
+
+    assert result.executable_approved is True
+    store.set_executable_approved.assert_awaited_once_with(skill_id, approved=True)
+
+
+@pytest.mark.asyncio
+async def test_approve_skill_executables_refuses_without_scripts():
+    skill_id = uuid4()
+    active = _skill(id=skill_id, status=SkillStatus.ACTIVE, has_scripts=False)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=active)
+
+    with pytest.raises(InvalidSkillTransitionError):
+        await review.approve_skill_executables(store, skill_id)
+
+
+@pytest.mark.asyncio
+async def test_approve_skill_executables_refuses_when_not_active():
+    skill_id = uuid4()
+    pending = _skill(id=skill_id, status=SkillStatus.PENDING_REVIEW, has_scripts=True)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=pending)
+
+    with pytest.raises(InvalidSkillTransitionError):
+        await review.approve_skill_executables(store, skill_id)

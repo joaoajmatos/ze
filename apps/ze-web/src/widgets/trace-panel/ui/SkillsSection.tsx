@@ -32,6 +32,11 @@ export function SkillsSection({ skillsUsed, live }: SkillsSectionProps) {
               {s.similarity != null && (
                 <span className="text-smoke/80">{Math.round(s.similarity * 100)}%</span>
               )}
+              {(s as { script_ran?: boolean }).script_ran && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-spark/20 text-amber-spark text-[10px]">
+                  script ran
+                </span>
+              )}
             </li>
           ))}
         </ul>

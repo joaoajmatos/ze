@@ -7,7 +7,7 @@ from uuid import UUID
 from ze_logging import get_logger
 from ze_sdk import DBPool
 
-from ze_skills.types import ReferenceFile, Skill, SkillReview, SkillSource, SkillStatus
+from ze_skills.types import ReferenceFile, Skill, SkillReview, SkillScript, SkillSource, SkillStatus
 
 log = get_logger(__name__)
 
@@ -24,7 +24,9 @@ def _skill_from_row(row) -> Skill:
         bundling_plugin=row["bundling_plugin"],
         status=SkillStatus(row["status"]),
         allowed_tools=row["allowed_tools"],
-        has_unsupported_scripts=row["has_unsupported_scripts"],
+        has_scripts=bool(row["has_scripts"]),
+        executable_approved=bool(row["executable_approved"]),
+        executable_approved_at=row["executable_approved_at"],
         content_hash=row["content_hash"],
         created_at=row["created_at"],
         approved_at=row["approved_at"],
@@ -93,12 +95,36 @@ class SkillStore(Protocol):
         description: str,
         instructions: str,
         allowed_tools: list[str] | None,
-        has_unsupported_scripts: bool,
+        has_scripts: bool,
         content_hash: str,
         new_status: SkillStatus,
     ) -> Skill | None: ...
 
+    async def set_executable_approved(
+        self, skill_id: UUID, *, approved: bool
+    ) -> Skill | None: ...
+
     async def add_reference_file(self, file: ReferenceFile) -> ReferenceFile: ...
+
+    async def delete_reference_files(self, skill_id: UUID) -> None: ...
+
+    async def list_reference_files(self, skill_id: UUID) -> list[ReferenceFile]: ...
+
+    async def get_reference_file(
+        self, skill_id: UUID, filename: str
+    ) -> ReferenceFile | None: ...
+
+    async def add_script(self, script: SkillScript) -> SkillScript: ...
+
+    async def delete_scripts(self, skill_id: UUID) -> None: ...
+
+    async def list_scripts(self, skill_id: UUID) -> list[SkillScript]: ...
+
+    async def get_script(
+        self, skill_id: UUID, filename: str
+    ) -> SkillScript | None: ...
+
+    async def add_review(self, review: SkillReview) -> SkillReview: ...
 
     async def delete_reference_files(self, skill_id: UUID) -> None: ...
 
@@ -125,7 +151,7 @@ class PostgresSkillStore:
                 """
                 INSERT INTO skills
                   (name, slug, description, instructions, source, origin_url,
-                   bundling_plugin, status, allowed_tools, has_unsupported_scripts,
+                   bundling_plugin, status, allowed_tools, has_scripts,
                    content_hash)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 RETURNING *
@@ -139,7 +165,7 @@ class PostgresSkillStore:
                 skill.bundling_plugin,
                 skill.status.value,
                 skill.allowed_tools,
-                skill.has_unsupported_scripts,
+                skill.has_scripts,
                 skill.content_hash,
             )
         result = _skill_from_row(row)
@@ -266,20 +292,22 @@ class PostgresSkillStore:
         description: str,
         instructions: str,
         allowed_tools: list[str] | None,
-        has_unsupported_scripts: bool,
+        has_scripts: bool,
         content_hash: str,
         new_status: SkillStatus,
     ) -> Skill | None:
         """Persist a recheck-detected content change: overwrite the content
-        fields, revert `status` to `new_status`, clear any prior check error,
+        fields, revert `status` to `new_status`, clear executable approval,
         and stamp `last_checked_at` (FR-015)."""
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
                 UPDATE skills
                 SET name = $2, description = $3, instructions = $4,
-                    allowed_tools = $5, has_unsupported_scripts = $6,
+                    allowed_tools = $5, has_scripts = $6,
                     content_hash = $7, status = $8,
+                    executable_approved = false,
+                    executable_approved_at = NULL,
                     last_checked_at = now(), last_check_error = NULL
                 WHERE id = $1
                 RETURNING *
@@ -289,7 +317,7 @@ class PostgresSkillStore:
                 description,
                 instructions,
                 allowed_tools,
-                has_unsupported_scripts,
+                has_scripts,
                 content_hash,
                 new_status.value,
             )
@@ -373,3 +401,81 @@ class PostgresSkillStore:
                     skill_id,
                 )
         return _review_from_row(row) if row else None
+
+    async def set_executable_approved(
+        self, skill_id: UUID, *, approved: bool
+    ) -> Skill | None:
+        async with self._pool.acquire() as conn:
+            if approved:
+                row = await conn.fetchrow(
+                    """
+                    UPDATE skills
+                    SET executable_approved = true,
+                        executable_approved_at = now()
+                    WHERE id = $1
+                    RETURNING *
+                    """,
+                    skill_id,
+                )
+            else:
+                row = await conn.fetchrow(
+                    """
+                    UPDATE skills
+                    SET executable_approved = false,
+                        executable_approved_at = NULL
+                    WHERE id = $1
+                    RETURNING *
+                    """,
+                    skill_id,
+                )
+        return _skill_from_row(row) if row else None
+
+    def _script_from_row(self, row) -> SkillScript:
+        return SkillScript(
+            id=row["id"],
+            skill_id=row["skill_id"],
+            filename=row["filename"],
+            content=bytes(row["content"]) if row["content"] is not None else b"",
+        )
+
+    async def add_script(self, script: SkillScript) -> SkillScript:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO skill_scripts (skill_id, filename, content)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (skill_id, filename) DO UPDATE
+                  SET content = EXCLUDED.content
+                RETURNING *
+                """,
+                script.skill_id,
+                script.filename,
+                script.content,
+            )
+        return self._script_from_row(row)
+
+    async def delete_scripts(self, skill_id: UUID) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "DELETE FROM skill_scripts WHERE skill_id = $1", skill_id
+            )
+
+    async def list_scripts(self, skill_id: UUID) -> list[SkillScript]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM skill_scripts WHERE skill_id = $1 ORDER BY filename",
+                skill_id,
+            )
+        return [self._script_from_row(r) for r in rows]
+
+    async def get_script(
+        self, skill_id: UUID, filename: str
+    ) -> SkillScript | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM skill_scripts WHERE skill_id = $1 AND filename = $2",
+                skill_id,
+                filename,
+            )
+        return self._script_from_row(row) if row else None
+

@@ -8,7 +8,7 @@ from ze_skills import review
 from ze_skills.errors import SkillNotFoundError
 from ze_skills.importer import fetch_skill_source
 from ze_skills.store import SkillStore
-from ze_skills.types import ReferenceFile, Skill, SkillSource, SkillStatus
+from ze_skills.types import ReferenceFile, Skill, SkillScript, SkillSource, SkillStatus
 
 
 def _skill_to_list_item(skill: Skill) -> dict:
@@ -21,22 +21,26 @@ def _skill_to_list_item(skill: Skill) -> dict:
         "origin_url": skill.origin_url,
         "bundling_plugin": skill.bundling_plugin,
         "status": skill.status.value,
-        "has_unsupported_scripts": skill.has_unsupported_scripts,
+        "has_scripts": skill.has_scripts,
+        "executable_approved": skill.executable_approved,
         "created_at": skill.created_at.isoformat() if skill.created_at else None,
         "approved_at": skill.approved_at.isoformat() if skill.approved_at else None,
         "last_checked_at": (
             skill.last_checked_at.isoformat() if skill.last_checked_at else None
         ),
         "last_check_error": skill.last_check_error,
+        "script_filenames": [],
     }
 
 
 async def _detail(store: SkillStore, skill: Skill) -> dict:
     reference_files = await store.list_reference_files(skill.id)
+    scripts = await store.list_scripts(skill.id)
     detail = {
         **_skill_to_list_item(skill),
         "instructions": skill.instructions,
         "allowed_tools": skill.allowed_tools,
+        "script_filenames": [s.filename for s in scripts],
         "reference_files": [
             {"filename": f.filename, "content_type": f.content_type}
             for f in reference_files
@@ -65,7 +69,7 @@ async def import_skill(
         source=SkillSource.IMPORTED,
         origin_url=url,
         allowed_tools=parsed.allowed_tools,
-        has_unsupported_scripts=parsed.has_unsupported_scripts,
+        has_scripts=parsed.has_scripts,
         status=SkillStatus.PENDING_REVIEW,
     )
     created = await store.create(skill)
@@ -77,6 +81,14 @@ async def import_skill(
                 filename=ref.filename,
                 content=ref.content,
                 content_type=ref.content_type,
+            )
+        )
+    for script in fetched.script_files:
+        await store.add_script(
+            SkillScript(
+                skill_id=created.id,
+                filename=script.filename,
+                content=script.content,
             )
         )
 
@@ -96,7 +108,13 @@ async def list_skills(
     source: SkillSource | None = None,
 ) -> list[dict]:
     skills = await store.list(status=status, source=source)
-    return [_skill_to_list_item(s) for s in skills]
+    items = []
+    for s in skills:
+        item = _skill_to_list_item(s)
+        scripts = await store.list_scripts(s.id) if s.id else []
+        item["script_filenames"] = [x.filename for x in scripts]
+        items.append(item)
+    return items
 
 
 async def get_reference_file(store: SkillStore, skill_id: UUID, filename: str) -> dict:
@@ -117,6 +135,11 @@ async def get_reference_file(store: SkillStore, skill_id: UUID, filename: str) -
 
 async def approve(store: SkillStore, skill_id: UUID) -> dict:
     skill = await review.approve_skill(store, skill_id)
+    return await _detail(store, skill)
+
+
+async def approve_executables(store: SkillStore, skill_id: UUID) -> dict:
+    skill = await review.approve_skill_executables(store, skill_id)
     return await _detail(store, skill)
 
 

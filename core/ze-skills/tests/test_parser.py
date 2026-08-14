@@ -19,7 +19,7 @@ def test_parses_valid_skill_md():
     assert "Arrr!" in result.description
     assert "Arrr!" in result.instructions
     assert result.allowed_tools is None
-    assert result.has_unsupported_scripts is False
+    assert result.has_scripts is False
 
 
 def test_parses_allowed_tools_list():
@@ -122,7 +122,7 @@ scripts:
 Use the helper script.
 """
     result = parse_skill_md(text)
-    assert result.has_unsupported_scripts is True
+    assert result.has_scripts is True
 
 
 def test_detects_script_reference_in_body():
@@ -133,7 +133,7 @@ description: References a script from the body.
 Run `scripts/helper.sh` to do the thing.
 """
     result = parse_skill_md(text)
-    assert result.has_unsupported_scripts is True
+    assert result.has_scripts is True
 
 
 def test_no_script_reference_is_false():
@@ -144,4 +144,4 @@ description: No scripts here.
 Just plain instructions with no scripts directory mentioned.
 """
     result = parse_skill_md(text)
-    assert result.has_unsupported_scripts is False
+    assert result.has_scripts is False

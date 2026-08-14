@@ -17,6 +17,7 @@ from ze_skills.types import (
     ReferenceFile,
     Skill,
     SkillReview,
+    SkillScript,
     SkillSource,
     SkillStatus,
     compute_content_hash,
@@ -32,6 +33,8 @@ def _content_snapshot(skill: Skill) -> dict:
         "instructions": skill.instructions,
         "allowed_tools": skill.allowed_tools,
         "content_hash": skill.content_hash,
+        "has_scripts": skill.has_scripts,
+        "script_filenames": [],
     }
 
 
@@ -59,6 +62,27 @@ async def approve_skill(store: SkillStore, skill_id: UUID) -> Skill:
         )
     )
     log.info("skill_approved", skill_id=str(skill_id))
+    return updated
+
+
+async def approve_skill_executables(store: SkillStore, skill_id: UUID) -> Skill:
+    """Separate from instructions approval (FR-012). Requires `active` + `has_scripts`."""
+    skill = await store.get(skill_id)
+    if skill is None:
+        raise SkillNotFoundError(f"Skill {skill_id} not found")
+    if skill.status is not SkillStatus.ACTIVE:
+        raise InvalidSkillTransitionError(
+            f"Cannot approve executables for skill {skill_id}: "
+            f"status is {skill.status.value}, expected active"
+        )
+    if not skill.has_scripts:
+        raise InvalidSkillTransitionError(
+            f"Cannot approve executables for skill {skill_id}: it has no scripts"
+        )
+    updated = await store.set_executable_approved(skill_id, approved=True)
+    if updated is None:
+        raise SkillNotFoundError(f"Skill {skill_id} not found")
+    log.info("skill_executables_approved", skill_id=str(skill_id))
     return updated
 
 
@@ -183,7 +207,7 @@ async def refresh_skill(
         description=parsed.description,
         instructions=parsed.instructions,
         allowed_tools=parsed.allowed_tools,
-        has_unsupported_scripts=parsed.has_unsupported_scripts,
+        has_scripts=parsed.has_scripts,
         content_hash=new_hash,
         new_status=SkillStatus.PENDING_REVIEW,
     )
@@ -198,6 +222,15 @@ async def refresh_skill(
                 filename=ref.filename,
                 content=ref.content,
                 content_type=ref.content_type,
+            )
+        )
+    await store.delete_scripts(skill_id)
+    for script in fetched.script_files:
+        await store.add_script(
+            SkillScript(
+                skill_id=skill_id,
+                filename=script.filename,
+                content=script.content,
             )
         )
 

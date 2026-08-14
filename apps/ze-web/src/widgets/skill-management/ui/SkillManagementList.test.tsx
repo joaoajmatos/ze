@@ -25,7 +25,9 @@ const pendingSkill: {
   origin_url: string;
   bundling_plugin: string | null;
   status: string;
-  has_unsupported_scripts: boolean;
+  has_scripts: boolean;
+  executable_approved?: boolean;
+  script_filenames?: string[];
   created_at: string;
   approved_at: string | null;
   last_checked_at: string | null;
@@ -39,7 +41,7 @@ const pendingSkill: {
   origin_url: "http://example.com/SKILL.md",
   bundling_plugin: null,
   status: "pending_review",
-  has_unsupported_scripts: false,
+  has_scripts: false,
   created_at: new Date().toISOString(),
   approved_at: null,
   last_checked_at: null,
@@ -128,6 +130,24 @@ describe("SkillManagementList", () => {
     fireEvent.click(screen.getByText("Disable"));
 
     expect(transitionMutate).toHaveBeenCalledWith({ skillId: "skill-2", kind: "disable" });
+  });
+
+  it("shows a script warning and a distinct executable-approval action", () => {
+    const scripted = {
+      ...activeSkill,
+      has_scripts: true,
+      executable_approved: false,
+      script_filenames: ["scripts/helper.py"],
+    };
+    const { transitionMutate } = setup([scripted]);
+    render(<SkillManagementList />);
+
+    expect(screen.getByText(/Contains scripts/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Approve executables"));
+    expect(transitionMutate).toHaveBeenCalledWith({
+      skillId: "skill-2",
+      kind: "approve-executables",
+    });
   });
 
   it("submits the import form with the entered URL", () => {
