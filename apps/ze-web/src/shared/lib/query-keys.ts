@@ -31,6 +31,9 @@ export const queryKeys = {
   skills: (status?: string, source?: string) =>
     ["skills", status ?? "", source ?? ""] as const,
   skillDetail: (skillId: string) => ["skill-detail", skillId] as const,
+  workspace: () => ["workspace"] as const,
+  workspaceFiles: (path?: string) => ["workspace-files", path ?? ""] as const,
+  workspaceRuns: (origin?: string) => ["workspace-runs", origin ?? ""] as const,
 };
 
 const CORE_REFRESH_SCREEN_MAP: Record<string, readonly string[]> = {

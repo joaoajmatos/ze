@@ -1,4 +1,5 @@
 import type { WsConfirmAction } from "@myguyze/ze-client";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
 
@@ -8,6 +9,7 @@ interface ConfirmBarProps {
   onConfirm: (value: string, editedContent?: string) => void;
   editable?: boolean;
   proposed?: string;
+  modeSwitcher?: ReactNode;
 }
 
 export function ConfirmBar({
@@ -16,12 +18,14 @@ export function ConfirmBar({
   onConfirm,
   editable = false,
   proposed = "",
+  modeSwitcher,
 }: ConfirmBarProps) {
   const [draft, setDraft] = useState(proposed);
 
   return (
     <div className="relative z-10 mb-3 w-full rounded-pill border border-plum-voltage/40 bg-plum-voltage/5 p-4">
       <p className="text-sm text-white mb-3">{prompt}</p>
+      {modeSwitcher && <div className="mb-3">{modeSwitcher}</div>}
       {editable && (
         <textarea
           aria-label="Edit proposed workspace content"

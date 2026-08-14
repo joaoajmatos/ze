@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 from types import SimpleNamespace
+from uuid import uuid4
 
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.errors import (
@@ -13,6 +14,8 @@ from ze_workspace.errors import (
 )
 from ze_workspace.store import WorkspaceStore
 from ze_workspace.types import WorkspaceMode, WorkspaceRunOrigin
+
+_pending_resets: dict[str, bool] = {}
 
 _ERROR_STATUS = {
     WorkspaceUnavailableError: 503,
@@ -164,7 +167,43 @@ async def list_runs(
     return {"runs": [_run_to_dict(r) for r in runs]}
 
 
-async def reset_workspace(store: WorkspaceStore, client: WorkspaceClient) -> dict:
+def has_pending_reset(confirmation_id: str) -> bool:
+    return confirmation_id in _pending_resets
+
+
+def drop_pending_reset(confirmation_id: str) -> None:
+    _pending_resets.pop(confirmation_id, None)
+
+
+def request_reset() -> dict:
+    confirmation_id = str(uuid4())
+    _pending_resets[confirmation_id] = True
+    return {"confirmation_id": confirmation_id}
+
+
+async def execute_reset(store: WorkspaceStore, client: WorkspaceClient) -> dict:
+    try:
+        await client.cancel()
+    except WorkspaceNotFoundError:
+        pass
     await client.reset()
     await store.mark_reset()
-    return {"ok": True}
+    return {"ok": True, "reset": True}
+
+
+async def resolve_reset(
+    store: WorkspaceStore,
+    client: WorkspaceClient,
+    confirmation_id: str,
+    choice: str,
+) -> dict:
+    if confirmation_id not in _pending_resets:
+        raise WorkspaceNotFoundError("no pending workspace reset")
+    drop_pending_reset(confirmation_id)
+    if choice != "approve":
+        return {"ok": True, "reset": False}
+    return await execute_reset(store, client)
+
+
+async def reset_workspace(store: WorkspaceStore, client: WorkspaceClient) -> dict:
+    return await execute_reset(store, client)

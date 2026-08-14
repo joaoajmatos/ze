@@ -451,6 +451,46 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-08-14T22:36:15.350Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:42:45.869Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:42:46.579Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:42:47.306Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:42:48.149Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:42:48.979Z"
     }
   ],
   "approach": "New core/ze-workspace plus sidecar/workspace (browser-helper split). WorkspaceMode is a persisted singleton with in-node interrupt() confirms; skill scripts are stored and need a separate executable approval. In-turn only — detach/follow-through is spec 116.",
@@ -736,7 +776,7 @@
       ]
     }
   },
-  "currentTask": "T048",
+  "currentTask": "T053",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1113,6 +1153,47 @@
         "apps/ze-web/src/widgets/skill-management/ui/SkillManagementList.tsx",
         "apps/ze-web/src/entities/skill/api/useSkillTransitionMutation.ts",
         "apps/ze-web/src/widgets/trace-panel/ui/SkillsSection.tsx"
+      ]
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "REST tests: POST /workspace/reset returns 202 without wiping; approve cancels then resets; deny unchanged; Off still lists/uploads",
+      "files": [
+        "apps/ze-api/tests/api/routes/test_workspace.py"
+      ]
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "Vitest covers listing, upload, retrieve, reset confirm, and mode switcher",
+      "files": [
+        "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.test.tsx"
+      ]
+    },
+    "T051": {
+      "status": "DONE",
+      "did": "POST /workspace/reset issues confirm_request; approve cancels in-flight run then wipes and sets last_reset_at",
+      "files": [
+        "apps/ze-api/ze_api/api/routes/workspace.py",
+        "core/ze-workspace/ze_workspace/rest.py",
+        "apps/ze-api/ze_api/api/websocket/confirmation.py"
+      ]
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "Workspace entity query/mutation hooks and queryKeys.workspace*",
+      "files": [
+        "apps/ze-web/src/entities/workspace/",
+        "apps/ze-web/src/shared/lib/query-keys.ts"
+      ]
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "System /workspace page with listing, upload, retrieve, reset, mode switcher also on pending ConfirmBar",
+      "files": [
+        "apps/ze-web/src/widgets/workspace-management/",
+        "apps/ze-web/src/pages/workspace/",
+        "apps/ze-web/src/shared/config/nav-routes.ts",
+        "apps/ze-web/src/app/router/routes.ts"
       ]
     }
   }

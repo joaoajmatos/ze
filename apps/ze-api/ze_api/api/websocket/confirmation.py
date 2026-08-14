@@ -16,6 +16,7 @@ from ze_api.api.websocket.serializers import (
 )
 from ze_api.api.websocket.session_titles import schedule_session_title_from_thread
 from ze_logging import get_logger
+from ze_workspace import rest as workspace_rest
 
 log = get_logger(__name__)
 
@@ -34,6 +35,26 @@ async def handle_confirm(
 ) -> tuple[str, dict] | None:
     choice = data.get("choice", "")
     request_id = data.get("id", "")
+
+    if workspace_rest.has_pending_reset(request_id):
+        if confirmation_store is not None and thread_id:
+            await confirmation_store.clear(thread_id, request_id)
+        if choice == "approve":
+            try:
+                await workspace_rest.execute_reset(
+                    container.workspace_store, container.workspace_client
+                )
+            except Exception as exc:
+                log.exception("workspace_reset_failed", error=str(exc))
+                await conn_mgr.send_frame(
+                    {"type": "error", "detail": "Workspace reset failed."}, thread_id
+                )
+                return None
+            workspace_rest.drop_pending_reset(request_id)
+        else:
+            workspace_rest.drop_pending_reset(request_id)
+        await conn_mgr.send_frame({"type": "confirm_cancel", "id": request_id}, thread_id)
+        return None
 
     if pending_config is None:
         await conn_mgr.send_frame(

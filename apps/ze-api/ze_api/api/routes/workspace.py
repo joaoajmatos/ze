@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import Response
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import JSONResponse, Response
 
 from ze_api.api.dependencies import (
+    get_connection_manager,
     get_ingestion_pipeline,
     get_workspace_client,
     get_workspace_store,
@@ -14,6 +17,9 @@ from ze_api.api.schemas import (
     WorkspaceIngestResponse,
     WorkspaceModeResponse,
     WorkspaceModeUpdate,
+    WorkspaceResetQueuedResponse,
+    WorkspaceResetRequest,
+    WorkspaceResetResultResponse,
     WorkspaceRunListResponse,
     WorkspaceStatusResponse,
     WorkspaceUploadResponse,
@@ -241,3 +247,80 @@ async def list_workspace_runs(
     except (WorkspaceError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return WorkspaceRunListResponse.model_validate(data)
+
+
+_RESET_PROMPT = (
+    "Reset the workspace? All files will be removed. "
+    "An in-flight command will be stopped first so nothing writes into an emptied tree."
+)
+
+
+@router.post(
+    "/reset",
+    operation_id="resetWorkspace",
+    summary="Reset the workspace",
+    description=(
+        "Does not wipe immediately. Issues a confirmation (editable: false). "
+        "On approve, cancel any in-flight run then wipe. On deny, no change."
+    ),
+)
+async def reset_workspace(
+    request: Request,
+    body: WorkspaceResetRequest | None = None,
+    store: WorkspaceStore = Depends(get_workspace_store),
+    client: WorkspaceClient = Depends(get_workspace_client),
+    conn_mgr=Depends(get_connection_manager),
+) -> JSONResponse:
+    payload = body or WorkspaceResetRequest()
+    if payload.confirmation_id and payload.choice:
+        try:
+            data = await workspace_rest.resolve_reset(
+                store, client, payload.confirmation_id, payload.choice
+            )
+        except (
+            WorkspaceUnavailableError,
+            WorkspaceBusyError,
+            WorkspacePathError,
+            WorkspaceNotFoundError,
+            WorkspaceFullError,
+        ) as exc:
+            _raise_workspace(exc)
+        return JSONResponse(
+            status_code=200,
+            content=WorkspaceResetResultResponse.model_validate(data).model_dump(),
+        )
+
+    queued = workspace_rest.request_reset()
+    confirmation_id = queued["confirmation_id"]
+    container = request.app.state.container if request is not None else None
+    confirmation_store = getattr(container, "confirmation_store", None)
+    actions = [
+        {"label": "Approve", "value": "approve", "style": "primary"},
+        {"label": "Cancel", "value": "deny", "style": "secondary"},
+    ]
+    if confirmation_store is not None:
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=900)
+        await confirmation_store.save(
+            thread_id="workspace",
+            request_id=confirmation_id,
+            prompt=_RESET_PROMPT,
+            actions=actions,
+            expires_at=expires_at,
+        )
+    if conn_mgr is not None:
+        await conn_mgr.send_frame(
+            {
+                "type": "confirm_request",
+                "id": confirmation_id,
+                "prompt": _RESET_PROMPT,
+                "editable": False,
+                "proposed": "",
+                "actions": actions,
+            }
+        )
+    return JSONResponse(
+        status_code=202,
+        content=WorkspaceResetQueuedResponse(
+            confirmation_id=confirmation_id
+        ).model_dump(),
+    )

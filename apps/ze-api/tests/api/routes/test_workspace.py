@@ -38,6 +38,8 @@ def _make_app(store=None, client=None, pipeline=None) -> FastAPI:
         workspace_store=store,
         workspace_client=client,
         ingestion_pipeline=pipeline,
+        confirmation_store=AsyncMock(),
+        connection_manager=AsyncMock(),
     )
     app.dependency_overrides[require_api_key] = lambda: None
     app.include_router(router, prefix="/api/v0")
@@ -215,3 +217,85 @@ async def test_ingest_calls_pipeline_with_file_bytes_and_keeps_file():
     assert req.file_bytes == b"csv-bytes"
     client.delete.assert_not_awaited()
     assert resp.json()["facts_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_reset_issues_confirm_without_wiping():
+    client = AsyncMock()
+    store = AsyncMock()
+    app = _make_app(store=store, client=client)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as http:
+        resp = await http.post("/api/v0/workspace/reset")
+    assert resp.status_code == 202
+    assert resp.json()["confirmation_id"]
+    client.reset.assert_not_awaited()
+    client.cancel.assert_not_awaited()
+    app.state.container.connection_manager.send_frame.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_reset_approve_cancels_then_wipes():
+    client = AsyncMock()
+    store = AsyncMock()
+    app = _make_app(store=store, client=client)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as http:
+        queued = await http.post("/api/v0/workspace/reset")
+        confirmation_id = queued.json()["confirmation_id"]
+        resp = await http.post(
+            "/api/v0/workspace/reset",
+            json={"confirmation_id": confirmation_id, "choice": "approve"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["reset"] is True
+    client.cancel.assert_awaited()
+    client.reset.assert_awaited()
+    store.mark_reset.assert_awaited()
+    assert client.cancel.await_count == 1
+    assert client.reset.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_reset_deny_leaves_workspace_unchanged():
+    client = AsyncMock()
+    store = AsyncMock()
+    app = _make_app(store=store, client=client)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as http:
+        queued = await http.post("/api/v0/workspace/reset")
+        confirmation_id = queued.json()["confirmation_id"]
+        resp = await http.post(
+            "/api/v0/workspace/reset",
+            json={"confirmation_id": confirmation_id, "choice": "deny"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["reset"] is False
+    client.reset.assert_not_awaited()
+    client.cancel.assert_not_awaited()
+    store.mark_reset.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_list_and_upload_work_when_mode_is_off():
+    store = AsyncMock()
+    store.get_mode = AsyncMock(return_value=WorkspaceMode.OFF)
+    store.get_state = AsyncMock(return_value=WorkspaceState(mode=WorkspaceMode.OFF))
+    client = AsyncMock()
+    client.list_dir = AsyncMock(return_value=[_file()])
+    client.upload = AsyncMock(return_value={"path": "notes.txt", "size": 5})
+    app = _make_app(store=store, client=client)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as http:
+        listing = await http.get("/api/v0/workspace/files")
+        upload = await http.post(
+            "/api/v0/workspace/files",
+            files={"file": ("notes.txt", b"hello", "text/plain")},
+        )
+    assert listing.status_code == 200
+    assert listing.json()["files"][0]["path"] == "notes.txt"
+    assert upload.status_code == 200

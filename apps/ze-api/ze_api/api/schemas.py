@@ -1181,6 +1181,16 @@ class WorkspaceResetQueuedResponse(BaseModel):
     confirmation_id: str
 
 
+class WorkspaceResetRequest(BaseModel):
+    confirmation_id: str | None = None
+    choice: Literal["approve", "deny"] | None = None
+
+
+class WorkspaceResetResultResponse(BaseModel):
+    ok: bool
+    reset: bool
+
+
 class WorkspaceIngestResponse(BaseModel):
     ingestion_id: str
     content_type: str

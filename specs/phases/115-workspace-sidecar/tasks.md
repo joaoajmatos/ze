@@ -401,11 +401,11 @@ retrieve it, confirm reset, listing empty. Reset without confirm leaves files.
 
 **Wave 1 — independent tests:**
 
-- [ ] T049 [P] [US3] REST tests for `POST /api/v0/workspace/reset` in
+- [x] T049 [P] [US3] REST tests for `POST /api/v0/workspace/reset` in
       `apps/ze-api/tests/api/routes/test_workspace.py` (extend) — issues confirm; approve
       cancels in-flight run then wipes; deny unchanged; list/upload still work when mode is
       Off
-- [ ] T050 [P] [US3] Vitest for
+- [x] T050 [P] [US3] Vitest for
       `apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.test.tsx` —
       listing names/sizes/mtimes, upload, retrieve, reset confirm, mode switcher
 
@@ -415,7 +415,7 @@ retrieve it, confirm reset, listing empty. Reset without confirm leaves files.
 
 **Wave 2 — reset API:**
 
-- [ ] T051 [US3] Implement `POST /api/v0/workspace/reset` in
+- [x] T051 [US3] Implement `POST /api/v0/workspace/reset` in
       `apps/ze-api/ze_api/api/routes/workspace.py` + `ze_workspace/rest.py` — always
       confirm (`editable: false`); on approve, sidecar `/cancel` then `/reset`; set
       `workspace_state.last_reset_at` (FR-014)
@@ -424,12 +424,12 @@ retrieve it, confirm reset, listing empty. Reset without confirm leaves files.
 
 **Wave 3 — web System page:**
 
-- [ ] T052 [P] [US3] Create `apps/ze-web/src/entities/workspace/` query/mutation hooks
+- [x] T052 [P] [US3] Create `apps/ze-web/src/entities/workspace/` query/mutation hooks
       (`useWorkspaceQuery`, `useWorkspaceFilesQuery`, `useWorkspaceRunsQuery`,
       `useWorkspaceModeMutation`, `useWorkspaceUploadMutation`,
       `useWorkspaceResetMutation`) + `index.ts`; add `queryKeys.workspace*` in
       `apps/ze-web/src/shared/lib/query-keys.ts`
-- [ ] T053 [US3] Create `apps/ze-web/src/widgets/workspace-management/ui/` listing +
+- [x] T053 [US3] Create `apps/ze-web/src/widgets/workspace-management/ui/` listing +
       upload + retrieve + reset + mode switcher; thin
       `apps/ze-web/src/pages/workspace/ui/WorkspacePage.tsx`; register `workspace` in
       `apps/ze-web/src/shared/config/nav-routes.ts` (`systemNavRoutes`) and
