@@ -53,6 +53,20 @@ class WorkspaceGate:
 
         return self._conversation_decide(mode, action)
 
+    def decide_named(
+        self,
+        *,
+        mode: WorkspaceMode | str,
+        action: str,
+        origin: str,
+    ) -> WorkspaceGateDecision:
+        mode_e = mode if isinstance(mode, WorkspaceMode) else WorkspaceMode(mode)
+        return self.decide(
+            mode=mode_e,
+            action=WorkspaceAction(action),
+            origin=WorkspaceRunOrigin(origin),
+        )
+
     def _conversation_decide(
         self, mode: WorkspaceMode, action: WorkspaceAction
     ) -> WorkspaceGateDecision:

@@ -23,6 +23,7 @@ from ze_automation.workflow.planner import WorkflowPlanner
 from ze_automation.workflow.postgres import PostgresWorkflowStore
 from ze_automation.workflow.scheduler import WorkflowScheduler
 from ze_automation.workflow.store import WorkflowStore
+from ze_automation.workspace_unattended import unattended_workspace
 from ze_data.domain import DataDomain
 from ze_data.portability.assembler import bulk_insert
 from ze_proactive.notifier import ProactiveNotifier
@@ -200,6 +201,8 @@ async def configure_workflow_executor(
     router: Any,
     persona_store: Any,
     workflow_graph_builder: Any,
+    workspace_gate: Any = None,
+    get_workspace_mode: Any = None,
 ) -> None:
     workflow_graph = workflow_graph_builder(
         checkpointer=checkpointer,
@@ -246,7 +249,8 @@ async def configure_workflow_executor(
                 "workflow_store": stack.workflow_store,
             },
         }
-        await workflow_graph.ainvoke(initial_state, run_config)
+        async with unattended_workspace(workspace_gate, get_workspace_mode):
+            await workflow_graph.ainvoke(initial_state, run_config)
 
     async def _workflow_failure_handler(workflow: Any, exc: Exception) -> None:
         alerts_cfg = settings.proactive_config.get("alerts", {})

@@ -87,6 +87,7 @@ describe("WorkspaceManagement", () => {
     render(<WorkspaceManagement />);
     expect(screen.getByText("notes.txt")).toBeInTheDocument();
     expect(screen.getAllByText(/12 B/).length).toBeGreaterThan(0);
+    expect(screen.getByText("conversation")).toBeInTheDocument();
   });
 
   it("uploads a chosen file", () => {

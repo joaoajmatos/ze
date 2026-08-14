@@ -453,7 +453,7 @@ chat app is disconnected — file present, run listed as unattended. Repeat in A
 
 **Wave 1:**
 
-- [ ] T054 [P] [US4] Unit tests in
+- [x] T054 [P] [US4] Unit tests in
       `core/ze-automation/tests/test_workspace_unattended.py` — Ask/Plan/Off skip
       unattended `run`/`run_script`; Auto-edit skips unattended commands but may write;
       Auto may run; persisted run `origin` is `unattended`. Tests inject a fake
@@ -465,13 +465,13 @@ chat app is disconnected — file present, run listed as unattended. Repeat in A
 
 **Wave 2:**
 
-- [ ] T055 [US4] Consult injected `WorkspaceGate` with `origin=unattended` from
+- [x] T055 [US4] Consult injected `WorkspaceGate` with `origin=unattended` from
       `core/ze-automation/ze_automation/goals/executor.py` and
       `core/ze-automation/ze_automation/workflow/` (scheduler/executor) **before**
       workspace tools run. Do not change non-workspace `GateDecision.EXECUTE` bypass.
       Do **not** add a `ze_workspace` import to `ze_personal/graph/workflow.py` or any
       plugin. Record runs with `origin=unattended` (FR-018).
-- [ ] T056 [US4] Show `origin` on
+- [x] T056 [US4] Show `origin` on
       `apps/ze-web/src/widgets/workspace-management/` recent-activity section using
       `GET /api/v0/workspace/runs` (route already in T036) (User Story 4 scenario 3).
 

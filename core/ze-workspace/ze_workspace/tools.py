@@ -8,7 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.errors import ToolConfirmationRequired
-from ze_agents.interrupt import workspace_confirmed
+from ze_agents.interrupt import workspace_confirmed, workspace_run_origin
 from ze_agents.tool import ToolAccess, tool
 from ze_logging import get_logger
 
@@ -82,11 +82,13 @@ async def _ensure_client() -> Any:
 
 async def _decide(
     action: WorkspaceAction,
-    origin: WorkspaceRunOrigin = WorkspaceRunOrigin.CONVERSATION,
+    origin: WorkspaceRunOrigin | None = None,
 ) -> tuple[WorkspaceMode, WorkspaceGateDecision]:
     if _gate is None:
         raise WorkspaceUnavailableError("workspace is not configured")
     mode = await _mode()
+    if origin is None:
+        origin = WorkspaceRunOrigin(workspace_run_origin.get())
     return mode, _gate.decide(mode=mode, action=action, origin=origin)
 
 
@@ -218,7 +220,7 @@ async def workspace_run(command: str) -> str:
     if decision is WorkspaceGateDecision.DENY:
         await _record_run(
             command=command,
-            origin=WorkspaceRunOrigin.CONVERSATION,
+            origin=WorkspaceRunOrigin(workspace_run_origin.get()),
             status=WorkspaceRunStatus.REFUSED,
             error_summary=f"denied in mode {mode.value}",
         )
@@ -240,9 +242,10 @@ async def workspace_run(command: str) -> str:
     status = WorkspaceRunStatus.TIMED_OUT if result.timed_out else (
         WorkspaceRunStatus.SUCCEEDED if result.exit_code == 0 else WorkspaceRunStatus.FAILED
     )
+    origin = WorkspaceRunOrigin(workspace_run_origin.get())
     await _record_run(
         command=command,
-        origin=WorkspaceRunOrigin.CONVERSATION,
+        origin=origin,
         status=status,
         exit_code=result.exit_code,
         output_preview=preview or err,
@@ -294,7 +297,7 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     if decision is WorkspaceGateDecision.DENY:
         await _record_run(
             command=f"skill-script {filename}",
-            origin=WorkspaceRunOrigin.CONVERSATION,
+            origin=WorkspaceRunOrigin(workspace_run_origin.get()),
             status=WorkspaceRunStatus.REFUSED,
             error_summary=f"denied in mode {mode.value}",
             skill_id=skill.id,
@@ -323,7 +326,7 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     )
     await _record_run(
         command=f"skill-script {filename}",
-        origin=WorkspaceRunOrigin.CONVERSATION,
+        origin=WorkspaceRunOrigin(workspace_run_origin.get()),
         status=status_run,
         exit_code=result.exit_code,
         output_preview=preview or err,

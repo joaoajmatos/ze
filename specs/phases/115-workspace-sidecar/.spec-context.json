@@ -491,6 +491,30 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-08-14T22:42:48.979Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:46:56.655Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:46:57.518Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:46:58.195Z"
     }
   ],
   "approach": "New core/ze-workspace plus sidecar/workspace (browser-helper split). WorkspaceMode is a persisted singleton with in-node interrupt() confirms; skill scripts are stored and need a separate executable approval. In-turn only — detach/follow-through is spec 116.",
@@ -776,7 +800,7 @@
       ]
     }
   },
-  "currentTask": "T053",
+  "currentTask": "T056",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1194,6 +1218,31 @@
         "apps/ze-web/src/pages/workspace/",
         "apps/ze-web/src/shared/config/nav-routes.ts",
         "apps/ze-web/src/app/router/routes.ts"
+      ]
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "Unattended gate tests: Ask/Plan/Off deny run; Auto-edit may write but not run; Auto may run; origin=unattended",
+      "files": [
+        "core/ze-automation/tests/test_workspace_unattended.py"
+      ]
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "Goal and workflow executors consult injected WorkspaceGate with origin=unattended before workspace tools; no plugin import of ze_workspace",
+      "files": [
+        "core/ze-automation/ze_automation/workspace_unattended.py",
+        "core/ze-automation/ze_automation/goals/executor.py",
+        "core/ze-automation/ze_automation/bootstrap.py",
+        "apps/ze-api/ze_api/container.py",
+        "core/ze-workspace/ze_workspace/tools.py"
+      ]
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "Recent activity on the workspace page shows run origin from GET /workspace/runs",
+      "files": [
+        "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.tsx"
       ]
     }
   }

@@ -10,7 +10,7 @@ from ze_agents.errors import GoalExecutionError
 from ze_sdk.memory import MemoryStore
 from ze_sdk.memory import Procedure
 from ze_sdk.memory import TaskState
-from ze_agents.types import ToolCall
+from ze_agents.types import AgentContext, GateDecision, ToolCall
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import (
@@ -24,6 +24,7 @@ from ze_automation.goals.types import (
     PriorMilestoneOutput,
 )
 from ze_agents.interface.types import Action, Notification
+from ze_automation.workspace_unattended import unattended_workspace
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -122,6 +123,8 @@ class GoalExecutor:
         agent_getter: Callable[[str], object],
         memory_store: MemoryStore | None = None,
         notify: Callable[..., Awaitable[None]] | None = None,
+        workspace_gate: object | None = None,
+        get_workspace_mode: Callable[[], Awaitable[object]] | None = None,
     ) -> None:
         self._store = goal_store
         self._planner = goal_planner
@@ -132,6 +135,8 @@ class GoalExecutor:
         # alongside `push` by wire_goal_executor_push — kept optional so tests
         # that construct GoalExecutor directly don't need to supply it.
         self._notify = notify
+        self._workspace_gate = workspace_gate
+        self._get_workspace_mode = get_workspace_mode
         self._advance_locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._steer_queues: dict[UUID, asyncio.Queue] = defaultdict(asyncio.Queue)
         self._provisional_procedures: dict[UUID, list[Procedure]] = {}
@@ -625,9 +630,6 @@ class GoalExecutor:
         except Exception:
             agent = self._get_agent("companion")
 
-        from ze_agents.types import GateDecision
-        from ze_agents.types import AgentContext
-
         provisional = self._provisional_procedures.get(goal.id)
         prompt = _build_milestone_prompt(
             milestone, goal, all_milestones, provisional_procedures=provisional or None
@@ -643,7 +645,10 @@ class GoalExecutor:
         )
 
         try:
-            result = await agent.run(ctx)
+            async with unattended_workspace(
+                self._workspace_gate, self._get_workspace_mode
+            ):
+                result = await agent.run(ctx)
         except GoalExecutionError:
             raise
         except Exception as exc:

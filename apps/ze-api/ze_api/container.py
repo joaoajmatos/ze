@@ -252,6 +252,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         skills_stack.skill_store, shared.embedder, settings
     )
     workspace = build_workspace_stack(shared, settings)
+    automation.goal_executor._workspace_gate = workspace.gate
+    automation.goal_executor._get_workspace_mode = workspace.store.get_mode
     shared.dep_map.update(automation.deps)
     shared.dep_map.update(worldstate.deps)
     shared.dep_map.update(skills_stack.deps)
@@ -357,6 +359,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         store=workspace.store,
         settings=settings,
         skill_store=skills_stack.skill_store,
+        ingestion_pipeline=ingestion.pipeline,
+    )
     from ze_worldstate.inflow import make_loop_extractor_from_parts
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
@@ -585,6 +589,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         router=router,
         persona_store=persona_store,
         workflow_graph_builder=build_workflow_graph,
+        workspace_gate=workspace.gate,
+        get_workspace_mode=workspace.store.get_mode,
     )
 
     from ze_memory.dream.job import DreamJob

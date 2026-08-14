@@ -164,10 +164,12 @@ export function WorkspaceManagement() {
         {runs.data?.length ? (
           <ul className="space-y-2">
             {runs.data.map((run) => (
-              <li key={run.id ?? run.command} className="text-xs text-smoke">
+              <li key={run.id ?? `${run.command}-${run.started_at}`} className="text-xs text-smoke">
                 <span className="font-mono text-white/90">{run.command}</span>
                 {" · "}
-                {run.origin}
+                <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/80">
+                  {run.origin}
+                </span>
                 {" · "}
                 {run.status}
               </li>

@@ -11,3 +11,6 @@ tool_interrupt_fn: ContextVar[ToolInterruptFn | None] = ContextVar(
     "tool_interrupt_fn", default=None
 )
 workspace_confirmed: ContextVar[bool] = ContextVar("workspace_confirmed", default=False)
+workspace_run_origin: ContextVar[str] = ContextVar(
+    "workspace_run_origin", default="conversation"
+)
