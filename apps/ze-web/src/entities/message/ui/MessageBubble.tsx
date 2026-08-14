@@ -1,9 +1,14 @@
-import type { MessageSchema as Message } from "@myguyze/ze-client";
+import type { MessageSchema as Message, WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { Info } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
+import { useTraceStore } from "@/features/trace-state";
 import { MessageTracePanel } from "@/widgets/message-trace";
+
+type WorkspaceChipTrace = WsTraceUpdateFrame & {
+  workspace?: { mode?: string; unavailable?: boolean; script_ran?: boolean } | null;
+};
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -18,6 +23,12 @@ export function MessageBubble({
 }) {
   const isUser = message.role === "user";
   const [traceOpen, setTraceOpen] = useState(false);
+  const workspace = useTraceStore((s) => {
+    const match = s.traces.find((t) => t.message_id === message.id) as
+      | WorkspaceChipTrace
+      | undefined;
+    return match?.workspace ?? null;
+  });
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "items-start gap-2"}`}>
@@ -93,6 +104,15 @@ export function MessageBubble({
               </button>
             )}
           </div>
+        )}
+
+        {!isUser && workspace && (
+          <span
+            data-testid="workspace-chip"
+            className="mt-1 inline-flex w-fit items-center rounded-full border border-plum-voltage/40 bg-plum-voltage/10 px-2 py-0.5 text-[10px] text-plum-voltage"
+          >
+            Workspace · {workspace.unavailable ? "unavailable" : workspace.mode ?? "used"}
+          </span>
         )}
 
         {message.components.length > 0 && (

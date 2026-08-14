@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ze_agents.interface.types import RawInput
 
@@ -81,11 +81,30 @@ class TurnResult:
     draft: str = ""
     confirm_agent: str = ""
     confirm_action: str = ""
+    confirm_editable: bool = False
+    confirm_proposed: str = ""
     dynamic_plan_steps: list | None = None
     dynamic_plan_high_risk: list | None = None
     error: str | None = None
     response: str | None = None
     message_id: str = ""
+
+
+def _interrupt_payload(graph_state_obj: Any) -> dict:
+    if graph_state_obj is None:
+        return {}
+    interrupts = getattr(graph_state_obj, "interrupts", None) or ()
+    for item in interrupts:
+        value = getattr(item, "value", item)
+        if isinstance(value, dict):
+            return value
+    tasks = getattr(graph_state_obj, "tasks", None) or ()
+    for task in tasks:
+        for item in getattr(task, "interrupts", None) or ():
+            value = getattr(item, "value", item)
+            if isinstance(value, dict):
+                return value
+    return {}
 
 
 def _confirmation_meta(final_state: dict) -> tuple[str, str, str]:
@@ -192,6 +211,9 @@ async def invoke_raw_turn(
         final_state = graph_state_obj.values
 
     draft, agent, action = _confirmation_meta(final_state)
+    payload = _interrupt_payload(graph_state_obj)
+    if payload.get("prompt"):
+        draft = str(payload["prompt"])
 
     return TurnResult(
         final_state=final_state,
@@ -200,6 +222,8 @@ async def invoke_raw_turn(
         draft=draft,
         confirm_agent=agent,
         confirm_action=action,
+        confirm_editable=bool(payload.get("editable", False)),
+        confirm_proposed=str(payload.get("proposed") or ""),
         dynamic_plan_steps=final_state.get("dynamic_plan_steps"),
         dynamic_plan_high_risk=final_state.get("dynamic_plan_high_risk"),
         error=final_state.get("error"),
@@ -208,13 +232,39 @@ async def invoke_raw_turn(
     )
 
 
-async def resume_turn(container: Container, config: dict) -> TurnResult:
+async def resume_turn(
+    container: Container, config: dict, resume: Any = None
+) -> TurnResult:
     """Resume the graph after the user confirms (async confirmation path)."""
-    final_state = await container.graph.ainvoke(None, config)
+    from langgraph.types import Command
+
+    graph_state_obj = await container.graph.aget_state(config)
+    payload = _interrupt_payload(graph_state_obj)
+    if payload:
+        value = resume if resume is not None else {"choice": "approve"}
+        final_state = await container.graph.ainvoke(Command(resume=value), config)
+    else:
+        final_state = await container.graph.ainvoke(None, config)
+    interrupted = False
+    new_state = await container.graph.aget_state(config)
+    if new_state and new_state.next:
+        interrupted = True
+        payload = _interrupt_payload(new_state)
+        draft = str(payload.get("prompt") or "")
+        return TurnResult(
+            final_state=new_state.values or final_state,
+            config=config,
+            interrupted=True,
+            draft=draft,
+            confirm_editable=bool(payload.get("editable", False)),
+            confirm_proposed=str(payload.get("proposed") or ""),
+            error=(new_state.values or {}).get("error") if new_state.values else None,
+            response=None,
+        )
     return TurnResult(
         final_state=final_state,
         config=config,
-        interrupted=False,
-        error=final_state.get("error"),
-        response=extract_response(final_state),
+        interrupted=interrupted,
+        error=final_state.get("error") if isinstance(final_state, dict) else None,
+        response=extract_response(final_state) if isinstance(final_state, dict) else "",
     )

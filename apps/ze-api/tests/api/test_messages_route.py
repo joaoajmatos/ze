@@ -128,6 +128,7 @@ async def test_get_message_trace_includes_skills_used():
             "source": "imported",
             "trigger": "automatic",
             "similarity": 0.82,
+            "script_ran": False,
         }
     ]
 

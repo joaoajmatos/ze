@@ -48,6 +48,17 @@ class SkillUsageTrace:
     source: str  # "bundled" | "imported"
     trigger: str  # "automatic" | "explicit"
     similarity: float | None = None  # set only when trigger == "automatic"
+    script_ran: bool = False
+
+
+@dataclass
+class WorkspaceUsageTrace:
+    mode: str
+    runs: list[dict[str, Any]] = field(default_factory=list)
+    files: list[dict[str, str]] = field(default_factory=list)
+    script_ran: bool = False
+    unavailable: bool = False
+    planned: list[str] | None = None
 
 
 @dataclass
@@ -64,3 +75,4 @@ class MessageTrace:
     compaction: CompactionTrace | None = None
     resume_recap_applied: bool = False
     skills_used: list[SkillUsageTrace] = field(default_factory=list)
+    workspace: WorkspaceUsageTrace | None = None

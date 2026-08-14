@@ -1,4 +1,4 @@
-import type { WsConfirmAction } from "@myguyze/ze-client";
+import type { WsConfirmAction, WsOutboundFrame } from "@myguyze/ze-client";
 import { useState } from "react";
 import { useSendNotice } from "@/features/send-context-notice";
 import { useFrame, useWsStore, send } from "@/shared/api";
@@ -8,6 +8,8 @@ export interface PendingConfirm {
   prompt: string;
   actions: WsConfirmAction[];
   threadId: string;
+  editable: boolean;
+  proposed: string;
 }
 
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
@@ -21,13 +23,20 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
     if (ephemeral) return;
     const frameThread = frame.thread_id ?? threadId;
     if (frameThread !== threadId) {
-      // Confirmation needed on another thread — set attention there
       setThreadAttention(frameThread, true);
       return;
     }
     if (!active) return;
     setThreadThinking(threadId, false);
-    setPendingConfirm({ id: frame.id, prompt: frame.prompt, actions: frame.actions, threadId });
+    const extra = frame as typeof frame & { editable?: boolean; proposed?: string };
+    setPendingConfirm({
+      id: frame.id,
+      prompt: frame.prompt,
+      actions: frame.actions,
+      threadId,
+      editable: Boolean(extra.editable),
+      proposed: extra.proposed ?? "",
+    });
   });
 
   useFrame("confirm_cancel", (frame) => {
@@ -37,14 +46,22 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
     setPendingConfirm(null);
   });
 
-  function respond(value: string) {
+  function respond(value: string, editedContent?: string) {
     if (!pendingConfirm) return;
     const confirm = pendingConfirm;
     setPendingConfirm(null);
 
     const isCheckpoint = value === "approve" || value === "deny";
     const sent = isCheckpoint
-      ? send({ type: "confirm", id: confirm.id, choice: value, thread_id: confirm.threadId })
+      ? send({
+          type: "confirm",
+          id: confirm.id,
+          choice: value,
+          thread_id: confirm.threadId,
+          ...(value === "approve" && editedContent != null
+            ? { edited_content: editedContent }
+            : {}),
+        } as WsOutboundFrame)
       : send({ type: "action", payload: value, thread_id: confirm.threadId });
 
     if (!sent) {

@@ -1,0 +1,1119 @@
+{
+  "workflow": "speckit",
+  "specName": "Workspace Environment",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T17:55:46.764Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T19:01:38.352Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T19:08:10.027Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T19:10:25.687Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-14T19:10:52.319Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T19:14:45.973Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T19:16:50.135Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-14T19:18:03.579Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T21:55:20.606Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:56:07.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:56:46.806Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:56:48.866Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:56:50.731Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:57:19.914Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:57:21.052Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:57:21.969Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T21:57:23.387Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:00:26.709Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:00:28.120Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:00:29.000Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:00:29.960Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:34.117Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:34.684Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:35.650Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:36.423Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:37.198Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:52.920Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:53.807Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:55.280Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:56.276Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:57.329Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:58.277Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:05:59.565Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:06:00.383Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:06:01.114Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:06:01.915Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:47.829Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:49.188Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:50.238Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:51.559Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:52.453Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:53.804Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:55.168Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:56.530Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:57.631Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:25:58.970Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:26:00.480Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:26:01.257Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:08.673Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:09.440Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:10.261Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:11.081Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:11.905Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:12.833Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:13.726Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:14.652Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:36:15.350Z"
+    }
+  ],
+  "approach": "New core/ze-workspace plus sidecar/workspace (browser-helper split). WorkspaceMode is a persisted singleton with in-node interrupt() confirms; skill scripts are stored and need a separate executable approval. In-turn only — detach/follow-through is spec 116.",
+  "decisions": [
+    {
+      "decision": "core/ze-workspace + sidecar/workspace, not a ZePlugin",
+      "why": "Cross-cutting computer beside the mind; same split as browser + skills/worldstate wiring",
+      "rejected": "Fold into ze-core, or a ZePlugin"
+    },
+    {
+      "decision": "Unprivileged child + stripped env + private-range deny",
+      "why": "FR-003/026 without new hypervisor ops",
+      "rejected": "gVisor/Firecracker, in-process subprocess, docker.sock sibling box"
+    },
+    {
+      "decision": "WorkspaceMode singleton, not CapabilityGate Mode",
+      "why": "Auto-edit and global persistence do not fit per-intent overrides",
+      "rejected": "Add AUTO_EDIT to Mode / capability_overrides"
+    },
+    {
+      "decision": "LangGraph interrupt() inside workspace tools for Ask confirms",
+      "why": "Per-action Claude Code-like confirm while keeping pending_confirmations",
+      "rejected": "Whole-turn CapabilityGate pause, parallel WS auth"
+    },
+    {
+      "decision": "Persist skill scripts; separate approve-executables",
+      "why": "114 discarded bytes and instructions-only approve must not silently run scripts",
+      "rejected": "Re-fetch origin_url at run time; reuse skill_reference_files"
+    },
+    {
+      "decision": "ToolConfirmationRequired in ze-agents; ingest via DI; output redact; sidecar split",
+      "why": "Analyze remediations C1/C2/I1/G1/U1 — no ze-core import of ze-workspace, no plugin import, no ze-ingestion dep",
+      "rejected": "WorkspaceConfirmInterrupt in ze_workspace caught by ze_core"
+    }
+  ],
+  "expectations": [
+    "Detached runs, wait-then-detach, automatic follow-up turn, and offline push belong to sibling spec 116"
+  ],
+  "context": [
+    "Phase 114 ze-skills (has_unsupported_scripts, discarded script bytes)",
+    "sidecar/browser + ze-browser client wiring",
+    "CapabilityGate four modes and pending_confirmations",
+    "IngestionPipeline file_bytes path"
+  ],
+  "step_summaries": {
+    "specify": {
+      "summary": "Planned isolated always-on workspace sidecar with modes, run records, and skill executable approval",
+      "key_finding": "Chat has no attachments and skill scripts are not stored — both must be added; confirmation must interrupt inside execute_tool, not reuse CapabilityGate"
+    },
+    "plan": {
+      "summary": "Planned isolated always-on workspace sidecar with modes, run records, and skill executable approval",
+      "key_finding": "Chat has no attachments and skill scripts are not stored — both must be added; confirmation must interrupt inside execute_tool, not reuse CapabilityGate"
+    },
+    "tasks": {
+      "summary": "62 tasks after analyze remediations (interrupt in ze-agents, ingest DI, sanitizer, sidecar split)"
+    }
+  },
+  "coverage": {
+    "FR-001": {
+      "title": "Single durable workspace persists until reset",
+      "tasks": [
+        "T007",
+        "T013",
+        "T015",
+        "T018"
+      ]
+    },
+    "FR-002": {
+      "title": "Isolated environment on Ze always-on side",
+      "tasks": [
+        "T004",
+        "T018",
+        "T020"
+      ]
+    },
+    "FR-003": {
+      "title": "No Ze credentials or private services in workspace",
+      "tasks": [
+        "T020",
+        "T021",
+        "T026",
+        "T027"
+      ]
+    },
+    "FR-004": {
+      "title": "Create read update list delete files via conversation",
+      "tasks": [
+        "T032",
+        "T033"
+      ]
+    },
+    "FR-005": {
+      "title": "Run commands in conversation and show outcome",
+      "tasks": [
+        "T032",
+        "T034"
+      ]
+    },
+    "FR-006": {
+      "title": "Workspace modes Off Plan Ask Auto-edit Auto",
+      "tasks": [
+        "T017",
+        "T032",
+        "T034",
+        "T036"
+      ]
+    },
+    "FR-007": {
+      "title": "Visibly annotate turns that used the workspace",
+      "tasks": [
+        "T012",
+        "T038"
+      ]
+    },
+    "FR-008": {
+      "title": "Record each workspace run for explainability",
+      "tasks": [
+        "T013",
+        "T015",
+        "T032",
+        "T036"
+      ]
+    },
+    "FR-009": {
+      "title": "Time budget and output cap",
+      "tasks": [
+        "T019",
+        "T028",
+        "T032"
+      ]
+    },
+    "FR-010": {
+      "title": "Degrade clearly when workspace unavailable",
+      "tasks": [
+        "T016",
+        "T025",
+        "T039"
+      ]
+    },
+    "FR-011": {
+      "title": "Approved skill scripts may run in the workspace",
+      "tasks": [
+        "T047"
+      ]
+    },
+    "FR-012": {
+      "title": "Instructions-only approval does not run scripts",
+      "tasks": [
+        "T044",
+        "T045"
+      ]
+    },
+    "FR-013": {
+      "title": "Skill review shows scripts can run if approved",
+      "tasks": [
+        "T043",
+        "T048"
+      ]
+    },
+    "FR-014": {
+      "title": "List retrieve place reset from workspace view",
+      "tasks": [
+        "T051",
+        "T052",
+        "T053"
+      ]
+    },
+    "FR-015": {
+      "title": "Refuse path escape outside workspace",
+      "tasks": [
+        "T018",
+        "T026",
+        "T036"
+      ]
+    },
+    "FR-016": {
+      "title": "Shell and ordinary scripting runtimes available",
+      "tasks": [
+        "T019"
+      ]
+    },
+    "FR-017": {
+      "title": "Skills cannot expand workspace capability",
+      "tasks": [
+        "T033"
+      ]
+    },
+    "FR-018": {
+      "title": "Unattended commands only when mode is Auto",
+      "tasks": [
+        "T017",
+        "T054",
+        "T055"
+      ]
+    },
+    "FR-019": {
+      "title": "No silent interleaving of workspace runs",
+      "tasks": [
+        "T019",
+        "T026"
+      ]
+    },
+    "FR-020": {
+      "title": "Storage ceiling enforced",
+      "tasks": [
+        "T018",
+        "T026",
+        "T036"
+      ]
+    },
+    "FR-021": {
+      "title": "Files stay in workspace; no automatic ingest",
+      "tasks": [
+        "T032",
+        "T036",
+        "T039"
+      ]
+    },
+    "FR-022": {
+      "title": "Browser helper stays separate; no GUI computer-use",
+      "tasks": [
+        "T058"
+      ]
+    },
+    "FR-023": {
+      "title": "Mind stays put; no local machine access",
+      "tasks": [
+        "T058"
+      ]
+    },
+    "FR-024": {
+      "title": "In-turn completion only; no detach or follow-up",
+      "tasks": [
+        "T034",
+        "T062"
+      ]
+    },
+    "FR-025": {
+      "title": "Durable run records with stable identity",
+      "tasks": [
+        "T013",
+        "T015",
+        "T032"
+      ]
+    },
+    "FR-026": {
+      "title": "Public internet allowed; private services unreachable",
+      "tasks": [
+        "T020",
+        "T026"
+      ]
+    },
+    "FR-027": {
+      "title": "Place files via chat attach and workspace-view upload",
+      "tasks": [
+        "T036",
+        "T039",
+        "T053"
+      ]
+    },
+    "FR-028": {
+      "title": "Opt-in ingest of a workspace file",
+      "tasks": [
+        "T032",
+        "T036"
+      ]
+    },
+    "FR-029": {
+      "title": "See and switch mode; persists across conversations",
+      "tasks": [
+        "T015",
+        "T036",
+        "T037",
+        "T053"
+      ]
+    },
+    "FR-030": {
+      "title": "Skill scripts follow the same mode rules as commands",
+      "tasks": [
+        "T017",
+        "T042",
+        "T047"
+      ]
+    }
+  },
+  "currentTask": "T048",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Created ze-workspace package manifest with ze-agents/logging/data, httpx, asyncpg; hatch wheel packages=ze_workspace; pytest asyncio_mode=auto",
+      "files": [
+        "core/ze-workspace/pyproject.toml"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Created empty ze_workspace package marker",
+      "files": [
+        "core/ze-workspace/ze_workspace/__init__.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Created tests package plus conftest with mock asyncpg pool and fake httpx sidecar helpers",
+      "files": [
+        "core/ze-workspace/tests/__init__.py",
+        "core/ze-workspace/tests/conftest.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Scaffolded sidecar/workspace with Dockerfile, fly.toml (min_machines_running=1, volume, port 8080), requirements, README, skeleton main/supervisor",
+      "files": [
+        "sidecar/workspace/Dockerfile",
+        "sidecar/workspace/fly.toml",
+        "sidecar/workspace/requirements.txt",
+        "sidecar/workspace/README.md",
+        "sidecar/workspace/main.py",
+        "sidecar/workspace/supervisor.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Added ze-workspace to ze-api deps and uv.sources",
+      "files": [
+        "apps/ze-api/pyproject.toml"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Added make test-workspace target, PHONY, TEST_PY_PACKAGES, help, and docs/testing.md row",
+      "files": [
+        "Makefile",
+        "docs/testing.md"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Added Compose workspace service with volume, healthcheck, and WORKSPACE_SERVICE_URL on backend",
+      "files": [
+        "docker-compose.yml"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Added workspace_service_url/token/timeout settings, .env.example, and workspace: YAML knobs",
+      "files": [
+        "apps/ze-api/ze_api/settings.py",
+        "apps/ze-api/.env.example",
+        "apps/ze-api/config/config.yaml"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Defined WorkspaceMode/RunStatus/Origin/Action enums and WorkspaceRun/File/State dataclasses",
+      "files": [
+        "core/ze-workspace/ze_workspace/types.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Defined WorkspaceUnavailable/Busy/Full/Path/NotFound errors subclassing ZeError",
+      "files": [
+        "core/ze-workspace/ze_workspace/errors.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Added ToolConfirmationRequired next to ToolBlockedError with prompt, editable, proposed payload; re-exported from ze_sdk.errors",
+      "files": [
+        "core/ze-agents/ze_agents/errors.py",
+        "packages/ze-sdk/ze_sdk/errors.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Added WorkspaceUsageTrace and MessageTrace.workspace; SkillUsageTrace.script_ran default false; parse nested workspace on load",
+      "files": [
+        "core/ze-core/ze_core/conversation/messages/types.py",
+        "core/ze-core/ze_core/conversation/messages/store.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Added zws001 migration for workspace_state singleton and workspace_runs plus Alembic env.py",
+      "files": [
+        "core/ze-workspace/ze_workspace/migrations/env.py",
+        "core/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Registered _ZE_WORKSPACE_VERSIONS in ze_api.migrate next to skills",
+      "files": [
+        "apps/ze-api/ze_api/migrate.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Implemented WorkspaceStore protocol and PostgresWorkspaceStore with mode persist, run insert/list origin filter, last_used/reset timestamps",
+      "files": [
+        "core/ze-workspace/ze_workspace/store.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Implemented WorkspaceClient mapping sidecar HTTP to workspace errors",
+      "files": [
+        "core/ze-workspace/ze_workspace/client.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Implemented WorkspaceGate mode x action x origin decisions",
+      "files": [
+        "core/ze-workspace/ze_workspace/gate.py"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Implemented sidecar HTTP health/stat/fs with path jail and storage ceiling",
+      "files": [
+        "sidecar/workspace/main.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Implemented /run /cancel mutex timeout and stdout spill in supervisor",
+      "files": [
+        "sidecar/workspace/supervisor.py",
+        "sidecar/workspace/main.py"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Stripped child env to PATH/HOME/LANG and applied owner-uid private-range deny",
+      "files": [
+        "sidecar/workspace/supervisor.py"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Implemented redact denylist and called it from PostgresWorkspaceStore insert of output_preview and error_summary",
+      "files": [
+        "core/ze-workspace/ze_workspace/sanitize.py",
+        "core/ze-workspace/ze_workspace/store.py"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Added build_workspace_stack, imported tools for @tool registration, wired client/gate/store into container dep_map configurable and close",
+      "files": [
+        "core/ze-workspace/ze_workspace/bootstrap.py",
+        "core/ze-workspace/ze_workspace/tools.py",
+        "apps/ze-api/ze_api/container.py"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Unit tests for PostgresWorkspaceStore mode persist and run insert/list origin filter",
+      "files": [
+        "core/ze-workspace/tests/test_store.py"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Unit tests for WorkspaceGate conversation Off deny, user REST allow, unattended Auto-only run, reset-always-confirm",
+      "files": [
+        "core/ze-workspace/tests/test_gate.py"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Unit tests for WorkspaceClient health false, 409 busy/full, 400 outside_workspace",
+      "files": [
+        "core/ze-workspace/tests/test_client.py"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Sidecar contract tests with fake supervisor: path escape, stripped env, busy, ceiling unchanged",
+      "files": [
+        "core/ze-workspace/tests/test_sidecar_contract.py"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "Unit tests for redact stripping OPENROUTER_API_KEY and secret-suffix keys",
+      "files": [
+        "core/ze-workspace/tests/test_sanitize.py"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Unit tests for workspace tools covering Off/Plan/Ask/Auto-edit/Auto, spill path, and injected ingest.",
+      "files": [
+        "core/ze-workspace/tests/test_tools.py"
+      ]
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "In-node confirm resume tests: approve edited payload, deny skips sidecar, no ze_workspace import.",
+      "files": [
+        "core/ze-core/tests/orchestration/test_workspace_interrupt.py"
+      ]
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "REST tests for status/mode/files/upload dedupe/409 full/400 escape/runs/ingest.",
+      "files": [
+        "apps/ze-api/tests/api/routes/test_workspace.py"
+      ]
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "Vitest for ConfirmBar edit field and MessageBubble workspace chip.",
+      "files": [
+        "apps/ze-web/src/entities/message/ui/ConfirmBar.test.tsx",
+        "apps/ze-web/src/entities/message/ui/MessageBubble.test.tsx"
+      ]
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "Implemented workspace list/read/write/delete/run/ingest tools with gate, confirm, redact, injected ingest.",
+      "files": [
+        "core/ze-workspace/ze_workspace/tools.py"
+      ]
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "Merged platform workspace tools into BaseAgent; catch ToolConfirmationRequired in call_tool.",
+      "files": [
+        "core/ze-agents/ze_agents/base_agent.py",
+        "core/ze-agents/ze_agents/interrupt.py"
+      ]
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "Mapped ToolConfirmationRequired to LangGraph interrupt and Command(resume=...) without importing ze_workspace.",
+      "files": [
+        "core/ze-core/ze_core/orchestration/nodes/execution.py",
+        "core/ze-core/ze_core/conversation/turn.py"
+      ]
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "Added workspace Pydantic schemas plus edited_content, workspace_placed, trace.workspace, script_ran.",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "Workspace REST facade and routes for status, mode, files, ingest, runs; mounted under /api/v0.",
+      "files": [
+        "core/ze-workspace/ze_workspace/rest.py",
+        "apps/ze-api/ze_api/api/routes/workspace.py",
+        "apps/ze-api/ze_api/api/app.py",
+        "apps/ze-api/ze_api/api/dependencies.py"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "ConfirmBar edit field and WS edited_content on approve; prompt shows current mode.",
+      "files": [
+        "apps/ze-api/ze_api/api/websocket/confirmation.py",
+        "apps/ze-web/src/features/respond-to-confirmation/api/useConfirmation.ts",
+        "apps/ze-web/src/entities/message/ui/ConfirmBar.tsx"
+      ]
+    },
+    "T038": {
+      "status": "DONE",
+      "did": "Populate MessageTrace.workspace, WorkspaceSection, and visible MessageBubble chip.",
+      "files": [
+        "core/ze-core/ze_core/orchestration/nodes/trace.py",
+        "apps/ze-web/src/widgets/trace-panel/ui/WorkspaceSection.tsx",
+        "apps/ze-web/src/entities/message/ui/MessageBubble.tsx"
+      ]
+    },
+    "T039": {
+      "status": "DONE",
+      "did": "Composer paperclip uploads via REST then sends context.workspace_placed; bytes never on WS.",
+      "files": [
+        "apps/ze-web/src/entities/message/ui/ChatInput.tsx",
+        "apps/ze-web/src/widgets/chat-workspace/ui/ChatWorkspace.tsx",
+        "apps/ze-web/src/entities/workspace/api/placeWorkspaceFile.ts",
+        "core/ze-core/ze_core/orchestration/nodes/context.py"
+      ]
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "Parser/importer/store tests cover has_scripts, persisted zip scripts, and executable-approval transitions",
+      "files": [
+        "core/ze-skills/tests/test_parser.py",
+        "core/ze-skills/tests/test_importer.py",
+        "core/ze-skills/tests/test_store.py",
+        "core/ze-skills/tests/test_review.py"
+      ]
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "Review tests assert approve_skill never sets executable_approved and approve_skill_executables requires active+has_scripts",
+      "files": [
+        "core/ze-skills/tests/test_review.py"
+      ]
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "workspace_run_skill_script tests: refuse without approval; Off/Plan skip; Ask confirms; Auto materializes DB bytes",
+      "files": [
+        "core/ze-workspace/tests/test_tools.py"
+      ]
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "REST approve-executables test plus vitest script warning and distinct Approve executables action",
+      "files": [
+        "apps/ze-api/tests/api/routes/test_skills.py",
+        "apps/ze-web/src/widgets/skill-management/ui/SkillManagementList.test.tsx"
+      ]
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "zsk002 renames has_scripts, adds executable approval columns and skill_scripts BYTEA table; types/store updated",
+      "files": [
+        "core/ze-skills/ze_skills/migrations/versions/zsk002_skill_scripts.py",
+        "core/ze-skills/ze_skills/types.py",
+        "core/ze-skills/ze_skills/store.py"
+      ]
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "Importer persists script bytes; approve_skill does not promote executables; approve_skill_executables and refresh clear flag",
+      "files": [
+        "core/ze-skills/ze_skills/importer.py",
+        "core/ze-skills/ze_skills/review.py"
+      ]
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "POST /skills/{id}/approve-executables plus has_scripts/executable_approved/script_filenames on skill schemas; codegen deferred to T060",
+      "files": [
+        "core/ze-skills/ze_skills/rest.py",
+        "apps/ze-api/ze_api/api/routes/skills.py",
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "workspace_run_skill_script requires active+executable_approved, gates as run, materializes bytes, records skill_id/path and script_ran",
+      "files": [
+        "core/ze-workspace/ze_workspace/tools.py",
+        "core/ze-core/ze_core/orchestration/nodes/trace.py"
+      ]
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "Skill list shows script warning and Approve executables; mutation POSTs approve-executables; trace SkillsSection shows script_ran",
+      "files": [
+        "apps/ze-web/src/widgets/skill-management/ui/SkillManagementList.tsx",
+        "apps/ze-web/src/entities/skill/api/useSkillTransitionMutation.ts",
+        "apps/ze-web/src/widgets/trace-panel/ui/SkillsSection.tsx"
+      ]
+    }
+  }
+}

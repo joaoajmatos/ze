@@ -72,6 +72,26 @@ class ToolBlockedError(AgentError):
     """Tool call rejected because the capability gate is BLOCKED."""
 
 
+class ToolConfirmationRequired(AgentError):
+    """Workspace (or other) tool needs an in-turn confirm before executing.
+
+    Caught by `call_tool` / `execute_tool` and mapped to LangGraph `interrupt()`.
+    `ze_core` must import this type from `ze_agents.errors`, never from a domain package.
+    """
+
+    def __init__(
+        self,
+        prompt: str,
+        *,
+        editable: bool = True,
+        proposed: str = "",
+    ) -> None:
+        super().__init__(prompt)
+        self.prompt = prompt
+        self.editable = editable
+        self.proposed = proposed
+
+
 # ── Workflow ──────────────────────────────────────────────────────────────────
 
 

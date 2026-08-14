@@ -226,6 +226,26 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
             except Exception:
                 pass  # best-effort; never block the turn
 
+    placed = screen_ctx.get("workspace_placed") or []
+    if placed:
+        lines = [
+            "[Workspace: the user placed these files in the workspace this turn "
+            "(they are not ingested unless you call ingest_workspace_file)]"
+        ]
+        for item in placed:
+            if isinstance(item, dict):
+                path = item.get("path") or ""
+                size = item.get("size")
+                extra = f" ({size} bytes)" if size is not None else ""
+                lines.append(f"- {path}{extra}")
+            else:
+                lines.append(f"- {item}")
+        note = "\n".join(lines)
+        existing = agent_context.screen_context_note
+        agent_context.screen_context_note = (
+            f"{existing}\n\n{note}" if existing else note
+        )
+
     return {
         "memory_context": memory_context,
         "agent_context": agent_context,

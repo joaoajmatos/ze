@@ -91,3 +91,15 @@ def get_loop_store(request: Request):
 
 def get_skill_store(request: Request):
     return request.app.state.container.skill_store
+
+
+def get_workspace_store(request: Request):
+    return request.app.state.container.workspace_store
+
+
+def get_workspace_client(request: Request):
+    return request.app.state.container.workspace_client
+
+
+def get_ingestion_pipeline(request: Request):
+    return request.app.state.container.ingestion_pipeline

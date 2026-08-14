@@ -290,3 +290,10 @@ dream:
   inactivity_trigger_enabled: false    # fire dream job when idle for N hours (no run since last session)
   inactivity_threshold_hours: 6
   inactivity_check_interval_minutes: 30
+
+# Durable workspace sidecar (files + shell). Secrets stay in .env.
+workspace:
+  run_timeout_seconds: 120
+  output_preview_chars: 8000
+  storage_ceiling_bytes: 1073741824
+  run_lock_wait_seconds: 30

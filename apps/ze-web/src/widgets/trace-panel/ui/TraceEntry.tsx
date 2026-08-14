@@ -5,6 +5,7 @@ import { MemorySection } from "./MemorySection";
 import { RoutingSection } from "./RoutingSection";
 import { SkillsSection } from "./SkillsSection";
 import { ToolsSection } from "./ToolsSection";
+import { WorkspaceSection } from "./WorkspaceSection";
 
 interface TraceEntryProps {
   trace: WsTraceUpdateFrame;
@@ -16,6 +17,7 @@ interface TraceEntryProps {
 export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEntryProps) {
   const [open, setOpen] = useState(defaultOpen);
   const confidencePct = Math.round(trace.confidence * 100);
+  const workspace = (trace as WsTraceUpdateFrame & { workspace?: unknown }).workspace;
 
   return (
     <div className={`border-b border-white/[0.06] last:border-b-0${live ? " ring-1 ring-inset ring-plum-voltage/20" : ""}`}>
@@ -50,6 +52,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEnt
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
           <SkillsSection skillsUsed={trace.skills_used} live={live} />
+          <WorkspaceSection workspace={workspace as never} live={live} />
         </div>
       )}
     </div>

@@ -44,6 +44,11 @@ class ZeApiSettings(BaseSettings):
     browser_max_text_chars: int = 8000
     browser_delay_ms: int = 2000
 
+    # ── Workspace sidecar ─────────────────────────────────────────────────────
+    workspace_service_url: str = "http://ze-workspace.internal:8080"
+    workspace_api_token: str = ""
+    workspace_timeout_seconds: int = 120
+
     # ── Agent harness ─────────────────────────────────────────────────────────
     max_tool_calls_per_turn: int = 20
 

@@ -76,10 +76,25 @@ def _trace_to_response(trace) -> MessageTraceResponse:
                 "source": s.source,
                 "trigger": s.trigger,
                 "similarity": s.similarity,
+                "script_ran": getattr(s, "script_ran", False),
             }
             for s in getattr(trace, "skills_used", [])
         ],
+        workspace=_workspace_to_response(getattr(trace, "workspace", None)),
     )
+
+
+def _workspace_to_response(workspace) -> dict | None:
+    if workspace is None:
+        return None
+    return {
+        "mode": workspace.mode,
+        "runs": list(workspace.runs or []),
+        "files": list(workspace.files or []),
+        "script_ran": bool(workspace.script_ran),
+        "unavailable": bool(workspace.unavailable),
+        "planned": workspace.planned,
+    }
 
 
 @router.get(

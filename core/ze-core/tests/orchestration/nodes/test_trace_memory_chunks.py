@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 from ze_core.conversation.messages.types import CompactionTrace
 from ze_core.orchestration.nodes.trace import _extract_memory_chunks, record_trace
@@ -206,3 +207,27 @@ async def test_record_trace_skills_used_explicit_trigger_has_no_similarity():
     used = result["message_trace"].skills_used
     assert used[0].trigger == "explicit"
     assert used[0].similarity is None
+
+
+async def test_record_trace_workspace_from_tool_calls():
+    tool = SimpleNamespace(
+        tool_name="workspace_write",
+        args={"path": "notes.txt", "content": "hi"},
+        result="Wrote notes.txt (2 bytes)",
+        duration_ms=5,
+        success=True,
+        error=None,
+    )
+    store = SimpleNamespace(get_mode=AsyncMock(return_value=SimpleNamespace(value="ask")))
+    state = {
+        "envelope": _envelope(),
+        "agent_result": SimpleNamespace(tool_calls=[tool]),
+        "memory_context": None,
+    }
+    result = await record_trace(
+        state, config={"configurable": {"workspace_store": store}}
+    )
+    workspace = result["message_trace"].workspace
+    assert workspace is not None
+    assert workspace.mode == "ask"
+    assert workspace.files == [{"path": "notes.txt", "op": "write"}]

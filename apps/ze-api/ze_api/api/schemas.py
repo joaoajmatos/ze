@@ -88,6 +88,16 @@ class SkillUsageTraceResponse(BaseModel):
     source: str
     trigger: str
     similarity: float | None = None
+    script_ran: bool = False
+
+
+class WorkspaceUsageTraceResponse(BaseModel):
+    mode: str
+    runs: list[dict] = []
+    files: list[dict] = []
+    script_ran: bool = False
+    unavailable: bool = False
+    planned: list[str] | None = None
 
 
 class MessageTraceResponse(BaseModel):
@@ -101,6 +111,7 @@ class MessageTraceResponse(BaseModel):
     tool_calls: list[ToolCallTraceResponse]
     total_duration_ms: int
     skills_used: list[SkillUsageTraceResponse] = []
+    workspace: WorkspaceUsageTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):
@@ -588,6 +599,8 @@ class WsConfirmRequestFrame(BaseModel):
     thread_id: str | None = None
     prompt: str
     actions: list[WsConfirmAction]
+    editable: bool = False
+    proposed: str = ""
 
 
 class WsConfirmCancelFrame(BaseModel):
@@ -639,6 +652,7 @@ class WsTraceUpdateFrame(BaseModel):
     tool_calls: list[ToolCallTraceResponse]
     total_duration_ms: int
     skills_used: list[SkillUsageTraceResponse] = []
+    workspace: WorkspaceUsageTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):
@@ -680,6 +694,12 @@ class WsScreenContext(BaseModel):
     goal_id: str | None = None
     workflow_id: str | None = None
     execution_id: str | None = None
+    workspace_placed: list["WsWorkspacePlaced"] | None = None
+
+
+class WsWorkspacePlaced(BaseModel):
+    path: str
+    size: int
 
 
 class WsSendMessageFrame(BaseModel):
@@ -699,6 +719,7 @@ class WsConfirmFrame(BaseModel):
     id: str
     thread_id: str
     choice: Literal["approve", "deny"]
+    edited_content: str | None = None
 
 
 class WsActionFrame(BaseModel):
@@ -1048,7 +1069,9 @@ class SkillResponse(BaseModel):
     origin_url: str | None
     bundling_plugin: str | None
     status: Literal["pending_review", "active", "disabled", "rejected"]
-    has_unsupported_scripts: bool
+    has_scripts: bool
+    executable_approved: bool = False
+    script_filenames: list[str] = []
     created_at: str | None
     approved_at: str | None
     last_checked_at: str | None
@@ -1079,3 +1102,88 @@ class SkillReferenceFileResponse(BaseModel):
 
 class SkillImportRequest(BaseModel):
     url: str
+
+
+# ── REST: workspace ───────────────────────────────────────────────────────────
+
+
+WorkspaceModeLiteral = Literal["off", "plan", "ask", "auto_edit", "auto"]
+WorkspaceRunOriginLiteral = Literal["conversation", "user", "unattended"]
+WorkspaceRunStatusLiteral = Literal[
+    "succeeded", "failed", "timed_out", "cancelled", "refused"
+]
+
+
+class WorkspaceStatusResponse(BaseModel):
+    available: bool
+    mode: WorkspaceModeLiteral
+    bytes_used: int
+    bytes_ceiling: int
+    busy: bool
+    last_reset_at: str | None
+    last_used_at: str | None
+
+
+class WorkspaceModeResponse(BaseModel):
+    mode: WorkspaceModeLiteral
+
+
+class WorkspaceModeUpdate(BaseModel):
+    mode: WorkspaceModeLiteral
+
+
+class WorkspaceFileItem(BaseModel):
+    path: str
+    size: int
+    modified_at: str
+    is_dir: bool
+
+
+class WorkspaceFileListResponse(BaseModel):
+    files: list[WorkspaceFileItem]
+
+
+class WorkspaceUploadResponse(BaseModel):
+    path: str
+    requested_path: str
+    size: int
+    deduplicated: bool
+
+
+class WorkspaceFileTouchResponse(BaseModel):
+    path: str
+    op: str
+
+
+class WorkspaceRunResponse(BaseModel):
+    id: str | None
+    started_at: str | None
+    ended_at: str | None
+    command: str
+    origin: WorkspaceRunOriginLiteral
+    thread_id: str | None
+    message_id: str | None
+    skill_id: str | None
+    skill_script_path: str | None
+    status: WorkspaceRunStatusLiteral
+    exit_code: int | None
+    output_preview: str
+    output_file_path: str | None
+    files_touched: list[WorkspaceFileTouchResponse]
+    error_summary: str | None
+
+
+class WorkspaceRunListResponse(BaseModel):
+    runs: list[WorkspaceRunResponse]
+
+
+class WorkspaceResetQueuedResponse(BaseModel):
+    confirmation_id: str
+
+
+class WorkspaceIngestResponse(BaseModel):
+    ingestion_id: str
+    content_type: str
+    summary: str
+    facts_count: int
+    tags: list[str]

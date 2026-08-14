@@ -9,7 +9,13 @@ from typing import Any, AsyncIterator
 
 from ze_agents.client import LLMClient
 from ze_agents.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
-from ze_agents.errors import AgentAbortedError, AgentError, HookAbort, ToolBlockedError
+from ze_agents.errors import (
+    AgentAbortedError,
+    AgentError,
+    HookAbort,
+    ToolBlockedError,
+    ToolConfirmationRequired,
+)
 from ze_agents.hooks import (
     LoopEndEvent,
     LoopStartEvent,
@@ -17,6 +23,7 @@ from ze_agents.hooks import (
     ToolStartEvent,
     get_hooks,
 )
+from ze_agents.interrupt import tool_interrupt_fn, workspace_confirmed
 from ze_logging import get_logger
 from ze_agents.types import (
     AgentContext,
@@ -32,6 +39,18 @@ from ze_agents.types import (
 _OPENROUTER_TOOL_SCHEMAS: dict[str, dict] = {
     "openrouter:web_search": {"type": "openrouter:web_search"},
 }
+
+# Platform tools merged into every agent unless `workspace_opt_out` is set.
+# Names only — registration lives in ze_workspace.tools; unknown names are skipped.
+_PLATFORM_TOOLS = (
+    "workspace_list",
+    "workspace_read",
+    "workspace_write",
+    "workspace_delete",
+    "workspace_run",
+    "workspace_run_skill_script",
+    "ingest_workspace_file",
+)
 
 log = get_logger(__name__)
 
@@ -258,6 +277,46 @@ class BaseAgent(ABC):
         start = time.monotonic()
         try:
             result = await spec.func(**args)
+        except ToolConfirmationRequired as exc:
+            interrupt_fn = tool_interrupt_fn.get()
+            if interrupt_fn is None:
+                raise
+            decision = interrupt_fn(
+                {
+                    "kind": "workspace",
+                    "prompt": exc.prompt,
+                    "editable": exc.editable,
+                    "proposed": exc.proposed,
+                    "tool": name,
+                    "args": stored_args,
+                }
+            )
+            choice = "approve"
+            edited = None
+            if isinstance(decision, dict):
+                choice = str(decision.get("choice") or "approve")
+                edited = decision.get("edited_content")
+            elif isinstance(decision, str):
+                choice = decision
+            if choice != "approve":
+                duration_ms = int((time.monotonic() - start) * 1000)
+                tool_call = ToolCall(
+                    tool_name=name,
+                    args=stored_args,
+                    result=None,
+                    duration_ms=duration_ms,
+                    success=False,
+                    error="denied by user",
+                )
+                await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
+                return tool_call
+            if edited is not None:
+                args = _apply_edited_content(name, args, str(edited))
+            confirmed_token = workspace_confirmed.set(True)
+            try:
+                result = await spec.func(**args)
+            finally:
+                workspace_confirmed.reset(confirmed_token)
         except Exception as exc:
             duration_ms = int((time.monotonic() - start) * 1000)
             log.warning("tool_error", tool=name, agent=self.name, error=str(exc))
@@ -308,7 +367,14 @@ class BaseAgent(ABC):
         )
         from ze_agents.tool import get_tool
 
-        names = tool_names if tool_names is not None else self.tools
+        names = tool_names if tool_names is not None else list(self.tools)
+        if not getattr(self, "workspace_opt_out", False):
+            from ze_agents.tool import registered_tools
+
+            registered = registered_tools()
+            for platform_name in _PLATFORM_TOOLS:
+                if platform_name in registered and platform_name not in names:
+                    names.append(platform_name)
         skill_tool_names = getattr(ctx, "skill_tool_names", None)
         if skill_tool_names is not None:
             # A skill's `allowed_tools` only ever narrows — never unions — the
@@ -497,6 +563,21 @@ async def _dispatch_tool_end(
             await hook.on_tool_end(ToolEndEvent(name, tool_call, ctx, iteration))
         except Exception as exc:
             log.warning("hook_error_on_tool_end", tool=name, error=str(exc))
+
+
+def _apply_edited_content(tool_name: str, args: dict[str, Any], edited: str) -> dict[str, Any]:
+    updated = dict(args)
+    if tool_name == "workspace_run":
+        updated["command"] = edited
+    elif tool_name == "workspace_write":
+        updated["content"] = edited
+    elif tool_name in {"workspace_delete", "ingest_workspace_file"}:
+        updated["path"] = edited
+    elif tool_name == "workspace_run_skill_script":
+        updated["filename"] = edited
+    else:
+        updated["content"] = edited
+    return updated
 
 
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:

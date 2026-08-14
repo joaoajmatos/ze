@@ -173,12 +173,20 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     stopThinking();
   });
 
-  function sendMessage(text: string): boolean {
+  function sendMessage(
+    text: string,
+    workspacePlaced?: { path: string; size: number }[],
+  ): boolean {
     const trimmed = text.trim();
     if (!trimmed || isThinking) return false;
 
+    const mergedContext = {
+      ...context,
+      ...(workspacePlaced?.length ? { workspace_placed: workspacePlaced } : {}),
+    } as typeof context;
+
     if (ephemeral) {
-      const sent = send({ type: "message", text: trimmed, context });
+      const sent = send({ type: "message", text: trimmed, context: mergedContext });
       if (!sent) {
         useSendNotice.getState().showNotice(NOT_CONNECTED_NOTICE);
         return false;
@@ -187,7 +195,12 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       return true;
     }
 
-    const sent = send({ type: "message", text: trimmed, thread_id: threadId, context });
+    const sent = send({
+      type: "message",
+      text: trimmed,
+      thread_id: threadId,
+      context: mergedContext,
+    });
     if (!sent) {
       useSendNotice.getState().showNotice(NOT_CONNECTED_NOTICE);
       return false;

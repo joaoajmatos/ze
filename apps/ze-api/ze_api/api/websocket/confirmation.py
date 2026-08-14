@@ -51,7 +51,13 @@ async def handle_confirm(
         try:
             await conn_mgr.send_frame({"type": "typing"}, thread_id)
             with bound_turn_context(thread_id):
-                outcome = await container.resume_turn(pending_config)
+                outcome = await container.resume_turn(
+                    pending_config,
+                    resume={
+                        "choice": "approve",
+                        "edited_content": data.get("edited_content"),
+                    },
+                )
         except Exception as exc:
             log.exception("ws_resume_error", error=str(exc))
             await conn_mgr.send_frame(
@@ -85,6 +91,36 @@ async def handle_confirm(
                 thread_id=thread_id,
                 components=components or None,
                 trace=trace,
+            )
+        if outcome.interrupted:
+            return request_id, pending_config
+        return None
+
+    try:
+        graph_state = await container.graph.aget_state(pending_config)
+        in_node = bool(getattr(graph_state, "interrupts", None))
+    except Exception:
+        in_node = False
+    if in_node:
+        if not conn_mgr.try_set_busy(thread_id):
+            await conn_mgr.send_frame({"type": "error", "detail": "busy"}, thread_id)
+            return request_id, pending_config
+        try:
+            with bound_turn_context(thread_id):
+                outcome = await container.resume_turn(
+                    pending_config, resume={"choice": "deny"}
+                )
+        except Exception as exc:
+            log.exception("ws_resume_deny_error", error=str(exc))
+            await conn_mgr.send_frame(
+                {"type": "error", "detail": "Resume failed."}, thread_id
+            )
+            return None
+        finally:
+            conn_mgr.clear_busy(thread_id)
+        if outcome.response:
+            await container.interface.send_with_thread(
+                outcome.response, thread_id=thread_id
             )
         return None
 
@@ -166,6 +202,8 @@ async def send_confirmation_request(
         "type": "confirm_request",
         "id": request_id,
         "prompt": outcome.draft or "",
+        "editable": bool(getattr(outcome, "confirm_editable", False)),
+        "proposed": getattr(outcome, "confirm_proposed", "") or "",
         "actions": [
             {"label": "Approve", "value": "approve", "style": "primary"},
             {"label": "Cancel", "value": "deny", "style": "secondary"},

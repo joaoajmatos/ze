@@ -13,6 +13,10 @@ OPENAPI_TAGS = [
         "name": "routing",
         "description": "Embedding-based routing audit log.",
     },
+    {
+        "name": "workspace",
+        "description": "Isolated workspace sidecar: files, commands, mode, and runs.",
+    },
 ]
 
 OPENAPI_RESPONSES_422: dict = {

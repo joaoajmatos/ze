@@ -27,6 +27,10 @@ from ze_skills.bootstrap import (
 )
 from ze_skills.store import SkillStore
 from ze_browser import BrowserClient
+from ze_workspace.bootstrap import build_workspace_stack
+from ze_workspace.client import WorkspaceClient
+from ze_workspace.gate import WorkspaceGate
+from ze_workspace.store import WorkspaceStore
 from ze_components.hook import ComponentCollectionHook
 from ze_core.nli import LocalNLIClient
 from ze_core.bootstrap import (
@@ -102,6 +106,9 @@ class ZeContainer(CoreContainer):
     workflow_scheduler: Any
     proactive_scheduler: ProactiveScheduler
     browser_client: BrowserClient
+    workspace_client: WorkspaceClient
+    workspace_gate: WorkspaceGate
+    workspace_store: WorkspaceStore
     push_notifier: NtfyNotifier | None
     message_store: PostgresMessageStore
     session_store: PostgresSessionStore
@@ -156,6 +163,9 @@ class ZeContainer(CoreContainer):
             "loop_surfacer": self.loop_surfacer,
             "skill_matcher": self.skill_matcher,
             "budget_checker": self.budget_checker,
+            "workspace_client": self.workspace_client,
+            "workspace_gate": self.workspace_gate,
+            "workspace_store": self.workspace_store,
             **plugin_services,
         }
         configurable["memory_hooks"] = [
@@ -174,8 +184,8 @@ class ZeContainer(CoreContainer):
     ) -> TurnResult:
         return await invoke_raw_turn(self, thread_id, raw, config_extra=config_extra)
 
-    async def resume_turn(self, config: dict) -> TurnResult:
-        return await resume_turn(self, config)
+    async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:
+        return await resume_turn(self, config, resume=resume)
 
     async def close(self) -> None:
         for plugin in reversed(self.plugins):
@@ -190,6 +200,7 @@ class ZeContainer(CoreContainer):
         await self.proactive_scheduler.stop()
         await self.workflow_scheduler.stop()
         await self.browser_client.close()
+        await self.workspace_client.close()
         if self.push_notifier is not None:
             await self.push_notifier.close()
         await super().close()
@@ -240,9 +251,11 @@ async def build_container(settings: Settings) -> ZeContainer:
     skill_matcher = build_skill_matcher(
         skills_stack.skill_store, shared.embedder, settings
     )
+    workspace = build_workspace_stack(shared, settings)
     shared.dep_map.update(automation.deps)
     shared.dep_map.update(worldstate.deps)
     shared.dep_map.update(skills_stack.deps)
+    shared.dep_map.update(workspace.deps)
 
     async def _worldstate_contradiction_hook(fact_id) -> None:
         from ze_worldstate.decay import cascade_from_evidence
@@ -319,6 +332,9 @@ async def build_container(settings: Settings) -> ZeContainer:
             NLIClient: shared.nli_client,
             LocalNLIClient: shared.nli_client,
             BrowserClient: browser_client,
+            WorkspaceClient: workspace.client,
+            WorkspaceGate: workspace.gate,
+            WorkspaceStore: workspace.store,
             UserChannelStore: user_channel_store,
             ChannelWatermarkStore: watermark_store,
             ThreadChannelMap: thread_channel_map,
@@ -333,6 +349,14 @@ async def build_container(settings: Settings) -> ZeContainer:
         plugins,
         browser_client=browser_client,
     )
+    import ze_workspace.tools as workspace_tools
+
+    workspace_tools.configure(
+        client=workspace.client,
+        gate=workspace.gate,
+        store=workspace.store,
+        settings=settings,
+        skill_store=skills_stack.skill_store,
     from ze_worldstate.inflow import make_loop_extractor_from_parts
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
@@ -488,6 +512,9 @@ async def build_container(settings: Settings) -> ZeContainer:
         workflow_scheduler=automation.workflow_scheduler,
         proactive_scheduler=ProactiveScheduler(),
         browser_client=browser_client,
+        workspace_client=workspace.client,
+        workspace_gate=workspace.gate,
+        workspace_store=workspace.store,
         push_notifier=push_notifier,
         message_store=message_store,
         session_store=session_store,

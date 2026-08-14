@@ -14,12 +14,14 @@ describe("toTraceFrame", () => {
       memory_chunks: [{ text: "User prefers concise answers", score: 0.91, source: "fact" }],
       tool_calls: [{ name: "search_web", result_snippet: "ok", duration_ms: 120, success: true }],
       total_duration_ms: 450,
+      skills_used: [],
     };
 
     expect(toTraceFrame("msg-1", trace)).toEqual({
       type: "trace_update",
       message_id: "msg-1",
       ...trace,
+      workspace: undefined,
     });
   });
 });

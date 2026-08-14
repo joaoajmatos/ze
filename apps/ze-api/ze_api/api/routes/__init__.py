@@ -16,6 +16,7 @@ from ze_api.api.routes import (
     version,
     webhooks,
     workflows,
+    workspace,
     ws_schema,
 )
 
@@ -37,5 +38,6 @@ __all__ = [
     "version",
     "webhooks",
     "workflows",
+    "workspace",
     "ws_schema",
 ]

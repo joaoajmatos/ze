@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChatMessageList, ChatInput, ConfirmBar } from "@/entities/message";
+import type { ChatAttachment } from "@/entities/message";
+import { placeWorkspaceFile } from "@/entities/workspace";
 import { reconnect, send } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";
+import { useSendNotice } from "@/features/send-context-notice";
 import { BackgroundBeamsCanvas } from "@/shared/effects/background-beams";
 import { GlowingStars } from "@/shared/effects/glowing-stars";
 import { useChatWorkspace } from "../model/useChatWorkspace";
@@ -26,6 +29,8 @@ export function ChatWorkspace() {
   } = useChatWorkspace();
 
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [attaching, setAttaching] = useState(false);
   const [connTimedOut, setConnTimedOut] = useState(false);
   const connState: ConnectionState =
     isConnected ? "connected" : connTimedOut ? "disconnected" : "connecting";
@@ -48,8 +53,24 @@ export function ChatWorkspace() {
   }, [isConnected]);
 
   function handleSend() {
-    if (sendMessage(input)) {
+    if (sendMessage(input, attachments.map((a) => ({ path: a.path, size: a.size })))) {
       setInput("");
+      setAttachments([]);
+    }
+  }
+
+  async function handlePickFile(file: File) {
+    setAttaching(true);
+    try {
+      const placed = await placeWorkspaceFile(file);
+      setAttachments((prev) => [
+        ...prev,
+        { path: placed.path, size: placed.size, name: file.name },
+      ]);
+    } catch {
+      useSendNotice.getState().showNotice("Could not place the file in the workspace.");
+    } finally {
+      setAttaching(false);
     }
   }
 
@@ -115,6 +136,8 @@ export function ChatWorkspace() {
           prompt={pendingConfirm.prompt}
           actions={pendingConfirm.actions}
           onConfirm={respondToConfirm}
+          editable={pendingConfirm.editable}
+          proposed={pendingConfirm.proposed}
         />
       )}
 
@@ -124,6 +147,12 @@ export function ChatWorkspace() {
           onChange={setInput}
           onSend={handleSend}
           disabled={isThinking}
+          attachments={attachments}
+          onPickFile={handlePickFile}
+          onRemoveAttachment={(path) =>
+            setAttachments((prev) => prev.filter((a) => a.path !== path))
+          }
+          attaching={attaching}
         />
       </div>
     </ChatLayout>

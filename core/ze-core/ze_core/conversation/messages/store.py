@@ -14,6 +14,7 @@ from ze_core.conversation.messages.types import (
     MemoryChunkTrace,
     SkillUsageTrace,
     ToolCallTrace,
+    WorkspaceUsageTrace,
 )
 
 
@@ -180,6 +181,10 @@ class PostgresMessageStore:
 
 
 def _parse_trace(data: dict) -> MessageTrace:
+    workspace_raw = data.get("workspace")
+    workspace = (
+        WorkspaceUsageTrace(**workspace_raw) if workspace_raw else None
+    )
     return MessageTrace(
         agent=data["agent"],
         routing_method=data["routing_method"],
@@ -191,6 +196,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         tool_calls=[ToolCallTrace(**t) for t in data.get("tool_calls", [])],
         total_duration_ms=data.get("total_duration_ms", 0),
         skills_used=[SkillUsageTrace(**s) for s in data.get("skills_used", [])],
+        workspace=workspace,
     )
 
 

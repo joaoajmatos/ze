@@ -17,5 +17,6 @@ export function toTraceFrame(
     tool_calls: trace.tool_calls,
     total_duration_ms: trace.total_duration_ms,
     skills_used: trace.skills_used,
-  };
+    workspace: (trace as MessageTraceResponse & { workspace?: unknown }).workspace,
+  } as WsTraceUpdateFrame;
 }

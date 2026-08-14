@@ -8,6 +8,7 @@ from langchain_core.runnables import RunnableConfig
 
 from ze_agents.types import GateDecision
 from ze_agents.errors import AgentTimeoutError
+from ze_agents.interrupt import tool_interrupt_fn
 from ze_logging import get_logger
 from ze_agents.registry import get_agent
 from ze_core.orchestration.state import AgentState
@@ -298,24 +299,30 @@ async def _run_with_timeout(
     instance = get_agent(agent_name)
     timeout = float(getattr(type(instance), "timeout", 30))
 
-    if token_queue is not None:
+    from langgraph.types import interrupt
 
-        async def _stream_and_collect() -> AgentResult:
-            tokens: list[str] = []
+    interrupt_token = tool_interrupt_fn.set(interrupt)
+    try:
+        if token_queue is not None:
+
+            async def _stream_and_collect() -> AgentResult:
+                tokens: list[str] = []
+                try:
+                    async for token in instance.stream(ctx):
+                        tokens.append(token)
+                        await token_queue.put(token)
+                finally:
+                    await token_queue.put(None)
+                return AgentResult(agent=agent_name, response="".join(tokens))
+
             try:
-                async for token in instance.stream(ctx):
-                    tokens.append(token)
-                    await token_queue.put(token)
-            finally:
-                await token_queue.put(None)
-            return AgentResult(agent=agent_name, response="".join(tokens))
+                return await asyncio.wait_for(_stream_and_collect(), timeout=timeout)
+            except asyncio.TimeoutError:
+                raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
 
         try:
-            return await asyncio.wait_for(_stream_and_collect(), timeout=timeout)
+            return await asyncio.wait_for(instance.run(ctx), timeout=timeout)
         except asyncio.TimeoutError:
             raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
-
-    try:
-        return await asyncio.wait_for(instance.run(ctx), timeout=timeout)
-    except asyncio.TimeoutError:
-        raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
+    finally:
+        tool_interrupt_fn.reset(interrupt_token)

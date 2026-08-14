@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ze-workspace"
+version = "0.1.0"
+description = "Isolated durable workspace — files, shell, and scripting runtimes beside the mind"
+requires-python = ">=3.11"
+dependencies = [
+    "ze-agents",
+    "ze-logging",
+    "ze-data",
+    "httpx",
+    "asyncpg==0.31.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.0.3",
+    "pytest-asyncio==1.4.0",
+    "pytest-mock==3.15.1",
+    "ze-sdk",
+    "ruff==0.15.14",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv.sources]
+ze-agents  = { workspace = true }
+ze-logging = { workspace = true }
+ze-data    = { workspace = true }
+ze-sdk     = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["ze_workspace"]
