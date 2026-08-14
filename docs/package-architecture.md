@@ -32,7 +32,7 @@ ze/
 │   └── ze-trading212/ # Trading212 REST client for finance ingestion
 ├── plugins/          # ZePlugin domain extensions
 │   ├── ze-personal/  # Personal-assistant domain layer — persona, contacts, onboarding
-│   ├── ze-email/     # Gmail channel + email agent (ZePlugin)
+│   ├── ze-messenger/ # Cross-channel messenger agent (ZePlugin)
 │   ├── ze-prospecting/   # Prospecting agent, campaign store, recovery job (ZePlugin)
 │   ├── ze-calendar/  # Calendar + reminders domain (ZePlugin)
 │   ├── ze-news/      # News ingestion, ranking, credibility (ZePlugin)
@@ -44,42 +44,16 @@ ze/
 
 ### Dependency graph
 
-```
-ze-browser        ←  no ze deps
-ze-onboarding     ←  no ze deps               ← setup coordinator, provider/store/persistence protocols
-ze-agents         ←  ze-onboarding            ← developer API (BaseAgent, @agent, @tool, ZePlugin, types)
-ze-plugin         ←  ze-agents                ← plugin extension framework, channels, signal sources, data domains
-ze-proactive      ←  ze-agents                ← job scheduling framework
-ze-data           ←  no ze deps               ← portability descriptor + service layer
-ze-notifications  ←  no ze deps
-ze-components     ←  ze-agents
-ze-google         ←  no ze deps               ← integrations/
-ze-trading212     ←  no ze deps
-ze-memory         ←  ze-agents
-ze-ingestion      ←  ze-agents, ze-memory, ze-browser
-ze-correlation    ←  ze-agents, ze-memory
-ze-automation     ←  ze-agents, ze-proactive, ze-memory   ← goals, workflows, accountability; wired directly by ze-api
-ze-sdk            ←  ze-agents, ze-proactive, ze-memory, ze-onboarding, ze-plugin, ze-data, ze-automation   ← plugin entry point
-ze-core           ←  ze-agents, ze-plugin                ← engine; never a domain dep
-ze-personal       ←  ze-sdk
-ze-email          ←  ze-sdk, ze-google, ze-personal
-ze-prospecting    ←  ze-sdk, ze-browser, ze-personal
-ze-calendar       ←  ze-sdk, ze-google, ze-personal
-ze-news           ←  ze-sdk
-ze-finance        ←  ze-sdk, ze-trading212
-ze-api            ←  ze-core, ze-plugin, ze-data, ze-sdk, ze-automation, ze-personal, ze-email,
-                      ze-prospecting, ze-calendar, ze-google, ze-browser, ze-news, ze-finance,
-                      ze-notifications, ze-components, ze-onboarding, ze-ingestion, ze-correlation
-ze-client         ←  no ze deps (generated from ze-api spec; npm workspace only)
-ze-web            ←  ze-client (workspace:*), connects to ze-api over WebSocket/REST
-```
+![Layer stack showing Ze's four top-level directories in strict dependency order — core infrastructure at the bottom, integrations above it, plugins above that, and apps at the top — with the packages layer (ze-sdk and friends) drawn as a cross-cutting seam beside core, integrations, and plugins rather than a fifth stacked layer.](diagrams/docs/package-layers.svg)
+
+<sub>[Interactive version](diagrams/docs/package-layers.html)</sub>
 
 Hard rules:
 - `ze-onboarding` never imports from any other Ze package — it is the stable setup-flow foundation.
 - `ze-agents` depends only on `ze-onboarding` plus third-party utilities — it is the stable agent/plugin API foundation.
 - `ze-plugin` and `ze-data` stay free of application wiring; they own the reusable extension and portability seams.
 - `ze-core` never imports from domain packages. It depends on `ze-agents` and `ze-plugin` for shared engine-facing types.
-- Plugin packages (`ze-personal`, `ze-email`, etc.) never import `ze-core` directly — use `ze-sdk`.
+- Plugin packages (`ze-personal`, `ze-messenger`, etc.) never import `ze-core` directly — use `ze-sdk`.
 - `ze-memory`, `ze-automation`, and `ze-personal` never import from `ze-api`. Violations break the abstraction.
 
 ---
@@ -338,17 +312,21 @@ accountability live in `ze-automation`, not here.
 
 ---
 
-## ze-email — Email Domain
+## ze-messenger — Messaging Domain
 
-`ze_email` owns the Gmail channel and email agent. It depends on `ze-sdk`, `ze-google`,
-and `ze-personal` (for contact extraction from email tool calls).
+`ze_messenger` owns the cross-channel messenger agent and inbound message processing.
+It depends on `ze-sdk`, `ze-google` (which owns `GmailChannel`), and `ze-personal`
+(for contact extraction from message tool calls).
 
 | Module | What it provides |
 |--------|-----------------|
-| `channel/gmail.py` | `GmailChannel` — Gmail API send/receive/poll |
-| `agents/email/agent.py` | `EmailAgent` — inbox read, draft, send |
-| `agents/email/tools.py` | Gmail `@tool` functions |
-| `plugin.py` | `EmailPlugin(ZePlugin)` — registers agent when Google credentials are present |
+| `agents/messenger/agent.py` | `MessengerAgent` — inbox read, draft, send across channels |
+| `agents/messenger/tools.py` | Gmail `@tool` functions |
+| `inbound/processor.py` | `InboundMessageProcessor` — routes polled inbound messages |
+| `jobs/inbound_poll.py` | `InboundPollingJob` — polls registered channels for new messages |
+| `jobs/gmail_watch_renewal.py` | Gmail push-notification watch renewal job |
+| `signals.py` | `MessagingSignalSource` — cross-plugin signal contribution |
+| `plugin.py` | `MessengerPlugin(ZePlugin)` — registers agent when Google credentials are present |
 
 ---
 
@@ -594,8 +572,8 @@ Five plugins are registered in `ze_api/container.py`:
   hooks, research/companion agents, and proactive jobs (briefing, insights, contact review).
   Goals, workflows, and accountability are wired directly by `ze_api/container.py` via
   `ze_automation`, not through this plugin.
-- **`EmailPlugin`** (`ze_email/plugin.py`) — Gmail channel + email agent (when Google
-  credentials are configured).
+- **`MessengerPlugin`** (`ze_messenger/plugin.py`) — cross-channel messenger agent,
+  Gmail channel wiring, and inbound polling (when Google credentials are configured).
 - **`ProspectingPlugin`** (`ze_prospecting/plugin.py`) — prospecting agent, campaign store,
   stale campaign recovery job.
 - **`CalendarPlugin`** (`ze_calendar/plugin.py`) — calendar and reminders agent paths.
@@ -633,7 +611,7 @@ Agent-scoped deps can be contributed via `agent_deps()` without touching the con
 | New automation concept (goals, workflows, execution) | `ze-automation` |
 | New Google integration credential | `ze-google` |
 | New agent (general assistant: research, companion) | `ze-personal` → `ze_personal/agents/<name>/` |
-| New agent (email) | `ze-email` → `ze_email/agents/<name>/` |
+| New agent (cross-channel messaging) | `ze-messenger` → `ze_messenger/agents/<name>/` |
 | New agent (prospecting) | `ze-prospecting` → `ze_prospecting/agents/` |
 | New agent that needs calendar/reminder state | `ze-calendar` → `ze_calendar/agents/<name>/` |
 | New agent that works with goals or workflows | `ze-automation` → `ze_automation/agents/<name>/` |

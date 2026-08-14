@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Package dependency layers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1280px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:900px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Layer stack · Ze architecture</p>
+    <h1>Package dependency layers</h1>
+    <svg viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="package-layers-title package-layers-desc">
+      <title id="package-layers-title">Ze monorepo layer architecture, bottom to top</title>
+      <desc id="package-layers-desc">Layer stack showing Ze's four top-level directories in strict dependency order — core infrastructure at the bottom, integrations above it, plugins above that, and apps at the top — with the packages layer (ze-sdk and friends) drawn as a cross-cutting seam beside core, integrations, and plugins rather than a fifth stacked layer.</desc>
+      <defs>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- direction indicator, left margin -->
+      <text x="76" y="92" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">ABSTRACTION</text>
+      <line x1="76" y1="356" x2="76" y2="104" stroke="#6b6b6b" stroke-width="1" marker-end="url(#arrow-accent)"/>
+      <text x="76" y="372" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">CONCRETE</text>
+
+      <!-- seam connectors (drawn before boxes) -->
+      <line x1="720" y1="196" x2="760" y2="196" stroke="#8052ff" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-accent)"/>
+      <line x1="720" y1="324" x2="760" y2="324" stroke="#8052ff" stroke-width="1.2" stroke-dasharray="4,4" marker-end="url(#arrow-accent)"/>
+
+      <!-- Layer: apps (top) -->
+      <rect x="120" y="100" width="600" height="64" fill="#f7f6f4"/>
+      <text x="140" y="116" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L4</text>
+      <text x="140" y="132" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">apps</text>
+      <text x="140" y="148" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">deployment units</text>
+      <text x="700" y="132" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">ze-api · ze-web</text>
+
+      <!-- Layer: plugins -->
+      <rect x="120" y="164" width="600" height="64" fill="#efeeeb"/>
+      <text x="140" y="180" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L3</text>
+      <text x="140" y="196" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">plugins</text>
+      <text x="140" y="212" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">ZePlugin domain extensions</text>
+      <text x="700" y="196" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">ze-personal · ze-messenger · ze-calendar · ze-news</text>
+
+      <!-- Layer: integrations -->
+      <rect x="120" y="228" width="600" height="64" fill="#f7f6f4"/>
+      <text x="140" y="244" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L2</text>
+      <text x="140" y="260" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">integrations</text>
+      <text x="140" y="276" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">external service wrappers</text>
+      <text x="700" y="260" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">ze-google · ze-trading212</text>
+
+      <!-- Layer: core (bottom) -->
+      <rect x="120" y="292" width="600" height="64" fill="#efeeeb"/>
+      <text x="140" y="308" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">L1</text>
+      <text x="140" y="324" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">core</text>
+      <text x="140" y="340" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">shared infra, no domain knowledge</text>
+      <text x="700" y="324" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">ze-agents · ze-core · ze-memory · ze-automation</text>
+
+      <!-- hairline dividers between layers -->
+      <line x1="120" y1="164" x2="720" y2="164" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="120" y1="228" x2="720" y2="228" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <line x1="120" y1="292" x2="720" y2="292" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+
+      <!-- outer silhouette -->
+      <rect x="120" y="100" width="600" height="256" fill="none" stroke="#0a0a0a" stroke-width="1"/>
+
+      <!-- Side band: packages (cross-cutting seam), focal -->
+      <rect x="760" y="164" width="160" height="192" rx="6" fill="rgba(128,82,255,0.08)"/>
+      <rect x="760" y="164" width="160" height="192" rx="6" fill="none" stroke="#8052ff" stroke-width="1.2" stroke-dasharray="4,4"/>
+      <text x="840" y="196" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.10em">SEAM · CROSS-CUTTING</text>
+      <text x="840" y="224" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">packages</text>
+      <text x="840" y="244" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ze-sdk · ze-client · ze-ui</text>
+      <text x="840" y="272" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">plugin entry point,</text>
+      <text x="840" y="284" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">spans core → plugins</text>
+
+      <!-- Legend -->
+      <line x1="120" y1="400" x2="920" y2="400" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="120" y="416" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="120" y="428" width="14" height="10" rx="2" fill="#efeeeb" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="140" y="436" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Stacked layer — strict bottom-to-top dependency</text>
+      <rect x="500" y="428" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2" stroke-dasharray="4,4"/>
+      <text x="520" y="436" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Cross-cutting seam — packages/ze-sdk</text>
+    </svg>
+  </div>
+</body>
+</html>

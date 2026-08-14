@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="finance-candidate-lifecycle-title finance-candidate-lifecycle-desc">
+      <title id="finance-candidate-lifecycle-title">Recurring expense candidate lifecycle</title>
+      <desc id="finance-candidate-lifecycle-desc">State machine showing a recurring-expense candidate moving from detected to either confirmed or dismissed by user action, with dismissed candidates automatically returning to detected when the charge amount later changes by more than the configured price-change threshold.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0a0a0a"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- initial marker -->
+      <circle cx="96" cy="136" r="6" fill="#0a0a0a"/>
+      <line x1="102" y1="136" x2="160" y2="136" stroke="#0a0a0a" stroke-width="1.2" marker-end="url(#arrow-ink)"/>
+
+      <!-- detected -> confirmed -->
+      <line x1="336" y1="128" x2="640" y2="128" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="436" y="108" width="104" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="488" y="117" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CONFIRM_RECURRING</text>
+
+      <!-- detected -> dismissed -->
+      <line x1="248" y1="168" x2="248" y2="304" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="258" y="230" width="120" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="318" y="239" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">DISMISS_RECURRING</text>
+
+      <!-- dismissed -> detected (guarded resurface) -->
+      <path d="M336,336 H452 Q460,336 460,328 V160 Q460,152 452,152 H336" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="472" y="228" width="132" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="538" y="237" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PRICE CHANGES</text>
+      <rect x="472" y="248" width="132" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="538" y="257" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">&gt; THRESHOLD (10%)</text>
+
+      <!-- confirmed -> end -->
+      <line x1="816" y1="136" x2="860" y2="136" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <circle cx="872" cy="136" r="8" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="872" cy="136" r="5" fill="#0a0a0a"/>
+
+      <!-- dismissed -> end -->
+      <line x1="248" y1="368" x2="248" y2="396" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <circle cx="248" cy="408" r="8" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="248" cy="408" r="5" fill="#0a0a0a"/>
+
+      <!-- Node: detected -->
+      <rect x="160" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="160" y="104" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="248" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">detected</text>
+      <text x="248" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">found, unreviewed</text>
+
+      <!-- Node: confirmed -->
+      <rect x="640" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="640" y="104" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="728" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">confirmed</text>
+      <text x="728" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">tracked as recurring</text>
+
+      <!-- Node: dismissed -->
+      <rect x="160" y="304" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="160" y="304" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="248" y="333" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">dismissed</text>
+      <text x="248" y="349" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ignored by user</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="452" x2="920" y2="452" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="468" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <circle cx="48" cy="484" r="5" fill="#0a0a0a"/>
+      <text x="64" y="487" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Initial state</text>
+      <circle cx="196" cy="484" r="7" fill="#f7f6f4" stroke="#0a0a0a" stroke-width="1"/>
+      <circle cx="196" cy="484" r="4" fill="#0a0a0a"/>
+      <text x="212" y="487" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Terminal state (until re-detected)</text>
+      <line x1="480" y1="484" x2="504" y2="484" stroke="#8052ff" stroke-width="1.4"/>
+      <text x="512" y="487" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Guarded transition (automatic)</text>
+    </svg>

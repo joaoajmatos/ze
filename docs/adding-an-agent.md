@@ -1,7 +1,7 @@
 # Ze — Adding a New Agent
 
 This guide explains how to write a new agent. Read it alongside the existing agents
-(`ze_personal/agents/research/`, `ze_email/agents/email/`) as working examples.
+(`ze_personal/agents/research/`, `ze_messenger/agents/messenger/`) as working examples.
 
 ---
 
@@ -11,7 +11,7 @@ This guide explains how to write a new agent. Read it alongside the existing age
 2. Resolve any open questions in the spec before writing code.
 3. Decide which package the agent belongs in (see [docs/package-architecture.md](package-architecture.md)):
    - General assistant agents (research, companion) → `ze_personal/agents/<name>/`
-   - Email → `ze_email/agents/<name>/`
+   - Cross-channel messaging (email, etc.) → `ze_messenger/agents/<name>/`
    - Prospecting → `ze_prospecting/agents/`
    - Calendar/reminder agents → `ze_calendar/agents/<name>/`
    - Goals/workflow agents → `ze_automation/agents/<name>/`

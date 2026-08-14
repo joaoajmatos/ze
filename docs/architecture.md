@@ -20,7 +20,7 @@ At a high level, the system is split into:
 - `ze-automation` for goals, workflows, accountability, and their proactive jobs.
 - `ze-personal` for the personal-assistant domain: identity, contacts, briefing/insights
   jobs, and the main general-purpose agents.
-- `ze-email`, `ze-calendar`, `ze-news`, `ze-prospecting`, and `ze-finance` for
+- `ze-messenger`, `ze-calendar`, `ze-news`, `ze-prospecting`, and `ze-finance` for
   domain-specific extensions.
 - `ze-onboarding`, `ze-ingestion`, `ze-correlation`, `ze-browser`, and
   `ze-notifications` for shared support systems.
@@ -180,7 +180,7 @@ See [docs/native-interface.md](native-interface.md) for the full WebSocket proto
 
 ## Agents
 
-**Modules:** `ze_personal/agents/` (research, companion) · `ze_automation/agents/` (goals, workflow) · `ze_email/agents/` (email) · `ze_prospecting/agents/` (prospecting) · `ze_calendar/agents/` (calendar, reminders) · `ze_news/agents/` (news)
+**Modules:** `ze_personal/agents/` (research, companion) · `ze_automation/agents/` (goals, workflow) · `ze_messenger/agents/` (messenger) · `ze_prospecting/agents/` (prospecting) · `ze_calendar/agents/` (calendar, reminders) · `ze_news/agents/` (news)
 
 All agents subclass `BaseAgent` (`ze_agents.base_agent`) and register via `@agent` (`ze_agents.registry`). Plugin code imports these via `ze_sdk`. Each agent owns:
 
@@ -200,7 +200,7 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `research` | OpenRouter web search, synthesis | `ze-personal` | Full |
 | `companion` | Pure reasoning + memory | `ze-personal` | Full |
 | `calendar` | Google Calendar API (CRUD) | `ze-calendar` | Haiku |
-| `email` | Gmail API (read, draft, send) | `ze-email` | Haiku |
+| `email` | Gmail API (read, draft, send) | `ze-messenger` | Haiku |
 | `reminders` | NL time parsing, APScheduler firing | `ze-calendar` | Haiku |
 | `prospecting` | Browser extraction, outreach drafting | `ze-prospecting` | Full |
 | `news` | `get_headlines` (personalized), `search_news` (semantic) | `ze-news` | Mini |
@@ -575,7 +575,7 @@ Every channel must implement three methods:
 
 | Channel | Class | Transport |
 |---|---|---|
-| `email` | `GmailChannel` (`ze_email/channel/gmail.py`) | Gmail API via `GoogleCredentials` (from `ze-google`) |
+| `email` | `GmailChannel` (`ze_google/gmail_channel.py`) | Gmail API via `GoogleCredentials` (from `ze-google`) |
 
 See [docs/channels.md](channels.md) for the authoring guide for adding new channels.
 
@@ -725,7 +725,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_api/compose.py` | `register_all_proactive_jobs()` — fans out core + plugin cron registration |
 | `ze_api/container.py` | `ZeContainer` — subclasses `ze_core.Container`, wires all ZePlugins |
 | `ze_personal/persona/` | `PostgresPersonaStore` — named profiles, dial overrides, DB persistence |
-| `ze_email/channel/` | `GmailChannel` — Gmail API channel (imports creds from `ze-google`) |
+| `ze_google/gmail_channel.py` | `GmailChannel` — Gmail API channel (owned by `ze-google`) |
 | `ze_api/interface/native.py` | `NativeAppInterface` — WebSocket frame delivery + ntfy fallback |
 
 ---

@@ -283,6 +283,10 @@ Ze detects any billing cycle that maps to a natural interval — not just monthl
 
 ### Candidate lifecycle
 
+![State machine showing a recurring-expense candidate moving from detected to either confirmed or dismissed by user action, with dismissed candidates automatically returning to detected when the charge amount later changes by more than the configured price-change threshold.](diagrams/docs/finance-candidate-lifecycle.svg)
+
+<sub>[Interactive version](diagrams/docs/finance-candidate-lifecycle.html)</sub>
+
 Detected candidates have three states:
 
 | Status | Meaning |

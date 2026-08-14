@@ -37,7 +37,7 @@ Legend: 🟢 substantial · 🟡 partial · 🔴 gap.
 
 | Maturity | Where it lives today |
 |---|---|
-| 🟢 | `ze-calendar`, `ze-email`/`ze-messenger`, `ze-news`, `ze-finance`, `ze-browser`, `ze-ingestion` (web/PDF/audio/image → common content model), `ze-communication` (inbound channels), signal admission (Phase 55/56). |
+| 🟢 | `ze-calendar`, `ze-messenger`, `ze-news`, `ze-finance`, `ze-browser`, `ze-ingestion` (web/PDF/audio/image → common content model), `ze-communication` (inbound channels), signal admission (Phase 55/56). |
 
 **State:** strong and broad. The admission gate (`relevance_to_user + intrinsic_magnitude`)
 is the right discipline — perception is already relevance-filtered rather than firehose.
