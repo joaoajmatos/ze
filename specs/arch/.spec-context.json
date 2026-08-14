@@ -1,0 +1,25 @@
+{
+  "workflow": "companion",
+  "specName": "arch",
+  "branch": "arch",
+  "selectedAt": "2026-08-14T11:16:05.877Z",
+  "currentStep": "tasks",
+  "status": "tasking",
+  "history": [
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-14T11:16:48.283Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T11:16:48.285Z"
+    }
+  ],
+  "telemetryInstanceId": "7e081093-1f93-4f63-9321-641a61efb500"
+}
