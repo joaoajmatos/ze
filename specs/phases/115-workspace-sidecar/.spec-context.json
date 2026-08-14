@@ -515,6 +515,30 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-08-14T22:46:58.195Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T057",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:50:34.738Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T058",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:50:41.593Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T059",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T22:50:47.413Z"
     }
   ],
   "approach": "New core/ze-workspace plus sidecar/workspace (browser-helper split). WorkspaceMode is a persisted singleton with in-node interrupt() confirms; skill scripts are stored and need a separate executable approval. In-turn only — detach/follow-through is spec 116.",
@@ -800,7 +824,7 @@
       ]
     }
   },
-  "currentTask": "T056",
+  "currentTask": "T059",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -1243,6 +1267,36 @@
       "did": "Recent activity on the workspace page shows run origin from GET /workspace/runs",
       "files": [
         "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.tsx"
+      ]
+    },
+    "T057": {
+      "status": "DONE",
+      "did": "Updated CLAUDE.md and AGENTS.md package graph, zws/zsk002 migration table, and Phase 115 Done row; noted ze-core/ze-agents must not import ze_workspace.",
+      "files": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ]
+    },
+    "T058": {
+      "status": "DONE",
+      "did": "Added core/ze-workspace/README.md and docs/workspace.md (modes, isolation, Compose/Fly); env vars in configuration.md; architecture/package-architecture mentions.",
+      "files": [
+        "core/ze-workspace/README.md",
+        "docs/workspace.md",
+        "docs/README.md",
+        "docs/configuration.md",
+        "docs/architecture.md",
+        "docs/package-architecture.md",
+        "docs/cognitive-architecture.md",
+        "sidecar/workspace/README.md"
+      ]
+    },
+    "T059": {
+      "status": "DONE",
+      "did": "Set specs/README.md 115 row to Done and spec.md Status to Implemented.",
+      "files": [
+        "specs/README.md",
+        "specs/phases/115-workspace-sidecar/spec.md"
       ]
     }
   }

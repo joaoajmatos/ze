@@ -487,12 +487,12 @@ FR-024 no detach) are confirmed here.
 
 **Wave 1 — independent docs:**
 
-- [ ] T057 [P] Update `CLAUDE.md` / `AGENTS.md` package graph, migration-ownership table
+- [x] T057 [P] Update `CLAUDE.md` / `AGENTS.md` package graph, migration-ownership table
       (`zws`, `zsk002`), graph flow if needed, and Phase 115 status row. Note:
       `ze-core`/`ze-agents` must not depend on `ze-workspace`.
-- [ ] T058 [P] Add `core/ze-workspace/README.md` and `docs/workspace.md` (mirrors
+- [x] T058 [P] Add `core/ze-workspace/README.md` and `docs/workspace.md` (mirrors
       `docs/browser.md` — env vars, isolation rules, mode table, not a browsing session)
-- [ ] T059 [P] Update `specs/README.md` index row for 115; keep spec header Status in sync
+- [x] T059 [P] Update `specs/README.md` index row for 115; keep spec header Status in sync
       when implementation lands
 
 **⟶ Wait for Wave 1 to finish, then:**
