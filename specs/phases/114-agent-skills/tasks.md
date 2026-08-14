@@ -362,13 +362,13 @@ pass; SC-004 satisfied.
 
 **Purpose**: Documentation and full validation across all stories.
 
-- [ ] T062 [P] Update `CLAUDE.md`'s package dependency graph, migration-ownership table, and
+- [x] T062 [P] Update `CLAUDE.md`'s package dependency graph, migration-ownership table, and
       Phase status table with the new `ze-skills` entry and Phase 114 row
-- [ ] T063 [P] Add `core/ze-skills/README.md` (mirrors `core/ze-worldstate/README.md` — package
+- [x] T063 [P] Add `core/ze-skills/README.md` (mirrors `core/ze-worldstate/README.md` — package
       purpose, key modules, how bundled vs. imported skills flow through the system)
-- [ ] T064 Run `make lint` and `make format` across all touched packages
+- [x] T064 Run `make lint` and `make format` across all touched packages
       (`ze-skills`, `ze-core`, `ze-agents`, `ze-plugin`, `ze-api`, `ze-web`)
-- [ ] T065 Run `make test-skills`, `make test-core`, `make test-agents`,
+- [x] T065 Run `make test-skills`, `make test-core`, `make test-agents`,
       `make test` (ze-api), `make test-web` — confirm all pass
 - [ ] T066 Execute quickstart.md Scenarios 1–9 end-to-end against a running `make dev` +
       `make db-up && make migrate` stack; confirm every "Expect" assertion holds

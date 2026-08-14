@@ -66,6 +66,16 @@ ze/                           # monorepo root
 │   │       ├── inflow.py     # inflow wiring helpers (conversation hook, messenger/calendar/ingestion extractors)
 │   │       ├── jobs/         # stale-suspicion expiry job
 │   │       └── migrations/   # zw001 (open_loops)
+│   ├── ze-skills/            # Agent Skills — import, review, matching, tool-narrowing
+│   │   └── ze_skills/
+│   │       ├── types.py      # Skill, SkillReview, ReferenceFile, SkillStatus/Source/Trigger
+│   │       ├── store.py      # SkillStore Protocol + PostgresSkillStore
+│   │       ├── parser.py     # parse_skill_md — YAML frontmatter + Markdown body
+│   │       ├── importer.py   # fetch_skill_source — URL/zip fetch
+│   │       ├── matching.py   # SkillMatcher — embedding similarity + /skill-name
+│   │       ├── review.py     # approve/reject/disable/enable/remove/refresh
+│   │       ├── jobs/         # SkillRecheckJob (daily source-content recheck)
+│   │       └── migrations/   # zsk001 (skills, skill_reference_files, skill_reviews)
 │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
 │   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
 │   ├── ze-notifications/     # Push notification abstraction (ntfy)
@@ -149,6 +159,7 @@ ze-memory       → ze-agents                core/
 ze-eval           (no ze deps — HTTP only) core/  ← eval infrastructure
 ze-automation   → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
 ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation  core/  ← open loops; wired by ze-api directly
+ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data  core/  ← agent skills; wired by ze-api directly
 ze-core         → ze-agents, ze-communication, ze-plugin  core/  ← engine; never a plugin dep
 ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
 ze-google       → ze-communication         integrations/  ← GmailChannel now lives here
@@ -157,7 +168,7 @@ ze-messenger    → ze-sdk, ze-google, ze-personal            plugins/
 ze-prospecting  → ze-sdk, ze-browser, ze-personal           plugins/
 ze-calendar     → ze-sdk, ze-google, ze-personal            plugins/
 ze-news         → ze-sdk                   plugins/
-ze-api          → ze-core, ze-data, ze-logging, ze-sdk, ze-personal, ze-automation, ze-worldstate, ze-messenger, ze-prospecting,
+ze-api          → ze-core, ze-data, ze-logging, ze-sdk, ze-personal, ze-automation, ze-worldstate, ze-skills, ze-messenger, ze-prospecting,
                     ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components   apps/
 ze-web            (React — connects to ze-api over WebSocket, no Python deps)         apps/
 ```
@@ -362,6 +373,7 @@ and runs them against a single `alembic_version` table.
 | ze-calendar | `zcal` | calendar_reminders, user_reminders |
 | ze-prospecting | `zpros` | prospect_campaigns, prospect_outreach |
 | ze-news | `zn` | news_articles |
+| ze-skills | `zsk` | skills, skill_reference_files, skill_reviews |
 
 **Naming conventions:**
 - One prefix per package (`zc`, `zm`, `zcal`, …).
@@ -373,14 +385,14 @@ and runs them against a single `alembic_version` table.
 - ze-api runs migrations but owns no tables.
 - Never add plugin-owned tables to ze-api migrations.
 - For `ZePlugin` subclasses: create `<pkg>/migrations/` and override `migrations_path()` — the runner discovers it automatically.
-- For non-plugin core packages (ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-automation): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
+- For non-plugin core packages (ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-automation, ze-worldstate, ze-skills): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
 - Use `depends_on` in migration files for cross-package ordering (e.g. ze-prospecting depends on `zc005` for the contacts table).
 
 ## LangGraph graph flow
 
 ```
 [voice/image] → transcribe/caption ─┐
-[text]                               ├→ embed_route → (compound?) → decompose → fetch_context → capability_check
+[text]                               ├→ embed_route → (compound?) → decompose → fetch_context → match_skills → capability_check
                                                                   ↘ fetch_context ↗
 capability_check → execute_tool → (compound?) → synthesize → write_memory → END
                  → draft_response → await_confirmation → END  (graph pauses here)
@@ -466,6 +478,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 111 | Claim Topology — shared `ClaimKind`/`Provenance`/`Confidence`/`decay()` vocabulary in `core/ze-agents/ze_agents/claims.py`; fixes frozen `Hypothesis.confidence` via new `HypothesisDecayJob` (`zcor002`); retrofits `OpenLoop`, `memory_facts` (`zm016`), and `Signal` (`zm017`) onto the shared vocabulary, `OpenLoop.provenance` unvalidated against a closed core whitelist; extracts `is_stale()` staleness helper into `core/ze-proactive`, shared by `StaleSuspicionJob`/`DriftSweepJob`/`PostgresGoalStore.list_stuck` | Done |
 | 112 | Session Context Continuity — replaces `write_memory`'s blind `[-SESSION_HISTORY_LIMIT:]` trim with a 70%-of-context-window compaction check (`ze_core/openrouter/context_windows.py`, LLM-produced rolling summary folded ahead of the verbatim tail, graceful fallback to the old trim on LLM failure); replaces `fetch_context`'s blank-history-on-gap side effect with a silent resume recap (`ResumeRecap`, session narrative + open loops + in-flight goals/workflows) injected into the system prompt via `AgentContext.resume_recap`, never appended to `messages`; both recorded on `MessageTrace` (`compaction`, `resume_recap_applied`) for trace-panel inspectability; no new graph nodes, no new tables | Done |
 | 113 | Proactive/Concurrency Hardening Sweep — three independent reliability fixes: `pending_confirmations` + in-process `pending_configs` rekeyed from `thread_id` to `request_id` (`zc027`) so concurrent confirmation gates on one thread can't clobber or cross-cancel each other; opt-in `budget:` config block + `SpendBudgetChecker`/`ze_core/telemetry/pricing.py` composed into `capability_check` (strictest-wins with `CapabilityGate`), holding execution via the existing `AWAIT_CONFIRMATION` gate when session/day spend would exceed a configured ceiling; `push_log` idempotency key + unique index (`zpro003`) turns `LoopSurfacer.log_push`/`PushSweepJob` from notify-then-log into claim-then-notify (`claim_push`/`release_push_claim`), closing the concurrent-sweep double-notify race and rolling back the claim on notifier failure | Done |
+| 114 | Agent Skills — new core `ze-skills` package: import `SKILL.md` from a URL or zip, pending-review gate before any conversation effect, embedding-similarity + `/skill-name` matching applied globally across agents, `allowed-tools` intersects (never unions) an agent's tools, usage on `MessageTrace.skills_used`/`trace_update`; bundled skills via `ZePlugin.bundled_skill_paths()`; daily `SkillRecheckJob` reverts to pending review on source content change; `GET/POST /api/v0/skills` + `widgets/skill-management` | Done |
 
 ## graphify
 

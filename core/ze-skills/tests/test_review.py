@@ -235,9 +235,7 @@ async def test_refresh_skill_changed_content_reverts_to_pending_review():
     store.delete_reference_files = AsyncMock()
     store.add_reference_file = AsyncMock()
 
-    with patch.object(
-        review, "fetch_skill_source", AsyncMock(return_value=_fetched())
-    ):
+    with patch.object(review, "fetch_skill_source", AsyncMock(return_value=_fetched())):
         result = await review.refresh_skill(store, skill_id)
 
     assert result.status == SkillStatus.PENDING_REVIEW

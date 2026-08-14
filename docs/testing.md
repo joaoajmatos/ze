@@ -19,6 +19,7 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-memory` | ze-memory | pytest |
 | `make test-automation` | ze-automation | pytest |
 | `make test-worldstate` | ze-worldstate | pytest |
+| `make test-skills` | ze-skills | pytest |
 | `make test-onboarding` | ze-onboarding | pytest |
 | `make test-correlation` | ze-correlation | pytest |
 | `make test-browser` | ze-browser | pytest |

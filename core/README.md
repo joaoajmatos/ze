@@ -23,6 +23,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-memory](ze-memory/) | Memory persistence and retrieval — facts, episodes, graph, consolidation |
 | [ze-automation](ze-automation/) | Goal + workflow engines, accountability — planners, executors, schedulers |
 | [ze-worldstate](ze-worldstate/) | Open-loop substrate — active concerns, drift detection, evidence-linked confidence |
+| [ze-skills](ze-skills/) | Agent Skills — import, review, matching, tool-narrowing |
 | [ze-correlation](ze-correlation/) | Cross-domain hypothesis formation from the memory graph |
 | [ze-browser](ze-browser/) | HTTP client for the Playwright browser sidecar |
 | [ze-notifications](ze-notifications/) | Push notification abstraction (ntfy) |
@@ -45,6 +46,7 @@ ze-proactive      ←  ze-agents
 ze-memory         ←  ze-agents
 ze-automation     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data, ze-components
 ze-worldstate     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation
+ze-skills         ←  ze-agents, ze-proactive, ze-logging, ze-data
 ze-correlation    ←  ze-agents, ze-memory
 ze-browser        ←  no ze deps
 ze-notifications  ←  no ze deps
@@ -75,6 +77,7 @@ The plugin entry point (`ze-sdk`) lives in [`packages/ze-sdk`](../packages/ze-sd
 | New outbound/inbound channel contract | `ze-communication` |
 | New goal, workflow, or accountability primitive | `ze-automation` |
 | New open-loop lifecycle, extraction, or surfacing logic | `ze-worldstate` |
+| New skill import, matching, or review primitive | `ze-skills` |
 | New dev fixture / seed domain | `ze-seed` |
 
 If the code has any dependency on personal-assistant domain concepts (goals,
