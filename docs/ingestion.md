@@ -8,27 +8,9 @@ Ze can ingest arbitrary external content — web pages, PDFs, YouTube videos, au
 
 Ingestion turns unstructured external content into structured knowledge:
 
-```
-URL / file / text
-       │
-       ▼
- ContentClassifier          ← URL pattern → MIME hint → magic bytes
-       │
-       ▼
-    Fetcher                 ← WebFetcher | BrowserFetcher | YtDlpFetcher | plugin fetcher
-       │
-       ▼
-   Processor               ← HTML → PDF → Audio (Whisper) → Image (vision) → Text
-       │
-       ▼
- Extractors (parallel)     ← LLMExtractor + any plugin extractors
-       │
-       ▼
-IngestionStore             ← archives raw text + extraction in `ingested_content`
-       │
-       ▼
-  MemorySink               ← proposes facts to ze-memory
-```
+![Process diagram showing raw URL, file, or text input classified, fetched, processed by content type, run through parallel extractors, archived, and finally proposed to ze-memory as facts.](diagrams/docs/ingestion-pipeline.svg)
+
+<sub>[Interactive version](diagrams/docs/ingestion-pipeline.html)</sub>
 
 Every stage emits a progress key so the user sees live status during long operations (video transcription, LLM extraction).
 

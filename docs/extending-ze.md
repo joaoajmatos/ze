@@ -16,46 +16,11 @@ Read this alongside:
 
 Start here before writing anything.
 
-```
-New agent that needs contacts or persona context?
-  → ze-personal  (ze_personal/agents/<name>/)
+![Flowchart showing where new code belongs: an agent for an existing domain routes to ze-personal, ze-automation, ze-messenger, ze-calendar, or ze-prospecting; an agent for a new domain gets its own plugin package; a proactive job lives in the agent's own package via the ZePlugin hook; and infrastructure additions route to ze-memory, ze-data, ze-agents/ze-onboarding, ze-notifications, or ze-components.](diagrams/docs/package-routing.svg)
 
-New agent for goals or workflows?
-  → ze-automation  (ze_automation/agents/<name>/)
+<sub>[Interactive version](diagrams/docs/package-routing.html)</sub>
 
-New agent for email/Gmail?
-  → ze-email  (ze_email/agents/<name>/)
-
-New agent for calendar/reminders?
-  → ze-calendar  (ze_calendar/agents/<name>/)
-
-New agent for prospecting/outreach?
-  → ze-prospecting  (ze_prospecting/agents/)
-
-New agent for a new coherent domain (finance, legal, health)?
-  → new plugin package  (see "Creating a new plugin package" below)
-
-New proactive background job?
-  → same package as the agent it serves  (+  plugin.register_proactive_jobs())
-
-New memory retrieval policy or graph predicate?
-  → ze-memory
-
-New export/import/delete data domain?
-  → ze-data (re-exported from ze_sdk)
-
-New stable authoring type or protocol?
-  → ze-agents  (re-exported from ze_sdk)
-
-New onboarding step/seed type or setup-flow primitive?
-  → ze-onboarding  (re-exported from ze_sdk.onboarding)
-
-New push notification backend?
-  → ze-notifications
-
-New server-driven UI component?
-  → ze-components
-```
+New agent that needs contacts or persona context routes to `ze-personal` (`ze_personal/agents/<name>/`). Goals or workflows go to `ze-automation` (`ze_automation/agents/<name>/`). Email/Gmail agents go to `ze-messenger` (`ze_messenger/agents/messenger/`). Calendar/reminders go to `ze-calendar` (`ze_calendar/agents/<name>/`). Prospecting/outreach goes to `ze-prospecting` (`ze_prospecting/agents/`). A new coherent domain (finance, legal, health) gets a new plugin package — see "Creating a new plugin package" below.
 
 See [docs/package-architecture.md](package-architecture.md) for the full decision table and the criteria for when a new package is warranted.
 

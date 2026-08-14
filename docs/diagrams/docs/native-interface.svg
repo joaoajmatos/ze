@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="native-interface-title native-interface-desc">
+      <title id="native-interface-title">Native app interface outbound delivery path</title>
+      <desc id="native-interface-desc">Architecture diagram showing the React app connected to NativeAppInterface over a bidirectional WebSocket at /ws, with NativeAppInterface always persisting outbound messages to MessageStore for unread replay and pushing through NtfyNotifier only when the client is offline.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- ============ ARROWS (drawn before boxes) ============ -->
+
+      <!-- React App <-> NativeAppInterface : bidirectional WebSocket (focal) -->
+      <line x1="200" y1="104" x2="320" y2="104" stroke="#8052ff" stroke-width="1.4" marker-start="url(#arrow-accent)" marker-end="url(#arrow-accent)"/>
+      <rect x="242" y="84" width="76" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="280" y="93" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">WS · /WS</text>
+
+      <!-- NativeAppInterface -> MessageStore : always persisted -->
+      <path d="M380,136 V176 Q380,184 372,184 H320 Q312,184 312,192 V232" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="321" y="164" width="50" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="346" y="173" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PERSIST</text>
+
+      <!-- NativeAppInterface -> NtfyNotifier : only when offline -->
+      <path d="M460,136 V176 Q460,184 468,184 H528 Q536,184 536,192 V232" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <rect x="473" y="164" width="50" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="498" y="173" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">OFFLINE</text>
+
+      <!-- ============ NODES ============ -->
+
+      <!-- Node: React App (Input/User) -->
+      <rect x="40" y="72" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="40" y="72" width="160" height="64" rx="6" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <rect x="44" y="76" width="24" height="12" rx="2" fill="transparent" stroke="rgba(107,107,107,0.40)" stroke-width="0.8"/>
+      <text x="56" y="85" fill="#6b6b6b" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UI</text>
+      <text x="120" y="103" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">React App</text>
+      <text x="120" y="119" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ze-web</text>
+
+      <!-- Node: NativeAppInterface (focal) -->
+      <rect x="320" y="72" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="320" y="72" width="200" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="324" y="76" width="32" height="12" rx="2" fill="transparent" stroke="rgba(128,82,255,0.50)" stroke-width="0.8"/>
+      <text x="340" y="85" fill="#8052ff" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">API</text>
+      <text x="420" y="103" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">NativeAppInterface</text>
+      <text x="420" y="119" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">1 connection at a time</text>
+
+      <!-- Node: MessageStore (Store) -->
+      <rect x="232" y="232" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="232" y="232" width="160" height="64" rx="6" fill="rgba(10,10,10,0.05)" stroke="#6b6b6b" stroke-width="1"/>
+      <rect x="236" y="236" width="24" height="12" rx="2" fill="transparent" stroke="rgba(107,107,107,0.40)" stroke-width="0.8"/>
+      <text x="248" y="245" fill="#6b6b6b" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DB</text>
+      <text x="312" y="263" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">MessageStore</text>
+      <text x="312" y="279" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Postgres · messages</text>
+
+      <!-- Node: NtfyNotifier (External) -->
+      <rect x="456" y="232" width="160" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="456" y="232" width="160" height="64" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.30)" stroke-width="1"/>
+      <rect x="460" y="236" width="28" height="12" rx="2" fill="transparent" stroke="rgba(10,10,10,0.30)" stroke-width="0.8"/>
+      <text x="474" y="245" fill="#6b6b6b" font-size="7" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EXT</text>
+      <text x="536" y="263" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">NtfyNotifier</text>
+      <text x="536" y="279" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">push when offline</text>
+
+      <!-- ============ LEGEND ============ -->
+      <line x1="40" y1="316" x2="600" y2="316" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="332" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="340" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="348" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Native interface</text>
+
+      <line x1="220" y1="345" x2="242" y2="345" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="248" y="348" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Always persisted</text>
+
+      <line x1="420" y1="345" x2="442" y2="345" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <text x="448" y="348" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Only when offline</text>
+    </svg>

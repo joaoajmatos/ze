@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Package routing</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1000px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:860px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart · Ze extension guide</p>
+    <h1>Where does my code belong?</h1>
+    <svg viewBox="0 0 1040 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="package-routing-title package-routing-desc">
+      <title id="package-routing-title">Ze package routing decision guide</title>
+      <desc id="package-routing-desc">Flowchart showing where new code belongs: a new agent for an existing domain routes to ze-personal, ze-automation, ze-messenger, ze-calendar, or ze-prospecting; a new agent for a new domain gets its own plugin package; a new proactive job lives in the agent's own package via the ZePlugin hook; and infrastructure additions route to ze-memory for memory or graph logic, ze-data for a data domain, ze-agents or ze-onboarding for core types, ze-notifications for push backends, or ze-components for UI components.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- trunk: root -> junction -> bus -> six branches -->
+      <line x1="520" y1="80" x2="520" y2="116" stroke="#6b6b6b" stroke-width="1"/>
+      <line x1="100" y1="116" x2="940" y2="116" stroke="#6b6b6b" stroke-width="1"/>
+      <circle cx="520" cy="116" r="4" fill="#0a0a0a"/>
+
+      <line x1="100" y1="116" x2="100" y2="156" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <line x1="268" y1="116" x2="268" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="436" y1="116" x2="436" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="604" y1="116" x2="604" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="772" y1="116" x2="772" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="940" y1="116" x2="940" y2="156" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- root (start pill) -->
+      <rect x="380" y="32" width="280" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="380" y="32" width="280" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="520" y="60" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">What am I adding?</text>
+
+      <!-- col1: agent, existing domain (focal) -->
+      <rect x="28" y="156" width="144" height="128" rx="6" fill="#f7f6f4"/>
+      <rect x="28" y="156" width="144" height="128" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="100" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Agent for</text>
+      <text x="100" y="196" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">existing domain</text>
+      <text x="100" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-personal · ze-calendar</text>
+      <text x="100" y="232" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-automation</text>
+      <text x="100" y="248" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-messenger</text>
+      <text x="100" y="264" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-prospecting</text>
+
+      <!-- col2: agent, new domain -->
+      <rect x="196" y="156" width="144" height="96" rx="6" fill="#f7f6f4"/>
+      <rect x="196" y="156" width="144" height="96" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="268" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Agent for</text>
+      <text x="268" y="196" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">new domain</text>
+      <text x="268" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">new plugin package</text>
+
+      <!-- col3: proactive job -->
+      <rect x="364" y="156" width="144" height="96" rx="6" fill="#f7f6f4"/>
+      <rect x="364" y="156" width="144" height="96" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="436" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Proactive job</text>
+      <text x="436" y="200" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">agent's own package</text>
+      <text x="436" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">(ZePlugin hook)</text>
+
+      <!-- col4: memory / graph -->
+      <rect x="532" y="156" width="144" height="80" rx="6" fill="#f7f6f4"/>
+      <rect x="532" y="156" width="144" height="80" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="604" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Memory / graph</text>
+      <text x="604" y="200" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-memory</text>
+
+      <!-- col5: data domain -->
+      <rect x="700" y="156" width="144" height="96" rx="6" fill="#f7f6f4"/>
+      <rect x="700" y="156" width="144" height="96" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="772" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Data domain</text>
+      <text x="772" y="200" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-data</text>
+      <text x="772" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">export / import / delete</text>
+
+      <!-- col6: core infra -->
+      <rect x="868" y="156" width="144" height="112" rx="6" fill="#f7f6f4"/>
+      <rect x="868" y="156" width="144" height="112" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="940" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Core infra</text>
+      <text x="940" y="200" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-agents · ze-onboarding</text>
+      <text x="940" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-notifications</text>
+      <text x="940" y="232" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-components</text>
+
+      <!-- Legend -->
+      <line x1="28" y1="320" x2="1012" y2="320" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="28" y="336" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="28" y="352" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="48" y="360" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Entry point</text>
+      <rect x="180" y="352" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="200" y="360" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Most common path</text>
+    </svg>
+  </div>
+</body>
+</html>

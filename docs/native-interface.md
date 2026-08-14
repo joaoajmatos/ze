@@ -11,14 +11,9 @@ over a persistent WebSocket. When the app is not connected, Ze falls back to
 
 ## Overview
 
-```
-React App ←──── WebSocket /ws ────→ NativeAppInterface
-                                              │
-                                     ┌────────┴─────────┐
-                                     ▼                   ▼
-                              MessageStore           NtfyNotifier
-                          (Postgres messages)    (push when offline)
-```
+![Architecture diagram of the native interface: the React app talks to NativeAppInterface over a bidirectional WebSocket, which always persists outbound messages to MessageStore and falls back to NtfyNotifier only when the client is offline.](diagrams/docs/native-interface.svg)
+
+<sub>[Interactive version](diagrams/docs/native-interface.html)</sub>
 
 `NativeAppInterface` is the `AppInterface` implementation for the native client. It
 saves every outbound message to `MessageStore` (for unread replay on reconnect), pushes

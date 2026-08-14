@@ -120,6 +120,10 @@ Other planned seed kinds are modeled but not fully implemented yet:
 
 ## WebSocket Flow
 
+![Sequence diagram showing the App starting onboarding with a command message, the Backend replying with an assistant message plus onboarding session metadata carrying a form component, and the App submitting the filled-in form back to the Backend as a structured component_submit payload.](diagrams/docs/onboarding-flow.svg)
+
+<sub>[Interactive version](diagrams/docs/onboarding-flow.html)</sub>
+
 The app starts onboarding by sending:
 
 ```json

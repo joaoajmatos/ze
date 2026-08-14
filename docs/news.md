@@ -8,26 +8,9 @@ from `ze-core` and `ze-personal`.
 
 ## Architecture overview
 
-```
-config.yaml (news.sources)
-        │
-        ▼
-SourceRegistry ──► RssSource.fetch() ──► NewsFetchJob (scheduled every 30 min)
-                                               ▲               │
-                                               │ force=True     │
-                                         refresh_news    ┌──────┤
-                                         (on-demand)     │      │
-                                                         ▼      ▼
-                                               NewsStore.upsert()    async credibility scoring
-                                                        │                      │
-                                               (embedding stored)    NewsStore.update_credibility()
-                                                        │
-                                           ┌────────────┼────────────┐
-                                           │            │            │
-                                           ▼            ▼            ▼
-                                    get_headlines   search_news   MorningBriefing
-                                    (news agent)   (news agent)   (briefing job)
-```
+![Data flow diagram showing configured sources feeding the source registry into a fetch job that runs on a schedule or an on-demand trigger, writing articles into the news store, which asynchronously kicks off credibility scoring and fans out to three consumers: headline retrieval, semantic search, and the morning briefing.](diagrams/docs/news-pipeline.svg)
+
+<sub>[Interactive version](diagrams/docs/news-pipeline.html)</sub>
 
 ---
 

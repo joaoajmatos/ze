@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1108 464" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="news-pipeline-title news-pipeline-desc">
+      <title id="news-pipeline-title">News pipeline: ingestion, storage, and consumption</title>
+      <desc id="news-pipeline-desc">Data flow diagram showing configured sources feeding the source registry into a fetch job that runs on a schedule or an on-demand trigger, writing articles into the news store, which asynchronously kicks off credibility scoring and fans out to three consumers: headline retrieval, semantic search, and the morning briefing.</desc>
+      <defs>
+<style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Row A: config.yaml -> SourceRegistry -> NewsFetchJob -> NewsStore.upsert() -->
+      <line x1="216" y1="144" x2="248" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="416" y1="144" x2="448" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="616" y1="144" x2="648" y2="144" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- refresh_news (on-demand trigger) -> NewsFetchJob, dashed, same x -->
+      <line x1="532" y1="248" x2="532" y2="168" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- NewsStore.upsert() -> credibility scoring, dashed async, same x -->
+      <line x1="732" y1="168" x2="732" y2="248" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+      <!-- NewsStore.upsert() -> get_headlines (fan attach y=128, corridor x=868) -->
+      <path d="M816,128 H860 Q868,128 868,120 V116 Q868,108 876,108 H900" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- NewsStore.upsert() -> search_news (fan attach y=144, corridor x=848) -->
+      <path d="M816,144 H840 Q848,144 848,152 V220 Q848,228 856,228 H900" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- NewsStore.upsert() -> MorningBriefing (fan attach y=160, corridor x=828) -->
+      <path d="M816,160 H820 Q828,160 828,168 V340 Q828,348 836,348 H900" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- edge labels -->
+      <rect x="600" y="122" width="64" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="632" y="131" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">ARTICLES</text>
+      <rect x="490" y="200" width="84" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="532" y="209" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">FORCE=TRUE</text>
+      <rect x="694" y="200" width="76" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="732" y="209" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">ASYNC SCORE</text>
+
+      <!-- Node: config.yaml (entry pill) -->
+      <rect x="48" y="120" width="168" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="48" y="120" width="168" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="132" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">config.yaml</text>
+      <text x="132" y="155" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">news.sources</text>
+
+      <!-- Node: SourceRegistry -->
+      <rect x="248" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="248" y="120" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="332" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">SourceRegistry</text>
+      <text x="332" y="155" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">→ RssSource.fetch()</text>
+
+      <!-- Node: NewsFetchJob -->
+      <rect x="448" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="448" y="120" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="532" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">NewsFetchJob</text>
+      <text x="532" y="155" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">every 30 min</text>
+
+      <!-- Node: NewsStore.upsert() (focal) -->
+      <rect x="648" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="648" y="120" width="168" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="732" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">NewsStore.upsert()</text>
+      <text x="732" y="155" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">embedding stored</text>
+
+      <!-- Node: refresh_news (on-demand trigger pill) -->
+      <rect x="448" y="248" width="168" height="48" rx="24" fill="#f7f6f4"/>
+      <rect x="448" y="248" width="168" height="48" rx="24" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="532" y="269" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">refresh_news</text>
+      <text x="532" y="283" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">on-demand · agent tool</text>
+
+      <!-- Node: credibility scoring (optional / async) -->
+      <rect x="648" y="248" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="648" y="248" width="168" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="732" y="269" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Credibility scoring</text>
+      <text x="732" y="283" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">update_credibility()</text>
+
+      <!-- Node: get_headlines -->
+      <rect x="900" y="84" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="900" y="84" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="984" y="105" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">get_headlines</text>
+      <text x="984" y="119" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">news agent tool</text>
+
+      <!-- Node: search_news -->
+      <rect x="900" y="204" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="900" y="204" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="984" y="225" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">search_news</text>
+      <text x="984" y="239" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">news agent tool</text>
+
+      <!-- Node: MorningBriefing -->
+      <rect x="900" y="324" width="168" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="900" y="324" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="984" y="345" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">MorningBriefing</text>
+      <text x="984" y="359" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">briefing job</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="412" x2="1068" y2="412" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="428" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="440" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="448" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Primary write path</text>
+      <rect x="260" y="440" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="280" y="448" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Trigger / async</text>
+      <rect x="460" y="440" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
+      <text x="480" y="448" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Entry point</text>
+    </svg>

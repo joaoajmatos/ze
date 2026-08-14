@@ -12,20 +12,9 @@ For the architectural invariants that all phases must respect, see
 
 ## Overview
 
-```
-ChannelRegistry
-  ├── GmailChannel (gmail:joao@gmail.com)   InboundChannel
-  ├── GmailChannel (gmail:joao@work.com)    InboundChannel
-  └── (future: ProtonMailChannel, WhatsAppChannel, ...)
+![Data flow diagram showing the ChannelRegistry feeding InboundPollingJob, which hands messages to InboundMessageProcessor for episode writing, signal emission, and contact-gated push notification; the processor writes ThreadChannelMap, which the outbound send_email tool reads to resolve which channel and thread to send through.](diagrams/docs/channels-inbound.svg)
 
-InboundPollingJob ──polls──▶ InboundMessageProcessor
-                                  ├── write episode (ze-memory)
-                                  ├── set thread_channel_map
-                                  ├── emit signal (MessagingSignalSource)
-                                  └── push notification (known contacts only)
-
-send_email tool ──resolves channel via──▶ ThreadChannelMap / UserChannelStore
-```
+<sub>[Interactive version](diagrams/docs/channels-inbound.html)</sub>
 
 Packages involved:
 

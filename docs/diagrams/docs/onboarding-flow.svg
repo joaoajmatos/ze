@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="onboarding-flow-title onboarding-flow-desc">
+      <title id="onboarding-flow-title">Onboarding exchange between the App and Backend over the WebSocket</title>
+      <desc id="onboarding-flow-desc">Sequence diagram showing the App starting onboarding with a command message, the Backend replying with an assistant message plus onboarding session metadata carrying a form component, and the App submitting the filled-in form back to the Backend as a structured component_submit payload.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- Lifelines -->
+      <line x1="200" y1="80" x2="200" y2="400" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="700" y1="80" x2="700" y2="400" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- Activation bars -->
+      <rect x="696" y="140" width="8" height="80" fill="rgba(10,10,10,0.06)" stroke="#6b6b6b" stroke-width="0.8"/>
+      <rect x="196" y="220" width="8" height="100" fill="rgba(10,10,10,0.06)" stroke="#6b6b6b" stroke-width="0.8"/>
+      <rect x="696" y="320" width="8" height="60" fill="rgba(10,10,10,0.06)" stroke="#6b6b6b" stroke-width="0.8"/>
+
+      <!-- Message 1: App -> Backend (command) -->
+      <line x1="200" y1="140" x2="692" y2="140" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="415" y="120" width="70" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="450" y="129" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">COMMAND</text>
+
+      <!-- Message 2: Backend -> App (message + onboarding meta) -->
+      <line x1="696" y1="220" x2="208" y2="220" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="399" y="200" width="102" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="450" y="209" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MESSAGE+META</text>
+
+      <!-- Message 3: App -> Backend (component_submit) -->
+      <line x1="200" y1="320" x2="692" y2="320" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="415" y="300" width="70" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="450" y="309" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SUBMIT</text>
+
+      <!-- Actor: App -->
+      <rect x="120" y="32" width="160" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="120" y="32" width="160" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="200" y="53" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">App</text>
+      <text x="200" y="67" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">react client</text>
+
+      <!-- Actor: Backend -->
+      <rect x="620" y="32" width="160" height="48" rx="6" fill="#f7f6f4"/>
+      <rect x="620" y="32" width="160" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="700" y="53" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Backend</text>
+      <text x="700" y="67" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ze-api · /ws</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="420" x2="860" y2="420" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="436" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="448" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="60" y="456" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Onboarding session reply</text>
+      <rect x="300" y="448" width="14" height="10" rx="2" fill="rgba(10,10,10,0.06)" stroke="#6b6b6b" stroke-width="0.8"/>
+      <text x="320" y="456" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Activation (holds control)</text>
+    </svg>
