@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="workspace-isolation-title workspace-isolation-desc">
+      <title id="workspace-isolation-title">The mind and the computer</title>
+      <desc id="workspace-isolation-desc">Architecture diagram showing Ze's mind (ze-api and secrets) separated from an isolated workspace sidecar that holds files and runs commands. A workspace gate is the only permitted HTTP path into the computer. Public internet egress is allowed. A sibling browser sidecar extracts pages and is not the computer. Forbidden paths from the workspace toward Ze secrets stop at the isolation boundary.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- zones -->
+      <rect x="40" y="72" width="280" height="292" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <rect x="52" y="76" width="40" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="72" y="85" fill="rgba(10,10,10,0.45)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">MIND</text>
+
+      <rect x="400" y="72" width="280" height="96" rx="8" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="0.8" stroke-dasharray="4,3"/>
+      <rect x="412" y="76" width="108" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="466" y="85" fill="rgba(10,10,10,0.45)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">PAGES · NOT THIS</text>
+
+      <rect x="400" y="176" width="280" height="188" rx="8" fill="rgba(128,82,255,0.05)" stroke="#8052ff" stroke-width="1.2" stroke-dasharray="4,4" stroke-opacity="0.5"/>
+      <rect x="412" y="180" width="148" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="486" y="189" fill="#8052ff" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">ISOLATED COMPUTER</text>
+
+      <!-- arrows (before boxes) -->
+      <line x1="280" y1="128" x2="440" y2="128" stroke="#2e5aa8" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+      <rect x="312" y="108" width="56" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="340" y="117" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EXTRACT</text>
+
+      <line x1="180" y1="160" x2="180" y2="208" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="188" y="176" width="36" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="206" y="185" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MODE</text>
+
+      <line x1="280" y1="240" x2="440" y2="240" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="332" y="220" width="36" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="350" y="229" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HTTP</text>
+
+      <line x1="640" y1="240" x2="720" y2="240" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="652" y="220" width="52" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="678" y="229" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EGRESS</text>
+
+      <line x1="540" y1="272" x2="540" y2="296" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="548" y="276" width="20" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="572" y="286" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">FS</text>
+
+      <line x1="440" y1="324" x2="408" y2="324" stroke="#8052ff" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <rect x="396" y="316" width="8" height="16" fill="#8052ff"/>
+      <rect x="336" y="304" width="56" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="364" y="313" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BLOCKED</text>
+
+      <!-- MIND nodes -->
+      <rect x="80" y="96" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="80" y="96" width="200" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <rect x="88" y="104" width="28" height="12" rx="2" fill="transparent" stroke="rgba(10,10,10,0.40)" stroke-width="0.8"/>
+      <text x="102" y="113" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="180" y="128" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-api</text>
+      <text x="180" y="144" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">orchestration · agents</text>
+
+      <rect x="80" y="208" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="80" y="208" width="200" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="88" y="216" width="32" height="12" rx="2" fill="transparent" stroke="rgba(128,82,255,0.40)" stroke-width="0.8"/>
+      <text x="104" y="225" fill="#8052ff" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GATE</text>
+      <text x="180" y="244" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">WorkspaceGate</text>
+      <text x="180" y="260" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">mode × action × origin</text>
+
+      <rect x="80" y="296" width="200" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="80" y="296" width="200" height="56" rx="6" fill="rgba(10,10,10,0.05)" stroke="#6b6b6b" stroke-width="1"/>
+      <text x="180" y="320" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Ze secrets</text>
+      <text x="180" y="336" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">keys · private net · loopback</text>
+
+      <!-- PAGES node -->
+      <rect x="440" y="96" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="440" y="96" width="200" height="64" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="540" y="124" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">browser sidecar</text>
+      <text x="540" y="140" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Playwright · pages only</text>
+
+      <!-- COMPUTER nodes -->
+      <rect x="440" y="208" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="440" y="208" width="200" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <rect x="448" y="216" width="48" height="12" rx="2" fill="transparent" stroke="rgba(128,82,255,0.40)" stroke-width="0.8"/>
+      <text x="472" y="225" fill="#8052ff" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SIDECAR</text>
+      <text x="540" y="244" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">workspace sidecar</text>
+      <text x="540" y="260" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">files · shell · scripts</text>
+
+      <rect x="440" y="296" width="200" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="440" y="296" width="200" height="56" rx="6" fill="rgba(10,10,10,0.05)" stroke="#6b6b6b" stroke-width="1"/>
+      <text x="540" y="320" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">/workspace</text>
+      <text x="540" y="336" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">durable volume</text>
+
+      <!-- external -->
+      <rect x="720" y="208" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="720" y="208" width="200" height="64" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.30)" stroke-width="1"/>
+      <text x="820" y="236" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Public internet</text>
+      <text x="820" y="252" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no RFC1918 · no Fly 6PN</text>
+
+      <!-- legend -->
+      <line x1="40" y1="420" x2="920" y2="420" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="436" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="448" width="14" height="10" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="60" y="456" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">Mind</text>
+      <rect x="120" y="448" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="140" y="456" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">Gate / computer</text>
+      <rect x="280" y="448" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="300" y="456" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">Sibling sidecar</text>
+      <rect x="440" y="448" width="8" height="10" fill="#8052ff"/>
+      <text x="456" y="456" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">Forbidden path stops here</text>
+      <line x1="680" y1="452" x2="708" y2="452" stroke="#2e5aa8" stroke-width="1.2"/>
+      <text x="716" y="456" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">Permitted HTTP</text>
+    </svg>

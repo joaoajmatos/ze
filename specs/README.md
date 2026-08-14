@@ -156,7 +156,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 109 | [Open-Loop Substrate](phases/109-open-loop-substrate/spec.md) | 🔄 In Progress (spec drafted — executive layer, Phase A of two) |
 | 112 | [Session Context Continuity](phases/112-session-context-continuity/spec.md) | ✅ Done |
 | 113 | [Proactive/Concurrency Hardening Sweep](phases/113-hardening-sweep/spec.md) | ✅ Done |
-| 115 | [Workspace Environment](phases/115-workspace-sidecar/spec.md) | 🔲 Pending |
+| 115 | [Workspace Environment](phases/115-workspace-sidecar/spec.md) | ✅ Done |
 | 116 | [Workspace Follow-Through](phases/116-workspace-follow-through/spec.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)

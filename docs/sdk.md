@@ -316,6 +316,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `onboarding()` | `-> OnboardingProvider \| None` | Onboarding provider for first-run setup. |
 | `migrations_path()` | `-> Path \| None` | `classmethod`. Path to the Alembic `versions/` directory. |
 | `agent_module_paths()` | `-> list[str]` | Module paths imported at bootstrap to trigger `@agent`/`@tool` registration. List tools module before agent module. |
+| `bundled_skill_paths()` | `-> list[str]` | Filesystem paths to bundled `SKILL.md` files. Registered at startup as `source=bundled`, `status=active`. See [skills.md](skills.md#bundled-skills). |
 
 ### Graph-level hooks
 

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1040 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="package-routing-title package-routing-desc">
       <title id="package-routing-title">Ze package routing decision guide</title>
-      <desc id="package-routing-desc">Flowchart showing where new code belongs: a new agent for an existing domain routes to ze-personal, ze-automation, ze-messenger, ze-calendar, or ze-prospecting; a new agent for a new domain gets its own plugin package; a new proactive job lives in the agent's own package via the ZePlugin hook; and infrastructure additions route to ze-memory for memory or graph logic, ze-data for a data domain, ze-agents or ze-onboarding for core types, ze-notifications for push backends, or ze-components for UI components.</desc>
-      <defs>
-        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+      <desc id="package-routing-desc">Flowchart showing where new code belongs: a new agent for an existing domain routes to ze-personal, ze-automation, ze-messenger, ze-calendar, or ze-prospecting; a new agent for a new domain gets its own plugin package; a new proactive job lives in the agent's own package via the ZePlugin hook; and infrastructure additions route to ze-memory for memory or graph logic, ze-data for a data domain, ze-agents or ze-onboarding for core types, ze-workspace or ze-browser for sidecars, ze-notifications for push backends, or ze-components for UI components.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
       </defs>
@@ -64,12 +63,13 @@
       <text x="772" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">export / import / delete</text>
 
       <!-- col6: core infra -->
-      <rect x="868" y="156" width="144" height="112" rx="6" fill="#f7f6f4"/>
-      <rect x="868" y="156" width="144" height="112" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <rect x="868" y="156" width="144" height="128" rx="6" fill="#f7f6f4"/>
+      <rect x="868" y="156" width="144" height="128" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
       <text x="940" y="180" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Core infra</text>
       <text x="940" y="200" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-agents · ze-onboarding</text>
-      <text x="940" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-notifications</text>
-      <text x="940" y="232" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-components</text>
+      <text x="940" y="216" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-workspace · ze-browser</text>
+      <text x="940" y="232" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-notifications</text>
+      <text x="940" y="248" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ze-components</text>
 
       <!-- Legend -->
       <line x1="28" y1="320" x2="1012" y2="320" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>

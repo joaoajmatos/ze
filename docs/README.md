@@ -35,6 +35,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [news.md](news.md) | RSS ingestion, ranking, credibility |
 | [finance.md](finance.md) | Data sources, CSV import, categories, privacy, deletion |
 | [onboarding.md](onboarding.md) | Plugin-extensible setup, seed review, reset scopes |
+| [skills.md](skills.md) | Agent Skills — import, review, matching, scripts in the workspace |
 | [data-portability.md](data-portability.md) | Export, import, deletion — `DataDomain` contract |
 
 ## Client & ops
@@ -44,6 +45,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [frontend.md](frontend.md) | ze-web — FSD layout, `@ze/client`, plugin UI |
 | [native-interface.md](native-interface.md) | WebSocket frames, confirmations, ntfy, unread replay |
 | [browser.md](browser.md) | Browser sidecar — Compose, health checks, Fly deploy |
+| [workspace.md](workspace.md) | Workspace sidecar — files, shell, skill scripts, modes, Fly deploy |
 | [configuration.md](configuration.md) | `.env`, `config.yaml`, `persona.yaml` |
 | [deployment.md](deployment.md) | Fly.io, GitHub Actions CI, environment setup |
 | [testing.md](testing.md) | `make test-<name>` across Python packages and ze-web |

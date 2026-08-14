@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 560 364" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dependencies-title dependencies-desc">
+      <title id="dependencies-title">ze-workspace dependencies</title>
+      <desc id="dependencies-desc">core/ze-workspace is the isolated-computer client, gate, and store, depending on ze-agents, ze-logging, and ze-data. ze-core and ze-agents must not import this package.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+      <path d="M 200,152 H 262 Q 270,152 270,144 V 88 Q 270,80 278,80 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <line x1="200" y1="164" x2="340" y2="164" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <path d="M 200,176 H 262 Q 270,176 270,184 V 240 Q 270,248 278,248 H 340" fill="none" stroke="#8052ff" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+      <rect x="48" y="132" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="48" y="132" width="32" height="12" rx="2" fill="transparent" stroke="#8052ff" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="64" y="141" fill="#8052ff" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="40" y="144" width="160" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="40" y="144" width="160" height="40" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="120" y="168" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-workspace</text>
+
+      <rect x="348" y="40" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="40" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="49" fill="#0a0a0a" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="60" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="60" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424" y="84" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-agents</text>
+
+      <rect x="348" y="124" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="124" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="133" fill="#0a0a0a" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="144" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="144" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424" y="168" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-logging</text>
+
+      <rect x="348" y="208" width="32" height="12" rx="2" fill="#f7f6f4"/>
+      <rect x="348" y="208" width="32" height="12" rx="2" fill="transparent" stroke="#0a0a0a" stroke-opacity="0.4" stroke-width="0.8"/>
+      <text x="364" y="217" fill="#0a0a0a" fill-opacity="0.8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <rect x="340" y="228" width="168" height="40" rx="6" fill="#f7f6f4"/>
+      <rect x="340" y="228" width="168" height="40" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="424" y="252" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">ze-data</text>
+
+      <line x1="30" y1="316" x2="530" y2="316" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>
+      <text x="30" y="332" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <rect x="120" y="324" width="12" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1"/>
+      <text x="138" y="334" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">This package</text>
+      <rect x="280" y="324" width="12" height="12" rx="2" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="298" y="334" fill="#6b6b6b" font-size="8" font-family="'Inter', sans-serif">Dependency</text>
+    </svg>

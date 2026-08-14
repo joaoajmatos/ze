@@ -9,6 +9,7 @@ Read this alongside:
 - [docs/sdk.md](sdk.md) — SDK symbol reference
 - [docs/adding-an-agent.md](adding-an-agent.md) — agent authoring details
 - [docs/package-architecture.md](package-architecture.md) — package layout and dependency rules
+- [docs/skills.md](skills.md) — bundled `SKILL.md` files via `bundled_skill_paths()`
 
 ---
 
@@ -16,7 +17,7 @@ Read this alongside:
 
 Start here before writing anything.
 
-![Flowchart showing where new code belongs: an agent for an existing domain routes to ze-personal, ze-automation, ze-messenger, ze-calendar, or ze-prospecting; an agent for a new domain gets its own plugin package; a proactive job lives in the agent's own package via the ZePlugin hook; and infrastructure additions route to ze-memory, ze-data, ze-agents/ze-onboarding, ze-notifications, or ze-components.](diagrams/docs/package-routing.svg)
+![Flowchart showing where new code belongs: an agent for an existing domain routes to ze-personal, ze-automation, ze-messenger, ze-calendar, or ze-prospecting; an agent for a new domain gets its own plugin package; a proactive job lives in the agent's own package via the ZePlugin hook; and infrastructure additions route to ze-memory, ze-data, ze-agents/ze-onboarding, ze-workspace/ze-browser, ze-notifications, or ze-components.](diagrams/docs/package-routing.svg)
 
 <sub>[Interactive version](diagrams/docs/package-routing.html)</sub>
 
@@ -227,6 +228,9 @@ class MyPlugin(ZePlugin):
             "ze_myplugin.agents.myagent.tools",
             "ze_myplugin.agents.myagent.agent",
         ]
+
+    def bundled_skill_paths(self) -> list[str]:
+        return [str(Path(__file__).parent / "skills" / "my-skill" / "SKILL.md")]
 
     @classmethod
     def migrations_path(cls) -> Path | None:

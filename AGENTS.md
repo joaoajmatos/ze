@@ -133,6 +133,7 @@ ze-components   (no ze deps)             core/
 ze-memory     → ze-agents                core/
 ze-eval         (no ze deps — HTTP only) core/  ← eval infrastructure
 ze-automation → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
+ze-workspace  → ze-agents, ze-logging, ze-data  core/  ← isolated computer; ze-core/ze-agents must not import it
 ze-core       → ze-agents, ze-plugin     core/  ← engine; never a plugin dep
 ze-sdk        → ze-agents, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
 ze-google       (no ze deps)             integrations/
@@ -326,6 +327,8 @@ and runs them against a single `alembic_version` table.
 | ze-calendar | `zcal` | calendar_reminders, user_reminders |
 | ze-prospecting | `zpros` | prospect_campaigns, prospect_outreach |
 | ze-news | `zn` | news_articles |
+| ze-skills | `zsk` | skills, skill_reference_files, skill_reviews, skill_scripts (`zsk002`) |
+| ze-workspace | `zws` | workspace_state, workspace_runs |
 
 **Naming conventions:**
 - One prefix per package (`zc`, `zm`, `zcal`, …).
@@ -337,7 +340,7 @@ and runs them against a single `alembic_version` table.
 - ze-api runs migrations but owns no tables.
 - Never add plugin-owned tables to ze-api migrations.
 - For `ZePlugin` subclasses: create `<pkg>/migrations/` and override `migrations_path()` — the runner discovers it automatically.
-- For non-plugin core packages (ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-automation): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
+- For non-plugin core packages (ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-automation, ze-skills, ze-workspace): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
 - Use `depends_on` in migration files for cross-package ordering (e.g. ze-prospecting depends on `zc005` for the contacts table).
 
 ## LangGraph graph flow
@@ -411,6 +414,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 79 | NLI cross-encoder — contradiction detection, retrieval re-rank cache, correlation grounding (`ze_core/nli.py`) | Done |
 | 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Done |
 | 81 | Plugin NLI adoption — news dedup, finance merchant merging | Pending |
+| 115 | Workspace Environment — `core/ze-workspace` + `sidecar/workspace`; modes Off/Plan/Ask/Auto-edit/Auto; skill scripts after executable approval (`zsk002`); System `/workspace` page; unattended Auto only. `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
 
 ## graphify
 

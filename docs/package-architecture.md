@@ -21,6 +21,8 @@ ze/
 │   ├── ze-ingestion/ # Content ingestion pipeline — fetch, process, extract, archive
 │   ├── ze-correlation/ # Cross-domain hypothesis engine — inline and proactive correlation
 │   ├── ze-browser/   # Browser sidecar HTTP client
+│   ├── ze-skills/    # Agent Skills — import, review, matching, script storage
+│   ├── ze-workspace/ # Isolated computer — files, shell, skill scripts
 │   ├── ze-notifications/ # Push notification abstraction (ntfy)
 │   └── ze-components/    # Server-driven UI component descriptors
 ├── packages/         # Shared packages — Python SDK + frontend npm
@@ -441,6 +443,49 @@ The sidecar itself is deployed separately and is never imported by any Python pa
 
 ---
 
+## ze-skills — Agent Skills
+
+`ze_skills` is the Agent Skills system: import a `SKILL.md`, review it, match it on
+a turn, and store bundled scripts. `ze-api` wires it directly. Plugin authors do
+not import this package; they declare bundled skills via
+`ZePlugin.bundled_skill_paths()`.
+
+| Module | What it provides |
+|--------|-----------------|
+| `types.py` | `Skill`, `SkillReview`, `SkillScript`, `ReferenceFile`, `SkillMatch` |
+| `parser.py` | `parse_skill_md()` — YAML frontmatter + Markdown body |
+| `importer.py` | Fetch a `SKILL.md` URL or zip |
+| `store.py` | `SkillStore` / `PostgresSkillStore` |
+| `review.py` | Approve / reject / disable / enable / remove / refresh / approve executables |
+| `matching.py` | `SkillMatcher` — embedding similarity + `/skill-name` |
+| `jobs/recheck.py` | Daily origin-URL content recheck |
+| `rest.py` | Dict wrappers for `/api/v0/skills` |
+| `migrations/` | `zsk001` (skills) · `zsk002` (skill_scripts + executable approval) |
+
+Scripts run in `ze-workspace`, not here. See [skills.md](skills.md).
+
+---
+
+## ze-workspace — Isolated Computer
+
+`ze_workspace` is the client, gate, tools, and store for the workspace sidecar (files
+and a shell in a separate process). `ze-api` wires it. `ze-core` and `ze-agents` must
+not import this package. Approved skill scripts run here via
+`workspace_run_skill_script` — see [skills.md](skills.md#workspace-integration).
+
+| Module | What it provides |
+|--------|-----------------|
+| `client.py` | `WorkspaceClient` — async HTTP client for the sidecar |
+| `gate.py` | `WorkspaceGate` — mode × action × origin |
+| `tools.py` | `workspace_*` tools |
+| `store.py` | `workspace_state` and `workspace_runs` |
+| `rest.py` | `/api/v0/workspace` routes |
+| `sanitize.py` | Path confinement and secret redaction |
+
+The sidecar itself is deployed separately (`sidecar/workspace/`).
+
+---
+
 ## ze-notifications — Push Notifications
 
 `ze_notifications` provides a transport-agnostic push notification abstraction.
@@ -622,6 +667,8 @@ Agent-scoped deps can be contributed via `agent_deps()` without touching the con
 | New push notification backend | `ze-notifications` |
 | New server-driven UI component | `ze-components` |
 | Headless browser interaction | `ze-browser` |
+| Reusable agent instructions (`SKILL.md`) | `ze-skills` |
+| Isolated files, shell, skill scripts | `ze-workspace` |
 
 When in doubt: ask whether the code has a runtime dependency on `ze-personal` or
 application config. If yes, it belongs in `ze-api`. If it is part of the stable

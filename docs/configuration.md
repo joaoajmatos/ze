@@ -76,6 +76,16 @@ See [browser.md](browser.md) for Docker Compose, health checks, and deployment.
 | `BROWSER_SERVICE_URL` | `http://ze-browser.internal:8080` | URL of the browser sidecar service |
 | `BROWSER_TIMEOUT_SECONDS` | `20` | HTTP timeout for browser requests |
 
+### Workspace sidecar
+
+See [workspace.md](workspace.md) for modes, isolation, Docker Compose, and deployment.
+
+| Variable | Default | Description |
+|---|---|---|
+| `WORKSPACE_SERVICE_URL` | `http://ze-workspace.internal:8080` | URL of the workspace sidecar service |
+| `WORKSPACE_API_TOKEN` | *(empty)* | Bearer token for the sidecar control API |
+| `WORKSPACE_TIMEOUT_SECONDS` | `120` | HTTP timeout for workspace requests |
+
 ### Prospecting
 
 | Variable | Default | Description |
@@ -94,7 +104,7 @@ See [browser.md](browser.md) for Docker Compose, health checks, and deployment.
 ## `config/config.yaml`
 
 Structural settings only: model aliases, memory graph, contacts consolidation, proactive
-crons, and news. Secrets and deployment values stay in `.env`. Persona profiles live in
+crons, news, and skills. Secrets and deployment values stay in `.env`. Persona profiles live in
 `config/persona.yaml`. Agent metadata lives as class attributes on `@agent`
 classes — there is no `agents:` block in YAML.
 
@@ -298,6 +308,26 @@ news:
 
 **Source tags** are arbitrary strings used by the `get_headlines` tool and the briefing
 for filtering. Useful conventions: `global`, `local`, `tech`, `pt`, `hacker-news`.
+
+### `skills:`
+
+Controls Agent Skills matching and the daily source-content recheck. See
+[skills.md](skills.md).
+
+```yaml
+skills:
+  match_threshold: 0.5   # cosine floor for automatic matching
+  recheck:
+    enabled: true
+    cron: "0 6 * * *"    # daily origin-URL recheck
+```
+
+`match_threshold` is the relevance floor for automatic matching (embedding similarity
+of the message against each active skill's name and description). Explicit `/skill-name`
+invocation ignores this floor.
+
+Set `recheck.enabled: false` to stop the daily job. Manual
+`POST /api/v0/skills/{id}/refresh` still works.
 
 ---
 

@@ -413,6 +413,20 @@ Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt
 
 ---
 
+## Skill source recheck (6 AM UTC)
+
+**Module:** `ze_skills/jobs/recheck.py`  
+**Config:** `skills.recheck` in `config/config.yaml`
+
+`SkillRecheckJob` re-fetches every imported skill's origin URL. Unchanged content
+stays active. Changed content reverts to pending review and clears executable
+approval. An unreachable source sets `last_check_error` and leaves the last
+approved version in place.
+
+See [skills.md](skills.md#daily-recheck).
+
+---
+
 ## Full schedule at a glance
 
 The pipeline diagram at the top of this document shows how conversations flow into
@@ -431,6 +445,7 @@ tier instead of literal clock position.
 | 2:00 AM daily | Memory consolidation + profile synthesis | `ze_memory/consolidator.py` |
 | 3:00 AM daily | Dream sleep pass + retrieval-cache expiry | `ze_memory/dream/job.py` |
 | 3:00 AM daily | Contacts consolidation (dedup + merge) | `ze_personal/contacts/consolidator.py` |
+| 6:00 AM daily | Imported skill source-content recheck | `ze_skills/jobs/recheck.py` |
 | Every 10 min | Session summary generation | `ze_memory/session_summary.py` |
 | 7:00 AM Sun | Weekly insight generation | `ze_personal/jobs/insights.py` |
 | 7:45 AM daily | Calendar sync + reminder scheduling | `ze_calendar/jobs/calendar_reminder.py` |

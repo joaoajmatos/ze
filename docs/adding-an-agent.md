@@ -278,6 +278,24 @@ are the live instances.
 
 ---
 
+## 5. Bundle a skill (optional)
+
+To ship reusable instructions with the plugin, put a `SKILL.md` in the package and
+return its path from `bundled_skill_paths()`. Ze registers it at startup as
+`source=bundled`, `status=active` (no review gate). Scripts in that skill still
+need a separate executable approval before they run in the workspace.
+
+```python
+from pathlib import Path
+
+def bundled_skill_paths(self) -> list[str]:
+    return [str(Path(__file__).parent / "skills" / "my-skill" / "SKILL.md")]
+```
+
+See [skills.md](skills.md#bundled-skills).
+
+---
+
 ## 6. Write tests
 
 ```
@@ -308,3 +326,4 @@ Conventions:
 - [ ] `tools.py` — all tools decorated with `@tool` (if applicable)
 - [ ] Progress keys added to `locales/en.yaml` (and `locales/pt.yaml`) in the plugin package
 - [ ] Tests written (including draft + blocked mode)
+- [ ] Optional: `bundled_skill_paths()` if the plugin ships a `SKILL.md`

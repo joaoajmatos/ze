@@ -35,6 +35,8 @@ Example: finance overview at `/finance`.
 
 Each slice exposes a public API through `index.ts`. Internal `ui/`, `api/`, `model/` folders are private to the slice.
 
+Core-owned screens include `/skills` (`pages/skills` + `widgets/skill-management`) and `/workspace` (`pages/workspace`). See [skills.md](skills.md) and [workspace.md](workspace.md).
+
 ## Extending an existing domain
 
 Example: goal detail view at `/goals/:goalId`.

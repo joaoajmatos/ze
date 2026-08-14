@@ -124,7 +124,8 @@ the reflection investment.
 
 Maturity: 🟢 substantial — Agent roster (research, companion, calendar, email, reminders,
 prospecting, news, finance, goals, workflow), `@tool` system, agentic loop, channels for
-outbound messaging, server-driven UI for surfacing.
+outbound messaging, server-driven UI for surfacing, `ze-workspace` sidecar for files and
+commands, `ze-skills` for reusable instructions and approved skill scripts.
 
 **State:** mature and extensible. Action is not the bottleneck. Per the doctrine, agents are
 *replaceable executors that propose changes to the world-state* — they are organs, and the
@@ -135,8 +136,10 @@ roster will churn for years without threatening continuity.
 > *permissioning, provenance, reversibility, confidence thresholds, user corrections*
 
 Maturity: 🟢🟡 mostly substantial — Capability gate (autonomous/confirm/draft_only/disabled),
-confirmation persistence + timeout, provenance tags in memory + correlation, memory review
-flows (propose→user reviews), dream rollback lineage, data portability/delete.
+confirmation persistence + timeout, workspace modes (Off / Plan / Ask / Auto-edit / Auto),
+skill review plus a second executable approval for scripts, provenance tags in memory +
+correlation, memory review flows (propose→user reviews), dream rollback lineage, data
+portability/delete.
 
 **State:** strong on permissioning and provenance. **Gap:** *confidence* is not yet a
 uniform, system-wide signal — it exists per-subsystem (correlation self-rating, fact

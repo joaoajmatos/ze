@@ -22,8 +22,8 @@ At a high level, the system is split into:
   jobs, and the main general-purpose agents.
 - `ze-messenger`, `ze-calendar`, `ze-news`, `ze-prospecting`, and `ze-finance` for
   domain-specific extensions.
-- `ze-onboarding`, `ze-ingestion`, `ze-correlation`, `ze-browser`, and
-  `ze-notifications` for shared support systems.
+- `ze-onboarding`, `ze-ingestion`, `ze-correlation`, `ze-skills`, `ze-browser`,
+  `ze-workspace`, and `ze-notifications` for shared support systems.
 - `ze-components` and `@ze/client` for server-driven UI and typed API consumption.
 
 ---
@@ -144,7 +144,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 ### Nodes
 
-![Flowchart of the twelve LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and a compound check that either loops plan_sequential for the next subtask or proceeds to synthesize, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
+![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, match_skills then capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and a compound check that either loops plan_sequential for the next subtask or proceeds to synthesize, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
 
 <sub>[Interactive version](diagrams/docs/graph-node-flow.html)</sub>
 
@@ -157,6 +157,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
 | `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes |
+| `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
 | `capability_check` | `nodes/capability.py` | Evaluate permission mode for agent.intent |
 | `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout |
 | `correlate` | `nodes/correlation.py` | Surface inline relationship hypotheses when relevant |
@@ -258,16 +259,40 @@ for the deeper design notes.
 
 ---
 
-## Browser and Notifications
+## Skills
 
-**Packages:** `ze-browser` · `ze-notifications`
+**Package:** `ze-skills`
+
+Skills add reusable instructions to every agent. Users import a `SKILL.md` from a
+URL, review it, and approve it before it can match. Developers ship bundled skills
+from a plugin via `ZePlugin.bundled_skill_paths()`. Matching is global: embedding
+similarity plus `/skill-name`. A skill's `allowed-tools` only narrows the agent's
+existing tools.
+
+Bundled scripts need a second executable approval and run in the workspace sidecar.
+See [skills.md](skills.md) and [workspace.md](workspace.md).
+
+---
+
+## Browser, Workspace, and Notifications
+
+**Packages:** `ze-browser` · `ze-workspace` · `ze-notifications`
 
 The browser client is a thin HTTP wrapper around a Playwright sidecar used for
-extraction and browser-backed tools. `ze-notifications` abstracts push delivery, with ntfy as the current implementation.
+extraction and browser-backed tools. The workspace package is the client, gate, and
+store for a separate sidecar that holds files and runs commands. `ze-core` and
+`ze-agents` must not import `ze_workspace`. `ze-notifications` abstracts push delivery, with ntfy as the current implementation.
 
-See [browser.md](browser.md) for local dev and operations,
+![Architecture diagram showing Ze's mind (ze-api and secrets) separated from an isolated workspace sidecar that holds files and runs commands. A workspace gate is the only permitted HTTP path into the computer. Public internet egress is allowed. A sibling browser sidecar extracts pages and is not the computer. Forbidden paths from the workspace toward Ze secrets stop at the isolation boundary.](diagrams/docs/workspace-isolation.svg)
+
+<sub>[Interactive version](diagrams/docs/workspace-isolation.html)</sub>
+
+See [browser.md](browser.md), [workspace.md](workspace.md), and [skills.md](skills.md)
+for local dev and operations,
 [core/ze-browser/README.md](../core/ze-browser/README.md),
-[sidecar/browser/README.md](../sidecar/browser/README.md), and
+[sidecar/browser/README.md](../sidecar/browser/README.md),
+[core/ze-workspace/README.md](../core/ze-workspace/README.md),
+[sidecar/workspace/README.md](../sidecar/workspace/README.md), and
 [core/ze-notifications/README.md](../core/ze-notifications/README.md).
 
 ---

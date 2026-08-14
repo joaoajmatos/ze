@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Skills and the workspace</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1000px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:760px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart · Ze skills</p>
+    <h1>Two gates, then the workspace</h1>
+    <svg viewBox="0 0 800 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="skills-workspace-title skills-workspace-desc">
+      <title id="skills-workspace-title">Two gates, then the workspace</title>
+      <desc id="skills-workspace-desc">Flowchart showing an imported skill approved for instructions, becoming active for matching, then a second executable approval before workspace_run_skill_script can run the bundled script in the workspace sidecar. Skills without scripts stop after instructions apply.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- start -> pending -->
+      <circle cx="240" cy="36" r="6" fill="#0a0a0a"/>
+      <line x1="240" y1="42" x2="240" y2="68" stroke="#0a0a0a" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- pending -> approve instructions -->
+      <line x1="240" y1="124" x2="240" y2="148" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="252" y="128" width="88" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="296" y="137" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">APPROVE</text>
+
+      <!-- approve instructions -> active -->
+      <line x1="240" y1="204" x2="240" y2="228" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- active -> diamond -->
+      <line x1="240" y1="292" x2="240" y2="324" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- diamond NO -> instructions only -->
+      <line x1="240" y1="404" x2="240" y2="436" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="252" y="408" width="96" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="300" y="417" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO SCRIPTS</text>
+
+      <!-- diamond YES -> approve executables -->
+      <line x1="280" y1="364" x2="456" y2="364" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="316" y="344" width="104" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="368" y="353" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HAS SCRIPTS</text>
+
+      <!-- approve executables -> run script -->
+      <line x1="556" y1="400" x2="556" y2="432" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- run script -> sidecar -->
+      <line x1="556" y1="488" x2="556" y2="520" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="456" y="492" width="88" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="500" y="501" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MODE GATE</text>
+
+      <!-- Node: pending review -->
+      <rect x="140" y="68" width="200" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="140" y="68" width="200" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="240" y="92" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Pending review</text>
+      <text x="240" y="108" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">import SKILL.md</text>
+
+      <!-- Node: approve instructions -->
+      <rect x="140" y="148" width="200" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="140" y="148" width="200" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="240" y="172" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Approve instructions</text>
+      <text x="240" y="188" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/approve</text>
+
+      <!-- Node: active (focal) -->
+      <rect x="140" y="228" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="140" y="228" width="200" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="240" y="256" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Active skill</text>
+      <text x="240" y="272" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">match + prompt inject</text>
+
+      <!-- Diamond: has scripts? -->
+      <polygon points="240,324 288,364 240,404 192,364" fill="#f7f6f4"/>
+      <polygon points="240,324 288,364 240,404 192,364" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="240" y="368" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Scripts?</text>
+
+      <!-- Node: instructions only -->
+      <rect x="140" y="436" width="200" height="56" rx="20" fill="#f7f6f4"/>
+      <rect x="140" y="436" width="200" height="56" rx="20" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="240" y="460" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Instructions only</text>
+      <text x="240" y="476" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no sidecar run</text>
+
+      <!-- Node: approve executables (focal 2) -->
+      <rect x="456" y="336" width="200" height="64" rx="6" fill="#f7f6f4"/>
+      <rect x="456" y="336" width="200" height="64" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="556" y="364" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Approve executables</text>
+      <text x="556" y="380" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">POST …/approve-executables</text>
+
+      <!-- Node: run skill script -->
+      <rect x="456" y="432" width="200" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="456" y="432" width="200" height="56" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="556" y="456" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Run skill script</text>
+      <text x="556" y="472" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">workspace_run_skill_script</text>
+
+      <!-- Node: sidecar -->
+      <rect x="456" y="520" width="200" height="56" rx="6" fill="#f7f6f4"/>
+      <rect x="456" y="520" width="200" height="56" rx="6" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.30)" stroke-width="1"/>
+      <text x="556" y="544" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Workspace sidecar</text>
+      <text x="556" y="560" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">/workspace · isolated shell</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="592" x2="760" y2="592" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="612" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="620" width="16" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="64" y="630" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">The two approvals — instructions, then scripts</text>
+      <rect x="400" y="620" width="16" height="12" rx="2" fill="rgba(10,10,10,0.03)" stroke="rgba(10,10,10,0.30)" stroke-width="1"/>
+      <text x="424" y="630" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Sidecar — not Ze's process</text>
+    </svg>
+  </div>
+</body>
+</html>

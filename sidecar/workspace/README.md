@@ -2,7 +2,7 @@
 
 Isolated workspace sidecar for [Ze](../../README.md). A small FastAPI service that is Ze's durable computer: files under `/workspace`, a shell, and ordinary scripting runtimes. Ze's agents call it over the private network — not exposed to the public internet.
 
-This is **not** a browsing session. Web pages stay in `sidecar/browser`. This service runs commands and holds files.
+This is **not** a browsing session. Web pages stay in `sidecar/browser`. This service runs commands and holds files. Skill scripts are ordinary files Ze writes, then runs — the sidecar does not know about skills. See [docs/skills.md](../../docs/skills.md).
 
 ## Why a separate service
 
@@ -50,7 +50,7 @@ Internal control API. Auth: `Authorization: Bearer $WORKSPACE_API_TOKEN` on ever
 
 Compose service `workspace` + named volume `workspace_data`. Point Ze at it with `WORKSPACE_SERVICE_URL=http://workspace:8080` (compose) or `http://localhost:8081` (hybrid `make dev`).
 
-See [docs/workspace.md](../../docs/workspace.md) once that doc lands.
+See [docs/workspace.md](../../docs/workspace.md).
 
 ### Docker
 

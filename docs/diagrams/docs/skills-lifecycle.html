@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ze · Skill status lifecycle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f7f6f4; --color-ink:#0a0a0a; --color-muted:#6b6b6b; --color-accent:#8052ff;
+      --font-sans:'Inter',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1000px; width:100%; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; color:var(--color-ink); margin-bottom:1.5rem; }
+    svg { width:100%; min-width:760px; display:block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">State machine · Ze skills</p>
+    <h1>Imported skill status lifecycle</h1>
+    <svg viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="skills-lifecycle-title skills-lifecycle-desc">
+      <title id="skills-lifecycle-title">Imported skill status lifecycle</title>
+      <desc id="skills-lifecycle-desc">State machine showing an imported skill moving from pending review to active or rejected, active toggling with disabled, and a source-content change sending an imported skill back to pending review.</desc>
+      <defs>
+        <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
+        <marker id="arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0a0a0a"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#f7f6f4"/>
+
+      <!-- start -> pending_review -->
+      <circle cx="96" cy="136" r="6" fill="#0a0a0a"/>
+      <line x1="102" y1="136" x2="160" y2="136" stroke="#0a0a0a" stroke-width="1.2" marker-end="url(#arrow-ink)"/>
+
+      <!-- pending_review -> active (APPROVE) -->
+      <line x1="336" y1="144" x2="640" y2="144" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="436" y="124" width="104" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="488" y="133" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">APPROVE</text>
+
+      <!-- active -> pending_review (CONTENT CHANGE) -->
+      <line x1="640" y1="112" x2="336" y2="112" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <rect x="416" y="92" width="132" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="482" y="101" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CONTENT CHANGE</text>
+
+      <!-- pending_review -> rejected (REJECT) -->
+      <line x1="248" y1="168" x2="248" y2="304" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="256" y="228" width="72" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="292" y="237" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REJECT</text>
+
+      <!-- active -> disabled (DISABLE) -->
+      <line x1="708" y1="168" x2="708" y2="304" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="612" y="228" width="80" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="652" y="237" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DISABLE</text>
+
+      <!-- disabled -> active (ENABLE) -->
+      <line x1="748" y1="304" x2="748" y2="168" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="760" y="228" width="72" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="796" y="237" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ENABLE</text>
+
+      <!-- Node: pending_review -->
+      <rect x="160" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="160" y="104" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="248" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">pending_review</text>
+      <text x="248" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">not matched</text>
+
+      <!-- Node: active (focal) -->
+      <rect x="640" y="104" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="640" y="104" width="176" height="64" rx="8" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="728" y="133" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">active</text>
+      <text x="728" y="149" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">eligible for matching</text>
+
+      <!-- Node: rejected -->
+      <rect x="160" y="304" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="160" y="304" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="248" y="333" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">rejected</text>
+      <text x="248" y="349" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">this version never runs</text>
+
+      <!-- Node: disabled -->
+      <rect x="640" y="304" width="176" height="64" rx="8" fill="#f7f6f4"/>
+      <rect x="640" y="304" width="176" height="64" rx="8" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="728" y="333" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">disabled</text>
+      <text x="728" y="349" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">kept, not matched</text>
+
+      <!-- aside -->
+      <text x="160" y="412" fill="#6b6b6b" font-size="14" font-family="'Instrument Serif', serif" font-style="italic">Bundled skills start active. A content change also clears executable_approved.</text>
+
+      <!-- Legend -->
+      <line x1="40" y1="440" x2="920" y2="440" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
+      <text x="40" y="460" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+      <rect x="40" y="472" width="16" height="12" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
+      <text x="64" y="482" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Active — instructions can shape a turn</text>
+      <line x1="360" y1="478" x2="392" y2="478" stroke="#8052ff" stroke-width="1.4"/>
+      <text x="400" y="482" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Imported source changed — re-review</text>
+    </svg>
+  </div>
+</body>
+</html>

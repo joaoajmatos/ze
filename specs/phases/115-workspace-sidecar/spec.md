@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Spec the workspace sidecar. Ze is a 24/7 companion with an always-on mind and thin clients (web now, desktop later). Skills are finished as instructions-only; they cannot run bundled scripts, and Ze has no computer — no files, no shell, no place to actually do work. Add a durable, isolated workspace on the always-on side (the same kind of split as the existing web-browsing helper): a sandboxed environment where agents can read/write files and run commands, and where approved skill scripts can execute. Artifacts come back to the user. The workspace must not receive Ze's credentials or reach Ze's internals. Desktop/local-machine access and GUI computer-use (screen, mouse) are out of scope. Do not move the mind into a desktop app."
 
