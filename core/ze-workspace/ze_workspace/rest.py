@@ -44,12 +44,13 @@ def _run_to_dict(run) -> dict:
         "message_id": str(run.message_id) if run.message_id else None,
         "skill_id": str(run.skill_id) if run.skill_id else None,
         "skill_script_path": run.skill_script_path,
-        "status": run.status.value,
+        "status": run.status.value if run.status is not None else "in_progress",
         "exit_code": run.exit_code,
         "output_preview": run.output_preview,
         "output_file_path": run.output_file_path,
         "files_touched": [{"path": t.path, "op": t.op} for t in run.files_touched],
         "error_summary": run.error_summary,
+        "follow_through_notified": run.follow_through_notified,
     }
 
 

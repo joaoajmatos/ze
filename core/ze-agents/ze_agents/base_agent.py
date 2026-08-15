@@ -23,7 +23,11 @@ from ze_agents.hooks import (
     ToolStartEvent,
     get_hooks,
 )
-from ze_agents.interrupt import tool_interrupt_fn, workspace_confirmed
+from ze_agents.interrupt import (
+    tool_interrupt_fn,
+    workspace_confirmed,
+    workspace_thread_id,
+)
 from ze_logging import get_logger
 from ze_agents.types import (
     AgentContext,
@@ -229,6 +233,7 @@ class BaseAgent(ABC):
             raise ToolBlockedError(f"Tool {name!r} is blocked by the capability gate")
 
         stored_args = _lm_args if _lm_args is not None else kwargs
+        workspace_thread_id.set(ctx.session_id)
 
         if spec.access.value == "write" and ctx.gate_decision == GateDecision.DRAFT:
             log.info("tool_suppressed_draft", tool=name, agent=self.name)

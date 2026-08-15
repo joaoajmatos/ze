@@ -33,4 +33,5 @@ export interface WorkspaceRunItem {
   output_file_path: string | null;
   files_touched: { path: string; op: string }[];
   error_summary: string | null;
+  follow_through_notified: boolean;
 }

@@ -169,12 +169,16 @@ async def _extract_workspace(
             }[name]
             files.append({"path": str(path), "op": op})
         if name == "workspace_run":
-            runs.append(
-                {
-                    "command": args.get("command", ""),
-                    "success": bool(getattr(call, "success", False)),
-                }
-            )
+            run_entry: dict[str, Any] = {
+                "command": args.get("command", ""),
+                "success": bool(getattr(call, "success", False)),
+            }
+            if result.startswith("[still running]"):
+                # Trace-only projection for a detached (ended_at IS NULL) row —
+                # never written to workspace_runs.status, which stays one of
+                # WorkspaceRunStatus's five closed terminal values.
+                run_entry["status"] = "in_progress"
+            runs.append(run_entry)
         if name == "workspace_run_skill_script" and getattr(call, "success", False):
             script_ran = True
 

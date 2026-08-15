@@ -7,7 +7,12 @@ import { useTraceStore } from "@/features/trace-state";
 import { MessageTracePanel } from "@/widgets/message-trace";
 
 type WorkspaceChipTrace = WsTraceUpdateFrame & {
-  workspace?: { mode?: string; unavailable?: boolean; script_ran?: boolean } | null;
+  workspace?: {
+    mode?: string;
+    unavailable?: boolean;
+    script_ran?: boolean;
+    runs?: { command?: string; status?: string }[];
+  } | null;
 };
 
 function formatTime(iso: string) {
@@ -106,14 +111,28 @@ export function MessageBubble({
           </div>
         )}
 
-        {!isUser && workspace && (
-          <span
-            data-testid="workspace-chip"
-            className="mt-1 inline-flex w-fit items-center rounded-full border border-plum-voltage/40 bg-plum-voltage/10 px-2 py-0.5 text-[10px] text-plum-voltage"
-          >
-            Workspace · {workspace.unavailable ? "unavailable" : workspace.mode ?? "used"}
-          </span>
-        )}
+        {!isUser && workspace && (() => {
+          const stillRunning = (workspace.runs ?? []).find((r) => r.status === "in_progress");
+          if (stillRunning) {
+            return (
+              <span
+                data-testid="workspace-still-running-chip"
+                className="mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-amber-spark/40 bg-amber-spark/10 px-2 py-0.5 text-[10px] text-amber-spark"
+              >
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-spark" />
+                Still running · {stillRunning.command ?? "workspace run"}
+              </span>
+            );
+          }
+          return (
+            <span
+              data-testid="workspace-chip"
+              className="mt-1 inline-flex w-fit items-center rounded-full border border-plum-voltage/40 bg-plum-voltage/10 px-2 py-0.5 text-[10px] text-plum-voltage"
+            >
+              Workspace · {workspace.unavailable ? "unavailable" : workspace.mode ?? "used"}
+            </span>
+          );
+        })()}
 
         {message.components.length > 0 && (
           <div className="mt-2 flex w-full min-w-0 flex-col gap-2">

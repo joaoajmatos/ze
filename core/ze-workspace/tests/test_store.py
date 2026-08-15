@@ -46,6 +46,7 @@ def _run_row(**overrides):
         "output_file_path": None,
         "files_touched": [],
         "error_summary": None,
+        "follow_through_notified": False,
     }
     row.update(overrides)
     return row

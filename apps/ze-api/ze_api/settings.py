@@ -48,6 +48,7 @@ class ZeApiSettings(BaseSettings):
     workspace_service_url: str = "http://ze-workspace.internal:8080"
     workspace_api_token: str = ""
     workspace_timeout_seconds: int = 120
+    workspace_follow_through_short_wait_seconds: int = 25
 
     # ── Agent harness ─────────────────────────────────────────────────────────
     max_tool_calls_per_turn: int = 20

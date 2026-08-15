@@ -1110,8 +1110,11 @@ class SkillImportRequest(BaseModel):
 WorkspaceModeLiteral = Literal["off", "plan", "ask", "auto_edit", "auto"]
 WorkspaceRunOriginLiteral = Literal["conversation", "user", "unattended"]
 WorkspaceRunStatusLiteral = Literal[
-    "succeeded", "failed", "timed_out", "cancelled", "refused"
+    "succeeded", "failed", "timed_out", "cancelled", "refused", "in_progress"
 ]
+# "in_progress" is never written to workspace_runs.status (which stays one of the
+# five closed WorkspaceRunStatus values) — it is the REST/trace projection of a
+# row with ended_at IS NULL (Phase 116, follow-through).
 
 
 class WorkspaceStatusResponse(BaseModel):
@@ -1171,6 +1174,7 @@ class WorkspaceRunResponse(BaseModel):
     output_file_path: str | None
     files_touched: list[WorkspaceFileTouchResponse]
     error_summary: str | None
+    follow_through_notified: bool = False
 
 
 class WorkspaceRunListResponse(BaseModel):

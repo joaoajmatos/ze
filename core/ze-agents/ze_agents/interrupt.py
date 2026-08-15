@@ -14,3 +14,6 @@ workspace_confirmed: ContextVar[bool] = ContextVar("workspace_confirmed", defaul
 workspace_run_origin: ContextVar[str] = ContextVar(
     "workspace_run_origin", default="conversation"
 )
+workspace_thread_id: ContextVar[str | None] = ContextVar(
+    "workspace_thread_id", default=None
+)

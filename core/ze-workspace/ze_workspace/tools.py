@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
 from uuid import UUID
 
 from ze_agents.errors import ToolConfirmationRequired
-from ze_agents.interrupt import workspace_confirmed, workspace_run_origin
+from ze_agents.interrupt import (
+    workspace_confirmed,
+    workspace_run_origin,
+    workspace_thread_id,
+)
 from ze_agents.tool import ToolAccess, tool
 from ze_logging import get_logger
 
@@ -21,8 +26,11 @@ from ze_workspace.types import (
     WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
+    WorkspaceRunResult,
     WorkspaceRunStatus,
 )
+
+DEFAULT_SHORT_WAIT_SECONDS = 25.0
 
 log = get_logger(__name__)
 
@@ -44,6 +52,8 @@ _ingestion: Any = None
 
 
 _skill_store: Any = None
+_run_watcher: Any = None
+_short_wait_seconds: float = DEFAULT_SHORT_WAIT_SECONDS
 
 
 def configure(
@@ -54,8 +64,10 @@ def configure(
     settings: Any = None,
     ingestion_pipeline: Any = None,
     skill_store: Any = None,
+    run_watcher: Any = None,
 ) -> None:
     global _client, _gate, _store, _settings, _ingestion, _skill_store
+    global _run_watcher, _short_wait_seconds
     _client = client
     _gate = gate
     _store = store
@@ -64,6 +76,13 @@ def configure(
         _ingestion = ingestion_pipeline
     if skill_store is not None:
         _skill_store = skill_store
+    if run_watcher is not None:
+        _run_watcher = run_watcher
+    if settings is not None:
+        _short_wait_seconds = float(
+            getattr(settings, "workspace_follow_through_short_wait_seconds", None)
+            or DEFAULT_SHORT_WAIT_SECONDS
+        )
 
 
 async def _mode() -> WorkspaceMode:
@@ -134,6 +153,92 @@ async def _record_run(
     if status is not WorkspaceRunStatus.REFUSED:
         await _store.touch_used()
     return recorded
+
+
+def _format_run_output(
+    result: WorkspaceRunResult, preview: str | None = None, err: str | None = None
+) -> str:
+    if preview is None:
+        preview = redact(result.stdout_preview or "")
+    if err is None:
+        err = redact(result.stderr_preview or "")
+    parts = [preview]
+    if err:
+        parts.append(err)
+    if result.output_file_path:
+        parts.append(f"(full output spilled to {result.output_file_path})")
+    if result.timed_out:
+        parts.append("(timed out)")
+    return "\n".join(p for p in parts if p) or f"exit {result.exit_code}"
+
+
+async def _run_and_maybe_detach(
+    *,
+    command: str,
+    origin: WorkspaceRunOrigin,
+    run_coro: Any,
+    skill_id: UUID | None = None,
+    skill_script_path: str | None = None,
+) -> str:
+    """Awaits run_coro up to _short_wait_seconds. If it finishes in time, persists
+    the terminal result and returns the formatted output. If it does not, hands the
+    still-running coroutine to the RunWatcher (T012/D2/D3) and returns a
+    "still running" reply instead of blocking the turn."""
+    if _store is None:
+        result = await run_coro
+        return _format_run_output(result)
+
+    thread_id = (
+        workspace_thread_id.get() if origin is WorkspaceRunOrigin.CONVERSATION else None
+    )
+    recorded = await _store.insert_in_progress_run(
+        WorkspaceRun(
+            command=command,
+            origin=origin,
+            thread_id=thread_id,
+            skill_id=skill_id,
+            skill_script_path=skill_script_path,
+        )
+    )
+
+    task: asyncio.Task[WorkspaceRunResult] = asyncio.ensure_future(run_coro)
+    try:
+        result = await asyncio.wait_for(
+            asyncio.shield(task), timeout=_short_wait_seconds
+        )
+    except asyncio.TimeoutError:
+        if _run_watcher is not None and recorded.id is not None:
+            await _run_watcher.detach(recorded, task)
+        wait_s = int(_short_wait_seconds)
+        return (
+            f"[still running] run {recorded.id}: `{command}` is taking longer than "
+            f"{wait_s}s and is continuing in the background. "
+            "I'll follow up on this thread once it finishes."
+        )
+
+    preview = redact(result.stdout_preview or "")
+    err = redact(result.stderr_preview or "")
+    status = (
+        WorkspaceRunStatus.TIMED_OUT
+        if result.timed_out
+        else (
+            WorkspaceRunStatus.SUCCEEDED
+            if result.exit_code == 0
+            else WorkspaceRunStatus.FAILED
+        )
+    )
+    if recorded.id is not None:
+        await _store.complete_run(
+            recorded.id,
+            status=status,
+            exit_code=result.exit_code,
+            output_preview=result.stdout_preview or result.stderr_preview or "",
+            output_file_path=result.output_file_path,
+            files_touched=result.files_touched,
+            error_summary=result.stderr_preview if result.exit_code else None,
+        )
+        await _store.touch_used()
+    return _format_run_output(result, preview, err)
 
 
 @tool(
@@ -236,31 +341,12 @@ async def workspace_run(command: str) -> str:
     timeout = 120
     if _settings is not None:
         timeout = int(getattr(_settings, "workspace_timeout_seconds", 120) or 120)
-    result = await client.run(["bash", "-lc", command], timeout_seconds=timeout)
-    preview = redact(result.stdout_preview or "")
-    err = redact(result.stderr_preview or "")
-    status = WorkspaceRunStatus.TIMED_OUT if result.timed_out else (
-        WorkspaceRunStatus.SUCCEEDED if result.exit_code == 0 else WorkspaceRunStatus.FAILED
-    )
     origin = WorkspaceRunOrigin(workspace_run_origin.get())
-    await _record_run(
+    return await _run_and_maybe_detach(
         command=command,
         origin=origin,
-        status=status,
-        exit_code=result.exit_code,
-        output_preview=preview or err,
-        output_file_path=result.output_file_path,
-        files_touched=result.files_touched,
-        error_summary=err if result.exit_code else None,
+        run_coro=client.run(["bash", "-lc", command], timeout_seconds=timeout),
     )
-    parts = [preview]
-    if err:
-        parts.append(err)
-    if result.output_file_path:
-        parts.append(f"(full output spilled to {result.output_file_path})")
-    if result.timed_out:
-        parts.append("(timed out)")
-    return "\n".join(p for p in parts if p) or f"exit {result.exit_code}"
 
 
 @tool(
@@ -318,28 +404,15 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     timeout = 120
     if _settings is not None:
         timeout = int(getattr(_settings, "workspace_timeout_seconds", 120) or 120)
-    result = await client.run(["bash", "-lc", f"python3 {rel} || bash {rel}"], timeout_seconds=timeout)
-    preview = redact(result.stdout_preview or "")
-    err = redact(result.stderr_preview or "")
-    status_run = WorkspaceRunStatus.TIMED_OUT if result.timed_out else (
-        WorkspaceRunStatus.SUCCEEDED if result.exit_code == 0 else WorkspaceRunStatus.FAILED
-    )
-    await _record_run(
+    return await _run_and_maybe_detach(
         command=f"skill-script {filename}",
         origin=WorkspaceRunOrigin(workspace_run_origin.get()),
-        status=status_run,
-        exit_code=result.exit_code,
-        output_preview=preview or err,
-        output_file_path=result.output_file_path,
-        files_touched=result.files_touched,
-        error_summary=err if result.exit_code else None,
+        run_coro=client.run(
+            ["bash", "-lc", f"python3 {rel} || bash {rel}"], timeout_seconds=timeout
+        ),
         skill_id=skill.id,
         skill_script_path=filename,
     )
-    parts = [preview]
-    if err:
-        parts.append(err)
-    return "\n".join(p for p in parts if p) or f"exit {result.exit_code}"
 
 
 @tool(

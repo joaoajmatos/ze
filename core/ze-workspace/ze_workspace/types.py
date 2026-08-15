@@ -66,7 +66,7 @@ class WorkspaceFileTouch:
 class WorkspaceRun:
     command: str
     origin: WorkspaceRunOrigin
-    status: WorkspaceRunStatus
+    status: WorkspaceRunStatus | None = None
     id: UUID | None = None
     started_at: datetime | None = None
     ended_at: datetime | None = None
@@ -79,6 +79,7 @@ class WorkspaceRun:
     output_file_path: str | None = None
     files_touched: list[WorkspaceFileTouch] = field(default_factory=list)
     error_summary: str | None = None
+    follow_through_notified: bool = False
 
 
 @dataclass

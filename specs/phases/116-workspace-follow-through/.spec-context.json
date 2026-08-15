@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Workspace Follow-Through",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T18:56:42.785Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-14T22:05:20.079Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-15T09:39:41.676Z"
+    }
+  ]
+}

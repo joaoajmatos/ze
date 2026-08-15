@@ -5,7 +5,7 @@ type WorkspaceTrace = NonNullable<
   (WsTraceUpdateFrame & {
     workspace?: {
       mode: string;
-      runs?: { command?: string }[];
+      runs?: { command?: string; status?: string }[];
       files?: { path: string; op?: string }[];
       script_ran?: boolean;
       unavailable?: boolean;
@@ -41,8 +41,17 @@ export function WorkspaceSection({ workspace, live }: WorkspaceSectionProps) {
             </p>
           ))}
           {runs.map((run, i) => (
-            <p key={`${run.command ?? "run"}-${i}`} className="font-mono text-white/80">
+            <p
+              key={`${run.command ?? "run"}-${i}`}
+              className="font-mono text-white/80"
+              data-testid={run.status === "in_progress" ? "workspace-run-in-progress" : undefined}
+            >
               $ {run.command}
+              {run.status === "in_progress" ? (
+                <span className="ml-1.5 rounded bg-amber-spark/20 px-1 py-0.5 font-sans text-[10px] uppercase tracking-wide text-amber-spark">
+                  still running
+                </span>
+              ) : null}
             </p>
           ))}
           {files.map((file) => (

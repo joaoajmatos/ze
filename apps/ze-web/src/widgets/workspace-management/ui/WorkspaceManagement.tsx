@@ -12,6 +12,7 @@ import {
 } from "@/entities/workspace";
 import { Button, ListPage, SectionPanel } from "@/shared/ui";
 import { formatBytes, formatMtime } from "../lib/format";
+import { RunningRunBanner } from "./RunningRunBanner";
 import { WorkspaceModeSwitcher } from "./WorkspaceModeSwitcher";
 
 export function WorkspaceManagement() {
@@ -95,6 +96,8 @@ export function WorkspaceManagement() {
           </Button>
         </div>
       </div>
+
+      <RunningRunBanner runs={runs.data ?? []} />
 
       {pendingResetId && (
         <div className="rounded-lg border border-amber-spark/40 bg-amber-spark/10 p-4">

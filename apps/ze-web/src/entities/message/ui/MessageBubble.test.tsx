@@ -61,4 +61,38 @@ describe("MessageBubble", () => {
     expect(screen.getByTestId("workspace-chip")).toHaveTextContent("Workspace · ask");
     useTraceStore.setState({ traces: [] });
   });
+
+  it("shows a still-running chip instead of the workspace chip when a run detached", () => {
+    useTraceStore.setState({
+      traces: [
+        {
+          type: "trace_update",
+          message_id: "msg-1",
+          agent: "companion",
+          routing_method: "embedding",
+          confidence: 0.9,
+          score_gap: 0.1,
+          is_compound: false,
+          subtasks: [],
+          memory_chunks: [],
+          tool_calls: [],
+          total_duration_ms: 10,
+          skills_used: [],
+          workspace: {
+            mode: "auto",
+            runs: [{ command: "sleep 60", status: "in_progress" }],
+            files: [],
+            script_ran: false,
+            unavailable: false,
+          },
+        } as never,
+      ],
+    });
+    render(<MessageBubble message={baseMessage} />);
+    expect(screen.getByTestId("workspace-still-running-chip")).toHaveTextContent(
+      "Still running · sleep 60",
+    );
+    expect(screen.queryByTestId("workspace-chip")).not.toBeInTheDocument();
+    useTraceStore.setState({ traces: [] });
+  });
 });

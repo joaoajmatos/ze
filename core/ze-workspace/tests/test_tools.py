@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import asyncio
+from dataclasses import replace
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 
 from ze_agents.errors import ToolConfirmationRequired
+from ze_agents.interrupt import workspace_confirmed
 from ze_workspace.errors import WorkspaceUnavailableError
 from ze_workspace.gate import WorkspaceGate
 from ze_workspace.tools import (
@@ -30,6 +34,10 @@ def _store(mode: WorkspaceMode) -> AsyncMock:
     store = AsyncMock()
     store.get_mode = AsyncMock(return_value=mode)
     store.insert_run = AsyncMock(side_effect=lambda run: run)
+    store.insert_in_progress_run = AsyncMock(
+        side_effect=lambda run: replace(run, id=uuid4())
+    )
+    store.complete_run = AsyncMock(side_effect=lambda run_id, **kwargs: SimpleNamespace(id=run_id, **kwargs))
     store.touch_used = AsyncMock()
     return store
 
@@ -137,7 +145,8 @@ async def test_auto_run_executes_and_persists():
     result = await workspace_run("echo hi")
     assert "ok" in result
     client.run.assert_awaited_once()
-    store.insert_run.assert_awaited_once()
+    store.insert_in_progress_run.assert_awaited_once()
+    store.complete_run.assert_awaited_once()
 
 
 async def test_truncated_output_mentions_spill_path():
@@ -320,3 +329,52 @@ async def test_unavailable_sidecar_raises():
     client.health = AsyncMock(return_value=False)
     with pytest.raises(WorkspaceUnavailableError):
         await workspace_list("")
+
+
+async def test_off_and_plan_never_reach_run_watcher():
+    run_watcher = AsyncMock()
+
+    client, store = _wire(WorkspaceMode.OFF)
+    configure(client=client, gate=WorkspaceGate(), store=store, run_watcher=run_watcher)
+    await workspace_run("echo hi")
+    run_watcher.detach.assert_not_awaited()
+
+    client, store = _wire(WorkspaceMode.PLAN)
+    configure(client=client, gate=WorkspaceGate(), store=store, run_watcher=run_watcher)
+    await workspace_run("echo hi")
+    run_watcher.detach.assert_not_awaited()
+
+
+async def test_ask_run_detaches_only_after_confirmation_resume():
+    run_watcher = AsyncMock()
+    client = _client()
+
+    async def slow_run(*args, **kwargs):
+        await asyncio.sleep(0.05)
+        return WorkspaceRunResult(
+            exit_code=0, timed_out=False, stdout_preview="ok", stderr_preview=""
+        )
+
+    client.run = AsyncMock(side_effect=slow_run)
+    store = _store(WorkspaceMode.ASK)
+    configure(
+        client=client,
+        gate=WorkspaceGate(),
+        store=store,
+        settings=SimpleNamespace(
+            workspace_timeout_seconds=120,
+            workspace_follow_through_short_wait_seconds=0.01,
+        ),
+        run_watcher=run_watcher,
+    )
+    with pytest.raises(ToolConfirmationRequired):
+        await workspace_run("echo hi")
+    run_watcher.detach.assert_not_awaited()
+
+    token = workspace_confirmed.set(True)
+    try:
+        result = await workspace_run("echo hi")
+    finally:
+        workspace_confirmed.reset(token)
+    assert "still running" in result
+    run_watcher.detach.assert_awaited_once()
