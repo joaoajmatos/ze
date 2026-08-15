@@ -20,6 +20,9 @@ from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_skills.bootstrap import register_proactive_jobs as register_skills_jobs
 from ze_worldstate.bootstrap import register_proactive_jobs as register_worldstate_jobs
+from ze_logging import get_logger
+
+log = get_logger(__name__)
 
 
 def register_all_proactive_jobs(
@@ -77,3 +80,20 @@ def register_all_proactive_jobs(
         )
     if dream_job is not None:
         register_dream_jobs(scheduler, settings, dream_job, pool=pool)
+
+
+async def reconcile_in_progress_workspace_runs(store: Any, run_watcher: Any) -> None:
+    """Startup reconciliation (Phase 116 D5) — re-adopt any `workspace_runs` row
+    still `ended_at IS NULL` from before a restart, so a detached run's
+    follow-through (follow-up turn + completion push) is not silently stranded.
+    Mirrors Phase 13's reminder startup replay: same problem, an in-memory
+    background watcher that must survive a process restart.
+    """
+    runs = await store.list_in_progress()
+    for run in runs:
+        try:
+            await run_watcher.reattach(run)
+        except Exception as exc:
+            log.warning(
+                "workspace_run_reattach_failed", run_id=str(run.id), error=str(exc)
+            )

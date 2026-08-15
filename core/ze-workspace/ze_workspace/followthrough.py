@@ -16,6 +16,10 @@ from ze_workspace.types import (
 
 log = get_logger(__name__)
 
+_RECONCILE_UNAVAILABLE_PREVIEW = (
+    "(output unavailable — ze-api restarted while this command was running)"
+)
+
 
 class TurnStarter(Protocol):
     async def invoke_raw_turn(self, thread_id: str, prompt: str) -> None:
@@ -40,6 +44,44 @@ class RunCompletionSource(Protocol):
     in-memory asyncio.Task was lost to a restart."""
 
     async def await_completion(self, run: WorkspaceRun) -> WorkspaceRunResult: ...
+
+
+class SidecarPollCompletionSource:
+    """Default RunCompletionSource (D5) — polls the sidecar's `/stat` `busy` flag
+    until it clears.
+
+    Phase 115's sidecar contract has no per-run status/output lookup, only
+    `/stat`'s `busy` boolean — the HTTP connection that was awaiting the
+    original `/run` call died with the old `ze-api` process, so its stdout,
+    exit code, and files_touched are unrecoverable after a restart. This is
+    the one durable thing reconciliation can observe: the sidecar going idle
+    again. Matches the spec's own tolerance ("missing a push is not a failed
+    run") extended to lost output detail — the run is still marked terminal so
+    follow-through fires, just without real output.
+    """
+
+    def __init__(self, client: Any, poll_interval_seconds: float = 2.0) -> None:
+        self._client = client
+        self._poll_interval = poll_interval_seconds
+
+    async def await_completion(self, run: WorkspaceRun) -> WorkspaceRunResult:
+        while True:
+            try:
+                stat = await self._client.stat()
+                busy = stat.busy
+            except Exception as exc:
+                log.warning(
+                    "workspace_reconcile_stat_failed", run_id=str(run.id), error=str(exc)
+                )
+                busy = True
+            if not busy:
+                return WorkspaceRunResult(
+                    exit_code=0,
+                    timed_out=False,
+                    stdout_preview=_RECONCILE_UNAVAILABLE_PREVIEW,
+                    stderr_preview="",
+                )
+            await asyncio.sleep(self._poll_interval)
 
 
 def _status_for_result(result: WorkspaceRunResult) -> WorkspaceRunStatus:

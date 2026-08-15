@@ -97,21 +97,21 @@ thread; restart mid-run: follow-up still lands once the run finishes.
 
 ### Tests for User Story 2
 
-- [ ] T018 [P] [US2] Integration test: detached run succeeds while the client is connected → follow-up turn appears on the thread, `PushSender.send_completion` is a no-op, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
-- [ ] T019 [P] [US2] Integration test: detached run succeeds while the client is disconnected → push is sent and the follow-up turn is written to conversation history, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
-- [ ] T020 [P] [US2] Integration test: a follow-up waits for an in-progress turn on the same thread (via `ThreadTurnLock`) before starting — does not interrupt mid-reply, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
-- [ ] T021 [P] [US2] Integration test: run finished in-turn (never detached) produces no follow-up turn and no completion push, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
+- [X] T018 [P] [US2] Integration test: detached run succeeds while the client is connected → follow-up turn appears on the thread, `PushSender.send_completion` is a no-op, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
+- [X] T019 [P] [US2] Integration test: detached run succeeds while the client is disconnected → push is sent and the follow-up turn is written to conversation history, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
+- [X] T020 [P] [US2] Integration test: a follow-up waits for an in-progress turn on the same thread (via `ThreadTurnLock`) before starting — does not interrupt mid-reply, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
+- [X] T021 [P] [US2] Integration test: run finished in-turn (never detached) produces no follow-up turn and no completion push, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Add `ThreadTurnLock` acquisition/release **inside** `ZeContainer.invoke_raw_turn` and `resume_turn` themselves (`apps/ze-api/ze_api/container.py`, `core/ze-core/ze_core/conversation/turn.py`) — the single point where the lock is taken, so the WebSocket turn handler, the eval route, and the new `TurnStarter` adapter (T023) all inherit it automatically through the same call, with no call-site needing its own acquire (depends on T006, T007)
-- [ ] T023 [US2] Implement the `TurnStarter` adapter as a thin wrapper around the now lock-aware `ZeContainer.invoke_raw_turn` (T022) — it does **not** acquire `ThreadTurnLock` itself, matching the contract's intent that locking has exactly one owner, in `apps/ze-api/ze_api/container.py` (depends on T022)
-- [ ] T024 [US2] Implement the `PushSender` adapter using `ProactiveNotifier`/`NativeAppInterface`'s existing connected-check (`_conn.connected`), in `apps/ze-api/ze_api/container.py`
-- [ ] T025 [P] [US2] Regression test confirming the WebSocket turn handler (`apps/ze-api/ze_api/api/websocket/turns.py`) and the eval route (`apps/ze-api/ze_api/api/routes/eval.py`) call the T022-wrapped `invoke_raw_turn` directly with no second `ThreadTurnLock` acquisition at their call sites (a second acquire on the same non-reentrant lock would deadlock), in `apps/ze-api/tests/test_turn_lock_wiring.py` (depends on T022)
-- [ ] T026 [US2] Wire a `RunWatcher` instance with the T023/T024 adapters into container bootstrap, in `apps/ze-api/ze_api/container.py` and `apps/ze-api/ze_api/compose.py`
-- [ ] T027 [US2] Startup reconciliation: on boot, query `WorkspaceStore.list_in_progress()` and call `RunWatcher.reattach(run)` for each, alongside the existing proactive job registration fan-out, in `apps/ze-api/ze_api/compose.py` (depends on T004, T026)
-- [ ] T028 [US2] Compose the synthetic follow-up prompt text per terminal status (succeeded/failed/timed_out/cancelled), in plain language, in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T007)
-- [ ] T029 [US2] Guard `RunWatcher` so only `origin == "conversation"` rows dispatch a follow-up turn or push (`unattended` rows use existing unattended-notification behavior — FR-015), in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T028)
+- [X] T022 [US2] Add `ThreadTurnLock` acquisition/release **inside** `ZeContainer.invoke_raw_turn` and `resume_turn` themselves (`apps/ze-api/ze_api/container.py`, `core/ze-core/ze_core/conversation/turn.py`) — the single point where the lock is taken, so the WebSocket turn handler, the eval route, and the new `TurnStarter` adapter (T023) all inherit it automatically through the same call, with no call-site needing its own acquire (depends on T006, T007)
+- [X] T023 [US2] Implement the `TurnStarter` adapter as a thin wrapper around the now lock-aware `ZeContainer.invoke_raw_turn` (T022) — it does **not** acquire `ThreadTurnLock` itself, matching the contract's intent that locking has exactly one owner, in `apps/ze-api/ze_api/container.py` (depends on T022)
+- [X] T024 [US2] Implement the `PushSender` adapter using `ProactiveNotifier`/`NativeAppInterface`'s existing connected-check (`_conn.connected`), in `apps/ze-api/ze_api/container.py`
+- [X] T025 [P] [US2] Regression test confirming the WebSocket turn handler (`apps/ze-api/ze_api/api/websocket/turns.py`) and the eval route (`apps/ze-api/ze_api/api/routes/eval.py`) call the T022-wrapped `invoke_raw_turn` directly with no second `ThreadTurnLock` acquisition at their call sites (a second acquire on the same non-reentrant lock would deadlock), in `apps/ze-api/tests/test_turn_lock_wiring.py` (depends on T022)
+- [X] T026 [US2] Wire a `RunWatcher` instance with the T023/T024 adapters into container bootstrap, in `apps/ze-api/ze_api/container.py` and `apps/ze-api/ze_api/compose.py`
+- [X] T027 [US2] Startup reconciliation: on boot, query `WorkspaceStore.list_in_progress()` and call `RunWatcher.reattach(run)` for each, alongside the existing proactive job registration fan-out, in `apps/ze-api/ze_api/compose.py` (depends on T004, T026)
+- [X] T028 [US2] Compose the synthetic follow-up prompt text per terminal status (succeeded/failed/timed_out/cancelled), in plain language, in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T007)
+- [X] T029 [US2] Guard `RunWatcher` so only `origin == "conversation"` rows dispatch a follow-up turn or push (`unattended` rows use existing unattended-notification behavior — FR-015), in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T028)
 
 **Checkpoint**: User Stories 1 and 2 both work independently — detach, then automatic follow-through, survives a restart.
 

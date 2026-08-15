@@ -6,7 +6,7 @@ from typing import Any
 from ze_logging import get_logger
 
 from ze_workspace.client import WorkspaceClient
-from ze_workspace.followthrough import RunWatcher
+from ze_workspace.followthrough import RunWatcher, SidecarPollCompletionSource
 from ze_workspace.gate import WorkspaceGate
 from ze_workspace.store import PostgresWorkspaceStore, WorkspaceStore
 from ze_workspace.types import WorkspaceRun
@@ -46,6 +46,7 @@ def build_workspace_stack(
     *,
     turn_starter: Any = None,
     push_sender: Any = None,
+    completion_source: Any = None,
 ) -> WorkspaceStack:
     import ze_workspace.tools  # noqa: F401
 
@@ -72,6 +73,7 @@ def build_workspace_stack(
         store=store,
         turn_starter=turn_starter or _NoopTurnStarter(),
         push_sender=push_sender or _NoopPushSender(),
+        completion_source=completion_source or SidecarPollCompletionSource(client),
     )
 
     ze_workspace.tools.configure(

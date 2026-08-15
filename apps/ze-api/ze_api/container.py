@@ -29,8 +29,10 @@ from ze_skills.store import SkillStore
 from ze_browser import BrowserClient
 from ze_workspace.bootstrap import build_workspace_stack
 from ze_workspace.client import WorkspaceClient
+from ze_workspace.followthrough import RunWatcher
 from ze_workspace.gate import WorkspaceGate
 from ze_workspace.store import WorkspaceStore
+from ze_workspace.turn_lock import ThreadTurnLock
 from ze_components.hook import ComponentCollectionHook
 from ze_core.nli import LocalNLIClient
 from ze_core.bootstrap import (
@@ -77,7 +79,10 @@ from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.compose import register_all_proactive_jobs
+from ze_api.compose import (
+    reconcile_in_progress_workspace_runs,
+    register_all_proactive_jobs,
+)
 from ze_api.db import create_checkpointer_pool, create_pool
 from ze_api.interface.native import NativeAppInterface
 from ze_api.webhook import (
@@ -91,6 +96,102 @@ import ze_components.tools  # noqa: F401 — registers all render tools at impor
 import ze_agents.nli_tools  # noqa: F401 — registers shared NLI tools at import time
 
 log = get_logger(__name__)
+
+
+class _ContainerTurnStarter:
+    """Satisfies ze_workspace.followthrough.TurnStarter — a thin wrapper around
+    the lock-aware ZeContainer.invoke_raw_turn (T022/T023). Does not acquire
+    ThreadTurnLock itself; container.invoke_raw_turn already does, and a second
+    acquire on the same non-reentrant lock would deadlock.
+
+    Built before ZeContainer exists (build_workspace_stack runs early in
+    build_container), so the container reference is bound in once available.
+    """
+
+    def __init__(self) -> None:
+        self._container: ZeContainer | None = None
+
+    def bind(self, container: "ZeContainer") -> None:
+        self._container = container
+
+    async def invoke_raw_turn(self, thread_id: str, prompt: str) -> None:
+        if self._container is None:
+            log.warning("workspace_followup_turn_starter_unbound", thread_id=thread_id)
+            return
+        outcome = await self._container.invoke_raw_turn(thread_id, RawInput(text=prompt))
+        if outcome.interrupted or not outcome.response:
+            return
+        await self._container.interface.send_with_thread(
+            outcome.response,
+            thread_id=thread_id,
+            components=(outcome.final_state or {}).get("components") or None,
+            trace=(outcome.final_state or {}).get("message_trace"),
+        )
+
+
+class _NotifierPushSender:
+    """Satisfies ze_workspace.followthrough.PushSender via the existing
+    ProactiveNotifier — same structured-event path stuck goals/accountability/
+    reminders already use (D4), `event_type="workspace_run_completed"` reusing
+    the Phase 105 notifications table with no new column. Bound in once the
+    notifier exists (built after the workspace stack in build_container)."""
+
+    def __init__(self) -> None:
+        self._notifier: ProactiveNotifier | None = None
+
+    def bind(self, notifier: ProactiveNotifier) -> None:
+        self._notifier = notifier
+
+    async def send_completion(self, run: Any) -> None:
+        if self._notifier is None:
+            log.warning("workspace_push_sender_unbound", run_id=str(run.id))
+            return
+        title = "Workspace run finished"
+        body = _push_body(run)
+        await self._notifier.notify(
+            "workspace_run_completed",
+            title,
+            body,
+            source="workspace",
+            target_type="workspace_run",
+            target_id=str(run.id) if run.id else None,
+            urgency="normal",
+        )
+
+
+def _push_body(run: Any) -> str:
+    status = getattr(run.status, "value", run.status)
+    command = run.command
+    if status == "cancelled":
+        return f"Stopped: {command}"
+    if status == "succeeded":
+        return f"Finished: {command}"
+    if status == "timed_out":
+        return f"Timed out: {command}"
+    return f"Failed: {command}"
+
+
+async def _locked_invoke_raw_turn(
+    container: Any,
+    turn_lock: ThreadTurnLock,
+    thread_id: str,
+    raw: RawInput,
+    *,
+    config_extra: dict | None = None,
+) -> TurnResult:
+    async with turn_lock.acquire(thread_id):
+        return await invoke_raw_turn(container, thread_id, raw, config_extra=config_extra)
+
+
+async def _locked_resume_turn(
+    container: Any,
+    turn_lock: ThreadTurnLock,
+    config: dict,
+    resume: object = None,
+) -> TurnResult:
+    thread_id = (config.get("configurable") or {}).get("thread_id") or ""
+    async with turn_lock.acquire(thread_id):
+        return await resume_turn(container, config, resume=resume)
 
 
 @dataclass(kw_only=True)
@@ -109,6 +210,8 @@ class ZeContainer(CoreContainer):
     workspace_client: WorkspaceClient
     workspace_gate: WorkspaceGate
     workspace_store: WorkspaceStore
+    workspace_run_watcher: RunWatcher
+    turn_lock: ThreadTurnLock
     push_notifier: NtfyNotifier | None
     message_store: PostgresMessageStore
     session_store: PostgresSessionStore
@@ -182,10 +285,12 @@ class ZeContainer(CoreContainer):
         *,
         config_extra: dict | None = None,
     ) -> TurnResult:
-        return await invoke_raw_turn(self, thread_id, raw, config_extra=config_extra)
+        return await _locked_invoke_raw_turn(
+            self, self.turn_lock, thread_id, raw, config_extra=config_extra
+        )
 
     async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:
-        return await resume_turn(self, config, resume=resume)
+        return await _locked_resume_turn(self, self.turn_lock, config, resume=resume)
 
     async def close(self) -> None:
         for plugin in reversed(self.plugins):
@@ -251,7 +356,12 @@ async def build_container(settings: Settings) -> ZeContainer:
     skill_matcher = build_skill_matcher(
         skills_stack.skill_store, shared.embedder, settings
     )
-    workspace = build_workspace_stack(shared, settings)
+    turn_lock = ThreadTurnLock()
+    turn_starter = _ContainerTurnStarter()
+    push_sender = _NotifierPushSender()
+    workspace = build_workspace_stack(
+        shared, settings, turn_starter=turn_starter, push_sender=push_sender
+    )
     automation.goal_executor._workspace_gate = workspace.gate
     automation.goal_executor._get_workspace_mode = workspace.store.get_mode
     shared.dep_map.update(automation.deps)
@@ -297,6 +407,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     notifier = ProactiveNotifier(
         interface=interface, notification_store=notification_store
     )
+    push_sender.bind(notifier)
     push_log_store = PushLogStore(pool=pool)
 
     from ze_worldstate.bootstrap import build_loop_surfacer
@@ -519,6 +630,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         workspace_client=workspace.client,
         workspace_gate=workspace.gate,
         workspace_store=workspace.store,
+        workspace_run_watcher=workspace.run_watcher,
+        turn_lock=turn_lock,
         push_notifier=push_notifier,
         message_store=message_store,
         session_store=session_store,
@@ -547,6 +660,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
 
     webhook_dispatcher._container = container
+    turn_starter.bind(container)
 
     for plugin in plugins:
         try:
@@ -623,6 +737,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         dream_job=dream_job,
         pool=pool,
     )
+    await reconcile_in_progress_workspace_runs(workspace.store, workspace.run_watcher)
 
     await automation.workflow_scheduler.start()
     await container.proactive_scheduler.start()
