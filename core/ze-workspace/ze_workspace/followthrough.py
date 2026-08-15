@@ -156,6 +156,24 @@ class RunWatcher:
         pending = self._completion_source.await_completion(run)
         await self.detach(run, pending)
 
+    async def cancel(self, run_id: UUID) -> WorkspaceRun | None:
+        """Administrative stop (User Story 3) — persists status=cancelled directly
+        via store.cancel_run (which leaves output_preview/files_touched untouched,
+        unlike _finish's complete_run call) and dispatches follow-through
+        immediately, rather than waiting for pending_completion to resolve.
+
+        Returns None if the run was already terminal (already-finished cancel,
+        route layer turns this into 409). If a `detach`ed `_finish` task is still
+        awaiting the sidecar call for this run, it will see the row already
+        terminal once that call returns (complete_run's `WHERE ended_at IS NULL`
+        guard) and no-op — this never double-dispatches.
+        """
+        cancelled = await self._store.cancel_run(run_id)
+        if cancelled is None:
+            return None
+        await self._dispatch(cancelled)
+        return cancelled
+
     async def _finish(
         self,
         run: WorkspaceRun,

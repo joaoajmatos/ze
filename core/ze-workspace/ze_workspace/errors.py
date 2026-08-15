@@ -25,3 +25,7 @@ class WorkspacePathError(WorkspaceError):
 
 class WorkspaceNotFoundError(WorkspaceError):
     """Requested file or run does not exist."""
+
+
+class WorkspaceRunAlreadyTerminalError(WorkspaceError):
+    """Cancel (or another terminal write) raced a run that had already finished."""

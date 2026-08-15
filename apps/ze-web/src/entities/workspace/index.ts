@@ -7,4 +7,5 @@ export { useWorkspaceRunsQuery } from "./api/useWorkspaceRunsQuery";
 export { useWorkspaceModeMutation } from "./api/useWorkspaceModeMutation";
 export { useWorkspaceUploadMutation } from "./api/useWorkspaceUploadMutation";
 export { useWorkspaceResetMutation } from "./api/useWorkspaceResetMutation";
+export { useCancelWorkspaceRunMutation } from "./api/useCancelWorkspaceRunMutation";
 export type { WorkspaceMode, WorkspaceStatus, WorkspaceFileItem, WorkspaceRunItem } from "./api/types";

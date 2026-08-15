@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, Response
@@ -9,6 +10,7 @@ from ze_api.api.dependencies import (
     get_connection_manager,
     get_ingestion_pipeline,
     get_workspace_client,
+    get_workspace_run_watcher,
     get_workspace_store,
     require_api_key,
 )
@@ -21,6 +23,7 @@ from ze_api.api.schemas import (
     WorkspaceResetRequest,
     WorkspaceResetResultResponse,
     WorkspaceRunListResponse,
+    WorkspaceRunResponse,
     WorkspaceStatusResponse,
     WorkspaceUploadResponse,
 )
@@ -34,6 +37,7 @@ from ze_workspace.errors import (
     WorkspacePathError,
     WorkspaceUnavailableError,
 )
+from ze_workspace.followthrough import RunWatcher
 from ze_workspace.store import WorkspaceStore
 
 router = APIRouter(
@@ -247,6 +251,30 @@ async def list_workspace_runs(
     except (WorkspaceError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return WorkspaceRunListResponse.model_validate(data)
+
+
+@router.post(
+    "/runs/{run_id}/cancel",
+    response_model=WorkspaceRunResponse,
+    operation_id="cancelWorkspaceRun",
+    summary="Cancel a workspace run",
+    description=(
+        "Stops an in-progress run. No confirmation is required (FR-009 — this "
+        "is not workspace reset). 409 if the run already finished, 404 if the "
+        "run id is unknown."
+    ),
+)
+async def cancel_workspace_run(
+    run_id: UUID,
+    store: WorkspaceStore = Depends(get_workspace_store),
+    client: WorkspaceClient = Depends(get_workspace_client),
+    run_watcher: RunWatcher = Depends(get_workspace_run_watcher),
+) -> WorkspaceRunResponse:
+    try:
+        data = await workspace_rest.cancel_run(store, client, run_watcher, run_id)
+    except WorkspaceError as exc:
+        _raise_workspace(exc)
+    return WorkspaceRunResponse.model_validate(data)
 
 
 _RESET_PROMPT = (

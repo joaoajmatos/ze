@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 from types import SimpleNamespace
-from uuid import uuid4
+from typing import Any
+from uuid import UUID, uuid4
 
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.errors import (
@@ -10,6 +11,7 @@ from ze_workspace.errors import (
     WorkspaceFullError,
     WorkspaceNotFoundError,
     WorkspacePathError,
+    WorkspaceRunAlreadyTerminalError,
     WorkspaceUnavailableError,
 )
 from ze_workspace.store import WorkspaceStore
@@ -23,6 +25,7 @@ _ERROR_STATUS = {
     WorkspaceFullError: 409,
     WorkspacePathError: 400,
     WorkspaceNotFoundError: 404,
+    WorkspaceRunAlreadyTerminalError: 409,
 }
 
 
@@ -106,6 +109,32 @@ async def list_files(client: WorkspaceClient, path: str = "") -> dict:
 
 async def download_file(client: WorkspaceClient, path: str) -> bytes:
     return await client.download(path)
+
+
+async def cancel_run(
+    store: WorkspaceStore,
+    client: WorkspaceClient,
+    run_watcher: Any,
+    run_id: UUID,
+) -> dict:
+    """User Story 3: stop an in-progress run without a confirmation prompt
+    (FR-009 — never routes through WorkspaceGate.decide()). Raises
+    WorkspaceNotFoundError for an unknown id, WorkspaceRunAlreadyTerminalError
+    if the run already finished (route layer maps both to their HTTP status via
+    http_status_for)."""
+    run = await store.get_run(run_id)
+    if run is None:
+        raise WorkspaceNotFoundError(f"workspace run {run_id} not found")
+    if run.ended_at is not None:
+        raise WorkspaceRunAlreadyTerminalError("already finished")
+    try:
+        await client.cancel()
+    except WorkspaceNotFoundError:
+        pass
+    cancelled = await run_watcher.cancel(run_id)
+    if cancelled is None:
+        raise WorkspaceRunAlreadyTerminalError("already finished")
+    return _run_to_dict(cancelled)
 
 
 def _unique_name(existing: set[str], path: str) -> str:

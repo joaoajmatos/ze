@@ -101,5 +101,9 @@ def get_workspace_client(request: Request):
     return request.app.state.container.workspace_client
 
 
+def get_workspace_run_watcher(request: Request):
+    return request.app.state.container.workspace_run_watcher
+
+
 def get_ingestion_pipeline(request: Request):
     return request.app.state.container.ingestion_pipeline

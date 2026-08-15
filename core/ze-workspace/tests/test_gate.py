@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import inspect
+
+from ze_workspace import rest as workspace_rest
 from ze_workspace.gate import WorkspaceGate
 from ze_workspace.types import (
     WorkspaceAction,
@@ -123,3 +126,22 @@ def test_plan_dry_run():
         _d(WorkspaceMode.PLAN, WorkspaceAction.RUN, WorkspaceRunOrigin.CONVERSATION)
         is WorkspaceGateDecision.PLAN
     )
+
+
+def test_workspace_action_has_no_cancel_member():
+    """Cancel (User Story 3, FR-009) is not a gated action at all — there is no
+    WorkspaceGateDecision to reach for it, so it can never land on CONFIRM."""
+    assert not hasattr(WorkspaceAction, "CANCEL")
+
+
+def test_cancel_run_never_calls_workspace_gate():
+    """Source-level guard: ze_workspace.rest.cancel_run's body must never
+    reference WorkspaceGate or call .decide() — cancel bypasses the confirm
+    path entirely, it is not a second confirmation on top of the original
+    run. Checked against the function's parameter names and body, not its
+    docstring, which is free to mention WorkspaceGate in prose."""
+    source = inspect.getsource(workspace_rest.cancel_run)
+    body = source.split('"""', 2)[-1]
+    assert "WorkspaceGate" not in body
+    assert "gate" not in body
+    assert ".decide(" not in body

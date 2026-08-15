@@ -128,17 +128,17 @@ confirm a second cancel on the same run returns `409`.
 
 ### Tests for User Story 3
 
-- [ ] T030 [P] [US3] Contract test for `POST /api/v0/workspace/runs/{id}/cancel`: success path within 15s (SC-005), `409` on an already-terminal run, `404` on an unknown id, in `apps/ze-api/tests/api/test_workspace_cancel.py`
-- [ ] T031 [P] [US3] Unit test: cancelling a detached run's `RunWatcher` task observes the terminal status and runs the normal US2 follow-through path (follow-up says "stopped", not success), in `core/ze-workspace/tests/test_followthrough.py`
+- [X] T030 [P] [US3] Contract test for `POST /api/v0/workspace/runs/{id}/cancel`: success path within 15s (SC-005), `409` on an already-terminal run, `404` on an unknown id, in `apps/ze-api/tests/api/test_workspace_cancel.py`
+- [X] T031 [P] [US3] Unit test: cancelling a detached run's `RunWatcher` task observes the terminal status and runs the normal US2 follow-through path (follow-up says "stopped", not success), in `core/ze-workspace/tests/test_followthrough.py`
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] Add `POST /api/v0/workspace/runs/{id}/cancel` route (`operation_id: cancelWorkspaceRun`) returning the updated `WorkspaceRunResponse` or `409`/`404`, in `apps/ze-api/ze_api/api/routes/workspace.py` (depends on T005)
-- [ ] T033 [US3] Add `follow_through_notified` to `WorkspaceRunResponse` and add the cancel response schema in `apps/ze-api/ze_api/api/schemas.py`
-- [ ] T034 [US3] Implement the cancel path in `ze-workspace`: call `WorkspaceClient.cancel()`, persist `status = cancelled`, `ended_at = now()`, leave `files_touched`/`output_preview` as already recorded, in `core/ze-workspace/ze_workspace/store.py` and `core/ze-workspace/ze_workspace/rest.py` (depends on T005)
-- [ ] T035 [US3] Confirm cancel bypasses `WorkspaceGate`'s confirm path entirely (FR-009 — no second confirmation), with a regression test in `core/ze-workspace/tests/test_gate.py`
-- [ ] T036 [P] [US3] Add a cancel button to the running-run banner built in T015, in `apps/ze-web/src/widgets/workspace-management/`, wired to the new cancel mutation
-- [ ] T037 [P] [US3] vitest for the cancel button and the "already finished" error state in `apps/ze-web/src/widgets/workspace-management/*.test.tsx`
+- [X] T032 [US3] Add `POST /api/v0/workspace/runs/{id}/cancel` route (`operation_id: cancelWorkspaceRun`) returning the updated `WorkspaceRunResponse` or `409`/`404`, in `apps/ze-api/ze_api/api/routes/workspace.py` (depends on T005)
+- [X] T033 [US3] Add `follow_through_notified` to `WorkspaceRunResponse` and add the cancel response schema in `apps/ze-api/ze_api/api/schemas.py`
+- [X] T034 [US3] Implement the cancel path in `ze-workspace`: call `WorkspaceClient.cancel()`, persist `status = cancelled`, `ended_at = now()`, leave `files_touched`/`output_preview` as already recorded, in `core/ze-workspace/ze_workspace/store.py` and `core/ze-workspace/ze_workspace/rest.py` (depends on T005)
+- [X] T035 [US3] Confirm cancel bypasses `WorkspaceGate`'s confirm path entirely (FR-009 — no second confirmation), with a regression test in `core/ze-workspace/tests/test_gate.py`
+- [X] T036 [P] [US3] Add a cancel button to the running-run banner built in T015, in `apps/ze-web/src/widgets/workspace-management/`, wired to the new cancel mutation
+- [X] T037 [P] [US3] vitest for the cancel button and the "already finished" error state in `apps/ze-web/src/widgets/workspace-management/*.test.tsx`
 
 **Checkpoint**: User Stories 1–3 all work independently.
 

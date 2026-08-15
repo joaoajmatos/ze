@@ -9,6 +9,7 @@ const {
   useWorkspaceModeMutation,
   useWorkspaceUploadMutation,
   useWorkspaceResetMutation,
+  useCancelWorkspaceRunMutation,
   retrieveWorkspaceFile,
 } = vi.hoisted(() => ({
   useWorkspaceQuery: vi.fn(),
@@ -17,6 +18,7 @@ const {
   useWorkspaceModeMutation: vi.fn(),
   useWorkspaceUploadMutation: vi.fn(),
   useWorkspaceResetMutation: vi.fn(),
+  useCancelWorkspaceRunMutation: vi.fn(),
   retrieveWorkspaceFile: vi.fn(),
 }));
 
@@ -27,6 +29,7 @@ vi.mock("@/entities/workspace", () => ({
   useWorkspaceModeMutation,
   useWorkspaceUploadMutation,
   useWorkspaceResetMutation,
+  useCancelWorkspaceRunMutation,
   retrieveWorkspaceFile,
 }));
 
@@ -78,6 +81,13 @@ function setup() {
   useWorkspaceModeMutation.mockReturnValue({ mutate: modeMutate, isPending: false });
   useWorkspaceUploadMutation.mockReturnValue({ mutate: uploadMutate, isPending: false });
   useWorkspaceResetMutation.mockReturnValue({ mutate: resetMutate, isPending: false });
+  useCancelWorkspaceRunMutation.mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+    variables: undefined,
+  });
   return { modeMutate, uploadMutate, resetMutate };
 }
 

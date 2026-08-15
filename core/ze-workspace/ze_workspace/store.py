@@ -109,6 +109,10 @@ class WorkspaceStore(Protocol):
 
     async def mark_follow_through_notified(self, run_id: UUID) -> bool: ...
 
+    async def get_run(self, run_id: UUID) -> WorkspaceRun | None: ...
+
+    async def cancel_run(self, run_id: UUID) -> WorkspaceRun | None: ...
+
     async def list_runs(
         self,
         *,
@@ -307,6 +311,37 @@ class PostgresWorkspaceStore:
                 " ORDER BY started_at DESC"
             )
         return [_run_from_row(r) for r in rows]
+
+    async def get_run(self, run_id: UUID) -> WorkspaceRun | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM workspace_runs WHERE id = $1", run_id
+            )
+        return _run_from_row(row) if row is not None else None
+
+    async def cancel_run(self, run_id: UUID) -> WorkspaceRun | None:
+        """Marks an in-progress run cancelled without touching already-recorded
+        output_preview/output_file_path/files_touched/exit_code (unlike
+        complete_run, which is meant for a run that just produced a full
+        result) — US3's contract requires partial output to stay inspectable.
+        Returns None if the run was already terminal (e.g. it finished a
+        moment before this call landed)."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE workspace_runs
+                   SET ended_at = now(), status = $2
+                 WHERE id = $1 AND ended_at IS NULL
+             RETURNING *
+                """,
+                run_id,
+                WorkspaceRunStatus.CANCELLED.value,
+            )
+        if row is None:
+            return None
+        result = _run_from_row(row)
+        log.info("workspace_run_cancelled", run_id=str(result.id))
+        return result
 
     async def mark_follow_through_notified(self, run_id: UUID) -> bool:
         """Idempotent: True only the first time it flips false -> true for run_id."""
