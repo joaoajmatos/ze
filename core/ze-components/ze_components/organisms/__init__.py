@@ -1,3 +1,4 @@
+from ze_components.organisms.chart import Chart, ChartPoint, chart
 from ze_components.organisms.connections import (
     ConnectionEvidence,
     ConnectionItem,
@@ -10,6 +11,8 @@ from ze_components.organisms.table import Table, table
 
 __all__ = [
     # Types
+    "Chart",
+    "ChartPoint",
     "ConnectionEvidence",
     "ConnectionItem",
     "Connections",
@@ -19,6 +22,7 @@ __all__ = [
     "Steps",
     "Table",
     # helpers
+    "chart",
     "connections",
     "form",
     "form_field",

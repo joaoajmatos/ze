@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+
 @source "../../../../../packages/ze-ui/src";
+
 
 @theme {
   /* ── Colors — "Open Sky": open loops as stars, one accent, tinted
@@ -130,4 +132,71 @@ select:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--color-plum-voltage);
   outline-offset: 2px;
+}
+
+/* Bklit chart tokens, re-themed to "Open Sky" — see spec 118-chart-visualization
+   research.md R3. Ze ships one dark theme (no light/dark toggle), so these are
+   defined once rather than split across :root/.dark like the shadcn default. */
+:root {
+  --chart-1:          var(--color-plum-voltage);
+  --chart-2:          var(--color-amber-spark);
+  --chart-3:          var(--color-lichen);
+  --chart-4:          var(--color-ember);
+  --chart-5:          var(--color-ash);
+  --chart-background:          var(--color-void);
+  --chart-foreground:          var(--color-bone);
+  --chart-foreground-muted:          var(--color-smoke);
+  --chart-line-primary:          var(--chart-1);
+  --chart-line-secondary:          var(--chart-2);
+  --chart-crosshair:          var(--color-smoke);
+  --chart-grid:          rgba(244,242,237,0.10);
+  --chart-brush-border:          var(--chart-grid);
+  --chart-tooltip-background:          rgba(18,17,32,0.92);
+  --chart-tooltip-foreground:          var(--color-bone);
+  --chart-tooltip-muted:          var(--color-smoke);
+  --chart-marker-background:          var(--color-void);
+  --chart-marker-border:          var(--color-ash);
+  --chart-marker-foreground:          var(--color-bone);
+  --chart-marker-badge-background:          var(--color-plum-voltage);
+  --chart-marker-badge-foreground:          var(--color-bone);
+  --chart-segment-background:          rgba(128,82,255,0.15);
+  --chart-segment-line:          var(--color-plum-voltage);
+  --chart-indicator-color:          var(--color-plum-voltage);
+  --chart-indicator-secondary-color:          var(--color-amber-spark);
+  --chart-label:          var(--color-smoke);
+  --chart-scale-01:          rgba(244,242,237,0.05);
+  --chart-scale-02:          rgba(244,242,237,0.15);
+  --chart-scale-03:          rgba(244,242,237,0.35);
+  --chart-scale-04:          rgba(244,242,237,0.6);
+  --chart-scale-05:          rgba(244,242,237,0.85);
+  --chart-scale-pattern-color:          rgba(244,242,237,0.05);
+}
+
+@theme inline {
+  --color-chart-1:          var(--chart-1);
+  --color-chart-2:          var(--chart-2);
+  --color-chart-3:          var(--chart-3);
+  --color-chart-4:          var(--chart-4);
+  --color-chart-5:          var(--chart-5);
+  --color-chart-background:          var(--chart-background);
+  --color-chart-foreground:          var(--chart-foreground);
+  --color-chart-foreground-muted:          var(--chart-foreground-muted);
+  --chart-line-primary:          var(--chart-line-primary);
+  --chart-line-secondary:          var(--chart-line-secondary);
+  --color-chart-crosshair:          var(--chart-crosshair);
+  --color-chart-grid:          var(--chart-grid);
+  --chart-brush-border:          var(--chart-brush-border);
+  --color-chart-tooltip-background:          var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground:          var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted:          var(--chart-tooltip-muted);
+  --color-chart-marker-background:          var(--chart-marker-background);
+  --color-chart-marker-border:          var(--chart-marker-border);
+  --color-chart-marker-foreground:          var(--chart-marker-foreground);
+  --color-chart-label:          var(--chart-label);
+  --color-chart-scale-01:          var(--chart-scale-01);
+  --color-chart-scale-02:          var(--chart-scale-02);
+  --color-chart-scale-03:          var(--chart-scale-03);
+  --color-chart-scale-04:          var(--chart-scale-04);
+  --color-chart-scale-05:          var(--chart-scale-05);
+  --color-chart-scale-pattern-color:          var(--chart-scale-pattern-color);
 }

@@ -119,6 +119,25 @@
         "status"
       ]
     },
+    "ChartPoint": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "number"
+        },
+        "series": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y"
+      ]
+    },
     "Col": {
       "type": "object",
       "properties": {
@@ -431,6 +450,52 @@
         "type"
       ]
     },
+    "Chart": {
+      "type": "object",
+      "properties": {
+        "chart_type": {
+          "enum": [
+            "line",
+            "bar",
+            "area",
+            "pie"
+          ]
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ChartPoint"
+          }
+        },
+        "series_labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "x_label": {
+          "type": "string"
+        },
+        "y_label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "legend": {
+          "type": "boolean"
+        },
+        "type": {
+          "const": "chart"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "chart_type",
+        "data",
+        "type"
+      ]
+    },
     "Primitive": {
       "oneOf": [
         {
@@ -468,6 +533,9 @@
         },
         {
           "$ref": "#/$defs/Steps"
+        },
+        {
+          "$ref": "#/$defs/Chart"
         }
       ],
       "discriminator": {
@@ -484,7 +552,8 @@
           "table": "#/$defs/Table",
           "form": "#/$defs/Form",
           "connections": "#/$defs/Connections",
-          "steps": "#/$defs/Steps"
+          "steps": "#/$defs/Steps",
+          "chart": "#/$defs/Chart"
         }
       }
     },
@@ -532,6 +601,9 @@
     },
     {
       "$ref": "#/$defs/Steps"
+    },
+    {
+      "$ref": "#/$defs/Chart"
     }
   ],
   "discriminator": {
@@ -548,7 +620,8 @@
       "table": "#/$defs/Table",
       "form": "#/$defs/Form",
       "connections": "#/$defs/Connections",
-      "steps": "#/$defs/Steps"
+      "steps": "#/$defs/Steps",
+      "chart": "#/$defs/Chart"
     }
   }
 }

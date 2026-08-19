@@ -59,6 +59,10 @@ def _field_schema(annotation: type) -> dict:
         item_type = args[0] if args else str
         return {"type": "array", "items": _field_schema(item_type)}
 
+    if origin is dict:
+        value_type = args[1] if len(args) > 1 else str
+        return {"type": "object", "additionalProperties": _field_schema(value_type)}
+
     if dataclasses.is_dataclass(annotation):
         return _dataclass_schema(annotation)
 
@@ -132,6 +136,13 @@ def _export_field_schema(
                 "items": {"$ref": f"#/$defs/{item_type.__name__}"},
             }
         return {"type": "array", "items": _export_field_schema(item_type)}
+
+    if origin is dict:
+        value_type = args[1] if len(args) > 1 else str
+        return {
+            "type": "object",
+            "additionalProperties": _export_field_schema(value_type),
+        }
 
     if dataclasses.is_dataclass(annotation):
         return {"$ref": f"#/$defs/{annotation.__name__}"}

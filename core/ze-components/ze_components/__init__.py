@@ -41,6 +41,8 @@ from ze_components.molecules import (
 
 # ── Organisms ─────────────────────────────────────────────────────────────────
 from ze_components.organisms import (
+    Chart,
+    ChartPoint,
     ConnectionEvidence,
     ConnectionItem,
     Connections,
@@ -49,6 +51,7 @@ from ze_components.organisms import (
     StepItem,
     Steps,
     Table,
+    chart,
     connections,
     form,
     form_field,
@@ -77,6 +80,7 @@ PRIMITIVE_SUB_TYPES: list[type] = [
     ConnectionEvidence,
     ConnectionItem,
     StepItem,
+    ChartPoint,
 ]
 
 PRIMITIVE_TYPES: list[type] = [
@@ -92,6 +96,7 @@ PRIMITIVE_TYPES: list[type] = [
     Form,
     Connections,
     Steps,
+    Chart,
 ]
 
 __all__ = [
@@ -133,6 +138,8 @@ __all__ = [
     "row",
     "section",
     # Organisms — types
+    "Chart",
+    "ChartPoint",
     "ConnectionEvidence",
     "ConnectionItem",
     "Connections",
@@ -142,6 +149,7 @@ __all__ = [
     "Steps",
     "Table",
     # Organisms — helpers
+    "chart",
     "connections",
     "form",
     "form_field",

@@ -82,6 +82,60 @@ async def test_render_confirm_appends_col_with_buttons():
     assert buttons_row["children"][1]["action"] == "no"
 
 
+async def test_render_chart_appends_chart_primitive():
+    token = ctx.begin_collection()
+    result = await ze_components.tools.render_chart(
+        chart_type="line",
+        data=[{"x": "Mon", "y": 1.0}, {"x": "Tue", "y": 2.0, "series": "a"}],
+        title="Trend",
+    )
+    components = ctx.collect_and_reset(token)
+
+    assert len(components) == 1
+    assert components[0]["type"] == "chart"
+    assert components[0]["chart_type"] == "line"
+    assert components[0]["data"] == [
+        {"x": "Mon", "y": 1.0},
+        {"x": "Tue", "y": 2.0, "series": "a"},
+    ]
+    assert components[0]["title"] == "Trend"
+    assert "chart" in result
+
+
+async def test_render_chart_drops_malformed_points():
+    token = ctx.begin_collection()
+    await ze_components.tools.render_chart(
+        chart_type="bar",
+        data=[{"x": "A", "y": 1.0}, {"x": "missing y"}, {"y": 2.0}],
+    )
+    components = ctx.collect_and_reset(token)
+
+    assert len(components[0]["data"]) == 1
+    assert components[0]["data"][0]["x"] == "A"
+
+
+async def test_render_chart_accepts_pie_type():
+    token = ctx.begin_collection()
+    await ze_components.tools.render_chart(
+        chart_type="pie",
+        data=[{"x": "A", "y": 1.0}, {"x": "B", "y": 2.0}],
+    )
+    components = ctx.collect_and_reset(token)
+
+    assert components[0]["chart_type"] == "pie"
+
+
+async def test_render_chart_truncates_at_data_cap():
+    token = ctx.begin_collection()
+    await ze_components.tools.render_chart(
+        chart_type="line",
+        data=[{"x": str(i), "y": float(i)} for i in range(600)],
+    )
+    components = ctx.collect_and_reset(token)
+
+    assert len(components[0]["data"]) == 500
+
+
 async def test_render_form_appends_form_primitive():
     token = ctx.begin_collection()
     await ze_components.tools.render_form(

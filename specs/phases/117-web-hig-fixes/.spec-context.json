@@ -1,0 +1,23 @@
+{
+  "workflow": "speckit",
+  "specName": "Web UI HIG Audit Fixes",
+  "branch": "main",
+  "currentStep": "plan",
+  "status": "planned",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T11:58:59.428Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T12:05:39.453Z"
+    }
+  ]
+}

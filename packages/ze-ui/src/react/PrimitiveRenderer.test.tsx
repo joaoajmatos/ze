@@ -101,6 +101,78 @@ describe("PrimitiveRenderer", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
+  it("renders a line chart without throwing", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "chart",
+          chart_type: "line",
+          data: [
+            { x: "2026-01-01", y: 1 },
+            { x: "2026-01-02", y: 2 },
+          ],
+          title: "Trend",
+        }}
+      />,
+    );
+    expect(screen.getByText("Trend")).toBeInTheDocument();
+  });
+
+  it("renders a bar chart without throwing", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "chart",
+          chart_type: "bar",
+          data: [
+            { x: "A", y: 1 },
+            { x: "B", y: 2 },
+          ],
+        }}
+      />,
+    );
+  });
+
+  it("renders an area chart without throwing", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "chart",
+          chart_type: "area",
+          data: [{ x: "2026-01-01", y: 1 }],
+        }}
+      />,
+    );
+  });
+
+  it("renders a pie chart without throwing", () => {
+    render(
+      <PrimitiveRenderer
+        node={{
+          type: "chart",
+          chart_type: "pie",
+          data: [
+            { x: "A", y: 1 },
+            { x: "B", y: 2 },
+          ],
+        }}
+      />,
+    );
+  });
+
+  it("renders an empty-state for a chart with no data", () => {
+    render(<PrimitiveRenderer node={{ type: "chart", chart_type: "line", data: [] }} />);
+    expect(screen.getByText("No data")).toBeInTheDocument();
+  });
+
+  it("degrades gracefully for an unrecognized chart_type", () => {
+    const { container } = render(
+      // @ts-expect-error — simulating a newer backend's unsupported chart_type
+      <PrimitiveRenderer node={{ type: "chart", chart_type: "scatter", data: [{ x: "A", y: 1 }] }} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it("renders inline markdown in text primitives", () => {
     render(
       <PrimitiveRenderer node={{ type: "text", content: "Focus on **conversation** next" }} />,

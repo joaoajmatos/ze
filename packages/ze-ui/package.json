@@ -10,6 +10,10 @@
     "./react": {
       "types": "./src/react/index.ts",
       "default": "./src/react/index.ts"
+    },
+    "./charts": {
+      "types": "./src/charts/index.tsx",
+      "default": "./src/charts/index.tsx"
     }
   },
   "repository": {
@@ -21,7 +25,20 @@
   },
   "dependencies": {
     "ajv": "8.20.0",
+    "@number-flow/react": "^0.6.2",
+    "@visx/curve": "4.0.1-alpha.0",
+    "@visx/event": "4.0.1-alpha.0",
+    "@visx/gradient": "4.0.1-alpha.0",
+    "@visx/grid": "4.0.1-alpha.0",
+    "@visx/group": "4.0.1-alpha.0",
+    "@visx/pattern": "4.0.1-alpha.0",
+    "@visx/responsive": "4.0.1-alpha.0",
+    "@visx/scale": "4.0.1-alpha.0",
+    "@visx/shape": "4.0.1-alpha.0",
     "clsx": "2.1.1",
+    "d3-array": "^3.2.4",
+    "d3-shape": "^3.2.0",
+    "motion": "^13.1.0",
     "tailwind-merge": "2.6.1"
   },
   "peerDependencies": {
@@ -31,6 +48,8 @@
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
+    "@types/d3-array": "^3.2.1",
+    "@types/d3-shape": "^3.1.7",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "jsdom": "29.1.1",

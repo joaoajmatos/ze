@@ -9,6 +9,7 @@ from ze_components import context as _ctx
 from ze_components.organisms.connections import Connections
 from ze_components.organisms.form import Form, form_field as _form_field
 from ze_components.organisms.table import Table
+from ze_components.organisms.chart import Chart, ChartPoint
 from ze_components.patterns.card_notice import card_notice
 from ze_components.patterns.choice_group import choice_group
 from ze_components.patterns.confirm import confirm_prompt
@@ -144,6 +145,28 @@ class _ConnectAccountSchema:
 
 
 @dataclasses.dataclass
+class _ChartPointSchema:
+    x: str
+    y: float
+    series: str | None = None
+
+
+@dataclasses.dataclass
+class _ChartSchema:
+    chart_type: str
+    data: list[_ChartPointSchema]
+    series_labels: dict[str, str] | None = None
+    x_label: str | None = None
+    y_label: str | None = None
+    title: str | None = None
+    legend: bool = True
+
+
+_CHART_TYPES = frozenset({"line", "bar", "area", "pie"})
+_CHART_DATA_MAX_POINTS = 500
+
+
+@dataclasses.dataclass
 class _ReviewItem:
     label: str
     value: str
@@ -223,6 +246,61 @@ async def render_table(
     caption: str | None = None,
 ) -> Table:
     return Table(headers=headers, rows=rows, title=title, caption=caption)
+
+
+def _coerce_chart_points(points: list) -> list[ChartPoint]:
+    """Drop malformed points and truncate to the documented data-volume cap
+    (data-model.md validation rules) rather than failing the whole chart."""
+    coerced: list[ChartPoint] = []
+    for raw in points:
+        raw = _coerce_dict(raw)
+        x = raw.get("x")
+        y = raw.get("y")
+        if not isinstance(x, str) or not isinstance(y, (int, float)):
+            log.warning("chart_point_dropped", raw=raw)
+            continue
+        coerced.append(ChartPoint(x=x, y=float(y), series=raw.get("series")))
+    if len(coerced) > _CHART_DATA_MAX_POINTS:
+        log.warning(
+            "chart_data_truncated",
+            original_count=len(coerced),
+            kept=_CHART_DATA_MAX_POINTS,
+        )
+        coerced = coerced[:_CHART_DATA_MAX_POINTS]
+    return coerced
+
+
+@render_tool(
+    _ChartSchema,
+    description=(
+        "Render a chart. Use for trends over time (chart_type: 'line' or 'area'), "
+        "category comparisons (chart_type: 'bar'), or part-to-whole proportions "
+        "(chart_type: 'pie'). Each data point: {x (pre-formatted label, required), "
+        "y (numeric value, required), series (optional, for multi-series charts)}. "
+        "Prefer render_table for exact values the user needs to read precisely; use "
+        "a chart when the shape of the data is the point."
+    ),
+)
+async def render_chart(
+    chart_type: str,
+    data: list,
+    series_labels: dict | None = None,
+    x_label: str | None = None,
+    y_label: str | None = None,
+    title: str | None = None,
+    legend: bool = True,
+) -> Chart:
+    if chart_type not in _CHART_TYPES:
+        log.warning("chart_type_unsupported", chart_type=chart_type)
+    return Chart(
+        chart_type=chart_type,  # type: ignore[arg-type]
+        data=_coerce_chart_points(data),
+        series_labels=series_labels,
+        x_label=x_label,
+        y_label=y_label,
+        title=title,
+        legend=legend,
+    )
 
 
 @render_tool(

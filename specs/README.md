@@ -158,6 +158,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 113 | [Proactive/Concurrency Hardening Sweep](phases/113-hardening-sweep/spec.md) | ✅ Done |
 | 115 | [Workspace Environment](phases/115-workspace-sidecar/spec.md) | ✅ Done |
 | 116 | [Workspace Follow-Through](phases/116-workspace-follow-through/spec.md) | 🔲 Pending |
+| 118 | [Chart Visualization](phases/118-chart-visualization/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

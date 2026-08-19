@@ -3,6 +3,7 @@ import { cn } from "../lib/cn";
 import type {
   Badge,
   Button,
+  Chart,
   Col,
   ConnectionItem,
   Connections,
@@ -16,6 +17,7 @@ import type {
   Table,
   Text,
 } from "../generated/types.gen";
+import { AreaChart, BarChart, LineChart, PieChart } from "../charts";
 import {
   PrimitiveRendererContext,
   usePrimitiveRendererActions,
@@ -140,6 +142,8 @@ function PrimitiveNodeRenderer({ node }: { node: Primitive }) {
       return <ConnectionsRenderer node={node} />;
     case "steps":
       return <StepsRenderer node={node} />;
+    case "chart":
+      return <ChartRenderer node={node} />;
     default:
       // Unknown primitive from a newer backend — render nothing, don't crash.
       return null;
@@ -474,6 +478,29 @@ function StepRow({ step, last }: { step: StepItem; last: boolean }) {
       </div>
     </li>
   );
+}
+
+function ChartRenderer({ node }: { node: Chart }) {
+  const props = {
+    data: node.data,
+    seriesLabels: node.series_labels,
+    xLabel: node.x_label,
+    yLabel: node.y_label,
+    title: node.title,
+  };
+  switch (node.chart_type) {
+    case "line":
+      return <LineChart {...props} />;
+    case "bar":
+      return <BarChart {...props} />;
+    case "area":
+      return <AreaChart {...props} />;
+    case "pie":
+      return <PieChart {...props} />;
+    default:
+      // Unsupported chart_type from a newer backend — degrade gracefully (FR-005).
+      return null;
+  }
 }
 
 function ConnectionsRenderer({ node }: { node: Connections }) {

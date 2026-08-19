@@ -1,0 +1,78 @@
+{
+  "workflow": "speckit",
+  "specName": "Agent Skills",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-14T17:36:41.939Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T062",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T17:39:03.153Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T063",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T17:39:03.940Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T064",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T17:40:59.315Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T065",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-14T17:47:53.113Z"
+    }
+  ],
+  "currentTask": "T065",
+  "task_summaries": {
+    "T062": {
+      "status": "DONE",
+      "did": "Documented ze-skills in CLAUDE.md layout, dep graph, migrations, graph flow, and Phase 114 status; synced core/README.md and docs/testing.md",
+      "files": [
+        "CLAUDE.md",
+        "core/README.md",
+        "docs/testing.md"
+      ]
+    },
+    "T063": {
+      "status": "DONE",
+      "did": "Added core/ze-skills/README.md covering import/review/matching, bundled vs imported flow, and config",
+      "files": [
+        "core/ze-skills/README.md"
+      ]
+    },
+    "T064": {
+      "status": "DONE",
+      "did": "ruff check passed on ze-skills/ze-core/ze-agents/ze-plugin/ze-api; formatted ze-skills; skipped repo-wide format sweep of unrelated pre-existing drift; eslint clean on skill UI",
+      "files": [
+        "core/ze-skills/tests/test_review.py"
+      ]
+    },
+    "T065": {
+      "status": "DONE",
+      "did": "test-skills 74 passed; test-core 622 passed; test-agents 25 passed; test-web all passed; test-api 199 passed, 1 pre-existing unrelated failure in test_settings.py routing_config"
+    }
+  }
+}

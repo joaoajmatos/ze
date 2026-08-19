@@ -89,6 +89,18 @@ def test_export_json_schema_includes_steps():
     assert schema["$defs"]["StepItem"]["required"] == ["label", "status"]
 
 
+def test_export_json_schema_includes_chart():
+    schema = export_json_schema()
+    chart = schema["$defs"]["Chart"]
+    assert chart["properties"]["type"] == {"const": "chart"}
+    assert chart["properties"]["chart_type"] == {"enum": ["line", "bar", "area", "pie"]}
+    assert chart["properties"]["data"]["items"] == {"$ref": "#/$defs/ChartPoint"}
+    assert set(chart["required"]) == {"type", "chart_type", "data"}
+    point = schema["$defs"]["ChartPoint"]
+    assert point["required"] == ["x", "y"]
+    assert point["properties"]["y"]["type"] == "number"
+
+
 def test_progress_steps_pattern_emits_steps_primitive():
     from ze_components.patterns import progress_steps
     from ze_components.serialize import serialize_primitive
