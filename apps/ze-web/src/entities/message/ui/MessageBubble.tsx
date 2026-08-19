@@ -49,8 +49,8 @@ export function MessageBubble({
             <div
               className={`px-4 py-2.5 rounded-[20px] text-sm leading-relaxed space-y-2 ${
                 isUser
-                  ? "bg-plum-voltage text-white rounded-br-[6px]"
-                  : "border border-white/[0.08] bg-white/[0.04] text-white rounded-bl-[6px]"
+                  ? "bg-plum-voltage text-foreground rounded-br-[6px]"
+                  : "border border-foreground/[0.08] bg-foreground/[0.04] text-foreground rounded-bl-[6px]"
               } ${highlighted ? "ring-2 ring-amber-spark/70" : ""}`}
             >
               <ReactMarkdown
@@ -65,7 +65,7 @@ export function MessageBubble({
                       target="_blank"
                       rel="noreferrer"
                       className={`underline underline-offset-2 ${
-                        isUser ? "text-white" : "text-plum-voltage hover:text-plum-voltage/80"
+                        isUser ? "text-foreground" : "text-plum-voltage hover:text-plum-voltage/80"
                       }`}
                     >
                       {children}
@@ -79,17 +79,17 @@ export function MessageBubble({
                   ),
                   li: ({ children }) => <li className="m-0">{children}</li>,
                   blockquote: ({ children }) => (
-                    <blockquote className="my-1 border-l-2 border-white/20 pl-3 text-ash">
+                    <blockquote className="my-1 border-l-2 border-foreground/20 pl-3 text-ash">
                       {children}
                     </blockquote>
                   ),
                   code: ({ children }) => (
-                    <code className="bg-white/10 rounded px-1 py-0.5 text-xs font-mono">
+                    <code className="bg-foreground/10 rounded px-1 py-0.5 text-xs font-mono">
                       {children}
                     </code>
                   ),
                   pre: ({ children }) => (
-                    <pre className="bg-white/5 rounded-xl p-3 my-2 overflow-x-auto text-xs font-mono">
+                    <pre className="bg-foreground/5 rounded-xl p-3 my-2 overflow-x-auto text-xs font-mono">
                       {children}
                     </pre>
                   ),
@@ -103,7 +103,7 @@ export function MessageBubble({
               <button
                 onClick={() => setTraceOpen(!traceOpen)}
                 title="Why did Ze say this?"
-                className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] flex items-center justify-center"
+                className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-foreground/[0.08] hover:bg-foreground/[0.15] flex items-center justify-center"
               >
                 <Info className="w-3 h-3 text-smoke" />
               </button>

@@ -23,7 +23,7 @@ export function FilterChips<T extends string>({ options, value, onChange, classN
             "px-3 py-1 rounded-full text-xs font-medium transition-colors border",
             value === opt.value
               ? "bg-plum-voltage/20 border-plum-voltage/50 text-plum-voltage"
-              : "bg-transparent border-white/10 text-smoke hover:border-white/20 hover:text-white",
+              : "bg-transparent border-foreground/10 text-smoke hover:border-foreground/20 hover:text-foreground",
           )}
         >
           {opt.label}

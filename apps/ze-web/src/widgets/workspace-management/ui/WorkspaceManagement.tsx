@@ -101,7 +101,7 @@ export function WorkspaceManagement() {
 
       {pendingResetId && (
         <div className="rounded-lg border border-amber-spark/40 bg-amber-spark/10 p-4">
-          <p className="text-sm text-white mb-3">
+          <p className="text-sm text-foreground mb-3">
             Reset the workspace? All files will be removed.
           </p>
           <div className="flex gap-2">
@@ -140,10 +140,10 @@ export function WorkspaceManagement() {
           {files.data?.map((file) => (
             <div
               key={file.path}
-              className="flex items-center justify-between gap-4 rounded-lg border border-white/10 px-4 py-3"
+              className="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">{file.path}</p>
+                <p className="truncate text-sm font-medium text-foreground">{file.path}</p>
                 <p className="text-xs text-smoke">
                   {formatBytes(file.size)} · {formatMtime(file.modified_at)}
                 </p>
@@ -168,9 +168,9 @@ export function WorkspaceManagement() {
           <ul className="space-y-2">
             {runs.data.map((run) => (
               <li key={run.id ?? `${run.command}-${run.started_at}`} className="text-xs text-smoke">
-                <span className="font-mono text-white/90">{run.command}</span>
+                <span className="font-mono text-foreground/90">{run.command}</span>
                 {" · "}
-                <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/80">
+                <span className="rounded bg-foreground/[0.06] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-foreground/80">
                   {run.origin}
                 </span>
                 {" · "}

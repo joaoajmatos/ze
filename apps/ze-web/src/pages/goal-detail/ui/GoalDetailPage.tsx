@@ -13,7 +13,7 @@ function statusBadgeClass(status: string): string {
   if (ACTIVE_STATUSES.has(status)) {
     return "inline-block px-2.5 py-0.5 rounded-full border border-plum-voltage/50 text-plum-voltage text-xs";
   }
-  return "inline-block px-2.5 py-0.5 rounded-full border border-white/20 text-smoke text-xs";
+  return "inline-block px-2.5 py-0.5 rounded-full border border-foreground/20 text-smoke text-xs";
 }
 
 export function GoalDetailPage() {
@@ -49,7 +49,7 @@ export function GoalDetailPage() {
       {/* Header */}
       <div>
         <button
-          className="flex items-center gap-1.5 text-xs text-smoke hover:text-white transition-colors mb-6"
+          className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors mb-6"
           onClick={() => navigate("/goals")}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -61,17 +61,17 @@ export function GoalDetailPage() {
             <Target className="w-5 h-5 text-plum-voltage" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white leading-tight">{detail.title}</h1>
+            <h1 className="text-xl font-semibold text-foreground leading-tight">{detail.title}</h1>
             <p className="text-sm text-smoke/80 mt-2 leading-relaxed max-w-2xl">{detail.objective}</p>
             <div className="flex flex-wrap items-center gap-2 mt-4">
               <span className={statusBadgeClass(detail.status)}>{detail.status}</span>
               {detail.time_horizon && (
-                <span className="inline-block px-2.5 py-0.5 rounded-full border border-white/15 text-smoke text-xs">
+                <span className="inline-block px-2.5 py-0.5 rounded-full border border-foreground/15 text-smoke text-xs">
                   {detail.time_horizon}
                 </span>
               )}
               {detail.type && (
-                <span className="inline-block px-2.5 py-0.5 rounded-full border border-white/15 text-smoke text-xs">
+                <span className="inline-block px-2.5 py-0.5 rounded-full border border-foreground/15 text-smoke text-xs">
                   {detail.type}
                 </span>
               )}
@@ -83,14 +83,14 @@ export function GoalDetailPage() {
       {/* Main layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <SectionPanel className="lg:col-span-2">
-          <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">
+          <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">
             Milestones
           </h2>
           <MilestoneTimeline milestones={detail.milestones} goalId={detail.id} />
         </SectionPanel>
 
         <SectionPanel>
-          <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">
+          <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">
             Learnings
           </h2>
           <GoalLearningsList learnings={detail.learnings} />
@@ -99,8 +99,8 @@ export function GoalDetailPage() {
           )}
 
           {activeGates.length > 0 && (
-            <div className="mt-5 pt-5 border-t border-white/[0.06]">
-              <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">
+            <div className="mt-5 pt-5 border-t border-foreground/[0.06]">
+              <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">
                 Gate
               </h2>
               <div className="space-y-3">
@@ -112,8 +112,8 @@ export function GoalDetailPage() {
           )}
 
           {detail.retrospective_text && (
-            <div className="mt-5 pt-5 border-t border-white/[0.06]">
-              <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">
+            <div className="mt-5 pt-5 border-t border-foreground/[0.06]">
+              <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">
                 Retrospective
               </h2>
               <p className="text-xs text-smoke leading-relaxed">{detail.retrospective_text}</p>

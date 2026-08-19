@@ -29,7 +29,7 @@ export function MemoryChunkList({ chunks }: MemoryChunkListProps) {
           >
             [{chunk.source} {(chunk.score * 100).toFixed(0)}%]
           </span>
-          <span className="text-white/80 leading-relaxed line-clamp-2 flex-1">
+          <span className="text-foreground/80 leading-relaxed line-clamp-2 flex-1">
             {chunk.text}
             {chunk.extraction_confidence != null && (
               <span

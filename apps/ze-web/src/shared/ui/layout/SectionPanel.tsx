@@ -8,7 +8,7 @@ interface SectionPanelProps {
 
 export function SectionPanel({ children, className }: SectionPanelProps) {
   return (
-    <div className={cn("rounded-2xl bg-white/[0.025] border border-white/[0.07] p-5", className)}>
+    <div className={cn("rounded-2xl bg-foreground/[0.025] border border-foreground/[0.07] p-5", className)}>
       {children}
     </div>
   );

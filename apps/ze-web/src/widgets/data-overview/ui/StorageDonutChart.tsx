@@ -10,7 +10,7 @@ export function StorageDonutChart({ segments, totalBytes }: StorageDonutChartPro
   if (totalBytes === 0 || segments.length === 0) {
     return (
       <div className="flex items-center gap-6">
-        <div className="w-[140px] h-[140px] rounded-full border border-white/[0.08] bg-white/[0.02] flex items-center justify-center flex-shrink-0">
+        <div className="w-[140px] h-[140px] rounded-full border border-foreground/[0.08] bg-foreground/[0.02] flex items-center justify-center flex-shrink-0">
           <p className="text-[10px] text-smoke/80 uppercase tracking-widest">No data</p>
         </div>
         <p className="text-sm text-smoke">Storage will appear once domains have data.</p>
@@ -58,7 +58,7 @@ export function StorageDonutChart({ segments, totalBytes }: StorageDonutChartPro
           })}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <p className="text-sm font-light text-white tabular-nums">{segments.length}</p>
+          <p className="text-sm font-light text-foreground tabular-nums">{segments.length}</p>
           <p className="text-[9px] text-smoke uppercase tracking-widest">groups</p>
         </div>
       </div>
@@ -72,7 +72,7 @@ export function StorageDonutChart({ segments, totalBytes }: StorageDonutChartPro
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: seg.color }}
               />
-              <p className="text-xs text-white truncate flex-1">
+              <p className="text-xs text-foreground truncate flex-1">
                 {capitalize(seg.label)}
               </p>
               <p className="text-[10px] text-smoke tabular-nums flex-shrink-0">

@@ -16,7 +16,7 @@ export function NoticeBanner() {
       <button
         type="button"
         onClick={clearNotice}
-        className="text-amber-spark hover:text-white transition-colors flex-shrink-0"
+        className="text-amber-spark hover:text-foreground transition-colors flex-shrink-0"
         aria-label="Dismiss"
       >
         <X className="w-3.5 h-3.5" />

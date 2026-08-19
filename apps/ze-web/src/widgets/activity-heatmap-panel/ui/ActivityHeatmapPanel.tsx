@@ -55,15 +55,15 @@ export function ActivityHeatmapPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg border border-white/10 p-1">
+          <div className="flex items-center gap-1 rounded-lg border border-foreground/10 p-1">
             {PRESETS.map((p) => (
               <button
                 key={p}
                 onClick={() => setPreset(p)}
                 className={`px-3 py-1 rounded text-xs transition-colors ${
                   preset === p
-                    ? "bg-plum-voltage/20 text-white"
-                    : "text-smoke hover:text-white"
+                    ? "bg-plum-voltage/20 text-foreground"
+                    : "text-smoke hover:text-foreground"
                 }`}
               >
                 {p}
@@ -73,8 +73,8 @@ export function ActivityHeatmapPanel() {
               onClick={() => setPreset("custom")}
               className={`px-3 py-1 rounded text-xs transition-colors ${
                 preset === "custom"
-                  ? "bg-plum-voltage/20 text-white"
-                  : "text-smoke hover:text-white"
+                  ? "bg-plum-voltage/20 text-foreground"
+                  : "text-smoke hover:text-foreground"
               }`}
             >
               Custom
@@ -87,7 +87,7 @@ export function ActivityHeatmapPanel() {
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="rounded border border-white/10 bg-transparent px-2 py-1 text-xs text-white focus:outline-none focus:border-plum-voltage [color-scheme:dark]"
+                className="rounded border border-foreground/10 bg-transparent px-2 py-1 text-xs text-foreground focus:outline-none focus:border-plum-voltage [color-scheme:dark]"
               />
               <span className="text-xs text-smoke">–</span>
               <input
@@ -95,7 +95,7 @@ export function ActivityHeatmapPanel() {
                 value={customEnd}
                 min={customStart || undefined}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="rounded border border-white/10 bg-transparent px-2 py-1 text-xs text-white focus:outline-none focus:border-plum-voltage [color-scheme:dark]"
+                className="rounded border border-foreground/10 bg-transparent px-2 py-1 text-xs text-foreground focus:outline-none focus:border-plum-voltage [color-scheme:dark]"
               />
             </div>
           )}

@@ -23,7 +23,7 @@ const Slider = React.forwardRef<
     >
       <SliderPrimitive.Track
         className={cn(
-          "relative h-1.5 w-full grow overflow-visible rounded-full bg-white/10",
+          "relative h-1.5 w-full grow overflow-visible rounded-full bg-foreground/10",
           trackClassName,
         )}
       >

@@ -20,7 +20,7 @@ function SearchSnippet({ snippet }: { snippet: string }) {
     <p className="mt-1 text-xs leading-relaxed text-smoke line-clamp-2">
       {parts.map((part, index) =>
         part.highlight ? (
-          <mark key={index} className="rounded bg-plum-voltage/20 px-0.5 text-white/90">
+          <mark key={index} className="rounded bg-plum-voltage/20 px-0.5 text-foreground/90">
             {part.text}
           </mark>
         ) : (
@@ -44,7 +44,7 @@ function SessionRowContent({
   if (searchSnippet) {
     return (
       <>
-        <p className="text-sm font-medium text-white leading-snug line-clamp-1">
+        <p className="text-sm font-medium text-foreground leading-snug line-clamp-1">
           {title ?? preview ?? "Untitled chat"}
         </p>
         <SearchSnippet snippet={searchSnippet} />
@@ -55,7 +55,7 @@ function SessionRowContent({
   if (title) {
     return (
       <>
-        <p className="text-sm font-medium text-white leading-snug line-clamp-1">{title}</p>
+        <p className="text-sm font-medium text-foreground leading-snug line-clamp-1">{title}</p>
         {preview && preview !== title && (
           <div className="mt-1 text-xs leading-relaxed text-smoke line-clamp-2">
             <MarkdownPreview>{preview}</MarkdownPreview>
@@ -67,13 +67,13 @@ function SessionRowContent({
 
   if (preview) {
     return (
-      <div className="text-sm leading-relaxed text-white line-clamp-2">
+      <div className="text-sm leading-relaxed text-foreground line-clamp-2">
         <MarkdownPreview>{preview}</MarkdownPreview>
       </div>
     );
   }
 
-  return <p className="text-sm font-medium text-white">Untitled chat</p>;
+  return <p className="text-sm font-medium text-foreground">Untitled chat</p>;
 }
 
 export function SessionRow({
@@ -94,7 +94,7 @@ export function SessionRow({
         "group w-full text-left rounded-pill border px-3.5 py-3 transition-colors",
         active
           ? "border-plum-voltage/30 bg-plum-voltage/10"
-          : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]",
+          : "border-foreground/10 bg-foreground/[0.02] hover:border-foreground/20 hover:bg-foreground/[0.04]",
       )}
     >
       <div className="flex items-start gap-3">
@@ -103,11 +103,11 @@ export function SessionRow({
             "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border",
             active
               ? "border-plum-voltage/30 bg-plum-voltage/15"
-              : "border-white/10 bg-white/[0.03] group-hover:border-white/20",
+              : "border-foreground/10 bg-foreground/[0.03] group-hover:border-foreground/20",
           )}
         >
           <MessageSquare
-            className={cn("size-3.5", active ? "text-plum-voltage" : "text-smoke group-hover:text-white/80")}
+            className={cn("size-3.5", active ? "text-plum-voltage" : "text-smoke group-hover:text-foreground/80")}
           />
         </div>
 
@@ -116,7 +116,7 @@ export function SessionRow({
           <div className="mt-1.5 flex items-center gap-2">
             <p className="text-[10px] text-smoke/80">{formatRelative(session.last_active_at)}</p>
             {matchSource && (
-              <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-smoke/80">
+              <span className="rounded-full border border-foreground/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-smoke/80">
                 {matchSourceLabel(matchSource)}
               </span>
             )}

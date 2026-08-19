@@ -94,7 +94,7 @@ function MobileChatSheet({
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px]"
+            className="fixed inset-0 z-40 bg-background/50 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -102,7 +102,7 @@ function MobileChatSheet({
           />
 
           <motion.div
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-black border-t border-white/10 rounded-t-[20px] max-h-[65vh]"
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background border-t border-foreground/10 rounded-t-[20px] max-h-[65vh]"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -110,11 +110,11 @@ function MobileChatSheet({
           >
             {/* Drag handle pill */}
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
+              <div className="w-10 h-1 rounded-full bg-foreground/20" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-foreground/10 flex-shrink-0">
               <span className="text-xs text-smoke tracking-widest uppercase font-medium">
                 Ze · {screen}
               </span>
@@ -130,7 +130,7 @@ function MobileChatSheet({
                 <button
                   onClick={close}
                   aria-label="Close"
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-smoke hover:text-white hover:bg-white/[0.06] transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-smoke hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -219,7 +219,7 @@ function DesktopChatWidget({
           <motion.button
             key="fab"
             onClick={toggle}
-            className="w-14 h-14 rounded-full bg-plum-voltage text-white flex items-center justify-center shadow-lg shadow-plum-voltage/30 hover:bg-plum-voltage/90 transition-colors cursor-pointer"
+            className="w-14 h-14 rounded-full bg-plum-voltage text-foreground flex items-center justify-center shadow-lg shadow-plum-voltage/30 hover:bg-plum-voltage/90 transition-colors cursor-pointer"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -236,7 +236,7 @@ function DesktopChatWidget({
           // ── Expanded panel ───────────────────────────────────────────────
           <motion.div
             key="panel"
-            className="flex flex-col bg-black border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-plum-voltage/10"
+            className="flex flex-col bg-background border border-foreground/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 ring-1 ring-plum-voltage/10"
             style={{ width: DESKTOP_W, height: DESKTOP_H }}
             initial={{ scale: 0.88, opacity: 0, y: 16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -244,9 +244,9 @@ function DesktopChatWidget({
             transition={{ type: "spring", damping: 26, stiffness: 320 }}
           >
             {/* Header — drag handle */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/10 flex-shrink-0 cursor-grab active:cursor-grabbing">
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-foreground/10 flex-shrink-0 cursor-grab active:cursor-grabbing">
               <div className="flex items-center gap-2 min-w-0">
-                <GripHorizontal className="w-3.5 h-3.5 text-white/25 flex-shrink-0" />
+                <GripHorizontal className="w-3.5 h-3.5 text-foreground/25 flex-shrink-0" />
                 <span className="text-xs text-smoke tracking-widest uppercase font-medium truncate">
                   Ze · {screen}
                 </span>
@@ -266,7 +266,7 @@ function DesktopChatWidget({
                   onClick={close}
                   aria-label="Collapse"
                   title="Collapse"
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-smoke hover:text-white hover:bg-white/[0.06] transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-smoke hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
                 >
                   <ChevronDown className="w-4 h-4" />
                 </button>

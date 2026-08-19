@@ -30,7 +30,7 @@ export function WorkspaceSection({ workspace, live }: WorkspaceSectionProps) {
         <p className="text-xs text-smoke/80 italic">No workspace use</p>
       ) : (
         <div className="space-y-1.5 text-xs">
-          <p className="text-white/90">
+          <p className="text-foreground/90">
             Mode {workspace.mode}
             {workspace.unavailable ? " · unavailable" : ""}
             {workspace.script_ran ? " · script ran" : ""}
@@ -43,7 +43,7 @@ export function WorkspaceSection({ workspace, live }: WorkspaceSectionProps) {
           {runs.map((run, i) => (
             <p
               key={`${run.command ?? "run"}-${i}`}
-              className="font-mono text-white/80"
+              className="font-mono text-foreground/80"
               data-testid={run.status === "in_progress" ? "workspace-run-in-progress" : undefined}
             >
               $ {run.command}

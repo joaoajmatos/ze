@@ -54,59 +54,61 @@ export function SettingsWorkspace() {
   }
 
   return (
-    <div className="max-w-sm mx-auto px-4 py-8 space-y-8">
-      <div className="space-y-4">
-        <p className="text-xs font-semibold tracking-widest uppercase text-smoke">Connection</p>
-        <div>
-          <label className="block text-xs text-smoke mb-1.5">Server URL</label>
-          <Input
-            value={serverUrl}
-            onChange={(e) => {
-              setServerUrl(e.target.value);
-              resetTest();
-            }}
-            placeholder="http://localhost:8000"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-smoke mb-1.5">API Key</label>
-          <Input
-            type="password"
-            value={apiKey}
-            onChange={(e) => {
-              setApiKey(e.target.value);
-              resetTest();
-            }}
-            placeholder="ZE_API_KEY"
-          />
-        </div>
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <div className="space-y-4">
+          <p className="text-xs font-semibold tracking-widest uppercase text-smoke">Connection</p>
+          <div>
+            <label className="block text-xs text-smoke mb-1.5">Server URL</label>
+            <Input
+              value={serverUrl}
+              onChange={(e) => {
+                setServerUrl(e.target.value);
+                resetTest();
+              }}
+              placeholder="http://localhost:8000"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-smoke mb-1.5">API Key</label>
+            <Input
+              type="password"
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                resetTest();
+              }}
+              placeholder="ZE_API_KEY"
+            />
+          </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={runTest} disabled={testing} className="flex-1">
-            {testing ? "Testing…" : "Test"}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={runTest} disabled={testing} className="flex-1">
+              {testing ? "Testing…" : "Test"}
+            </Button>
+            {testResult === "ok" && (
+              <span className="flex items-center gap-1 text-xs text-lichen">
+                <Check className="w-3.5 h-3.5" /> OK
+              </span>
+            )}
+            {testResult === "error" && (
+              <span className="flex items-center gap-1 text-xs text-destructive">
+                <AlertCircle className="w-3.5 h-3.5" /> Failed
+              </span>
+            )}
+          </div>
+
+          <Button onClick={handleSave} className="w-full">
+            {saved ? "Saved ✓" : "Save & reconnect"}
           </Button>
-          {testResult === "ok" && (
-            <span className="flex items-center gap-1 text-xs text-lichen">
-              <Check className="w-3.5 h-3.5" /> OK
-            </span>
-          )}
-          {testResult === "error" && (
-            <span className="flex items-center gap-1 text-xs text-destructive">
-              <AlertCircle className="w-3.5 h-3.5" /> Failed
-            </span>
-          )}
         </div>
 
-        <Button onClick={handleSave} className="w-full">
-          {saved ? "Saved ✓" : "Save & reconnect"}
-        </Button>
+        {uiManifest?.settings_sections.map((entry) => (
+          <PluginSettingsSection key={entry.id} entry={entry} />
+        ))}
       </div>
 
-      {uiManifest?.settings_sections.map((entry) => (
-        <PluginSettingsSection key={entry.id} entry={entry} />
-      ))}
-
-      <div className="space-y-3 pt-4 border-t border-white/10">
+      <div className="space-y-3 pt-4 border-t border-foreground/10">
         <p className="text-xs font-semibold tracking-widest uppercase text-smoke">Notifications</p>
         <p className="text-sm text-smoke leading-relaxed">
           Ze uses ntfy for push notifications. Install the ntfy app and subscribe to your topic.
@@ -122,7 +124,7 @@ export function SettingsWorkspace() {
 
       <RedirectHintTarget
         hintId={settingsDataSectionId}
-        className="space-y-3 pt-4 border-t border-white/10"
+        className="space-y-3 pt-4 border-t border-foreground/10"
       >
         <p className="text-xs font-semibold tracking-widest uppercase text-smoke">Your data</p>
         <p className="text-sm text-smoke leading-relaxed">
@@ -157,17 +159,17 @@ export function SettingsWorkspace() {
         </Button>
       </RedirectHintTarget>
 
-      <div className="pt-4 border-t border-white/10">
+      <div className="pt-4 border-t border-foreground/10">
         <Button variant="danger" onClick={() => setShowResetModal(true)} className="w-full">
           Reset configuration
         </Button>
       </div>
 
       {showResetModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-[#111] border border-white/20 rounded-xl p-6 w-full max-w-sm space-y-5">
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 px-4">
+          <div className="bg-[#111] border border-foreground/20 rounded-xl p-6 w-full max-w-sm space-y-5">
             <div>
-              <p className="text-lg font-semibold text-white">Reset configuration?</p>
+              <p className="text-lg font-semibold text-foreground">Reset configuration?</p>
               <p className="text-sm text-smoke mt-1 leading-relaxed">
                 This removes the saved server URL and API key. Ze will show the setup screen.
               </p>
@@ -185,10 +187,10 @@ export function SettingsWorkspace() {
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
+        <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50 px-4">
           <div className="bg-[#111] border border-destructive/40 rounded-xl p-6 w-full max-w-sm space-y-5">
             <div>
-              <p className="text-lg font-semibold text-white">Delete all data?</p>
+              <p className="text-lg font-semibold text-foreground">Delete all data?</p>
               <p className="text-xs text-destructive mt-0.5 font-medium uppercase tracking-widest">
                 This cannot be undone
               </p>
@@ -210,7 +212,7 @@ export function SettingsWorkspace() {
               ))}
             </ul>
 
-            <div className="border-t border-white/10 pt-4">
+            <div className="border-t border-foreground/10 pt-4">
               <p className="text-xs text-smoke mb-2">Want a copy first?</p>
               <Button
                 variant="ghost"
@@ -224,7 +226,7 @@ export function SettingsWorkspace() {
 
             <div>
               <label className="block text-xs text-smoke mb-1.5">
-                Type <span className="text-white font-mono">DELETE</span> to confirm
+                Type <span className="text-foreground font-mono">DELETE</span> to confirm
               </label>
               <Input
                 value={deleteConfirmText}

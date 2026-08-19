@@ -15,13 +15,13 @@ export function DayDetailPopover({ day }: Props) {
 
   return (
     <div className="min-w-[180px] space-y-2">
-      <p className="text-xs font-semibold text-white">{formatDate(day.date)}</p>
-      <div className="border-t border-white/10" />
+      <p className="text-xs font-semibold text-foreground">{formatDate(day.date)}</p>
+      <div className="border-t border-foreground/10" />
       <div className="space-y-1.5">
         {day.agents.map((a) => (
           <div key={a.agent} className="flex items-center gap-2">
             <span className="text-xs text-smoke capitalize w-20 truncate">{a.agent}</span>
-            <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+            <div className="flex-1 h-2 rounded-full bg-foreground/5 overflow-hidden">
               <div
                 className="h-full rounded-full"
                 style={{
@@ -34,7 +34,7 @@ export function DayDetailPopover({ day }: Props) {
           </div>
         ))}
       </div>
-      <div className="border-t border-white/10" />
+      <div className="border-t border-foreground/10" />
       <p className="text-xs text-smoke">Total: {day.total} messages</p>
     </div>
   );

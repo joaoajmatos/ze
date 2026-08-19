@@ -33,7 +33,7 @@ function StatusBadge({ status }: { status: string }) {
       : status === "pending_review"
         ? "bg-amber-500/15 text-amber-500"
         : status === "disabled"
-          ? "bg-white/10 text-smoke"
+          ? "bg-foreground/10 text-smoke"
           : "bg-destructive/15 text-destructive";
   return (
     <span
@@ -46,7 +46,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function SourceBadge({ source }: { source: string }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-white/5 px-2 py-0.5 text-xs text-smoke">
+    <span className="inline-flex items-center rounded-full bg-foreground/5 px-2 py-0.5 text-xs text-smoke">
       {source}
     </span>
   );
@@ -59,7 +59,7 @@ function SkillRow({ skill }: { skill: SkillResponse }) {
   const executablesApproved = Boolean(row.executable_approved);
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-white/10 px-4 py-3">
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <StatusBadge status={skill.status} />

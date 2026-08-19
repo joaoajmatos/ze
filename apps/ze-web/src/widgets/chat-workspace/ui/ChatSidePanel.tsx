@@ -25,7 +25,7 @@ function TracePanelHeader() {
 
   return (
     <div className="px-3 py-2.5 flex-shrink-0">
-      <p className="text-xs font-medium text-white">Trace</p>
+      <p className="text-xs font-medium text-foreground">Trace</p>
       <p className="text-[10px] text-smoke/80 mt-0.5">{detail}</p>
     </div>
   );
@@ -55,7 +55,7 @@ function HistoryPanelHeader({ searchQuery, onSearchChange }: HistoryPanelHeaderP
 
   return (
     <div className="flex-shrink-0 px-3 pt-2.5 pb-3">
-      <p className="text-xs font-medium text-white">History</p>
+      <p className="text-xs font-medium text-foreground">History</p>
       <p className="mt-0.5 text-[10px] text-smoke/80">{detail}</p>
       <SearchBar
         value={searchQuery}
@@ -78,7 +78,7 @@ function ChatSidePanelHeader({
   const isTrace = tab === "trace";
 
   return (
-    <div className="relative border-b border-white/[0.06]">
+    <div className="relative border-b border-foreground/[0.06]">
       <div
         className={cn(
           motion.fade,

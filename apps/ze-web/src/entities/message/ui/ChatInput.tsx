@@ -59,7 +59,7 @@ export function ChatInput({
           {attachments.map((item) => (
             <span
               key={item.path}
-              className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2 py-1 text-[11px] text-white"
+              className="inline-flex items-center gap-1 rounded-full border border-foreground/15 bg-foreground/[0.04] px-2 py-1 text-[11px] text-foreground"
             >
               {item.name}
               {onRemoveAttachment && (
@@ -67,7 +67,7 @@ export function ChatInput({
                   type="button"
                   aria-label={`Remove ${item.name}`}
                   onClick={() => onRemoveAttachment(item.path)}
-                  className="text-smoke hover:text-white"
+                  className="text-smoke hover:text-foreground"
                 >
                   <X className="size-3" />
                 </button>
@@ -78,7 +78,7 @@ export function ChatInput({
       )}
       <div
         className={cn(
-          "flex min-h-9 items-end gap-2 rounded-pill border border-white/15 bg-white/[0.03] px-4 py-2 transition-colors",
+          "flex min-h-9 items-end gap-2 rounded-pill border border-foreground/15 bg-foreground/[0.03] px-4 py-2 transition-colors",
           "focus-within:border-plum-voltage/50",
           isDisabled && "opacity-50",
         )}
@@ -100,7 +100,7 @@ export function ChatInput({
               aria-label="Attach file to workspace"
               disabled={isDisabled || attaching}
               onClick={() => fileRef.current?.click()}
-              className="mb-0.5 flex size-8 flex-shrink-0 items-center justify-center rounded-full text-smoke hover:text-white disabled:opacity-40"
+              className="mb-0.5 flex size-8 flex-shrink-0 items-center justify-center rounded-full text-smoke hover:text-foreground disabled:opacity-40"
             >
               <Paperclip className="size-4" />
             </button>
@@ -118,7 +118,7 @@ export function ChatInput({
           placeholder={placeholder ?? (isDisabled ? "Ze is thinking…" : "Message Ze")}
           rows={1}
           className={cn(
-            "min-h-[1.5rem] max-h-40 flex-1 resize-none overflow-y-auto bg-transparent text-sm leading-relaxed text-white placeholder:text-smoke focus:outline-none disabled:cursor-not-allowed",
+            "min-h-[1.5rem] max-h-40 flex-1 resize-none overflow-y-auto bg-transparent text-sm leading-relaxed text-foreground placeholder:text-smoke focus:outline-none disabled:cursor-not-allowed",
           )}
           style={{ height: "auto" }}
         />
@@ -127,7 +127,7 @@ export function ChatInput({
           onClick={onSend}
           disabled={!canSend}
           aria-label="Send message"
-          className="flex size-8 flex-shrink-0 items-center justify-center rounded-full bg-plum-voltage text-white transition-opacity disabled:opacity-40"
+          className="flex size-8 flex-shrink-0 items-center justify-center rounded-full bg-plum-voltage text-foreground transition-opacity disabled:opacity-40"
           whileTap={{ scale: 0.9 }}
         >
           <ArrowUp className="size-4" />

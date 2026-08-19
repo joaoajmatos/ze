@@ -47,7 +47,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               exit="exit"
               className="text-center space-y-6"
             >
-              <p className="text-[64px] font-extralight tracking-tight text-white leading-none">
+              <p className="text-[64px] font-extralight tracking-tight text-foreground leading-none">
                 Ze
               </p>
               <p className="text-sm text-smoke tracking-wide">Your personal AI assistant.</p>
@@ -67,7 +67,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               className="space-y-5"
             >
               <p className="text-xs font-semibold tracking-widest uppercase text-smoke">Connect</p>
-              <p className="text-2xl font-extralight text-white">Where is Ze running?</p>
+              <p className="text-2xl font-extralight text-foreground">Where is Ze running?</p>
 
               <div className="space-y-3">
                 <div>
@@ -134,7 +134,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <p className="text-xs font-semibold tracking-widest uppercase text-smoke">
                 Notifications
               </p>
-              <p className="text-2xl font-extralight text-white">Stay in the loop.</p>
+              <p className="text-2xl font-extralight text-foreground">Stay in the loop.</p>
               <p className="text-sm text-smoke leading-relaxed">
                 Install ntfy to receive push notifications when Ze has something for you.
               </p>
@@ -151,7 +151,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 </Button>
                 <button
                   onClick={onComplete}
-                  className="text-xs text-smoke hover:text-white transition-colors py-1"
+                  className="text-xs text-smoke hover:text-foreground transition-colors py-1"
                 >
                   Skip for now
                 </button>
@@ -164,7 +164,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           {STEPS.map((s) => (
             <span
               key={s}
-              className={`h-1 rounded-full transition-all ${s === step ? "bg-plum-voltage w-4" : "w-1 bg-white/20"}`}
+              className={`h-1 rounded-full transition-all ${s === step ? "bg-plum-voltage w-4" : "w-1 bg-foreground/20"}`}
             />
           ))}
         </div>

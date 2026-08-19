@@ -45,7 +45,7 @@ export function BrainMemoryPage() {
       </div>
 
       {bounds?.earliest && (
-        <div className="rounded-pill border border-white/10 bg-white/[0.02] px-4 py-3">
+        <div className="rounded-pill border border-foreground/10 bg-foreground/[0.02] px-4 py-3">
           <TimelineScrubber
             earliest={new Date(bounds.earliest)}
             value={asOfDate}

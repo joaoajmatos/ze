@@ -41,7 +41,7 @@ function DomainBreakdownItem({
     <BreakdownItem
       header={
         <div className="flex items-center gap-2 min-w-0">
-          <p className="font-mono text-xs text-white truncate">
+          <p className="font-mono text-xs text-foreground truncate">
             {shortDomainName(domain.name)}
           </p>
           {domain.importable && (
@@ -53,7 +53,7 @@ function DomainBreakdownItem({
       }
       meta={
         <>
-          {showSize && <span className="text-white">{formatBytes(domain.size_bytes)}</span>}
+          {showSize && <span className="text-foreground">{formatBytes(domain.size_bytes)}</span>}
           <span className="text-smoke">{formatCount(domain.count)}</span>
         </>
       }

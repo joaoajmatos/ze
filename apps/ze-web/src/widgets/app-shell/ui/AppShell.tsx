@@ -16,19 +16,19 @@ import { NavGroup } from "./NavGroup";
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
     "flex items-center gap-3 px-3 py-2 rounded-pill text-sm transition-colors",
-    isActive ? "bg-plum-voltage/15 text-white" : "text-smoke hover:text-white hover:bg-white/5",
+    isActive ? "bg-plum-voltage/15 text-foreground" : "text-smoke hover:text-foreground hover:bg-secondary",
   );
 
 const childNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
     "flex items-center gap-2.5 px-3 py-1.5 rounded-pill text-xs w-full transition-colors",
-    isActive ? "bg-plum-voltage/15 text-white" : "text-smoke hover:text-white hover:bg-white/5",
+    isActive ? "bg-plum-voltage/15 text-foreground" : "text-smoke hover:text-foreground hover:bg-secondary",
   );
 
 const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
     "flex-1 flex flex-col items-center py-3 gap-1 text-[10px] transition-colors",
-    isActive ? "text-white" : "text-smoke",
+    isActive ? "text-foreground" : "text-smoke",
   );
 
 export function AppShell() {
@@ -56,11 +56,11 @@ export function AppShell() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-black text-white overflow-hidden">
-      <nav className="hidden md:flex flex-col w-14 lg:w-52 border-r border-white/10 flex-shrink-0">
-        <div className="px-4 py-5 border-b border-white/10 flex items-center gap-3">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+      <nav className="hidden md:flex flex-col w-14 lg:w-52 border-r border-border flex-shrink-0">
+        <div className="px-4 py-5 border-b border-border flex items-center gap-3">
           <div className="w-6 h-6 rounded-full bg-plum-voltage flex-shrink-0" />
-          <span className="hidden lg:block text-sm font-semibold text-white">Ze</span>
+          <span className="hidden lg:block text-sm font-display font-semibold text-foreground">Ze</span>
         </div>
 
         <div className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto">
@@ -126,7 +126,7 @@ export function AppShell() {
           )}
         </div>
 
-        <div className="p-2 border-t border-white/10">
+        <div className="p-2 border-t border-border">
           <NavLink to={`/${settingsNavRoute.path}`} className={navLinkClass}>
             <Settings className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:block">{settingsNavRoute.label}</span>
@@ -148,7 +148,7 @@ export function AppShell() {
         </BreadcrumbProvider>
       </main>
 
-      <nav className="md:hidden fixed inset-x-0 bottom-0 z-30 flex border-t border-white/10 bg-black/90 backdrop-blur-sm">
+      <nav className="md:hidden fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-background/90 backdrop-blur-sm">
         {mobileNavRoutes.map(({ path, icon: Icon, label, index }) => (
           <NavLink key={path} to={path} end={index} className={mobileNavLinkClass}>
             <Icon className="w-5 h-5" />

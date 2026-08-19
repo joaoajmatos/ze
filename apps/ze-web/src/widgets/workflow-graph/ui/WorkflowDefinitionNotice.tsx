@@ -52,7 +52,7 @@ export function WorkflowDefinitionNotice({ mode, startedAt, onViewRevisionsSince
       className={
         isWarning
           ? "mb-4 flex items-start gap-2 rounded-xl border border-amber-spark/30 bg-amber-spark/[0.06] px-3 py-2.5 text-xs text-amber-spark"
-          : "mb-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-smoke"
+          : "mb-4 flex items-start gap-2 rounded-xl border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5 text-xs text-smoke"
       }
       role="status"
     >

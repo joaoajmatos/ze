@@ -27,7 +27,7 @@ export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
   }
 
   return (
-    <div className="space-y-3 pt-4 border-t border-white/10">
+    <div className="space-y-3 pt-4 border-t border-foreground/10">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

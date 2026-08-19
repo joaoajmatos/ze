@@ -20,18 +20,18 @@ export function EntityDetailPanel({ entity, detail, isLoading, onClose, onExpand
   const Icon = ENTITY_ICONS[entity.entity_type] ?? HelpCircle;
 
   return (
-    <div className="flex flex-col h-full bg-white/[0.03] border-l border-white/10 overflow-hidden">
-      <div className="flex items-start justify-between p-4 border-b border-white/10 flex-shrink-0">
+    <div className="flex flex-col h-full bg-foreground/[0.03] border-l border-foreground/10 overflow-hidden">
+      <div className="flex items-start justify-between p-4 border-b border-foreground/10 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-smoke shrink-0" />
           <div>
-            <p className="text-sm font-medium text-white leading-tight">{entity.canonical_name}</p>
+            <p className="text-sm font-medium text-foreground leading-tight">{entity.canonical_name}</p>
             <p className="text-xs text-smoke">
               {entity.entity_type} &bull; {entity.degree} connections
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="text-smoke hover:text-white transition-colors shrink-0">
+        <button onClick={onClose} className="text-smoke hover:text-foreground transition-colors shrink-0">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -50,7 +50,7 @@ export function EntityDetailPanel({ entity, detail, isLoading, onClose, onExpand
                 </p>
                 <ul className="space-y-1">
                   {detail.facts.map((f) => (
-                    <li key={String(f.id)} className="text-xs text-white/80">
+                    <li key={String(f.id)} className="text-xs text-foreground/80">
                       <span className="text-smoke">{f.key}:</span>{" "}
                       {f.value}
                     </li>
@@ -66,7 +66,7 @@ export function EntityDetailPanel({ entity, detail, isLoading, onClose, onExpand
                 </p>
                 <ul className="space-y-1.5">
                   {detail.episodes.map((ep) => (
-                    <li key={String(ep.id)} className="text-xs text-white/70 italic leading-snug">
+                    <li key={String(ep.id)} className="text-xs text-foreground/70 italic leading-snug">
                       "{ep.summary ?? "—"}"
                     </li>
                   ))}
@@ -84,10 +84,10 @@ export function EntityDetailPanel({ entity, detail, isLoading, onClose, onExpand
       </div>
 
       {detail && detail.neighbours.length > 0 && (
-        <div className="p-4 border-t border-white/10 flex-shrink-0">
+        <div className="p-4 border-t border-foreground/10 flex-shrink-0">
           <button
             onClick={() => onExpand(detail.neighbours, detail.neighbour_edges)}
-            className="w-full flex items-center justify-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-white/80 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-lg border border-foreground/10 px-3 py-2 text-xs text-foreground/80 hover:bg-foreground/5 transition-colors"
           >
             <ChevronDown className="w-3 h-3" />
             Expand {detail.neighbours.length} neighbour{detail.neighbours.length !== 1 ? "s" : ""}

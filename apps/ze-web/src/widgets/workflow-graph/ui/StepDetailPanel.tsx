@@ -21,19 +21,19 @@ const STATE_LABEL: Record<StepState, string> = {
 };
 
 const markdownComponents = {
-  h1: ({ children }: { children?: React.ReactNode }) => <p className="font-semibold text-white/80 mt-2 mb-0.5">{children}</p>,
-  h2: ({ children }: { children?: React.ReactNode }) => <p className="font-semibold text-white/80 mt-2 mb-0.5">{children}</p>,
-  h3: ({ children }: { children?: React.ReactNode }) => <p className="font-medium text-white/70 mt-1.5 mb-0.5">{children}</p>,
+  h1: ({ children }: { children?: React.ReactNode }) => <p className="font-semibold text-foreground/80 mt-2 mb-0.5">{children}</p>,
+  h2: ({ children }: { children?: React.ReactNode }) => <p className="font-semibold text-foreground/80 mt-2 mb-0.5">{children}</p>,
+  h3: ({ children }: { children?: React.ReactNode }) => <p className="font-medium text-foreground/70 mt-1.5 mb-0.5">{children}</p>,
   p: ({ children }: { children?: React.ReactNode }) => <p className="mb-1.5">{children}</p>,
-  strong: ({ children }: { children?: React.ReactNode }) => <strong className="text-white/80 font-medium">{children}</strong>,
+  strong: ({ children }: { children?: React.ReactNode }) => <strong className="text-foreground/80 font-medium">{children}</strong>,
   ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5">{children}</ul>,
   ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5">{children}</ol>,
   li: ({ children }: { children?: React.ReactNode }) => <li>{children}</li>,
-  code: ({ children }: { children?: React.ReactNode }) => <code className="bg-white/10 rounded px-1 font-mono">{children}</code>,
+  code: ({ children }: { children?: React.ReactNode }) => <code className="bg-foreground/10 rounded px-1 font-mono">{children}</code>,
   blockquote: ({ children }: { children?: React.ReactNode }) => (
-    <blockquote className="border-l-2 border-white/20 pl-2 italic opacity-70">{children}</blockquote>
+    <blockquote className="border-l-2 border-foreground/20 pl-2 italic opacity-70">{children}</blockquote>
   ),
-  hr: () => <hr className="border-white/10 my-2" />,
+  hr: () => <hr className="border-foreground/10 my-2" />,
 };
 
 interface Props {
@@ -48,8 +48,8 @@ export function StepDetailPanel({ node, executionError, onClose }: Props) {
   const showInferredError = state === "failed-inferred" && executionError && !result?.error;
 
   return (
-    <div className="flex flex-col h-full bg-white/[0.03] border-l border-white/10 overflow-hidden">
-      <div className="flex items-start justify-between p-4 border-b border-white/10 flex-shrink-0">
+    <div className="flex flex-col h-full bg-foreground/[0.03] border-l border-foreground/10 overflow-hidden">
+      <div className="flex items-start justify-between p-4 border-b border-foreground/10 flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Icon
             className={`w-4 h-4 shrink-0 ${
@@ -63,7 +63,7 @@ export function StepDetailPanel({ node, executionError, onClose }: Props) {
             }`}
           />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white leading-tight line-clamp-2">{step.task}</p>
+            <p className="text-sm font-medium text-foreground leading-tight line-clamp-2">{step.task}</p>
             <p className="text-xs text-smoke">
               {STATE_LABEL[state]}
               {result && ` • ${formatDurationMs(result.duration_ms)}`}
@@ -72,7 +72,7 @@ export function StepDetailPanel({ node, executionError, onClose }: Props) {
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="text-smoke hover:text-white transition-colors shrink-0">
+        <button onClick={onClose} className="text-smoke hover:text-foreground transition-colors shrink-0">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -81,14 +81,14 @@ export function StepDetailPanel({ node, executionError, onClose }: Props) {
         {step.agent_hint && (
           <section>
             <p className="text-xs font-medium text-smoke uppercase tracking-wider mb-1">Agent</p>
-            <p className="text-xs text-white/80">{step.agent_hint}</p>
+            <p className="text-xs text-foreground/80">{step.agent_hint}</p>
           </section>
         )}
 
         {step.verify && (
           <section>
             <p className="text-xs font-medium text-smoke uppercase tracking-wider mb-1">Verify</p>
-            <p className="text-xs text-white/70 font-mono">{step.verify}</p>
+            <p className="text-xs text-foreground/70 font-mono">{step.verify}</p>
           </section>
         )}
 

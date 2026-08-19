@@ -32,7 +32,7 @@ export function RunningRunBanner({ runs }: { runs: WorkspaceRunItem[] }) {
           >
             <div className="flex min-w-0 items-center gap-2">
               <span className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-amber-spark" />
-              <p className="min-w-0 truncate text-sm text-white">
+              <p className="min-w-0 truncate text-sm text-foreground">
                 <span className="font-mono">{run.command}</span> is still running
                 {run.started_at ? ` · started ${formatStartedAt(run.started_at)}` : ""}
               </p>

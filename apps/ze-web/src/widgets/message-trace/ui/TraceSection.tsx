@@ -13,10 +13,10 @@ export function TraceSection({ title, count, loading, children, defaultOpen = tr
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-t border-white/[0.06] first:border-t-0">
+    <div className="border-t border-foreground/[0.06] first:border-t-0">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 w-full px-3 py-2 text-xs text-smoke hover:text-white transition-colors text-left"
+        className="flex items-center gap-1.5 w-full px-3 py-2 text-xs text-smoke hover:text-foreground transition-colors text-left"
       >
         {open ? (
           <ChevronDown className="w-3 h-3 flex-shrink-0" />

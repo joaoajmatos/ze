@@ -7,7 +7,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   completed: <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />,
   in_progress: <Clock className="w-4 h-4 text-plum-voltage flex-shrink-0 animate-pulse" />,
   skipped: <SkipForward className="w-4 h-4 text-smoke/80 flex-shrink-0" />,
-  pending: <Circle className="w-4 h-4 text-white/20 flex-shrink-0" />,
+  pending: <Circle className="w-4 h-4 text-foreground/20 flex-shrink-0" />,
 };
 
 interface MilestoneRowProps {
@@ -20,11 +20,11 @@ export function MilestoneRow({ milestone, goalId }: MilestoneRowProps) {
   const isDone = milestone.status === "completed" || milestone.status === "skipped";
 
   return (
-    <div className="py-3 border-b border-white/5 last:border-0">
+    <div className="py-3 border-b border-foreground/5 last:border-0">
       <div className="flex items-start gap-3">
         <div className="mt-0.5">{STATUS_ICON[milestone.status] ?? STATUS_ICON.pending}</div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white">
+          <p className="text-sm font-medium text-foreground">
             {milestone.sequence}. {milestone.title}
           </p>
           {milestone.output && (

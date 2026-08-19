@@ -16,12 +16,12 @@ export function SearchBar({ value, onChange, placeholder = "Search…", classNam
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-pill border border-white/10 bg-white/[0.03] pl-9 pr-9 text-sm text-white placeholder:text-smoke focus:outline-none focus:border-plum-voltage/50 transition-colors"
+        className="h-9 w-full rounded-pill border border-foreground/10 bg-foreground/[0.03] pl-9 pr-9 text-sm text-foreground placeholder:text-smoke focus:outline-none focus:border-plum-voltage/50 transition-colors"
       />
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-3 text-smoke hover:text-white transition-colors"
+          className="absolute right-3 text-smoke hover:text-foreground transition-colors"
         >
           <X className="size-3.5" />
         </button>

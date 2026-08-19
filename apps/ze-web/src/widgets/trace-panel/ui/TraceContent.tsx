@@ -78,7 +78,7 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
       )}
 
       {pending && !liveTrace && (
-        <div className="sticky bottom-0 flex items-center gap-2 px-3 py-2 bg-black/60 border-t border-white/[0.06] text-xs text-smoke">
+        <div className="sticky bottom-0 flex items-center gap-2 px-3 py-2 bg-background/60 border-t border-foreground/[0.06] text-xs text-smoke">
           <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
           Ze is thinking…
         </div>

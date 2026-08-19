@@ -94,7 +94,7 @@ export function SidePanel({
       >
         <aside
           className={cn(
-            "relative flex h-full flex-col overflow-hidden border-l border-white/10 bg-black/20",
+            "relative flex h-full flex-col overflow-hidden border-l border-foreground/10 bg-background/20",
             className,
           )}
           style={{ width }}
@@ -114,7 +114,7 @@ export function SidePanel({
         aria-hidden={!open}
         tabIndex={open ? 0 : -1}
         className={cn(
-          "fixed inset-0 z-40 bg-black/60",
+          "fixed inset-0 z-40 bg-background/60",
           motion.fade,
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
@@ -122,7 +122,7 @@ export function SidePanel({
       <aside
         aria-hidden={!open}
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex flex-col overflow-hidden border-l border-white/10 bg-black/20",
+          "fixed inset-y-0 right-0 z-50 flex flex-col overflow-hidden border-l border-foreground/10 bg-background/20",
           motion.slide,
           open ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-full opacity-0",
           className,

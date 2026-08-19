@@ -11,7 +11,7 @@ interface ViewToggleProps {
 
 export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
   return (
-    <div className={cn("flex items-center gap-0.5 rounded-pill border border-white/10 p-0.5", className)}>
+    <div className={cn("flex items-center gap-0.5 rounded-pill border border-foreground/10 p-0.5", className)}>
       {(["list", "grid"] as const).map((mode) => {
         const Icon = mode === "list" ? LayoutList : LayoutGrid;
         return (
@@ -21,8 +21,8 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
             className={cn(
               "flex items-center justify-center size-7 rounded-full transition-colors",
               value === mode
-                ? "bg-white/10 text-white"
-                : "text-smoke hover:text-white",
+                ? "bg-foreground/10 text-foreground"
+                : "text-smoke hover:text-foreground",
             )}
           >
             <Icon className="size-3.5" />

@@ -27,8 +27,8 @@ function SessionItem({ session, active, isThinking, hasAttention, onSelect }: {
         "w-full text-left px-3 py-1.5 rounded-pill text-xs truncate flex items-center gap-2",
         motion.colors,
         active
-          ? "bg-plum-voltage/15 text-white"
-          : "text-smoke hover:text-white hover:bg-white/5",
+          ? "bg-plum-voltage/15 text-foreground"
+          : "text-smoke hover:text-foreground hover:bg-foreground/5",
       )}
     >
       <span className="flex-1 truncate">{label}</span>
@@ -84,7 +84,7 @@ export function ChatNavGroup() {
         className={cn(
           "w-full flex items-center gap-2 px-3 py-1.5 rounded-pill text-xs",
           motion.colors,
-          "text-smoke hover:text-white hover:bg-white/5",
+          "text-smoke hover:text-foreground hover:bg-foreground/5",
         )}
       >
         <Plus className="w-3 h-3 flex-shrink-0" />
@@ -93,7 +93,7 @@ export function ChatNavGroup() {
 
       {isLoading &&
         [1, 2, 3].map((i) => (
-          <div key={i} className="h-7 mx-0.5 rounded-pill bg-white/5 animate-pulse" />
+          <div key={i} className="h-7 mx-0.5 rounded-pill bg-foreground/5 animate-pulse" />
         ))}
 
       {recent.map((session) => (

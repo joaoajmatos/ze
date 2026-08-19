@@ -60,8 +60,8 @@ export function NavGroup({
               cn(
                 sharedLabelClass,
                 isActive
-                  ? "bg-plum-voltage/15 text-white"
-                  : "text-smoke hover:text-white hover:bg-white/5",
+                  ? "bg-plum-voltage/15 text-foreground"
+                  : "text-smoke hover:text-foreground hover:bg-foreground/5",
               )
             }
           >
@@ -83,8 +83,8 @@ export function NavGroup({
             className={cn(
               sharedLabelClass,
               isChildActive
-                ? "text-white"
-                : "text-smoke hover:text-white hover:bg-white/5",
+                ? "text-foreground"
+                : "text-smoke hover:text-foreground hover:bg-foreground/5",
             )}
           >
             <span className="relative flex-shrink-0">
@@ -105,7 +105,7 @@ export function NavGroup({
           onClick={toggle}
           aria-label={open ? "Collapse" : "Expand"}
           className={cn(
-            "hidden lg:flex w-7 h-7 items-center justify-center rounded text-white/40 hover:text-white flex-shrink-0",
+            "hidden lg:flex w-7 h-7 items-center justify-center rounded text-foreground/40 hover:text-foreground flex-shrink-0",
             motion.colors,
           )}
         >

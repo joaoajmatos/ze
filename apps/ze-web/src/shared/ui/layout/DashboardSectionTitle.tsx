@@ -16,7 +16,7 @@ export function DashboardSectionTitle({
     <p
       className={cn(
         "text-xs font-semibold uppercase tracking-widest mb-5",
-        tone === "warning" ? "text-amber-spark/80" : "text-white/40",
+        tone === "warning" ? "text-amber-spark/80" : "text-foreground/40",
         className,
       )}
     >

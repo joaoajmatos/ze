@@ -30,7 +30,7 @@ function IconButton({
         ? "text-plum-voltage hover:bg-plum-voltage/10 hover:border-plum-voltage/30"
         : tone === "danger"
           ? "text-destructive hover:bg-destructive/10 hover:border-destructive/30"
-          : "text-smoke hover:bg-white/5 hover:border-white/20";
+          : "text-smoke hover:bg-foreground/5 hover:border-foreground/20";
   return (
     <button
       onClick={onClick}

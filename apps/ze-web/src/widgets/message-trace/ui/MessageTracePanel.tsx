@@ -13,7 +13,7 @@ export function MessageTracePanel({ messageId }: MessageTracePanelProps) {
 
   if (isLoading) {
     return (
-      <div className="mt-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs text-smoke">
+      <div className="mt-1 rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-2 text-xs text-smoke">
         Loading trace…
       </div>
     );
@@ -21,14 +21,14 @@ export function MessageTracePanel({ messageId }: MessageTracePanelProps) {
 
   if (!trace) {
     return (
-      <div className="mt-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs text-smoke/80 italic">
+      <div className="mt-1 rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] px-3 py-2 text-xs text-smoke/80 italic">
         No trace available for this message.
       </div>
     );
   }
 
   return (
-    <div className="mt-1 rounded-xl border border-white/[0.06] bg-white/[0.03] overflow-hidden text-xs">
+    <div className="mt-1 rounded-xl border border-foreground/[0.06] bg-foreground/[0.03] overflow-hidden text-xs">
       <TraceSection title="Routing">
         <RoutingBadge
           agent={trace.agent}

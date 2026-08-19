@@ -95,7 +95,7 @@ export function WorkflowDetailPage() {
       {/* Header */}
       <div>
         <button
-          className="flex items-center gap-1.5 text-xs text-smoke hover:text-white transition-colors mb-6"
+          className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors mb-6"
           onClick={() => navigate("/workflows")}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -108,7 +108,7 @@ export function WorkflowDetailPage() {
               <Workflow className="w-5 h-5 text-plum-voltage" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-white leading-tight">{detail.name}</h1>
+              <h1 className="text-xl font-semibold text-foreground leading-tight">{detail.name}</h1>
               {detail.description && (
                 <p className="text-sm text-smoke/80 mt-2 leading-relaxed max-w-2xl">{detail.description}</p>
               )}
@@ -117,16 +117,16 @@ export function WorkflowDetailPage() {
                   className={
                     detail.enabled
                       ? "inline-block px-2.5 py-0.5 rounded-full border border-plum-voltage/50 text-plum-voltage text-xs"
-                      : "inline-block px-2.5 py-0.5 rounded-full border border-white/20 text-smoke text-xs"
+                      : "inline-block px-2.5 py-0.5 rounded-full border border-foreground/20 text-smoke text-xs"
                   }
                 >
                   {detail.enabled ? "active" : "paused"}
                 </span>
-                <span className="inline-block px-2.5 py-0.5 rounded-full border border-white/15 text-smoke text-xs">
+                <span className="inline-block px-2.5 py-0.5 rounded-full border border-foreground/15 text-smoke text-xs">
                   {formatSchedule(detail.schedule)}
                 </span>
                 {avgRunDuration && (
-                  <span className="inline-block px-2.5 py-0.5 rounded-full border border-white/15 text-smoke text-xs">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full border border-foreground/15 text-smoke text-xs">
                     {avgRunDuration} avg run
                   </span>
                 )}
@@ -164,7 +164,7 @@ export function WorkflowDetailPage() {
         {/* Steps — 2/3 width */}
         <SectionPanel className="lg:col-span-2">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest">Steps</h2>
+            <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest">Steps</h2>
             <div className="flex items-center gap-2">
               <StepsStatus
                 liveExecution={liveExecution}
@@ -199,24 +199,24 @@ export function WorkflowDetailPage() {
           <WorkflowGraph steps={graphSteps} execution={displayExecution} isLive={isRunning} />
 
           {displayExecution?.summary && displayExecution.status !== "running" && (
-            <div className="mt-5 pt-5 border-t border-white/[0.06]">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">Summary</p>
-              <div className="text-sm text-white/80 leading-relaxed space-y-1.5">
+            <div className="mt-5 pt-5 border-t border-foreground/[0.06]">
+              <p className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-3">Summary</p>
+              <div className="text-sm text-foreground/80 leading-relaxed space-y-1.5">
                 <ReactMarkdown
                   components={{
-                    h1: ({ children }) => <p className="font-semibold text-white mt-3 mb-1 text-base">{children}</p>,
-                    h2: ({ children }) => <p className="font-semibold text-white/90 mt-3 mb-1">{children}</p>,
-                    h3: ({ children }) => <p className="font-medium text-white/80 mt-2 mb-0.5">{children}</p>,
+                    h1: ({ children }) => <p className="font-semibold text-foreground mt-3 mb-1 text-base">{children}</p>,
+                    h2: ({ children }) => <p className="font-semibold text-foreground/90 mt-3 mb-1">{children}</p>,
+                    h3: ({ children }) => <p className="font-medium text-foreground/80 mt-2 mb-0.5">{children}</p>,
                     p: ({ children }) => <p className="mb-2">{children}</p>,
-                    strong: ({ children }) => <strong className="text-white font-medium">{children}</strong>,
+                    strong: ({ children }) => <strong className="text-foreground font-medium">{children}</strong>,
                     ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-0.5">{children}</ul>,
                     ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-0.5">{children}</ol>,
-                    li: ({ children }) => <li className="text-white/80">{children}</li>,
-                    code: ({ children }) => <code className="bg-white/10 rounded px-1.5 py-0.5 text-xs font-mono">{children}</code>,
+                    li: ({ children }) => <li className="text-foreground/80">{children}</li>,
+                    code: ({ children }) => <code className="bg-foreground/10 rounded px-1.5 py-0.5 text-xs font-mono">{children}</code>,
                     blockquote: ({ children }) => (
-                      <blockquote className="border-l-2 border-white/20 pl-3 italic text-white/60 my-2">{children}</blockquote>
+                      <blockquote className="border-l-2 border-foreground/20 pl-3 italic text-foreground/60 my-2">{children}</blockquote>
                     ),
-                    hr: () => <hr className="border-white/10 my-3" />,
+                    hr: () => <hr className="border-foreground/10 my-3" />,
                   }}
                 >
                   {displayExecution.summary}
@@ -229,7 +229,7 @@ export function WorkflowDetailPage() {
         {/* Run history + change history sidebar */}
         <div className="flex flex-col gap-6">
           <SectionPanel>
-            <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">Run History</h2>
+            <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">Run History</h2>
             {execLoading ? (
               <ListSkeleton count={3} />
             ) : (
@@ -243,7 +243,7 @@ export function WorkflowDetailPage() {
 
           <div id="change-history">
             <SectionPanel>
-              <h2 className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-5">Change History</h2>
+              <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">Change History</h2>
               {revisionsLoading ? (
                 <ListSkeleton count={3} />
               ) : (
@@ -293,7 +293,7 @@ function ChatAboutRunButton({ execution, workflowName }: ChatAboutRunButtonProps
 
   return (
     <button
-      className="flex items-center gap-1.5 text-xs text-smoke hover:text-white transition-colors"
+      className="flex items-center gap-1.5 text-xs text-smoke hover:text-foreground transition-colors"
       title="Chat about this run"
       onClick={() => openForExecution({ screen: "workflow run", entityId: execution.id, prefillMessage })}
     >
@@ -349,7 +349,7 @@ function StepsStatus({ liveExecution, displayExecution, isRunning, onClear }: St
         <div className="flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-success" />
           <span className="text-xs text-success">Complete</span>
-          <button className="ml-1 text-xs text-smoke hover:text-white transition-colors" onClick={onClear}>
+          <button className="ml-1 text-xs text-smoke hover:text-foreground transition-colors" onClick={onClear}>
             Clear
           </button>
         </div>
@@ -360,7 +360,7 @@ function StepsStatus({ liveExecution, displayExecution, isRunning, onClear }: St
         <div className="flex items-center gap-1.5">
           <Ban className="w-3.5 h-3.5 text-amber-400" />
           <span className="text-xs text-amber-400">Cancelled</span>
-          <button className="ml-1 text-xs text-smoke hover:text-white transition-colors" onClick={onClear}>
+          <button className="ml-1 text-xs text-smoke hover:text-foreground transition-colors" onClick={onClear}>
             Clear
           </button>
         </div>
@@ -371,7 +371,7 @@ function StepsStatus({ liveExecution, displayExecution, isRunning, onClear }: St
         <div className="flex items-center gap-1.5">
           <XCircle className="w-3.5 h-3.5 text-destructive" />
           <span className="text-xs text-destructive">Failed</span>
-          <button className="ml-1 text-xs text-smoke hover:text-white transition-colors" onClick={onClear}>
+          <button className="ml-1 text-xs text-smoke hover:text-foreground transition-colors" onClick={onClear}>
             Clear
           </button>
         </div>
@@ -399,7 +399,7 @@ function StepsStatus({ liveExecution, displayExecution, isRunning, onClear }: St
         >
           {succeeded ? "Completed" : cancelled ? "Cancelled" : "Failed"}
         </span>
-        <button className="ml-1 text-xs text-smoke hover:text-white transition-colors" onClick={onClear}>
+        <button className="ml-1 text-xs text-smoke hover:text-foreground transition-colors" onClick={onClear}>
           Clear
         </button>
       </div>
@@ -481,7 +481,7 @@ function WorkflowRevisionRow({ revision }: { revision: WorkflowRevisionResponse 
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+    <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
       <button
         className="flex w-full items-start gap-2 text-left"
         onClick={() => setExpanded((v) => !v)}
@@ -493,12 +493,12 @@ function WorkflowRevisionRow({ revision }: { revision: WorkflowRevisionResponse 
         )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-white/70">#{revision.revision_number}</span>
+            <span className="text-foreground/70">#{revision.revision_number}</span>
             <span
               className={
                 revision.change_type === "created"
                   ? "rounded-full border border-plum-voltage/50 px-2 py-0.5 text-plum-voltage"
-                  : "rounded-full border border-white/15 px-2 py-0.5 text-smoke"
+                  : "rounded-full border border-foreground/15 px-2 py-0.5 text-smoke"
               }
             >
               {revision.change_type}
@@ -506,7 +506,7 @@ function WorkflowRevisionRow({ revision }: { revision: WorkflowRevisionResponse 
             <span className="text-smoke">{actorLabel(revision.actor_source)}</span>
             <span className="text-smoke/70">{formatRelativeTimestamp(revision.created_at)}</span>
           </div>
-          <p className="mt-1 text-sm text-white/80">{revision.summary || "No fields changed"}</p>
+          <p className="mt-1 text-sm text-foreground/80">{revision.summary || "No fields changed"}</p>
         </div>
       </button>
 
@@ -548,7 +548,7 @@ function StepSummaryList({ steps }: { steps: WorkflowStepResponse[] }) {
   return (
     <ul className="space-y-1">
       {steps.map((step) => (
-        <li key={step.id} className="text-xs text-white/70">
+        <li key={step.id} className="text-xs text-foreground/70">
           <span className="text-smoke/70">{step.id}</span> {step.task}
           {step.on_failure !== "fail" && (
             <span className="ml-1 text-smoke/60">(on_failure: {step.on_failure})</span>

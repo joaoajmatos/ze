@@ -16,7 +16,7 @@ export function ErrorState({ message, detail, onRetry }: ErrorStateProps) {
         <button
           type="button"
           onClick={onRetry}
-          className="text-xs text-plum-voltage underline hover:text-white transition-colors"
+          className="text-xs text-plum-voltage underline hover:text-foreground transition-colors"
         >
           Retry
         </button>

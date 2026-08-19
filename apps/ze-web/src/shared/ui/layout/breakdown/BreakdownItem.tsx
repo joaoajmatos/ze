@@ -21,10 +21,10 @@ export function BreakdownItem({
 
   const headerClassName =
     "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors";
-  const interactiveClassName = expandable ? " hover:bg-white/[0.03]" : "";
+  const interactiveClassName = expandable ? " hover:bg-foreground/[0.03]" : "";
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+    <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] overflow-hidden">
       {expandable ? (
         <button
           type="button"
@@ -55,7 +55,7 @@ export function BreakdownItem({
       )}
 
       {expandable && open && (
-        <div className="px-3 pb-3 border-t border-white/[0.06] pt-2.5">{children}</div>
+        <div className="px-3 pb-3 border-t border-foreground/[0.06] pt-2.5">{children}</div>
       )}
     </div>
   );

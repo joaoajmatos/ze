@@ -1,6 +1,7 @@
 import type { WorkflowResponse } from "@myguyze/ze-client";
 import { Workflow } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { humanizeIdentifier } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 import { useTriggerWorkflowMutation } from "../api/useTriggerWorkflowMutation";
 import { formatSchedule, formatTimestamp } from "../lib/format";
@@ -17,7 +18,7 @@ function StatusDot({ enabled }: { enabled: boolean }) {
         <span className="absolute inline-flex size-full rounded-full bg-plum-voltage opacity-50 animate-ping" />
       )}
       <span
-        className={`relative inline-flex size-2 rounded-full ${enabled ? "bg-plum-voltage" : "bg-white/20"}`}
+        className={`relative inline-flex size-2 rounded-full ${enabled ? "bg-plum-voltage" : "bg-foreground/20"}`}
       />
     </span>
   );
@@ -30,7 +31,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
   if (variant === "grid") {
     return (
       <div
-        className="group relative flex flex-col gap-3 p-5 rounded-pill bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] hover:border-white/20 transition-all cursor-pointer overflow-hidden"
+        className="group relative flex flex-col gap-3 p-5 rounded-pill bg-foreground/[0.02] border border-foreground/10 hover:bg-foreground/[0.04] hover:border-foreground/20 transition-all cursor-pointer overflow-hidden"
         onClick={() => navigate(`/workflows/${workflow.id}`)}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-plum-voltage/[0.06] to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-pill" />
@@ -43,7 +44,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
         </div>
 
         <div className="flex-1 min-h-0">
-          <p className="text-sm font-medium text-white leading-snug line-clamp-2">{workflow.name}</p>
+          <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{humanizeIdentifier(workflow.name)}</p>
           {workflow.description && (
             <p className="mt-1 text-xs text-smoke line-clamp-2">{workflow.description}</p>
           )}
@@ -54,12 +55,12 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
             className={
               workflow.enabled
                 ? "inline-block px-2 py-0.5 rounded-full border border-plum-voltage/50 text-plum-voltage text-xs"
-                : "inline-block px-2 py-0.5 rounded-full border border-white/20 text-smoke text-xs"
+                : "inline-block px-2 py-0.5 rounded-full border border-foreground/20 text-smoke text-xs"
             }
           >
             {workflow.enabled ? "active" : "paused"}
           </span>
-          <span className="inline-block px-2 py-0.5 rounded-full border border-white/15 text-smoke text-xs">
+          <span className="inline-block px-2 py-0.5 rounded-full border border-foreground/15 text-smoke text-xs">
             {formatSchedule(workflow.schedule)}
           </span>
         </div>
@@ -85,7 +86,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
 
   return (
     <div
-      className="group flex items-center gap-4 px-5 py-4 rounded-pill bg-white/[0.02] border border-white/10 hover:bg-white/[0.035] hover:border-white/20 transition-colors cursor-pointer"
+      className="group flex items-center gap-4 px-5 py-4 rounded-pill bg-foreground/[0.02] border border-foreground/10 hover:bg-foreground/[0.035] hover:border-foreground/20 transition-colors cursor-pointer"
       onClick={() => navigate(`/workflows/${workflow.id}`)}
     >
       <div className="flex items-center justify-center size-8 rounded-full bg-plum-voltage/10 border border-plum-voltage/15 shrink-0">
@@ -94,7 +95,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-white truncate">{workflow.name}</p>
+          <p className="text-sm font-medium text-foreground truncate">{humanizeIdentifier(workflow.name)}</p>
         </div>
         {workflow.description && (
           <p className="text-xs text-smoke truncate mt-0.5">{workflow.description}</p>
@@ -102,7 +103,7 @@ export function WorkflowCard({ workflow, variant = "row" }: WorkflowCardProps) {
       </div>
 
       <div className="hidden md:flex items-center gap-2 shrink-0">
-        <span className="inline-block px-2 py-0.5 rounded-full border border-white/15 text-smoke text-xs">
+        <span className="inline-block px-2 py-0.5 rounded-full border border-foreground/15 text-smoke text-xs">
           {formatSchedule(workflow.schedule)}
         </span>
         {(workflow.last_run_at || workflow.next_run_at) && (

@@ -90,7 +90,7 @@ export function ChatWorkspace() {
         </div>
       )}
       {connState === "disconnected" && (
-        <div className="relative z-10 mb-3 flex w-full items-center justify-between rounded-pill border border-white/15 px-4 py-2 text-xs text-white">
+        <div className="relative z-10 mb-3 flex w-full items-center justify-between rounded-pill border border-foreground/15 px-4 py-2 text-xs text-foreground">
           <span className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
             Could not connect.
@@ -108,9 +108,9 @@ export function ChatWorkspace() {
       )}
 
       {isEmpty && (
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6">
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6 motion-safe:[animation:sky-settle_600ms_ease-out]">
           <GlowingStars className="rounded-pill" count={80} />
-          <p className="text-[48px] font-extralight tracking-tight text-white leading-none select-none">
+          <p className="font-display text-[48px] font-medium tracking-tight text-foreground leading-none select-none">
             Ze
           </p>
           <p className="text-sm text-smoke">Your personal AI assistant</p>

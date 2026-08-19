@@ -39,20 +39,20 @@ export function TopBar() {
   const currentTitle = pageHeader?.title ?? currentRoute?.label ?? "";
 
   return (
-    <div className="flex items-center justify-between px-6 h-14 border-b border-white/[0.08] bg-white/[0.02] flex-shrink-0">
+    <div className="flex items-center justify-between px-6 h-14 border-b border-border bg-secondary flex-shrink-0">
       {/* Left: title / breadcrumb */}
       <div className="flex items-center gap-2.5 min-w-0">
         {detail ? (
           <>
             <button
               onClick={() => navigate(detail.path)}
-              className="flex items-center gap-2 text-smoke hover:text-white transition-colors shrink-0"
+              className="flex items-center gap-2 py-1.5 px-2 -mx-2 text-smoke hover:text-foreground transition-colors shrink-0"
             >
               {detail.Icon && <detail.Icon className="w-4 h-4" />}
               <span className="text-sm">{detail.label}</span>
             </button>
-            <span className="text-white/20 select-none">/</span>
-            <span className="text-base font-semibold text-white truncate">
+            <span className="text-foreground/20 select-none">/</span>
+            <span className="font-display text-base font-semibold text-foreground truncate">
               {detailTitle ?? "…"}
             </span>
           </>
@@ -61,7 +61,7 @@ export function TopBar() {
             {CurrentIcon && (
               <CurrentIcon className="w-5 h-5 text-plum-voltage shrink-0" />
             )}
-            <span className="text-base font-semibold text-white">{currentTitle}</span>
+            <span className="font-display text-base font-semibold text-foreground">{currentTitle}</span>
           </div>
         )}
       </div>
@@ -72,7 +72,7 @@ export function TopBar() {
           <>
             <div className="flex items-center gap-1">{quickActions}</div>
             <div
-              className="w-px h-5 bg-white/10 mx-2"
+              className="w-px h-5 bg-foreground/10 mx-2"
               role="separator"
               aria-orientation="vertical"
             />

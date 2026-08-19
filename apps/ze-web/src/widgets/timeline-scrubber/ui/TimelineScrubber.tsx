@@ -152,7 +152,7 @@ export function TimelineScrubber({ earliest, value, onChange, activity, activity
           thumbAriaLabel="Memory timeline position"
           thumbAriaValueText={isNow ? "Live" : `${formatDate(liveDate)}, ${agoLabel(todayIndex - liveDayIndex)}`}
           trackClassName="h-12 bg-transparent"
-          thumbClassName="group h-12 w-0.5 shrink-0 rounded-none bg-white/25 shadow-none transition-colors hover:bg-white/45 active:bg-white/60 hover:scale-100 active:scale-100 active:shadow-none"
+          thumbClassName="group h-12 w-0.5 shrink-0 rounded-none bg-foreground/25 shadow-none transition-colors hover:bg-foreground/45 active:bg-foreground/60 hover:scale-100 active:scale-100 active:shadow-none"
           thumbChildren={
             <span className="pointer-events-none absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-plum-voltage shadow-[0_0_0_3px_rgba(0,0,0,0.7)] transition-transform duration-150 group-hover:scale-110 group-active:scale-125" />
           }

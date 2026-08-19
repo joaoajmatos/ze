@@ -8,12 +8,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-plum-voltage text-white hover:bg-[#6d3fe0]",
-        ghost:   "border border-white/20 text-white hover:border-white/40",
+        default: "bg-plum-voltage text-foreground hover:bg-[#6d3fe0]",
+        ghost:   "border border-foreground/20 text-foreground hover:border-foreground/40",
         outline: "border border-plum-voltage/50 text-plum-voltage hover:border-plum-voltage",
         amber:   "border border-warning text-warning hover:border-warning/80",
         danger:  "border border-destructive text-destructive hover:border-destructive/80",
-        link:    "text-smoke hover:text-white underline-offset-4 hover:underline",
+        link:    "text-smoke hover:text-foreground underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2",

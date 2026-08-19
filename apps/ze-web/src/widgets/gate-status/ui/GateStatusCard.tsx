@@ -21,10 +21,10 @@ export function GateStatusCard({ gate, goalId }: GateStatusCardProps) {
   const isAwaiting = gate.status === "awaiting_approval";
 
   return (
-    <div className="rounded-pill border border-white/10 p-4 space-y-2">
+    <div className="rounded-pill border border-foreground/10 p-4 space-y-2">
       <div className="flex items-center gap-2">
         {STATUS_ICON[gate.status] ?? STATUS_ICON.pending}
-        <p className="text-sm font-medium text-white">{gate.title}</p>
+        <p className="text-sm font-medium text-foreground">{gate.title}</p>
       </div>
 
       {gate.context_summary && (

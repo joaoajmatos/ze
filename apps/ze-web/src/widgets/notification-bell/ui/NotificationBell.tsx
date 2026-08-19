@@ -53,25 +53,25 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-pill text-smoke hover:text-white hover:bg-white/5 transition-colors"
+        className="relative flex items-center justify-center w-9 h-9 rounded-pill text-smoke hover:text-foreground hover:bg-foreground/5 transition-colors"
         aria-label="Notifications"
       >
         <Bell className="w-[18px] h-[18px]" />
         {!!unreadCount && unreadCount > 0 && (
-          <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-plum-voltage text-[10px] leading-[16px] text-white text-center font-medium">
+          <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-plum-voltage text-[10px] leading-[16px] text-foreground text-center font-medium">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-96 max-h-[28rem] flex flex-col rounded-2xl border border-white/10 bg-black shadow-xl z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
-            <span className="text-sm font-semibold text-white">Notifications</span>
+        <div className="absolute right-0 top-11 w-96 max-h-[28rem] flex flex-col rounded-2xl border border-foreground/10 bg-background shadow-xl z-50 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-foreground/[0.08]">
+            <span className="text-sm font-semibold text-foreground">Notifications</span>
             <button
               onClick={() => markAllRead.mutate()}
               disabled={!unreadCount}
-              className="flex items-center gap-1 text-xs text-smoke hover:text-white transition-colors disabled:opacity-40 disabled:hover:text-smoke"
+              className="flex items-center gap-1 text-xs text-smoke hover:text-foreground transition-colors disabled:opacity-40 disabled:hover:text-smoke"
             >
               <CheckCheck className="w-3.5 h-3.5" />
               Mark all read
@@ -92,7 +92,7 @@ export function NotificationBell() {
                     <button
                       onClick={() => handleItemClick(item)}
                       className={cn(
-                        "w-full text-left px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors",
+                        "w-full text-left px-4 py-3 border-b border-foreground/[0.04] hover:bg-foreground/[0.03] transition-colors",
                         !item.read && "bg-plum-voltage/[0.06]",
                       )}
                     >
@@ -101,7 +101,7 @@ export function NotificationBell() {
                           <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-plum-voltage shrink-0" />
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-white truncate">{item.title}</p>
+                          <p className="text-sm text-foreground truncate">{item.title}</p>
                           <p className="text-xs text-smoke line-clamp-2 mt-0.5">{item.body}</p>
                           <p className="text-[11px] text-smoke/60 mt-1">
                             {relativeTime(item.created_at)} · {item.source}
@@ -118,7 +118,7 @@ export function NotificationBell() {
               <button
                 onClick={() => void fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className="w-full py-2.5 text-xs text-smoke hover:text-white transition-colors"
+                className="w-full py-2.5 text-xs text-smoke hover:text-foreground transition-colors"
               >
                 {isFetchingNextPage ? "Loading…" : "Load more"}
               </button>

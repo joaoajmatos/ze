@@ -38,8 +38,8 @@ function ExecutionRow({ execution, selected, onClick }: ExecutionRowProps) {
         "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left",
         motion.colors,
         selected
-          ? "bg-white/[0.07] border border-white/20"
-          : "border border-white/10 hover:bg-white/[0.04] hover:border-white/15",
+          ? "bg-foreground/[0.07] border border-foreground/20"
+          : "border border-foreground/10 hover:bg-foreground/[0.04] hover:border-foreground/15",
       )}
       onClick={onClick}
     >
@@ -55,7 +55,7 @@ function ExecutionRow({ execution, selected, onClick }: ExecutionRowProps) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-white/80 capitalize">{isRunning ? "Running…" : execution.status}</span>
+          <span className="text-xs text-foreground/80 capitalize">{isRunning ? "Running…" : execution.status}</span>
           {duration && (
             <span className="flex items-center gap-0.5 text-xs text-smoke flex-shrink-0">
               <Clock className="w-3 h-3" />

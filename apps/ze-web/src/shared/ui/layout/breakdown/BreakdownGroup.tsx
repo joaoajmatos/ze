@@ -21,7 +21,7 @@ export function BreakdownGroup({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-white/[0.06] last:border-0 pb-4 last:pb-0">
+    <div className="border-b border-foreground/[0.06] last:border-0 pb-4 last:pb-0">
       <button
         type="button"
         aria-expanded={open}

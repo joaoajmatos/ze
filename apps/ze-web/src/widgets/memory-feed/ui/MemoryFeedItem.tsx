@@ -16,7 +16,7 @@ function Pill({ children, tone = "neutral" }: { children: React.ReactNode; tone?
       ? "border-plum-voltage/30 bg-plum-voltage/10 text-plum-voltage"
       : tone === "danger"
         ? "border-destructive/30 bg-destructive/10 text-destructive"
-        : "border-white/10 bg-white/[0.04] text-smoke";
+        : "border-foreground/10 bg-foreground/[0.04] text-smoke";
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium ${toneClass}`}>
       {children}
@@ -33,7 +33,7 @@ export function MemoryFeedItem({ item, filters }: MemoryFeedItemProps) {
       className={`group flex gap-3 px-4 py-3.5 rounded-pill border transition-colors ${
         contradicted
           ? "border-destructive/25 bg-destructive/[0.04]"
-          : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.035]"
+          : "border-foreground/10 bg-foreground/[0.02] hover:border-foreground/20 hover:bg-foreground/[0.035]"
       }`}
     >
       <div
@@ -42,7 +42,7 @@ export function MemoryFeedItem({ item, filters }: MemoryFeedItemProps) {
             ? "bg-destructive/10 border-destructive/20 text-destructive"
             : isFact
               ? "bg-plum-voltage/10 border-plum-voltage/20 text-plum-voltage/80"
-              : "bg-white/[0.06] border-white/10 text-smoke"
+              : "bg-foreground/[0.06] border-foreground/10 text-smoke"
         }`}
       >
         {contradicted ? (
@@ -58,11 +58,11 @@ export function MemoryFeedItem({ item, filters }: MemoryFeedItemProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             {isFact ? (
-              <p className={`text-sm leading-snug ${contradicted ? "line-through text-smoke" : "text-white"}`}>
+              <p className={`text-sm leading-snug ${contradicted ? "line-through text-smoke" : "text-foreground"}`}>
                 <span className="text-smoke">{item.key}:</span> {item.value}
               </p>
             ) : (
-              <p className="text-sm leading-snug text-white line-clamp-2">
+              <p className="text-sm leading-snug text-foreground line-clamp-2">
                 {item.summary ?? item.prompt_snippet ?? "(no summary)"}
               </p>
             )}

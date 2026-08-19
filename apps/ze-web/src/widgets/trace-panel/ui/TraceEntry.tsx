@@ -20,10 +20,10 @@ export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEnt
   const workspace = (trace as WsTraceUpdateFrame & { workspace?: unknown }).workspace;
 
   return (
-    <div className={`border-b border-white/[0.06] last:border-b-0${live ? " ring-1 ring-inset ring-plum-voltage/20" : ""}`}>
+    <div className={`border-b border-foreground/[0.06] last:border-b-0${live ? " ring-1 ring-inset ring-plum-voltage/20" : ""}`}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-white/[0.03] transition-colors"
+        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-foreground/[0.03] transition-colors"
       >
         {open ? (
           <ChevronDown className="w-3 h-3 flex-shrink-0 text-smoke" />
@@ -36,7 +36,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEnt
             {trace.agent}
           </span>
         ) : live ? (
-          <span className="w-16 h-3.5 rounded bg-white/[0.06] animate-pulse" />
+          <span className="w-16 h-3.5 rounded bg-foreground/[0.06] animate-pulse" />
         ) : null}
         {trace.total_duration_ms > 0 && (
           <span className="text-smoke/80 text-[10px] ml-auto">{trace.total_duration_ms}ms</span>

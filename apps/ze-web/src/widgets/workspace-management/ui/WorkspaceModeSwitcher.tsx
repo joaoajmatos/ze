@@ -29,7 +29,7 @@ export function WorkspaceModeSwitcher({
         value={mode}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value as WorkspaceMode)}
-        className="rounded-pill border border-white/20 bg-black/40 px-3 py-1 text-xs text-white focus:outline-none focus:border-plum-voltage/50"
+        className="rounded-pill border border-foreground/20 bg-background/40 px-3 py-1 text-xs text-foreground focus:outline-none focus:border-plum-voltage/50"
       >
         {MODES.map((m) => (
           <option key={m.value} value={m.value}>

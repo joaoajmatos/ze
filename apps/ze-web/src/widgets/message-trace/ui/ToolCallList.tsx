@@ -19,7 +19,7 @@ export function ToolCallList({ toolCalls }: ToolCallListProps) {
           ) : (
             <XCircle className="w-3 h-3 text-destructive flex-shrink-0" />
           )}
-          <span className="font-mono text-white/90">{tc.name}</span>
+          <span className="font-mono text-foreground/90">{tc.name}</span>
           <span className="text-smoke">{tc.duration_ms}ms</span>
           {tc.result_snippet && (
             <span className="text-smoke/80 truncate max-w-[160px]">{tc.result_snippet}</span>

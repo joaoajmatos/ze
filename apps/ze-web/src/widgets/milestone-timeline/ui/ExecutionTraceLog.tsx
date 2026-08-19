@@ -18,7 +18,7 @@ export function ExecutionTraceLog({ goalId, milestoneId }: ExecutionTraceLogProp
   }
 
   return (
-    <div className="mt-2 pl-3 border-l border-white/10">
+    <div className="mt-2 pl-3 border-l border-foreground/10">
       {traces.map((trace) => (
         <TraceRow key={trace.id} trace={trace} />
       ))}

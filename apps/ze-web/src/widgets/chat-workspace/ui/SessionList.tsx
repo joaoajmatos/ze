@@ -75,7 +75,7 @@ export function SessionList({ searchQuery }: SessionListProps) {
     <div className="space-y-2 px-3 py-3">
       {isLoading &&
         [1, 2, 3].map((i) => (
-          <div key={i} className="h-[4.5rem] animate-pulse rounded-pill border border-white/10 bg-white/[0.02]" />
+          <div key={i} className="h-[4.5rem] animate-pulse rounded-pill border border-foreground/10 bg-foreground/[0.02]" />
         ))}
 
       {!isLoading && isSearching && (searchResults?.length ?? 0) === 0 && (

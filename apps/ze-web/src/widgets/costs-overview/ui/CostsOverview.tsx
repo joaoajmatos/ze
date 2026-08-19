@@ -42,10 +42,10 @@ function AnomalyPanel({ anomalies, isLoading }: { anomalies: CostAnomalyItem[]; 
       </DashboardSectionTitle>
 
       {!isLoading && !hasAnomalies && (
-        <div className="px-3 py-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] flex items-center gap-3">
+        <div className="px-3 py-3 rounded-2xl border border-foreground/[0.06] bg-foreground/[0.02] flex items-center gap-3">
           <div className="w-1.5 h-1.5 rounded-full bg-lichen flex-shrink-0" />
           <div>
-            <p className="text-xs text-white/70">All clear — no unusual spend</p>
+            <p className="text-xs text-foreground/70">All clear — no unusual spend</p>
             <p className="text-[10px] text-smoke mt-0.5">
               Ze flags runs that cost an abnormal amount
             </p>
@@ -60,7 +60,7 @@ function AnomalyPanel({ anomalies, isLoading }: { anomalies: CostAnomalyItem[]; 
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm text-white">
+              <p className="text-sm text-foreground">
                 {formatAgentName(a.agent)}{" "}
                 <span className="text-amber-spark font-medium">
                   {a.multiplier.toFixed(1)}×
@@ -163,7 +163,7 @@ function TokenSplit({
           className="bg-plum-voltage/70 rounded-l-full"
           style={{ width: `${inputPct}%` }}
         />
-        <div className="bg-white/15 rounded-r-full flex-1" />
+        <div className="bg-foreground/15 rounded-r-full flex-1" />
       </div>
       <p className="text-[9px] text-smoke/80">
         {inputPct}% input · {100 - inputPct}% output
@@ -194,8 +194,8 @@ function UsageItem({
 
   return (
     <BreakdownItem
-      header={<p className="text-sm text-white">{formatLabel(label)}</p>}
-      meta={<span className="text-sm text-white">{formatUsd(usage.usd)}</span>}
+      header={<p className="text-sm text-foreground">{formatLabel(label)}</p>}
+      meta={<span className="text-sm text-foreground">{formatUsd(usage.usd)}</span>}
     >
       <MetricProgressBar pct={pct} minWidthPct={0} />
       <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-smoke">

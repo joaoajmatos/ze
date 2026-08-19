@@ -25,8 +25,8 @@ const STATE_BORDER: Record<StepState, string> = {
   "completed-fail": "border-destructive/50",
   "failed-inferred": "border-destructive/30",
   running: "border-plum-voltage/60",
-  pending: "border-white/10",
-  "not-taken": "border-white/[0.06]",
+  pending: "border-foreground/10",
+  "not-taken": "border-foreground/[0.06]",
 };
 
 const STATE_ICON_COLOR: Record<StepState, string> = {
@@ -34,17 +34,17 @@ const STATE_ICON_COLOR: Record<StepState, string> = {
   "completed-fail": "text-destructive",
   "failed-inferred": "text-destructive/50",
   running: "text-plum-voltage animate-spin",
-  pending: "text-white/20",
-  "not-taken": "text-white/20",
+  pending: "text-foreground/20",
+  "not-taken": "text-foreground/20",
 };
 
 const STATE_TEXT_COLOR: Record<StepState, string> = {
-  "completed-ok": "text-white",
-  "completed-fail": "text-white",
-  "failed-inferred": "text-white/50",
-  running: "text-white",
-  pending: "text-white/40",
-  "not-taken": "text-white/25",
+  "completed-ok": "text-foreground",
+  "completed-fail": "text-foreground",
+  "failed-inferred": "text-foreground/50",
+  running: "text-foreground",
+  pending: "text-foreground/40",
+  "not-taken": "text-foreground/25",
 };
 
 function StepNodeInner({ data }: NodeProps<StepNodeType>) {
@@ -55,19 +55,19 @@ function StepNodeInner({ data }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "rounded-xl border bg-white/[0.03] px-3 py-2.5 w-[220px] cursor-pointer",
+        "rounded-xl border bg-foreground/[0.03] px-3 py-2.5 w-[220px] cursor-pointer",
         motion.colors,
         STATE_BORDER[state],
-        selected && "ring-1 ring-plum-voltage border-plum-voltage/60 bg-white/[0.06]",
+        selected && "ring-1 ring-plum-voltage border-plum-voltage/60 bg-foreground/[0.06]",
       )}
     >
-      <Handle type="target" position={Position.Top} className="!bg-white/20 !border-none !w-1.5 !h-1.5" />
+      <Handle type="target" position={Position.Top} className="!bg-foreground/20 !border-none !w-1.5 !h-1.5" />
       <div className="flex items-start gap-2">
         <Icon className={cn("w-4 h-4 flex-shrink-0 mt-0.5", STATE_ICON_COLOR[state])} />
         <p className={cn("text-xs leading-snug line-clamp-3", STATE_TEXT_COLOR[state])}>{step.task}</p>
       </div>
-      {state === "not-taken" && <p className="mt-1 text-[10px] text-white/25 italic">Not taken this run</p>}
-      <Handle type="source" position={Position.Bottom} className="!bg-white/20 !border-none !w-1.5 !h-1.5" />
+      {state === "not-taken" && <p className="mt-1 text-[10px] text-foreground/25 italic">Not taken this run</p>}
+      <Handle type="source" position={Position.Bottom} className="!bg-foreground/20 !border-none !w-1.5 !h-1.5" />
     </div>
   );
 }

@@ -14,7 +14,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 bg-background/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -34,7 +34,7 @@ const SheetContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed z-50 bg-black border border-white/10 shadow-xl transition ease-in-out",
+        "fixed z-50 bg-background border border-foreground/10 shadow-xl transition ease-in-out",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         side === "bottom" &&
           "inset-x-0 bottom-0 rounded-t-[24px] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
@@ -45,7 +45,7 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <SheetClose className="absolute right-4 top-4 text-[#9a9a9a] hover:text-white transition-colors">
+      <SheetClose className="absolute right-4 top-4 text-[#9a9a9a] hover:text-foreground transition-colors">
         <X className="h-4 w-4" />
       </SheetClose>
     </DialogPrimitive.Content>

@@ -75,7 +75,7 @@ function WorkflowGraphInner({ steps, execution }: Props) {
 
   return (
     <div className="flex h-full min-h-[480px]">
-      <div className="flex-1 relative rounded-xl border border-white/[0.06] overflow-hidden bg-white/[0.01]">
+      <div className="flex-1 relative rounded-xl border border-foreground/[0.06] overflow-hidden bg-foreground/[0.01]">
         <div className="absolute top-3 left-3 z-10">
           <WorkflowGraphToolbar
             hideNotTaken={hideNotTaken}

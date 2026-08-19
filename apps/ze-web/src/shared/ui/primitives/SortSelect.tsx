@@ -20,10 +20,10 @@ export function SortSelect<T extends string>({ options, value, onChange, classNa
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="h-9 appearance-none rounded-pill border border-white/10 bg-white/[0.03] pl-8 pr-8 text-sm text-white focus:outline-none focus:border-plum-voltage/50 transition-colors cursor-pointer"
+        className="h-9 appearance-none rounded-pill border border-foreground/10 bg-foreground/[0.03] pl-8 pr-8 text-sm text-foreground focus:outline-none focus:border-plum-voltage/50 transition-colors cursor-pointer"
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value} className="bg-black text-white">
+          <option key={opt.value} value={opt.value} className="bg-background text-foreground">
             {opt.label}
           </option>
         ))}

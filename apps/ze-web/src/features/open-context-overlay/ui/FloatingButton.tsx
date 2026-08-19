@@ -20,7 +20,7 @@ export function FloatingButton({ screen, entityId }: { screen: string; entityId?
     <motion.button
       onClick={() => openFor(screen, entityId)}
       className={cn(
-        "fixed bottom-20 right-6 z-40 w-12 h-12 rounded-full bg-plum-voltage text-white flex items-center justify-center shadow-lg md:hidden",
+        "fixed bottom-20 right-6 z-40 w-12 h-12 rounded-full bg-plum-voltage text-foreground flex items-center justify-center shadow-lg md:hidden",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-plum-voltage focus-visible:ring-offset-2 focus-visible:ring-offset-black",
       )}
       whileHover={{ scale: 1.05 }}

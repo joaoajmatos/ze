@@ -33,7 +33,7 @@ export function BrainGraphPage() {
       )}
 
       {data && data.nodes.length > 0 && (
-        <div className="flex-1 rounded-xl border border-white/10 overflow-hidden">
+        <div className="flex-1 rounded-xl border border-foreground/10 overflow-hidden">
           <MemoryGraph
             data={data}
             entityType={entityType}

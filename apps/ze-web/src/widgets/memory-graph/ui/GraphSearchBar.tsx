@@ -14,12 +14,12 @@ export function GraphSearchBar({ value, onChange }: Props) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search entities…"
-        className="rounded-lg border border-white/10 bg-white/[0.03] pl-8 pr-7 py-1.5 text-xs text-white placeholder-smoke focus:outline-none focus:border-plum-voltage/60 w-48"
+        className="rounded-lg border border-foreground/10 bg-foreground/[0.03] pl-8 pr-7 py-1.5 text-xs text-foreground placeholder-smoke focus:outline-none focus:border-plum-voltage/60 w-48"
       />
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-2 text-smoke hover:text-white transition-colors"
+          className="absolute right-2 text-smoke hover:text-foreground transition-colors"
         >
           <X className="w-3 h-3" />
         </button>

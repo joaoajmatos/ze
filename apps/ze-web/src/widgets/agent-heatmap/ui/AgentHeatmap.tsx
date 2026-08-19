@@ -75,7 +75,7 @@ export function AgentHeatmap({ data }: Props) {
 
       {hoveredDay && (
         <div
-          className="absolute z-50 bg-[#111827] border border-white/10 rounded-lg p-3 shadow-xl pointer-events-none"
+          className="absolute z-50 bg-[#111827] border border-foreground/10 rounded-lg p-3 shadow-xl pointer-events-none"
           style={{
             left: popoverPos.x,
             top: popoverPos.y - 8,
