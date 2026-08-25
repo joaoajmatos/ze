@@ -118,7 +118,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 68 | [ze-data Package](phases/068-ze-data/spec.md) | ✅ Done |
 | 69 | [ze-ingestion Pipeline](phases/069-ze-ingestion/spec.md) | ✅ Done |
 | 70 | [Finance Recurring Detection](phases/070-finance-recurring/spec.md) | ✅ Done |
-| 71 | [Cross-Goal Awareness](phases/071-cross-goal-awareness/spec.md) | 🔲 Pending |
+| 71 | [Cross-Goal Awareness](phases/071-cross-goal-awareness/spec.md) | ✅ Done |
 | 72 | [API Client Codegen](phases/072-api-client-codegen/spec.md) | ✅ Done |
 | 73 | [API Surface](phases/073-api-surface/spec.md) | ✅ Done |
 | 74 | [Automation Substrate](phases/074-automation-substrate/spec.md) | ✅ Done |
@@ -141,7 +141,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 92 | [Agent Activity Heatmap](phases/092-agent-activity-heatmap/spec.md) | ✅ Done |
 | 93 | [Temporal Memory Timeline](phases/093-temporal-memory-timeline/spec.md) | 🔲 Pending |
 | 94 | [Memory Graph View](phases/094-memory-graph-view/spec.md) | 🔲 Pending |
-| 95 | [Unified Streaming Architecture](phases/095-live-trace-streaming/spec.md) | 🔲 Pending |
+| 95 | [Unified Streaming Architecture](phases/095-live-trace-streaming/spec.md) | ✅ Done |
 | 96 | [Dev Data Seeder](phases/096-dev-data-seeder/spec.md) | 🔲 Pending |
 | 97 | [Embedding Model Upgrade (MiniLM → E5)](phases/097-embedding-model-upgrade/spec.md) | 🔲 Pending |
 | 98 | [Workflow Run Chat](phases/098-workflow-run-chat/spec.md) | 🔲 Pending |

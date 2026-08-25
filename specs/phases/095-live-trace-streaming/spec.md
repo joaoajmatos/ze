@@ -1,6 +1,9 @@
 # Phase 95 — Unified Streaming Architecture
 
-**Status:** Pending
+**Status:** Implemented — `invoke_raw_turn` (moved to `core/ze-core/ze_core/conversation/turn.py`
+during a later refactor, not `container.py` as originally sketched) calls
+`graph.astream_events(...)`; `send_trace_partial` wired through `apps/ze-api/ze_api/interface/native.py`
+and the `trace-state` feature slice in `apps/ze-web`.
 **Depends on:** Phase 90 (Ze's Mind Split-Pane — `trace_update` WS frame and panel)
 **Packages touched:** `core/ze-core`, `apps/ze-api`, `apps/ze-web`
 

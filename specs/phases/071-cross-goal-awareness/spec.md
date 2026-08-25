@@ -1,8 +1,12 @@
 # Cross-Goal Awareness: Proactive Surfacing & Convergence Detection — Spec
 
-> **Package:** `ze_personal` (types, planner, executor, tools)
+> **Package:** `ze_automation` (types, planner, executor, tools) — moved from `ze_personal` in
+> Phase 74's automation-substrate extraction; this spec's module paths predate that move.
 > **Phase:** 71
-> **Status:** Pending
+> **Status:** Implemented — see `core/ze-automation/ze_automation/goals/{types,planner,executor}.py`
+> and `core/ze-automation/ze_automation/agents/goals/tools.py`; tests in
+> `core/ze-automation/tests/goal_engine/test_planner_convergence.py`,
+> `test_executor_reuse_notice.py`, `core/ze-automation/tests/goal_agent/test_create_goal_convergence.py`.
 > **Depends on:** Phase 35 ([35-cross-goal-output-reuse.md](../035-cross-goal-output-reuse/spec.md)), Phase 36 ([36-cross-goal-learning-promotion.md](../036-cross-goal-learning-promotion/spec.md))
 
 ---
