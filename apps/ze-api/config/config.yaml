@@ -133,6 +133,11 @@ proactive:
     anomaly_min_samples: 5          # min historical runs to establish baseline
     anomaly_retention_days: 30      # how long to keep anomaly records
     stall_days: 3                   # milestone idle days before counted as stalled
+  budget:
+    max_pushes_per_day: 3          # shared across correlation + worldstate pushes (phase 123)
+  attention_arbitration:
+    enabled: true
+    cron: "0 */4 * * *"
 
 correlation:
   inline:
@@ -155,7 +160,6 @@ correlation:
     max_seeds_per_run: 20
     seed_lookback_hours: 8      # look back slightly more than the cron interval
     dry_run: true               # log would-be pushes during calibration; set false to go live
-    max_pushes_per_day: 3
   salience:
     dry_run: false             # true → log admission decisions without writing to graph
     admission:
@@ -170,8 +174,6 @@ correlation:
       tau_relevance: 0.5
       min_evidence: 2
       novelty_similarity_max: 0.85
-    budget:
-      max_pushes_per_day: 3
     feedback:
       step: 0.05
       tau_min: 0.4
@@ -187,9 +189,6 @@ worldstate:
     cron: "0 5 * * *"
   push:
     enabled: true
-    cron: "0 */4 * * *"
-    budget:
-      max_pushes_per_day: 3
     inline_cooldown_hours: 12
     thresholds:
       tau_confidence: 0.5

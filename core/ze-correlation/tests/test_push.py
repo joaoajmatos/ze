@@ -15,7 +15,6 @@ from ze_correlation.push import (
     passes_grounding,
     passes_novelty,
     passes_relevance,
-    within_budget,
 )
 from ze_correlation.types import EvidenceRef, Hypothesis
 
@@ -41,7 +40,6 @@ def _make_settings(
                 "dry_run": dry_run,
                 "max_seeds_per_run": max_seeds_per_run,
                 "seed_lookback_hours": seed_lookback_hours,
-                "max_pushes_per_day": max_pushes_per_day,
             },
             "salience": {
                 "surfacing": {
@@ -49,9 +47,9 @@ def _make_settings(
                     "tau_relevance": tau_relevance,
                     "novelty_similarity_max": novelty_similarity_max,
                 },
-                "budget": {"max_pushes_per_day": max_pushes_per_day},
             },
-        }
+        },
+        "proactive": {"budget": {"max_pushes_per_day": max_pushes_per_day}},
     }
     return s
 
@@ -109,6 +107,8 @@ def _make_consumer(
 
     push_log = MagicMock()
     push_log.count_sent_within_hours = AsyncMock(return_value=pushed_count)
+    push_log.try_claim = AsyncMock(return_value=True)
+    push_log.release_claim = AsyncMock()
     push_log.log = AsyncMock()
 
     if nli_client is None:
@@ -183,7 +183,7 @@ async def test_qualifying_hypothesis_is_pushed():
     await consumer.run_once()
     mocks["notifier"].push.assert_awaited_once()
     mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
-    mocks["push_log"].log.assert_awaited_once()
+    mocks["push_log"].try_claim.assert_awaited_once()
 
 
 async def test_low_confidence_rejected():
@@ -206,6 +206,25 @@ async def test_budget_exceeded_rejects_push():
     consumer, mocks = _make_consumer(hypotheses=[h], pushed_count=3)
     await consumer.run_once()
     mocks["notifier"].push.assert_not_awaited()
+    mocks["push_log"].try_claim.assert_not_awaited()
+
+
+async def test_lost_claim_race_rejects_push():
+    h = _make_hypothesis(confidence=0.75, relevance=0.65)
+    consumer, mocks = _make_consumer(hypotheses=[h])
+    mocks["push_log"].try_claim = AsyncMock(return_value=False)
+    await consumer.run_once()
+    mocks["notifier"].push.assert_not_awaited()
+    mocks["hypothesis_store"].mark_surfaced.assert_not_awaited()
+
+
+async def test_notify_failure_releases_claim():
+    h = _make_hypothesis(confidence=0.75, relevance=0.65)
+    consumer, mocks = _make_consumer(hypotheses=[h])
+    mocks["notifier"].push = AsyncMock(side_effect=RuntimeError("ntfy down"))
+    await consumer.run_once()
+    mocks["push_log"].release_claim.assert_awaited_once()
+    mocks["hypothesis_store"].mark_surfaced.assert_not_awaited()
 
 
 async def test_novelty_too_similar_rejected():
@@ -302,7 +321,7 @@ async def test_dry_run_does_not_log_to_push_log():
     h = _make_hypothesis(confidence=0.75, relevance=0.65)
     consumer, mocks = _make_consumer(settings, hypotheses=[h])
     await consumer.run_once()
-    mocks["push_log"].log.assert_not_awaited()
+    mocks["push_log"].try_claim.assert_not_awaited()
 
 
 # ── disabled ──────────────────────────────────────────────────────────────────
@@ -390,13 +409,3 @@ async def test_passes_grounding_rejects_below_threshold():
     assert result is False
 
 
-async def test_within_budget_true_when_under_max():
-    push_log = MagicMock()
-    push_log.count_sent_within_hours = AsyncMock(return_value=1)
-    assert await within_budget(push_log, "some_key", 3) is True
-
-
-async def test_within_budget_false_when_at_max():
-    push_log = MagicMock()
-    push_log.count_sent_within_hours = AsyncMock(return_value=3)
-    assert await within_budget(push_log, "some_key", 3) is False

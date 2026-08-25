@@ -196,6 +196,7 @@ async def test_passes_push_bar_rejects_within_inline_cooldown():
 
 async def test_claim_push_calls_try_claim_with_loop_id_as_idempotency_key():
     push_log = AsyncMock()
+    push_log.count_sent_within_hours = AsyncMock(return_value=0)
     push_log.try_claim = AsyncMock(return_value=True)
     surfacer = LoopSurfacer(
         loop_store=AsyncMock(), graph_store=AsyncMock(), push_log=push_log
@@ -204,7 +205,9 @@ async def test_claim_push_calls_try_claim_with_loop_id_as_idempotency_key():
     result = await surfacer.claim_push(loop_id, "rationale text")
     assert result is True
     push_log.try_claim.assert_awaited_once_with(
-        "worldstate_loop_push", idempotency_key=str(loop_id), payload="rationale text"
+        "attention_push",
+        idempotency_key=f"loop:{loop_id}",
+        payload="rationale text",
     )
 
 
@@ -216,5 +219,5 @@ async def test_release_push_claim_calls_release_claim():
     loop_id = uuid4()
     await surfacer.release_push_claim(loop_id)
     push_log.release_claim.assert_awaited_once_with(
-        "worldstate_loop_push", idempotency_key=str(loop_id)
+        "attention_push", idempotency_key=f"loop:{loop_id}"
     )

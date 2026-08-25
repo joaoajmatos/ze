@@ -10,6 +10,7 @@ from ze_data.portability.assembler import bulk_insert
 from ze_logging import get_logger
 from ze_memory.entity_anchor import match_entities_in_query
 from ze_memory.graph.store import GraphStore, PostgresGraphStore
+from ze_proactive.bootstrap import shared_push_budget
 
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
 from ze_worldstate.jobs.push_sweep import PushSweepJob
@@ -104,9 +105,7 @@ def register_proactive_jobs(
             loop_store=stack.loop_store,
             surfacer=loop_surfacer,
             notifier=notifier,
-            max_pushes_per_day=int(
-                push_cfg.get("budget", {}).get("max_pushes_per_day", 3)
-            ),
+            max_pushes_per_day=shared_push_budget(settings),
             inline_cooldown_hours=float(push_cfg.get("inline_cooldown_hours", 12.0)),
             thresholds=push_cfg.get("thresholds", {}),
         )

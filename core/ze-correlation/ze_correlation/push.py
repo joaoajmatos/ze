@@ -8,6 +8,8 @@ import numpy as np
 
 from ze_logging import get_logger
 
+from ze_proactive.attention_budget import release_shared, try_claim_shared
+
 from ze_agents.nli import NLIClient
 from ze_correlation.engine import CorrelationEngine
 from ze_correlation.store import PostgresHypothesisStore
@@ -18,7 +20,6 @@ log = get_logger(__name__)
 
 UTC = timezone.utc
 
-_PUSH_LOG_KEY = "correlation_push"
 _NOVELTY_LOOKBACK_HOURS = 48.0
 
 
@@ -85,20 +86,6 @@ async def passes_grounding(
     except Exception as exc:
         log.warning("push_bar_grounding_check_failed", error=str(exc))
     return True
-
-
-async def within_budget(
-    push_log: Any,
-    event_key: str,
-    max_per_day: int,
-    window_hours: float = 24.0,
-) -> bool:
-    try:
-        count = await push_log.count_sent_within_hours(event_key, window_hours)
-        return count < max_per_day
-    except Exception as exc:
-        log.warning("push_bar_budget_check_failed", error=str(exc))
-        return True
 
 
 class CorrelationPushConsumer:
@@ -182,12 +169,32 @@ class CorrelationPushConsumer:
             )
             return
 
-        await self._notifier.push(
-            f"Ze noticed a connection:\n\n{hypothesis.summary}\n\n{hypothesis.narrative}",
-            urgency="normal",
+        claimed = await try_claim_shared(
+            self._push_log,
+            "hypothesis",
+            hypothesis.id,
+            self._cfg.max_pushes_per_day,
+            payload=str(hypothesis.id),
         )
+        if not claimed:
+            log.info("correlation_push_budget_exhausted", hypothesis_id=str(hypothesis.id))
+            return
+
+        try:
+            await self._notifier.push(
+                f"Ze noticed a connection:\n\n{hypothesis.summary}\n\n{hypothesis.narrative}",
+                urgency="normal",
+            )
+        except Exception as exc:
+            await release_shared(self._push_log, "hypothesis", hypothesis.id)
+            log.warning(
+                "correlation_push_notify_failed",
+                hypothesis_id=str(hypothesis.id),
+                error=str(exc),
+            )
+            return
+
         await self._hypothesis_store.mark_surfaced(hypothesis.id)
-        await self._push_log.log(_PUSH_LOG_KEY, payload=str(hypothesis.id))
         log.info("correlation_pushed", hypothesis_id=str(hypothesis.id))
 
     async def _passes_push_bar(self, hypothesis: Hypothesis) -> bool:
@@ -198,8 +205,6 @@ class CorrelationPushConsumer:
         if not await self._passes_novelty(hypothesis):
             return False
         if not await self._passes_grounding(hypothesis):
-            return False
-        if not await self._within_budget():
             return False
         return True
 
@@ -229,12 +234,6 @@ class CorrelationPushConsumer:
             self._cfg.novelty_similarity_max,
         )
 
-    async def _within_budget(self) -> bool:
-        return await within_budget(
-            self._push_log, _PUSH_LOG_KEY, self._cfg.max_pushes_per_day
-        )
-
-
 class _PushConfig:
     __slots__ = (
         "enabled",
@@ -257,24 +256,22 @@ def _load_config(settings: Any) -> _PushConfig:
     if isinstance(raw, dict):
         push_cfg = raw.get("correlation", {}).get("push", {})
         surfacing = raw.get("correlation", {}).get("salience", {}).get("surfacing", {})
-        budget = raw.get("correlation", {}).get("salience", {}).get("budget", {})
+        shared_budget = raw.get("proactive", {}).get("budget", {})
     elif isinstance(settings, dict):
         push_cfg = settings.get("correlation", {}).get("push", {})
         surfacing = (
             settings.get("correlation", {}).get("salience", {}).get("surfacing", {})
         )
-        budget = settings.get("correlation", {}).get("salience", {}).get("budget", {})
+        shared_budget = settings.get("proactive", {}).get("budget", {})
     else:
-        push_cfg = surfacing = budget = {}
+        push_cfg = surfacing = shared_budget = {}
 
     return _PushConfig(
         enabled=bool(push_cfg.get("enabled", False)),
         dry_run=bool(push_cfg.get("dry_run", True)),
         max_seeds_per_run=int(push_cfg.get("max_seeds_per_run", 20)),
         seed_lookback_hours=float(push_cfg.get("seed_lookback_hours", 8.0)),
-        max_pushes_per_day=int(
-            push_cfg.get("max_pushes_per_day", budget.get("max_pushes_per_day", 3))
-        ),
+        max_pushes_per_day=int(shared_budget.get("max_pushes_per_day", 3)),
         tau_push=float(surfacing.get("tau_push", 0.6)),
         tau_relevance=float(surfacing.get("tau_relevance", 0.5)),
         novelty_similarity_max=float(surfacing.get("novelty_similarity_max", 0.85)),
