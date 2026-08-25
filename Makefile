@@ -75,6 +75,7 @@ help:
 	@echo "    test-ingestion       Run ze-ingestion tests"
 	@echo "    test-automation      Run ze-automation tests"
 	@echo "    test-worldstate      Run ze-worldstate tests"
+	@echo "    test-priority        Run ze-priority tests"
 	@echo "    test-skills          Run ze-skills tests"
 	@echo "    test-workspace       Run ze-workspace tests"
 	@echo "    test-trading212      Run ze-trading212 tests"
@@ -265,6 +266,7 @@ TEST_PY_PACKAGES := \
 	test-ingestion \
 	test-automation \
 	test-worldstate \
+	test-priority \
 	test-skills \
 	test-workspace \
 	test-core \
@@ -277,7 +279,7 @@ TEST_PY_PACKAGES := \
 
 .PHONY: test test-api test-core test-logging test-agents test-communication test-plugin test-sdk test-proactive \
 	test-memory test-onboarding test-seed test-correlation test-browser test-notifications \
-	test-components test-eval test-google test-trading212 test-ingestion test-automation test-worldstate test-skills test-workspace test-personal test-prospecting test-messenger \
+	test-components test-eval test-google test-trading212 test-ingestion test-automation test-worldstate test-priority test-skills test-workspace test-personal test-prospecting test-messenger \
 	test-calendar test-news test-all test-web web-test
 
 test test-api:
@@ -312,6 +314,9 @@ test-automation:
 
 test-worldstate:
 	$(call pytest_pkg,core/ze-worldstate/tests)
+
+test-priority:
+	$(call pytest_pkg,core/ze-priority/tests)
 
 test-skills:
 	$(call pytest_pkg,core/ze-skills/tests)

@@ -50,6 +50,7 @@ from ze_core.conversation.messages import PostgresMessageStore
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
 from ze_correlation.bootstrap import build_correlation_stack
+from ze_priority.view import PriorityView
 from ze_data.portability.service import DataPortabilityService
 from ze_seed.service import DevDataSeeder, collect_seed_domains
 from ze_ingestion.bootstrap import (
@@ -234,6 +235,7 @@ class ZeContainer(CoreContainer):
     loop_graph_store: Any
     loop_entity_resolver: Any
     loop_surfacer: Any
+    priority_view: PriorityView
     skill_store: SkillStore
     skill_matcher: Any
     budget_checker: SpendBudgetChecker | None = None
@@ -605,6 +607,12 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     dream_store = PostgresDreamStore(pool=pool)
 
+    priority_view = PriorityView(
+        loop_store=worldstate.loop_store,
+        goal_store=automation.goal_store,
+        hypothesis_store=correlation.hypothesis_store,
+    )
+
     container = ZeContainer(
         settings=settings,
         pool=pool,
@@ -655,6 +663,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         loop_surfacer=loop_surfacer,
+        priority_view=priority_view,
         skill_store=skills_stack.skill_store,
         skill_matcher=skill_matcher,
     )

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ze-priority"
+version = "0.1.0"
+description = "Attention arbitration for Ze — PriorityView ranking + shared push budget"
+requires-python = ">=3.11"
+dependencies = [
+    "ze-agents",
+    "ze-proactive",
+    "ze-worldstate",
+    "ze-automation",
+    "ze-correlation",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.0.3",
+    "pytest-asyncio==1.4.0",
+    "pytest-mock==3.15.1",
+    "ruff==0.15.14",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv.sources]
+ze-agents      = { workspace = true }
+ze-proactive   = { workspace = true }
+ze-worldstate  = { workspace = true }
+ze-automation  = { workspace = true }
+ze-correlation = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["ze_priority"]

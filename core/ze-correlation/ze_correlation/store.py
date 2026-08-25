@@ -110,6 +110,18 @@ class PostgresHypothesisStore:
             )
         return [_row_to_hypothesis(r) for r in rows]
 
+    async def list_recent(self, window_days: int) -> list[Hypothesis]:
+        """Hypotheses `HypothesisDecayJob` has not yet marked as stale — the
+        complement of `list_decay_candidates` (FR-001 clarification: PriorityView
+        reuses this staleness definition rather than inventing its own)."""
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            rows = await conn.fetch(
+                "SELECT * FROM correlation_hypothesis"
+                " WHERE created_at >= now() - ($1 || ' days')::interval",
+                str(window_days),
+            )
+        return [_row_to_hypothesis(r) for r in rows]
+
     async def set_feedback(
         self,
         hypothesis_id: UUID,

@@ -7,6 +7,7 @@ dependencies = [
     "ze-core",
     "ze-automation",
     "ze-worldstate",
+    "ze-priority",
     "ze-skills",
     "ze-workspace",
     "ze-data",
@@ -64,6 +65,7 @@ dev = [
 ze-core          = { workspace = true }
 ze-automation    = { workspace = true }
 ze-worldstate    = { workspace = true }
+ze-priority      = { workspace = true }
 ze-skills        = { workspace = true }
 ze-workspace     = { workspace = true }
 ze-data          = { workspace = true }
