@@ -142,6 +142,20 @@ export type BodyIngest = {
 };
 
 /**
+ * Body_uploadWorkspaceFile
+ */
+export type BodyUploadWorkspaceFile = {
+    /**
+     * File
+     */
+    file: Blob | File;
+    /**
+     * Path
+     */
+    path?: string | null;
+};
+
+/**
  * BranchInput
  */
 export type BranchInput = {
@@ -937,6 +951,10 @@ export type FactDigestItem = {
      * Agent
      */
     agent: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
 };
 
 /**
@@ -1443,6 +1461,14 @@ export type MemoryActivityDay = {
      * Count
      */
     count: number;
+    /**
+     * Fact Count
+     */
+    fact_count: number;
+    /**
+     * Episode Count
+     */
+    episode_count: number;
 };
 
 /**
@@ -1724,6 +1750,7 @@ export type MessageTraceResponse = {
      * Skills Used
      */
     skills_used?: Array<SkillUsageTraceResponse>;
+    workspace?: WorkspaceUsageTraceResponse | null;
 };
 
 /**
@@ -2043,9 +2070,17 @@ export type SkillDetailResponse = {
      */
     status: 'pending_review' | 'active' | 'disabled' | 'rejected';
     /**
-     * Has Unsupported Scripts
+     * Has Scripts
      */
-    has_unsupported_scripts: boolean;
+    has_scripts: boolean;
+    /**
+     * Executable Approved
+     */
+    executable_approved?: boolean;
+    /**
+     * Script Filenames
+     */
+    script_filenames?: Array<string>;
     /**
      * Created At
      */
@@ -2171,9 +2206,17 @@ export type SkillResponse = {
      */
     status: 'pending_review' | 'active' | 'disabled' | 'rejected';
     /**
-     * Has Unsupported Scripts
+     * Has Scripts
      */
-    has_unsupported_scripts: boolean;
+    has_scripts: boolean;
+    /**
+     * Executable Approved
+     */
+    executable_approved?: boolean;
+    /**
+     * Script Filenames
+     */
+    script_filenames?: Array<string>;
     /**
      * Created At
      */
@@ -2226,6 +2269,10 @@ export type SkillUsageTraceResponse = {
      * Similarity
      */
     similarity?: number | null;
+    /**
+     * Script Ran
+     */
+    script_ran?: boolean;
 };
 
 /**
@@ -2815,6 +2862,282 @@ export type WorkflowStepResponse = {
      * On Failure
      */
     on_failure?: string;
+};
+
+/**
+ * WorkspaceFileItem
+ */
+export type WorkspaceFileItem = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Modified At
+     */
+    modified_at: string;
+    /**
+     * Is Dir
+     */
+    is_dir: boolean;
+};
+
+/**
+ * WorkspaceFileListResponse
+ */
+export type WorkspaceFileListResponse = {
+    /**
+     * Files
+     */
+    files: Array<WorkspaceFileItem>;
+};
+
+/**
+ * WorkspaceFileTouchResponse
+ */
+export type WorkspaceFileTouchResponse = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Op
+     */
+    op: string;
+};
+
+/**
+ * WorkspaceIngestResponse
+ */
+export type WorkspaceIngestResponse = {
+    /**
+     * Ingestion Id
+     */
+    ingestion_id: string;
+    /**
+     * Content Type
+     */
+    content_type: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Facts Count
+     */
+    facts_count: number;
+    /**
+     * Tags
+     */
+    tags: Array<string>;
+};
+
+/**
+ * WorkspaceModeResponse
+ */
+export type WorkspaceModeResponse = {
+    /**
+     * Mode
+     */
+    mode: 'off' | 'plan' | 'ask' | 'auto_edit' | 'auto';
+};
+
+/**
+ * WorkspaceModeUpdate
+ */
+export type WorkspaceModeUpdate = {
+    /**
+     * Mode
+     */
+    mode: 'off' | 'plan' | 'ask' | 'auto_edit' | 'auto';
+};
+
+/**
+ * WorkspaceResetRequest
+ */
+export type WorkspaceResetRequest = {
+    /**
+     * Confirmation Id
+     */
+    confirmation_id?: string | null;
+    /**
+     * Choice
+     */
+    choice?: 'approve' | 'deny' | null;
+};
+
+/**
+ * WorkspaceRunListResponse
+ */
+export type WorkspaceRunListResponse = {
+    /**
+     * Runs
+     */
+    runs: Array<WorkspaceRunResponse>;
+};
+
+/**
+ * WorkspaceRunResponse
+ */
+export type WorkspaceRunResponse = {
+    /**
+     * Id
+     */
+    id: string | null;
+    /**
+     * Started At
+     */
+    started_at: string | null;
+    /**
+     * Ended At
+     */
+    ended_at: string | null;
+    /**
+     * Command
+     */
+    command: string;
+    /**
+     * Origin
+     */
+    origin: 'conversation' | 'user' | 'unattended';
+    /**
+     * Thread Id
+     */
+    thread_id: string | null;
+    /**
+     * Message Id
+     */
+    message_id: string | null;
+    /**
+     * Skill Id
+     */
+    skill_id: string | null;
+    /**
+     * Skill Script Path
+     */
+    skill_script_path: string | null;
+    /**
+     * Status
+     */
+    status: 'succeeded' | 'failed' | 'timed_out' | 'cancelled' | 'refused' | 'in_progress';
+    /**
+     * Exit Code
+     */
+    exit_code: number | null;
+    /**
+     * Output Preview
+     */
+    output_preview: string;
+    /**
+     * Output File Path
+     */
+    output_file_path: string | null;
+    /**
+     * Files Touched
+     */
+    files_touched: Array<WorkspaceFileTouchResponse>;
+    /**
+     * Error Summary
+     */
+    error_summary: string | null;
+    /**
+     * Follow Through Notified
+     */
+    follow_through_notified?: boolean;
+};
+
+/**
+ * WorkspaceStatusResponse
+ */
+export type WorkspaceStatusResponse = {
+    /**
+     * Available
+     */
+    available: boolean;
+    /**
+     * Mode
+     */
+    mode: 'off' | 'plan' | 'ask' | 'auto_edit' | 'auto';
+    /**
+     * Bytes Used
+     */
+    bytes_used: number;
+    /**
+     * Bytes Ceiling
+     */
+    bytes_ceiling: number;
+    /**
+     * Busy
+     */
+    busy: boolean;
+    /**
+     * Last Reset At
+     */
+    last_reset_at: string | null;
+    /**
+     * Last Used At
+     */
+    last_used_at: string | null;
+};
+
+/**
+ * WorkspaceUploadResponse
+ */
+export type WorkspaceUploadResponse = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Requested Path
+     */
+    requested_path: string;
+    /**
+     * Size
+     */
+    size: number;
+    /**
+     * Deduplicated
+     */
+    deduplicated: boolean;
+};
+
+/**
+ * WorkspaceUsageTraceResponse
+ */
+export type WorkspaceUsageTraceResponse = {
+    /**
+     * Mode
+     */
+    mode: string;
+    /**
+     * Runs
+     */
+    runs?: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Files
+     */
+    files?: Array<{
+        [key: string]: unknown;
+    }>;
+    /**
+     * Script Ran
+     */
+    script_ran?: boolean;
+    /**
+     * Unavailable
+     */
+    unavailable?: boolean;
+    /**
+     * Planned
+     */
+    planned?: Array<string> | null;
 };
 
 /**
@@ -4778,6 +5101,36 @@ export type ApproveSkillResponses = {
 
 export type ApproveSkillResponse = ApproveSkillResponses[keyof ApproveSkillResponses];
 
+export type ApproveSkillExecutablesData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/approve-executables';
+};
+
+export type ApproveSkillExecutablesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ApproveSkillExecutablesError = ApproveSkillExecutablesErrors[keyof ApproveSkillExecutablesErrors];
+
+export type ApproveSkillExecutablesResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type ApproveSkillExecutablesResponse = ApproveSkillExecutablesResponses[keyof ApproveSkillExecutablesResponses];
+
 export type RejectSkillData = {
     body?: never;
     path: {
@@ -4867,6 +5220,326 @@ export type EnableSkillResponses = {
 };
 
 export type EnableSkillResponse = EnableSkillResponses[keyof EnableSkillResponses];
+
+export type RefreshSkillData = {
+    body?: never;
+    path: {
+        /**
+         * Skill Id
+         */
+        skill_id: string;
+    };
+    query?: never;
+    url: '/api/v0/skills/{skill_id}/refresh';
+};
+
+export type RefreshSkillErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RefreshSkillError = RefreshSkillErrors[keyof RefreshSkillErrors];
+
+export type RefreshSkillResponses = {
+    /**
+     * Successful Response
+     */
+    200: SkillDetailResponse;
+};
+
+export type RefreshSkillResponse = RefreshSkillResponses[keyof RefreshSkillResponses];
+
+export type GetWorkspaceData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/workspace';
+};
+
+export type GetWorkspaceResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceStatusResponse;
+};
+
+export type GetWorkspaceResponse = GetWorkspaceResponses[keyof GetWorkspaceResponses];
+
+export type GetWorkspaceModeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/workspace/mode';
+};
+
+export type GetWorkspaceModeResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceModeResponse;
+};
+
+export type GetWorkspaceModeResponse = GetWorkspaceModeResponses[keyof GetWorkspaceModeResponses];
+
+export type UpdateWorkspaceModeData = {
+    body: WorkspaceModeUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v0/workspace/mode';
+};
+
+export type UpdateWorkspaceModeErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateWorkspaceModeError = UpdateWorkspaceModeErrors[keyof UpdateWorkspaceModeErrors];
+
+export type UpdateWorkspaceModeResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceModeResponse;
+};
+
+export type UpdateWorkspaceModeResponse = UpdateWorkspaceModeResponses[keyof UpdateWorkspaceModeResponses];
+
+export type ListWorkspaceFilesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Path
+         */
+        path?: string;
+    };
+    url: '/api/v0/workspace/files';
+};
+
+export type ListWorkspaceFilesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWorkspaceFilesError = ListWorkspaceFilesErrors[keyof ListWorkspaceFilesErrors];
+
+export type ListWorkspaceFilesResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceFileListResponse;
+};
+
+export type ListWorkspaceFilesResponse = ListWorkspaceFilesResponses[keyof ListWorkspaceFilesResponses];
+
+export type UploadWorkspaceFileData = {
+    body: BodyUploadWorkspaceFile;
+    path?: never;
+    query?: never;
+    url: '/api/v0/workspace/files';
+};
+
+export type UploadWorkspaceFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UploadWorkspaceFileError = UploadWorkspaceFileErrors[keyof UploadWorkspaceFileErrors];
+
+export type UploadWorkspaceFileResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceUploadResponse;
+};
+
+export type UploadWorkspaceFileResponse = UploadWorkspaceFileResponses[keyof UploadWorkspaceFileResponses];
+
+export type IngestWorkspaceFileData = {
+    body?: never;
+    path: {
+        /**
+         * File Path
+         */
+        file_path: string;
+    };
+    query?: never;
+    url: '/api/v0/workspace/files/{file_path}/ingest';
+};
+
+export type IngestWorkspaceFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type IngestWorkspaceFileError = IngestWorkspaceFileErrors[keyof IngestWorkspaceFileErrors];
+
+export type IngestWorkspaceFileResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceIngestResponse;
+};
+
+export type IngestWorkspaceFileResponse = IngestWorkspaceFileResponses[keyof IngestWorkspaceFileResponses];
+
+export type DeleteWorkspaceFileData = {
+    body?: never;
+    path: {
+        /**
+         * File Path
+         */
+        file_path: string;
+    };
+    query?: never;
+    url: '/api/v0/workspace/files/{file_path}';
+};
+
+export type DeleteWorkspaceFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteWorkspaceFileError = DeleteWorkspaceFileErrors[keyof DeleteWorkspaceFileErrors];
+
+export type DeleteWorkspaceFileResponses = {
+    /**
+     * Successful Response
+     */
+    204: void;
+};
+
+export type DeleteWorkspaceFileResponse = DeleteWorkspaceFileResponses[keyof DeleteWorkspaceFileResponses];
+
+export type GetWorkspaceFileData = {
+    body?: never;
+    path: {
+        /**
+         * File Path
+         */
+        file_path: string;
+    };
+    query?: never;
+    url: '/api/v0/workspace/files/{file_path}';
+};
+
+export type GetWorkspaceFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetWorkspaceFileError = GetWorkspaceFileErrors[keyof GetWorkspaceFileErrors];
+
+export type GetWorkspaceFileResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type ListWorkspaceRunsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Origin
+         */
+        origin?: string | null;
+    };
+    url: '/api/v0/workspace/runs';
+};
+
+export type ListWorkspaceRunsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListWorkspaceRunsError = ListWorkspaceRunsErrors[keyof ListWorkspaceRunsErrors];
+
+export type ListWorkspaceRunsResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceRunListResponse;
+};
+
+export type ListWorkspaceRunsResponse = ListWorkspaceRunsResponses[keyof ListWorkspaceRunsResponses];
+
+export type CancelWorkspaceRunData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query?: never;
+    url: '/api/v0/workspace/runs/{run_id}/cancel';
+};
+
+export type CancelWorkspaceRunErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CancelWorkspaceRunError = CancelWorkspaceRunErrors[keyof CancelWorkspaceRunErrors];
+
+export type CancelWorkspaceRunResponses = {
+    /**
+     * Successful Response
+     */
+    200: WorkspaceRunResponse;
+};
+
+export type CancelWorkspaceRunResponse = CancelWorkspaceRunResponses[keyof CancelWorkspaceRunResponses];
+
+export type ResetWorkspaceData = {
+    /**
+     * Body
+     */
+    body?: WorkspaceResetRequest | null;
+    path?: never;
+    query?: never;
+    url: '/api/v0/workspace/reset';
+};
+
+export type ResetWorkspaceErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResetWorkspaceError = ResetWorkspaceErrors[keyof ResetWorkspaceErrors];
+
+export type ResetWorkspaceResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type ListChannelsData = {
     body?: never;

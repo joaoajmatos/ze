@@ -1,0 +1,220 @@
+{
+  "workflow": "speckit",
+  "specName": "Data Overview Charts",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:25:00.735Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:32:54.095Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:38:55.191Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:43:53.414Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:48.943Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:49.385Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:49.838Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:50.338Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:50.759Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:51.113Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:51.623Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:52.077Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:52.519Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:52.920Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:51:53.116Z"
+    }
+  ],
+  "currentTask": "T010",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Replace StorageDonutChart with PieChart",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.tsx"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Test category chart multi single and empty states",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.test.tsx"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Manual validation of category chart",
+      "files": [
+        "specs/phases/122-data-overview-charts/quickstart.md"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Add domain comparison BarChart in BreakdownGroup",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.tsx"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Test domain chart including zero-size domain",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.test.tsx"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Manual validation of domain comparison chart",
+      "files": [
+        "specs/phases/122-data-overview-charts/quickstart.md"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Verify zero-storage and many-domain edge cases",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.test.tsx"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Verify no hardcoded colors in data-overview tsx",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.tsx"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Mark spec 122 implemented in spec.md and README",
+      "files": [
+        "specs/README.md"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Run make test-web",
+      "files": [
+        "apps/ze-web/src/widgets/data-overview/ui/DataOverview.test.tsx"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "focused tests",
+      "command": "make test-memory; make test-web",
+      "result": "memory 265 passed; ze-web 115 passed; ze-ui 20 passed; make lint fails on pre-existing unrelated ruff errors",
+      "warnings": [
+        "make lint fails in ze-skills store Protocol redefinitions and diagram-design script"
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Reuse @myguyze/ze-ui LineChart/BarChart/PieChart wrappers",
+      "why": "spec 118 already shipped the shared chart contract",
+      "rejected": "new per-page SVG charts"
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "Shipped chart surfaces for this page using shared ze-ui primitives"
+    }
+  },
+  "last_action": "all tasks done — tests pass"
+}

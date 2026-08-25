@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetProfileData, GetProfileResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, ListCapabilitiesData, ListCapabilitiesResponses, ListChannelsData, ListChannelsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, StartGoalData, StartGoalErrors, StartGoalResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UpdateCapabilityData, UpdateCapabilityErrors, UpdateCapabilityResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses } from './types.gen';
+import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetProfileData, GetProfileResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceModeData, GetWorkspaceModeResponses, GetWorkspaceResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, IngestWorkspaceFileData, IngestWorkspaceFileErrors, IngestWorkspaceFileResponses, ListCapabilitiesData, ListCapabilitiesResponses, ListChannelsData, ListChannelsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RefreshSkillData, RefreshSkillErrors, RefreshSkillResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ResetWorkspaceData, ResetWorkspaceErrors, ResetWorkspaceResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, StartGoalData, StartGoalErrors, StartGoalResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UpdateCapabilityData, UpdateCapabilityErrors, UpdateCapabilityResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses, UpdateWorkspaceModeData, UpdateWorkspaceModeErrors, UpdateWorkspaceModeResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -800,6 +800,17 @@ export const approveSkill = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
+ * Approve skill scripts for execution
+ *
+ * Separate from instructions approval. Sets executable_approved only when the skill is active and has_scripts is true (FR-012, SC-005).
+ */
+export const approveSkillExecutables = <ThrowOnError extends boolean = false>(options: Options<ApproveSkillExecutablesData, ThrowOnError>): RequestResult<ApproveSkillExecutablesResponses, ApproveSkillExecutablesErrors, ThrowOnError> => (options.client ?? client).post<ApproveSkillExecutablesResponses, ApproveSkillExecutablesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/skills/{skill_id}/approve-executables',
+    ...options
+});
+
+/**
  * Reject a pending skill
  *
  * Transition a pending-review skill to rejected (FR-006); it never becomes active in this form. Records a SkillReview row.
@@ -830,6 +841,151 @@ export const enableSkill = <ThrowOnError extends boolean = false>(options: Optio
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/skills/{skill_id}/enable',
     ...options
+});
+
+/**
+ * Manually recheck an imported skill's source
+ *
+ * Re-fetch an imported skill's origin_url and compare content hashes (FR-015). On a change, reverts to pending_review with the prior version kept for comparison (FR-016). An unreachable source sets last_check_error without deactivating the skill.
+ */
+export const refreshSkill = <ThrowOnError extends boolean = false>(options: Options<RefreshSkillData, ThrowOnError>): RequestResult<RefreshSkillResponses, RefreshSkillErrors, ThrowOnError> => (options.client ?? client).post<RefreshSkillResponses, RefreshSkillErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/skills/{skill_id}/refresh',
+    ...options
+});
+
+/**
+ * Get workspace status
+ *
+ * Live sidecar health plus persisted mode and last-used timestamps.
+ */
+export const getWorkspace = <ThrowOnError extends boolean = false>(options?: Options<GetWorkspaceData, ThrowOnError>): RequestResult<GetWorkspaceResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetWorkspaceResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace',
+    ...options
+});
+
+/**
+ * Get workspace mode
+ *
+ * Return the persisted workspace mode (Off / Plan / Ask / Auto-edit / Auto).
+ */
+export const getWorkspaceMode = <ThrowOnError extends boolean = false>(options?: Options<GetWorkspaceModeData, ThrowOnError>): RequestResult<GetWorkspaceModeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetWorkspaceModeResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/mode',
+    ...options
+});
+
+/**
+ * Set workspace mode
+ *
+ * Persist the workspace mode until the user changes it again. Does not confirm.
+ */
+export const updateWorkspaceMode = <ThrowOnError extends boolean = false>(options: Options<UpdateWorkspaceModeData, ThrowOnError>): RequestResult<UpdateWorkspaceModeResponses, UpdateWorkspaceModeErrors, ThrowOnError> => (options.client ?? client).patch<UpdateWorkspaceModeResponses, UpdateWorkspaceModeErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/mode',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List workspace files
+ *
+ * List files under a workspace-relative path (default: root). Origin is user REST.
+ */
+export const listWorkspaceFiles = <ThrowOnError extends boolean = false>(options?: Options<ListWorkspaceFilesData, ThrowOnError>): RequestResult<ListWorkspaceFilesResponses, ListWorkspaceFilesErrors, ThrowOnError> => (options?.client ?? client).get<ListWorkspaceFilesResponses, ListWorkspaceFilesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/files',
+    ...options
+});
+
+/**
+ * Place a file in the workspace
+ *
+ * Upload bytes into the workspace without ingesting them. Duplicate names are stored under a distinct suffix rather than overwritten.
+ */
+export const uploadWorkspaceFile = <ThrowOnError extends boolean = false>(options: Options<UploadWorkspaceFileData, ThrowOnError>): RequestResult<UploadWorkspaceFileResponses, UploadWorkspaceFileErrors, ThrowOnError> => (options.client ?? client).post<UploadWorkspaceFileResponses, UploadWorkspaceFileErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/files',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Ingest a workspace file into memory
+ *
+ * Opt-in ingest of an existing workspace file. The file is not deleted.
+ */
+export const ingestWorkspaceFile = <ThrowOnError extends boolean = false>(options: Options<IngestWorkspaceFileData, ThrowOnError>): RequestResult<IngestWorkspaceFileResponses, IngestWorkspaceFileErrors, ThrowOnError> => (options.client ?? client).post<IngestWorkspaceFileResponses, IngestWorkspaceFileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/files/{file_path}/ingest',
+    ...options
+});
+
+/**
+ * Delete a workspace file
+ *
+ * User-initiated delete. No confirmation. 404 if missing.
+ */
+export const deleteWorkspaceFile = <ThrowOnError extends boolean = false>(options: Options<DeleteWorkspaceFileData, ThrowOnError>): RequestResult<DeleteWorkspaceFileResponses, DeleteWorkspaceFileErrors, ThrowOnError> => (options.client ?? client).delete<DeleteWorkspaceFileResponses, DeleteWorkspaceFileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/files/{file_path}',
+    ...options
+});
+
+/**
+ * Download a workspace file
+ *
+ * Return file bytes as an attachment. Directories and escapes are 400.
+ */
+export const getWorkspaceFile = <ThrowOnError extends boolean = false>(options: Options<GetWorkspaceFileData, ThrowOnError>): RequestResult<GetWorkspaceFileResponses, GetWorkspaceFileErrors, ThrowOnError> => (options.client ?? client).get<GetWorkspaceFileResponses, GetWorkspaceFileErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/files/{file_path}',
+    ...options
+});
+
+/**
+ * List recent workspace runs
+ *
+ * Persisted command history, optionally filtered by origin.
+ */
+export const listWorkspaceRuns = <ThrowOnError extends boolean = false>(options?: Options<ListWorkspaceRunsData, ThrowOnError>): RequestResult<ListWorkspaceRunsResponses, ListWorkspaceRunsErrors, ThrowOnError> => (options?.client ?? client).get<ListWorkspaceRunsResponses, ListWorkspaceRunsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/runs',
+    ...options
+});
+
+/**
+ * Cancel a workspace run
+ *
+ * Stops an in-progress run. No confirmation is required (FR-009 — this is not workspace reset). 409 if the run already finished, 404 if the run id is unknown.
+ */
+export const cancelWorkspaceRun = <ThrowOnError extends boolean = false>(options: Options<CancelWorkspaceRunData, ThrowOnError>): RequestResult<CancelWorkspaceRunResponses, CancelWorkspaceRunErrors, ThrowOnError> => (options.client ?? client).post<CancelWorkspaceRunResponses, CancelWorkspaceRunErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/runs/{run_id}/cancel',
+    ...options
+});
+
+/**
+ * Reset the workspace
+ *
+ * Does not wipe immediately. Issues a confirmation (editable: false). On approve, cancel any in-flight run then wipe. On deny, no change.
+ */
+export const resetWorkspace = <ThrowOnError extends boolean = false>(options?: Options<ResetWorkspaceData, ThrowOnError>): RequestResult<ResetWorkspaceResponses, ResetWorkspaceErrors, ThrowOnError> => (options?.client ?? client).post<ResetWorkspaceResponses, ResetWorkspaceErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/reset',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
 });
 
 /**

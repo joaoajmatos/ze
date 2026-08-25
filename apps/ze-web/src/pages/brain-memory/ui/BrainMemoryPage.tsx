@@ -21,7 +21,10 @@ export function BrainMemoryPage() {
   const earliest = bounds?.earliest ? new Date(bounds.earliest) : undefined;
   // Stable "now" snapshot — recomputing per render would churn the activity query key.
   const now = useMemo(() => new Date(), []);
-  const { data: activity } = useMemoryActivityQuery(earliest, earliest ? now : undefined);
+  const { data: activity } = useMemoryActivityQuery(
+    earliest,
+    earliest ? (asOfDate ?? now) : undefined,
+  );
 
   const isPast = asOfDate !== null;
   const asOfIso = asOfDate ? asOfDate.toISOString() : undefined;

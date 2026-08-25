@@ -1,90 +1,49 @@
-import { useState, useRef } from "react";
-import HeatMap, { type HeatMapValue } from "@uiw/react-heat-map";
-import type { ActivityHeatmapResponse, HeatmapDay } from "@myguyze/ze-client";
-import { agentColor } from "@/shared/config";
+import type { ActivityHeatmapResponse } from "@myguyze/ze-client";
+import { HeatmapChart } from "@myguyze/ze-ui/charts";
 import { DayDetailPopover } from "./DayDetailPopover";
 
 interface Props {
   data: ActivityHeatmapResponse;
 }
 
-function dominantColor(day: HeatmapDay): string {
-  if (day.agents.length === 0) return "#6b7280";
-  return agentColor(day.agents[0].agent);
+function isoDay(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-function intensityAlpha(total: number): number {
-  if (total <= 0) return 0;
-  if (total <= 2) return 0.3;
-  if (total <= 5) return 0.6;
-  return 1;
+function activitySeries(data: ActivityHeatmapResponse): { x: string; y: number }[] {
+  const totals = new Map(data.days.map((day) => [day.date, day.total]));
+  const points: { x: string; y: number }[] = [];
+  const cursor = new Date(`${data.start}T00:00:00`);
+  const end = new Date(`${data.end}T00:00:00`);
+  while (cursor <= end) {
+    const x = isoDay(cursor);
+    points.push({ x, y: totals.get(x) ?? 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return points;
 }
 
 export function AgentHeatmap({ data }: Props) {
-  const [hoveredDay, setHoveredDay] = useState<HeatmapDay | null>(null);
-  const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 });
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const dayMap = new Map<string, HeatmapDay>(data.days.map((d) => [d.date, d]));
-
-  const values: HeatMapValue[] = data.days.map((d) => ({
-    date: d.date,
-    count: d.total,
-  }));
-
-  const startDate = new Date(data.start + "T00:00:00");
-  const endDate = new Date(data.end + "T00:00:00");
-
   return (
-    <div ref={containerRef} className="relative">
-      <HeatMap
-        value={values}
-        startDate={startDate}
-        endDate={endDate}
-        rectSize={14}
-        space={3}
-        weekLabels={["", "Mon", "", "Wed", "", "Fri", ""]}
-        style={{ color: "#6b7280" }}
-        rectRender={(rectProps, item) => {
-          const day = dayMap.get(item.date);
-          const color = day ? dominantColor(day) : "#374151";
-          const alpha = day ? intensityAlpha(item.count) : 0;
-
+    <HeatmapChart
+      data={activitySeries(data)}
+      formatLabel={(value, date) =>
+        `${date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · ${value} messages`
+      }
+      renderTooltip={(cell) => {
+        const day = data.days.find((item) => item.date === cell.iso);
+        if (!day) {
           return (
-            <rect
-              {...rectProps}
-              rx={2}
-              fill={alpha === 0 ? "#1f2937" : color}
-              opacity={alpha === 0 ? 1 : alpha}
-              style={{ cursor: day ? "pointer" : "default" }}
-              onMouseEnter={(e) => {
-                if (!day) return;
-                const rect = containerRef.current?.getBoundingClientRect();
-                const target = e.currentTarget.getBoundingClientRect();
-                setPopoverPos({
-                  x: target.left - (rect?.left ?? 0) + target.width / 2,
-                  y: target.top - (rect?.top ?? 0),
-                });
-                setHoveredDay(day);
-              }}
-              onMouseLeave={() => setHoveredDay(null)}
-            />
+            <p>
+              {cell.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · 0
+            </p>
           );
-        }}
-      />
-
-      {hoveredDay && (
-        <div
-          className="absolute z-50 bg-[#111827] border border-foreground/10 rounded-lg p-3 shadow-xl pointer-events-none"
-          style={{
-            left: popoverPos.x,
-            top: popoverPos.y - 8,
-            transform: "translate(-50%, -100%)",
-          }}
-        >
-          <DayDetailPopover day={hoveredDay} />
-        </div>
-      )}
-    </div>
+        }
+        return <DayDetailPopover day={day} />;
+      }}
+    />
   );
 }

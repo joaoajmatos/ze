@@ -11,7 +11,7 @@ export interface BarXAxisProps {
   tickerHalfWidth?: number;
   /** Whether to show all labels or skip some for dense data. Default: false */
   showAllLabels?: boolean;
-  /** Maximum number of labels to show. Default: 12 */
+  /** Maximum number of labels to show. Default: 6 */
   maxLabels?: number;
 }
 
@@ -90,7 +90,7 @@ export function BarXAxis(props: BarXAxisProps) {
 const BarXAxisInner = memo(function BarXAxisInner({
   tickerHalfWidth = 50,
   showAllLabels = false,
-  maxLabels = 12,
+  maxLabels = 6,
   container,
 }: BarXAxisProps & { container: HTMLDivElement }) {
   const { margin, tooltipData, barScale, bandWidth, barXAccessor, data } =

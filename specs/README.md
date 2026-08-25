@@ -159,6 +159,10 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 115 | [Workspace Environment](phases/115-workspace-sidecar/spec.md) | ✅ Done |
 | 116 | [Workspace Follow-Through](phases/116-workspace-follow-through/spec.md) | 🔲 Pending |
 | 118 | [Chart Visualization](phases/118-chart-visualization/spec.md) | ✅ Done |
+| 119 | [Memory Graph Charts](phases/119-memory-graph-charts/spec.md) | ✅ Done |
+| 120 | [Usage Dashboard Charts](phases/120-usage-dashboard-charts/spec.md) | ✅ Done |
+| 121 | [Memory Feed Charts](phases/121-memory-feed-charts/spec.md) | ✅ Done |
+| 122 | [Data Overview Charts](phases/122-data-overview-charts/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

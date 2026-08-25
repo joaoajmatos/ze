@@ -1,0 +1,340 @@
+{
+  "workflow": "speckit",
+  "specName": "Memory Graph Charts",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:22:20.486Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:28:45.313Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:36:30.914Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:43:52.617Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:24.289Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:24.710Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:25.247Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:25.618Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:25.974Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:26.518Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:27.023Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:27.527Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:27.898Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:28.253Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:28.723Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:29.232Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:29.699Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:30.060Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:30.455Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:30.921Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:31.390Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:31.842Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:51:32.044Z"
+    }
+  ],
+  "currentTask": "T018",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Return created_at on entity-detail facts",
+      "files": [
+        "core/ze-memory/ze_memory/admin.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Add created_at to FactDigestItem schema",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Test get_entity_detail includes fact created_at",
+      "files": [
+        "core/ze-memory/tests/test_admin_activity.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Regenerate ze-client types for created_at",
+      "files": [
+        "packages/ze-client/src/generated/types.gen.ts"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Add entityActivitySeries helper",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/lib/entityActivitySeries.ts"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Render entity activity LineChart in detail panel",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/EntityDetailPanel.tsx"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Test EntityDetailPanel activity chart",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/EntityDetailPanel.test.tsx"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Manual validation of entity activity chart",
+      "files": [
+        "specs/phases/119-memory-graph-charts/quickstart.md"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Add graphComposition helper",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/lib/graphComposition.ts"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Pass composition from MemoryGraph",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/MemoryGraph.tsx"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Render composition PieCharts in GraphToolbar",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/GraphToolbar.tsx"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Test GraphToolbar composition charts",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/GraphToolbar.test.tsx"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Manual validation of composition chart",
+      "files": [
+        "specs/phases/119-memory-graph-charts/quickstart.md"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Replace remaining chrome hex with theme tokens",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/GraphSearchBar.tsx"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Manual validation of graph chrome",
+      "files": [
+        "specs/phases/119-memory-graph-charts/quickstart.md"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Verify single-date empty-graph and narrow-panel cases",
+      "files": [
+        "apps/ze-web/src/widgets/memory-graph/ui/EntityDetailPanel.test.tsx"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Mark spec 119 implemented in spec.md and README",
+      "files": [
+        "specs/README.md"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Run make test-memory and make test-web",
+      "files": [
+        "core/ze-memory/tests/test_admin_activity.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "focused tests",
+      "command": "make test-memory; make test-web",
+      "result": "memory 265 passed; ze-web 115 passed; ze-ui 20 passed; make lint fails on pre-existing unrelated ruff errors",
+      "warnings": [
+        "make lint fails in ze-skills store Protocol redefinitions and diagram-design script"
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Reuse @myguyze/ze-ui LineChart/BarChart/PieChart wrappers",
+      "why": "spec 118 already shipped the shared chart contract",
+      "rejected": "new per-page SVG charts"
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "Shipped chart surfaces for this page using shared ze-ui primitives"
+    }
+  },
+  "last_action": "all tasks done — tests pass"
+}

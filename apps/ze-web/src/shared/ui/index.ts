@@ -5,6 +5,7 @@ export { Slider } from "./primitives/slider";
 export { SearchBar } from "./primitives/SearchBar";
 export { FilterChips } from "./primitives/FilterChips";
 export type { FilterOption } from "./primitives/FilterChips";
+export { ChartsToggle } from "./primitives/ChartsToggle";
 export { ViewToggle } from "./primitives/ViewToggle";
 export type { ViewMode } from "./primitives/ViewToggle";
 export { SortSelect } from "./primitives/SortSelect";

@@ -2,6 +2,7 @@ import type { EntityDetailResponse, GraphEdge, GraphEntityNode, MemoryGraphRespo
 import { useCallback, useMemo, useRef, useState } from "react";
 import ForceGraph3D, { type ForceGraphMethods } from "react-force-graph-3d";
 import { useEntityDetailQuery } from "@/entities/memory-graph";
+import { graphComposition } from "../lib/graphComposition";
 import { EntityDetailPanel } from "./EntityDetailPanel";
 import { buildEntityNodeObject, entityColor, entityRadius, type GraphNodeDatum } from "./entityNodeObject";
 import { GraphSearchBar } from "./GraphSearchBar";
@@ -78,6 +79,11 @@ export function MemoryGraph({ data, entityType, onEntityTypeChange }: MemoryGrap
     [allEntities, allEdges, search],
   );
 
+  const composition = useMemo(
+    () => graphComposition(allEntities, allEdges),
+    [allEntities, allEdges],
+  );
+
   const { data: detail, isLoading: detailLoading } = useEntityDetailQuery(selectedId);
 
   const handleExpand = useCallback(
@@ -123,6 +129,7 @@ export function MemoryGraph({ data, entityType, onEntityTypeChange }: MemoryGrap
             onEntityTypeChange={onEntityTypeChange}
             onFitView={fitView}
             onResetLayout={resetLayout}
+            composition={composition}
           />
           <GraphSearchBar value={search} onChange={setSearch} />
         </div>

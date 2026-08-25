@@ -189,27 +189,42 @@ async def get_memory_activity(pool: Any, start: datetime, end: datetime) -> dict
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """
-            SELECT day, SUM(count)::int AS count
+            SELECT day, source, SUM(count)::int AS count
             FROM (
-                SELECT date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS day, COUNT(*) AS count
+                SELECT date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS day,
+                       'fact' AS source, COUNT(*) AS count
                 FROM memory_facts
                 WHERE created_at >= $1 AND created_at < $2
                 GROUP BY 1
 
                 UNION ALL
 
-                SELECT date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS day, COUNT(*) AS count
+                SELECT date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS day,
+                       'episode' AS source, COUNT(*) AS count
                 FROM memory_episodes
                 WHERE created_at >= $1 AND created_at < $2
                 GROUP BY 1
             ) sub
-            GROUP BY day
+            GROUP BY day, source
             ORDER BY day ASC
             """,
             start,
             end,
         )
-    days = [{"date": r["day"].isoformat(), "count": r["count"]} for r in rows]
+    by_day: dict[str, dict] = {}
+    for r in rows:
+        key = r["day"].isoformat()
+        entry = by_day.setdefault(
+            key, {"date": key, "fact_count": 0, "episode_count": 0}
+        )
+        if r["source"] == "fact":
+            entry["fact_count"] = r["count"]
+        elif r["source"] == "episode":
+            entry["episode_count"] = r["count"]
+    days = []
+    for entry in by_day.values():
+        entry["count"] = entry["fact_count"] + entry["episode_count"]
+        days.append(entry)
     max_count = max((d["count"] for d in days), default=0)
     return {"days": days, "max_count": max_count}
 
@@ -383,7 +398,8 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
 
         fact_rows = await conn.fetch(
             """
-            SELECT f.id, f.predicate AS key, f.value, COALESCE(me.agent, 'unknown') AS agent
+            SELECT f.id, f.predicate AS key, f.value, COALESCE(me.agent, 'unknown') AS agent,
+                   f.created_at
             FROM memory_facts f
             LEFT JOIN memory_episodes me ON me.id = f.source_episode_id
             WHERE f.subject_id = $1
@@ -393,7 +409,13 @@ async def get_entity_detail(pool: Any, entity_id: Any) -> dict | None:
             entity_id,
         )
         facts = [
-            {"id": r["id"], "key": r["key"], "value": r["value"], "agent": r["agent"]}
+            {
+                "id": r["id"],
+                "key": r["key"],
+                "value": r["value"],
+                "agent": r["agent"],
+                "created_at": r["created_at"],
+            }
             for r in fact_rows
         ]
 

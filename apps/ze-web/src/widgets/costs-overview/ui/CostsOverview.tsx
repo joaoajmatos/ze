@@ -21,6 +21,7 @@ import {
   MetricProgressBar,
   SectionPanel,
 } from "@/shared/ui";
+import { HeatmapChart, PieChart } from "@myguyze/ze-ui/charts";
 import type { CostAnomalyItem, DailyCostBucket } from "@myguyze/ze-client";
 
 function formatRelativeTime(isoString: string): string {
@@ -93,57 +94,6 @@ function fillDays(by_day: DailyCostBucket[], days = 30): DailyCostBucket[] {
     result.push(map.get(key) ?? { date: key, usd: 0, calls: 0 });
   }
   return result;
-}
-
-function SpendChart({ by_day }: { by_day: DailyCostBucket[] }) {
-  const filled = fillDays(by_day);
-  const max = Math.max(...filled.map((d) => d.usd), 0.000001);
-  const peakIdx = filled.reduce(
-    (best, d, i) => (d.usd > filled[best].usd ? i : best),
-    0,
-  );
-
-  const W = 400;
-  const H = 72;
-  const n = filled.length;
-  const gap = 2;
-  const barW = Math.floor((W - gap * (n - 1)) / n);
-
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="w-full"
-      style={{ height: H }}
-      aria-hidden="true"
-    >
-      {filled.map((d, i) => {
-        const h = Math.max(2, (d.usd / max) * (H - 4));
-        const x = i * (barW + gap);
-        const y = H - h;
-        const isPeak = i === peakIdx && d.usd > 0;
-        const isRecent = i >= n - 3;
-        const fill = isPeak
-          ? "#ffb829"
-          : isRecent && d.usd > 0
-            ? "rgba(128,82,255,0.9)"
-            : d.usd > 0
-              ? "rgba(128,82,255,0.5)"
-              : "rgba(255,255,255,0.05)";
-
-        return (
-          <rect
-            key={d.date}
-            x={x}
-            y={y}
-            width={barW}
-            height={h}
-            rx={1}
-            fill={fill}
-          />
-        );
-      })}
-    </svg>
-  );
 }
 
 function TokenSplit({
@@ -229,6 +179,7 @@ export function CostsOverview() {
     : [];
 
   const dailyAvg = data ? data.total_usd / 30 : 0;
+  const filledDays = data ? fillDays(data.by_day) : [];
 
   return (
     <DashboardShell
@@ -243,15 +194,13 @@ export function CostsOverview() {
             <DashboardGridMain>
               <DashboardHero value={formatUsd(data.total_usd)} caption={data.period} />
 
-              {data.by_day.length > 0 && (
-                <div>
-                  <SpendChart by_day={data.by_day} />
-                  <div className="flex justify-between mt-1">
-                    <p className="text-[9px] text-smoke/80">30 days ago</p>
-                    <p className="text-[9px] text-smoke/80">today</p>
-                  </div>
-                </div>
-              )}
+              <HeatmapChart
+                data={filledDays.map((d) => ({ x: d.date, y: d.usd }))}
+                title="Daily spend"
+                formatLabel={(value, date) =>
+                  `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · ${formatUsd(value)}`
+                }
+              />
 
               <div className="grid grid-cols-3 gap-2">
                 <DashboardStatCard label="per day" value={formatUsd(dailyAvg)} />
@@ -286,6 +235,14 @@ export function CostsOverview() {
                 emptyMessage="No plugin data yet."
               >
                 <div className="space-y-2">
+                  <PieChart
+                    donut
+                    title="Plugin share"
+                    data={sortedPlugins.map(([plugin, usage]) => ({
+                      x: formatPluginName(plugin),
+                      y: usage.usd,
+                    }))}
+                  />
                   {sortedPlugins.map(([plugin, usage]) => (
                     <UsageItem
                       key={plugin}
@@ -305,6 +262,14 @@ export function CostsOverview() {
                 emptyMessage="No agent data yet."
               >
                 <div className="space-y-2">
+                  <PieChart
+                    donut
+                    title="Agent share"
+                    data={sortedAgents.map(([agent, usage]) => ({
+                      x: formatAgentName(agent),
+                      y: usage.usd,
+                    }))}
+                  />
                   {sortedAgents.map(([agent, usage]) => (
                     <UsageItem
                       key={agent}

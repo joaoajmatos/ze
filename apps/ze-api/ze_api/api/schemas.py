@@ -167,6 +167,7 @@ class FactDigestItem(BaseModel):
     key: str
     value: str
     agent: str
+    created_at: datetime | None = None
 
 
 class EpisodeDigestItem(BaseModel):
@@ -859,6 +860,8 @@ class TimelineBoundsResponse(BaseModel):
 class MemoryActivityDay(BaseModel):
     date: str
     count: int
+    fact_count: int
+    episode_count: int
 
 
 class MemoryActivityResponse(BaseModel):

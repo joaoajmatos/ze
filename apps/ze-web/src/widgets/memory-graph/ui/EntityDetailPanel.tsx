@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { X, User, MapPin, Building2, Hash, HelpCircle, ChevronDown } from "lucide-react";
 import type { EntityDetailResponse, GraphEntityNode } from "@myguyze/ze-client";
+import { LineChart } from "@myguyze/ze-ui/charts";
+import { entityActivitySeries } from "../lib/entityActivitySeries";
 
 const ENTITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   person: User,
@@ -18,6 +21,10 @@ interface Props {
 
 export function EntityDetailPanel({ entity, detail, isLoading, onClose, onExpand }: Props) {
   const Icon = ENTITY_ICONS[entity.entity_type] ?? HelpCircle;
+  const activity = useMemo(
+    () => (detail ? entityActivitySeries(detail) : []),
+    [detail],
+  );
 
   return (
     <div className="flex flex-col h-full bg-foreground/[0.03] border-l border-foreground/10 overflow-hidden">
@@ -43,6 +50,17 @@ export function EntityDetailPanel({ entity, detail, isLoading, onClose, onExpand
 
         {detail && (
           <>
+            {activity.length > 0 && (
+              <section>
+                <LineChart
+                  data={activity}
+                  seriesLabels={{ fact: "Facts", episode: "Episodes" }}
+                  title="Activity"
+                  yLabel="items"
+                />
+              </section>
+            )}
+
             {detail.facts.length > 0 && (
               <section>
                 <p className="text-xs font-medium text-smoke uppercase tracking-wider mb-2">

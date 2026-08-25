@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { DataDomainItem } from "@myguyze/ze-client";
+import { PieChart } from "@myguyze/ze-ui/charts";
 import { useDataDomainsQuery } from "@/entities/data-domain";
 import { settingsDataPath } from "@/shared/config";
 import { useTopBarQuickActions } from "@/shared/lib";
@@ -25,7 +26,6 @@ import {
   largestCategory,
 } from "../lib/aggregate";
 import { capitalize, formatBytes, formatCount, shortDomainName } from "../lib/format";
-import { StorageDonutChart } from "./StorageDonutChart";
 
 function DomainBreakdownItem({
   domain,
@@ -104,7 +104,11 @@ export function DataOverview() {
 
             <SectionPanel>
               <DashboardSectionTitle>By category</DashboardSectionTitle>
-              <StorageDonutChart segments={segments} totalBytes={data.total_size_bytes} />
+              <PieChart
+                donut
+                data={segments.map((seg) => ({ x: capitalize(seg.label), y: seg.bytes }))}
+                title="Storage"
+              />
             </SectionPanel>
 
             <div className="grid grid-cols-3 gap-2">

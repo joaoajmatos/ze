@@ -1,0 +1,250 @@
+{
+  "workflow": "speckit",
+  "specName": "Usage Dashboard Charts",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:24:59.342Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:30:06.979Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:37:25.048Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:43:52.926Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:34.013Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:34.409Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:34.915Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:35.526Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:36.122Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:36.629Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:37.034Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:37.497Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:37.955Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:38.343Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:38.737Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:39.227Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:51:39.455Z"
+    }
+  ],
+  "currentTask": "T012",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Replace SpendChart with BarChart",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.tsx"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Test 30-day zero-filled spend chart",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.test.tsx"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Manual validation of spend chart",
+      "files": [
+        "specs/phases/120-usage-dashboard-charts/quickstart.md"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Add plugin share PieChart",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.tsx"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Add agent share PieChart",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.tsx"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Test plugin and agent breakdown charts",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.test.tsx"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Manual validation of breakdown charts",
+      "files": [
+        "specs/phases/120-usage-dashboard-charts/quickstart.md"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Confirm no remaining hardcoded chart colors",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.tsx"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Manual validation of usage page chrome",
+      "files": [
+        "specs/phases/120-usage-dashboard-charts/quickstart.md"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Verify zero-spend and many-plugin edge cases",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.test.tsx"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Mark spec 120 implemented in spec.md and README",
+      "files": [
+        "specs/README.md"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Run make test-web",
+      "files": [
+        "apps/ze-web/src/widgets/costs-overview/ui/CostsOverview.test.tsx"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "focused tests",
+      "command": "make test-memory; make test-web",
+      "result": "memory 265 passed; ze-web 115 passed; ze-ui 20 passed; make lint fails on pre-existing unrelated ruff errors",
+      "warnings": [
+        "make lint fails in ze-skills store Protocol redefinitions and diagram-design script"
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Reuse @myguyze/ze-ui LineChart/BarChart/PieChart wrappers",
+      "why": "spec 118 already shipped the shared chart contract",
+      "rejected": "new per-page SVG charts"
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "Shipped chart surfaces for this page using shared ze-ui primitives"
+    }
+  },
+  "last_action": "all tasks done — tests pass"
+}

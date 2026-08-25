@@ -1,0 +1,295 @@
+{
+  "workflow": "speckit",
+  "specName": "Memory Feed Charts",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:25:00.049Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:31:44.986Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:38:17.277Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-19T18:43:53.173Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:41.189Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:41.544Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:41.900Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:42.383Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:42.869Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:43.378Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:43.731Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:44.134Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:44.558Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:44.915Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:45.365Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:45.803Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:46.319Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:46.692Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-08-19T18:51:47.076Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-19T18:51:47.334Z"
+    }
+  ],
+  "currentTask": "T015",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Pass asOfDate as memory activity query end",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.tsx"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Test as-of wiring for activity query",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.test.tsx"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Render memory growth BarChart",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.tsx"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Test growth chart for multi-week and short ranges",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.test.tsx"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Manual validation of growth chart",
+      "files": [
+        "specs/phases/121-memory-feed-charts/quickstart.md"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Split memory activity by fact and episode",
+      "files": [
+        "core/ze-memory/ze_memory/admin.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Add fact_count and episode_count to MemoryActivityDay",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Test activity counts sum to count",
+      "files": [
+        "core/ze-memory/tests/test_admin_activity.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Regenerate ze-client types for activity split",
+      "files": [
+        "packages/ze-client/src/generated/types.gen.ts"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Render facts-vs-episodes PieChart",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.tsx"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Test composition chart including single-category",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.test.tsx"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Manual validation of composition chart",
+      "files": [
+        "specs/phases/121-memory-feed-charts/quickstart.md"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Verify new-account and single-type edge cases",
+      "files": [
+        "apps/ze-web/src/pages/brain-memory/ui/BrainMemoryPage.test.tsx"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Mark spec 121 implemented in spec.md and README",
+      "files": [
+        "specs/README.md"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Run make test-memory and make test-web",
+      "files": [
+        "core/ze-memory/tests/test_admin_activity.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "focused tests",
+      "command": "make test-memory; make test-web",
+      "result": "memory 265 passed; ze-web 115 passed; ze-ui 20 passed; make lint fails on pre-existing unrelated ruff errors",
+      "warnings": [
+        "make lint fails in ze-skills store Protocol redefinitions and diagram-design script"
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Reuse @myguyze/ze-ui LineChart/BarChart/PieChart wrappers",
+      "why": "spec 118 already shipped the shared chart contract",
+      "rejected": "new per-page SVG charts"
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "Shipped chart surfaces for this page using shared ze-ui primitives"
+    }
+  },
+  "last_action": "all tasks done — tests pass"
+}

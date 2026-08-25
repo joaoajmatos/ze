@@ -41,6 +41,8 @@ export type Label = string;
 export type Value = string;
 export type Style = ("primary" | "secondary" | "danger") | null;
 export type Actions = WsConfirmAction[];
+export type Editable = boolean;
+export type Proposed = string;
 export type Type3 = "confirm_cancel";
 export type Id3 = string;
 export type ThreadId3 = string | null;
@@ -83,7 +85,18 @@ export type Name1 = string;
 export type Source1 = string;
 export type Trigger = string;
 export type Similarity = number | null;
+export type ScriptRan = boolean;
 export type SkillsUsed = SkillUsageTraceResponse[];
+export type Mode = string;
+export type Runs = {
+  [k: string]: unknown;
+}[];
+export type Files = {
+  [k: string]: unknown;
+}[];
+export type ScriptRan1 = boolean;
+export type Unavailable = boolean;
+export type Planned = string[] | null;
 export type Type10 = "notification";
 export type Id4 = string;
 export type EventType = string;
@@ -113,12 +126,16 @@ export type Screen1 = string;
 export type GoalId = string | null;
 export type WorkflowId = string | null;
 export type ExecutionId = string | null;
+export type WorkspacePlaced = WsWorkspacePlaced[] | null;
+export type Path = string;
+export type Size = number;
 export type Type12 = "ack";
 export type Ids = string[];
 export type Type13 = "confirm";
 export type Id5 = string;
 export type ThreadId10 = string;
 export type Choice = "approve" | "deny";
+export type EditedContent = string | null;
 export type Type14 = "action";
 export type Payload = string;
 export type ThreadId11 = string | null;
@@ -185,6 +202,8 @@ export interface WsConfirmRequestFrame {
   thread_id?: ThreadId2;
   prompt: Prompt;
   actions: Actions;
+  editable?: Editable;
+  proposed?: Proposed;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -266,6 +285,7 @@ export interface WsTraceUpdateFrame {
   tool_calls: ToolCalls;
   total_duration_ms: TotalDurationMs;
   skills_used?: SkillsUsed;
+  workspace?: WorkspaceUsageTraceResponse | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -297,6 +317,19 @@ export interface SkillUsageTraceResponse {
   source: Source1;
   trigger: Trigger;
   similarity?: Similarity;
+  script_ran?: ScriptRan;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WorkspaceUsageTraceResponse".
+ */
+export interface WorkspaceUsageTraceResponse {
+  mode: Mode;
+  runs?: Runs;
+  files?: Files;
+  script_ran?: ScriptRan1;
+  unavailable?: Unavailable;
+  planned?: Planned;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -333,6 +366,15 @@ export interface WsScreenContext {
   goal_id?: GoalId;
   workflow_id?: WorkflowId;
   execution_id?: ExecutionId;
+  workspace_placed?: WorkspacePlaced;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsWorkspacePlaced".
+ */
+export interface WsWorkspacePlaced {
+  path: Path;
+  size: Size;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -351,6 +393,7 @@ export interface WsConfirmFrame {
   id: Id5;
   thread_id: ThreadId10;
   choice: Choice;
+  edited_content?: EditedContent;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

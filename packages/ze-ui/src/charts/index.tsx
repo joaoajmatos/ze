@@ -11,6 +11,7 @@ import { PieChart as BklitPieChart } from "./pie-chart";
 import { PieSlice } from "./pie-slice";
 import { ChartTooltip } from "./tooltip";
 import { XAxis } from "./x-axis";
+import { HeatmapChart } from "./heatmap-chart";
 
 /**
  * Ze's chart data contract — mirrors core/ze-components' `ChartPoint` dataclass
@@ -88,6 +89,15 @@ function toTimeSeriesRows(
   });
 }
 
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function formatCategoryLabel(x: string): string {
+  if (!ISO_DAY.test(x)) return x;
+  const parsed = new Date(`${x}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return x;
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function toCategoryRows(
   data: ChartPoint[],
   series: string[]
@@ -95,11 +105,12 @@ function toCategoryRows(
   const byX = new Map<string, Record<string, unknown>>();
   const order: string[] = [];
   for (const point of data) {
-    if (!byX.has(point.x)) {
-      byX.set(point.x, { name: point.x });
-      order.push(point.x);
+    const name = formatCategoryLabel(point.x);
+    if (!byX.has(name)) {
+      byX.set(name, { name });
+      order.push(name);
     }
-    byX.get(point.x)![point.series ?? IMPLICIT_SERIES] = point.y;
+    byX.get(name)![point.series ?? IMPLICIT_SERIES] = point.y;
   }
   return order.map((key) => {
     const row = byX.get(key)!;
@@ -231,7 +242,29 @@ export function BarChart({
   );
 }
 
-export function PieChart({ data, seriesLabels, title, className }: ZeChartProps) {
+export interface ZePieChartProps extends ZeChartProps {
+  /** Render as a ring (donut) instead of a solid pie. Default: false. */
+  donut?: boolean;
+  /**
+   * Explicit inner radius in pixels for the ring hole. Only used when `donut`
+   * is true; overrides the default ring thickness. Bklit's PieChart takes an
+   * absolute pixel value (no percentage-of-radius option), so this is tuned
+   * for the widget sizes charts are typically placed at (~140-240px) rather
+   * than computed from the rendered size.
+   */
+  innerRadius?: number;
+}
+
+const DEFAULT_DONUT_INNER_RADIUS = 40;
+
+export function PieChart({
+  data,
+  seriesLabels,
+  title,
+  className,
+  donut = false,
+  innerRadius,
+}: ZePieChartProps) {
   if (data.length === 0) return <EmptyChart title={title} />;
   const slices = data.map((point, i) => ({
     label: seriesLabels?.[point.x] ?? point.x,
@@ -240,7 +273,11 @@ export function PieChart({ data, seriesLabels, title, className }: ZeChartProps)
   }));
   return (
     <ChartFrame title={title}>
-      <BklitPieChart className={className} data={slices}>
+      <BklitPieChart
+        className={className}
+        data={slices}
+        innerRadius={donut ? (innerRadius ?? DEFAULT_DONUT_INNER_RADIUS) : 0}
+      >
         {slices.map((slice, i) => (
           <PieSlice index={i} key={slice.label} />
         ))}
@@ -248,6 +285,9 @@ export function PieChart({ data, seriesLabels, title, className }: ZeChartProps)
     </ChartFrame>
   );
 }
+
+export { HeatmapChart };
+export type { HeatmapCell } from "./heatmap-data";
 
 function Legend({
   names,
