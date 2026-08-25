@@ -206,3 +206,22 @@ class ClaimError(ZeCoreError):
 
 class MissingDecayParameterError(ClaimError):
     """Caller omitted a parameter its decay_profile requires."""
+
+
+# ── Contribution seam ─────────────────────────────────────────────────────────
+
+
+class ContributionError(ZeCoreError):
+    """Base class for contribution-seam write-path errors."""
+
+
+class UnlicensedClaimKindError(ContributionError):
+    """A contribution's claim_kind is not licensed for its source_function."""
+
+
+class MissingEvidenceError(ContributionError):
+    """An INFERENCE/SUSPICION contribution has no evidence."""
+
+
+class DanglingEvidenceError(ContributionError):
+    """A cited evidence reference does not exist."""

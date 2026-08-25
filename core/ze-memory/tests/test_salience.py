@@ -19,7 +19,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_memory.admission import AdmissionGate
 from ze_memory.relevance import RelevanceModel
 from ze_memory.surfacing import SurfacingConfig, SurfacingGate
@@ -51,6 +51,7 @@ def _make_signal(
         occurred_at=datetime(2026, 6, 17, tzinfo=timezone.utc),
         claim_kind=ClaimKind.FACT,
         confidence=1.0,
+        provenance=Provenance.LIVE_SEARCH,
         entities=entities or [],
         magnitude=magnitude,
     )

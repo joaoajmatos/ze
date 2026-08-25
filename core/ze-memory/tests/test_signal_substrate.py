@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_memory.graph.predicates import MENTIONS
 from ze_memory.graph.store import PostgresGraphStore
 from ze_memory.retriever import PostgresMemoryStore
@@ -75,6 +75,7 @@ def _make_signal(entities=None, **kwargs) -> Signal:
         occurred_at=datetime(2026, 6, 17, tzinfo=timezone.utc),
         claim_kind=ClaimKind.FACT,
         confidence=1.0,
+        provenance=kwargs.pop("provenance", Provenance.LIVE_SEARCH),
         entities=entities or [],
         **kwargs,
     )
@@ -125,10 +126,10 @@ async def test_ingest_signal_expires_at_is_none_on_ingest():
 
     insert_call = conn.fetchrow.call_args_list[1]
     args = insert_call[0]
-    # expires_at is the last positional arg (index 11: query, id, source,
+    # expires_at is the last positional arg (index 12: query, id, source,
     # external_ref, title, summary, occurred_at, claim_kind, confidence,
-    # magnitude, payload, expires_at)
-    assert args[11] is None  # expires_at
+    # provenance, magnitude, payload, expires_at)
+    assert args[12] is None  # expires_at
 
 
 # ── ingest_signal: deduplication ─────────────────────────────────────────────

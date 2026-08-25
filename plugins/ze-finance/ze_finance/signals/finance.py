@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_logging import get_logger
 from ze_memory.types import Signal
 
@@ -46,6 +46,7 @@ class FinanceSignalSource:
                         occurred_at=datetime.now(timezone.utc),
                         claim_kind=ClaimKind.FACT,
                         confidence=1.0,
+                        provenance=Provenance.GRAPH_RECALL,
                         payload={"signal_type": "finance.pnl_swing", "severity": "medium"},
                     )
                 )
@@ -70,6 +71,7 @@ class FinanceSignalSource:
                         else datetime.now(timezone.utc),
                         claim_kind=ClaimKind.FACT,
                         confidence=1.0,
+                        provenance=Provenance.GRAPH_RECALL,
                         payload={"signal_type": "finance.large_transaction", "severity": "low"},
                     )
                 )

@@ -29,6 +29,7 @@ async def _propose(
             loop_store=loop_store,
             entity_resolver=configurable.get("loop_entity_resolver"),
             graph_store=configurable.get("loop_graph_store"),
+            memory_store=configurable.get("loop_memory_store"),
         )
     except Exception as exc:
         log.warning("loop_extraction_failed", provenance=provenance, error=str(exc))
@@ -48,6 +49,7 @@ def make_loop_extractor_from_parts(
     loop_entity_resolver: Any,
     openrouter_client: Any,
     embedder: Any,
+    loop_memory_store: Any = None,
 ):
     """Builds a plain `(text, provenance) -> None` async callable, for wiring into
     inflow modules (ze-messenger, ze-calendar, ze-ingestion) that must not import
@@ -60,6 +62,7 @@ def make_loop_extractor_from_parts(
         "loop_entity_resolver": loop_entity_resolver,
         "openrouter_client": openrouter_client,
         "embedder": embedder,
+        "loop_memory_store": loop_memory_store,
     }
 
     async def _extractor(text: str, provenance: str) -> None:
@@ -76,4 +79,5 @@ def make_loop_extractor(container: Any):
         loop_entity_resolver=container.loop_entity_resolver,
         openrouter_client=container.openrouter_client,
         embedder=container.embedder,
+        loop_memory_store=getattr(container, "memory_store", None),
     )

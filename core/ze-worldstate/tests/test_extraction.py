@@ -22,7 +22,10 @@ def _empty_deps():
     graph_store.list_relationships = AsyncMock(return_value=[])
     embedder = AsyncMock()
     entity_resolver = AsyncMock(return_value=[])
-    return loop_store, graph_store, embedder, entity_resolver
+    memory_store = AsyncMock()
+    memory_store.get_facts_by_ids = AsyncMock(side_effect=lambda ids: list(ids))
+    memory_store.get_episodes_by_ids = AsyncMock(side_effect=lambda ids: list(ids))
+    return loop_store, graph_store, embedder, entity_resolver, memory_store
 
 
 def _with_id(loop):
@@ -32,7 +35,7 @@ def _with_id(loop):
 
 async def test_ordinary_content_returns_no_loop():
     llm = _llm({"is_loop": False, "title": ""})
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
 
     result = await propose_loop_candidates(
         "what's the weather like",
@@ -50,7 +53,7 @@ async def test_ordinary_content_returns_no_loop():
 
 async def test_conversation_creates_suspected_low_confidence():
     llm = _llm({"is_loop": True, "title": "Renew passport"})
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
 
     result = await propose_loop_candidates(
         "I really need to renew my passport before the trip",
@@ -61,6 +64,7 @@ async def test_conversation_creates_suspected_low_confidence():
         loop_store,
         entity_resolver,
         graph_store=graph_store,
+        memory_store=memory_store,
     )
     assert len(result) == 1
     loop = result[0]
@@ -73,17 +77,18 @@ async def test_conversation_creates_suspected_low_confidence():
 async def test_all_four_inflow_provenances_create_suspected_loops():
     for provenance in ["conversation", "email", "calendar", "ingestion"]:
         llm = _llm({"is_loop": True, "title": "Follow up"})
-        loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+        loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
 
         result = await propose_loop_candidates(
             "some triggering text",
             provenance,
-            [],
+            [EvidenceRef(evidence_type="episode", evidence_id=uuid4())],
             llm,
             embedder,
             loop_store,
             entity_resolver,
             graph_store=graph_store,
+            memory_store=memory_store,
         )
         assert len(result) == 1
         assert result[0].provenance == provenance
@@ -94,17 +99,18 @@ async def test_unrecognized_provenance_string_does_not_raise():
     """A plugin-owned inflow string never in the old 5-value whitelist must be
     accepted as-is — FR-003, quickstart.md §3."""
     llm = _llm({"is_loop": True, "title": "Follow up"})
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
 
     result = await propose_loop_candidates(
         "some triggering text",
         "a_future_plugins_own_channel",
-        [],
+        [EvidenceRef(evidence_type="episode", evidence_id=uuid4())],
         llm,
         embedder,
         loop_store,
         entity_resolver,
         graph_store=graph_store,
+        memory_store=memory_store,
     )
     assert len(result) == 1
     assert result[0].provenance == "a_future_plugins_own_channel"
@@ -113,7 +119,7 @@ async def test_unrecognized_provenance_string_does_not_raise():
 
 async def test_user_declared_creates_active_high_confidence_directly():
     llm = AsyncMock()
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
 
     result = await propose_loop_candidates(
         "remind me I need to follow up with the accountant",
@@ -141,7 +147,7 @@ async def test_explicit_declaration_within_conversation_creates_active_user_decl
             "explicit_declaration": True,
         }
     )
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
 
     result = await propose_loop_candidates(
         "remind me I need to follow up with the accountant next week",
@@ -179,7 +185,7 @@ async def test_resolves_existing_closes_matching_loop_instead_of_creating():
             "resolves_existing": True,
         }
     )
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
     entity_id = uuid4()
     entity_resolver.return_value = [entity_id]
     loop_store.get = AsyncMock(return_value=existing)
@@ -228,7 +234,7 @@ async def test_duplicate_candidate_attaches_to_existing_loop_not_duplicated():
         state=LoopState.SUSPECTED,
     )
     llm = _llm({"is_loop": True, "title": "Renew passport"})
-    loop_store, graph_store, embedder, entity_resolver = _empty_deps()
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
     entity_id = uuid4()
     entity_resolver.return_value = [entity_id]
 

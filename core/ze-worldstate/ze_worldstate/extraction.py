@@ -8,8 +8,11 @@ from uuid import UUID
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
+from ze_plugin.contribution import validate_and_submit
+from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
 
 from ze_worldstate import drift
+from ze_worldstate.contribution import loop_to_contribution
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.store import LoopStore
@@ -155,7 +158,9 @@ async def _create_declared_loop(
         confirmed_at=confirmed_at,
         drift_deadline=drift.compute_drift_deadline(confirmed_at, implied_window_days),
     )
-    created = await loop_store.create(loop)
+    created = await validate_and_submit(
+        loop_to_contribution(loop), lambda: loop_store.create(loop)
+    )
     await loop_store.set_drift_deadline(created.id, loop.drift_deadline)
     created.drift_deadline = loop.drift_deadline
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
@@ -172,6 +177,7 @@ async def propose_loop_candidates(
     entity_resolver: Any,
     *,
     graph_store: GraphStore | None = None,
+    memory_store: Any = None,
     model: str = DEFAULT_EXTRACTION_MODEL,
 ) -> list[OpenLoop]:
     """Conservative, relevance-gated (FR-009). Returns [] for ordinary content.
@@ -268,6 +274,28 @@ async def propose_loop_candidates(
         confidence=_SUSPECTED_CONFIDENCE,
         state=LoopState.SUSPECTED,
     )
-    created = await loop_store.create(loop)
+    contribution_evidence = [
+        ContributionEvidenceRef(kind=ref.evidence_type, id=ref.evidence_id)
+        for ref in evidence_refs
+    ]
+
+    async def _check_fact_exists(fact_id: UUID) -> bool:
+        if memory_store is None:
+            return False
+        facts = await memory_store.get_facts_by_ids([fact_id])
+        return len(facts) > 0
+
+    async def _check_episode_exists(episode_id: UUID) -> bool:
+        if memory_store is None:
+            return False
+        episodes = await memory_store.get_episodes_by_ids([episode_id])
+        return len(episodes) > 0
+
+    created = await validate_and_submit(
+        loop_to_contribution(loop, evidence=contribution_evidence),
+        lambda: loop_store.create(loop),
+        check_fact_exists=_check_fact_exists,
+        check_episode_exists=_check_episode_exists,
+    )
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
     return [created]

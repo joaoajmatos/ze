@@ -7,7 +7,9 @@ from uuid import UUID
 from ze_logging import get_logger
 from ze_agents.claims import ClaimKind
 from ze_agents.tasks import fire_and_forget
+from ze_plugin.contribution import validate_and_submit
 from ze_memory.consolidation_store import _cosine_similarity
+from ze_memory.contribution import signal_to_contribution
 
 from ze_memory.defaults import (
     DEFAULT_EPISODE_BUDGET_TOKENS,
@@ -1238,25 +1240,32 @@ class PostgresMemoryStore:
                         created=False,
                     )
 
-                row = await conn.fetchrow(
-                    """
-                    INSERT INTO memory_signals
-                      (id, source, external_ref, title, summary, occurred_at,
-                       claim_kind, confidence, magnitude, payload, expires_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11)
-                    RETURNING id
-                    """,
-                    signal.id,
-                    signal.source,
-                    signal.external_ref,
-                    signal.title,
-                    signal.summary,
-                    signal.occurred_at,
-                    signal.claim_kind.value,
-                    signal.confidence,
-                    signal.magnitude,
-                    json.dumps(signal.payload),
-                    signal.expires_at,
+                async def _write() -> Any:
+                    return await conn.fetchrow(
+                        """
+                        INSERT INTO memory_signals
+                          (id, source, external_ref, title, summary, occurred_at,
+                           claim_kind, confidence, provenance, magnitude, payload,
+                           expires_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12)
+                        RETURNING id
+                        """,
+                        signal.id,
+                        signal.source,
+                        signal.external_ref,
+                        signal.title,
+                        signal.summary,
+                        signal.occurred_at,
+                        signal.claim_kind.value,
+                        signal.confidence,
+                        signal.provenance.value,
+                        signal.magnitude,
+                        json.dumps(signal.payload),
+                        signal.expires_at,
+                    )
+
+                row = await validate_and_submit(
+                    signal_to_contribution(signal), _write
                 )
             signal_id: UUID = row["id"]
 

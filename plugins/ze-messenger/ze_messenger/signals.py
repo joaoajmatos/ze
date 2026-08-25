@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_communication.types import InboundMessage
 from ze_memory.types import EntityRef, Signal
 from ze_plugin.signals import SignalSource
@@ -24,6 +24,7 @@ class MessagingSignalSource(SignalSource):
                 occurred_at=msg.received_at,
                 claim_kind=ClaimKind.FACT,
                 confidence=1.0,
+                provenance=Provenance.GRAPH_RECALL,
                 entities=[EntityRef(name=msg.sender, entity_type="person")],
                 magnitude=0.0,
                 payload={

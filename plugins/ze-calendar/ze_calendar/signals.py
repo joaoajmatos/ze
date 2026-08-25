@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_memory.types import Signal
 
 
@@ -50,6 +50,7 @@ class CalendarSignalSource:
                     occurred_at=fire_at,
                     claim_kind=ClaimKind.FACT,
                     confidence=1.0,
+                    provenance=Provenance.GRAPH_RECALL,
                     magnitude=0.0,
                 )
             )

@@ -489,6 +489,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_entity_resolver=worldstate.entity_resolver,
         openrouter_client=shared.openrouter_client,
         embedder=shared.embedder,
+        loop_memory_store=shared.memory_store,
     )
 
     from ze_agents.progress.translations import ProgressTranslations

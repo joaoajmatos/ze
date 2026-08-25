@@ -11,6 +11,7 @@ dependencies = [
     "ze-agents",
     "ze-logging",
     "ze-memory",
+    "ze-plugin",
     "asyncpg==0.31.0",
 ]
 
@@ -29,6 +30,7 @@ asyncio_mode = "auto"
 ze-agents = { workspace = true }
 ze-logging = { workspace = true }
 ze-memory  = { workspace = true }
+ze-plugin  = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ze_correlation"]

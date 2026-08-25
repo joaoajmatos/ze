@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Contribution Seam Core — Typed Proposals + Reflection Migration",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-25T18:40:44.532Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-25T19:51:12.977Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-08-25T20:32:17.874Z"
+    }
+  ]
+}
