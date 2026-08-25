@@ -419,6 +419,13 @@ async def build_container(settings: Settings) -> ZeContainer:
         push_log_store,
         getattr(correlation, "relevance_model", None),
         shared.embedder,
+        notifier,
+    )
+
+    from ze_correlation.bootstrap import build_correlation_push_candidate_source
+
+    correlation_push_source = build_correlation_push_candidate_source(
+        correlation, notifier, settings, shared.embedder, shared.nli_client
     )
 
     persona_cfg = settings.persona_config
@@ -737,6 +744,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         correlation=correlation,
         worldstate=worldstate,
         loop_surfacer=loop_surfacer,
+        priority_view=priority_view,
+        correlation_push_source=correlation_push_source,
         skills_stack=skills_stack,
         shared=shared,
         plugins=plugins,

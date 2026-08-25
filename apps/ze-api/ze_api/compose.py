@@ -13,7 +13,8 @@ from ze_memory.bootstrap import (
     register_dream_jobs,
     register_memory_jobs,
 )
-from ze_proactive.bootstrap import register_notification_jobs
+from ze_priority.arbitration import AttentionArbitrationJob
+from ze_proactive.bootstrap import register_notification_jobs, shared_push_budget
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
@@ -34,6 +35,8 @@ def register_all_proactive_jobs(
     correlation: Any,
     worldstate: Any = None,
     loop_surfacer: Any = None,
+    priority_view: Any = None,
+    correlation_push_source: Any = None,
     skills_stack: Any = None,
     shared: Any,
     plugins: list,
@@ -59,17 +62,36 @@ def register_all_proactive_jobs(
         settings,
         correlation,
         shared=shared,
-        notifier=notifier,
-        push_log_store=push_log_store,
     )
     if worldstate is not None:
-        register_worldstate_jobs(
-            scheduler,
-            settings,
-            worldstate,
-            loop_surfacer=loop_surfacer,
-            notifier=notifier,
+        register_worldstate_jobs(scheduler, settings, worldstate)
+    if (
+        loop_surfacer is not None
+        and priority_view is not None
+        and correlation_push_source is not None
+    ):
+        arbitration_cfg = (
+            (getattr(settings, "config", None) or {})
+            .get("proactive", {})
+            .get("attention_arbitration", {})
         )
+        if arbitration_cfg.get("enabled", True):
+            arbitration_job = AttentionArbitrationJob(
+                priority_view=priority_view,
+                loop_surfacer=loop_surfacer,
+                correlation_push_source=correlation_push_source,
+                push_log=push_log_store,
+                max_pushes_per_day=shared_push_budget(settings),
+            )
+            scheduler.add_cron_job(
+                fn=arbitration_job.run,
+                cron=arbitration_cfg.get("cron", "0 */4 * * *"),
+                job_id=AttentionArbitrationJob.job_id,
+            )
+            log.info(
+                "attention_arbitration_job_scheduled",
+                cron=arbitration_cfg.get("cron", "0 */4 * * *"),
+            )
     if skills_stack is not None:
         register_skills_jobs(scheduler, settings, skills_stack)
     for plugin in plugins:

@@ -85,3 +85,28 @@ async def test_shared_budget_caps_across_source_kinds():
     push_log = _push_log(count=3, claim_result=True)
     assert await try_claim_shared(push_log, "hypothesis", uuid4(), 3) is False
     assert await try_claim_shared(push_log, "loop", uuid4(), 3) is False
+
+
+async def test_three_hypothesis_claims_exhaust_the_shared_budget_for_a_loop_claim():
+    """Exhausts `max_pushes_per_day` via three `try_claim_shared(..., "hypothesis",
+    ...)` calls against a real-ish counting push_log, then asserts a fourth
+    `try_claim_shared(..., "loop", ...)` call the same day is withheld — the two
+    mechanisms share one counter, not two independent ones (User Story 3)."""
+    sent_count = 0
+
+    async def count_sent_within_hours(_event_type: str, _hours: float) -> int:
+        return sent_count
+
+    async def try_claim(_event_type: str, *, idempotency_key: str, payload=None) -> bool:
+        nonlocal sent_count
+        sent_count += 1
+        return True
+
+    push_log = MagicMock()
+    push_log.count_sent_within_hours = AsyncMock(side_effect=count_sent_within_hours)
+    push_log.try_claim = AsyncMock(side_effect=try_claim)
+
+    for _ in range(3):
+        assert await try_claim_shared(push_log, "hypothesis", uuid4(), 3) is True
+
+    assert await try_claim_shared(push_log, "loop", uuid4(), 3) is False

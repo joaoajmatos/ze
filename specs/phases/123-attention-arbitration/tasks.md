@@ -84,18 +84,18 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with one remaining budget slot claims and sends only the higher-ranked candidate; the other is logged as budget-arbitrated, not dropped, in `core/ze-priority/tests/test_arbitration.py`
-- [ ] T022 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with zero remaining budget slots pushes neither candidate regardless of rank, in `core/ze-priority/tests/test_arbitration.py`
-- [ ] T023 [P] [US2] Unit test: a lost claim race (two candidates, first claim fails) falls through to the next-ranked eligible candidate, in `core/ze-priority/tests/test_arbitration.py`
+- [X] T021 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with one remaining budget slot claims and sends only the higher-ranked candidate; the other is logged as budget-arbitrated, not dropped, in `core/ze-priority/tests/test_arbitration.py`
+- [X] T022 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with zero remaining budget slots pushes neither candidate regardless of rank, in `core/ze-priority/tests/test_arbitration.py`
+- [X] T023 [P] [US2] Unit test: a lost claim race (two candidates, first claim fails) falls through to the next-ranked eligible candidate, in `core/ze-priority/tests/test_arbitration.py`
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Add an eligibility-only candidate method to `LoopSurfacer` in `core/ze-worldstate/ze_worldstate/surfacing.py` (applies existing `passes_push_bar` novelty/relevance checks, returns candidates without sending or claiming)
-- [ ] T025 [US2] Add an equivalent eligibility-only `CorrelationPushCandidateSource` (or method on `CorrelationPushConsumer`) in `core/ze-correlation/ze_correlation/push.py`
-- [ ] T026 [US2] Implement `core/ze-priority/ze_priority/arbitration.py`: `AttentionArbitrationJob` (per contracts/priority_view.md) — gathers eligible candidates from both sources, ranks via `PriorityView.rank_subset()`, iterates ranked candidates calling `try_claim_shared`, delegates the winner to its source's existing send function, releases on send failure, logs remaining candidates as budget-arbitrated
-- [ ] T027 [US2] Remove `core/ze-worldstate/ze_worldstate/jobs/push_sweep.py` (`PushSweepJob`) and its dedicated tests, superseded by `AttentionArbitrationJob`
-- [ ] T028 [US2] Remove `ze-correlation`'s autonomous scheduled push-trigger registration (keep the extracted eligibility/send functions from T025), superseded by `AttentionArbitrationJob`
-- [ ] T029 [US2] Register `AttentionArbitrationJob` (`job_id = "attention_arbitration_sweep"`) in `apps/ze-api/ze_api/compose.py`, replacing the removed `PushSweepJob` and correlation trigger registrations
+- [X] T024 [US2] Add an eligibility-only candidate method to `LoopSurfacer` in `core/ze-worldstate/ze_worldstate/surfacing.py` (applies existing `passes_push_bar` novelty/relevance checks, returns candidates without sending or claiming)
+- [X] T025 [US2] Add an equivalent eligibility-only `CorrelationPushCandidateSource` (or method on `CorrelationPushConsumer`) in `core/ze-correlation/ze_correlation/push.py`
+- [X] T026 [US2] Implement `core/ze-priority/ze_priority/arbitration.py`: `AttentionArbitrationJob` (per contracts/priority_view.md) — gathers eligible candidates from both sources, ranks via `PriorityView.rank_subset()`, iterates ranked candidates calling `try_claim_shared`, delegates the winner to its source's existing send function, releases on send failure, logs remaining candidates as budget-arbitrated
+- [X] T027 [US2] Remove `core/ze-worldstate/ze_worldstate/jobs/push_sweep.py` (`PushSweepJob`) and its dedicated tests, superseded by `AttentionArbitrationJob`
+- [X] T028 [US2] Remove `ze-correlation`'s autonomous scheduled push-trigger registration (keep the extracted eligibility/send functions from T025), superseded by `AttentionArbitrationJob`
+- [X] T029 [US2] Register `AttentionArbitrationJob` (`job_id = "attention_arbitration_sweep"`) in `apps/ze-api/ze_api/compose.py`, replacing the removed `PushSweepJob` and correlation trigger registrations
 
 **Checkpoint**: US1 + US2 together fully replace both prior sweep jobs with one arbitrated sweep; existing per-mechanism eligibility bars (SC-004) are unchanged.
 
@@ -109,11 +109,11 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ### Tests for User Story 3
 
-- [ ] T030 [P] [US3] Integration-style unit test: exhaust `proactive.budget.max_pushes_per_day` via three `try_claim_shared(..., source_kind="hypothesis", ...)` calls, then assert a fourth `try_claim_shared(..., source_kind="loop", ...)` call the same day returns `False`, in `core/ze-proactive/tests/test_attention_budget.py`
+- [X] T030 [P] [US3] Integration-style unit test: exhaust `proactive.budget.max_pushes_per_day` via three `try_claim_shared(..., source_kind="hypothesis", ...)` calls, then assert a fourth `try_claim_shared(..., source_kind="loop", ...)` call the same day returns `False`, in `core/ze-proactive/tests/test_attention_budget.py`
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Remove the now-dead fallback read of `correlation.salience.budget.max_pushes_per_day` from `ze_correlation`'s config loader (superseded by T009/T013's shared-config wiring), and grep the codebase for any remaining reference to the retired per-mechanism event keys (`correlation_push`, `worldstate_loop_push`) or config keys, updating/removing each
+- [X] T031 [US3] Remove the now-dead fallback read of `correlation.salience.budget.max_pushes_per_day` from `ze_correlation`'s config loader (superseded by T009/T013's shared-config wiring), and grep the codebase for any remaining reference to the retired per-mechanism event keys (`correlation_push`, `worldstate_loop_push`) or config keys, updating/removing each
 
 **Checkpoint**: Exactly one budget, one config key, one event key — verified by T030 exercising both mechanisms against the same counter.
 
@@ -121,11 +121,11 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T033 [P] Run all `quickstart.md` validation scenarios (User Stories 1–3 + degradation edge case) end-to-end
-- [ ] T034 [P] Update `CLAUDE.md`'s package dependency graph and "Adding a new plugin"-adjacent core-package listing to include `ze-priority`; add its migration-ownership row if applicable (none — no new tables)
-- [ ] T035 Update `specs/README.md` phase index row for Phase 123
+- [X] T033 [P] Run all `quickstart.md` validation scenarios (User Stories 1–3 + degradation edge case) end-to-end
+- [X] T034 [P] Update `CLAUDE.md`'s package dependency graph and "Adding a new plugin"-adjacent core-package listing to include `ze-priority`; add its migration-ownership row if applicable (none — no new tables)
+- [X] T035 Update `specs/README.md` phase index row for Phase 123
 - [X] T036 [P] Add a performance test seeding a synthetic tens-of-items working set (loops/goals/hypotheses) and asserting `PriorityView.rank()` completes in under 500ms (SC-001), in `core/ze-priority/tests/test_view.py`
-- [ ] T037 Run `make lint && make test-priority && make test-proactive && make test-correlation && make test-worldstate` and fix any failures
+- [X] T037 Run `make lint && make test-priority && make test-proactive && make test-correlation && make test-worldstate` and fix any failures
 
 ---
 

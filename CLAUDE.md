@@ -167,6 +167,7 @@ ze-eval           (no ze deps — HTTP only) core/  ← eval infrastructure
 ze-automation   → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
 ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation  core/  ← open loops; wired by ze-api directly
 ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data  core/  ← agent skills; wired by ze-api directly
+ze-priority     → ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation  core/  ← attention arbitration (PriorityView + shared push budget); wired by ze-api directly
 ze-workspace    → ze-agents, ze-logging, ze-data  core/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
 ze-core         → ze-agents, ze-communication, ze-plugin  core/  ← engine; never a plugin dep
 ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
@@ -176,7 +177,7 @@ ze-messenger    → ze-sdk, ze-google, ze-personal            plugins/
 ze-prospecting  → ze-sdk, ze-browser, ze-personal           plugins/
 ze-calendar     → ze-sdk, ze-google, ze-personal            plugins/
 ze-news         → ze-sdk                   plugins/
-ze-api          → ze-core, ze-data, ze-logging, ze-sdk, ze-personal, ze-automation, ze-worldstate, ze-skills, ze-workspace, ze-messenger, ze-prospecting,
+ze-api          → ze-core, ze-data, ze-logging, ze-sdk, ze-personal, ze-automation, ze-worldstate, ze-skills, ze-priority, ze-workspace, ze-messenger, ze-prospecting,
                     ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components   apps/
 ze-web            (React — connects to ze-api over WebSocket, no Python deps)         apps/
 ```

@@ -11,9 +11,9 @@ from ze_correlation import (
     PostgresHypothesisStore,
 )
 from ze_correlation.jobs.hypothesis_decay import HypothesisDecayJob
+from ze_correlation.push import CorrelationPushCandidateSource
 from ze_memory.relevance import RelevanceModel
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 
 log = get_logger(__name__)
@@ -43,27 +43,39 @@ def build_correlation_stack(shared: Any, settings: Any) -> CorrelationStack:
     )
 
 
+def build_correlation_push_candidate_source(
+    stack: CorrelationStack,
+    notifier: ProactiveNotifier,
+    settings: Any,
+    embedder: Any = None,
+    nli_client: Any = None,
+) -> CorrelationPushCandidateSource:
+    """Constructed in `ze_api/container.py` for `AttentionArbitrationJob`
+    (phase 123 User Story 2) — the push-eligibility/send half of what
+    `CorrelationPushConsumer` used to do end-to-end."""
+    return CorrelationPushCandidateSource(
+        hypothesis_store=stack.hypothesis_store,
+        notifier=notifier,
+        settings=settings,
+        embedder=embedder,
+        nli_client=nli_client,
+    )
+
+
 def register_proactive_jobs(
     scheduler: ProactiveScheduler,
     settings: Any,
     stack: CorrelationStack,
     *,
     shared: Any,
-    notifier: ProactiveNotifier,
-    push_log_store: PushLogStore,
 ) -> None:
     raw_cfg = getattr(settings, "config", {}) or {}
     _push_cfg = raw_cfg.get("correlation", {}).get("push", {})
     _push_schedule = _push_cfg.get("schedule", "0 */4 * * *")
     push_consumer = CorrelationPushConsumer(
         engine=stack.correlation_engine,
-        hypothesis_store=stack.hypothesis_store,
         memory_store=shared.memory_store,
-        notifier=notifier,
-        push_log=push_log_store,
         settings=settings,
-        embedder=shared.embedder,
-        nli_client=shared.nli_client,
     )
     correlation_job = CorrelationJob(push_consumer=push_consumer)
     scheduler.add_cron_job(

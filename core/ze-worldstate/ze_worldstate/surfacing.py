@@ -48,11 +48,13 @@ class LoopSurfacer:
         pool: Any = None,
         relevance_model: Any = None,
         embedder: Any = None,
+        notifier: Any = None,
     ) -> None:
         self._loop_store = loop_store
         self._graph_store = graph_store
         self._push_log = push_log
         self._pool = pool
+        self._notifier = notifier
         self._relevance_model = relevance_model
         self._embedder = embedder
 
@@ -183,7 +185,7 @@ class LoopSurfacer:
                 eligible.append(loop)
         return eligible
 
-    async def send(self, loop: OpenLoop, notifier: Any) -> bool:
+    async def send(self, loop: OpenLoop) -> bool:
         """Send-only path for a loop that has already won the shared-budget
         claim. Re-checks current lifecycle state immediately before sending
         (FR-011) — the loop may have closed/dropped between selection and send."""
@@ -192,7 +194,7 @@ class LoopSurfacer:
             return False
 
         body = format_hedged_mention(loop.title, loop.drift_rationale)
-        await notifier.push(body, urgency="normal")
+        await self._notifier.push(body, urgency="normal")
         return True
 
     async def _entity_names(self, loop_id: UUID) -> list[str]:

@@ -10,10 +10,8 @@ from ze_data.portability.assembler import bulk_insert
 from ze_logging import get_logger
 from ze_memory.entity_anchor import match_entities_in_query
 from ze_memory.graph.store import GraphStore, PostgresGraphStore
-from ze_proactive.bootstrap import shared_push_budget
 
 from ze_worldstate.jobs.drift_sweep import DriftSweepJob
-from ze_worldstate.jobs.push_sweep import PushSweepJob
 from ze_worldstate.jobs.stale_suspicion import (
     DEFAULT_STALE_WINDOW_DAYS,
     StaleSuspicionJob,
@@ -62,6 +60,7 @@ def build_loop_surfacer(
     push_log: Any,
     relevance_model: Any = None,
     embedder: Any = None,
+    notifier: Any = None,
 ) -> LoopSurfacer:
     """Constructed in `ze_api/container.py` once `push_log_store` (and, for the
     push path, the correlation stack's `RelevanceModel`) exist — both are built
@@ -73,6 +72,7 @@ def build_loop_surfacer(
         pool=stack.pool,
         relevance_model=relevance_model,
         embedder=embedder,
+        notifier=notifier,
     )
 
 
@@ -80,9 +80,6 @@ def register_proactive_jobs(
     scheduler: Any,
     settings: Any,
     stack: WorldstateStack,
-    *,
-    loop_surfacer: Any = None,
-    notifier: Any = None,
 ) -> None:
     cfg = getattr(settings, "config", None) or {}
     worldstate_cfg = cfg.get("worldstate", {}) if isinstance(cfg, dict) else {}
@@ -98,19 +95,6 @@ def register_proactive_jobs(
         drift_job = DriftSweepJob(loop_store=stack.loop_store)
         scheduler.register(drift_job, cron=drift_cfg.get("cron", "0 5 * * *"))
         log.info("drift_sweep_job_scheduled")
-
-    push_cfg = worldstate_cfg.get("push", {})
-    if push_cfg.get("enabled", True) and loop_surfacer is not None and notifier is not None:
-        push_job = PushSweepJob(
-            loop_store=stack.loop_store,
-            surfacer=loop_surfacer,
-            notifier=notifier,
-            max_pushes_per_day=shared_push_budget(settings),
-            inline_cooldown_hours=float(push_cfg.get("inline_cooldown_hours", 12.0)),
-            thresholds=push_cfg.get("thresholds", {}),
-        )
-        scheduler.register(push_job, cron=push_cfg.get("cron", "0 */4 * * *"))
-        log.info("push_sweep_job_scheduled")
 
 
 def worldstate_data_domains(pool: asyncpg.Pool) -> list[DataDomain]:

@@ -163,6 +163,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 120 | [Usage Dashboard Charts](phases/120-usage-dashboard-charts/spec.md) | ✅ Done |
 | 121 | [Memory Feed Charts](phases/121-memory-feed-charts/spec.md) | ✅ Done |
 | 122 | [Data Overview Charts](phases/122-data-overview-charts/spec.md) | ✅ Done |
+| 123 | [Attention Arbitration](phases/123-attention-arbitration/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

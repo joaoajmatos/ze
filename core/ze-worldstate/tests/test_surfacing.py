@@ -188,6 +188,88 @@ async def test_passes_push_bar_rejects_budget_exhausted():
     )
 
 
+async def test_passes_push_bar_ignores_budget_when_check_budget_false():
+    loop = _loop(confidence=0.8)
+    surfacer = _push_bar_surfacer(relevance_value=0.8, budget_count=3)
+    assert (
+        await surfacer.passes_push_bar(loop, loop.drift_rationale, check_budget=False)
+        is True
+    )
+
+
+# ── eligible_candidates / send (phase 123 User Story 2) ────────────────────────
+
+
+def _eligibility_surfacer(
+    *, loops: list[OpenLoop], relevance_value: float = 0.8
+) -> LoopSurfacer:
+    push_log = AsyncMock()
+    push_log.list_recent_payloads = AsyncMock(return_value=[])
+    push_log.was_sent_within_hours = AsyncMock(return_value=False)
+
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=loops)
+
+    return LoopSurfacer(
+        loop_store=loop_store,
+        graph_store=AsyncMock(),
+        push_log=push_log,
+        pool=None,
+        relevance_model=_relevance_model(relevance_value),
+        embedder=None,
+    )
+
+
+async def test_eligible_candidates_returns_loops_passing_the_bar():
+    loop = _loop(confidence=0.8)
+    surfacer = _eligibility_surfacer(loops=[loop])
+    candidates = await surfacer.eligible_candidates()
+    assert candidates == [loop]
+
+
+async def test_eligible_candidates_excludes_low_confidence_loops():
+    loop = _loop(confidence=0.1)
+    surfacer = _eligibility_surfacer(loops=[loop])
+    assert await surfacer.eligible_candidates() == []
+
+
+async def test_eligible_candidates_skips_loops_without_rationale():
+    loop = _loop(confidence=0.8, drift_rationale=None)
+    surfacer = _eligibility_surfacer(loops=[loop])
+    assert await surfacer.eligible_candidates() == []
+
+
+async def test_send_pushes_when_loop_still_drifting():
+    loop = _loop(confidence=0.8)
+    loop_store = AsyncMock()
+    loop_store.get = AsyncMock(return_value=loop)
+    notifier = AsyncMock()
+    surfacer = LoopSurfacer(
+        loop_store=loop_store, graph_store=AsyncMock(), push_log=AsyncMock(), notifier=notifier
+    )
+
+    sent = await surfacer.send(loop)
+
+    assert sent is True
+    notifier.push.assert_awaited_once()
+
+
+async def test_send_returns_false_when_loop_no_longer_drifting():
+    loop = _loop(confidence=0.8)
+    resolved = _loop(id=loop.id, state=LoopState.CLOSED)
+    loop_store = AsyncMock()
+    loop_store.get = AsyncMock(return_value=resolved)
+    notifier = AsyncMock()
+    surfacer = LoopSurfacer(
+        loop_store=loop_store, graph_store=AsyncMock(), push_log=AsyncMock(), notifier=notifier
+    )
+
+    sent = await surfacer.send(loop)
+
+    assert sent is False
+    notifier.push.assert_not_awaited()
+
+
 async def test_passes_push_bar_rejects_within_inline_cooldown():
     loop = _loop(confidence=0.8)
     surfacer = _push_bar_surfacer(relevance_value=0.8, inline_sent=True)

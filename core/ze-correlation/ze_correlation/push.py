@@ -8,8 +8,6 @@ import numpy as np
 
 from ze_logging import get_logger
 
-from ze_proactive.attention_budget import release_shared, try_claim_shared
-
 from ze_agents.nli import NLIClient
 from ze_correlation.engine import CorrelationEngine
 from ze_correlation.store import PostgresHypothesisStore
@@ -89,34 +87,25 @@ async def passes_grounding(
 
 
 class CorrelationPushConsumer:
-    """Picks recently admitted signals, correlates them, and pushes qualifying hypotheses."""
+    """Picks recently admitted signals and correlates them into hypotheses.
+
+    Push-eligibility and sending live in `CorrelationPushCandidateSource` below —
+    this consumer no longer self-triggers a push (superseded by
+    `AttentionArbitrationJob`, phase 123 User Story 2)."""
 
     def __init__(
         self,
         engine: CorrelationEngine,
-        hypothesis_store: PostgresHypothesisStore,
         memory_store: Any,  # PostgresMemoryStore — for seed selection
-        notifier: Any,  # ProactiveNotifier
-        push_log: Any,  # PushLogStore
         settings: Any,
-        embedder: Any = None,  # SentenceTransformer — for novelty gate
-        nli_client: NLIClient | None = None,
     ) -> None:
         self._engine = engine
-        self._hypothesis_store = hypothesis_store
         self._memory = memory_store
-        self._notifier = notifier
-        self._push_log = push_log
-        self._embedder = embedder
-        self._settings = settings
-        self._nli = nli_client
         self._cfg = _load_config(settings)
 
     async def run_once(self, *, seeds: list[UUID] | None = None) -> list[Hypothesis]:
-        """Correlate recent seeds and push qualifying hypotheses.
-
-        Returns all hypotheses formed; a subset (those passing the push bar) are pushed.
-        """
+        """Correlate recent seeds into persisted hypotheses. Returns all
+        hypotheses formed — pushing them is `AttentionArbitrationJob`'s concern."""
         if not self._cfg.enabled and not self._cfg.dry_run:
             log.info("correlation_push_disabled")
             return []
@@ -132,10 +121,6 @@ class CorrelationPushConsumer:
         hypotheses = await self._engine.correlate(working_seeds, mode="proactive")
         if not hypotheses:
             log.info("correlation_push_no_hypotheses", seeds=len(working_seeds))
-            return hypotheses
-
-        for hypothesis in hypotheses:
-            await self._maybe_push(hypothesis)
 
         return hypotheses
 
@@ -151,51 +136,58 @@ class CorrelationPushConsumer:
             log.warning("correlation_push_seed_fetch_failed", error=str(exc))
             return []
 
-    async def _maybe_push(self, hypothesis: Hypothesis) -> None:
-        if not await self._passes_push_bar(hypothesis):
-            log.info(
-                "correlation_push_bar_failed",
-                hypothesis_id=str(hypothesis.id),
-                confidence=hypothesis.confidence,
-                relevance=hypothesis.relevance,
-            )
-            return
 
-        if self._cfg.dry_run:
-            log.info(
-                "correlation_push_dry_run",
-                hypothesis_id=str(hypothesis.id),
-                summary=hypothesis.summary,
-            )
-            return
+class CorrelationPushCandidateSource:
+    """Push-eligible hypothesis candidates for `AttentionArbitrationJob`
+    (FR-007). Applies the same confidence/relevance/novelty/grounding push bar
+    `CorrelationPushConsumer` used to apply inline — minus the budget check,
+    now centralized in `ze_proactive.attention_budget` (FR-005/FR-006)."""
 
-        claimed = await try_claim_shared(
-            self._push_log,
-            "hypothesis",
-            hypothesis.id,
-            self._cfg.max_pushes_per_day,
-            payload=str(hypothesis.id),
-        )
-        if not claimed:
-            log.info("correlation_push_budget_exhausted", hypothesis_id=str(hypothesis.id))
-            return
+    def __init__(
+        self,
+        hypothesis_store: PostgresHypothesisStore,
+        notifier: Any,
+        settings: Any,
+        embedder: Any = None,
+        nli_client: NLIClient | None = None,
+    ) -> None:
+        self._hypothesis_store = hypothesis_store
+        self._notifier = notifier
+        self._embedder = embedder
+        self._settings = settings
+        self._nli = nli_client
+        self._cfg = _load_config(settings)
 
+    async def eligible_candidates(self) -> list[Hypothesis]:
+        try:
+            hypotheses = await self._hypothesis_store.list_unsurfaced()
+        except Exception as exc:
+            log.warning("correlation_push_candidates_fetch_failed", error=str(exc))
+            return []
+
+        eligible: list[Hypothesis] = []
+        for hypothesis in hypotheses:
+            if await self._passes_push_bar(hypothesis):
+                eligible.append(hypothesis)
+        return eligible
+
+    async def send(self, hypothesis: Hypothesis) -> bool:
         try:
             await self._notifier.push(
                 f"Ze noticed a connection:\n\n{hypothesis.summary}\n\n{hypothesis.narrative}",
                 urgency="normal",
             )
         except Exception as exc:
-            await release_shared(self._push_log, "hypothesis", hypothesis.id)
             log.warning(
-                "correlation_push_notify_failed",
+                "correlation_push_send_failed",
                 hypothesis_id=str(hypothesis.id),
                 error=str(exc),
             )
-            return
+            return False
 
         await self._hypothesis_store.mark_surfaced(hypothesis.id)
         log.info("correlation_pushed", hypothesis_id=str(hypothesis.id))
+        return True
 
     async def _passes_push_bar(self, hypothesis: Hypothesis) -> bool:
         if not passes_confidence(hypothesis.confidence, self._cfg.tau_push):
@@ -234,13 +226,13 @@ class CorrelationPushConsumer:
             self._cfg.novelty_similarity_max,
         )
 
+
 class _PushConfig:
     __slots__ = (
         "enabled",
         "dry_run",
         "max_seeds_per_run",
         "seed_lookback_hours",
-        "max_pushes_per_day",
         "tau_push",
         "tau_relevance",
         "novelty_similarity_max",
@@ -256,22 +248,19 @@ def _load_config(settings: Any) -> _PushConfig:
     if isinstance(raw, dict):
         push_cfg = raw.get("correlation", {}).get("push", {})
         surfacing = raw.get("correlation", {}).get("salience", {}).get("surfacing", {})
-        shared_budget = raw.get("proactive", {}).get("budget", {})
     elif isinstance(settings, dict):
         push_cfg = settings.get("correlation", {}).get("push", {})
         surfacing = (
             settings.get("correlation", {}).get("salience", {}).get("surfacing", {})
         )
-        shared_budget = settings.get("proactive", {}).get("budget", {})
     else:
-        push_cfg = surfacing = shared_budget = {}
+        push_cfg = surfacing = {}
 
     return _PushConfig(
         enabled=bool(push_cfg.get("enabled", False)),
         dry_run=bool(push_cfg.get("dry_run", True)),
         max_seeds_per_run=int(push_cfg.get("max_seeds_per_run", 20)),
         seed_lookback_hours=float(push_cfg.get("seed_lookback_hours", 8.0)),
-        max_pushes_per_day=int(shared_budget.get("max_pushes_per_day", 3)),
         tau_push=float(surfacing.get("tau_push", 0.6)),
         tau_relevance=float(surfacing.get("tau_relevance", 0.5)),
         novelty_similarity_max=float(surfacing.get("novelty_similarity_max", 0.85)),
