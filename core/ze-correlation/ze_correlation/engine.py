@@ -9,7 +9,15 @@ from uuid import UUID, uuid4
 
 from ze_logging import get_logger
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_plugin.contribution import (
+    Contribution,
+    SourceFunction,
+    TargetFace,
+    validate_and_submit,
+)
+from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
+
 from ze_correlation.prompts import CORRELATION_SYSTEM, build_correlation_user_message
 from ze_correlation.store import PostgresHypothesisStore
 from ze_correlation.types import EvidenceRef, Hypothesis
@@ -207,7 +215,7 @@ class CorrelationEngine:
                 log.warning("correlation_pin_signals_failed", error=str(exc))
 
         # 12. Persist
-        await self._store.save(hypothesis)
+        await self._save_hypothesis_via_seam(hypothesis)
         log.info(
             "hypothesis_formed",
             hypothesis_id=str(hypothesis.id),
@@ -218,6 +226,48 @@ class CorrelationEngine:
         return [hypothesis]
 
     # ── private helpers ───────────────────────────────────────────────────────
+
+    async def _save_hypothesis_via_seam(self, hypothesis: Hypothesis) -> None:
+        """Route a formed hypothesis's write through the contribution seam.
+
+        `claim_kind` always reflects `hypothesis.claim_kind` (INFERENCE or
+        SUSPICION, never FACT — FR-007), not a hardcoded value here, so the
+        general licensing check applies exactly as it does for the dream
+        pipeline (FR-006).
+        """
+        contribution_evidence = [
+            ContributionEvidenceRef(kind=ref.kind, id=ref.id)
+            for ref in hypothesis.evidence
+        ]
+        contribution = Contribution(
+            claim_kind=hypothesis.claim_kind,
+            provenance=Provenance.SYNTHESIZED,
+            confidence=Confidence(
+                value=hypothesis.confidence, decay_profile=DecayProfile.TIME_LINEAR
+            ),
+            target_face=TargetFace.SELF,
+            source_function=SourceFunction.REFLECTION,
+            evidence=contribution_evidence,
+        )
+        await validate_and_submit(
+            contribution,
+            lambda: self._store.save(hypothesis),
+            check_fact_exists=self._check_fact_exists,
+            check_episode_exists=self._check_episode_exists,
+            check_signal_exists=self._check_signal_exists,
+        )
+
+    async def _check_fact_exists(self, fact_id: UUID) -> bool:
+        facts = await self._memory.get_facts_by_ids([fact_id])
+        return len(facts) > 0
+
+    async def _check_episode_exists(self, episode_id: UUID) -> bool:
+        episodes = await self._memory.get_episodes_by_ids([episode_id])
+        return len(episodes) > 0
+
+    async def _check_signal_exists(self, signal_id: UUID) -> bool:
+        signals = await self._memory.get_signals_by_ids([signal_id])
+        return len(signals) > 0
 
     async def _top_seeds(self, seeds: list[UUID], n: int) -> list[UUID]:
         """Return the top-N seeds ranked by relevance score."""

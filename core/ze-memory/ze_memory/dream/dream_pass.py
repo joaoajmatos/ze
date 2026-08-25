@@ -7,7 +7,16 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_logging import get_logger
+from ze_plugin.contribution import (
+    Contribution,
+    EvidenceRef,
+    SourceFunction,
+    TargetFace,
+    validate_and_submit,
+)
+
 from ze_memory.dream.critic import DreamCritic
 from ze_memory.dream.gates import ScoringGates
 from ze_memory.dream.types import ArtifactStatus, ArtifactType
@@ -158,7 +167,7 @@ class DreamPass:
             if not synthesis or synthesis.upper() == "NONE":
                 continue
 
-            artifact_id = await self._dream_store.save_artifact(
+            artifact_id = await self._save_artifact_via_seam(
                 run_id=run_id,
                 artifact_type=ArtifactType.SYNTHESIZED_INSIGHT.value,
                 content=synthesis,
@@ -205,7 +214,7 @@ class DreamPass:
             if not synthesis or synthesis.upper() == "NONE":
                 continue
 
-            artifact_id = await self._dream_store.save_artifact(
+            artifact_id = await self._save_artifact_via_seam(
                 run_id=run_id,
                 artifact_type=ArtifactType.SYNTHESIZED_PROCEDURE.value,
                 content=synthesis,
@@ -275,7 +284,7 @@ class DreamPass:
                 continue
 
             episode_ids = [e for e in (row["episode_ids"] or []) if e]
-            artifact_id = await self._dream_store.save_artifact(
+            artifact_id = await self._save_artifact_via_seam(
                 run_id=run_id,
                 artifact_type=ArtifactType.HINDSIGHT_FACT.value,
                 content=result_text,
@@ -364,7 +373,7 @@ class DreamPass:
                 log.debug("stress_test_invalid_format", content=result_text[:100])
                 continue
 
-            artifact_id = await self._dream_store.save_artifact(
+            artifact_id = await self._save_artifact_via_seam(
                 run_id=run_id,
                 artifact_type=ArtifactType.PLAN_STRESS_TEST.value,
                 content=result_text,
@@ -452,6 +461,74 @@ class DreamPass:
 
             scored += 1
         return scored
+
+    async def _check_fact_exists(self, fact_id: UUID) -> bool:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchval(
+                "SELECT 1 FROM memory_facts WHERE id = $1", fact_id
+            )
+        return row is not None
+
+    async def _check_episode_exists(self, episode_id: UUID) -> bool:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchval(
+                "SELECT 1 FROM memory_episodes WHERE id = $1", episode_id
+            )
+        return row is not None
+
+    async def _save_artifact_via_seam(
+        self,
+        *,
+        run_id: UUID,
+        artifact_type: str,
+        content: str,
+        source_episode_ids: list[Any],
+        source_fact_ids: list[Any],
+        support_count: int,
+        distinct_session_count: int,
+        temporal_spread_days: int,
+        user_asserted_source_count: int,
+        claim_kind: ClaimKind = ClaimKind.INFERENCE,
+    ) -> UUID:
+        """Route a staged artifact write through the contribution seam.
+
+        Always tags `claim_kind=INFERENCE` in production — reflection's only
+        licensed kinds are INFERENCE/SUSPICION — regardless of `artifact_type`'s
+        own name (e.g. `HINDSIGHT_FACT` is a staging-layer label, never a
+        claim-kind tag). `claim_kind` is only exposed as a parameter so tests can
+        exercise the rejection path at this real write site; no production call
+        site overrides the default.
+        """
+        evidence = [
+            EvidenceRef(kind="fact", id=fact_id) for fact_id in source_fact_ids
+        ] + [
+            EvidenceRef(kind="episode", id=episode_id)
+            for episode_id in source_episode_ids
+        ]
+        contribution = Contribution(
+            claim_kind=claim_kind,
+            provenance=Provenance.SYNTHESIZED,
+            confidence=Confidence(value=0.5, decay_profile=DecayProfile.TIME_LINEAR),
+            target_face=TargetFace.SELF,
+            source_function=SourceFunction.REFLECTION,
+            evidence=evidence,
+        )
+        return await validate_and_submit(
+            contribution,
+            lambda: self._dream_store.save_artifact(
+                run_id=run_id,
+                artifact_type=artifact_type,
+                content=content,
+                source_episode_ids=source_episode_ids,
+                source_fact_ids=source_fact_ids,
+                support_count=support_count,
+                distinct_session_count=distinct_session_count,
+                temporal_spread_days=temporal_spread_days,
+                user_asserted_source_count=user_asserted_source_count,
+            ),
+            check_fact_exists=self._check_fact_exists,
+            check_episode_exists=self._check_episode_exists,
+        )
 
     async def _fetch_episode_texts(self, episode_ids: list[Any]) -> list[str]:
         if not episode_ids:
