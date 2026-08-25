@@ -1,6 +1,9 @@
 # Claim Topology — One Vocabulary for Confidence, Kind, and Provenance
 
-> **Status:** Proposed (design-only — no implementation until ratified)
+> **Status:** Ratified — implemented as `specs/phases/111-claim-topology/spec.md` (Done). The
+> shared vocabulary and all four producer retrofits described below have shipped; only
+> `contribution-seam.md`'s `Contribution` type and `attention-arbitration.md`'s `PriorityView`
+> (both explicitly out of scope for this brief) remain unbuilt.
 > **Scope:** `core/ze-agents` (new shared home), `core/ze-memory`, `core/ze-correlation`,
 > `core/ze-worldstate`, `core/ze-plugin` (all four current claim producers).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The epistemic ontology,

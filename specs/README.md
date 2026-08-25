@@ -134,10 +134,10 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 84 | [Webhook Infrastructure](phases/084-webhooks/spec.md) | 🔲 Pending |
 | 85 | [Ze Messaging Hub](phases/085-messaging-hub/spec.md) | 🔲 Pending |
 | 87 | [Plugin UI Platform](phases/087-plugin-ui/spec.md) | ✅ Done |
-| 88 | [Memory Feed](phases/088-memory-feed/spec.md) | 🔲 Pending |
-| 89 | [Message Trace](phases/089-message-trace/spec.md) | 🔲 Pending |
+| 88 | [Memory Feed](phases/088-memory-feed/spec.md) | ✅ Done |
+| 89 | [Message Trace](phases/089-message-trace/spec.md) | ✅ Done |
 | 90 | [Ze's Mind Split-Pane](phases/090-ze-mind-split-pane/spec.md) | 🔲 Pending |
-| 91 | [Goal Dashboard v2](phases/091-goal-dashboard-v2/spec.md) | 🔲 Pending |
+| 91 | [Goal Dashboard v2](phases/091-goal-dashboard-v2/spec.md) | ✅ Done |
 | 92 | [Agent Activity Heatmap](phases/092-agent-activity-heatmap/spec.md) | ✅ Done |
 | 93 | [Temporal Memory Timeline](phases/093-temporal-memory-timeline/spec.md) | 🔲 Pending |
 | 94 | [Memory Graph View](phases/094-memory-graph-view/spec.md) | 🔲 Pending |

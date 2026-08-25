@@ -307,14 +307,21 @@ will resolve which projection to build first. This document does not pre-empt it
   migration `zw001`) that reuses `ze-memory`'s existing graph/relationship tables
   (`memory_relationships`/`GraphStore`, new `open_loop` bucket) for dedup and neighbourhood
   expansion, rather than a parallel model. See `core/ze-worldstate/ze_worldstate/store.py`.
-- [ ] **Confidence calibration** — still unresolved. `ze-worldstate` added its own confidence
-  decay cascade for open loops (`ze_worldstate/decay.py`), which means there are now at least
-  three local confidence schemes in the system (correlation self-rating, fact confidence,
-  open-loop decay) with no shared calibration. This is now the sharpest remaining instance of
-  the governance gap named in `docs/cognitive-architecture.md` §7, and arguably deserves
-  attention before a fourth scheme accumulates.
+- [x] **Confidence calibration** — resolved: `specs/arch/claim-topology.md` (ratified) shipped
+  as Phase 111, giving `ClaimKind`/`Provenance`/`Confidence`/`decay()` one shared home
+  (`core/ze-agents/ze_agents/claims.py`) and retrofitting all four producers — `OpenLoop`,
+  `Hypothesis`/`EvidenceRef` (fixing its previously-frozen confidence), `memory_facts`, and
+  `Signal`. What remains is not calibration but **ranking** — see the next item.
+- [ ] **Cross-concern prioritization** — still open. Now that every claim shares one confidence
+  scale, nothing yet *ranks* across them: `OpenLoop` drift state, goal milestones/gates, and
+  `Hypothesis` novelty are each locally ordered but never compared. `specs/arch/
+  attention-arbitration.md` (Proposed, unblocked now that claim-topology has shipped) sketches
+  the fix — a read-only `PriorityView` projection plus a shared attention/push budget across
+  `ze-correlation` and `ze-worldstate`. Not yet specced for implementation.
 - [ ] **Contribution seam timing** — `specs/arch/contribution-seam.md`'s own rollout plan says
   extraction happens once the executive layer ships as a second real client after
   `SignalSource`. That condition is now met, but Phase 110 explicitly declined to build the
   seam (direct calls instead), citing the same document's design-only caveat. Whether to
-  extract now or continue deferring is an open decision — see that document.
+  extract now or continue deferring is an open decision — see that document. Doctrine's own
+  arbitration trigger ("two functions colliding over the same world-state face") has not yet
+  fired, so this remains low-urgency relative to cross-concern prioritization above.
