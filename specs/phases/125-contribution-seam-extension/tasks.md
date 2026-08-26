@@ -51,18 +51,18 @@ enforcement builds on.
 **⚠️ CRITICAL**: US2 cannot begin until this phase is complete. US1 and US3 do not depend on
 this phase's contents and MAY proceed in parallel with it (see Dependencies & Execution Order).
 
-- [ ] T002 [P] Flip `_LICENSE[SourceFunction.SOCIAL_COGNITION]` from `frozenset()` to
+- [X] T002 [P] Flip `_LICENSE[SourceFunction.SOCIAL_COGNITION]` from `frozenset()` to
   `frozenset({ClaimKind.IDENTITY})` in `core/ze-plugin/ze_plugin/contribution.py` (FR-004;
   research.md §5) — the one core-package change this feature makes
-- [ ] T003 [P] Create `packages/ze-sdk/ze_sdk/contribution.py`: re-export `Contribution`,
+- [X] T003 [P] Create `packages/ze-sdk/ze_sdk/contribution.py`: re-export `Contribution`,
   `EvidenceRef`, `SourceFunction`, `TargetFace`, `validate_and_submit` from
   `ze_plugin.contribution`, mirroring `ze_sdk/channels.py`'s existing re-export pattern
   (FR-003; data-model.md; research.md §7a) — required because `ze-personal` is a plugin and
   CLAUDE.md bars plugin code from importing `ze_plugin.*` directly
-- [ ] T004 [P] Write `packages/ze-sdk/tests/test_contribution.py`: each re-exported name imports
+- [X] T004 [P] Write `packages/ze-sdk/tests/test_contribution.py`: each re-exported name imports
   from `ze_sdk.contribution` and is identical (`is`) to its `ze_plugin.contribution` original —
   depends on T003
-- [ ] T005 Update `core/ze-plugin/tests/test_contribution.py`: `SOCIAL_COGNITION` now accepts
+- [X] T005 Update `core/ze-plugin/tests/test_contribution.py`: `SOCIAL_COGNITION` now accepts
   `claim_kind=IDENTITY` and rejects `FACT`/`INFERENCE`/`SUSPICION`/`PRIORITY` (FR-004) —
   depends on T002
 
@@ -141,37 +141,37 @@ licensing check Phase 124 built (FR-007 of that spec), not a new reimplementatio
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Write `plugins/ze-personal/tests/contacts/test_contribution.py`:
+- [X] T014 [P] [US2] Write `plugins/ze-personal/tests/contacts/test_contribution.py`:
   `person_source_to_contribution()` round-trips a `PersonSource` into a `Contribution` with
   `claim_kind=ClaimKind.IDENTITY`, `provenance` taken from the source, `confidence.decay_profile
   =DecayProfile.EVIDENCE_WEIGHTED`, `target_face=TargetFace.USER`,
   `source_function=SourceFunction.SOCIAL_COGNITION`, `evidence=[]` — mirrors
   `ze_memory/tests/test_contribution.py`'s `signal_to_contribution()` test shape — depends on
   T008 (US1's `PersonSource` fields)
-- [ ] T015 [P] [US2] Extend `plugins/ze-personal/tests/contacts/test_consolidator.py`: a contact
+- [X] T015 [P] [US2] Extend `plugins/ze-personal/tests/contacts/test_consolidator.py`: a contact
   contribution mistagged `claim_kind=FACT` submitted through `_store_candidate` raises
   `UnlicensedClaimKindError` before `store.upsert()`/`store.add_source()` are called (mock the
   store, assert not called); a correctly-tagged `claim_kind=IDENTITY` contribution persists
   exactly as today's direct call would have (Acceptance Scenarios 1-2, SC-001) — write first,
   confirm it fails against pre-implementation code
-- [ ] T016 [P] [US2] Write `plugins/ze-personal/tests/graph/test_memory_hooks.py` (new file — no
+- [X] T016 [P] [US2] Write `plugins/ze-personal/tests/graph/test_memory_hooks.py` (new file — no
   existing tests cover `memory_hooks.py`): the same FR-004 rejection test as T015, but through
   `_write_contact_proposals`'s write boundary — proves the licensing check is enforced at both
   real write sites, not just the consolidator's
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Create `person_source_to_contribution()` in
+- [X] T017 [US2] Create `person_source_to_contribution()` in
   `plugins/ze-personal/ze_personal/contacts/contribution.py`, importing `Contribution`/
   `SourceFunction`/`TargetFace` from `ze_sdk.contribution` and `ClaimKind`/`Confidence`/
   `DecayProfile` from `ze_agents.claims` (FR-003; data-model.md; research.md §7) — depends on
   T003 (Foundational), T008 (US1)
-- [ ] T018 [US2] In `consolidator.py::_store_candidate`, wrap the existing-person branch
+- [X] T018 [US2] In `consolidator.py::_store_candidate`, wrap the existing-person branch
   (`store.add_source(best.id, source)`) and the new-person branch (`store.upsert(person)` then
   `store.add_source(stored.id, source)`) each in `validate_and_submit()` using
   `person_source_to_contribution(source)` — matching/dedup logic itself untouched (FR-003,
   FR-004, FR-010) — depends on T017
-- [ ] T019 [US2] In `plugins/ze-personal/ze_personal/graph/memory_hooks.py::_write_contact_proposals`,
+- [X] T019 [US2] In `plugins/ze-personal/ze_personal/graph/memory_hooks.py::_write_contact_proposals`,
   wrap its own `person_store.add_source(...)` / `person_store.upsert(person)` +
   `add_source(...)` sequence in `validate_and_submit()` the same way (FR-003's "same write
   boundary" parity, research.md §7) — depends on T017

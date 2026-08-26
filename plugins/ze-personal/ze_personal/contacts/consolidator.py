@@ -9,6 +9,9 @@ from uuid import UUID
 
 import asyncpg
 
+from ze_sdk.contribution import validate_and_submit
+
+from ze_personal.contacts.contribution import person_source_to_contribution
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import (
     ContactProposal,
@@ -168,7 +171,10 @@ class ContactsConsolidator:
         if existing:
             best = existing[0]
             source.person_id = best.id  # type: ignore[assignment]
-            await self._store.add_source(best.id, source)  # type: ignore[arg-type]
+            await validate_and_submit(
+                person_source_to_contribution(source),
+                lambda: self._store.add_source(best.id, source),  # type: ignore[arg-type]
+            )
             return False
         else:
             person = Person(
@@ -182,9 +188,16 @@ class ContactsConsolidator:
                 dismissed=False,
                 confidence=weight,
             )
-            stored = await self._store.upsert(person)
-            source.person_id = stored.id  # type: ignore[assignment]
-            await self._store.add_source(stored.id, source)  # type: ignore[arg-type]
+
+            async def _write() -> Person:
+                stored = await self._store.upsert(person)
+                source.person_id = stored.id  # type: ignore[assignment]
+                await self._store.add_source(stored.id, source)  # type: ignore[arg-type]
+                return stored
+
+            await validate_and_submit(
+                person_source_to_contribution(source), _write
+            )
             return True
 
     async def _mark_processed(self, episode_ids: list[UUID]) -> None:

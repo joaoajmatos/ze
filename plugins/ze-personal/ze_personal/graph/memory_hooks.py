@@ -9,6 +9,9 @@ from __future__ import annotations
 from typing import Any
 
 from ze_sdk.channels import ChannelHandle, ChannelType
+from ze_sdk.contribution import validate_and_submit
+
+from ze_personal.contacts.contribution import person_source_to_contribution
 from ze_personal.contacts.types import ContactProposal, Person, PersonSource
 from ze_logging import get_logger
 
@@ -52,7 +55,10 @@ async def _write_contact_proposals(
             if existing:
                 best = existing[0]
                 source.person_id = best.id
-                await person_store.add_source(best.id, source)
+                await validate_and_submit(
+                    person_source_to_contribution(source),
+                    lambda: person_store.add_source(best.id, source),
+                )
                 contact_id = best.id
             else:
                 person = Person(
@@ -65,9 +71,16 @@ async def _write_contact_proposals(
                     dismissed=False,
                     confidence=proposal.confidence,
                 )
-                stored = await person_store.upsert(person)
-                source.person_id = stored.id
-                await person_store.add_source(stored.id, source)
+
+                async def _write() -> Person:
+                    stored = await person_store.upsert(person)
+                    source.person_id = stored.id
+                    await person_store.add_source(stored.id, source)
+                    return stored
+
+                stored = await validate_and_submit(
+                    person_source_to_contribution(source), _write
+                )
                 contact_id = stored.id
 
             if contact_channel_store:

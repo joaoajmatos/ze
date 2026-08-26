@@ -31,6 +31,7 @@ async def _write() -> str:
         (SourceFunction.REFLECTION, ClaimKind.INFERENCE),
         (SourceFunction.REFLECTION, ClaimKind.SUSPICION),
         (SourceFunction.EXECUTIVE, ClaimKind.PRIORITY),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.IDENTITY),
     ],
 )
 async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> None:
@@ -64,6 +65,10 @@ async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> N
         (SourceFunction.PERCEPTION, ClaimKind.SUSPICION),
         (SourceFunction.REFLECTION, ClaimKind.FACT),
         (SourceFunction.REFLECTION, ClaimKind.PRIORITY),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.FACT),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.INFERENCE),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.SUSPICION),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.PRIORITY),
     ],
 )
 async def test_unlicensed_claim_kind_is_rejected(source_function, claim_kind) -> None:

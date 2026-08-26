@@ -58,7 +58,7 @@ _LICENSE: dict[SourceFunction, frozenset[ClaimKind]] = {
             ClaimKind.PRIORITY,
         }
     ),
-    SourceFunction.SOCIAL_COGNITION: frozenset(),
+    SourceFunction.SOCIAL_COGNITION: frozenset({ClaimKind.IDENTITY}),
     SourceFunction.REFLECTION: frozenset({ClaimKind.INFERENCE, ClaimKind.SUSPICION}),
     SourceFunction.ACTION: frozenset(),
     SourceFunction.GOVERNANCE: frozenset(),

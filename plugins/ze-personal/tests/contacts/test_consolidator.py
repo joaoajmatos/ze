@@ -1,12 +1,18 @@
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
+
+import pytest
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile
+from ze_agents.errors import UnlicensedClaimKindError
+from ze_plugin.contribution import SourceFunction, TargetFace
 
 from ze_personal.contacts.consolidator import (
     ContactsConsolidator,
     _format_batch,
     _safe_classification,
 )
+from ze_personal.contacts.contribution import Contribution
 from ze_personal.contacts.types import Person
 from ze_agents.settings import Settings
 
@@ -279,3 +285,51 @@ async def test_run_marks_episodes_as_extracted():
     assert conn.execute.called
     call_sql = conn.execute.call_args[0][0]
     assert "contacts_extracted = true" in call_sql
+
+
+# ── _store_candidate write-path licensing (FR-004, SC-001) ─────────────────────
+
+
+def _mistagged_contribution(source) -> Contribution:
+    return Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=source.provenance,
+        confidence=Confidence(value=source.weight, decay_profile=DecayProfile.EVIDENCE_WEIGHTED),
+        target_face=TargetFace.USER,
+        source_function=SourceFunction.SOCIAL_COGNITION,
+        evidence=[],
+    )
+
+
+async def test_store_candidate_rejects_mistagged_claim_kind():
+    store = make_person_store(get_by_name_result=[])
+    consolidator = make_consolidator(person_store=store)
+
+    from ze_personal.contacts.types import ContactProposal
+
+    candidate = ContactProposal(name="João Silva", confidence=0.9)
+
+    with patch(
+        "ze_personal.contacts.consolidator.person_source_to_contribution",
+        side_effect=_mistagged_contribution,
+    ):
+        with pytest.raises(UnlicensedClaimKindError):
+            await consolidator._store_candidate(candidate)
+
+    store.upsert.assert_not_called()
+    store.add_source.assert_not_called()
+
+
+async def test_store_candidate_persists_correctly_tagged_contribution():
+    store = make_person_store(get_by_name_result=[])
+    consolidator = make_consolidator(person_store=store)
+
+    from ze_personal.contacts.types import ContactProposal
+
+    candidate = ContactProposal(name="João Silva", confidence=0.9)
+
+    created = await consolidator._store_candidate(candidate)
+
+    assert created is True
+    store.upsert.assert_called_once()
+    store.add_source.assert_called_once()
