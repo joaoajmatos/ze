@@ -143,7 +143,7 @@ suites unmodified; assert no behavior changes beyond call-boundary type-shape ad
 
 ### Tests for User Story 3
 
-- [ ] T032 [US3] Run `make test-correlation` and `make test-worldstate`; fix any test that fails due only to a call-boundary type-shape change introduced by T019-T024 or T029-T031 (e.g. a test constructing a bare `OpenLoop`/`Hypothesis` that now also needs a `Contribution`-shaped assertion) — no test's *assertions about surfaced loops/hypotheses/pushes* may change (Acceptance Scenario 1, SC-002, FR-008)
+- [X] T032 [US3] Run `make test-correlation` and `make test-worldstate`; fix any test that fails due only to a call-boundary type-shape change introduced by T019-T024 or T029-T031 (e.g. a test constructing a bare `OpenLoop`/`Hypothesis` that now also needs a `Contribution`-shaped assertion) — no test's *assertions about surfaced loops/hypotheses/pushes* may change (Acceptance Scenario 1, SC-002, FR-008)
 
 **Checkpoint**: All three user stories independently verified; zero regressions in existing
 consumer behavior.
