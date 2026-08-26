@@ -196,25 +196,25 @@ a contact. Assert entries are `ContactProposal`s carrying `claim_kind=IDENTITY`/
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Write `core/ze-agents/tests/test_types.py`: a `ContactProposal`-shaped
+- [X] T020 [P] [US3] Write `core/ze-agents/tests/test_types.py`: a `ContactProposal`-shaped
   object with `claim_kind`/`provenance`/`confidence` attributes satisfies
   `isinstance(x, ClaimBearingProposal)` (structural, `runtime_checkable`); `AgentResult()`'s
   `memory_proposals`/`contact_proposals` default to `[]` typed `list[ClaimBearingProposal]`
   (Acceptance Scenario 1)
-- [ ] T021 [P] [US3] Extend `plugins/ze-personal/tests/contacts/test_extractors.py`: constructed
+- [X] T021 [P] [US3] Extend `plugins/ze-personal/tests/contacts/test_extractors.py`: constructed
   `ContactProposal`s from both `extract_email_contacts` and `extract_calendar_contacts` carry
   `claim_kind=IDENTITY` and the `Provenance` matching their `source_type` (`"email"`→
   `LIVE_SEARCH`, `"calendar"`→`LIVE_SEARCH`) (Acceptance Scenario 1) — depends on T008
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Add the `runtime_checkable` `ClaimBearingProposal` `Protocol`
+- [X] T022 [US3] Add the `runtime_checkable` `ClaimBearingProposal` `Protocol`
   (`claim_kind: ClaimKind`, `provenance: Provenance`, `confidence: float`) to
   `core/ze-agents/ze_agents/types.py`, importing only `ze_agents.claims` (no new cross-package
   edge — FR-005; data-model.md; research.md §3) — depends on T020 (test-first)
-- [ ] T023 [US3] Retype `AgentResult.memory_proposals`/`.contact_proposals` to
+- [X] T023 [US3] Retype `AgentResult.memory_proposals`/`.contact_proposals` to
   `list[ClaimBearingProposal]` in the same file (was untyped `list`) — depends on T022
-- [ ] T024 [US3] Update `extract_email_contacts`/`extract_calendar_contacts` in
+- [X] T024 [US3] Update `extract_email_contacts`/`extract_calendar_contacts` in
   `plugins/ze-personal/ze_personal/contacts/extractors.py` to populate `claim_kind=ClaimKind.IDENTITY`
   and `provenance=_SOURCE_TYPE_TO_PROVENANCE[...]` on each constructed `ContactProposal`
   (FR-001, FR-005) — depends on T008 (US1), T021 (test-first)

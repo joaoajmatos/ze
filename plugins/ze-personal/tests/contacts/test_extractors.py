@@ -1,3 +1,4 @@
+from ze_agents.claims import ClaimKind, Provenance
 from ze_personal.contacts.extractors import (
     extract_calendar_contacts,
     extract_email_contacts,
@@ -101,6 +102,14 @@ def test_email_relationship_label():
     assert proposals[0].relationship == "email contact"
 
 
+def test_email_proposal_carries_claim_vocabulary():
+    tc = _email_tc({"from": "x@example.com"})
+    proposals = extract_email_contacts([tc])
+
+    assert proposals[0].claim_kind == ClaimKind.IDENTITY
+    assert proposals[0].provenance == Provenance.LIVE_SEARCH
+
+
 # ── extract_calendar_contacts ─────────────────────────────────────────────────
 
 
@@ -182,3 +191,12 @@ def test_calendar_skips_events_without_attendees():
     proposals = extract_calendar_contacts([tc])
 
     assert proposals == []
+
+
+def test_calendar_proposal_carries_claim_vocabulary():
+    event = {"attendees": [{"email": "x@example.com"}]}
+    tc = _events_tc([event])
+    proposals = extract_calendar_contacts([tc])
+
+    assert proposals[0].claim_kind == ClaimKind.IDENTITY
+    assert proposals[0].provenance == Provenance.LIVE_SEARCH

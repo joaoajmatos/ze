@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Protocol, runtime_checkable
 from uuid import UUID
+
+from ze_agents.claims import ClaimKind, Provenance
 
 
 # ── Capability types ──────────────────────────────────────────────────────────
@@ -50,6 +52,17 @@ class AbortToken:
     @property
     def is_set(self) -> bool:
         return self._event.is_set()
+
+
+@runtime_checkable
+class ClaimBearingProposal(Protocol):
+    """Structural shape any producer's proposal type must satisfy to sit on
+    `AgentResult.memory_proposals`/`.contact_proposals` — referenced without this
+    package depending on any concrete producer type (Principle III)."""
+
+    claim_kind: ClaimKind
+    provenance: Provenance
+    confidence: float
 
 
 class IdentityBuilder(Protocol):
@@ -143,6 +156,6 @@ class AgentResult:
     response: str
     tool_calls: list[ToolCall] = field(default_factory=list)
     tokens_used: int = 0
-    memory_proposals: list = field(default_factory=list)
-    contact_proposals: list = field(default_factory=list)
+    memory_proposals: list[ClaimBearingProposal] = field(default_factory=list)
+    contact_proposals: list[ClaimBearingProposal] = field(default_factory=list)
     extensions: dict[str, Any] = field(default_factory=dict)

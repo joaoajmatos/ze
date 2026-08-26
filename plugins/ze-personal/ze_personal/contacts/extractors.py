@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import email.utils
 
-from ze_personal.contacts.types import ContactProposal, SOURCE_WEIGHTS
+from ze_agents.claims import ClaimKind
+from ze_personal.contacts.types import (
+    ContactProposal,
+    SOURCE_WEIGHTS,
+    _SOURCE_TYPE_TO_PROVENANCE,
+)
 from ze_agents.types import ToolCall
 
 
@@ -40,6 +45,8 @@ def extract_email_contacts(tool_calls: list[ToolCall]) -> list[ContactProposal]:
                 confidence=SOURCE_WEIGHTS["email"],
                 confirmed=False,
                 source_type="email",
+                claim_kind=ClaimKind.IDENTITY,
+                provenance=_SOURCE_TYPE_TO_PROVENANCE["email"],
             )
         )
 
@@ -83,6 +90,8 @@ def extract_calendar_contacts(tool_calls: list[ToolCall]) -> list[ContactProposa
                         confidence=SOURCE_WEIGHTS["calendar"],
                         confirmed=False,
                         source_type="calendar",
+                        claim_kind=ClaimKind.IDENTITY,
+                        provenance=_SOURCE_TYPE_TO_PROVENANCE["calendar"],
                     )
                 )
 
