@@ -229,12 +229,12 @@ and `contact_proposals` is actually populated with vocabulary-carrying entries e
 
 **Purpose**: Repo-wide consistency and final validation.
 
-- [ ] T025 [P] Run `make lint` and fix any violations across `plugins/ze-personal`,
+- [X] T025 [P] Run `make lint` and fix any violations across `plugins/ze-personal`,
   `packages/ze-sdk`, `core/ze-plugin`, `core/ze-agents`
-- [ ] T026 Run `make migrate` locally against `make db-up` to confirm `zc028_contacts_claim_kind`
+- [X] T026 Run `make migrate` locally against `make db-up` to confirm `zc028_contacts_claim_kind`
   applies cleanly on top of `zc027`
-- [ ] T027 Execute `quickstart.md` end-to-end (all 5 scenarios) and confirm each expected outcome
-- [ ] T028 Update spec.md **Status** from `Planned` to `Done`, and flip `specs/README.md`'s
+- [X] T027 Execute `quickstart.md` end-to-end (all 5 scenarios) and confirm each expected outcome
+- [X] T028 Update spec.md **Status** from `Planned` to `Done`, and flip `specs/README.md`'s
   phase-125 row from `🔄 In Progress` to `✅ Done` (Constitution Principle I, Development
   Workflow Definition of Done) — no `CLAUDE.md` package-dependency-graph update needed, this
   feature introduces zero new edges (unlike Phase 124)

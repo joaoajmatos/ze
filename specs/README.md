@@ -165,6 +165,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 122 | [Data Overview Charts](phases/122-data-overview-charts/spec.md) | ✅ Done |
 | 123 | [Attention Arbitration](phases/123-attention-arbitration/spec.md) | ✅ Done |
 | 124 | [Contribution Seam Core](phases/124-contribution-seam-core/spec.md) | ✅ Done |
+| 125 | [Contribution Seam Extension](phases/125-contribution-seam-extension/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

@@ -16,8 +16,8 @@ down_revision: Union[str, Sequence[str], None] = "zc027"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-_PROVENANCE_BACKFILL = """
-    UPDATE {table} SET provenance = CASE source_type
+_PROVENANCE_CASE = """
+    CASE {source_type_expr}
         WHEN 'manual' THEN 'prompt_supplied'
         WHEN 'conversation' THEN 'synthesized'
         WHEN 'email' THEN 'live_search'
@@ -33,9 +33,34 @@ def upgrade() -> None:
         op.execute(f"ALTER TABLE {table} ADD COLUMN claim_kind TEXT")
         op.execute(f"UPDATE {table} SET claim_kind = 'identity'")
         op.execute(f"ALTER TABLE {table} ALTER COLUMN claim_kind SET NOT NULL")
-
         op.execute(f"ALTER TABLE {table} ADD COLUMN provenance TEXT")
-        op.execute(_PROVENANCE_BACKFILL.format(table=table))
+
+    # contact_sources / contact_relationships each carry their own source_type.
+    op.execute(
+        "UPDATE contact_sources SET provenance = "
+        + _PROVENANCE_CASE.format(source_type_expr="source_type")
+    )
+    op.execute(
+        "UPDATE contact_relationships SET provenance = "
+        + _PROVENANCE_CASE.format(source_type_expr="source_type")
+    )
+
+    # contacts has no source_type column of its own — derive provenance from its
+    # most recently created contact_sources row (SYNTHESIZED if it has none).
+    op.execute(f"""
+        UPDATE contacts SET provenance = COALESCE(
+            (
+                SELECT {_PROVENANCE_CASE.format(source_type_expr="cs.source_type")}
+                FROM contact_sources cs
+                WHERE cs.contact_id = contacts.id
+                ORDER BY cs.created_at DESC
+                LIMIT 1
+            ),
+            'synthesized'
+        )
+    """)
+
+    for table in ("contacts", "contact_sources", "contact_relationships"):
         op.execute(f"ALTER TABLE {table} ALTER COLUMN provenance SET NOT NULL")
 
 
