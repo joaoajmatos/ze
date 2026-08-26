@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-25
 
-**Status**: Planned
+**Status**: Done
 
 **Input**: User description: "Implement the first two phased-rollout steps of specs/arch/contribution-seam.md as one feature, mirroring the precedent set by Phase 111 (claim-topology) of shipping the shared type and its real retrofits together rather than splitting scaffolding from payoff: (1) define the Contribution type (claim_kind, provenance, confidence, target_face, source_function, evidence) in core/ze-plugin, built on the shared ze_agents.claims vocabulary from Phase 111; (2) retrofit Signal (core/ze-memory) to carry it — Signal already gained claim_kind/confidence in Phase 111's zm017 migration, this feature adds the missing provenance field and formalizes Signal as a Contribution subtype without replacing the SignalSource polling mechanism; (3) retrofit OpenLoop's extraction path (core/ze-worldstate) to produce typed Contributions while keeping its current direct-write mechanics; (4) migrate reflection — the dream pipeline (core/ze-memory/dream) and the correlation engine (core/ze-correlation) — onto the seam, so that dream artifact staging and correlation hypothesis generation both go through a validated Contribution write path that mechanically rejects any claim_kind=FACT proposal from those two sources. No consumer of signal_sources() is rewired — ze-correlation and ze-worldstate keep polling exactly as today; only the object shape and the reflection write path change. Arbitration in this feature is a validated write path (type + claim-kind license check), not real conflict resolution between competing contributions — that remains out of scope until a second function collides with an existing one on the same world-state face."
 

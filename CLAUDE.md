@@ -162,10 +162,11 @@ ze-plugin       → ze-agents, ze-data       core/
 ze-proactive    → ze-agents                core/
 ze-notifications  (no ze deps)             core/
 ze-components     (no ze deps)             core/
-ze-memory       → ze-agents                core/
+ze-memory       → ze-agents, ze-plugin      core/  ← ze-plugin: Contribution seam (Signal write path)
 ze-eval           (no ze deps — HTTP only) core/  ← eval infrastructure
 ze-automation   → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
-ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation  core/  ← open loops; wired by ze-api directly
+ze-correlation  → ze-agents, ze-logging, ze-memory, ze-plugin  core/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
+ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin  core/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
 ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data  core/  ← agent skills; wired by ze-api directly
 ze-priority     → ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation  core/  ← attention arbitration (PriorityView + shared push budget); wired by ze-api directly
 ze-workspace    → ze-agents, ze-logging, ze-data  core/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it

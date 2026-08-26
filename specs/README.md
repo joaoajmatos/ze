@@ -164,6 +164,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 121 | [Memory Feed Charts](phases/121-memory-feed-charts/spec.md) | ✅ Done |
 | 122 | [Data Overview Charts](phases/122-data-overview-charts/spec.md) | ✅ Done |
 | 123 | [Attention Arbitration](phases/123-attention-arbitration/spec.md) | ✅ Done |
+| 124 | [Contribution Seam Core](phases/124-contribution-seam-core/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

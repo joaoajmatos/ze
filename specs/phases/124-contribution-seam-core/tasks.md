@@ -154,11 +154,11 @@ consumer behavior.
 
 **Purpose**: Repo-wide consistency and final validation.
 
-- [ ] T033 [P] Run `make lint` and fix any violations across `core/ze-plugin`, `core/ze-agents`, `core/ze-memory`, `core/ze-worldstate`, `core/ze-correlation`, and the four touched plugin packages
-- [ ] T034 Run `make migrate` locally against `make db-up` to confirm `zm018_signal_provenance` applies cleanly on top of `zm017`
-- [ ] T035 Execute `quickstart.md` end-to-end (all 5 scenarios) and confirm each expected outcome
-- [ ] T036 [P] Update `CLAUDE.md`'s "Package dependency graph" table to add the three new edges this feature introduces (`ze-memory`, `ze-worldstate`, `ze-correlation` → `ze-plugin`)
-- [ ] T037 Update spec.md **Status** from `Planned` to `Done` and add a row to `specs/README.md`'s phase index (Constitution Principle I, Development Workflow Definition of Done)
+- [X] T033 [P] Run `make lint` and fix any violations across `core/ze-plugin`, `core/ze-agents`, `core/ze-memory`, `core/ze-worldstate`, `core/ze-correlation`, and the four touched plugin packages
+- [X] T034 Run `make migrate` locally against `make db-up` to confirm `zm018_signal_provenance` applies cleanly on top of `zm017`
+- [X] T035 Execute `quickstart.md` end-to-end (all 5 scenarios) and confirm each expected outcome
+- [X] T036 [P] Update `CLAUDE.md`'s "Package dependency graph" table to add the three new edges this feature introduces (`ze-memory`, `ze-worldstate`, `ze-correlation` → `ze-plugin`)
+- [X] T037 Update spec.md **Status** from `Planned` to `Done` and add a row to `specs/README.md`'s phase index (Constitution Principle I, Development Workflow Definition of Done)
 
 ---
 

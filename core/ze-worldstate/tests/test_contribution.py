@@ -78,7 +78,7 @@ def _llm(response: dict) -> AsyncMock:
     return client
 
 
-async def test_declared_loop_rejects_malformed_claim_kind_before_create():
+async def test_extraction_write_path_rejects_malformed_claim_kind_before_create():
     llm = AsyncMock()
     loop_store = AsyncMock()
     loop_store.create = AsyncMock(side_effect=lambda loop: setattr(loop, "id", uuid4()) or loop)
