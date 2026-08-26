@@ -9,12 +9,12 @@ from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_logging import get_logger
+from ze_collision.detect import submit_and_detect_collisions
 from ze_plugin.contribution import (
     Contribution,
     EvidenceRef,
     SourceFunction,
     TargetFace,
-    validate_and_submit,
 )
 
 from ze_memory.dream.critic import DreamCritic
@@ -65,6 +65,7 @@ class DreamPass:
         nli_client: Any | None = None,
         goal_store: Any | None = None,
         settings: Any = None,
+        collision_store: Any = None,
     ) -> None:
         self._pool = pool
         self._dream_store = dream_store
@@ -73,6 +74,7 @@ class DreamPass:
         self._nli = nli_client
         self._goal_store = goal_store
         self._settings = settings
+        self._collision_store = collision_store
 
     async def run(self, run_id: UUID) -> dict:
         start = time.monotonic()
@@ -512,8 +514,9 @@ class DreamPass:
             target_face=TargetFace.SELF,
             source_function=SourceFunction.REFLECTION,
             evidence=evidence,
+            content=content,
         )
-        return await validate_and_submit(
+        return await submit_and_detect_collisions(
             contribution,
             lambda: self._dream_store.save_artifact(
                 run_id=run_id,
@@ -526,8 +529,12 @@ class DreamPass:
                 temporal_spread_days=temporal_spread_days,
                 user_asserted_source_count=user_asserted_source_count,
             ),
+            result_id=lambda artifact_id: artifact_id,
+            producer_kind="dream_artifact",
             check_fact_exists=self._check_fact_exists,
             check_episode_exists=self._check_episode_exists,
+            collision_store=self._collision_store,
+            nli_client=self._nli,
         )
 
     async def _fetch_episode_texts(self, episode_ids: list[Any]) -> list[str]:

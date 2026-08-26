@@ -12,7 +12,11 @@ NOW = datetime(2026, 7, 14, tzinfo=timezone.utc)
 
 
 def _row(similarity, confidence=1.0, updated_at=None):
-    return {"similarity": similarity, "confidence": confidence, "updated_at": updated_at}
+    return {
+        "similarity": similarity,
+        "confidence": confidence,
+        "updated_at": updated_at,
+    }
 
 
 # ── T033: favors recency when similarity comparable; favors confidence similarly ─
@@ -32,7 +36,9 @@ def test_composite_score_favors_confidence_when_similarity_and_recency_comparabl
     high_conf = _row(0.5, confidence=0.95, updated_at=same_ts)
     low_conf = _row(0.5, confidence=0.1, updated_at=same_ts)
 
-    assert composite_score(high_conf, weights, NOW) > composite_score(low_conf, weights, NOW)
+    assert composite_score(high_conf, weights, NOW) > composite_score(
+        low_conf, weights, NOW
+    )
 
 
 def test_composite_score_old_low_confidence_loses_to_recent_high_confidence_at_similar_similarity():
@@ -41,7 +47,9 @@ def test_composite_score_old_low_confidence_loses_to_recent_high_confidence_at_s
     old_low_confidence_marginally_nearer = _row(
         0.81, confidence=0.4, updated_at=NOW - timedelta(days=200)
     )
-    recent_high_confidence = _row(0.79, confidence=0.98, updated_at=NOW - timedelta(days=1))
+    recent_high_confidence = _row(
+        0.79, confidence=0.98, updated_at=NOW - timedelta(days=1)
+    )
 
     assert composite_score(recent_high_confidence, weights, NOW) > composite_score(
         old_low_confidence_marginally_nearer, weights, NOW

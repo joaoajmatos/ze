@@ -81,7 +81,9 @@ def test_not_eligible_when_not_active():
 
 def test_compose_absence_rationale_cites_dates():
     confirmed_at = datetime(2026, 7, 10, tzinfo=timezone.utc)
-    loop = _loop(confirmed_at=confirmed_at, drift_deadline=confirmed_at + timedelta(days=7))
+    loop = _loop(
+        confirmed_at=confirmed_at, drift_deadline=confirmed_at + timedelta(days=7)
+    )
     rationale = compose_absence_rationale(loop)
     assert "2026-07-10" in rationale
     assert "2026-07-17" in rationale

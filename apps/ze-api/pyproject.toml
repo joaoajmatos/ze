@@ -10,6 +10,7 @@ dependencies = [
     "ze-priority",
     "ze-skills",
     "ze-workspace",
+    "ze-collision",
     "ze-data",
     "ze-ingestion",
     "ze-yt",
@@ -68,6 +69,7 @@ ze-worldstate    = { workspace = true }
 ze-priority      = { workspace = true }
 ze-skills        = { workspace = true }
 ze-workspace     = { workspace = true }
+ze-collision     = { workspace = true }
 ze-data          = { workspace = true }
 ze-ingestion     = { workspace = true }
 ze-yt            = { workspace = true }

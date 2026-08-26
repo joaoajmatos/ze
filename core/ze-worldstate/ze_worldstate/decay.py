@@ -46,8 +46,12 @@ async def cascade_from_evidence(
         )
 
         if loop.state == LoopState.ACTIVE:
-            rationale = drift.compose_contradiction_rationale(evidence_type, evidence_id)
-            transitioned = await loop_store.transition(loop.id, LoopState.DRIFTING.value)
+            rationale = drift.compose_contradiction_rationale(
+                evidence_type, evidence_id
+            )
+            transitioned = await loop_store.transition(
+                loop.id, LoopState.DRIFTING.value
+            )
             await loop_store.set_drift_rationale(loop.id, rationale)
             transitioned.drift_rationale = rationale
             loop = transitioned

@@ -77,6 +77,7 @@ async def test_get_memory_activity_splits_fact_and_episode_counts():
         }
     ]
     assert result["max_count"] == 5
-    assert result["days"][0]["fact_count"] + result["days"][0]["episode_count"] == result[
-        "days"
-    ][0]["count"]
+    assert (
+        result["days"][0]["fact_count"] + result["days"][0]["episode_count"]
+        == result["days"][0]["count"]
+    )

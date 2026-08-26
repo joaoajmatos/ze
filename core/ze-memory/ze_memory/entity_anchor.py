@@ -45,7 +45,9 @@ def _word_bounded_match(name: str, text: str) -> bool:
     return re.search(pattern, text, re.IGNORECASE) is not None
 
 
-async def match_entities_in_query(query_text: str, pool: Any) -> list[EntityAnchorMatch]:
+async def match_entities_in_query(
+    query_text: str, pool: Any
+) -> list[EntityAnchorMatch]:
     """Word-bounded, case-insensitive match of known entities against query text.
 
     Canonical-name matches take precedence over alias matches for the same
@@ -223,7 +225,9 @@ def _merge_list(vector_items: list, anchor_items: list) -> list:
     return result
 
 
-def merge_candidates(vector_ctx: MemoryContext, anchor_ctx: MemoryContext) -> MemoryContext:
+def merge_candidates(
+    vector_ctx: MemoryContext, anchor_ctx: MemoryContext
+) -> MemoryContext:
     """Merge entity-anchored candidates into a vector-retrieved MemoryContext.
 
     Dedups facts/episodes/entities/events by ID, keeping the strongest evidence

@@ -488,7 +488,9 @@ class TestConfirmationTimeoutFlow:
             graph_config=graph_config,
         )
 
-        confirmation_store.clear.assert_awaited_once_with("thread-timeout", "req-timeout")
+        confirmation_store.clear.assert_awaited_once_with(
+            "thread-timeout", "req-timeout"
+        )
         container.abort_pending_checkpoint.assert_awaited_once_with(graph_config)
 
     async def test_timeout_sends_message_to_user(self):

@@ -404,16 +404,26 @@ async def test_two_gates_on_same_thread_both_tracked_independently():
     thread_pending_requests: dict[str, set[str]] = {}
 
     request_id_a, config_a = await send_confirmation_request(
-        mgr, container, _make_outcome(thread_id, "Approve A?"), thread_id,
+        mgr,
+        container,
+        _make_outcome(thread_id, "Approve A?"),
+        thread_id,
         confirmation_store=confirmation_store,
     )
-    _track_gate(pending_configs, thread_pending_requests, request_id_a, thread_id, config_a)
+    _track_gate(
+        pending_configs, thread_pending_requests, request_id_a, thread_id, config_a
+    )
 
     request_id_b, config_b = await send_confirmation_request(
-        mgr, container, _make_outcome(thread_id, "Approve B?"), thread_id,
+        mgr,
+        container,
+        _make_outcome(thread_id, "Approve B?"),
+        thread_id,
         confirmation_store=confirmation_store,
     )
-    _track_gate(pending_configs, thread_pending_requests, request_id_b, thread_id, config_b)
+    _track_gate(
+        pending_configs, thread_pending_requests, request_id_b, thread_id, config_b
+    )
 
     assert request_id_a != request_id_b
 

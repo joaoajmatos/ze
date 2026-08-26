@@ -11,7 +11,13 @@ from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 
 from ze_worldstate.contribution import loop_to_contribution
 from ze_worldstate.extraction import propose_loop_candidates
-from ze_worldstate.types import EvidenceRef, LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import (
+    EvidenceRef,
+    LoopClaimKind,
+    LoopProvenance,
+    LoopState,
+    OpenLoop,
+)
 
 
 def _make_loop(**kwargs) -> OpenLoop:
@@ -43,11 +49,15 @@ def test_loop_to_contribution_preserves_claim_kind_and_confidence():
 
 def test_loop_to_contribution_maps_inflow_provenance_to_epistemic():
     assert (
-        loop_to_contribution(_make_loop(provenance=LoopProvenance.USER_DECLARED)).provenance
+        loop_to_contribution(
+            _make_loop(provenance=LoopProvenance.USER_DECLARED)
+        ).provenance
         == Provenance.PROMPT_SUPPLIED
     )
     assert (
-        loop_to_contribution(_make_loop(provenance=LoopProvenance.CONVERSATION)).provenance
+        loop_to_contribution(
+            _make_loop(provenance=LoopProvenance.CONVERSATION)
+        ).provenance
         == Provenance.SYNTHESIZED
     )
     assert (
@@ -81,7 +91,9 @@ def _llm(response: dict) -> AsyncMock:
 async def test_extraction_write_path_rejects_malformed_claim_kind_before_create():
     llm = AsyncMock()
     loop_store = AsyncMock()
-    loop_store.create = AsyncMock(side_effect=lambda loop: setattr(loop, "id", uuid4()) or loop)
+    loop_store.create = AsyncMock(
+        side_effect=lambda loop: setattr(loop, "id", uuid4()) or loop
+    )
     embedder = AsyncMock()
     entity_resolver = AsyncMock(return_value=[])
 

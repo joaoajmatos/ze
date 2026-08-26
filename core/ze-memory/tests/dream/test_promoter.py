@@ -31,7 +31,9 @@ def _make_pool(fetch_rows=None):
 
 
 def _make_promoter(pool):
-    return DreamPromoter(pool=pool, dream_store=AsyncMock(), embedder=None, settings=None)
+    return DreamPromoter(
+        pool=pool, dream_store=AsyncMock(), embedder=None, settings=None
+    )
 
 
 # ── _run_confidence_decay (fetch-decay-write, T015) ─────────────────────────

@@ -135,3 +135,32 @@ async def test_rejection_emits_warning_log() -> None:
             await validate_and_submit(contribution, _write)
 
     assert any(e.get("event") == "contribution_rejected" for e in logs)
+
+
+def test_content_and_entity_ids_default_to_empty() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.SYNTHESIZED,
+        confidence=_confidence(),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.PERCEPTION,
+    )
+
+    assert contribution.content is None
+    assert contribution.entity_ids == []
+
+
+async def test_validate_and_submit_ignores_content_and_entity_ids() -> None:
+    entity_id = uuid4()
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.SYNTHESIZED,
+        confidence=_confidence(),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.PERCEPTION,
+        content="X moved to Berlin",
+        entity_ids=[entity_id],
+    )
+
+    result = await validate_and_submit(contribution, _write)
+    assert result == "written"

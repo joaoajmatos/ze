@@ -11,7 +11,11 @@ from ze_correlation.push import (
 )
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
-from ze_proactive.attention_budget import release_shared, try_claim_shared, within_budget
+from ze_proactive.attention_budget import (
+    release_shared,
+    try_claim_shared,
+    within_budget,
+)
 
 from ze_worldstate.matching import _loops_linked_to_entities
 from ze_worldstate.rest import _fetch_entities, _fetch_evidence_summaries
@@ -58,7 +62,9 @@ class LoopSurfacer:
         self._relevance_model = relevance_model
         self._embedder = embedder
 
-    async def inline_candidates(self, entity_ids: list[UUID]) -> list[DriftingLoopMention]:
+    async def inline_candidates(
+        self, entity_ids: list[UUID]
+    ) -> list[DriftingLoopMention]:
         """Entity-link-overlap matches only — no confidence/relevance/novelty/budget
         gating (FR-006: inline has no such gate)."""
         loops = await _loops_linked_to_entities(
@@ -204,5 +210,7 @@ class LoopSurfacer:
         return [e["canonical_name"] for e in entities]
 
     async def _evidence_labels(self, loop_id: UUID) -> list[str]:
-        summaries = await _fetch_evidence_summaries(self._pool, self._loop_store, loop_id)
+        summaries = await _fetch_evidence_summaries(
+            self._pool, self._loop_store, loop_id
+        )
         return [s["summary"] for s in summaries if s.get("summary")]

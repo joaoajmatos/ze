@@ -34,6 +34,7 @@ import ze_ingestion
 import ze_worldstate
 import ze_skills
 import ze_workspace
+import ze_collision
 
 from ze_api.errors import MigrationReadinessError
 
@@ -62,6 +63,7 @@ _ZE_WORLDSTATE_VERSIONS = (
 )
 _ZE_SKILLS_VERSIONS = Path(ze_skills.__file__).parent / "migrations" / "versions"
 _ZE_WORKSPACE_VERSIONS = Path(ze_workspace.__file__).parent / "migrations" / "versions"
+_ZE_COLLISION_VERSIONS = Path(ze_collision.__file__).parent / "migrations" / "versions"
 
 
 def _import_plugins() -> None:
@@ -84,6 +86,7 @@ def _collect_version_locations() -> list[Path]:
         _ZE_WORLDSTATE_VERSIONS,
         _ZE_SKILLS_VERSIONS,
         _ZE_WORKSPACE_VERSIONS,
+        _ZE_COLLISION_VERSIONS,
     ]
     for plugin_cls in get_plugin_registry():
         plugin_path = plugin_cls.migrations_path()

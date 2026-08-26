@@ -53,7 +53,9 @@ async def handle_confirm(
             workspace_rest.drop_pending_reset(request_id)
         else:
             workspace_rest.drop_pending_reset(request_id)
-        await conn_mgr.send_frame({"type": "confirm_cancel", "id": request_id}, thread_id)
+        await conn_mgr.send_frame(
+            {"type": "confirm_cancel", "id": request_id}, thread_id
+        )
         return None
 
     if pending_config is None:

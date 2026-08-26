@@ -8,7 +8,7 @@ from uuid import UUID
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
-from ze_plugin.contribution import validate_and_submit
+from ze_collision.detect import submit_and_detect_collisions
 from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
 
 from ze_worldstate import drift
@@ -105,7 +105,9 @@ async def _run_extraction_gate(
         return None
 
     raw_window = parsed.get("implied_window_days")
-    implied_window_days = int(raw_window) if isinstance(raw_window, (int, float)) else None
+    implied_window_days = (
+        int(raw_window) if isinstance(raw_window, (int, float)) else None
+    )
 
     return _ExtractionGateResult(
         is_loop=bool(parsed.get("is_loop")),
@@ -145,6 +147,8 @@ async def _create_declared_loop(
     entity_ids: list[UUID],
     loop_store: LoopStore,
     implied_window_days: int | None = None,
+    collision_store: Any = None,
+    nli_client: Any = None,
 ) -> OpenLoop:
     confirmed_at = datetime.now(timezone.utc)
     loop = OpenLoop(
@@ -158,8 +162,13 @@ async def _create_declared_loop(
         confirmed_at=confirmed_at,
         drift_deadline=drift.compute_drift_deadline(confirmed_at, implied_window_days),
     )
-    created = await validate_and_submit(
-        loop_to_contribution(loop), lambda: loop_store.create(loop)
+    created = await submit_and_detect_collisions(
+        loop_to_contribution(loop, entity_ids=entity_ids),
+        lambda: loop_store.create(loop),
+        result_id=lambda c: c.id,
+        producer_kind="open_loop",
+        collision_store=collision_store,
+        nli_client=nli_client,
     )
     await loop_store.set_drift_deadline(created.id, loop.drift_deadline)
     created.drift_deadline = loop.drift_deadline
@@ -179,6 +188,8 @@ async def propose_loop_candidates(
     graph_store: GraphStore | None = None,
     memory_store: Any = None,
     model: str = DEFAULT_EXTRACTION_MODEL,
+    collision_store: Any = None,
+    nli_client: Any = None,
 ) -> list[OpenLoop]:
     """Conservative, relevance-gated (FR-009). Returns [] for ordinary content.
 
@@ -197,7 +208,13 @@ async def propose_loop_candidates(
 
     if prov == LoopProvenance.USER_DECLARED:
         created = await _create_declared_loop(
-            text.strip(), prov, evidence_refs, entity_ids, loop_store
+            text.strip(),
+            prov,
+            evidence_refs,
+            entity_ids,
+            loop_store,
+            collision_store=collision_store,
+            nli_client=nli_client,
         )
         return [created]
 
@@ -232,6 +249,8 @@ async def propose_loop_candidates(
             entity_ids,
             loop_store,
             implied_window_days=gate.implied_window_days,
+            collision_store=collision_store,
+            nli_client=nli_client,
         )
         return [created]
 
@@ -291,11 +310,17 @@ async def propose_loop_candidates(
         episodes = await memory_store.get_episodes_by_ids([episode_id])
         return len(episodes) > 0
 
-    created = await validate_and_submit(
-        loop_to_contribution(loop, evidence=contribution_evidence),
+    created = await submit_and_detect_collisions(
+        loop_to_contribution(
+            loop, evidence=contribution_evidence, entity_ids=entity_ids
+        ),
         lambda: loop_store.create(loop),
+        result_id=lambda c: c.id,
+        producer_kind="open_loop",
         check_fact_exists=_check_fact_exists,
         check_episode_exists=_check_episode_exists,
+        collision_store=collision_store,
+        nli_client=nli_client,
     )
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
     return [created]

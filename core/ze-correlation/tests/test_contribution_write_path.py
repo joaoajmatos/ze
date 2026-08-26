@@ -88,18 +88,18 @@ async def test_contribution_uses_time_linear_decay_and_self_face():
     from ze_correlation import engine as engine_module
 
     captured = {}
-    original = engine_module.validate_and_submit
+    original = engine_module.submit_and_detect_collisions
 
-    async def _spy(contribution, write, **checkers):
+    async def _spy(contribution, write, **kwargs):
         captured["contribution"] = contribution
-        return await original(contribution, write, **checkers)
+        return await original(contribution, write, **kwargs)
 
     engine, _ = _make_engine()
     hypothesis = _make_hypothesis()
 
     import unittest.mock as mock
 
-    with mock.patch("ze_correlation.engine.validate_and_submit", new=_spy):
+    with mock.patch("ze_correlation.engine.submit_and_detect_collisions", new=_spy):
         await engine._save_hypothesis_via_seam(hypothesis)
 
     contribution = captured["contribution"]

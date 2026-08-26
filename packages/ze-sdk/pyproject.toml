@@ -17,6 +17,7 @@ dependencies = [
     "ze-memory",
     "ze-onboarding",
     "ze-automation",
+    "ze-collision",
 ]
 
 [tool.uv.sources]
@@ -29,6 +30,7 @@ ze-proactive     = { workspace = true }
 ze-memory        = { workspace = true }
 ze-onboarding    = { workspace = true }
 ze-automation    = { workspace = true }
+ze-collision     = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ze_sdk"]

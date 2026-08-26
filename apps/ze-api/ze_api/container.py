@@ -26,6 +26,7 @@ from ze_skills.bootstrap import (
     register_bundled_skills,
 )
 from ze_skills.store import SkillStore
+from ze_collision.store import PostgresCollisionLogStore
 from ze_browser import BrowserClient
 from ze_workspace.bootstrap import build_workspace_stack
 from ze_workspace.client import WorkspaceClient
@@ -119,7 +120,9 @@ class _ContainerTurnStarter:
         if self._container is None:
             log.warning("workspace_followup_turn_starter_unbound", thread_id=thread_id)
             return
-        outcome = await self._container.invoke_raw_turn(thread_id, RawInput(text=prompt))
+        outcome = await self._container.invoke_raw_turn(
+            thread_id, RawInput(text=prompt)
+        )
         if outcome.interrupted or not outcome.response:
             return
         await self._container.interface.send_with_thread(
@@ -181,7 +184,9 @@ async def _locked_invoke_raw_turn(
     config_extra: dict | None = None,
 ) -> TurnResult:
     async with turn_lock.acquire(thread_id):
-        return await invoke_raw_turn(container, thread_id, raw, config_extra=config_extra)
+        return await invoke_raw_turn(
+            container, thread_id, raw, config_extra=config_extra
+        )
 
 
 async def _locked_resume_turn(
@@ -238,6 +243,8 @@ class ZeContainer(CoreContainer):
     priority_view: PriorityView
     skill_store: SkillStore
     skill_matcher: Any
+    collision_store: Any = None
+    nli_client: Any = None
     budget_checker: SpendBudgetChecker | None = None
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
@@ -266,6 +273,8 @@ class ZeContainer(CoreContainer):
             "loop_graph_store": self.loop_graph_store,
             "loop_entity_resolver": self.loop_entity_resolver,
             "loop_surfacer": self.loop_surfacer,
+            "collision_store": self.collision_store,
+            "nli_client": self.nli_client,
             "skill_matcher": self.skill_matcher,
             "budget_checker": self.budget_checker,
             "workspace_client": self.workspace_client,
@@ -621,6 +630,11 @@ async def build_container(settings: Settings) -> ZeContainer:
         hypothesis_store=correlation.hypothesis_store,
     )
 
+    collision_store = PostgresCollisionLogStore(pool=pool)
+    shared.memory_store._collision_store = collision_store
+    correlation.correlation_engine._collision_store = collision_store
+    correlation.correlation_engine._nli_client = shared.nli_client
+
     container = ZeContainer(
         settings=settings,
         pool=pool,
@@ -674,6 +688,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         priority_view=priority_view,
         skill_store=skills_stack.skill_store,
         skill_matcher=skill_matcher,
+        collision_store=collision_store,
+        nli_client=shared.nli_client,
     )
 
     webhook_dispatcher._container = container
@@ -688,6 +704,12 @@ async def build_container(settings: Settings) -> ZeContainer:
                 "plugin_startup_failed", plugin=type(plugin).__name__, error=str(exc)
             )
             raise
+
+    for plugin in plugins:
+        consolidator = getattr(plugin, "contacts_consolidator", None)
+        if consolidator is not None:
+            consolidator._collision_store = collision_store
+            consolidator._nli_client = shared.nli_client
 
     _webhook_processor = getattr(container, "_webhook_processor", None)
     _calendar_reminder_job = getattr(container, "_calendar_reminder_job", None)
@@ -736,6 +758,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         settings=settings,
         notifier=notifier,
     )
+    if dream_job._dream_pass is not None:
+        dream_job._dream_pass._collision_store = collision_store
 
     register_all_proactive_jobs(
         container.proactive_scheduler,

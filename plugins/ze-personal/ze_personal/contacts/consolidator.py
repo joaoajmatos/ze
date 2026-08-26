@@ -9,7 +9,7 @@ from uuid import UUID
 
 import asyncpg
 
-from ze_sdk.contribution import validate_and_submit
+from ze_sdk.contribution import submit_and_detect_collisions
 
 from ze_personal.contacts.contribution import person_source_to_contribution
 from ze_personal.contacts.store import PersonStore
@@ -62,12 +62,16 @@ class ContactsConsolidator:
         person_store: PersonStore,
         openrouter_client: Any,
         settings: Any = None,
+        collision_store: Any = None,
+        nli_client: Any = None,
     ) -> None:
         self._pool = pool
         self._store = person_store
         self._client = openrouter_client
         self._settings = settings
         self._log = get_logger(__name__)
+        self._collision_store = collision_store
+        self._nli_client = nli_client
 
     async def run(self) -> ContactsConsolidationReport:
         start = time.monotonic()
@@ -171,9 +175,13 @@ class ContactsConsolidator:
         if existing:
             best = existing[0]
             source.person_id = best.id  # type: ignore[assignment]
-            await validate_and_submit(
+            await submit_and_detect_collisions(
                 person_source_to_contribution(source),
                 lambda: self._store.add_source(best.id, source),  # type: ignore[arg-type]
+                result_id=lambda _: best.id,
+                producer_kind="contact",
+                collision_store=self._collision_store,
+                nli_client=self._nli_client,
             )
             return False
         else:
@@ -195,8 +203,13 @@ class ContactsConsolidator:
                 await self._store.add_source(stored.id, source)  # type: ignore[arg-type]
                 return stored
 
-            await validate_and_submit(
-                person_source_to_contribution(source), _write
+            await submit_and_detect_collisions(
+                person_source_to_contribution(source),
+                _write,
+                result_id=lambda p: p.id,
+                producer_kind="contact",
+                collision_store=self._collision_store,
+                nli_client=self._nli_client,
             )
             return True
 

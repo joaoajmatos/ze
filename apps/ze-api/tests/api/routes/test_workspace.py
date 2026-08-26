@@ -58,9 +58,7 @@ def _file(path="notes.txt", size=5) -> WorkspaceFile:
 @pytest.mark.asyncio
 async def test_get_status_and_mode():
     store = AsyncMock()
-    store.get_state = AsyncMock(
-        return_value=WorkspaceState(mode=WorkspaceMode.ASK)
-    )
+    store.get_state = AsyncMock(return_value=WorkspaceState(mode=WorkspaceMode.ASK))
     store.get_mode = AsyncMock(return_value=WorkspaceMode.ASK)
     client = AsyncMock()
     client.health = AsyncMock(return_value=True)
@@ -84,9 +82,7 @@ async def test_get_status_and_mode():
 @pytest.mark.asyncio
 async def test_patch_mode_persists():
     store = AsyncMock()
-    store.set_mode = AsyncMock(
-        return_value=WorkspaceState(mode=WorkspaceMode.AUTO)
-    )
+    store.set_mode = AsyncMock(return_value=WorkspaceState(mode=WorkspaceMode.AUTO))
     app = _make_app(store=store)
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"

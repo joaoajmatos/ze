@@ -110,7 +110,9 @@ async def test_confirm_close_drop_persist_across_relist():
 
     async def _transition(loop_id, state):
         target = LoopState(state)
-        confirmed_at = datetime.now(timezone.utc) if target == LoopState.ACTIVE else None
+        confirmed_at = (
+            datetime.now(timezone.utc) if target == LoopState.ACTIVE else None
+        )
         return _loop(id=loop_id, state=target, confirmed_at=confirmed_at)
 
     store.transition = AsyncMock(side_effect=_transition)

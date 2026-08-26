@@ -29,9 +29,7 @@ def _loop(state=LoopState.SUSPECTED, **overrides) -> OpenLoop:
 
 async def test_confirm_loop_transitions_suspected_to_active():
     loop_store = AsyncMock()
-    active_loop = _loop(
-        state=LoopState.ACTIVE, confirmed_at=datetime.now(timezone.utc)
-    )
+    active_loop = _loop(state=LoopState.ACTIVE, confirmed_at=datetime.now(timezone.utc))
     loop_store.transition = AsyncMock(return_value=active_loop)
     loop_store.set_drift_deadline = AsyncMock()
 

@@ -79,6 +79,8 @@ class Contribution:
     target_face: TargetFace
     source_function: SourceFunction
     evidence: list[EvidenceRef] = field(default_factory=list)
+    content: str | None = None
+    entity_ids: list[UUID] = field(default_factory=list)
 
 
 async def validate_and_submit(
@@ -108,7 +110,10 @@ async def validate_and_submit(
             f"{contribution.source_function!r}"
         )
 
-    if contribution.claim_kind in _EVIDENCE_REQUIRED_KINDS and not contribution.evidence:
+    if (
+        contribution.claim_kind in _EVIDENCE_REQUIRED_KINDS
+        and not contribution.evidence
+    ):
         log.warning(
             "contribution_rejected",
             source_function=contribution.source_function,
@@ -134,8 +139,6 @@ async def validate_and_submit(
                 claim_kind=contribution.claim_kind,
                 reason="dangling_evidence",
             )
-            raise DanglingEvidenceError(
-                f"evidence {ref.kind}:{ref.id} does not exist"
-            )
+            raise DanglingEvidenceError(f"evidence {ref.kind}:{ref.id} does not exist")
 
     return await write()

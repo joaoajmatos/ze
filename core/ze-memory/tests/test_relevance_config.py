@@ -6,7 +6,11 @@ from ze_memory.defaults import (
     ENTITY_MATCH_CONSTANT_DEFAULT,
     RELEVANCE_FLOOR_DEFAULT,
 )
-from ze_memory.relevance_config import CompositeWeights, RelevanceConfig, relevance_config
+from ze_memory.relevance_config import (
+    CompositeWeights,
+    RelevanceConfig,
+    relevance_config,
+)
 
 
 def test_relevance_config_defaults_with_no_settings():

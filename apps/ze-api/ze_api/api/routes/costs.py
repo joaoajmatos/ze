@@ -40,7 +40,13 @@ def _aggregate_by_plugin(
         key = agent_to_plugin.get(agent, "other")
         target = by_plugin.setdefault(
             key,
-            {"usd": 0.0, "tokens": 0, "calls": 0, "prompt_tokens": 0, "completion_tokens": 0},
+            {
+                "usd": 0.0,
+                "tokens": 0,
+                "calls": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+            },
         )
         target["usd"] += bucket["usd"]
         target["tokens"] += bucket["tokens"]
@@ -69,7 +75,9 @@ async def web_cost_summary(container=Depends(get_container)) -> WebCostSummaryRe
     agent_to_plugin = _build_agent_to_plugin_map()
     by_plugin = {
         plugin: AgentCostBucket.model_validate(bucket)
-        for plugin, bucket in _aggregate_by_plugin(data["by_agent"], agent_to_plugin).items()
+        for plugin, bucket in _aggregate_by_plugin(
+            data["by_agent"], agent_to_plugin
+        ).items()
     }
     by_day = [DailyCostBucket.model_validate(d) for d in data["by_day"]]
     return WebCostSummaryResponse(

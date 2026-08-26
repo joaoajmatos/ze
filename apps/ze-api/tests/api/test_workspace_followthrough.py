@@ -63,8 +63,17 @@ class FakeInMemoryStore:
         self.runs[recorded.id] = recorded
         return recorded
 
-    async def complete_run(self, run_id, *, status, exit_code=None, output_preview="",
-                            output_file_path=None, files_touched=None, error_summary=None):
+    async def complete_run(
+        self,
+        run_id,
+        *,
+        status,
+        exit_code=None,
+        output_preview="",
+        output_file_path=None,
+        files_touched=None,
+        error_summary=None,
+    ):
         run = self.runs[run_id]
         if run.ended_at is not None:
             return None
@@ -93,9 +102,9 @@ class FakeInMemoryStore:
         pass
 
     async def insert_run(self, run: WorkspaceRun) -> WorkspaceRun:
-        recorded = WorkspaceRun(id=uuid4(), **{
-            k: v for k, v in run.__dict__.items() if k != "id"
-        })
+        recorded = WorkspaceRun(
+            id=uuid4(), **{k: v for k, v in run.__dict__.items() if k != "id"}
+        )
         self.runs[recorded.id] = recorded
         return recorded
 
@@ -110,7 +119,9 @@ def _settings(short_wait: float) -> SimpleNamespace:
     )
 
 
-def _wire(monkeypatch, *, short_wait: float, run_seconds: float, mode=WorkspaceMode.AUTO):
+def _wire(
+    monkeypatch, *, short_wait: float, run_seconds: float, mode=WorkspaceMode.AUTO
+):
     store = FakeInMemoryStore(mode)
     monkeypatch.setattr(bootstrap, "PostgresWorkspaceStore", lambda pool: store)
     shared = SimpleNamespace(pool=None)
@@ -165,7 +176,12 @@ async def test_long_run_detaches_and_ends_turn_with_still_running(monkeypatch):
 # ── User Story 2: follow-up turn + completion push (T018-T021) ────────────────
 
 
-def _completed_run(*, status: WorkspaceRunStatus, origin=WorkspaceRunOrigin.CONVERSATION, thread_id="t-run") -> WorkspaceRun:
+def _completed_run(
+    *,
+    status: WorkspaceRunStatus,
+    origin=WorkspaceRunOrigin.CONVERSATION,
+    thread_id="t-run",
+) -> WorkspaceRun:
     return WorkspaceRun(
         id=uuid4(),
         command="sleep 60",
@@ -245,7 +261,9 @@ def _real_push_stack(*, connected: bool):
         message_store=msg_store, connection_manager=conn, notifier=ntfy
     )
     notification_store = _FakeNotificationStore()
-    notifier = ProactiveNotifier(interface=interface, notification_store=notification_store)
+    notifier = ProactiveNotifier(
+        interface=interface, notification_store=notification_store
+    )
     push_sender = _NotifierPushSender()
     push_sender.bind(notifier)
     return push_sender, conn, msg_store, ntfy, notification_store
@@ -277,7 +295,9 @@ class _LockAwareFakeContainer:
 async def test_us2_connected_run_gets_followup_turn_and_noop_push():
     """T018: connected -> follow-up turn appears on the thread; push is a no-op
     (no ntfy dispatch — the WebSocket is delivering in real time)."""
-    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(connected=True)
+    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(
+        connected=True
+    )
 
     interface = SimpleNamespace(send_with_thread=AsyncMock())
     turn_starter = _ContainerTurnStarter()
@@ -285,12 +305,13 @@ async def test_us2_connected_run_gets_followup_turn_and_noop_push():
     async def raw_invoke(thread_id, raw):
         return _FakeTurnOutcome(response=f"The workspace run finished: {raw.text}")
 
-
     container = _LockAwareFakeContainer(ThreadTurnLock(), raw_invoke, interface)
     turn_starter.bind(container)
 
     store = _FakeWatcherStore()
-    watcher = RunWatcher(store=store, turn_starter=turn_starter, push_sender=push_sender)
+    watcher = RunWatcher(
+        store=store, turn_starter=turn_starter, push_sender=push_sender
+    )
 
     run = _completed_run(status=WorkspaceRunStatus.SUCCEEDED)
     await watcher._dispatch(run)
@@ -305,7 +326,9 @@ async def test_us2_disconnected_run_pushes_and_writes_followup_to_history():
     """T019: disconnected -> ntfy push fires and the follow-up turn is written
     to conversation history (via the fake message store standing in for
     Postgres-backed MessageStore)."""
-    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(connected=False)
+    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(
+        connected=False
+    )
 
     saved_history: list = []
 
@@ -322,25 +345,32 @@ async def test_us2_disconnected_run_pushes_and_writes_followup_to_history():
         async def invoke_raw_turn(self, thread_id, raw, *, config_extra=None):
             async with self._turn_lock.acquire(thread_id):
                 outcome = await self._raw_invoke(thread_id, raw)
-                await self.interface.send_with_thread(outcome.response, thread_id=thread_id)
+                await self.interface.send_with_thread(
+                    outcome.response, thread_id=thread_id
+                )
                 return outcome
-
 
     real_interface = NativeAppInterface(
         message_store=msg_store, connection_manager=conn, notifier=AsyncMock()
     )
-    container = _ContainerWithRealInterface(ThreadTurnLock(), raw_invoke, real_interface)
+    container = _ContainerWithRealInterface(
+        ThreadTurnLock(), raw_invoke, real_interface
+    )
 
     turn_starter = _ContainerTurnStarter()
     turn_starter.bind(container)
 
     store = _FakeWatcherStore()
-    watcher = RunWatcher(store=store, turn_starter=turn_starter, push_sender=push_sender)
+    watcher = RunWatcher(
+        store=store, turn_starter=turn_starter, push_sender=push_sender
+    )
 
     run = _completed_run(status=WorkspaceRunStatus.SUCCEEDED, thread_id="thread-disc")
     await watcher._dispatch(run)
 
-    assert saved_history == ["The workspace run `sleep 60` (id " + str(run.id) + ") finished successfully."]
+    assert saved_history == [
+        "The workspace run `sleep 60` (id " + str(run.id) + ") finished successfully."
+    ]
     assert msg_store.saved  # follow-up turn's message reached conversation history
     ntfy.push.assert_awaited()  # disconnected -> ntfy push fired
 
@@ -382,15 +412,21 @@ async def test_us2_unattended_run_never_dispatches_followup_or_push():
     """T021 (restated for _dispatch directly; T009/US1 already covers the
     origin!=conversation guard at the detach/finish level) — kept here for
     User-Story-2 test-file locality per the task list."""
-    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(connected=False)
+    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(
+        connected=False
+    )
     interface = SimpleNamespace(send_with_thread=AsyncMock())
     turn_starter = _ContainerTurnStarter()
     turn_starter.bind(SimpleNamespace(interface=interface, invoke_raw_turn=AsyncMock()))
 
     store = _FakeWatcherStore()
-    watcher = RunWatcher(store=store, turn_starter=turn_starter, push_sender=push_sender)
+    watcher = RunWatcher(
+        store=store, turn_starter=turn_starter, push_sender=push_sender
+    )
 
-    run = _completed_run(status=WorkspaceRunStatus.SUCCEEDED, origin=WorkspaceRunOrigin.UNATTENDED)
+    run = _completed_run(
+        status=WorkspaceRunStatus.SUCCEEDED, origin=WorkspaceRunOrigin.UNATTENDED
+    )
     await watcher._dispatch(run)
 
     interface.send_with_thread.assert_not_awaited()
@@ -405,7 +441,9 @@ async def test_us2_in_turn_completion_produces_no_followup_or_push():
     complete_run/insert_run directly, RunWatcher.detach is never called (already
     covered by test_short_run_finishes_in_turn_without_detach above); this test
     pins that a RunWatcher with no dispatch call produces zero side effects."""
-    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(connected=False)
+    push_sender, conn, msg_store, ntfy, notification_store = _real_push_stack(
+        connected=False
+    )
     interface = SimpleNamespace(send_with_thread=AsyncMock())
     turn_starter = _ContainerTurnStarter()
     turn_starter.bind(SimpleNamespace(interface=interface, invoke_raw_turn=AsyncMock()))

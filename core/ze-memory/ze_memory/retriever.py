@@ -7,7 +7,7 @@ from uuid import UUID
 from ze_logging import get_logger
 from ze_agents.claims import ClaimKind
 from ze_agents.tasks import fire_and_forget
-from ze_plugin.contribution import validate_and_submit
+from ze_collision.detect import submit_and_detect_collisions
 from ze_memory.consolidation_store import _cosine_similarity
 from ze_memory.contribution import signal_to_contribution
 
@@ -93,6 +93,7 @@ class PostgresMemoryStore:
         policy_registry: Any = None,
         graph_store: GraphStore | None = None,
         nli_client: NLIClient | None = None,
+        collision_store: Any = None,
     ) -> None:
         self._pool = pool
         self._embedder = embedder
@@ -103,6 +104,7 @@ class PostgresMemoryStore:
         self._traversal = self._build_traversal(graph_store, settings)
         self._retrieval_cache = PostgresRetrievalCacheStore(pool)
         self._nli = nli_client
+        self._collision_store = collision_store
 
     def apply_policy_registry(self, registry: Any) -> None:
         """Replace the retrieval policy registry (called after plugins are discovered)."""
@@ -733,7 +735,9 @@ class PostgresMemoryStore:
             )
 
             claim_kind = (
-                ClaimKind.INFERENCE if fact.provenance == "synthesized" else ClaimKind.FACT
+                ClaimKind.INFERENCE
+                if fact.provenance == "synthesized"
+                else ClaimKind.FACT
             )
             row = await conn.fetchrow(
                 "INSERT INTO memory_facts"
@@ -1264,8 +1268,13 @@ class PostgresMemoryStore:
                         signal.expires_at,
                     )
 
-                row = await validate_and_submit(
-                    signal_to_contribution(signal), _write
+                row = await submit_and_detect_collisions(
+                    signal_to_contribution(signal),
+                    _write,
+                    result_id=lambda r: r["id"],
+                    producer_kind="signal",
+                    collision_store=getattr(self, "_collision_store", None),
+                    nli_client=getattr(self, "_nli", None),
                 )
             signal_id: UUID = row["id"]
 

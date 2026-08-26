@@ -153,7 +153,9 @@ async def test_fetch_anchored_candidates_returns_one_hop_facts():
 
 
 async def test_fetch_anchored_candidates_empty_when_no_matches():
-    ctx = await fetch_anchored_candidates([], AsyncMock(), MagicMock(), RelevanceConfig())
+    ctx = await fetch_anchored_candidates(
+        [], AsyncMock(), MagicMock(), RelevanceConfig()
+    )
     assert ctx.facts == []
     assert ctx.episodes == []
 

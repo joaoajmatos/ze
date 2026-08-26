@@ -10,6 +10,7 @@ dependencies = [
     "ze-agents",
     "ze-logging",
     "ze-plugin",
+    "ze-collision",
     "asyncpg==0.31.0",
     "numpy==2.4.6",
 ]
@@ -43,6 +44,7 @@ markers = [
 ze-agents = { workspace = true }
 ze-logging = { workspace = true }
 ze-plugin = { workspace = true }
+ze-collision = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ze_memory"]

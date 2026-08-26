@@ -831,7 +831,9 @@ class TestOnFailurePolicies:
         store.finish_execution = AsyncMock()
         client = MagicMock()
         client.complete = AsyncMock(return_value="all failed summary")
-        config = {"configurable": {"workflow_store": store, "openrouter_client": client}}
+        config = {
+            "configurable": {"workflow_store": store, "openrouter_client": client}
+        }
         step_results = [
             StepResult(
                 step_index=0,
@@ -868,7 +870,9 @@ class TestPartialSynthesis:
         store.finish_execution = AsyncMock()
         client = MagicMock()
         client.complete = AsyncMock(return_value="partial output summary")
-        config = {"configurable": {"workflow_store": store, "openrouter_client": client}}
+        config = {
+            "configurable": {"workflow_store": store, "openrouter_client": client}
+        }
         execution_id = uuid4()
         state = {
             "workflow_execution_id": execution_id,
@@ -910,7 +914,9 @@ class TestPartialSynthesis:
         store.finish_execution = AsyncMock()
         client = MagicMock()
         client.complete = AsyncMock()
-        config = {"configurable": {"workflow_store": store, "openrouter_client": client}}
+        config = {
+            "configurable": {"workflow_store": store, "openrouter_client": client}
+        }
         state = {
             "workflow_execution_id": uuid4(),
             "workflow_step_results": [
@@ -997,7 +1003,9 @@ class TestNoResultsVerify:
                 {"pass": True, "no_results": True, "reason": "No new items found"}
             )
         )
-        config = {"configurable": {"workflow_store": store, "openrouter_client": client}}
+        config = {
+            "configurable": {"workflow_store": store, "openrouter_client": client}
+        }
         step = WorkflowStep(
             task="Check for news",
             id="s0",
@@ -1039,10 +1047,14 @@ class TestCancellation:
                 )
             ],
         }
-        result = await workflow_cancelled(state, {"configurable": {"workflow_store": store}})
+        result = await workflow_cancelled(
+            state, {"configurable": {"workflow_store": store}}
+        )
         assert result["final_response"] == "Workflow run cancelled."
         store.finish_execution.assert_called_once_with(
-            execution_id, "cancelled", summary=store.finish_execution.call_args.kwargs["summary"]
+            execution_id,
+            "cancelled",
+            summary=store.finish_execution.call_args.kwargs["summary"],
         )
 
     async def test_load_workflow_step_routes_to_cancelled_when_flagged(self):

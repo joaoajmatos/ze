@@ -25,6 +25,8 @@ class StaleSuspicionJob:
     async def run(self) -> None:
         loops = await self._loop_store.list([LoopState.SUSPECTED.value])
         for loop in loops:
-            if loop.created_at is not None and is_stale(loop.created_at, self._window_days):
+            if loop.created_at is not None and is_stale(
+                loop.created_at, self._window_days
+            ):
                 await self._loop_store.transition(loop.id, LoopState.DROPPED.value)
                 log.info("stale_suspicion_dropped", loop_id=str(loop.id))

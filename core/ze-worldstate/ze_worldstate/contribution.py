@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from ze_agents.claims import Confidence, DecayProfile, Provenance
 from ze_plugin.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace
 
@@ -15,7 +17,9 @@ _INFLOW_TO_EPISTEMIC: dict[str, Provenance] = {
 
 
 def loop_to_contribution(
-    loop: OpenLoop, evidence: list[EvidenceRef] | None = None
+    loop: OpenLoop,
+    evidence: list[EvidenceRef] | None = None,
+    entity_ids: list[UUID] | None = None,
 ) -> Contribution:
     return Contribution(
         claim_kind=loop.claim_kind,
@@ -27,4 +31,6 @@ def loop_to_contribution(
         target_face=TargetFace.ACTIVE_CONCERNS,
         source_function=SourceFunction.EXECUTIVE,
         evidence=evidence or [],
+        content=loop.title,
+        entity_ids=entity_ids or [],
     )

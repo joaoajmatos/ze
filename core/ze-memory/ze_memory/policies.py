@@ -311,7 +311,11 @@ class CompanionPolicy:
             events=events,
         )
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=cur_sid,
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -377,7 +381,11 @@ class ResearchPolicy:
             events=events,
         )
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=cur_sid,
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -420,7 +428,11 @@ class GoalsPolicy:
             facts=facts, profile=profile, task_state=task_state, events=events
         )
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=getattr(request, "current_session_id", None),
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -448,7 +460,11 @@ class WorkflowPolicy:
         facts = budget_facts(fact_rows, DEFAULT_FACT_BUDGET_TOKENS)
         ctx = MemoryContext(facts=facts, task_state=task_state)
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=getattr(request, "current_session_id", None),
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -486,7 +502,11 @@ class CalendarPolicy:
         events = events_from_rows(event_rows)
         ctx = MemoryContext(facts=facts, events=events)
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=getattr(request, "current_session_id", None),
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -512,7 +532,11 @@ class RemindersPolicy:
         facts = budget_facts(fact_rows, DEFAULT_FACT_BUDGET_TOKENS)
         ctx = MemoryContext(facts=facts)
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=getattr(request, "current_session_id", None),
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -573,7 +597,11 @@ class EmailPolicy:
             events=events,
         )
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=cur_sid,
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -622,7 +650,11 @@ class ProspectingPolicy:
             facts=facts, episodes=episodes, session_summaries=session_summaries
         )
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=cur_sid,
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -673,7 +705,11 @@ class PlannerPolicy:
         procedures = procedures_from_rows(proc_rows, DEFAULT_PROCEDURE_BUDGET_TOKENS)
         ctx = MemoryContext(facts=facts, procedures=procedures, task_state=task_state)
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=getattr(request, "current_session_id", None),
         )
         ctx.token_estimate = token_estimate(ctx)
@@ -707,7 +743,11 @@ class ToolExecutorPolicy:
         facts = budget_facts(fact_rows, DEFAULT_FACT_BUDGET_TOKENS)
         ctx = MemoryContext(facts=facts, task_state=task_state)
         ctx = await augment_with_entity_anchor(
-            ctx, request.query_text, store.pool, store.graph_store, cfg,
+            ctx,
+            request.query_text,
+            store.pool,
+            store.graph_store,
+            cfg,
             current_session_id=getattr(request, "current_session_id", None),
         )
         ctx.token_estimate = token_estimate(ctx)

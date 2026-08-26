@@ -245,7 +245,10 @@ async def test_send_pushes_when_loop_still_drifting():
     loop_store.get = AsyncMock(return_value=loop)
     notifier = AsyncMock()
     surfacer = LoopSurfacer(
-        loop_store=loop_store, graph_store=AsyncMock(), push_log=AsyncMock(), notifier=notifier
+        loop_store=loop_store,
+        graph_store=AsyncMock(),
+        push_log=AsyncMock(),
+        notifier=notifier,
     )
 
     sent = await surfacer.send(loop)
@@ -261,7 +264,10 @@ async def test_send_returns_false_when_loop_no_longer_drifting():
     loop_store.get = AsyncMock(return_value=resolved)
     notifier = AsyncMock()
     surfacer = LoopSurfacer(
-        loop_store=loop_store, graph_store=AsyncMock(), push_log=AsyncMock(), notifier=notifier
+        loop_store=loop_store,
+        graph_store=AsyncMock(),
+        push_log=AsyncMock(),
+        notifier=notifier,
     )
 
     sent = await surfacer.send(loop)

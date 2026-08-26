@@ -83,6 +83,13 @@ ze/                           # monorepo root
 │   │       ├── tools.py      # workspace_* @tools (not imported by ze-core/ze-agents)
 │   │       ├── store.py      # workspace_state + workspace_runs
 │   │       └── migrations/   # zws001 (workspace_state, workspace_runs)
+│   ├── ze-collision/         # Contribution collision detection — cross-function conflict logging
+│   │   └── ze_collision/
+│   │       ├── types.py      # CollisionCandidate, CollisionLogEntry
+│   │       ├── store.py      # CollisionLogStore Protocol + PostgresCollisionLogStore
+│   │       ├── detect.py     # submit_and_detect_collisions() wrapper over validate_and_submit
+│   │       ├── rest.py       # list_collisions() query surface
+│   │       └── migrations/   # zcol001 (contribution_collisions)
 │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
 │   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
 │   ├── ze-notifications/     # Push notification abstraction (ntfy)
@@ -162,16 +169,17 @@ ze-plugin       → ze-agents, ze-data       core/
 ze-proactive    → ze-agents                core/
 ze-notifications  (no ze deps)             core/
 ze-components     (no ze deps)             core/
-ze-memory       → ze-agents, ze-plugin      core/  ← ze-plugin: Contribution seam (Signal write path)
+ze-collision    → ze-agents, ze-plugin, ze-logging  core/  ← contribution collision detection; wired by ze-api directly
+ze-memory       → ze-agents, ze-plugin, ze-collision      core/  ← ze-plugin: Contribution seam (Signal write path)
 ze-eval           (no ze deps — HTTP only) core/  ← eval infrastructure
 ze-automation   → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
-ze-correlation  → ze-agents, ze-logging, ze-memory, ze-plugin  core/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
-ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin  core/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
+ze-correlation  → ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision  core/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
+ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision  core/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
 ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data  core/  ← agent skills; wired by ze-api directly
 ze-priority     → ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation  core/  ← attention arbitration (PriorityView + shared push budget); wired by ze-api directly
 ze-workspace    → ze-agents, ze-logging, ze-data  core/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
 ze-core         → ze-agents, ze-communication, ze-plugin  core/  ← engine; never a plugin dep
-ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
+ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation, ze-collision  packages/  ← plugin entry point
 ze-google       → ze-communication         integrations/  ← GmailChannel now lives here
 ze-personal     → ze-sdk, ze-memory (read-only: ze_memory.dream.store for dream journal)   plugins/
 ze-messenger    → ze-sdk, ze-google, ze-personal            plugins/
@@ -385,6 +393,7 @@ and runs them against a single `alembic_version` table.
 | ze-news | `zn` | news_articles |
 | ze-skills | `zsk` | skills, skill_reference_files, skill_reviews, skill_scripts (`zsk002`) |
 | ze-workspace | `zws` | workspace_state, workspace_runs |
+| ze-collision | `zcol` | contribution_collisions |
 
 **Naming conventions:**
 - One prefix per package (`zc`, `zm`, `zcal`, …).

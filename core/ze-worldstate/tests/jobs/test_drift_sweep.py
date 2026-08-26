@@ -8,7 +8,9 @@ from ze_worldstate.jobs.drift_sweep import DriftSweepJob
 from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
 
 
-def _loop(*, confirmed_days_ago: int, updated_days_ago: int, window_days: int = 7) -> OpenLoop:
+def _loop(
+    *, confirmed_days_ago: int, updated_days_ago: int, window_days: int = 7
+) -> OpenLoop:
     now = datetime.now(timezone.utc)
     confirmed_at = now - timedelta(days=confirmed_days_ago)
     return OpenLoop(

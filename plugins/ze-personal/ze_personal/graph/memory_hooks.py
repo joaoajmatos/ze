@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ze_sdk.channels import ChannelHandle, ChannelType
-from ze_sdk.contribution import validate_and_submit
+from ze_sdk.contribution import submit_and_detect_collisions
 
 from ze_personal.contacts.contribution import person_source_to_contribution
 from ze_personal.contacts.types import ContactProposal, Person, PersonSource
@@ -26,12 +26,16 @@ async def contact_proposal_hook(result: Any, ctx: Any, config: dict) -> None:
     """
     person_store = config["configurable"].get("person_store")
     contact_channel_store = config["configurable"].get("contact_channel_store")
+    collision_store = config["configurable"].get("collision_store")
+    nli_client = config["configurable"].get("nli_client")
     if person_store and result.contact_proposals:
         await _write_contact_proposals(
             person_store,
             result.contact_proposals,
             ctx.prompt,
             contact_channel_store=contact_channel_store,
+            collision_store=collision_store,
+            nli_client=nli_client,
         )
 
 
@@ -40,6 +44,8 @@ async def _write_contact_proposals(
     proposals: list[ContactProposal],
     prompt: str,
     contact_channel_store: Any = None,
+    collision_store: Any = None,
+    nli_client: Any = None,
 ) -> None:
     for proposal in proposals:
         if not proposal.name:
@@ -55,9 +61,13 @@ async def _write_contact_proposals(
             if existing:
                 best = existing[0]
                 source.person_id = best.id
-                await validate_and_submit(
+                await submit_and_detect_collisions(
                     person_source_to_contribution(source),
                     lambda: person_store.add_source(best.id, source),
+                    result_id=lambda _: best.id,
+                    producer_kind="contact",
+                    collision_store=collision_store,
+                    nli_client=nli_client,
                 )
                 contact_id = best.id
             else:
@@ -78,8 +88,13 @@ async def _write_contact_proposals(
                     await person_store.add_source(stored.id, source)
                     return stored
 
-                stored = await validate_and_submit(
-                    person_source_to_contribution(source), _write
+                stored = await submit_and_detect_collisions(
+                    person_source_to_contribution(source),
+                    _write,
+                    result_id=lambda p: p.id,
+                    producer_kind="contact",
+                    collision_store=collision_store,
+                    nli_client=nli_client,
                 )
                 contact_id = stored.id
 

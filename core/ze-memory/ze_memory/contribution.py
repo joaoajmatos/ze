@@ -19,4 +19,9 @@ def signal_to_contribution(signal: Signal) -> Contribution:
         target_face=TargetFace.WORLD,
         source_function=SourceFunction.PERCEPTION,
         evidence=[],
+        content=f"{signal.title} {signal.summary}",
+        # Entity resolution for signals happens *after* this write, inside
+        # retriever.py's `ingest_signal` — so matching falls back to
+        # `target_face` here per FR-002. Intentional, not a gap.
+        entity_ids=[],
     )

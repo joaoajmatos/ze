@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ze-collision"
+version = "0.1.0"
+description = "Contribution collision detection — cross-function conflict logging over the Contribution seam"
+requires-python = ">=3.11"
+dependencies = [
+    "ze-agents",
+    "ze-plugin",
+    "ze-logging",
+    "asyncpg==0.31.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.0.3",
+    "pytest-asyncio==1.4.0",
+    "pytest-mock==3.15.1",
+    "ruff==0.15.14",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.uv.sources]
+ze-agents = { workspace = true }
+ze-plugin = { workspace = true }
+ze-logging = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["ze_collision"]

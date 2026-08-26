@@ -135,7 +135,9 @@ def _make_store(conn, *, settings=None):
     store = MagicMock()
     store.pool = MagicMock()
     store.pool.acquire = MagicMock(return_value=_async_ctx(conn))
-    store.settings = settings if settings is not None else {"memory": {"relevance_floor": 0.35}}
+    store.settings = (
+        settings if settings is not None else {"memory": {"relevance_floor": 0.35}}
+    )
     store.get_task_state = AsyncMock(return_value=None)
     return store
 
@@ -191,7 +193,9 @@ async def test_research_policy_excludes_low_similarity_episodes(
     )
     store = _make_store(conn)
 
-    ctx = await ResearchPolicy().retrieve(_request(module="research", agent="research"), store)
+    ctx = await ResearchPolicy().retrieve(
+        _request(module="research", agent="research"), store
+    )
 
     assert len(ctx.episodes) == 1
     assert ctx.episodes[0].relevance_score == 0.9

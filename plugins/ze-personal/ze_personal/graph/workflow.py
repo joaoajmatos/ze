@@ -172,7 +172,7 @@ async def verify_step(state: dict[str, Any], config: RunnableConfig) -> dict:
                         "content": (
                             f"Step output:\n{output}\n\n"
                             f"Verification criteria: {step.verify}\n\n"
-                            'Does the output meet the criteria? Reply with JSON only: '
+                            "Does the output meet the criteria? Reply with JSON only: "
                             '{"pass": true, "no_results": false, "reason": "..."}'
                         ),
                     }
@@ -337,7 +337,9 @@ async def workflow_synthesize(state: dict[str, Any], config: RunnableConfig) -> 
         failure_notes = "\n".join(
             f"- Step {r.step_index + 1} ({r.task}): {r.error}" for r in failed
         )
-        parts = f"{parts}\n\nSteps that failed but did not stop the run:\n{failure_notes}"
+        parts = (
+            f"{parts}\n\nSteps that failed but did not stop the run:\n{failure_notes}"
+        )
 
     if parts:
         response = await client.complete(
@@ -508,7 +510,9 @@ async def workflow_cancelled(state: dict[str, Any], config: RunnableConfig) -> d
             for r in successful
             if r.output
         )
-        summary = f"Run cancelled after completing {len(successful)} step(s).\n\n{parts}"
+        summary = (
+            f"Run cancelled after completing {len(successful)} step(s).\n\n{parts}"
+        )
     else:
         summary = "Run cancelled before any step completed."
 

@@ -85,21 +85,21 @@ async def test_inference_claim_kind_persists_with_neutral_confidence():
 
 async def test_save_artifact_via_seam_uses_neutral_confidence_and_self_face():
     """Confidence and target_face used at submission time, per research.md §11/§13."""
-    from ze_plugin import contribution as contribution_module
+    from ze_collision import detect as detect_module
 
     captured = {}
-    original = contribution_module.validate_and_submit
+    original = detect_module.submit_and_detect_collisions
 
-    async def _spy(contribution, write, **checkers):
+    async def _spy(contribution, write, **kwargs):
         captured["contribution"] = contribution
-        return await original(contribution, write, **checkers)
+        return await original(contribution, write, **kwargs)
 
     dream_pass, _ = _make_dream_pass()
-    dream_pass_module_validate = "ze_memory.dream.dream_pass.validate_and_submit"
+    dream_pass_module_submit = "ze_memory.dream.dream_pass.submit_and_detect_collisions"
 
     import unittest.mock as mock
 
-    with mock.patch(dream_pass_module_validate, new=_spy):
+    with mock.patch(dream_pass_module_submit, new=_spy):
         await dream_pass._save_artifact_via_seam(**_artifact_kwargs())
 
     contribution = captured["contribution"]

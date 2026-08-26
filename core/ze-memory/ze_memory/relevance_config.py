@@ -70,9 +70,7 @@ def relevance_config(settings: Any = None) -> RelevanceConfig:
             similarity=float(
                 weights_raw.get("similarity", COMPOSITE_WEIGHT_SIMILARITY_DEFAULT)
             ),
-            recency=float(
-                weights_raw.get("recency", COMPOSITE_WEIGHT_RECENCY_DEFAULT)
-            ),
+            recency=float(weights_raw.get("recency", COMPOSITE_WEIGHT_RECENCY_DEFAULT)),
             confidence=float(
                 weights_raw.get("confidence", COMPOSITE_WEIGHT_CONFIDENCE_DEFAULT)
             ),
@@ -89,9 +87,7 @@ def relevance_config(settings: Any = None) -> RelevanceConfig:
                 entity_anchor_raw.get("enabled", ENTITY_ANCHOR_ENABLED_DEFAULT)
             ),
             entity_match_constant=float(
-                entity_anchor_raw.get(
-                    "match_constant", ENTITY_MATCH_CONSTANT_DEFAULT
-                )
+                entity_anchor_raw.get("match_constant", ENTITY_MATCH_CONSTANT_DEFAULT)
             ),
             live_rerank_enabled=bool(
                 live_rerank_raw.get("enabled", LIVE_RERANK_ENABLED_DEFAULT)

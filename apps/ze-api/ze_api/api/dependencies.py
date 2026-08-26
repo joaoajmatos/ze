@@ -93,6 +93,10 @@ def get_skill_store(request: Request):
     return request.app.state.container.skill_store
 
 
+def get_collision_store(request: Request):
+    return request.app.state.container.collision_store
+
+
 def get_workspace_store(request: Request):
     return request.app.state.container.workspace_store
 

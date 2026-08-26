@@ -35,8 +35,12 @@ def is_drift_eligible(loop: OpenLoop, now: datetime | None = None) -> bool:
 def compose_absence_rationale(loop: OpenLoop, now: datetime | None = None) -> str:
     """Hedged, evidence-cited rationale for the sweep path (FR-001, FR-005)."""
     now = now or datetime.now(timezone.utc)
-    confirmed_s = loop.confirmed_at.date().isoformat() if loop.confirmed_at else "unknown"
-    deadline_s = loop.drift_deadline.date().isoformat() if loop.drift_deadline else "unknown"
+    confirmed_s = (
+        loop.confirmed_at.date().isoformat() if loop.confirmed_at else "unknown"
+    )
+    deadline_s = (
+        loop.drift_deadline.date().isoformat() if loop.drift_deadline else "unknown"
+    )
     return (
         "No corroborating evidence (email, calendar, or conversational update) "
         f"since confirmation on {confirmed_s}; implied window elapsed {deadline_s}."

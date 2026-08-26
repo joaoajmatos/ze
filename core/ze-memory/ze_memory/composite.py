@@ -21,12 +21,22 @@ _NEUTRAL_RECENCY = 0.5
 
 # Priority order of timestamp-like fields to use as the recency signal, checked
 # across both raw asyncpg rows (dict-like) and projected dataclasses (attrs).
-_RECENCY_FIELDS = ("updated_at", "last_turn_at", "created_at", "start_at", "occurred_at")
+_RECENCY_FIELDS = (
+    "updated_at",
+    "last_turn_at",
+    "created_at",
+    "start_at",
+    "occurred_at",
+)
 
 
 def _get(candidate: Any, *keys: str) -> Any:
     for key in keys:
-        value = candidate.get(key) if hasattr(candidate, "get") else getattr(candidate, key, None)
+        value = (
+            candidate.get(key)
+            if hasattr(candidate, "get")
+            else getattr(candidate, key, None)
+        )
         if value is not None:
             return value
     return None
@@ -91,4 +101,6 @@ def sort_by_composite_score(
     rows: list[Any], weights: CompositeWeights, now: datetime
 ) -> list[Any]:
     """Stable-sort candidates by composite_score, highest first."""
-    return sorted(rows, key=lambda row: composite_score(row, weights, now), reverse=True)
+    return sorted(
+        rows, key=lambda row: composite_score(row, weights, now), reverse=True
+    )

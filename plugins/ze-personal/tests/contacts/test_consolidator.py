@@ -294,7 +294,9 @@ def _mistagged_contribution(source) -> Contribution:
     return Contribution(
         claim_kind=ClaimKind.FACT,
         provenance=source.provenance,
-        confidence=Confidence(value=source.weight, decay_profile=DecayProfile.EVIDENCE_WEIGHTED),
+        confidence=Confidence(
+            value=source.weight, decay_profile=DecayProfile.EVIDENCE_WEIGHTED
+        ),
         target_face=TargetFace.USER,
         source_function=SourceFunction.SOCIAL_COGNITION,
         evidence=[],

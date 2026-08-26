@@ -10,11 +10,11 @@ from uuid import UUID, uuid4
 from ze_logging import get_logger
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_collision.detect import submit_and_detect_collisions
 from ze_plugin.contribution import (
     Contribution,
     SourceFunction,
     TargetFace,
-    validate_and_submit,
 )
 from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
 
@@ -61,12 +61,16 @@ class CorrelationEngine:
         llm_client: Any,  # ze_agents LLMClient protocol
         hypothesis_store: PostgresHypothesisStore,
         settings: Any,
+        collision_store: Any = None,
+        nli_client: Any = None,
     ) -> None:
         self._memory = memory_store
         self._relevance = relevance_model
         self._llm = llm_client
         self._store = hypothesis_store
         self._cfg = _load_config(settings)
+        self._collision_store = collision_store
+        self._nli_client = nli_client
 
     async def correlate(
         self,
@@ -248,13 +252,19 @@ class CorrelationEngine:
             target_face=TargetFace.SELF,
             source_function=SourceFunction.REFLECTION,
             evidence=contribution_evidence,
+            content=hypothesis.summary,
+            entity_ids=list(hypothesis.entities),
         )
-        await validate_and_submit(
+        await submit_and_detect_collisions(
             contribution,
             lambda: self._store.save(hypothesis),
+            result_id=lambda _: hypothesis.id,
+            producer_kind="hypothesis",
             check_fact_exists=self._check_fact_exists,
             check_episode_exists=self._check_episode_exists,
             check_signal_exists=self._check_signal_exists,
+            collision_store=self._collision_store,
+            nli_client=self._nli_client,
         )
 
     async def _check_fact_exists(self, fact_id: UUID) -> bool:
