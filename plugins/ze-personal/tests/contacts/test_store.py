@@ -55,6 +55,8 @@ def _make_pool(person: Person) -> MagicMock:
             "confirmed": True,
             "dismissed": person.dismissed,
             "confidence": person.confidence,
+            "claim_kind": person.claim_kind.value,
+            "provenance": person.provenance.value,
             "first_seen": None,
             "last_mentioned": None,
             "created_at": None,

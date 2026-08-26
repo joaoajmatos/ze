@@ -4,6 +4,7 @@ from uuid import UUID
 
 import asyncpg
 
+from ze_agents.claims import ClaimKind, Provenance
 from ze_personal.contacts.types import (
     Person,
     PersonContext,
@@ -41,6 +42,8 @@ def _person_from_row(row: asyncpg.Record) -> Person:
         confirmed=row["confirmed"],
         dismissed=row["dismissed"],
         confidence=row["confidence"],
+        claim_kind=ClaimKind(row["claim_kind"]),
+        provenance=Provenance(row["provenance"]),
         first_seen=row["first_seen"],
         last_mentioned=row["last_mentioned"],
         created_at=row["created_at"],
@@ -54,6 +57,8 @@ def _source_from_row(row: asyncpg.Record) -> PersonSource:
         person_id=row["contact_id"],
         source_type=row["source_type"],
         weight=row["weight"],
+        claim_kind=ClaimKind(row["claim_kind"]),
+        provenance=Provenance(row["provenance"]),
         raw_context=row["raw_context"] or "",
         created_at=row["created_at"],
     )
@@ -74,8 +79,8 @@ class PersonStore:
                     INSERT INTO contacts (
                         id, name, aliases, classification, classification_confidence,
                         relationship_to_user, contact_info, notes,
-                        confirmed, dismissed, confidence
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11)
+                        confirmed, dismissed, confidence, claim_kind, provenance
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13)
                     ON CONFLICT (id) DO UPDATE SET
                         name                      = EXCLUDED.name,
                         aliases                   = EXCLUDED.aliases,
@@ -87,6 +92,8 @@ class PersonStore:
                         confirmed                 = EXCLUDED.confirmed,
                         dismissed                 = EXCLUDED.dismissed,
                         confidence                = EXCLUDED.confidence,
+                        claim_kind                = EXCLUDED.claim_kind,
+                        provenance                = EXCLUDED.provenance,
                         last_mentioned            = NOW(),
                         updated_at                = NOW()
                     RETURNING *
@@ -102,6 +109,8 @@ class PersonStore:
                     person.confirmed,
                     person.dismissed,
                     person.confidence,
+                    person.claim_kind.value,
+                    person.provenance.value,
                 )
             else:
                 row = await conn.fetchrow(
@@ -109,8 +118,8 @@ class PersonStore:
                     INSERT INTO contacts (
                         name, aliases, classification, classification_confidence,
                         relationship_to_user, contact_info, notes,
-                        confirmed, dismissed, confidence
-                    ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10)
+                        confirmed, dismissed, confidence, claim_kind, provenance
+                    ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10, $11, $12)
                     RETURNING *
                     """,
                     person.name,
@@ -123,6 +132,8 @@ class PersonStore:
                     person.confirmed,
                     person.dismissed,
                     person.confidence,
+                    person.claim_kind.value,
+                    person.provenance.value,
                 )
         result = _person_from_row(row)
         self._log.debug("person_upserted", person_id=str(result.id), name=result.name)
@@ -285,12 +296,16 @@ class PersonStore:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO contact_sources (contact_id, source_type, weight, raw_context)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO contact_sources (
+                    contact_id, source_type, weight, claim_kind, provenance, raw_context
+                )
+                VALUES ($1, $2, $3, $4, $5, $6)
                 """,
                 person_id,
                 source.source_type,
                 source.weight,
+                source.claim_kind.value,
+                source.provenance.value,
                 source.raw_context or None,
             )
             await conn.execute(
@@ -317,8 +332,9 @@ class PersonStore:
                 """
                 INSERT INTO contact_relationships (
                     person_a_id, person_b_id,
-                    relationship_description, confidence, source_type
-                ) VALUES ($1, $2, $3, $4, $5)
+                    relationship_description, confidence, source_type,
+                    claim_kind, provenance
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                 ON CONFLICT (person_a_id, person_b_id) DO UPDATE SET
                     relationship_description = EXCLUDED.relationship_description,
                     confidence               = EXCLUDED.confidence
@@ -329,6 +345,8 @@ class PersonStore:
                 rel.relationship_description,
                 rel.confidence,
                 rel.source_type,
+                rel.claim_kind.value,
+                rel.provenance.value,
             )
         return PersonRelationship(
             id=row["id"],
@@ -337,6 +355,8 @@ class PersonStore:
             relationship_description=row["relationship_description"],
             confidence=row["confidence"],
             source_type=row["source_type"],
+            claim_kind=ClaimKind(row["claim_kind"]),
+            provenance=Provenance(row["provenance"]),
             created_at=row["created_at"],
         )
 
@@ -358,6 +378,8 @@ class PersonStore:
                 relationship_description=r["relationship_description"],
                 confidence=r["confidence"],
                 source_type=r["source_type"],
+                claim_kind=ClaimKind(r["claim_kind"]),
+                provenance=Provenance(r["provenance"]),
                 created_at=r["created_at"],
             )
             for r in rows

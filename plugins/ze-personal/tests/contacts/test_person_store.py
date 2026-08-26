@@ -2,6 +2,7 @@ from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
+from ze_agents.claims import ClaimKind, Provenance
 from ze_personal.contacts.store import (
     PersonStore,
     _contact_info_from_row,
@@ -51,6 +52,8 @@ def make_person_row(**overrides):
         "confirmed": True,
         "dismissed": False,
         "confidence": 1.0,
+        "claim_kind": "identity",
+        "provenance": "synthesized",
         "first_seen": now,
         "last_mentioned": now,
         "created_at": now,
@@ -66,6 +69,8 @@ def make_source_row(**overrides):
         "contact_id": uuid4(),
         "source_type": "conversation",
         "weight": 1.0,
+        "claim_kind": "identity",
+        "provenance": "synthesized",
         "raw_context": "I met João at the aviation conference",
         "created_at": datetime.utcnow(),
     }
@@ -86,6 +91,8 @@ def test_person_from_row_maps_fields():
     assert person.confirmed is True
     assert person.confidence == 1.0
     assert person.relationship_to_user == "charter operator, potential pilot customer"
+    assert person.claim_kind == ClaimKind.IDENTITY
+    assert person.provenance == Provenance.SYNTHESIZED
 
 
 def test_person_from_row_handles_null_optionals():
@@ -115,6 +122,8 @@ def test_source_from_row_maps_fields():
     assert source.person_id == row["contact_id"]
     assert source.source_type == "conversation"
     assert source.weight == 1.0
+    assert source.claim_kind == ClaimKind.IDENTITY
+    assert source.provenance == Provenance.SYNTHESIZED
 
 
 # ── PersonStore.upsert ────────────────────────────────────────────────────────
@@ -132,6 +141,7 @@ async def test_upsert_insert_new_person():
     assert conn.fetchrow.called
     call_sql = conn.fetchrow.call_args[0][0]
     assert "INSERT INTO contacts" in call_sql
+    assert "claim_kind" in call_sql
     assert result.name == "João Silva"
 
 
@@ -240,6 +250,7 @@ async def test_add_source_inserts_and_updates_confidence():
     insert_sql = conn.execute.call_args_list[0][0][0]
     update_sql = conn.execute.call_args_list[1][0][0]
     assert "INSERT INTO contact_sources" in insert_sql
+    assert "claim_kind" in insert_sql
     assert "GREATEST(confidence" in update_sql
 
 
@@ -322,6 +333,8 @@ async def test_add_relationship_upserts():
         "relationship_description": "works at same company",
         "confidence": 0.8,
         "source_type": "conversation",
+        "claim_kind": "identity",
+        "provenance": "synthesized",
         "created_at": now,
     }
     conn = make_conn()
@@ -339,5 +352,36 @@ async def test_add_relationship_upserts():
 
     assert result.person_a_id == a_id
     assert result.person_b_id == b_id
+    assert result.claim_kind == ClaimKind.IDENTITY
+    assert result.provenance == Provenance.SYNTHESIZED
     call_sql = conn.fetchrow.call_args[0][0]
     assert "ON CONFLICT" in call_sql
+    assert "claim_kind" in call_sql
+
+
+# ── PersonStore.get_relationships ────────────────────────────────────────────
+
+
+async def test_get_relationships_maps_claim_kind_and_provenance():
+    person_id = uuid4()
+    now = datetime.utcnow()
+    row = {
+        "id": uuid4(),
+        "person_a_id": person_id,
+        "person_b_id": uuid4(),
+        "relationship_description": "works at same company",
+        "confidence": 0.8,
+        "source_type": "conversation",
+        "claim_kind": "identity",
+        "provenance": "synthesized",
+        "created_at": now,
+    }
+    conn = make_conn()
+    conn.fetch = AsyncMock(return_value=[row])
+    store = make_store(make_pool(conn))
+
+    result = await store.get_relationships(person_id)
+
+    assert len(result) == 1
+    assert result[0].claim_kind == ClaimKind.IDENTITY
+    assert result[0].provenance == Provenance.SYNTHESIZED

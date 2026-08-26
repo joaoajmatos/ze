@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
 
+from ze_agents.claims import ClaimKind, Provenance
+
 
 SOURCE_WEIGHTS: dict[str, float] = {
     "manual": 1.0,
@@ -9,6 +11,14 @@ SOURCE_WEIGHTS: dict[str, float] = {
     "email": 0.7,
     "calendar": 0.6,
     "research": 0.2,
+}
+
+_SOURCE_TYPE_TO_PROVENANCE: dict[str, Provenance] = {
+    "manual": Provenance.PROMPT_SUPPLIED,
+    "conversation": Provenance.SYNTHESIZED,
+    "email": Provenance.LIVE_SEARCH,
+    "calendar": Provenance.LIVE_SEARCH,
+    "research": Provenance.SYNTHESIZED,
 }
 
 
@@ -24,6 +34,8 @@ class Person:
     confirmed: bool = False
     dismissed: bool = False
     confidence: float = 0.0  # max(source.weight) across all sources
+    claim_kind: ClaimKind = ClaimKind.IDENTITY
+    provenance: Provenance = Provenance.SYNTHESIZED
     id: UUID | None = None
     first_seen: datetime | None = None
     last_mentioned: datetime | None = None
@@ -36,6 +48,8 @@ class PersonSource:
     person_id: UUID
     source_type: str  # "conversation" | "manual" | "email" | "calendar" | "research"
     weight: float
+    claim_kind: ClaimKind = ClaimKind.IDENTITY
+    provenance: Provenance = Provenance.SYNTHESIZED
     raw_context: str = ""
     id: UUID | None = None
     created_at: datetime | None = None
@@ -48,6 +62,8 @@ class PersonRelationship:
     relationship_description: str
     confidence: float = 0.5
     source_type: str = "manual"
+    claim_kind: ClaimKind = ClaimKind.IDENTITY
+    provenance: Provenance = Provenance.PROMPT_SUPPLIED
     id: UUID | None = None
     created_at: datetime | None = None
 
@@ -86,4 +102,6 @@ class ContactProposal:
     confidence: float = 0.5
     confirmed: bool = False
     source_type: str = "conversation"
+    claim_kind: ClaimKind = ClaimKind.IDENTITY
+    provenance: Provenance = Provenance.SYNTHESIZED
     raw_context: str = ""
