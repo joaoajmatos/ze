@@ -1,0 +1,17 @@
+{
+  "workflow": "speckit",
+  "specName": "Social Cognition Foundation",
+  "branch": "main",
+  "currentStep": "specify",
+  "status": "specified",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-08-26T17:22:52.180Z"
+    }
+  ],
+  "telemetryInstanceId": "4b0354a9-2adb-4b84-b6e3-23144a177b8e"
+}
