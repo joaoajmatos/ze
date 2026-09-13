@@ -13,6 +13,7 @@ import {
   Settings,
   PenTool,
   FolderOpen,
+  ListOrdered,
 } from "lucide-react";
 import { redirectHintPath } from "@/shared/lib/redirect-hint";
 
@@ -28,6 +29,7 @@ export const navRoutes: NavRouteMeta[] = [
   // Core-owned routes — plugin nav from GET /api/v0/ui/manifest is merged at runtime.
   { path: "/", label: "Chat", icon: MessageCircle, index: true, showInMobileNav: true },
   { path: "goals", label: "Goals", icon: Target, showInMobileNav: true },
+  { path: "priority", label: "Priority", icon: ListOrdered, showInMobileNav: false },
   { path: "workflows", label: "Workflows", icon: Workflow, showInMobileNav: true },
   { path: "costs", label: "Usage", icon: BarChart2, showInMobileNav: true },
   { path: "brain-memory", label: "Memory", icon: Brain, showInMobileNav: false },
@@ -39,7 +41,7 @@ export const navRoutes: NavRouteMeta[] = [
 
 /** Work sub-routes — rendered inside the collapsible Work group. */
 export const workNavRoutes: NavRouteMeta[] = navRoutes.filter(
-  (r) => r.path === "goals" || r.path === "workflows",
+  (r) => r.path === "goals" || r.path === "workflows" || r.path === "priority",
 );
 
 /** Knowledge sub-routes — rendered inside the collapsible Knowledge group. */

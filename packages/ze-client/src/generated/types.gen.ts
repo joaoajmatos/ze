@@ -294,6 +294,34 @@ export type ChannelUpdateRequest = {
 };
 
 /**
+ * CollisionLogEntrySchema
+ */
+export type CollisionLogEntrySchema = {
+    /**
+     * Id
+     */
+    id: string;
+    contribution_a: ContributionRefSchema;
+    contribution_b: ContributionRefSchema;
+    /**
+     * Matched Entity Id
+     */
+    matched_entity_id: string | null;
+    /**
+     * Matched Target Face
+     */
+    matched_target_face: string;
+    /**
+     * Conflict Summary
+     */
+    conflict_summary: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
  * ConsolidationReportResponse
  */
 export type ConsolidationReportResponse = {
@@ -351,6 +379,28 @@ export type ContactListItem = {
      * Notes
      */
     notes?: string | null;
+};
+
+/**
+ * ContributionRefSchema
+ */
+export type ContributionRefSchema = {
+    /**
+     * Domain Id
+     */
+    domain_id: string;
+    /**
+     * Producer Kind
+     */
+    producer_kind: string;
+    /**
+     * Source Function
+     */
+    source_function: string;
+    /**
+     * Claim Kind
+     */
+    claim_kind: string;
 };
 
 /**
@@ -1875,6 +1925,97 @@ export type PluginPageResponse = {
     tree: Array<{
         [key: string]: unknown;
     }>;
+};
+
+/**
+ * PriorityOverrideRequestSchema
+ */
+export type PriorityOverrideRequestSchema = {
+    /**
+     * Source Kind
+     */
+    source_kind: 'loop' | 'goal' | 'hypothesis';
+    /**
+     * Source Id
+     */
+    source_id: string;
+    /**
+     * Anchor Source Kind
+     */
+    anchor_source_kind: 'loop' | 'goal' | 'hypothesis';
+    /**
+     * Anchor Source Id
+     */
+    anchor_source_id: string;
+    /**
+     * Relation
+     */
+    relation: 'above' | 'below';
+    /**
+     * Pinned
+     */
+    pinned?: boolean;
+};
+
+/**
+ * PriorityOverrideSchema
+ */
+export type PriorityOverrideSchema = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Pinned
+     */
+    pinned: boolean;
+    /**
+     * Anchor Source Kind
+     */
+    anchor_source_kind: 'loop' | 'goal' | 'hypothesis';
+    /**
+     * Anchor Source Id
+     */
+    anchor_source_id: string;
+    /**
+     * Relation
+     */
+    relation: 'above' | 'below';
+    /**
+     * Submitted At
+     */
+    submitted_at: string;
+};
+
+/**
+ * PrioritySnapshotItem
+ */
+export type PrioritySnapshotItem = {
+    /**
+     * Source Kind
+     */
+    source_kind: 'loop' | 'goal' | 'hypothesis';
+    /**
+     * Source Id
+     */
+    source_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Displayed Rank
+     */
+    displayed_rank: number;
+    /**
+     * Computed Rank
+     */
+    computed_rank: number;
+    /**
+     * Overridden From Computed
+     */
+    overridden_from_computed: boolean;
+    override: PriorityOverrideSchema | null;
 };
 
 /**
@@ -4917,6 +5058,127 @@ export type DropLoopResponses = {
 };
 
 export type DropLoopResponse = DropLoopResponses[keyof DropLoopResponses];
+
+export type ListCollisionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Entity Id
+         */
+        entity_id?: string | null;
+        /**
+         * Source Function
+         */
+        source_function?: string | null;
+        /**
+         * Since
+         */
+        since?: string | null;
+        /**
+         * Until
+         */
+        until?: string | null;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v0/collisions';
+};
+
+export type ListCollisionsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListCollisionsError = ListCollisionsErrors[keyof ListCollisionsErrors];
+
+export type ListCollisionsResponses = {
+    /**
+     * Response Listcollisions
+     *
+     * Successful Response
+     */
+    200: Array<CollisionLogEntrySchema>;
+};
+
+export type ListCollisionsResponse = ListCollisionsResponses[keyof ListCollisionsResponses];
+
+export type GetPrioritySnapshotData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/priority/snapshot';
+};
+
+export type GetPrioritySnapshotResponses = {
+    /**
+     * Response Getprioritysnapshot
+     *
+     * Successful Response
+     */
+    200: Array<PrioritySnapshotItem>;
+};
+
+export type GetPrioritySnapshotResponse = GetPrioritySnapshotResponses[keyof GetPrioritySnapshotResponses];
+
+export type SubmitPriorityOverrideData = {
+    body: PriorityOverrideRequestSchema;
+    path?: never;
+    query?: never;
+    url: '/api/v0/priority/override';
+};
+
+export type SubmitPriorityOverrideErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SubmitPriorityOverrideError = SubmitPriorityOverrideErrors[keyof SubmitPriorityOverrideErrors];
+
+export type SubmitPriorityOverrideResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrioritySnapshotItem;
+};
+
+export type SubmitPriorityOverrideResponse = SubmitPriorityOverrideResponses[keyof SubmitPriorityOverrideResponses];
+
+export type UnpinPriorityOverrideData = {
+    body?: never;
+    path: {
+        /**
+         * Override Id
+         */
+        override_id: string;
+    };
+    query?: never;
+    url: '/api/v0/priority/override/{override_id}/unpin';
+};
+
+export type UnpinPriorityOverrideErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnpinPriorityOverrideError = UnpinPriorityOverrideErrors[keyof UnpinPriorityOverrideErrors];
+
+export type UnpinPriorityOverrideResponses = {
+    /**
+     * Successful Response
+     */
+    200: PrioritySnapshotItem;
+};
+
+export type UnpinPriorityOverrideResponse = UnpinPriorityOverrideResponses[keyof UnpinPriorityOverrideResponses];
 
 export type ListSkillsData = {
     body?: never;
