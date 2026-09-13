@@ -446,7 +446,8 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - Write a spec before significant new features: `/speckit-specify` for `specs/phases/` features, or an ADR in `specs/arch/` (follow the existing ones) for cross-cutting decisions.
 - When implementing from an attached Cursor plan: do not edit the plan file; use the pre-created todos and mark them in_progress/completed as you work.
 - Ze's user-facing interface is the React web app (`ze-web`), not Telegram — do not describe Telegram-style UI capabilities to users.
-- Only create git commits when explicitly asked.
+- Only create git commits when explicitly asked. When asked to commit a large batch, split by logical phase or spec user story rather than one dump.
+- Chat chrome: the generic side panel is **trace** (not "Ze's Mind"); session history lives there too. Do not duplicate page titles already shown in the top bar.
 
 ## Learned Workspace Facts
 
@@ -455,3 +456,5 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - Plugin management UI registers via `ZePlugin.ui_contributions()`; `ze-web` loads nav/settings from `GET /api/v0/ui/manifest`; plugin REST routes mount via `rest_routes()`.
 - `apps/ze-web` follows Feature-Sliced Design: `pages → widgets → features → entities → shared`; query hooks live in `entities/<name>/api/`.
 - Chat inline UI uses `ze-components` `render_*` tools (table, metric, list, timeline, progress, confirm, form) rendered by `PrimitiveRenderer` below message bubbles.
+- `journal/` is gitignored local writing for a public narrative (weekly LinkedIn posts plus a technical blog); treat it as authoring notes, not product source.
+- Optional page quick actions sit in the top bar left of the notification icon (with a separator), via a reusable slot rather than per-page chrome.

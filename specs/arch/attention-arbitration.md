@@ -1,6 +1,10 @@
 # Attention Arbitration — One Ranked View, One Attention Budget
 
-> **Status:** Proposed (design-only — not yet specced for implementation)
+> **Status:** Shipped. Implemented as `specs/phases/123-attention-arbitration/spec.md` —
+> `PriorityView` (`core/ze-priority`), the shared attention budget (`core/ze-proactive`), and
+> the greedy cross-mechanism push check are all live. Phase 127 (`specs/phases/127-priority-override/spec.md`)
+> layered user-directed override on top. Loop/goal store reconciliation was explicitly kept out
+> of scope (FR-010) and remains open — see "Open Questions" below.
 > **Scope:** `core/ze-worldstate`, `ze-automation` (goals), `core/ze-correlation`,
 > `core/ze-proactive` (shared push infrastructure).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The epistemic ontology (`Priority` claim-kind),
@@ -90,20 +94,19 @@ shared budget when both have something drift-worthy on the same day.
 
 ## Open Questions
 
-- [ ] **Ranking formula** — is priority a weighted combination of confidence × urgency
-  (drift proximity / gate deadline / hypothesis novelty), or does each mechanism supply its own
-  pre-ranked local order and `PriorityView` only interleaves them? The former is more honest to
-  "one function," the latter is cheaper and lower-risk to ship first.
-- [ ] **Where `PriorityView` lives** — `core/ze-worldstate` (already the executive-function
-  package) or a new thin package that depends on `ze-worldstate`, `ze-automation`, and
-  `ze-correlation` without any of them depending on each other? The latter avoids adding
-  `ze-automation`/`ze-correlation` as dependencies of `ze-worldstate` just for a read.
-- [ ] **Surfacing consumer** — does the briefing/conversation-turn assembly path start reading
-  `PriorityView` directly, replacing today's per-mechanism inline logic, or does it stay a
-  backend-only ranking used only to arbitrate the shared budget initially (safer, smaller
-  first slice)?
-- [ ] **Definition of "shared budget"** — one number per day system-wide, or a budget that
-  itself varies by the user's current load (fewer interruptions on a day already full of
-  meetings)? Recommend starting with the simple system-wide number; this is exactly the kind of
-  refinement that should wait for evidence, not be designed in speculatively.
+- [x] **Ranking formula** — resolved per Phase 123 FR-002: a resolved priority score computed
+  from the shared `Confidence` type combined with each mechanism's own signal (drift state for
+  loops, idle days for goals, novelty/confidence for hypotheses) — not a bare interleave of
+  pre-ranked local orders.
+- [x] **Where `PriorityView` lives** — resolved as the "new thin package" option: `core/ze-priority`,
+  depending on `ze-worldstate`, `ze-automation`, and `ze-correlation` (plus `ze-agents`,
+  `ze-proactive`, `ze-plugin`, `ze-collision`) without any of those three depending on each
+  other, per the dependency graph in the repo's `CLAUDE.md`.
+- [ ] **Surfacing consumer** — Phase 123 shipped `PriorityView` as the arbiter for the shared
+  push budget (backend-only ranking, per FR-007); Phase 127 added a user-facing snapshot view
+  and drag-reorder UI on top. Whether the briefing/conversation-turn assembly path itself reads
+  `PriorityView` directly, replacing per-mechanism inline logic there too, remains open.
+- [x] **Definition of "shared budget"** — resolved as the simple system-wide number per Phase
+  123 FR-005: the single migrated limit is the minimum of the two prior per-mechanism
+  `max_pushes_per_day` values, not a load-varying budget.
 </content>

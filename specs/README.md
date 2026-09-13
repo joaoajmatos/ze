@@ -167,6 +167,8 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 124 | [Contribution Seam Core](phases/124-contribution-seam-core/spec.md) | ✅ Done |
 | 125 | [Contribution Seam Extension](phases/125-contribution-seam-extension/spec.md) | ✅ Done |
 | 126 | [Contribution Collision Detection](phases/126-contribution-collision-detection/spec.md) | ✅ Done |
+| 127 | [User-Directed Priority Override](phases/127-priority-override/spec.md) | ✅ Done |
+| 128 | [Social Cognition Foundation](phases/128-social-cognition-foundation/spec.md) | 📝 Draft |
 
 ## Ze Core specs (`core/`)
 
@@ -212,7 +214,7 @@ should read them before changing anything structural.
 |-----|----------|
 | [**Ze Doctrine**](arch/ze-doctrine.md) | **Constitutional.** Ze's continuous spine is the world-state (model of you + active concerns); epistemic ontology (identity/fact/inference/suspicion/priority); provenance + arbitration order. Every spec is checked against it. See also [Cognitive Architecture](../docs/cognitive-architecture.md). |
 | [Aperture Decision](arch/aperture-decision.md) | **Open decision brief.** Which projection of the world-state the executive layer optimises for — open loops vs life-graph + intervention. Grounds the executive-layer phase spec. |
-| [Contribution Seam](arch/contribution-seam.md) | **Design-only.** Generalise `SignalSource` into a uniform proposal seam so all seven cognitive functions write to the spine the same way, arbitrated by governance. Extract after the executive layer exists. |
+| [Contribution Seam](arch/contribution-seam.md) | **Mostly shipped.** `Contribution` type + `OpenLoop`/`Signal`/reflection retrofits done (Phase 124); collision detection done (Phase 126). Real cross-function arbitration is still design-only, gated on collision evidence. |
 | [Single-User Model](arch/single-user-model.md) | No `user_id` anywhere; auth is a single API key; Ze serves one person |
 | [OpenRouter Gateway](arch/openrouter-gateway.md) | All LLM calls through OpenRouter only — single billing, config-driven model swaps |
 | [LangGraph Orchestration](arch/langgraph-orchestration.md) | LangGraph + AsyncPostgresSaver — durable graph execution with confirmation-flow pause/resume |
@@ -238,3 +240,5 @@ Made when a significant restructuring forced the question.
 | [Communication Hub](arch/communication-hub.md) | Channel identity contract, thread ownership, memory contribution policy, signal filtering, extensibility |
 | [Plugin UI](arch/plugin-ui.md) | Three-tier plugin UI model (SDUI, manifest + generic shell, optional frontend modules) |
 | [spec-kit Adoption](arch/spec-kit-adoption.md) | Feature specs use GitHub spec-kit (`specs/phases/NNN-<name>/` dirs, `.specify/` scaffolding, `/speckit-*` pipeline) |
+| [Attention Arbitration](arch/attention-arbitration.md) | One ranked `PriorityView` + one shared attention budget across loops, goals, and correlation hypotheses — shipped as Phase 123/127 |
+| [Social Cognition](arch/social-cognition.md) | **Open decision brief.** People/projects/relationships as evolving state extending the memory graph, not a new store; reconciles an existing parallel `contact_relationships` table into it |

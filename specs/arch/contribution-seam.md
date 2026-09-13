@@ -1,10 +1,15 @@
 # Contribution Seam — How the Seven Functions Write to the Spine
 
-> **Status:** Partially ratified. The `Contribution` **type** (claim_kind/provenance/confidence
-> + target_face/source_function/evidence) and its two retrofitted producers (`OpenLoop`,
-> `Signal`) are ready to build now — see "Resolved" and "Phased rollout" below. The
-> **arbitration mechanism** (a real conflict-resolution step, as opposed to a validated write
-> path) remains design-only until reflection becomes a third client.
+> **Status:** Mostly ratified and shipped. The `Contribution` **type**
+> (claim_kind/provenance/confidence + target_face/source_function/evidence) lives in
+> `core/ze-plugin/ze_plugin/contribution.py`; `OpenLoop`, `Signal`, and reflection (dream
+> pipeline + correlation engine) all route through its validated write path as of Phase 124 —
+> see "Resolved" and "Phased rollout" below. Phase 126 added collision *detection* (logging
+> only) on top of this write path. The **arbitration mechanism** (a real conflict-resolution
+> step, as opposed to a per-contribution claim-kind license check) remains design-only —
+> Phase 126 exists to gather the evidence that would justify building it (step 5 below),
+> and Phase 127 shipped one narrow, user-directed instance of arbitration (priority
+> override) without generalizing the mechanism.
 > **Scope:** `ze-plugin` (the seam itself), `ze-memory` / world-state (the target),
 > `ze-core` governance (arbitration); every function-owning package downstream.
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The contribution model;
@@ -70,7 +75,7 @@ like" and how far each is from the seam today.
 | Memory | nothing new (custodian) | direct table writes | Memory is the *target*, not a contributor — mostly exempt |
 | Executive | priorities, open-loop state | does not exist yet | **Built on the seam from day one** (aperture) |
 | Social cognition | identity/relationship claims | contacts writes directly | Migrate after executive |
-| Reflection | inferences, suspicions | dream/correlation write/return directly | High value — enforces "no facts from reflection" |
+| Reflection | inferences, suspicions | **On the seam** (Phase 124) — `dream_pass.py` and `ze_correlation/engine.py` route their writes through `Contribution`, which rejects `claim_kind=FACT` before the store is reached | Done — "no facts from reflection" is now type-enforced, not conventional |
 | Action | records of what it did | agents write results directly | Low priority — side effects, already grounded |
 | Governance | confidence/consent/provenance metadata | capability gate, review flows | Governance *is* the arbiter, not a contributor |
 
@@ -136,27 +141,31 @@ follow-up, `Signal` is a `Contribution` in shape only; the delivery mechanism is
 ## Phased rollout sketch (not a commitment)
 
 The seam must be **extracted from two real clients, not invented before one.** Both trigger
-conditions have now fired — the executive layer shipped (Phases 109–110) and its loop
-extraction is an admitted "direct-write proto-contribution" (FR-017); perception's `Signal` has
-also now been resolved to a `Contribution` subtype (above). Updated order:
+conditions fired (executive layer shipped, `Signal` resolved to a `Contribution` subtype), and
+the rollout has since moved past step 3. Status:
 
 1. ~~Executive layer ships (aperture, Option A).~~ **Done** — `core/ze-worldstate`, Phases
    109–110.
-2. **Define the `Contribution` type and retrofit its two existing producers to it**
-   (`specs/arch/claim-topology.md` covers the shared claim vocabulary this depends on):
-   - `OpenLoop`'s extraction path keeps its current direct-write mechanics; it just now produces
-     typed `Contribution`s instead of ad hoc loop-store calls.
-   - `Signal` gains the shape resolved above.
-   - **No consumer is rewired yet** — `ze-correlation` and `ze-worldstate` keep polling
-     `signal_sources()` exactly as before; only the object shape changes.
-3. **Migrate reflection onto it.** Highest safety payoff: mechanically forbids dream/correlation
-   from writing facts. The dream staging buffer becomes a contribution queue. This is the first
-   *third* client, and the point at which generalizing the arbitration mechanism (not just the
-   type) actually earns its cost.
+2. ~~Define the `Contribution` type and retrofit its two existing producers to it.~~ **Done** —
+   Phase 124. `OpenLoop`'s extraction path and `Signal` both produce typed `Contribution`s;
+   `ze-correlation`/`ze-worldstate` were not rewired to consume contributions and still poll
+   `signal_sources()` exactly as before, per that phase's own scope guard (FR-008).
+3. ~~Migrate reflection onto it.~~ **Done** — Phase 124 shipped this in the same feature as
+   step 2, rather than as a separate follow-up (see that phase's User Story 2). The dream
+   pipeline's `dream_pass.py` and `ze-correlation`'s `engine.py` both route their writes
+   through `Contribution`; a `claim_kind=FACT` submission from either is rejected before any
+   store is reached. The dream staging buffer itself was **not** replaced with a persisted
+   contribution queue — "migrate onto the seam" ended up meaning "the existing write call
+   passes through the validated wrapper," per Phase 124's own Assumptions section, not a
+   staging-architecture rewrite.
 4. **Migrate social cognition** (relationship claims) and **action** (result records) as
-   convenience allows. Low urgency.
+   convenience allows. Low urgency, not yet started.
 5. **Add genuine arbitration** only once two functions demonstrably collide on the same
-   world-state face.
+   world-state face. Phase 126 (contribution collision *detection*) exists to make that trigger
+   condition observable — it logs collisions but still doesn't arbitrate them. No cross-function
+   arbitration mechanism has been built yet; Phase 127 (priority override) shipped one narrow,
+   user-directed arbitration case (decaying/pinned overrides merged into `PriorityView.rank()`)
+   without generalizing this step.
 
 Memory and governance are never "migrated" — they are the target and the arbiter.
 
@@ -181,11 +190,16 @@ Memory and governance are never "migrated" — they are the target and the arbit
 ## Open Questions
 
 - [x] **Trigger to build.** Confirmed fired: executive layer (`ze-worldstate`) exists, and
-  perception's `Signal` has a resolved `Contribution` design. The *type* is now due; the
-  *arbitration mechanism* is still gated on reflection becoming a third client (step 3 above).
-- [ ] **Sync vs staged per function** — resolve which functions arbitrate inline vs via a queue.
-  Perception/executive likely sync (both already write inline in their current call paths);
-  reflection likely staged (the dream staging buffer already is one).
+  perception's `Signal` has a resolved `Contribution` design. The *type* shipped in Phase 124
+  along with reflection as a third client (step 3 above, done); the *arbitration mechanism* is
+  now gated on Phase 126's collision evidence accumulating (step 5), not on a third client
+  existing.
+- [x] **Sync vs staged per function** — resolved by how Phase 124 actually wired reflection:
+  the correlation engine's write is synchronous/inline (`engine.py` calls through the
+  `Contribution` wrapper at hypothesis-save time); the dream pipeline's write stays staged (the
+  existing artifact-staging buffer is unchanged — the seam wraps the write call, it did not
+  become a new persisted contribution queue). No function was moved off its natural sync/staged
+  posture to adopt the seam; the seam validates whichever posture a producer already has.
 - [x] **Does `Contribution` replace `Signal`, or is `Signal` a `Contribution` subtype?**
   Resolved above: subtype. `SignalSource` (the registration Protocol) is unchanged.
 - [ ] **Confidence source** — resolved in *shape* by `specs/arch/claim-topology.md` (one

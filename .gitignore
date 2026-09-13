@@ -60,3 +60,6 @@ eval/results/
 
 # spec-kit per-feature state
 .specify/feature.json
+
+# Building-in-public writing (local drafts, not the product)
+journal/
