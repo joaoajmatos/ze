@@ -15,6 +15,7 @@ def test_agents_registered_via_agent_decorator():
     assert "messenger" in agents
     assert "workflow" in agents
     assert "goals" in agents
+    assert "priority" in agents
     research = agents["research"]
     assert getattr(research, "description", "").strip()
     assert getattr(research, "model", "")

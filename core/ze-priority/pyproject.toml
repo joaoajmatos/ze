@@ -13,6 +13,9 @@ dependencies = [
     "ze-worldstate",
     "ze-automation",
     "ze-correlation",
+    "ze-plugin",
+    "ze-collision",
+    "asyncpg==0.31.0",
 ]
 
 [dependency-groups]
@@ -33,6 +36,8 @@ ze-proactive   = { workspace = true }
 ze-worldstate  = { workspace = true }
 ze-automation  = { workspace = true }
 ze-correlation = { workspace = true }
+ze-plugin      = { workspace = true }
+ze-collision   = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ze_priority"]

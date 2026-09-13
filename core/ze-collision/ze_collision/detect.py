@@ -4,9 +4,11 @@
 without altering it (FR-001): it delegates for validation/persistence, then — only
 after a successful write, fully fail-open — checks whether the new contribution
 genuinely conflicts (NLI-flagged, not mere co-occurrence) with a recently-submitted
-contribution from a *different* `source_function` on the same world-state face
-(FR-002/FR-007), logging a `CollisionLogEntry` when it does. Never blocks, delays,
-or resolves either write.
+contribution from a *different* `(source_function, provenance)` pair on the same
+world-state face (FR-002/FR-007; narrowed from `source_function` alone in Phase 127
+so a user-stated override and Ze's own synthesized claim, both `EXECUTIVE`, can
+still be compared — research.md R1), logging a `CollisionLogEntry` when it does.
+Never blocks, delays, or resolves either write.
 """
 
 from __future__ import annotations
@@ -60,8 +62,11 @@ def _find_candidates(new: CollisionCandidate) -> list[_CandidateMatch]:
     _prune_window()
     matches: list[_CandidateMatch] = []
     for _inserted_at, existing in _window:
-        if existing.source_function == new.source_function:
-            continue  # FR-002/FR-007 — same source_function never a candidate pair
+        if (
+            existing.source_function == new.source_function
+            and existing.provenance == new.provenance
+        ):
+            continue  # FR-002/FR-007 — same (source_function, provenance) never a candidate pair
         if existing.target_face != new.target_face:
             continue
 
@@ -172,6 +177,7 @@ async def submit_and_detect_collisions(
             domain_id=result_id(result),
             producer_kind=producer_kind,
             source_function=contribution.source_function,
+            provenance=contribution.provenance,
             claim_kind=contribution.claim_kind,
             target_face=contribution.target_face,
             content=contribution.content,

@@ -26,7 +26,9 @@ from ze_skills.bootstrap import (
     register_bundled_skills,
 )
 from ze_skills.store import SkillStore
-from ze_collision.store import PostgresCollisionLogStore
+from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
+from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
+from ze_priority import import_agent_modules as import_priority_agents
 from ze_browser import BrowserClient
 from ze_workspace.bootstrap import build_workspace_stack
 from ze_workspace.client import WorkspaceClient
@@ -243,6 +245,7 @@ class ZeContainer(CoreContainer):
     priority_view: PriorityView
     skill_store: SkillStore
     skill_matcher: Any
+    priority_override_store: PriorityOverrideStore = None
     collision_store: Any = None
     nli_client: Any = None
     budget_checker: SpendBudgetChecker | None = None
@@ -363,6 +366,15 @@ async def build_container(settings: Settings) -> ZeContainer:
     automation = build_automation_stack(shared, settings)
     correlation = build_correlation_stack(shared, settings)
     worldstate = build_worldstate_stack(shared, settings)
+
+    priority_view = PriorityView(
+        loop_store=worldstate.loop_store,
+        goal_store=automation.goal_store,
+        hypothesis_store=correlation.hypothesis_store,
+    )
+    priority_override_store = PostgresPriorityOverrideStore(pool=pool)
+    collision_store = PostgresCollisionLogStore(pool=pool)
+
     skills_stack = build_skills_stack(shared, settings)
     skill_matcher = build_skill_matcher(
         skills_stack.skill_store, shared.embedder, settings
@@ -470,6 +482,9 @@ async def build_container(settings: Settings) -> ZeContainer:
             ChannelWatermarkStore: watermark_store,
             ThreadChannelMap: thread_channel_map,
             ContactChannelStore: contact_channel_store,
+            PriorityView: priority_view,
+            PriorityOverrideStore: priority_override_store,
+            CollisionLogStore: collision_store,
         }
     )
 
@@ -586,6 +601,7 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     import_automation_agents()
     import_ingestion_agents()
+    import_priority_agents()
     bootstrap_agents(deps=agent_deps, plugins=plugins)
     await register_bundled_skills(skills_stack.skill_store, plugins)
 
@@ -624,13 +640,6 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     dream_store = PostgresDreamStore(pool=pool)
 
-    priority_view = PriorityView(
-        loop_store=worldstate.loop_store,
-        goal_store=automation.goal_store,
-        hypothesis_store=correlation.hypothesis_store,
-    )
-
-    collision_store = PostgresCollisionLogStore(pool=pool)
     shared.memory_store._collision_store = collision_store
     correlation.correlation_engine._collision_store = collision_store
     correlation.correlation_engine._nli_client = shared.nli_client
@@ -688,6 +697,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         priority_view=priority_view,
         skill_store=skills_stack.skill_store,
         skill_matcher=skill_matcher,
+        priority_override_store=priority_override_store,
         collision_store=collision_store,
         nli_client=shared.nli_client,
     )

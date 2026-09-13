@@ -59,6 +59,11 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_communication.registry import ChannelRegistry
     from ze_personal.channels.user_channel_store import UserChannelStore
     from ze_personal.channels.thread_channel_map import ThreadChannelMap
+    from sentence_transformers import SentenceTransformer
+    from ze_priority.view import PriorityView
+    from ze_priority.store import PriorityOverrideStore
+    from ze_collision.store import CollisionLogStore
+    from ze_agents.nli import NLIClient
 
     class _AllPathsPlugin:
         def agent_module_paths(self) -> list[str]:
@@ -90,9 +95,18 @@ def test_bootstrap_registers_companion_and_research(settings):
         ChannelRegistry: MM(spec=ChannelRegistry),
         UserChannelStore: MM(spec=UserChannelStore),
         ThreadChannelMap: MM(spec=ThreadChannelMap),
+        PriorityView: MM(spec=PriorityView),
+        PriorityOverrideStore: MM(spec=PriorityOverrideStore),
+        CollisionLogStore: MM(spec=CollisionLogStore),
+        NLIClient: MM(spec=NLIClient),
+        SentenceTransformer: MM(spec=SentenceTransformer),
         object: client,
     }
     bootstrap_agents(deps=deps, plugins=[_AllPathsPlugin()])
 
     assert isinstance(get_agent("companion"), CompanionAgent)
     assert isinstance(get_agent("research"), ResearchAgent)
+
+    from ze_priority.agent import PriorityAgent
+
+    assert isinstance(get_agent("priority"), PriorityAgent)

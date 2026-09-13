@@ -26,6 +26,7 @@ def _contribution(
     *,
     source_function: SourceFunction,
     claim_kind: ClaimKind = ClaimKind.FACT,
+    provenance: Provenance = Provenance.SYNTHESIZED,
     target_face: TargetFace = TargetFace.WORLD,
     content: str | None = "some content",
     entity_ids: list | None = None,
@@ -38,7 +39,7 @@ def _contribution(
 
     return Contribution(
         claim_kind=claim_kind,
-        provenance=Provenance.SYNTHESIZED,
+        provenance=provenance,
         confidence=Confidence(value=0.7, decay_profile=DecayProfile.TIME_LINEAR),
         target_face=target_face,
         source_function=source_function,
@@ -108,6 +109,31 @@ async def test_conflicting_cross_function_pair_logs_one_collision() -> None:
     )
     await _submit(b, store, nli)
 
+    assert store.log.await_count == 1
+
+
+async def test_same_source_function_different_provenance_pair_is_compared() -> None:
+    entity_id = uuid4()
+    store = AsyncMock()
+    nli = _nli_client(0.9)
+
+    a = _contribution(
+        source_function=SourceFunction.EXECUTIVE,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        content="user wants X above Y",
+        entity_ids=[entity_id],
+    )
+    await _submit(a, store, nli)
+
+    b = _contribution(
+        source_function=SourceFunction.EXECUTIVE,
+        provenance=Provenance.SYNTHESIZED,
+        content="Ze currently ranks X below Y",
+        entity_ids=[entity_id],
+    )
+    await _submit(b, store, nli)
+
+    nli.scores.assert_called()
     assert store.log.await_count == 1
 
 

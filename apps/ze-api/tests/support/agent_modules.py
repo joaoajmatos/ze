@@ -7,6 +7,8 @@ ALL_AGENT_MODULE_PATHS = [
     "ze_automation.agents.goals.agent",
     "ze_automation.agents.workflow.tools",
     "ze_automation.agents.workflow.agent",
+    "ze_priority.tools",
+    "ze_priority.agent",
     "ze_personal.agents.research.agent",
     "ze_personal.agents.companion.agent",
     "ze_calendar.agents.calendar.agent",

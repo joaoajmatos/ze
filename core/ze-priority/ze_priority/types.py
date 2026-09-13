@@ -58,6 +58,52 @@ class PriorityRanking:
 
 
 @dataclass
+class PriorityOverride:
+    """A user's durable reprioritization for one item (`priority_overrides` table).
+
+    At most one active (`superseded_at IS None`) row per `(source_kind, source_id)`.
+    """
+
+    id: UUID
+    source_kind: SourceKind
+    source_id: UUID
+    anchor_source_kind: SourceKind
+    anchor_source_id: UUID
+    relation: Literal["above", "below"]
+    pinned: bool
+    submitted_at: datetime
+    superseded_at: datetime | None
+    contribution_domain_id: UUID
+
+
+@dataclass
+class PriorityOverrideRequest:
+    """Input to `ze_priority.service.submit_reprioritization` — shared by the REST
+    route and the `reprioritize_item` conversational tool (FR-004)."""
+
+    source_kind: SourceKind
+    source_id: UUID
+    anchor_source_kind: SourceKind
+    anchor_source_id: UUID
+    relation: Literal["above", "below"]
+    pinned: bool = False
+
+
+@dataclass
+class MergedPriorityItem:
+    """One rendered row of the priority snapshot — `PriorityItem` plus the
+    override-merge outcome (data-model.md "Ranking merge")."""
+
+    source_kind: SourceKind
+    source_id: UUID
+    title: str
+    displayed_rank: int
+    computed_rank: int
+    overridden_from_computed: bool
+    override: PriorityOverride | None
+
+
+@dataclass
 class PriorityCandidateRef:
     """An already-fetched source entity, scoped for `PriorityView.rank_subset()`.
 

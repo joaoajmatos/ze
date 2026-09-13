@@ -35,7 +35,9 @@ class AttentionArbitrationJob:
 
     async def run(self) -> None:
         loop_candidates = await self._loop_surfacer.eligible_candidates()
-        hypothesis_candidates = await self._correlation_push_source.eligible_candidates()
+        hypothesis_candidates = (
+            await self._correlation_push_source.eligible_candidates()
+        )
 
         if not loop_candidates and not hypothesis_candidates:
             return

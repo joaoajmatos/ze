@@ -38,7 +38,11 @@ async def test_rank_combines_three_mocked_sources():
     ranking = await _view(loop_store, goal_store, hypothesis_store).rank()
 
     assert len(ranking.items) == 3
-    assert {item.source_kind for item in ranking.items} == {"loop", "goal", "hypothesis"}
+    assert {item.source_kind for item in ranking.items} == {
+        "loop",
+        "goal",
+        "hypothesis",
+    }
     assert ranking.sources_succeeded == {"loop", "goal", "hypothesis"}
     assert ranking.sources_failed == set()
 
@@ -54,7 +58,9 @@ async def test_rank_combines_three_mocked_sources():
 
 async def test_long_drifting_loop_outranks_fresh_low_confidence_hypothesis():
     loop = make_loop(confidence=0.5, updated_at=datetime.now(UTC) - timedelta(days=10))
-    hyp = make_hypothesis(confidence=0.2, relevance=0.3, created_at=datetime.now(UTC) - timedelta(hours=1))
+    hyp = make_hypothesis(
+        confidence=0.2, relevance=0.3, created_at=datetime.now(UTC) - timedelta(hours=1)
+    )
 
     loop_store = AsyncMock()
     loop_store.list.return_value = [loop]

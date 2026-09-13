@@ -1102,6 +1102,58 @@ class CollisionLogEntrySchema(BaseModel):
         )
 
 
+# ── REST: priority snapshot & override ──────────────────────────────────────────
+
+
+class PriorityOverrideSchema(BaseModel):
+    id: UUIDType
+    pinned: bool
+    anchor_source_kind: Literal["loop", "goal", "hypothesis"]
+    anchor_source_id: UUIDType
+    relation: Literal["above", "below"]
+    submitted_at: datetime
+
+
+class PrioritySnapshotItem(BaseModel):
+    source_kind: Literal["loop", "goal", "hypothesis"]
+    source_id: UUIDType
+    title: str
+    displayed_rank: int
+    computed_rank: int
+    overridden_from_computed: bool
+    override: PriorityOverrideSchema | None
+
+    @classmethod
+    def from_merged_item(cls, item: Any) -> "PrioritySnapshotItem":
+        return cls(
+            source_kind=item.source_kind,
+            source_id=item.source_id,
+            title=item.title,
+            displayed_rank=item.displayed_rank,
+            computed_rank=item.computed_rank,
+            overridden_from_computed=item.overridden_from_computed,
+            override=PriorityOverrideSchema(
+                id=item.override.id,
+                pinned=item.override.pinned,
+                anchor_source_kind=item.override.anchor_source_kind,
+                anchor_source_id=item.override.anchor_source_id,
+                relation=item.override.relation,
+                submitted_at=item.override.submitted_at,
+            )
+            if item.override is not None
+            else None,
+        )
+
+
+class PriorityOverrideRequestSchema(BaseModel):
+    source_kind: Literal["loop", "goal", "hypothesis"]
+    source_id: UUIDType
+    anchor_source_kind: Literal["loop", "goal", "hypothesis"]
+    anchor_source_id: UUIDType
+    relation: Literal["above", "below"]
+    pinned: bool = False
+
+
 # ── REST: skills ──────────────────────────────────────────────────────────────
 
 

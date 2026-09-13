@@ -176,7 +176,7 @@ ze-automation   → ze-agents, ze-proactive, ze-memory  core/  ← goals + workf
 ze-correlation  → ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision  core/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
 ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision  core/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
 ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data  core/  ← agent skills; wired by ze-api directly
-ze-priority     → ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation  core/  ← attention arbitration (PriorityView + shared push budget); wired by ze-api directly
+ze-priority     → ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation, ze-plugin, ze-collision  core/  ← attention arbitration (PriorityView + shared push budget) + user-directed priority override; wired by ze-api directly; ze-plugin: Contribution seam (reprioritization write path)
 ze-workspace    → ze-agents, ze-logging, ze-data  core/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
 ze-core         → ze-agents, ze-communication, ze-plugin  core/  ← engine; never a plugin dep
 ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation, ze-collision  packages/  ← plugin entry point
@@ -394,6 +394,7 @@ and runs them against a single `alembic_version` table.
 | ze-skills | `zsk` | skills, skill_reference_files, skill_reviews, skill_scripts (`zsk002`) |
 | ze-workspace | `zws` | workspace_state, workspace_runs |
 | ze-collision | `zcol` | contribution_collisions |
+| ze-priority | `zpri` | priority_overrides |
 
 **Naming conventions:**
 - One prefix per package (`zc`, `zm`, `zcal`, …).
@@ -505,6 +506,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Done |
 | 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Done |
 | 122 | Data Overview Charts — storage-composition chart replacing `StorageDonutChart` on the data overview widget | Done |
+| 127 | User-Directed Priority Override — `PriorityOverride` (`ze-priority`'s first store, `zpri` migration chain), snapshot view + drag reorder + conversational `reprioritize_item` tool, decaying/pinned overrides merged into `PriorityView.rank()` at render time, `ze_collision` skip rule narrowed to `(source_function, provenance)` so user-vs-executive priority disagreement is observable | Done |
 
 ## graphify
 

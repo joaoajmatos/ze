@@ -13,7 +13,12 @@ from ze_worldstate.types import LoopState
 
 from ze_priority.errors import ZePriorityError
 from ze_priority.scoring import score_goal, score_hypothesis, score_loop, sort_and_rank
-from ze_priority.types import PriorityCandidateRef, PriorityItem, PriorityRanking, SourceKind
+from ze_priority.types import (
+    PriorityCandidateRef,
+    PriorityItem,
+    PriorityRanking,
+    SourceKind,
+)
 
 log = get_logger(__name__)
 

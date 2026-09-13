@@ -65,7 +65,9 @@ def score_goal(stuck: StuckGoal, *, now: datetime | None = None) -> PriorityItem
     `idle_days` — reuses the existing normalization function rather than
     inventing a new one (FR-003), per research.md."""
     now = now or datetime.now(UTC)
-    freshness = decay(1.0, DecayProfile.TIME_LINEAR, elapsed_days=float(stuck.idle_days))
+    freshness = decay(
+        1.0, DecayProfile.TIME_LINEAR, elapsed_days=float(stuck.idle_days)
+    )
     urgency = max(0.0, min(1.0, 1.0 - freshness))
     activity_at = now - timedelta(days=stuck.idle_days)
 

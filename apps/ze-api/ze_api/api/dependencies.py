@@ -97,6 +97,18 @@ def get_collision_store(request: Request):
     return request.app.state.container.collision_store
 
 
+def get_priority_view(request: Request):
+    return request.app.state.container.priority_view
+
+
+def get_priority_override_store(request: Request):
+    return request.app.state.container.priority_override_store
+
+
+def get_nli_client(request: Request):
+    return request.app.state.container.nli_client
+
+
 def get_workspace_store(request: Request):
     return request.app.state.container.workspace_store
 

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Provenance
 from ze_plugin.contribution import SourceFunction, TargetFace
 
 
@@ -21,6 +21,7 @@ class CollisionCandidate:
     domain_id: UUID
     producer_kind: str
     source_function: SourceFunction
+    provenance: Provenance
     claim_kind: ClaimKind
     target_face: TargetFace
     # `None` means this contribution can never itself trigger or match a

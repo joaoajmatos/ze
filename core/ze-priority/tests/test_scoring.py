@@ -43,10 +43,14 @@ def test_tie_break_falls_back_to_source_id_ascending():
     large_id = UUID(int=2)
 
     a = score_hypothesis(
-        make_hypothesis(id=large_id, confidence=0.5, relevance=1.0, created_at=same_time)
+        make_hypothesis(
+            id=large_id, confidence=0.5, relevance=1.0, created_at=same_time
+        )
     )
     b = score_hypothesis(
-        make_hypothesis(id=small_id, confidence=0.5, relevance=1.0, created_at=same_time)
+        make_hypothesis(
+            id=small_id, confidence=0.5, relevance=1.0, created_at=same_time
+        )
     )
 
     ranked = sort_and_rank([a, b])
