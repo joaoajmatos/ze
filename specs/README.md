@@ -168,7 +168,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 125 | [Contribution Seam Extension](phases/125-contribution-seam-extension/spec.md) | ✅ Done |
 | 126 | [Contribution Collision Detection](phases/126-contribution-collision-detection/spec.md) | ✅ Done |
 | 127 | [User-Directed Priority Override](phases/127-priority-override/spec.md) | ✅ Done |
-| 128 | [Social Cognition Foundation](phases/128-social-cognition-foundation/spec.md) | 📝 Draft |
+| 128 | [Social Cognition Foundation](phases/128-social-cognition-foundation/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 
