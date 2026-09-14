@@ -6,8 +6,10 @@ from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
+import pytest
 
-from ze_memory.graph.predicates import DESCRIBES, MENTIONS
+from ze_agents.claims import Confidence, DecayProfile
+from ze_memory.graph.predicates import COLLABORATES_WITH, DESCRIBES, MENTIONS, WORKS_ON
 from ze_memory.graph.store import PostgresGraphStore
 from ze_memory.graph.traversal import BoundedExpansionPolicy
 from ze_memory.graph.types import GraphExpansion, Relationship
@@ -28,7 +30,7 @@ def _make_rel(
         target_id=target_id or uuid4(),
         target_type=target_type,
         target_text=target_text,
-        confidence=confidence,
+        confidence=Confidence(value=confidence, decay_profile=DecayProfile.TIME_LINEAR),
         creation_method="explicit",
     )
 
@@ -95,6 +97,29 @@ class TestUpsertRelationship:
         sql = conn.fetchrow.call_args[0][0]
         assert "ON CONFLICT" not in sql
 
+    async def test_reinforcement_advances_last_contact(self):
+        pool, conn = _make_pool()
+        conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+        store = PostgresGraphStore(pool=pool)
+        rel = _make_rel(predicate=WORKS_ON)
+
+        await store.upsert_relationship(rel)
+
+        sql = conn.fetchrow.call_args[0][0]
+        assert "last_contact" in sql
+        assert "GREATEST(EXCLUDED.last_contact, memory_relationships.last_contact)" in sql
+
+    async def test_collaborates_with_reinforcement_also_advances_last_contact(self):
+        pool, conn = _make_pool()
+        conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+        store = PostgresGraphStore(pool=pool)
+        rel = _make_rel(predicate=COLLABORATES_WITH, target_type="person")
+
+        await store.upsert_relationship(rel)
+
+        sql = conn.fetchrow.call_args[0][0]
+        assert "GREATEST(EXCLUDED.last_contact, memory_relationships.last_contact)" in sql
+
 
 # ── list_relationships ────────────────────────────────────────────────────────
 
@@ -115,6 +140,7 @@ class TestListRelationships:
             "reviewed": False,
             "created_at": None,
             "updated_at": None,
+            "last_contact": None,
         }
 
     async def test_empty_source_ids_returns_empty(self):
@@ -147,6 +173,76 @@ class TestListRelationships:
         assert "predicate = ANY($2)" in sql
 
 
+# ── confidence read-time decay hydration (US2, SC-004) ─────────────────────────
+
+
+class TestConfidenceDecayHydration:
+    def _make_row(self, source_id, target_id, last_contact, confidence=1.0):
+        return {
+            "id": uuid4(),
+            "source_id": source_id,
+            "source_type": "person",
+            "predicate": WORKS_ON,
+            "target_id": target_id,
+            "target_type": "project",
+            "target_text": None,
+            "confidence": confidence,
+            "provenance_id": None,
+            "creation_method": "extracted",
+            "reviewed": False,
+            "created_at": last_contact,
+            "updated_at": last_contact,
+            "last_contact": last_contact,
+        }
+
+    async def test_stale_relationship_confidence_decays_via_shared_time_linear(self):
+        import datetime as dt
+
+        from ze_memory.graph.store import decay
+
+        pool, conn = _make_pool()
+        sid, tid = uuid4(), uuid4()
+        stale_last_contact = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=65)
+        conn.fetch = AsyncMock(
+            return_value=[self._make_row(sid, tid, stale_last_contact, confidence=1.0)]
+        )
+        store = PostgresGraphStore(pool=pool)
+
+        rels = await store.list_relationships([sid])
+
+        assert isinstance(rels[0].confidence, Confidence)
+        assert rels[0].confidence.decay_profile == DecayProfile.TIME_LINEAR
+        expected = decay(1.0, DecayProfile.TIME_LINEAR, elapsed_days=65)
+        assert rels[0].confidence.value == pytest.approx(expected)
+        assert rels[0].confidence.value < 1.0
+
+    async def test_no_activity_beyond_creation_reports_last_contact_equal_created_at(
+        self,
+    ):
+        import datetime as dt
+
+        pool, conn = _make_pool()
+        sid, tid = uuid4(), uuid4()
+        created_at = dt.datetime.now(dt.timezone.utc)
+        conn.fetch = AsyncMock(
+            return_value=[self._make_row(sid, tid, created_at, confidence=1.0)]
+        )
+        store = PostgresGraphStore(pool=pool)
+
+        rels = await store.list_relationships([sid])
+
+        assert rels[0].last_contact is not None
+        assert rels[0].last_contact == rels[0].created_at
+
+    async def test_last_contact_only_advances_via_upsert_no_manual_setter(self):
+        """No code path lets a caller set last_contact except through
+        upsert_relationship's own COALESCE($n, now())/GREATEST reinforcement —
+        Relationship has no separate setter and store.py never accepts an
+        externally supplied "set last_contact" operation."""
+        assert not hasattr(PostgresGraphStore, "set_last_contact")
+        assert not hasattr(PostgresGraphStore, "update_last_contact")
+
+
 # ── expand ────────────────────────────────────────────────────────────────────
 
 
@@ -166,6 +262,7 @@ class TestExpand:
             "reviewed": False,
             "created_at": None,
             "updated_at": None,
+            "last_contact": None,
         }
 
     async def test_empty_seeds_returns_empty_expansion(self):

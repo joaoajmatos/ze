@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_logging import get_logger
-from ze_agents.claims import ClaimKind
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile
 from ze_agents.tasks import fire_and_forget
 from ze_collision.detect import submit_and_detect_collisions
 from ze_memory.consolidation_store import _cosine_similarity
@@ -902,7 +902,9 @@ class PostgresMemoryStore:
                         target_type="fact",
                         provenance_id=fact.source_episode_id,
                         creation_method="extracted",
-                        confidence=fact.confidence,
+                        confidence=Confidence(
+                            value=fact.confidence, decay_profile=DecayProfile.TIME_LINEAR
+                        ),
                     )
                 )
             if fact.source_episode_id is not None:
@@ -959,7 +961,9 @@ class PostgresMemoryStore:
                         target_id=entity_id,
                         target_type="entity",
                         creation_method="extracted",
-                        confidence=0.8,
+                        confidence=Confidence(
+                            value=0.8, decay_profile=DecayProfile.TIME_LINEAR
+                        ),
                     )
                 )
 
@@ -1162,7 +1166,10 @@ class PostgresMemoryStore:
                                 target_id=fact_id,
                                 target_type="fact",
                                 creation_method="extracted",
-                                confidence=fact.confidence,
+                                confidence=Confidence(
+                                    value=fact.confidence,
+                                    decay_profile=DecayProfile.TIME_LINEAR,
+                                ),
                             )
                         )
                 except Exception as exc:
@@ -1294,7 +1301,9 @@ class PostgresMemoryStore:
                                     target_id=entity_id,
                                     target_type="entity",
                                     creation_method="extracted",
-                                    confidence=0.9,
+                                    confidence=Confidence(
+                                        value=0.9, decay_profile=DecayProfile.TIME_LINEAR
+                                    ),
                                 )
                             )
                         except Exception as exc:

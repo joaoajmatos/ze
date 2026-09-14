@@ -6,6 +6,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
 
+from ze_agents.claims import Confidence, DecayProfile
+
+
+def _default_confidence() -> Confidence:
+    return Confidence(value=1.0, decay_profile=DecayProfile.TIME_LINEAR)
+
 
 @dataclass
 class Relationship:
@@ -22,12 +28,16 @@ class Relationship:
     target_id: UUID | None = None
     target_type: str | None = None
     target_text: str | None = None
-    confidence: float = 1.0
+    # Read-time-decayed; DecayProfile is always TIME_LINEAR for Relationship (FR-004).
+    # The persisted memory_relationships.confidence column stores the undecayed
+    # base float — see GraphStore for the read-time hydration.
+    confidence: Confidence = field(default_factory=_default_confidence)
     provenance_id: UUID | None = None
     creation_method: str = "explicit"  # explicit | extracted | synthesized
     reviewed: bool = False
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    last_contact: datetime | None = None
 
 
 @dataclass

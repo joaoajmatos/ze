@@ -393,7 +393,7 @@ class TestPromoteEventOutcome:
         assert rel.source_type == "event"
         assert rel.target_id == fact_id
         assert rel.target_type == "fact"
-        assert rel.confidence == 0.9
+        assert rel.confidence.value == 0.9
 
     async def test_no_op_without_client(self):
         gs = _make_graph_store()

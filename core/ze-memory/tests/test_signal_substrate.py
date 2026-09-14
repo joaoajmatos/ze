@@ -401,6 +401,7 @@ class TestExpandSignalBucketing:
             "reviewed": False,
             "created_at": None,
             "updated_at": None,
+            "last_contact": None,
         }
 
     @asynccontextmanager

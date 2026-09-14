@@ -35,6 +35,7 @@ class _FakeConn:
                     "reviewed": False,
                     "created_at": datetime.now(timezone.utc),
                     "updated_at": datetime.now(timezone.utc),
+                    "last_contact": datetime.now(timezone.utc),
                 }
             )
         return "INSERT 0 1"

@@ -25,6 +25,12 @@ BELONGS_TO_GOAL = "BELONGS_TO_GOAL"
 # event → fact: a durable learning extracted from a lived event
 PROMOTES_TO = "PROMOTES_TO"
 
+# person → project
+WORKS_ON = "WORKS_ON"
+
+# person ↔ person
+COLLABORATES_WITH = "COLLABORATES_WITH"
+
 ALL_PREDICATES: frozenset[str] = frozenset(
     {
         DESCRIBES,
@@ -34,5 +40,7 @@ ALL_PREDICATES: frozenset[str] = frozenset(
         USES_PROCEDURE,
         BELONGS_TO_GOAL,
         PROMOTES_TO,
+        WORKS_ON,
+        COLLABORATES_WITH,
     }
 )

@@ -12,7 +12,7 @@ from ze_agents.types import RetrievalRequest as RetrievalRequest  # noqa: F401 â
 @dataclass
 class EntityRef:
     name: str
-    entity_type: str  # "person" | "org" | "topic" | "ticker" | "place" | "product"
+    entity_type: str  # "person" | "org" | "topic" | "ticker" | "place" | "product" | "project"
 
 
 @dataclass
@@ -62,7 +62,7 @@ class SignalIngestResult:
 @dataclass
 class Entity:
     id: UUID | None
-    entity_type: str
+    entity_type: str  # "person" | "org" | "topic" | "ticker" | "place" | "product" | "project"
     canonical_name: str
     aliases: list[str] = field(default_factory=list)
     attrs: dict[str, str] = field(default_factory=dict)
