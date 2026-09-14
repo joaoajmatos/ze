@@ -21,8 +21,8 @@ description: "Task list for Model Default with Overrides (specs/phases/103-model
 
 ## Path Conventions
 
-Existing Ze monorepo layout (see `plan.md` Project Structure): `core/ze-agents/`,
-`core/ze-core/`, `plugins/ze-personal/`, `plugins/ze-calendar/`, `apps/ze-api/`. No
+Existing Ze monorepo layout (see `plan.md` Project Structure): `core/contracts/ze-agents/`,
+`core/engine/ze-core/`, `plugins/ze-personal/`, `plugins/ze-calendar/`, `apps/ze-api/`. No
 new package.
 
 ---
@@ -33,7 +33,7 @@ new package.
 working tree before any code changes (no new package, no new dependencies needed).
 
 - [X] T001 Re-run the call-site grep from research.md §2 (`resolve_model`,
-      `models.get(`, `agent_cls.model`) across `core/ze-core/`, `plugins/ze-personal/`,
+      `models.get(`, `agent_cls.model`) across `core/engine/ze-core/`, `plugins/ze-personal/`,
       `plugins/ze-calendar/`, `apps/ze-api/` to confirm no drift since planning; note
       any new/removed call sites before proceeding
 
@@ -46,7 +46,7 @@ depends on.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [X] T002 Create `core/ze-agents/ze_agents/model_resolution.py` with
+- [X] T002 Create `core/contracts/ze-agents/ze_agents/model_resolution.py` with
       `resolve_model(key: str, declared: str | None, config: dict) -> str`
       (override → declared → default, raising `AgentConfigError` from
       `ze_agents.errors` if no default is configured) and
@@ -55,17 +55,17 @@ depends on.
       `validate_model_config(config: dict, known_keys: frozenset[str]) -> None`
       (raises `AgentConfigError` if `models.default` is missing/empty, or if any
       `models.overrides` key is not in `known_keys`)
-- [X] T003 [P] Write `core/ze-agents/tests/test_model_resolution.py` covering:
+- [X] T003 [P] Write `core/contracts/ze-agents/tests/test_model_resolution.py` covering:
       override wins over declared and default; declared wins over default when no
       override; default used when neither override nor declared is set;
       `AgentConfigError` when `models.default` missing/empty; `AgentConfigError`
       when an `overrides` key is not in `known_keys` (depends on T002)
 - [X] T004 Wire `validate_model_config()` into
-      `core/ze-core/ze_core/container.py` startup, called once alongside the
+      `core/engine/ze-core/ze_core/container.py` startup, called once alongside the
       existing `RouterConfig` construction with `known_keys` = the union of
       `get_enabled_agents().keys()` and `model_resolution.KNOWN_STEP_KEYS`
       (depends on T002)
-- [X] T005 [P] Add startup-validation tests to `core/ze-core/tests/test_container.py`
+- [X] T005 [P] Add startup-validation tests to `core/engine/ze-core/tests/test_container.py`
       for T004: missing `models.default` raises at startup; an unknown
       `models.overrides` key (both an agent-name-shaped typo and a step-key-shaped
       typo) raises at startup (depends on T004)
@@ -99,21 +99,21 @@ the message trace that the new model was used (quickstart.md Scenario 1).
 ### Implementation for User Story 1
 
 - [X] T007 [US1] Add a `config: dict` constructor param to `EmbeddingRouter` in
-      `core/ze-core/ze_core/routing/router.py` and rewrite `_resolve_model()` to
+      `core/engine/ze-core/ze_core/routing/router.py` and rewrite `_resolve_model()` to
       compute the same `declared` value as today (agent's `model_simple` on
       `complexity == "simple"`, else `model`) and pass it through
       `ze_agents.model_resolution.resolve_model(agent_name, declared, self._config)`
       (depends on T002)
 - [X] T008 [US1] Pass `settings.config` into the `EmbeddingRouter(...)`
-      construction in `core/ze-core/ze_core/container.py` (same block that builds
+      construction in `core/engine/ze-core/ze_core/container.py` (same block that builds
       `RouterConfig`) (depends on T007)
 - [X] T009 [P] [US1] Wire `synthesize()` in
-      `core/ze-core/ze_core/orchestration/nodes/memory.py` to call
+      `core/engine/ze-core/ze_core/orchestration/nodes/memory.py` to call
       `resolve_model("synthesis", MODEL_SYNTHESIS, cfg)` from
       `ze_agents.model_resolution`/`ze_agents.defaults` instead of the inline
       `models.get("synthesis", ...)` lookup (depends on T002)
 - [X] T010 [P] [US1] Wire the router LLM-decomposition fallback in
-      `core/ze-core/ze_core/container.py` (`RouterConfig(fallback_model=...)`
+      `core/engine/ze-core/ze_core/container.py` (`RouterConfig(fallback_model=...)`
       construction) to call `resolve_model("router_fallback",
       MODEL_ROUTER_FALLBACK, settings.config)` instead of
       `routing_cfg.get("fallback_model", ...)` (depends on T002)
@@ -134,9 +134,9 @@ the message trace that the new model was used (quickstart.md Scenario 1).
       to call `resolve_model("reminders", "anthropic/claude-haiku-4-5",
       self._settings.config)` (depends on T002)
 - [X] T015 [US1] Update existing unit tests to assert the new resolution path at
-      each wired call site: `core/ze-core/tests/routing/test_router.py`,
-      `core/ze-core/tests/orchestration/nodes/test_memory.py`,
-      `core/ze-core/tests/test_container.py`,
+      each wired call site: `core/engine/ze-core/tests/routing/test_router.py`,
+      `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`,
+      `core/engine/ze-core/tests/test_container.py`,
       `apps/ze-api/tests/api/test_sessions_route.py` (or the websocket
       session-title test, if separate), `plugins/ze-personal/tests/graph/test_workflow.py`,
       `plugins/ze-personal/tests/jobs/test_insights.py`,
@@ -168,16 +168,16 @@ Scenario 2). Add a typo'd override key and confirm startup fails
 
 ### Implementation for User Story 2
 
-- [X] T017 [US2] Add a test to `core/ze-core/tests/routing/test_router.py` (or
+- [X] T017 [US2] Add a test to `core/engine/ze-core/tests/routing/test_router.py` (or
       `test_router_integration.py`) proving an entry in `models.overrides` pins one
       agent's resolved model while a sibling agent with no override follows
       `models.default` (depends on T007, T015)
-- [X] T018 [US2] Extend `core/ze-agents/tests/test_model_resolution.py` with a case
+- [X] T018 [US2] Extend `core/contracts/ze-agents/tests/test_model_resolution.py` with a case
       proving that removing an override entry and re-resolving falls back to the
       declared model (or default, if no declared model) — exercises the "live
       re-read" behavior from research.md §1 (depends on T003)
 - [X] T019 [US2] Extend the startup-validation tests in
-      `core/ze-core/tests/test_container.py` (from T005) with an explicit
+      `core/engine/ze-core/tests/test_container.py` (from T005) with an explicit
       "unknown override key" case using an agent-name-shaped typo, confirming the
       error message names the offending key (depends on T004, T005)
 - [ ] T020 [US2] Run quickstart.md Scenarios 2 and 5 manually to confirm override
@@ -208,16 +208,16 @@ their previously configured models (quickstart.md Scenario 3).
 
 ### Implementation for User Story 3
 
-- [X] T022 [P] [US3] Create `core/ze-core/tests/orchestration/nodes/test_preprocessing.py`
+- [X] T022 [P] [US3] Create `core/engine/ze-core/tests/orchestration/nodes/test_preprocessing.py`
       asserting that `preprocess()` in
-      `core/ze-core/ze_core/orchestration/nodes/preprocessing.py` resolves the
+      `core/engine/ze-core/ze_core/orchestration/nodes/preprocessing.py` resolves the
       transcription model from `models.whisper` and the vision-caption model from
       `models.vision_caption` regardless of what `models.default` is set to (no
       production code change expected here — this call site intentionally bypasses
       `resolve_model`; the test documents and locks in that exclusion) (depends on
       T006)
 - [X] T023 [P] [US3] Add a test near the embedding-model wiring in
-      `core/ze-core/ze_core/container.py` (e.g. `core/ze-core/tests/test_container.py`)
+      `core/engine/ze-core/ze_core/container.py` (e.g. `core/engine/ze-core/tests/test_container.py`)
       asserting `models.embedding` resolution is unaffected by `models.default`
       changes (depends on T006)
 - [ ] T024 [US3] Run quickstart.md Scenario 3 manually (send a voice message and an
@@ -293,8 +293,8 @@ is safe to change without breaking capability-specific steps.
 ```bash
 # Once T002 (resolver) and T007/T008 (router wiring + config wiring) are done,
 # launch all remaining call-site wiring tasks together:
-Task: "Wire synthesize() in core/ze-core/ze_core/orchestration/nodes/memory.py"
-Task: "Wire RouterConfig.fallback_model in core/ze-core/ze_core/container.py"
+Task: "Wire synthesize() in core/engine/ze-core/ze_core/orchestration/nodes/memory.py"
+Task: "Wire RouterConfig.fallback_model in core/engine/ze-core/ze_core/container.py"
 Task: "Wire apps/ze-api/ze_api/api/websocket/session_titles.py"
 Task: "Wire _resolve_verify_model() in plugins/ze-personal/ze_personal/graph/workflow.py"
 Task: "Wire jobs/insights.py in plugins/ze-personal"

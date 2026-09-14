@@ -247,7 +247,7 @@ separately look up the original contributions.
 - The collision log is a new, small, append-only store (modeled on `ze-proactive`'s
   `PushLogStore` pattern) — not a reuse of `push_log` itself, since collisions are not push
   notifications and conflating the two would make both harder to reason about.
-- This feature's home package is `core/ze-plugin`, alongside the `Contribution` write path it
+- This feature's home package is `core/contracts/ze-plugin`, alongside the `Contribution` write path it
   observes (per `contribution-seam.md`'s own placement of the type and write path there),
   though the exact package is a planning-time decision if a better-fitting location (e.g.
   `ze-core` governance, since arbitration-adjacent concerns are named as governance's domain in

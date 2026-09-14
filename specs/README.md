@@ -169,6 +169,8 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 126 | [Contribution Collision Detection](phases/126-contribution-collision-detection/spec.md) | ✅ Done |
 | 127 | [User-Directed Priority Override](phases/127-priority-override/spec.md) | ✅ Done |
 | 128 | [Social Cognition Foundation](phases/128-social-cognition-foundation/spec.md) | ✅ Done |
+| 129 | [Workspace Run Journal](phases/129-workspace-run-journal/spec.md) | 🔲 Pending |
+| 130 | [Social Cognition Co-Occurrence](phases/130-social-cognition-co-occurrence/spec.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 

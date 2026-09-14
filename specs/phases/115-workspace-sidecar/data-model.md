@@ -1,12 +1,12 @@
 # Phase 1 Data Model: Workspace Environment
 
-Owning package for workspace entities: `core/ze-workspace/ze_workspace/types.py` +
-`core/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py`.
+Owning package for workspace entities: `core/ops/ze-workspace/ze_workspace/types.py` +
+`core/ops/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py`.
 
-Owning package for executable approval / skill scripts: `core/ze-skills/` +
+Owning package for executable approval / skill scripts: `core/automation/ze-skills/` +
 `zsk002_skill_scripts.py`.
 
-Turn annotation fields: `core/ze-core/ze_core/conversation/messages/types.py`
+Turn annotation fields: `core/engine/ze-core/ze_core/conversation/messages/types.py`
 (`MessageTrace`, `SkillUsageTrace`).
 
 ## Enums

@@ -8,7 +8,7 @@
 
 **Correction found during planning (confirmed with the user before proceeding)**: the
 spec's premise — "currently unbounded `AgentState.messages` growth" — does not match
-the code. `write_memory` (`core/ze-core/ze_core/orchestration/nodes/memory.py:111-116`)
+the code. `write_memory` (`core/engine/ze-core/ze_core/orchestration/nodes/memory.py:111-116`)
 already hard-caps checkpointed `state["messages"]` at the last `SESSION_HISTORY_LIMIT`
 (10) entries every turn; the real failure mode is a silent 5-turn memory cliff (blind
 trim, no summary), not a hard context-capacity error. `fetch_context`
@@ -57,7 +57,7 @@ provider SDK — Constitution VII), no new third-party tokenizer dependency
 session-summary store, `ze-worldstate`'s `open_loops`, `ze-automation`'s
 goals/workflows tables — all read-only from this feature's perspective.
 
-**Testing**: pytest (`make test-core`), mirroring `core/ze-core/tests/orchestration/
+**Testing**: pytest (`make test-core`), mirroring `core/engine/ze-core/tests/orchestration/
 nodes/` conventions (dataclass fakes/`AsyncMock` for `config["configurable"]`, minimal
 hand-built `AgentState`, no full graph run). SC-002 (recall accuracy) validated through
 `eval/run.py` against scripted scenarios in `eval/scenarios/`, not pytest.
@@ -66,7 +66,7 @@ hand-built `AgentState`, no full graph run). SC-002 (recall accuracy) validated 
 deployment) — no new deployment surface.
 
 **Project Type**: Backend-only addition to an existing monorepo package
-(`core/ze-core`); no new package, no frontend change required to satisfy the spec's
+(`core/engine/ze-core`); no new package, no frontend change required to satisfy the spec's
 functional requirements (the trace panel *rendering* the new fields is a natural
 follow-up but not a blocking requirement — FR-011 only requires inspectability via the
 existing trace surface, which the REST payload already provides).
@@ -92,7 +92,7 @@ state never interacts with another user's; SC-001 targets 500+ turns per thread.
 |---|---|---|
 | I. Spec-First Development | Spec exists at `specs/phases/112-session-context-continuity/spec.md`, status will move to Implemented in the same commit as the code (per prior phases' pattern, e.g. Phase 111) | PASS |
 | II. Single-User Model | No `user_id`/tenancy introduced; goal/workflow "relevance" resolved as global-because-single-user (research.md R5), not a new per-thread scoping column | PASS |
-| III. Layered Package Architecture | New nodes and the context-window table live in `core/ze-core` (engine, no domain knowledge — reads generic message/session/loop/goal/workflow shapes, not plugin-specific data). Resume-recap assembly reads `ze-memory`, `ze-worldstate`, `ze-automation` — all already core-layer, already engine-accessible per the existing dependency graph (`ze-core → ze-agents, ze-communication, ze-plugin`; goal/workflow/loop/memory stores are wired into `config["configurable"]` by the container, the existing seam `surface_loops` already uses). No plugin-domain vocabulary is hardcoded into a core enum — the recap only names generic entity kinds (loop/goal/workflow), not plugin identities. | PASS |
+| III. Layered Package Architecture | New nodes and the context-window table live in `core/engine/ze-core` (engine, no domain knowledge — reads generic message/session/loop/goal/workflow shapes, not plugin-specific data). Resume-recap assembly reads `ze-memory`, `ze-worldstate`, `ze-automation` — all already core-layer, already engine-accessible per the existing dependency graph (`ze-core → ze-agents, ze-communication, ze-plugin`; goal/workflow/loop/memory stores are wired into `config["configurable"]` by the container, the existing seam `surface_loops` already uses). No plugin-domain vocabulary is hardcoded into a core enum — the recap only names generic entity kinds (loop/goal/workflow), not plugin identities. | PASS |
 | IV. Typed, Explicit Python | `RollingSummary`, `ResumeRecap`, `CompactionTrace` are dataclasses in `types.py`-style modules, not Pydantic (Pydantic stays confined to `ze_api/api/schemas.py`, which is untouched — the trace REST route's `response_model` already exists and just gains fields on its existing dataclass). Failure fallback (R7) raises no bare exceptions — it catches and degrades gracefully as FR-010 requires. | PASS |
 | V. Test Discipline | New pytest coverage for both nodes + the context-window table, no real DB/LLM (mocked `config["configurable"]` deps, mocked `client.complete`), mirrors existing `nodes/test_loop_surfacing.py` pattern | PASS |
 | VI. Explicit Persistence | No new tables — explicitly verified against alternatives in research.md R2/R6; the one existing column touched (`trace` JSONB) already exists from `zc020_message_trace.py`, no migration needed | PASS |
@@ -118,12 +118,12 @@ specs/phases/112-session-context-continuity/
 
 ### Source Code (repository root)
 
-This is an addition to the existing `core/ze-core` package inside Ze's established
+This is an addition to the existing `core/engine/ze-core` package inside Ze's established
 monorepo layout (see root `CLAUDE.md` — not a new project type; no Option 1/2/3
 scaffolding applies). Concrete paths touched:
 
 ```text
-core/ze-core/
+core/engine/ze-core/
 ├── ze_core/
 │   ├── openrouter/
 │   │   └── context_windows.py       # NEW — MODEL_CONTEXT_WINDOWS, get_context_window()
@@ -149,15 +149,15 @@ core/ze-core/
                                       #   covers both the pre-existing gap-check and
                                       #   the new resume-recap branch
 
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
 ├── types.py                         # EDIT — AgentContext.resume_recap: str | None
 └── base_agent.py                    # EDIT — _build_system_prompt renders resume_recap
 
 eval/scenarios/                      # NEW scenario file(s) for SC-002 recall validation
 ```
 
-**Structure Decision**: Everything lives inside the existing `core/ze-core` and
-`core/ze-agents` packages — no new package, no new graph nodes (this replaces logic
+**Structure Decision**: Everything lives inside the existing `core/engine/ze-core` and
+`core/contracts/ze-agents` packages — no new package, no new graph nodes (this replaces logic
 inside two existing nodes, `write_memory` and `fetch_context`, rather than adding new
 ones — research.md R1). The one cross-package touch (`AgentContext` in `ze-agents`) is
 the existing, established seam for injecting runtime prompt context — no violation of

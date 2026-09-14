@@ -66,7 +66,7 @@ specs/phases/105-notification-center/
 ### Source Code (repository root)
 
 ```text
-core/ze-proactive/ze_proactive/
+core/contracts/ze-proactive/ze_proactive/
 ├── notification_store.py          # NEW — NotificationStore (asyncpg), dedup query (R3)
 ├── notifier.py                    # MODIFIED — ProactiveNotifier gains structured push (event_type/title/target)
 ├── migrations/versions/
@@ -74,7 +74,7 @@ core/ze-proactive/ze_proactive/
 └── tests/
     └── test_notification_store.py # NEW
 
-core/ze-agents/ze_agents/interface/
+core/contracts/ze-agents/ze_agents/interface/
 └── types.py                        # MODIFIED — Notification gains event_type/title/target_type/target_id fields
 
 apps/ze-api/ze_api/

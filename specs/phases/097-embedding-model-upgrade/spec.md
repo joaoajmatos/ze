@@ -3,7 +3,7 @@
 > **Status:** Pending
 > **Depends on:** Phase 2 (memory retrieval), Phase 1 (routing)
 > **Enables:** Reliable embedding-based routing without LLM fallback for most messages
-> **Packages touched:** `core/ze-core`, `core/ze-memory`, `apps/ze-api`
+> **Packages touched:** `core/engine/ze-core`, `core/cognition/ze-memory`, `apps/ze-api`
 
 ---
 
@@ -72,7 +72,7 @@ already handle null embeddings gracefully by recomputing on next write.
 Wrap `SentenceTransformer` with a thin class that enforces E5's prefix contract:
 
 ```python
-# core/ze-core/ze_core/embeddings.py
+# core/engine/ze-core/ze_core/embeddings.py
 
 _DEFAULT_MODEL = "intfloat/multilingual-e5-base"
 
@@ -111,7 +111,7 @@ passages, which is correct.
 user messages. Switch to the asymmetric calls:
 
 ```python
-# core/ze-core/ze_core/routing/router.py
+# core/engine/ze-core/ze_core/routing/router.py
 
 # At build time (encode descriptions):
 self._agent_matrix = self._embedder.encode_passage(descriptions, ...)
@@ -139,7 +139,7 @@ Wire it through `Settings` → `container.py` → `get_embedder(settings.embeddi
 All stored embeddings are incompatible with the new model. NULL them:
 
 ```sql
--- core/ze-core/ze_core/migrations/versions/zc021_null_embeddings_e5_migration.py
+-- core/engine/ze-core/ze_core/migrations/versions/zc021_null_embeddings_e5_migration.py
 UPDATE user_facts SET embedding = NULL;
 UPDATE episodes SET embedding = NULL;
 ```

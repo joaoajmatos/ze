@@ -6,14 +6,14 @@ open `NEEDS CLARIFICATION` markers remain.
 
 ## 1. Package placement: client + domain core package, plus a sidecar
 
-**Decision**: New `core/ze-workspace/` package (client, types, store, gate, tools,
+**Decision**: New `core/ops/ze-workspace/` package (client, types, store, gate, tools,
 bootstrap) wired directly into `apps/ze-api`, plus a new `sidecar/workspace/` process
 that is the actual computer. Not a `ZePlugin`.
 
 **Rationale**: The workspace is cross-cutting infrastructure — every agent may use it,
 skills may run scripts in it, unattended work may use it when mode is Auto, and the
 mind must stay where it is (FR-023). That is the same split as the browser helper
-(`core/ze-browser` + `sidecar/browser`) combined with the store/bootstrap shape of
+(`integrations/ze-browser` + `sidecar/browser`) combined with the store/bootstrap shape of
 `ze-skills` / `ze-worldstate` (durable records, REST facade, migrations). A plugin
 would imply a single owning domain; the workspace is the computer beside the mind.
 
@@ -366,7 +366,7 @@ Brain is memory; Settings is prefs.
 
 ## 13. Migration ownership
 
-**Decision**: New chain prefix `zws` owned by `core/ze-workspace/` (`zws001`
+**Decision**: New chain prefix `zws` owned by `core/ops/ze-workspace/` (`zws001`
 workspace_state + workspace_runs). Skill-script persistence and executable
 approval are `zsk002` on the existing `ze-skills` chain (`depends_on` zsk001).
 Register `_ZE_WORKSPACE_VERSIONS` in `ze_api/migrate.py` next to

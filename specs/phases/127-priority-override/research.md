@@ -3,7 +3,7 @@
 ## R1. How does a user's reprioritization pass Contribution licensing while still
 being detectable as a collision against `PriorityView`'s own computed ranking?
 
-**Problem**: `core/ze-plugin/ze_plugin/contribution.py`'s license table licenses
+**Problem**: `core/contracts/ze-plugin/ze_plugin/contribution.py`'s license table licenses
 `ClaimKind.PRIORITY` to `SourceFunction.EXECUTIVE` only (this is a doctrine-mandated
 closed set per the module docstring — "the seven cognitive functions ... from
 `specs/arch/ze-doctrine.md`"). Any reprioritization Contribution, whether from the
@@ -19,7 +19,7 @@ in the first place.
 **Decision**: Two changes, both minimal and precedented:
 
 1. **Provenance, not a new SourceFunction, carries the user-vs-executive distinction.**
-   `core/ze-worldstate/ze_worldstate/contribution.py:12-16` already maps
+   `core/cognition/ze-worldstate/ze_worldstate/contribution.py:12-16` already maps
    `LoopProvenance.USER_DECLARED → Provenance.PROMPT_SUPPLIED` for `OpenLoop`
    contributions — a direct precedent for "user-stated" intent expressed as
    `Provenance.PROMPT_SUPPLIED` under `SourceFunction.EXECUTIVE`, not as a new
@@ -159,7 +159,7 @@ consistent with FR-007's confirmation requirement"). **Decision**: a new
 `reprioritize_item` tool lives in `ze_priority/tools.py` (core package, not a
 plugin), registered with `Mode.CONFIRM` capability so `capability_check` routes
 it through the existing `draft_response → await_confirmation` LangGraph pause
-(`core/ze-core/ze_core/orchestration/nodes/execution.py`) exactly like any other
+(`core/engine/ze-core/ze_core/orchestration/nodes/execution.py`) exactly like any other
 consequential agent action — no new confirmation primitive is built (FR-007).
 This is justified because the action writes a `Contribution` to shared
 world-state (`ACTIVE_CONCERNS`), the same trust tier as other core-tool writes

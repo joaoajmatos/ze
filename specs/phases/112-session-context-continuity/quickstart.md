@@ -29,7 +29,7 @@
 1. Create at least one of: an active `OpenLoop`, an in-flight goal, an in-flight
    workflow (any existing flow — e.g. let the goal engine start a multi-week goal).
 2. Let the thread go idle past `session_inactivity_minutes` (config value shared with
-   `SessionSummariser`, `core/ze-memory/ze_memory/session_summary.py`) — or lower that
+   `SessionSummariser`, `core/cognition/ze-memory/ze_memory/session_summary.py`) — or lower that
    config value temporarily in a test `config.yaml` to speed up validation.
 3. Send a new message on the same thread that does *not* mention the outstanding item.
 4. **Expected**: no separate "welcome back" WS frame or chat bubble appears (FR-007a);
@@ -64,7 +64,7 @@
 
 ## Automated coverage
 
-- Unit tests: `make test-core` (covers `core/ze-core/tests/orchestration/nodes/
+- Unit tests: `make test-core` (covers `core/engine/ze-core/tests/orchestration/nodes/
   test_context_budget.py`, `test_resume_recap.py`, `test_context_windows.py`).
 - Eval suite (SC-002 recall accuracy): `python eval/run.py --tag session-continuity`
   once scenarios are added under `eval/scenarios/`.

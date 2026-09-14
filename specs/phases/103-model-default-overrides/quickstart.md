@@ -74,7 +74,7 @@ Validation guide for the resolver introduced in this feature. Assumes `make dev`
 ## Automated coverage
 
 Each scenario above has a corresponding unit test:
-- Scenarios 1–3, 6–7 → `core/ze-agents/tests/test_model_resolution.py` (resolver
+- Scenarios 1–3, 6–7 → `core/contracts/ze-agents/tests/test_model_resolution.py` (resolver
   precedence, capability-key exclusion) plus updated tests at each of the 8
   migrated call sites (`ze-core`, `ze-personal`, `ze-calendar`, `ze-api` test
   suites — see `plan.md` Project Structure).

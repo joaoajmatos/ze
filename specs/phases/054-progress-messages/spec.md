@@ -68,7 +68,7 @@ WebSocket client → useChatSession → showTyping + typingText
 
 ## Changes
 
-### `core/ze-agents/ze_agents/plugin.py`
+### `core/contracts/ze-agents/ze_agents/plugin.py`
 
 Add `locale_data(locale: str) -> dict` to `ZePlugin`. Default implementation
 auto-loads `locales/{locale}.yaml` from within the plugin's own package directory
@@ -76,7 +76,7 @@ auto-loads `locales/{locale}.yaml` from within the plugin's own package director
 
 Add `_load_locale_file(locale: str) -> dict` classmethod as the shared loader.
 
-### `core/ze-agents/ze_agents/progress/translations.py`
+### `core/contracts/ze-agents/ze_agents/progress/translations.py`
 
 Add `ProgressTranslations.build(layers, fallback_layers)` classmethod that deep-merges
 a list of dicts, later entries winning on conflict. Used to merge N plugin locale

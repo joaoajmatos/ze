@@ -1,6 +1,6 @@
 # ze-communication — Channel Contract
 
-> **Package:** `core/ze-communication` — `ze_communication/`
+> **Package:** `core/contracts/ze-communication` — `ze_communication/`
 > **Status:** Done
 > **Implemented in:** [Phase 83](../phases/083-ze-communication/spec.md)
 > **Architecture:** [arch/communication-hub.md](../arch/communication-hub.md)
@@ -39,7 +39,7 @@ future channels (Slack, iMessage) follow the same pattern.
 ## Module Location
 
 ```
-core/ze-communication/ze_communication/
+core/contracts/ze-communication/ze_communication/
   channel.py     ← Channel ABC, InboundChannel ABC
   registry.py    ← ChannelRegistry
   types.py       ← ChannelType, ChannelHandle, Message, SentMessage, Thread, InboundMessage

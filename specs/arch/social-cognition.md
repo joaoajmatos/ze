@@ -1,12 +1,13 @@
 # Social Cognition — People, Projects, and Relationships as Evolving State
 
-> **Status:** Proposed — design questions resolved, not yet specced for implementation. All
-> four open questions from the first draft are settled below (see "Resolved design
-> questions"); nothing here is blocked on further research.
-> **Scope:** `core/ze-memory` (the graph), `plugins/ze-personal` (contacts, the existing
-> partial implementation), `core/ze-correlation` (co-occurrence inference), `core/ze-priority`
-> (surfacing), `core/ze-proactive` (the shared staleness helper reused below),
-> `core/ze-communication`/`ze-messenger`/`ze-calendar` (the inflows).
+> **Status:** Proposed — design questions resolved. Rollout steps 1–2 shipped as
+> Phase 128; step 3 is specced as
+> [`specs/phases/130-social-cognition-co-occurrence/spec.md`](../phases/130-social-cognition-co-occurrence/spec.md)
+> (not yet implemented). Step 4 remains deferred.
+> **Scope:** `core/cognition/ze-memory` (the graph), `plugins/ze-personal` (contacts, the existing
+> partial implementation), `core/cognition/ze-correlation` (co-occurrence inference), `core/arbitration/ze-priority`
+> (surfacing), `core/contracts/ze-proactive` (the shared staleness helper reused below),
+> `core/contracts/ze-communication`/`ze-messenger`/`ze-calendar` (the inflows).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The contribution model (social cognition is
 > licensed for `ClaimKind.IDENTITY` only — "identity/relationship claims, boundaries"; it may
 > not emit facts about the world, and its inferences must arrive via reflection first, same as
@@ -72,20 +73,20 @@ codebase, and it repeats a mistake the doctrine has already named once.
   same "built following the right instinct, before the graph existed to reconcile it into"
   situation `aperture-decision.md` describes for loops, except here nothing ever ran, so there
   is no live data and no migration to plan (see "Resolved design questions" below). Had it
-  been wired, it would be **a second, parallel graph duplicating `core/ze-memory`'s
+  been wired, it would be **a second, parallel graph duplicating `core/cognition/ze-memory`'s
   `memory_relationships`** — the exact anti-pattern `aperture-decision.md` warned against
   ("a flat loop table that ignores the memory graph would violate this and strand the path to
   B"). This brief retires it outright rather than migrating it.
 - **`StaleFollowUpNudge` (same file) is live**, unlike `PersonRelationship`:
   `PersonStore.list_stale_for_follow_up(stale_days, limit)` is called from
   `ze_personal/jobs/briefing.py` today — but it uses a fixed `stale_days` config threshold,
-  predates `core/ze-priority`'s `PriorityView` (Phase 123), and is not budget-gated through
+  predates `core/arbitration/ze-priority`'s `PriorityView` (Phase 123), and is not budget-gated through
   it. It is its own independent, unranked nudge channel, dedup'd only by a 20-hour `push_log`
   cooldown on the whole briefing, not by `PriorityView`'s shared attention budget.
-- **`core/ze-memory`'s `Relationship` dataclass** (`ze_memory/graph/types.py`) has the right
+- **`core/cognition/ze-memory`'s `Relationship` dataclass** (`ze_memory/graph/types.py`) has the right
   shape for a typed, provenanced, confidence-scored edge (`predicate`, `confidence`,
   `provenance_id`, `creation_method: explicit|extracted|synthesized`). Its predicate
-  vocabulary (`core/ze-memory/ze_memory/graph/predicates.py`) is deliberately closed —
+  vocabulary (`core/cognition/ze-memory/ze_memory/graph/predicates.py`) is deliberately closed —
   `MENTIONS`, `PARTICIPATES_IN`, `DESCRIBES`, `SOURCED_FROM`, `USES_PROCEDURE`,
   `BELONGS_TO_GOAL`, `PROMOTES_TO` — and the file's own header states the extension policy:
   "only extend this list when a concrete retrieval or audit use case demands it." Note
@@ -98,13 +99,13 @@ codebase, and it repeats a mistake the doctrine has already named once.
 - **`ze_agents.claims` ships `DecayProfile.TIME_LINEAR`** (`_TIME_LINEAR_RATE = 0.03` per
   `_TIME_LINEAR_PERIOD_DAYS = 30.0`, a fixed, non-per-caller-tunable rate) and it is already
   in wide production use for exactly this shape of "confidence should fall as time passes"
-  problem: `core/ze-correlation`'s `HypothesisDecayJob` (`DEFAULT_DECAY_WINDOW_DAYS = 30`),
-  the dream promoter (`elapsed_days=30.0`), and `core/ze-priority`'s urgency scoring
+  problem: `core/cognition/ze-correlation`'s `HypothesisDecayJob` (`DEFAULT_DECAY_WINDOW_DAYS = 30`),
+  the dream promoter (`elapsed_days=30.0`), and `core/arbitration/ze-priority`'s urgency scoring
   (`scoring.py`, `elapsed_days=stuck.idle_days`) all reuse the same fixed rate rather than each
-  tuning their own. `core/ze-proactive/ze_proactive/staleness.py`'s `is_stale(timestamp,
+  tuning their own. `core/contracts/ze-proactive/ze_proactive/staleness.py`'s `is_stale(timestamp,
   window_days)` is the shared helper behind several of these sweeps.
 - **No `project` (or any project-shaped) entity type exists anywhere** — not in
-  `core/ze-memory`'s `entity_type` set (`person | org | topic | ticker | place | product`),
+  `core/cognition/ze-memory`'s `entity_type` set (`person | org | topic | ticker | place | product`),
   not in `ze-automation`'s goals/workflows (those are the user's own declared work items, not
   a container correlating other people to a shared context).
 
@@ -118,12 +119,12 @@ piece of dead schema that was built with the right instinct but never wired.
 
 Two additions to the existing memory graph, no new store:
 
-1. **`project` becomes a new `entity_type`** in `core/ze-memory`, alongside
+1. **`project` becomes a new `entity_type`** in `core/cognition/ze-memory`, alongside
    person/org/topic/ticker/place/product. A project is whatever the user is working on that
    involves other people — it is discovered the same way contacts are (extraction from
    conversation/email/calendar), not manually declared as a prerequisite.
 2. **Person↔person and person↔project edges live in `memory_relationships`**, via two new
-   entries in `core/ze-memory/ze_memory/graph/predicates.py`'s controlled vocabulary:
+   entries in `core/cognition/ze-memory/ze_memory/graph/predicates.py`'s controlled vocabulary:
    `WORKS_ON` (person → project) and `COLLABORATES_WITH` (person ↔ person) — `PARTICIPATES_IN`
    is already spoken for (event → entity) and isn't reused. `contact_relationships` is retired
    outright, not migrated (see "Resolved design questions" — it never had a live producer).
@@ -132,7 +133,7 @@ Per research: no AI-agent memory architecture examined (Mem0, Letta/MemGPT, Zep/
 LangGraph) treats "social memory" as a distinct structure, and the one production system with
 a project/context-clustering primitive (Zep/Graphiti's Community Subgraph) implements it as
 generic entity clustering, not a people-specific subsystem. This is exactly what extending
-`core/ze-memory` this way produces.
+`core/cognition/ze-memory` this way produces.
 
 ### Relationship state — minimal, not a scoring engine
 
@@ -162,7 +163,7 @@ relationship tracker *is* a knowledge graph; "who's connected to what" is its mo
 projection.** The alternative (a dedicated `ze-social` package with its own store) was
 considered and rejected for the same reason the doctrine rejected it for loops:
 
-| | Extend `core/ze-memory` (recommended) | New `ze-social` store |
+| | Extend `core/cognition/ze-memory` (recommended) | New `ze-social` store |
 |---|---|---|
 | Precedent | R1/R2: every AI-memory architecture researched | None found — no system researched has a standalone social-memory store |
 | Reuses existing work | `Relationship` dataclass, predicate vocabulary, `GraphStore.expand()`, `/brain/graph` UI (Phase 94), `Confidence`/decay (Phase 111) | Nothing — duplicates all of the above |
@@ -189,7 +190,7 @@ This maps directly onto machinery Ze already has, and should not get a new subsy
    `Contribution`, exactly the same shape as any other correlation hypothesis, with evidence
    and confidence. **No new correlation subsystem is built**, and neither the window nor the
    weighting is invented from scratch (see "Resolved design questions" for both):
-   - **Recency window: 30 days**, via `core/ze-proactive/ze_proactive/staleness.py`'s existing
+   - **Recency window: 30 days**, via `core/contracts/ze-proactive/ze_proactive/staleness.py`'s existing
      `is_stale(timestamp, window_days)` helper — the same window
      `HypothesisDecayJob.DEFAULT_DECAY_WINDOW_DAYS`, the dream promoter, and `TIME_LINEAR`'s
      own decay period already use. Evidence outside the window doesn't count.
@@ -226,7 +227,7 @@ persisting a ranked list. This sidesteps the "when does a project end" question 
 ## Surfacing — reuse `PriorityView`, retire the unbudgeted nudge
 
 `StaleFollowUpNudge`/`list_stale_for_follow_up` is real and shipping today, but it predates
-`core/ze-priority` and bypasses its shared attention budget entirely — it is exactly the
+`core/arbitration/ze-priority` and bypasses its shared attention budget entirely — it is exactly the
 per-mechanism nudge channel Phase 123 was built to eliminate for loops/goals/hypotheses. Per
 research finding R5, the creepy-vs-useful line real products draw is transparency of *why* a
 nudge fired, not whether automatic inference happens at all — Ze already clears that bar
@@ -250,7 +251,7 @@ piece) and "build" (the new entity type and predicates), not a data migration.
 1. **Add `project` as an `entity_type`; retire `contact_relationships` outright** (drop the
    table and the `PersonRelationship`/`add_relationship`/`get_relationships` code — no data to
    move, per "Resolved design questions"). Add `WORKS_ON` and `COLLABORATES_WITH` to
-   `core/ze-memory/ze_memory/graph/predicates.py`. Retrofit `Relationship.confidence` from
+   `core/cognition/ze-memory/ze_memory/graph/predicates.py`. Retrofit `Relationship.confidence` from
    plain `float` to `ze_agents.claims.Confidence` with `DecayProfile.TIME_LINEAR`. No new
    inference yet — this alone makes people/projects/relationships queryable in one graph and
    visible in the existing `/brain/graph` view.
@@ -322,7 +323,7 @@ each resolves from either a codebase fact gathered while drafting this brief, or
   large predicate vocabulary on the edge itself. Revisit only if `COLLABORATES_WITH` proves
   too coarse in practice — no evidence today says it will.
 - [x] **Where the co-occurrence inference threshold lives, and what the numbers are.**
-  Resolved: a 30-day recency window via `core/ze-proactive/ze_proactive/staleness.py`'s
+  Resolved: a 30-day recency window via `core/contracts/ze-proactive/ze_proactive/staleness.py`'s
   existing `is_stale()` helper — the same window already used by
   `HypothesisDecayJob.DEFAULT_DECAY_WINDOW_DAYS`, the dream promoter's `elapsed_days=30.0`,
   and `TIME_LINEAR`'s own `_TIME_LINEAR_PERIOD_DAYS`. Evidence weighting reuses

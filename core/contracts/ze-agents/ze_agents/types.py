@@ -1,0 +1,161 @@
+from __future__ import annotations
+
+import asyncio
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Protocol, runtime_checkable
+from uuid import UUID
+
+from ze_agents.claims import ClaimKind, Provenance
+
+
+# ── Capability types ──────────────────────────────────────────────────────────
+
+
+class Mode(str, Enum):
+    AUTONOMOUS = "autonomous"
+    CONFIRM = "confirm"
+    DRAFT_ONLY = "draft_only"
+    DISABLED = "disabled"
+
+
+class GateDecision(str, Enum):
+    EXECUTE = "execute"
+    DRAFT = "draft"
+    AWAIT_CONFIRMATION = "confirm"
+    BLOCKED = "blocked"
+
+
+@dataclass
+class Intent:
+    """An agent capability: execution mode and a human-readable description."""
+
+    mode: Mode
+    description: str = ""
+
+
+# ── Orchestration types ───────────────────────────────────────────────────────
+
+
+@dataclass
+class AbortToken:
+    """Async abort signal for agentic loops. Set from outside; checked per iteration."""
+
+    _event: asyncio.Event = field(default_factory=asyncio.Event)
+    reason: str | None = None
+
+    def abort(self, reason: str | None = None) -> None:
+        """Signal the running loop to stop after the current tool call completes."""
+        self.reason = reason
+        self._event.set()
+
+    @property
+    def is_set(self) -> bool:
+        return self._event.is_set()
+
+
+@runtime_checkable
+class ClaimBearingProposal(Protocol):
+    """Structural shape any producer's proposal type must satisfy to sit on
+    `AgentResult.memory_proposals`/`.contact_proposals` — referenced without this
+    package depending on any concrete producer type (Principle III)."""
+
+    claim_kind: ClaimKind
+    provenance: Provenance
+    confidence: float
+
+
+class IdentityBuilder(Protocol):
+    """Callable that renders the persona/memory preamble injected into agent prompts."""
+
+    def __call__(
+        self,
+        persona: dict,
+        memory_context: str,
+        *,
+        profile: Any,
+        contacts_context: str,
+    ) -> str: ...
+
+
+@dataclass
+class ToolCall:
+    tool_name: str
+    args: dict[str, Any]
+    result: Any
+    duration_ms: int
+    success: bool
+    error: str | None = None
+    is_draft: bool = False
+
+
+@dataclass
+class AgentContext:
+    session_id: str
+    prompt: str
+    intent: str
+    gate_decision: GateDecision = GateDecision.EXECUTE
+    memory: Any = None
+    contacts: Any = None
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    messages: list[dict] = field(default_factory=list)
+    persona: dict = field(default_factory=dict)
+    model: str | None = None
+    reporter: Any = field(default=None, repr=False)  # ProgressReporter | None
+    # identity_builder is runtime-only (a callable); always None in stored state.
+    # Never checkpoint a context where this is set — the serde test enforces that.
+    identity_builder: IdentityBuilder | None = field(default=None, repr=False)
+    # abort_token is runtime-only; never checkpoint a context where this is set.
+    abort_token: AbortToken | None = field(default=None, repr=False)
+    # memory_store is runtime-only; set by GoalExecutor for direct agent invocations
+    # that bypass the fetch_context graph node. Never checkpoint.
+    memory_store: Any = field(default=None, repr=False)
+    # embed_fn is runtime-only; injected by the container so BaseAgent can compute
+    # embeddings without importing ze-core. Never checkpoint.
+    embed_fn: Callable[[str], Any] | None = field(default=None, repr=False)
+    # token_sink is runtime-only; when set, agentic_loop streams tokens to it.
+    # Signature: async (chunk: str) -> None. Never checkpoint.
+    token_sink: Any | None = field(default=None, repr=False)
+    # screen_context_note is runtime-only; injected by fetch_context when the client
+    # sends a WsScreenContext (e.g. viewing a specific workflow execution). Never checkpoint.
+    screen_context_note: str | None = field(default=None, repr=False)
+    # resume_recap is runtime-only; injected by fetch_context's resume-recap branch
+    # on a long-gap turn. Rendered into the system prompt, never appended to
+    # messages — must never surface as a visible chat message. Never checkpoint.
+    resume_recap: str | None = field(default=None, repr=False)
+    # active_skills / skill_tool_names are populated by the `match_skills` orchestration
+    # node from the turn's `SkillMatch` list (core/automation/ze-skills). `active_skills` holds the
+    # matched `Skill` objects (name/description/instructions injected into the system
+    # prompt); `skill_tool_names`, when not None, is the intersection of every matched
+    # skill's `allowed_tools` and must only ever narrow — never union — an agent's own
+    # `tools` (FR-008). Never checkpoint: skills are re-matched fresh on resume.
+    active_skills: list[Any] = field(default_factory=list, repr=False)
+    skill_tool_names: list[str] | None = field(default=None, repr=False)
+    # extensions must hold only msgpack-serializable primitives so stored contexts
+    # can be checkpointed. Use identity_builder for callable injection instead.
+    extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)
+    timezone: str = "UTC"
+
+
+@dataclass
+class RetrievalRequest:
+    module: str
+    agent: str
+    query_text: str
+    query_embedding: Any
+    intent: str | None = None
+    task_id: UUID | None = None
+    goal_id: UUID | None = None
+    max_tokens: int = 2000
+    current_session_id: str | None = None
+
+
+@dataclass
+class AgentResult:
+    agent: str
+    response: str
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    tokens_used: int = 0
+    memory_proposals: list[ClaimBearingProposal] = field(default_factory=list)
+    contact_proposals: list[ClaimBearingProposal] = field(default_factory=list)
+    extensions: dict[str, Any] = field(default_factory=dict)

@@ -15,7 +15,7 @@ Ze has two complementary eval modes:
 The eval system is split into two parts:
 
 ```
-core/ze-eval/          # ze_eval Python package — all eval infrastructure
+core/ops/ze-eval/          # ze_eval Python package — all eval infrastructure
   ze_eval/
     __init__.py        # public surface: ZeEvalClient, load_scenarios
     types.py           # typed dataclasses: JudgeScore, VerifyResult, SessionMetrics, ScenarioResult

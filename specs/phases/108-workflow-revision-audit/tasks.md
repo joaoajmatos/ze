@@ -20,8 +20,8 @@ description: "Task list for Workflow Revision Audit (Phase 108)"
 
 ## Path Conventions (per plan.md)
 
-- Backend domain: `core/ze-automation/ze_automation/workflow/`, `core/ze-automation/ze_automation/agents/workflow/`, `core/ze-automation/ze_automation/migrations/versions/`
-- Cross-package plumbing: `core/ze-core/ze_core/orchestration/nodes/context.py`
+- Backend domain: `core/automation/ze-automation/ze_automation/workflow/`, `core/automation/ze-automation/ze_automation/agents/workflow/`, `core/automation/ze-automation/ze_automation/migrations/versions/`
+- Cross-package plumbing: `core/engine/ze-core/ze_core/orchestration/nodes/context.py`
 - API composition root: `apps/ze-api/ze_api/api/`
 - Frontend: `apps/ze-web/src/entities/workflow/`, `apps/ze-web/src/pages/workflow-detail/`, `apps/ze-web/src/widgets/workflow-graph/`, `apps/ze-web/src/widgets/chat-workspace/`, `apps/ze-web/src/entities/session/`
 
@@ -41,11 +41,11 @@ description: "Task list for Workflow Revision Audit (Phase 108)"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [X] T002 [P] Add `zc026_workflow_revisions.py` migration (down_revision `zc025`) creating `workflow_revisions` per data-model.md schema (UUID PK, `workflow_id` FK `ON DELETE CASCADE`, `revision_number`, `change_type` CHECK, `steps_before`/`steps_after` JSONB, `summary`, `actor_source` CHECK, `actor_session_id`, `actor_user_message_id`, `created_at`, unique index on `(workflow_id, revision_number)`, index on `(workflow_id, created_at DESC)`) in `core/ze-automation/ze_automation/migrations/versions/zc026_workflow_revisions.py`
-- [X] T003 [P] Add `ActorSource` enum, `ActorContext` dataclass, and `WorkflowRevision` dataclass to `core/ze-automation/ze_automation/workflow/types.py`
-- [X] T004 [P] Create `core/ze-automation/ze_automation/workflow/revision_summary.py` with `build_change_summary(before: list[WorkflowStep], after: list[WorkflowStep], change_type: str) -> str` implementing the per-step-id add/remove/field-change diff from research.md §3
-- [X] T005 Add `list_revisions(workflow_id, limit=20, offset=0) -> list[WorkflowRevision]` to the `WorkflowStore` Protocol in `core/ze-automation/ze_automation/workflow/store.py`, and extend `create`/`update_steps` signatures with `actor: ActorContext | None = None` (depends on T003)
-- [X] T006 [P] Unit tests for `build_change_summary` (add/remove/field-change/created cases, including the exact `"Step s1: on_failure fail → continue"` phrasing) in `core/ze-automation/tests/workflow/test_revision_summary.py` (depends on T004)
+- [X] T002 [P] Add `zc026_workflow_revisions.py` migration (down_revision `zc025`) creating `workflow_revisions` per data-model.md schema (UUID PK, `workflow_id` FK `ON DELETE CASCADE`, `revision_number`, `change_type` CHECK, `steps_before`/`steps_after` JSONB, `summary`, `actor_source` CHECK, `actor_session_id`, `actor_user_message_id`, `created_at`, unique index on `(workflow_id, revision_number)`, index on `(workflow_id, created_at DESC)`) in `core/automation/ze-automation/ze_automation/migrations/versions/zc026_workflow_revisions.py`
+- [X] T003 [P] Add `ActorSource` enum, `ActorContext` dataclass, and `WorkflowRevision` dataclass to `core/automation/ze-automation/ze_automation/workflow/types.py`
+- [X] T004 [P] Create `core/automation/ze-automation/ze_automation/workflow/revision_summary.py` with `build_change_summary(before: list[WorkflowStep], after: list[WorkflowStep], change_type: str) -> str` implementing the per-step-id add/remove/field-change diff from research.md §3
+- [X] T005 Add `list_revisions(workflow_id, limit=20, offset=0) -> list[WorkflowRevision]` to the `WorkflowStore` Protocol in `core/automation/ze-automation/ze_automation/workflow/store.py`, and extend `create`/`update_steps` signatures with `actor: ActorContext | None = None` (depends on T003)
+- [X] T006 [P] Unit tests for `build_change_summary` (add/remove/field-change/created cases, including the exact `"Step s1: on_failure fail → continue"` phrasing) in `core/automation/ze-automation/tests/workflow/test_revision_summary.py` (depends on T004)
 
 **Checkpoint**: Migration, types, and diff logic exist — user story implementation can begin.
 
@@ -59,25 +59,25 @@ description: "Task list for Workflow Revision Audit (Phase 108)"
 
 ### Tests for User Story 1
 
-- [X] T007 [P] [US1] Test `PostgresWorkflowStore.create` writes a `change_type="created"` revision with `revision_number=1`, empty `steps_before`, and the given `actor` in `core/ze-automation/tests/workflow/test_postgres_revisions.py` (mocked asyncpg pool per Constitution V)
+- [X] T007 [P] [US1] Test `PostgresWorkflowStore.create` writes a `change_type="created"` revision with `revision_number=1`, empty `steps_before`, and the given `actor` in `core/automation/ze-automation/tests/workflow/test_postgres_revisions.py` (mocked asyncpg pool per Constitution V)
 - [X] T008 [P] [US1] Test `PostgresWorkflowStore.update_steps` writes a `change_type="edited"` revision with correct `steps_before`/`steps_after`, incrementing `revision_number`, in the same test file
 - [X] T009 [P] [US1] Test that after `update_steps` writes revision 2, revision 1's row (all fields) is byte-for-byte unchanged on read-back — immutability / read-after-write (SC-006) — in the same test file (depends on T007, T008)
 - [X] T010 [P] [US1] Test `update_steps` writes **no** revision when incoming steps equal current steps (no-op, FR-008) in the same test file
 - [X] T011 [P] [US1] Test `update_steps` writes **no** revision when `validate_workflow_steps` raises `WorkflowPlanError` (FR-008) in the same test file
 - [X] T012 [P] [US1] Test revision rows are cascade-deleted when the parent workflow is deleted (FR-014) in the same test file
-- [X] T013 [P] [US1] Test `edit_workflow_steps`/`create_workflow` tools construct `ActorContext(source=AGENT, session_id=..., user_message_id=...)` from injected deps and pass it to the store in `core/ze-automation/tests/agents/workflow/test_tools_revision_actor.py`
-- [X] T014 [P] [US1] Test `_merge_deps` auto-injects `session_id`/`user_message_id` into `edit_workflow_steps`/`create_workflow` from the agent's `deps` dict (reuse existing `ze_agents` deps-injection test patterns) in `core/ze-agents/tests/test_base_agent_deps.py`
+- [X] T013 [P] [US1] Test `edit_workflow_steps`/`create_workflow` tools construct `ActorContext(source=AGENT, session_id=..., user_message_id=...)` from injected deps and pass it to the store in `core/automation/ze-automation/tests/agents/workflow/test_tools_revision_actor.py`
+- [X] T014 [P] [US1] Test `_merge_deps` auto-injects `session_id`/`user_message_id` into `edit_workflow_steps`/`create_workflow` from the agent's `deps` dict (reuse existing `ze_agents` deps-injection test patterns) in `core/contracts/ze-agents/tests/test_base_agent_deps.py`
 
 ### Implementation for User Story 1
 
-- [X] T015 [US1] Implement revision write inside `PostgresWorkflowStore.create()` in `core/ze-automation/ze_automation/workflow/postgres.py`: compute `revision_number=1`, `summary` via `build_change_summary([], steps, "created")`, insert into `workflow_revisions` on the same `conn`/transaction as the `workflows` INSERT (depends on T002, T003, T004)
+- [X] T015 [US1] Implement revision write inside `PostgresWorkflowStore.create()` in `core/automation/ze-automation/ze_automation/workflow/postgres.py`: compute `revision_number=1`, `summary` via `build_change_summary([], steps, "created")`, insert into `workflow_revisions` on the same `conn`/transaction as the `workflows` INSERT (depends on T002, T003, T004)
 - [X] T016 [US1] Implement revision write inside `PostgresWorkflowStore.update_steps()` in the same file: compare incoming vs. current `steps` via `_step_to_dict`, skip the revision insert on identical/invalid input, else compute next `revision_number` (`COALESCE(MAX(...), 0) + 1`), `summary` via `build_change_summary`, insert on the same `conn` as the `workflows` UPDATE (depends on T015)
 - [X] T017 [US1] Implement `PostgresWorkflowStore.list_revisions()` (offset-paginated, `revision_number DESC`) in the same file (depends on T005)
-- [X] T018 [US1] Add `session_id: str | None = None, user_message_id: str | None = None` params to `edit_workflow_steps` and `create_workflow` in `core/ze-automation/ze_automation/agents/workflow/tools.py`; construct `ActorContext(source=ActorSource.AGENT, ...)` (fallback to `ActorSource.SYSTEM` when either is `None`) and pass as `actor=` to `store.update_steps`/`store.create` (depends on T003, T015, T016)
-- [X] T019 [US1] Add `"session_id": ctx.session_id, "user_message_id": ctx.extensions.get("user_message_id")` to the `deps` dict in `WorkflowManagerAgent.run()` in `core/ze-automation/ze_automation/agents/workflow/agent.py` (depends on T018)
+- [X] T018 [US1] Add `session_id: str | None = None, user_message_id: str | None = None` params to `edit_workflow_steps` and `create_workflow` in `core/automation/ze-automation/ze_automation/agents/workflow/tools.py`; construct `ActorContext(source=ActorSource.AGENT, ...)` (fallback to `ActorSource.SYSTEM` when either is `None`) and pass as `actor=` to `store.update_steps`/`store.create` (depends on T003, T015, T016)
+- [X] T019 [US1] Add `"session_id": ctx.session_id, "user_message_id": ctx.extensions.get("user_message_id")` to the `deps` dict in `WorkflowManagerAgent.run()` in `core/automation/ze-automation/ze_automation/agents/workflow/agent.py` (depends on T018)
 - [X] T020 [US1] Add `config_extra["user_message_id"] = str(user_msg.id)` in `handle_message()` in `apps/ze-api/ze_api/api/websocket/turns.py` (right after `user_msg` is constructed/saved)
-- [X] T021 [US1] Read `config["configurable"].get("user_message_id")` in `fetch_context()` in `core/ze-core/ze_core/orchestration/nodes/context.py` and set `agent_context.extensions["user_message_id"] = user_message_id` when present (depends on T020)
-- [X] T022 [US1] Pass `actor=ActorContext(source=ActorSource.API)` from `update_workflow_steps()` in `core/ze-automation/ze_automation/rest.py` through to `store.update_steps(...)` (depends on T003, T016)
+- [X] T021 [US1] Read `config["configurable"].get("user_message_id")` in `fetch_context()` in `core/engine/ze-core/ze_core/orchestration/nodes/context.py` and set `agent_context.extensions["user_message_id"] = user_message_id` when present (depends on T020)
+- [X] T022 [US1] Pass `actor=ActorContext(source=ActorSource.API)` from `update_workflow_steps()` in `core/automation/ze-automation/ze_automation/rest.py` through to `store.update_steps(...)` (depends on T003, T016)
 
 **Checkpoint**: Every create/edit path (agent + API) now produces exactly one correctly-attributed, immutable revision row, verifiable via `list_revisions` — User Story 1 is independently complete.
 
@@ -98,7 +98,7 @@ description: "Task list for Workflow Revision Audit (Phase 108)"
 ### Implementation for User Story 2
 
 - [X] T026 [US2] Add `ActorContextResponse`/`WorkflowRevisionResponse` Pydantic models to `apps/ze-api/ze_api/api/schemas.py` per contracts/workflow-revisions-api.md (flattened `actor_*` fields)
-- [X] T027 [US2] Add `list_workflow_revisions(store, workflow_id, limit, offset) -> list[dict]` to `core/ze-automation/ze_automation/rest.py`, serializing `WorkflowRevision` (reuse `_step_to_response_dict` for steps) (depends on T017)
+- [X] T027 [US2] Add `list_workflow_revisions(store, workflow_id, limit, offset) -> list[dict]` to `core/automation/ze-automation/ze_automation/rest.py`, serializing `WorkflowRevision` (reuse `_step_to_response_dict` for steps) (depends on T017)
 - [X] T028 [US2] Add `GET /{workflow_id}/revisions` route (`operation_id="listWorkflowRevisions"`, `limit: Query(20, ge=1, le=100)`, `offset: Query(0, ge=0)`, 404 on missing workflow) to `apps/ze-api/ze_api/api/routes/workflows.py` (depends on T026, T027)
 - [X] T029 [US2] Regenerate `@myguyze/ze-client` from the updated OpenAPI spec (per repo's existing codegen command) so `listWorkflowRevisions` and `WorkflowRevisionResponse` are available to ze-web (depends on T028)
 - [X] T030 [P] [US2] Create `useWorkflowRevisionsQuery.ts` in `apps/ze-web/src/entities/workflow/api/` following the `useWorkflowExecutionsQuery.ts` pattern (`queryKeys.workflowRevisions(workflowId)`, `enabled: !!workflowId`) (depends on T029)

@@ -202,7 +202,7 @@
       "status": "DONE",
       "did": "Split memory activity by fact and episode",
       "files": [
-        "core/ze-memory/ze_memory/admin.py"
+        "core/cognition/ze-memory/ze_memory/admin.py"
       ]
     },
     "T007": {
@@ -216,7 +216,7 @@
       "status": "DONE",
       "did": "Test activity counts sum to count",
       "files": [
-        "core/ze-memory/tests/test_admin_activity.py"
+        "core/cognition/ze-memory/tests/test_admin_activity.py"
       ]
     },
     "T009": {
@@ -265,7 +265,7 @@
       "status": "DONE",
       "did": "Run make test-memory and make test-web",
       "files": [
-        "core/ze-memory/tests/test_admin_activity.py"
+        "core/cognition/ze-memory/tests/test_admin_activity.py"
       ]
     }
   },

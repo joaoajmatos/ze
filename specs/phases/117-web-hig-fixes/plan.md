@@ -111,7 +111,7 @@ apps/ze-web/src/
 Backend (only if Research, Unknown 1, concludes the root cause is server-side):
 
 ```text
-core/ze-core/ze_core/... or apps/ze-api/ze_api/interface/native.py
+core/engine/ze-core/ze_core/... or apps/ze-api/ze_api/interface/native.py
 ```
 
 **Structure Decision**: Single existing web app (`apps/ze-web`), FSD layout

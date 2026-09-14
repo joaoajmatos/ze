@@ -1,6 +1,6 @@
 # ze-automation — Automation Substrate
 
-> **Package:** `core/ze-automation` — `ze_automation/`
+> **Package:** `core/automation/ze-automation` — `ze_automation/`
 > **Status:** Done
 > **Implemented in:** [Phase 74](../phases/074-automation-substrate/spec.md)
 
@@ -43,7 +43,7 @@ or persona.
 ## Module Location
 
 ```
-core/ze-automation/ze_automation/
+core/automation/ze-automation/ze_automation/
   goals/
     types.py            ← Goal, Milestone, Gate, GoalLearning
     store.py            ← GoalStore Protocol

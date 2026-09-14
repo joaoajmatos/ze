@@ -1,8 +1,8 @@
 # Phase 1 Data Model: Attention Arbitration
 
 No new database tables (Assumptions, spec.md). Everything below is in-memory
-dataclasses (`core/ze-priority/ze_priority/types.py`) computed fresh per query, plus
-one new module in `core/ze-proactive` wrapping the existing `push_log` table under a
+dataclasses (`core/arbitration/ze-priority/ze_priority/types.py`) computed fresh per query, plus
+one new module in `core/contracts/ze-proactive` wrapping the existing `push_log` table under a
 new shared event key.
 
 ## PriorityItem
@@ -78,7 +78,7 @@ class PriorityView:
 State transitions: none — `PriorityView` is stateless and computed fresh per call
 (Key Entities, spec.md).
 
-## SharedAttentionBudget (core/ze-proactive/ze_proactive/attention_budget.py)
+## SharedAttentionBudget (core/contracts/ze-proactive/ze_proactive/attention_budget.py)
 
 Replaces the two independently-configured budgets (FR-005). Wraps the existing
 `PushLogStore`; no schema change.
@@ -113,7 +113,7 @@ async def release_shared(
 ) -> None: ...
 ```
 
-## AttentionArbitrationJob (core/ze-priority/ze_priority/arbitration.py)
+## AttentionArbitrationJob (core/arbitration/ze-priority/ze_priority/arbitration.py)
 
 Not a data entity, but the one call site that ties `PriorityView` and
 `SharedAttentionBudget` together (FR-007). Sequence per sweep:

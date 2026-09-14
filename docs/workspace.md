@@ -13,7 +13,7 @@ This is **not** a browsing session. Web pages stay in the [browser sidecar](brow
 | Piece | Location | Role |
 |---|---|---|
 | Sidecar service | `sidecar/workspace/` | FastAPI — files, run, cancel, reset |
-| Python package | `core/ze-workspace/` | Client, gate, tools, store, REST |
+| Python package | `core/ops/ze-workspace/` | Client, gate, tools, store, REST |
 | Web UI | `apps/ze-web` System `/workspace` | Mode, files, confirmed reset |
 
 If the sidecar is unreachable, workspace tools return an error the agent can skip.
@@ -137,6 +137,6 @@ Full Fly setup: [sidecar/workspace/README.md](../sidecar/workspace/README.md).
 
 - [skills.md](skills.md) — import, review, matching, and how scripts reach this sidecar
 - [sidecar/workspace/README.md](../sidecar/workspace/README.md) — API contract, isolation, Fly config
-- [core/ze-workspace/README.md](../core/ze-workspace/README.md) — Python package
+- [core/ops/ze-workspace/README.md](../core/ops/ze-workspace/README.md) — Python package
 - [specs/phases/115-workspace-sidecar/spec.md](../specs/phases/115-workspace-sidecar/spec.md) — design
 - [deployment.md](deployment.md) — main backend Fly deploy

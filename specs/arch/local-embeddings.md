@@ -58,7 +58,7 @@ and kept in memory for the process lifetime.
 - Marked `@pytest.mark.slow` in tests — slow to load in CI, excluded from default
   test runs (pass `SLOW=1` to include)
 - If a significantly better multilingual model emerges, swapping it requires changing
-  the singleton in `core/ze-core/ze_core/embeddings.py` and re-indexing stored vectors
+  the singleton in `core/engine/ze-core/ze_core/embeddings.py` and re-indexing stored vectors
 
 ---
 
@@ -85,6 +85,6 @@ dependency (Ze currently uses OpenRouter only for LLM calls); latency per embed 
 
 ## Links
 
-- `core/ze-core/ze_core/embeddings.py` — singleton loader
-- `core/ze-core/ze_core/routing/` — `EmbeddingRouter` usage
-- `core/ze-memory/` — semantic retrieval and dedup usage
+- `core/engine/ze-core/ze_core/embeddings.py` — singleton loader
+- `core/engine/ze-core/ze_core/routing/` — `EmbeddingRouter` usage
+- `core/cognition/ze-memory/` — semantic retrieval and dedup usage

@@ -22,7 +22,7 @@ independent implementation and testing.
 
 ## Path Conventions
 
-Single monorepo, multi-package: new core package at `core/ze-collision/`, plus small edits across
+Single monorepo, multi-package: new core package at `core/seam/ze-collision/`, plus small edits across
 five existing packages at their established paths (per plan.md's Project Structure).
 
 ---
@@ -31,10 +31,10 @@ five existing packages at their established paths (per plan.md's Project Structu
 
 **Purpose**: Scaffold the new `ze-collision` package so foundational work has somewhere to land.
 
-- [X] T001 Create `core/ze-collision/pyproject.toml` (package name `ze-collision`, deps on
+- [X] T001 Create `core/seam/ze-collision/pyproject.toml` (package name `ze-collision`, deps on
       `ze-agents`, `ze-plugin`, `ze-logging`; workspace already globs `core/*`, no root
       `pyproject.toml` edit needed — verified `[tool.uv.workspace] members = ["core/*", ...]`)
-- [X] T002 Create `core/ze-collision/ze_collision/__init__.py` and `core/ze-collision/tests/__init__.py`
+- [X] T002 Create `core/seam/ze-collision/ze_collision/__init__.py` and `core/seam/ze-collision/tests/__init__.py`
 - [X] T003 [P] Add `test-collision` target to `Makefile` (mirror `test-worldstate`/`test-skills`
       targets at lines ~315/321) and list it in the `test-all` aggregate
 
@@ -48,15 +48,15 @@ five existing packages at their established paths (per plan.md's Project Structu
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
 - [X] T004 [P] Add `content: str | None = None` and `entity_ids: list[UUID] = field(default_factory=list)`
-      fields to `Contribution` in `core/ze-plugin/ze_plugin/contribution.py` (data-model.md
+      fields to `Contribution` in `core/contracts/ze-plugin/ze_plugin/contribution.py` (data-model.md
       "Modified: Contribution") — additive only, `validate_and_submit`'s own body is untouched
-- [X] T005 [P] Update `core/ze-plugin/tests/test_contribution.py` to cover the two new optional
+- [X] T005 [P] Update `core/contracts/ze-plugin/tests/test_contribution.py` to cover the two new optional
       fields (default values, and that `validate_and_submit`'s behavior is unaffected by their
       presence/absence)
-- [X] T006 [P] Create `CollisionLogEntry` dataclass in `core/ze-collision/ze_collision/types.py`
+- [X] T006 [P] Create `CollisionLogEntry` dataclass in `core/seam/ze-collision/ze_collision/types.py`
       (data-model.md "New: CollisionLogEntry") plus the internal `CollisionCandidate` dataclass
       used by the recency-window scan
-- [X] T007 Create migration `core/ze-collision/ze_collision/migrations/versions/zcol001_contribution_collisions.py`
+- [X] T007 Create migration `core/seam/ze-collision/ze_collision/migrations/versions/zcol001_contribution_collisions.py`
       — raw-SQL Alembic migration for the `contribution_collisions` table and the three indexes
       from data-model.md (`(matched_entity_id, created_at)`,
       `(contribution_a_source_function, contribution_b_source_function, created_at)`,
@@ -66,9 +66,9 @@ five existing packages at their established paths (per plan.md's Project Structu
       alongside the other non-plugin core packages, and add `ze-collision` to
       `apps/ze-api/pyproject.toml` dependencies
 - [X] T009 Create `CollisionLogStore` Protocol + `PostgresCollisionLogStore` in
-      `core/ze-collision/ze_collision/store.py` (`log()`, `list()` per data-model.md's Store
-      section, modeled on `core/ze-proactive/ze_proactive/push_log_store.py`) — depends on T006, T007
-- [X] T010 [P] Unit tests for `PostgresCollisionLogStore` in `core/ze-collision/tests/test_store.py`
+      `core/seam/ze-collision/ze_collision/store.py` (`log()`, `list()` per data-model.md's Store
+      section, modeled on `core/contracts/ze-proactive/ze_proactive/push_log_store.py`) — depends on T006, T007
+- [X] T010 [P] Unit tests for `PostgresCollisionLogStore` in `core/seam/ze-collision/tests/test_store.py`
       (mock asyncpg pool, per constitution Principle V — no real DB)
 - [X] T011 Wire `CollisionLogStore` construction and the existing injected `NLIClient` into
       `apps/ze-api/ze_api/container.py` (same pattern as `LoopStore`/`SkillStore` wiring at the
@@ -91,45 +91,45 @@ window. Assert one collision log entry referencing both, and both contributions 
 
 ### Tests for User Story 1
 
-- [X] T012 [P] [US1] Unit test in `core/ze-collision/tests/test_detect.py`: conflicting
+- [X] T012 [P] [US1] Unit test in `core/seam/ze-collision/tests/test_detect.py`: conflicting
       cross-function pair sharing an entity produces exactly one `CollisionLogEntry` (mock
       `NLIClient.scores` to return a contradiction score)
-- [X] T013 [P] [US1] Unit test in `core/ze-collision/tests/test_detect.py`: a pair from the
+- [X] T013 [P] [US1] Unit test in `core/seam/ze-collision/tests/test_detect.py`: a pair from the
       *same* `source_function` never becomes a candidate (FR-002/FR-007 — asserts
       `NLIClient.scores` is never called for such a pair)
-- [X] T014 [P] [US1] Unit test in `core/ze-collision/tests/test_detect.py`: `write()`'s return
+- [X] T014 [P] [US1] Unit test in `core/seam/ze-collision/tests/test_detect.py`: `write()`'s return
       value and any exception it raises pass through `submit_and_detect_collisions()` unchanged
       versus calling `validate_and_submit()` directly (contract from contracts/collisions-api.md)
 
 ### Implementation for User Story 1
 
 - [X] T015 [US1] Implement the recency-window candidate index (in-process, bounded by
-      `_COLLISION_WINDOW_HOURS`) in `core/ze-collision/ze_collision/detect.py`, keyed by entity
+      `_COLLISION_WINDOW_HOURS`) in `core/seam/ze-collision/ze_collision/detect.py`, keyed by entity
       ID and by `target_face`, storing `CollisionCandidate` — depends on T006
 - [X] T016 [US1] Implement `submit_and_detect_collisions()` in
-      `core/ze-collision/ze_collision/detect.py`: delegates to the unmodified
+      `core/seam/ze-collision/ze_collision/detect.py`: delegates to the unmodified
       `ze_plugin.contribution.validate_and_submit()`, then on success runs the candidate scan
       (entity match, falling back to `target_face` per FR-002) and calls
       `NLIClient.scores([(content_a, content_b)])` for each candidate pair, logging a
       `CollisionLogEntry` via `CollisionLogStore.log()` when contradiction is flagged — depends
       on T009, T015
-- [X] T017 [US1] [P] Update `loop_to_contribution()` in `core/ze-worldstate/ze_worldstate/contribution.py`
+- [X] T017 [US1] [P] Update `loop_to_contribution()` in `core/cognition/ze-worldstate/ze_worldstate/contribution.py`
       to populate `content=loop.title` and accept/pass through `entity_ids`
-- [X] T018 [US1] Update the two call sites in `core/ze-worldstate/ze_worldstate/extraction.py`
+- [X] T018 [US1] Update the two call sites in `core/cognition/ze-worldstate/ze_worldstate/extraction.py`
       (lines ~161, ~294) to call `submit_and_detect_collisions()` instead of
       `validate_and_submit()`, passing `result_id=lambda created: created.id`,
       `producer_kind="open_loop"`, and the already-resolved `entity_ids` — depends on T016, T017
-- [X] T019 [US1] [P] Update `signal_to_contribution()` in `core/ze-memory/ze_memory/contribution.py`
+- [X] T019 [US1] [P] Update `signal_to_contribution()` in `core/cognition/ze-memory/ze_memory/contribution.py`
       to populate `content=f"{signal.title} {signal.summary}"` and `entity_ids` from
       `signal.entities`
-- [X] T020 [US1] Update the call site in `core/ze-memory/ze_memory/retriever.py` (line ~1267) to
+- [X] T020 [US1] Update the call site in `core/cognition/ze-memory/ze_memory/retriever.py` (line ~1267) to
       call `submit_and_detect_collisions()` — depends on T016, T019
 - [X] T021 [US1] [P] Update the inline `Contribution` construction in
-      `core/ze-memory/ze_memory/dream/dream_pass.py` (line ~509) to pass `content=content` (the
+      `core/cognition/ze-memory/ze_memory/dream/dream_pass.py` (line ~509) to pass `content=content` (the
       parameter already in scope) and switch the call at line ~516 to
       `submit_and_detect_collisions()`, `producer_kind="dream_artifact"` — depends on T016
 - [X] T022 [US1] [P] Update the inline `Contribution` construction in
-      `core/ze-correlation/ze_correlation/engine.py` (`_save_hypothesis_via_seam`, line ~240) to
+      `core/cognition/ze-correlation/ze_correlation/engine.py` (`_save_hypothesis_via_seam`, line ~240) to
       pass `content=` from the hypothesis's claim text and `entity_ids=` derived from
       `hypothesis.evidence`, and switch the call at line ~252 to
       `submit_and_detect_collisions()`, `producer_kind="hypothesis"` — depends on T016
@@ -160,20 +160,20 @@ with compatible content; assert zero collision log entries.
 
 ### Tests for User Story 2
 
-- [X] T026 [P] [US2] Unit test in `core/ze-collision/tests/test_detect.py`: same-entity,
+- [X] T026 [P] [US2] Unit test in `core/seam/ze-collision/tests/test_detect.py`: same-entity,
       different-`source_function`, compatible content (mock `NLIClient.scores` returning
       entailment/neutral, not contradiction) → zero log entries
-- [X] T027 [P] [US2] Unit test in `core/ze-collision/tests/test_detect.py`: same `target_face`,
+- [X] T027 [P] [US2] Unit test in `core/seam/ze-collision/tests/test_detect.py`: same `target_face`,
       no shared entity, unrelated content → zero log entries (target_face-only match still
       requires the NLI check to fire and fail to detect contradiction)
-- [X] T028 [P] [US2] Unit test in `core/ze-collision/tests/test_detect.py`: three contributions
+- [X] T028 [P] [US2] Unit test in `core/seam/ze-collision/tests/test_detect.py`: three contributions
       from three different functions sharing an entity, only one genuinely-conflicting pair →
       exactly one log entry, not three (pairwise, not group-based)
 
 ### Implementation for User Story 2
 
 - [X] T029 [US2] Harden the NLI-result interpretation in
-      `core/ze-collision/ze_collision/detect.py`'s scoring step so only a genuine
+      `core/seam/ze-collision/ze_collision/detect.py`'s scoring step so only a genuine
       contradiction-labeled result logs a collision — entailment/neutral scores, or a `None`
       (unscorable) result, must not — depends on T016
 
@@ -191,7 +191,7 @@ entity; assert only matching entries return with full review detail.
 
 ### Tests for User Story 3
 
-- [X] T030 [P] [US3] Contract test in `core/ze-collision/tests/test_rest.py` for
+- [X] T030 [P] [US3] Contract test in `core/seam/ze-collision/tests/test_rest.py` for
       `list_collisions()` filtering by `entity_id`, `source_function`, `since`/`until`, and
       `limit` (per contracts/collisions-api.md)
 - [X] T031 [P] [US3] Integration test in `apps/ze-api/tests/api/test_collisions.py` for
@@ -200,7 +200,7 @@ entity; assert only matching entries return with full review detail.
 
 ### Implementation for User Story 3
 
-- [X] T032 [US3] Implement `list_collisions()` in `core/ze-collision/ze_collision/rest.py`
+- [X] T032 [US3] Implement `list_collisions()` in `core/seam/ze-collision/ze_collision/rest.py`
       (entity/source_function/date-range filters over `CollisionLogStore.list()`) — depends on T009
 - [X] T033 [US3] Add `CollisionLogEntrySchema` (and `ContributionRefSchema` for the nested
       `contribution_a`/`contribution_b`) to `apps/ze-api/ze_api/api/schemas.py`
@@ -217,7 +217,7 @@ arbitration trigger fired" from the log alone (SC-004).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [X] T036 [P] Fault-injection test in `core/ze-collision/tests/test_detect.py`: `NLIClient.scores`
+- [X] T036 [P] Fault-injection test in `core/seam/ze-collision/tests/test_detect.py`: `NLIClient.scores`
       raises / times out → both writes still succeed, zero log entries, no exception escapes
       `submit_and_detect_collisions()` (SC-003)
 - [X] T037 [P] Run `specs/phases/126-contribution-collision-detection/quickstart.md`'s five

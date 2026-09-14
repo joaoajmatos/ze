@@ -48,7 +48,7 @@ not `ZeApiSettings`.
 | `GOOGLE_REFRESH_TOKEN` | If using calendar/email | Long-lived refresh token. Obtained by running `scripts/google_auth.py` once locally. |
 | `TIMEZONE` | No | IANA timezone string (default: `UTC`). Used for calendar/reminder agents via `config.timezone` YAML override. |
 
-### Logging (`core/ze-logging`)
+### Logging (`core/kernel/ze-logging`)
 
 `LOG_*` vars are read by `ZeApiSettings` at startup and passed to `ze_logging.configure_logging()`.
 

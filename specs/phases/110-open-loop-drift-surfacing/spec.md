@@ -279,7 +279,7 @@ re-pushed within the novelty window, and that a `drifting` loop failing any sing
   sooner drift check (see Clarifications).
 - **Reuse, not reinvention, of the push bar**: this feature takes a new direct package dependency
   from `ze-worldstate` on `ze-correlation` and calls its existing push mechanics
-  (`core/ze-correlation/ze_correlation/push.py`'s threshold/novelty/budget/grounding pattern) for
+  (`core/cognition/ze-correlation/ze_correlation/push.py`'s threshold/novelty/budget/grounding pattern) for
   open loops rather than defining a parallel implementation, but tracks its own daily push budget
   as a sibling counter dedicated to open loops rather than sharing the correlation engine's
   budget (see Clarifications). `CLAUDE.md`'s package dependency graph table must be updated in

@@ -87,5 +87,5 @@ no Android support; complex token lifecycle.
 ## Links
 
 - [Phase 40 — Notifications](../phases/040-notifications/spec.md)
-- `core/ze-notifications/ze_notifications/` — `NtfyNotifier` implementation
+- `integrations/ze-notifications/ze_notifications/` — `NtfyNotifier` implementation
 - `apps/ze-api/ze_api/interface/native.py` — ntfy fallback in `NativeAppInterface`

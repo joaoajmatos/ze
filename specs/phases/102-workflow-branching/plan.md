@@ -48,7 +48,7 @@ over OpenRouter (branch classification + existing verify-gate calls), asyncpg
 codegen'd `@myguyze/ze-client` SDK (existing `ze-web` Workflows screen)
 
 **Storage**: PostgreSQL — `workflows.steps` and `workflow_executions.step_results`
-are already `jsonb` columns (`core/ze-automation/ze_automation/workflow/postgres.py`).
+are already `jsonb` columns (`core/automation/ze-automation/ze_automation/workflow/postgres.py`).
 New step/result fields are additive JSON keys; **no schema migration is required**.
 
 **Testing**: pytest, `asyncio_mode = "auto"`; mock `LLMClient.complete` (branch
@@ -85,9 +85,9 @@ step at a time, unchanged from today.
 |---|---|
 | I. Spec-First Development | Spec at `specs/phases/102-workflow-branching/spec.md`; status will move from Draft → Implemented in the same commit as the code, per constitution. **PASS** |
 | II. Single-User Model | No `user_id`/tenancy/role concept introduced anywhere in this feature. **PASS** |
-| III. Layered Package Architecture | `WorkflowStep`/`Branch`/`StepResult`/`WorkflowPlanner`/`PostgresWorkflowStore` all stay in `core/ze-automation` (no domain knowledge — pure engine types), unchanged ownership. The execution graph (`route_branch` node) stays in `plugins/ze-personal/ze_personal/graph/workflow.py`, its current (pre-existing) location — see note below. **PASS**, with a flagged pre-existing inconsistency, not introduced by this plan. |
+| III. Layered Package Architecture | `WorkflowStep`/`Branch`/`StepResult`/`WorkflowPlanner`/`PostgresWorkflowStore` all stay in `core/automation/ze-automation` (no domain knowledge — pure engine types), unchanged ownership. The execution graph (`route_branch` node) stays in `plugins/ze-personal/ze_personal/graph/workflow.py`, its current (pre-existing) location — see note below. **PASS**, with a flagged pre-existing inconsistency, not introduced by this plan. |
 | IV. Typed, Explicit Python | `Branch` is a new dataclass in `types.py` (never `models.py`); invalid branch/default-next targets raise the existing typed `WorkflowPlanError` (`ze_agents.errors`), not a bare exception. **PASS** |
-| V. Test Discipline | New tests added to `core/ze-automation/tests/workflow_engine/` and `plugins/ze-personal/tests/graph/test_workflow.py`; mock `LLMClient.complete` and asyncpg pool; no real DB/LLM. **PASS** |
+| V. Test Discipline | New tests added to `core/automation/ze-automation/tests/workflow_engine/` and `plugins/ze-personal/tests/graph/test_workflow.py`; mock `LLMClient.complete` and asyncpg pool; no real DB/LLM. **PASS** |
 | VI. Explicit Persistence | No migration: `steps`/`step_results` are already `jsonb`; new fields are additive keys handled entirely in Python (de)serialization. **PASS** |
 | VII. One LLM Gateway, Local Embeddings | Branch classification is one more `LLMClient.complete()` call through the same injected client and `workflow_verify` model config key already used by the verify gate — no new provider, no new API key. **PASS** |
 | Additional Constraints — Frontend FSD | The two widget fixes (`WorkflowStepsList`, `LiveRunPanel`) stay in their existing `widgets/` slice, importing types from `@myguyze/ze-client` as today (no new re-export wrapper). No new query hooks needed — existing `useWorkflowExecutionsQuery`/`useLiveExecutionQuery` already return the extended `WorkflowExecutionResponse` once the schema/codegen changes land. **PASS** |
@@ -121,7 +121,7 @@ specs/phases/102-workflow-branching/
 ### Source Code (repository root)
 
 ```text
-core/ze-automation/ze_automation/workflow/
+core/automation/ze-automation/ze_automation/workflow/
 ├── types.py             # + Branch dataclass; WorkflowStep gains id/branches/default_next;
 │                         #   StepResult gains step_id/branch_taken
 ├── planner.py            # _PLAN_SYSTEM extended to optionally emit id/branches/default_next;
@@ -130,7 +130,7 @@ core/ze-automation/ze_automation/workflow/
 │                         #   id backfill ("s{index}") for rows missing an id
 └── store.py               # WorkflowStore protocol — unchanged signatures
 
-core/ze-automation/ze_automation/agents/workflow/
+core/automation/ze-automation/ze_automation/agents/workflow/
 └── tools.py              # create_workflow validates branch/default_next targets after
                            #   planner.plan(), raising WorkflowPlanError on invalid target;
                            #   get_workflow includes branches in its step serialization
@@ -141,7 +141,7 @@ plugins/ze-personal/ze_personal/graph/
                            #   new route_branch node + conditional edges;
                            #   verify_step / after_verify_step updated to route through it
 
-core/ze-automation/tests/workflow_engine/
+core/automation/ze-automation/tests/workflow_engine/
 ├── test_workflow_planner.py     # + branch-emission cases
 └── test_postgres_workflow_store.py  # + id backfill, branch/default_next round-trip
 
@@ -153,7 +153,7 @@ apps/ze-api/ze_api/api/
 │                          #   StepResultResponse +step_id/branch_taken
 └── routes/workflows.py    # no signature changes — response_model fields flow through
 
-core/ze-automation/ze_automation/
+core/automation/ze-automation/ze_automation/
 └── rest.py                # get_workflow()/list_workflow_executions() dict-building
                            #   extended with the same new fields, mirrored from postgres.py
 
@@ -172,7 +172,7 @@ apps/ze-web/src/
 ```
 
 **Structure Decision**: No new packages, services, pages, or routes. Backend
-changes land inside the existing `core/ze-automation` (types/planner/store/rest —
+changes land inside the existing `core/automation/ze-automation` (types/planner/store/rest —
 engine-owned, no domain knowledge), the existing `plugins/ze-personal` graph
 module (execution), and the existing `ze-api` REST layer (schema/route). Frontend
 changes are confined to two already-existing `widgets/` components — no new

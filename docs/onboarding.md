@@ -7,7 +7,7 @@ development or re-onboarding.
 
 ## Package Boundary
 
-Reusable onboarding logic lives in `core/ze-onboarding`:
+Reusable onboarding logic lives in `core/ops/ze-onboarding`:
 
 - `ze_onboarding.types` defines provider, step, field, seed, store, persistence, view, and
   reset dataclasses/protocols.

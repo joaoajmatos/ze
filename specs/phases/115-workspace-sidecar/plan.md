@@ -8,7 +8,7 @@
 
 Give Ze a single durable, isolated computer on the always-on side — files, a shell, and
 ordinary scripting runtimes — without moving the mind or touching the user's laptop. A new
-`core/ze-workspace` package plus `sidecar/workspace` follow the browser-helper split: Ze
+`core/ops/ze-workspace` package plus `sidecar/workspace` follow the browser-helper split: Ze
 calls a control API; programs run in a stripped, unprivileged subprocess that can reach the
 public internet but not Ze's private services or credentials. Conversational runs complete
 inside the turn. Workspace modes (Off / Plan / Ask / Auto-edit / Auto) persist as a
@@ -35,7 +35,7 @@ importer/review (`zsk002`). LangGraph 1.2.2 `interrupt()` + existing
 live on a Compose volume / Fly volume at `/workspace`, not in Postgres. Run records in
 Postgres are the attach point for a later follow-through spec.
 
-**Testing**: pytest (`core/ze-workspace/tests/`, `sidecar/workspace` logic tested via the
+**Testing**: pytest (`core/ops/ze-workspace/tests/`, `sidecar/workspace` logic tested via the
 client with a fake HTTP sidecar; `ze-skills` importer/review tests updated; `ze-api` REST
 tests; vitest for workspace page + ConfirmBar edit + message chip). No real Docker, Fly,
 or network in unit tests. Mock asyncpg and `WorkspaceClient`.
@@ -80,8 +80,8 @@ inline preview, 1 GiB ceiling. Management UI is one System page plus chat chips 
   `BaseAgent` name merge.
 - **IV. Typed, Explicit Python** — PASS. Dataclasses in `types.py`, `StrEnum` for mode /
   run status / origin, typed `ZeError` subclasses, async I/O, constructor injection.
-- **V. Test Discipline** — PASS (planned). Tests in `core/ze-workspace/tests/`,
-  `core/ze-skills/tests/` (importer stores scripts; approve-executables), `apps/ze-api/tests/`,
+- **V. Test Discipline** — PASS (planned). Tests in `core/ops/ze-workspace/tests/`,
+  `core/automation/ze-skills/tests/` (importer stores scripts; approve-executables), `apps/ze-api/tests/`,
   `apps/ze-web/src/**/*.test.ts(x)`. Fake sidecar HTTP, mock pools, no real LLM.
 - **VI. Explicit Persistence** — PASS. Raw-SQL Alembic `zws001` in `ze-workspace`, `zsk002`
   in `ze-skills`. No ORM. Meta-runner constant `_ZE_WORKSPACE_VERSIONS`.
@@ -122,7 +122,7 @@ sidecar/workspace/                         # NEW — the computer (no Ze imports
 ├── supervisor.py                          # unprivileged exec, mutex, timeout, nftables
 └── README.md
 
-core/ze-workspace/                         # NEW core package
+core/ops/ze-workspace/                         # NEW core package
 ├── pyproject.toml
 └── ze_workspace/
     ├── __init__.py
@@ -143,21 +143,21 @@ core/ze-workspace/                         # NEW core package
         └── versions/
             └── zws001_workspace.py        # workspace_state, workspace_runs
 
-core/ze-skills/ze_skills/
+core/automation/ze-skills/ze_skills/
 ├── types.py                               # + has_scripts, executable_approved; skill_scripts
 ├── parser.py / importer.py                # persist scripts instead of discarding
 ├── review.py                              # approve_skill_executables()
 ├── rest.py / store.py
 └── migrations/versions/zsk002_skill_scripts.py
 
-core/ze-agents/ze_agents/errors.py         # ToolConfirmationRequired (next to ToolBlockedError)
-core/ze-agents/ze_agents/base_agent.py     # merge WORKSPACE_TOOLS; catch ToolConfirmationRequired
-core/ze-core/ze_core/orchestration/nodes/execution.py  # interrupt() on ToolConfirmationRequired
-core/ze-core/ze_core/conversation/turn.py  # Command(resume=) for workspace confirms
-core/ze-core/ze_core/conversation/messages/types.py    # MessageTrace.workspace, SkillUsageTrace.script_ran
-core/ze-core/ze_core/orchestration/nodes/trace.py      # populate workspace usage
-core/ze-automation/ze_automation/goals/executor.py      # injected WorkspaceGate, origin=unattended
-core/ze-automation/ze_automation/workflow/              # same; not ze_personal.graph.workflow
+core/contracts/ze-agents/ze_agents/errors.py         # ToolConfirmationRequired (next to ToolBlockedError)
+core/contracts/ze-agents/ze_agents/base_agent.py     # merge WORKSPACE_TOOLS; catch ToolConfirmationRequired
+core/engine/ze-core/ze_core/orchestration/nodes/execution.py  # interrupt() on ToolConfirmationRequired
+core/engine/ze-core/ze_core/conversation/turn.py  # Command(resume=) for workspace confirms
+core/engine/ze-core/ze_core/conversation/messages/types.py    # MessageTrace.workspace, SkillUsageTrace.script_ran
+core/engine/ze-core/ze_core/orchestration/nodes/trace.py      # populate workspace usage
+core/automation/ze-automation/ze_automation/goals/executor.py      # injected WorkspaceGate, origin=unattended
+core/automation/ze-automation/ze_automation/workflow/              # same; not ze_personal.graph.workflow
 
 apps/ze-api/ze_api/container.py            # WorkspaceClient + stack, configurable injection
 apps/ze-api/ze_api/settings.py             # WORKSPACE_SERVICE_URL, token, timeout
@@ -182,13 +182,13 @@ apps/ze-web/src/entities/message/ui/ConfirmBar.tsx    # editable content
 apps/ze-web/src/widgets/trace-panel/ui/WorkspaceSection.tsx
 apps/ze-web/src/widgets/skill-management/…            # scripts + executable approval
 
-core/ze-workspace/tests/
-core/ze-skills/tests/                      # importer stores scripts; no silent promotion
+core/ops/ze-workspace/tests/
+core/automation/ze-skills/tests/                      # importer stores scripts; no silent promotion
 apps/ze-api/tests/
 apps/ze-web/src/**/*.test.ts(x)
 ```
 
-**Structure Decision**: New `core/ze-workspace/` (directly wired, like `ze-skills`) plus
+**Structure Decision**: New `core/ops/ze-workspace/` (directly wired, like `ze-skills`) plus
 `sidecar/workspace/` (like `sidecar/browser`). Confirmation extends the existing graph
 resume path rather than adding a node, using `ToolConfirmationRequired` in `ze-agents`
 so the engine never imports `ze-workspace`. Skill-script persistence stays in `ze-skills`

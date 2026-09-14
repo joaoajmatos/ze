@@ -88,7 +88,7 @@ async def within_budget(
 
 - `CorrelationPushConsumer._passes_push_bar` is refactored to call these same functions with its
   existing `hypothesis.confidence`/`hypothesis.summary`/evidence — behavior-preserving, verified
-  by the existing `core/ze-correlation/tests/test_push.py` suite continuing to pass unmodified.
+  by the existing `core/cognition/ze-correlation/tests/test_push.py` suite continuing to pass unmodified.
 - `ze_worldstate.surfacing.LoopSurfacer.passes_push_bar` calls all five functions with the
   loop's own `confidence`, a `relevance` score computed via the injected `RelevanceModel` against
   the loop's linked entity names (`topics=[]`, research.md §7), `drift_rationale` as `summary`,

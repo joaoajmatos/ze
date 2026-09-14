@@ -1,6 +1,6 @@
 # ze-agents — Developer API
 
-> **Package:** `core/ze-agents` — `ze_agents/`
+> **Package:** `core/contracts/ze-agents` — `ze_agents/`
 > **Status:** Done
 > **Supersedes:** [01-agent.md (stale)](01-agent.md)
 
@@ -46,7 +46,7 @@ of routing, graph execution, or dependency injection — those live in `ze-core`
 ## Module Location
 
 ```
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
   base_agent.py       ← BaseAgent ABC + agentic_loop
   registry.py         ← @agent decorator + AgentRegistry
   tool.py             ← @tool decorator + ToolAccess

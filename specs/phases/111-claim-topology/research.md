@@ -13,8 +13,8 @@ settle — no open unknowns remain.
 ## 1. Where `Signal` actually lives (correction to arch brief / spec framing)
 
 **Finding**: `specs/arch/claim-topology.md` and the spec's Input line describe `Signal` as living
-in `core/ze-plugin`. It does not. `Signal` (the dataclass with `source`, `magnitude`, `payload`,
-etc.) is defined in `core/ze-memory/ze_memory/types.py`. `core/ze-plugin/ze_plugin/signals.py`
+in `core/contracts/ze-plugin`. It does not. `Signal` (the dataclass with `source`, `magnitude`, `payload`,
+etc.) is defined in `core/cognition/ze-memory/ze_memory/types.py`. `core/contracts/ze-plugin/ze_plugin/signals.py`
 only holds the `SignalSource` Protocol (the `poll()` contract plugins implement) — it imports
 `Signal` from `ze_memory.types` under `TYPE_CHECKING`, it doesn't define it.
 
@@ -22,7 +22,7 @@ only holds the `SignalSource` Protocol (the `poll()` contract plugins implement)
 `SignalSource` Protocol in `ze-plugin` is unchanged (per FR-014) — it just returns objects of
 this now-richer shape. This doesn't change any requirement's substance (the four
 `SignalSource` implementers still populate the two new fields), only the file path tasks.md
-must target: `core/ze-memory/ze_memory/types.py`, not a `ze-plugin` module.
+must target: `core/cognition/ze-memory/ze_memory/types.py`, not a `ze-plugin` module.
 
 **Alternatives considered**: Treat the arch brief as authoritative and look for a second
 `Signal`-like type in `ze-plugin` to retrofit instead. Rejected — `grep -rn "class Signal\b"`
@@ -43,7 +43,7 @@ as a second formal vocabulary. `LoopProvenance` conflated two axes the doctrine 
 epistemic origin (closed, doctrine-mandated) and inflow channel (open-ended, operational).
 
 Separately, `email`/`calendar` are literally `ze-messenger`/`ze-calendar` domain vocabulary —
-baking them into `core/ze-agents` would violate Principle III (core has no domain knowledge) and
+baking them into `core/contracts/ze-agents` would violate Principle III (core has no domain knowledge) and
 require a core PR for every future plugin's inflow channel.
 
 **Decision** (formalized in `specs/arch/plugin-domain-vocabulary.md`, an ADR + constitution
@@ -67,7 +67,7 @@ plugin boundary — the boundary was already string-typed. But
 LoopProvenance(provenance)`, coercing that string against the closed 5-value enum and raising
 `ValueError` for anything unrecognized.
 
-A full-repo grep (`grep -rn "LoopProvenance\." core/ze-worldstate/ core/ze-correlation/
+A full-repo grep (`grep -rn "LoopProvenance\." core/cognition/ze-worldstate/ core/cognition/ze-correlation/
 apps/ze-api/ plugins/`) across both production code and every test file found only two of the
 five enum values are ever referenced by name anywhere outside the enum's own declaration:
 `LoopProvenance.CONVERSATION` and `LoopProvenance.USER_DECLARED` — both inside
@@ -106,7 +106,7 @@ is removing that requirement entirely, not softening its failure mode).
 
 ## 4. `EvidenceRef.origin`: confirmed as the correct (unaffected) use of the closed enum
 
-**Finding**: `EvidenceRef.origin` (`core/ze-correlation/ze_correlation/types.py`) is currently
+**Finding**: `EvidenceRef.origin` (`core/cognition/ze-correlation/ze_correlation/types.py`) is currently
 `Literal["graph_recall", "live_search", "prompt_supplied"]` — already exactly the doctrine's
 epistemic-origin axis (missing only `synthesized`), never an inflow-channel concept. It describes
 how a piece of evidence entered the correlation engine's reasoning, not which plugin produced the
@@ -137,7 +137,7 @@ computation itself (the confidence arithmetic only — floor clamp, weighted rec
 ## 6. `memory_facts`' decay is a bulk SQL `UPDATE`, not a per-row Python call — how does FR-011 apply?
 
 **Finding** (unaffected by the Provenance rework): `DreamPromoter._run_confidence_decay` in
-`core/ze-memory/ze_memory/dream/promoter.py` does the decay entirely in one SQL statement:
+`core/cognition/ze-memory/ze_memory/dream/promoter.py` does the decay entirely in one SQL statement:
 `confidence = GREATEST(0.0, confidence - 0.03)` plus two `CASE` expressions setting
 `reviewed`/`contradicted` at the 0.50/0.25 cliffs, scoped to
 `provenance = 'synthesized' AND corroborated = false AND created_at < now() - interval '30 days'

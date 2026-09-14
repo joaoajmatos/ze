@@ -22,7 +22,7 @@ must finish before the next wave.
 (C1); unattended gating stays in `ze-automation` via injection (C2); ingest pipeline is
 injected, no `ze-ingestion` dep (I1); output denylist sanitizer (G1); sidecar split into
 three sequential tasks (U1); `GET /workspace/runs` in US1 REST (I2); `import
-ze_workspace.tools` in bootstrap (U3); sidecar tests under `core/ze-workspace/tests/`
+ze_workspace.tools` in bootstrap (U3); sidecar tests under `core/ops/ze-workspace/tests/`
 (U4).
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -34,8 +34,8 @@ ze_workspace.tools` in bootstrap (U3); sidecar tests under `core/ze-workspace/te
 
 ## Path Conventions
 
-Existing monorepo — new `core/ze-workspace/` and `sidecar/workspace/`; extend `core/ze-skills/`,
-`core/ze-agents/`, `core/ze-core/`, `core/ze-automation/`, `apps/ze-api/`, `apps/ze-web/`.
+Existing monorepo — new `core/ops/ze-workspace/` and `sidecar/workspace/`; extend `core/automation/ze-skills/`,
+`core/contracts/ze-agents/`, `core/engine/ze-core/`, `core/automation/ze-automation/`, `apps/ze-api/`, `apps/ze-web/`.
 
 ---
 
@@ -46,19 +46,19 @@ place to land code.
 
 **Wave 1 — package manifest:**
 
-- [x] T001 Create `core/ze-workspace/pyproject.toml` (deps: `ze-agents`, `ze-logging`,
+- [x] T001 Create `core/ops/ze-workspace/pyproject.toml` (deps: `ze-agents`, `ze-logging`,
       `ze-data`, `httpx`, `asyncpg==0.31.0` — **not** `ze-ingestion`; dev group mirrors
-      `core/ze-skills/pyproject.toml`; `[tool.hatch.build.targets.wheel] packages =
+      `core/automation/ze-skills/pyproject.toml`; `[tool.hatch.build.targets.wheel] packages =
       ["ze_workspace"]`; `testpaths = ["tests"]`, `asyncio_mode = "auto"`)
 
 **⟶ Wait for Wave 1 to finish, then:**
 
 **Wave 2 — independent (different files):**
 
-- [x] T002 [P] Create `core/ze-workspace/ze_workspace/__init__.py` (empty package marker)
-- [x] T003 [P] Create `core/ze-workspace/tests/__init__.py` and
-      `core/ze-workspace/tests/conftest.py` (mock asyncpg pool, fake sidecar `httpx` app —
-      mirrors `core/ze-browser/tests` + `core/ze-skills/tests/conftest.py`)
+- [x] T002 [P] Create `core/ops/ze-workspace/ze_workspace/__init__.py` (empty package marker)
+- [x] T003 [P] Create `core/ops/ze-workspace/tests/__init__.py` and
+      `core/ops/ze-workspace/tests/conftest.py` (mock asyncpg pool, fake sidecar `httpx` app —
+      mirrors `integrations/ze-browser/tests` + `core/automation/ze-skills/tests/conftest.py`)
 - [x] T004 [P] Scaffold `sidecar/workspace/` with `Dockerfile`, `fly.toml` (app
       `ze-workspace`, volume, `min_machines_running = 1`, `internal_port = 8080`),
       `requirements.txt` (fastapi/uvicorn), and `README.md` (mirrors `sidecar/browser/`)
@@ -70,7 +70,7 @@ place to land code.
 - [x] T005 Add `ze-workspace` to `apps/ze-api/pyproject.toml` dependencies and
       `[tool.uv.sources]` (`ze-workspace = { workspace = true }`)
 - [x] T006 [P] Add `test-workspace` to the root `Makefile` (`.PHONY`, `TEST_PY_PACKAGES`,
-      `make help`) pointing at `core/ze-workspace/tests`, and a row in `docs/testing.md`
+      `make help`) pointing at `core/ops/ze-workspace/tests`, and a row in `docs/testing.md`
 - [x] T007 [P] Add Compose service `workspace` (build `sidecar/workspace`, named volume
       `workspace_data`, healthcheck `GET /health`) and `WORKSPACE_SERVICE_URL:
       http://workspace:8080` on `backend` in `docker-compose.yml`
@@ -96,36 +96,36 @@ container injection. No user-story work until this phase is complete.
 - [x] T009 [P] Define `WorkspaceMode`, `WorkspaceRunStatus`, `WorkspaceRunOrigin`
       (`conversation` | `user` | `unattended`), `WorkspaceAction` StrEnums and
       `WorkspaceRun`, `WorkspaceFile`, `WorkspaceState` dataclasses in
-      `core/ze-workspace/ze_workspace/types.py` (per data-model.md)
+      `core/ops/ze-workspace/ze_workspace/types.py` (per data-model.md)
 - [x] T010 [P] Define `WorkspaceUnavailableError`, `WorkspaceBusyError`,
       `WorkspaceFullError`, `WorkspacePathError`, `WorkspaceNotFoundError` in
-      `core/ze-workspace/ze_workspace/errors.py` (subclass `ZeError`). Do **not** put a
+      `core/ops/ze-workspace/ze_workspace/errors.py` (subclass `ZeError`). Do **not** put a
       confirm-interrupt type here.
 - [x] T011 [P] Add `ToolConfirmationRequired(AgentError)` next to `ToolBlockedError` in
-      `core/ze-agents/ze_agents/errors.py` — payload: prompt, editable flag, proposed
+      `core/contracts/ze-agents/ze_agents/errors.py` — payload: prompt, editable flag, proposed
       command or file contents. `ze_core` / `ze_agents` never import `ze_workspace`.
 - [x] T012 [P] Add `WorkspaceUsageTrace` and `MessageTrace.workspace`; add
       `SkillUsageTrace.script_ran: bool = False` in
-      `core/ze-core/ze_core/conversation/messages/types.py`
+      `core/engine/ze-core/ze_core/conversation/messages/types.py`
 
 **⟶ Wait for Wave 1 to finish, then:**
 
 **Wave 2 — persistence + client + gate:**
 
-- [x] T013 Create `core/ze-workspace/ze_workspace/migrations/env.py` (mirror
-      `core/ze-skills/ze_skills/migrations/env.py`) and
-      `core/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py` — raw SQL
+- [x] T013 Create `core/ops/ze-workspace/ze_workspace/migrations/env.py` (mirror
+      `core/automation/ze-skills/ze_skills/migrations/env.py`) and
+      `core/ops/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py` — raw SQL
       `workspace_state` (singleton `id=1`, default mode `ask`) and `workspace_runs` per
       data-model.md
 - [x] T014 Register `_ZE_WORKSPACE_VERSIONS` in `apps/ze-api/ze_api/migrate.py` alongside
       `_ZE_SKILLS_VERSIONS`
 - [x] T015 Implement `WorkspaceStore` protocol + `PostgresWorkspaceStore` in
-      `core/ze-workspace/ze_workspace/store.py` — get/set mode, insert/list runs (including
+      `core/ops/ze-workspace/ze_workspace/store.py` — get/set mode, insert/list runs (including
       `origin` filter), update `last_used_at` / `last_reset_at`
-- [x] T016 [P] Implement `WorkspaceClient` in `core/ze-workspace/ze_workspace/client.py`
+- [x] T016 [P] Implement `WorkspaceClient` in `core/ops/ze-workspace/ze_workspace/client.py`
       (`httpx` → sidecar contract in `contracts/workspace-sidecar.md`: health, stat, fs,
       run, cancel, reset; maps HTTP errors to `ze_workspace.errors`)
-- [x] T017 [P] Implement `WorkspaceGate` in `core/ze-workspace/ze_workspace/gate.py` —
+- [x] T017 [P] Implement `WorkspaceGate` in `core/ops/ze-workspace/ze_workspace/gate.py` —
       mode × action × origin → `allow` | `confirm` | `plan` | `deny` per data-model.md
       (`origin=conversation` Off denies all tools; `origin=user` REST list/read/place/
       retrieve allow even in Off; unattended commands only `auto`; unattended writes
@@ -161,12 +161,12 @@ container injection. No user-story work until this phase is complete.
 
 **Wave 6 — sanitizer + wiring:**
 
-- [x] T021 [P] Implement `redact()` in `core/ze-workspace/ze_workspace/sanitize.py` and
+- [x] T021 [P] Implement `redact()` in `core/ops/ze-workspace/ze_workspace/sanitize.py` and
       call it from `PostgresWorkspaceStore` insert/update of `output_preview` /
       `error_summary` plus any chat-inline helper — denylist env-key names
       (`OPENROUTER_API_KEY`, `DATABASE_URL`, `ZE_API_KEY`, `WORKSPACE_API_TOKEN`,
       `*_SECRET`/`*_TOKEN`/`*_PASSWORD`) (SC-004)
-- [x] T022 Create `build_workspace_stack` in `core/ze-workspace/ze_workspace/bootstrap.py`
+- [x] T022 Create `build_workspace_stack` in `core/ops/ze-workspace/ze_workspace/bootstrap.py`
       — `import ze_workspace.tools  # noqa: F401` so `@tool` registers; construct client +
       store + gate; put `WorkspaceClient` / `WorkspaceGate` / `IngestionPipeline` (from
       shared container, do not import-construct here if it creates a package dep) on
@@ -179,19 +179,19 @@ container injection. No user-story work until this phase is complete.
 **Wave 7 — foundational tests (independent files):**
 
 - [x] T023 [P] Unit tests for `PostgresWorkspaceStore` in
-      `core/ze-workspace/tests/test_store.py` (mock asyncpg; mode persist; run insert/list
+      `core/ops/ze-workspace/tests/test_store.py` (mock asyncpg; mode persist; run insert/list
       with origin filter)
-- [x] T024 [P] Unit tests for `WorkspaceGate` in `core/ze-workspace/tests/test_gate.py` —
+- [x] T024 [P] Unit tests for `WorkspaceGate` in `core/ops/ze-workspace/tests/test_gate.py` —
       conversation Off denies list; user REST list allows in Off; unattended run only
       Auto; unattended write Auto-edit or Auto; reset-always-confirm
 - [x] T025 [P] Unit tests for `WorkspaceClient` in
-      `core/ze-workspace/tests/test_client.py` using a fake HTTP sidecar (health false →
+      `core/ops/ze-workspace/tests/test_client.py` using a fake HTTP sidecar (health false →
       `WorkspaceUnavailableError`; 409 busy/full; 400 outside_workspace)
 - [x] T026 [P] Sidecar contract tests in
-      `core/ze-workspace/tests/test_sidecar_contract.py` (fake supervisor, **not**
+      `core/ops/ze-workspace/tests/test_sidecar_contract.py` (fake supervisor, **not**
       `sidecar/workspace/tests/`) — path escape refused; child env lacks token/secrets;
       second run busy; ceiling refuse leaves tree unchanged
-- [x] T027 [P] Unit tests for `redact()` in `core/ze-workspace/tests/test_sanitize.py` —
+- [x] T027 [P] Unit tests for `redact()` in `core/ops/ze-workspace/tests/test_sanitize.py` —
       command output containing `OPENROUTER_API_KEY=...` is not present in the returned
       preview
 
@@ -217,12 +217,12 @@ fabricate success.
 **Wave 1 — independent tests:**
 
 - [x] T028 [P] [US1] Unit tests for workspace `@tool`s in
-      `core/ze-workspace/tests/test_tools.py` — list/read/write/delete/run; Off deny; Plan
+      `core/ops/ze-workspace/tests/test_tools.py` — list/read/write/delete/run; Off deny; Plan
       dry-run (no client execute); Ask raises `ToolConfirmationRequired`; Auto-edit write
       vs run; truncated output spills to a file path (FR-009); ingest uses injected
       pipeline mock (no `ze_ingestion` import required in the test harness)
 - [x] T029 [P] [US1] Unit tests for in-node confirm resume in
-      `core/ze-core/tests/orchestration/test_workspace_interrupt.py` — catch
+      `core/engine/ze-core/tests/orchestration/test_workspace_interrupt.py` — catch
       `ToolConfirmationRequired` from `ze_agents.errors` (assert the test file does not
       import `ze_workspace`); approve executes edited payload; deny does not call sidecar;
       interrupt uses `pending_confirmations`
@@ -242,14 +242,14 @@ fabricate success.
 
 - [x] T032 [US1] Implement `@tool`s `workspace_list`, `workspace_read`, `workspace_write`,
       `workspace_delete`, `workspace_run`, `ingest_workspace_file` in
-      `core/ze-workspace/ze_workspace/tools.py` — consult `WorkspaceGate`; Plan returns
+      `core/ops/ze-workspace/ze_workspace/tools.py` — consult `WorkspaceGate`; Plan returns
       preview; Ask/confirm raises `ToolConfirmationRequired` from `ze_agents.errors`; Auto
       executes via `WorkspaceClient`; persist `WorkspaceRun` on `/run` after `redact()`
       (FR-008, FR-025, SC-004); `ingest_workspace_file` reads sidecar bytes and calls the
       **injected** `IngestionPipeline.ingest` (FR-028) — do not import `ze_ingestion` at
       module top if that implies a package dep; never auto-ingest on write/place (FR-021)
 - [x] T033 [US1] Merge fixed `WORKSPACE_TOOLS` into `BaseAgent.agentic_loop` in
-      `core/ze-agents/ze_agents/base_agent.py` (opt-out flag); skills still intersect, never
+      `core/contracts/ze-agents/ze_agents/base_agent.py` (opt-out flag); skills still intersect, never
       union (FR-017). Catch `ToolConfirmationRequired` in `call_tool` and re-raise for the
       graph (do not import `ze_workspace`).
 
@@ -257,10 +257,10 @@ fabricate success.
 
 **Wave 3 — confirm interrupt + resume:**
 
-- [x] T034 [US1] In `core/ze-core/ze_core/orchestration/nodes/execution.py`, map
+- [x] T034 [US1] In `core/engine/ze-core/ze_core/orchestration/nodes/execution.py`, map
       `ToolConfirmationRequired` (from `ze_agents.errors` only) to LangGraph `interrupt()`;
       write `pending_confirmations`; on resume run the approved or `edited_content` payload.
-      Extend `core/ze-core/ze_core/conversation/turn.py` `resume_turn` to pass
+      Extend `core/engine/ze-core/ze_core/conversation/turn.py` `resume_turn` to pass
       `Command(resume=...)`. Keep existing `interrupt_before=["await_confirmation"]`
       CapabilityGate path unchanged. This file must not import `ze_workspace`.
 
@@ -272,7 +272,7 @@ fabricate success.
       `WsSendMessageFrame.context.workspace_placed`, `MessageTraceResponse.workspace`,
       `SkillUsageTraceResponse.script_ran` in `apps/ze-api/ze_api/api/schemas.py` per
       `contracts/workspace-api.md`
-- [x] T036 [US1] Implement `core/ze-workspace/ze_workspace/rest.py` facade (plain dicts) and
+- [x] T036 [US1] Implement `core/ops/ze-workspace/ze_workspace/rest.py` facade (plain dicts) and
       `apps/ze-api/ze_api/api/routes/workspace.py` — `GET /workspace`, `GET/PATCH
       /workspace/mode`, `GET/POST /workspace/files`, `GET/DELETE
       /workspace/files/{path}`, `POST /workspace/files/{path}/ingest`, `GET
@@ -290,7 +290,7 @@ fabricate success.
       `apps/ze-web/src/entities/message/ui/ConfirmBar.tsx` (`editable: true` shows an edit
       field). Show current mode on the confirm prompt (FR-029).
 - [x] T038 [US1] Populate `MessageTrace.workspace` in
-      `core/ze-core/ze_core/orchestration/nodes/trace.py`; emit on `trace_update`. Add
+      `core/engine/ze-core/ze_core/orchestration/nodes/trace.py`; emit on `trace_update`. Add
       `WorkspaceSection` in `apps/ze-web/src/widgets/trace-panel/ui/WorkspaceSection.tsx`
       and a visible chip on
       `apps/ze-web/src/entities/message/ui/MessageBubble.tsx` (FR-007, SC-002 — not
@@ -322,15 +322,15 @@ annotated with skill **and** `script_ran`. Disabled/pending skills never run scr
 **Wave 1 — independent tests:**
 
 - [x] T040 [P] [US2] Update importer/parser tests in
-      `core/ze-skills/tests/test_importer.py` and `core/ze-skills/tests/test_parser.py` —
+      `core/automation/ze-skills/tests/test_importer.py` and `core/automation/ze-skills/tests/test_parser.py` —
       script files are stored (not discarded); `has_scripts` true; instructions-only
       approve leaves `executable_approved` false
 - [x] T041 [P] [US2] Unit tests for `approve_skill_executables` in
-      `core/ze-skills/tests/test_review.py` — sets flag only when `has_scripts`; content
+      `core/automation/ze-skills/tests/test_review.py` — sets flag only when `has_scripts`; content
       change of scripts clears flag and reverts pending_review; disabled skill scripts do
       not run
 - [x] T042 [P] [US2] Tests for `workspace_run_skill_script` in
-      `core/ze-workspace/tests/test_tools.py` (extend) — refuses without
+      `core/ops/ze-workspace/tests/test_tools.py` (extend) — refuses without
       `executable_approved`; Off/Plan do not execute; Ask confirms; Auto runs; materializes
       from DB bytes not origin_url
 - [x] T043 [P] [US2] REST test `POST /api/v0/skills/{id}/approve-executables` in
@@ -345,16 +345,16 @@ annotated with skill **and** `script_ran`. Disabled/pending skills never run scr
 **Wave 2 — persist scripts:**
 
 - [x] T044 [US2] Add `zsk002_skill_scripts.py` in
-      `core/ze-skills/ze_skills/migrations/versions/` — rename
+      `core/automation/ze-skills/ze_skills/migrations/versions/` — rename
       `has_unsupported_scripts` → `has_scripts`; add `executable_approved`,
       `executable_approved_at`; create `skill_scripts` (BYTEA, unique `(skill_id,
-      filename)`). Update `core/ze-skills/ze_skills/types.py` and `store.py`.
+      filename)`). Update `core/automation/ze-skills/ze_skills/types.py` and `store.py`.
 
 **⟶ Wait for Wave 2 to finish, then:**
 
 **Wave 3 — import + approve-executables:**
 
-- [x] T045 [US2] Change `core/ze-skills/ze_skills/importer.py` to persist script files
+- [x] T045 [US2] Change `core/automation/ze-skills/ze_skills/importer.py` to persist script files
       instead of skipping them; keep non-script refs on `skill_reference_files`. Update
       `review.py` `approve_skill` so it MUST NOT set `executable_approved` (FR-012,
       SC-005). Add `approve_skill_executables`. Recheck that changes script bytes clears
@@ -362,7 +362,7 @@ annotated with skill **and** `script_ran`. Disabled/pending skills never run scr
       script filenames.
 - [x] T046 [US2] Add `approve_executables()` wrapper +
       `POST /api/v0/skills/{id}/approve-executables` (`operation_id=approveSkillExecutables`)
-      in `core/ze-skills/ze_skills/rest.py` and
+      in `core/automation/ze-skills/ze_skills/rest.py` and
       `apps/ze-api/ze_api/api/routes/skills.py`. Replace `has_unsupported_scripts` with
       `has_scripts`, `executable_approved`, `script_filenames` on skill schemas in
       `apps/ze-api/ze_api/api/schemas.py`. Run `make codegen`.
@@ -372,7 +372,7 @@ annotated with skill **and** `script_ran`. Disabled/pending skills never run scr
 **Wave 4 — run script tool + UI + trace:**
 
 - [x] T047 [US2] Implement `workspace_run_skill_script` in
-      `core/ze-workspace/ze_workspace/tools.py` — require skill `active` +
+      `core/ops/ze-workspace/ze_workspace/tools.py` — require skill `active` +
       `executable_approved`; apply `WorkspaceGate` as for `run` (FR-030); materialize
       script bytes to a temp path under `/workspace` and `POST /run`; record
       `skill_id` / `skill_script_path` on `workspace_runs`; set
@@ -454,7 +454,7 @@ chat app is disconnected — file present, run listed as unattended. Repeat in A
 **Wave 1:**
 
 - [x] T054 [P] [US4] Unit tests in
-      `core/ze-automation/tests/test_workspace_unattended.py` — Ask/Plan/Off skip
+      `core/automation/ze-automation/tests/test_workspace_unattended.py` — Ask/Plan/Off skip
       unattended `run`/`run_script`; Auto-edit skips unattended commands but may write;
       Auto may run; persisted run `origin` is `unattended`. Tests inject a fake
       `WorkspaceGate` — do not import from `ze_personal`.
@@ -466,8 +466,8 @@ chat app is disconnected — file present, run listed as unattended. Repeat in A
 **Wave 2:**
 
 - [x] T055 [US4] Consult injected `WorkspaceGate` with `origin=unattended` from
-      `core/ze-automation/ze_automation/goals/executor.py` and
-      `core/ze-automation/ze_automation/workflow/` (scheduler/executor) **before**
+      `core/automation/ze-automation/ze_automation/goals/executor.py` and
+      `core/automation/ze-automation/ze_automation/workflow/` (scheduler/executor) **before**
       workspace tools run. Do not change non-workspace `GateDecision.EXECUTE` bypass.
       Do **not** add a `ze_workspace` import to `ze_personal/graph/workflow.py` or any
       plugin. Record runs with `origin=unattended` (FR-018).
@@ -490,7 +490,7 @@ FR-024 no detach) are confirmed here.
 - [x] T057 [P] Update `CLAUDE.md` / `AGENTS.md` package graph, migration-ownership table
       (`zws`, `zsk002`), graph flow if needed, and Phase 115 status row. Note:
       `ze-core`/`ze-agents` must not depend on `ze-workspace`.
-- [x] T058 [P] Add `core/ze-workspace/README.md` and `docs/workspace.md` (mirrors
+- [x] T058 [P] Add `core/ops/ze-workspace/README.md` and `docs/workspace.md` (mirrors
       `docs/browser.md` — env vars, isolation rules, mode table, not a browsing session)
 - [x] T059 [P] Update `specs/README.md` index row for 115; keep spec header Status in sync
       when implementation lands
@@ -562,8 +562,8 @@ FR-024 no detach) are confirmed here.
 ## Parallel example: User Story 1 tests
 
 ```text
-Task: core/ze-workspace/tests/test_tools.py
-Task: core/ze-core/tests/orchestration/test_workspace_interrupt.py
+Task: core/ops/ze-workspace/tests/test_tools.py
+Task: core/engine/ze-core/tests/orchestration/test_workspace_interrupt.py
 Task: apps/ze-api/tests/api/routes/test_workspace.py
 Task: ConfirmBar.test.tsx + MessageBubble.test.tsx
 ```

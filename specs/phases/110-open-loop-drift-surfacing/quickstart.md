@@ -101,10 +101,10 @@ window) is unaffected — proving the budgets are independent (Clarification).
 
 ## Automated coverage
 
-Each scenario above should have a corresponding test: `core/ze-worldstate/tests/test_drift.py`
+Each scenario above should have a corresponding test: `core/cognition/ze-worldstate/tests/test_drift.py`
 and `tests/jobs/test_drift_sweep.py` (scenarios 1, 2, 5's last bullet), `test_surfacing.py`
 (scenario 3, and the push-bar/cooldown logic in `tests/jobs/test_push_sweep.py`, scenarios 4–5),
-plus `core/ze-correlation/tests/test_push.py` extended to confirm the extracted bar functions
-are behavior-preserving. A new `core/ze-core/tests/` node test covers the `surface_loops`
+plus `core/cognition/ze-correlation/tests/test_push.py` extended to confirm the extracted bar functions
+are behavior-preserving. A new `core/engine/ze-core/tests/` node test covers the `surface_loops`
 node's `config["configurable"]` contract (present/absent `loop_surfacer`, matching how
 `nodes/correlation.py` is tested).

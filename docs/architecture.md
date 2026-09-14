@@ -289,11 +289,11 @@ store for a separate sidecar that holds files and runs commands. `ze-core` and
 
 See [browser.md](browser.md), [workspace.md](workspace.md), and [skills.md](skills.md)
 for local dev and operations,
-[core/ze-browser/README.md](../core/ze-browser/README.md),
+[integrations/ze-browser/README.md](../integrations/ze-browser/README.md),
 [sidecar/browser/README.md](../sidecar/browser/README.md),
-[core/ze-workspace/README.md](../core/ze-workspace/README.md),
+[core/ops/ze-workspace/README.md](../core/ops/ze-workspace/README.md),
 [sidecar/workspace/README.md](../sidecar/workspace/README.md), and
-[core/ze-notifications/README.md](../core/ze-notifications/README.md).
+[integrations/ze-notifications/README.md](../integrations/ze-notifications/README.md).
 
 ---
 

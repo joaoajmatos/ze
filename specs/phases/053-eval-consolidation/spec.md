@@ -1,6 +1,6 @@
 # Eval Consolidation — Spec
 
-> **Package:** `ze-eval` (`core/ze-eval/`)
+> **Package:** `ze-eval` (`core/ops/ze-eval/`)
 > **Phase:** 53
 > **Status:** Done
 
@@ -10,7 +10,7 @@
 
 | Feature | Status |
 |---------|--------|
-| `core/ze-eval/` package with `pyproject.toml` | ✅ Done |
+| `core/ops/ze-eval/` package with `pyproject.toml` | ✅ Done |
 | Top-level `eval/` directory (scenarios, `run.py`, `server.py`) | ✅ Done |
 | `make dev-eval`, `make eval-server` targets | ✅ Done |
 | MCP eval server | ✅ Done |
@@ -20,7 +20,7 @@
 ## Purpose
 
 The eval framework previously lived as a flat, unpackaged Python module at `evals/`
-in the repo root. Phase 53 extracted infrastructure into `core/ze-eval/` and relocated
+in the repo root. Phase 53 extracted infrastructure into `core/ops/ze-eval/` and relocated
 test data and entrypoints to top-level `eval/`.
 
 A secondary goal is to lay the groundwork for adopting
@@ -153,7 +153,7 @@ inline dicts (e.g. `scenario_metrics`, `judge_score`, `verify_results`) in
 makes it possible to write tests against individual scorer functions.
 
 ```python
-# core/ze-eval/ze_eval/types.py
+# core/ops/ze-eval/ze_eval/types.py
 
 @dataclass
 class JudgeScore:
@@ -315,7 +315,7 @@ Makefile targets update from `uv run python -m evals.runner` to
 ## Package Configuration
 
 ```toml
-# core/ze-eval/pyproject.toml
+# core/ops/ze-eval/pyproject.toml
 
 [build-system]
 requires = ["hatchling"]
@@ -405,7 +405,7 @@ fine — keep whichever is less surprising.
 
 ## Migration Steps
 
-1. Create `core/ze-eval/pyproject.toml` and `core/ze-eval/ze_eval/` skeleton.
+1. Create `core/ops/ze-eval/pyproject.toml` and `core/ops/ze-eval/ze_eval/` skeleton.
 2. Add `ze-eval` to the workspace in the root `pyproject.toml` (`members` list).
 3. Copy each source file from `evals/` to `ze_eval/`, applying the renames and
    refactors described above.
@@ -442,9 +442,9 @@ as before.
 ## Documentation Impact
 
 - `docs/eval.md` — rewrite all path references and `uv run` invocations. Add a
-  section explaining that `ze-eval` is a standalone package under `core/ze-eval/`
+  section explaining that `ze-eval` is a standalone package under `core/ops/ze-eval/`
   and that `eval/` holds the actual test data.
-- `CLAUDE.md` — repository layout table: replace `evals/` row with `core/ze-eval/`
+- `CLAUDE.md` — repository layout table: replace `evals/` row with `core/ops/ze-eval/`
   and `eval/`. No other sections affected.
 - `specs/README.md` — add Phase 53 row.
 
@@ -531,7 +531,7 @@ capabilities.
 
 - [ ] **Subcommand vs separate entrypoint for report**: `eval/run.py report` vs
   `eval/report.py`. Lean toward subcommand — fewer files to explain in docs.
-- [ ] **`ze-eval` in the workspace `members` list**: Confirm whether `core/ze-eval`
+- [ ] **`ze-eval` in the workspace `members` list**: Confirm whether `core/ops/ze-eval`
   should be added to the root `pyproject.toml` workspace members. It should be,
   so `uv sync` installs it into the shared venv.
 - [ ] **`eval/results/` gitignore**: JSON run results are currently not gitignored.

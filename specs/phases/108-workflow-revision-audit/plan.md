@@ -59,18 +59,18 @@ matching the `goal_execution_traces` precedent
 - **II. Single-User Model**: No `user_id` columns. `session_id`/`user_message_id` are
   conversation-linkage, not tenant scoping. PASS.
 - **III. Layered Package Architecture**: New table + store methods live in
-  `core/ze-automation` (already owns `workflows`/`workflow_executions`). REST route
+  `core/automation/ze-automation` (already owns `workflows`/`workflow_executions`). REST route
   added to existing `apps/ze-api` router. No plugin boundary crossed. PASS.
 - **IV. Typed, Explicit Python**: New `WorkflowRevision`/`ActorContext` dataclasses in
   `workflow/types.py`; Pydantic response models only in `ze_api/api/schemas.py`.
   Errors reuse existing `WorkflowPlanError` (no new error type needed — writes never
   fail the caller; a revision-write failure must not break the underlying edit, see
   research.md). PASS.
-- **V. Test Discipline**: New tests in `core/ze-automation/tests/workflow/` (store),
+- **V. Test Discipline**: New tests in `core/automation/ze-automation/tests/workflow/` (store),
   `apps/ze-api/tests/` (route), `apps/ze-web/src/pages/workflow-detail/` (component).
   No real DB/LLM in unit tests. PASS.
 - **VI. Explicit Persistence**: Hand-written raw-SQL Alembic migration
-  `zc026_workflow_revisions.py` in `core/ze-automation`, `down_revision = "zc025"`,
+  `zc026_workflow_revisions.py` in `core/automation/ze-automation`, `down_revision = "zc025"`,
   FK `ON DELETE CASCADE` to `workflows.id`. PASS.
 - **VII. One LLM Gateway, Local Embeddings**: Not applicable — no LLM calls added.
   PASS.
@@ -95,7 +95,7 @@ specs/phases/108-workflow-revision-audit/
 ### Source Code (repository root)
 
 ```text
-core/ze-automation/ze_automation/
+core/automation/ze-automation/ze_automation/
 ├── workflow/
 │   ├── types.py                # + WorkflowRevision, ActorContext, ActorSource
 │   ├── store.py                # + WorkflowStore.list_revisions(), record_revision() internal
@@ -107,10 +107,10 @@ core/ze-automation/ze_automation/
 └── migrations/versions/
     └── zc026_workflow_revisions.py   # NEW
 
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
 └── types.py                       # AgentContext.extensions carries user_message_id (no new field)
 
-core/ze-core/ze_core/orchestration/nodes/
+core/engine/ze-core/ze_core/orchestration/nodes/
 └── context.py                     # fetch_context reads configurable["user_message_id"]
 
 apps/ze-api/ze_api/api/

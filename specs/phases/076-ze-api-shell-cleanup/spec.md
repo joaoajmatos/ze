@@ -1,6 +1,6 @@
 # Phase 76 — ze-api Shell Cleanup
 
-> **Package:** `apps/ze-api/` (primary), `core/ze-plugin/`, `core/ze-automation/`, `core/ze-memory/`, `core/ze-correlation/`, `core/ze-ingestion/`, `core/ze-core/`
+> **Package:** `apps/ze-api/` (primary), `core/contracts/ze-plugin/`, `core/automation/ze-automation/`, `core/cognition/ze-memory/`, `core/cognition/ze-correlation/`, `core/ops/ze-ingestion/`, `core/engine/ze-core/`
 > **Phase:** 76
 > **Status:** Done
 > **Prerequisite:** Phase 74 (automation substrate), Phase 68 (ze-data), Phase 64 (plugin package extraction), Phase 09 (conversation module reorg)
@@ -267,7 +267,7 @@ Each non-plugin core package that contributes services, jobs, or agents exposes 
 **bootstrap module** (not necessarily `ZePlugin`):
 
 ```python
-# core/ze-automation/ze_automation/bootstrap.py
+# core/automation/ze-automation/ze_automation/bootstrap.py
 
 @dataclass
 class AutomationStack:
@@ -403,12 +403,12 @@ Update `dependencies.py` to read from `container` only.
 
 | From `apps/ze-api/tests/` | To |
 |---------------------------|-----|
-| `orchestration/test_nodes.py` | `core/ze-core/tests/` |
-| `routing/test_*.py` | `core/ze-core/tests/routing/` |
+| `orchestration/test_nodes.py` | `core/engine/ze-core/tests/` |
+| `routing/test_*.py` | `core/engine/ze-core/tests/routing/` |
 | `agents/calendar/`, `agents/reminders/` | `plugins/ze-calendar/tests/` |
 | `jobs/test_reminders.py` | `plugins/ze-calendar/tests/` |
-| `components/test_hook.py` | `core/ze-components/tests/` |
-| `api/test_memory_profile.py` | `core/ze-memory/tests/` |
+| `components/test_hook.py` | `core/kernel/ze-components/tests/` |
+| `api/test_memory_profile.py` | `core/cognition/ze-memory/tests/` |
 
 **Keep in ze-api:** WS protocol, app lifespan, auth, migrate meta-runner, plugin wiring
 smoke tests, OpenAPI schema tests.
@@ -427,23 +427,23 @@ apps/ze-api/ze_api/
   db.py                   # → consolidate with ze_core/db.py
   dependencies.py         # auth + container accessors
 
-core/ze-plugin/ze_plugin/
+core/contracts/ze-plugin/ze_plugin/
   bootstrap.py            # NEW — plugin discovery + DI
 
-core/ze-automation/ze_automation/
+core/automation/ze-automation/ze_automation/
   bootstrap.py            # NEW — services + jobs + workflow executor
 
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
   bootstrap.py            # NEW — proactive job registration
   admin.py                  # NEW (phase B) — REST service
 
-core/ze-correlation/ze_correlation/
+core/cognition/ze-correlation/ze_correlation/
   bootstrap.py            # NEW
 
-core/ze-ingestion/ze_ingestion/
+core/ops/ze-ingestion/ze_ingestion/
   bootstrap.py            # NEW
 
-core/ze-core/ze_core/
+core/engine/ze-core/ze_core/
   bootstrap.py            # NEW — engine stack + data domains
 ```
 

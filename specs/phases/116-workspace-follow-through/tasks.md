@@ -21,9 +21,9 @@ description: "Task list for Workspace Follow-Through"
 
 ## Path Conventions
 
-Existing monorepo layout (plan.md): `core/ze-workspace/ze_workspace/`,
-`core/ze-workspace/tests/`, `apps/ze-api/ze_api/`, `apps/ze-api/tests/`,
-`apps/ze-web/src/`, `core/ze-core/ze_core/`, `core/ze-automation/`.
+Existing monorepo layout (plan.md): `core/ops/ze-workspace/ze_workspace/`,
+`core/ops/ze-workspace/tests/`, `apps/ze-api/ze_api/`, `apps/ze-api/tests/`,
+`apps/ze-web/src/`, `core/engine/ze-core/ze_core/`, `core/automation/ze-automation/`.
 
 ---
 
@@ -43,14 +43,14 @@ without these.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [X] T002 Migration `zws002_run_followthrough.py`: add `follow_through_notified BOOLEAN NOT NULL DEFAULT false` to `workspace_runs`, `depends_on` `zws001`, in `core/ze-workspace/ze_workspace/migrations/versions/zws002_run_followthrough.py`; register the revision in `apps/ze-api/ze_api/migrate.py`'s `_ZE_WORKSPACE_VERSIONS`
-- [X] T003 [P] Add `follow_through_notified: bool` to the `WorkspaceRun` dataclass in `core/ze-workspace/ze_workspace/types.py`
-- [X] T004 [P] Add `WorkspaceStore.list_in_progress()` (rows with `ended_at IS NULL`) and `WorkspaceStore.mark_follow_through_notified(run_id)` (idempotent `UPDATE ... WHERE follow_through_notified = false`) in `core/ze-workspace/ze_workspace/store.py`
-- [X] T005 [P] Add `WorkspaceClient.cancel(run_id)` calling the sidecar's `/cancel` in `core/ze-workspace/ze_workspace/client.py`
-- [X] T006 [P] Implement `ThreadTurnLock` (`dict[str, asyncio.Lock]` keyed by `thread_id`, `acquire`/`release` async context manager) in `core/ze-workspace/ze_workspace/turn_lock.py`
-- [X] T007 Implement `TurnStarter`/`PushSender` Protocols and the `RunWatcher` skeleton (`detach`, `reattach`, terminal-status handling, `follow_through_notified` guard) in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T003, T004)
-- [X] T008 [P] Unit tests for `ThreadTurnLock` acquire/release ordering and per-thread isolation in `core/ze-workspace/tests/test_turn_lock.py`
-- [X] T009 [P] Unit tests for `RunWatcher` (detach schedules a task; terminal status triggers `TurnStarter`+`PushSender` exactly once via `follow_through_notified`; `reattach` re-adopts an `ended_at IS NULL` row; origin != conversation never dispatches) with a fake store/turn-starter/push-sender in `core/ze-workspace/tests/test_followthrough.py` (depends on T007)
+- [X] T002 Migration `zws002_run_followthrough.py`: add `follow_through_notified BOOLEAN NOT NULL DEFAULT false` to `workspace_runs`, `depends_on` `zws001`, in `core/ops/ze-workspace/ze_workspace/migrations/versions/zws002_run_followthrough.py`; register the revision in `apps/ze-api/ze_api/migrate.py`'s `_ZE_WORKSPACE_VERSIONS`
+- [X] T003 [P] Add `follow_through_notified: bool` to the `WorkspaceRun` dataclass in `core/ops/ze-workspace/ze_workspace/types.py`
+- [X] T004 [P] Add `WorkspaceStore.list_in_progress()` (rows with `ended_at IS NULL`) and `WorkspaceStore.mark_follow_through_notified(run_id)` (idempotent `UPDATE ... WHERE follow_through_notified = false`) in `core/ops/ze-workspace/ze_workspace/store.py`
+- [X] T005 [P] Add `WorkspaceClient.cancel(run_id)` calling the sidecar's `/cancel` in `core/ops/ze-workspace/ze_workspace/client.py`
+- [X] T006 [P] Implement `ThreadTurnLock` (`dict[str, asyncio.Lock]` keyed by `thread_id`, `acquire`/`release` async context manager) in `core/ops/ze-workspace/ze_workspace/turn_lock.py`
+- [X] T007 Implement `TurnStarter`/`PushSender` Protocols and the `RunWatcher` skeleton (`detach`, `reattach`, terminal-status handling, `follow_through_notified` guard) in `core/ops/ze-workspace/ze_workspace/followthrough.py` (depends on T003, T004)
+- [X] T008 [P] Unit tests for `ThreadTurnLock` acquire/release ordering and per-thread isolation in `core/ops/ze-workspace/tests/test_turn_lock.py`
+- [X] T009 [P] Unit tests for `RunWatcher` (detach schedules a task; terminal status triggers `TurnStarter`+`PushSender` exactly once via `follow_through_notified`; `reattach` re-adopts an `ended_at IS NULL` row; origin != conversation never dispatches) with a fake store/turn-starter/push-sender in `core/ops/ze-workspace/tests/test_followthrough.py` (depends on T007)
 
 **Checkpoint**: Foundation ready — user story phases can begin.
 
@@ -74,9 +74,9 @@ ends the turn with "still running" and `GET /api/v0/workspace/runs` shows
 
 ### Implementation for User Story 1
 
-- [X] T012 [US1] In the `workspace_run`/`workspace_run_skill_script` tool executors, await the sidecar call with `asyncio.wait_for(short_wait)`; on timeout call `RunWatcher.detach(run, pending_completion)` and return a "still running" tool result instead of blocking, in `core/ze-workspace/ze_workspace/tools.py` (depends on T007, T001)
-- [X] T013 [US1] Project `WorkspaceUsageTrace.runs` entries as `status: "in_progress"` for rows with `ended_at IS NULL` (trace-only, never written to `workspace_runs.status`) in `core/ze-core/ze_core/orchestration/nodes/trace.py` (depends on T003)
-- [X] T014 [US1] Regression test: Off/Plan modes never reach `RunWatcher.detach` (nothing runs); Ask/Auto-edit only detach after the existing `ToolConfirmationRequired` resume completes, in `core/ze-workspace/tests/test_tools.py` (depends on T012)
+- [X] T012 [US1] In the `workspace_run`/`workspace_run_skill_script` tool executors, await the sidecar call with `asyncio.wait_for(short_wait)`; on timeout call `RunWatcher.detach(run, pending_completion)` and return a "still running" tool result instead of blocking, in `core/ops/ze-workspace/ze_workspace/tools.py` (depends on T007, T001)
+- [X] T013 [US1] Project `WorkspaceUsageTrace.runs` entries as `status: "in_progress"` for rows with `ended_at IS NULL` (trace-only, never written to `workspace_runs.status`) in `core/engine/ze-core/ze_core/orchestration/nodes/trace.py` (depends on T003)
+- [X] T014 [US1] Regression test: Off/Plan modes never reach `RunWatcher.detach` (nothing runs); Ask/Auto-edit only detach after the existing `ToolConfirmationRequired` resume completes, in `core/ops/ze-workspace/tests/test_tools.py` (depends on T012)
 - [X] T015 [US1] Build the running-run banner on the Phase 115 workspace page — shows the in-progress detached run's command and started time, sourced from `GET /api/v0/workspace/runs` (`ended_at: null`), in `apps/ze-web/src/entities/workspace/` (query hook) and `apps/ze-web/src/widgets/workspace-management/` (banner component). Satisfies FR-010's "in the workspace view" half; US3's T035 later adds the cancel button to this banner rather than creating it.
 - [X] T016 [US1] Render a "still running" chip identifying the run on the message bubble and the workspace trace section — FR-010's "in the conversation" half, in `apps/ze-web/src/entities/message/ui/MessageBubble.tsx` and `apps/ze-web/src/widgets/trace-panel/ui/WorkspaceSection.tsx`
 - [X] T017 [P] [US1] vitest for the running-run banner (T015) and the "still running" chip (T016) in `apps/ze-web/src/widgets/workspace-management/*.test.tsx` and `apps/ze-web/src/entities/message/ui/MessageBubble.test.tsx`
@@ -104,14 +104,14 @@ thread; restart mid-run: follow-up still lands once the run finishes.
 
 ### Implementation for User Story 2
 
-- [X] T022 [US2] Add `ThreadTurnLock` acquisition/release **inside** `ZeContainer.invoke_raw_turn` and `resume_turn` themselves (`apps/ze-api/ze_api/container.py`, `core/ze-core/ze_core/conversation/turn.py`) — the single point where the lock is taken, so the WebSocket turn handler, the eval route, and the new `TurnStarter` adapter (T023) all inherit it automatically through the same call, with no call-site needing its own acquire (depends on T006, T007)
+- [X] T022 [US2] Add `ThreadTurnLock` acquisition/release **inside** `ZeContainer.invoke_raw_turn` and `resume_turn` themselves (`apps/ze-api/ze_api/container.py`, `core/engine/ze-core/ze_core/conversation/turn.py`) — the single point where the lock is taken, so the WebSocket turn handler, the eval route, and the new `TurnStarter` adapter (T023) all inherit it automatically through the same call, with no call-site needing its own acquire (depends on T006, T007)
 - [X] T023 [US2] Implement the `TurnStarter` adapter as a thin wrapper around the now lock-aware `ZeContainer.invoke_raw_turn` (T022) — it does **not** acquire `ThreadTurnLock` itself, matching the contract's intent that locking has exactly one owner, in `apps/ze-api/ze_api/container.py` (depends on T022)
 - [X] T024 [US2] Implement the `PushSender` adapter using `ProactiveNotifier`/`NativeAppInterface`'s existing connected-check (`_conn.connected`), in `apps/ze-api/ze_api/container.py`
 - [X] T025 [P] [US2] Regression test confirming the WebSocket turn handler (`apps/ze-api/ze_api/api/websocket/turns.py`) and the eval route (`apps/ze-api/ze_api/api/routes/eval.py`) call the T022-wrapped `invoke_raw_turn` directly with no second `ThreadTurnLock` acquisition at their call sites (a second acquire on the same non-reentrant lock would deadlock), in `apps/ze-api/tests/test_turn_lock_wiring.py` (depends on T022)
 - [X] T026 [US2] Wire a `RunWatcher` instance with the T023/T024 adapters into container bootstrap, in `apps/ze-api/ze_api/container.py` and `apps/ze-api/ze_api/compose.py`
 - [X] T027 [US2] Startup reconciliation: on boot, query `WorkspaceStore.list_in_progress()` and call `RunWatcher.reattach(run)` for each, alongside the existing proactive job registration fan-out, in `apps/ze-api/ze_api/compose.py` (depends on T004, T026)
-- [X] T028 [US2] Compose the synthetic follow-up prompt text per terminal status (succeeded/failed/timed_out/cancelled), in plain language, in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T007)
-- [X] T029 [US2] Guard `RunWatcher` so only `origin == "conversation"` rows dispatch a follow-up turn or push (`unattended` rows use existing unattended-notification behavior — FR-015), in `core/ze-workspace/ze_workspace/followthrough.py` (depends on T028)
+- [X] T028 [US2] Compose the synthetic follow-up prompt text per terminal status (succeeded/failed/timed_out/cancelled), in plain language, in `core/ops/ze-workspace/ze_workspace/followthrough.py` (depends on T007)
+- [X] T029 [US2] Guard `RunWatcher` so only `origin == "conversation"` rows dispatch a follow-up turn or push (`unattended` rows use existing unattended-notification behavior — FR-015), in `core/ops/ze-workspace/ze_workspace/followthrough.py` (depends on T028)
 
 **Checkpoint**: User Stories 1 and 2 both work independently — detach, then automatic follow-through, survives a restart.
 
@@ -129,14 +129,14 @@ confirm a second cancel on the same run returns `409`.
 ### Tests for User Story 3
 
 - [X] T030 [P] [US3] Contract test for `POST /api/v0/workspace/runs/{id}/cancel`: success path within 15s (SC-005), `409` on an already-terminal run, `404` on an unknown id, in `apps/ze-api/tests/api/test_workspace_cancel.py`
-- [X] T031 [P] [US3] Unit test: cancelling a detached run's `RunWatcher` task observes the terminal status and runs the normal US2 follow-through path (follow-up says "stopped", not success), in `core/ze-workspace/tests/test_followthrough.py`
+- [X] T031 [P] [US3] Unit test: cancelling a detached run's `RunWatcher` task observes the terminal status and runs the normal US2 follow-through path (follow-up says "stopped", not success), in `core/ops/ze-workspace/tests/test_followthrough.py`
 
 ### Implementation for User Story 3
 
 - [X] T032 [US3] Add `POST /api/v0/workspace/runs/{id}/cancel` route (`operation_id: cancelWorkspaceRun`) returning the updated `WorkspaceRunResponse` or `409`/`404`, in `apps/ze-api/ze_api/api/routes/workspace.py` (depends on T005)
 - [X] T033 [US3] Add `follow_through_notified` to `WorkspaceRunResponse` and add the cancel response schema in `apps/ze-api/ze_api/api/schemas.py`
-- [X] T034 [US3] Implement the cancel path in `ze-workspace`: call `WorkspaceClient.cancel()`, persist `status = cancelled`, `ended_at = now()`, leave `files_touched`/`output_preview` as already recorded, in `core/ze-workspace/ze_workspace/store.py` and `core/ze-workspace/ze_workspace/rest.py` (depends on T005)
-- [X] T035 [US3] Confirm cancel bypasses `WorkspaceGate`'s confirm path entirely (FR-009 — no second confirmation), with a regression test in `core/ze-workspace/tests/test_gate.py`
+- [X] T034 [US3] Implement the cancel path in `ze-workspace`: call `WorkspaceClient.cancel()`, persist `status = cancelled`, `ended_at = now()`, leave `files_touched`/`output_preview` as already recorded, in `core/ops/ze-workspace/ze_workspace/store.py` and `core/ops/ze-workspace/ze_workspace/rest.py` (depends on T005)
+- [X] T035 [US3] Confirm cancel bypasses `WorkspaceGate`'s confirm path entirely (FR-009 — no second confirmation), with a regression test in `core/ops/ze-workspace/tests/test_gate.py`
 - [X] T036 [P] [US3] Add a cancel button to the running-run banner built in T015, in `apps/ze-web/src/widgets/workspace-management/`, wired to the new cancel mutation
 - [X] T037 [P] [US3] vitest for the cancel button and the "already finished" error state in `apps/ze-web/src/widgets/workspace-management/*.test.tsx`
 
@@ -157,13 +157,13 @@ ends or is cancelled, a new request succeeds.
 ### Tests for User Story 4
 
 - [ ] T038 [P] [US4] Integration test: a second `workspace_run` call while a detached run is in progress is refused and names the running command, in `apps/ze-api/tests/api/test_workspace_followthrough.py`
-- [ ] T039 [P] [US4] Integration test: unattended (goal/workflow) executor skips or waits — does not interleave — while a detached run is in progress, in `core/ze-automation/tests/executors/test_workspace_busy.py`
+- [ ] T039 [P] [US4] Integration test: unattended (goal/workflow) executor skips or waits — does not interleave — while a detached run is in progress, in `core/automation/ze-automation/tests/executors/test_workspace_busy.py`
 
 ### Implementation for User Story 4
 
-- [ ] T040 [US4] Extend `WorkspaceGate`'s busy check to query `WorkspaceStore.list_in_progress()` so any `ended_at IS NULL` row (not only a run the calling turn is itself waiting on) counts as busy for `run`/`run_script`, in `core/ze-workspace/ze_workspace/gate.py` (depends on T004)
-- [ ] T041 [US4] Surface the busy refusal message with the running command's identity (id + `command`) to conversational callers, in `core/ze-workspace/ze_workspace/tools.py` (depends on T040)
-- [ ] T042 [US4] Confirm `ze-automation` goal/workflow executors already routed through `WorkspaceGate` (Phase 115) now see the same busy signal for detached runs and skip/wait rather than error, in `core/ze-automation/ze_automation/goals/executor.py` and `core/ze-automation/ze_automation/workflow/` (depends on T040)
+- [ ] T040 [US4] Extend `WorkspaceGate`'s busy check to query `WorkspaceStore.list_in_progress()` so any `ended_at IS NULL` row (not only a run the calling turn is itself waiting on) counts as busy for `run`/`run_script`, in `core/ops/ze-workspace/ze_workspace/gate.py` (depends on T004)
+- [ ] T041 [US4] Surface the busy refusal message with the running command's identity (id + `command`) to conversational callers, in `core/ops/ze-workspace/ze_workspace/tools.py` (depends on T040)
+- [ ] T042 [US4] Confirm `ze-automation` goal/workflow executors already routed through `WorkspaceGate` (Phase 115) now see the same busy signal for detached runs and skip/wait rather than error, in `core/automation/ze-automation/ze_automation/goals/executor.py` and `core/automation/ze-automation/ze_automation/workflow/` (depends on T040)
 
 **Checkpoint**: All four user stories are independently functional.
 
@@ -214,10 +214,10 @@ Development Workflow section).
 ## Parallel Example: Foundational
 
 ```bash
-Task: "Add follow_through_notified field to WorkspaceRun in core/ze-workspace/ze_workspace/types.py"
-Task: "Add list_in_progress()/mark_follow_through_notified() to core/ze-workspace/ze_workspace/store.py"
-Task: "Add WorkspaceClient.cancel() in core/ze-workspace/ze_workspace/client.py"
-Task: "Implement ThreadTurnLock in core/ze-workspace/ze_workspace/turn_lock.py"
+Task: "Add follow_through_notified field to WorkspaceRun in core/ops/ze-workspace/ze_workspace/types.py"
+Task: "Add list_in_progress()/mark_follow_through_notified() to core/ops/ze-workspace/ze_workspace/store.py"
+Task: "Add WorkspaceClient.cancel() in core/ops/ze-workspace/ze_workspace/client.py"
+Task: "Implement ThreadTurnLock in core/ops/ze-workspace/ze_workspace/turn_lock.py"
 ```
 
 ---

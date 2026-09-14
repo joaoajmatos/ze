@@ -61,7 +61,7 @@ not fragment-quality.
 ## Module Location
 
 ```
-core/ze-memory/
+core/cognition/ze-memory/
   ze_memory/
     session_summary.py    ← new: SessionSummariser (LLM call + store write)
     retriever.py          ← extend retrieve() to search session summaries

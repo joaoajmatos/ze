@@ -2,7 +2,7 @@
 
 **Status:** Pending
 **Depends on:** Phase 85 (Ze Messaging Hub)
-**Packages touched:** `core/ze-communication`, `core/ze-plugin`, `apps/ze-api`, `integrations/ze-google`
+**Packages touched:** `core/contracts/ze-communication`, `core/contracts/ze-plugin`, `apps/ze-api`, `integrations/ze-google`
 
 ---
 
@@ -40,7 +40,7 @@ integration later requires no changes to routing or `ze-api`.
 
 ---
 
-## Core contracts (`core/ze-communication` + `core/ze-plugin`)
+## Core contracts (`core/contracts/ze-communication` + `core/contracts/ze-plugin`)
 
 ### `ze_communication/webhook.py`
 

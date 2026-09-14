@@ -20,7 +20,7 @@ description: "Task list for Workflow Resilience and Control (107)"
 
 ## Path Conventions
 
-Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, `apps/ze-api/`, `apps/ze-web/`.
+Existing monorepo (see plan.md): `core/automation/ze-automation/`, `plugins/ze-personal/`, `apps/ze-api/`, `apps/ze-web/`.
 
 ---
 
@@ -28,7 +28,7 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 
 **Purpose**: Confirm scaffolding; no new packages, migrations, or dependencies (plan.md — JSONB field extensions only).
 
-- [x] T001 Confirm `workflows.steps` and `workflow_executions.step_results` JSONB columns in `core/ze-automation/ze_automation/migrations/` need no new migration for `on_failure`, `attempt_count`, and `no_results` (data-model.md)
+- [x] T001 Confirm `workflows.steps` and `workflow_executions.step_results` JSONB columns in `core/automation/ze-automation/ze_automation/migrations/` need no new migration for `on_failure`, `attempt_count`, and `no_results` (data-model.md)
 
 ---
 
@@ -38,16 +38,16 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [x] T002 Add `on_failure: str = "fail"` to `WorkflowStep` in `core/ze-automation/ze_automation/workflow/types.py`
-- [x] T003 [P] Add `attempt_count: int = 1` and `no_results: bool = False` to `StepResult` in `core/ze-automation/ze_automation/workflow/types.py`
-- [x] T004 Create `validate_workflow_steps()` in `core/ze-automation/ze_automation/workflow/validation.py` (duplicate ids, dangling branch/default_next/`skip_to` targets per data-model.md)
-- [x] T005 Extend `validate_step_targets()` in `core/ze-automation/ze_automation/workflow/planner.py` to validate `on_failure: skip_to:<step_id>` targets via `validate_workflow_steps()` — depends on T004
-- [x] T006 Extend `_step_to_dict` / `_step_from_dict` for `on_failure` (default `"fail"` when absent) in `core/ze-automation/ze_automation/workflow/postgres.py` — depends on T002
-- [x] T007 [P] Extend `_step_result_to_dict` / `_step_result_from_dict` for `attempt_count` and `no_results` in `core/ze-automation/ze_automation/workflow/postgres.py` — depends on T003
-- [x] T008 Add `update_steps(workflow_id, steps)` to `WorkflowStore` protocol in `core/ze-automation/ze_automation/workflow/store.py` — depends on T002
-- [x] T009 Implement `update_steps()` in `PostgresWorkflowStore` (`core/ze-automation/ze_automation/workflow/postgres.py`) calling `validate_workflow_steps()` before UPDATE — depends on T004, T006, T008
-- [x] T010 [P] Unit tests for `validate_workflow_steps()` in `core/ze-automation/tests/workflow/test_validation.py` — depends on T004
-- [x] T011 [P] Unit tests for JSONB round-trip of new step/step-result fields in `core/ze-automation/tests/workflow/test_postgres.py` — depends on T006, T007
+- [x] T002 Add `on_failure: str = "fail"` to `WorkflowStep` in `core/automation/ze-automation/ze_automation/workflow/types.py`
+- [x] T003 [P] Add `attempt_count: int = 1` and `no_results: bool = False` to `StepResult` in `core/automation/ze-automation/ze_automation/workflow/types.py`
+- [x] T004 Create `validate_workflow_steps()` in `core/automation/ze-automation/ze_automation/workflow/validation.py` (duplicate ids, dangling branch/default_next/`skip_to` targets per data-model.md)
+- [x] T005 Extend `validate_step_targets()` in `core/automation/ze-automation/ze_automation/workflow/planner.py` to validate `on_failure: skip_to:<step_id>` targets via `validate_workflow_steps()` — depends on T004
+- [x] T006 Extend `_step_to_dict` / `_step_from_dict` for `on_failure` (default `"fail"` when absent) in `core/automation/ze-automation/ze_automation/workflow/postgres.py` — depends on T002
+- [x] T007 [P] Extend `_step_result_to_dict` / `_step_result_from_dict` for `attempt_count` and `no_results` in `core/automation/ze-automation/ze_automation/workflow/postgres.py` — depends on T003
+- [x] T008 Add `update_steps(workflow_id, steps)` to `WorkflowStore` protocol in `core/automation/ze-automation/ze_automation/workflow/store.py` — depends on T002
+- [x] T009 Implement `update_steps()` in `PostgresWorkflowStore` (`core/automation/ze-automation/ze_automation/workflow/postgres.py`) calling `validate_workflow_steps()` before UPDATE — depends on T004, T006, T008
+- [x] T010 [P] Unit tests for `validate_workflow_steps()` in `core/automation/ze-automation/tests/workflow/test_validation.py` — depends on T004
+- [x] T011 [P] Unit tests for JSONB round-trip of new step/step-result fields in `core/automation/ze-automation/tests/workflow/test_postgres.py` — depends on T006, T007
 
 **Checkpoint**: Foundation ready — types, validation, and `update_steps` exist and are tested.
 
@@ -89,7 +89,7 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 ### Implementation for User Story 2
 
 - [x] T020 [US2] Extend `workflow_failed` to LLM-synthesize successful steps into `finish_execution(..., summary=...)` when ≥1 step succeeded in `plugins/ze-personal/ze_personal/graph/workflow.py`
-- [x] T021 [US2] Update `_workflow_failure_handler` to prefer `execution.summary` over `str(exc)[:200]` for notification body in `core/ze-automation/ze_automation/bootstrap.py` — depends on T020
+- [x] T021 [US2] Update `_workflow_failure_handler` to prefer `execution.summary` over `str(exc)[:200]` for notification body in `core/automation/ze-automation/ze_automation/bootstrap.py` — depends on T020
 
 **Checkpoint**: User Stories 1 and 2 both work — resilient routing plus partial value recovery on true failures.
 
@@ -103,12 +103,12 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 
 ### Tests for User Story 3
 
-- [x] T022 [P] Unit tests for `is_transient_failure()` in `core/ze-automation/tests/workflow/test_retry.py`
+- [x] T022 [P] Unit tests for `is_transient_failure()` in `core/automation/ze-automation/tests/workflow/test_retry.py`
 - [x] T023 [P] [US3] Graph tests for retry routing and `attempt_count` in `plugins/ze-personal/tests/graph/test_workflow.py`
 
 ### Implementation for User Story 3
 
-- [x] T024 [P] Create `retry.py` with `STEP_MAX_ATTEMPTS = 3`, `RETRY_DELAY_SECONDS = 2.0`, and `is_transient_failure()` in `core/ze-automation/ze_automation/workflow/retry.py`
+- [x] T024 [P] Create `retry.py` with `STEP_MAX_ATTEMPTS = 3`, `RETRY_DELAY_SECONDS = 2.0`, and `is_transient_failure()` in `core/automation/ze-automation/ze_automation/workflow/retry.py`
 - [x] T025 [US3] Add `step_attempt: int` to `WorkflowAgentState` and track/increment in `load_workflow_step` in `plugins/ze-personal/ze_personal/graph/workflow.py` — depends on T024
 - [x] T026 [US3] Add `retry_step` edge in `after_verify_step` and graph builder (transient + attempts remaining → reload step after delay; else → `handle_step_failure`) in `plugins/ze-personal/ze_personal/graph/workflow.py` — depends on T024, T025, T015
 - [x] T027 [US3] Persist `attempt_count` on `StepResult` in `_fail_step` / success paths in `plugins/ze-personal/ze_personal/graph/workflow.py` — depends on T003, T025
@@ -126,12 +126,12 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 ### Tests for User Story 4
 
 - [x] T028 [P] [US4] Graph tests for verify `no_results` success path vs tool-error failure path in `plugins/ze-personal/tests/graph/test_workflow.py`
-- [x] T029 [P] [US4] Planner tests for monitoring-shaped verify criteria in `core/ze-automation/tests/workflow/test_planner.py`
+- [x] T029 [P] [US4] Planner tests for monitoring-shaped verify criteria in `core/automation/ze-automation/tests/workflow/test_planner.py`
 
 ### Implementation for User Story 4
 
 - [x] T030 [US4] Extend verify LLM JSON schema to `{"pass", "no_results", "reason"}` and record `StepResult(no_results=True)` when appropriate in `plugins/ze-personal/ze_personal/graph/workflow.py` — depends on T003
-- [x] T031 [US4] Update `_PLAN_SYSTEM`, `_parse_step`, and `_parse_step` output to include `on_failure` and monitoring verify guidance in `core/ze-automation/ze_automation/workflow/planner.py` — depends on T002, T005
+- [x] T031 [US4] Update `_PLAN_SYSTEM`, `_parse_step`, and `_parse_step` output to include `on_failure` and monitoring verify guidance in `core/automation/ze-automation/ze_automation/workflow/planner.py` — depends on T002, T005
 - [x] T032 [P] [US4] Add `attempt_count` and `no_results` to `StepResultResponse` in `apps/ze-api/ze_api/api/schemas.py` — depends on T003
 
 **Checkpoint**: Monitoring workflows no longer false-fail on empty findings.
@@ -147,14 +147,14 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 ### Tests for User Story 5
 
 - [x] T033 [P] [US5] API tests for `PATCH /api/v0/workflows/{id}/steps` (success + 422 validation) in `apps/ze-api/tests/api/routes/test_workflows.py`
-- [x] T034 [P] [US5] Agent tool tests for `edit_workflow_steps` in `core/ze-automation/tests/workflow_agent/test_tools.py`
+- [x] T034 [P] [US5] Agent tool tests for `edit_workflow_steps` in `core/automation/ze-automation/tests/workflow_agent/test_tools.py`
 
 ### Implementation for User Story 5
 
 - [x] T035 [P] [US5] Add `UpdateWorkflowStepsRequest` and `WorkflowStepInput` to `apps/ze-api/ze_api/api/schemas.py` — depends on T018
-- [x] T036 [US5] Implement `update_workflow_steps()` helper in `core/ze-automation/ze_automation/rest.py` delegating to `store.update_steps()` — depends on T009
+- [x] T036 [US5] Implement `update_workflow_steps()` helper in `core/automation/ze-automation/ze_automation/rest.py` delegating to `store.update_steps()` — depends on T009
 - [x] T037 [US5] Add `PATCH /api/v0/workflows/{workflow_id}/steps` route (`updateWorkflowSteps`) in `apps/ze-api/ze_api/api/routes/workflows.py` — depends on T035, T036
-- [x] T038 [US5] Add `edit_workflow_steps` agent tool in `core/ze-automation/ze_automation/agents/workflow/tools.py` — depends on T009
+- [x] T038 [US5] Add `edit_workflow_steps` agent tool in `core/automation/ze-automation/ze_automation/agents/workflow/tools.py` — depends on T009
 - [x] T038b [US5] Register `edit_workflow_steps` and `cancel_workflow_run` on `WorkflowManagerAgent.tools` and document in agent instructions (`agent.py`)
 
 **Checkpoint**: Users can tune steps (including `on_failure`) without recreating workflows.
@@ -169,18 +169,18 @@ Existing monorepo (see plan.md): `core/ze-automation/`, `plugins/ze-personal/`, 
 
 ### Tests for User Story 6
 
-- [x] T039 [P] [US6] Scheduler tests for `cancel_execution()` and `is_cancelled()` in `core/ze-automation/tests/workflow_engine/test_scheduler.py`
+- [x] T039 [P] [US6] Scheduler tests for `cancel_execution()` and `is_cancelled()` in `core/automation/ze-automation/tests/workflow_engine/test_scheduler.py`
 - [x] T040 [P] [US6] Graph tests for `workflow_cancelled` node in `plugins/ze-personal/tests/graph/test_workflow.py`
 - [x] T041 [P] [US6] API tests for `POST …/executions/{id}/cancel` (cancelled + not_running) in `apps/ze-api/tests/api/routes/test_workflows.py`
 
 ### Implementation for User Story 6
 
-- [x] T042 [US6] Add `CancellationRegistry` and `cancel_execution()` / `is_cancelled()` to `WorkflowScheduler` in `core/ze-automation/ze_automation/workflow/scheduler.py` (register on trigger, clear in finally)
+- [x] T042 [US6] Add `CancellationRegistry` and `cancel_execution()` / `is_cancelled()` to `WorkflowScheduler` in `core/automation/ze-automation/ze_automation/workflow/scheduler.py` (register on trigger, clear in finally)
 - [x] T043 [US6] Implement `workflow_cancelled` node and check `is_cancelled()` in `load_workflow_step` / `handle_step_failure` in `plugins/ze-personal/ze_personal/graph/workflow.py` — depends on T042; pass scheduler via `config["configurable"]` from `bootstrap.py`
-- [x] T044 [US6] Wire scheduler into workflow graph config in `core/ze-automation/ze_automation/bootstrap.py` — depends on T042
+- [x] T044 [US6] Wire scheduler into workflow graph config in `core/automation/ze-automation/ze_automation/bootstrap.py` — depends on T042
 - [x] T045 [P] [US6] Add `CancelWorkflowExecutionResponse` to `apps/ze-api/ze_api/api/schemas.py`
-- [x] T046 [US6] Implement `cancel_workflow_execution()` in `core/ze-automation/ze_automation/rest.py` and `POST …/cancel` route in `apps/ze-api/ze_api/api/routes/workflows.py` — depends on T042, T045
-- [x] T047 [US6] Add `cancel_workflow_run` agent tool in `core/ze-automation/ze_automation/agents/workflow/tools.py` — depends on T042
+- [x] T046 [US6] Implement `cancel_workflow_execution()` in `core/automation/ze-automation/ze_automation/rest.py` and `POST …/cancel` route in `apps/ze-api/ze_api/api/routes/workflows.py` — depends on T042, T045
+- [x] T047 [US6] Add `cancel_workflow_run` agent tool in `core/automation/ze-automation/ze_automation/agents/workflow/tools.py` — depends on T042
 - [x] T047b [US6] *(merged into T038b)* Register `cancel_workflow_run` on `WorkflowManagerAgent.tools`
 - [x] T048 [P] [US6] Create `useCancelExecutionMutation.ts` in `apps/ze-web/src/entities/workflow/api/` and export from `apps/ze-web/src/entities/workflow/index.ts`
 - [x] T049 [US6] Add Cancel button (visible while running) and `cancelled` status styling in `apps/ze-web/src/pages/workflow-detail/ui/WorkflowDetailPage.tsx` — depends on T048
@@ -304,14 +304,14 @@ T035 UpdateWorkflowStepsRequest schema
 
 ### Tests for User Story 7
 
-- [x] T055 [P] [US7] Store tests: `start_execution` persists `steps_snapshot`; `update_steps` does not mutate existing snapshots in `core/ze-automation/tests/workflow/test_postgres.py`
+- [x] T055 [P] [US7] Store tests: `start_execution` persists `steps_snapshot`; `update_steps` does not mutate existing snapshots in `core/automation/ze-automation/tests/workflow/test_postgres.py`
 - [x] T056 [P] [US7] API test: `GET …/executions/{id}` includes `steps_snapshot` in `apps/ze-api/tests/api/test_workflows_route.py`
 - [x] T057 [P] [US7] Web test: historical run shows edited-since banner in `apps/ze-web/src/pages/workflow-detail/ui/WorkflowDetailPage.test.tsx` (or widget-level test)
 
 ### Implementation for User Story 7
 
-- [x] T058 [US7] Write migration `zc025_workflow_execution_snapshot_and_cancelled.py` in `core/ze-automation/ze_automation/migrations/versions/` — add `steps_snapshot JSONB`, extend status CHECK for `cancelled` *(zc025 — zc022 taken by ze-core)*
-- [x] T059 [US7] Add `steps_snapshot` to `WorkflowExecution` in `core/ze-automation/ze_automation/workflow/types.py` — depends on T058
+- [x] T058 [US7] Write migration `zc025_workflow_execution_snapshot_and_cancelled.py` in `core/automation/ze-automation/ze_automation/migrations/versions/` — add `steps_snapshot JSONB`, extend status CHECK for `cancelled` *(zc025 — zc022 taken by ze-core)*
+- [x] T059 [US7] Add `steps_snapshot` to `WorkflowExecution` in `core/automation/ze-automation/ze_automation/workflow/types.py` — depends on T058
 - [x] T060 [US7] Persist snapshot in `start_execution()` and serialize in `postgres.py` (`_row_to_execution`, list/get execution) — depends on T059
 - [x] T061 [P] [US7] Add `steps_snapshot` to `WorkflowExecutionResponse` in `apps/ze-api/ze_api/api/schemas.py` — depends on T059
 - [x] T062 [US7] Add `stepsDifferFromSnapshot(current, snapshot)` helper in `apps/ze-web/src/entities/workflow/lib/stepsSnapshot.ts` (deep compare by step ids + task + on_failure + branches)

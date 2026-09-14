@@ -7,9 +7,9 @@ image small and cold starts fast.
 | Piece | Location | Role |
 |---|---|---|
 | Sidecar service | `sidecar/browser/` | Playwright + FastAPI — `GET /health`, `POST /extract` |
-| Python client | `core/ze-browser/` | `BrowserClient` — injected into `ze-api`'s container |
+| Python client | `integrations/ze-browser/` | `BrowserClient` — injected into `ze-api`'s container |
 | Prospecting agent | `plugins/ze-prospecting/` | Primary consumer — `browser_extract` tool |
-| Ingestion | `core/ze-ingestion/` | `BrowserFetcher` for JS-heavy pages |
+| Ingestion | `core/ops/ze-ingestion/` | `BrowserFetcher` for JS-heavy pages |
 
 If the sidecar is unreachable, Ze logs a warning at startup and prospecting falls back
 to web-search-only research. Individual `browser_extract` calls return an error string
@@ -110,6 +110,6 @@ python scripts/check_browser_health.py http://ze-browser.internal:8080 --probe
 ## Further reading
 
 - [sidecar/browser/README.md](../sidecar/browser/README.md) — API contract, extractor behavior, Fly config
-- [core/ze-browser/README.md](../core/ze-browser/README.md) — `BrowserClient` package
+- [integrations/ze-browser/README.md](../integrations/ze-browser/README.md) — `BrowserClient` package
 - [specs/phases/026-prospecting-agent/spec.md](../specs/phases/026-prospecting-agent/spec.md) — original design
 - [deployment.md](deployment.md) — main backend Fly deploy

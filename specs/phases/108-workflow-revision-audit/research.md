@@ -6,7 +6,7 @@
 `.update_steps()`, on the same `conn` used for the `INSERT`/`UPDATE`, wrapped in an
 explicit `conn.transaction()`.
 
-**Rationale**: `update_steps` (`core/ze-automation/ze_automation/workflow/postgres.py:220-239`)
+**Rationale**: `update_steps` (`core/automation/ze-automation/ze_automation/workflow/postgres.py:220-239`)
 already validates steps and checks workflow existence before writing — the natural
 place to also compute the diff and insert the revision row. Both write paths
 (`edit_workflow_steps` agent tool and `PATCH /{workflow_id}/steps` REST route) call
@@ -46,7 +46,7 @@ this scale (single workflow, single edit) and avoids a schema column with no oth
 
 **Decision**: New pure function `build_change_summary(before: list[WorkflowStep],
 after: list[WorkflowStep]) -> str` in a new
-`core/ze-automation/ze_automation/workflow/revision_summary.py`. Diff by step `id`:
+`core/automation/ze-automation/ze_automation/workflow/revision_summary.py`. Diff by step `id`:
 - Steps present in `after` but not `before` → `"Step {id} added"`.
 - Steps in `before` but not `after` → `"Step {id} removed"`.
 - Steps in both with field-level differences → one clause per changed field, e.g.
@@ -76,16 +76,16 @@ msgpack-serializable primitives"):
 1. `apps/ze-api/ze_api/api/websocket/turns.py::handle_message` — after `user_msg =
    Message(id=uuid4(), ...)` is constructed (line ~56), add
    `config_extra["user_message_id"] = str(user_msg.id)`.
-2. `core/ze-core/ze_core/orchestration/nodes/context.py::fetch_context` — read
+2. `core/engine/ze-core/ze_core/orchestration/nodes/context.py::fetch_context` — read
    `config["configurable"].get("user_message_id")` and set
    `agent_context.extensions["user_message_id"] = user_message_id` when present (no
    new dataclass field needed on `AgentContext`; `session_id` already exists as a
    first-class field).
-3. `core/ze-automation/ze_automation/agents/workflow/agent.py::WorkflowManagerAgent.run`
+3. `core/automation/ze-automation/ze_automation/agents/workflow/agent.py::WorkflowManagerAgent.run`
    — add `"session_id": ctx.session_id, "user_message_id":
    ctx.extensions.get("user_message_id")` to the `deps` dict passed to
    `agentic_loop(...)`.
-4. `core/ze-automation/ze_automation/agents/workflow/tools.py::edit_workflow_steps` and
+4. `core/automation/ze-automation/ze_automation/agents/workflow/tools.py::edit_workflow_steps` and
    `create_workflow` — add `session_id: str | None = None, user_message_id: str | None
    = None` parameters. `_merge_deps` (`ze_agents/base_agent.py:471-484`) auto-injects
    them from `deps` because they're not in the LLM-visible schema (the LLM never
@@ -143,7 +143,7 @@ insert (`SELECT ... FOR UPDATE` not needed — single-user, single-writer-per-wo
 in practice, and a unique index catches any race rather than silently duplicating).
 `actor_session_id`/`actor_user_message_id` are plain columns with **no FK** — `sessions`
 and `messages` tables live in `ze-core`'s separate migration chain
-(`core/ze-core/ze_core/migrations/versions/zc016_messages.py`,
+(`core/engine/ze-core/ze_core/migrations/versions/zc016_messages.py`,
 `zc018_sessions.py`), and cross-chain FKs aren't used elsewhere in this codebase
 (`accountability_anomalies.session_id TEXT`, no FK, is the existing precedent).
 `steps_before`/`steps_after` are stored as JSONB (not normalized) to reuse

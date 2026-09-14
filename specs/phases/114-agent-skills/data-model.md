@@ -1,8 +1,8 @@
 # Phase 1 Data Model: Agent Skills
 
-Owning package: `core/ze-skills/ze_skills/types.py` (dataclasses) +
-`core/ze-skills/ze_skills/migrations/versions/zsk001_skills.py` (schema). One field addition
-to an existing type: `core/ze-core/ze_core/conversation/messages/types.py` (`MessageTrace`).
+Owning package: `core/automation/ze-skills/ze_skills/types.py` (dataclasses) +
+`core/automation/ze-skills/ze_skills/migrations/versions/zsk001_skills.py` (schema). One field addition
+to an existing type: `core/engine/ze-core/ze_core/conversation/messages/types.py` (`MessageTrace`).
 
 ## Enums
 
@@ -84,7 +84,7 @@ re-review — so prior approvals are never lost (FR-016, User Story 4).
 
 ### `SkillMatch` (not persisted — intermediate result of `SkillMatcher`, feeds `SkillUsageTrace`)
 
-Produced per-turn by `SkillMatcher.match()` (`core/ze-skills/ze_skills/matching.py`) and consumed
+Produced per-turn by `SkillMatcher.match()` (`core/automation/ze-skills/ze_skills/matching.py`) and consumed
 by two downstream sites: `AgentContext.active_skills`/`skill_tool_names` (instruction injection +
 tool narrowing) and `record_trace` (`SkillUsageTrace` construction, one `SkillMatch` → one
 `SkillUsageTrace`).
@@ -99,7 +99,7 @@ class SkillMatch:
 
 ### `SkillUsageTrace` (not a table — a field on `MessageTrace`)
 
-Added to `core/ze-core/ze_core/conversation/messages/types.py`:
+Added to `core/engine/ze-core/ze_core/conversation/messages/types.py`:
 
 ```python
 @dataclass

@@ -88,7 +88,7 @@ console.log("  → packages/ze-client/src/generated/ws.ts");
 console.log("Extracting UI primitive schema from Python...");
 
 const uiSchemaJson = execSync(
-  `cd ${root} && uv run --project core/ze-components python -c "` +
+  `cd ${root} && uv run --project core/kernel/ze-components python -c "` +
     `import json; from ze_components.schema import export_json_schema; print(json.dumps(export_json_schema()))"`,
   { encoding: "utf8" },
 );

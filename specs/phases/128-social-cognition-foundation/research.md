@@ -1,8 +1,8 @@
 # Phase 0 Research: Social Cognition Foundation
 
 Grounding facts were gathered by reading the current implementations of every
-surface this phase touches (`core/ze-memory`, `plugins/ze-personal`,
-`core/ze-priority`, `core/ze-agents/ze_agents/claims.py`). Findings below are
+surface this phase touches (`core/cognition/ze-memory`, `plugins/ze-personal`,
+`core/arbitration/ze-priority`, `core/contracts/ze-agents/ze_agents/claims.py`). Findings below are
 verified against code, not assumed.
 
 ## 1. `entity_type` and predicate vocabularies are enforced differently today
@@ -10,12 +10,12 @@ verified against code, not assumed.
 **Decision**: Add `"project"` as a Python-level documented value only —
 mirror the existing pattern exactly, do not introduce an enum.
 
-**Rationale**: `entity_type` (`core/ze-memory/ze_memory/types.py:15,65`) is a
+**Rationale**: `entity_type` (`core/cognition/ze-memory/ze_memory/types.py:15,65`) is a
 bare `str` field with a `# "person" | "org" | ...` comment; there is no
 `ALL_ENTITY_TYPES` frozenset and no DB `CHECK` constraint
 (`zm001_memory_tables.py` — `entity_type TEXT NOT NULL`, unconstrained).
 Predicates, by contrast, *are* a real `frozenset[str]`
-(`core/ze-memory/ze_memory/graph/predicates.py:28-38`,
+(`core/cognition/ze-memory/ze_memory/graph/predicates.py:28-38`,
 `ALL_PREDICATES`), though still unenforced at the DB or `upsert_relationship`
 write path — it's a documentation/lint-level vocabulary. FR-001/FR-002 match
 these two existing conventions exactly: extend the `entity_type` comment,
@@ -31,7 +31,7 @@ mandates as an exact closed set; `entity_type` is not currently one of
 those.
 
 **Extractor gap found (must fix for FR-003 to work end-to-end)**:
-`core/ze-memory/ze_memory/extractor.py:267-279` — the LLM extraction prompt
+`core/cognition/ze-memory/ze_memory/extractor.py:267-279` — the LLM extraction prompt
 lists `"person|organisation|pl..."` (note: `"organisation"`, not `"org"` —
 a pre-existing mismatch versus the `types.py` comment) and defaults any
 entity type the LLM doesn't recognize to `"concept"`. Without adding
@@ -46,28 +46,28 @@ fix and is left alone.)
 ## 2. `Relationship.confidence` retrofit: read-time decay, not a batch job
 
 **Decision**: `Relationship.confidence` (currently a plain `float` at
-`core/ze-memory/ze_memory/graph/types.py:25`) becomes a
+`core/cognition/ze-memory/ze_memory/graph/types.py:25`) becomes a
 `ze_agents.claims.Confidence`-typed field, **computed at read time** in
 `GraphStore`'s row-hydration path:
 `Confidence(value=decay(row["confidence"], DecayProfile.TIME_LINEAR, elapsed_days=(now - row["last_contact"]).days), decay_profile=DecayProfile.TIME_LINEAR)`.
 The DB `confidence` column keeps storing the undecayed, reinforced base
 value (bumped via the existing `GREATEST(...)` `ON CONFLICT` clause in
-`upsert_relationship`, `core/ze-memory/ze_memory/graph/store.py:56-58`); a
+`upsert_relationship`, `core/cognition/ze-memory/ze_memory/graph/store.py:56-58`); a
 new `last_contact TIMESTAMPTZ` column drives the elapsed-time calculation.
 
 **Rationale**: Two decay-application patterns already exist in the
 codebase, and neither fits SC-004's requirement ("confidence, read at any
 point ..., reflects real elapsed-time decay"):
-- `HypothesisDecayJob` (`core/ze-correlation/.../jobs/hypothesis_decay.py`)
+- `HypothesisDecayJob` (`core/cognition/ze-correlation/.../jobs/hypothesis_decay.py`)
   and `cascade_from_evidence()`
-  (`core/ze-worldstate/ze_worldstate/decay.py`) both **write** a decayed
+  (`core/cognition/ze-worldstate/ze_worldstate/decay.py`) both **write** a decayed
   value back to storage — via a scheduled sweep or an event-triggered
   cascade, respectively. Reusing this for `Relationship` would require a
   new scheduled job with its own cadence, which the spec's own
   "reconciliation, not new-build" framing and FR-006 (no new
   relationship-specific mechanism) argue against.
 - `ze_priority.scoring.score_loop/score_goal/score_hypothesis`
-  (`core/ze-priority/ze_priority/scoring.py:34-100`) construct a
+  (`core/arbitration/ze-priority/ze_priority/scoring.py:34-100`) construct a
   `Confidence` value fresh on every call and, for `score_goal`, literally
   call `decay()` against elapsed idle-days at scoring time — this is the
   closest existing precedent for "value that reflects elapsed time whenever
@@ -86,7 +86,7 @@ relationship-specific mechanism, and a batch job introduces a staleness
 window (decay only reflected after the next sweep) that read-time
 computation avoids for free using the same `decay()` function.
 
-**Migration**: `core/ze-memory` `zm` chain, next revision `zm019` (chain
+**Migration**: `core/cognition/ze-memory` `zm` chain, next revision `zm019` (chain
 head confirmed at `zm018_signal_provenance.py`). Adds `last_contact
 TIMESTAMPTZ` to `memory_relationships`, backfilled to `created_at` for
 existing rows (matches the spec's edge case: "if no activity has ever
@@ -97,7 +97,7 @@ dataclass field type changes.
 
 ## 3. `PriorityView`'s fourth source must not create a core→plugin dependency
 
-**Decision**: Define a structural `Protocol` in `core/ze-priority`
+**Decision**: Define a structural `Protocol` in `core/arbitration/ze-priority`
 (e.g. `RelationshipStalenessSource`, matching
 `PersonStore.list_stale_for_follow_up(stale_days, limit) ->
 list[StaleFollowUpNudge]`'s existing shape) that `PriorityView` depends on
@@ -108,7 +108,7 @@ composition root (`apps/ze-api/ze_api/container.py`) supplies the concrete
 `PersonStore` instance when constructing `PriorityView`.
 
 **Rationale**: `PriorityView.__init__` today
-(`core/ze-priority/ze_priority/view.py:40-48`) takes `LoopStore`,
+(`core/arbitration/ze-priority/ze_priority/view.py:40-48`) takes `LoopStore`,
 `GoalStore`, `PostgresHypothesisStore` — all three are `core/`-owned,
 domain-free types (loops/goals/hypotheses are generic constructs owned by
 other core packages). "Stale relationship" is inherently `ze-personal`
@@ -131,7 +131,7 @@ packages depend on other core packages directly, never through the SDK
 re-export layer.
 
 `PriorityView.rank()`'s existing `SourceKind` (`Literal["loop", "goal",
-"hypothesis"]`, `core/ze-priority/ze_priority/types.py:13`) gains a fourth
+"hypothesis"]`, `core/arbitration/ze-priority/ze_priority/types.py:13`) gains a fourth
 member, `"relationship"`; a new `RelationshipSignal` dataclass and
 `score_relationship_staleness()` function follow the exact shape of the
 three existing `score_*` functions in `scoring.py`. The existing
@@ -191,7 +191,7 @@ whole table goes). Delete `PersonRelationship`
 and `.get_relationships()` (`store.py:329-386`), the
 `_domain("contacts.relationships", "contact_relationships", 20)`
 registration in `plugin.py:182`, the `contact_relationships` truncation
-entry in `core/ze-onboarding/ze_onboarding/reset.py:26`, and every
+entry in `core/ops/ze-onboarding/ze_onboarding/reset.py:26`, and every
 reference in `plugins/ze-personal/tests/contacts/test_person_store.py` and
 `test_types.py`.
 
@@ -219,7 +219,7 @@ deliberate behavior change, not a compatibility shim to preserve.
 
 | Chain | Owning package | Current head | This phase's revision |
 |---|---|---|---|
-| `zm` | `core/ze-memory` | `zm018` | `zm019` — adds `last_contact` to `memory_relationships` |
+| `zm` | `core/cognition/ze-memory` | `zm018` | `zm019` — adds `last_contact` to `memory_relationships` |
 | `zc` | `plugins/ze-personal` | `zc028` | `zc029` — drops `contact_relationships` |
 
 No other package's migration chain is touched.

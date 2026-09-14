@@ -10,10 +10,10 @@ Four claim producers (`OpenLoop`, `Hypothesis`/`EvidenceRef`, `memory_facts`, `S
 express claim-kind, provenance, and confidence-with-decay a different way; `Hypothesis`'s
 confidence never decays at all — a live doctrine violation. This feature promotes `OpenLoop`'s
 already-correct implementation into a shared `ClaimKind`/`Confidence` vocabulary plus one
-parameterized decay function in `core/ze-agents/ze_agents/claims.py`, retrofits the other three
+parameterized decay function in `core/contracts/ze-agents/ze_agents/claims.py`, retrofits the other three
 producers onto it (fixing the frozen-hypothesis-confidence bug as a direct consequence via a new
 scheduled decay job), and extracts the duplicated staleness-cutoff check from three sweep jobs
-into one helper in `core/ze-proactive`. `Provenance` unifies too, but stays doctrine-closed at
+into one helper in `core/contracts/ze-proactive`. `Provenance` unifies too, but stays doctrine-closed at
 exactly four epistemic-origin values (`graph_recall`/`live_search`/`prompt_supplied`/
 `synthesized`) per `specs/arch/plugin-domain-vocabulary.md` — a constitutional amendment adopted
 mid-design after review found the original brief would have baked plugin-owned inflow vocabulary
@@ -66,7 +66,7 @@ UI, no new REST surface
 |---|---|---|
 | I. Spec-First Development | Spec exists at `specs/phases/111-claim-topology/spec.md`, status will move to `Implemented` in the same commit as the code per Definition of Done | PASS |
 | II. Single-User Model | No `user_id`/tenancy touched anywhere in this feature; explicitly noted in spec Assumptions | PASS |
-| III. Layered Package Architecture | New shared module lands in `core/ze-agents` (no domain knowledge — pure vocabulary/decay-math, same shape as existing `nli.py`); the closed `Provenance` enum is held to exactly the doctrine's four values, with plugin-owned inflow vocabulary (`email`, `calendar`) explicitly kept out per `specs/arch/plugin-domain-vocabulary.md` (this feature's own amendment to Principle III); no plugin imports `ze_core.*` or `ze_plugin.*` as a result of this feature; dependency direction unchanged (research.md §9 confirms zero new edges) | PASS |
+| III. Layered Package Architecture | New shared module lands in `core/contracts/ze-agents` (no domain knowledge — pure vocabulary/decay-math, same shape as existing `nli.py`); the closed `Provenance` enum is held to exactly the doctrine's four values, with plugin-owned inflow vocabulary (`email`, `calendar`) explicitly kept out per `specs/arch/plugin-domain-vocabulary.md` (this feature's own amendment to Principle III); no plugin imports `ze_core.*` or `ze_plugin.*` as a result of this feature; dependency direction unchanged (research.md §9 confirms zero new edges) | PASS |
 | IV. Typed, Explicit Python | `ClaimKind`/`Provenance`/`DecayProfile` as `StrEnum`, `Confidence` as a dataclass in a `claims.py` (not `models.py`); `decay()` raises a typed `ZeError` subclass on missing profile params, never bare `ValueError` (contracts/claims.md §1) | PASS |
 | V. Test Discipline | All four producer retrofits and the new decay job/staleness helper get unit tests with `AsyncMock`-mocked pools, no real DB, no real LLM; `make test-<pkg>` + `make lint` gate completion per package | PASS (enforced at task level) |
 | VI. Explicit Persistence | Both new columns are hand-written raw-SQL Alembic migrations on their owning package's chain (`zcor`, `zm`); no ORM; `zcor` migration's `depends_on` already anchors to `zm006` per the existing chain | PASS |
@@ -100,13 +100,13 @@ specs/phases/111-claim-topology/
 This feature touches six existing packages in this monorepo — no new package is created.
 
 ```text
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
 └── claims.py                          # NEW — ClaimKind, Provenance, DecayProfile, Confidence, decay()
 
-core/ze-agents/tests/
+core/contracts/ze-agents/tests/
 └── test_claims.py                     # NEW — unit tests for decay() per profile
 
-core/ze-worldstate/ze_worldstate/
+core/cognition/ze-worldstate/ze_worldstate/
 ├── types.py                           # MODIFIED — LoopClaimKind aliases ClaimKind; LoopProvenance
 │                                       #   becomes a plain string-constant namespace (not an Enum);
 │                                       #   OpenLoop.provenance retypes to str
@@ -114,12 +114,12 @@ core/ze-worldstate/ze_worldstate/
 └── extraction.py                      # MODIFIED — drops LoopProvenance(provenance) coercion;
                                         #   propose_loop_candidates uses the incoming str directly
 
-core/ze-worldstate/tests/
+core/cognition/ze-worldstate/tests/
 └── (existing tests using LoopProvenance.CONVERSATION/.USER_DECLARED as fixtures — unchanged,
     per research.md §3's compatibility audit; new test asserting an unrecognized provenance
     string no longer raises)
 
-core/ze-correlation/ze_correlation/
+core/cognition/ze-correlation/ze_correlation/
 ├── types.py                           # MODIFIED — Hypothesis.claim_kind, EvidenceRef.origin: Provenance
 ├── store.py                           # MODIFIED — PostgresHypothesisStore reads/writes claim_kind, new set_confidence()
 ├── engine.py                          # MODIFIED — Hypothesis(...) construction populates claim_kind
@@ -129,10 +129,10 @@ core/ze-correlation/ze_correlation/
 └── migrations/versions/
     └── zcor00N_hypothesis_claim_kind.py  # NEW — additive, backfilled, non-nullable
 
-core/ze-correlation/tests/
+core/cognition/ze-correlation/tests/
 └── test_hypothesis_decay.py           # NEW
 
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
 ├── types.py                           # MODIFIED — Signal.claim_kind, Signal.confidence
 ├── dream/promoter.py                  # MODIFIED — _run_confidence_decay calls shared decay() per
 │                                       #   row; _promote's own INSERT populates claim_kind='inference'
@@ -148,23 +148,23 @@ core/ze-memory/ze_memory/
     └── zm0NN_signals_claim_kind.py    # NEW — memory_signals.claim_kind + .confidence, additive,
                                         #   backfilled, non-nullable (added post-/speckit-analyze — see E4)
 
-core/ze-memory/tests/
+core/cognition/ze-memory/tests/
 └── (existing dream/promoter tests updated for the fetch-decay-write shape; new coverage for the
     three additional memory_facts write paths and the memory_signals round-trip)
 
-core/ze-proactive/ze_proactive/
+core/contracts/ze-proactive/ze_proactive/
 └── staleness.py                       # NEW — is_stale()
 
-core/ze-proactive/tests/
+core/contracts/ze-proactive/tests/
 └── test_staleness.py                  # NEW
 
-core/ze-worldstate/ze_worldstate/jobs/
+core/cognition/ze-worldstate/ze_worldstate/jobs/
 ├── stale_suspicion.py                 # MODIFIED — calls is_stale() instead of inline cutoff
 └── drift_sweep.py                     # MODIFIED — list_drift_candidates narrowed, filters via is_stale()
 
-core/ze-worldstate/ze_worldstate/store.py  # MODIFIED — list_drift_candidates drops SQL-side cutoff predicate
+core/cognition/ze-worldstate/ze_worldstate/store.py  # MODIFIED — list_drift_candidates drops SQL-side cutoff predicate
 
-core/ze-automation/ze_automation/
+core/automation/ze-automation/ze_automation/
 ├── jobs/stuck_goals.py                # MODIFIED — calls is_stale() for the idle-days check
 └── goals/postgres.py                  # MODIFIED — list_stuck narrowed, filters idle-days via is_stale()
                                         #   (alert_cooldown_days suppression stays SQL-side, unrelated to FR-015)

@@ -61,7 +61,7 @@ that makes per-step pinning silently fail today.
 
 ## 3. Where should the shared resolver live?
 
-**Decision**: `core/ze-agents/ze_agents/model_resolution.py`.
+**Decision**: `core/contracts/ze-agents/ze_agents/model_resolution.py`.
 
 **Rationale**: `ze-agents` is already the lowest common package: `ze-core` depends
 on it, and both plugins touched by this change (`ze-personal`, `ze-calendar`)

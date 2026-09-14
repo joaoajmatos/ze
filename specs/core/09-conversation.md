@@ -31,7 +31,7 @@ them via WebSocket and REST, but ownership lives in ze-core alongside the engine
 ## Module layout
 
 ```
-core/ze-core/ze_core/conversation/
+core/engine/ze-core/ze_core/conversation/
   turn.py          # make_graph_input, invoke_raw_turn, resume_turn, TurnResult
   messages/
     types.py       # Message, MessageRole
@@ -73,5 +73,5 @@ but owns no tables.
 
 ## Testing
 
-Unit tests in `core/ze-core/tests/conversation/` using mocked asyncpg pools.
+Unit tests in `core/engine/ze-core/tests/conversation/` using mocked asyncpg pools.
 WS integration tests remain in `apps/ze-api/tests/api/`.

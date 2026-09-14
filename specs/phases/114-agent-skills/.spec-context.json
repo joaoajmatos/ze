@@ -58,21 +58,22 @@
     },
     "T063": {
       "status": "DONE",
-      "did": "Added core/ze-skills/README.md covering import/review/matching, bundled vs imported flow, and config",
+      "did": "Added core/automation/ze-skills/README.md covering import/review/matching, bundled vs imported flow, and config",
       "files": [
-        "core/ze-skills/README.md"
+        "core/automation/ze-skills/README.md"
       ]
     },
     "T064": {
       "status": "DONE",
       "did": "ruff check passed on ze-skills/ze-core/ze-agents/ze-plugin/ze-api; formatted ze-skills; skipped repo-wide format sweep of unrelated pre-existing drift; eslint clean on skill UI",
       "files": [
-        "core/ze-skills/tests/test_review.py"
+        "core/automation/ze-skills/tests/test_review.py"
       ]
     },
     "T065": {
       "status": "DONE",
       "did": "test-skills 74 passed; test-core 622 passed; test-agents 25 passed; test-web all passed; test-api 199 passed, 1 pre-existing unrelated failure in test_settings.py routing_config"
     }
-  }
+  },
+  "telemetryInstanceId": "a7e24d65-1ef3-40bb-93a9-f71ba6d5bd5d"
 }

@@ -75,12 +75,12 @@ and the `@tool` registry has no namespacing (enabling silent collisions).
 ## Module Location
 
 ```
-core/ze-plugin/
+core/contracts/ze-plugin/
   ze_plugin/
     plugin.py          ← ZePlugin ABC — startup/shutdown hooks
     bootstrap.py       ← plugin discovery, DI, build_integrations()
 
-core/ze-agents/
+core/contracts/ze-agents/
   ze_agents/
     bootstrap.py       ← bootstrap_agents(), validate_registry()
     tool.py            ← @tool registry (plugin-scoped namespacing deferred)

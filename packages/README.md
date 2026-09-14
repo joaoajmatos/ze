@@ -98,7 +98,7 @@ make test-web                   # vitest for TS packages + ze-web
 |----------|---------|
 | New plugin-facing re-export | `packages/ze-sdk` |
 | New REST route types or SDK method | regenerate `@ze/client` via `make codegen` |
-| New UI primitive type | `core/ze-components` + regenerate `@ze/ui` via `make codegen` |
+| New UI primitive type | `core/kernel/ze-components` + regenerate `@ze/ui` via `make codegen` |
 | Primitive render styling | `@ze/ui/react` |
 | WebSocket / onboarding wiring for UI actions | `apps/ze-web` |
 | Page-level REST usage | `apps/ze-web` via `@ze/client` |

@@ -19,7 +19,7 @@ deleted directly (deletion only cascades from the parent `workflows` row).
 | `actor` | `ActorContext` (flattened into 3 columns, see below) | FR-005, FR-006 |
 | `created_at` | `datetime` (UTC) | Server-generated |
 
-**Python dataclass** (`core/ze-automation/ze_automation/workflow/types.py`):
+**Python dataclass** (`core/automation/ze-automation/ze_automation/workflow/types.py`):
 
 ```python
 from enum import Enum
@@ -89,7 +89,7 @@ FK between the two tables.
 
 ## Store interface additions
 
-`core/ze-automation/ze_automation/workflow/store.py` (`WorkflowStore` Protocol):
+`core/automation/ze-automation/ze_automation/workflow/store.py` (`WorkflowStore` Protocol):
 
 ```python
 async def create(self, workflow: Workflow, actor: ActorContext | None = None) -> UUID:

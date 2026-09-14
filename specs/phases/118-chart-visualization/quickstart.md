@@ -12,7 +12,7 @@
 make test-components
 ```
 
-Expected: new tests in `core/ze-components/tests/test_schema.py` /
+Expected: new tests in `core/kernel/ze-components/tests/test_schema.py` /
 `tests/test_tools.py` pass, asserting:
 - `export_json_schema()` includes a `Chart` def with a `oneOf`/discriminator entry for
   `"chart"`, matching `contracts/chart-primitive.md` §2.

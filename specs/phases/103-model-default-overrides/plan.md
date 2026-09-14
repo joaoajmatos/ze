@@ -86,12 +86,12 @@ configuration file schema only. The config.yaml schema itself is documented in
 ### Source Code (repository root)
 
 ```text
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
 ├── model_resolution.py          # NEW — resolve_model(key, declared, config); KNOWN_STEP_KEYS registry;
 │                                 #        validate_model_config(config, agent_names) for startup fail-fast
 └── tests/test_model_resolution.py   # NEW — resolver unit tests
 
-core/ze-core/ze_core/
+core/engine/ze-core/ze_core/
 ├── routing/router.py             # EDIT — _resolve_model() calls resolve_model() instead of reading
 │                                 #        agent_cls.model directly
 ├── orchestration/nodes/memory.py # EDIT — synthesize() calls resolve_model("synthesis", MODEL_SYNTHESIS, cfg)

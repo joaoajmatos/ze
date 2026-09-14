@@ -1,7 +1,7 @@
 """Contract tests for POST /api/v0/workspace/runs/{id}/cancel (Phase 116, User
 Story 3). Exercises the FastAPI route layer against fake WorkspaceStore/
 WorkspaceClient/RunWatcher — SQL and RunWatcher.cancel() unit behavior are
-covered by core/ze-workspace/tests/{test_store,test_followthrough}.py.
+covered by core/ops/ze-workspace/tests/{test_store,test_followthrough}.py.
 """
 
 from __future__ import annotations

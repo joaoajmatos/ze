@@ -68,7 +68,7 @@ requires zero changes to `container.py`.
 ## Module Location
 
 ```
-core/ze-agents/
+core/contracts/ze-agents/
   ze_agents/
     integration.py       ← NEW: ZeIntegration Protocol
     plugin.py            ← add integration_types() classmethod

@@ -1,6 +1,6 @@
 # ze-data — Spec
 
-> **Package:** `core/ze-data`
+> **Package:** `core/kernel/ze-data`
 > **Phase:** 68
 > **Status:** Done
 
@@ -58,7 +58,7 @@ data-management layer in the stack.
 ## Module Location
 
 ```
-core/ze-data/
+core/kernel/ze-data/
 └── ze_data/
     ├── __init__.py       # public re-exports: DataDomain, DataPortabilityService, types
     ├── domain.py         # DataDomain dataclass

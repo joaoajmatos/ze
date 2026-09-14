@@ -9,13 +9,13 @@
 **Input**: User description: "Social Cognition Foundation — phase 128, implementing steps 1
 and 2 of specs/arch/social-cognition.md's phased rollout sketch (the reconciliation steps, not
 step 3's new co-occurrence inference capability, which stays out of scope for a later phase).
-Add `project` as a new entity_type in core/ze-memory; add `WORKS_ON` (person→project) and
+Add `project` as a new entity_type in core/cognition/ze-memory; add `WORKS_ON` (person→project) and
 `COLLABORATES_WITH` (person↔person) predicates to the memory graph's controlled vocabulary;
 retrofit `Relationship.confidence` to the shared `Confidence`/`DecayProfile.TIME_LINEAR` type
 and add a computed `last_contact` field; retire `plugins/ze-personal`'s dead
 `PersonRelationship`/`contact_relationships` schema (zero production callers, no seed data —
 confirmed by repo-wide grep); wire the existing `StaleFollowUpNudge`/
-`list_stale_for_follow_up()` nudge into `core/ze-priority`'s `PriorityView` as a fourth ranked
+`list_stale_for_follow_up()` nudge into `core/arbitration/ze-priority`'s `PriorityView` as a fourth ranked
 source instead of its own independent, unbudgeted config threshold. Project-person
 co-occurrence inference via `ze-correlation` is explicitly out of scope for this phase."
 
@@ -43,9 +43,9 @@ document's own sequencing.
 first looked, and partly self-inflicted: `plugins/ze-personal` already has a `PersonRelationship`
 type and a `contact_relationships` table, but they were never wired to any producer (zero
 production callers beyond tests) — real schema that, had it been used, would have duplicated
-`core/ze-memory`'s `memory_relationships` graph, the exact parallel-structure anti-pattern
+`core/cognition/ze-memory`'s `memory_relationships` graph, the exact parallel-structure anti-pattern
 `specs/arch/aperture-decision.md` warned against for open loops. Meanwhile `StaleFollowUpNudge`
-*is* live in the morning briefing today, but predates `core/ze-priority`'s `PriorityView`
+*is* live in the morning briefing today, but predates `core/arbitration/ze-priority`'s `PriorityView`
 (Phase 123) and bypasses its shared attention budget with its own fixed-threshold config.
 
 This phase is therefore reconciliation more than new-build: it gives Ze a `project` entity and
@@ -66,7 +66,7 @@ drawn in this phase.
 - Q: How is a `project` entity actually created — does this phase need a dedicated extraction
   path, or does it reuse the existing contact-extraction machinery? → A: Reuses the existing
   entity-extraction/upsert pattern `PersonStore._write_entity()` already established for
-  `person` entities — a `project` is upserted into `core/ze-memory`'s entity table the same
+  `person` entities — a `project` is upserted into `core/cognition/ze-memory`'s entity table the same
   way, triggered from the same conversation/email/calendar extraction call sites that already
   produce `PersonCandidate`/`ContactProposal`-shaped output for people. This phase does not
   invent a new extraction pipeline; it extends the existing one to a second entity type.
@@ -205,10 +205,10 @@ highest-ranked item, not just loops/goals/hypotheses.
 
 ### Functional Requirements
 
-- **FR-001**: System MUST add `project` as a valid value of `core/ze-memory`'s `entity_type`
+- **FR-001**: System MUST add `project` as a valid value of `core/cognition/ze-memory`'s `entity_type`
   field, alongside the existing `person | org | topic | ticker | place | product` set.
 - **FR-002**: System MUST add two new predicates, `WORKS_ON` and `COLLABORATES_WITH`, to
-  `core/ze-memory`'s controlled relationship-predicate vocabulary, documented with the same
+  `core/cognition/ze-memory`'s controlled relationship-predicate vocabulary, documented with the same
   one-line semantic comment convention as the existing predicates (e.g. `PARTICIPATES_IN`'s
   "event → entity" comment) — `WORKS_ON` is person → project; `COLLABORATES_WITH` is
   person ↔ person. Existing predicates, including `PARTICIPATES_IN`, MUST NOT be repurposed for
@@ -220,7 +220,7 @@ highest-ranked item, not just loops/goals/hypotheses.
 - **FR-004**: The memory graph's `Relationship.confidence` field MUST be retrofitted from a
   plain `float` to the shared `ze_agents.claims.Confidence` type, using
   `DecayProfile.TIME_LINEAR` — the same decay profile and rate already used by
-  `HypothesisDecayJob`, the dream promoter, and `core/ze-priority`'s urgency scoring. No new,
+  `HypothesisDecayJob`, the dream promoter, and `core/arbitration/ze-priority`'s urgency scoring. No new,
   relationship-specific decay profile is introduced.
 - **FR-005**: `Relationship` (or its storage layer) MUST carry a `last_contact` timestamp field
   that is set/updated only from processed communication-graph activity (a message, meeting, or
@@ -235,7 +235,7 @@ highest-ranked item, not just loops/goals/hypotheses.
   `PersonStore.add_relationship()`/`get_relationships()` — with no data migration step, since
   no production caller and no seed data exist for any of them.
 - **FR-008**: System MUST route `list_stale_for_follow_up`'s underlying signal through
-  `core/ze-priority`'s `PriorityView` as a fourth ranked source (alongside loops, goals, and
+  `core/arbitration/ze-priority`'s `PriorityView` as a fourth ranked source (alongside loops, goals, and
   correlation hypotheses), participating in the same shared, atomically-claimed daily attention
   budget established in Phase 123 — not as an independently-thresholded, unranked channel.
 - **FR-009**: The morning briefing (`ze_personal/jobs/briefing.py`) MUST read its
@@ -255,7 +255,7 @@ highest-ranked item, not just loops/goals/hypotheses.
 
 ### Key Entities
 
-- **Project entity**: A `core/ze-memory` entity with `entity_type="project"`, extracted the
+- **Project entity**: A `core/cognition/ze-memory` entity with `entity_type="project"`, extracted the
   same way person entities already are — a name/canonical identifier, aliases, and whatever
   attributes the existing entity-extraction path already captures generically. Not a new store;
   a new value of an existing field.

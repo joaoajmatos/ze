@@ -1,7 +1,7 @@
 # Phase 1 Data Model: Workspace Follow-Through
 
 This spec attaches to Phase 115's `workspace_runs` table
-(`core/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py`) and adds
+(`core/ops/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py`) and adds
 no new Postgres table (FR-012). It does not touch `workspace_state`, `skill_scripts`,
 or any Phase 115 enum's stored values.
 
@@ -50,8 +50,8 @@ dispatch attempt.
 
 | State | Owner | Notes |
 |---|---|---|
-| `RunWatcher` background tasks | `core/ze-workspace` `ze_workspace/followthrough.py` | One `asyncio.Task` per detached run, keyed by `run.id`. Rebuilt at startup by D5 reconciliation, not persisted. |
-| `ThreadTurnLock` | `core/ze-workspace` `ze_workspace/turn_lock.py` | `dict[str, asyncio.Lock]` keyed by `thread_id`. Process-local; a lock held at the moment of a crash is simply gone on restart along with the in-flight turn it guarded — no durable state to reconcile (LangGraph's own checkpoint is the durability layer for turn content, not this lock). |
+| `RunWatcher` background tasks | `core/ops/ze-workspace` `ze_workspace/followthrough.py` | One `asyncio.Task` per detached run, keyed by `run.id`. Rebuilt at startup by D5 reconciliation, not persisted. |
+| `ThreadTurnLock` | `core/ops/ze-workspace` `ze_workspace/turn_lock.py` | `dict[str, asyncio.Lock]` keyed by `thread_id`. Process-local; a lock held at the moment of a crash is simply gone on restart along with the in-flight turn it guarded — no durable state to reconcile (LangGraph's own checkpoint is the durability layer for turn content, not this lock). |
 
 These two are deliberately not modeled as Postgres rows: they exist only to
 coordinate this single `ze-api` process (D3's alternatives-considered explains why
@@ -84,7 +84,7 @@ guarantee (surviving a crash mid-lock) the spec does not ask for.
 
 ## Migration
 
-`core/ze-workspace/ze_workspace/migrations/versions/zws002_run_followthrough.py` —
+`core/ops/ze-workspace/ze_workspace/migrations/versions/zws002_run_followthrough.py` —
 adds `follow_through_notified BOOLEAN NOT NULL DEFAULT false` to `workspace_runs`,
 `depends_on` Phase 115's `zws001`. Raw SQL, no ORM, continues the `zws` chain
 (`apps/ze-api/ze_api/migrate.py`'s `_ZE_WORKSPACE_VERSIONS` constant already lists

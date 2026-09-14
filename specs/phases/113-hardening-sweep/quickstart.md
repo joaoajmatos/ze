@@ -50,7 +50,7 @@ that scope, and the surfaced message is self-sufficient (no log-digging required
 
 1. Get an open loop into `LoopState.DRIFTING` with a `drift_rationale` set, such that it
    would pass `LoopSurfacer.passes_push_bar()` today (see
-   `core/ze-worldstate/tests/jobs/test_push_sweep.py` for how existing tests construct
+   `core/cognition/ze-worldstate/tests/jobs/test_push_sweep.py` for how existing tests construct
    this fixture state).
 2. Trigger `PushSweepJob.run()` twice concurrently against the same DB state — e.g. via
    two near-simultaneous manual job triggers, or in a test, `asyncio.gather(job.run(),
@@ -69,18 +69,18 @@ still apply, only one notification either way).
 Each scenario above should also exist as a package test using mocked stores
 (`AsyncMock`, per constitution V):
 
-- `core/ze-core/tests/conversation/confirmations/test_store.py` — key-collision cases
+- `core/engine/ze-core/tests/conversation/confirmations/test_store.py` — key-collision cases
   for `save`/`get_pending`/`clear` with multiple `request_id`s sharing a `thread_id`.
 - `apps/ze-api/tests/websocket/test_confirmation_concurrency.py` — end-to-end
   two-gates-same-thread flow through the WS handlers, asserting `pending_configs`
   dict-shape correctness.
-- `core/ze-core/tests/telemetry/test_budget.py` — `SpendBudgetChecker.check()` against
+- `core/engine/ze-core/tests/telemetry/test_budget.py` — `SpendBudgetChecker.check()` against
   mocked `CostStore` rows, session vs. daily scope, no-config-set short-circuit.
-- `core/ze-core/tests/orchestration/test_capability_check_budget.py` — node-level
+- `core/engine/ze-core/tests/orchestration/test_capability_check_budget.py` — node-level
   composition of `CapabilityGate` decision + budget decision, strictest-wins.
-- `core/ze-proactive/tests/test_push_log_store.py` — `try_claim` unique-violation
+- `core/contracts/ze-proactive/tests/test_push_log_store.py` — `try_claim` unique-violation
   returns `False` rather than raising; unaffected behavior for `NULL`-key rows.
-- `core/ze-worldstate/tests/jobs/test_push_sweep.py` — extend existing suite with a
+- `core/cognition/ze-worldstate/tests/jobs/test_push_sweep.py` — extend existing suite with a
   concurrent-claim race test (two `PushSweepJob.run()` calls, one notifier call).
 
 `make test-core`, `make test-proactive`, `make test-worldstate`, `make test-api`, and

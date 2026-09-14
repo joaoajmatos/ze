@@ -90,7 +90,7 @@ specs/phases/127-priority-override/
 ### Source Code (repository root)
 
 ```text
-core/ze-priority/ze_priority/
+core/arbitration/ze-priority/ze_priority/
 ├── types.py              # + PriorityOverride, PriorityOverrideRequest, SourceKind reuse
 ├── view.py                # unchanged (PriorityView.rank/rank_subset — read-only input)
 ├── scoring.py              # unchanged
@@ -103,7 +103,7 @@ core/ze-priority/ze_priority/
 └── migrations/
     └── zpri001_priority_overrides.py   # NEW chain, prefix `zpri`
 
-core/ze-collision/ze_collision/
+core/seam/ze-collision/ze_collision/
 └── detect.py                # MODIFY _find_candidates(): skip rule → (source_function, provenance)
 
 apps/ze-api/ze_api/

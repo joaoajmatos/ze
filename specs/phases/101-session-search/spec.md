@@ -3,7 +3,7 @@
 > **Status:** Done
 > **Depends on:** Phase 90 — History side panel (`ChatSidePanel` / `SessionList`); Phase 45 — `messages` table + WebSocket turns; Phase 52 — session-grouped episode consolidation (`memory_session_summaries`)
 > **Enables:** Jump-to-message in chat (future), nav sidebar search, smarter session list at scale
-> **Packages touched:** `core/ze-core`, `core/ze-memory`, `apps/ze-api`, `apps/ze-web`
+> **Packages touched:** `core/engine/ze-core`, `core/cognition/ze-memory`, `apps/ze-api`, `apps/ze-web`
 
 ---
 
@@ -290,7 +290,7 @@ None.
 ## Data Structures
 
 ```python
-# core/ze-core/ze_core/conversation/sessions/types.py
+# core/engine/ze-core/ze_core/conversation/sessions/types.py
 
 @dataclass
 class Session:
@@ -311,7 +311,7 @@ class SessionSearchHit:
 ```
 
 ```python
-# core/ze-core/ze_core/conversation/sessions/title.py
+# core/engine/ze-core/ze_core/conversation/sessions/title.py
 
 class SessionTitleGenerator:
     async def generate(self, *, user_text: str, assistant_text: str) -> str: ...

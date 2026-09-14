@@ -6,7 +6,7 @@
 
 ## R2. Growth-over-time data already exists
 
-**Finding**: `GET /api/v0/memory/activity` (`get_memory_activity`, `core/ze-memory/ze_memory/admin.py:185`) already unions `memory_facts` + `memory_episodes` counts per day into `MemoryActivityDay{date, count}` — exactly what User Story 1's growth chart needs, no new query.
+**Finding**: `GET /api/v0/memory/activity` (`get_memory_activity`, `core/cognition/ze-memory/ze_memory/admin.py:185`) already unions `memory_facts` + `memory_episodes` counts per day into `MemoryActivityDay{date, count}` — exactly what User Story 1's growth chart needs, no new query.
 
 **Decision**: Feed `MemoryActivityResponse.days` directly into the growth chart (`{x: date, y: count}`) — reuse the existing `useMemoryActivityQuery` the page already calls for the `TimelineScrubber`'s density strip.
 

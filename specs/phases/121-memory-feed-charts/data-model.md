@@ -11,7 +11,7 @@
 | `fact_count` | `int` | **new** |
 | `episode_count` | `int` | **new** |
 
-`core/ze-memory/ze_memory/admin.py`'s `get_memory_activity` query changes from a collapsing `UNION ALL ... GROUP BY day` to a labeled union grouped by `(day, source)`, then reshaped in Python into the three-count-per-day dict.
+`core/cognition/ze-memory/ze_memory/admin.py`'s `get_memory_activity` query changes from a collapsing `UNION ALL ... GROUP BY day` to a labeled union grouped by `(day, source)`, then reshaped in Python into the three-count-per-day dict.
 
 ## Growth Chart Points (frontend, derived)
 

@@ -17,9 +17,9 @@ description: "Task list for feature implementation"
 
 This is the existing Ze monorepo — no new packages. Paths used below:
 
-- `core/ze-automation/ze_automation/workflow/` — engine types/planner/store (no domain knowledge)
-- `core/ze-automation/ze_automation/agents/workflow/` — agent tool surface
-- `core/ze-automation/tests/workflow_engine/`, `core/ze-automation/tests/workflow_agent/` — backend tests
+- `core/automation/ze-automation/ze_automation/workflow/` — engine types/planner/store (no domain knowledge)
+- `core/automation/ze-automation/ze_automation/agents/workflow/` — agent tool surface
+- `core/automation/ze-automation/tests/workflow_engine/`, `core/automation/ze-automation/tests/workflow_agent/` — backend tests
 - `plugins/ze-personal/ze_personal/graph/workflow.py` — execution graph (existing, pre-Phase-74-reorg location)
 - `plugins/ze-personal/tests/graph/test_workflow.py` — execution graph tests
 - `apps/ze-api/ze_api/api/` — REST schemas/routes
@@ -41,13 +41,13 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [X] T002 Add `Branch` dataclass (`condition: str`, `to: str`) and extend `WorkflowStep` (+ `id: str`, `branches: list[Branch] = []`, `default_next: str | None = None`) and `StepResult` (+ `step_id: str`, `branch_taken: str | None = None`) in `core/ze-automation/ze_automation/workflow/types.py`
-- [X] T003 [P] Extend `_step_to_dict`/`_step_from_dict` (backfill `id = f"s{index}"` when absent, requiring an `index` parameter) and `_step_result_to_dict`/`_step_result_from_dict` (new fields, absent-safe on read) in `core/ze-automation/ze_automation/workflow/postgres.py`
-- [X] T004 [P] Add a branch/default-next target-validation helper (every `Branch.to`/`default_next` must equal `"END"`, `"FAIL"`, or another step's `id` in the same plan; unique `id`s) that raises the existing `WorkflowPlanError` in `core/ze-automation/ze_automation/workflow/planner.py`
+- [X] T002 Add `Branch` dataclass (`condition: str`, `to: str`) and extend `WorkflowStep` (+ `id: str`, `branches: list[Branch] = []`, `default_next: str | None = None`) and `StepResult` (+ `step_id: str`, `branch_taken: str | None = None`) in `core/automation/ze-automation/ze_automation/workflow/types.py`
+- [X] T003 [P] Extend `_step_to_dict`/`_step_from_dict` (backfill `id = f"s{index}"` when absent, requiring an `index` parameter) and `_step_result_to_dict`/`_step_result_from_dict` (new fields, absent-safe on read) in `core/automation/ze-automation/ze_automation/workflow/postgres.py`
+- [X] T004 [P] Add a branch/default-next target-validation helper (every `Branch.to`/`default_next` must equal `"END"`, `"FAIL"`, or another step's `id` in the same plan; unique `id`s) that raises the existing `WorkflowPlanError` in `core/automation/ze-automation/ze_automation/workflow/planner.py`
 - [X] T005 [P] Add `BranchResponse` model and extend `WorkflowStepResponse` (+ `id`, `branches`, `default_next`) and `StepResultResponse` (+ `step_id`, `branch_taken`) in `apps/ze-api/ze_api/api/schemas.py`
-- [X] T006 Extend `get_workflow()` and `list_workflow_executions()` dict builders to include the new fields in `core/ze-automation/ze_automation/rest.py` (depends on T002)
-- [X] T007 [P] Add unit tests for `Branch`/`WorkflowStep`/`StepResult` field defaults (empty `branches`, `None` `default_next`/`branch_taken` reproduce today's shape) in `core/ze-automation/tests/workflow_engine/test_types.py` (new file)
-- [X] T008 [P] Add unit tests for id backfill (`"s{index}"` for steps missing `id`) and branch/default_next/step_id/branch_taken JSONB round-trip in `core/ze-automation/tests/workflow_engine/test_postgres_workflow_store.py`
+- [X] T006 Extend `get_workflow()` and `list_workflow_executions()` dict builders to include the new fields in `core/automation/ze-automation/ze_automation/rest.py` (depends on T002)
+- [X] T007 [P] Add unit tests for `Branch`/`WorkflowStep`/`StepResult` field defaults (empty `branches`, `None` `default_next`/`branch_taken` reproduce today's shape) in `core/automation/ze-automation/tests/workflow_engine/test_types.py` (new file)
+- [X] T008 [P] Add unit tests for id backfill (`"s{index}"` for steps missing `id`) and branch/default_next/step_id/branch_taken JSONB round-trip in `core/automation/ze-automation/tests/workflow_engine/test_postgres_workflow_store.py`
 
 **Checkpoint**: Data model, persistence, and REST schema are ready — user story work can begin.
 
@@ -65,7 +65,7 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 - [X] T010 [P] [US1] Add test: a step with no branches continues to the next step in list order (regression against today's behavior), in `plugins/ze-personal/tests/graph/test_workflow.py`
 - [X] T011 [P] [US1] Add test: a step with no branches but `default_next` set jumps to that target instead of the next step in list order (FR-006's no-branches override case), in `plugins/ze-personal/tests/graph/test_workflow.py`
 - [X] T012 [P] [US1] Add test: a step whose own verification fails routes to `workflow_failed` and never reaches `route_branch`, even when that step has `branches` defined (FR-009 regression against the refactored routing path), in `plugins/ze-personal/tests/graph/test_workflow.py`
-- [X] T013 [P] [US1] Add test: `create_workflow` rejects a plan containing a branch/default_next target that isn't an existing step id or `END`/`FAIL`, returning the existing `{"error": ...}` shape, in `core/ze-automation/tests/workflow_agent/test_tools.py`
+- [X] T013 [P] [US1] Add test: `create_workflow` rejects a plan containing a branch/default_next target that isn't an existing step id or `END`/`FAIL`, returning the existing `{"error": ...}` shape, in `core/automation/ze-automation/tests/workflow_agent/test_tools.py`
 
 ### Implementation for User Story 1
 
@@ -73,7 +73,7 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 - [X] T015 [US1] Implement the `route_branch` node: resolve output against `branches` in order via one `LLMClient.complete()` classification call (reusing the `workflow_verify` model config key), falling back to `default_next` then plain sequential order, in `plugins/ze-personal/ze_personal/graph/workflow.py` (depends on T014)
 - [X] T016 [US1] Update `after_verify_step` and the graph builder's conditional edges to route through `route_branch`, handling `END`/`FAIL` terminal targets, in `plugins/ze-personal/ze_personal/graph/workflow.py` (depends on T015)
 - [X] T017 [US1] Record `step_id` and `branch_taken` on every `StepResult` produced by `verify_step`/`_fail_step`, in `plugins/ze-personal/ze_personal/graph/workflow.py` (depends on T002, T016)
-- [X] T018 [US1] Wire the T004 target-validation helper into `create_workflow`, immediately after `planner.plan()`, in `core/ze-automation/ze_automation/agents/workflow/tools.py` (depends on T004)
+- [X] T018 [US1] Wire the T004 target-validation helper into `create_workflow`, immediately after `planner.plan()`, in `core/automation/ze-automation/ze_automation/agents/workflow/tools.py` (depends on T004)
 
 **Checkpoint**: User Story 1 is fully functional and testable independently — this is the MVP.
 
@@ -106,9 +106,9 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 
 ### Tests for User Story 3
 
-- [X] T022 [P] [US3] Add test: a stored workflow row whose `steps` JSON has no `id`/`branches`/`default_next` keys loads via `_row_to_workflow` with ids backfilled as `s0, s1, ...` in list order and `branches == []` on every step, in `core/ze-automation/tests/workflow_engine/test_postgres_workflow_store.py`
+- [X] T022 [P] [US3] Add test: a stored workflow row whose `steps` JSON has no `id`/`branches`/`default_next` keys loads via `_row_to_workflow` with ids backfilled as `s0, s1, ...` in list order and `branches == []` on every step, in `core/automation/ze-automation/tests/workflow_engine/test_postgres_workflow_store.py`
 - [X] T023 [P] [US3] Add test: a legacy (backfilled, branch-less) workflow run executes every step in original order, and a failed step fails the whole run with no implicit branching or retry, in `plugins/ze-personal/tests/graph/test_workflow.py`
-- [X] T024 [P] [US3] Add test: `get_workflow`/`list_workflows` agent tools return a legacy workflow's steps with backfilled ids and empty `branches`, indistinguishable in shape from a newly authored linear workflow, in `core/ze-automation/tests/workflow_agent/test_tools.py`
+- [X] T024 [P] [US3] Add test: `get_workflow`/`list_workflows` agent tools return a legacy workflow's steps with backfilled ids and empty `branches`, indistinguishable in shape from a newly authored linear workflow, in `core/automation/ze-automation/tests/workflow_agent/test_tools.py`
 
 **Checkpoint**: User Story 3 verified — no implementation tasks beyond Foundational; this phase is pure regression coverage confirming T002/T003/T014–T017 didn't change legacy behavior.
 
@@ -122,13 +122,13 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 
 ### Tests for User Story 4
 
-- [X] T025 [P] [US4] Add test: `WorkflowPlanner.plan()` given a description with explicit either/or conditional language returns steps including a non-empty `branches` list (mock `LLMClient.complete` to return a fixed branching JSON payload), in `core/ze-automation/tests/workflow_engine/test_workflow_planner.py`
-- [X] T026 [P] [US4] Add test: `WorkflowPlanner.plan()` given a plain sequential description returns steps with `branches == []` on every step (regression), in `core/ze-automation/tests/workflow_engine/test_workflow_planner.py`
+- [X] T025 [P] [US4] Add test: `WorkflowPlanner.plan()` given a description with explicit either/or conditional language returns steps including a non-empty `branches` list (mock `LLMClient.complete` to return a fixed branching JSON payload), in `core/automation/ze-automation/tests/workflow_engine/test_workflow_planner.py`
+- [X] T026 [P] [US4] Add test: `WorkflowPlanner.plan()` given a plain sequential description returns steps with `branches == []` on every step (regression), in `core/automation/ze-automation/tests/workflow_engine/test_workflow_planner.py`
 
 ### Implementation for User Story 4
 
-- [X] T027 [US4] Extend `_PLAN_SYSTEM` to optionally request `id`, `branches` (list of `{condition, to}`), and `default_next` per step, instructing the model to omit them for plain linear workflows, in `core/ze-automation/ze_automation/workflow/planner.py` (depends on T004)
-- [X] T028 [US4] Extend `WorkflowPlanner.plan()`'s JSON parsing to build `Branch` objects and populate the new `WorkflowStep` fields, defaulting to `id=f"s{index}"`, `branches=[]`, `default_next=None` when the model omits them, in `core/ze-automation/ze_automation/workflow/planner.py` (depends on T002, T027)
+- [X] T027 [US4] Extend `_PLAN_SYSTEM` to optionally request `id`, `branches` (list of `{condition, to}`), and `default_next` per step, instructing the model to omit them for plain linear workflows, in `core/automation/ze-automation/ze_automation/workflow/planner.py` (depends on T004)
+- [X] T028 [US4] Extend `WorkflowPlanner.plan()`'s JSON parsing to build `Branch` objects and populate the new `WorkflowStep` fields, defaulting to `id=f"s{index}"`, `branches=[]`, `default_next=None` when the model omits them, in `core/automation/ze-automation/ze_automation/workflow/planner.py` (depends on T002, T027)
 
 **Checkpoint**: All backend user stories (1–4) are independently functional.
 
@@ -166,7 +166,7 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 - [X] T038 [P] Update `spec.md`'s `**Status**` field from `Draft` to `Implemented` in `specs/phases/102-workflow-branching/spec.md`, in the same commit as the implementation (constitution Principle I)
 - [X] T039 [P] Add the phase 102 index row to `specs/README.md`
 - [ ] T040 Run every scenario in `specs/phases/102-workflow-branching/quickstart.md` end-to-end (`make dev-full`) and confirm expected outcomes — not run this session (requires a live `make dev-full` + manual browser walkthrough); automated coverage (T009-T037) exercises the same scenarios
-- [X] T041 Run `make lint`, `make test-automation`, `make test-personal`, and `make web-test`; fix any failures — all touched-package tests pass (281 ze-automation, 186 ze-personal, 142 ze-api, 44 ze-web); `make lint` has 3 pre-existing failures unrelated to this feature (`apps/ze-api/ze_api/api/websocket/connection.py`, `core/ze-core/tests/conversation/test_session_store.py`, `core/ze-seed/tests/test_loader.py`) and one pre-existing unrelated ze-api test failure (`test_routing_config_defaults_empty_without_yaml_block`)
+- [X] T041 Run `make lint`, `make test-automation`, `make test-personal`, and `make web-test`; fix any failures — all touched-package tests pass (281 ze-automation, 186 ze-personal, 142 ze-api, 44 ze-web); `make lint` has 3 pre-existing failures unrelated to this feature (`apps/ze-api/ze_api/api/websocket/connection.py`, `core/engine/ze-core/tests/conversation/test_session_store.py`, `core/ops/ze-seed/tests/test_loader.py`) and one pre-existing unrelated ze-api test failure (`test_routing_config_defaults_empty_without_yaml_block`)
 
 ---
 
@@ -199,10 +199,10 @@ This is the existing Ze monorepo — no new packages. Paths used below:
 
 ```bash
 # After T002 (types.py) lands, launch together:
-Task: "Extend _step_to_dict/_step_from_dict/_step_result_(to|from)_dict in core/ze-automation/ze_automation/workflow/postgres.py"
-Task: "Add branch/default-next target-validation helper in core/ze-automation/ze_automation/workflow/planner.py"
+Task: "Extend _step_to_dict/_step_from_dict/_step_result_(to|from)_dict in core/automation/ze-automation/ze_automation/workflow/postgres.py"
+Task: "Add branch/default-next target-validation helper in core/automation/ze-automation/ze_automation/workflow/planner.py"
 Task: "Add BranchResponse + extend WorkflowStepResponse/StepResultResponse in apps/ze-api/ze_api/api/schemas.py"
-Task: "Add unit tests for Branch/WorkflowStep/StepResult defaults in core/ze-automation/tests/workflow_engine/test_types.py"
+Task: "Add unit tests for Branch/WorkflowStep/StepResult defaults in core/automation/ze-automation/tests/workflow_engine/test_types.py"
 ```
 
 ## Parallel Example: User Story 1
@@ -212,7 +212,7 @@ Task: "Test: branching step routes to matching branch, skips the other — plugi
 Task: "Test: no-branches step continues sequentially (regression) — plugins/ze-personal/tests/graph/test_workflow.py"
 Task: "Test: no-branches step with default_next jumps to that target — plugins/ze-personal/tests/graph/test_workflow.py"
 Task: "Test: a failed step never reaches route_branch — plugins/ze-personal/tests/graph/test_workflow.py"
-Task: "Test: create_workflow rejects invalid branch target — core/ze-automation/tests/workflow_agent/test_tools.py"
+Task: "Test: create_workflow rejects invalid branch target — core/automation/ze-automation/tests/workflow_agent/test_tools.py"
 ```
 
 ---

@@ -74,7 +74,7 @@ backend contract that the client will consume.
 ## Module Location
 
 ```
-core/ze-core/
+core/engine/ze-core/
   ze_core/
     conversation/
       messages/
@@ -408,10 +408,10 @@ NTFY_TOKEN=                  # optional; leave empty for public topics
 
 | Test | Location |
 |------|----------|
-| `PostgresMessageStore.save()` writes correct row | `core/ze-core/tests/conversation/test_message_store.py` |
-| `list_since()` returns messages in ascending order | `core/ze-core/tests/conversation/test_message_store.py` |
-| `mark_read()` flips read flag | `core/ze-core/tests/conversation/test_message_store.py` |
-| `list_unread()` excludes already-read messages | `core/ze-core/tests/conversation/test_message_store.py` |
+| `PostgresMessageStore.save()` writes correct row | `core/engine/ze-core/tests/conversation/test_message_store.py` |
+| `list_since()` returns messages in ascending order | `core/engine/ze-core/tests/conversation/test_message_store.py` |
+| `mark_read()` flips read flag | `core/engine/ze-core/tests/conversation/test_message_store.py` |
+| `list_unread()` excludes already-read messages | `core/engine/ze-core/tests/conversation/test_message_store.py` |
 | `NativeAppInterface.send_message()` saves + pushes + notifies | `tests/interface/test_native.py` |
 | `NativeAppInterface.send_message()` continues if WebSocket disconnected | `tests/interface/test_native.py` |
 | `NativeAppInterface.send_message()` continues if ntfy raises | `tests/interface/test_native.py` |

@@ -92,7 +92,7 @@ simpler for the generated TS client than a nested object; internal dataclass kee
 ## Agent tool contract changes
 
 `edit_workflow_steps` and `create_workflow`
-(`core/ze-automation/ze_automation/agents/workflow/tools.py`) gain two
+(`core/automation/ze-automation/ze_automation/agents/workflow/tools.py`) gain two
 internally-injected parameters. These are **not** part of the LLM-visible tool schema
 (no change to the `@tool(description=...)` text or to what the LLM must supply) — they
 arrive via `_merge_deps` from the agent's `deps` dict, same mechanism as `store`:

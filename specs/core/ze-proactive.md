@@ -1,6 +1,6 @@
 # ze-proactive — Job Scheduling Framework
 
-> **Package:** `core/ze-proactive` — `ze_proactive/`
+> **Package:** `core/contracts/ze-proactive` — `ze_proactive/`
 > **Status:** Done
 > **Implemented in:** [Phase 48](../phases/048-core-split/spec.md) (extracted from ze-core)
 
@@ -40,7 +40,7 @@ register with `ProactiveScheduler` at startup.
 ## Module Location
 
 ```
-core/ze-proactive/ze_proactive/
+core/contracts/ze-proactive/ze_proactive/
   job.py              ← ProactiveJob ABC
   scheduler.py        ← ProactiveScheduler (APScheduler wrapper)
   notifier.py         ← ProactiveNotifier

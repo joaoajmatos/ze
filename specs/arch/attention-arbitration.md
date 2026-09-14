@@ -1,12 +1,12 @@
 # Attention Arbitration — One Ranked View, One Attention Budget
 
 > **Status:** Shipped. Implemented as `specs/phases/123-attention-arbitration/spec.md` —
-> `PriorityView` (`core/ze-priority`), the shared attention budget (`core/ze-proactive`), and
+> `PriorityView` (`core/arbitration/ze-priority`), the shared attention budget (`core/contracts/ze-proactive`), and
 > the greedy cross-mechanism push check are all live. Phase 127 (`specs/phases/127-priority-override/spec.md`)
 > layered user-directed override on top. Loop/goal store reconciliation was explicitly kept out
 > of scope (FR-010) and remains open — see "Open Questions" below.
-> **Scope:** `core/ze-worldstate`, `ze-automation` (goals), `core/ze-correlation`,
-> `core/ze-proactive` (shared push infrastructure).
+> **Scope:** `core/cognition/ze-worldstate`, `ze-automation` (goals), `core/cognition/ze-correlation`,
+> `core/contracts/ze-proactive` (shared push infrastructure).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The epistemic ontology (`Priority` claim-kind),
 > §Belief revision.
 > **Depends on:** `specs/arch/claim-topology.md` shipping first — this brief needs the shared
@@ -35,7 +35,7 @@ Three items looked separate in isolation but turned out to share a single missin
    stores" quietly became "no way to ask 'what's open right now' across both," which is a
    different and unintended cost.
 3. **No shared attention budget.** `ze-correlation`'s push mechanics
-   (`core/ze-correlation/ze_correlation/push.py`) are genuinely reused by
+   (`core/cognition/ze-correlation/ze_correlation/push.py`) are genuinely reused by
    `ze-worldstate`'s `push_sweep.py` — but Phase 110 tracks its own daily push counter as a
    *sibling* to correlation's, against the same `push_log`, rather than one counter both draw
    from. Two mechanisms independently deciding "have I used my interruption budget today"
@@ -98,7 +98,7 @@ shared budget when both have something drift-worthy on the same day.
   from the shared `Confidence` type combined with each mechanism's own signal (drift state for
   loops, idle days for goals, novelty/confidence for hypotheses) — not a bare interleave of
   pre-ranked local orders.
-- [x] **Where `PriorityView` lives** — resolved as the "new thin package" option: `core/ze-priority`,
+- [x] **Where `PriorityView` lives** — resolved as the "new thin package" option: `core/arbitration/ze-priority`,
   depending on `ze-worldstate`, `ze-automation`, and `ze-correlation` (plus `ze-agents`,
   `ze-proactive`, `ze-plugin`, `ze-collision`) without any of those three depending on each
   other, per the dependency graph in the repo's `CLAUDE.md`.

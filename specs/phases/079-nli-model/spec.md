@@ -2,7 +2,7 @@
 
 **Status:** Done
 **Depends on:** Phase 78a (shares the `cross-encoder/nli-deberta-v3-small` singleton)
-**Packages touched:** `core/ze-memory`, `core/ze-correlation` (correlation grounding)
+**Packages touched:** `core/cognition/ze-memory`, `core/cognition/ze-correlation` (correlation grounding)
 
 ---
 
@@ -29,7 +29,7 @@ probabilities; we use those directly.
 | Decision | Choice | Rationale |
 |---|---|---|
 | Model | `cross-encoder/nli-deberta-v3-small` | ~90 MB local, no API cost, same model as Phase 78b Gate1_NLI — one download, shared singleton |
-| Singleton location | `core/ze-memory/ze_memory/nli.py` (Phase 79) → `core/ze-core/ze_core/nli.py` (Phase 80) | Phase 79 delivered memory-layer integration; Phase 80 promotes to shared `NLIClient` |
+| Singleton location | `core/cognition/ze-memory/ze_memory/nli.py` (Phase 79) → `core/engine/ze-core/ze_core/nli.py` (Phase 80) | Phase 79 delivered memory-layer integration; Phase 80 promotes to shared `NLIClient` |
 | Loading | Lazy-loaded at first call; cached via module-level `_model` | Consistent with `ze_core/embeddings.py` pattern |
 | Language fallback | Skip NLI, fall back to cosine-only behaviour for non-Latin scripts | DeBERTa is English-primary; multilingual coverage is a Phase 79+ concern |
 | Async execution | `asyncio.get_event_loop().run_in_executor(None, ...)` — CPU-bound inference off the event loop | Consistent with how the embedder is used in consolidation |
@@ -39,7 +39,7 @@ probabilities; we use those directly.
 
 ## Callsite 1 — Contradiction detection in `dedup_facts()`
 
-**File:** `core/ze-memory/ze_memory/consolidator.py`
+**File:** `core/cognition/ze-memory/ze_memory/consolidator.py`
 
 ### Current behaviour
 
@@ -102,7 +102,7 @@ nli_lower_cosine_bound: 0.60         # skip NLI if cosine below this
 
 ## Callsite 2 — Semantic contradiction check at write time
 
-**File:** `core/ze-memory/ze_memory/retriever.py`
+**File:** `core/cognition/ze-memory/ze_memory/retriever.py`
 **Method:** `_write_fact_with_contradiction_check()` (line 544)
 
 ### Current behaviour
@@ -150,7 +150,7 @@ default true).
 
 ## Callsite 3 — Retrieval re-ranking
 
-**Files:** `core/ze-memory/ze_memory/retriever.py`, `core/ze-memory/ze_memory/policies.py`
+**Files:** `core/cognition/ze-memory/ze_memory/retriever.py`, `core/cognition/ze-memory/ze_memory/policies.py`
 
 ### Current behaviour
 
@@ -218,7 +218,7 @@ leave `retrieve()` on cosine for now. This trades precision for latency predicta
 
 ## Callsite 4 — Correlation hypothesis grounding
 
-**File:** `core/ze-memory/ze_memory` (correlation push module — `ze_correlation/push.py`)
+**File:** `core/cognition/ze-memory/ze_memory` (correlation push module — `ze_correlation/push.py`)
 **Context:** Phase 57 `CorrelationEngine` generates hypotheses from episodic signal
 co-occurrence. `SurfacingGate.check_push()` gates whether a hypothesis reaches the user.
 
@@ -268,7 +268,7 @@ there.
 
 ## NLI model singleton
 
-**File:** `core/ze-memory/ze_memory/nli.py` (Phase 79; relocated to `ze_core/nli.py` in Phase 80)
+**File:** `core/cognition/ze-memory/ze_memory/nli.py` (Phase 79; relocated to `ze_core/nli.py` in Phase 80)
 
 ```python
 from __future__ import annotations
@@ -348,7 +348,7 @@ Implemented in `ze_memory/retrieval_cache.py` and `ze_memory/retrieval_rerank.py
 
 ## Dependency addition
 
-Add to `core/ze-memory/pyproject.toml`:
+Add to `core/cognition/ze-memory/pyproject.toml`:
 
 ```toml
 "sentence-transformers>=2.7.0",   # already present for Phase 78b; confirm version
@@ -370,12 +370,12 @@ Both callsites run off the hot response path:
 
 **Step 1 — NLI singleton**
 
-`core/ze-memory/ze_memory/nli.py` — add `get_nli_model()` and `nli_scores()`.
+`core/cognition/ze-memory/ze_memory/nli.py` — add `get_nli_model()` and `nli_scores()`.
 Add `_is_latin()` guard.
 
 **Step 2 — Dedup NLI integration**
 
-`core/ze-memory/ze_memory/consolidator.py`:
+`core/cognition/ze-memory/ze_memory/consolidator.py`:
 - Add NLI pass for pairs in `0.60 ≤ cosine < 0.95` range
 - Contradiction → `mark_contradicted(older_id)` using `max(created_at)` rule
 - Entailment (cosine ≥ 0.85) → existing `_llm_merge()` path (NLI confirms it's a paraphrase)
@@ -383,7 +383,7 @@ Add `_is_latin()` guard.
 
 **Step 3 — Write-time NLI check**
 
-`core/ze-memory/ze_memory/retriever.py` (`_write_fact_with_contradiction_check()`):
+`core/cognition/ze-memory/ze_memory/retriever.py` (`_write_fact_with_contradiction_check()`):
 - After existing exact-match fast path
 - ANN fetch top-10 same-subject facts
 - NLI on pairs with cosine ≥ 0.60
@@ -391,7 +391,7 @@ Add `_is_latin()` guard.
 
 **Step 4 — Tests**
 
-`core/ze-memory/tests/`:
+`core/cognition/ze-memory/tests/`:
 - `test_nli.py` — singleton loads, `nli_scores()` returns correct shape, `_is_latin()` guard
 - `test_consolidator_nli.py` — contradictory fact pair (low cosine) is caught; paraphrase pair (same range, entailment) triggers LLM merge; unrelated pair (< 0.60 cosine) is skipped
 - `test_store_nli.py` — write-time check catches contradictions that exact-match misses
@@ -400,13 +400,13 @@ Add `_is_latin()` guard.
 
 **Step 5 — Re-rank `search_session_summaries()`**
 
-`core/ze-memory/ze_memory/retriever.py`:
+`core/cognition/ze-memory/ze_memory/retriever.py`:
 - After cosine fetch, if ≥ `nli_rerank_min_candidates`: run NLI re-rank
 - Use `asyncio.get_event_loop().run_in_executor(None, ...)` to keep off event loop
 
 **Step 6 — Correlation grounding**
 
-`core/ze-correlation/ze_correlation/push.py`:
+`core/cognition/ze-correlation/ze_correlation/push.py`:
 - Add `_nli_grounded()` pre-filter on push path only
 
 **Step 7 — Full `retrieve()` re-ranking** ✅

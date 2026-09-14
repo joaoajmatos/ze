@@ -178,7 +178,7 @@ Two workflows live in `.github/workflows/`:
 - `pytest` with fast tests only (embedding model tests excluded)
 
 **`deploy-backend.yml`** — runs on merge to `main` when application code changes
-(path filter: `apps/ze-api/**`, `core/ze-core/**`, `core/ze-memory/**`,
+(path filter: `apps/ze-api/**`, `core/engine/ze-core/**`, `core/cognition/ze-memory/**`,
 `plugins/ze-personal/**`, etc.):
 - Runs CI first
 - Calls `fly deploy --remote-only` from `apps/ze-api/` using a scoped deploy token

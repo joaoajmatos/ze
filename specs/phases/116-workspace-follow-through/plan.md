@@ -17,7 +17,7 @@ push through the existing `ProactiveNotifier` / `NativeAppInterface.push` fires 
 when the WebSocket is not connected — reusing the connected-check that already gates
 every other proactive push, not a new notification product. Cancel stops the sidecar
 process and marks the run `cancelled`; the watcher treats that as terminal like any
-other outcome. No new package: this lives inside `core/ze-workspace` (follow-through
+other outcome. No new package: this lives inside `core/ops/ze-workspace` (follow-through
 orchestrator) and `apps/ze-api` (turn lock, wiring), extending Phase 115's
 `workspace_runs` rows and REST surface rather than building a parallel model.
 
@@ -44,7 +44,7 @@ reconciliation pass re-adopts any `workspace_runs` row still without `ended_at`
 so an `ze-api` restart doesn't strand a run without follow-through (same shape as
 Phase 13's reminder startup replay).
 
-**Testing**: pytest (`core/ze-workspace/tests/` for the watcher, turn-lock, and
+**Testing**: pytest (`core/ops/ze-workspace/tests/` for the watcher, turn-lock, and
 cancel path with a fake `WorkspaceClient` and fake `Container`; `apps/ze-api/tests/`
 for the REST cancel route and the `invoke_raw_turn` follow-up wiring). No real
 Postgres, no real LLM, no real sidecar HTTP — same discipline as Phase 115.
@@ -79,7 +79,7 @@ is unchanged and still the outer bound after detach (FR-014).
 - **II. Single-User Model** — PASS. One workspace, one run at a time, no `user_id` /
   tenancy; the turn lock is keyed by `thread_id`, not by user.
 - **III. Layered Package Architecture** — PASS. Follow-through orchestration
-  (watcher, cancel, terminal-status → follow-up dispatch) lives in `core/ze-workspace`,
+  (watcher, cancel, terminal-status → follow-up dispatch) lives in `core/ops/ze-workspace`,
   a `core/` package with no domain knowledge, wired by `apps/ze-api` exactly like
   Phase 115. The watcher calls `container.invoke_raw_turn` and
   `ProactiveNotifier`/`AppInterface.push` through injected protocols passed at
@@ -93,7 +93,7 @@ is unchanged and still the outer bound after detach (FR-014).
   in `ze_workspace/types.py`; typed `ZeError` subclasses for cancel-on-already-
   terminal; async watcher, no blocking waits; constructor injection for the
   `TurnStarter`/`PushSender` Protocols.
-- **V. Test Discipline** — PASS (planned). Tests in `core/ze-workspace/tests/`
+- **V. Test Discipline** — PASS (planned). Tests in `core/ops/ze-workspace/tests/`
   (watcher terminal-transition, turn-lock ordering, cancel-already-finished),
   `apps/ze-api/tests/` (REST cancel, `invoke_raw_turn` follow-up call), `ze-web`
   vitest for the "still running" chip and cancel button. Mocked `WorkspaceClient`,
@@ -109,7 +109,7 @@ No violations requiring Complexity Tracking justification.
 identities, no new notification product (push reuses `ProactiveNotifier`). The
 `TurnStarter`/`PushSender` Protocol boundary keeps `ze-workspace` free of `ze_core`/
 `ze_api` imports even though it now needs to start turns and push — confirmed against
-`core/ze-workspace`'s existing DI pattern for `WorkspaceClient`. Gate still PASSES
+`core/ops/ze-workspace`'s existing DI pattern for `WorkspaceClient`. Gate still PASSES
 after design.
 
 ## Project Structure
@@ -130,7 +130,7 @@ specs/phases/116-workspace-follow-through/
 ### Source Code (repository root)
 
 ```text
-core/ze-workspace/ze_workspace/
+core/ops/ze-workspace/ze_workspace/
 ├── types.py                           # + WorkspaceRunOutcome helpers (no new run status;
 │                                       #   detach adds no new enum member — see data-model)
 ├── followthrough.py                   # NEW — RunWatcher: waits short_wait, hands run to a
@@ -168,13 +168,13 @@ apps/ze-web/src/
 ├── widgets/workspace-management/      # + running-run banner, cancel button
 └── entities/message/ui/MessageBubble.tsx  # "still running" chip on the detaching turn
 
-core/ze-workspace/tests/
+core/ops/ze-workspace/tests/
 apps/ze-api/tests/
 apps/ze-web/src/**/*.test.ts(x)
 ```
 
 **Structure Decision**: No new package or sidecar. Follow-through is new modules
-inside `core/ze-workspace` (`followthrough.py`, `turn_lock.py`) wired by
+inside `core/ops/ze-workspace` (`followthrough.py`, `turn_lock.py`) wired by
 `apps/ze-api`, mirroring how Phase 115 already wires `WorkspaceGate`/`WorkspaceClient`
 through `container.py` and `compose.py`. The turn lock lives in `ze-workspace` (it is
 workspace follow-through's own requirement) but is applied by `apps/ze-api` around

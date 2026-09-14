@@ -2,7 +2,7 @@
 
 **Status:** Done
 **Depends on:** Phase 88 (Memory Feed — establishes `/brain/memory` route), Phase 57 (Correlation engine — graph store)
-**Packages touched:** `core/ze-memory`, `apps/ze-api`, `apps/ze-web`
+**Packages touched:** `core/cognition/ze-memory`, `apps/ze-api`, `apps/ze-web`
 
 ---
 

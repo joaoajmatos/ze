@@ -31,7 +31,7 @@ Prerequisites: `make db-up && make migrate` (picks up `zm019` and `zc029`),
    construct a `Relationship` with `last_contact` set 60+ days in the past
    and confirm `relationship.confidence.value` is lower than the stored
    base, computed via `ze_agents.claims.decay(..., DecayProfile.TIME_LINEAR,
-   elapsed_days=...)` — this is `core/ze-memory`'s
+   elapsed_days=...)` — this is `core/cognition/ze-memory`'s
    `tests/graph/test_store.py` (or equivalent) exercising the read-time
    decay path from data-model.md §4.
 3. Send a new message referencing the same relationship. Confirm
@@ -43,7 +43,7 @@ Prerequisites: `make db-up && make migrate` (picks up `zm019` and `zc029`),
 1. Seed one stale relationship (via `PersonStore.list_stale_for_follow_up`
    returning a non-empty result) and one eligible open loop, on the same
    day, with the shared daily attention budget set to admit only one item
-   (existing `core/ze-priority` test fixtures already do this for
+   (existing `core/arbitration/ze-priority` test fixtures already do this for
    loop-vs-goal-vs-hypothesis; extend the same fixture pattern with a
    relationship item).
 2. Call `PriorityView.rank()` with all four sources wired (per

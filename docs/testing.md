@@ -74,7 +74,7 @@ make test-core SLOW=1
 When filtering to a single file or test name:
 
 ```bash
-uv run pytest core/ze-memory/tests/test_store_writes.py -q
+uv run pytest core/cognition/ze-memory/tests/test_store_writes.py -q
 uv run pytest apps/ze-api/tests -k test_health -q
 ```
 

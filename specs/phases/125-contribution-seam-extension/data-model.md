@@ -155,7 +155,7 @@ def person_source_to_contribution(source: PersonSource) -> Contribution:
     )
 ```
 
-## Modified type — `core/ze-agents/ze_agents/types.py`
+## Modified type — `core/contracts/ze-agents/ze_agents/types.py`
 
 ### `ClaimBearingProposal` (new Protocol)
 
@@ -186,7 +186,7 @@ class AgentResult:
     contact_proposals: list[ClaimBearingProposal] = field(default_factory=list)  # was: list
 ```
 
-**Why a Protocol, not the concrete types**: `core/ze-agents` sits at the bottom of the package
+**Why a Protocol, not the concrete types**: `core/contracts/ze-agents` sits at the bottom of the package
 graph (`ze-memory → ze-agents`, `ze-personal → ze-sdk → ze-agents` — both depend on
 `ze-agents`, never the reverse); importing `ze_memory.types.Fact` or
 `ze_personal.contacts.types.ContactProposal` directly from `ze_agents/types.py` would invert the
@@ -209,7 +209,7 @@ dataclass). Retrofitting `Fact` itself is out of this feature's scope (FR-001/FR
 the `Person` family) — the field is typed against the Protocol for whichever future producer
 populates it (research.md §3).
 
-## Modified table — `core/ze-plugin/ze_plugin/contribution.py`
+## Modified table — `core/contracts/ze-plugin/ze_plugin/contribution.py`
 
 ```python
 _LICENSE: dict[SourceFunction, frozenset[ClaimKind]] = {

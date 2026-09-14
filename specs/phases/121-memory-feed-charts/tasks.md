@@ -20,7 +20,7 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-`core/ze-memory` (backend), `apps/ze-api` (schema), `packages/ze-client` (generated types), `apps/ze-web/src/pages/brain-memory` (frontend) — per `plan.md`'s Project Structure.
+`core/cognition/ze-memory` (backend), `apps/ze-api` (schema), `packages/ze-client` (generated types), `apps/ze-web/src/pages/brain-memory` (frontend) — per `plan.md`'s Project Structure.
 
 ---
 
@@ -65,9 +65,9 @@ No new dependencies or scaffolding — reuses spec 118's `packages/ze-ui` chart 
 
 ### Implementation for User Story 2
 
-- [x] T006 [US2] In `core/ze-memory/ze_memory/admin.py`'s `get_memory_activity` (~line 185), change the inner `UNION ALL` to label each half with a `source` column (`'fact'`/`'episode'`), `GROUP BY day, source` instead of collapsing immediately, then reshape the rows in Python into `{date, count: fact_count + episode_count, fact_count, episode_count}` per day (contracts/memory-activity-split.md)
+- [x] T006 [US2] In `core/cognition/ze-memory/ze_memory/admin.py`'s `get_memory_activity` (~line 185), change the inner `UNION ALL` to label each half with a `source` column (`'fact'`/`'episode'`), `GROUP BY day, source` instead of collapsing immediately, then reshape the rows in Python into `{date, count: fact_count + episode_count, fact_count, episode_count}` per day (contracts/memory-activity-split.md)
 - [x] T007 [P] [US2] Add `fact_count: int` and `episode_count: int` to `MemoryActivityDay` in `apps/ze-api/ze_api/api/schemas.py:859`
-- [x] T008 [P] [US2] Test: `get_memory_activity`'s per-day `fact_count + episode_count` sums to `count`, in `core/ze-memory/tests/` (depends on T006)
+- [x] T008 [P] [US2] Test: `get_memory_activity`'s per-day `fact_count + episode_count` sums to `count`, in `core/cognition/ze-memory/tests/` (depends on T006)
 - [x] T009 [US2] Regenerate `packages/ze-client/src/generated/types.gen.ts` via `bun run scripts/codegen.ts` (depends on T006, T007)
 - [x] T010 [US2] In `BrainMemoryPage.tsx`, render a `PieChart` summing `fact_count`/`episode_count` across the currently-loaded `activity.days` (depends on T009, T001)
 - [x] T011 [P] [US2] Test: composition chart shows the facts-vs-episodes proportion, and renders a sensible single-category state for a facts-only (or episodes-only) account, in `BrainMemoryPage.test.tsx` (depends on T010)
@@ -104,7 +104,7 @@ No new dependencies or scaffolding — reuses spec 118's `packages/ze-ui` chart 
 ## Parallel Example: User Story 2
 
 ```bash
-Task: "Change get_memory_activity's query to group by (day, source) in core/ze-memory/ze_memory/admin.py"
+Task: "Change get_memory_activity's query to group by (day, source) in core/cognition/ze-memory/ze_memory/admin.py"
 Task: "Add fact_count/episode_count to MemoryActivityDay in apps/ze-api/ze_api/api/schemas.py"
 ```
 

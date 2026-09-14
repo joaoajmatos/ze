@@ -6,13 +6,13 @@
 
 **Status**: Done
 
-**Input**: User description: "Implement the first two phased-rollout steps of specs/arch/contribution-seam.md as one feature, mirroring the precedent set by Phase 111 (claim-topology) of shipping the shared type and its real retrofits together rather than splitting scaffolding from payoff: (1) define the Contribution type (claim_kind, provenance, confidence, target_face, source_function, evidence) in core/ze-plugin, built on the shared ze_agents.claims vocabulary from Phase 111; (2) retrofit Signal (core/ze-memory) to carry it — Signal already gained claim_kind/confidence in Phase 111's zm017 migration, this feature adds the missing provenance field and formalizes Signal as a Contribution subtype without replacing the SignalSource polling mechanism; (3) retrofit OpenLoop's extraction path (core/ze-worldstate) to produce typed Contributions while keeping its current direct-write mechanics; (4) migrate reflection — the dream pipeline (core/ze-memory/dream) and the correlation engine (core/ze-correlation) — onto the seam, so that dream artifact staging and correlation hypothesis generation both go through a validated Contribution write path that mechanically rejects any claim_kind=FACT proposal from those two sources. No consumer of signal_sources() is rewired — ze-correlation and ze-worldstate keep polling exactly as today; only the object shape and the reflection write path change. Arbitration in this feature is a validated write path (type + claim-kind license check), not real conflict resolution between competing contributions — that remains out of scope until a second function collides with an existing one on the same world-state face."
+**Input**: User description: "Implement the first two phased-rollout steps of specs/arch/contribution-seam.md as one feature, mirroring the precedent set by Phase 111 (claim-topology) of shipping the shared type and its real retrofits together rather than splitting scaffolding from payoff: (1) define the Contribution type (claim_kind, provenance, confidence, target_face, source_function, evidence) in core/contracts/ze-plugin, built on the shared ze_agents.claims vocabulary from Phase 111; (2) retrofit Signal (core/cognition/ze-memory) to carry it — Signal already gained claim_kind/confidence in Phase 111's zm017 migration, this feature adds the missing provenance field and formalizes Signal as a Contribution subtype without replacing the SignalSource polling mechanism; (3) retrofit OpenLoop's extraction path (core/cognition/ze-worldstate) to produce typed Contributions while keeping its current direct-write mechanics; (4) migrate reflection — the dream pipeline (core/cognition/ze-memory/dream) and the correlation engine (core/cognition/ze-correlation) — onto the seam, so that dream artifact staging and correlation hypothesis generation both go through a validated Contribution write path that mechanically rejects any claim_kind=FACT proposal from those two sources. No consumer of signal_sources() is rewired — ze-correlation and ze-worldstate keep polling exactly as today; only the object shape and the reflection write path change. Arbitration in this feature is a validated write path (type + claim-kind license check), not real conflict resolution between competing contributions — that remains out of scope until a second function collides with an existing one on the same world-state face."
 
 **Governed by**: [`specs/arch/ze-doctrine.md`](../../arch/ze-doctrine.md) (constitutional —
 §The contribution model: "reflection may never emit a fact" is this feature's load-bearing
 rule), and [`specs/arch/contribution-seam.md`](../../arch/contribution-seam.md) (the design
 brief this feature implements — phased-rollout steps 2 and 3; step 1, the executive layer, is
-already done via `core/ze-worldstate`). Depends on
+already done via `core/cognition/ze-worldstate`). Depends on
 [`specs/arch/claim-topology.md`](../../arch/claim-topology.md) / Phase 111 (shipped — the
 `ClaimKind`/`Provenance`/`Confidence` vocabulary this feature's `Contribution` type is built
 directly on; `Signal` already carries `claim_kind`/`confidence` from that phase's `zm017`
@@ -98,7 +98,7 @@ existing `magnitude` (relevance) field is preserved as distinct from `confidence
    `ze_agents.claims`-typed since Phase 111) populate the `Contribution` without duplication or
    re-derivation.
 3. **Given** the `Contribution` type, **When** inspected, **Then** it is defined once in
-   `core/ze-plugin` and imported by every producer — no package redefines its own copy.
+   `core/contracts/ze-plugin` and imported by every producer — no package redefines its own copy.
 
 ---
 
@@ -181,14 +181,14 @@ behavior changes beyond type-shape adaptations at the call boundary.
 
 ### Functional Requirements
 
-- **FR-001**: System MUST define a `Contribution` type in `core/ze-plugin` carrying
+- **FR-001**: System MUST define a `Contribution` type in `core/contracts/ze-plugin` carrying
   `claim_kind` (`ze_agents.claims.ClaimKind`), `provenance` (`ze_agents.claims.Provenance`),
   `confidence` (`ze_agents.claims.Confidence`), `target_face` (which world-state face:
   self/user/world/active-concerns), `source_function` (which of the seven cognitive functions
   produced it), and `evidence` (a list of kind-tagged references — e.g. `("fact", id)`,
   `("signal", id)` — mirroring `ze_correlation.types.EvidenceRef`'s existing shape rather than a
   bare ID list; required for `INFERENCE`/`SUSPICION`).
-- **FR-002**: `Signal` (`core/ze-memory`) MUST gain a `provenance` field typed as
+- **FR-002**: `Signal` (`core/cognition/ze-memory`) MUST gain a `provenance` field typed as
   `ze_agents.claims.Provenance`, replacing reliance on the existing bare `source: str` for
   epistemic origin (the plugin-identifying `source` string itself is unaffected — it remains
   plugin-domain vocabulary per `specs/arch/plugin-domain-vocabulary.md`, not folded into
@@ -200,18 +200,18 @@ behavior changes beyond type-shape adaptations at the call boundary.
   persists a `Signal` to `memory_signals`, MUST route through the same validated write path as
   FR-005/FR-006 (general licensing check per FR-007, Edge Case 1) — the wrapper call, not the
   insert logic itself, is what changes.
-- **FR-004**: `OpenLoop`'s extraction path (`core/ze-worldstate/ze_worldstate/extraction.py`)
+- **FR-004**: `OpenLoop`'s extraction path (`core/cognition/ze-worldstate/ze_worldstate/extraction.py`)
   MUST produce `Contribution`-typed objects for candidate loops and route its `loop_store.create`
   call(s) through the same validated write path as FR-005/FR-006 (general licensing check per
   FR-007, Edge Case 1), while keeping its current direct-write *mechanics* unchanged — matching
   (dedup), entity linking, and the `loop_store.create` call signature are untouched; only a
   license-check gate is added in front of the existing call. This is a shape change plus a
   licensing gate, not a rewiring of how loops get created or matched.
-- **FR-005**: The dream pipeline's artifact-staging write path (`core/ze-memory/ze_memory/dream`)
+- **FR-005**: The dream pipeline's artifact-staging write path (`core/cognition/ze-memory/ze_memory/dream`)
   MUST route through a `Contribution`-typed write that validates `claim_kind` against
   reflection's license (`INFERENCE` or `SUSPICION` only) before any artifact is persisted, and
   MUST reject any contribution tagged `claim_kind=FACT` from this source.
-- **FR-006**: The correlation engine's hypothesis-save path (`core/ze-correlation/ze_correlation/engine.py`)
+- **FR-006**: The correlation engine's hypothesis-save path (`core/cognition/ze-correlation/ze_correlation/engine.py`)
   MUST route through the same `Contribution`-typed write and MUST reject any contribution tagged
   `claim_kind=FACT` from this source, using the identical validation logic as FR-005 (one
   licensing check, not two independent reimplementations).
@@ -245,9 +245,9 @@ behavior changes beyond type-shape adaptations at the call boundary.
 - **Contribution**: A function's typed proposal to change the world-state — `claim_kind`,
   `provenance`, `confidence`, `target_face`, `source_function`, `evidence` (a list of
   kind-tagged references, e.g. `("fact", id)`, mirroring `ze_correlation.types.EvidenceRef`).
-  Defined once in `core/ze-plugin`, consumed by every retrofitted producer.
+  Defined once in `core/contracts/ze-plugin`, consumed by every retrofitted producer.
 - **Signal (retrofitted)**: Perception's existing candidate-signal type
-  (`core/ze-memory/ze_memory/types.py`), gaining a typed `provenance` field and expressible as a
+  (`core/cognition/ze-memory/ze_memory/types.py`), gaining a typed `provenance` field and expressible as a
   `FACT`-kind `Contribution`.
 - **OpenLoop candidate (retrofitted)**: The executive function's existing loop-extraction
   output, now shaped as a `Contribution` at the point of proposal while its store-write

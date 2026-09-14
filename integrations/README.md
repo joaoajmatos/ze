@@ -17,12 +17,16 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 |---------|-------------|
 | [ze-google](ze-google/) | Google OAuth2 credentials and service client factories (Calendar, Gmail) |
 | [ze-trading212](ze-trading212/) | Trading212 REST API v0 client (portfolio, orders, history, instruments) |
+| [ze-browser](ze-browser/) | HTTP client for the Playwright browser sidecar |
+| [ze-notifications](ze-notifications/) | Push notification abstraction (ntfy) |
 
 ## Dependency graph
 
 ```
-ze-google      ←  no ze deps
-ze-trading212  ←  no ze deps
+ze-google         ←  no ze deps
+ze-trading212     ←  no ze deps
+ze-browser        ←  no ze deps
+ze-notifications  ←  no ze deps
 ```
 
 ## Where new code goes
@@ -31,6 +35,8 @@ ze-trading212  ←  no ze deps
 |----------|---------|
 | New Google service client factory | `ze-google` |
 | New broker / trading API client | create `ze-<broker>/` here |
+| New browser sidecar endpoint client | `ze-browser` |
+| New push notification backend | `ze-notifications` |
 | Any other third-party API wrapper | create `ze-<service>/` here |
 
 `plugins/` (which have domain knowledge) and `apps/ze-api` (which wires everything

@@ -3,7 +3,7 @@
 **Status:** Done
 **Depends on:** Phase 83 (ze-communication + ze-messenger)
 **Supersedes:** Phase 84a draft (absorbed into this spec)
-**Packages touched:** `core/ze-communication`, `integrations/ze-google`, `plugins/ze-messenger`,
+**Packages touched:** `core/contracts/ze-communication`, `integrations/ze-google`, `plugins/ze-messenger`,
   `plugins/ze-personal`, `apps/ze-api`
 
 ---
@@ -60,7 +60,7 @@ This phase makes Ze a proper messaging hub:
 
 ---
 
-## `core/ze-communication`: channel identity + InboundMessage headers
+## `core/contracts/ze-communication`: channel identity + InboundMessage headers
 
 Add `headers: dict[str, str]` field to `InboundMessage` (default empty dict). Channel
 implementations populate it with transport-level headers (`List-Unsubscribe`, `Precedence`,

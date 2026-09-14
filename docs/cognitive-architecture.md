@@ -19,7 +19,7 @@ a *capability* is.
 So we add a functional taxonomy alongside it. A subsystem is not primarily "the news plugin"; it is
 **perception that happens to be sourced from news**. Reading Ze this way used to make one thing
 immediately clear: Ze perceived, remembered, reflected, and acted well, but its executive
-function was under-built. `core/ze-worldstate` (Phases 109–110) and `core/ze-priority`
+function was under-built. `core/cognition/ze-worldstate` (Phases 109–110) and `core/arbitration/ze-priority`
 (Phases 123, 127) closed that gap. The remaining gap this lens surfaces is **social
 cognition** — third-party relationship modeling stays thin (see function 4 below).
 
@@ -67,10 +67,10 @@ relationship with Y" that the executive layer can read.
 > *goals, plans, scheduling, follow-through, interruption handling*
 
 Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, multi-week), workflows
-(multi-step plans), scheduler. `core/ze-worldstate` (Phases 109–110): open loops — the
+(multi-step plans), scheduler. `core/cognition/ze-worldstate` (Phases 109–110): open loops — the
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
 closed|dropped`), extracted from all four inflows, with drift detection and hedged,
-push-bar-gated surfacing. `core/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
+push-bar-gated surfacing. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
 goals, and correlation hypotheses together against one shared attention budget, plus
 user-directed priority override.
 
@@ -84,11 +84,11 @@ that make up most of a real life:
 - a "I should look into X" mentioned once and never closed.
 
 **What was missing, now closed (Phase 123, attention arbitration):** continuous prioritization
-across everything open at once. `core/ze-priority`'s `PriorityView` ranks loops, goals, and
+across everything open at once. `core/arbitration/ze-priority`'s `PriorityView` ranks loops, goals, and
 correlation hypotheses together as `Priority`-kind claims, without recomputing what each source
 mechanism already scores; the two previously-independent daily push budgets (correlation's and
 worldstate's) were consolidated into one shared, atomically-claimed attention budget in
-`core/ze-proactive`. Interruption-handling is now one policy, not per-mechanism. Phase 127
+`core/contracts/ze-proactive`. Interruption-handling is now one policy, not per-mechanism. Phase 127
 (user-directed priority override) layered a first arbitration case on top: decaying/pinned user
 reorderings merge into `PriorityView.rank()` at render time.
 
@@ -168,8 +168,8 @@ spine, not a pipeline with a start and end:
 
 - **The world-state is the hub** (doctrine §"The one commitment"). Every function reads from
   and writes to it; nothing holds a competing private truth.
-- **Executive function now has a cross-concern view.** `core/ze-worldstate` gives the "active
-  concerns" face a real representation (open loops), and `core/ze-priority`'s `PriorityView`
+- **Executive function now has a cross-concern view.** `core/cognition/ze-worldstate` gives the "active
+  concerns" face a real representation (open loops), and `core/arbitration/ze-priority`'s `PriorityView`
   (Phase 123) ranks loops, goals, and correlation hypotheses together against one shared
   attention budget — closing the "several attention mechanisms" gap this section used to flag.
   What remains open is unifying the *stores* themselves (loops and goals stay deliberately
@@ -194,7 +194,7 @@ contribution model); the rule with the most teeth is that **reflection may never
 (the dream and correlation engines conclude, they do not observe — their output stays an
 inference or suspicion until perception or the user corroborates it). Every contribution is a
 *proposal* carrying claim-kind + provenance + confidence, and governance arbitrates. The
-`Contribution` type (`core/ze-plugin`, Phase 124) is now that uniform proposal seam: `Signal`,
+`Contribution` type (`core/contracts/ze-plugin`, Phase 124) is now that uniform proposal seam: `Signal`,
 `OpenLoop`, the dream pipeline, and the correlation engine all route their writes through it,
 and its claim-kind license check is what makes "reflection may never emit a fact" a type-level
 guarantee rather than a convention. What the seam does *not* yet do is arbitrate *between*
@@ -214,7 +214,7 @@ keeps its domain identity; the function is an annotation.
 | Decide whether Ze *as a mind* is complete, and what to build next | **Function** (this doc). |
 
 The one place the function taxonomy became *structural* is executive function: "active
-concerns" got its own domain home, `core/ze-worldstate`, rather than a promotion within
+concerns" got its own domain home, `core/cognition/ze-worldstate`, rather than a promotion within
 `ze-automation` — see `specs/arch/aperture-decision.md` (ratified) for the resolved decision.
 
 ---
@@ -243,10 +243,9 @@ have since shipped:
    Phase 126 added collision *detection* (logging only) on the same write path; real
    cross-contribution arbitration is still design-only, gated on that evidence accumulating.
 3. **Social cognition and project/social memory are the same gap seen twice** — a first-class
-   representation of *people and projects as evolving states*, not a directory. No design brief
-   exists yet; likely the next priority, and structurally similar to items 1–2 above (it will
-   probably also turn out to be "one shared representation crossing several existing stores"
-   rather than a new package).
+   representation of *people and projects as evolving states*, not a directory. Design brief:
+   `specs/arch/social-cognition.md`. Steps 1–2 shipped as Phase 128; step 3 (co-occurrence
+   inference) is specced as Phase 130, not yet implemented.
 4. **Confidence calibration's *source*, not its shape.** `claim-topology.md` fixes the
    mechanical half (one decay function, one type) but not whether a confidence value comes from
    LLM self-rating, corroboration counting, or user feedback — that still varies by producer

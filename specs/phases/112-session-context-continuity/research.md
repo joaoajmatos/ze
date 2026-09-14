@@ -4,7 +4,7 @@
 
 **Superseded finding**: the spec's premise ("currently unbounded AgentState.messages
 growth") does not match the code. `write_memory`
-(`core/ze-core/ze_core/orchestration/nodes/memory.py:111-116`) already replaces
+(`core/engine/ze-core/ze_core/orchestration/nodes/memory.py:111-116`) already replaces
 `state["messages"]` every turn with `updated[-SESSION_HISTORY_LIMIT:]`
 (`SESSION_HISTORY_LIMIT = 10`, defined in `nodes/context.py:16`) — and `AgentState.messages`
 carries no LangGraph reducer annotation (plain `list[dict]`, `state.py:45`), so this is a
@@ -72,7 +72,7 @@ already does — no new persistence primitive, no checkpoint branching.
 same thread lineage," not checkpoint branching (out of scope, per spec Input). The
 stored, permanent record obligation (FR-003a) is satisfied separately — `messages`
 in `AgentState`/checkpoints was never the durable record; the durable record is the
-`messages` table + `trace` column (`core/ze-core/ze_core/conversation/messages/`),
+`messages` table + `trace` column (`core/engine/ze-core/ze_core/conversation/messages/`),
 written by the existing message-persistence path independent of graph state. Compacting
 the graph-state copy therefore cannot violate FR-003a as long as message persistence
 (save to `messages` table) happens with the original, uncompacted text — which it
@@ -88,7 +88,7 @@ mutating `messages` directly).
 
 ## R3. Per-model context-window table
 
-**Decision**: New static module `core/ze-core/ze_core/openrouter/context_windows.py`:
+**Decision**: New static module `core/engine/ze-core/ze_core/openrouter/context_windows.py`:
 a read-only `dict[str, int]` (`MODEL_CONTEXT_WINDOWS`) keyed by OpenRouter model slug,
 covering the models `config/config.yaml` currently assigns to agents, plus a
 `DEFAULT_CONTEXT_WINDOW_TOKENS` fallback constant (conservative, e.g. 32_000) and a
@@ -105,7 +105,7 @@ best-effort proxy for "the model handling this thread's turns" (FR-001), since
 `AgentContext.model` isn't always populated this late and the synthesis model is the
 existing fallback pattern already used at this exact call site for a similar purpose.
 
-**Rationale**: `OpenRouterClient` (`core/ze-core/ze_core/openrouter/client.py`) has no
+**Rationale**: `OpenRouterClient` (`core/engine/ze-core/ze_core/openrouter/client.py`) has no
 context-length metadata today (confirmed by exploration — only `fetch_generation_cost`
 exists, a post-hoc cost lookup). OpenRouter's `/models` endpoint does return
 `context_length`, but adding a live network call into the pre-turn budget check on
@@ -122,7 +122,7 @@ this open as a future upgrade — the accessor signature doesn't change either w
 ## R4. Token estimation
 
 **Decision**: Reuse the existing token estimation already used by
-`core/ze-core/ze_core/telemetry/` (cost tracking necessarily estimates or reads token
+`core/engine/ze-core/ze_core/telemetry/` (cost tracking necessarily estimates or reads token
 counts today) rather than introducing a second tokenizer dependency. If telemetry's
 estimation is post-hoc only (actual usage from OpenRouter's response), compaction needs
 a *pre-call* estimate — a simple chars/4 heuristic (used defensively, since the 70%
@@ -144,7 +144,7 @@ single library can't be authoritative anyway).
 **Decision**: Extend the gap check `fetch_context` already runs (`nodes/context.py:62-68`
 — `(now - last_active) > inactivity_minutes * 60`, reading `session_inactivity_minutes`
 from `cfg`, the same config key `SessionSummariser._inactivity_minutes()` reads at
-`core/ze-memory/ze_memory/session_summary.py:17,239` — this identity is what satisfies
+`core/cognition/ze-memory/ze_memory/session_summary.py:17,239` — this identity is what satisfies
 FR-006's "same shared value" requirement; no new threshold constant, no dependency on
 importing `SessionSummariser` itself). Today that branch sets `history: list[dict] = []`
 (blanking); it becomes: when the gap is exceeded, keep `history = []` (compaction/trim
@@ -185,7 +185,7 @@ its letter today).
 
 ## R6. Trace fields (FR-011, User Story 3)
 
-**Decision**: Extend `MessageTrace` (`core/ze-core/ze_core/conversation/messages/types.py:38-48`)
+**Decision**: Extend `MessageTrace` (`core/engine/ze-core/ze_core/conversation/messages/types.py:38-48`)
 with two optional fields: `compaction: CompactionTrace | None` (whether a rolling
 summary was present this turn, and the turn-index span it covers) and
 `resume_recap_applied: bool`. New `AgentState` fields `compaction_span: tuple[int, int]
@@ -219,8 +219,8 @@ logic that could itself stall the turn.
 
 ## R8. Test placement
 
-**Decision**: New test cases added to the existing `core/ze-core/tests/orchestration/nodes/
-test_memory.py` (compaction branch) and a new `core/ze-core/tests/orchestration/nodes/
+**Decision**: New test cases added to the existing `core/engine/ze-core/tests/orchestration/nodes/
+test_memory.py` (compaction branch) and a new `core/engine/ze-core/tests/orchestration/nodes/
 test_context.py` (no test file for `fetch_context` exists today — confirmed by search —
 so this is a new file covering both the pre-existing gap-check behavior and the new
 resume-recap branch; no dedicated file per new node since there are no new nodes — R1),

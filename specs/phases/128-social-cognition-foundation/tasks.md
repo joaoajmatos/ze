@@ -37,17 +37,17 @@ initialize beyond what Phase 2 does directly.
 
 **Purpose**: Graph-schema and vocabulary changes that both US1 and US2
 depend on. US3 does **not** depend on this phase (it touches
-`core/ze-priority`/`plugins/ze-personal`'s briefing job only) and may be
+`core/arbitration/ze-priority`/`plugins/ze-personal`'s briefing job only) and may be
 built in parallel with Phase 2/US1/US2 — see Dependencies section.
 
 **⚠️ CRITICAL**: US1 and US2 cannot start until this phase is complete.
 
-- [X] T001 Create migration `core/ze-memory/ze_memory/migrations/versions/zm019_relationship_last_contact.py` (revision `zm019`, down_revision `zm018`): add `last_contact TIMESTAMPTZ` to `memory_relationships`, backfilled to `created_at` for existing rows (research.md §2/§Summary)
-- [X] T002 [P] Add `"project"` to the documented `entity_type` allowed-values comment on `EntityRef.entity_type` and `Entity.entity_type` in `core/ze-memory/ze_memory/types.py` (contracts/memory-graph-vocabulary.md)
-- [X] T003 [P] Add `"project"` to the recognized-type list in the LLM extraction prompt in `core/ze-memory/ze_memory/extractor.py` (currently defaults unrecognized types to `"concept"` — research.md §1) so generic extraction classifies project mentions correctly
-- [X] T004 [P] Add `WORKS_ON` (`# person → project`) and `COLLABORATES_WITH` (`# person ↔ person`) constants to `core/ze-memory/ze_memory/graph/predicates.py`, folded into `ALL_PREDICATES` (contracts/memory-graph-vocabulary.md)
-- [X] T005 Add `last_contact: datetime` field to the `Relationship` dataclass in `core/ze-memory/ze_memory/graph/types.py` (depends on T001)
-- [X] T006 Extend `GraphStore.upsert_relationship`'s `ON CONFLICT (source_id, predicate, target_id) DO UPDATE` clause in `core/ze-memory/ze_memory/graph/store.py` to also advance `last_contact` to the newer of the existing/incoming values, alongside the existing `confidence = GREATEST(...)` bump (depends on T001, T005; data-model.md §3)
+- [X] T001 Create migration `core/cognition/ze-memory/ze_memory/migrations/versions/zm019_relationship_last_contact.py` (revision `zm019`, down_revision `zm018`): add `last_contact TIMESTAMPTZ` to `memory_relationships`, backfilled to `created_at` for existing rows (research.md §2/§Summary)
+- [X] T002 [P] Add `"project"` to the documented `entity_type` allowed-values comment on `EntityRef.entity_type` and `Entity.entity_type` in `core/cognition/ze-memory/ze_memory/types.py` (contracts/memory-graph-vocabulary.md)
+- [X] T003 [P] Add `"project"` to the recognized-type list in the LLM extraction prompt in `core/cognition/ze-memory/ze_memory/extractor.py` (currently defaults unrecognized types to `"concept"` — research.md §1) so generic extraction classifies project mentions correctly
+- [X] T004 [P] Add `WORKS_ON` (`# person → project`) and `COLLABORATES_WITH` (`# person ↔ person`) constants to `core/cognition/ze-memory/ze_memory/graph/predicates.py`, folded into `ALL_PREDICATES` (contracts/memory-graph-vocabulary.md)
+- [X] T005 Add `last_contact: datetime` field to the `Relationship` dataclass in `core/cognition/ze-memory/ze_memory/graph/types.py` (depends on T001)
+- [X] T006 Extend `GraphStore.upsert_relationship`'s `ON CONFLICT (source_id, predicate, target_id) DO UPDATE` clause in `core/cognition/ze-memory/ze_memory/graph/store.py` to also advance `last_contact` to the newer of the existing/incoming values, alongside the existing `confidence = GREATEST(...)` bump (depends on T001, T005; data-model.md §3)
 
 **Checkpoint**: `memory_relationships` has `last_contact`; `project`/`WORKS_ON`/`COLLABORATES_WITH` are recognized vocabulary; reinforcement advances `last_contact`. US1 and US2 implementation can now begin.
 
@@ -70,7 +70,7 @@ via a typed edge with confidence and provenance (quickstart.md, User Story
 
 - [X] T007 [P] [US1] Test: conversation-episode extraction produces a `project` entity + `WORKS_ON` edge, in `plugins/ze-personal/tests/contacts/test_consolidator.py` (mock the LLM client — `client.complete`/`client.stream` — per Constitution V; no real LLM call)
 - [X] T008 [P] [US1] Test: two people mentioned together with no project produces a `COLLABORATES_WITH` edge between their `person` entities, in `plugins/ze-personal/tests/contacts/test_consolidator.py` (mock the LLM client per Constitution V; no real LLM call)
-- [X] T009 [P] [US1] Test: `GraphStore.upsert_relationship` reinforces (not duplicates) an existing `WORKS_ON`/`COLLABORATES_WITH` edge and advances `last_contact`, in `core/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
+- [X] T009 [P] [US1] Test: `GraphStore.upsert_relationship` reinforces (not duplicates) an existing `WORKS_ON`/`COLLABORATES_WITH` edge and advances `last_contact`, in `core/cognition/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
 - [X] T010 [P] [US1] Test: `zc029` migration drops `contact_relationships` cleanly with no data loss expected (empty table), in `plugins/ze-personal/tests/migrations/test_zc029.py` (or existing migration-test convention for this package)
 
 ### Implementation for User Story 1
@@ -85,7 +85,7 @@ via a typed edge with confidence and provenance (quickstart.md, User Story
 - [X] T018 [US1] Remove `PersonRelationship` dataclass from `plugins/ze-personal/ze_personal/contacts/types.py`
 - [X] T019 [US1] Remove `PersonStore.add_relationship()` and `PersonStore.get_relationships()` from `plugins/ze-personal/ze_personal/contacts/store.py` (depends on T018)
 - [X] T020 [US1] Remove the `_domain("contacts.relationships", "contact_relationships", 20)` registration from `plugins/ze-personal/ze_personal/plugin.py`
-- [X] T021 [US1] Remove the `contact_relationships` truncation entry from `core/ze-onboarding/ze_onboarding/reset.py`
+- [X] T021 [US1] Remove the `contact_relationships` truncation entry from `core/ops/ze-onboarding/ze_onboarding/reset.py`
 - [X] T022 [US1] Update `plugins/ze-personal/tests/contacts/test_person_store.py` and `test_types.py` to remove all `PersonRelationship`/`add_relationship`/`get_relationships` references (depends on T018, T019)
 
 **Checkpoint**: Project entities and both new edge types flow from extraction into the graph with reinforcement; the dead `contact_relationships` schema no longer exists anywhere in the codebase (SC-001, SC-002).
@@ -106,15 +106,15 @@ Story 2).
 
 ### Tests for User Story 2
 
-- [X] T023 [P] [US2] Dedicated SC-004 test: construct/read a `Relationship` with `last_contact` 60+ days in the past and confirm `relationship.confidence.value` reflects `ze_agents.claims.decay(..., DecayProfile.TIME_LINEAR, elapsed_days=...)`'s output, in `core/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
-- [X] T024 [P] [US2] Test: `last_contact` only advances via `GraphStore.upsert_relationship` (processed communication-graph activity) — no code path allows a manual/user-supplied `last_contact`, in `core/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
-- [X] T025 [P] [US2] Test: an edge with no activity beyond creation reports `last_contact == created_at` (not null, not a guess), in `core/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
+- [X] T023 [P] [US2] Dedicated SC-004 test: construct/read a `Relationship` with `last_contact` 60+ days in the past and confirm `relationship.confidence.value` reflects `ze_agents.claims.decay(..., DecayProfile.TIME_LINEAR, elapsed_days=...)`'s output, in `core/cognition/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
+- [X] T024 [P] [US2] Test: `last_contact` only advances via `GraphStore.upsert_relationship` (processed communication-graph activity) — no code path allows a manual/user-supplied `last_contact`, in `core/cognition/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
+- [X] T025 [P] [US2] Test: an edge with no activity beyond creation reports `last_contact == created_at` (not null, not a guess), in `core/cognition/ze-memory/tests/graph/test_store.py` (mock the `asyncpg` pool with `AsyncMock` per Constitution V; no real DB)
 
 ### Implementation for User Story 2
 
-- [X] T026 [US2] Retrofit `Relationship.confidence`'s type from `float` to `ze_agents.claims.Confidence` in `core/ze-memory/ze_memory/graph/types.py` (depends on T005; contracts/memory-graph-vocabulary.md)
-- [X] T027 [US2] Implement read-time decay hydration in `GraphStore`'s row→`Relationship` construction (`list_relationships`/`expand`) in `core/ze-memory/ze_memory/graph/store.py`: `Confidence(value=decay(stored_float, DecayProfile.TIME_LINEAR, elapsed_days=(now - last_contact).days), decay_profile=DecayProfile.TIME_LINEAR)` (depends on T006, T026; research.md §2)
-- [X] T028 [US2] Grep `core/ze-memory` and `plugins/ze-personal` for any caller reading a `Relationship.confidence` as a bare float and update it to `.value` (depends on T026)
+- [X] T026 [US2] Retrofit `Relationship.confidence`'s type from `float` to `ze_agents.claims.Confidence` in `core/cognition/ze-memory/ze_memory/graph/types.py` (depends on T005; contracts/memory-graph-vocabulary.md)
+- [X] T027 [US2] Implement read-time decay hydration in `GraphStore`'s row→`Relationship` construction (`list_relationships`/`expand`) in `core/cognition/ze-memory/ze_memory/graph/store.py`: `Confidence(value=decay(stored_float, DecayProfile.TIME_LINEAR, elapsed_days=(now - last_contact).days), decay_profile=DecayProfile.TIME_LINEAR)` (depends on T006, T026; research.md §2)
+- [X] T028 [US2] Grep `core/cognition/ze-memory` and `plugins/ze-personal` for any caller reading a `Relationship.confidence` as a bare float and update it to `.value` (depends on T026)
 
 **Checkpoint**: Reading any relationship edge at any time reflects honest, real decay; `last_contact` is trustworthy (SC-004).
 
@@ -133,22 +133,22 @@ eligible on the same day and the shared budget covering only one, confirm
 relationship when it wins (quickstart.md, User Story 3).
 
 **Note**: This story does not depend on Phase 2/US1/US2 — it is scoped
-entirely to `core/ze-priority` and `plugins/ze-personal/ze_personal/jobs/
+entirely to `core/arbitration/ze-priority` and `plugins/ze-personal/ze_personal/jobs/
 briefing.py`, and may be implemented in parallel with them.
 
 ### Tests for User Story 3
 
-- [X] T029 [P] [US3] Test: `PriorityView.rank()` ranks a relationship item against loop/goal/hypothesis items and surfaces whichever scores highest, in `core/ze-priority/tests/test_view.py` (mock stores with `AsyncMock` per Constitution V; no real DB, no real LLM)
-- [X] T030 [P] [US3] Test: `PriorityView.rank()` degrades gracefully when `relationship_source` raises — still returns ranked items from the sources that succeeded (FR-010), in `core/ze-priority/tests/test_view.py` (mock stores with `AsyncMock` per Constitution V; no real DB)
-- [X] T031 [P] [US3] Regression test: `PriorityView` constructed without a `relationship_source` (existing three-store signature) still works unchanged, in `core/ze-priority/tests/test_view.py` (mock stores with `AsyncMock` per Constitution V; no real DB)
+- [X] T029 [P] [US3] Test: `PriorityView.rank()` ranks a relationship item against loop/goal/hypothesis items and surfaces whichever scores highest, in `core/arbitration/ze-priority/tests/test_view.py` (mock stores with `AsyncMock` per Constitution V; no real DB, no real LLM)
+- [X] T030 [P] [US3] Test: `PriorityView.rank()` degrades gracefully when `relationship_source` raises — still returns ranked items from the sources that succeeded (FR-010), in `core/arbitration/ze-priority/tests/test_view.py` (mock stores with `AsyncMock` per Constitution V; no real DB)
+- [X] T031 [P] [US3] Regression test: `PriorityView` constructed without a `relationship_source` (existing three-store signature) still works unchanged, in `core/arbitration/ze-priority/tests/test_view.py` (mock stores with `AsyncMock` per Constitution V; no real DB)
 - [X] T032 [P] [US3] Test: `MorningBriefing.run()` reads its relationship-staleness line from `PriorityView`'s ranked output, not a direct `PersonStore.list_stale_for_follow_up()` call, in `plugins/ze-personal/tests/jobs/test_briefing.py` (mock `PriorityView`/`PersonStore` with `AsyncMock` per Constitution V; no real DB, no real LLM)
 
 ### Implementation for User Story 3
 
-- [X] T033 [US3] Add `"relationship"` to the `SourceKind` `Literal` and add a `RelationshipSignal` dataclass (`name: str`, `days_ago: int`) to `core/ze-priority/ze_priority/types.py`
-- [X] T034 [US3] Define the `RelationshipStalenessSource` `Protocol` in `core/ze-priority/ze_priority/types.py`, structurally matching `PersonStore.list_stale_for_follow_up(stale_days, limit) -> list[StaleFollowUpNudge]` (depends on T033; contracts/priority-relationship-source.md)
-- [X] T035 [US3] Implement `score_relationship_staleness()` in `core/ze-priority/ze_priority/scoring.py`, mirroring `score_loop`/`score_goal`/`score_hypothesis`'s signature and `sort_and_rank`-compatible `PriorityItem` output (depends on T033)
-- [X] T036 [US3] Add an optional `relationship_source: RelationshipStalenessSource | None = None` constructor parameter to `PriorityView` in `core/ze-priority/ze_priority/view.py` (depends on T034)
+- [X] T033 [US3] Add `"relationship"` to the `SourceKind` `Literal` and add a `RelationshipSignal` dataclass (`name: str`, `days_ago: int`) to `core/arbitration/ze-priority/ze_priority/types.py`
+- [X] T034 [US3] Define the `RelationshipStalenessSource` `Protocol` in `core/arbitration/ze-priority/ze_priority/types.py`, structurally matching `PersonStore.list_stale_for_follow_up(stale_days, limit) -> list[StaleFollowUpNudge]` (depends on T033; contracts/priority-relationship-source.md)
+- [X] T035 [US3] Implement `score_relationship_staleness()` in `core/arbitration/ze-priority/ze_priority/scoring.py`, mirroring `score_loop`/`score_goal`/`score_hypothesis`'s signature and `sort_and_rank`-compatible `PriorityItem` output (depends on T033)
+- [X] T036 [US3] Add an optional `relationship_source: RelationshipStalenessSource | None = None` constructor parameter to `PriorityView` in `core/arbitration/ze-priority/ze_priority/view.py` (depends on T034)
 - [X] T037 [US3] Add a fourth try/except source block to `PriorityView.rank()`; generalize the all-sources-failed hard-fail check from the hardcoded `3` to the number of sources actually supplied (depends on T035, T036)
 - [X] T038 [US3] Wire the concrete `PersonStore` instance into `PriorityView`'s `relationship_source` argument in `apps/ze-api/ze_api/container.py` (depends on T036)
 - [X] T039 [US3] Add a `priority_view: PriorityView` constructor dependency to `MorningBriefing` in `plugins/ze-personal/ze_personal/jobs/briefing.py`, wired via the job's existing DI registration (depends on T037)
@@ -173,7 +173,7 @@ briefing.py`, and may be implemented in parallel with them.
 - **Foundational (Phase 2)**: No dependencies — start immediately. **Blocks US1 and US2 only.**
 - **US1 (Phase 3)**: Depends on Foundational (Phase 2) completion.
 - **US2 (Phase 4)**: Depends on Foundational (Phase 2) completion. Independent of US1 (touches the same files as US1's T015/T016 only incidentally — T026/T027 build on T005/T006 from Foundational, not on US1's extraction work).
-- **US3 (Phase 5)**: **No dependency on Foundational, US1, or US2** — entirely scoped to `core/ze-priority` and `briefing.py`. Can be implemented in parallel with Phase 2-4 by a different contributor/session.
+- **US3 (Phase 5)**: **No dependency on Foundational, US1, or US2** — entirely scoped to `core/arbitration/ze-priority` and `briefing.py`. Can be implemented in parallel with Phase 2-4 by a different contributor/session.
 - **Polish (Phase 6)**: Depends on whichever of US1/US2/US3 are in scope for the release being validated; T042 (quickstart) requires all three for full validation.
 
 ### Parallel Opportunities
@@ -193,7 +193,7 @@ briefing.py`, and may be implemented in parallel with them.
 # Launch US1 tests together:
 Task: "Test: conversation extraction produces project entity + WORKS_ON edge in plugins/ze-personal/tests/contacts/test_consolidator.py"
 Task: "Test: two people mentioned together produce a COLLABORATES_WITH edge in plugins/ze-personal/tests/contacts/test_consolidator.py"
-Task: "Test: GraphStore.upsert_relationship reinforces an edge and advances last_contact in core/ze-memory/tests/graph/test_store.py"
+Task: "Test: GraphStore.upsert_relationship reinforces an edge and advances last_contact in core/cognition/ze-memory/tests/graph/test_store.py"
 Task: "Test: zc029 migration drops contact_relationships cleanly in plugins/ze-personal/tests/migrations/test_zc029.py"
 ```
 
@@ -213,7 +213,7 @@ Task: "Test: zc029 migration drops contact_relationships cleanly in plugins/ze-p
 1. Foundational → US1 (MVP: projects/edges in the graph, dead schema gone).
 2. Add US2 (honest decay) → validate independently → SC-004 satisfied.
 3. Add US3 (fair-ranked nudges, independent of the above) → validate independently → SC-003 satisfied.
-4. Each story adds value without breaking the others — US1/US2 touch `core/ze-memory`+`ze-personal` extraction/contacts code, US3 touches `core/ze-priority`+`ze-personal` briefing code, with no file overlap between US3 and US1/US2.
+4. Each story adds value without breaking the others — US1/US2 touch `core/cognition/ze-memory`+`ze-personal` extraction/contacts code, US3 touches `core/arbitration/ze-priority`+`ze-personal` briefing code, with no file overlap between US3 and US1/US2.
 
 ### Parallel Team Strategy
 

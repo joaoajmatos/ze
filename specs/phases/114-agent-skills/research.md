@@ -6,7 +6,7 @@ open `NEEDS CLARIFICATION` markers remain.
 
 ## 1. Package placement: new core package vs. plugin
 
-**Decision**: New `core/ze-skills/` package, wired directly into `apps/ze-api` (not a
+**Decision**: New `core/automation/ze-skills/` package, wired directly into `apps/ze-api` (not a
 `ZePlugin`).
 
 **Rationale**: Skills are cross-cutting — every agent, regardless of domain, must be able
@@ -34,7 +34,7 @@ concern layered next to (not inside) any one plugin.
 
 ## 2. Automatic matching mechanism
 
-**Decision**: Reuse the `EmbeddingRouter` pattern (`core/ze-core/ze_core/routing/router.py`) —
+**Decision**: Reuse the `EmbeddingRouter` pattern (`core/engine/ze-core/ze_core/routing/router.py`) —
 embed each active skill's `name + description` once (cached, invalidated on
 approve/disable/content-change), embed the per-turn message once (or reuse the routing
 embedding already computed for agent routing in `embed_route`), cosine-similarity via
@@ -126,7 +126,7 @@ matched skills in the same turn each declare a restriction, the applied set is t
 intersection of all of them (most conservative), consistent with "narrow, never expand."
 
 **Rationale**: `agentic_loop` already accepts an optional `tool_names` override
-(`core/ze-agents/ze_agents/base_agent.py`); the existing default-to-`self.tools` behavior
+(`core/contracts/ze-agents/ze_agents/base_agent.py`); the existing default-to-`self.tools` behavior
 is the natural insertion point for a second, narrower default sourced from
 `AgentContext`, following exactly the same single-field / single-consumption-site shape
 already proven by `resume_recap` (added in phase 112) rather than touching every
@@ -157,7 +157,7 @@ WS reply on the *same* thread, which does not describe skill review at all.
 ## 9. Skill Usage persistence
 
 **Decision**: No dedicated `skill_usages` table. A new `skills_used: list[SkillUsageTrace]`
-field on the existing `MessageTrace` dataclass (`core/ze-core/ze_core/conversation/messages/types.py`),
+field on the existing `MessageTrace` dataclass (`core/engine/ze-core/ze_core/conversation/messages/types.py`),
 populated by `record_trace` and persisted via the existing `messages.trace` JSONB column
 (phase 89's trace mechanism) and existing `trace_update` WS frame.
 
@@ -175,7 +175,7 @@ phase's schema.
 
 ## 10. Migration ownership
 
-**Decision**: New chain, prefix `zsk`, owned by `core/ze-skills/ze_skills/migrations/`,
+**Decision**: New chain, prefix `zsk`, owned by `core/automation/ze-skills/ze_skills/migrations/`,
 registered in `apps/ze-api/ze_api/migrate.py` as `_ZE_SKILLS_VERSIONS` alongside
 `_ZE_WORLDSTATE_VERSIONS`/`_ZE_INGESTION_VERSIONS` (direct-wire core packages, not
 `ZePlugin.migrations_path()`).

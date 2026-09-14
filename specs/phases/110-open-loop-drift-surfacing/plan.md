@@ -39,14 +39,14 @@ shared one
 
 **Testing**: `pytest`, `asyncio_mode = "auto"`, `AsyncMock` for asyncpg pools, no real DB/LLM/embedder
 in unit tests, per `docs/testing.md`; orchestration-node test mocks `config["configurable"]`
-exactly as the existing `core/ze-core/tests/orchestration/nodes/test_correlation.py` does — the
+exactly as the existing `core/engine/ze-core/tests/orchestration/nodes/test_correlation.py` does — the
 new test lives in the same suite (`test_loop_surfacing.py`)
 
 **Target Platform**: Linux server (existing `ze-api` deployment; FastAPI/uvicorn + LangGraph)
 
-**Project Type**: Backend package extension — additions to the existing `core/ze-worldstate`
-package, a new node in `core/ze-core/ze_core/orchestration/nodes/`, a small extraction of
-reusable functions out of `core/ze-correlation/ze_correlation/push.py`, and `ze-api` wiring
+**Project Type**: Backend package extension — additions to the existing `core/cognition/ze-worldstate`
+package, a new node in `core/engine/ze-core/ze_core/orchestration/nodes/`, a small extraction of
+reusable functions out of `core/cognition/ze-correlation/ze_correlation/push.py`, and `ze-api` wiring
 (jobs, graph configurable injection, config.yaml). No new frontend surface — Phase A's loop
 review list already renders `drifting` loops and gains a `drift_rationale` field for free once
 the REST payload includes it (Assumptions: "No new UI paradigm").
@@ -75,7 +75,7 @@ hundreds-of-loops working set; no new scale concern.
 | II. Single-User Model | No `user_id` anywhere in the new columns, jobs, or push-log keys | PASS |
 | III. Layered Package Architecture | Drift/push logic stays inside `ze-worldstate` (core, non-plugin, same reasoning as Phase A). The one new package-graph edge — `ze-worldstate → ze-correlation` — is explicit, ratified by Clarification, and is between two **core** packages (no plugin boundary crossed). The inline node is added to `ze-core`'s orchestration graph but reads its dependency (a `LoopSurfacer`-shaped object) only via `config["configurable"]`, exactly as `correlate`'s `correlation_engine` is — so `ze_core` gains **no** import-time dependency on `ze_worldstate`, preserving "engine has no domain knowledge." `CLAUDE.md`'s dependency graph table is updated in the same commit per the Clarification and the Governance principle. | PASS |
 | IV. Typed, Explicit Python | New fields on the existing `OpenLoop` dataclass in `types.py` (never `models.py`); typed errors reused from Phase A (`errors.py`); async I/O throughout; constructor injection for the new jobs and the inline node's surfacer object | PASS |
-| V. Test Discipline | New tests in `core/ze-worldstate/tests/jobs/test_drift_sweep.py`, `test_push_sweep.py`, `core/ze-worldstate/tests/test_decay.py` (extended for FR-002), `core/ze-correlation/tests/test_push.py` (extended after the bar-function extraction), and a new orchestration-node test in `core/ze-core/tests/`; no real DB/LLM/embedder | PASS (planned) |
+| V. Test Discipline | New tests in `core/cognition/ze-worldstate/tests/jobs/test_drift_sweep.py`, `test_push_sweep.py`, `core/cognition/ze-worldstate/tests/test_decay.py` (extended for FR-002), `core/cognition/ze-correlation/tests/test_push.py` (extended after the bar-function extraction), and a new orchestration-node test in `core/engine/ze-core/tests/`; no real DB/LLM/embedder | PASS (planned) |
 | VI. Explicit Persistence | One new migration `zw002_drift_columns.py` continuing the existing `zw` chain owned by `ze-worldstate`; no ORM; no new table (push-log reuse is row-level, not schema-level) | PASS |
 | VII. One LLM Gateway, Local Embeddings | Grounding check reuses the already-injected `NLIClient`; no new provider dependency; inline surfacing explicitly avoids a new embedding call per Clarification | PASS |
 
@@ -100,7 +100,7 @@ specs/phases/110-open-loop-drift-surfacing/
 ### Source Code (repository root)
 
 ```text
-core/ze-worldstate/
+core/cognition/ze-worldstate/
 ├── pyproject.toml                        # add "ze-correlation" to dependencies
 ├── ze_worldstate/
 │   ├── types.py                          # OpenLoop gains drift_deadline, drift_rationale
@@ -132,7 +132,7 @@ core/ze-worldstate/
         ├── test_drift_sweep.py
         └── test_push_sweep.py
 
-core/ze-correlation/
+core/cognition/ze-correlation/
 └── ze_correlation/
     └── push.py                           # extract passes_confidence, passes_novelty,
                                           #   passes_grounding, within_budget as free functions
@@ -141,7 +141,7 @@ core/ze-correlation/
                                           #   CorrelationPushConsumer and ze-worldstate's
                                           #   LoopSurfacer call the same bar, not two bars
 
-core/ze-core/
+core/engine/ze-core/
 └── ze_core/orchestration/
     ├── nodes/
     │   └── loop_surfacing.py             # NEW — mirrors nodes/correlation.py's shape; reads
@@ -169,7 +169,7 @@ CLAUDE.md                                 # package dependency graph table: ze-w
                                           #   gains "ze-correlation" dependency (same commit)
 ```
 
-**Structure Decision**: All new domain logic stays inside `core/ze-worldstate`, following Phase
+**Structure Decision**: All new domain logic stays inside `core/cognition/ze-worldstate`, following Phase
 A's shape (a `jobs/` module per scheduled sweep, a `bootstrap.py` stack builder, `rest.py` plain
 functions). The only structurally new things are (1) a genuinely new package dependency edge
 `ze-worldstate → ze-correlation`, ratified by Clarification and reflected in `CLAUDE.md`, used

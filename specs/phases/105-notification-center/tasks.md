@@ -20,7 +20,7 @@ description: "Task list for Notification Center (105)"
 
 ## Path Conventions
 
-Existing monorepo (see plan.md Project Structure): `core/ze-proactive/`, `core/ze-agents/`, `apps/ze-api/`, `apps/ze-web/`, plus job call sites in `plugins/*` and `core/ze-automation/`.
+Existing monorepo (see plan.md Project Structure): `core/contracts/ze-proactive/`, `core/contracts/ze-agents/`, `apps/ze-api/`, `apps/ze-web/`, plus job call sites in `plugins/*` and `core/automation/ze-automation/`.
 
 ---
 
@@ -28,7 +28,7 @@ Existing monorepo (see plan.md Project Structure): `core/ze-proactive/`, `core/z
 
 **Purpose**: Confirm scaffolding needed before any schema/code changes; no new packages or dependencies are required (plan.md — feature is additive to existing packages).
 
-- [ ] T001 Confirm `ze-proactive`'s Alembic `zpro` chain head matches `zpro001_push_log` in `core/ze-proactive/ze_proactive/migrations/versions/` so `zpro002_notifications.py` chains correctly
+- [ ] T001 Confirm `ze-proactive`'s Alembic `zpro` chain head matches `zpro001_push_log` in `core/contracts/ze-proactive/ze_proactive/migrations/versions/` so `zpro002_notifications.py` chains correctly
 
 ---
 
@@ -38,16 +38,16 @@ Existing monorepo (see plan.md Project Structure): `core/ze-proactive/`, `core/z
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Write migration `zpro002_notifications.py` in `core/ze-proactive/ze_proactive/migrations/versions/` creating the `notifications` table per data-model.md (columns, `(created_at DESC)` index, `(event_type, target_type, target_id, created_at)` index, partial `(read_at) WHERE read_at IS NULL` index)
-- [ ] T003 [P] Add `NotificationRow`/`Notification` dataclass to `core/ze-proactive/ze_proactive/types.py` (new file) matching data-model.md's wire shape
-- [ ] T004 [P] Add `event_type`, `title`, `target_type`, `target_id` optional fields to the `Notification` dataclass in `core/ze-agents/ze_agents/interface/types.py` (keep existing `content`/`format`/`urgency`/`actions` fields for backward compatibility with unstructured `push(str)` calls)
-- [ ] T005 Implement `NotificationStore` in `core/ze-proactive/ze_proactive/notification_store.py`: `create()`, `list_page(cursor, limit, unread_only, mark_read)`, `unread_count()`, `mark_read(id)`, `mark_all_read()`, `exists_recent(event_type, target_type, target_id, hours)` (dedup query, research R3) — asyncpg-backed, depends on T002/T003
-- [ ] T005a [P] Add `NotificationStore.prune_read_older_than(days: int = 90)` to `core/ze-proactive/ze_proactive/notification_store.py` (FR-015) — deletes rows where `read_at IS NOT NULL AND read_at < now() - days`; unread rows are never touched — depends on T005
-- [ ] T006 Extend `ProactiveNotifier` in `core/ze-proactive/ze_proactive/notifier.py` with a `notify(event_type, title, body, *, source, target_type=None, target_id=None, hours=None)` method that: checks `NotificationStore.exists_recent` when `hours` is given, writes via `NotificationStore.create`, then calls `self._interface.push(...)` with the structured `Notification` (T004) for existing chat/ntfy delivery — depends on T004, T005
-- [ ] T006a Confirm which `PushLogStore` is actually injected into proactive jobs today by tracing `apps/ze-api/ze_api/container.py`'s DI wiring. If jobs resolve `core/ze-core/ze_core/proactive/push_log_store.py` (the stale duplicate — missing `count_sent_within_hours`, still imported by `ze_core/__init__.py` and `plugins/ze-calendar/tests/jobs/test_reminders.py`) instead of `core/ze-proactive/ze_proactive/push_log_store.py`, either (a) repoint that DI wiring to the `ze-proactive` copy, or (b) if the `ze_core` copy is confirmed dead code from the phase-48 split, delete it and its lingering import/test references in a small standalone cleanup commit — do not fold silent removal into T007
+- [ ] T002 Write migration `zpro002_notifications.py` in `core/contracts/ze-proactive/ze_proactive/migrations/versions/` creating the `notifications` table per data-model.md (columns, `(created_at DESC)` index, `(event_type, target_type, target_id, created_at)` index, partial `(read_at) WHERE read_at IS NULL` index)
+- [ ] T003 [P] Add `NotificationRow`/`Notification` dataclass to `core/contracts/ze-proactive/ze_proactive/types.py` (new file) matching data-model.md's wire shape
+- [ ] T004 [P] Add `event_type`, `title`, `target_type`, `target_id` optional fields to the `Notification` dataclass in `core/contracts/ze-agents/ze_agents/interface/types.py` (keep existing `content`/`format`/`urgency`/`actions` fields for backward compatibility with unstructured `push(str)` calls)
+- [ ] T005 Implement `NotificationStore` in `core/contracts/ze-proactive/ze_proactive/notification_store.py`: `create()`, `list_page(cursor, limit, unread_only, mark_read)`, `unread_count()`, `mark_read(id)`, `mark_all_read()`, `exists_recent(event_type, target_type, target_id, hours)` (dedup query, research R3) — asyncpg-backed, depends on T002/T003
+- [ ] T005a [P] Add `NotificationStore.prune_read_older_than(days: int = 90)` to `core/contracts/ze-proactive/ze_proactive/notification_store.py` (FR-015) — deletes rows where `read_at IS NOT NULL AND read_at < now() - days`; unread rows are never touched — depends on T005
+- [ ] T006 Extend `ProactiveNotifier` in `core/contracts/ze-proactive/ze_proactive/notifier.py` with a `notify(event_type, title, body, *, source, target_type=None, target_id=None, hours=None)` method that: checks `NotificationStore.exists_recent` when `hours` is given, writes via `NotificationStore.create`, then calls `self._interface.push(...)` with the structured `Notification` (T004) for existing chat/ntfy delivery — depends on T004, T005
+- [ ] T006a Confirm which `PushLogStore` is actually injected into proactive jobs today by tracing `apps/ze-api/ze_api/container.py`'s DI wiring. If jobs resolve `core/engine/ze-core/ze_core/proactive/push_log_store.py` (the stale duplicate — missing `count_sent_within_hours`, still imported by `ze_core/__init__.py` and `plugins/ze-calendar/tests/jobs/test_reminders.py`) instead of `core/contracts/ze-proactive/ze_proactive/push_log_store.py`, either (a) repoint that DI wiring to the `ze-proactive` copy, or (b) if the `ze_core` copy is confirmed dead code from the phase-48 split, delete it and its lingering import/test references in a small standalone cleanup commit — do not fold silent removal into T007
 - [ ] T007 Wire `NotificationStore` into DI: add to `plugin_deps`/constructor wiring in `apps/ze-api/ze_api/container.py` so `ProactiveNotifier` and the new REST routes can resolve it — depends on T005, T006a
-- [ ] T008 [P] Write unit tests for `NotificationStore` (mocked asyncpg pool) in `core/ze-proactive/tests/test_notification_store.py`, covering pagination, `unread_count`, `mark_read`/`mark_all_read`, and the `exists_recent` dedup scoping from research R3 (same event_type+different target must NOT dedup against each other) — depends on T005
-- [ ] T009 [P] Write unit tests for `ProactiveNotifier.notify()` in `core/ze-proactive/tests/test_notifier.py` (mocked `NotificationStore` + `AppInterface`) covering the dedup-skip path and the persist-then-deliver path — depends on T006
+- [ ] T008 [P] Write unit tests for `NotificationStore` (mocked asyncpg pool) in `core/contracts/ze-proactive/tests/test_notification_store.py`, covering pagination, `unread_count`, `mark_read`/`mark_all_read`, and the `exists_recent` dedup scoping from research R3 (same event_type+different target must NOT dedup against each other) — depends on T005
+- [ ] T009 [P] Write unit tests for `ProactiveNotifier.notify()` in `core/contracts/ze-proactive/tests/test_notifier.py` (mocked `NotificationStore` + `AppInterface`) covering the dedup-skip path and the persist-then-deliver path — depends on T006
 
 **Checkpoint**: Foundation ready — `notifications` table, store, and structured notify path all exist and are tested. User stories can now proceed.
 
@@ -71,11 +71,11 @@ Existing monorepo (see plan.md Project Structure): `core/ze-proactive/`, `core/z
 - [ ] T014 [US1] Adopt `ProactiveNotifier.notify()` (T006) in `plugins/ze-personal/ze_personal/jobs/briefing.py` (`event_type="morning_brief"`, `source="personal"`, no target) replacing the current plain `notifier.push(str)` call
 - [ ] T015 [P] [US1] Adopt `notify()` in `plugins/ze-personal/ze_personal/jobs/insights.py` (`event_type="insight_digest"`, `source="personal"`)
 - [ ] T016 [P] [US1] Adopt `notify()` in `plugins/ze-calendar/ze_calendar/jobs/calendar_reminder.py` (`event_type="calendar_reminder"`, `source="calendar"`, `target_type="reminder"`, `target_id=<reminder id>`)
-- [ ] T017 [P] [US1] Adopt `notify()` in `core/ze-automation/ze_automation/jobs/stuck_goals.py` (`event_type="stuck_goal"`, `source="goals"`, `target_type="goal"`, `target_id=<goal id>`, `hours=` matching its existing rate-limit window per research R3)
-- [ ] T018 [P] [US1] Adopt `notify()` in `core/ze-automation/ze_automation/jobs/cost_anomaly.py` (`event_type="cost_anomaly"`, `source="accountability"`)
-- [ ] T019 [P] [US1] Adopt `notify()` in `core/ze-automation/ze_automation/jobs/goal_suggestion.py` (`event_type="goal_suggestion"`, `source="goals"`, `target_type="goal_suggestion"`, `target_id=<suggestion id>`)
-- [ ] T020 [P] [US1] Adopt `notify()` in `core/ze-automation/ze_automation/jobs/accountability.py` (`event_type="accountability_narrative"`, `source="accountability"`)
-- [ ] T021a [US1] Adopt `notify()` at the goal-gate-reached call site in `core/ze-automation/ze_automation/agents/goals/agent.py` (or `tools.py` — both already import `ProactiveNotifier`; confirm the exact gate-reached branch) with `event_type="goal_gate"`, `source="goals"`, `target_type="goal"`, `target_id=<goal id>`
+- [ ] T017 [P] [US1] Adopt `notify()` in `core/automation/ze-automation/ze_automation/jobs/stuck_goals.py` (`event_type="stuck_goal"`, `source="goals"`, `target_type="goal"`, `target_id=<goal id>`, `hours=` matching its existing rate-limit window per research R3)
+- [ ] T018 [P] [US1] Adopt `notify()` in `core/automation/ze-automation/ze_automation/jobs/cost_anomaly.py` (`event_type="cost_anomaly"`, `source="accountability"`)
+- [ ] T019 [P] [US1] Adopt `notify()` in `core/automation/ze-automation/ze_automation/jobs/goal_suggestion.py` (`event_type="goal_suggestion"`, `source="goals"`, `target_type="goal_suggestion"`, `target_id=<suggestion id>`)
+- [ ] T020 [P] [US1] Adopt `notify()` in `core/automation/ze-automation/ze_automation/jobs/accountability.py` (`event_type="accountability_narrative"`, `source="accountability"`)
+- [ ] T021a [US1] Adopt `notify()` at the goal-gate-reached call site in `core/automation/ze-automation/ze_automation/agents/goals/agent.py` (or `tools.py` — both already import `ProactiveNotifier`; confirm the exact gate-reached branch) with `event_type="goal_gate"`, `source="goals"`, `target_type="goal"`, `target_id=<goal id>`
 - [ ] T021b [US1] Add a **new** live `notify()` call for workflow failures — today `workflow_failure` is only ever written to `push_log` (see `ze_automation/bootstrap.py`, `ze_automation/rest.py`, `accountability/summarizer.py`), there is no existing `ProactiveNotifier` call for it anywhere. Add the call at the point the workflow scheduler/executor currently calls `push_log.log("workflow_failure:...")`, with `event_type="workflow_failure"`, `source="workflows"`, `target_type="workflow_run"`, `target_id=<run id>` — requires injecting `ProactiveNotifier` into that executor/job if not already present
 - [ ] T022 [P] [US1] Create `apps/ze-web/src/entities/notification/` — `api/useNotificationsQuery.ts`, `api/useUnreadCountQuery.ts`, `index.ts` (types re-exported from `@ze/client`)
 - [ ] T023 [US1] Create `apps/ze-web/src/widgets/notification-bell/ui/NotificationBell.tsx` — badge showing unread count, dropdown/panel rendering the paginated list with infinite scroll — depends on T022
@@ -133,8 +133,8 @@ Existing monorepo (see plan.md Project Structure): `core/ze-proactive/`, `core/z
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T038a [P] Wire `NotificationStore.prune_read_older_than(90)` into a daily proactive job (new `core/ze-proactive/ze_proactive/jobs/prune_notifications.py` `@proactive_job`, or a hook on an existing daily job) so FR-015 retention actually runs — depends on T005a
-- [ ] T038b [P] Unit test for `prune_read_older_than` (mocked pool: unread rows survive regardless of age, read rows older than the cutoff are deleted, read rows within the window survive) in `core/ze-proactive/tests/test_notification_store.py` — depends on T005a
+- [ ] T038a [P] Wire `NotificationStore.prune_read_older_than(90)` into a daily proactive job (new `core/contracts/ze-proactive/ze_proactive/jobs/prune_notifications.py` `@proactive_job`, or a hook on an existing daily job) so FR-015 retention actually runs — depends on T005a
+- [ ] T038b [P] Unit test for `prune_read_older_than` (mocked pool: unread rows survive regardless of age, read rows older than the cutoff are deleted, read rows within the window survive) in `core/contracts/ze-proactive/tests/test_notification_store.py` — depends on T005a
 - [ ] T039 [P] Update `specs/README.md` phase index row for 105 and flip `spec.md` status to `Implemented` in the same commit as the last implementation task, per constitution Principle I
 - [ ] T040 [P] Add the `notifications` table to the migration-ownership table in `CLAUDE.md` (`ze-proactive` row, `zpro` prefix)
 - [ ] T041 Run `quickstart.md` scenarios 1–5 end-to-end against `make dev-full`

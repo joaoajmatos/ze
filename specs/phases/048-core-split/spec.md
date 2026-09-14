@@ -1,6 +1,6 @@
 # Ze Core Split — ze-agents + ze-proactive
 
-> **Packages:** `core/ze-agents/` (new), `core/ze-proactive/` (new), `core/ze-core/` (slimmed)
+> **Packages:** `core/contracts/ze-agents/` (new), `core/contracts/ze-proactive/` (new), `core/engine/ze-core/` (slimmed)
 > **Phase:** 48
 > **Status:** Done
 > **Prerequisite:** Phase 49 (ze-sdk) depends on this split; implement this phase first.
@@ -264,7 +264,7 @@ This is a design fix forced by the split — and a correct one. An agent's job i
 ## Package Configuration
 
 ```toml
-# core/ze-agents/pyproject.toml
+# core/contracts/ze-agents/pyproject.toml
 [project]
 name = "ze-agents"
 version = "0.1.0"
@@ -272,7 +272,7 @@ description = "Ze developer API — BaseAgent, @agent, @tool, ZePlugin, shared t
 requires-python = ">=3.11"
 dependencies = []   # no ze deps — this is the base layer
 
-# core/ze-proactive/pyproject.toml
+# core/contracts/ze-proactive/pyproject.toml
 [project]
 name = "ze-proactive"
 version = "0.1.0"
@@ -280,7 +280,7 @@ description = "Ze job scheduling and notification framework"
 requires-python = ">=3.11"
 dependencies = ["ze-agents"]
 
-# core/ze-core/pyproject.toml (updated)
+# core/engine/ze-core/pyproject.toml (updated)
 [project]
 name = "ze-core"
 version = "0.1.0"
@@ -303,7 +303,7 @@ dependencies = ["ze-agents", "ze-proactive", "ze-memory"]
 
 ### Step 1: Create ze-agents
 
-Extract the modules listed above into a new `core/ze-agents/` package. Add import aliases in ze-core pointing to the new locations so nothing breaks mid-migration:
+Extract the modules listed above into a new `core/contracts/ze-agents/` package. Add import aliases in ze-core pointing to the new locations so nothing breaks mid-migration:
 
 ```python
 # ze_core/orchestration/base_agent.py (temporary shim)
@@ -316,7 +316,7 @@ Replace all `from ze_core.orchestration.types import ...` inside ze-core's engin
 
 ### Step 3: Create ze-proactive
 
-Move `ze_core/proactive/` to `core/ze-proactive/ze_proactive/`. Update imports in ze-core (container, graph) that reference the old paths. Add compatibility shims in ze-core.
+Move `ze_core/proactive/` to `core/contracts/ze-proactive/ze_proactive/`. Update imports in ze-core (container, graph) that reference the old paths. Add compatibility shims in ze-core.
 
 ### Step 4: Update ze-memory
 

@@ -1,8 +1,8 @@
 # Aperture Decision — What Ze's Executive Layer Optimises For
 
-> **Status:** Ratified — Option A (open loops first) shipped as `core/ze-worldstate`
+> **Status:** Ratified — Option A (open loops first) shipped as `core/cognition/ze-worldstate`
 > (Phase 109 substrate, Phase 110 drift detection & surfacing).
-> **Scope:** `core/ze-worldstate`; downstream: correlation, briefings, proactive surface.
+> **Scope:** `core/cognition/ze-worldstate`; downstream: correlation, briefings, proactive surface.
 > **Constrained by:** `specs/arch/ze-doctrine.md`. The spine (world-state) is settled; this
 > brief decided which **projection** of it the product is built around first.
 > **Enables:** the contribution seam (`specs/arch/contribution-seam.md`) now has a second
@@ -160,7 +160,7 @@ was treated as a first-class requirement throughout, not a later add-on.
 ## Open Questions — resolved
 
 - [x] **Ratify A-first, or override toward B-first?** Ratified A-first; shipped as
-  `core/ze-worldstate`.
+  `core/cognition/ze-worldstate`.
 - [x] **Loop granularity** — flat, one loop per implicitly-detected item (promise, decision,
   drifting project); no sub-loop hierarchy was built. Goals remain a separate, un-unified
   concept (see `specs/phases/110-open-loop-drift-surfacing/spec.md` FR-014) — this is now a
@@ -169,7 +169,7 @@ was treated as a first-class requirement throughout, not a later add-on.
 - [x] **Extraction trust** — loops open in `suspected` state (`LoopState.SUSPECTED` in
   `ze_worldstate/types.py`), i.e. as low-confidence claims requiring corroboration before
   `active`, consistent with the doctrine's inference posture for perception-opened loops.
-- [x] **Where it lives** — a new core package, `core/ze-worldstate` (not a promotion inside
+- [x] **Where it lives** — a new core package, `core/cognition/ze-worldstate` (not a promotion inside
   `ze-automation`), depending on `ze-agents`, `ze-proactive`, `ze-memory`, `ze-data`,
   `ze-components`, `ze-correlation`. Wired into `ze-api` directly, same pattern as
   `ze-automation`.

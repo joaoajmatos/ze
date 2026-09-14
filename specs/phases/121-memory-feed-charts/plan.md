@@ -12,7 +12,7 @@ Add a memory-growth-over-time chart and a facts-vs-episodes composition chart to
 
 ## Technical Context
 
-**Language/Version**: Python 3.11 (`core/ze-memory`, `apps/ze-api`) / TypeScript, React 19 (`apps/ze-web`)
+**Language/Version**: Python 3.11 (`core/cognition/ze-memory`, `apps/ze-api`) / TypeScript, React 19 (`apps/ze-web`)
 
 **Primary Dependencies**: `packages/ze-ui`'s `LineChart`/`BarChart`/`PieChart` (spec 118); existing `GET /api/v0/memory/activity` endpoint
 
@@ -26,7 +26,7 @@ Add a memory-growth-over-time chart and a facts-vs-episodes composition chart to
 
 **Performance Goals**: No new perf targets — same query shape (labeled union instead of collapsed union), same result cardinality (one row per day)
 
-**Constraints**: `_ACTIVITY_MAX_DAYS` cap (`core/ze-memory/ze_memory/admin.py`) already bounds query range — unaffected by this change
+**Constraints**: `_ACTIVITY_MAX_DAYS` cap (`core/cognition/ze-memory/ze_memory/admin.py`) already bounds query range — unaffected by this change
 
 **Scale/Scope**: One endpoint gains two fields; one existing page gains two charts; one existing query call-site gets its `end` param corrected
 
@@ -38,7 +38,7 @@ Add a memory-growth-over-time chart and a facts-vs-episodes composition chart to
 - **II. Single-User Model** — PASS (N/A). No scoping change.
 - **III. Layered Package Architecture** — PASS. Backend change stays inside `ze-memory` → `ze-api`; frontend change stays inside `apps/ze-web`, consuming `packages/ze-ui` as already established.
 - **IV. Typed, Explicit Python** — PASS. `MemoryActivityDay` stays a Pydantic model per the existing API-schema convention; the query change is raw SQL, no ORM.
-- **V. Test Discipline** — PASS, planned. `core/ze-memory` gains a test for the `fact_count`/`episode_count` split; `apps/ze-web` gains component tests for both new charts and the as-of wiring fix.
+- **V. Test Discipline** — PASS, planned. `core/cognition/ze-memory` gains a test for the `fact_count`/`episode_count` split; `apps/ze-web` gains component tests for both new charts and the as-of wiring fix.
 - **VI. Explicit Persistence** — PASS (N/A). No migration.
 - **VII. One LLM Gateway, Local Embeddings** — PASS (N/A).
 
@@ -61,9 +61,9 @@ specs/phases/121-memory-feed-charts/
 ### Source Code (repository root)
 
 ```text
-core/ze-memory/ze_memory/admin.py             # EDIT — get_memory_activity: labeled union, group by (day, source)
+core/cognition/ze-memory/ze_memory/admin.py             # EDIT — get_memory_activity: labeled union, group by (day, source)
 apps/ze-api/ze_api/api/schemas.py             # EDIT — MemoryActivityDay gains fact_count, episode_count
-core/ze-memory/tests/                          # EDIT — assert the split sums to count
+core/cognition/ze-memory/tests/                          # EDIT — assert the split sums to count
 
 packages/ze-client/src/generated/             # REGEN — types.gen.ts picks up the two new fields
 

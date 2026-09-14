@@ -14,11 +14,11 @@ make migrate
 ## 1. Confirm the shared vocabulary has exactly one definition, and `Provenance` stays closed (SC-002)
 
 ```bash
-grep -rn "class ClaimKind" core/ core/*/ze_*/   # exactly one hit: core/ze-agents/ze_agents/claims.py
-grep -rn "class Provenance" core/ core/*/ze_*/  # exactly one hit: core/ze-agents/ze_agents/claims.py
-grep -rn "class LoopClaimKind" core/ze-worldstate/  # zero hits — now an alias, not a class
-grep -rn "EMAIL\|CALENDAR" core/ze-worldstate/ze_worldstate/types.py  # zero hits — dropped per FR-003
-grep -rn "class LoopProvenance" core/ze-worldstate/ze_worldstate/types.py
+grep -rn "class ClaimKind" core/ core/*/ze_*/   # exactly one hit: core/contracts/ze-agents/ze_agents/claims.py
+grep -rn "class Provenance" core/ core/*/ze_*/  # exactly one hit: core/contracts/ze-agents/ze_agents/claims.py
+grep -rn "class LoopClaimKind" core/cognition/ze-worldstate/  # zero hits — now an alias, not a class
+grep -rn "EMAIL\|CALENDAR" core/cognition/ze-worldstate/ze_worldstate/types.py  # zero hits — dropped per FR-003
+grep -rn "class LoopProvenance" core/cognition/ze-worldstate/ze_worldstate/types.py
 # expect: a plain class (NOT `class LoopProvenance(StrEnum)`), holding only
 # CONVERSATION/INGESTION/USER_DECLARED
 ```
@@ -27,9 +27,9 @@ grep -rn "class LoopProvenance" core/ze-worldstate/ze_worldstate/types.py
 
 ```bash
 grep -rn "cutoff = .*now.*- .*timedelta\|now() - (" \
-  core/ze-worldstate/ze_worldstate/jobs/ core/ze-automation/ze_automation/jobs/ \
-  core/ze-automation/ze_automation/goals/postgres.py core/ze-worldstate/ze_worldstate/store.py
-# expect: one hit inside core/ze-proactive/ze_proactive/staleness.py; none of the three sweep
+  core/cognition/ze-worldstate/ze_worldstate/jobs/ core/automation/ze-automation/ze_automation/jobs/ \
+  core/automation/ze-automation/ze_automation/goals/postgres.py core/cognition/ze-worldstate/ze_worldstate/store.py
+# expect: one hit inside core/contracts/ze-proactive/ze_proactive/staleness.py; none of the three sweep
 # call sites compute a stale cutoff inline anymore (stuck_goals' unrelated alert_cooldown_days
 # suppression predicate is expected to remain — see research.md §7)
 ```
@@ -37,7 +37,7 @@ grep -rn "cutoff = .*now.*- .*timedelta\|now() - (" \
 ## 3. Confirm the inflow-channel boundary is unvalidated (plugin-domain-vocabulary.md)
 
 ```bash
-grep -rn "LoopProvenance(" core/ze-worldstate/ze_worldstate/extraction.py
+grep -rn "LoopProvenance(" core/cognition/ze-worldstate/ze_worldstate/extraction.py
 # expect: zero hits — the ValueError-raising coercion is removed per FR-003
 ```
 

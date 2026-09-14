@@ -1,6 +1,6 @@
 # Phase 0 Research: Workflow Resilience and Control
 
-All items resolved by reading the existing workflow implementation (`core/ze-automation`,
+All items resolved by reading the existing workflow implementation (`core/automation/ze-automation`,
 `plugins/ze-personal/ze_personal/graph/workflow.py`, `bootstrap.py`). No external
 library research required. No NEEDS CLARIFICATION markers remain.
 

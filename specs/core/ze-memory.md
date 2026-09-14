@@ -1,6 +1,6 @@
 # ze-memory — Memory Stack
 
-> **Package:** `core/ze-memory` — `ze_memory/`
+> **Package:** `core/cognition/ze-memory` — `ze_memory/`
 > **Status:** Done (78b dream pass in progress)
 > **Architecture:** [arch/memory-package-split.md](../arch/memory-package-split.md), [arch/memory-graph-augmentation.md](../arch/memory-graph-augmentation.md), [arch/dream-memory.md](../arch/dream-memory.md)
 > **Supersedes:** [06-memory.md (stale)](06-memory.md)
@@ -49,7 +49,7 @@ subsystem runs an offline consolidation loop.
 ## Module Location
 
 ```
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
   store.py              ← MemoryStore (facts, episodes)
   retriever.py          ← MemoryRetriever (semantic search)
   graph/                ← MemoryGraph, entity/relationship store

@@ -2,7 +2,7 @@
 
 **Status:** Done
 **Depends on:** Phase 73 (API surface), Phase 82 (ze-web FSD), Phase 87 (Plugin UI)
-**Packages touched:** `core/ze-core`, `apps/ze-api`, `apps/ze-web`
+**Packages touched:** `core/engine/ze-core`, `apps/ze-api`, `apps/ze-web`
 
 ---
 

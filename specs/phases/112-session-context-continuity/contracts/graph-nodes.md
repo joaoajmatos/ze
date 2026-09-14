@@ -8,7 +8,7 @@ tests are written against.
 
 ## `write_memory` — compaction branch
 
-`core/ze-core/ze_core/orchestration/nodes/memory.py`
+`core/engine/ze-core/ze_core/orchestration/nodes/memory.py`
 
 Existing signature, unchanged:
 
@@ -48,7 +48,7 @@ to the pre-existing trim (FR-010).
 
 ## `fetch_context` — resume-recap branch
 
-`core/ze-core/ze_core/orchestration/nodes/context.py`
+`core/engine/ze-core/ze_core/orchestration/nodes/context.py`
 
 Existing signature, unchanged:
 

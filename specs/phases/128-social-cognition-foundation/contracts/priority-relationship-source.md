@@ -1,15 +1,15 @@
 # Contract: `PriorityView`'s relationship-staleness source
 
-This is the seam that lets `core/ze-priority` (a `core/` package with no
+This is the seam that lets `core/arbitration/ze-priority` (a `core/` package with no
 domain knowledge, per Constitution III) rank a `plugins/ze-personal`
 (domain) signal without either package importing the other's concrete
 types — the same shape as Phase 60's `SignalSource` protocol. See
 research.md §3 for the full rationale.
 
-## Protocol (new, defined in `core/ze-priority`)
+## Protocol (new, defined in `core/arbitration/ze-priority`)
 
 ```python
-# core/ze-priority/ze_priority/types.py (or a new protocols.py)
+# core/arbitration/ze-priority/ze_priority/types.py (or a new protocols.py)
 
 class RelationshipStalenessSource(Protocol):
     async def list_stale_for_follow_up(

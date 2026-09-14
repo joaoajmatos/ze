@@ -45,7 +45,7 @@ future decay job is wired in, exactly as `Hypothesis.confidence` sat un-decayed 
 `provenance`/`confidence` directly per FR-001/FR-002) and `ze_memory.types.Fact` (`ze-memory`,
 tagged `claim_kind=ClaimKind.FACT` at construction) — never a bare `Contribution`, and a
 transient `Contribution` envelope is built only at each proposal's write boundary, never stored
-on `AgentResult`. **However**, `AgentResult` lives in `core/ze-agents/ze_agents/types.py`, a
+on `AgentResult`. **However**, `AgentResult` lives in `core/contracts/ze-agents/ze_agents/types.py`, a
 core package with zero dependency on `ze-memory` or `ze-personal` in the package graph
 (`ze-memory → ze-agents`, `ze-personal → ze-sdk → ze-agents` — both depend on `ze-agents`, not
 the reverse; `ze-agents` importing either concrete type would invert the graph and violate
@@ -112,7 +112,7 @@ target faces the way `claim-topology.md` already warned against.
 ## 5. Updating `ze_plugin.contribution._LICENSE`
 
 **Decision**: `_LICENSE[SourceFunction.SOCIAL_COGNITION]` changes from `frozenset()` to
-`frozenset({ClaimKind.IDENTITY})` in `core/ze-plugin/ze_plugin/contribution.py`. No other
+`frozenset({ClaimKind.IDENTITY})` in `core/contracts/ze-plugin/ze_plugin/contribution.py`. No other
 `_LICENSE` entries change — `SourceFunction.ACTION` stays `frozenset()` (per Decision 3 above,
 action's proposal fields never construct a `Contribution` tagged `ACTION`; `record_trace` is
 explicitly exempt per FR-008 and never enters the seam at all).

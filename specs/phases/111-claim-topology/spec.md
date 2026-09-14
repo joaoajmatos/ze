@@ -6,7 +6,7 @@
 
 **Status**: Implemented
 
-**Input**: User description: "Implement the shared claim topology proposed in specs/arch/claim-topology.md: a single ClaimKind/Provenance/Confidence vocabulary in core/ze-agents (ze_agents/claims.py), with a shared, parameterized confidence-decay function, retrofitted into the four existing claim producers — OpenLoop (core/ze-worldstate, becomes the reference/rename source), Hypothesis/EvidenceRef (core/ze-correlation, including fixing the currently-missing decay job so hypothesis confidence actually ages), memory_facts (core/ze-memory, replacing its bespoke -0.03/30-day linear decay with the shared decay profile), and Signal (core/ze-plugin, adding claim_kind and real confidence fields it currently lacks entirely, keeping magnitude as a separate relevance concept). Also extract the shared staleness-sweep utility duplicated across ze-worldstate and ze-automation into core/ze-proactive. No new tables; only add the missing claim_kind column to correlation_hypothesis and memory_facts via package-owned Alembic migrations. No consumer behavior changes beyond the decay fix."
+**Input**: User description: "Implement the shared claim topology proposed in specs/arch/claim-topology.md: a single ClaimKind/Provenance/Confidence vocabulary in core/contracts/ze-agents (ze_agents/claims.py), with a shared, parameterized confidence-decay function, retrofitted into the four existing claim producers — OpenLoop (core/cognition/ze-worldstate, becomes the reference/rename source), Hypothesis/EvidenceRef (core/cognition/ze-correlation, including fixing the currently-missing decay job so hypothesis confidence actually ages), memory_facts (core/cognition/ze-memory, replacing its bespoke -0.03/30-day linear decay with the shared decay profile), and Signal (core/contracts/ze-plugin, adding claim_kind and real confidence fields it currently lacks entirely, keeping magnitude as a separate relevance concept). Also extract the shared staleness-sweep utility duplicated across ze-worldstate and ze-automation into core/contracts/ze-proactive. No new tables; only add the missing claim_kind column to correlation_hypothesis and memory_facts via package-owned Alembic migrations. No consumer behavior changes beyond the decay fix."
 
 **Governed by**: [`specs/arch/ze-doctrine.md`](../../arch/ze-doctrine.md) (constitutional — §The
 epistemic ontology, §Belief revision), [`specs/arch/claim-topology.md`](../../arch/claim-topology.md)
@@ -26,11 +26,11 @@ A 2026-07 architecture review mapped every reflective/proactive mechanism in the
 against the doctrine's epistemic ontology (identity/fact/inference/suspicion/priority claims,
 each carrying honest provenance and a confidence that decays) and found the ontology
 implemented **four times, four incompatible ways**, instead of once: `OpenLoop`
-(`core/ze-worldstate`) has the only correct, complete implementation; `Signal`
-(`core/ze-plugin`) has no confidence or claim-kind field at all; `Hypothesis`/`EvidenceRef`
-(`core/ze-correlation`) has confidence but **no decay job**, so a correlation's confidence is
+(`core/cognition/ze-worldstate`) has the only correct, complete implementation; `Signal`
+(`core/contracts/ze-plugin`) has no confidence or claim-kind field at all; `Hypothesis`/`EvidenceRef`
+(`core/cognition/ze-correlation`) has confidence but **no decay job**, so a correlation's confidence is
 frozen forever at generation time — a live, direct violation of the doctrine's "everything
-decays" rule; `memory_facts` (`core/ze-memory`) has a fourth, differently-shaped
+decays" rule; `memory_facts` (`core/cognition/ze-memory`) has a fourth, differently-shaped
 provenance/confidence pair. Three independent modules also reimplement the identical "has this
 gone stale" cutoff-check shape with no shared code.
 
@@ -45,7 +45,7 @@ scale is not possible while they use four incompatible scales.
 values (`conversation`, `email`, `calendar`, `ingestion`, `user_declared`) into the same closed
 `Provenance` enum as the doctrine's four epistemic-origin categories. Two of those five —
 `email`, `calendar` — are plugin domain vocabulary (`ze-messenger`, `ze-calendar`), not core
-concepts; baking them into a core enum would require a `core/ze-agents` change every time a
+concepts; baking them into a core enum would require a `core/contracts/ze-agents` change every time a
 future plugin adds its own inflow channel, violating Principle III. This spec was reworked
 after `specs/arch/plugin-domain-vocabulary.md` (a constitutional amendment) resolved the
 question: the doctrine-closed `Provenance` enum stays exactly the four epistemic categories
@@ -123,7 +123,7 @@ changed their type.
 
 **Acceptance Scenarios**:
 
-1. **Given** the shared vocabulary exists in `core/ze-agents`, **When** `ze-correlation`,
+1. **Given** the shared vocabulary exists in `core/contracts/ze-agents`, **When** `ze-correlation`,
    `ze-memory`, and `ze-plugin` each import it, **Then** none of them gain a new package
    dependency they didn't already have (all three already depend on `ze-agents` directly or
    transitively).
@@ -163,7 +163,7 @@ decisions before and after the extraction, for the same inputs.
 
 **Acceptance Scenarios**:
 
-1. **Given** the shared staleness helper exists in `core/ze-proactive`, **When**
+1. **Given** the shared staleness helper exists in `core/contracts/ze-proactive`, **When**
    `stale_suspicion.py`, `drift.py`, and `stuck_goals.py` are each updated to call it, **Then**
    each job's own state-transition and window-configuration logic is unchanged — only the
    "is this past its cutoff" check is shared.
@@ -202,10 +202,10 @@ decisions before and after the extraction, for the same inputs.
 ### Functional Requirements
 
 - **FR-001**: The system MUST provide one shared `ClaimKind` enumeration (`IDENTITY`, `FACT`,
-  `INFERENCE`, `SUSPICION`, `PRIORITY`) in `core/ze-agents`, replacing `ze-worldstate`'s
+  `INFERENCE`, `SUSPICION`, `PRIORITY`) in `core/contracts/ze-agents`, replacing `ze-worldstate`'s
   `LoopClaimKind` as the canonical definition.
 - **FR-002**: The system MUST provide one shared, doctrine-closed `Provenance` enumeration in
-  `core/ze-agents` covering exactly the doctrine's four epistemic-origin categories
+  `core/contracts/ze-agents` covering exactly the doctrine's four epistemic-origin categories
   (`graph_recall`, `live_search`, `prompt_supplied`, `synthesized`) — no plugin-specific or
   inflow-specific values. Per `specs/arch/plugin-domain-vocabulary.md`, this enum MUST NOT gain
   a member naming a specific plugin, channel, or inflow mechanism (e.g. `email`, `calendar`);
@@ -222,7 +222,7 @@ decisions before and after the extraction, for the same inputs.
   existing `LoopProvenance(provenance)` coercion in `propose_loop_candidates` (which raises
   `ValueError` for any unrecognized string) MUST be removed; any plugin may supply its own
   inflow string without a `ze-worldstate` code change.
-- **FR-004**: The system MUST provide one shared `Confidence` value type in `core/ze-agents`
+- **FR-004**: The system MUST provide one shared `Confidence` value type in `core/contracts/ze-agents`
   carrying a `value: float` in `[0, 1]` and a `decay_profile` discriminator, plus one decay
   function parameterized by that profile — not a decay function per producer.
 - **FR-005**: The decay function MUST support, at minimum, an `EVIDENCE_WEIGHTED` profile
@@ -282,14 +282,14 @@ decisions before and after the extraction, for the same inputs.
 - **FR-014**: The `SignalSource` Protocol itself, and how `ze-correlation` and `ze-worldstate`
   consume signals (polling `signal_sources()`), MUST NOT change. Only the shape of the object
   returned changes.
-- **FR-015**: The system MUST provide one shared staleness-check helper in `core/ze-proactive`
+- **FR-015**: The system MUST provide one shared staleness-check helper in `core/contracts/ze-proactive`
   implementing the "cutoff = now − window; past it → stale" decision, and `ze-worldstate`'s
   `stale_suspicion.py` and `drift.py` sweep and `ze-automation`'s `stuck_goals.py` MUST each be
   updated to call it for their staleness check, while retaining their own distinct
   state-transition logic and window configuration unchanged.
 - **FR-016**: The system MUST add a `claim_kind` column to `correlation_hypothesis`
-  (`core/ze-correlation`, package-owned migration, `zcor` prefix) and to `memory_facts`
-  (`core/ze-memory`, package-owned migration, `zm` prefix), each as a required (non-nullable)
+  (`core/cognition/ze-correlation`, package-owned migration, `zcor` prefix) and to `memory_facts`
+  (`core/cognition/ze-memory`, package-owned migration, `zm` prefix), each as a required (non-nullable)
   column with a migration-time backfill for existing rows — no existing row may be left without
   a `claim_kind`.
 - **FR-017**: This feature MUST NOT introduce a `Contribution` type, an arbitration mechanism,

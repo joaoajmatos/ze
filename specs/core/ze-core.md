@@ -1,6 +1,6 @@
 # ze-core — Orchestration Engine
 
-> **Package:** `core/ze-core` — `ze_core/`
+> **Package:** `core/engine/ze-core` — `ze_core/`
 > **Status:** Done
 > **Supersedes:** [01-agent.md](01-agent.md), [02-app-interface.md](02-app-interface.md), [03-capability-gate.md](03-capability-gate.md), [04-routing.md](04-routing.md), [05-orchestration.md](05-orchestration.md), [07-container.md](07-container.md), [09-conversation.md](09-conversation.md) (all stale)
 
@@ -53,7 +53,7 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
 ## Module Location
 
 ```
-core/ze-core/ze_core/
+core/engine/ze-core/ze_core/
   orchestration/      ← graph_builder, nodes, AgentState, edges, agent registry
   routing/            ← EmbeddingRouter, ComplexityEstimator, fallback, RouterStore
   capability/         ← CapabilityGate, PostgresCapabilityOverrideStore, Mode

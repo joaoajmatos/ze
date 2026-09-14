@@ -91,6 +91,6 @@ distinct treatment for `suspected` vs `active` rows.
 ## Automated coverage
 
 The above scenarios should each have a corresponding test in
-`core/ze-worldstate/tests/` (unit, mocked asyncpg/LLM/embedder) plus at least one
+`core/cognition/ze-worldstate/tests/` (unit, mocked asyncpg/LLM/embedder) plus at least one
 `apps/ze-api/tests/` integration-style test exercising the REST contract end-to-end. Web-side
 coverage: `apps/ze-web/src/entities/loop` and `widgets/loop-review` via vitest.

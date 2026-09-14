@@ -70,7 +70,7 @@ This phase specifies **only the engine core**. No graph wiring, no push job, no 
 ## Module Location
 
 ```
-core/ze-correlation/ze_correlation/
+core/cognition/ze-correlation/ze_correlation/
     __init__.py
     types.py            # Hypothesis, EvidenceRef
     engine.py           # CorrelationEngine
@@ -87,7 +87,7 @@ wire those in.
 ## Data Structures
 
 ```python
-# core/ze-correlation/ze_correlation/types.py
+# core/cognition/ze-correlation/ze_correlation/types.py
 
 @dataclass
 class EvidenceRef:
@@ -119,7 +119,7 @@ class Hypothesis:
 ## Interface Contract
 
 ```python
-# core/ze-correlation/ze_correlation/engine.py
+# core/cognition/ze-correlation/ze_correlation/engine.py
 
 class CorrelationEngine:
     def __init__(

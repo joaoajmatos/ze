@@ -541,10 +541,10 @@
       "at": "2026-08-14T22:50:47.413Z"
     }
   ],
-  "approach": "New core/ze-workspace plus sidecar/workspace (browser-helper split). WorkspaceMode is a persisted singleton with in-node interrupt() confirms; skill scripts are stored and need a separate executable approval. In-turn only — detach/follow-through is spec 116.",
+  "approach": "New core/ops/ze-workspace plus sidecar/workspace (browser-helper split). WorkspaceMode is a persisted singleton with in-node interrupt() confirms; skill scripts are stored and need a separate executable approval. In-turn only — detach/follow-through is spec 116.",
   "decisions": [
     {
-      "decision": "core/ze-workspace + sidecar/workspace, not a ZePlugin",
+      "decision": "core/ops/ze-workspace + sidecar/workspace, not a ZePlugin",
       "why": "Cross-cutting computer beside the mind; same split as browser + skills/worldstate wiring",
       "rejected": "Fold into ze-core, or a ZePlugin"
     },
@@ -830,22 +830,22 @@
       "status": "DONE",
       "did": "Created ze-workspace package manifest with ze-agents/logging/data, httpx, asyncpg; hatch wheel packages=ze_workspace; pytest asyncio_mode=auto",
       "files": [
-        "core/ze-workspace/pyproject.toml"
+        "core/ops/ze-workspace/pyproject.toml"
       ]
     },
     "T002": {
       "status": "DONE",
       "did": "Created empty ze_workspace package marker",
       "files": [
-        "core/ze-workspace/ze_workspace/__init__.py"
+        "core/ops/ze-workspace/ze_workspace/__init__.py"
       ]
     },
     "T003": {
       "status": "DONE",
       "did": "Created tests package plus conftest with mock asyncpg pool and fake httpx sidecar helpers",
       "files": [
-        "core/ze-workspace/tests/__init__.py",
-        "core/ze-workspace/tests/conftest.py"
+        "core/ops/ze-workspace/tests/__init__.py",
+        "core/ops/ze-workspace/tests/conftest.py"
       ]
     },
     "T004": {
@@ -895,21 +895,21 @@
       "status": "DONE",
       "did": "Defined WorkspaceMode/RunStatus/Origin/Action enums and WorkspaceRun/File/State dataclasses",
       "files": [
-        "core/ze-workspace/ze_workspace/types.py"
+        "core/ops/ze-workspace/ze_workspace/types.py"
       ]
     },
     "T010": {
       "status": "DONE",
       "did": "Defined WorkspaceUnavailable/Busy/Full/Path/NotFound errors subclassing ZeError",
       "files": [
-        "core/ze-workspace/ze_workspace/errors.py"
+        "core/ops/ze-workspace/ze_workspace/errors.py"
       ]
     },
     "T011": {
       "status": "DONE",
       "did": "Added ToolConfirmationRequired next to ToolBlockedError with prompt, editable, proposed payload; re-exported from ze_sdk.errors",
       "files": [
-        "core/ze-agents/ze_agents/errors.py",
+        "core/contracts/ze-agents/ze_agents/errors.py",
         "packages/ze-sdk/ze_sdk/errors.py"
       ]
     },
@@ -917,16 +917,16 @@
       "status": "DONE",
       "did": "Added WorkspaceUsageTrace and MessageTrace.workspace; SkillUsageTrace.script_ran default false; parse nested workspace on load",
       "files": [
-        "core/ze-core/ze_core/conversation/messages/types.py",
-        "core/ze-core/ze_core/conversation/messages/store.py"
+        "core/engine/ze-core/ze_core/conversation/messages/types.py",
+        "core/engine/ze-core/ze_core/conversation/messages/store.py"
       ]
     },
     "T013": {
       "status": "DONE",
       "did": "Added zws001 migration for workspace_state singleton and workspace_runs plus Alembic env.py",
       "files": [
-        "core/ze-workspace/ze_workspace/migrations/env.py",
-        "core/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py"
+        "core/ops/ze-workspace/ze_workspace/migrations/env.py",
+        "core/ops/ze-workspace/ze_workspace/migrations/versions/zws001_workspace.py"
       ]
     },
     "T014": {
@@ -940,21 +940,21 @@
       "status": "DONE",
       "did": "Implemented WorkspaceStore protocol and PostgresWorkspaceStore with mode persist, run insert/list origin filter, last_used/reset timestamps",
       "files": [
-        "core/ze-workspace/ze_workspace/store.py"
+        "core/ops/ze-workspace/ze_workspace/store.py"
       ]
     },
     "T016": {
       "status": "DONE",
       "did": "Implemented WorkspaceClient mapping sidecar HTTP to workspace errors",
       "files": [
-        "core/ze-workspace/ze_workspace/client.py"
+        "core/ops/ze-workspace/ze_workspace/client.py"
       ]
     },
     "T017": {
       "status": "DONE",
       "did": "Implemented WorkspaceGate mode x action x origin decisions",
       "files": [
-        "core/ze-workspace/ze_workspace/gate.py"
+        "core/ops/ze-workspace/ze_workspace/gate.py"
       ]
     },
     "T018": {
@@ -983,16 +983,16 @@
       "status": "DONE",
       "did": "Implemented redact denylist and called it from PostgresWorkspaceStore insert of output_preview and error_summary",
       "files": [
-        "core/ze-workspace/ze_workspace/sanitize.py",
-        "core/ze-workspace/ze_workspace/store.py"
+        "core/ops/ze-workspace/ze_workspace/sanitize.py",
+        "core/ops/ze-workspace/ze_workspace/store.py"
       ]
     },
     "T022": {
       "status": "DONE",
       "did": "Added build_workspace_stack, imported tools for @tool registration, wired client/gate/store into container dep_map configurable and close",
       "files": [
-        "core/ze-workspace/ze_workspace/bootstrap.py",
-        "core/ze-workspace/ze_workspace/tools.py",
+        "core/ops/ze-workspace/ze_workspace/bootstrap.py",
+        "core/ops/ze-workspace/ze_workspace/tools.py",
         "apps/ze-api/ze_api/container.py"
       ]
     },
@@ -1000,49 +1000,49 @@
       "status": "DONE",
       "did": "Unit tests for PostgresWorkspaceStore mode persist and run insert/list origin filter",
       "files": [
-        "core/ze-workspace/tests/test_store.py"
+        "core/ops/ze-workspace/tests/test_store.py"
       ]
     },
     "T024": {
       "status": "DONE",
       "did": "Unit tests for WorkspaceGate conversation Off deny, user REST allow, unattended Auto-only run, reset-always-confirm",
       "files": [
-        "core/ze-workspace/tests/test_gate.py"
+        "core/ops/ze-workspace/tests/test_gate.py"
       ]
     },
     "T025": {
       "status": "DONE",
       "did": "Unit tests for WorkspaceClient health false, 409 busy/full, 400 outside_workspace",
       "files": [
-        "core/ze-workspace/tests/test_client.py"
+        "core/ops/ze-workspace/tests/test_client.py"
       ]
     },
     "T026": {
       "status": "DONE",
       "did": "Sidecar contract tests with fake supervisor: path escape, stripped env, busy, ceiling unchanged",
       "files": [
-        "core/ze-workspace/tests/test_sidecar_contract.py"
+        "core/ops/ze-workspace/tests/test_sidecar_contract.py"
       ]
     },
     "T027": {
       "status": "DONE",
       "did": "Unit tests for redact stripping OPENROUTER_API_KEY and secret-suffix keys",
       "files": [
-        "core/ze-workspace/tests/test_sanitize.py"
+        "core/ops/ze-workspace/tests/test_sanitize.py"
       ]
     },
     "T028": {
       "status": "DONE",
       "did": "Unit tests for workspace tools covering Off/Plan/Ask/Auto-edit/Auto, spill path, and injected ingest.",
       "files": [
-        "core/ze-workspace/tests/test_tools.py"
+        "core/ops/ze-workspace/tests/test_tools.py"
       ]
     },
     "T029": {
       "status": "DONE",
       "did": "In-node confirm resume tests: approve edited payload, deny skips sidecar, no ze_workspace import.",
       "files": [
-        "core/ze-core/tests/orchestration/test_workspace_interrupt.py"
+        "core/engine/ze-core/tests/orchestration/test_workspace_interrupt.py"
       ]
     },
     "T030": {
@@ -1064,23 +1064,23 @@
       "status": "DONE",
       "did": "Implemented workspace list/read/write/delete/run/ingest tools with gate, confirm, redact, injected ingest.",
       "files": [
-        "core/ze-workspace/ze_workspace/tools.py"
+        "core/ops/ze-workspace/ze_workspace/tools.py"
       ]
     },
     "T033": {
       "status": "DONE",
       "did": "Merged platform workspace tools into BaseAgent; catch ToolConfirmationRequired in call_tool.",
       "files": [
-        "core/ze-agents/ze_agents/base_agent.py",
-        "core/ze-agents/ze_agents/interrupt.py"
+        "core/contracts/ze-agents/ze_agents/base_agent.py",
+        "core/contracts/ze-agents/ze_agents/interrupt.py"
       ]
     },
     "T034": {
       "status": "DONE",
       "did": "Mapped ToolConfirmationRequired to LangGraph interrupt and Command(resume=...) without importing ze_workspace.",
       "files": [
-        "core/ze-core/ze_core/orchestration/nodes/execution.py",
-        "core/ze-core/ze_core/conversation/turn.py"
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py",
+        "core/engine/ze-core/ze_core/conversation/turn.py"
       ]
     },
     "T035": {
@@ -1094,7 +1094,7 @@
       "status": "DONE",
       "did": "Workspace REST facade and routes for status, mode, files, ingest, runs; mounted under /api/v0.",
       "files": [
-        "core/ze-workspace/ze_workspace/rest.py",
+        "core/ops/ze-workspace/ze_workspace/rest.py",
         "apps/ze-api/ze_api/api/routes/workspace.py",
         "apps/ze-api/ze_api/api/app.py",
         "apps/ze-api/ze_api/api/dependencies.py"
@@ -1113,7 +1113,7 @@
       "status": "DONE",
       "did": "Populate MessageTrace.workspace, WorkspaceSection, and visible MessageBubble chip.",
       "files": [
-        "core/ze-core/ze_core/orchestration/nodes/trace.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/trace.py",
         "apps/ze-web/src/widgets/trace-panel/ui/WorkspaceSection.tsx",
         "apps/ze-web/src/entities/message/ui/MessageBubble.tsx"
       ]
@@ -1125,31 +1125,31 @@
         "apps/ze-web/src/entities/message/ui/ChatInput.tsx",
         "apps/ze-web/src/widgets/chat-workspace/ui/ChatWorkspace.tsx",
         "apps/ze-web/src/entities/workspace/api/placeWorkspaceFile.ts",
-        "core/ze-core/ze_core/orchestration/nodes/context.py"
+        "core/engine/ze-core/ze_core/orchestration/nodes/context.py"
       ]
     },
     "T040": {
       "status": "DONE",
       "did": "Parser/importer/store tests cover has_scripts, persisted zip scripts, and executable-approval transitions",
       "files": [
-        "core/ze-skills/tests/test_parser.py",
-        "core/ze-skills/tests/test_importer.py",
-        "core/ze-skills/tests/test_store.py",
-        "core/ze-skills/tests/test_review.py"
+        "core/automation/ze-skills/tests/test_parser.py",
+        "core/automation/ze-skills/tests/test_importer.py",
+        "core/automation/ze-skills/tests/test_store.py",
+        "core/automation/ze-skills/tests/test_review.py"
       ]
     },
     "T041": {
       "status": "DONE",
       "did": "Review tests assert approve_skill never sets executable_approved and approve_skill_executables requires active+has_scripts",
       "files": [
-        "core/ze-skills/tests/test_review.py"
+        "core/automation/ze-skills/tests/test_review.py"
       ]
     },
     "T042": {
       "status": "DONE",
       "did": "workspace_run_skill_script tests: refuse without approval; Off/Plan skip; Ask confirms; Auto materializes DB bytes",
       "files": [
-        "core/ze-workspace/tests/test_tools.py"
+        "core/ops/ze-workspace/tests/test_tools.py"
       ]
     },
     "T043": {
@@ -1164,24 +1164,24 @@
       "status": "DONE",
       "did": "zsk002 renames has_scripts, adds executable approval columns and skill_scripts BYTEA table; types/store updated",
       "files": [
-        "core/ze-skills/ze_skills/migrations/versions/zsk002_skill_scripts.py",
-        "core/ze-skills/ze_skills/types.py",
-        "core/ze-skills/ze_skills/store.py"
+        "core/automation/ze-skills/ze_skills/migrations/versions/zsk002_skill_scripts.py",
+        "core/automation/ze-skills/ze_skills/types.py",
+        "core/automation/ze-skills/ze_skills/store.py"
       ]
     },
     "T045": {
       "status": "DONE",
       "did": "Importer persists script bytes; approve_skill does not promote executables; approve_skill_executables and refresh clear flag",
       "files": [
-        "core/ze-skills/ze_skills/importer.py",
-        "core/ze-skills/ze_skills/review.py"
+        "core/automation/ze-skills/ze_skills/importer.py",
+        "core/automation/ze-skills/ze_skills/review.py"
       ]
     },
     "T046": {
       "status": "DONE",
       "did": "POST /skills/{id}/approve-executables plus has_scripts/executable_approved/script_filenames on skill schemas; codegen deferred to T060",
       "files": [
-        "core/ze-skills/ze_skills/rest.py",
+        "core/automation/ze-skills/ze_skills/rest.py",
         "apps/ze-api/ze_api/api/routes/skills.py",
         "apps/ze-api/ze_api/api/schemas.py"
       ]
@@ -1190,8 +1190,8 @@
       "status": "DONE",
       "did": "workspace_run_skill_script requires active+executable_approved, gates as run, materializes bytes, records skill_id/path and script_ran",
       "files": [
-        "core/ze-workspace/ze_workspace/tools.py",
-        "core/ze-core/ze_core/orchestration/nodes/trace.py"
+        "core/ops/ze-workspace/ze_workspace/tools.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/trace.py"
       ]
     },
     "T048": {
@@ -1222,7 +1222,7 @@
       "did": "POST /workspace/reset issues confirm_request; approve cancels in-flight run then wipes and sets last_reset_at",
       "files": [
         "apps/ze-api/ze_api/api/routes/workspace.py",
-        "core/ze-workspace/ze_workspace/rest.py",
+        "core/ops/ze-workspace/ze_workspace/rest.py",
         "apps/ze-api/ze_api/api/websocket/confirmation.py"
       ]
     },
@@ -1248,18 +1248,18 @@
       "status": "DONE",
       "did": "Unattended gate tests: Ask/Plan/Off deny run; Auto-edit may write but not run; Auto may run; origin=unattended",
       "files": [
-        "core/ze-automation/tests/test_workspace_unattended.py"
+        "core/automation/ze-automation/tests/test_workspace_unattended.py"
       ]
     },
     "T055": {
       "status": "DONE",
       "did": "Goal and workflow executors consult injected WorkspaceGate with origin=unattended before workspace tools; no plugin import of ze_workspace",
       "files": [
-        "core/ze-automation/ze_automation/workspace_unattended.py",
-        "core/ze-automation/ze_automation/goals/executor.py",
-        "core/ze-automation/ze_automation/bootstrap.py",
+        "core/automation/ze-automation/ze_automation/workspace_unattended.py",
+        "core/automation/ze-automation/ze_automation/goals/executor.py",
+        "core/automation/ze-automation/ze_automation/bootstrap.py",
         "apps/ze-api/ze_api/container.py",
-        "core/ze-workspace/ze_workspace/tools.py"
+        "core/ops/ze-workspace/ze_workspace/tools.py"
       ]
     },
     "T056": {
@@ -1279,9 +1279,9 @@
     },
     "T058": {
       "status": "DONE",
-      "did": "Added core/ze-workspace/README.md and docs/workspace.md (modes, isolation, Compose/Fly); env vars in configuration.md; architecture/package-architecture mentions.",
+      "did": "Added core/ops/ze-workspace/README.md and docs/workspace.md (modes, isolation, Compose/Fly); env vars in configuration.md; architecture/package-architecture mentions.",
       "files": [
-        "core/ze-workspace/README.md",
+        "core/ops/ze-workspace/README.md",
         "docs/workspace.md",
         "docs/README.md",
         "docs/configuration.md",
@@ -1299,5 +1299,6 @@
         "specs/phases/115-workspace-sidecar/spec.md"
       ]
     }
-  }
+  },
+  "telemetryInstanceId": "0f898fc2-1edc-4160-98c6-c1d332db537a"
 }

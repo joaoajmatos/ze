@@ -81,11 +81,11 @@ under 30s" (SC-005) — no scale engineering beyond straightforward indexed quer
   `ReferenceFile`), `StrEnum` for `SkillStatus`/`SkillSource`/`SkillTrigger`. New `ZeError`
   subclasses (`SkillParseError`, `SkillNotFoundError`, `InvalidSkillTransitionError`) in
   `errors.py`. All I/O async (`httpx.AsyncClient`, `asyncpg`).
-- **V. Test Discipline** — PASS (planned). Tests in `core/ze-skills/tests/`; mock `httpx`
+- **V. Test Discipline** — PASS (planned). Tests in `core/automation/ze-skills/tests/`; mock `httpx`
   responses for import/recheck, mock asyncpg pool for the store, mock the embedder for
   matching tests.
 - **VI. Explicit Persistence** — PASS. Hand-written raw-SQL Alembic migrations under
-  `core/ze-skills/ze_skills/migrations/versions/`, prefix `zsk`, registered in
+  `core/automation/ze-skills/ze_skills/migrations/versions/`, prefix `zsk`, registered in
   `apps/ze-api/ze_api/migrate.py`'s `_ZE_SKILLS_VERSIONS` constant alongside the other
   directly-wired core packages. No ORM.
 - **VII. One LLM Gateway, Local Embeddings** — PASS. Skill matching uses the existing local
@@ -117,7 +117,7 @@ specs/phases/114-agent-skills/
 ### Source Code (repository root)
 
 ```text
-core/ze-skills/                        # NEW core package (Layer: core, no domain knowledge)
+core/automation/ze-skills/                        # NEW core package (Layer: core, no domain knowledge)
 ├── pyproject.toml                     # deps: ze-agents, ze-proactive, ze-logging, ze-data, httpx, asyncpg
 └── ze_skills/
     ├── __init__.py
@@ -142,17 +142,17 @@ core/ze-skills/                        # NEW core package (Layer: core, no domai
         └── versions/
             └── zsk001_skills.py       # skills, skill_reference_files, skill_reviews tables
 
-core/ze-core/ze_core/orchestration/nodes/skills.py   # NEW node: match_skills(state, config)
-core/ze-core/ze_core/orchestration/graph.py           # add_node("match_skills", ...) after embed_route
-core/ze-core/ze_core/orchestration/nodes/trace.py     # record_trace: populate MessageTrace.skills_used
-core/ze-core/ze_core/conversation/messages/types.py   # MessageTrace.skills_used: list[SkillUsageTrace]
+core/engine/ze-core/ze_core/orchestration/nodes/skills.py   # NEW node: match_skills(state, config)
+core/engine/ze-core/ze_core/orchestration/graph.py           # add_node("match_skills", ...) after embed_route
+core/engine/ze-core/ze_core/orchestration/nodes/trace.py     # record_trace: populate MessageTrace.skills_used
+core/engine/ze-core/ze_core/conversation/messages/types.py   # MessageTrace.skills_used: list[SkillUsageTrace]
 
-core/ze-agents/ze_agents/types.py                     # AgentContext: + active_skills, skill_tool_names
-core/ze-agents/ze_agents/base_agent.py                # _build_system_prompt: prepend skill instructions;
+core/contracts/ze-agents/ze_agents/types.py                     # AgentContext: + active_skills, skill_tool_names
+core/contracts/ze-agents/ze_agents/base_agent.py                # _build_system_prompt: prepend skill instructions;
                                                         # agentic_loop: intersect tool_names with skill_tool_names
 
-core/ze-plugin/ze_plugin/plugin.py                     # ZePlugin.bundled_skill_paths() -> list[str], default []
-core/ze-agents/ze_agents/bootstrap.py                  # import bundled skill modules at startup (mirrors
+core/contracts/ze-plugin/ze_plugin/plugin.py                     # ZePlugin.bundled_skill_paths() -> list[str], default []
+core/contracts/ze-agents/ze_agents/bootstrap.py                  # import bundled skill modules at startup (mirrors
                                                         # _plugin_agent_module_paths)
 
 apps/ze-api/ze_api/container.py                        # wire build_skills_stack(shared, settings), pass
@@ -175,12 +175,12 @@ apps/ze-web/src/widgets/skill-management/
 apps/ze-web/src/pages/skills/                           # management page, routed via nav-routes.ts
 apps/ze-web/src/widgets/mind-panel/…                     # extend existing trace panel to render skills_used
 
-core/ze-skills/tests/                                   # unit tests: parser, importer, matching, store, review
+core/automation/ze-skills/tests/                                   # unit tests: parser, importer, matching, store, review
 apps/ze-api/tests/…                                     # REST route tests
 apps/ze-web/src/**/*.test.tsx                            # management widget tests
 ```
 
-**Structure Decision**: New standalone `core/ze-skills/` package, directly wired (not a
+**Structure Decision**: New standalone `core/automation/ze-skills/` package, directly wired (not a
 `ZePlugin`) — same composition pattern as `ze-worldstate`, since skills are cross-cutting
 engine-adjacent infrastructure consumed by every agent rather than one domain's concern. Graph
 integration point is a single new orchestration node (`match_skills`) reading an injected

@@ -51,7 +51,7 @@ just no longer self-triggering a send.
 
 ## Decision: Goal urgency signal = existing `idle_days` staleness, not gate-deadline proximity
 
-**Rationale**: `core/ze-automation` has no deadline field anywhere in `Goal`,
+**Rationale**: `core/automation/ze-automation` has no deadline field anywhere in `Goal`,
 `Milestone`, or `VerificationGate` (confirmed by exhaustive grep — zero occurrences
 of "deadline"). The only existing goal urgency signal exposed by `GoalStore` is
 `list_stuck(idle_days, alert_cooldown_days) -> list[StuckGoal]`, where `idle_days`
@@ -71,10 +71,10 @@ computed, don't recompute" posture applied to loops (drift state) and hypotheses
   scope (this feature is a projection, not a producer-side data model change) and
   would itself need its own spec/clarification about who sets deadlines and how.
 
-## Decision: Shared budget primitive relocates to `core/ze-proactive`
+## Decision: Shared budget primitive relocates to `core/contracts/ze-proactive`
 
 **Rationale**: FR-006 requires the shared attention-budget check to live in
-`core/ze-proactive`. Today `within_budget()` and the `_PUSH_LOG_KEY` constant are
+`core/contracts/ze-proactive`. Today `within_budget()` and the `_PUSH_LOG_KEY` constant are
 defined in `ze_correlation/push.py`, and `ze_worldstate/surfacing.py` imports
 `within_budget` *from `ze_correlation`* — an existing cross-package reach-around
 that predates this feature. Moving `within_budget()` (plus new
@@ -99,7 +99,7 @@ costs nothing and documents intent).
 
 ## Decision: Shared config key `proactive.budget.max_pushes_per_day`
 
-**Rationale**: `core/ze-proactive` has no dedicated settings dataclass — other
+**Rationale**: `core/contracts/ze-proactive` has no dedicated settings dataclass — other
 proactive jobs read their config ad hoc from `settings.config["proactive"][...]`
 (`ze_proactive/bootstrap.py`). Following that established pattern, the new shared
 limit reads from `proactive.budget.max_pushes_per_day` in

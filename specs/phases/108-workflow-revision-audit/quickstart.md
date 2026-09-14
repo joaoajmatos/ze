@@ -76,9 +76,9 @@ make dev-full        # backend :8000 + web :5173
 
 ## Automated coverage (see tasks.md for the full breakdown)
 
-- `core/ze-automation/tests/workflow/test_postgres_revisions.py` — revision write on
+- `core/automation/ze-automation/tests/workflow/test_postgres_revisions.py` — revision write on
   create/update, no-op skip, cascade delete, revision numbering (mocked asyncpg pool).
-- `core/ze-automation/tests/workflow/test_revision_summary.py` — diff summary
+- `core/automation/ze-automation/tests/workflow/test_revision_summary.py` — diff summary
   generation for add/remove/field-change/create cases.
 - `apps/ze-api/tests/api/routes/test_workflows_revisions.py` — `GET
   .../revisions` pagination, 404, response shape.

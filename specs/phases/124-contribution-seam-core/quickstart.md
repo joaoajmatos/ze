@@ -15,7 +15,7 @@ make migrate      # applies the new zm018 provenance migration
 ## 1. `Contribution` type + licensing table (User Story 1)
 
 ```bash
-make test-plugin   # core/ze-plugin/tests/test_contribution.py
+make test-plugin   # core/contracts/ze-plugin/tests/test_contribution.py
 make test-memory test-worldstate   # includes Edge Case 1 rejection tests, see §2
 ```
 
@@ -25,8 +25,8 @@ Expected: `Contribution` round-trips from both a `Signal` and an `OpenLoop`; `ma
 ## 2. General licensing enforcement at `Signal`/`OpenLoop`'s real write paths (Edge Case 1)
 
 ```bash
-pytest core/ze-memory/tests/test_contribution.py -k ingest_signal
-pytest core/ze-worldstate/tests/test_contribution.py -k extraction
+pytest core/cognition/ze-memory/tests/test_contribution.py -k ingest_signal
+pytest core/cognition/ze-worldstate/tests/test_contribution.py -k extraction
 ```
 
 Expected: a `Signal` mistagged with a `claim_kind` other than `FACT` is rejected by
@@ -38,8 +38,8 @@ reflection-specific.
 ## 3. Reflection cannot submit a fact (User Story 2 — the payoff)
 
 ```bash
-make test-memory        # core/ze-memory/tests/dream/test_contribution_write_path.py
-make test-correlation   # core/ze-correlation/tests/test_contribution_write_path.py
+make test-memory        # core/cognition/ze-memory/tests/dream/test_contribution_write_path.py
+make test-correlation   # core/cognition/ze-correlation/tests/test_contribution_write_path.py
 ```
 
 Manual check (Python REPL, after `make dev-eval` is running or directly against a test DB
@@ -76,7 +76,7 @@ promotion gate (`gates.py`/`promoter.py`) still runs on it afterward (FR-010).
 ## 4. `HINDSIGHT_FACT` naming-trap regression test
 
 ```bash
-pytest core/ze-memory/tests/dream/test_contribution_write_path.py -k hindsight_fact
+pytest core/cognition/ze-memory/tests/dream/test_contribution_write_path.py -k hindsight_fact
 ```
 
 Expected: an `ArtifactType.HINDSIGHT_FACT` artifact submitted with `claim_kind=INFERENCE`
@@ -97,7 +97,7 @@ adaptations (`signal_to_contribution`/`loop_to_contribution` wrapping) — SC-00
 ## 6. Evidence existence validation (dangling reference)
 
 ```bash
-pytest core/ze-plugin/tests/test_contribution.py -k evidence
+pytest core/contracts/ze-plugin/tests/test_contribution.py -k evidence
 ```
 
 Expected: a `SUSPICION`-kind contribution citing a nonexistent fact ID raises

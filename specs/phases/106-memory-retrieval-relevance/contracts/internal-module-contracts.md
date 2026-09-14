@@ -4,7 +4,7 @@ This feature has no external HTTP/WebSocket surface — it changes internal
 retrieval behavior consumed by `PostgresMemoryStore.retrieve()`, already called
 by the `fetch_context` graph node and directly by domain services (`GoalPlanner`,
 `BaseAgent.agentic_loop`). The contracts below are the function signatures new
-or changed code must satisfy so `core/ze-memory` callers, `core/ze-core`'s trace
+or changed code must satisfy so `core/cognition/ze-memory` callers, `core/engine/ze-core`'s trace
 node, and `apps/ze-web`'s Mind panel stay compatible.
 
 ## `ze_memory.relevance_config.relevance_config(settings) -> RelevanceConfig`

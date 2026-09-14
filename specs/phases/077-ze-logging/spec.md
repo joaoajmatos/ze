@@ -1,6 +1,6 @@
 # ze-logging — Spec
 
-> **Package:** `core/ze-logging`
+> **Package:** `core/kernel/ze-logging`
 > **Phase:** 77
 > **Status:** Done
 > **Prerequisite:** Phase 76 (ze-api shell cleanup — removes duplicate `ze_api/logging.py`)
@@ -11,7 +11,7 @@
 
 | Feature | Status |
 |---------|--------|
-| `core/ze-logging` package | ✅ Done |
+| `core/kernel/ze-logging` package | ✅ Done |
 | Move implementation from `ze_api/logging.py` | ✅ Done |
 | `ze_agents.logging` → re-export shim | ✅ Removed — all imports use `ze_logging` |
 | `ze_sdk` re-export update | ✅ Done |
@@ -62,7 +62,7 @@ every other package calls `get_logger`.
 ## Module Location
 
 ```
-core/ze-logging/
+core/kernel/ze-logging/
 ├── pyproject.toml          # deps: structlog only
 ├── tests/
 │   └── test_logging.py     # moved from apps/ze-api/tests/test_logging.py
@@ -161,7 +161,7 @@ ze-api              depends on ze-logging; calls configure_logging at startup
 
 ## Migration
 
-### 1. Create `core/ze-logging`
+### 1. Create `core/kernel/ze-logging`
 
 Move body of `apps/ze-api/ze_api/logging.py` → `ze_logging/__init__.py` unchanged
 (behaviour-preserving).
@@ -199,7 +199,7 @@ Files affected (~10): `api/app.py`, `container.py`, `interface/native.py`,
 
 ### 5. Tests
 
-- Move `apps/ze-api/tests/test_logging.py` → `core/ze-logging/tests/test_logging.py`
+- Move `apps/ze-api/tests/test_logging.py` → `core/kernel/ze-logging/tests/test_logging.py`
 - Update imports to `from ze_logging import ...`
 - ze-api test conftest: call `configure_logging()` via `ze_logging` if needed
 - Add `make test-logging` target (or fold into existing `make test-agents`)
@@ -224,7 +224,7 @@ context inside the graph if needed later.
 ## Verification
 
 ```bash
-make test-logging   # or core/ze-logging/tests
+make test-logging   # or core/kernel/ze-logging/tests
 make test-api
 make test-agents
 make lint

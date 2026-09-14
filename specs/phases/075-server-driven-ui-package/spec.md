@@ -21,7 +21,7 @@
 
 ## Purpose
 
-Ze already has a server-driven UI contract in practice: the backend emits structured component payloads, and `ze-web` renders them inline. This phase turns that contract into a dedicated workspace package, analogous to `@ze/client`, so the UI schema, runtime validation, and React rendering API have one canonical import surface instead of being split across backend-local definitions and web-app-local copies. It supersedes the current in-tree `core/ze-components` frontend contract surface rather than layering a second path on top of it.
+Ze already has a server-driven UI contract in practice: the backend emits structured component payloads, and `ze-web` renders them inline. This phase turns that contract into a dedicated workspace package, analogous to `@ze/client`, so the UI schema, runtime validation, and React rendering API have one canonical import surface instead of being split across backend-local definitions and web-app-local copies. It supersedes the current in-tree `core/kernel/ze-components` frontend contract surface rather than layering a second path on top of it.
 
 The package is intentionally split into a framework-neutral contract layer and a React renderer layer. The contract layer defines the primitive tree schema, parsing, and validation. The renderer layer provides the React implementation used by `ze-web` today and `ze-app` later if that app stays on React.
 

@@ -22,11 +22,11 @@ contact-store write boundaries — `consolidator.py::_store_candidate` and
 `memory_hooks.py::_write_contact_proposals` — in Phase 124's `validate_and_submit()`,
 matching/dedup logic itself untouched (FR-010). Flip
 `_LICENSE[SourceFunction.SOCIAL_COGNITION]` from `frozenset()` to `frozenset({ClaimKind.IDENTITY})`
-in `core/ze-plugin/ze_plugin/contribution.py` — the one core-package change this feature makes,
+in `core/contracts/ze-plugin/ze_plugin/contribution.py` — the one core-package change this feature makes,
 without which FR-004's rejection behavior is unenforceable. Backfill existing `contacts`/
 `contact_sources`/`contact_relationships` rows via one new migration (`zc028`, chain tip
 `zc027`). Retype `AgentResult.memory_proposals`/`.contact_proposals`
-(`core/ze-agents/ze_agents/types.py`) as `list[ClaimBearingProposal]`, a new core-owned
+(`core/contracts/ze-agents/ze_agents/types.py`) as `list[ClaimBearingProposal]`, a new core-owned
 `runtime_checkable` Protocol (mirroring the existing `LLMClient`/`DBPool` pattern) rather than
 either concrete producer type or `Contribution` itself — both are unreachable from `ze-agents`
 without inverting the package graph (research.md §3, discovered during this planning pass and
@@ -42,9 +42,9 @@ arbitration is built (FR-009).
 depends on `ze-plugin` (package graph), so this is a new file, not a new dependency edge.
 `plugins/ze-personal` gains an import of `ze_agents.claims` (already directly importable by
 plugin code — only `ze_core.*`/`ze_plugin.*` are barred, per CLAUDE.md) and the new
-`ze_sdk.contribution` module. `core/ze-agents/ze_agents/types.py` gains a `Protocol`
+`ze_sdk.contribution` module. `core/contracts/ze-agents/ze_agents/types.py` gains a `Protocol`
 referencing only its own `ze_agents.claims` module — no new cross-package edge.
-`core/ze-plugin/ze_plugin/contribution.py` gains one changed dict value — no new import.
+`core/contracts/ze-plugin/ze_plugin/contribution.py` gains one changed dict value — no new import.
 
 **Storage**: PostgreSQL via `asyncpg`. One new migration on the `ze-personal`-owned `zc` chain
 (tip `zc027`): `zc028_contacts_claim_kind.py`, adding `claim_kind TEXT NOT NULL` and
@@ -59,8 +59,8 @@ dream/correlation `test_contribution_write_path.py` pattern — FR-004/SC-001),
 (new fields on constructed `ContactProposal`s, FR-001/FR-002). New
 `plugins/ze-personal/tests/contacts/test_contribution.py` (`person_source_to_contribution()`
 round-trip, mirroring `ze_memory/tests/test_contribution.py`). Modified
-`core/ze-plugin/tests/test_contribution.py` (`_LICENSE[SOCIAL_COGNITION]` now accepts
-`IDENTITY`, rejects everything else). Modified `core/ze-agents/tests/` for the new
+`core/contracts/ze-plugin/tests/test_contribution.py` (`_LICENSE[SOCIAL_COGNITION]` now accepts
+`IDENTITY`, rejects everything else). Modified `core/contracts/ze-agents/tests/` for the new
 `ClaimBearingProposal` Protocol and `AgentResult` field types. New
 `packages/ze-sdk/tests/test_contribution.py` (re-export surface — imports resolve, `__all__`
 matches). No real DB (mock asyncpg with `AsyncMock`), no real LLM.
@@ -81,7 +81,7 @@ DB round-trip it wraps.
 `validate_and_submit()`'s logic (spec.md Assumptions) — only the `_LICENSE` table's
 `SOCIAL_COGNITION` entry changes. MUST NOT change consolidator dedup/merge logic (FR-010). MUST
 NOT wrap `record_trace` (FR-008). MUST NOT implement cross-contribution arbitration (FR-009).
-MUST NOT give `core/ze-agents` a dependency on `ze-memory`, `ze-personal`, or `ze-plugin`
+MUST NOT give `core/contracts/ze-agents` a dependency on `ze-memory`, `ze-personal`, or `ze-plugin`
 (Principle III) — resolved via the `ClaimBearingProposal` Protocol (research.md §3). MUST NOT
 import `ze_plugin.*` directly from `ze-personal` (plugin code) — resolved via the new
 `ze_sdk.contribution` re-export.
@@ -164,13 +164,13 @@ plugins/ze-personal/ze_personal/graph/
                               #   (FR-003's "same write boundary" — Edge Case parity with
                               #   consolidator.py, research.md §7)
 
-core/ze-plugin/ze_plugin/
+core/contracts/ze-plugin/ze_plugin/
 ├── contribution.py          # MODIFIED: _LICENSE[SOCIAL_COGNITION] = frozenset({ClaimKind.IDENTITY})
 │                            #   (research.md §5)
 └── tests/
     └── test_contribution.py    # MODIFIED: SOCIAL_COGNITION licensing assertions
 
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
 └── types.py                  # MODIFIED: new ClaimBearingProposal Protocol;
                               #   AgentResult.memory_proposals/.contact_proposals retyped
                               #   list[ClaimBearingProposal] (FR-005, research.md §3)
@@ -199,4 +199,4 @@ traceability.*
 
 | Deviation | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|
-| `AgentResult.memory_proposals`/`.contact_proposals` typed against a new `ClaimBearingProposal` Protocol, not the concrete `ContactProposal`/`Fact`/`Contribution` types a literal reading of the spec's Input/Overview suggested | `core/ze-agents` sits below `ze-memory`, `ze-personal`, and `ze-plugin` in the package graph; importing any of their concrete types from `ze_agents/types.py` would invert the graph and violate Principle III ("core has no domain knowledge") | A literal `list[Contribution]` was rejected first (research.md §3 — `Contribution` has no content payload, would lose `.name`/`.classification`/etc. that `memory_hooks.py` reads today) and confirmed unreachable anyway (`ze-plugin → ze-agents`); a literal `list[ContactProposal]`/`list[Fact]` was the `/speckit-plan`-session-clarified resolution but is *also* unreachable (`ze-memory → ze-agents`, `ze-personal → ze-sdk → ze-agents`) — a structural `Protocol` (mirroring the existing `LLMClient`/`DBPool` pattern already used in this exact file) is the only typed option that doesn't require a new, graph-inverting import |
+| `AgentResult.memory_proposals`/`.contact_proposals` typed against a new `ClaimBearingProposal` Protocol, not the concrete `ContactProposal`/`Fact`/`Contribution` types a literal reading of the spec's Input/Overview suggested | `core/contracts/ze-agents` sits below `ze-memory`, `ze-personal`, and `ze-plugin` in the package graph; importing any of their concrete types from `ze_agents/types.py` would invert the graph and violate Principle III ("core has no domain knowledge") | A literal `list[Contribution]` was rejected first (research.md §3 — `Contribution` has no content payload, would lose `.name`/`.classification`/etc. that `memory_hooks.py` reads today) and confirmed unreachable anyway (`ze-plugin → ze-agents`); a literal `list[ContactProposal]`/`list[Fact]` was the `/speckit-plan`-session-clarified resolution but is *also* unreachable (`ze-memory → ze-agents`, `ze-personal → ze-sdk → ze-agents`) — a structural `Protocol` (mirroring the existing `LLMClient`/`DBPool` pattern already used in this exact file) is the only typed option that doesn't require a new, graph-inverting import |

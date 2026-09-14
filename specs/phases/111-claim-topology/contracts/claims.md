@@ -211,8 +211,8 @@ only answers the one shared "is this past its cutoff" question (FR-015).
 
 | Migration | Package | Chain | Adds |
 |---|---|---|---|
-| new `zcor00N` | `core/ze-correlation` | `zcor` | `correlation_hypothesis.claim_kind TEXT NOT NULL`, backfilled `'inference'` |
-| new `zm0NN` | `core/ze-memory` | `zm` | `memory_facts.claim_kind TEXT NOT NULL`, backfilled per FR-010's rule |
+| new `zcor00N` | `core/cognition/ze-correlation` | `zcor` | `correlation_hypothesis.claim_kind TEXT NOT NULL`, backfilled `'inference'` |
+| new `zm0NN` | `core/cognition/ze-memory` | `zm` | `memory_facts.claim_kind TEXT NOT NULL`, backfilled per FR-010's rule |
 
 Both use the standard `ALTER ... ADD COLUMN` (nullable) → `UPDATE ... SET` (backfill) →
 `ALTER ... SET NOT NULL` three-step sequence for adding a required column to a non-empty table,

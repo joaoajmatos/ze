@@ -1,6 +1,6 @@
 # Phase 1 Data Model: Contribution Collision Detection
 
-## Modified: `Contribution` (`core/ze-plugin/ze_plugin/contribution.py`)
+## Modified: `Contribution` (`core/contracts/ze-plugin/ze_plugin/contribution.py`)
 
 Two new optional fields — additive, does not change existing construction call sites that don't
 set them:
@@ -82,7 +82,7 @@ class CollisionLogStore(Protocol):
     ) -> list[CollisionLogEntry]: ...
 ```
 
-Modeled on `PushLogStore`'s shape (`core/ze-proactive/ze_proactive/push_log_store.py`) — a thin
+Modeled on `PushLogStore`'s shape (`core/contracts/ze-proactive/ze_proactive/push_log_store.py`) — a thin
 asyncpg-backed Protocol implementation, no ORM (constitution Principle VI).
 
 ## Migration: `zcol001_contribution_collisions.py`

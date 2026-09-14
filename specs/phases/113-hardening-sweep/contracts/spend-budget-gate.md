@@ -1,7 +1,7 @@
 # Contract: Spend Budget Gate
 
-New internal interface — `core/ze-core/ze_core/telemetry/budget.py`, consumed by the
-existing `capability_check` graph node (`core/ze-core/ze_core/orchestration/nodes/execution.py`).
+New internal interface — `core/engine/ze-core/ze_core/telemetry/budget.py`, consumed by the
+existing `capability_check` graph node (`core/engine/ze-core/ze_core/orchestration/nodes/execution.py`).
 
 ## New module: `ze_core/telemetry/pricing.py`
 
@@ -56,7 +56,7 @@ query (avoids overhead for the common case of no budget configured, matching FR-
 ## Call-site change: `capability_check` node
 
 ```python
-# core/ze-core/ze_core/orchestration/nodes/execution.py
+# core/engine/ze-core/ze_core/orchestration/nodes/execution.py
 
 async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
     gate: CapabilityGate = config["configurable"]["capability_gate"]

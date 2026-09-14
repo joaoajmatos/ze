@@ -14,7 +14,7 @@
 
 **Backward compatibility**: Additive only. `date`/`count` semantics unchanged — the `TimelineScrubber`'s existing density strip (`apps/ze-web/src/widgets/timeline-scrubber`) keeps working unmodified since it only reads `count`.
 
-**Source**: `core/ze-memory/ze_memory/admin.py:185` `get_memory_activity` — change the inner `UNION ALL` to label each half (`'fact'`/`'episode'` as a `source` column), `GROUP BY day, source` instead of collapsing immediately, then fold the per-source rows into one dict per day in Python (`{date, count: fact_count + episode_count, fact_count, episode_count}`). `apps/ze-api/ze_api/api/schemas.py:859` `MemoryActivityDay` gains the two new required int fields.
+**Source**: `core/cognition/ze-memory/ze_memory/admin.py:185` `get_memory_activity` — change the inner `UNION ALL` to label each half (`'fact'`/`'episode'` as a `source` column), `GROUP BY day, source` instead of collapsing immediately, then fold the per-source rows into one dict per day in Python (`{date, count: fact_count + episode_count, fact_count, episode_count}`). `apps/ze-api/ze_api/api/schemas.py:859` `MemoryActivityDay` gains the two new required int fields.
 
 ## Also in scope: as-of wiring (not a contract change, a call-site fix)
 

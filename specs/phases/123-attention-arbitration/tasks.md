@@ -23,12 +23,12 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [X] T001 Create `core/ze-priority/pyproject.toml` and `core/ze-priority/ze_priority/__init__.py` package skeleton, depending on `ze-agents`, `ze-proactive`, `ze-worldstate`, `ze-automation`, `ze-correlation`
+- [X] T001 Create `core/arbitration/ze-priority/pyproject.toml` and `core/arbitration/ze-priority/ze_priority/__init__.py` package skeleton, depending on `ze-agents`, `ze-proactive`, `ze-worldstate`, `ze-automation`, `ze-correlation`
 - [X] T002 [P] Add `ze-priority` as a workspace member (root `pyproject.toml` / `uv.lock` regeneration)
 - [X] T003 [P] Add `ze-priority` to `apps/ze-api/pyproject.toml` dependencies
 - [X] T004 [P] Add `test-priority` target to `Makefile` following the existing `test-<package>` pattern
 
-**Checkpoint**: `core/ze-priority` package exists, installable, empty test suite passes.
+**Checkpoint**: `core/arbitration/ze-priority` package exists, installable, empty test suite passes.
 
 ---
 
@@ -38,15 +38,15 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [X] T005 [P] Create `core/ze-priority/ze_priority/types.py` with `PriorityItem`, `LoopSignal`/`GoalSignal`/`HypothesisSignal` (`SourceSignal` union), and `PriorityRanking` dataclasses per data-model.md — for goal-sourced items, `claim_kind` is `ClaimKind.PRIORITY`, assigned by `PriorityView` itself (goals carry no source-level claim kind), not read off `Goal`/`StuckGoal`
-- [X] T006 [P] Create `core/ze-priority/ze_priority/errors.py` with `ZePriorityError(ZeError)`
-- [X] T007 Create `core/ze-proactive/ze_proactive/attention_budget.py` with `ATTENTION_PUSH_EVENT_KEY`, `within_budget()`, `try_claim_shared()`, `release_shared()` per contracts/priority_view.md — logic moved from `core/ze-correlation/ze_correlation/push.py`'s existing `within_budget()`/`_PUSH_LOG_KEY`
-- [X] T008 [P] Write `core/ze-proactive/tests/test_attention_budget.py` covering `within_budget`, atomic `try_claim_shared` (mocked `PushLogStore`), and `release_shared`
-- [X] T009 Update `core/ze-correlation/ze_correlation/push.py`: remove local `within_budget`/`_PUSH_LOG_KEY`, import from `ze_proactive.attention_budget`, update `CorrelationPushConsumer._within_budget()` and its claim/release call sites to use `try_claim_shared`/`release_shared` with `source_kind="hypothesis"`
-- [X] T010 Update `core/ze-worldstate/ze_worldstate/surfacing.py`: change the `within_budget` import from `ze_correlation.push` to `ze_proactive.attention_budget`; update `LoopSurfacer.claim_push`/`release_push_claim` to call `try_claim_shared`/`release_shared` with `source_kind="loop"`
+- [X] T005 [P] Create `core/arbitration/ze-priority/ze_priority/types.py` with `PriorityItem`, `LoopSignal`/`GoalSignal`/`HypothesisSignal` (`SourceSignal` union), and `PriorityRanking` dataclasses per data-model.md — for goal-sourced items, `claim_kind` is `ClaimKind.PRIORITY`, assigned by `PriorityView` itself (goals carry no source-level claim kind), not read off `Goal`/`StuckGoal`
+- [X] T006 [P] Create `core/arbitration/ze-priority/ze_priority/errors.py` with `ZePriorityError(ZeError)`
+- [X] T007 Create `core/contracts/ze-proactive/ze_proactive/attention_budget.py` with `ATTENTION_PUSH_EVENT_KEY`, `within_budget()`, `try_claim_shared()`, `release_shared()` per contracts/priority_view.md — logic moved from `core/cognition/ze-correlation/ze_correlation/push.py`'s existing `within_budget()`/`_PUSH_LOG_KEY`
+- [X] T008 [P] Write `core/contracts/ze-proactive/tests/test_attention_budget.py` covering `within_budget`, atomic `try_claim_shared` (mocked `PushLogStore`), and `release_shared`
+- [X] T009 Update `core/cognition/ze-correlation/ze_correlation/push.py`: remove local `within_budget`/`_PUSH_LOG_KEY`, import from `ze_proactive.attention_budget`, update `CorrelationPushConsumer._within_budget()` and its claim/release call sites to use `try_claim_shared`/`release_shared` with `source_kind="hypothesis"`
+- [X] T010 Update `core/cognition/ze-worldstate/ze_worldstate/surfacing.py`: change the `within_budget` import from `ze_correlation.push` to `ze_proactive.attention_budget`; update `LoopSurfacer.claim_push`/`release_push_claim` to call `try_claim_shared`/`release_shared` with `source_kind="loop"`
 - [X] T011 Replace `correlation.push.max_pushes_per_day`, `correlation.salience.budget.max_pushes_per_day`, and `worldstate.push.budget.max_pushes_per_day` in `apps/ze-api/config/config.yaml` with a single `proactive.budget.max_pushes_per_day: 3` key (migrated value = min of the two prior effective values, per spec Clarifications)
-- [X] T012 Update `core/ze-proactive/ze_proactive/bootstrap.py` to read `proactive.budget.max_pushes_per_day` and expose it for constructor injection into consumers of the shared budget
-- [X] T013 Update `core/ze-correlation` and `core/ze-worldstate` bootstrap wiring (`ze_correlation` consumer construction, `ze_worldstate/bootstrap.py`) to source `max_pushes_per_day` from the shared `proactive.budget` config instead of their own now-removed YAML keys
+- [X] T012 Update `core/contracts/ze-proactive/ze_proactive/bootstrap.py` to read `proactive.budget.max_pushes_per_day` and expose it for constructor injection into consumers of the shared budget
+- [X] T013 Update `core/cognition/ze-correlation` and `core/cognition/ze-worldstate` bootstrap wiring (`ze_correlation` consumer construction, `ze_worldstate/bootstrap.py`) to source `max_pushes_per_day` from the shared `proactive.budget` config instead of their own now-removed YAML keys
 
 **Checkpoint**: Shared budget primitive lives in `ze-proactive` under one config key and one event key; both `ze-correlation` and `ze-worldstate` compile and their existing tests pass against it. No ranking exists yet.
 
@@ -60,16 +60,16 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ### Tests for User Story 1
 
-- [X] T014 [P] [US1] Unit test: `PriorityView.rank()` combines three mocked sources into one ordered list with correct `source_kind`/`signal` passthrough, in `core/ze-priority/tests/test_view.py`
-- [X] T015 [P] [US1] Unit test: a 10-day-drifting loop ranks above a 1-hour-old low-confidence hypothesis (spec.md Acceptance Scenario 2), in `core/ze-priority/tests/test_view.py`
-- [X] T016 [P] [US1] Unit test: deterministic tie-break by `activity_at` then `source_id` on equal `Confidence.value`, in `core/ze-priority/tests/test_scoring.py`
-- [X] T017 [P] [US1] Unit test: graceful degradation — `HypothesisStore` raises, `rank()` still returns loop/goal items with `sources_failed == {"hypothesis"}` (spec.md Edge Cases); plus a second case where all three stores raise, asserting `ZePriorityError` is raised (contracts/priority_view.md), in `core/ze-priority/tests/test_view.py`
-- [X] T017a [P] [US1] Unit test: a `PriorityItem`/`PriorityRanking` round-trips into a valid `Priority`-kind claim shape (`ClaimKind.PRIORITY` + `Confidence`, no missing fields) — FR-004's "must not preclude future Contribution-seam integration" — in `core/ze-priority/tests/test_view.py`
+- [X] T014 [P] [US1] Unit test: `PriorityView.rank()` combines three mocked sources into one ordered list with correct `source_kind`/`signal` passthrough, in `core/arbitration/ze-priority/tests/test_view.py`
+- [X] T015 [P] [US1] Unit test: a 10-day-drifting loop ranks above a 1-hour-old low-confidence hypothesis (spec.md Acceptance Scenario 2), in `core/arbitration/ze-priority/tests/test_view.py`
+- [X] T016 [P] [US1] Unit test: deterministic tie-break by `activity_at` then `source_id` on equal `Confidence.value`, in `core/arbitration/ze-priority/tests/test_scoring.py`
+- [X] T017 [P] [US1] Unit test: graceful degradation — `HypothesisStore` raises, `rank()` still returns loop/goal items with `sources_failed == {"hypothesis"}` (spec.md Edge Cases); plus a second case where all three stores raise, asserting `ZePriorityError` is raised (contracts/priority_view.md), in `core/arbitration/ze-priority/tests/test_view.py`
+- [X] T017a [P] [US1] Unit test: a `PriorityItem`/`PriorityRanking` round-trips into a valid `Priority`-kind claim shape (`ClaimKind.PRIORITY` + `Confidence`, no missing fields) — FR-004's "must not preclude future Contribution-seam integration" — in `core/arbitration/ze-priority/tests/test_view.py`
 
 ### Implementation for User Story 1
 
-- [X] T018 [US1] Implement `core/ze-priority/ze_priority/scoring.py`: per-source `Confidence` adapters (loop `OpenLoop.confidence`/`state` via `TIME_LINEAR`; goal `StuckGoal.idle_days` via `ze_agents.claims.decay()` with `TIME_LINEAR`; hypothesis `confidence`+`relevance` via `EVIDENCE_WEIGHTED`) plus the deterministic tie-break comparator, per research.md
-- [X] T019 [US1] Implement `core/ze-priority/ze_priority/view.py`: `PriorityView.__init__(loop_store, goal_store, hypothesis_store)`, `rank()` (queries all three, per-source try/except degrading into `sources_failed`, raises `ZePriorityError` only if all three fail, sorts via scoring.py, assigns 1-indexed `rank`, sets `claim_kind=ClaimKind.PRIORITY` on goal-sourced items), and `rank_subset(candidates)` per contracts/priority_view.md
+- [X] T018 [US1] Implement `core/arbitration/ze-priority/ze_priority/scoring.py`: per-source `Confidence` adapters (loop `OpenLoop.confidence`/`state` via `TIME_LINEAR`; goal `StuckGoal.idle_days` via `ze_agents.claims.decay()` with `TIME_LINEAR`; hypothesis `confidence`+`relevance` via `EVIDENCE_WEIGHTED`) plus the deterministic tie-break comparator, per research.md
+- [X] T019 [US1] Implement `core/arbitration/ze-priority/ze_priority/view.py`: `PriorityView.__init__(loop_store, goal_store, hypothesis_store)`, `rank()` (queries all three, per-source try/except degrading into `sources_failed`, raises `ZePriorityError` only if all three fail, sorts via scoring.py, assigns 1-indexed `rank`, sets `claim_kind=ClaimKind.PRIORITY` on goal-sourced items), and `rank_subset(candidates)` per contracts/priority_view.md
 - [X] T020 [US1] Wire `PriorityView` construction into `apps/ze-api/ze_api/container.py` (constructor injection of the existing `LoopStore`/`GoalStore`/`HypothesisStore` instances)
 
 **Checkpoint**: `PriorityView` is fully functional and independently testable — no budget/arbitration behavior depends on it yet.
@@ -84,16 +84,16 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ### Tests for User Story 2
 
-- [X] T021 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with one remaining budget slot claims and sends only the higher-ranked candidate; the other is logged as budget-arbitrated, not dropped, in `core/ze-priority/tests/test_arbitration.py`
-- [X] T022 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with zero remaining budget slots pushes neither candidate regardless of rank, in `core/ze-priority/tests/test_arbitration.py`
-- [X] T023 [P] [US2] Unit test: a lost claim race (two candidates, first claim fails) falls through to the next-ranked eligible candidate, in `core/ze-priority/tests/test_arbitration.py`
+- [X] T021 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with one remaining budget slot claims and sends only the higher-ranked candidate; the other is logged as budget-arbitrated, not dropped, in `core/arbitration/ze-priority/tests/test_arbitration.py`
+- [X] T022 [P] [US2] Unit test: `AttentionArbitrationJob.run()` with zero remaining budget slots pushes neither candidate regardless of rank, in `core/arbitration/ze-priority/tests/test_arbitration.py`
+- [X] T023 [P] [US2] Unit test: a lost claim race (two candidates, first claim fails) falls through to the next-ranked eligible candidate, in `core/arbitration/ze-priority/tests/test_arbitration.py`
 
 ### Implementation for User Story 2
 
-- [X] T024 [US2] Add an eligibility-only candidate method to `LoopSurfacer` in `core/ze-worldstate/ze_worldstate/surfacing.py` (applies existing `passes_push_bar` novelty/relevance checks, returns candidates without sending or claiming)
-- [X] T025 [US2] Add an equivalent eligibility-only `CorrelationPushCandidateSource` (or method on `CorrelationPushConsumer`) in `core/ze-correlation/ze_correlation/push.py`
-- [X] T026 [US2] Implement `core/ze-priority/ze_priority/arbitration.py`: `AttentionArbitrationJob` (per contracts/priority_view.md) — gathers eligible candidates from both sources, ranks via `PriorityView.rank_subset()`, iterates ranked candidates calling `try_claim_shared`, delegates the winner to its source's existing send function, releases on send failure, logs remaining candidates as budget-arbitrated
-- [X] T027 [US2] Remove `core/ze-worldstate/ze_worldstate/jobs/push_sweep.py` (`PushSweepJob`) and its dedicated tests, superseded by `AttentionArbitrationJob`
+- [X] T024 [US2] Add an eligibility-only candidate method to `LoopSurfacer` in `core/cognition/ze-worldstate/ze_worldstate/surfacing.py` (applies existing `passes_push_bar` novelty/relevance checks, returns candidates without sending or claiming)
+- [X] T025 [US2] Add an equivalent eligibility-only `CorrelationPushCandidateSource` (or method on `CorrelationPushConsumer`) in `core/cognition/ze-correlation/ze_correlation/push.py`
+- [X] T026 [US2] Implement `core/arbitration/ze-priority/ze_priority/arbitration.py`: `AttentionArbitrationJob` (per contracts/priority_view.md) — gathers eligible candidates from both sources, ranks via `PriorityView.rank_subset()`, iterates ranked candidates calling `try_claim_shared`, delegates the winner to its source's existing send function, releases on send failure, logs remaining candidates as budget-arbitrated
+- [X] T027 [US2] Remove `core/cognition/ze-worldstate/ze_worldstate/jobs/push_sweep.py` (`PushSweepJob`) and its dedicated tests, superseded by `AttentionArbitrationJob`
 - [X] T028 [US2] Remove `ze-correlation`'s autonomous scheduled push-trigger registration (keep the extracted eligibility/send functions from T025), superseded by `AttentionArbitrationJob`
 - [X] T029 [US2] Register `AttentionArbitrationJob` (`job_id = "attention_arbitration_sweep"`) in `apps/ze-api/ze_api/compose.py`, replacing the removed `PushSweepJob` and correlation trigger registrations
 
@@ -109,7 +109,7 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ### Tests for User Story 3
 
-- [X] T030 [P] [US3] Integration-style unit test: exhaust `proactive.budget.max_pushes_per_day` via three `try_claim_shared(..., source_kind="hypothesis", ...)` calls, then assert a fourth `try_claim_shared(..., source_kind="loop", ...)` call the same day returns `False`, in `core/ze-proactive/tests/test_attention_budget.py`
+- [X] T030 [P] [US3] Integration-style unit test: exhaust `proactive.budget.max_pushes_per_day` via three `try_claim_shared(..., source_kind="hypothesis", ...)` calls, then assert a fourth `try_claim_shared(..., source_kind="loop", ...)` call the same day returns `False`, in `core/contracts/ze-proactive/tests/test_attention_budget.py`
 
 ### Implementation for User Story 3
 
@@ -124,7 +124,7 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 - [X] T033 [P] Run all `quickstart.md` validation scenarios (User Stories 1–3 + degradation edge case) end-to-end
 - [X] T034 [P] Update `CLAUDE.md`'s package dependency graph and "Adding a new plugin"-adjacent core-package listing to include `ze-priority`; add its migration-ownership row if applicable (none — no new tables)
 - [X] T035 Update `specs/README.md` phase index row for Phase 123
-- [X] T036 [P] Add a performance test seeding a synthetic tens-of-items working set (loops/goals/hypotheses) and asserting `PriorityView.rank()` completes in under 500ms (SC-001), in `core/ze-priority/tests/test_view.py`
+- [X] T036 [P] Add a performance test seeding a synthetic tens-of-items working set (loops/goals/hypotheses) and asserting `PriorityView.rank()` completes in under 500ms (SC-001), in `core/arbitration/ze-priority/tests/test_view.py`
 - [X] T037 Run `make lint && make test-priority && make test-proactive && make test-correlation && make test-worldstate` and fix any failures
 
 ---
@@ -160,10 +160,10 @@ description: "Task list for Attention Arbitration — PriorityView + Shared Push
 
 ```bash
 # Launch all US1 tests together (after Foundational, before implementation):
-Task: "Unit test PriorityView.rank() combines three mocked sources in core/ze-priority/tests/test_view.py"
-Task: "Unit test drift-duration vs hypothesis-recency ranking in core/ze-priority/tests/test_view.py"
-Task: "Unit test deterministic tie-break in core/ze-priority/tests/test_scoring.py"
-Task: "Unit test graceful degradation on source failure in core/ze-priority/tests/test_view.py"
+Task: "Unit test PriorityView.rank() combines three mocked sources in core/arbitration/ze-priority/tests/test_view.py"
+Task: "Unit test drift-duration vs hypothesis-recency ranking in core/arbitration/ze-priority/tests/test_view.py"
+Task: "Unit test deterministic tie-break in core/arbitration/ze-priority/tests/test_scoring.py"
+Task: "Unit test graceful degradation on source failure in core/arbitration/ze-priority/tests/test_view.py"
 ```
 
 ---

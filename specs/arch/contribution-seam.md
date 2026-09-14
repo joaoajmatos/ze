@@ -2,7 +2,7 @@
 
 > **Status:** Mostly ratified and shipped. The `Contribution` **type**
 > (claim_kind/provenance/confidence + target_face/source_function/evidence) lives in
-> `core/ze-plugin/ze_plugin/contribution.py`; `OpenLoop`, `Signal`, and reflection (dream
+> `core/contracts/ze-plugin/ze_plugin/contribution.py`; `OpenLoop`, `Signal`, and reflection (dream
 > pipeline + correlation engine) all route through its validated write path as of Phase 124 —
 > see "Resolved" and "Phased rollout" below. Phase 126 added collision *detection* (logging
 > only) on top of this write path. The **arbitration mechanism** (a real conflict-resolution
@@ -14,7 +14,7 @@
 > `ze-core` governance (arbitration); every function-owning package downstream.
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The contribution model;
 > `specs/arch/claim-topology.md` for the shared claim vocabulary the `Contribution` type builds on.
-> **Relationship to the aperture:** the executive layer (`core/ze-worldstate`, ratified in
+> **Relationship to the aperture:** the executive layer (`core/cognition/ze-worldstate`, ratified in
 > `specs/arch/aperture-decision.md`) already exists and is one of the seam's two concrete
 > producers.
 
@@ -144,7 +144,7 @@ The seam must be **extracted from two real clients, not invented before one.** B
 conditions fired (executive layer shipped, `Signal` resolved to a `Contribution` subtype), and
 the rollout has since moved past step 3. Status:
 
-1. ~~Executive layer ships (aperture, Option A).~~ **Done** — `core/ze-worldstate`, Phases
+1. ~~Executive layer ships (aperture, Option A).~~ **Done** — `core/cognition/ze-worldstate`, Phases
    109–110.
 2. ~~Define the `Contribution` type and retrofit its two existing producers to it.~~ **Done** —
    Phase 124. `OpenLoop`'s extraction path and `Signal` both produce typed `Contribution`s;

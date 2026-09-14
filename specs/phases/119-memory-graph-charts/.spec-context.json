@@ -191,7 +191,7 @@
       "status": "DONE",
       "did": "Return created_at on entity-detail facts",
       "files": [
-        "core/ze-memory/ze_memory/admin.py"
+        "core/cognition/ze-memory/ze_memory/admin.py"
       ]
     },
     "T002": {
@@ -205,7 +205,7 @@
       "status": "DONE",
       "did": "Test get_entity_detail includes fact created_at",
       "files": [
-        "core/ze-memory/tests/test_admin_activity.py"
+        "core/cognition/ze-memory/tests/test_admin_activity.py"
       ]
     },
     "T004": {
@@ -310,7 +310,7 @@
       "status": "DONE",
       "did": "Run make test-memory and make test-web",
       "files": [
-        "core/ze-memory/tests/test_admin_activity.py"
+        "core/cognition/ze-memory/tests/test_admin_activity.py"
       ]
     }
   },

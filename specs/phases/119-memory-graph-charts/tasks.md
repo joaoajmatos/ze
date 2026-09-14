@@ -20,7 +20,7 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-`core/ze-memory` (backend), `apps/ze-api` (schema), `packages/ze-client` (generated types), `apps/ze-web/src/widgets/memory-graph` (frontend) — per `plan.md`'s Project Structure.
+`core/cognition/ze-memory` (backend), `apps/ze-api` (schema), `packages/ze-client` (generated types), `apps/ze-web/src/widgets/memory-graph` (frontend) — per `plan.md`'s Project Structure.
 
 ---
 
@@ -44,9 +44,9 @@ No new dependencies or scaffolding needed — this feature reuses spec 118's `pa
 
 ### Implementation for User Story 1
 
-- [x] T001 [P] [US1] In `core/ze-memory/ze_memory/admin.py`'s `get_entity_detail` (~line 384), add `f.created_at` to the fact-rows `SELECT` and `"created_at": r["created_at"]` to the dict comprehension that builds each fact entry (contracts/entity-detail-created-at.md)
+- [x] T001 [P] [US1] In `core/cognition/ze-memory/ze_memory/admin.py`'s `get_entity_detail` (~line 384), add `f.created_at` to the fact-rows `SELECT` and `"created_at": r["created_at"]` to the dict comprehension that builds each fact entry (contracts/entity-detail-created-at.md)
 - [x] T002 [P] [US1] Add `created_at: datetime` to `FactDigestItem` in `apps/ze-api/ze_api/api/schemas.py:165`
-- [x] T003 [P] [US1] Test: `get_entity_detail` returns `created_at` on fact rows, matching `memory_facts.created_at`, in `core/ze-memory/tests/`
+- [x] T003 [P] [US1] Test: `get_entity_detail` returns `created_at` on fact rows, matching `memory_facts.created_at`, in `core/cognition/ze-memory/tests/`
 - [x] T004 [US1] Regenerate `packages/ze-client/src/generated/types.gen.ts` via `bun run scripts/codegen.ts` (depends on T001, T002)
 - [x] T005 [P] [US1] Create `entityActivitySeries(detail: EntityDetailResponse): ChartPoint[]` in `apps/ze-web/src/widgets/memory-graph/lib/entityActivitySeries.ts`, bucketing facts + episodes by day, tagging `series: "fact" | "episode"` (data-model.md)
 - [x] T006 [US1] Render a `LineChart`/`BarChart` of the entity's activity in `apps/ze-web/src/widgets/memory-graph/ui/EntityDetailPanel.tsx`, above or alongside the existing Facts/Episodes lists, using `entityActivitySeries` (depends on T004, T005)
@@ -119,7 +119,7 @@ No new dependencies or scaffolding needed — this feature reuses spec 118's `pa
 ## Parallel Example: User Story 1
 
 ```bash
-Task: "Add f.created_at to get_entity_detail's SELECT + dict in core/ze-memory/ze_memory/admin.py"
+Task: "Add f.created_at to get_entity_detail's SELECT + dict in core/cognition/ze-memory/ze_memory/admin.py"
 Task: "Add created_at: datetime to FactDigestItem in apps/ze-api/ze_api/api/schemas.py"
 Task: "Create entityActivitySeries() in apps/ze-web/src/widgets/memory-graph/lib/entityActivitySeries.ts"
 ```

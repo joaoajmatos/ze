@@ -4,7 +4,7 @@ Stories 1 and 2).
 Exercises the settings -> bootstrap.build_workspace_stack -> ze_workspace.tools
 boundary end to end (ZeApiSettings-shaped settings, real RunWatcher), with an
 in-memory fake WorkspaceStore standing in for Postgres — SQL correctness for the
-new store methods is covered by core/ze-workspace/tests/test_store.py.
+new store methods is covered by core/ops/ze-workspace/tests/test_store.py.
 
 User Story 2's tests (T018-T021) exercise apps/ze-api's real TurnStarter/
 PushSender adapters (_ContainerTurnStarter, _NotifierPushSender in

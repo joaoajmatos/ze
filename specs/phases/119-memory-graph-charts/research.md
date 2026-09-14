@@ -8,7 +8,7 @@
 
 ## R2. Per-entity activity data gap
 
-**Finding**: `GET /api/v0/entities/{id}` (`EntityDetailResponse`) returns `facts: FactDigestItem[]` and `episodes: EpisodeDigestItem[]`. `EpisodeDigestItem` has `created_at`; `FactDigestItem` (`apps/ze-api/ze_api/api/schemas.py:165`) does **not** expose a timestamp, even though the underlying `MemoryFact` domain type (`core/ze-memory/ze_memory/types.py`) already has `created_at`.
+**Finding**: `GET /api/v0/entities/{id}` (`EntityDetailResponse`) returns `facts: FactDigestItem[]` and `episodes: EpisodeDigestItem[]`. `EpisodeDigestItem` has `created_at`; `FactDigestItem` (`apps/ze-api/ze_api/api/schemas.py:165`) does **not** expose a timestamp, even though the underlying `MemoryFact` domain type (`core/cognition/ze-memory/ze_memory/types.py`) already has `created_at`.
 
 **Decision**: Add `created_at: datetime` to `FactDigestItem` and populate it from the existing `MemoryFact.created_at` in the entity-detail service — a small, additive backend change, not a new data source. The activity chart (User Story 1) then plots both facts and episodes by `created_at`.
 

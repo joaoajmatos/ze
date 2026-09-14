@@ -5,7 +5,7 @@ recent experience, compresses it, tests abstractions, and promotes only validate
 changes into stable memory. The point is not random generation — it is a controlled
 learning loop that improves retention, abstraction, and robustness.
 
-**Package:** `core/ze-memory/ze_memory/dream/`
+**Package:** `core/cognition/ze-memory/ze_memory/dream/`
 **Architecture:** [specs/arch/dream-memory.md](../specs/arch/dream-memory.md)
 **Implementation spec:** [specs/phases/078-dream-memory/spec.md](../specs/phases/078-dream-memory/spec.md)
 

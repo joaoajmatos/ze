@@ -3,7 +3,7 @@
 > **Status:** Pending
 > **Depends on:** Phase 45 — NativeAppInterface, ConnectionManager, WebSocket transport
 > **Enables:** Side-by-side chat panels, conversation history navigation without losing context
-> **Packages touched:** `core/ze-core`, `apps/ze-api`, `apps/ze-web`
+> **Packages touched:** `core/engine/ze-core`, `apps/ze-api`, `apps/ze-web`
 
 ---
 
@@ -377,7 +377,7 @@ No schema changes required.
 
 | Dependency | Purpose |
 |------------|---------|
-| `core/ze-core` | `ConnectionManager`, `NativeAppInterface`, `PendingConfirmationStore` |
+| `core/engine/ze-core` | `ConnectionManager`, `NativeAppInterface`, `PendingConfirmationStore` |
 | `apps/ze-api` | WS endpoint, `handle_confirm`, `handle_message` |
 | `apps/ze-web` | `ws-client.ts`, `useWsStore`, `useChatWorkspace`, `session-store.ts`, `bootstrap-ws.ts` |
 

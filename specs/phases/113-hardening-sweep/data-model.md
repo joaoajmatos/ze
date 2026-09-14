@@ -66,7 +66,7 @@ starts (no explicit reset mechanic needed, per spec Edge Cases).
 | `completion_rate_per_million` | `float` | USD per 1,000,000 completion tokens. |
 
 Seeded from the same model slugs already present in `MODEL_CONTEXT_WINDOWS`
-(`core/ze-core/ze_core/openrouter/context_windows.py`) and `config/config.yaml`.
+(`core/engine/ze-core/ze_core/openrouter/context_windows.py`) and `config/config.yaml`.
 Unlisted models fall back to a conservative default rate (documented in the module,
 mirroring `DEFAULT_CONTEXT_WINDOW_TOKENS`). Not a DB table — a static in-code dict,
 consistent with the `context_windows.py` precedent (Phase 112) and the "no new external

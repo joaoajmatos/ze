@@ -1,6 +1,6 @@
 # Contract: `PendingConfirmationStore`
 
-Internal interface contract (`core/ze-core/ze_core/conversation/confirmations/store.py`),
+Internal interface contract (`core/engine/ze-core/ze_core/conversation/confirmations/store.py`),
 consumed by `apps/ze-api/ze_api/api/websocket/{confirmation,turns,endpoint}.py`. No
 external WS/REST wire-protocol change — the client already sends/receives `request_id`
 (`id` field) today; only the server-side storage key changes.
@@ -52,7 +52,7 @@ async def clear(self, thread_id: str, request_id: str) -> bool: ...
 
 ## Migration
 
-`core/ze-core/ze_core/migrations/versions/zc0XX_confirmations_request_id_key.py`
+`core/engine/ze-core/ze_core/migrations/versions/zc0XX_confirmations_request_id_key.py`
 (next free `zc` revision number at implementation time):
 
 ```sql

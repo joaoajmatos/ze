@@ -24,7 +24,7 @@ this phase changes scoring, ranking, and query paths, not persisted schema.
 
 ## Technical Context
 
-**Language/Version**: Python 3.11 (existing `core/ze-memory` package), TypeScript/React for the Mind panel (`apps/ze-web`)
+**Language/Version**: Python 3.11 (existing `core/cognition/ze-memory` package), TypeScript/React for the Mind panel (`apps/ze-web`)
 
 **Primary Dependencies**: asyncpg (pgvector `<=>` cosine distance), existing `NLIClient` (`ze_agents.nli`, phase 79/80), existing `GraphStore.expand()` (phase 60/64), `paraphrase-multilingual-MiniLM-L12-v2` embedder (unchanged — model swap is phase 97)
 
@@ -34,13 +34,13 @@ this phase changes scoring, ranking, and query paths, not persisted schema.
 
 **Target Platform**: Backend service (`apps/ze-api`, uvicorn); web client (`apps/ze-web`, Vite/React) for Mind panel display only.
 
-**Project Type**: Existing monorepo package extension — no new package. Changes land in `core/ze-memory` (retrieval core), `core/ze-core` (trace extraction), `apps/ze-web` (Mind panel), `apps/ze-api/config/config.yaml` (defaults).
+**Project Type**: Existing monorepo package extension — no new package. Changes land in `core/cognition/ze-memory` (retrieval core), `core/engine/ze-core` (trace extraction), `apps/ze-web` (Mind panel), `apps/ze-api/config/config.yaml` (defaults).
 
 **Performance Goals**: SC-005 — median added latency < 150ms/turn with rerank enabled, < 30ms with rerank disabled, versus current baseline.
 
 **Constraints**: Single extra pgvector query per candidate type to obtain a real similarity float (already computed internally by `<=>` — just needs to be selected, not only used in `ORDER BY`). Entity-anchor matching must be word-bounded (current `_link_episode_entities` substring match via SQL `position()` is **not** word-bounded — it needs a regex/word-boundary fix or a stricter query, since it's the pattern being reused for FR-005 alias matching, and edge cases explicitly call out substring false positives as unacceptable for this feature).
 
-**Scale/Scope**: Touches every retrieval policy in `core/ze-memory/ze_memory/policies.py` (9 orchestration-level + 2 domain-service-level + 2 introspection), `retriever.py` (`_graph_augment`, `search_session_summaries`), `projection.py` (dataclass construction), `types.py` (new fields on `Fact`/`Episode`/`Entity`/`Event`), `ze_core/orchestration/nodes/trace.py` (score source), `ze_core/conversation/messages/types.py` (`MemoryChunkTrace` label), and the Mind panel widget in `apps/ze-web`.
+**Scale/Scope**: Touches every retrieval policy in `core/cognition/ze-memory/ze_memory/policies.py` (9 orchestration-level + 2 domain-service-level + 2 introspection), `retriever.py` (`_graph_augment`, `search_session_summaries`), `projection.py` (dataclass construction), `types.py` (new fields on `Fact`/`Episode`/`Entity`/`Event`), `ze_core/orchestration/nodes/trace.py` (score source), `ze_core/conversation/messages/types.py` (`MemoryChunkTrace` label), and the Mind panel widget in `apps/ze-web`.
 
 ## Constitution Check
 
@@ -48,7 +48,7 @@ this phase changes scoring, ranking, and query paths, not persisted schema.
 
 - **I. Spec-First Development** — Spec (with 5 clarifications) exists at `specs/phases/106-memory-retrieval-relevance/spec.md`. PASS.
 - **II. Single-User Model** — No per-user scoping introduced; floor/weights are global deployment config, not per-user. PASS.
-- **III. Layered Package Architecture** — All changes live in `core/ze-memory` (pure infra, no domain knowledge) and `core/ze-core` (engine trace). No plugin imports `ze_core` internals; entity-anchored retrieval reuses `GraphStore`/`BoundedExpansionPolicy` already exposed to `core/ze-memory`. PASS.
+- **III. Layered Package Architecture** — All changes live in `core/cognition/ze-memory` (pure infra, no domain knowledge) and `core/engine/ze-core` (engine trace). No plugin imports `ze_core` internals; entity-anchored retrieval reuses `GraphStore`/`BoundedExpansionPolicy` already exposed to `core/cognition/ze-memory`. PASS.
 - **IV. Typed, Explicit Python** — New fields added to existing `dataclasses` in `ze_memory/types.py` (no Pydantic in domain code); no new bare exceptions — reuse `ZeError` subclasses on failure paths (e.g. rerank timeout degrades, doesn't raise). PASS.
 - **V. Test Discipline** — New composite-scoring, floor, and entity-anchor logic gets unit tests with `AsyncMock` pools and a mocked `NLIClient`; no real DB or LLM calls. PASS.
 - **VI. Explicit Persistence** — No schema changes; nothing to migrate. N/A.
@@ -73,7 +73,7 @@ specs/phases/106-memory-retrieval-relevance/
 ### Source Code (repository root)
 
 ```text
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
 ├── types.py              # Fact/Episode/Entity/Event: + relevance_score, retrieval_provenance
 ├── defaults.py           # + RELEVANCE_FLOOR_DEFAULT, COMPOSITE_WEIGHTS_DEFAULT, ENTITY_MATCH_CONSTANT, live rerank bounds
 ├── relevance_config.py   # NEW — config resolver, mirrors nli_config.py pattern
@@ -86,7 +86,7 @@ core/ze-memory/ze_memory/
 ├── graph/
 │   ├── store.py           # unchanged — GraphStore.expand() reused as-is
 │   └── projection.py      # unchanged post-hoc decoration path stays for non-anchor graph augmentation
-core/ze-core/ze_core/
+core/engine/ze-core/ze_core/
 ├── conversation/messages/types.py   # MemoryChunkTrace: + relevance_score field, extraction_confidence kept distinct
 └── orchestration/nodes/trace.py     # _extract_memory_chunks: score = fact.relevance_score (not fact.confidence)
 apps/ze-api/config/config.yaml        # memory: relevance_floor, composite_weights, entity_anchor, live_rerank keys
@@ -97,8 +97,8 @@ eval/scenarios/                          # new scenarios for SC-001 (no-match), 
 ```
 
 **Structure Decision**: No new package or app. This is a within-package extension of
-`core/ze-memory` (the retrieval core), with small, mechanical follow-on edits to
-`core/ze-core` (trace field source) and `apps/ze-web` (display label). No migration —
+`core/cognition/ze-memory` (the retrieval core), with small, mechanical follow-on edits to
+`core/engine/ze-core` (trace field source) and `apps/ze-web` (display label). No migration —
 all new state is either transient (per-request scores) or configuration.
 
 ## Complexity Tracking

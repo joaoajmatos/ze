@@ -1,6 +1,6 @@
 # Phase 0 Research: Memory Retrieval Relevance
 
-All items below were resolved by reading the existing `core/ze-memory` implementation
+All items below were resolved by reading the existing `core/cognition/ze-memory` implementation
 rather than by external research — this phase extends code that already exists, and
 the open questions were "how does the current system behave" rather than "what
 library should we pick." No NEEDS CLARIFICATION markers remain in the Technical
@@ -8,7 +8,7 @@ Context; each item traces back either to a code reading or to a spec clarificati
 
 ## 1. Where does "extraction confidence" leak into the Mind panel today?
 
-**Decision**: `core/ze-core/ze_core/orchestration/nodes/trace.py::_extract_memory_chunks`
+**Decision**: `core/engine/ze-core/ze_core/orchestration/nodes/trace.py::_extract_memory_chunks`
 sets `MemoryChunkTrace.score = getattr(fact, "confidence", 1.0)` for facts and
 `getattr(ep, "relevance", 0.0)` for episodes. `Fact.confidence` is extraction
 confidence (set at write time by the extractor LLM), not retrieval similarity —

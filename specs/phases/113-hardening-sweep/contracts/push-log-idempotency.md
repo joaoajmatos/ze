@@ -1,8 +1,8 @@
 # Contract: `PushLogStore` idempotent claim
 
-Internal interface contract (`core/ze-proactive/ze_proactive/push_log_store.py`),
-consumed by `core/ze-worldstate/ze_worldstate/surfacing.py` (`LoopSurfacer`) and
-`core/ze-worldstate/ze_worldstate/jobs/push_sweep.py` (`PushSweepJob`).
+Internal interface contract (`core/contracts/ze-proactive/ze_proactive/push_log_store.py`),
+consumed by `core/cognition/ze-worldstate/ze_worldstate/surfacing.py` (`LoopSurfacer`) and
+`core/cognition/ze-worldstate/ze_worldstate/jobs/push_sweep.py` (`PushSweepJob`).
 
 ## Before (current)
 
@@ -80,7 +80,7 @@ never sends a notification at all — not even a redundant one that's merely log
 
 ## Migration
 
-`core/ze-proactive/ze_proactive/migrations/versions/zproXXX_push_log_idempotency.py`
+`core/contracts/ze-proactive/ze_proactive/migrations/versions/zproXXX_push_log_idempotency.py`
 (next free `zpro` revision number at implementation time):
 
 ```sql
@@ -92,7 +92,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_push_log_event_idempotency
 Postgres unique indexes treat `NULL` values as distinct from one another, so this index
 is a no-op constraint-wise for every existing row and every existing caller of
 `log()` that doesn't pass an `idempotency_key` (workflow failures, correlation pushes,
-etc. — verified against current callers in `core/ze-correlation/ze_correlation/push.py`
+etc. — verified against current callers in `core/cognition/ze-correlation/ze_correlation/push.py`
 and other `push_log_store.log(...)` call sites, none of which are touched by this
 migration).
 

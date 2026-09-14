@@ -68,7 +68,7 @@ The relevance set is the user's interest fingerprint: a weighted map of entities
 topics, projected from memory on demand (cached, short TTL).
 
 ```python
-# core/ze-memory/ze_memory/types.py
+# core/cognition/ze-memory/ze_memory/types.py
 
 @dataclass
 class RelevanceEntry:
@@ -98,7 +98,7 @@ Negative preferences (`news_exclusion`, "stop showing X") subtract or zero a key
 the Phase 50 exclusion taxonomy so news and correlation share one notion of "don't care".
 
 ```python
-# core/ze-memory/ze_memory/relevance.py
+# core/cognition/ze-memory/ze_memory/relevance.py
 class RelevanceModel:
     def __init__(self, memory_store, goal_provider) -> None: ...
     async def build(self) -> RelevanceSet: ...

@@ -5,7 +5,7 @@ no interface is hand-written twice.
 
 ## 1. LLM-facing tool contract (`render_chart`)
 
-Registered in `core/ze-components/ze_components/tools.py` via the existing `render_tool`
+Registered in `core/kernel/ze-components/ze_components/tools.py` via the existing `render_tool`
 decorator, exactly like `render_metric`/`render_table`. The JSON schema below is what
 `build_render_schema()` derives from the private `_ChartSchema` dataclass and is what the
 LLM sees as the tool's input schema — this is the contract an agent actually calls against.

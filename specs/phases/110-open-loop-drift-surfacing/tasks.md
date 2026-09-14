@@ -30,7 +30,7 @@ surfacing P1, US3 = push surfacing P2) per spec.md.
 `ze-worldstate → ze-correlation` edge (ratified by Clarification; needed before any code that
 imports `ze_correlation` from `ze_worldstate`).
 
-- [X] T001 Add `"ze-correlation"` to `core/ze-worldstate/pyproject.toml` dependencies
+- [X] T001 Add `"ze-correlation"` to `core/cognition/ze-worldstate/pyproject.toml` dependencies
 - [X] T002 Update the package dependency graph table in `CLAUDE.md`: `ze-worldstate` row gains
       `ze-correlation`, same commit as T001 (constitution Governance principle)
 
@@ -44,21 +44,21 @@ until this phase is done.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [X] T003 Create migration `core/ze-worldstate/ze_worldstate/migrations/versions/zw002_drift_columns.py`
+- [X] T003 Create migration `core/cognition/ze-worldstate/ze_worldstate/migrations/versions/zw002_drift_columns.py`
       adding `drift_deadline TIMESTAMPTZ NULL`, `drift_rationale TEXT NULL` to `open_loops`, plus
       partial index `open_loops_drift_deadline_idx ON open_loops (drift_deadline) WHERE state = 'active'`
 - [X] T004 [P] Add `drift_deadline: datetime | None` and `drift_rationale: str | None` fields to
-      the `OpenLoop` dataclass in `core/ze-worldstate/ze_worldstate/types.py`
+      the `OpenLoop` dataclass in `core/cognition/ze-worldstate/ze_worldstate/types.py`
 - [X] T005 Add `LoopState.ACTIVE: {..., LoopState.DRIFTING}` edge to `_ALLOWED_TRANSITIONS` in
-      `core/ze-worldstate/ze_worldstate/store.py` (depends on T004)
+      `core/cognition/ze-worldstate/ze_worldstate/store.py` (depends on T004)
 - [X] T006 Add `set_drift_deadline(loop_id, deadline)`, `set_drift_rationale(loop_id, rationale)`,
       `list_drift_candidates()` to the `LoopStore` Protocol and `PostgresLoopStore` in
-      `core/ze-worldstate/ze_worldstate/store.py` (depends on T003, T004, T005)
-- [X] T007 Extend `link_evidence` in `core/ze-worldstate/ze_worldstate/store.py` to also execute
+      `core/cognition/ze-worldstate/ze_worldstate/store.py` (depends on T003, T004, T005)
+- [X] T007 Extend `link_evidence` in `core/cognition/ze-worldstate/ze_worldstate/store.py` to also execute
       `UPDATE open_loops SET updated_at = now() WHERE id = $1` alongside its existing
       `memory_relationships` insert (depends on T003)
 - [X] T008 [P] Add `drift_rationale` (nullable, additive) to the loop REST payload in
-      `core/ze-worldstate/ze_worldstate/rest.py` and, if declared separately, the schema in
+      `core/cognition/ze-worldstate/ze_worldstate/rest.py` and, if declared separately, the schema in
       `apps/ze-api/ze_api/api/routes/loops.py` (depends on T004)
 
 **Checkpoint**: Foundation ready — `OpenLoop` carries drift fields, the store can read/write
@@ -80,36 +80,36 @@ transition without waiting for the sweep.
 ### Implementation for User Story 1
 
 - [X] T009 [P] [US1] Add `DEFAULT_DRIFT_WINDOW_DAYS` constant and drift-window computation
-      helpers in new `core/ze-worldstate/ze_worldstate/drift.py`
+      helpers in new `core/cognition/ze-worldstate/ze_worldstate/drift.py`
 - [X] T010 [US1] Add `compose_absence_rationale()` and
       `compose_contradiction_rationale(evidence_type, evidence_id)` rationale-composition
-      helpers in `core/ze-worldstate/ze_worldstate/drift.py` (depends on T009)
+      helpers in `core/cognition/ze-worldstate/ze_worldstate/drift.py` (depends on T009)
 - [X] T011 [US1] Add optional `implied_window_days: int | None` field to the extraction gate's
       JSON response schema (`_SYSTEM_PROMPT`, `_ExtractionGateResult`) in
-      `core/ze-worldstate/ze_worldstate/extraction.py`
+      `core/cognition/ze-worldstate/ze_worldstate/extraction.py`
 - [X] T012 [US1] Set `drift_deadline = confirmed_at + timedelta(days=implied_window_days or
-      DEFAULT_DRIFT_WINDOW_DAYS)` in `core/ze-worldstate/ze_worldstate/review.py::confirm_loop`
+      DEFAULT_DRIFT_WINDOW_DAYS)` in `core/cognition/ze-worldstate/ze_worldstate/review.py::confirm_loop`
       (depends on T006, T009, T011)
 - [X] T013 [US1] Set `drift_deadline` on the direct-declared-active path in
-      `core/ze-worldstate/ze_worldstate/extraction.py` (depends on T012)
-- [X] T014 [US1] Extend `cascade_from_evidence` in `core/ze-worldstate/ze_worldstate/decay.py`:
+      `core/cognition/ze-worldstate/ze_worldstate/extraction.py` (depends on T012)
+- [X] T014 [US1] Extend `cascade_from_evidence` in `core/cognition/ze-worldstate/ze_worldstate/decay.py`:
       when an affected loop is `ACTIVE`, transition it to `DRIFTING` and write a rationale via
       `drift.compose_contradiction_rationale` (depends on T005, T010)
-- [X] T015 [US1] Create `DriftSweepJob` in `core/ze-worldstate/ze_worldstate/jobs/drift_sweep.py`:
+- [X] T015 [US1] Create `DriftSweepJob` in `core/cognition/ze-worldstate/ze_worldstate/jobs/drift_sweep.py`:
       use `list_drift_candidates()`, the eligibility predicate from `drift.py`, transition
       eligible loops to `DRIFTING`, and `set_drift_rationale` via
       `compose_absence_rationale()` (depends on T006, T009, T010)
 - [X] T016 [US1] Wire `DriftSweepJob` construction into
-      `core/ze-worldstate/ze_worldstate/bootstrap.py` (depends on T015)
+      `core/cognition/ze-worldstate/ze_worldstate/bootstrap.py` (depends on T015)
 - [X] T017 [US1] Register the drift sweep job in `apps/ze-api/ze_api/compose.py` and add
       `worldstate.drift{window_days, cron}` to `apps/ze-api/config/config.yaml` (depends on T016)
-- [X] T018 [P] [US1] Test `core/ze-worldstate/tests/test_drift.py` — window computation,
+- [X] T018 [P] [US1] Test `core/cognition/ze-worldstate/tests/test_drift.py` — window computation,
       rationale composition, sweep-eligibility predicate
-- [X] T019 [P] [US1] Test `core/ze-worldstate/tests/jobs/test_drift_sweep.py` — elapsed window +
+- [X] T019 [P] [US1] Test `core/cognition/ze-worldstate/tests/jobs/test_drift_sweep.py` — elapsed window +
       no evidence drifts; fresh evidence stays active; non-`active` states untouched (FR-004);
       transient failure mid-batch leaves already-processed transitions intact and retries the
       rest next run
-- [X] T020 [US1] Extend `core/ze-worldstate/tests/test_decay.py` for FR-002 — immediate
+- [X] T020 [US1] Extend `core/cognition/ze-worldstate/tests/test_decay.py` for FR-002 — immediate
       contradiction transitions an `active` loop to `drifting` without a sweep (depends on T014)
 
 **Checkpoint**: User Story 1 is fully functional and independently testable — drift sweep and
@@ -131,21 +131,21 @@ loop state changes.
 ### Implementation for User Story 2
 
 - [X] T021 [US2] Create `LoopSurfacer.inline_candidates(entity_ids)` in
-      `core/ze-worldstate/ze_worldstate/surfacing.py`, matching `drifting` loops by entity-link
+      `core/cognition/ze-worldstate/ze_worldstate/surfacing.py`, matching `drifting` loops by entity-link
       overlap only (reusing Phase A's entity-resolution/matching infrastructure, no new
       embedding call); results carry `mention_text` built via new
       `format_hedged_mention(loop.title, loop.drift_rationale)` helper in `surfacing.py`, not
       raw rationale text (FR-009) (depends on Phase 2 completion)
 - [X] T022 [US2] Wire `LoopSurfacer` construction into
-      `core/ze-worldstate/ze_worldstate/bootstrap.py` (depends on T021)
-- [X] T023 [P] [US2] Create `core/ze-core/ze_core/orchestration/nodes/loop_surfacing.py`,
+      `core/cognition/ze-worldstate/ze_worldstate/bootstrap.py` (depends on T021)
+- [X] T023 [P] [US2] Create `core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py`,
       structurally mirroring `nodes/correlation.py`: reads
       `config["configurable"].get("loop_surfacer")`, returns `{}` immediately if absent, calls
       `surfacer.inline_candidates(entity_ids)` otherwise, catches and logs
       (`inline_loop_surfacing_error`) any exception; the node's text-section append uses
       `mention.mention_text` verbatim (already hedged), not a separately composed string
 - [X] T024 [US2] Wire a `"surface_loops"` node into
-      `core/ze-core/ze_core/orchestration/graph.py`, sequenced
+      `core/engine/ze-core/ze_core/orchestration/graph.py`, sequenced
       `execute_tool → correlate → surface_loops → (route)`, appending independently to
       `state["components"]` / `final_response` via the existing dict-merge pattern (depends on
       T023)
@@ -153,14 +153,14 @@ loop state changes.
       `apps/ze-api/ze_api/container.py`, same construction/injection shape as
       `correlation_engine` (depends on T022, T024)
 - [X] T026 [US2] Write a `worldstate_loop_inline:{loop_id}` `push_log` row via `PushLogStore` on
-      every inline mention, inside `core/ze-worldstate/ze_worldstate/surfacing.py` (depends on
+      every inline mention, inside `core/cognition/ze-worldstate/ze_worldstate/surfacing.py` (depends on
       T021)
-- [X] T027 [P] [US2] Test `core/ze-worldstate/tests/test_surfacing.py` — entity-overlap match
+- [X] T027 [P] [US2] Test `core/cognition/ze-worldstate/tests/test_surfacing.py` — entity-overlap match
       surfaces a mention; no overlap produces no mention; repeated relevant turns may mention
       again (no novelty/budget gate on inline); mention text returned by `inline_candidates`
       starts with the hedged-phrasing prefix ("It looks like"), never a bare rationale string
       (FR-009)
-- [X] T028 [P] [US2] New node test in `core/ze-core/tests/` for `surface_loops` — present/absent
+- [X] T028 [P] [US2] New node test in `core/engine/ze-core/tests/` for `surface_loops` — present/absent
       `loop_surfacer` in `config["configurable"]`, exception handling, matching how
       `nodes/correlation.py` is tested
 
@@ -187,21 +187,21 @@ condition produces no push; verify no re-push within the novelty window or budge
       `passes_novelty(summary, recent_summaries, embedder, max_similarity)`,
       `passes_grounding(summary, evidence_labels, nli_client, threshold)`,
       `within_budget(push_log, event_key, max_per_day, window_hours=24.0)` as free functions in
-      `core/ze-correlation/ze_correlation/push.py`
+      `core/cognition/ze-correlation/ze_correlation/push.py`
 - [X] T030 [US3] Refactor `CorrelationPushConsumer._passes_push_bar` to call the extracted
       functions, behavior-preserving (depends on T029)
-- [X] T031 [P] [US3] Extend `core/ze-correlation/tests/test_push.py` to confirm the extracted
+- [X] T031 [P] [US3] Extend `core/cognition/ze-correlation/tests/test_push.py` to confirm the extracted
       functions are behavior-preserving (existing suite continues to pass unmodified) (depends
       on T029, T030)
 - [X] T032 [US3] Add `passes_push_bar(loop, rationale)` to `LoopSurfacer` in
-      `core/ze-worldstate/ze_worldstate/surfacing.py`, calling the five extracted functions with
+      `core/cognition/ze-worldstate/ze_worldstate/surfacing.py`, calling the five extracted functions with
       `event_key="worldstate_loop_push"`, plus the inline-cooldown gate —
       `not await push_log.was_sent_within_hours(f"worldstate_loop_inline:{loop_id}",
       cooldown_hours)`. Requires a new `relevance_model: RelevanceModel` constructor param on
       `LoopSurfacer`, scoring the loop's linked entity names via `relevance_model.build()` /
       `.score(rset, entity_names, topics=[])` (research.md §7) (depends on T021, T026, T029,
       Setup T001/T002)
-- [X] T033 [US3] Create `PushSweepJob` in `core/ze-worldstate/ze_worldstate/jobs/push_sweep.py`:
+- [X] T033 [US3] Create `PushSweepJob` in `core/cognition/ze-worldstate/ze_worldstate/jobs/push_sweep.py`:
       select `drifting` loops, call `passes_push_bar`, re-check current lifecycle state
       immediately before sending (FR-011), send the notification, log a `push_log` row with
       `event_type="worldstate_loop_push"`; push notification body is
@@ -209,11 +209,11 @@ condition produces no push; verify no re-push within the novelty window or budge
       `CorrelationPushConsumer._maybe_push`'s templated body rather than a bare rationale dump
       (FR-009) (depends on T032)
 - [X] T034 [US3] Add a `relevance_model: RelevanceModel` field to `CorrelationStack` in
-      `core/ze-correlation/ze_correlation/bootstrap.py`, populated from the existing local
+      `core/cognition/ze-correlation/ze_correlation/bootstrap.py`, populated from the existing local
       `relevance_model` variable in `build_correlation_stack` (no behavior change to
       `CorrelationEngine`'s own use of it) (depends on Setup T001/T002)
 - [X] T035 [US3] Wire `PushSweepJob` construction into
-      `core/ze-worldstate/ze_worldstate/bootstrap.py`; `LoopSurfacer` construction now also takes
+      `core/cognition/ze-worldstate/ze_worldstate/bootstrap.py`; `LoopSurfacer` construction now also takes
       the `RelevanceModel` instance from `correlation.relevance_model` on the `CorrelationStack`
       already returned by `build_correlation_stack(...)` in `apps/ze-api/ze_api/container.py`
       (container.py:223) — reuse that instance, don't construct a second one (depends on T033,
@@ -221,14 +221,14 @@ condition produces no push; verify no re-push within the novelty window or budge
 - [X] T036 [US3] Register the push sweep job in `apps/ze-api/ze_api/compose.py` and add
       `worldstate.push{enabled, cron, budget, thresholds: {tau_confidence, tau_relevance, ...}}`
       to `apps/ze-api/config/config.yaml` (depends on T035)
-- [X] T037 [P] [US3] Test `core/ze-worldstate/tests/jobs/test_push_sweep.py` — clears all bars →
+- [X] T037 [P] [US3] Test `core/cognition/ze-worldstate/tests/jobs/test_push_sweep.py` — clears all bars →
       exactly one push; re-run within novelty window → no second push; budget exhausted → no
       push until reset (and correlation engine's own budget is unaffected); grounding failure →
       no push; relevance below threshold → no push; loop closed between sweep selection and send
       → no push (FR-011); inline mention then immediate sweep → no push within cooldown
       (FR-012), pushable after cooldown elapses; pushed notification body uses the hedged
       template, not raw `drift_rationale` (FR-009)
-- [X] T038 [P] [US3] Extend `core/ze-worldstate/tests/test_surfacing.py` for `passes_push_bar`
+- [X] T038 [P] [US3] Extend `core/cognition/ze-worldstate/tests/test_surfacing.py` for `passes_push_bar`
       cases (depends on T032)
 
 **Checkpoint**: All user stories are independently functional — drift detection, inline
@@ -294,16 +294,16 @@ lifecycle transitions beyond `active → drifting`.
 ## Parallel Example: User Story 1
 
 ```bash
-Task: "Add DEFAULT_DRIFT_WINDOW_DAYS constant and drift-window computation helpers in core/ze-worldstate/ze_worldstate/drift.py"
-Task: "Test core/ze-worldstate/tests/test_drift.py"
+Task: "Add DEFAULT_DRIFT_WINDOW_DAYS constant and drift-window computation helpers in core/cognition/ze-worldstate/ze_worldstate/drift.py"
+Task: "Test core/cognition/ze-worldstate/tests/test_drift.py"
 ```
 
 ## Parallel Example: User Story 2
 
 ```bash
-Task: "Create core/ze-core/ze_core/orchestration/nodes/loop_surfacing.py"
-Task: "Test core/ze-worldstate/tests/test_surfacing.py"
-Task: "New node test in core/ze-core/tests/ for surface_loops"
+Task: "Create core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py"
+Task: "Test core/cognition/ze-worldstate/tests/test_surfacing.py"
+Task: "New node test in core/engine/ze-core/tests/ for surface_loops"
 ```
 
 ---

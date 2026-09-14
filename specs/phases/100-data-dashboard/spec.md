@@ -36,7 +36,7 @@ Adding a dedicated read-only **Data** page under the System umbrella gives the u
 ### 1. `DataDomain.count` and `DataDomain.size_bytes`
 
 ```python
-# core/ze-data/ze_data/domain.py
+# core/kernel/ze-data/ze_data/domain.py
 
 @dataclass
 class DataDomain:
@@ -132,8 +132,8 @@ Pure SVG for the donut — no chart library dependency (same approach as `SpendC
 
 | Change | File |
 |--------|------|
-| `DataDomain.count` / `size_bytes` | `core/ze-data/ze_data/domain.py` |
-| `DomainSummary`, `list_domain_summaries()` | `core/ze-data/ze_data/portability/service.py` |
+| `DataDomain.count` / `size_bytes` | `core/kernel/ze-data/ze_data/domain.py` |
+| `DomainSummary`, `list_domain_summaries()` | `core/kernel/ze-data/ze_data/portability/service.py` |
 | `DataDomainItem`, `DataDomainsResponse` | `apps/ze-api/ze_api/api/schemas.py` |
 | `GET /api/v0/data/domains` | `apps/ze-api/ze_api/api/routes/data.py` |
 | `_count` / `_size` wiring | Each plugin's `data_domains()` method |

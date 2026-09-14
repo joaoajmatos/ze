@@ -1,6 +1,6 @@
 # Data Model: Contribution Seam Core
 
-## New types — `core/ze-plugin/ze_plugin/contribution.py`
+## New types — `core/contracts/ze-plugin/ze_plugin/contribution.py`
 
 ### `SourceFunction` (StrEnum)
 
@@ -77,14 +77,14 @@ awaits and returns `write()` unchanged — `write` is the existing store call
 (`loop_store.create`, `dream_store.save_artifact`, `hypothesis_store.save`), never replaced,
 only gated (Assumptions: "a guard function/wrapper, not a new persisted queue").
 
-### Error types — `core/ze-agents/ze_agents/errors.py`
+### Error types — `core/contracts/ze-agents/ze_agents/errors.py`
 
 `ContributionError(ZeCoreError)` → `UnlicensedClaimKindError`, `MissingEvidenceError`,
 `DanglingEvidenceError` (research.md §10).
 
 ## Retrofitted types
 
-### `Signal` (`core/ze-memory/ze_memory/types.py`) — modified
+### `Signal` (`core/cognition/ze-memory/ze_memory/types.py`) — modified
 
 Adds one field:
 
@@ -117,7 +117,7 @@ using this conversion (FR-003 amended, Edge Case 1). `evidence=[]` means no exis
 callables are needed at this call site (FR-011's non-empty rule only applies to
 `INFERENCE`/`SUSPICION`, and perception is licensed for `FACT` only).
 
-### `OpenLoop` (`core/ze-worldstate/ze_worldstate/types.py`) — unchanged shape
+### `OpenLoop` (`core/cognition/ze-worldstate/ze_worldstate/types.py`) — unchanged shape
 
 No new fields (already has `claim_kind`, `confidence` from Phase 111's `zw001`/claim-topology
 retrofit). `provenance: str` (inflow) stays exactly as-is (FR-004, research.md §5). A new
@@ -152,7 +152,7 @@ def loop_to_contribution(
   `check_fact_exists`/`check_episode_exists` callables wired the same way as the dream/correlation
   call sites (research.md §8).
 
-### `DreamArtifact` staging (`core/ze-memory/ze_memory/dream/`) — write-path change only
+### `DreamArtifact` staging (`core/cognition/ze-memory/ze_memory/dream/`) — write-path change only
 
 No dataclass field changes. `dream_pass.py`'s four `save_artifact()` call sites gain a
 `claim_kind=ClaimKind.INFERENCE` argument (always — dream never emits `FACT` or `SUSPICION`,
@@ -163,7 +163,7 @@ per FR-005) and route through `validate_and_submit()` before the existing
 a fixed neutral placeholder; the promotion gate's own scoring, unchanged by this feature, is what
 actually determines promotion, not this value). `target_face=TargetFace.SELF` (research.md §13).
 
-### `Hypothesis` save (`core/ze-correlation/`) — write-path change only
+### `Hypothesis` save (`core/cognition/ze-correlation/`) — write-path change only
 
 No dataclass field changes (`Hypothesis.claim_kind` already exists, always `SUSPICION` today).
 `engine.py`'s `hypothesis_store.save(hypothesis)` call is wrapped in `validate_and_submit()`;
@@ -181,7 +181,7 @@ lifecycle rather than introducing a second, different decay characterization of 
 
 ## New migration
 
-`core/ze-memory/ze_memory/migrations/versions/zm018_signal_provenance.py` (next free `zm`
+`core/cognition/ze-memory/ze_memory/migrations/versions/zm018_signal_provenance.py` (next free `zm`
 revision after `zm017`) — adds `provenance TEXT NOT NULL DEFAULT 'synthesized'` to
 `memory_signals`, then drops the default (new rows must set it explicitly going forward) per the
 zm017 precedent (research.md §7).

@@ -55,7 +55,7 @@ can render "still running" without a second request. `status: "in_progress"` her
 a trace-only projection for a null-`ended_at` row — never written to
 `workspace_runs.status`, which stays one of Phase 115's five closed values.
 
-## Internal orchestrator contract (`core/ze-workspace/ze_workspace/followthrough.py`)
+## Internal orchestrator contract (`core/ops/ze-workspace/ze_workspace/followthrough.py`)
 
 Not a network contract — this is the Protocol boundary `apps/ze-api` implements so
 `ze-workspace` never imports `ze_core`/`ze_api` (Constitution III).

@@ -1,6 +1,6 @@
 # ze-ingestion — Spec
 
-> **Package:** `core/ze-ingestion`
+> **Package:** `core/ops/ze-ingestion`
 > **Phase:** 69
 > **Status:** Done
 
@@ -76,7 +76,7 @@ results are merged. No extractor has veto power over another.
 ## Module Location
 
 ```
-core/ze-ingestion/
+core/ops/ze-ingestion/
 └── ze_ingestion/
     ├── __init__.py           # public re-exports
     ├── types.py              # ContentType, IngestionRequest, RawContent,
@@ -382,7 +382,7 @@ Progress keys live in `ze_ingestion/locales/en.yaml` (same structure as other pl
 The `IngestionAgent` locale is loaded and merged into `ProgressTranslations` at startup.
 
 ```yaml
-# core/ze-ingestion/ze_ingestion/locales/en.yaml
+# core/ops/ze-ingestion/ze_ingestion/locales/en.yaml
 
 ingestion:
   starting:

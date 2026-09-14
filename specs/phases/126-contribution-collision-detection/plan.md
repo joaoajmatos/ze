@@ -59,9 +59,9 @@ concerns beyond FR-009's filters
 |---|---|---|
 | I. Spec-First | Spec (126), governed by `ze-doctrine.md` §Arbitration and `contribution-seam.md` step 5's trigger condition, exists and is clarified before this plan | PASS |
 | II. Single-User | No `user_id`/tenancy anywhere in `CollisionLogEntry` or the new store; single API key on the REST route like every other `/api/v0/` route | PASS |
-| III. Layered Package Architecture | New package `core/ze-collision` — no domain knowledge beyond the doctrine-mandated `SourceFunction`/`TargetFace`/`ClaimKind` closed enums it already consumes from `ze-plugin`/`ze-agents`; wired directly into `apps/ze-api` (same pattern as `ze-worldstate`, `ze-skills`) rather than folded into `ze-core`, because it owns its own tables/store/REST surface, which `ze-core`'s "no owned tables beyond engine internals" role doesn't fit. `SourceFunction`/`TargetFace` stay core-owned per the existing carve-out (doctrine-mandated closed sets) — this feature adds no new enum values, only reads them | PASS |
+| III. Layered Package Architecture | New package `core/seam/ze-collision` — no domain knowledge beyond the doctrine-mandated `SourceFunction`/`TargetFace`/`ClaimKind` closed enums it already consumes from `ze-plugin`/`ze-agents`; wired directly into `apps/ze-api` (same pattern as `ze-worldstate`, `ze-skills`) rather than folded into `ze-core`, because it owns its own tables/store/REST surface, which `ze-core`'s "no owned tables beyond engine internals" role doesn't fit. `SourceFunction`/`TargetFace` stay core-owned per the existing carve-out (doctrine-mandated closed sets) — this feature adds no new enum values, only reads them | PASS |
 | IV. Typed, Explicit Python | `CollisionLogEntry` as a `types.py` dataclass; `ContributionError`-style typed error only if a genuine error path exists (there mostly isn't one — everything fails open); Pydantic confined to `ze_api/api/schemas.py` for the REST route | PASS |
-| V. Test Discipline | Unit tests mock `NLIClient`/asyncpg per existing convention (`core/ze-plugin/tests/test_contribution.py`, `core/ze-worldstate/tests/test_contribution.py` as direct precedent) | PASS |
+| V. Test Discipline | Unit tests mock `NLIClient`/asyncpg per existing convention (`core/contracts/ze-plugin/tests/test_contribution.py`, `core/cognition/ze-worldstate/tests/test_contribution.py` as direct precedent) | PASS |
 | VI. Explicit Persistence | Hand-written raw-SQL Alembic migration, new `zcol` chain owned by `ze-collision`, registered in `ze_api/migrate.py`'s `_ZE_COLLISION_VERSIONS` alongside the other non-plugin core packages | PASS |
 | VII. One LLM Gateway / Local Embeddings | Reuses the existing injected `NLIClient` (local cross-encoder) — no new LLM call, no new embedding model | PASS |
 
@@ -85,7 +85,7 @@ specs/phases/126-contribution-collision-detection/
 ### Source Code (repository root)
 
 ```text
-core/ze-collision/                       # NEW package
+core/seam/ze-collision/                       # NEW package
 ├── pyproject.toml
 ├── ze_collision/
 │   ├── types.py            # CollisionLogEntry, CollisionCandidate
@@ -101,24 +101,24 @@ core/ze-collision/                       # NEW package
     ├── test_store.py
     └── test_rest.py
 
-core/ze-plugin/ze_plugin/contribution.py   # MODIFIED — add optional content/entity_ids
+core/contracts/ze-plugin/ze_plugin/contribution.py   # MODIFIED — add optional content/entity_ids
                                             # fields to Contribution; validate_and_submit's
                                             # own behavior is unchanged (FR-001)
 
-core/ze-worldstate/ze_worldstate/
+core/cognition/ze-worldstate/ze_worldstate/
 ├── contribution.py                        # MODIFIED — loop_to_contribution() populates
 │                                           #  content= (loop.title) and entity_ids=
 └── extraction.py                          # MODIFIED — call submit_and_detect_collisions()
                                             #  instead of validate_and_submit() (2 call sites)
 
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
 ├── contribution.py                        # MODIFIED — signal_to_contribution() populates
 │                                           #  content= (signal.title + summary), entity_ids=
 ├── retriever.py                           # MODIFIED — 1 call site
 └── dream/dream_pass.py                    # MODIFIED — 1 call site, content= param already
                                             #  available (dream artifact `content`)
 
-core/ze-correlation/ze_correlation/engine.py  # MODIFIED — 1 call site, content= from
+core/cognition/ze-correlation/ze_correlation/engine.py  # MODIFIED — 1 call site, content= from
                                                #  hypothesis, entity_ids from hypothesis evidence
 
 plugins/ze-personal/ze_personal/
@@ -133,7 +133,7 @@ apps/ze-api/ze_api/
 └── api/routes/collisions.py               # NEW — GET /api/v0/collisions
 ```
 
-**Structure Decision**: New core package `core/ze-collision`, following the precedent of
+**Structure Decision**: New core package `core/seam/ze-collision`, following the precedent of
 `ze-worldstate`/`ze-skills`/`ze-correlation` (a bounded cross-cutting substrate with its own
 store, migrations, and REST surface, wired directly by `ze-api` rather than folded into
 `ze-core`). Twelve existing files across five packages get a small, mechanical edit each: extend

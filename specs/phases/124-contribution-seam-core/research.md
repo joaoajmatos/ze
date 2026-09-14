@@ -8,7 +8,7 @@ document resolves implementation-level unknowns surfaced while reading the actua
 
 ## 1. Where `Contribution` lives
 
-**Decision**: New `core/ze-plugin/ze_plugin/contribution.py` — `Contribution` dataclass, the
+**Decision**: New `core/contracts/ze-plugin/ze_plugin/contribution.py` — `Contribution` dataclass, the
 `ContributionRejectedError` hierarchy, and `validate_and_submit()`, the shared guard function.
 
 **Rationale**: `contribution-seam.md` names `ze-plugin` as the seam's home ("the natural home
@@ -21,8 +21,8 @@ for the `Contribution` contract"). `ze-plugin` has no `types.py` today (`plugin.
 it is a cross-plugin write-path contract, and `ze-plugin` already depends on `ze-agents.claims`
 transitively via nothing today, so this establishes a clean new import, not a cycle).
 `ze-core` (rejected — `ze-core` is engine-internal and never a plugin dependency per the
-dependency graph in `CLAUDE.md`; `Contribution` must be importable from `core/ze-memory`,
-`core/ze-worldstate`, and `core/ze-correlation`, none of which may depend on `ze-core`).
+dependency graph in `CLAUDE.md`; `Contribution` must be importable from `core/cognition/ze-memory`,
+`core/cognition/ze-worldstate`, and `core/cognition/ze-correlation`, none of which may depend on `ze-core`).
 
 ## 2. Licensing table shape
 
@@ -159,7 +159,7 @@ write path, sourced from the artifact-generation call site, not from `artifact_t
 
 ## 7. `provenance` migration backfill for existing `Signal` / `Contribution` rows
 
-**Decision**: `Signal.provenance` is added via `core/ze-memory/ze_memory/migrations/versions/
+**Decision**: `Signal.provenance` is added via `core/cognition/ze-memory/ze_memory/migrations/versions/
 zm018_signal_provenance.py` (the next free `zm` revision after `zm017`) as `NOT NULL` with a
 one-time backfill default of `Provenance.SYNTHESIZED` for any pre-existing `memory_signals` rows
 (they predate honest per-signal provenance tracking and were, in practice, model-processed

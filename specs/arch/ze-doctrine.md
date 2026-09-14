@@ -285,7 +285,7 @@ will resolve which projection to build first. This document does not pre-empt it
   provenance-honest, agency-preserving — these are no longer properties of one engine; they
   are properties of Ze.
 - **A world-state / active-concerns layer was the first-class gap to close.** It was the
-  missing executive organ (see `docs/cognitive-architecture.md`); `core/ze-worldstate`
+  missing executive organ (see `docs/cognitive-architecture.md`); `core/cognition/ze-worldstate`
   (Phases 109–110) closes the first slice of it. What remains — cross-concern prioritisation,
   loop/goal reconciliation, calibrated confidence — is tracked in this document's Open
   Questions, not this Consequences list.
@@ -300,16 +300,16 @@ will resolve which projection to build first. This document does not pre-empt it
 ## Open Questions
 
 - [x] **Aperture** — resolved: open-loops-first (Option A), ratified in
-  `specs/arch/aperture-decision.md` and shipped as `core/ze-worldstate` (Phases 109–110).
+  `specs/arch/aperture-decision.md` and shipped as `core/cognition/ze-worldstate` (Phases 109–110).
   Life-graph-with-intervention remains the long-run limit this grows into by accretion, not a
   separate build.
 - [x] **World-state materialisation** — resolved as a hybrid: a new store (`open_loops`,
   migration `zw001`) that reuses `ze-memory`'s existing graph/relationship tables
   (`memory_relationships`/`GraphStore`, new `open_loop` bucket) for dedup and neighbourhood
-  expansion, rather than a parallel model. See `core/ze-worldstate/ze_worldstate/store.py`.
+  expansion, rather than a parallel model. See `core/cognition/ze-worldstate/ze_worldstate/store.py`.
 - [x] **Confidence calibration** — resolved: `specs/arch/claim-topology.md` (ratified) shipped
   as Phase 111, giving `ClaimKind`/`Provenance`/`Confidence`/`decay()` one shared home
-  (`core/ze-agents/ze_agents/claims.py`) and retrofitting all four producers — `OpenLoop`,
+  (`core/contracts/ze-agents/ze_agents/claims.py`) and retrofitting all four producers — `OpenLoop`,
   `Hypothesis`/`EvidenceRef` (fixing its previously-frozen confidence), `memory_facts`, and
   `Signal`. What remains is not calibration but **ranking** — see the next item.
 - [ ] **Cross-concern prioritization** — still open. Now that every claim shares one confidence

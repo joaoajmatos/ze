@@ -6,7 +6,7 @@
 
 **Status**: Implemented
 
-**Input**: User description: "Rework how the whole usage and data screen looks using a suite of new graphs and charts. Context: the Usage page (`/costs`, `CostsOverview` widget) currently renders spend history as a hand-rolled inline SVG bar chart (`SpendChart`, no axis/legend/tooltip, hardcoded hex colors instead of the app's theme tokens) and shows the prompt/completion token split as a two-segment progress bar (`TokenSplit`). Both predate the chart-visualization capability just shipped in spec 118-chart-visualization (core/ze-components Chart/ChartPoint primitive, packages/ze-ui chart renderer with line/bar/area/pie via Bklit). The user wants the whole usage/data screen reworked to use the new chart suite instead of these one-off hand-rolled visualizations."
+**Input**: User description: "Rework how the whole usage and data screen looks using a suite of new graphs and charts. Context: the Usage page (`/costs`, `CostsOverview` widget) currently renders spend history as a hand-rolled inline SVG bar chart (`SpendChart`, no axis/legend/tooltip, hardcoded hex colors instead of the app's theme tokens) and shows the prompt/completion token split as a two-segment progress bar (`TokenSplit`). Both predate the chart-visualization capability just shipped in spec 118-chart-visualization (core/kernel/ze-components Chart/ChartPoint primitive, packages/ze-ui chart renderer with line/bar/area/pie via Bklit). The user wants the whole usage/data screen reworked to use the new chart suite instead of these one-off hand-rolled visualizations."
 
 ## User Scenarios & Testing *(mandatory)*
 

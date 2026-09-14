@@ -20,7 +20,7 @@ Packages involved:
 
 | Package | Role |
 |---|---|
-| `core/ze-communication` | `Channel`/`InboundChannel` ABCs, `ChannelRegistry`, `InboundMessage` types |
+| `core/contracts/ze-communication` | `Channel`/`InboundChannel` ABCs, `ChannelRegistry`, `InboundMessage` types |
 | `integrations/ze-google` | `GmailChannel` implementation |
 | `plugins/ze-messenger` | Polling job, message processor, signal source, `MessengerAgent` |
 | `plugins/ze-personal` | `UserChannelStore`, `ChannelWatermarkStore`, `ThreadChannelMap` |

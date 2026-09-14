@@ -10,9 +10,9 @@ Workflow execution today fails the entire run on any step verification failure (
 
 ## Technical Context
 
-**Language/Version**: Python 3.11 (`core/ze-automation`, `plugins/ze-personal`), TypeScript/React (`apps/ze-web`)
+**Language/Version**: Python 3.11 (`core/automation/ze-automation`, `plugins/ze-personal`), TypeScript/React (`apps/ze-web`)
 
-**Primary Dependencies**: LangGraph workflow graph (`plugins/ze-personal/ze_personal/graph/workflow.py`), `WorkflowScheduler` / `PostgresWorkflowStore` (`core/ze-automation`), FastAPI REST (`apps/ze-api`), OpenRouter client (existing internal retries — workflow-level retries are an additional layer at step boundaries), `ProactiveNotifier` failure alerts (`core/ze-automation/ze_automation/bootstrap.py`)
+**Primary Dependencies**: LangGraph workflow graph (`plugins/ze-personal/ze_personal/graph/workflow.py`), `WorkflowScheduler` / `PostgresWorkflowStore` (`core/automation/ze-automation`), FastAPI REST (`apps/ze-api`), OpenRouter client (existing internal retries — workflow-level retries are an additional layer at step boundaries), `ProactiveNotifier` failure alerts (`core/automation/ze-automation/ze_automation/bootstrap.py`)
 
 **Storage**: PostgreSQL — existing `workflows.steps` and `workflow_executions.step_results` JSONB columns; new fields (`on_failure`, `attempt_count`, `no_results`) stored inside those JSON blobs. New execution status `cancelled`. **107 core**: no migration for workflow step JSONB. **107b**: migration for `steps_snapshot` + `cancelled` CHECK constraint.
 
@@ -20,7 +20,7 @@ Workflow execution today fails the entire run on any step verification failure (
 
 **Target Platform**: Backend (`apps/ze-api`, uvicorn); web client workflow detail page (`apps/ze-web/src/pages/workflow-detail/`).
 
-**Project Type**: Monorepo extension — changes in `core/ze-automation` (types, store, scheduler, planner, agent tools, retry helper), `plugins/ze-personal` (workflow graph nodes/edges), `apps/ze-api` (REST + schemas), `apps/ze-web` (cancel button + execution status display).
+**Project Type**: Monorepo extension — changes in `core/automation/ze-automation` (types, store, scheduler, planner, agent tools, retry helper), `plugins/ze-personal` (workflow graph nodes/edges), `apps/ze-api` (REST + schemas), `apps/ze-web` (cancel button + execution status display).
 
 **Performance Goals**: SC-006 — cancellation observed within a few seconds (checked at step boundaries, not mid-LLM-call). Retry backoff: fixed 2s delay between step attempts (research.md item 4) to avoid hammering rate limits.
 
@@ -34,7 +34,7 @@ Workflow execution today fails the entire run on any step verification failure (
 
 - **I. Spec-First Development** — Spec with 5 clarifications at `specs/phases/107-workflow-resilience/spec.md`. PASS.
 - **II. Single-User Model** — No `user_id` columns; cancellation registry is process-local, not per-user. PASS.
-- **III. Layered Package Architecture** — Domain workflow graph stays in `plugins/ze-personal`; automation substrate (types, store, scheduler, planner, tools) in `core/ze-automation`; REST in `apps/ze-api`. No plugin imports `ze_core` beyond existing graph wiring. PASS.
+- **III. Layered Package Architecture** — Domain workflow graph stays in `plugins/ze-personal`; automation substrate (types, store, scheduler, planner, tools) in `core/automation/ze-automation`; REST in `apps/ze-api`. No plugin imports `ze_core` beyond existing graph wiring. PASS.
 - **IV. Typed, Explicit Python** — New fields on existing dataclasses in `ze_automation/workflow/types.py`; Pydantic only in `ze_api/api/schemas.py` for REST. Errors via `WorkflowPlanError` / `WorkflowExecutionError`. PASS.
 - **V. Test Discipline** — Graph routing, retry classification, on_failure policies, partial synthesis, store validation, REST cancel/edit covered in unit tests. PASS.
 - **VI. Explicit Persistence** — JSONB field extensions only; no migration. PASS.
@@ -61,7 +61,7 @@ specs/phases/107-workflow-resilience/
 ### Source Code (repository root)
 
 ```text
-core/ze-automation/ze_automation/
+core/automation/ze-automation/ze_automation/
 ├── workflow/
 │   ├── types.py              # + on_failure on WorkflowStep; + attempt_count, no_results on StepResult
 │   ├── postgres.py           # serialize/deserialize new fields; + update_steps()
@@ -88,7 +88,7 @@ apps/ze-web/src/
 └── pages/workflow-detail/    # Cancel button when running; cancelled status badge
 ```
 
-**Structure Decision**: No new package. Workflow graph changes live in `plugins/ze-personal` (existing location per phase 74/20 reorg). Automation types/store/scheduler extensions in `core/ze-automation`. REST and minimal web UI in `apps/`.
+**Structure Decision**: No new package. Workflow graph changes live in `plugins/ze-personal` (existing location per phase 74/20 reorg). Automation types/store/scheduler extensions in `core/automation/ze-automation`. REST and minimal web UI in `apps/`.
 
 ## 107b follow-up (User Story 7)
 

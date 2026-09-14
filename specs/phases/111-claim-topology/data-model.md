@@ -10,7 +10,7 @@ table by `ze_memory/retriever.py::ingest_signal`/`get_signals_by_ids`, which the
 design overlooked). All types are dataclasses per `CLAUDE.md`'s convention (`types.py`, never
 `models.py`) — no Pydantic outside `ze_api/api/schemas.py`.
 
-## New module: `core/ze-agents/ze_agents/claims.py`
+## New module: `core/contracts/ze-agents/ze_agents/claims.py`
 
 ### `ClaimKind` (StrEnum)
 
@@ -88,7 +88,7 @@ below) — `Signal` already has an equivalent plugin-owned string field (`source
 
 ## Retrofitted entities
 
-### `OpenLoop` (`core/ze-worldstate/ze_worldstate/types.py`)
+### `OpenLoop` (`core/cognition/ze-worldstate/ze_worldstate/types.py`)
 
 | Field | Was | Becomes | Rule |
 |---|---|---|---|
@@ -124,7 +124,7 @@ decay_profile=DecayProfile.EVIDENCE_WEIGHTED, ...)` for the confidence arithmeti
 its own inline `max(...)` expression (research.md §5); state-transition and logging behavior
 unchanged.
 
-### `Hypothesis` (`core/ze-correlation/ze_correlation/types.py`)
+### `Hypothesis` (`core/cognition/ze-correlation/ze_correlation/types.py`)
 
 New field:
 
@@ -134,14 +134,14 @@ New field:
 
 No provenance-shaped field added to `Hypothesis` itself in this feature.
 
-### `EvidenceRef` (`core/ze-correlation/ze_correlation/types.py`)
+### `EvidenceRef` (`core/cognition/ze-correlation/ze_correlation/types.py`)
 
 `origin: Literal["graph_recall", "live_search", "prompt_supplied"]` → `origin: Provenance`
 (FR-008), gaining `SYNTHESIZED` as a valid value it couldn't previously express. Confirmed
 (research.md §4) as the correct, unaffected use of the doctrine-closed enum — this field
 describes evidence's epistemic origin, not an inflow channel.
 
-### `memory_facts` row (`core/ze-memory`, `memory_facts` table)
+### `memory_facts` row (`core/cognition/ze-memory`, `memory_facts` table)
 
 New column: `claim_kind` (see Schema Changes below). Written at fact-write time by the dream
 pipeline's existing promotion gate (FR-010): `FACT` for raw/observed rows and corroborated
@@ -149,7 +149,7 @@ synthesized rows already promoted; `INFERENCE` for uncorroborated synthesized ro
 `Provenance`-typed field added — this feature does not touch `memory_facts`' existing
 `provenance: str` (`'raw'`/`'synthesized'`) column.
 
-### `Signal` (`core/ze-memory/ze_memory/types.py` — see research.md §1 for the location
+### `Signal` (`core/cognition/ze-memory/ze_memory/types.py` — see research.md §1 for the location
 correction)
 
 New fields:
@@ -175,7 +175,7 @@ updating — see Schema Changes below.
 Both are required, non-nullable columns with a migration-time backfill — no nullable-and-unset
 window (per spec Edge Cases and FR-016).
 
-### `correlation_hypothesis.claim_kind` (`core/ze-correlation`, `zcor` chain)
+### `correlation_hypothesis.claim_kind` (`core/cognition/ze-correlation`, `zcor` chain)
 
 ```sql
 ALTER TABLE correlation_hypothesis ADD COLUMN claim_kind TEXT;
@@ -186,7 +186,7 @@ ALTER TABLE correlation_hypothesis ALTER COLUMN claim_kind SET NOT NULL;
 Backfill value: `'inference'` for every existing row (Assumptions: "no corroboration signal
 exists today to distinguish `SUSPICION`").
 
-### `memory_facts.claim_kind` (`core/ze-memory`, `zm` chain)
+### `memory_facts.claim_kind` (`core/cognition/ze-memory`, `zm` chain)
 
 ```sql
 ALTER TABLE memory_facts ADD COLUMN claim_kind TEXT;
@@ -200,7 +200,7 @@ ALTER TABLE memory_facts ALTER COLUMN claim_kind SET NOT NULL;
 Backfill rule per FR-010 / Assumptions: uses the existing `provenance`/`corroborated` columns
 (both already present as of `zm009`) to classify every existing row.
 
-### `memory_signals.claim_kind` / `memory_signals.confidence` (`core/ze-memory`, `zm` chain — added post-`/speckit-analyze`)
+### `memory_signals.claim_kind` / `memory_signals.confidence` (`core/cognition/ze-memory`, `zm` chain — added post-`/speckit-analyze`)
 
 ```sql
 ALTER TABLE memory_signals ADD COLUMN claim_kind TEXT;
@@ -222,9 +222,9 @@ notion of confidence to derive this value from.
 No schema change to `open_loops.provenance` — it stays a `TEXT` column at the database level
 (only its Python type annotation changes from `LoopProvenance` to `str`); no migration needed.
 
-## New module: `core/ze-proactive`'s staleness helper
+## New module: `core/contracts/ze-proactive`'s staleness helper
 
-`core/ze-proactive/ze_proactive/staleness.py` (new file):
+`core/contracts/ze-proactive/ze_proactive/staleness.py` (new file):
 
 ```python
 def is_stale(timestamp: datetime, window_days: int, *, now: datetime | None = None) -> bool

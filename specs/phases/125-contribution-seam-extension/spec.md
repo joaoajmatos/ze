@@ -174,7 +174,7 @@ a contact. Assert entries are `ContactProposal`s carrying `claim_kind=IDENTITY`/
   `claim_kind` is not `IDENTITY`, using the identical general-purpose licensing check Phase 124
   built (not a new, parallel implementation).
 - **FR-005**: `AgentResult.memory_proposals` and `AgentResult.contact_proposals`
-  (`core/ze-agents/ze_agents/types.py`) MUST carry the same claim vocabulary as everything else
+  (`core/contracts/ze-agents/ze_agents/types.py`) MUST carry the same claim vocabulary as everything else
   moving through the seam, expressed as `list[ClaimBearingProposal]` — a new `runtime_checkable`
   `Protocol` defined in `ze_agents.types` (`claim_kind: ClaimKind`, `provenance: Provenance`,
   `confidence: float`), mirroring the existing `LLMClient`/`DBPool` Protocol pattern in the same
@@ -221,7 +221,7 @@ a contact. Assert entries are `ContactProposal`s carrying `claim_kind=IDENTITY`/
   exists today). A transient `Contribution` envelope is built only at each proposal's write
   boundary, never stored on `AgentResult`.
 - **ClaimBearingProposal (new)**: A `runtime_checkable` `Protocol` in
-  `core/ze-agents/ze_agents/types.py` (`claim_kind`/`provenance`/`confidence`), mirroring the
+  `core/contracts/ze-agents/ze_agents/types.py` (`claim_kind`/`provenance`/`confidence`), mirroring the
   existing `LLMClient`/`DBPool` Protocol pattern, letting `AgentResult` reference the seam's
   vocabulary shape without importing any producer's concrete type.
 

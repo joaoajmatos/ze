@@ -2,7 +2,7 @@
 
 > **Status:** Accepted
 > **Date:** 2026-07-27
-> **Scope:** `core/ze-agents` (`ClaimKind`/`Provenance`/`Confidence`), `core/ze-worldstate`
+> **Scope:** `core/contracts/ze-agents` (`ClaimKind`/`Provenance`/`Confidence`), `core/cognition/ze-worldstate`
 > (`LoopProvenance`), and any future core-owned closed vocabulary a plugin would need to extend.
 > **Triggered by:** review of `specs/phases/111-claim-topology/spec.md`'s FR-002, which proposed
 > folding `ze-worldstate`'s inflow-specific `LoopProvenance` values (`conversation`, `email`,
@@ -14,7 +14,7 @@
 
 ## Context and Problem Statement
 
-`specs/arch/claim-topology.md` proposes one shared `Provenance` enum in `core/ze-agents`,
+`specs/arch/claim-topology.md` proposes one shared `Provenance` enum in `core/contracts/ze-agents`,
 covering both the doctrine's four epistemic source categories (`graph_recall`, `live_search`,
 `prompt_supplied`, `synthesized`) and `ze-worldstate`'s five inflow-specific values
 (`conversation`, `email`, `calendar`, `ingestion`, `user_declared`) — "one enum, not two
@@ -22,9 +22,9 @@ competing vocabularies for where did this come from."
 
 Two of those five inflow values — `email` and `calendar` — are not core concepts. They are the
 literal domain vocabulary of `plugins/ze-messenger` and `plugins/ze-calendar`. Baking them into
-a `core/ze-agents` enum means every future plugin that produces claims through its own inflow
+a `core/contracts/ze-agents` enum means every future plugin that produces claims through its own inflow
 channel (`ze-finance`'s Trading212 sync, `ze-news`'s RSS poll, a future `ze-legal` filing feed)
-requires a `core/ze-agents` code change to add its value — the exact dependency direction
+requires a `core/contracts/ze-agents` code change to add its value — the exact dependency direction
 Principle III forbids ("New capabilities that belong to a domain go in a plugin, not the
 engine").
 
@@ -109,7 +109,7 @@ that the doctrine itself keeps separate: **epistemic origin** (doctrine-mandated
 ### Positive Consequences
 
 - Adding a new plugin inflow channel (a fifth `SignalSource` implementer, a new communication
-  channel) never requires a `core/ze-agents` or `core/ze-worldstate` PR.
+  channel) never requires a `core/contracts/ze-agents` or `core/cognition/ze-worldstate` PR.
 - Fixes a real doctrine-fidelity gap as a side effect: `Provenance` in core now matches
   `ze-doctrine.md`'s actual four-value definition instead of a five-value superset the doctrine
   never specified.
@@ -140,8 +140,8 @@ that the doctrine itself keeps separate: **epistemic origin** (doctrine-mandated
   single-enum proposal)
 - `specs/phases/111-claim-topology/spec.md` — reworked in the same session to reflect this
   decision
-- `core/ze-worldstate/ze_worldstate/inflow.py::make_loop_extractor_from_parts` — existing
+- `core/cognition/ze-worldstate/ze_worldstate/inflow.py::make_loop_extractor_from_parts` — existing
   precedent showing the plugin boundary was already string-typed before this ADR
-- `core/ze-communication/ze_communication/types.py::ChannelType` — existing precedent for a
-  plugin-facing vocabulary owned outside `core/ze-agents`
+- `core/contracts/ze-communication/ze_communication/types.py::ChannelType` — existing precedent for a
+  plugin-facing vocabulary owned outside `core/contracts/ze-agents`
 </content>

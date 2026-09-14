@@ -1,6 +1,6 @@
 # Data Model: Chart Visualization
 
-Mirrors the existing primitive pattern (see `core/ze-components/ze_components/organisms/table.py`'s
+Mirrors the existing primitive pattern (see `core/kernel/ze-components/ze_components/organisms/table.py`'s
 `Table` dataclass) — a frozen `type` discriminator field plus plain-dataclass fields, exported to
 JSON Schema by `ze_components/schema.py` and mirrored 1:1 as a generated TS type consumed by
 `packages/ze-ui`.

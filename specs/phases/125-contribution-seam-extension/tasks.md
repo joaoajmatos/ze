@@ -52,7 +52,7 @@ enforcement builds on.
 this phase's contents and MAY proceed in parallel with it (see Dependencies & Execution Order).
 
 - [X] T002 [P] Flip `_LICENSE[SourceFunction.SOCIAL_COGNITION]` from `frozenset()` to
-  `frozenset({ClaimKind.IDENTITY})` in `core/ze-plugin/ze_plugin/contribution.py` (FR-004;
+  `frozenset({ClaimKind.IDENTITY})` in `core/contracts/ze-plugin/ze_plugin/contribution.py` (FR-004;
   research.md §5) — the one core-package change this feature makes
 - [X] T003 [P] Create `packages/ze-sdk/ze_sdk/contribution.py`: re-export `Contribution`,
   `EvidenceRef`, `SourceFunction`, `TargetFace`, `validate_and_submit` from
@@ -62,7 +62,7 @@ this phase's contents and MAY proceed in parallel with it (see Dependencies & Ex
 - [X] T004 [P] Write `packages/ze-sdk/tests/test_contribution.py`: each re-exported name imports
   from `ze_sdk.contribution` and is identical (`is`) to its `ze_plugin.contribution` original —
   depends on T003
-- [X] T005 Update `core/ze-plugin/tests/test_contribution.py`: `SOCIAL_COGNITION` now accepts
+- [X] T005 Update `core/contracts/ze-plugin/tests/test_contribution.py`: `SOCIAL_COGNITION` now accepts
   `claim_kind=IDENTITY` and rejects `FACT`/`INFERENCE`/`SUSPICION`/`PRIORITY` (FR-004) —
   depends on T002
 
@@ -186,7 +186,7 @@ zero behavior change for correctly-tagged writes.
 
 **Goal**: `AgentResult.memory_proposals`/`.contact_proposals` are typed against the seam's claim
 vocabulary (`ClaimBearingProposal`) instead of a bare `list`, with `contact_proposals` actually
-populated with vocabulary-carrying `ContactProposal` entries — without giving `core/ze-agents`
+populated with vocabulary-carrying `ContactProposal` entries — without giving `core/contracts/ze-agents`
 a new dependency on any downstream package.
 
 **Independent Test**: Inspect `AgentResult.contact_proposals` after an agent turn that proposes
@@ -196,7 +196,7 @@ a contact. Assert entries are `ContactProposal`s carrying `claim_kind=IDENTITY`/
 
 ### Tests for User Story 3
 
-- [X] T020 [P] [US3] Write `core/ze-agents/tests/test_types.py`: a `ContactProposal`-shaped
+- [X] T020 [P] [US3] Write `core/contracts/ze-agents/tests/test_types.py`: a `ContactProposal`-shaped
   object with `claim_kind`/`provenance`/`confidence` attributes satisfies
   `isinstance(x, ClaimBearingProposal)` (structural, `runtime_checkable`); `AgentResult()`'s
   `memory_proposals`/`contact_proposals` default to `[]` typed `list[ClaimBearingProposal]`
@@ -210,7 +210,7 @@ a contact. Assert entries are `ContactProposal`s carrying `claim_kind=IDENTITY`/
 
 - [X] T022 [US3] Add the `runtime_checkable` `ClaimBearingProposal` `Protocol`
   (`claim_kind: ClaimKind`, `provenance: Provenance`, `confidence: float`) to
-  `core/ze-agents/ze_agents/types.py`, importing only `ze_agents.claims` (no new cross-package
+  `core/contracts/ze-agents/ze_agents/types.py`, importing only `ze_agents.claims` (no new cross-package
   edge — FR-005; data-model.md; research.md §3) — depends on T020 (test-first)
 - [X] T023 [US3] Retype `AgentResult.memory_proposals`/`.contact_proposals` to
   `list[ClaimBearingProposal]` in the same file (was untyped `list`) — depends on T022
@@ -230,7 +230,7 @@ and `contact_proposals` is actually populated with vocabulary-carrying entries e
 **Purpose**: Repo-wide consistency and final validation.
 
 - [X] T025 [P] Run `make lint` and fix any violations across `plugins/ze-personal`,
-  `packages/ze-sdk`, `core/ze-plugin`, `core/ze-agents`
+  `packages/ze-sdk`, `core/contracts/ze-plugin`, `core/contracts/ze-agents`
 - [X] T026 Run `make migrate` locally against `make db-up` to confirm `zc028_contacts_claim_kind`
   applies cleanly on top of `zc027`
 - [X] T027 Execute `quickstart.md` end-to-end (all 5 scenarios) and confirm each expected outcome
@@ -285,7 +285,7 @@ and `contact_proposals` is actually populated with vocabulary-carrying entries e
 
 ```bash
 # Foundational and US1 have no shared dependency — launch together:
-Task: "Flip _LICENSE[SOCIAL_COGNITION] in core/ze-plugin/ze_plugin/contribution.py"
+Task: "Flip _LICENSE[SOCIAL_COGNITION] in core/contracts/ze-plugin/ze_plugin/contribution.py"
 Task: "Create packages/ze-sdk/ze_sdk/contribution.py re-export module"
 Task: "Add claim_kind/provenance fields to Person/PersonSource/PersonRelationship/ContactProposal
        in plugins/ze-personal/ze_personal/contacts/types.py"

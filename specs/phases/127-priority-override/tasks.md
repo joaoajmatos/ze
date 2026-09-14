@@ -20,8 +20,8 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
-`core/ze-collision/`, `apps/ze-api/ze_api/`, `apps/ze-web/src/`.
+Existing monorepo layout (plan.md "Project Structure"): `core/arbitration/ze-priority/`,
+`core/seam/ze-collision/`, `apps/ze-api/ze_api/`, `apps/ze-web/src/`.
 
 ---
 
@@ -29,8 +29,8 @@ Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
 
 **Purpose**: New migration chain + package scaffolding for `ze-priority`'s first store
 
-- [X] T001 Create `core/ze-priority/ze_priority/migrations/` directory and `zpri001_priority_overrides.py` — hand-written raw-SQL Alembic migration creating `priority_overrides` (columns per data-model.md's `PriorityOverride` table: `id`, `source_kind`, `source_id`, `anchor_source_kind`, `anchor_source_id`, `relation`, `pinned`, `submitted_at`, `superseded_at`, `contribution_domain_id`), indexed on `(source_kind, source_id)` where `superseded_at IS NULL`
-- [X] T002 Add `_ZE_PRIORITY_VERSIONS` constant to `apps/ze-api/ze_api/migrate.py` pointing at `core/ze-priority/ze_priority/migrations/`, following the existing pattern for `ze-worldstate`/`ze-skills` (per research.md R5)
+- [X] T001 Create `core/arbitration/ze-priority/ze_priority/migrations/` directory and `zpri001_priority_overrides.py` — hand-written raw-SQL Alembic migration creating `priority_overrides` (columns per data-model.md's `PriorityOverride` table: `id`, `source_kind`, `source_id`, `anchor_source_kind`, `anchor_source_id`, `relation`, `pinned`, `submitted_at`, `superseded_at`, `contribution_domain_id`), indexed on `(source_kind, source_id)` where `superseded_at IS NULL`
+- [X] T002 Add `_ZE_PRIORITY_VERSIONS` constant to `apps/ze-api/ze_api/migrate.py` pointing at `core/arbitration/ze-priority/ze_priority/migrations/`, following the existing pattern for `ze-worldstate`/`ze-skills` (per research.md R5)
 - [X] T003 [P] Add the new migration + package row to `CLAUDE.md`'s "Migration ownership" table (`ze-priority | zpri | priority_overrides`) and package dependency graph note
 
 **Checkpoint**: `make migrate` applies `zpri001` cleanly against a fresh `make db-up` database
@@ -43,14 +43,14 @@ Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [X] T004 [P] Add `PriorityOverride` dataclass to `core/ze-priority/ze_priority/types.py` per data-model.md (fields: `id`, `source_kind`, `source_id`, `anchor_source_kind`, `anchor_source_id`, `relation: Literal["above","below"]`, `pinned: bool`, `submitted_at`, `superseded_at`, `contribution_domain_id`)
-- [X] T005 [P] Add `PriorityOverrideNotFoundError` and `StaleReprioritizationTargetError` to `core/ze-priority/ze_priority/errors.py` (subclassing the existing `ZePriorityError`)
-- [X] T006 Implement `PriorityOverrideStore` in `core/ze-priority/ze_priority/store.py` — `create(override) -> PriorityOverride` (supersedes any existing active row for the same `(source_kind, source_id)` in the same transaction, per data-model.md), `get_active() -> list[PriorityOverride]` (excludes superseded rows), `get(id) -> PriorityOverride | None`, `unpin(id) -> PriorityOverride` (raises `PriorityOverrideNotFoundError` if no active row matches)
-- [X] T007 [P] Modify `_find_candidates()` in `core/ze-collision/ze_collision/detect.py` — narrow the skip condition from `existing.source_function == new.source_function` to also require `existing.provenance == new.provenance` before skipping (research.md R1); this requires adding `provenance: Provenance` to `CollisionCandidate` in `core/ze-collision/ze_collision/types.py` and populating it in `submit_and_detect_collisions()` (`detect.py`) from `contribution.provenance`
-- [X] T008 [P] [Tests] Update `core/ze-collision/tests/test_detect.py` — add a case asserting two same-`source_function`-different-`provenance` candidates ARE compared (not skipped), and that the existing same-`source_function`-same-`provenance` skip (Phase 126's original FR-002/FR-007 case) still holds
+- [X] T004 [P] Add `PriorityOverride` dataclass to `core/arbitration/ze-priority/ze_priority/types.py` per data-model.md (fields: `id`, `source_kind`, `source_id`, `anchor_source_kind`, `anchor_source_id`, `relation: Literal["above","below"]`, `pinned: bool`, `submitted_at`, `superseded_at`, `contribution_domain_id`)
+- [X] T005 [P] Add `PriorityOverrideNotFoundError` and `StaleReprioritizationTargetError` to `core/arbitration/ze-priority/ze_priority/errors.py` (subclassing the existing `ZePriorityError`)
+- [X] T006 Implement `PriorityOverrideStore` in `core/arbitration/ze-priority/ze_priority/store.py` — `create(override) -> PriorityOverride` (supersedes any existing active row for the same `(source_kind, source_id)` in the same transaction, per data-model.md), `get_active() -> list[PriorityOverride]` (excludes superseded rows), `get(id) -> PriorityOverride | None`, `unpin(id) -> PriorityOverride` (raises `PriorityOverrideNotFoundError` if no active row matches)
+- [X] T007 [P] Modify `_find_candidates()` in `core/seam/ze-collision/ze_collision/detect.py` — narrow the skip condition from `existing.source_function == new.source_function` to also require `existing.provenance == new.provenance` before skipping (research.md R1); this requires adding `provenance: Provenance` to `CollisionCandidate` in `core/seam/ze-collision/ze_collision/types.py` and populating it in `submit_and_detect_collisions()` (`detect.py`) from `contribution.provenance`
+- [X] T008 [P] [Tests] Update `core/seam/ze-collision/tests/test_detect.py` — add a case asserting two same-`source_function`-different-`provenance` candidates ARE compared (not skipped), and that the existing same-`source_function`-same-`provenance` skip (Phase 126's original FR-002/FR-007 case) still holds
 - [X] T009 [P] Add `PrioritySnapshotItem`, `PriorityOverrideRequest`, `PriorityOverrideResponse` Pydantic models to `apps/ze-api/ze_api/api/schemas.py` per `contracts/rest-api.md`
 - [X] T010 Wire `priority_override_store: PriorityOverrideStore` into `apps/ze-api/ze_api/container.py` (constructed alongside the existing `priority_view = PriorityView(...)` at line ~627) and add a `get_priority_override_store` dependency in `apps/ze-api/ze_api/api/dependencies.py`
-- [X] T011 [P] [Tests] Unit tests for `PriorityOverrideStore` in `core/ze-priority/tests/test_store.py` (mock asyncpg pool with `AsyncMock`) — covers create/supersede/get_active/unpin/not-found
+- [X] T011 [P] [Tests] Unit tests for `PriorityOverrideStore` in `core/arbitration/ze-priority/tests/test_store.py` (mock asyncpg pool with `AsyncMock`) — covers create/supersede/get_active/unpin/not-found
 
 **Checkpoint**: Store, types, and the narrowed collision skip-rule are in place and unit-tested; no user-facing behavior yet
 
@@ -65,11 +65,11 @@ Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
 ### Tests for User Story 1
 
 - [X] T012 [P] [US1] Contract test for `GET /api/v0/priority/snapshot` in `apps/ze-api/tests/api/test_priority_routes.py` — asserts response shape matches `contracts/rest-api.md`'s `PrioritySnapshotItem[]`, and empty list (not error) when all three sources are empty (Acceptance Scenario 2)
-- [X] T013 [P] [US1] Unit tests for the ranking-merge pure function in `core/ze-priority/tests/test_merge.py` — with no active overrides, merged output equals `PriorityView.rank()`'s unmodified order and `overridden_from_computed=False` for every item
+- [X] T013 [P] [US1] Unit tests for the ranking-merge pure function in `core/arbitration/ze-priority/tests/test_merge.py` — with no active overrides, merged output equals `PriorityView.rank()`'s unmodified order and `overridden_from_computed=False` for every item
 
 ### Implementation for User Story 1
 
-- [X] T014 [US1] Implement the ranking-merge function in `core/ze-priority/ze_priority/merge.py` per data-model.md "Ranking merge" — `merge(ranking: PriorityRanking, overrides: list[PriorityOverride], now: datetime) -> list[MergedPriorityItem]` (with no active overrides, this is a pass-through producing `overridden_from_computed=False` for every item; decay-weighted repositioning is added in US2, T023)
+- [X] T014 [US1] Implement the ranking-merge function in `core/arbitration/ze-priority/ze_priority/merge.py` per data-model.md "Ranking merge" — `merge(ranking: PriorityRanking, overrides: list[PriorityOverride], now: datetime) -> list[MergedPriorityItem]` (with no active overrides, this is a pass-through producing `overridden_from_computed=False` for every item; decay-weighted repositioning is added in US2, T023)
 - [X] T015 [US1] Implement `GET /api/v0/priority/snapshot` in new `apps/ze-api/ze_api/api/routes/priority.py`, delegating to a new `ze_priority.rest.get_snapshot(priority_view, override_store)` module function, following the `collisions.py` route pattern (response_model, operation_id, summary, description per Constitution IV)
 - [X] T016 [US1] Register the new `priority` router in `apps/ze-api/ze_api/api/app.py` (or wherever routers are included, matching how `loops`/`collisions` routers are registered)
 - [X] T017 [P] [US1] Create `apps/ze-web/src/entities/priority-item/api/usePrioritySnapshotQuery.ts` — React Query hook over the generated `@ze/client` `getPrioritySnapshot()` SDK method (regenerate `@ze/client` from the updated OpenAPI spec first)
@@ -90,13 +90,13 @@ Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
 ### Tests for User Story 2
 
 - [X] T021 [P] [US2] Contract test for `POST /api/v0/priority/override` and `POST /api/v0/priority/override/{id}/unpin` in `apps/ze-api/tests/api/test_priority_routes.py` — covers success, 404 on stale/nonexistent target, and the FR-015 error-response shape
-- [X] T022 [P] [US2] Unit tests for `submit_reprioritization()` in `core/ze-priority/tests/test_service.py` — asserts both the user-override Contribution (`EXECUTIVE`/`PROMPT_SUPPLIED`) and companion contribution (`EXECUTIVE`/`SYNTHESIZED`) are submitted via `submit_and_detect_collisions`, both carrying `entity_ids=[source_id]` (research.md R4); asserts FR-012 supersession (second call for the same item sets `superseded_at` on the first row); asserts FR-011 (submitting against a target no longer present in any `PriorityView` source list raises `StaleReprioritizationTargetError`)
-- [X] T023 [P] [US2] Extend `test_merge.py` (`core/ze-priority/tests/test_merge.py`) — decaying override at full weight fully repositions the item adjacent to its anchor (Acceptance Scenario 2, `computed_rank` unchanged); weight linearly interpolated at 24h into the 48h window (R6); weight `0` at/after 48h reverts to unmodified position (Acceptance Scenario 3); pinned override holds full weight regardless of elapsed time (Acceptance Scenario 4); stale target (FR-011) is excluded from the merge entirely; two contradicting overrides resolve by most-recent-`submitted_at`-wins (FR-014, research.md R7)
+- [X] T022 [P] [US2] Unit tests for `submit_reprioritization()` in `core/arbitration/ze-priority/tests/test_service.py` — asserts both the user-override Contribution (`EXECUTIVE`/`PROMPT_SUPPLIED`) and companion contribution (`EXECUTIVE`/`SYNTHESIZED`) are submitted via `submit_and_detect_collisions`, both carrying `entity_ids=[source_id]` (research.md R4); asserts FR-012 supersession (second call for the same item sets `superseded_at` on the first row); asserts FR-011 (submitting against a target no longer present in any `PriorityView` source list raises `StaleReprioritizationTargetError`)
+- [X] T023 [P] [US2] Extend `test_merge.py` (`core/arbitration/ze-priority/tests/test_merge.py`) — decaying override at full weight fully repositions the item adjacent to its anchor (Acceptance Scenario 2, `computed_rank` unchanged); weight linearly interpolated at 24h into the 48h window (R6); weight `0` at/after 48h reverts to unmodified position (Acceptance Scenario 3); pinned override holds full weight regardless of elapsed time (Acceptance Scenario 4); stale target (FR-011) is excluded from the merge entirely; two contradicting overrides resolve by most-recent-`submitted_at`-wins (FR-014, research.md R7)
 
 ### Implementation for User Story 2
 
-- [X] T024 [US2] Implement `override_to_contribution()` and `synthesized_claim_contribution()` in new `core/ze-priority/ze_priority/contribution.py`, mirroring `ze_worldstate/contribution.py`'s structure, per data-model.md's "Reprioritization Contribution pair" table
-- [X] T025 [US2] Implement `submit_reprioritization(request, *, priority_view, override_store, collision_store, nli_client) -> PriorityOverride` in `core/ze-priority/ze_priority/service.py` — resolves current `PriorityView` state to validate the target and anchor still exist (FR-011, raises `StaleReprioritizationTargetError` otherwise), builds both contributions (T024), submits each via `ze_collision.detect.submit_and_detect_collisions`, persists the resulting `PriorityOverride` via `PriorityOverrideStore.create` (T006)
+- [X] T024 [US2] Implement `override_to_contribution()` and `synthesized_claim_contribution()` in new `core/arbitration/ze-priority/ze_priority/contribution.py`, mirroring `ze_worldstate/contribution.py`'s structure, per data-model.md's "Reprioritization Contribution pair" table
+- [X] T025 [US2] Implement `submit_reprioritization(request, *, priority_view, override_store, collision_store, nli_client) -> PriorityOverride` in `core/arbitration/ze-priority/ze_priority/service.py` — resolves current `PriorityView` state to validate the target and anchor still exist (FR-011, raises `StaleReprioritizationTargetError` otherwise), builds both contributions (T024), submits each via `ze_collision.detect.submit_and_detect_collisions`, persists the resulting `PriorityOverride` via `PriorityOverrideStore.create` (T006)
 - [X] T026 [US2] Extend `merge.py` (T014) with the decay-weight calculation (R6: linear from 1.0 at `submitted_at` to 0.0 at `submitted_at + 48h`, pinned = constant 1.0) and cross-item conflict resolution (R7: apply active overrides in ascending `submitted_at` order)
 - [X] T027 [US2] Implement `POST /api/v0/priority/override` and `POST /api/v0/priority/override/{id}/unpin` in `apps/ze-api/ze_api/api/routes/priority.py` (T015), delegating to `submit_reprioritization` (T025) and `PriorityOverrideStore.unpin` (T006); map `StaleReprioritizationTargetError` → 404, `PriorityOverrideNotFoundError` → 404
 - [X] T028 [US2] Add `@dnd-kit/core` + `@dnd-kit/sortable` to `apps/ze-web/package.json` (research.md R9) and wire drag-and-drop into `PrioritySnapshot.tsx` (T019) — on drop, compute the anchor item + `relation` from the drop position and call the new mutation (T029); on submission failure, revert the drag and show an inline error (FR-015)
@@ -116,12 +116,12 @@ Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
 
 ### Tests for User Story 3
 
-- [X] T032 [P] [US3] Unit tests for `reprioritize_item`'s disambiguation logic in `core/ze-priority/tests/test_tools.py` — exact/near-unique title match proceeds; zero matches and multiple close matches both return a clarification request without calling `submit_reprioritization` (Acceptance Scenario 2)
+- [X] T032 [P] [US3] Unit tests for `reprioritize_item`'s disambiguation logic in `core/arbitration/ze-priority/tests/test_tools.py` — exact/near-unique title match proceeds; zero matches and multiple close matches both return a clarification request without calling `submit_reprioritization` (Acceptance Scenario 2)
 - [X] T033 [P] [US3] Integration test in `apps/ze-api/tests/` (or wherever agentic-loop/confirmation tests live) asserting `reprioritize_item`'s capability mode routes the graph through `draft_response → await_confirmation` and that the Contribution is submitted only after `EXECUTE`-resume (FR-007)
 
 ### Implementation for User Story 3
 
-- [X] T034 [US3] Implement `reprioritize_item` tool in new `core/ze-priority/ze_priority/tools.py` per `contracts/tool-contract.md` — embedding-similarity disambiguation against the current `PriorityView` snapshot titles (reusing `ze_core/embeddings.py`'s singleton per research.md R8), translating `requested_relation`/`pin` into the anchor-relative `PriorityOverrideRequest` shape, calling `submit_reprioritization` (T025) on confirmed execution
+- [X] T034 [US3] Implement `reprioritize_item` tool in new `core/arbitration/ze-priority/ze_priority/tools.py` per `contracts/tool-contract.md` — embedding-similarity disambiguation against the current `PriorityView` snapshot titles (reusing `ze_core/embeddings.py`'s singleton per research.md R8), translating `requested_relation`/`pin` into the anchor-relative `PriorityOverrideRequest` shape, calling `submit_reprioritization` (T025) on confirmed execution
 - [X] T035 [US3] Set `Mode.CONFIRM` capability for `reprioritize_item` in the relevant capability config so `capability_check` routes it through the existing `await_confirmation` gate (no new confirmation primitive, FR-007)
 - [X] T036 [US3] Register `reprioritize_item` in the appropriate agent's tool list and add its module path to the relevant `agent_module_paths()`/bootstrap wiring so `@tool` registration fires at startup
 - [X] T037 [US3] Wire the tool's failure path (FR-015) so a failed `submit_reprioritization` call after confirmation surfaces a clear "could not be applied" message back through the agent's response, not a silent success
@@ -164,9 +164,9 @@ Existing monorepo layout (plan.md "Project Structure"): `core/ze-priority/`,
 ## Parallel Example: Foundational Phase
 
 ```bash
-Task: "Add PriorityOverride dataclass to core/ze-priority/ze_priority/types.py"
-Task: "Add PriorityOverrideNotFoundError/StaleReprioritizationTargetError to core/ze-priority/ze_priority/errors.py"
-Task: "Modify _find_candidates() skip rule in core/ze-collision/ze_collision/detect.py"
+Task: "Add PriorityOverride dataclass to core/arbitration/ze-priority/ze_priority/types.py"
+Task: "Add PriorityOverrideNotFoundError/StaleReprioritizationTargetError to core/arbitration/ze-priority/ze_priority/errors.py"
+Task: "Modify _find_candidates() skip rule in core/seam/ze-collision/ze_collision/detect.py"
 Task: "Add Pydantic schemas to apps/ze-api/ze_api/api/schemas.py"
 ```
 

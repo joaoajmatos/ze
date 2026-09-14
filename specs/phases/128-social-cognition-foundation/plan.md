@@ -8,7 +8,7 @@
 
 Give Ze a `project` entity type and typed, decaying `WORKS_ON`
 (person→project) / `COLLABORATES_WITH` (person↔person) edges in the
-existing `core/ze-memory` graph — reusing the entity-extraction/upsert
+existing `core/cognition/ze-memory` graph — reusing the entity-extraction/upsert
 pattern already established for `person` entities, not a new store or
 pipeline. Retrofit `Relationship.confidence` from a plain `float` to the
 shared `ze_agents.claims.Confidence` type with `DecayProfile.TIME_LINEAR`,
@@ -16,7 +16,7 @@ computed at read time from a new `last_contact` column (research.md §2).
 Retire `plugins/ze-personal`'s dead, never-wired `PersonRelationship`/
 `contact_relationships` schema outright (zero production callers, no seed
 data). Route the existing `StaleFollowUpNudge` signal through
-`core/ze-priority`'s `PriorityView` as a fourth ranked source, via a new
+`core/arbitration/ze-priority`'s `PriorityView` as a fourth ranked source, via a new
 structural `Protocol` (`RelationshipStalenessSource`) so the core package
 never imports plugin code — the same shape as Phase 60's `SignalSource`.
 Explicitly out of scope: project-person co-occurrence inference
@@ -26,9 +26,9 @@ Explicitly out of scope: project-person co-occurrence inference
 
 **Language/Version**: Python 3.12 (backend); no new frontend surface (spec Assumption — `/brain/graph` already generalizes to any `entity_type`)
 
-**Primary Dependencies**: `ze_agents.claims` (`Confidence`, `DecayProfile`, `decay()`), `core/ze-memory`'s `GraphStore`/extractor, `core/ze-priority`'s `PriorityView`/`scoring.py`, `plugins/ze-personal`'s `PersonStore`/`ContactsConsolidator`/extractors, LangGraph result hooks (`memory_hooks.py`)
+**Primary Dependencies**: `ze_agents.claims` (`Confidence`, `DecayProfile`, `decay()`), `core/cognition/ze-memory`'s `GraphStore`/extractor, `core/arbitration/ze-priority`'s `PriorityView`/`scoring.py`, `plugins/ze-personal`'s `PersonStore`/`ContactsConsolidator`/extractors, LangGraph result hooks (`memory_hooks.py`)
 
-**Storage**: PostgreSQL — `core/ze-memory`'s `zm` chain (migration `zm019`: add `memory_relationships.last_contact`), `plugins/ze-personal`'s `zc` chain (migration `zc029`: drop `contact_relationships`)
+**Storage**: PostgreSQL — `core/cognition/ze-memory`'s `zm` chain (migration `zm019`: add `memory_relationships.last_contact`), `plugins/ze-personal`'s `zc` chain (migration `zc029`: drop `contact_relationships`)
 
 **Testing**: pytest, `asyncio_mode=auto`; mock `asyncpg` pools with `AsyncMock`, no real DB, no real LLM (mock `client.complete`); a dedicated elapsed-time decay test per SC-004 (constructs a `Relationship`/calls the hydration path with a synthetic `last_contact` in the past — no real clock manipulation)
 
@@ -78,7 +78,7 @@ specs/phases/128-social-cognition-foundation/
 ### Source Code (repository root)
 
 ```text
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
 ├── types.py                          # entity_type comment: + "project"
 ├── extractor.py                      # extraction prompt: + "project" recognized type
 └── graph/
@@ -88,7 +88,7 @@ core/ze-memory/ze_memory/
     └── migrations/versions/
         └── zm019_relationship_last_contact.py   # new
 
-core/ze-priority/ze_priority/
+core/arbitration/ze-priority/ze_priority/
 ├── types.py                          # SourceKind + "relationship"; + RelationshipSignal; + RelationshipStalenessSource Protocol
 ├── scoring.py                        # + score_relationship_staleness()
 └── view.py                           # PriorityView: + optional relationship_source param; 4th try/except in rank()
@@ -105,7 +105,7 @@ plugins/ze-personal/ze_personal/
 └── migrations/versions/
     └── zc029_drop_contact_relationships.py       # new
 
-core/ze-onboarding/ze_onboarding/
+core/ops/ze-onboarding/ze_onboarding/
 └── reset.py                          # remove contact_relationships truncation entry
 
 apps/ze-api/ze_api/

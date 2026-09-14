@@ -4,7 +4,7 @@
 **Depends on:** Phase 66 (Primitive UI), Phase 72 (API Client Codegen), Phase 75 (`@ze/ui`), Phase 76 (ze-api shell), Phase 82 (ze-web FSD)
 **Architecture:** [arch/plugin-ui.md](../arch/plugin-ui.md)
 
-**Packages touched:** `core/ze-plugin`, `packages/ze-sdk`, `apps/ze-api`, `apps/ze-web`, `packages/ze-ui` (types only)
+**Packages touched:** `core/contracts/ze-plugin`, `packages/ze-sdk`, `apps/ze-api`, `apps/ze-web`, `packages/ze-ui` (types only)
 
 ---
 
@@ -64,7 +64,7 @@ Delivery is split into sub-phases (87a–87d). Each sub-phase is independently s
 
 ---
 
-## Core contracts (`core/ze-plugin`)
+## Core contracts (`core/contracts/ze-plugin`)
 
 ### `ze_plugin/ui.py`
 

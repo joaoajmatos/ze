@@ -106,7 +106,7 @@ is directly insertable without transformation beyond datetime string parsing.
 ## Plugin Hook: `data_domains()`
 
 ```python
-# core/ze-agents/ze_agents/plugin.py
+# core/contracts/ze-agents/ze_agents/plugin.py
 
 @dataclass
 class DataDomain:
@@ -281,7 +281,7 @@ Token is valid for 10 minutes. Stored in-process (no DB table needed).
 ## Module Location
 
 ```
-core/ze-agents/ze_agents/
+core/contracts/ze-agents/ze_agents/
   plugin.py           ← DataDomain (add importer field) + data_domains() hook
 
 apps/ze-api/ze_api/

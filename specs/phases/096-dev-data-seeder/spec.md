@@ -53,7 +53,7 @@ leaving user-created data untouched.
 ## Module Location
 
 ```
-core/ze-seed/
+core/ops/ze-seed/
   ze_seed/
     domain.py
     context.py

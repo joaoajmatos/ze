@@ -2,7 +2,7 @@
 
 ## R1: How does the `Contribution` write path actually look today?
 
-**Finding**: `core/ze-plugin/ze_plugin/contribution.py`'s `Contribution` dataclass carries only
+**Finding**: `core/contracts/ze-plugin/ze_plugin/contribution.py`'s `Contribution` dataclass carries only
 `claim_kind`, `provenance`, `confidence`, `target_face`, `source_function`, `evidence` — no ID, no
 content, no entity linkage. `validate_and_submit(contribution, write, ...)` uses `Contribution`
 purely to run licensing + evidence-existence checks, then delegates to the caller's `write()`
@@ -70,7 +70,7 @@ same real-world entity is accepted and documented in the spec — out of scope f
 
 ## R3: What NLI mechanism does this reuse, and what does "fail open" look like in practice?
 
-**Finding**: `NLIClient` (`core/ze-agents/ze_agents/nli.py`, `Protocol`) exposes
+**Finding**: `NLIClient` (`core/contracts/ze-agents/ze_agents/nli.py`, `Protocol`) exposes
 `scores(pairs: list[tuple[str, str]]) -> list[dict[str, float] | None]` — a `None` entry per pair
 already signals "could not be scored" (the protocol's own built-in fail-open channel).
 `ze-correlation`'s existing inline NLI usage (`ze_correlation/push.py`,
@@ -86,14 +86,14 @@ the spec's Assumptions section framing this as "not fixed by this spec").
 
 ## R4: Where does the collision log live, and how is it queried?
 
-**Finding**: `ze-proactive`'s `PushLogStore` (`core/ze-proactive/ze_proactive/push_log_store.py`,
+**Finding**: `ze-proactive`'s `PushLogStore` (`core/contracts/ze-proactive/ze_proactive/push_log_store.py`,
 migrations `zpro001`/`zpro003`) is the cited precedent for "new, small, append-only store." No
 existing package currently owns a table for cross-function conflict records. Existing non-plugin
 core packages (`ze-worldstate`, `ze-skills`, `ze-correlation`) each own their own migration chain
 and are wired directly into `apps/ze-api/ze_api/container.py` and `migrate.py`'s
 `_ZE_*_VERSIONS` constants — not folded into `ze-core`.
 
-**Decision**: New package `core/ze-collision`, migration prefix `zcol`, one table
+**Decision**: New package `core/seam/ze-collision`, migration prefix `zcol`, one table
 (`contribution_collisions`), following `PushLogStore`'s shape (append-only, no updates, indexed
 for the query patterns FR-009 requires). REST surface: `GET /api/v0/collisions` in
 `apps/ze-api/ze_api/api/routes/collisions.py`, following the existing `/api/v0/loops`,

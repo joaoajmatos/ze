@@ -4,8 +4,8 @@
 > shared vocabulary and all four producer retrofits described below have shipped; only
 > `contribution-seam.md`'s `Contribution` type and `attention-arbitration.md`'s `PriorityView`
 > (both explicitly out of scope for this brief) remain unbuilt.
-> **Scope:** `core/ze-agents` (new shared home), `core/ze-memory`, `core/ze-correlation`,
-> `core/ze-worldstate`, `core/ze-plugin` (all four current claim producers).
+> **Scope:** `core/contracts/ze-agents` (new shared home), `core/cognition/ze-memory`, `core/cognition/ze-correlation`,
+> `core/cognition/ze-worldstate`, `core/contracts/ze-plugin` (all four current claim producers).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The epistemic ontology,
 > §The contribution model.
 > **Relationship to the contribution seam:** narrower and more urgent than

@@ -59,7 +59,7 @@ rows, improving signal quality for long-term memory.
 ## Module Location
 
 ```
-core/ze-memory/
+core/cognition/ze-memory/
   ze_memory/
     consolidator.py   ← primary change: archive_episodes gains session-grouping path
     defaults.py       ← new config constants

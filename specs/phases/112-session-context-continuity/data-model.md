@@ -4,7 +4,7 @@ No new database tables. This feature only adds in-process/state types and extend
 existing JSONB payload shape (`messages.trace`). See research.md R2/R6 for why no new
 migration is needed.
 
-## `ContextBudget` (new, `core/ze-core/ze_core/openrouter/context_windows.py`)
+## `ContextBudget` (new, `core/engine/ze-core/ze_core/openrouter/context_windows.py`)
 
 Static lookup, not a persisted entity.
 
@@ -47,7 +47,7 @@ Rendering: `ResumeRecap.render() -> str` produces the block injected into
 `AgentContext.resume_recap`, consumed by `BaseAgent._build_system_prompt` exactly like
 `screen_context_note` (never appended to `state["messages"]` — FR-007a).
 
-## `AgentState` extensions (`core/ze-core/ze_core/orchestration/state.py`)
+## `AgentState` extensions (`core/engine/ze-core/ze_core/orchestration/state.py`)
 
 | Field | Type | Notes |
 |---|---|---|
@@ -58,7 +58,7 @@ Rendering: `ResumeRecap.render() -> str` produces the block injected into
 return-and-replace mechanism (research.md R2) — no new field needed to hold the
 compacted form, and no new graph node (research.md R1).
 
-## `MessageTrace` extension (`core/ze-core/ze_core/conversation/messages/types.py`)
+## `MessageTrace` extension (`core/engine/ze-core/ze_core/conversation/messages/types.py`)
 
 Existing dataclass fields: `agent, routing_method, confidence, score_gap, is_compound,
 subtasks, memory_chunks, tool_calls, total_duration_ms`.

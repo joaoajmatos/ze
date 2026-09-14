@@ -1,6 +1,6 @@
 # Phase 1 Data Model: Workflow Conditional Branching
 
-All types below live in `core/ze-automation/ze_automation/workflow/types.py`
+All types below live in `core/automation/ze-automation/ze_automation/workflow/types.py`
 unless noted. Every new field is optional with a default that reproduces today's
 behavior exactly — this is an additive change to existing dataclasses, not a
 new schema.
@@ -71,7 +71,7 @@ Added to `WorkflowAgentState` in `plugins/ze-personal/ze_personal/graph/workflow
 
 ## Persistence mapping (JSONB, additive — no migration)
 
-`core/ze-automation/ze_automation/workflow/postgres.py`:
+`core/automation/ze-automation/ze_automation/workflow/postgres.py`:
 
 - `_step_to_dict` / `_step_from_dict`: add `id`, `branches` (list of
   `{"condition", "to"}` dicts), `default_next`. `_step_from_dict` backfills
@@ -100,7 +100,7 @@ callers don't need type-level changes beyond what the new fields require.
 | `StepResultResponse` | + `step_id: str`, `branch_taken: str \| None` |
 | `WorkflowResponse`, `WorkflowDetailResponse`, `WorkflowExecutionResponse`, `TriggerWorkflowResponse` | unchanged — they only wrap the two models above |
 
-`core/ze-automation/ze_automation/rest.py` (`get_workflow`, `list_workflow_executions`)
+`core/automation/ze-automation/ze_automation/rest.py` (`get_workflow`, `list_workflow_executions`)
 builds the plain dicts these schemas validate — extended in lockstep with the
 dataclass changes above (same fields, same names, so `WorkflowStepResponse.model_validate(s)`
 in `routes/workflows.py` needs no route-level changes).

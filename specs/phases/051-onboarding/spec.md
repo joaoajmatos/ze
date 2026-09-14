@@ -89,7 +89,7 @@ the user can wipe learned state and re-run onboarding safely.
 ## Module Locations
 
 ```text
-core/ze-onboarding/
+core/ops/ze-onboarding/
   ze_onboarding/
     __init__.py
     types.py                # dataclasses, provider/store/persistence protocols
@@ -100,12 +100,12 @@ packages/ze-sdk/
   ze_sdk/
     onboarding.py           # re-export ze_onboarding symbols
 
-core/ze-agents/
+core/contracts/ze-agents/
   ze_agents/
     plugin.py               # ZePlugin.onboarding() opt-in hook
     onboarding/             # compatibility re-export of ze_onboarding
 
-core/ze-components/
+core/kernel/ze-components/
   ze_components/
     types.py                # add onboarding-friendly components/fields
     tools.py                # render tools for new components
@@ -134,7 +134,7 @@ apps/ze-app/
     review_widget.dart
 ```
 
-The reusable onboarding domain belongs in `core/ze-onboarding`, not `ze-api`.
+The reusable onboarding domain belongs in `core/ops/ze-onboarding`, not `ze-api`.
 `ze-api` owns only deployment adapters: SQL, WebSocket frames, reset execution, and
 container wiring.
 

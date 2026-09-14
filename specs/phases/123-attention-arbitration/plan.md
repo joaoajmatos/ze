@@ -17,7 +17,7 @@ mechanisms (via new eligibility-only extraction methods that stop short of sendi
 rank them through `PriorityView`, and atomically claim the shared daily push budget
 for the single top-ranked candidate only. The shared budget primitive itself
 (`within_budget`, claim/release) moves from `ze_correlation.push` into
-`core/ze-proactive` per FR-006, fixing an existing cross-package dependency smell
+`core/contracts/ze-proactive` per FR-006, fixing an existing cross-package dependency smell
 (`ze_worldstate.surfacing` currently imports it from `ze_correlation`) along the way.
 No new database tables; the existing `push_log` table gains one shared event key.
 
@@ -40,7 +40,7 @@ is called: ranking is deterministic, not LLM-based).
 alongside the other proactive jobs.
 
 **Project Type**: Single project — new core package within the existing monorepo
-(`core/ze-priority/`).
+(`core/arbitration/ze-priority/`).
 
 **Performance Goals**: SC-001 — full ranked query in <500ms for a typical working set
 (tens of open loops/goals/hypotheses); no source mechanism's own computation is
@@ -65,7 +65,7 @@ provide.
 | II. Single-User Model | No `user_id`, no multi-tenancy; budget and ranking are process-global for the one user. | PASS |
 | III. Layered Package Architecture | `ze-priority` is a new **core** package (no domain knowledge of its own — it combines signals other core packages already compute) depending on other core packages (`ze-worldstate`, `ze-automation`, `ze-correlation`, `ze-proactive`, `ze-agents`), matching the existing precedent of `ze-worldstate → ze-correlation`. It is wired directly in `apps/ze-api` (composition root), not through `ze_sdk` (it is not a plugin extension point). | PASS |
 | IV. Typed, Explicit Python | `PriorityItem`, `PriorityRanking` etc. as dataclasses in `types.py`; errors as `ZeError` subclasses; async store reads; constructor-injected stores/budget primitive. | PASS |
-| V. Test Discipline | Unit tests in `core/ze-priority/tests/` mock all three store Protocols and `PushLogStore`. | PASS |
+| V. Test Discipline | Unit tests in `core/arbitration/ze-priority/tests/` mock all three store Protocols and `PushLogStore`. | PASS |
 | VI. Explicit Persistence | No new tables. `push_log`'s existing schema (event_type, idempotency_key, unique index) is reused as-is with a new event-type value. | PASS |
 | VII. One LLM Gateway | No LLM call in this feature — ranking is a deterministic function over existing `Confidence` values. | PASS |
 
@@ -89,7 +89,7 @@ specs/phases/123-attention-arbitration/
 ### Source Code (repository root)
 
 ```text
-core/ze-priority/                          # NEW package
+core/arbitration/ze-priority/                          # NEW package
 ├── pyproject.toml
 └── ze_priority/
     ├── types.py            # PriorityItem, PriorityRanking, SourceSignal dataclasses
@@ -101,12 +101,12 @@ core/ze-priority/                          # NEW package
         ├── test_scoring.py
         └── test_arbitration.py
 
-core/ze-proactive/ze_proactive/
+core/contracts/ze-proactive/ze_proactive/
 ├── attention_budget.py       # NEW: within_budget() + try_claim_shared()/release_shared()
 │                              #      (moved from ze_correlation.push, FR-005/FR-006)
 └── tests/test_attention_budget.py   # NEW
 
-core/ze-correlation/ze_correlation/
+core/cognition/ze-correlation/ze_correlation/
 ├── push.py                   # MODIFIED: within_budget/_PUSH_LOG_KEY removed; import from
 │                              #   ze_proactive.attention_budget; consumer's autonomous
 │                              #   scheduled trigger removed (superseded by AttentionArbitrationJob)
@@ -114,7 +114,7 @@ core/ze-correlation/ze_correlation/
 │                              #   method the new job can call after winning arbitration
 └── tests/test_push.py        # MODIFIED accordingly
 
-core/ze-worldstate/ze_worldstate/
+core/cognition/ze-worldstate/ze_worldstate/
 ├── surfacing.py               # MODIFIED: within_budget import source changed; LoopSurfacer
 │                              #   gains an eligibility-only method (candidates without sending)
 ├── jobs/push_sweep.py          # REMOVED: PushSweepJob superseded by AttentionArbitrationJob
@@ -130,7 +130,7 @@ apps/ze-api/
                                 #   proactive.budget.max_pushes_per_day (= min of prior values)
 ```
 
-**Structure Decision**: New core package `core/ze-priority` (no plugin involvement —
+**Structure Decision**: New core package `core/arbitration/ze-priority` (no plugin involvement —
 this is engine-level cross-cutting infrastructure, matching how `ze-worldstate` and
 `ze-correlation` were structured). It is the only package positioned to depend on all
 three source stores plus the shared budget primitive without creating a dependency

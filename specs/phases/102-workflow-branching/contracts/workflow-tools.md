@@ -2,7 +2,7 @@
 
 Ze has no public HTTP API for workflows — workflows are authored and inspected
 entirely through `@tool`-decorated functions in
-`core/ze-automation/ze_automation/agents/workflow/tools.py`, called by the
+`core/automation/ze-automation/ze_automation/agents/workflow/tools.py`, called by the
 `WorkflowAgent` (LLM-driven ReAct loop) or a user's chat turn. Those tool
 signatures/return shapes are the effective "interface contract" this feature
 touches. No REST/WS endpoint changes.

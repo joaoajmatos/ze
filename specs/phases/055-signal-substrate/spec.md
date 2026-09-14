@@ -62,7 +62,7 @@ downstream is graph traversal over what already exists.
 ## Module Location
 
 ```
-core/ze-memory/ze_memory/
+core/cognition/ze-memory/ze_memory/
     types.py            # + EntityRef, Signal dataclasses; signal_ids on GraphExpansion
     retriever.py        # ingest_signal on PostgresMemoryStore;
                         # _resolve_entity_ref helper extracted from _resolve_participant_names
@@ -86,7 +86,7 @@ that retrieval policies can explicitly include or exclude external signals, and 
 `expand()` traversal stays unambiguous.
 
 ```python
-# core/ze-memory/ze_memory/types.py
+# core/cognition/ze-memory/ze_memory/types.py
 
 @dataclass
 class EntityRef:
@@ -120,7 +120,7 @@ entity edges even after the source row is pruned.
 ## Interface Contract
 
 ```python
-# core/ze-memory/ze_memory/store.py  (MemoryStore protocol — additions)
+# core/cognition/ze-memory/ze_memory/store.py  (MemoryStore protocol — additions)
 
 class MemoryStore(Protocol):
     async def ingest_signal(self, signal: Signal) -> SignalIngestResult | None:

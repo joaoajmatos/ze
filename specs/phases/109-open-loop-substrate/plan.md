@@ -38,7 +38,7 @@ in unit tests, following `docs/testing.md`
 
 **Target Platform**: Linux server (existing `ze-api` deployment; FastAPI/uvicorn)
 
-**Project Type**: Backend package addition within the existing monorepo — new `core/ze-worldstate`
+**Project Type**: Backend package addition within the existing monorepo — new `core/cognition/ze-worldstate`
 package + `ze-api` wiring + minimal `ze-web` review surface (reuses the contacts-style
 propose/review pattern; no new UI paradigm per Assumptions)
 
@@ -65,7 +65,7 @@ not a scale concern. Four inflows (conversation, email, calendar, ingestion) at 
 | II. Single-User Model | No `user_id` column anywhere in the new schema; loops belong to the one user implicitly | PASS |
 | III. Layered Package Architecture | `ze-worldstate` is a new **core** package (not a `ZePlugin`) — it is the concrete form of the world-state's fourth face, part of the spine per `ze-doctrine.md`, exactly as `ze-automation` (goals/workflows) is core infra wired directly into `ze-api` rather than a domain plugin. It depends only on `ze-agents`, `ze-proactive`, `ze-memory`, `ze-data`, `ze-components` — never `ze-core` (engine-internal), matching `ze-automation`'s dependency shape. | PASS |
 | IV. Typed, Explicit Python | Dataclasses in `ze_worldstate/types.py` (never `models.py`); Pydantic only in `ze_api/api/schemas.py` for the REST layer; typed `ZeError` subclasses for loop-specific errors; async I/O throughout; constructor injection | PASS |
-| V. Test Discipline | Tests in `core/ze-worldstate/tests/`; mock asyncpg with `AsyncMock`; no real embedder/LLM calls in unit tests (embedder injected, mockable) | PASS (planned) |
+| V. Test Discipline | Tests in `core/cognition/ze-worldstate/tests/`; mock asyncpg with `AsyncMock`; no real embedder/LLM calls in unit tests (embedder injected, mockable) | PASS (planned) |
 | VI. Explicit Persistence | New hand-written raw-SQL Alembic chain, prefix `zw`, owned by `ze-worldstate`; `ze-api`'s meta-runner (`migrate.py`) discovers it the same way it discovers `ze-automation`'s `_ZE_AUTOMATION_VERSIONS` | PASS |
 | VII. One LLM Gateway, Local Embeddings | Extraction's relevance gate and any LLM-assisted title generation go through the injected `LLMClient`; entity/title similarity reuses the existing injected embedder — no new provider dependency | PASS |
 
@@ -91,7 +91,7 @@ specs/phases/109-open-loop-substrate/
 ### Source Code (repository root)
 
 ```text
-core/ze-worldstate/                       # NEW package — mirrors ze-automation's shape
+core/cognition/ze-worldstate/                       # NEW package — mirrors ze-automation's shape
 ├── pyproject.toml                        # deps: ze-agents, ze-logging, ze-proactive,
 │                                          #       ze-memory, ze-data, ze-components, asyncpg
 ├── ze_worldstate/

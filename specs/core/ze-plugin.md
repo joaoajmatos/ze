@@ -1,6 +1,6 @@
 # ze-plugin — Plugin Extension Framework
 
-> **Package:** `core/ze-plugin` — `ze_plugin/`
+> **Package:** `core/contracts/ze-plugin` — `ze_plugin/`
 > **Status:** Done
 > **Implemented in:** [Phase 47](../phases/047-plugin-framework/spec.md), [Phase 64](../phases/064-plugin-package-extraction/spec.md)
 
@@ -36,7 +36,7 @@ between the engine and domain code.
 ## Module Location
 
 ```
-core/ze-plugin/ze_plugin/
+core/contracts/ze-plugin/ze_plugin/
   plugin.py        ← ZePlugin ABC
   integration.py   ← ZeIntegration Protocol
   registry.py      ← plugin registry

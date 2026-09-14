@@ -2,7 +2,7 @@
 
 **Status:** Done
 **Depends on:** Phase 82 (ze-web FSD) — no hard dep, can run in parallel
-**Packages touched:** `core/ze-communication` (new), `core/ze-plugin`, `packages/ze-sdk`, `integrations/ze-google`, `plugins/ze-email` → renamed `plugins/ze-messenger`, `apps/ze-api`
+**Packages touched:** `core/contracts/ze-communication` (new), `core/contracts/ze-plugin`, `packages/ze-sdk`, `integrations/ze-google`, `plugins/ze-email` → renamed `plugins/ze-messenger`, `apps/ze-api`
 
 ---
 
@@ -15,7 +15,7 @@ plugin/agent concerns. There is no inbound interface — `poll_replies` is outbo
 polling tied to a specific prospecting use case, not a generic inbound model.
 
 This phase:
-1. Extracts a dedicated `core/ze-communication` package that owns the full channel
+1. Extracts a dedicated `core/contracts/ze-communication` package that owns the full channel
    contract — types, outbound, inbound (polling-based), and the registry.
 2. Moves `GmailChannel` to `integrations/ze-google`, where it belongs as a Google API adapter.
 3. Renames `plugins/ze-email` → `plugins/ze-messenger`: a generic cross-channel
@@ -33,7 +33,7 @@ Phase 84 drops into.
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Package location | `core/ze-communication` | Channel contracts are infrastructure shared across plugins and integrations — not a plugin concern |
+| Package location | `core/contracts/ze-communication` | Channel contracts are infrastructure shared across plugins and integrations — not a plugin concern |
 | `GmailChannel` location | `integrations/ze-google` | It is a pure Google API adapter; no Ze domain logic — integrations are the right home |
 | Integration deps | `ze-google` may depend on `ze-communication` | The "no Ze deps" rule was about domain knowledge; protocol/type deps are fine |
 | Inbound model | `InboundChannel` ABC with `poll_new_messages` + `supports_push: bool` | Polling now, push later — flag lets callers adapt without interface churn |
@@ -43,12 +43,12 @@ Phase 84 drops into.
 
 ---
 
-## Package: `core/ze-communication`
+## Package: `core/contracts/ze-communication`
 
 ### Location
 
 ```
-core/ze-communication/
+core/contracts/ze-communication/
   ze_communication/
     __init__.py
     types.py          # ChannelType, ChannelHandle, Message, SentMessage,
@@ -325,7 +325,7 @@ adding non-Gmail channels later.
 
 ---
 
-## `core/ze-plugin`: remove channels submodule
+## `core/contracts/ze-plugin`: remove channels submodule
 
 `ze_plugin/channels/` is deleted. `ze-plugin` removes its dep on channel types.
 
@@ -378,7 +378,7 @@ already use `ChannelType` which comes from `ze_sdk.channels`.
 
 ### 83a — Core package + types
 
-1. Create `core/ze-communication/` with `types.py`, `channel.py`, `registry.py`, `pyproject.toml`
+1. Create `core/contracts/ze-communication/` with `types.py`, `channel.py`, `registry.py`, `pyproject.toml`
 2. Add `ze-communication` dep to `ze-sdk`; update `ze_sdk/channels.py` to re-export
 3. Remove `ze_plugin/channels/` submodule; remove dep from `ze-plugin/pyproject.toml`
 4. Fix any imports in `ze-core`, `ze-personal` that used `ze_plugin.channels.*`

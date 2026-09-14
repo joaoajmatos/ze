@@ -12,7 +12,7 @@ Add two chart-based views to the existing `/brain/graph` page, both consuming sp
 
 ## Technical Context
 
-**Language/Version**: Python 3.11 (`core/ze-memory`, `apps/ze-api`) / TypeScript, React 19 (`apps/ze-web`)
+**Language/Version**: Python 3.11 (`core/cognition/ze-memory`, `apps/ze-api`) / TypeScript, React 19 (`apps/ze-web`)
 
 **Primary Dependencies**: `packages/ze-ui`'s `LineChart`/`BarChart`/`PieChart` (spec 118, no new dependency); existing `GET /api/v0/memory/graph/entity/{id}` and `GET /api/v0/memory/graph` endpoints
 
@@ -38,7 +38,7 @@ Add two chart-based views to the existing `/brain/graph` page, both consuming sp
 - **II. Single-User Model** — PASS. No scoping change; entity/graph data is already single-user.
 - **III. Layered Package Architecture** — PASS. The `created_at` field flows through the existing `ze-memory` → `ze-api` path; no new cross-package dependency. Chart placement is entirely within `apps/ze-web`, consuming `packages/ze-ui` as already established by spec 118.
 - **IV. Typed, Explicit Python** — PASS. `FactDigestItem` stays a Pydantic model in `ze_api/api/schemas.py` (per the existing convention for API schemas); no new dataclass needed beyond the one field.
-- **V. Test Discipline** — PASS, planned. `core/ze-memory` gains a test asserting `get_entity_detail` returns `created_at` on facts; `apps/ze-web`/`packages/ze-ui` gain component tests for both new chart placements.
+- **V. Test Discipline** — PASS, planned. `core/cognition/ze-memory` gains a test asserting `get_entity_detail` returns `created_at` on facts; `apps/ze-web`/`packages/ze-ui` gain component tests for both new chart placements.
 - **VI. Explicit Persistence** — PASS (N/A). No migration — `memory_facts.created_at` already exists; only the read path changes.
 - **VII. One LLM Gateway, Local Embeddings** — PASS (N/A). No LLM calls involved.
 
@@ -61,9 +61,9 @@ specs/phases/119-memory-graph-charts/
 ### Source Code (repository root)
 
 ```text
-core/ze-memory/ze_memory/admin.py            # EDIT — get_entity_detail: select + return f.created_at
+core/cognition/ze-memory/ze_memory/admin.py            # EDIT — get_entity_detail: select + return f.created_at
 apps/ze-api/ze_api/api/schemas.py            # EDIT — FactDigestItem gains created_at: datetime
-core/ze-memory/tests/                         # EDIT — assert created_at present on fact digest rows
+core/cognition/ze-memory/tests/                         # EDIT — assert created_at present on fact digest rows
 
 packages/ze-client/src/generated/            # REGEN — types.gen.ts picks up FactDigestItem.created_at
 

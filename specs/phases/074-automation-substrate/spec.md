@@ -1,6 +1,6 @@
 # Automation Substrate — Spec
 
-> **Packages:** `core/ze-automation/` (core), `core/ze-proactive/` (unchanged), `plugins/ze-personal/` (shrunk to persona + contacts only)
+> **Packages:** `core/automation/ze-automation/` (core), `core/contracts/ze-proactive/` (unchanged), `plugins/ze-personal/` (shrunk to persona + contacts only)
 > **Phase:** 74
 > **Status:** Done
 > **Depends on:** Phase 47 ([47-plugin-framework.md](../047-plugin-framework/spec.md)), Phase 48 ([48-core-split.md](../048-core-split/spec.md))
@@ -78,7 +78,7 @@ delivery, and push deduplication remain a separate infrastructure layer.
 ## Module Location
 
 ```
-core/ze-automation/
+core/automation/ze-automation/
   ze_automation/
     goals/
       types.py
@@ -103,7 +103,7 @@ core/ze-automation/
     migrations/
       versions/
 
-core/ze-proactive/
+core/contracts/ze-proactive/
   ze_proactive/
     scheduler.py
     job.py

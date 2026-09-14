@@ -4,7 +4,7 @@
 
 **Decision**: Fix both layers that are thread_id-keyed: the DB table `pending_confirmations`
 (`PRIMARY KEY (thread_id)`, `ON CONFLICT (thread_id) DO UPDATE` in
-`core/ze-core/ze_core/conversation/confirmations/store.py:33`) **and** the in-process
+`core/engine/ze-core/ze_core/conversation/confirmations/store.py:33`) **and** the in-process
 `pending_configs: dict[str, dict]` in `apps/ze-api/ze_api/api/websocket/endpoint.py:63`,
 which is also keyed by `thread_id` and silently overwritten by
 `pending_configs[thread_id] = result` (endpoint.py:122, 147, 215) whenever a second gate
@@ -72,10 +72,10 @@ timeout firing and clearing its own (already-answered-or-not) row is harmless ei
 
 ## R4 — How to estimate real-time spend without waiting for reconciliation
 
-**Decision**: Add `core/ze-core/ze_core/telemetry/pricing.py`, a static
+**Decision**: Add `core/engine/ze-core/ze_core/telemetry/pricing.py`, a static
 `MODEL_PRICING: dict[str, tuple[float, float]]` (prompt $/1M tokens, completion $/1M
 tokens) table seeded from the same model slugs already in `MODEL_CONTEXT_WINDOWS`
-(`core/ze-core/ze_core/openrouter/context_windows.py`) and `config/config.yaml`, with a
+(`core/engine/ze-core/ze_core/openrouter/context_windows.py`) and `config/config.yaml`, with a
 conservative default rate for unlisted models. A new `SpendBudgetChecker` in
 `telemetry/budget.py` sums `prompt_tokens`/`completion_tokens` from `llm_cost_log` for
 the running session/day (a plain `SUM(...) WHERE session_id = $1` / `WHERE created_at >
@@ -106,7 +106,7 @@ row, which is the wrong shape for something that must run before every costly tu
 ## R5 — Where the budget check plugs into the graph
 
 **Decision**: Extend the existing `capability_check` node
-(`core/ze-core/ze_core/orchestration/nodes/execution.py:27`) to also call
+(`core/engine/ze-core/ze_core/orchestration/nodes/execution.py:27`) to also call
 `SpendBudgetChecker`, and take the stricter of the two `GateDecision`s (existing
 `_GATE_RANK` ordering already used for compound-subtask strictness at line 43). When the
 budget checker signals "over budget," it returns `GateDecision.AWAIT_CONFIRMATION` (not

@@ -52,11 +52,12 @@ ze/                           # monorepo root
 │   │       ├── runtime/      # AutomationPlanner, AutomationStore contracts
 │   │       └── migrations/   # zc006–zc009 (goal traces/suggestions/stuck/reuse), zc011 (workflows), zc014 (accountability)
 │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
-│   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
-│   ├── ze-notifications/     # Push notification abstraction (ntfy)
 │   ├── ze-logging/           # structlog setup, get_logger, context binding
 │   ├── ze-components/        # Server-driven UI component descriptors
 │   └── ze-eval/              # Eval infrastructure — runner, judge, verifier, MCP server
+│
+│   (core/ is now grouped into kernel/, contracts/, engine/, seam/, cognition/,
+│   automation/, arbitration/, ops/ — see CLAUDE.md's Repository layout for the full tree)
 ├── packages/                 # Shared packages (Python SDK + frontend npm)
 │   ├── ze-sdk/               # Public SDK surface — flat re-export layer for plugin authors
 │   │   └── ze_sdk/           # ze_sdk, ze_sdk.types, ze_sdk.proactive, ze_sdk.channels,
@@ -93,7 +94,9 @@ ze/                           # monorepo root
 │   ├── ze-finance/           # Finance domain (ZePlugin) — in progress
 │   └── ze-legal/             # Legal domain (ZePlugin) — in progress
 ├── integrations/             # External service wrappers — no Ze domain knowledge
-│   └── ze-google/            # Google OAuth2 credentials and service client factories
+│   ├── ze-google/            # Google OAuth2 credentials and service client factories
+│   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
+│   └── ze-notifications/     # Push notification abstraction (ntfy)
 ├── apps/                     # Deployment units
 │   ├── ze-api/               # HTTP/WebSocket API, wires all plugins
 │   │   ├── ze_api/
@@ -109,7 +112,7 @@ ze/                           # monorepo root
 │   │   │   └── persona.yaml  # Persona profiles and dials
 │   │   └── tests/
 │   └── ze-web/               # React web client (Vite + TypeScript + Tailwind + shadcn/ui)
-├── eval/                     # Eval test data and entrypoints (uses core/ze-eval)
+├── eval/                     # Eval test data and entrypoints (uses core/ops/ze-eval)
 │   ├── scenarios/            # YAML scenario definitions — edit these to add tests
 │   ├── results/              # JSON run outputs (gitignored)
 │   ├── run.py                # CLI: python eval/run.py [--judge] [--tag X] [report]
@@ -122,20 +125,20 @@ ze/                           # monorepo root
 ### Package dependency graph
 
 ```
-ze-browser      (no ze deps)             core/
-ze-logging      (no ze deps)             core/
-ze-agents     → ze-logging               core/
-ze-data         (no ze deps)             core/
-ze-plugin     → ze-agents, ze-data       core/
-ze-proactive  → ze-agents                core/
-ze-notifications(no ze deps)             core/
-ze-components   (no ze deps)             core/
-ze-memory     → ze-agents                core/
-ze-eval         (no ze deps — HTTP only) core/  ← eval infrastructure
-ze-automation → ze-agents, ze-proactive, ze-memory  core/  ← goals + workflows; wired by ze-api directly
-ze-workspace  → ze-agents, ze-logging, ze-data  core/  ← isolated computer; ze-core/ze-agents must not import it
-ze-core       → ze-agents, ze-plugin     core/  ← engine; never a plugin dep
+ze-logging      (no ze deps)             core/kernel/
+ze-data         (no ze deps)             core/kernel/
+ze-components   (no ze deps)             core/kernel/
+ze-agents     → ze-logging               core/contracts/
+ze-plugin     → ze-agents, ze-data       core/contracts/
+ze-proactive  → ze-agents                core/contracts/
+ze-core       → ze-agents, ze-plugin     core/engine/  ← engine; never a plugin dep
+ze-memory     → ze-agents                core/cognition/
+ze-eval         (no ze deps — HTTP only) core/ops/  ← eval infrastructure
+ze-automation → ze-agents, ze-proactive, ze-memory  core/automation/  ← goals + workflows; wired by ze-api directly
+ze-workspace  → ze-agents, ze-logging, ze-data  core/ops/  ← isolated computer; ze-core/ze-agents must not import it
 ze-sdk        → ze-agents, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
+ze-browser      (no ze deps)             integrations/
+ze-notifications(no ze deps)             integrations/
 ze-google       (no ze deps)             integrations/
 ze-personal   → ze-sdk                   plugins/
 ze-email      → ze-sdk, ze-google, ze-personal             plugins/
@@ -402,19 +405,19 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 57 | Correlation engine — `ze-correlation` package, `CorrelationEngine`, `PostgresHypothesisStore`, graph neighbourhood expansion, recall guarantee, signal pinning | Done |
 | 60 | Cross-plugin signal contract — `SignalSource` protocol, `ZePlugin.signal_sources()` hook, `NewsSignalSource`, `CalendarSignalSource`, container collection + dedup | Done |
 | 64 | Plugin package extraction — `ze-plugin` package carved from `ze-agents`; `ZePlugin`, `channels/`, `SignalSource`, `ZeIntegration` in their own package; `ze-agents` focused on agent execution API | Done |
-| 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/ze-data`; no Ze deps | Done |
+| 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/kernel/ze-data`; no Ze deps | Done |
 | 70 | Finance recurring detection — algorithmic recurring expense/subscription detection, staleness-aware proactive job, CSV nudge flow, price-change resurface | Done |
 | 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Pending |
 | 72 | API client codegen — `@ze/client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Done |
 | 73 | API surface cleanup — all routes under `/api/v0/`; `HTTPBearer` security scheme; explicit `operation_id` on every route; auth extracted into `require_api_key` Depends; duplicate cost route removed; `GET /api/v0/version` | Done |
 | 74 | Automation substrate — `ze-automation` core package owns full automation stack (types, stores, planners, executors, agents, migrations); `ze-personal` reduced to persona + contacts + onboarding | Done |
 | 76 | ze-api shell cleanup — domain bootstrap into package modules; `ZeApiSettings` shell; test relocation; delete `ze_api/bootstrap.py`; `compose.py` for proactive jobs | Done |
-| 77 | ze-logging — structlog configuration extracted from ze-api/ze-agents into `core/ze-logging`; `get_logger` via ze-sdk | Done |
+| 77 | ze-logging — structlog configuration extracted from ze-api/ze-agents into `core/kernel/ze-logging`; `get_logger` via ze-sdk | Done |
 | 78 | Dream Memory — sleep pass, dream journal, retrieval weight, sensitive tagging (78a); dream synthesis + gates pending (78b) | In Progress |
 | 79 | NLI cross-encoder — contradiction detection, retrieval re-rank cache, correlation grounding (`ze_core/nli.py`) | Done |
 | 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Done |
 | 81 | Plugin NLI adoption — news dedup, finance merchant merging | Pending |
-| 115 | Workspace Environment — `core/ze-workspace` + `sidecar/workspace`; modes Off/Plan/Ask/Auto-edit/Auto; skill scripts after executable approval (`zsk002`); System `/workspace` page; unattended Auto only. `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
+| 115 | Workspace Environment — `core/ops/ze-workspace` + `sidecar/workspace`; modes Off/Plan/Ask/Auto-edit/Auto; skill scripts after executable approval (`zsk002`); System `/workspace` page; unattended Auto only. `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
 
 ## graphify
 
@@ -451,10 +454,11 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 
 ## Learned Workspace Facts
 
-- `core/ze-seed` (Phase 96) seeds dev data when `AUTO_SEED_DEV_DATA=true` (default on `make dev` / `make dev-full`); each run wipes the `seed-dev-*` namespace and re-applies narrative fixtures; plugins extend via `ZePlugin.seed_domains()`.
+- `core/ops/ze-seed` (Phase 96) seeds dev data when `AUTO_SEED_DEV_DATA=true` (default on `make dev` / `make dev-full`); each run wipes the `seed-dev-*` namespace and re-applies narrative fixtures; plugins extend via `ZePlugin.seed_domains()`.
 - `ze-email` was renamed to `ze-messenger` (`plugins/ze-messenger/`); Gmail inbound channel lives in `integrations/ze-google`.
 - Plugin management UI registers via `ZePlugin.ui_contributions()`; `ze-web` loads nav/settings from `GET /api/v0/ui/manifest`; plugin REST routes mount via `rest_routes()`.
 - `apps/ze-web` follows Feature-Sliced Design: `pages → widgets → features → entities → shared`; query hooks live in `entities/<name>/api/`.
 - Chat inline UI uses `ze-components` `render_*` tools (table, metric, list, timeline, progress, confirm, form) rendered by `PrimitiveRenderer` below message bubbles.
 - `journal/` is gitignored local writing for a public narrative (weekly LinkedIn posts plus a technical blog); treat it as authoring notes, not product source.
 - Optional page quick actions sit in the top bar left of the notification icon (with a separator), via a reusable slot rather than per-page chrome.
+- Keep the phase 115 workspace sidecar (`core/ops/ze-workspace` + `sidecar/workspace`); do not replace it with Cloudflare Computer — borrow run-handle / exec-journal ideas instead.

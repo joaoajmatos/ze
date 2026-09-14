@@ -9,7 +9,7 @@ where an existing one fits."
 ## D1: How does a "follow-up turn" actually get started?
 
 **Decision**: Reuse `container.invoke_raw_turn(thread_id, RawInput(text=...))`
-(`core/ze-core/ze_core/conversation/turn.py`, wrapped by
+(`core/engine/ze-core/ze_core/conversation/turn.py`, wrapped by
 `apps/ze-api/ze_api/container.py:ZeContainer.invoke_raw_turn`) — the exact function
 the WebSocket turn handler (`apps/ze-api/ze_api/api/websocket/turns.py`) and the eval
 route already call. The watcher constructs a synthetic prompt (e.g. "The workspace

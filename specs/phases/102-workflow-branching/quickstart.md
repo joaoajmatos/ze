@@ -54,7 +54,7 @@ branch always routes back to `s1` itself. Trigger it and confirm:
 ## 4. Planner behavior (User Story 4)
 
 Two `WorkflowPlanner.plan()` calls, asserted directly in
-`core/ze-automation/tests/workflow_engine/test_workflow_planner.py` (mocking
+`core/automation/ze-automation/tests/workflow_engine/test_workflow_planner.py` (mocking
 `LLMClient.complete` to return a fixed branching vs. linear JSON payload):
 
 - A description with "if X then Y otherwise Z" phrasing → returned steps
@@ -98,7 +98,7 @@ confirming:
 Run the full suite for the touched packages:
 
 ```bash
-make test-automation   # core/ze-automation — types, planner, postgres store, rest.py
+make test-automation   # core/automation/ze-automation — types, planner, postgres store, rest.py
 make test-personal     # plugins/ze-personal — graph executor (route_branch, loop guard)
 make test-web          # ze-web — WorkflowStepsList/LiveRunPanel rendering-order unit tests
 ```

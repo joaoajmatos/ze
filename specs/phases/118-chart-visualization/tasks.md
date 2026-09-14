@@ -21,7 +21,7 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-Web app monorepo — Python backend package (`core/ze-components`), shared TS UI-contract package (`packages/ze-ui`), React app (`apps/ze-web`). Paths below match `plan.md`'s Project Structure exactly.
+Web app monorepo — Python backend package (`core/kernel/ze-components`), shared TS UI-contract package (`packages/ze-ui`), React app (`apps/ze-web`). Paths below match `plan.md`'s Project Structure exactly.
 
 ---
 
@@ -58,11 +58,11 @@ Web app monorepo — Python backend package (`core/ze-components`), shared TS UI
 
 ### Implementation for User Story 1
 
-- [X] T008 [P] [US1] Create `Chart` and `ChartPoint` dataclasses in `core/ze-components/ze_components/organisms/chart.py`, mirroring `organisms/table.py`'s `Table` pattern (`type: Literal["chart"]` frozen discriminator, `chart_type: Literal["line", "bar", "area"]`) — data-model.md
-- [X] T009 [US1] Register `Chart` in `PRIMITIVE_TYPES` and `ChartPoint` in `PRIMITIVE_SUB_TYPES`, export both from `core/ze-components/ze_components/__init__.py` (depends on T008)
-- [X] T010 [US1] Add the private `_ChartSchema` dataclass and `render_chart` tool registration to `core/ze-components/ze_components/tools.py` per `contracts/chart-primitive.md` §1, including the wrapper-layer validation rules from data-model.md (drop malformed points, truncate at 500-point cap with a logged warning, defend against a stale `chart_type`) (depends on T008)
-- [X] T011 [P] [US1] Test: `Chart`/`ChartPoint` JSON-schema export shape (discriminator, `$defs`, `maxItems`) in `core/ze-components/tests/test_schema.py` (depends on T009)
-- [X] T012 [P] [US1] Test: `render_chart` tool schema and validation behavior (enum values, malformed-point drop, 500-point truncation) in `core/ze-components/tests/test_tools.py` (depends on T010)
+- [X] T008 [P] [US1] Create `Chart` and `ChartPoint` dataclasses in `core/kernel/ze-components/ze_components/organisms/chart.py`, mirroring `organisms/table.py`'s `Table` pattern (`type: Literal["chart"]` frozen discriminator, `chart_type: Literal["line", "bar", "area"]`) — data-model.md
+- [X] T009 [US1] Register `Chart` in `PRIMITIVE_TYPES` and `ChartPoint` in `PRIMITIVE_SUB_TYPES`, export both from `core/kernel/ze-components/ze_components/__init__.py` (depends on T008)
+- [X] T010 [US1] Add the private `_ChartSchema` dataclass and `render_chart` tool registration to `core/kernel/ze-components/ze_components/tools.py` per `contracts/chart-primitive.md` §1, including the wrapper-layer validation rules from data-model.md (drop malformed points, truncate at 500-point cap with a logged warning, defend against a stale `chart_type`) (depends on T008)
+- [X] T011 [P] [US1] Test: `Chart`/`ChartPoint` JSON-schema export shape (discriminator, `$defs`, `maxItems`) in `core/kernel/ze-components/tests/test_schema.py` (depends on T009)
+- [X] T012 [P] [US1] Test: `render_chart` tool schema and validation behavior (enum values, malformed-point drop, 500-point truncation) in `core/kernel/ze-components/tests/test_tools.py` (depends on T010)
 - [X] T013 [US1] Regenerate `packages/ze-ui/src/generated/types.gen.ts` and `packages/ze-ui/src/generated/schema.json` from `ze_components.schema.export_json_schema()` (depends on T009)
 - [X] T014 [US1] Add a `case "chart":` arm to `PrimitiveNodeRenderer`'s switch in `packages/ze-ui/src/react/PrimitiveRenderer.tsx`, dispatching to a new `ChartRenderer` that switches on `node.chart_type` to render `LineChart`/`BarChart`/`AreaChart` from `apps/ze-web/src/shared/ui/charts` (depends on T013, T007)
 - [X] T015 [P] [US1] Test: `PrimitiveRenderer` chart cases — line/bar/area render without throwing, an unrecognized `chart_type` falls back to `null` per the file's existing default behavior — in `packages/ze-ui/src/react/PrimitiveRenderer.test.tsx` (depends on T014)
@@ -95,7 +95,7 @@ Web app monorepo — Python backend package (`core/ze-components`), shared TS UI
 
 ### Implementation for User Story 3
 
-- [X] T019 [US3] Widen the `chart_type` `Literal` in `core/ze-components/ze_components/organisms/chart.py` to add `"pie"` (depends on T008)
+- [X] T019 [US3] Widen the `chart_type` `Literal` in `core/kernel/ze-components/ze_components/organisms/chart.py` to add `"pie"` (depends on T008)
 - [X] T020 [P] [US3] Install the Bklit pie chart via `pnpm dlx shadcn add @bklit/pie-chart` into `apps/ze-web/src/shared/ui/charts/pie-chart.tsx`, re-theme to Ze tokens, export from `index.ts` (depends on T001, T002, T007)
 - [X] T021 [US3] Add a `"pie"` branch to `ChartRenderer`'s dispatch in `packages/ze-ui/src/react/PrimitiveRenderer.tsx` (depends on T019, T020, T014)
 - [X] T022 [P] [US3] Extend the test suites from T011/T012/T015 with `"pie"` cases; re-run the full suite and confirm the pre-existing line/bar/area assertions pass unchanged (SC-004) (depends on T021)
@@ -160,8 +160,8 @@ Task: "Install Bklit area chart into apps/ze-web/src/shared/ui/charts/area-chart
 
 ```bash
 # Once render_chart (T010) and the PRIMITIVE_TYPES registration (T009) exist:
-Task: "Test chart schema export in core/ze-components/tests/test_schema.py"
-Task: "Test render_chart tool validation in core/ze-components/tests/test_tools.py"
+Task: "Test chart schema export in core/kernel/ze-components/tests/test_schema.py"
+Task: "Test render_chart tool validation in core/kernel/ze-components/tests/test_tools.py"
 ```
 
 ---

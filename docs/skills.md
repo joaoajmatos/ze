@@ -5,7 +5,7 @@ agent. They do not grant new tools. An imported skill cannot affect a conversati
 until you review it. Scripts never inherit that approval — they run only after a
 separate executable approval, and only inside the [workspace sidecar](workspace.md).
 
-**Package:** `core/ze-skills/ze_skills/`  
+**Package:** `core/automation/ze-skills/ze_skills/`  
 **Web UI:** System `/skills` (`widgets/skill-management`)  
 **Specs:** [114-agent-skills](../specs/phases/114-agent-skills/spec.md) ·
 [115-workspace-sidecar](../specs/phases/115-workspace-sidecar/spec.md) (scripts)
@@ -282,7 +282,7 @@ See [configuration.md](configuration.md#skills) for the full block.
 ## Further reading
 
 - [workspace.md](workspace.md) — sidecar modes, isolation, local and Fly setup
-- [core/ze-skills/README.md](../core/ze-skills/README.md) — package modules
-- [core/ze-workspace/README.md](../core/ze-workspace/README.md) — client, gate, tools
+- [core/automation/ze-skills/README.md](../core/automation/ze-skills/README.md) — package modules
+- [core/ops/ze-workspace/README.md](../core/ops/ze-workspace/README.md) — client, gate, tools
 - [sdk.md](sdk.md#zeplugin--extension-point) — `bundled_skill_paths()`
 - [adding-an-agent.md](adding-an-agent.md#5-bundle-a-skill-optional) — shipping a skill with a plugin

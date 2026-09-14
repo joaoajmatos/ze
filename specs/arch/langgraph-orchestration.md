@@ -96,4 +96,4 @@ already required.
 
 - [Phase 5 — Orchestration](../phases/005-orchestration/spec.md)
 - [core/05-orchestration.md](../core/05-orchestration.md)
-- `core/ze-core/ze_core/orchestration/` — graph builder, nodes, `AgentState`
+- `core/engine/ze-core/ze_core/orchestration/` — graph builder, nodes, `AgentState`

@@ -54,7 +54,7 @@ contract.
 ## Interface Contract
 
 ```python
-# core/ze-agents/ze_agents/signals.py  (new)
+# core/contracts/ze-agents/ze_agents/signals.py  (new)
 
 @runtime_checkable
 class SignalSource(Protocol):
@@ -65,7 +65,7 @@ class SignalSource(Protocol):
 ```
 
 ```python
-# core/ze-agents/ze_agents/plugin.py  (ZePlugin — addition)
+# core/contracts/ze-agents/ze_agents/plugin.py  (ZePlugin — addition)
 
 class ZePlugin(ABC):
     def signal_sources(self) -> list[SignalSource]:

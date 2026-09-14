@@ -28,7 +28,7 @@ today's `SOURCE_WEIGHTS`-derived behavior. A `PersonSource` round-trips the same
 ## 2. Contact-store writes enforce `IDENTITY`-only (User Story 2 — the payoff)
 
 ```bash
-make test-plugin -- -k SOCIAL_COGNITION      # core/ze-plugin/tests/test_contribution.py
+make test-plugin -- -k SOCIAL_COGNITION      # core/contracts/ze-plugin/tests/test_contribution.py
 make test-personal -- -k test_consolidator   # FR-004 rejection test
 ```
 

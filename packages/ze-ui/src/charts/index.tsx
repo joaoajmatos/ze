@@ -14,7 +14,7 @@ import { XAxis } from "./x-axis";
 import { HeatmapChart } from "./heatmap-chart";
 
 /**
- * Ze's chart data contract — mirrors core/ze-components' `ChartPoint` dataclass
+ * Ze's chart data contract — mirrors core/kernel/ze-components' `ChartPoint` dataclass
  * (see specs/phases/118-chart-visualization/data-model.md) so agent-emitted and
  * hand-placed charts share one shape.
  */

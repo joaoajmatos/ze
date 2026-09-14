@@ -59,7 +59,7 @@ problems; deferring them avoids building spam machinery before the core works.
 ## Module Location
 
 ```
-core/ze-correlation/ze_correlation/
+core/cognition/ze-correlation/ze_correlation/
     job.py              # CorrelationJob (@proactive_job) — added in this phase
     push.py             # run_once(): seed selection, push bar, delivery
 ```
@@ -72,7 +72,7 @@ Container wiring follows existing proactive patterns: `@proactive_job` +
 ## Interface Contract
 
 ```python
-# core/ze-correlation/ze_correlation/push.py
+# core/cognition/ze-correlation/ze_correlation/push.py
 
 class CorrelationPushConsumer:
     def __init__(
@@ -91,7 +91,7 @@ class CorrelationPushConsumer:
 ```
 
 ```python
-# core/ze-correlation/ze_correlation/job.py
+# core/cognition/ze-correlation/ze_correlation/job.py
 
 @proactive_job
 class CorrelationJob:

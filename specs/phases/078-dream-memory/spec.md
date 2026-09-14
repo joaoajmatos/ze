@@ -91,7 +91,7 @@ No phase writes synthetic outputs directly to live memory. All dream products li
 ## Module Location
 
 ```
-core/ze-memory/
+core/cognition/ze-memory/
   ze_memory/
     dream/
       __init__.py
@@ -336,7 +336,7 @@ artifact.content + source_episodes
 ## Data Structures
 
 ```python
-# core/ze-memory/ze_memory/dream/types.py
+# core/cognition/ze-memory/ze_memory/dream/types.py
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -550,7 +550,7 @@ ALTER TABLE memory_entities
 ## Replay Score Function
 
 ```python
-# core/ze-memory/ze_memory/dream/scorer.py
+# core/cognition/ze-memory/ze_memory/dream/scorer.py
 
 def replay_score(
     episode: Episode,

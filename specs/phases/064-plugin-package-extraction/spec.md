@@ -179,7 +179,7 @@ These are ordered to keep the test suite green at each step.
 
 ### 1. Scaffold `ze-plugin`
 
-Create `core/ze-plugin/` with `pyproject.toml` declaring a dependency on `ze-agents`.
+Create `core/contracts/ze-plugin/` with `pyproject.toml` declaring a dependency on `ze-agents`.
 Empty `ze_plugin/__init__.py`. No behaviour yet.
 
 ### 2. Move `channels/`

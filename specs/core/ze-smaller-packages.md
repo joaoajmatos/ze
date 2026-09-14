@@ -6,7 +6,7 @@ Reference specs for packages that are self-contained enough not to need a full s
 
 ## ze-logging
 
-**Package:** `core/ze-logging`  
+**Package:** `core/kernel/ze-logging`  
 **Purpose:** Configures structlog for the whole system. Exports `get_logger(name)`.
 Every Ze package uses this instead of stdlib `logging` or `print`.  
 **Rule:** Always `from ze_logging import get_logger; logger = get_logger(__name__)`.
@@ -15,7 +15,7 @@ Every Ze package uses this instead of stdlib `logging` or `print`.
 
 ## ze-notifications
 
-**Package:** `core/ze-notifications`  
+**Package:** `integrations/ze-notifications`  
 **Purpose:** Push notification abstraction over ntfy. `NtfyNotifier` sends HTTP PUT
 to `{NTFY_BASE_URL}/{NTFY_TOPIC}`. Used by `ProactiveNotifier` (ze-proactive) and
 `NativeAppInterface` (ze-api) when the WebSocket is not connected.  
@@ -25,7 +25,7 @@ to `{NTFY_BASE_URL}/{NTFY_TOPIC}`. Used by `ProactiveNotifier` (ze-proactive) an
 
 ## ze-browser
 
-**Package:** `core/ze-browser`  
+**Package:** `integrations/ze-browser`  
 **Purpose:** Browser sidecar client. `BrowserClient` connects to a Playwright sidecar
 process. `browser_tool` is a `@tool` for the prospecting agent to fetch and extract
 web page content. No Ze domain knowledge.  
@@ -35,7 +35,7 @@ web page content. No Ze domain knowledge.
 
 ## ze-data
 
-**Package:** `core/ze-data`  
+**Package:** `core/kernel/ze-data`  
 **Purpose:** `DataDomain` Protocol and `DataPortabilityService`. Plugins implement
 `DataDomain` to expose their data for export. No Ze domain knowledge.  
 **See also:** [Phase 62 — Data Portability](../phases/062-data-portability/spec.md), [Phase 68 — ze-data Package](../phases/068-ze-data/spec.md)
@@ -44,7 +44,7 @@ web page content. No Ze domain knowledge.
 
 ## ze-components
 
-**Package:** `core/ze-components`  
+**Package:** `core/kernel/ze-components`  
 **Purpose:** Server-driven UI component descriptor types and serialisation. Agents
 return component descriptors (`atoms/`, `molecules/`, `organisms/`) that the React
 client renders. No rendering logic lives here.  
@@ -54,7 +54,7 @@ client renders. No rendering logic lives here.
 
 ## ze-correlation
 
-**Package:** `core/ze-correlation`  
+**Package:** `core/cognition/ze-correlation`  
 **Purpose:** `CorrelationEngine` — finds non-obvious connections between signals,
 facts, and episodes inside the user's neighbourhood. `PostgresHypothesisStore` persists
 hypotheses. Recall-tagged: every correlation includes `provenance` marking whether
@@ -65,7 +65,7 @@ evidence came from graph recall or live search.
 
 ## ze-eval
 
-**Package:** `core/ze-eval`  
+**Package:** `core/ops/ze-eval`  
 **Purpose:** Eval infrastructure — `EvalRunner`, `EvalJudge`, `EvalVerifier`, `EvalScorer`,
 YAML scenario loading, MCP server for interactive evals. Connects to ze-api over HTTP;
 no internal Ze imports.  
@@ -75,7 +75,7 @@ no internal Ze imports.
 
 ## ze-onboarding
 
-**Package:** `core/ze-onboarding`  
+**Package:** `core/ops/ze-onboarding`  
 **Purpose:** `OnboardingCoordinator` drives first-run setup through a series of
 `OnboardingProvider` steps (persona capture, channel setup, goal elicitation).
 `PostgresOnboardingStore` persists progress. Can be replayed per-step.  
@@ -85,7 +85,7 @@ no internal Ze imports.
 
 ## ze-ingestion
 
-**Package:** `core/ze-ingestion`  
+**Package:** `core/ops/ze-ingestion`  
 **Purpose:** Ingest pipeline for external content (RSS, emails, documents). Fetchers
 pull raw content; processors extract structured signals; the sink writes to ze-memory
 and ze-correlation. `IngestionAgent` handles user-triggered ingestion.  
@@ -95,7 +95,7 @@ and ze-correlation. `IngestionAgent` handles user-triggered ingestion.
 
 ## ze-seed
 
-**Package:** `core/ze-seed`  
+**Package:** `core/ops/ze-seed`  
 **Purpose:** Development data seeder. Generates realistic synthetic facts, episodes,
 goals, and conversations for local development and eval. Not imported by any production
 package.  

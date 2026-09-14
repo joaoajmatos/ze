@@ -2,7 +2,7 @@
 
 **Status:** Done
 **Depends on:** Phase 79 (NLI cross-encoder integration)
-**Packages touched:** `core/ze-agents`, `core/ze-core`, `core/ze-memory`, `core/ze-correlation`, `packages/ze-sdk`, `apps/ze-api`
+**Packages touched:** `core/contracts/ze-agents`, `core/engine/ze-core`, `core/cognition/ze-memory`, `core/cognition/ze-correlation`, `packages/ze-sdk`, `apps/ze-api`
 
 ---
 
@@ -100,7 +100,7 @@ Agents pass `nli_client` via `agentic_loop(..., deps={"nli_client": self._nli})`
 2. Move deps to `ze-core/pyproject.toml`
 3. DI registration in bootstrap + container
 4. Refactor memory/correlation callsites
-5. Move unit tests to `core/ze-core/tests/test_nli.py`
+5. Move unit tests to `core/engine/ze-core/tests/test_nli.py`
 
 ### 80b — Agent surface
 

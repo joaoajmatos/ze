@@ -186,7 +186,7 @@ pushes alone. Assert a subsequent worldstate push attempt on the same day is als
   attention-budget check with a single configured limit. The migrated single limit MUST be
   derived as the minimum of the two prior `max_pushes_per_day` values, so post-migration daily
   interruption volume is never higher than the smaller of the two prior limits.
-- **FR-006**: The shared attention-budget check MUST live in `core/ze-proactive` (the existing
+- **FR-006**: The shared attention-budget check MUST live in `core/contracts/ze-proactive` (the existing
   home of `PushLogStore` and the shared push-bar primitives), not duplicated per caller.
 - **FR-007**: When both `ze-correlation` and `ze-worldstate` have eligible items to push on the
   same day and the shared budget cannot cover both, the system MUST push the item `PriorityView`

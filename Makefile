@@ -3,7 +3,7 @@
 .DEFAULT_GOAL := help
 
 ZE      := apps/ze-api
-ZE_CORE := core/ze-core
+ZE_CORE := core/engine/ze-core
 ZE_WEB  := apps/ze-web
 
 LOG_FILE     ?= $(ZE)/logs/ze.log
@@ -288,67 +288,67 @@ test test-api:
 	$(call pytest_pkg,apps/ze-api/tests)
 
 test-core:
-	$(call pytest_pkg,core/ze-core/tests)
+	$(call pytest_pkg,core/engine/ze-core/tests)
 
 test-logging:
-	$(call pytest_pkg,core/ze-logging/tests)
+	$(call pytest_pkg,core/kernel/ze-logging/tests)
 
 test-agents:
-	$(call pytest_pkg,core/ze-agents/tests)
+	$(call pytest_pkg,core/contracts/ze-agents/tests)
 
 test-plugin:
-	$(call pytest_pkg,core/ze-plugin/tests)
+	$(call pytest_pkg,core/contracts/ze-plugin/tests)
 
 test-sdk:
 	$(call pytest_pkg,packages/ze-sdk/tests)
 
 test-proactive:
-	$(call pytest_pkg,core/ze-proactive/tests)
+	$(call pytest_pkg,core/contracts/ze-proactive/tests)
 
 test-memory:
-	$(call pytest_pkg,core/ze-memory/tests)
+	$(call pytest_pkg,core/cognition/ze-memory/tests)
 
 test-ingestion:
-	$(call pytest_pkg,core/ze-ingestion/tests)
+	$(call pytest_pkg,core/ops/ze-ingestion/tests)
 
 test-automation:
-	$(call pytest_pkg,core/ze-automation/tests)
+	$(call pytest_pkg,core/automation/ze-automation/tests)
 
 test-worldstate:
-	$(call pytest_pkg,core/ze-worldstate/tests)
+	$(call pytest_pkg,core/cognition/ze-worldstate/tests)
 
 test-priority:
-	$(call pytest_pkg,core/ze-priority/tests)
+	$(call pytest_pkg,core/arbitration/ze-priority/tests)
 
 test-skills:
-	$(call pytest_pkg,core/ze-skills/tests)
+	$(call pytest_pkg,core/automation/ze-skills/tests)
 
 test-workspace:
-	$(call pytest_pkg,core/ze-workspace/tests)
+	$(call pytest_pkg,core/ops/ze-workspace/tests)
 
 test-collision:
-	$(call pytest_pkg,core/ze-collision/tests)
+	$(call pytest_pkg,core/seam/ze-collision/tests)
 
 test-onboarding:
-	$(call pytest_pkg,core/ze-onboarding/tests)
+	$(call pytest_pkg,core/ops/ze-onboarding/tests)
 
 test-seed:
-	$(call pytest_pkg,core/ze-seed/tests)
+	$(call pytest_pkg,core/ops/ze-seed/tests)
 
 test-correlation:
-	$(call pytest_pkg,core/ze-correlation/tests)
+	$(call pytest_pkg,core/cognition/ze-correlation/tests)
 
 test-browser:
-	$(call pytest_pkg,core/ze-browser/tests)
+	$(call pytest_pkg,integrations/ze-browser/tests)
 
 test-notifications:
-	$(call pytest_pkg,core/ze-notifications/tests)
+	$(call pytest_pkg,integrations/ze-notifications/tests)
 
 test-components:
-	$(call pytest_pkg,core/ze-components/tests)
+	$(call pytest_pkg,core/kernel/ze-components/tests)
 
 test-eval:
-	$(call pytest_pkg,core/ze-eval/tests)
+	$(call pytest_pkg,core/ops/ze-eval/tests)
 
 test-google:
 	$(call pytest_pkg,integrations/ze-google/tests)
@@ -363,7 +363,7 @@ test-prospecting:
 	$(call pytest_pkg,plugins/ze-prospecting/tests)
 
 test-communication:
-	$(call pytest_pkg,core/ze-communication/tests)
+	$(call pytest_pkg,core/contracts/ze-communication/tests)
 
 test-messenger:
 	$(call pytest_pkg,plugins/ze-messenger/tests)
