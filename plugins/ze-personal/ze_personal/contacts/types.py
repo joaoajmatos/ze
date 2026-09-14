@@ -56,19 +56,6 @@ class PersonSource:
 
 
 @dataclass
-class PersonRelationship:
-    person_a_id: UUID
-    person_b_id: UUID
-    relationship_description: str
-    confidence: float = 0.5
-    source_type: str = "manual"
-    claim_kind: ClaimKind = ClaimKind.IDENTITY
-    provenance: Provenance = Provenance.PROMPT_SUPPLIED
-    id: UUID | None = None
-    created_at: datetime | None = None
-
-
-@dataclass
 class PersonCandidate:
     """Intermediate type produced by extraction — not yet stored as a Person."""
 
@@ -89,6 +76,32 @@ class PersonContext:
 class StaleFollowUpNudge:
     name: str
     days_ago: int
+
+
+@dataclass
+class ProjectProposal:
+    """Typed output of any project-mention extraction step (extractors, consolidator, agents)."""
+
+    name: str
+    confidence: float = 0.5
+    source_type: str = "conversation"
+    raw_context: str = ""
+
+
+@dataclass
+class RelationshipEdgeProposal:
+    """Typed output of a WORKS_ON/COLLABORATES_WITH edge mention.
+
+    `person_name` is always the source (a person); `target_name` is a project
+    name for WORKS_ON or another person's name for COLLABORATES_WITH.
+    """
+
+    predicate: str  # "WORKS_ON" | "COLLABORATES_WITH"
+    person_name: str
+    target_name: str
+    confidence: float = 0.5
+    source_type: str = "conversation"
+    raw_context: str = ""
 
 
 @dataclass

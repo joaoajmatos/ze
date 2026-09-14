@@ -10,8 +10,9 @@ from ze_personal.contacts.types import (
     Person,
     PersonCandidate,
     PersonContext,
-    PersonRelationship,
     PersonSource,
+    ProjectProposal,
+    RelationshipEdgeProposal,
     StaleFollowUpNudge,
 )
 
@@ -21,8 +22,9 @@ __all__ = [
     "Person",
     "PersonCandidate",
     "PersonContext",
-    "PersonRelationship",
     "PersonSource",
+    "ProjectProposal",
+    "RelationshipEdgeProposal",
     "StaleFollowUpNudge",
     "PersonStore",
     "ContactChannelStore",

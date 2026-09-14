@@ -9,7 +9,7 @@ from ze_personal.contacts.store import (
     _person_from_row,
     _source_from_row,
 )
-from ze_personal.contacts.types import Person, PersonRelationship, PersonSource
+from ze_personal.contacts.types import Person, PersonSource
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -319,69 +319,3 @@ async def test_get_context_respects_token_budget():
 
     assert len(ctx.people) < 5
 
-
-# ── PersonStore.add_relationship ─────────────────────────────────────────────
-
-
-async def test_add_relationship_upserts():
-    a_id, b_id = uuid4(), uuid4()
-    now = datetime.utcnow()
-    row = {
-        "id": uuid4(),
-        "person_a_id": a_id,
-        "person_b_id": b_id,
-        "relationship_description": "works at same company",
-        "confidence": 0.8,
-        "source_type": "conversation",
-        "claim_kind": "identity",
-        "provenance": "synthesized",
-        "created_at": now,
-    }
-    conn = make_conn()
-    conn.fetchrow = AsyncMock(return_value=row)
-    store = make_store(make_pool(conn))
-
-    rel = PersonRelationship(
-        person_a_id=a_id,
-        person_b_id=b_id,
-        relationship_description="works at same company",
-        confidence=0.8,
-        source_type="conversation",
-    )
-    result = await store.add_relationship(rel)
-
-    assert result.person_a_id == a_id
-    assert result.person_b_id == b_id
-    assert result.claim_kind == ClaimKind.IDENTITY
-    assert result.provenance == Provenance.SYNTHESIZED
-    call_sql = conn.fetchrow.call_args[0][0]
-    assert "ON CONFLICT" in call_sql
-    assert "claim_kind" in call_sql
-
-
-# ── PersonStore.get_relationships ────────────────────────────────────────────
-
-
-async def test_get_relationships_maps_claim_kind_and_provenance():
-    person_id = uuid4()
-    now = datetime.utcnow()
-    row = {
-        "id": uuid4(),
-        "person_a_id": person_id,
-        "person_b_id": uuid4(),
-        "relationship_description": "works at same company",
-        "confidence": 0.8,
-        "source_type": "conversation",
-        "claim_kind": "identity",
-        "provenance": "synthesized",
-        "created_at": now,
-    }
-    conn = make_conn()
-    conn.fetch = AsyncMock(return_value=[row])
-    store = make_store(make_pool(conn))
-
-    result = await store.get_relationships(person_id)
-
-    assert len(result) == 1
-    assert result[0].claim_kind == ClaimKind.IDENTITY
-    assert result[0].provenance == Provenance.SYNTHESIZED

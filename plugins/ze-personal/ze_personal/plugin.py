@@ -179,7 +179,6 @@ class PersonalPlugin(ZePlugin):
             # Contact children (FK to contacts) — order 20
             _domain("contacts.channels", "contact_channels", 20),
             _domain("contacts.sources", "contact_sources", 20),
-            _domain("contacts.relationships", "contact_relationships", 20),
             # Goal children (FK to goals) — order 20
             _domain("goals.milestones", "goal_milestones", 20),
             _domain("goals.gates", "goal_gates", 20),

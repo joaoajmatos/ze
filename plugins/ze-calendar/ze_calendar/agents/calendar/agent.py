@@ -4,7 +4,10 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
 from ze_agents.types import Intent, Mode
 from ze_agents.types import AgentContext, AgentResult
-from ze_personal.contacts.extractors import extract_calendar_contacts
+from ze_personal.contacts.extractors import (
+    extract_calendar_contacts,
+    extract_calendar_social_edges,
+)
 from ze_google.auth import GoogleCredentials
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
@@ -89,6 +92,9 @@ class CalendarAgent(BaseAgent):
         )
 
         contact_proposals = extract_calendar_contacts(loop_tool_calls)
+        project_proposals, relationship_edge_proposals = (
+            extract_calendar_social_edges(loop_tool_calls)
+        )
 
         self._log.info(
             "calendar_agent_complete",
@@ -102,6 +108,10 @@ class CalendarAgent(BaseAgent):
             response=response,
             tool_calls=loop_tool_calls,
             contact_proposals=contact_proposals,
+            extensions={
+                "project_proposals": project_proposals,
+                "relationship_edge_proposals": relationship_edge_proposals,
+            },
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:

@@ -9,6 +9,7 @@ from uuid import UUID
 
 import asyncpg
 
+from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
 from ze_sdk.contribution import submit_and_detect_collisions
 
 from ze_personal.contacts.contribution import person_source_to_contribution
@@ -17,8 +18,11 @@ from ze_personal.contacts.types import (
     ContactProposal,
     Person,
     PersonSource,
+    ProjectProposal,
+    RelationshipEdgeProposal,
     SOURCE_WEIGHTS,
 )
+from ze_personal.graph.memory_hooks import _write_project_entity, _write_relationship_edge
 from ze_logging import get_logger
 
 _MODEL_DEFAULT = "anthropic/claude-haiku-4-5"
@@ -26,10 +30,11 @@ _BATCH_SIZE_DEFAULT = 10
 _MAX_EPISODES_DEFAULT = 50
 
 _EXTRACT_SYSTEM = """\
-Extract named individuals from AI assistant conversation transcripts.
-Return a JSON array of people who are meaningful to the user.
+Extract named individuals, projects, and relationships between them from AI
+assistant conversation transcripts. Return a JSON object with exactly three
+keys: "people", "projects", "relationships".
 
-For each person return an object with exactly these keys:
+"people" — array of people meaningful to the user. Each object:
   "name"           — full name or best available (string)
   "classification" — "personal", "professional", or "unknown" (string)
   "relationship"   — how they relate to the user, free text (string)
@@ -37,12 +42,26 @@ For each person return an object with exactly these keys:
   "confidence"     — 0.1 to 1.0 (number)
   "context"        — one-sentence quote or summary establishing this person (string)
 
+"projects" — array of named projects, products, or initiatives mentioned. Each object:
+  "name"       — project name (string)
+  "confidence" — 0.1 to 1.0 (number)
+  "context"    — one-sentence quote or summary establishing this project (string)
+
+"relationships" — array of WORKS_ON (person works on a project) or
+COLLABORATES_WITH (person collaborates with another person) edges explicitly
+stated or clearly implied. Each object:
+  "predicate"  — "WORKS_ON" or "COLLABORATES_WITH" (string)
+  "person"     — the source person's name (string)
+  "target"     — the project name (WORKS_ON) or the other person's name (COLLABORATES_WITH)
+  "confidence" — 0.1 to 1.0 (number)
+  "context"    — one-sentence quote or summary establishing this relationship (string)
+
 Rules:
-- Only include specific named people, not vague references like "a colleague" or "someone"
+- Only include specific named people/projects, not vague references like "a colleague" or "some project"
 - Exclude the user themselves
 - Exclude well-known public figures unless the user has a direct personal relationship with them
-- If the same person appears multiple times, include them once with the best available context
-- Return [] if no named individuals are found
+- If the same person or project appears multiple times, include them once with the best available context
+- Return empty arrays for any category with no matches
 """
 
 
@@ -90,7 +109,7 @@ class ContactsConsolidator:
 
         for i in range(0, len(episodes), batch_size):
             batch = episodes[i : i + batch_size]
-            candidates = await self._extract_candidates(batch)
+            candidates, projects, edges = await self._extract_candidates(batch)
             report.candidates_extracted += len(candidates)
 
             for candidate in candidates:
@@ -99,6 +118,12 @@ class ContactsConsolidator:
                     report.contacts_created += 1
                 else:
                     report.contacts_updated += 1
+
+            for proposal in projects:
+                await self._store_project(proposal)
+
+            for edge in edges:
+                await self._store_edge(edge)
 
             await self._mark_processed([r["id"] for r in batch])
 
@@ -124,20 +149,22 @@ class ContactsConsolidator:
 
     async def _extract_candidates(
         self, batch: list[asyncpg.Record]
-    ) -> list[ContactProposal]:
+    ) -> tuple[
+        list[ContactProposal], list[ProjectProposal], list[RelationshipEdgeProposal]
+    ]:
         block = _format_batch(batch)
         try:
             raw = await self._client.complete(
                 messages=[{"role": "user", "content": block}],
                 model=self._synthesis_model(),
                 system=_EXTRACT_SYSTEM,
-                max_tokens=800,
+                max_tokens=1000,
             )
             parsed = json.loads(raw)
-            if not isinstance(parsed, list):
+            if not isinstance(parsed, dict):
                 self._log.warning("contacts_extract_bad_shape", raw=raw[:200])
-                return []
-            return [
+                return [], [], []
+            people = [
                 ContactProposal(
                     name=str(c.get("name", "")).strip(),
                     classification=_safe_classification(c.get("classification")),
@@ -150,12 +177,50 @@ class ContactsConsolidator:
                     source_type="conversation",
                     raw_context=str(c.get("context", ""))[:500],
                 )
-                for c in parsed
+                for c in parsed.get("people", [])
                 if isinstance(c, dict) and c.get("name")
             ]
+            projects = [
+                ProjectProposal(
+                    name=str(p.get("name", "")).strip(),
+                    confidence=float(p.get("confidence", 0.5)),
+                    source_type="conversation",
+                    raw_context=str(p.get("context", ""))[:500],
+                )
+                for p in parsed.get("projects", [])
+                if isinstance(p, dict) and p.get("name")
+            ]
+            edges = [
+                RelationshipEdgeProposal(
+                    predicate=str(r.get("predicate", "")).strip(),
+                    person_name=str(r.get("person", "")).strip(),
+                    target_name=str(r.get("target", "")).strip(),
+                    confidence=float(r.get("confidence", 0.5)),
+                    source_type="conversation",
+                    raw_context=str(r.get("context", ""))[:500],
+                )
+                for r in parsed.get("relationships", [])
+                if isinstance(r, dict)
+                and r.get("predicate") in (WORKS_ON, COLLABORATES_WITH)
+                and r.get("person")
+                and r.get("target")
+            ]
+            return people, projects, edges
         except Exception as exc:
             self._log.warning("contacts_extract_failed", error=str(exc))
-            return []
+            return [], [], []
+
+    async def _store_project(self, proposal: ProjectProposal) -> None:
+        if not proposal.name or self._store.memory_store is None:
+            return
+        await _write_project_entity(self._store.memory_store, proposal)
+
+    async def _store_edge(self, edge: RelationshipEdgeProposal) -> None:
+        if not edge.person_name or not edge.target_name:
+            return
+        if self._store.memory_store is None:
+            return
+        await _write_relationship_edge(self._store.memory_store, edge)
 
     async def _store_candidate(self, candidate: ContactProposal) -> bool:
         """Upsert a candidate into the person store. Returns True if newly created."""

@@ -8,7 +8,6 @@ from ze_agents.claims import ClaimKind, Provenance
 from ze_personal.contacts.types import (
     Person,
     PersonContext,
-    PersonRelationship,
     PersonSource,
     StaleFollowUpNudge,
 )
@@ -69,6 +68,10 @@ class PersonStore:
         self._pool = pool
         self._memory = memory_store
         self._log = get_logger(__name__)
+
+    @property
+    def memory_store(self) -> Any:
+        return self._memory
 
     async def upsert(self, person: Person) -> Person:
         """Insert a new person or update an existing one by id."""
@@ -325,65 +328,6 @@ class PersonStore:
             source_type=source.source_type,
             weight=source.weight,
         )
-
-    async def add_relationship(self, rel: PersonRelationship) -> PersonRelationship:
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                INSERT INTO contact_relationships (
-                    person_a_id, person_b_id,
-                    relationship_description, confidence, source_type,
-                    claim_kind, provenance
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT (person_a_id, person_b_id) DO UPDATE SET
-                    relationship_description = EXCLUDED.relationship_description,
-                    confidence               = EXCLUDED.confidence
-                RETURNING *
-                """,
-                rel.person_a_id,
-                rel.person_b_id,
-                rel.relationship_description,
-                rel.confidence,
-                rel.source_type,
-                rel.claim_kind.value,
-                rel.provenance.value,
-            )
-        return PersonRelationship(
-            id=row["id"],
-            person_a_id=row["person_a_id"],
-            person_b_id=row["person_b_id"],
-            relationship_description=row["relationship_description"],
-            confidence=row["confidence"],
-            source_type=row["source_type"],
-            claim_kind=ClaimKind(row["claim_kind"]),
-            provenance=Provenance(row["provenance"]),
-            created_at=row["created_at"],
-        )
-
-    async def get_relationships(self, person_id: UUID) -> list[PersonRelationship]:
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT * FROM contact_relationships
-                WHERE person_a_id = $1 OR person_b_id = $1
-                ORDER BY confidence DESC
-                """,
-                person_id,
-            )
-        return [
-            PersonRelationship(
-                id=r["id"],
-                person_a_id=r["person_a_id"],
-                person_b_id=r["person_b_id"],
-                relationship_description=r["relationship_description"],
-                confidence=r["confidence"],
-                source_type=r["source_type"],
-                claim_kind=ClaimKind(r["claim_kind"]),
-                provenance=Provenance(r["provenance"]),
-                created_at=r["created_at"],
-            )
-            for r in rows
-        ]
 
     async def list_stale_for_follow_up(
         self, stale_days: int, limit: int

@@ -158,7 +158,7 @@ async def test_run_creates_new_contact_when_not_found():
 
     client = AsyncMock()
     client.complete = AsyncMock(
-        return_value='[{"name": "João Silva", "classification": "professional", "relationship": "charter operator", "contact_info": {}, "confidence": 0.9, "context": "Called to validate H1"}]'
+        return_value='{"people": [{"name": "João Silva", "classification": "professional", "relationship": "charter operator", "contact_info": {}, "confidence": 0.9, "context": "Called to validate H1"}], "projects": [], "relationships": []}'
     )
 
     store = make_person_store(get_by_name_result=[])
@@ -187,7 +187,7 @@ async def test_run_updates_existing_contact_when_found():
 
     client = AsyncMock()
     client.complete = AsyncMock(
-        return_value='[{"name": "João Silva", "classification": "professional", "relationship": "charter operator", "contact_info": {}, "confidence": 0.9, "context": "Called again"}]'
+        return_value='{"people": [{"name": "João Silva", "classification": "professional", "relationship": "charter operator", "contact_info": {}, "confidence": 0.9, "context": "Called again"}], "projects": [], "relationships": []}'
     )
 
     existing = Person(name="João Silva", id=uuid4(), confirmed=True, confidence=1.0)
@@ -212,7 +212,7 @@ async def test_run_skips_candidate_with_empty_name():
 
     client = AsyncMock()
     client.complete = AsyncMock(
-        return_value='[{"name": "", "classification": "unknown", "relationship": "", "contact_info": {}, "confidence": 0.5, "context": ""}]'
+        return_value='{"people": [{"name": "", "classification": "unknown", "relationship": "", "contact_info": {}, "confidence": 0.5, "context": ""}], "projects": [], "relationships": []}'
     )
 
     store = make_person_store()
@@ -264,6 +264,85 @@ async def test_run_handles_bad_json_gracefully():
     report = await consolidator.run()
 
     assert report.candidates_extracted == 0
+
+
+# ── ContactsConsolidator.run — project/relationship extraction (US1) ──────────
+
+
+def make_memory_store():
+    memory_store = AsyncMock()
+    memory_store.upsert_entity = AsyncMock(side_effect=lambda entity: uuid4())
+    memory_store.graph_store = AsyncMock()
+    memory_store.graph_store.upsert_relationship = AsyncMock(return_value=uuid4())
+    return memory_store
+
+
+async def test_run_extracts_project_and_works_on_edge():
+    episode = make_episode_row()
+    conn = make_conn()
+    conn.fetch = AsyncMock(side_effect=[[episode], []])
+    conn.execute = AsyncMock()
+
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=(
+            '{"people": [{"name": "João Silva", "classification": "professional", '
+            '"relationship": "", "contact_info": {}, "confidence": 0.9, '
+            '"context": "Works on AirLisboa"}], '
+            '"projects": [{"name": "AirLisboa", "confidence": 0.8, '
+            '"context": "AirLisboa project"}], '
+            '"relationships": [{"predicate": "WORKS_ON", "person": "João Silva", '
+            '"target": "AirLisboa", "confidence": 0.8, "context": "works on AirLisboa"}]}'
+        )
+    )
+
+    memory_store = make_memory_store()
+    store = make_person_store(get_by_name_result=[])
+    store.memory_store = memory_store
+
+    consolidator = make_consolidator(
+        pool=make_pool(conn), person_store=store, client=client
+    )
+
+    await consolidator.run()
+
+    memory_store.graph_store.upsert_relationship.assert_called_once()
+    rel = memory_store.graph_store.upsert_relationship.call_args[0][0]
+    assert rel.predicate == "WORKS_ON"
+    assert rel.source_type == "person"
+    assert rel.target_type == "project"
+
+
+async def test_run_extracts_collaborates_with_edge_for_two_people():
+    episode = make_episode_row()
+    conn = make_conn()
+    conn.fetch = AsyncMock(side_effect=[[episode], []])
+    conn.execute = AsyncMock()
+
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=(
+            '{"people": [], "projects": [], "relationships": '
+            '[{"predicate": "COLLABORATES_WITH", "person": "Alice", "target": "Bob", '
+            '"confidence": 0.7, "context": "work together"}]}'
+        )
+    )
+
+    memory_store = make_memory_store()
+    store = make_person_store()
+    store.memory_store = memory_store
+
+    consolidator = make_consolidator(
+        pool=make_pool(conn), person_store=store, client=client
+    )
+
+    await consolidator.run()
+
+    memory_store.graph_store.upsert_relationship.assert_called_once()
+    rel = memory_store.graph_store.upsert_relationship.call_args[0][0]
+    assert rel.predicate == "COLLABORATES_WITH"
+    assert rel.source_type == "person"
+    assert rel.target_type == "person"
 
 
 # ── Mark processed ────────────────────────────────────────────────────────────

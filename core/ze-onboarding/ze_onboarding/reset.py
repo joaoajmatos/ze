@@ -23,7 +23,6 @@ _PERSONAL_STATE_TABLES = [
     "prospect_outreach",
     "prospect_campaigns",
     "contact_channels",
-    "contact_relationships",
     "contact_sources",
     "contacts",
     "goal_execution_traces",

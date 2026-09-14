@@ -4,7 +4,6 @@ from ze_agents.claims import ClaimKind, Provenance
 from ze_personal.contacts.types import (
     ContactProposal,
     Person,
-    PersonRelationship,
     PersonSource,
     _SOURCE_TYPE_TO_PROVENANCE,
 )
@@ -18,13 +17,6 @@ def test_person_defaults_claim_kind_identity():
 def test_person_source_defaults_claim_kind_identity():
     source = PersonSource(person_id=uuid4(), source_type="conversation", weight=1.0)
     assert source.claim_kind == ClaimKind.IDENTITY
-
-
-def test_person_relationship_defaults_claim_kind_identity():
-    rel = PersonRelationship(
-        person_a_id=uuid4(), person_b_id=uuid4(), relationship_description="friend"
-    )
-    assert rel.claim_kind == ClaimKind.IDENTITY
 
 
 def test_contact_proposal_defaults_claim_kind_identity():

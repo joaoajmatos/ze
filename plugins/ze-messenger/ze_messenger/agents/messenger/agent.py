@@ -9,7 +9,10 @@ from ze_communication.channel import InboundChannel
 from ze_communication.registry import ChannelRegistry
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.channels.user_channel_store import UserChannelStore
-from ze_personal.contacts.extractors import extract_email_contacts
+from ze_personal.contacts.extractors import (
+    extract_email_contacts,
+    extract_email_social_edges,
+)
 
 _AGENT_INSTRUCTIONS = """\
 You manage the user's messaging inbox across communication channels.
@@ -92,6 +95,9 @@ class MessengerAgent(BaseAgent):
         )
 
         contact_proposals = extract_email_contacts(loop_tool_calls)
+        project_proposals, relationship_edge_proposals = extract_email_social_edges(
+            loop_tool_calls
+        )
 
         self._log.info(
             "messenger_agent_complete",
@@ -105,6 +111,10 @@ class MessengerAgent(BaseAgent):
             response=response,
             tool_calls=loop_tool_calls,
             contact_proposals=contact_proposals,
+            extensions={
+                "project_proposals": project_proposals,
+                "relationship_edge_proposals": relationship_edge_proposals,
+            },
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
