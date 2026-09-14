@@ -584,6 +584,10 @@ async def build_container(settings: Settings) -> ZeContainer:
     for plugin in plugins:
         plugin_stores.update(plugin.rest_stores())
 
+    person_store = plugin_stores.get("person_store")
+    if person_store is not None:
+        priority_view.set_relationship_source(person_store)
+
     signal_sources = collect_plugin_signal_sources(plugins)
     if signal_sources:
         log.info("signal_sources_collected", keys=list(signal_sources))

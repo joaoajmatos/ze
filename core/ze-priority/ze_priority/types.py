@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Protocol
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Confidence
@@ -10,7 +10,7 @@ from ze_automation.goals.types import StuckGoal
 from ze_correlation.types import Hypothesis
 from ze_worldstate.types import LoopState, OpenLoop
 
-SourceKind = Literal["loop", "goal", "hypothesis"]
+SourceKind = Literal["loop", "goal", "hypothesis", "relationship"]
 
 
 @dataclass
@@ -32,7 +32,26 @@ class HypothesisSignal:
     relevance: float
 
 
-SourceSignal = LoopSignal | GoalSignal | HypothesisSignal
+@dataclass
+class RelationshipSignal:
+    """Mirrors `ze_personal.contacts.types.StaleFollowUpNudge`'s two fields —
+    `ze-priority` never imports the plugin type (Constitution III)."""
+
+    name: str
+    days_ago: int
+
+
+SourceSignal = LoopSignal | GoalSignal | HypothesisSignal | RelationshipSignal
+
+
+class RelationshipStalenessSource(Protocol):
+    """Structural seam matching `PersonStore.list_stale_for_follow_up()`'s shape
+    so `ze-priority` never imports `ze_personal` (Constitution III, Phase 60's
+    `SignalSource` pattern)."""
+
+    async def list_stale_for_follow_up(
+        self, stale_days: int, limit: int
+    ) -> list[RelationshipSignal]: ...
 
 
 @dataclass

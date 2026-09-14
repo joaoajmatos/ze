@@ -11,6 +11,7 @@ dependencies = [
     "ze-sdk",
     "ze-news",
     "ze-automation",
+    "ze-priority",
     "ze-components",
     "ze-seed",
     "asyncpg==0.31.0",
@@ -31,6 +32,7 @@ dev = [
 ze-sdk = { workspace = true }
 ze-news = { workspace = true }
 ze-automation = { workspace = true }
+ze-priority = { workspace = true }
 ze-components = { workspace = true }
 ze-seed = { workspace = true }
 

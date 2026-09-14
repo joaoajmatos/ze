@@ -23,6 +23,16 @@ def make_notifier():
     return n
 
 
+def make_priority_view(stale_contacts=None):
+    items = [
+        SimpleNamespace(source_kind="relationship", signal=nudge)
+        for nudge in (stale_contacts or [])
+    ]
+    priority_view = MagicMock()
+    priority_view.rank = AsyncMock(return_value=SimpleNamespace(items=items))
+    return priority_view
+
+
 def make_briefing(
     *,
     dedup=False,
@@ -34,6 +44,7 @@ def make_briefing(
     settings=None,
     news_store=None,
     memory_store=None,
+    priority_view=None,
 ):
     push_log = MagicMock()
     push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
@@ -53,7 +64,6 @@ def make_briefing(
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=workflows or [])
 
     person_store = MagicMock()
-    person_store.list_stale_for_follow_up = AsyncMock(return_value=stale_contacts or [])
 
     b = MorningBriefing(
         notifier=notifier or make_notifier(),
@@ -63,6 +73,7 @@ def make_briefing(
         person_store=person_store,
         settings=settings or make_settings(),
         news_store=news_store,
+        priority_view=priority_view or make_priority_view(stale_contacts),
     )
     return b, push_log
 
@@ -165,6 +176,37 @@ async def test_briefing_singular_day_in_nudge():
     assert "1 days ago" not in text
 
 
+async def test_briefing_reads_relationship_nudges_from_priority_view_not_person_store():
+    """SC-003: the stale-relationship line comes from PriorityView's ranked
+    output, not a direct PersonStore.list_stale_for_follow_up() call."""
+    notifier = make_notifier()
+    priority_view = make_priority_view(
+        [StaleFollowUpNudge(name="Rui Pereira", days_ago=21)]
+    )
+    b, _ = make_briefing(notifier=notifier, priority_view=priority_view)
+    await b.run()
+
+    priority_view.rank.assert_awaited_once()
+    text = notifier.notify.call_args[0][2]
+    assert "Rui Pereira" in text
+    assert "21 days ago" in text
+
+
+async def test_briefing_ignores_non_relationship_priority_items():
+    notifier = make_notifier()
+    priority_view = MagicMock()
+    priority_view.rank = AsyncMock(
+        return_value=SimpleNamespace(
+            items=[SimpleNamespace(source_kind="loop", signal=object())]
+        )
+    )
+    b, _ = make_briefing(notifier=notifier, priority_view=priority_view)
+    await b.run()
+
+    text = notifier.notify.call_args[0][2]
+    assert "Follow-up nudges" not in text
+
+
 async def test_briefing_includes_headlines_when_news_store_present():
     notifier = make_notifier()
     articles = [
@@ -244,7 +286,6 @@ def make_briefing_with_personalization(
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=[])
 
     person_store = MagicMock()
-    person_store.list_stale_for_follow_up = AsyncMock(return_value=[])
 
     b = MorningBriefing(
         notifier=notifier or make_notifier(),
@@ -255,6 +296,7 @@ def make_briefing_with_personalization(
         settings=make_settings(),
         news_store=news_store,
         goal_store=goal_store,
+        priority_view=make_priority_view(),
     )
     return b
 

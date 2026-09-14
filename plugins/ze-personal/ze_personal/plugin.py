@@ -25,6 +25,7 @@ from ze_automation.goals.postgres import PostgresGoalStore as GoalStore
 from ze_automation.goals.suggestion_store import GoalSuggestionStore
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.executor import GoalExecutor
+from ze_priority.view import PriorityView
 from ze_personal.jobs.briefing import MorningBriefing
 from ze_personal.jobs.contacts import ContactReviewNotifier
 from ze_personal.jobs.insights import InsightEngine
@@ -57,6 +58,7 @@ class PersonalPlugin(ZePlugin):
         user_channel_store: UserChannelStore,
         watermark_store: ChannelWatermarkStore,
         thread_channel_map: ThreadChannelMap,
+        priority_view: PriorityView,
     ) -> None:
         self._settings = settings
         self._notifier = notifier
@@ -92,6 +94,7 @@ class PersonalPlugin(ZePlugin):
             settings=settings,
             news_store=None,
             goal_store=self.goal_store,
+            priority_view=priority_view,
         )
         self.insight_engine = InsightEngine(
             notifier=notifier,

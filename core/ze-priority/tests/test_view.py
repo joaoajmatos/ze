@@ -7,7 +7,7 @@ import pytest
 
 from ze_agents.claims import ClaimKind, Confidence
 from ze_priority.errors import ZePriorityError
-from ze_priority.types import PriorityCandidateRef
+from ze_priority.types import PriorityCandidateRef, RelationshipSignal
 from ze_priority.view import PriorityView
 
 from tests.factories import make_hypothesis, make_loop, make_stuck_goal
@@ -15,11 +15,14 @@ from tests.factories import make_hypothesis, make_loop, make_stuck_goal
 UTC = timezone.utc
 
 
-def _view(loop_store=None, goal_store=None, hypothesis_store=None) -> PriorityView:
+def _view(
+    loop_store=None, goal_store=None, hypothesis_store=None, relationship_source=None
+) -> PriorityView:
     return PriorityView(
         loop_store=loop_store or AsyncMock(),
         goal_store=goal_store or AsyncMock(),
         hypothesis_store=hypothesis_store or AsyncMock(),
+        relationship_source=relationship_source,
     )
 
 
@@ -103,6 +106,122 @@ async def test_all_sources_failing_raises():
 
     with pytest.raises(ZePriorityError):
         await _view(loop_store, goal_store, hypothesis_store).rank()
+
+
+# ── relationship-staleness source (US3) ────────────────────────────────────────
+
+
+async def test_rank_includes_relationship_source_when_configured():
+    loop = make_loop()
+    stuck = make_stuck_goal()
+    hyp = make_hypothesis()
+
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [loop]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = [stuck]
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = [hyp]
+    relationship_source = AsyncMock()
+    relationship_source.list_stale_for_follow_up.return_value = [
+        RelationshipSignal(name="Alice", days_ago=60)
+    ]
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, relationship_source
+    ).rank()
+
+    assert {item.source_kind for item in ranking.items} == {
+        "loop",
+        "goal",
+        "hypothesis",
+        "relationship",
+    }
+    assert ranking.sources_succeeded == {"loop", "goal", "hypothesis", "relationship"}
+    by_kind = {item.source_kind: item for item in ranking.items}
+    assert by_kind["relationship"].title == "Alice"
+    assert by_kind["relationship"].signal.days_ago == 60
+
+
+async def test_rank_can_surface_relationship_item_as_highest_ranked():
+    from ze_worldstate.types import LoopState
+
+    loop = make_loop(confidence=0.1, state=LoopState.ACTIVE)
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [loop]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+    relationship_source = AsyncMock()
+    relationship_source.list_stale_for_follow_up.return_value = [
+        RelationshipSignal(name="Alice", days_ago=200)
+    ]
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, relationship_source
+    ).rank()
+
+    assert ranking.items[0].source_kind == "relationship"
+    assert ranking.items[0].rank == 1
+
+
+async def test_relationship_source_failure_degrades_gracefully_fr010():
+    loop = make_loop()
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [loop]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+    relationship_source = AsyncMock()
+    relationship_source.list_stale_for_follow_up.side_effect = RuntimeError(
+        "db unreachable"
+    )
+
+    ranking = await _view(
+        loop_store, goal_store, hypothesis_store, relationship_source
+    ).rank()
+
+    assert ranking.sources_failed == {"relationship"}
+    assert "relationship" not in ranking.sources_succeeded
+    assert {item.source_kind for item in ranking.items} == {"loop"}
+
+
+async def test_relationship_source_none_is_skipped_not_counted_as_failed():
+    loop = make_loop()
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [loop]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+
+    ranking = await _view(loop_store, goal_store, hypothesis_store, None).rank()
+
+    assert "relationship" not in ranking.sources_failed
+    assert "relationship" not in ranking.sources_succeeded
+
+
+async def test_priority_view_without_relationship_source_still_works():
+    """Regression: the existing three-store constructor signature keeps working
+    unchanged when relationship_source is omitted entirely."""
+    loop = make_loop()
+    loop_store = AsyncMock()
+    loop_store.list.return_value = [loop]
+    goal_store = AsyncMock()
+    goal_store.list_stuck.return_value = []
+    hypothesis_store = AsyncMock()
+    hypothesis_store.list_recent.return_value = []
+
+    view = PriorityView(
+        loop_store=loop_store,
+        goal_store=goal_store,
+        hypothesis_store=hypothesis_store,
+    )
+    ranking = await view.rank()
+
+    assert {item.source_kind for item in ranking.items} == {"loop"}
 
 
 async def test_rank_subset_never_touches_the_stores():

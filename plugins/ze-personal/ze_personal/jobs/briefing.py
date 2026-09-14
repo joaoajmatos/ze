@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ze_personal.contacts.store import PersonStore
 from ze_logging import get_logger
+from ze_priority.view import PriorityView
 from ze_sdk.proactive import PushLogStore
 from ze_agents.settings import Settings
 from ze_automation.workflow.store import WorkflowStore
@@ -32,6 +33,7 @@ class MorningBriefing:
         workflow_store: WorkflowStore,
         person_store: PersonStore,
         settings: Settings,
+        priority_view: PriorityView,
         news_store=None,
         goal_store: GoalTitleProvider | None = None,
         dream_store=None,
@@ -41,14 +43,12 @@ class MorningBriefing:
         self._memory = memory_store
         self._workflows = workflow_store
         self._persons = person_store
+        self._priority_view = priority_view
         self._settings = settings
         self._news = news_store
         self._goal_store = goal_store
         self._dream_store = dream_store
         self._log = get_logger(__name__)
-        follow_up_cfg = self._settings.config.get("contacts", {}).get("follow_up", {})
-        self._stale_days = int(follow_up_cfg.get("stale_days", 7))
-        self._max_nudges = int(follow_up_cfg.get("max_nudges", 3))
         news_cfg = settings.config.get("news", {})
         self._personalization_settings = PersonalizationSettings.from_config(news_cfg)
         news_personalization_cfg = news_cfg.get("personalization", {})
@@ -75,9 +75,7 @@ class MorningBriefing:
         unreviewed = await self._memory.count_unreviewed_facts()
         workflows = await self._workflows.list_enabled_scheduled()
         failures = await self._push_log.list_workflow_failures_within_hours(24)
-        stale_contacts = await self._persons.list_stale_for_follow_up(
-            self._stale_days, self._max_nudges
-        )
+        stale_contacts = await self._stale_relationship_nudges()
 
         threshold = int(
             self._settings.config.get("proactive", {})
@@ -128,6 +126,17 @@ class MorningBriefing:
         )
         self._log.info("briefing_sent", unreviewed=unreviewed)
         await self._push_log.log("morning_brief")
+
+    async def _stale_relationship_nudges(self) -> list:
+        """Read stale-relationship nudges from `PriorityView`'s ranked output —
+        the shared attention budget, not a direct `PersonStore` call (SC-003)."""
+        try:
+            ranking = await self._priority_view.rank()
+        except Exception:
+            return []
+        return [
+            item.signal for item in ranking.items if item.source_kind == "relationship"
+        ]
 
     async def _append_dream_section(self, lines: list[str]) -> None:
         try:

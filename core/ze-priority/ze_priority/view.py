@@ -12,11 +12,18 @@ from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopState
 
 from ze_priority.errors import ZePriorityError
-from ze_priority.scoring import score_goal, score_hypothesis, score_loop, sort_and_rank
+from ze_priority.scoring import (
+    score_goal,
+    score_hypothesis,
+    score_loop,
+    score_relationship_staleness,
+    sort_and_rank,
+)
 from ze_priority.types import (
     PriorityCandidateRef,
     PriorityItem,
     PriorityRanking,
+    RelationshipStalenessSource,
     SourceKind,
 )
 
@@ -32,27 +39,46 @@ _GOAL_ALERT_COOLDOWN_DAYS = 0
 
 _OPEN_LOOP_STATES = [LoopState.ACTIVE.value, LoopState.DRIFTING.value]
 
+# ze-priority owns its own relationship-staleness thresholds, analogous to how
+# loop/goal staleness thresholds are owned by their respective core packages —
+# not read from plugins/ze-personal's briefing config (research.md §6).
+_RELATIONSHIP_STALE_DAYS_DEFAULT = 7
+_RELATIONSHIP_LIMIT_DEFAULT = 3
+
 
 class PriorityView:
-    """Read-only projection ranking open loops, stuck/near-gate goals, and
-    non-stale hypotheses on one comparable `Confidence` scale (FR-001..FR-004)."""
+    """Read-only projection ranking open loops, stuck/near-gate goals,
+    non-stale hypotheses, and stale relationships on one comparable
+    `Confidence` scale (FR-001..FR-004)."""
 
     def __init__(
         self,
         loop_store: LoopStore,
         goal_store: GoalStore,
         hypothesis_store: PostgresHypothesisStore,
+        relationship_source: RelationshipStalenessSource | None = None,
     ) -> None:
         self._loop_store = loop_store
         self._goal_store = goal_store
         self._hypothesis_store = hypothesis_store
+        self._relationship_source = relationship_source
+
+    def set_relationship_source(self, source: RelationshipStalenessSource) -> None:
+        """Backfill the relationship source after construction.
+
+        Composition-root escape hatch for the one genuine wiring-order cycle:
+        `PriorityView` is injected into `PersonalPlugin` (for `MorningBriefing`)
+        before `PersonalPlugin` constructs the `PersonStore` this source needs.
+        """
+        self._relationship_source = source
 
     async def rank(self) -> PriorityRanking:
-        """Queries all three sources, degrading per-source on error (FR-009).
-        Raises `ZePriorityError` only if all three fail."""
+        """Queries every configured source, degrading per-source on error (FR-009).
+        Raises `ZePriorityError` only if all configured sources fail."""
         items: list[PriorityItem] = []
         succeeded: set[SourceKind] = set()
         failed: set[SourceKind] = set()
+        total_sources = 3
 
         try:
             loops = await self._loop_store.list(_OPEN_LOOP_STATES)
@@ -83,7 +109,21 @@ class PriorityView:
             log.warning("priority_view_hypothesis_source_failed", error=str(exc))
             failed.add("hypothesis")
 
-        if len(failed) == 3:
+        if self._relationship_source is not None:
+            total_sources += 1
+            try:
+                nudges = await self._relationship_source.list_stale_for_follow_up(
+                    _RELATIONSHIP_STALE_DAYS_DEFAULT, _RELATIONSHIP_LIMIT_DEFAULT
+                )
+                items.extend(score_relationship_staleness(n) for n in nudges)
+                succeeded.add("relationship")
+            except Exception as exc:
+                log.warning(
+                    "priority_view_relationship_source_failed", error=str(exc)
+                )
+                failed.add("relationship")
+
+        if len(failed) == total_sources:
             raise ZePriorityError("all PriorityView sources failed")
 
         return PriorityRanking(

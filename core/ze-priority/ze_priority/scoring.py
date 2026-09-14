@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from uuid import NAMESPACE_DNS, UUID, uuid5
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, decay
 from ze_automation.goals.types import StuckGoal
@@ -12,6 +13,7 @@ from ze_priority.types import (
     HypothesisSignal,
     LoopSignal,
     PriorityItem,
+    RelationshipSignal,
 )
 
 UTC = timezone.utc
@@ -97,6 +99,37 @@ def score_hypothesis(hyp: Hypothesis, *, now: datetime | None = None) -> Priorit
         priority=Confidence(value=value, decay_profile=DecayProfile.EVIDENCE_WEIGHTED),
         rank=0,
         activity_at=_as_aware(hyp.created_at),
+    )
+
+
+_RELATIONSHIP_NAMESPACE = uuid5(NAMESPACE_DNS, "ze.priority.relationship")
+
+
+def _relationship_source_id(name: str) -> UUID:
+    """`StaleFollowUpNudge`/`RelationshipSignal` carry no id — derive one
+    deterministically from the name so ranking has a stable `source_id`."""
+    return uuid5(_RELATIONSHIP_NAMESPACE, name)
+
+
+def score_relationship_staleness(
+    nudge: RelationshipSignal, *, now: datetime | None = None
+) -> PriorityItem:
+    """Urgency = complement of the shared `decay()` freshness curve applied to
+    `days_ago` — same normalization `score_goal` uses (FR-003)."""
+    now = now or datetime.now(UTC)
+    freshness = decay(1.0, DecayProfile.TIME_LINEAR, elapsed_days=float(nudge.days_ago))
+    urgency = max(0.0, min(1.0, 1.0 - freshness))
+    activity_at = now - timedelta(days=nudge.days_ago)
+
+    return PriorityItem(
+        source_kind="relationship",
+        claim_kind=ClaimKind.PRIORITY,
+        source_id=_relationship_source_id(nudge.name),
+        title=nudge.name,
+        signal=RelationshipSignal(name=nudge.name, days_ago=nudge.days_ago),
+        priority=Confidence(value=urgency, decay_profile=DecayProfile.TIME_LINEAR),
+        rank=0,
+        activity_at=activity_at,
     )
 
 
