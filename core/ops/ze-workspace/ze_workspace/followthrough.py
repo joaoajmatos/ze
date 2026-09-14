@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Awaitable, Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from ze_logging import get_logger
@@ -10,15 +10,25 @@ from ze_workspace.store import WorkspaceStore
 from ze_workspace.types import (
     WorkspaceRun,
     WorkspaceRunOrigin,
-    WorkspaceRunResult,
     WorkspaceRunStatus,
+    WorkspaceRunStatusDTO,
 )
 
 log = get_logger(__name__)
 
-_RECONCILE_UNAVAILABLE_PREVIEW = (
-    "(output unavailable — ze-api restarted while this command was running)"
+_LOST_ON_RESTART_SUMMARY = (
+    "the computer restarted and lost this run — no fabricated result"
 )
+_NEVER_DISPATCHED_SUMMARY = (
+    "ze-api restarted before this run reached the workspace computer"
+)
+
+_STATUS_MAP = {
+    "succeeded": WorkspaceRunStatus.SUCCEEDED,
+    "failed": WorkspaceRunStatus.FAILED,
+    "timed_out": WorkspaceRunStatus.TIMED_OUT,
+    "cancelled": WorkspaceRunStatus.CANCELLED,
+}
 
 
 class TurnStarter(Protocol):
@@ -38,58 +48,16 @@ class PushSender(Protocol):
         ...
 
 
-class RunCompletionSource(Protocol):
-    """Re-derives a pending completion for a run rediscovered at startup (D5) —
-    supplied by apps/ze-api so RunWatcher.reattach can resume watching a run whose
-    in-memory asyncio.Task was lost to a restart."""
+class RunStatusSource(Protocol):
+    """The subset of WorkspaceClient RunWatcher needs — GET /runs/{id} and
+    GET /runs/{id}/events (Phase 129). Kept as a narrow Protocol so tests can
+    supply a fake without constructing a real httpx-backed WorkspaceClient."""
 
-    async def await_completion(self, run: WorkspaceRun) -> WorkspaceRunResult: ...
+    async def get_run(self, run_id: UUID) -> WorkspaceRunStatusDTO | None: ...
 
-
-class SidecarPollCompletionSource:
-    """Default RunCompletionSource (D5) — polls the sidecar's `/stat` `busy` flag
-    until it clears.
-
-    Phase 115's sidecar contract has no per-run status/output lookup, only
-    `/stat`'s `busy` boolean — the HTTP connection that was awaiting the
-    original `/run` call died with the old `ze-api` process, so its stdout,
-    exit code, and files_touched are unrecoverable after a restart. This is
-    the one durable thing reconciliation can observe: the sidecar going idle
-    again. Matches the spec's own tolerance ("missing a push is not a failed
-    run") extended to lost output detail — the run is still marked terminal so
-    follow-through fires, just without real output.
-    """
-
-    def __init__(self, client: Any, poll_interval_seconds: float = 2.0) -> None:
-        self._client = client
-        self._poll_interval = poll_interval_seconds
-
-    async def await_completion(self, run: WorkspaceRun) -> WorkspaceRunResult:
-        while True:
-            try:
-                stat = await self._client.stat()
-                busy = stat.busy
-            except Exception as exc:
-                log.warning(
-                    "workspace_reconcile_stat_failed", run_id=str(run.id), error=str(exc)
-                )
-                busy = True
-            if not busy:
-                return WorkspaceRunResult(
-                    exit_code=0,
-                    timed_out=False,
-                    stdout_preview=_RECONCILE_UNAVAILABLE_PREVIEW,
-                    stderr_preview="",
-                )
-            await asyncio.sleep(self._poll_interval)
-
-
-def _status_for_result(result: WorkspaceRunResult) -> WorkspaceRunStatus:
-    if result.timed_out:
-        return WorkspaceRunStatus.TIMED_OUT
-    if result.exit_code == 0:
-        return WorkspaceRunStatus.SUCCEEDED
-    return WorkspaceRunStatus.FAILED
+    def watch_run(self, run_id: UUID) -> Any:
+        """Returns an async iterator of JournalEventDTO."""
+        ...
 
 
 def _followup_prompt(run: WorkspaceRun) -> str:
@@ -104,69 +72,92 @@ def _followup_prompt(run: WorkspaceRun) -> str:
 
 
 class RunWatcher:
-    """Follows a detached workspace run to a terminal status, then dispatches
-    follow-through (a follow-up turn and a completion push) for origin=conversation
-    runs only (FR-015)."""
+    """Follows a detached workspace run to a terminal status by watching its
+    sidecar handle (Phase 129 — reads real output/exit data, no more guessing
+    from /stat's busy flag), then dispatches follow-through (a follow-up turn
+    and a completion push) for origin=conversation runs only (FR-015)."""
 
     def __init__(
         self,
         store: WorkspaceStore,
         turn_starter: TurnStarter,
         push_sender: PushSender,
-        completion_source: RunCompletionSource | None = None,
+        client: RunStatusSource | None = None,
     ) -> None:
         self._store = store
         self._turn_starter = turn_starter
         self._push_sender = push_sender
-        self._completion_source = completion_source
+        self._client = client
         self._tasks: dict[UUID, asyncio.Task[Any]] = {}
 
-    async def detach(
-        self,
-        run: WorkspaceRun,
-        pending_completion: Awaitable[WorkspaceRunResult],
-    ) -> None:
-        """Called once the short wait elapses without pending_completion resolving.
-        Schedules a background task that awaits pending_completion, persists the
-        terminal status, then — only when run.origin == conversation — dispatches
-        the follow-up turn and completion push."""
+    async def detach(self, run: WorkspaceRun) -> None:
+        """Called once the short wait elapses without the run reaching a
+        terminal status. Schedules a background task that watches the run's
+        sidecar handle to completion, persists the real terminal result, then
+        — only when run.origin == conversation — dispatches the follow-up
+        turn and completion push."""
         if run.id is None:
             log.warning("workspace_run_detach_missing_id", command=run.command)
             return
-        task = asyncio.create_task(self._finish(run, pending_completion))
+        task = asyncio.create_task(self._watch_to_terminal(run))
         self._tasks[run.id] = task
         task.add_done_callback(lambda _t, rid=run.id: self._tasks.pop(rid, None))
 
     async def reattach(self, run: WorkspaceRun) -> None:
-        """Startup reconciliation (D5): re-derives pending_completion for a run
-        with ended_at IS NULL and calls detach() again. If follow_through_notified
-        is already True on an otherwise-terminal row found at startup, this is not
-        double-delivery — it is the one delivery that never went out."""
+        """Startup reconciliation: re-adopts a row with ended_at IS NULL. If
+        follow_through_notified is already True on an otherwise-terminal row
+        found at startup, this is not double-delivery — it is the one
+        delivery that never went out."""
         if run.id is None:
             return
         if run.ended_at is not None:
             if not run.follow_through_notified:
                 await self._dispatch(run)
             return
-        if self._completion_source is None:
-            log.warning(
-                "workspace_run_reattach_no_completion_source", run_id=str(run.id)
+        if not run.sidecar_dispatched:
+            # Crashed between insert_in_progress_run and the POST /run call
+            # landing — the sidecar never received this id, no call needed.
+            completed = await self._store.complete_run(
+                run.id,
+                status=WorkspaceRunStatus.FAILED,
+                error_summary=_NEVER_DISPATCHED_SUMMARY,
             )
+            if completed is not None:
+                await self._dispatch(completed)
             return
-        pending = self._completion_source.await_completion(run)
-        await self.detach(run, pending)
+        if self._client is None:
+            log.warning("workspace_run_reattach_no_client", run_id=str(run.id))
+            return
+        status = await self._client.get_run(run.id)
+        if status is None:
+            # Edge Case 3: computer restarted and lost the in-flight process.
+            # Ze does not invent success.
+            completed = await self._store.complete_run(
+                run.id,
+                status=WorkspaceRunStatus.FAILED,
+                error_summary=_LOST_ON_RESTART_SUMMARY,
+            )
+            if completed is not None:
+                await self._dispatch(completed)
+            return
+        if status.status == "running":
+            await self.detach(run)
+            return
+        completed = await self._complete_from_status(run.id, status)
+        if completed is not None:
+            await self._dispatch(completed)
 
     async def cancel(self, run_id: UUID) -> WorkspaceRun | None:
         """Administrative stop (User Story 3) — persists status=cancelled directly
         via store.cancel_run (which leaves output_preview/files_touched untouched,
-        unlike _finish's complete_run call) and dispatches follow-through
-        immediately, rather than waiting for pending_completion to resolve.
+        unlike complete_run) and dispatches follow-through immediately, rather
+        than waiting for the watch loop to observe the exit event.
 
         Returns None if the run was already terminal (already-finished cancel,
-        route layer turns this into 409). If a `detach`ed `_finish` task is still
-        awaiting the sidecar call for this run, it will see the row already
-        terminal once that call returns (complete_run's `WHERE ended_at IS NULL`
-        guard) and no-op — this never double-dispatches.
+        route layer turns this into 409). If a `detach`ed watch task is still
+        running for this id, it will see the row already terminal once its own
+        completion write lands (complete_run's `WHERE ended_at IS NULL` guard)
+        and no-op — this never double-dispatches.
         """
         cancelled = await self._store.cancel_run(run_id)
         if cancelled is None:
@@ -174,38 +165,52 @@ class RunWatcher:
         await self._dispatch(cancelled)
         return cancelled
 
-    async def _finish(
-        self,
-        run: WorkspaceRun,
-        pending_completion: Awaitable[WorkspaceRunResult],
-    ) -> None:
+    async def _watch_to_terminal(self, run: WorkspaceRun) -> None:
         assert run.id is not None
+        assert self._client is not None
         try:
-            result = await pending_completion
+            async for event in self._client.watch_run(run.id):
+                if event.type == "exit":
+                    break
         except Exception as exc:  # sidecar/network failure while detached
             log.warning(
-                "workspace_run_detached_failed", run_id=str(run.id), error=str(exc)
+                "workspace_run_watch_failed", run_id=str(run.id), error=str(exc)
             )
             completed = await self._store.complete_run(
                 run.id,
                 status=WorkspaceRunStatus.FAILED,
                 error_summary=str(exc),
             )
-        else:
-            preview = result.stdout_preview or result.stderr_preview
+            if completed is not None:
+                await self._dispatch(completed)
+            return
+
+        status = await self._client.get_run(run.id)
+        if status is None:
             completed = await self._store.complete_run(
                 run.id,
-                status=_status_for_result(result),
-                exit_code=result.exit_code,
-                output_preview=preview,
-                output_file_path=result.output_file_path,
-                files_touched=result.files_touched,
-                error_summary=result.stderr_preview if result.exit_code else None,
+                status=WorkspaceRunStatus.FAILED,
+                error_summary=_LOST_ON_RESTART_SUMMARY,
             )
+        else:
+            completed = await self._complete_from_status(run.id, status)
         if completed is None:
             log.info("workspace_run_already_terminal", run_id=str(run.id))
             return
         await self._dispatch(completed)
+
+    async def _complete_from_status(
+        self, run_id: UUID, status: WorkspaceRunStatusDTO
+    ) -> WorkspaceRun | None:
+        return await self._store.complete_run(
+            run_id,
+            status=_STATUS_MAP.get(status.status, WorkspaceRunStatus.FAILED),
+            exit_code=status.exit_code,
+            output_preview=status.stdout_preview or status.stderr_preview or "",
+            output_file_path=status.output_file_path,
+            files_touched=status.files_touched,
+            error_summary=status.stderr_preview if status.exit_code else None,
+        )
 
     async def _dispatch(self, run: WorkspaceRun) -> None:
         if run.id is None or run.origin is not WorkspaceRunOrigin.CONVERSATION:

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
+import json
 import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import UUID
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 import supervisor
@@ -29,8 +32,8 @@ def _require_token(authorization: str | None = Header(default=None)) -> None:
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
-def err(status: int, error: str, **extra) -> JSONResponse:
-    return JSONResponse(status_code=status, content={"error": error, **extra})
+def err(status_code: int, error: str, **extra) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"error": error, **extra})
 
 
 def resolve_path(rel: str) -> Path | JSONResponse:
@@ -77,6 +80,7 @@ class PutBody(BaseModel):
 
 class RunBody(BaseModel):
     command: list[str]
+    id: str | None = None
     cwd: str = ""
     timeout_seconds: int = supervisor.DEFAULT_TIMEOUT
     stdin_b64: str | None = None
@@ -194,29 +198,80 @@ async def delete_fs(path: str = Query()):
 async def run(body: RunBody):
     if not body.command:
         return err(400, "empty_command")
+    run_id: UUID | None = None
+    if body.id:
+        try:
+            run_id = UUID(body.id)
+        except ValueError:
+            return err(400, "invalid_id")
     stdin_bytes = base64.b64decode(body.stdin_b64) if body.stdin_b64 else None
-    result = await supervisor.run_command(
-        body.command,
-        cwd=body.cwd,
-        timeout_seconds=body.timeout_seconds or supervisor.DEFAULT_TIMEOUT,
-        env=body.env,
-        stdin_bytes=stdin_bytes,
-    )
-    if result.get("error") == "busy":
-        return err(409, "busy")
-    if result.get("error") == "outside_workspace":
-        return err(400, "outside_workspace")
-    result.pop("child_env", None)
-    result.pop("status", None)
-    result.pop("error", None)
-    return result
+    try:
+        entry = await supervisor.spawn_run(
+            body.command,
+            run_id,
+            cwd=body.cwd,
+            timeout_seconds=body.timeout_seconds or supervisor.DEFAULT_TIMEOUT,
+            env=body.env,
+            stdin_bytes=stdin_bytes,
+        )
+    except supervisor.RunBusyError as exc:
+        return err(
+            409,
+            "busy",
+            id=str(exc.running.id),
+            command=exc.running.command,
+        )
+    return {"id": str(entry.id)}
 
 
-@app.post("/cancel", dependencies=[Depends(_require_token)])
-async def cancel():
-    killed = await supervisor.cancel_run()
-    if not killed:
-        return err(404, "not_running")
+@app.get("/runs/{run_id}", dependencies=[Depends(_require_token)])
+async def get_run(run_id: UUID):
+    entry = supervisor.journal.get(run_id)
+    if entry is None:
+        return err(404, "not_found")
+    return entry.to_status_dict()
+
+
+@app.get("/runs/{run_id}/events", dependencies=[Depends(_require_token)])
+async def get_run_events(run_id: UUID):
+    entry = supervisor.journal.get(run_id)
+    if entry is None:
+        return err(404, "not_found")
+
+    async def _stream():
+        sent = 0
+        watch_event = asyncio.Event()
+        entry.watchers.append(watch_event)
+        try:
+            while True:
+                pending = entry.events[sent:]
+                for ev in pending:
+                    line = {"seq": ev.seq, "type": ev.type, "data": ev.data}
+                    if ev.type == "exit":
+                        line["exit_code"] = ev.exit_code
+                        line["timed_out"] = ev.timed_out
+                    yield (json.dumps(line) + "\n").encode("utf-8")
+                    if ev.type == "exit":
+                        return
+                sent = len(entry.events)
+                if not entry.is_running():
+                    return
+                watch_event.clear()
+                await watch_event.wait()
+        finally:
+            if watch_event in entry.watchers:
+                entry.watchers.remove(watch_event)
+
+    return StreamingResponse(_stream(), media_type="application/x-ndjson")
+
+
+@app.post("/runs/{run_id}/cancel", dependencies=[Depends(_require_token)])
+async def cancel_run(run_id: UUID):
+    entry, outcome = await supervisor.cancel_handle(run_id)
+    if outcome == "not_found":
+        return err(404, "not_found")
+    if outcome == "already_terminal":
+        return err(409, "already_terminal", status=entry.status if entry else None)
     return {"ok": True}
 
 

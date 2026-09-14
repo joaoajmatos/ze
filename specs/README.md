@@ -157,7 +157,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 112 | [Session Context Continuity](phases/112-session-context-continuity/spec.md) | ✅ Done |
 | 113 | [Proactive/Concurrency Hardening Sweep](phases/113-hardening-sweep/spec.md) | ✅ Done |
 | 115 | [Workspace Environment](phases/115-workspace-sidecar/spec.md) | ✅ Done |
-| 116 | [Workspace Follow-Through](phases/116-workspace-follow-through/spec.md) | 🔲 Pending |
+| 116 | [Workspace Follow-Through](phases/116-workspace-follow-through/spec.md) | ✅ Done (User Story 4's busy rule closed by 129) |
 | 118 | [Chart Visualization](phases/118-chart-visualization/spec.md) | ✅ Done |
 | 119 | [Memory Graph Charts](phases/119-memory-graph-charts/spec.md) | ✅ Done |
 | 120 | [Usage Dashboard Charts](phases/120-usage-dashboard-charts/spec.md) | ✅ Done |
@@ -169,7 +169,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 126 | [Contribution Collision Detection](phases/126-contribution-collision-detection/spec.md) | ✅ Done |
 | 127 | [User-Directed Priority Override](phases/127-priority-override/spec.md) | ✅ Done |
 | 128 | [Social Cognition Foundation](phases/128-social-cognition-foundation/spec.md) | ✅ Done |
-| 129 | [Workspace Run Journal](phases/129-workspace-run-journal/spec.md) | 🔲 Pending |
+| 129 | [Workspace Run Journal](phases/129-workspace-run-journal/spec.md) | ✅ Done |
 | 130 | [Social Cognition Co-Occurrence](phases/130-social-cognition-co-occurrence/spec.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)

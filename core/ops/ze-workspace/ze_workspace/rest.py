@@ -128,8 +128,8 @@ async def cancel_run(
     if run.ended_at is not None:
         raise WorkspaceRunAlreadyTerminalError("already finished")
     try:
-        await client.cancel()
-    except WorkspaceNotFoundError:
+        await client.cancel_run(run_id)
+    except (WorkspaceNotFoundError, WorkspaceRunAlreadyTerminalError):
         pass
     cancelled = await run_watcher.cancel(run_id)
     if cancelled is None:
@@ -212,10 +212,9 @@ def request_reset() -> dict:
 
 
 async def execute_reset(store: WorkspaceStore, client: WorkspaceClient) -> dict:
-    try:
-        await client.cancel()
-    except WorkspaceNotFoundError:
-        pass
+    # POST /reset on the sidecar now cancels its own current run internally
+    # (supervisor.reset_workspace, Phase 129) before wiping — no separate
+    # cancel call needed here.
     await client.reset()
     await store.mark_reset()
     return {"ok": True, "reset": True}

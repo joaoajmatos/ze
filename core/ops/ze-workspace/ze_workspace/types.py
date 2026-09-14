@@ -80,6 +80,7 @@ class WorkspaceRun:
     files_touched: list[WorkspaceFileTouch] = field(default_factory=list)
     error_summary: str | None = None
     follow_through_notified: bool = False
+    sidecar_dispatched: bool = False
 
 
 @dataclass
@@ -106,4 +107,29 @@ class WorkspaceRunResult:
     stdout_preview: str
     stderr_preview: str
     output_file_path: str | None = None
+    files_touched: list[WorkspaceFileTouch] = field(default_factory=list)
+
+
+@dataclass
+class JournalEventDTO:
+    """One event from GET /runs/{id}/events (Phase 129 data-model.md)."""
+
+    seq: int
+    type: str  # "stdout" | "stderr" | "exit"
+    data: str
+    exit_code: int | None = None
+    timed_out: bool | None = None
+
+
+@dataclass
+class WorkspaceRunStatusDTO:
+    """GET /runs/{id} response (Phase 129 contracts/sidecar-run-api.md)."""
+
+    id: UUID
+    status: str  # "running" | "succeeded" | "failed" | "timed_out" | "cancelled"
+    exit_code: int | None
+    timed_out: bool
+    stdout_preview: str
+    stderr_preview: str
+    output_file_path: str | None
     files_touched: list[WorkspaceFileTouch] = field(default_factory=list)

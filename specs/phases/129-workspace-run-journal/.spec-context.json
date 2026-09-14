@@ -1,0 +1,370 @@
+{
+  "workflow": "companion",
+  "specName": "workspace run journal",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-14T19:26:44.160Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T19:28:53.372Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:12:34.428Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:14:34.892Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.242Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T20:40:56.243Z"
+    }
+  ],
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "telemetryInstanceId": "e3d77d17-b1f8-40ef-98d7-17440ef630fd",
+  "coverage": {
+    "FR-001": {
+      "title": "Start returns a stable run handle immediately; caller need not hold the start request until exit"
+    },
+    "FR-002": {
+      "title": "Computer is source of truth for in-flight run status, output, exit, timeout, files touched"
+    },
+    "FR-003": {
+      "title": "Mind restart reattaches to open handles and recovers the real result for follow-through"
+    },
+    "FR-004": {
+      "title": "Handle remains readable after exit until disposed or retention expires"
+    },
+    "FR-005": {
+      "title": "Handle can be watched as stdout, stderr, and exit events"
+    },
+    "FR-006": {
+      "title": "Cancel targets a specific handle and must not kill a different run"
+    },
+    "FR-007": {
+      "title": "One run at a time; refusal names the running handle and command"
+    },
+    "FR-008": {
+      "title": "Phase 115/116 isolation, modes, follow-through, and skill-script rules stay in force"
+    },
+    "FR-009": {
+      "title": "Must not relocate the computer onto Cloudflare Computer or a VFS/FUSE isolate"
+    },
+    "FR-010": {
+      "title": "Must not add named egress, host-side git, or a second execution backend"
+    },
+    "FR-011": {
+      "title": "Live watching does not replace follow-through; one follow-up per terminal run"
+    },
+    "FR-012": {
+      "title": "Shown output still redacts secrets"
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 12,
+    "projectedTasks": 18,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: sidecar/workspace",
+    "area: core/ops/ze-workspace",
+    "constraint: Phase 115 isolation and Phase 116 follow-through unchanged",
+    "constraint: copy Cloudflare run handles, not the platform"
+  ],
+  "intent": "The computer owns in-flight runs so follow-through survives a mind restart",
+  "expectations": [
+    "Do not adopt Cloudflare Computer, Durable Objects, FUSE, just-bash, or Worker isolates",
+    "Do not add named egress, host-side git, or a second backend",
+    "Do not replace WorkspaceGate or workspace_* tools",
+    "Do not build a full terminal console UI"
+  ],
+  "currentTask": "T035"
+}

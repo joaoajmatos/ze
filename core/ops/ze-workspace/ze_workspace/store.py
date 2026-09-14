@@ -75,6 +75,7 @@ def _run_from_row(row) -> WorkspaceRun:
         files_touched=_touches_from_json(row["files_touched"]),
         error_summary=row["error_summary"],
         follow_through_notified=bool(row["follow_through_notified"]),
+        sidecar_dispatched=bool(row["sidecar_dispatched"]),
     )
 
 
@@ -108,6 +109,8 @@ class WorkspaceStore(Protocol):
     async def list_in_progress(self) -> list[WorkspaceRun]: ...
 
     async def mark_follow_through_notified(self, run_id: UUID) -> bool: ...
+
+    async def mark_sidecar_dispatched(self, run_id: UUID) -> bool: ...
 
     async def get_run(self, run_id: UUID) -> WorkspaceRun | None: ...
 
@@ -349,6 +352,20 @@ class PostgresWorkspaceStore:
             result = await conn.execute(
                 "UPDATE workspace_runs SET follow_through_notified = true"
                 " WHERE id = $1 AND follow_through_notified = false",
+                run_id,
+            )
+        return isinstance(result, str) and result.strip().endswith(" 1")
+
+    async def mark_sidecar_dispatched(self, run_id: UUID) -> bool:
+        """Idempotent: True only the first time it flips false -> true for
+        run_id. Set once POST /run has actually been called for this row —
+        lets RunWatcher.reattach skip a sidecar call entirely for a row that
+        crashed between insert_in_progress_run and the sidecar call landing
+        (Phase 129 data-model.md)."""
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "UPDATE workspace_runs SET sidecar_dispatched = true"
+                " WHERE id = $1 AND sidecar_dispatched = false",
                 run_id,
             )
         return isinstance(result, str) and result.strip().endswith(" 1")

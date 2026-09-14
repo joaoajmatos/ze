@@ -27,11 +27,12 @@ import ze_workspace.tools as tools
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.turn_lock import ThreadTurnLock
 from ze_workspace.types import (
+    JournalEventDTO,
     WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
-    WorkspaceRunResult,
     WorkspaceRunStatus,
+    WorkspaceRunStatusDTO,
 )
 
 from ze_api.container import _ContainerTurnStarter, _NotifierPushSender
@@ -98,6 +99,14 @@ class FakeInMemoryStore:
     async def mark_follow_through_notified(self, run_id) -> bool:
         return True
 
+    async def mark_sidecar_dispatched(self, run_id) -> bool:
+        run = self.runs.get(run_id)
+        if run is not None:
+            self.runs[run_id] = WorkspaceRun(
+                **{**run.__dict__, "sidecar_dispatched": True}
+            )
+        return True
+
     async def touch_used(self) -> None:
         pass
 
@@ -122,19 +131,56 @@ def _settings(short_wait: float) -> SimpleNamespace:
 def _wire(
     monkeypatch, *, short_wait: float, run_seconds: float, mode=WorkspaceMode.AUTO
 ):
+    import time as _time
+
     store = FakeInMemoryStore(mode)
     monkeypatch.setattr(bootstrap, "PostgresWorkspaceStore", lambda pool: store)
     shared = SimpleNamespace(pool=None)
     stack = bootstrap.build_workspace_stack(shared, _settings(short_wait))
 
-    async def fake_run(*args, **kwargs):
-        await asyncio.sleep(run_seconds)
-        return WorkspaceRunResult(
-            exit_code=0, timed_out=False, stdout_preview="ok", stderr_preview=""
+    started_at: dict = {}
+
+    async def fake_start_run(command, run_id, **kwargs):
+        started_at[run_id] = _time.monotonic()
+
+    def _terminal_status(run_id):
+        return WorkspaceRunStatusDTO(
+            id=run_id,
+            status="succeeded",
+            exit_code=0,
+            timed_out=False,
+            stdout_preview="ok",
+            stderr_preview="",
+            output_file_path=None,
+            files_touched=[],
         )
 
+    async def fake_get_run(run_id):
+        started = started_at.setdefault(run_id, _time.monotonic())
+        if _time.monotonic() - started >= run_seconds:
+            return _terminal_status(run_id)
+        return WorkspaceRunStatusDTO(
+            id=run_id,
+            status="running",
+            exit_code=None,
+            timed_out=False,
+            stdout_preview="",
+            stderr_preview="",
+            output_file_path=None,
+            files_touched=[],
+        )
+
+    async def fake_watch_run(run_id):
+        started = started_at.setdefault(run_id, _time.monotonic())
+        remaining = run_seconds - (_time.monotonic() - started)
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+        yield JournalEventDTO(seq=0, type="exit", data="", exit_code=0, timed_out=False)
+
     stack.client.health = AsyncMock(return_value=True)
-    stack.client.run = AsyncMock(side_effect=fake_run)
+    stack.client.start_run = AsyncMock(side_effect=fake_start_run)
+    stack.client.get_run = AsyncMock(side_effect=fake_get_run)
+    stack.client.watch_run = fake_watch_run
     return stack, store
 
 

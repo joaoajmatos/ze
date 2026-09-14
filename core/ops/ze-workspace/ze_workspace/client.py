@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, AsyncIterator
+from uuid import UUID
 import base64
 
 import httpx
@@ -11,12 +13,15 @@ from ze_workspace.errors import (
     WorkspaceFullError,
     WorkspaceNotFoundError,
     WorkspacePathError,
+    WorkspaceRunAlreadyTerminalError,
     WorkspaceUnavailableError,
 )
+from ze_workspace.sanitize import redact
 from ze_workspace.types import (
+    JournalEventDTO,
     WorkspaceFile,
     WorkspaceFileTouch,
-    WorkspaceRunResult,
+    WorkspaceRunStatusDTO,
     WorkspaceStat,
 )
 
@@ -131,41 +136,101 @@ class WorkspaceClient:
     async def delete(self, path: str) -> None:
         await self._request("DELETE", "/fs", params={"path": path})
 
-    async def run(
+    async def start_run(
         self,
         command: list[str],
+        run_id: UUID,
         *,
         cwd: str = "",
         timeout_seconds: int = 120,
         stdin_b64: str | None = None,
         env: dict[str, str] | None = None,
-    ) -> WorkspaceRunResult:
-        data = await self._json(
+    ) -> None:
+        """POSTs /run with id=run_id; returns as soon as the sidecar has
+        recorded the run (FR-001 — does not wait for the process to exit).
+        Raises WorkspaceBusyError on 409 (the one-slot invariant, backstop —
+        tools.py checks list_in_progress() first so this is rarely hit)."""
+        await self._json(
             "POST",
             "/run",
             json_body={
                 "command": command,
+                "id": str(run_id),
                 "cwd": cwd,
                 "timeout_seconds": timeout_seconds,
                 "stdin_b64": stdin_b64,
                 "env": env or {},
             },
         )
+
+    async def get_run(self, run_id: UUID) -> WorkspaceRunStatusDTO | None:
+        """GET /runs/{id}. Returns None on 404 (unknown or retention-evicted
+        handle) rather than raising — callers (RunWatcher.reattach) treat
+        that as "computer restarted and lost it" (Edge Case 3)."""
+        try:
+            data = await self._get_json(f"/runs/{run_id}")
+        except WorkspaceNotFoundError:
+            return None
         touches = [
             WorkspaceFileTouch(path=t["path"], op=t["op"])
             for t in data.get("files_touched") or []
         ]
-        return WorkspaceRunResult(
-            exit_code=int(data.get("exit_code") or 0),
+        return WorkspaceRunStatusDTO(
+            id=run_id,
+            status=str(data.get("status") or "running"),
+            exit_code=data.get("exit_code"),
             timed_out=bool(data.get("timed_out")),
-            stdout_preview=str(data.get("stdout_preview") or ""),
-            stderr_preview=str(data.get("stderr_preview") or ""),
+            stdout_preview=redact(str(data.get("stdout_preview") or "")),
+            stderr_preview=redact(str(data.get("stderr_preview") or "")),
             output_file_path=data.get("output_file_path"),
             files_touched=touches,
         )
 
-    async def cancel(self) -> None:
-        await self._json("POST", "/cancel")
+    async def watch_run(self, run_id: UUID) -> AsyncIterator[JournalEventDTO]:
+        """GET /runs/{id}/events as a streaming async generator — already-
+        buffered events replay first, then live events follow, closing after
+        the terminal `exit` event (FR-005). Redaction (FR-012) is applied
+        here at the mind/client boundary, not inside the sidecar — the
+        sidecar has no Ze package dependencies (Phase 115 isolation) and so
+        cannot import ze_workspace.sanitize."""
+        url = f"{self._base_url}/runs/{run_id}/events"
+        try:
+            async with self._client.stream(
+                "GET", url, headers=self._headers()
+            ) as resp:
+                if resp.status_code == 404:
+                    await resp.aread()
+                    raise WorkspaceNotFoundError(f"workspace run {run_id} not found")
+                if resp.status_code >= 400:
+                    body = await resp.aread()
+                    raise WorkspaceUnavailableError(
+                        f"Workspace service error {resp.status_code}: "
+                        f"{body[:200].decode('utf-8', errors='replace')}"
+                    )
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    data = json.loads(line)
+                    yield JournalEventDTO(
+                        seq=int(data.get("seq") or 0),
+                        type=str(data.get("type") or ""),
+                        data=redact(str(data.get("data") or "")),
+                        exit_code=data.get("exit_code"),
+                        timed_out=data.get("timed_out"),
+                    )
+        except httpx.TimeoutException as exc:
+            raise WorkspaceUnavailableError(
+                f"Workspace service timed out: {exc}"
+            ) from exc
+        except (httpx.ConnectError, httpx.RemoteProtocolError) as exc:
+            raise WorkspaceUnavailableError(
+                f"Cannot reach workspace service: {exc}"
+            ) from exc
+
+    async def cancel_run(self, run_id: UUID) -> None:
+        """POST /runs/{id}/cancel. Raises WorkspaceNotFoundError (404) or
+        WorkspaceRunAlreadyTerminalError (409)."""
+        await self._json("POST", f"/runs/{run_id}/cancel")
 
     async def reset(self) -> None:
         await self._json("POST", "/reset")
@@ -231,7 +296,15 @@ class WorkspaceClient:
             payload = payload["detail"]
         error = str(payload.get("error") or payload.get("detail") or "")
         if resp.status_code == 409 and error == "busy":
-            raise WorkspaceBusyError("workspace is occupied")
+            running_id = payload.get("id")
+            running_command = payload.get("command")
+            raise WorkspaceBusyError(
+                f"workspace is occupied by run {running_id}: {running_command}"
+            )
+        if resp.status_code == 409 and error == "already_terminal":
+            raise WorkspaceRunAlreadyTerminalError(
+                payload.get("status") or "already finished"
+            )
         if resp.status_code in {409, 413} and error in {"full", "exists"}:
             if error == "full" or resp.status_code == 413:
                 raise WorkspaceFullError("workspace storage ceiling would be exceeded")

@@ -47,6 +47,7 @@ def _run_row(**overrides):
         "files_touched": [],
         "error_summary": None,
         "follow_through_notified": False,
+        "sidecar_dispatched": False,
     }
     row.update(overrides)
     return row
@@ -91,6 +92,16 @@ async def test_insert_run_redacts_preview():
     args = conn.fetchrow.await_args.args
     assert "OPENROUTER_API_KEY=sk-secret" not in args
     assert any(isinstance(a, str) and "[redacted]" in a for a in args)
+
+
+async def test_mark_sidecar_dispatched_idempotent():
+    pool, conn = make_pool(execute="UPDATE 1")
+    store = PostgresWorkspaceStore(pool)
+    run_id = uuid4()
+    assert await store.mark_sidecar_dispatched(run_id) is True
+
+    conn.execute = AsyncMock(return_value="UPDATE 0")
+    assert await store.mark_sidecar_dispatched(run_id) is False
 
 
 async def test_list_runs_filters_origin():

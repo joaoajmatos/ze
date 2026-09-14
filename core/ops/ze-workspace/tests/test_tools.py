@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from dataclasses import replace
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -10,7 +9,7 @@ from uuid import uuid4
 import pytest
 
 from ze_agents.errors import ToolConfirmationRequired
-from ze_agents.interrupt import workspace_confirmed
+from ze_agents.interrupt import workspace_confirmed, workspace_run_origin
 from ze_workspace.errors import WorkspaceUnavailableError
 from ze_workspace.gate import WorkspaceGate
 from ze_workspace.tools import (
@@ -26,8 +25,25 @@ from ze_workspace.tools import (
 from ze_workspace.types import (
     WorkspaceFile,
     WorkspaceMode,
-    WorkspaceRunResult,
+    WorkspaceRun,
+    WorkspaceRunOrigin,
+    WorkspaceRunStatusDTO,
 )
+
+
+def _status(**overrides) -> WorkspaceRunStatusDTO:
+    base = dict(
+        id=uuid4(),
+        status="succeeded",
+        exit_code=0,
+        timed_out=False,
+        stdout_preview="ok",
+        stderr_preview="",
+        output_file_path=None,
+        files_touched=[],
+    )
+    base.update(overrides)
+    return WorkspaceRunStatusDTO(**base)
 
 
 def _store(mode: WorkspaceMode) -> AsyncMock:
@@ -39,6 +55,8 @@ def _store(mode: WorkspaceMode) -> AsyncMock:
     )
     store.complete_run = AsyncMock(side_effect=lambda run_id, **kwargs: SimpleNamespace(id=run_id, **kwargs))
     store.touch_used = AsyncMock()
+    store.mark_sidecar_dispatched = AsyncMock(return_value=True)
+    store.list_in_progress = AsyncMock(return_value=[])
     return store
 
 
@@ -49,14 +67,8 @@ def _client() -> AsyncMock:
     client.download = AsyncMock(return_value=b"hello")
     client.put = AsyncMock(return_value={"path": "notes.txt", "size": 5})
     client.delete = AsyncMock()
-    client.run = AsyncMock(
-        return_value=WorkspaceRunResult(
-            exit_code=0,
-            timed_out=False,
-            stdout_preview="ok",
-            stderr_preview="",
-        )
-    )
+    client.start_run = AsyncMock(return_value=None)
+    client.get_run = AsyncMock(side_effect=lambda run_id: _status(id=run_id))
     return client
 
 
@@ -109,7 +121,7 @@ async def test_plan_run_is_dry_run():
     client, _ = _wire(WorkspaceMode.PLAN)
     result = await workspace_run("echo hi")
     assert "[plan]" in result
-    client.run.assert_not_awaited()
+    client.start_run.assert_not_awaited()
 
 
 async def test_ask_write_raises_confirmation():
@@ -137,26 +149,24 @@ async def test_auto_edit_run_still_confirms():
     client, _ = _wire(WorkspaceMode.AUTO_EDIT)
     with pytest.raises(ToolConfirmationRequired):
         await workspace_run("echo hi")
-    client.run.assert_not_awaited()
+    client.start_run.assert_not_awaited()
 
 
 async def test_auto_run_executes_and_persists():
     client, store = _wire(WorkspaceMode.AUTO)
     result = await workspace_run("echo hi")
     assert "ok" in result
-    client.run.assert_awaited_once()
+    client.start_run.assert_awaited_once()
     store.insert_in_progress_run.assert_awaited_once()
     store.complete_run.assert_awaited_once()
 
 
 async def test_truncated_output_mentions_spill_path():
     client, _ = _wire(WorkspaceMode.AUTO)
-    client.run = AsyncMock(
-        return_value=WorkspaceRunResult(
-            exit_code=0,
-            timed_out=False,
+    client.get_run = AsyncMock(
+        side_effect=lambda run_id: _status(
+            id=run_id,
             stdout_preview="head",
-            stderr_preview="",
             output_file_path=".ze-output/run-1.txt",
         )
     )
@@ -206,7 +216,7 @@ async def test_run_skill_script_refuses_without_executable_approval():
     )
     result = await workspace_run_skill_script(skill_id, "scripts/h.py")
     assert "separately approved" in result
-    client.run.assert_not_awaited()
+    client.start_run.assert_not_awaited()
 
 
 async def test_run_skill_script_auto_materializes_from_db_bytes():
@@ -238,7 +248,7 @@ async def test_run_skill_script_auto_materializes_from_db_bytes():
     client.put.assert_awaited()
     put_args = client.put.await_args
     assert put_args.args[1] == b"print(1)"
-    client.run.assert_awaited_once()
+    client.start_run.assert_awaited_once()
     assert "ok" in result
 
 
@@ -266,7 +276,7 @@ async def test_run_skill_script_off_does_not_execute():
     )
     result = await workspace_run_skill_script(skill_id, "scripts/h.py")
     assert "off" in result.lower()
-    client.run.assert_not_awaited()
+    client.start_run.assert_not_awaited()
     client.put.assert_not_awaited()
 
 
@@ -294,7 +304,7 @@ async def test_run_skill_script_plan_is_dry_run():
     )
     result = await workspace_run_skill_script(skill_id, "scripts/h.py")
     assert "[plan]" in result
-    client.run.assert_not_awaited()
+    client.start_run.assert_not_awaited()
 
 
 async def test_run_skill_script_ask_raises_confirmation():
@@ -321,7 +331,7 @@ async def test_run_skill_script_ask_raises_confirmation():
     )
     with pytest.raises(ToolConfirmationRequired):
         await workspace_run_skill_script(skill_id, "scripts/h.py")
-    client.run.assert_not_awaited()
+    client.start_run.assert_not_awaited()
 
 
 async def test_unavailable_sidecar_raises():
@@ -346,16 +356,19 @@ async def test_off_and_plan_never_reach_run_watcher():
 
 
 async def test_ask_run_detaches_only_after_confirmation_resume():
+    import time
+
     run_watcher = AsyncMock()
     client = _client()
+    run_started_at: dict = {}
 
-    async def slow_run(*args, **kwargs):
-        await asyncio.sleep(0.05)
-        return WorkspaceRunResult(
-            exit_code=0, timed_out=False, stdout_preview="ok", stderr_preview=""
-        )
+    async def slow_get_run(run_id):
+        started = run_started_at.setdefault(run_id, time.monotonic())
+        if time.monotonic() - started >= 0.05:
+            return _status(id=run_id)
+        return _status(id=run_id, status="running", exit_code=None)
 
-    client.run = AsyncMock(side_effect=slow_run)
+    client.get_run = AsyncMock(side_effect=slow_get_run)
     store = _store(WorkspaceMode.ASK)
     configure(
         client=client,
@@ -378,3 +391,59 @@ async def test_ask_run_detaches_only_after_confirmation_resume():
         workspace_confirmed.reset(token)
     assert "still running" in result
     run_watcher.detach.assert_awaited_once()
+
+
+def _in_progress_run() -> WorkspaceRun:
+    return WorkspaceRun(
+        id=uuid4(),
+        command="sleep 60",
+        origin=WorkspaceRunOrigin.CONVERSATION,
+        status=None,
+        thread_id="t1",
+    )
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [WorkspaceRunOrigin.CONVERSATION, WorkspaceRunOrigin.USER, WorkspaceRunOrigin.UNATTENDED],
+)
+async def test_workspace_run_refuses_while_another_run_in_progress(origin):
+    running = _in_progress_run()
+    client, store = _wire(WorkspaceMode.AUTO)
+    store.list_in_progress = AsyncMock(return_value=[running])
+    token = workspace_run_origin.set(origin.value)
+    try:
+        result = await workspace_run("echo hi")
+    finally:
+        workspace_run_origin.reset(token)
+    assert str(running.id) in result
+    assert running.command in result
+    client.start_run.assert_not_awaited()
+
+
+async def test_workspace_run_skill_script_refuses_while_another_run_in_progress():
+    running = _in_progress_run()
+    skill_id = "11111111-1111-1111-1111-111111111111"
+    skill_store = AsyncMock()
+    skill_store.get = AsyncMock(
+        return_value=SimpleNamespace(
+            id=skill_id,
+            name="S",
+            status=SimpleNamespace(value="active"),
+            has_scripts=True,
+            executable_approved=True,
+        )
+    )
+    skill_store.get_script = AsyncMock(
+        return_value=SimpleNamespace(filename="scripts/h.py", content=b"print(1)")
+    )
+    client = _client()
+    store = _store(WorkspaceMode.AUTO)
+    store.list_in_progress = AsyncMock(return_value=[running])
+    configure(client=client, gate=WorkspaceGate(), store=store, skill_store=skill_store)
+
+    result = await workspace_run_skill_script(skill_id, "scripts/h.py")
+
+    assert str(running.id) in result
+    client.put.assert_not_awaited()
+    client.start_run.assert_not_awaited()

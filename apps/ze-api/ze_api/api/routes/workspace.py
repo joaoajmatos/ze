@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -13,7 +14,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from ze_api.api.dependencies import (
     get_connection_manager,
@@ -260,6 +261,38 @@ async def list_workspace_runs(
     except (WorkspaceError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return WorkspaceRunListResponse.model_validate(data)
+
+
+@router.get(
+    "/runs/{run_id}/events",
+    operation_id="watchWorkspaceRunEvents",
+    summary="Watch a workspace run's live output",
+    description=(
+        "Streams already-produced output then live output as it happens "
+        "(newline-delimited JSON), closing after the exit event (FR-005). "
+        "Does not replace follow-through — the follow-up turn still fires "
+        "exactly once when the run becomes terminal (FR-011)."
+    ),
+)
+async def watch_workspace_run_events(
+    run_id: UUID,
+    client: WorkspaceClient = Depends(get_workspace_client),
+) -> StreamingResponse:
+    status = await client.get_run(run_id)
+    if status is None:
+        raise HTTPException(
+            status_code=404, detail=f"workspace run {run_id} not found"
+        )
+
+    async def _proxy():
+        async for event in client.watch_run(run_id):
+            line: dict = {"seq": event.seq, "type": event.type, "data": event.data}
+            if event.type == "exit":
+                line["exit_code"] = event.exit_code
+                line["timed_out"] = event.timed_out
+            yield (json.dumps(line) + "\n").encode("utf-8")
+
+    return StreamingResponse(_proxy(), media_type="application/x-ndjson")
 
 
 @router.post(

@@ -247,10 +247,11 @@ async def test_reset_approve_cancels_then_wipes():
         )
     assert resp.status_code == 200
     assert resp.json()["reset"] is True
-    client.cancel.assert_awaited()
+    # POST /reset on the sidecar now cancels its own current run internally
+    # (Phase 129) — the mind no longer makes a separate cancel call.
+    client.cancel.assert_not_awaited()
     client.reset.assert_awaited()
     store.mark_reset.assert_awaited()
-    assert client.cancel.await_count == 1
     assert client.reset.await_count == 1
 
 
