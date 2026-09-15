@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-26
 
-**Status**: Draft
+**Status**: Done
 
 **Input**: User description: "Social Cognition Foundation — phase 128, implementing steps 1
 and 2 of specs/arch/social-cognition.md's phased rollout sketch (the reconciliation steps, not

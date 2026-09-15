@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-25
 
-**Status**: Draft
+**Status**: Done
 
 **Input**: User description: "Implement attention-arbitration per specs/arch/attention-arbitration.md: a read-only PriorityView projection over LoopStore (ze-worldstate), GoalStore (ze-automation), and HypothesisStore (ze-correlation) that ranks open loops, goal milestones/gates, and hypotheses on one comparable scale using the shared Confidence type from ze_agents.claims (Phase 111), combining each mechanism's existing locally-computed signals (drift state, milestone/gate proximity, hypothesis novelty) rather than recomputing them. PriorityView's output is the executive function's first real Priority-kind claim per the doctrine's claim-kind licensing table. Also consolidate the two sibling daily push-budget counters currently maintained independently by ze-correlation's push.py and ze-worldstate's push_sweep.py against the same push_log table into one shared attention-budget check, likely living in ze-proactive, so PriorityView's ranking is what arbitrates which mechanism spends the shared interruption budget on a given day. Explicitly out of scope: merging the OpenLoop and goal stores (FR-014's separate-stores decision stands), and the full Contribution-seam arbitration mechanism from contribution-seam.md (no orchestration seam yet, this is a query only)."
 
