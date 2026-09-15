@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from ze_agents.claims import Confidence, DecayProfile
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_memory.graph.predicates import WORKS_ON
 from ze_memory.graph.types import Relationship
 from ze_memory.types import Entity
@@ -127,6 +127,80 @@ async def _write_relationship_edge(
             target=edge.target_name,
             error=str(exc),
         )
+
+
+async def write_relationship_edge_via_seam(
+    memory_store: Any,
+    *,
+    source_id: UUID,
+    target_id: UUID,
+    target_type: str,
+    predicate: str,
+    confidence: float,
+    evidence: list[Any] | None = None,
+    collision_store: Any = None,
+    nli_client: Any = None,
+) -> None:
+    """Promotion write path for Phase 130's co-occurrence inference.
+
+    Unlike `_write_relationship_edge()` (Phase 128's direct-extraction path,
+    which resolves entities by name and writes unconditionally), this is
+    called with entity ids already resolved from an existing `Hypothesis`
+    and goes through the contribution seam — `SourceFunction.SOCIAL_COGNITION`
+    is licensed for `ClaimKind.IDENTITY` only (research.md Decision 1), so
+    collision detection (Phase 126) now applies to this write path even
+    though it does not yet apply to Phase 128's (research.md Decision 5 —
+    retrofitting that path is out of this phase's scope).
+    """
+    from ze_plugin.contribution import SourceFunction, TargetFace
+    from ze_sdk.contribution import Contribution, submit_and_detect_collisions
+
+    graph_store = getattr(memory_store, "graph_store", None)
+    if graph_store is None:
+        return
+
+    contribution = Contribution(
+        claim_kind=ClaimKind.IDENTITY,
+        provenance=Provenance.SYNTHESIZED,
+        confidence=Confidence(value=confidence, decay_profile=DecayProfile.TIME_LINEAR),
+        target_face=TargetFace.USER,
+        source_function=SourceFunction.SOCIAL_COGNITION,
+        evidence=evidence or [],
+        entity_ids=[source_id, target_id],
+    )
+
+    async def _write() -> UUID:
+        return await graph_store.upsert_relationship(
+            Relationship(
+                source_id=source_id,
+                source_type="person",
+                predicate=predicate,
+                target_id=target_id,
+                target_type=target_type,
+                confidence=Confidence(
+                    value=confidence, decay_profile=DecayProfile.TIME_LINEAR
+                ),
+            )
+        )
+
+    async def _check_episode_exists(episode_id: UUID) -> bool:
+        episodes = await memory_store.get_episodes_by_ids([episode_id])
+        return len(episodes) > 0
+
+    async def _check_signal_exists(signal_id: UUID) -> bool:
+        signals = await memory_store.get_signals_by_ids([signal_id])
+        return len(signals) > 0
+
+    await submit_and_detect_collisions(
+        contribution,
+        write=_write,
+        result_id=lambda rid: rid,
+        producer_kind="social_cooccurrence_edge",
+        check_episode_exists=_check_episode_exists,
+        check_signal_exists=_check_signal_exists,
+        collision_store=collision_store,
+        nli_client=nli_client,
+    )
 
 
 async def _write_contact_proposals(

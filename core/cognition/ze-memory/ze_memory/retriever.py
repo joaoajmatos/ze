@@ -438,6 +438,63 @@ class PostgresMemoryStore:
             )
         return row["id"]
 
+    async def get_entity(self, entity_id: UUID) -> Entity | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT id, entity_type, canonical_name, aliases, attrs"
+                " FROM memory_entities WHERE id = $1",
+                entity_id,
+            )
+        if row is None:
+            return None
+        aliases = row["aliases"]
+        if isinstance(aliases, str):
+            aliases = json.loads(aliases)
+        attrs = row["attrs"]
+        if isinstance(attrs, str):
+            attrs = json.loads(attrs)
+        return Entity(
+            id=row["id"],
+            entity_type=row["entity_type"],
+            canonical_name=row["canonical_name"],
+            aliases=aliases or [],
+            attrs=attrs or {},
+        )
+
+    async def find_entity_by_name(
+        self, canonical_name: str, entity_type: str | None = None
+    ) -> Entity | None:
+        async with self._pool.acquire() as conn:
+            if entity_type is not None:
+                row = await conn.fetchrow(
+                    "SELECT id, entity_type, canonical_name, aliases, attrs"
+                    " FROM memory_entities"
+                    " WHERE lower(canonical_name) = lower($1) AND entity_type = $2",
+                    canonical_name,
+                    entity_type,
+                )
+            else:
+                row = await conn.fetchrow(
+                    "SELECT id, entity_type, canonical_name, aliases, attrs"
+                    " FROM memory_entities WHERE lower(canonical_name) = lower($1)",
+                    canonical_name,
+                )
+        if row is None:
+            return None
+        aliases = row["aliases"]
+        if isinstance(aliases, str):
+            aliases = json.loads(aliases)
+        attrs = row["attrs"]
+        if isinstance(attrs, str):
+            attrs = json.loads(attrs)
+        return Entity(
+            id=row["id"],
+            entity_type=row["entity_type"],
+            canonical_name=row["canonical_name"],
+            aliases=aliases or [],
+            attrs=attrs or {},
+        )
+
     async def get_task_state(
         self,
         task_id: UUID | None = None,

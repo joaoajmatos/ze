@@ -173,6 +173,55 @@ class TestListRelationships:
         assert "predicate = ANY($2)" in sql
 
 
+class TestListRelationshipsByTarget:
+    def _make_row(self, source_id, target_id, predicate=WORKS_ON):
+        return {
+            "id": uuid4(),
+            "source_id": source_id,
+            "source_type": "person",
+            "predicate": predicate,
+            "target_id": target_id,
+            "target_type": "project",
+            "target_text": None,
+            "confidence": 1.0,
+            "provenance_id": None,
+            "creation_method": "explicit",
+            "reviewed": False,
+            "created_at": None,
+            "updated_at": None,
+            "last_contact": None,
+        }
+
+    async def test_empty_target_ids_returns_empty(self):
+        pool, _ = _make_pool()
+        store = PostgresGraphStore(pool=pool)
+        result = await store.list_relationships_by_target([])
+        assert result == []
+
+    async def test_returns_relationships_pointing_at_target(self):
+        pool, conn = _make_pool()
+        sid, tid = uuid4(), uuid4()
+        conn.fetch = AsyncMock(return_value=[self._make_row(sid, tid)])
+
+        store = PostgresGraphStore(pool=pool)
+        rels = await store.list_relationships_by_target([tid])
+
+        assert len(rels) == 1
+        assert rels[0].source_id == sid
+        assert rels[0].target_id == tid
+
+    async def test_filters_by_predicates(self):
+        pool, conn = _make_pool()
+        conn.fetch = AsyncMock(return_value=[])
+        store = PostgresGraphStore(pool=pool)
+
+        await store.list_relationships_by_target([uuid4()], predicates=[WORKS_ON])
+
+        sql = conn.fetch.call_args[0][0]
+        assert "predicate = ANY($2)" in sql
+        assert "target_id = ANY($1)" in sql
+
+
 # ── confidence read-time decay hydration (US2, SC-004) ─────────────────────────
 
 

@@ -8,7 +8,9 @@ import asyncpg
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_memory.bootstrap import consolidation_enabled
-from ze_sdk import ZePlugin
+from ze_sdk import NLIClient, ZePlugin
+from ze_sdk.contribution import CollisionLogStore
+from ze_sdk.correlation import PostgresHypothesisStore
 from ze_sdk.ui import UiContribution
 from ze_agents.settings import Settings as CoreSettings
 from ze_proactive.notifier import ProactiveNotifier
@@ -29,7 +31,9 @@ from ze_priority.view import PriorityView
 from ze_personal.jobs.briefing import MorningBriefing
 from ze_personal.jobs.contacts import ContactReviewNotifier
 from ze_personal.jobs.insights import InsightEngine
+from ze_personal.jobs.social_cooccurrence import SocialCooccurrenceJob
 from ze_personal.onboarding import PersonalOnboardingProvider
+from ze_personal.social.candidates import GraphCoOccurrenceCandidateSource
 from ze_automation.workflow.store import WorkflowStore
 from ze_automation.workflow.planner import WorkflowPlanner
 
@@ -59,6 +63,9 @@ class PersonalPlugin(ZePlugin):
         watermark_store: ChannelWatermarkStore,
         thread_channel_map: ThreadChannelMap,
         priority_view: PriorityView,
+        hypothesis_store: PostgresHypothesisStore,
+        collision_store: CollisionLogStore,
+        nli_client: NLIClient,
     ) -> None:
         self._settings = settings
         self._notifier = notifier
@@ -105,6 +112,15 @@ class PersonalPlugin(ZePlugin):
         self.contact_review = ContactReviewNotifier(
             person_store=self.person_store,
             notifier=notifier,
+        )
+        self.social_cooccurrence = SocialCooccurrenceJob(
+            candidate_source=GraphCoOccurrenceCandidateSource(
+                pool=pool, graph_store=memory_store.graph_store
+            ),
+            hypothesis_store=hypothesis_store,
+            memory_store=memory_store,
+            collision_store=collision_store,
+            nli_client=nli_client,
         )
 
     @classmethod
@@ -298,6 +314,7 @@ class PersonalPlugin(ZePlugin):
     def agent_module_paths(self) -> list[str]:
         return [
             "ze_personal.contacts.tools",
+            "ze_personal.social.tools",
             "ze_personal.agents.research.agent",
             "ze_personal.agents.companion.agent",
         ]
@@ -307,6 +324,7 @@ class PersonalPlugin(ZePlugin):
             self.morning_briefing,
             self.insight_engine,
             self.contact_review,
+            self.social_cooccurrence,
         ]
 
     def onboarding(self) -> PersonalOnboardingProvider:

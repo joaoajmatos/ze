@@ -22,7 +22,6 @@ from ze_personal.contacts.types import (
     RelationshipEdgeProposal,
     SOURCE_WEIGHTS,
 )
-from ze_personal.graph.memory_hooks import _write_project_entity, _write_relationship_edge
 from ze_logging import get_logger
 
 _MODEL_DEFAULT = "anthropic/claude-haiku-4-5"
@@ -213,6 +212,8 @@ class ContactsConsolidator:
     async def _store_project(self, proposal: ProjectProposal) -> None:
         if not proposal.name or self._store.memory_store is None:
             return
+        from ze_personal.graph.memory_hooks import _write_project_entity
+
         await _write_project_entity(self._store.memory_store, proposal)
 
     async def _store_edge(self, edge: RelationshipEdgeProposal) -> None:
@@ -220,6 +221,8 @@ class ContactsConsolidator:
             return
         if self._store.memory_store is None:
             return
+        from ze_personal.graph.memory_hooks import _write_relationship_edge
+
         await _write_relationship_edge(self._store.memory_store, edge)
 
     async def _store_candidate(self, candidate: ContactProposal) -> bool:

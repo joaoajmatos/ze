@@ -53,6 +53,7 @@ from ze_core.conversation.messages import PostgresMessageStore
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
 from ze_correlation.bootstrap import build_correlation_stack
+from ze_correlation.store import PostgresHypothesisStore
 from ze_priority.view import PriorityView
 from ze_data.portability.service import DataPortabilityService
 from ze_seed.service import DevDataSeeder, collect_seed_domains
@@ -485,6 +486,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             PriorityView: priority_view,
             PriorityOverrideStore: priority_override_store,
             CollisionLogStore: collision_store,
+            PostgresHypothesisStore: correlation.hypothesis_store,
         }
     )
 

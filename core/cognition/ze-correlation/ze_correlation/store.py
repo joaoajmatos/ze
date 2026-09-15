@@ -36,8 +36,10 @@ class PostgresHypothesisStore:
                 """
                 INSERT INTO correlation_hypothesis
                   (id, summary, narrative, relation, confidence, relevance,
-                   evidence, entities, surfaced, feedback, created_at, claim_kind)
-                VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12)
+                   evidence, entities, surfaced, feedback, created_at, claim_kind,
+                   confirmed, promoted_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12,
+                        $13, $14)
                 ON CONFLICT (id) DO NOTHING
                 """,
                 hypothesis.id,
@@ -52,6 +54,8 @@ class PostgresHypothesisStore:
                 hypothesis.feedback,
                 hypothesis.created_at,
                 hypothesis.claim_kind.value,
+                hypothesis.confirmed,
+                hypothesis.promoted_at,
             )
         log.info("hypothesis_saved", hypothesis_id=str(hypothesis.id))
 
@@ -134,6 +138,82 @@ class PostgresHypothesisStore:
                 hypothesis_id,
             )
 
+    async def update_evidence(
+        self,
+        hypothesis_id: UUID,
+        evidence: list[EvidenceRef],
+        confidence: float,
+    ) -> None:
+        """Refresh an existing hypothesis's evidence/confidence in place.
+
+        Used by `SocialCooccurrenceJob` to accumulate evidence across runs on
+        the same (person, project) pair rather than creating a duplicate row —
+        `save()`'s `ON CONFLICT (id) DO NOTHING` intentionally never updates.
+        """
+        evidence_data = [
+            {
+                "kind": e.kind,
+                "id": str(e.id),
+                "label": e.label,
+                "external_ref": e.external_ref,
+                "origin": e.origin.value if hasattr(e.origin, "value") else e.origin,
+                "retrieved_at": e.retrieved_at.isoformat(),
+                "ingested_at": e.ingested_at.isoformat() if e.ingested_at else None,
+            }
+            for e in evidence
+        ]
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            await conn.execute(
+                "UPDATE correlation_hypothesis"
+                " SET evidence = $1::jsonb, confidence = $2 WHERE id = $3",
+                json.dumps(evidence_data),
+                confidence,
+                hypothesis_id,
+            )
+
+    async def confirm(self, hypothesis_id: UUID) -> Hypothesis:
+        """Flip `confirmed = true` — mirrors `PersonStore.confirm()`'s shape."""
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            row = await conn.fetchrow(
+                "UPDATE correlation_hypothesis SET confirmed = true"
+                " WHERE id = $1 RETURNING *",
+                hypothesis_id,
+            )
+        if row is None:
+            raise HypothesisNotFoundError(str(hypothesis_id))
+        return _row_to_hypothesis(row)
+
+    async def mark_promoted(self, hypothesis_id: UUID) -> Hypothesis:
+        """Set `promoted_at = now()` — the promotion idempotency guard."""
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            row = await conn.fetchrow(
+                "UPDATE correlation_hypothesis SET promoted_at = NOW()"
+                " WHERE id = $1 RETURNING *",
+                hypothesis_id,
+            )
+        if row is None:
+            raise HypothesisNotFoundError(str(hypothesis_id))
+        return _row_to_hypothesis(row)
+
+    async def list_by_entities(self, entity_ids: list[UUID]) -> list[Hypothesis]:
+        """Hypotheses whose `entities` intersects `entity_ids` — used for both
+        conversational lookup (`who_is_on_project`) and the job's per-pair
+        existing-hypothesis check."""
+        if not entity_ids:
+            return []
+        entity_strs = [str(e) for e in entity_ids]
+        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
+            rows = await conn.fetch(
+                "SELECT * FROM correlation_hypothesis"
+                " WHERE entities ?| $1::text[]",
+                entity_strs,
+            )
+        return [_row_to_hypothesis(r) for r in rows]
+
+
+class HypothesisNotFoundError(Exception):
+    pass
+
 
 def _row_to_hypothesis(row: object) -> Hypothesis:
     evidence_raw = json.loads(row["evidence"])  # type: ignore[index]
@@ -165,4 +245,6 @@ def _row_to_hypothesis(row: object) -> Hypothesis:
         surfaced=row["surfaced"],  # type: ignore[index]
         feedback=row["feedback"],  # type: ignore[index]
         claim_kind=ClaimKind(row["claim_kind"]),  # type: ignore[index]
+        confirmed=row["confirmed"],  # type: ignore[index]
+        promoted_at=row["promoted_at"],  # type: ignore[index]
     )

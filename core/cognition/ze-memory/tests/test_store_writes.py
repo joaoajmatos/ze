@@ -205,6 +205,63 @@ async def test_upsert_entity_passes_correct_fields():
     assert "Acme Corp" in args
 
 
+# ── get_entity / find_entity_by_name (Phase 130) ────────────────────────────────
+
+
+async def test_get_entity_returns_none_when_missing():
+    pool, conn = _make_pool()
+    store, conn = _make_store(pool)
+    conn.fetchrow = AsyncMock(return_value=None)
+
+    result = await store.get_entity(uuid4())
+
+    assert result is None
+
+
+async def test_get_entity_hydrates_entity():
+    pool, conn = _make_pool()
+    store, conn = _make_store(pool)
+    entity_id = uuid4()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": entity_id,
+            "entity_type": "project",
+            "canonical_name": "Launch",
+            "aliases": [],
+            "attrs": {},
+        }
+    )
+
+    result = await store.get_entity(entity_id)
+
+    assert result is not None
+    assert result.id == entity_id
+    assert result.entity_type == "project"
+    assert result.canonical_name == "Launch"
+
+
+async def test_find_entity_by_name_filters_by_type():
+    pool, conn = _make_pool()
+    store, conn = _make_store(pool)
+    conn.fetchrow = AsyncMock(return_value=None)
+
+    await store.find_entity_by_name("Launch", entity_type="project")
+
+    sql = conn.fetchrow.call_args[0][0]
+    assert "entity_type = $2" in sql
+
+
+async def test_find_entity_by_name_without_type_filter():
+    pool, conn = _make_pool()
+    store, conn = _make_store(pool)
+    conn.fetchrow = AsyncMock(return_value=None)
+
+    await store.find_entity_by_name("Launch")
+
+    sql = conn.fetchrow.call_args[0][0]
+    assert "AND entity_type" not in sql
+
+
 # ── graph relationship creation ───────────────────────────────────────────────
 
 

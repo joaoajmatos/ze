@@ -15,3 +15,21 @@ def test_public_api_imports() -> None:
     assert PostgresMemoryStore is not None
     assert ProactiveJob is not None
     assert ProactiveScheduler is not None
+
+
+def test_correlation_reexports_are_the_real_classes() -> None:
+    import ze_correlation.store
+    import ze_correlation.types
+    from ze_sdk.correlation import (
+        EvidenceRef,
+        Hypothesis,
+        HypothesisNotFoundError,
+        HypothesisStore,
+        PostgresHypothesisStore,
+    )
+
+    assert Hypothesis is ze_correlation.types.Hypothesis
+    assert EvidenceRef is ze_correlation.types.EvidenceRef
+    assert PostgresHypothesisStore is ze_correlation.store.PostgresHypothesisStore
+    assert HypothesisNotFoundError is ze_correlation.store.HypothesisNotFoundError
+    assert HypothesisStore is not None

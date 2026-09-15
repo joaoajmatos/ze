@@ -32,6 +32,11 @@ class GraphStore(Protocol):
         source_ids: list[UUID],
         predicates: list[str] | None = None,
     ) -> list[Relationship]: ...
+    async def list_relationships_by_target(
+        self,
+        target_ids: list[UUID],
+        predicates: list[str] | None = None,
+    ) -> list[Relationship]: ...
     async def expand(
         self,
         seed_ids: list[UUID],
@@ -133,6 +138,50 @@ class PostgresGraphStore:
                     ORDER BY confidence DESC, updated_at DESC
                     """,
                     source_ids,
+                )
+        return [_rel_from_row(r) for r in rows]
+
+    async def list_relationships_by_target(
+        self,
+        target_ids: list[UUID],
+        predicates: list[str] | None = None,
+    ) -> list[Relationship]:
+        """Return all inbound relationships pointing at the given target IDs.
+
+        `list_relationships()`'s complement — needed by any reader that
+        starts from the target (e.g. "who has a WORKS_ON edge to project X")
+        rather than the source, since that direction can't be expressed with
+        source_id-only filtering.
+        """
+        if not target_ids:
+            return []
+        async with self._pool.acquire() as conn:
+            if predicates:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, source_id, source_type, predicate,
+                           target_id, target_type, target_text,
+                           confidence, provenance_id, creation_method, reviewed,
+                           created_at, updated_at, last_contact
+                    FROM memory_relationships
+                    WHERE target_id = ANY($1) AND predicate = ANY($2)
+                    ORDER BY confidence DESC, updated_at DESC
+                    """,
+                    target_ids,
+                    predicates,
+                )
+            else:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, source_id, source_type, predicate,
+                           target_id, target_type, target_text,
+                           confidence, provenance_id, creation_method, reviewed,
+                           created_at, updated_at, last_contact
+                    FROM memory_relationships
+                    WHERE target_id = ANY($1)
+                    ORDER BY confidence DESC, updated_at DESC
+                    """,
+                    target_ids,
                 )
         return [_rel_from_row(r) for r in rows]
 

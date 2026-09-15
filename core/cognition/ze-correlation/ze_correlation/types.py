@@ -35,3 +35,5 @@ class Hypothesis:
     claim_kind: ClaimKind  # INFERENCE | SUSPICION only, never FACT (FR-007)
     surfaced: bool = False  # True when shown inline or pushed
     feedback: Literal["useful", "not_relevant", "muted"] | None = None
+    confirmed: bool = False  # True once the user explicitly confirms the link
+    promoted_at: datetime | None = None  # set once an identity edge is written
