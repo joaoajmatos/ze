@@ -1,0 +1,368 @@
+{
+  "workflow": "companion",
+  "specName": "social cognition co occurrence",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-14T19:29:07.064Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T19:31:09.183Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:14:43.826Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:16:56.463Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T21:52:39.090Z"
+    }
+  ],
+  "telemetryInstanceId": "001ffeb4-87cb-41d3-87c6-b858c4a9a2f1",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Form co-occurrence hypotheses via ze-correlation from existing inflows"
+    },
+    "FR-002": {
+      "title": "Hypotheses are INFERENCE contributions with evidence and decaying confidence"
+    },
+    "FR-003": {
+      "title": "Evidence outside the 30-day recency window does not count"
+    },
+    "FR-004": {
+      "title": "Evidence weighting reuses SOURCE_WEIGHTS; replies beat CC-only mentions"
+    },
+    "FR-005": {
+      "title": "No identity edge and no settled surfacing until corroboration or confirm"
+    },
+    "FR-006": {
+      "title": "Promotion writes WORKS_ON/COLLABORATES_WITH identity edges through the seam"
+    },
+    "FR-007": {
+      "title": "Current membership is a recency-window read; no project lifecycle state"
+    },
+    "FR-008": {
+      "title": "No relationship-strength score, cadence field, or per-thread membership"
+    },
+    "FR-009": {
+      "title": "No predicate taxonomy beyond COLLABORATES_WITH"
+    },
+    "FR-010": {
+      "title": "Unconfirmed inferences do not spend the shared attention budget"
+    },
+    "FR-011": {
+      "title": "No dedicated projects UI; hedged conversational and graph reads only"
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 10,
+    "projectedTasks": 14,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: specs/arch/social-cognition.md",
+    "area: core/cognition/ze-correlation",
+    "area: plugins/ze-personal",
+    "constraint: Phase 128 graph vocabulary already shipped",
+    "constraint: reflection never emits a fact"
+  ],
+  "intent": "Infer person-project membership from communication, promote to identity only when corroborated",
+  "expectations": [
+    "ADR step 4 (strength score, cadence, per-thread membership) stays deferred",
+    "No project active/closed lifecycle",
+    "No new correlation package or social graph store",
+    "Unconfirmed inferences must not take interruption budget"
+  ],
+  "currentTask": "T031"
+}
