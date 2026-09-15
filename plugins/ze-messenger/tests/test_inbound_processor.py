@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 from ze_communication.types import ChannelType, InboundMessage
@@ -162,12 +162,22 @@ async def test_extract_facts_calls_propose_facts():
     )
     processor._llm_client = llm
 
-    await processor._extract_facts(_msg())
+    with patch(
+        "ze_messenger.inbound.processor.submit_perception_facts",
+        new_callable=AsyncMock,
+    ) as submit:
+        await processor._extract_facts(_msg())
 
-    memory.propose_facts.assert_called_once()
-    facts = memory.propose_facts.call_args[0][0]
-    assert len(facts) == 1
-    assert facts[0].value == "Alice"
+    memory.propose_facts.assert_not_called()
+    submit.assert_awaited_once()
+    items = submit.await_args.args[1]
+    assert len(items) == 1
+    assert items[0].fact.value == "Alice"
+    from ze_agents.claims import Provenance
+    from ze_plugin.contribution import TargetFace
+
+    assert items[0].provenance == Provenance.SYNTHESIZED
+    assert items[0].target_face == TargetFace.USER
 
 
 async def test_extract_facts_no_llm_client_is_noop():

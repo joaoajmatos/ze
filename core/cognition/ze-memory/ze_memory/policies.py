@@ -44,7 +44,7 @@ from ze_memory.types import MemoryContext, RetrievalRequest
 _FACT_SELECT = """
     SELECT id, subject_id, predicate, object_text, object_id, value,
            confidence, reviewed, contradicted, source_episode_id, source_refs,
-           COALESCE(provenance, 'raw') AS provenance, updated_at
+           provenance, claim_kind, updated_at
 """
 
 _ENTITY_SELECT = """
@@ -767,7 +767,7 @@ class ProfilePolicy:
             fact_rows = await conn.fetch(
                 "SELECT id, subject_id, predicate, object_text, object_id, value,"
                 " confidence, reviewed, contradicted, source_episode_id, source_refs,"
-                " COALESCE(provenance, 'raw') AS provenance"
+                " provenance, claim_kind"
                 " FROM memory_facts WHERE contradicted = false"
                 " ORDER BY confidence DESC, updated_at DESC LIMIT 50"
             )
@@ -798,7 +798,7 @@ class MemoryUIPolicy:
                 """
                 SELECT id, subject_id, predicate, object_text, object_id, value,
                        confidence, reviewed, contradicted, source_episode_id, source_refs,
-                       COALESCE(provenance, 'raw') AS provenance
+                       provenance, claim_kind
                 FROM memory_facts
                 WHERE contradicted = false
                 ORDER BY updated_at DESC LIMIT 100

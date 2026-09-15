@@ -43,6 +43,8 @@ def _make_fact_row(fid=None, confidence=0.9):
         "contradicted": False,
         "source_episode_id": None,
         "source_refs": None,
+        "provenance": "prompt_supplied",
+        "claim_kind": "fact",
     }
 
 

@@ -180,6 +180,33 @@ def test_memory_facts_returns_list(client):
     assert isinstance(resp.json(), list)
 
 
+def test_memory_fact_quality_has_no_raw_bucket(client):
+    c, conn = client
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "total": 3,
+            "avg_confidence": 0.8,
+            "low_confidence_count": 0,
+            "contradicted_count": 0,
+            "synthesized_unreviewed": 1,
+            "synthesized_uncorroborated": 1,
+            "synthesized_expired": 0,
+        }
+    )
+    conn.fetch = AsyncMock(
+        return_value=[
+            {"provenance": "prompt_supplied", "n": 2},
+            {"provenance": "synthesized", "n": 1},
+        ]
+    )
+    resp = c.get("/memory/facts/quality")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "raw" not in data["by_provenance"]
+    assert data["by_provenance"]["prompt_supplied"] == 2
+    assert data["by_provenance"]["synthesized"] == 1
+
+
 # ── OpenAPI schema ────────────────────────────────────────────────────────────
 
 

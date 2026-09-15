@@ -1,0 +1,373 @@
+{
+  "workflow": "speckit",
+  "specName": "perception facts seam",
+  "branch": "133-perception-facts-seam",
+  "currentStep": "implement",
+  "status": "implemented",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T20:31:04.734Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T20:34:15.914Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T20:36:24.687Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T20:36:28.087Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:36:40.249Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T20:37:49.940Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T20:38:25.673Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T20:38:35.141Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:38:35.336Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.771Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.771Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.771Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.771Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T20:58:48.771Z"
+    }
+  ],
+  "telemetryInstanceId": "7cb24228-1659-4417-acc4-34cf15bb435e",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Route write_memory LLM-extracted facts through the contribution seam as PERCEPTION FACT SYNTHESIZED",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-002": {
+      "title": "Route AgentResult.memory_proposals through the seam as PERCEPTION FACT PROMPT_SUPPLIED",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-003": {
+      "title": "Stamp provenance per fact; mixed batches must not share one stamp",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-004": {
+      "title": "Route MemorySink.push fact strings through the seam as SYNTHESIZED perception facts",
+      "tasks": [
+        "T009",
+        "T010"
+      ]
+    },
+    "FR-005": {
+      "title": "Attach ingestion_id as contribution evidence and Fact.source_refs",
+      "tasks": [
+        "T001",
+        "T009",
+        "T010"
+      ]
+    },
+    "FR-006": {
+      "title": "Plugin extractors stay list[str]; do not grow Contribution",
+      "tasks": [
+        "T010"
+      ]
+    },
+    "FR-007": {
+      "title": "Leave ingestion open-loop extraction on the seam unchanged",
+      "tasks": [
+        "T010"
+      ]
+    },
+    "FR-008": {
+      "title": "Messenger inbound extraction uses conversation extraction stamps and the seam",
+      "tasks": [
+        "T013",
+        "T015"
+      ]
+    },
+    "FR-009": {
+      "title": "Onboarding memory_fact seeds go through the seam as PROMPT_SUPPLIED reviewed facts",
+      "tasks": [
+        "T014",
+        "T016"
+      ]
+    },
+    "FR-010": {
+      "title": "Goal-learning promotion is synthesized perception facts with the goal as evidence",
+      "tasks": [
+        "T011",
+        "T012"
+      ]
+    },
+    "FR-011": {
+      "title": "propose_facts remains write= callback; do not delete Protocol or hard-cut Fact.provenance",
+      "tasks": [
+        "T003",
+        "T006",
+        "T008"
+      ]
+    },
+    "FR-012": {
+      "title": "Do not change surface_loops, resume recap, rank_subset, push budget, or arbitration",
+      "tasks": [
+        "T017"
+      ]
+    },
+    "FR-013": {
+      "title": "Do not rewire signal_sources or migrate events/entities/episodes/facets",
+      "tasks": [
+        "T008",
+        "T017"
+      ]
+    },
+    "FR-014": {
+      "title": "License violations reject before persist with existing seam warning and typed error",
+      "tasks": [
+        "T002",
+        "T005"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 18,
+    "projectedTasks": 22,
+    "scopeSignal": "larger",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: ze_memory ingest_signal + contribution",
+    "area: write_memory / MemorySink / messenger inbound / onboarding / goal executor",
+    "constraint: contribution-seam step 5; Phase 134 owns schema hard-cut",
+    "constraint: no PriorityView or arbitration changes"
+  ],
+  "approach": "Per-fact Contribution envelope plus submit_and_detect_collisions; propose_facts remains the persist callback. Do not copy SYNTHESIZED onto Fact.provenance str. Goal learnings are perception facts with goal evidence.",
+  "decisions": [
+    {
+      "decision": "Do not set Fact.provenance synthesized for envelope SYNTHESIZED",
+      "why": "Insert path maps that string to claim_kind INFERENCE",
+      "rejected": "Dual-write envelope and string dialect this phase"
+    },
+    {
+      "decision": "EvidenceRef kinds ingestion and goal skip dangling without checkers",
+      "why": "Those ids are not memory_facts/signals",
+      "rejected": "Empty evidence only or fake fact checkers"
+    },
+    {
+      "decision": "Goal-learning promotion is PERCEPTION FACT SYNTHESIZED with goal evidence",
+      "why": "ACTION cannot submit FACT; close the public door before 134",
+      "rejected": "Leave ungated propose_facts or invent a claim kind"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Seam wrapper for perception-fact writers; persist callback unchanged",
+      "key_finding": "Fact.provenance synthesized currently inserts INFERENCE"
+    },
+    "tasks": {
+      "summary": "19 tasks: foundation helper then US1/US2/US4/US3 plus polish suites"
+    }
+  },
+  "currentTask": "T019"
+}

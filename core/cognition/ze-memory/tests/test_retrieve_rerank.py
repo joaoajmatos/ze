@@ -97,6 +97,8 @@ async def test_retrieve_applies_cached_fact_order(mock_fetch_facts, mock_ff):
             "contradicted": False,
             "source_episode_id": None,
             "source_refs": [],
+            "provenance": "prompt_supplied",
+            "claim_kind": "fact",
         },
         {
             "id": id_second,
@@ -110,6 +112,8 @@ async def test_retrieve_applies_cached_fact_order(mock_fetch_facts, mock_ff):
             "contradicted": False,
             "source_episode_id": None,
             "source_refs": [],
+            "provenance": "prompt_supplied",
+            "claim_kind": "fact",
         },
     ]
 

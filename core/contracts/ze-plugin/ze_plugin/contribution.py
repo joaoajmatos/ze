@@ -67,8 +67,11 @@ _LICENSE: dict[SourceFunction, frozenset[ClaimKind]] = {
 
 @dataclass
 class EvidenceRef:
-    kind: Literal["fact", "episode", "signal"]
+    kind: Literal["fact", "episode", "signal", "ingestion", "goal"]
     id: UUID
+
+
+_SKIP_DANGLING_WITHOUT_CHECKER = frozenset({"ingestion", "goal"})
 
 
 @dataclass
@@ -131,6 +134,8 @@ async def validate_and_submit(
     }
     for ref in contribution.evidence:
         checker = checkers.get(ref.kind)
+        if checker is None and ref.kind in _SKIP_DANGLING_WITHOUT_CHECKER:
+            continue
         exists = await checker(ref.id) if checker is not None else False
         if not exists:
             log.warning(

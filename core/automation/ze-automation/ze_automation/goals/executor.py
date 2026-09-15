@@ -6,10 +6,10 @@ from collections import defaultdict
 from typing import Awaitable, Callable
 from uuid import UUID
 
+from ze_agents.claims import Provenance
 from ze_agents.errors import GoalExecutionError
-from ze_sdk.memory import MemoryStore
-from ze_sdk.memory import Procedure
-from ze_sdk.memory import TaskState
+from ze_sdk.contribution import EvidenceRef, TargetFace
+from ze_sdk.memory import MemoryStore, PerceptionFactSubmit, Procedure, TaskState, submit_perception_facts
 from ze_agents.types import AgentContext, GateDecision, ToolCall
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
@@ -512,7 +512,22 @@ class GoalExecutor:
             log.info("goal_learning_promotion_none", goal_id=str(goal.id))
             return
         try:
-            await self._memory.propose_facts(facts)
+            evidence = [EvidenceRef(kind="goal", id=goal.id)]
+            items = []
+            for fact in facts:
+                refs = list(fact.source_refs)
+                if goal.id not in refs:
+                    refs.append(goal.id)
+                fact.source_refs = refs
+                items.append(
+                    PerceptionFactSubmit(
+                        fact=fact,
+                        provenance=Provenance.SYNTHESIZED,
+                        target_face=TargetFace.USER,
+                        evidence=evidence,
+                    )
+                )
+            await submit_perception_facts(self._memory, items)
             log.info("goal_learning_promoted", goal_id=str(goal.id), count=len(facts))
         except Exception as exc:
             log.warning("goal_learning_promotion_write_failed", error=str(exc))

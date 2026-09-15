@@ -38,6 +38,8 @@ class Fact:
     contradicted: bool = False
     source_episode_id: UUID | None = None
     source_refs: list[UUID] = ...
+    provenance: Provenance = Provenance.PROMPT_SUPPLIED
+    claim_kind: ClaimKind | None = None
 ```
 
 **Table:** `memory_facts` — pgvector embedding on `value`.

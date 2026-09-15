@@ -211,8 +211,6 @@ async def get_fact_quality(
             """
             SELECT
                 COUNT(*)                                                          AS total,
-                COUNT(*) FILTER (WHERE provenance = 'raw')                        AS raw_count,
-                COUNT(*) FILTER (WHERE provenance = 'synthesized')                AS synthesized_count,
                 COALESCE(AVG(confidence), 0.0)                                    AS avg_confidence,
                 COUNT(*) FILTER (WHERE confidence < 0.5)                          AS low_confidence_count,
                 COUNT(*) FILTER (WHERE contradicted = true)                       AS contradicted_count,
@@ -228,12 +226,17 @@ async def get_fact_quality(
             FROM memory_facts
             """
         )
+        provenance_rows = await conn.fetch(
+            """
+            SELECT provenance, COUNT(*)::int AS n
+              FROM memory_facts
+             GROUP BY provenance
+            """
+        )
+    by_provenance = {r["provenance"]: r["n"] for r in provenance_rows}
     return MemoryFactQualityResponse(
         total=row["total"],
-        by_provenance={
-            "raw": row["raw_count"],
-            "synthesized": row["synthesized_count"],
-        },
+        by_provenance=by_provenance,
         avg_confidence=round(float(row["avg_confidence"]), 4),
         low_confidence_count=row["low_confidence_count"],
         contradicted_count=row["contradicted_count"],

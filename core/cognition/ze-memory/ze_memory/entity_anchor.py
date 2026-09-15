@@ -25,7 +25,7 @@ log = get_logger(__name__)
 _FACT_SELECT = """
     SELECT id, subject_id, predicate, object_text, object_id, value,
            confidence, reviewed, contradicted, source_episode_id, source_refs,
-           COALESCE(provenance, 'raw') AS provenance
+           provenance, claim_kind
     FROM memory_facts
 """
 

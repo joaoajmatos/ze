@@ -25,7 +25,7 @@ class FactSpec:
     object_id: UUID | None = None
     reviewed: bool = True
     contradicted: bool = False
-    provenance: str = "raw"
+    provenance: str = "prompt_supplied"
     days_ago: int = 0
 
 
@@ -146,7 +146,7 @@ def load_persona(path: Path | None = None) -> PersonaNarrative:
             object_id=UUID(item["object_id"]) if item.get("object_id") else None,
             reviewed=bool(item.get("reviewed", True)),
             contradicted=bool(item.get("contradicted", False)),
-            provenance=item.get("provenance", "raw"),
+            provenance=item.get("provenance", "prompt_supplied"),
             days_ago=int(item.get("days_ago", 0)),
         )
         for item in raw.get("facts", [])

@@ -312,16 +312,13 @@ will resolve which projection to build first. This document does not pre-empt it
   (`core/contracts/ze-agents/ze_agents/claims.py`) and retrofitting all four producers — `OpenLoop`,
   `Hypothesis`/`EvidenceRef` (fixing its previously-frozen confidence), `memory_facts`, and
   `Signal`. What remains is not calibration but **ranking** — see the next item.
-- [ ] **Cross-concern prioritization** — still open. Now that every claim shares one confidence
-  scale, nothing yet *ranks* across them: `OpenLoop` drift state, goal milestones/gates, and
-  `Hypothesis` novelty are each locally ordered but never compared. `specs/arch/
-  attention-arbitration.md` (Proposed, unblocked now that claim-topology has shipped) sketches
-  the fix — a read-only `PriorityView` projection plus a shared attention/push budget across
-  `ze-correlation` and `ze-worldstate`. Not yet specced for implementation.
-- [ ] **Contribution seam timing** — `specs/arch/contribution-seam.md`'s own rollout plan says
-  extraction happens once the executive layer ships as a second real client after
-  `SignalSource`. That condition is now met, but Phase 110 explicitly declined to build the
-  seam (direct calls instead), citing the same document's design-only caveat. Whether to
-  extract now or continue deferring is an open decision — see that document. Doctrine's own
-  arbitration trigger ("two functions colliding over the same world-state face") has not yet
-  fired, so this remains low-urgency relative to cross-concern prioritization above.
+- [x] **Cross-concern prioritization** — ranking shipped: `PriorityView` (Phases 123, 127)
+  plus turn surfacing (Phase 132) consume a merged ranked view (including user-directed
+  pins). A shared push budget exists. **Genuine cross-function contribution arbitration**
+  (two licensed writes colliding, a resolver picking a winner) is still design-only —
+  see `contribution-seam.md` step 8; Phase 126 only logs collisions.
+- [x] **Contribution seam timing** — extracted. Type + validated write path (124),
+  collision detection (126), perception facts (133), `memory_facts` doctrine provenance
+  and no public `propose_facts` (134). Ranking consumers of the spine are Phase 132.
+  Still deferred: action result records (step 7), `signal_sources()` consumer rewiring,
+  and real contribution arbitration (step 8).

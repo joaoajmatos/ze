@@ -1,13 +1,9 @@
 # Claim Topology — One Vocabulary for Confidence, Kind, and Provenance
 
-> **Status:** Ratified — implemented as `specs/phases/111-claim-topology/spec.md` (Done). The
-> shared vocabulary and the producer retrofits described below have shipped. The
-> `Contribution` type (`contribution-seam.md`) and `PriorityView`
-> (`attention-arbitration.md`) have also shipped since this brief was written; they were
-> out of scope here. Remaining on the fact row: `Fact.provenance` is still a `"raw"` /
-> `"synthesized"` string, and `propose_facts()` is still a public ungated write. That
-> hard-cut is `contribution-seam.md` rollout step 6, constrained by
-> `specs/arch/pre-v1-hard-cuts.md`.
+> **Status:** Ratified — implemented as `specs/phases/111-claim-topology/spec.md` (Done).
+> The leftover on the fact row (`Fact.provenance` as `"raw"`/`"synthesized"`, public
+> `propose_facts()`) shipped as contribution-seam rollout steps 5–6 (Phases 133–134).
+> `Fact.provenance` is `ze_agents.claims.Provenance`; persist is private to the seam.
 > **Scope:** `core/contracts/ze-agents` (new shared home), `core/cognition/ze-memory`, `core/cognition/ze-correlation`,
 > `core/cognition/ze-worldstate`, `core/contracts/ze-plugin` (all four current claim producers).
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The epistemic ontology,

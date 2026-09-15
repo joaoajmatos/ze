@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_logging import get_logger
-from ze_agents.claims import ClaimKind, Confidence, DecayProfile
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_agents.tasks import fire_and_forget
 from ze_collision.detect import submit_and_detect_collisions
 from ze_memory.consolidation_store import _cosine_similarity
@@ -19,7 +19,11 @@ from ze_memory.defaults import (
 from ze_agents.nli import NLIClient
 from ze_memory.dream.scorer import refresh_episode_sensitive_flag, tag_episode_metadata
 from ze_memory.dream.sensitive import is_sensitive_entity
-from ze_memory.errors import InvalidRetrievalRequestError
+from ze_memory.errors import (
+    InvalidFactProvenanceError,
+    InvalidRetrievalRequestError,
+    StoreError,
+)
 from ze_memory.extractor import parse_fact_response, raw_to_facts
 from ze_memory.nli_config import nli_config
 from ze_memory.relevance_config import relevance_config
@@ -67,6 +71,34 @@ from ze_memory.types import (
 )
 
 log = get_logger(__name__)
+
+
+def _persist_provenance(fact: Fact) -> Provenance:
+    value = fact.provenance
+    if isinstance(value, Provenance):
+        return value
+    try:
+        return Provenance(value)
+    except ValueError as exc:
+        raise InvalidFactProvenanceError(
+            f"unknown fact provenance {value!r}"
+        ) from exc
+
+
+def _persist_claim_kind(fact: Fact, provenance: Provenance) -> ClaimKind:
+    kind = fact.claim_kind
+    if kind is None:
+        return (
+            ClaimKind.INFERENCE
+            if provenance is Provenance.SYNTHESIZED
+            else ClaimKind.FACT
+        )
+    if isinstance(kind, ClaimKind):
+        return kind
+    try:
+        return ClaimKind(kind)
+    except ValueError as exc:
+        raise StoreError(f"unknown fact claim_kind {kind!r}") from exc
 
 _EVENT_OUTCOME_SYSTEM = (
     "You extract generalizable declarative facts from an event outcome. "
@@ -166,7 +198,7 @@ class PostgresMemoryStore:
             synthesized_ids = [
                 f.id
                 for f in ctx.facts
-                if getattr(f, "provenance", None) == "synthesized" and f.id is not None
+                if f.provenance is Provenance.SYNTHESIZED and f.id is not None
             ]
             if synthesized_ids:
                 fire_and_forget(
@@ -264,7 +296,7 @@ class PostgresMemoryStore:
         except Exception as exc:
             log.warning("memory_write_episode_failed", error=str(exc))
 
-    async def propose_facts(self, proposals: list[Fact]) -> None:
+    async def _persist_facts(self, proposals: list[Fact]) -> None:
         for fact in proposals:
             try:
                 await self._write_fact_with_contradiction_check(fact)
@@ -770,6 +802,8 @@ class PostgresMemoryStore:
     # ── internal ──────────────────────────────────────────────────────────────
 
     async def _write_fact_with_contradiction_check(self, fact: Fact) -> UUID | None:
+        provenance = _persist_provenance(fact)
+        claim_kind = _persist_claim_kind(fact, provenance)
         value_emb = self._embedder.encode(fact.value)
         emb_list = _to_list(value_emb)
         nli_cfg = nli_config(self._settings)
@@ -791,17 +825,14 @@ class PostgresMemoryStore:
                 conn, fact, value_emb, emb_list, nli_cfg
             )
 
-            claim_kind = (
-                ClaimKind.INFERENCE
-                if fact.provenance == "synthesized"
-                else ClaimKind.FACT
-            )
             row = await conn.fetchrow(
                 "INSERT INTO memory_facts"
                 " (subject_id, predicate, object_text, object_id, value,"
                 "  confidence, reviewed, contradicted,"
-                "  source_episode_id, source_refs, embedding, agent, claim_kind)"
-                " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::vector, $12, $13)"
+                "  source_episode_id, source_refs, embedding, agent,"
+                "  claim_kind, provenance)"
+                " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb,"
+                " $11::vector, $12, $13, $14)"
                 " RETURNING id",
                 fact.subject_id,
                 fact.predicate,
@@ -816,6 +847,7 @@ class PostgresMemoryStore:
                 emb_list,
                 fact.agent,
                 claim_kind.value,
+                provenance.value,
             )
             fact_id: UUID = row["id"]
 

@@ -15,6 +15,10 @@ class StoreError(MemoryError):
     pass
 
 
+class InvalidFactProvenanceError(StoreError):
+    pass
+
+
 class PolicyError(MemoryError):
     pass
 

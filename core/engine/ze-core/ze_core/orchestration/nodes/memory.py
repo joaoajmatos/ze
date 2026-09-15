@@ -4,6 +4,7 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
+from ze_agents.claims import Provenance
 from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
@@ -13,6 +14,9 @@ from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
+from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
+from ze_memory.extractor import _coerce_fact
+from ze_plugin.contribution import TargetFace
 
 log = get_logger(__name__)
 
@@ -89,7 +93,25 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                 explicit=result.memory_proposals,
             )
         if proposals:
-            await store.propose_facts(proposals)
+            explicit_predicates = set()
+            for item in result.memory_proposals:
+                coerced = _coerce_fact(item)
+                if coerced is not None:
+                    explicit_predicates.add(coerced.predicate)
+            items = [
+                PerceptionFactSubmit(
+                    fact=fact,
+                    provenance=(
+                        Provenance.PROMPT_SUPPLIED
+                        if fact.predicate in explicit_predicates
+                        else Provenance.SYNTHESIZED
+                    ),
+                    target_face=TargetFace.USER,
+                    evidence=[],
+                )
+                for fact in proposals
+            ]
+            await submit_perception_facts(store, items)
 
         event_extractor = config["configurable"].get("event_extractor")
         if event_extractor is not None:

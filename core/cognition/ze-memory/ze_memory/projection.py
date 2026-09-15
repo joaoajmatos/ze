@@ -6,6 +6,7 @@ import json
 from typing import Any
 from uuid import UUID
 
+from ze_agents.claims import ClaimKind, Provenance
 from ze_memory.types import (
     Entity,
     Episode,
@@ -137,7 +138,10 @@ def _fact_from_row(row: Any) -> Fact:
         contradicted=row_dict["contradicted"],
         source_episode_id=row_dict["source_episode_id"],
         source_refs=_load_uuids(row_dict["source_refs"]),
-        provenance=row_dict.get("provenance", "raw"),
+        provenance=Provenance(row_dict["provenance"]),
+        claim_kind=ClaimKind(row_dict["claim_kind"])
+        if row_dict.get("claim_kind") is not None
+        else None,
         relevance_score=row_dict.get("similarity"),
     )
 

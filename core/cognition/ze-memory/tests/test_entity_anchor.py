@@ -136,7 +136,8 @@ async def test_fetch_anchored_candidates_returns_one_hop_facts():
                 "contradicted": False,
                 "source_episode_id": None,
                 "source_refs": "[]",
-                "provenance": "raw",
+                "provenance": "prompt_supplied",
+                "claim_kind": "fact",
             }
         ]
     )

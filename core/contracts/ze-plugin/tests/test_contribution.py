@@ -150,6 +150,45 @@ def test_content_and_entity_ids_default_to_empty() -> None:
     assert contribution.entity_ids == []
 
 
+async def test_ingestion_evidence_without_checker_is_accepted() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.SYNTHESIZED,
+        confidence=_confidence(),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.PERCEPTION,
+        evidence=[EvidenceRef(kind="ingestion", id=uuid4())],
+    )
+    result = await validate_and_submit(contribution, _write)
+    assert result == "written"
+
+
+async def test_goal_evidence_without_checker_is_accepted() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.SYNTHESIZED,
+        confidence=_confidence(),
+        target_face=TargetFace.USER,
+        source_function=SourceFunction.PERCEPTION,
+        evidence=[EvidenceRef(kind="goal", id=uuid4())],
+    )
+    result = await validate_and_submit(contribution, _write)
+    assert result == "written"
+
+
+async def test_fact_evidence_without_checker_is_still_dangling() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.SYNTHESIZED,
+        confidence=_confidence(),
+        target_face=TargetFace.USER,
+        source_function=SourceFunction.PERCEPTION,
+        evidence=[EvidenceRef(kind="fact", id=uuid4())],
+    )
+    with pytest.raises(DanglingEvidenceError):
+        await validate_and_submit(contribution, _write)
+
+
 async def test_validate_and_submit_ignores_content_and_entity_ids() -> None:
     entity_id = uuid4()
     contribution = Contribution(

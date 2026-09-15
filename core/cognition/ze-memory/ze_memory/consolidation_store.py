@@ -81,8 +81,8 @@ class PostgresConsolidationStore:
     ) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
-                "INSERT INTO memory_facts (predicate, value, confidence, embedding, agent, claim_kind)"
-                " VALUES ($1, $2, $3, $4::vector, 'consolidation', 'fact')",
+                "INSERT INTO memory_facts (predicate, value, confidence, embedding, agent, claim_kind, provenance)"
+                " VALUES ($1, $2, $3, $4::vector, 'consolidation', 'fact', 'synthesized')",
                 predicate,
                 value,
                 confidence,

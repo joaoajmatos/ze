@@ -6,7 +6,6 @@ from uuid import UUID
 from ze_agents.types import RetrievalRequest
 from ze_memory.types import (
     Entity,
-    Fact,
     MemoryContext,
     Procedure,
     ProfileFacet,
@@ -64,8 +63,6 @@ class MemoryStore(Protocol):
         response: str,
         embedding: Any,
     ) -> None: ...
-
-    async def propose_facts(self, proposals: list[Fact]) -> None: ...
 
     async def propose_events(self, events: list[Any]) -> None: ...
 

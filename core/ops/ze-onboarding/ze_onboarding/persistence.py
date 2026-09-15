@@ -3,9 +3,12 @@ from __future__ import annotations
 import json
 from typing import Any, Awaitable, Callable
 
+from ze_agents.claims import Provenance
+from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
 from ze_memory.types import Fact
 from ze_onboarding.coordinator import OnboardingError
 from ze_onboarding.types import StoredOnboardingSeed
+from ze_plugin.contribution import TargetFace
 
 PluginSettingSetter = Callable[[str, Any], Awaitable[None]]
 
@@ -37,15 +40,21 @@ class OnboardingPersistence:
         return applied
 
     async def _apply_memory_fact(self, seed: StoredOnboardingSeed) -> None:
-        await self._memory_store.propose_facts(
+        await submit_perception_facts(
+            self._memory_store,
             [
-                Fact(
-                    predicate=seed.key,
-                    value=_seed_value_text(seed.value),
-                    confidence=seed.confidence,
-                    reviewed=True,
+                PerceptionFactSubmit(
+                    fact=Fact(
+                        predicate=seed.key,
+                        value=_seed_value_text(seed.value),
+                        confidence=seed.confidence,
+                        reviewed=True,
+                    ),
+                    provenance=Provenance.PROMPT_SUPPLIED,
+                    target_face=TargetFace.USER,
+                    evidence=[],
                 )
-            ]
+            ],
         )
 
     async def _apply_profile_facet(self, seed: StoredOnboardingSeed) -> None:

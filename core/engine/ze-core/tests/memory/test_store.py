@@ -264,7 +264,7 @@ class TestProposeFacts:
         conn.fetch = AsyncMock(return_value=[])
         store, _ = _store(conn=conn)
         facts = [Fact(predicate="k1", value="v1"), Fact(predicate="k2", value="v2")]
-        await store.propose_facts(facts)
+        await store._persist_facts(facts)
         # Each fact triggers: exact key check, semantic check, insert → at minimum 2 executes
         assert conn.execute.await_count >= 2
 
@@ -282,7 +282,7 @@ class TestProposeFacts:
         conn.execute = AsyncMock(side_effect=[Exception("fail on first insert"), None])
         store, _ = _store(conn=conn)
         facts = [Fact(predicate="k1", value="v1"), Fact(predicate="k2", value="v2")]
-        await store.propose_facts(facts)  # should not raise
+        await store._persist_facts(facts)  # should not raise
 
     async def test_exact_key_match_marks_contradicted(self):
         existing_id = uuid4()
@@ -294,7 +294,7 @@ class TestProposeFacts:
             ]
         )
         store, _ = _store(conn=conn)
-        await store.propose_facts([Fact(predicate="same_key", value="new value")])
+        await store._persist_facts([Fact(predicate="same_key", value="new value")])
         # Verify contradicted = true update was called for the existing fact
         update_calls = [
             c for c in conn.execute.await_args_list if "contradicted = true" in str(c)
@@ -363,7 +363,7 @@ class TestSettingsAccess:
         embedder = MagicMock()
         embedder.encode = MagicMock(side_effect=[emb_a, emb_b])
         store._embedder = embedder
-        await store.propose_facts([Fact(predicate="x", value="orthogonal")])
+        await store._persist_facts([Fact(predicate="x", value="orthogonal")])
         # cosine_similarity([1,0],[0,1]) = 0.0 < 0.99 → no contradiction update
         update_calls = [
             c for c in conn.execute.await_args_list if "contradicted = true" in str(c)

@@ -1,9 +1,14 @@
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_agents.errors import UnlicensedClaimKindError
+from ze_memory.types import Fact, MemoryContext
+from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 
 
 from ze_memory.extractor import gather_fact_proposals
-from ze_memory.types import MemoryContext
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
 from ze_agents.types import AgentContext, AgentResult
@@ -134,18 +139,128 @@ class TestWriteMemory:
             "messages": [],
             "input_modality": "text",
         }
-        await write_memory(
-            state,
-            _config(
-                store=store,
-                client=client,
-                thread_id="s1",
-                fact_extractor=gather_fact_proposals,
+        with patch(
+            "ze_core.orchestration.nodes.memory.submit_perception_facts",
+            new_callable=AsyncMock,
+        ) as submit:
+            await write_memory(
+                state,
+                _config(
+                    store=store,
+                    client=client,
+                    thread_id="s1",
+                    fact_extractor=gather_fact_proposals,
+                ),
+            )
+        store.propose_facts.assert_not_awaited()
+        submit.assert_awaited_once()
+        items = submit.await_args.args[1]
+        assert any(i.fact.predicate == "city" for i in items)
+        assert all(i.provenance == Provenance.SYNTHESIZED for i in items)
+        assert all(i.target_face == TargetFace.USER for i in items)
+
+    async def test_explicit_memory_proposals_are_prompt_supplied(self):
+        store = _make_store()
+        explicit = [Fact(predicate="city", value="Lisbon")]
+
+        async def extractor(_cfg, **_kwargs):
+            return explicit
+
+        state = {
+            "session_id": "s1",
+            "agent_context": _ctx("I live in Lisbon"),
+            "agent_result": AgentResult(
+                agent="companion",
+                response="Nice city!",
+                memory_proposals=explicit,
             ),
+            "subtask_results": [],
+            "messages": [],
+            "input_modality": "text",
+        }
+        with patch(
+            "ze_core.orchestration.nodes.memory.submit_perception_facts",
+            new_callable=AsyncMock,
+        ) as submit:
+            await write_memory(
+                state,
+                _config(store=store, thread_id="s1", fact_extractor=extractor),
+            )
+        store.propose_facts.assert_not_awaited()
+        items = submit.await_args.args[1]
+        assert items[0].provenance == Provenance.PROMPT_SUPPLIED
+
+    async def test_mixed_batch_stamps_provenance_per_predicate_after_merge(self):
+        store = _make_store()
+        explicit = [Fact(predicate="city", value="Paris")]
+        merged = [
+            Fact(predicate="city", value="Paris"),
+            Fact(predicate="job", value="engineer"),
+        ]
+
+        async def extractor(_cfg, **_kwargs):
+            return merged
+
+        state = {
+            "session_id": "s1",
+            "agent_context": _ctx("I live in Lisbon and I am an engineer"),
+            "agent_result": AgentResult(
+                agent="companion",
+                response="Got it",
+                memory_proposals=explicit,
+            ),
+            "subtask_results": [],
+            "messages": [],
+            "input_modality": "text",
+        }
+        with patch(
+            "ze_core.orchestration.nodes.memory.submit_perception_facts",
+            new_callable=AsyncMock,
+        ) as submit:
+            await write_memory(
+                state,
+                _config(store=store, thread_id="s1", fact_extractor=extractor),
+            )
+        by_pred = {i.fact.predicate: i.provenance for i in submit.await_args.args[1]}
+        assert by_pred["city"] == Provenance.PROMPT_SUPPLIED
+        assert by_pred["job"] == Provenance.SYNTHESIZED
+
+    async def test_wrong_claim_kind_rejected_before_persist(self):
+        store = _make_store()
+        store._write_fact_with_contradiction_check = AsyncMock()
+        store._collision_store = None
+        store._nli = None
+        fact = Fact(predicate="city", value="Lisbon")
+
+        async def extractor(_cfg, **_kwargs):
+            return [fact]
+
+        mistagged = Contribution(
+            claim_kind=ClaimKind.INFERENCE,
+            provenance=Provenance.SYNTHESIZED,
+            confidence=Confidence(value=0.8, decay_profile=DecayProfile.TIME_LINEAR),
+            target_face=TargetFace.USER,
+            source_function=SourceFunction.PERCEPTION,
+            evidence=[],
         )
-        store.propose_facts.assert_awaited_once()
-        proposed = store.propose_facts.call_args[0][0]
-        assert any(f.predicate == "city" for f in proposed)
+        state = {
+            "session_id": "s1",
+            "agent_context": _ctx("I live in Lisbon"),
+            "agent_result": AgentResult(agent="companion", response="Nice city!"),
+            "subtask_results": [],
+            "messages": [],
+            "input_modality": "text",
+        }
+        with patch(
+            "ze_memory.contribution.fact_to_contribution", return_value=mistagged
+        ):
+            with pytest.raises(UnlicensedClaimKindError):
+                await write_memory(
+                    state,
+                    _config(store=store, thread_id="s1", fact_extractor=extractor),
+                )
+        store.propose_facts.assert_not_awaited()
+        store._write_fact_with_contradiction_check.assert_not_awaited()
 
     async def test_compound_synthesizes_result(self):
         store = _make_store()

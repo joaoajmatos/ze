@@ -2,17 +2,16 @@
 
 > **Status:** Mostly ratified and shipped. The `Contribution` **type**
 > (claim_kind/provenance/confidence + target_face/source_function/evidence) lives in
-> `core/contracts/ze-plugin/ze_plugin/contribution.py`; `OpenLoop`, `Signal`, and reflection (dream
-> pipeline + correlation engine) all route through its validated write path as of Phase 124 —
-> see "Resolved" and "Phased rollout" below. Phase 126 added collision *detection* (logging
-> only) on top of this write path. Contacts (125) and social co-occurrence (130) also write
-> through the seam. The remaining hole is **perception facts**: conversation
-> `write_memory` and ingestion `MemorySink` still call `propose_facts()` ungated.
-> The **arbitration mechanism** (a real conflict-resolution step, as opposed to a
-> per-contribution claim-kind license check) remains design-only — Phase 126 exists to
-> gather the evidence that would justify building it (step 8 below), and Phase 127 shipped
-> one narrow, user-directed instance of arbitration (priority override) without
-> generalizing the mechanism.
+> `core/contracts/ze-plugin/ze_plugin/contribution.py`. Perception **facts** land through
+> the same validated write path as signals (Phase 133); `memory_facts` stores doctrine
+> `Provenance` / `ClaimKind` and `MemoryStore` has no public `propose_facts` (Phase 134).
+> Collision detection (Phase 126) logs cross-function conflicts without resolving them.
+> Contacts (125) and social co-occurrence (130) also write through the seam.
+> The **arbitration mechanism** (a real conflict-resolution step) remains design-only —
+> Phase 126 exists to gather the evidence that would justify building it (step 8 below),
+> and Phase 127 shipped one narrow, user-directed instance of arbitration (priority
+> override) without generalizing the mechanism. Phase 132 consumes `PriorityView` on
+> the read/turn path. Do not rewire `signal_sources()` polling here; that is still deferred.
 > **Scope:** `ze-plugin` (the seam itself), `ze-memory` / world-state (the target),
 > `ze-core` governance (arbitration); every function-owning package downstream.
 > **Constrained by:** `specs/arch/ze-doctrine.md` §The contribution model;
@@ -46,24 +45,23 @@ extracted from two concrete cases — never invented ahead of one.
 
 ### Current state (2026-09-15)
 
-The type and the validated write path shipped. What did **not** ship is a closed
-front door. These producers already call `validate_and_submit` /
+The type and the validated write path shipped. Perception facts are on that
+path. These producers already call `validate_and_submit` /
 `submit_and_detect_collisions`: `Signal` ingest, open-loop extraction (including
 ingestion's loop hook), dream artifacts, correlation hypotheses, contact identity
-writes, and social co-occurrence hypotheses.
+writes, social co-occurrence hypotheses, and **perception facts** (conversation
+`write_memory`, ingestion `MemorySink`, inbound extract, onboarding `memory_fact`
+seeds, goal-learning promotion).
 
-These still write around it:
+`memory_facts` stores doctrine `Provenance` (`prompt_supplied` / `synthesized` /
+`graph_recall` / `live_search`) and `ClaimKind`. There is no public
+`MemoryStore.propose_facts()`. Remaining seam work is **not** those doors: action
+result records (step 7), genuine cross-function arbitration (step 8), and rewiring
+`signal_sources()` polling.
 
-- Conversation `write_memory` → `MemoryStore.propose_facts()`
-- Ingestion `MemorySink` → the same `propose_facts()`
-- `memory_facts` still speaks a private provenance dialect (`"raw"` /
-  `"synthesized"` on `Fact.provenance: str`); the INSERT path derives `claim_kind`
-  from that string and does not persist a doctrine `Provenance`
-
-That is the remaining house-cleaning: perception facts onto the seam, then a
-hard-cut of the fact row onto the shared vocabulary. Pre-v1 hard cuts
-(`specs/arch/pre-v1-hard-cuts.md`) forbid wrapping `propose_facts()` and leaving
-it public.
+That house-cleaning for ranking consumers (`PriorityView`, Phase 132) and for
+perception-fact writes (133–134) is shipped. Pre-v1 hard cuts
+(`specs/arch/pre-v1-hard-cuts.md`) still forbid wrapping deleted APIs.
 
 ---
 
@@ -99,8 +97,8 @@ like" and how far each is from the seam today.
 
 | Function | Contributes | Today | Distance to seam |
 |---|---|---|---|
-| Perception | facts, candidate loops | **Signals** on the seam (`ingest_signal`). **Loops** on the seam (`propose_loop_candidates`, including the ingestion hook). **Facts** from conversation and ingestion still call `propose_facts()` ungated | Next work: steps 5–6 below. `SignalSource` stays the registration Protocol |
-| Memory | nothing new (custodian) | still exposes `propose_facts()` as a public write | Target, not a contributor — but the public back door must close in step 6. Memory does not originate claims |
+| Perception | facts, candidate loops | **Signals**, **loops**, and **facts** on the seam (`ingest_signal`, `propose_loop_candidates`, `submit_perception_facts`) | Done for current producers (133–134). `SignalSource` stays the registration Protocol; polling rewire is deferred |
+| Memory | nothing new (custodian) | persist is private (`_persist_facts` / seam `write=`); no public `propose_facts` | Target, not a contributor. Door closed in step 6 / Phase 134 |
 | Executive | priorities, open-loop state | OpenLoop writes on the seam (Phases 109–110, 124); `PriorityView` ranks (123, 127, 132) | Write path done. Ranking consumer is Phase 132, not this brief |
 | Social cognition | identity/relationship claims | Contacts on the seam (125); co-occurrence hypotheses on the seam (130) | Done for current producers |
 | Reflection | inferences, suspicions | **On the seam** (Phase 124) — `dream_pass.py` and `ze_correlation/engine.py` route their writes through `Contribution`, which rejects `claim_kind=FACT` before the store is reached | Done — "no facts from reflection" is now type-enforced, not conventional |
@@ -174,9 +172,8 @@ follow-up, `Signal` is a `Contribution` in shape only; the delivery mechanism is
 
 The seam must be **extracted from two real clients, not invented before one.** Both trigger
 conditions fired (executive layer shipped, `Signal` resolved to a `Contribution` subtype), and
-the rollout has since moved past step 3. Remaining steps are a commitment, not a sketch.
-**Do not start steps 5–6 while Phase 132 (priority turn surfacing) is still open.** Product
-surface first; substrate next. Number the two feature specs at `/speckit-specify` time.
+the rollout has since moved past step 6. Remaining steps are a commitment, not a sketch.
+**Phase 132 (priority turn surfacing) is Done.** Steps 5–6 shipped as Phases 133–134.
 
 1. ~~Executive layer ships (aperture, Option A).~~ **Done** — `core/cognition/ze-worldstate`, Phases
    109–110.
@@ -194,24 +191,13 @@ surface first; substrate next. Number the two feature specs at `/speckit-specify
    staging-architecture rewrite.
 4. ~~Migrate social cognition (relationship claims).~~ **Done** for current producers —
    contacts (125), social-cognition foundation (128), co-occurrence hypotheses (130).
-5. **Perception facts on the seam** (next feature spec after Phase 132). Two call
-   sites, one shape already used by `ingest_signal`:
-   - `ze_core/orchestration/nodes/memory.py` (`write_memory` → `propose_facts`)
-   - `ze_ingestion/sink.py` (`MemorySink` → `propose_facts`)
-   Each fact is a `Contribution` with `source_function=perception`, `claim_kind=FACT`,
-   shared `Confidence`, and honest provenance (resolved below). Ingestion's
-   `ingestion_id` becomes evidence / `source_refs` (Phase 69 promised this and never
-   landed). Plugin extractors (finance, etc.) keep writing their own tables; the
-   fact strings they return take this path. Open-loop extraction from ingestion
-   already on the seam stays as-is. When this phase is Done, those two callers no
-   longer call ungated `propose_facts()`.
-6. **Hard-cut `memory_facts` onto the shared vocabulary** (feature spec after step 5).
-   `Fact` and the `memory_facts` row use `ClaimKind` / `Provenance` / `Confidence`
-   for real. Drop the `"raw"` / `"synthesized"` string dialect. Persist provenance
-   on insert. `propose_facts()` is no longer a public ungated API — either private
-   to the seam's `write=` callback or deleted. Schema churn is allowed
-   (`pre-v1-hard-cuts.md`). This is the leftover from `claim-topology.md`, not a
-   new theory of memory.
+5. ~~**Perception facts on the seam**.~~ **Done** — Phase 133. Conversation `write_memory`,
+   ingestion `MemorySink`, messenger inbound extract, onboarding `memory_fact` seeds, and
+   goal-learning promotion submit via `submit_perception_facts` (`PERCEPTION` / `FACT`,
+   per-fact provenance). Persist is the seam `write=` callback, not ungated `propose_facts()`.
+6. ~~**Hard-cut `memory_facts` onto the shared vocabulary**.~~ **Done** — Phase 134.
+   `Fact.provenance` is doctrine `Provenance`; `claim_kind` is on the dataclass; INSERT
+   persists both; public `propose_facts` is gone (`_persist_facts` is private).
 7. **Action** (result records) as convenience allows. Low urgency. Same seam, same
    hard-cut rule, not bundled into steps 5–6.
 8. **Add genuine arbitration** only once two functions demonstrably collide on the same

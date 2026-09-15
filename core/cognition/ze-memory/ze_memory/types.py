@@ -85,7 +85,8 @@ class Fact:
     source_episode_id: UUID | None = None
     source_refs: list[UUID] = field(default_factory=list)
     embedding: Any = field(default=None, repr=False, compare=False)
-    provenance: str = "raw"
+    provenance: Provenance = Provenance.PROMPT_SUPPLIED
+    claim_kind: ClaimKind | None = None
     agent: str = "unknown"
     relevance_score: float | None = field(default=None, compare=False)
     retrieval_provenance: str | None = field(default=None, compare=False)

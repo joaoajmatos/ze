@@ -703,8 +703,8 @@ async def test_contradiction_null_subject_scoped_independently():
     assert subj_arg is None
 
 
-async def test_propose_facts_contradicts_per_subject():
-    """propose_facts calls _write_fact_with_contradiction_check for each fact independently."""
+async def test_persist_facts_contradicts_per_subject():
+    """_persist_facts calls _write_fact_with_contradiction_check for each fact independently."""
     store, conn = _make_contradiction_store()
     subject_a = uuid4()
     subject_b = uuid4()
@@ -729,9 +729,86 @@ async def test_propose_facts_contradicts_per_subject():
             confidence=0.9,
         ),
     ]
-    await store.propose_facts(facts)
+    await store._persist_facts(facts)
 
     # Two UPDATE calls, one per subject
     assert conn.execute.await_count == 2
     subjects_seen = {conn.execute.call_args_list[i][0][2] for i in range(2)}
     assert subjects_seen == {subject_a, subject_b}
+
+
+async def test_write_fact_rejects_unknown_provenance():
+    store, conn = _make_contradiction_store()
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    from ze_memory.errors import InvalidFactProvenanceError
+    from ze_memory.types import Fact
+
+    fact = Fact(predicate="city", value="Lisbon", provenance="raw")  # type: ignore[arg-type]
+    with pytest.raises(InvalidFactProvenanceError):
+        await store._write_fact_with_contradiction_check(fact)
+    conn.fetchrow.assert_not_awaited()
+
+
+async def test_write_fact_inserts_doctrine_provenance_and_claim_kind():
+    store, conn = _make_contradiction_store()
+    fact_id = uuid4()
+    conn.fetchrow = AsyncMock(return_value={"id": fact_id})
+    from ze_agents.claims import ClaimKind, Provenance
+    from ze_memory.types import Fact
+
+    fact = Fact(
+        predicate="city",
+        value="Lisbon",
+        provenance=Provenance.PROMPT_SUPPLIED,
+        claim_kind=ClaimKind.FACT,
+    )
+    result = await store._write_fact_with_contradiction_check(fact)
+    assert result == fact_id
+    sql = conn.fetchrow.await_args.args[0]
+    assert "provenance" in sql
+    args = conn.fetchrow.await_args.args
+    assert Provenance.PROMPT_SUPPLIED.value in args
+    assert ClaimKind.FACT.value in args
+
+
+async def test_synthesized_without_claim_kind_derives_inference():
+    store, conn = _make_contradiction_store()
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
+    from ze_agents.claims import ClaimKind, Provenance
+    from ze_memory.types import Fact
+
+    fact = Fact(
+        predicate="insight",
+        value="pattern",
+        provenance=Provenance.SYNTHESIZED,
+        claim_kind=None,
+    )
+    await store._write_fact_with_contradiction_check(fact)
+    assert ClaimKind.INFERENCE.value in conn.fetchrow.await_args.args
+
+
+def test_fact_from_row_loads_claim_kind_and_provenance():
+    from uuid import uuid4
+
+    from ze_agents.claims import ClaimKind, Provenance
+    from ze_memory.projection import _fact_from_row
+
+    fact = _fact_from_row(
+        {
+            "id": uuid4(),
+            "subject_id": None,
+            "predicate": "city",
+            "object_text": None,
+            "object_id": None,
+            "value": "Lisbon",
+            "confidence": 0.9,
+            "reviewed": False,
+            "contradicted": False,
+            "source_episode_id": None,
+            "source_refs": "[]",
+            "provenance": "synthesized",
+            "claim_kind": "inference",
+        }
+    )
+    assert fact.provenance is Provenance.SYNTHESIZED
+    assert fact.claim_kind is ClaimKind.INFERENCE

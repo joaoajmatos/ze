@@ -24,7 +24,8 @@ def _fact_row(similarity, **overrides):
         "contradicted": False,
         "source_episode_id": None,
         "source_refs": "[]",
-        "provenance": "raw",
+        "provenance": "prompt_supplied",
+        "claim_kind": "fact",
         "similarity": similarity,
     }
     row.update(overrides)
