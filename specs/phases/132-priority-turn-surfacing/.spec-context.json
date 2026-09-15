@@ -1,0 +1,79 @@
+{
+  "workflow": "companion",
+  "specName": "Priority Turn Surfacing",
+  "branch": "main",
+  "currentStep": "specify",
+  "status": "specified",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-14T22:06:01.324Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:06:15.790Z"
+    }
+  ],
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "telemetryInstanceId": "56005fb3-0d1d-427d-b6e5-51978dce3ac9",
+  "coverage": {
+    "FR-001": {
+      "title": "Inline mentions are chosen from items topically relevant to the turn"
+    },
+    "FR-002": {
+      "title": "Among relevant candidates, mention follows PriorityView ranking including user pins"
+    },
+    "FR-003": {
+      "title": "Globally high-ranked items with no topical overlap are not injected"
+    },
+    "FR-004": {
+      "title": "Resume recap of what is open lists items in PriorityView order"
+    },
+    "FR-005": {
+      "title": "Explicit what's-open questions are answered from PriorityView as one ordered list"
+    },
+    "FR-006": {
+      "title": "Loop and goal stores remain separate; this is a read-side consumer"
+    },
+    "FR-007": {
+      "title": "Must not change the shared daily push budget or greedy push check"
+    },
+    "FR-008": {
+      "title": "Must not build contribution-seam conflict resolution"
+    },
+    "FR-009": {
+      "title": "One failed PriorityView source degrades; total ranking failure omits the mention"
+    },
+    "FR-010": {
+      "title": "Unconfirmed social-cognition inferences keep Phase 130 posture"
+    },
+    "FR-011": {
+      "title": "Inline mentions stay a short bounded list, not a dump of the snapshot"
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 16,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "context": [
+    "living spec: attention-arbitration surfacing consumer leftover",
+    "area: surface_loops vs PriorityView",
+    "constraint: Phase 110 entity-overlap relevance preserved"
+  ],
+  "intent": "Conversation turns and resume recap mention the highest-priority topically relevant open item via PriorityView, not loops only",
+  "expectations": [
+    "merging OpenLoop and goal stores",
+    "contribution-seam arbitration",
+    "changing the shared push budget",
+    "rewriting the morning briefing"
+  ]
+}
