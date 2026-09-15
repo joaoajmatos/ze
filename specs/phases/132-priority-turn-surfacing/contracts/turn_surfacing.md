@@ -16,6 +16,7 @@ class TurnSurfacing:
         priority_view: PriorityView,
         override_store: PriorityOverrideStore | None,
         graph_store: GraphStore,
+        loop_store: LoopStore,
         push_log: Any | None = None,
     ) -> None: ...
 

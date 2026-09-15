@@ -18,6 +18,7 @@ class LoopSignal:
     state: LoopState
     confidence: float
     drift_deadline: datetime | None
+    drift_rationale: str | None = None
 
 
 @dataclass
@@ -66,6 +67,9 @@ class PriorityItem:
     priority: Confidence
     rank: int
     activity_at: datetime
+    linked_entity_ids: tuple[UUID, ...] = ()
+    match_text: str = ""
+    hedge: bool = False
 
 
 @dataclass
@@ -133,3 +137,13 @@ class PriorityCandidateRef:
 
     source_kind: SourceKind
     entity: OpenLoop | StuckGoal | Hypothesis
+
+
+@dataclass
+class OpenItemMention:
+    """A conversation-turn mention of one ranked open item. Not persisted."""
+
+    source_kind: SourceKind
+    source_id: UUID
+    title: str
+    mention_text: str

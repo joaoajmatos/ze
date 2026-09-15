@@ -37,25 +37,25 @@ description: "Task list for Priority Turn Surfacing (Phase 132)"
 
 **Wave 1 — independent (different files):**
 
-- [ ] **T001** Add `OpenItemMention` and additive `PriorityItem` fields `linked_entity_ids`, `match_text`, `hedge` (data-model.md) · `core/arbitration/ze-priority/ze_priority/types.py`
+- [x] **T001** Add `OpenItemMention` and additive `PriorityItem` fields `linked_entity_ids`, `match_text`, `hedge` (data-model.md) · `core/arbitration/ze-priority/ze_priority/types.py`
 
 **⟶ Wait for Wave 1 to finish, then:**
 
-- [ ] **T002** Fill `linked_entity_ids` / `match_text` / `hedge` in `score_hypothesis`, `score_goal`, and `score_relationship_staleness` (research.md R3, R10) · `core/arbitration/ze-priority/ze_priority/scoring.py`
+- [x] **T002** Fill `linked_entity_ids` / `match_text` / `hedge` in `score_hypothesis`, `score_goal`, and `score_relationship_staleness` (research.md R3, R10) · `core/arbitration/ze-priority/ze_priority/scoring.py`
 
 **⟶ Wait for Wave 2 to finish, then:**
 
 **Wave 3 — independent (different files):**
 
-- [ ] **T003** [P] Extend scoring unit tests so hypothesis/goal/relationship items carry the new fields · `core/arbitration/ze-priority/tests/test_scoring.py`
-- [ ] **T004** [P] Add `TurnSurfacing` with merged snapshot (`rank()` + `merge()`), `recap_mentions()`, `is_global_open_query()`, and degrade-to-empty on `ZePriorityError` / degrade-to-unmerged-rank if override store fails (contracts/turn_surfacing.md, FR-009) · `core/arbitration/ze-priority/ze_priority/turn.py`
+- [x] **T003** [P] Extend scoring unit tests so hypothesis/goal/relationship items carry the new fields · `core/arbitration/ze-priority/tests/test_scoring.py`
+- [x] **T004** [P] Add `TurnSurfacing` with merged snapshot (`rank()` + `merge()`), `recap_mentions()`, `is_global_open_query()`, and degrade-to-empty on `ZePriorityError` / degrade-to-unmerged-rank if override store fails (contracts/turn_surfacing.md, FR-009) · `core/arbitration/ze-priority/ze_priority/turn.py`
 
 **⟶ Wait for Wave 3 to finish, then:**
 
 **Wave 4 — independent (different files):**
 
-- [ ] **T005** [P] Tests: recap order follows merge including a pin; total ranking failure returns `[]`; override-store failure still returns ranked items (FR-002, FR-009, SC-003/SC-004) · `core/arbitration/ze-priority/tests/test_turn.py`
-- [ ] **T006** [P] Construct `TurnSurfacing` in the composition root and put it on `config["configurable"]["turn_surfacer"]`; keep `loop_surfacer` for push eligibility · `apps/ze-api/ze_api/container.py`
+- [x] **T005** [P] Tests: recap order follows merge including a pin; total ranking failure returns `[]`; override-store failure still returns ranked items (FR-002, FR-009, SC-003/SC-004) · `core/arbitration/ze-priority/tests/test_turn.py`
+- [x] **T006** [P] Construct `TurnSurfacing` in the composition root and put it on `config["configurable"]["turn_surfacer"]`; keep `loop_surfacer` for push eligibility · `apps/ze-api/ze_api/container.py`
 
 **Checkpoint**: Merged snapshot can be read without the graph node. User stories can start.
 
@@ -71,8 +71,8 @@ description: "Task list for Priority Turn Surfacing (Phase 132)"
 
 **Wave 1 — independent (different files):**
 
-- [ ] **T007** [P] [US1] Tests: overlapping loop+goal with goal ranked/pinned higher mentions the goal first; unrelated global top item absent; empty when no overlap; cap of 3; unconfirmed hypothesis is hedged; no call path to `LoopSurfacer.inline_candidates` (FR-001–FR-003, FR-010, FR-011) · `core/arbitration/ze-priority/tests/test_turn.py`
-- [ ] **T008** [P] [US1] Rewrite `surface_loops` tests to inject `turn_surfacer.inline_mentions`; missing surfacer / no entities / exception / empty mentions still return `{}`; component type is `open_items`; `final_response` append still works on non-compound turns · `core/engine/ze-core/tests/orchestration/nodes/test_loop_surfacing.py`
+- [x] **T007** [P] [US1] Tests: overlapping loop+goal with goal ranked/pinned higher mentions the goal first; unrelated global top item absent; empty when no overlap; cap of 3; unconfirmed hypothesis is hedged; no call path to `LoopSurfacer.inline_candidates` (FR-001–FR-003, FR-010, FR-011) · `core/arbitration/ze-priority/tests/test_turn.py`
+- [x] **T008** [P] [US1] Rewrite `surface_loops` tests to inject `turn_surfacer.inline_mentions`; missing surfacer / no entities / exception / empty mentions still return `{}`; component type is `open_items`; `final_response` append still works on non-compound turns · `core/engine/ze-core/tests/orchestration/nodes/test_loop_surfacing.py`
 
 **⟶ Wait for Wave 1 to finish, then:**
 
@@ -80,8 +80,8 @@ description: "Task list for Priority Turn Surfacing (Phase 132)"
 
 **Wave 2 — independent (different files):**
 
-- [ ] **T009** [P] [US1] Implement `inline_mentions`: graph `has_open_loop` overlap for loops, `linked_entity_ids` for hypotheses, `match_text` for goals/relationships; filter after merge; cap 3; hedged text; log `worldstate_loop_inline:{id}` for loop mentions (research.md R3–R5, R8–R10) · `core/arbitration/ze-priority/ze_priority/turn.py`
-- [ ] **T010** [P] [US1] Switch `surface_loops` to `turn_surfacer.inline_mentions(entity_ids, entities=...)`; skip append when `is_global_open_query(prompt)`; emit `open_item_mentions` + `open_items` component; never call `loop_surfacer` (contracts/turn_surfacing.md) · `core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py`
+- [x] **T009** [P] [US1] Implement `inline_mentions`: graph `has_open_loop` overlap for loops, `linked_entity_ids` for hypotheses, `match_text` for goals/relationships; filter after merge; cap 3; hedged text; log `worldstate_loop_inline:{id}` for loop mentions (research.md R3–R5, R8–R10) · `core/arbitration/ze-priority/ze_priority/turn.py`
+- [x] **T010** [P] [US1] Switch `surface_loops` to `turn_surfacer.inline_mentions(entity_ids, entities=...)`; skip append when `is_global_open_query(prompt)`; emit `open_item_mentions` + `open_items` component; never call `loop_surfacer` (contracts/turn_surfacing.md) · `core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py`
 
 **Checkpoint**: User Story 1 is independently testable. MVP.
 

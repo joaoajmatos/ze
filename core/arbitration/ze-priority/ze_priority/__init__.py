@@ -8,6 +8,7 @@ from ze_priority.types import (
     HypothesisSignal,
     LoopSignal,
     MergedPriorityItem,
+    OpenItemMention,
     PriorityCandidateRef,
     PriorityItem,
     PriorityOverride,
@@ -16,6 +17,7 @@ from ze_priority.types import (
     SourceKind,
     SourceSignal,
 )
+from ze_priority.turn import TurnSurfacing
 from ze_priority.view import PriorityView
 
 _AGENT_MODULE_PATHS = ["ze_priority.tools", "ze_priority.agent"]
@@ -37,6 +39,7 @@ __all__ = [
     "HypothesisSignal",
     "LoopSignal",
     "MergedPriorityItem",
+    "OpenItemMention",
     "PriorityCandidateRef",
     "PriorityItem",
     "PriorityOverride",
@@ -47,6 +50,7 @@ __all__ = [
     "SourceKind",
     "SourceSignal",
     "StaleReprioritizationTargetError",
+    "TurnSurfacing",
     "ZePriorityError",
     "agent_module_paths",
     "import_agent_modules",

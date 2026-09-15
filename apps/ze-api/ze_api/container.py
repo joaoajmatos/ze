@@ -55,6 +55,7 @@ from ze_core.orchestration.graph import build_graph
 from ze_correlation.bootstrap import build_correlation_stack
 from ze_correlation.store import PostgresHypothesisStore
 from ze_priority.view import PriorityView
+from ze_priority.turn import TurnSurfacing
 from ze_data.portability.service import DataPortabilityService
 from ze_seed.service import DevDataSeeder, collect_seed_domains
 from ze_ingestion.bootstrap import (
@@ -243,6 +244,7 @@ class ZeContainer(CoreContainer):
     loop_graph_store: Any
     loop_entity_resolver: Any
     loop_surfacer: Any
+    turn_surfacer: Any
     priority_view: PriorityView
     skill_store: SkillStore
     skill_matcher: Any
@@ -277,6 +279,7 @@ class ZeContainer(CoreContainer):
             "loop_graph_store": self.loop_graph_store,
             "loop_entity_resolver": self.loop_entity_resolver,
             "loop_surfacer": self.loop_surfacer,
+            "turn_surfacer": self.turn_surfacer,
             "collision_store": self.collision_store,
             "nli_client": self.nli_client,
             "skill_matcher": self.skill_matcher,
@@ -442,6 +445,13 @@ async def build_container(settings: Settings) -> ZeContainer:
         getattr(correlation, "relevance_model", None),
         shared.embedder,
         notifier,
+    )
+    turn_surfacer = TurnSurfacing(
+        priority_view=priority_view,
+        override_store=priority_override_store,
+        graph_store=worldstate.graph_store,
+        loop_store=worldstate.loop_store,
+        push_log=push_log_store,
     )
 
     from ze_correlation.bootstrap import build_correlation_push_candidate_source
@@ -700,6 +710,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         loop_graph_store=worldstate.graph_store,
         loop_entity_resolver=worldstate.entity_resolver,
         loop_surfacer=loop_surfacer,
+        turn_surfacer=turn_surfacer,
         priority_view=priority_view,
         skill_store=skills_stack.skill_store,
         skill_matcher=skill_matcher,

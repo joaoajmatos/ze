@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "Priority Turn Surfacing",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -67,6 +67,93 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-15T19:38:12.798Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T19:38:54.473Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:39:07.955Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:39:27.725Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:42:55.965Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:42:56.949Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:43:03.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:43:04.558Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:44:17.897Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:44:18.758Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:44:19.711Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:44:20.514Z"
     }
   ],
   "last_action": "living specs evaluated — skipped (not configured)",
@@ -201,6 +288,82 @@
     },
     "tasks": {
       "summary": "18 tasks: foundational TurnSurfacing, US1 inline mentions, US2 recap/whats-open, polish"
+    }
+  },
+  "currentTask": "T010",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Add OpenItemMention and PriorityItem relevance/hedge fields plus LoopSignal.drift_rationale",
+      "files": [
+        "core/arbitration/ze-priority/ze_priority/types.py",
+        "core/arbitration/ze-priority/ze_priority/__init__.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Fill linked_entity_ids, match_text, hedge, and loop drift_rationale at score time",
+      "files": [
+        "core/arbitration/ze-priority/ze_priority/scoring.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Extend scoring tests for linked_entity_ids, match_text, hedge, and drift_rationale",
+      "files": [
+        "core/arbitration/ze-priority/tests/test_scoring.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Add TurnSurfacing with merged snapshot, recap_mentions, is_global_open_query, and degrade paths",
+      "files": [
+        "core/arbitration/ze-priority/ze_priority/turn.py",
+        "core/arbitration/ze-priority/ze_priority/__init__.py",
+        "specs/phases/132-priority-turn-surfacing/contracts/turn_surfacing.md"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Add recap pin-order, total-failure, and override-store degrade tests",
+      "files": [
+        "core/arbitration/ze-priority/tests/test_turn.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Wire TurnSurfacing onto ZeContainer configurable as turn_surfacer",
+      "files": [
+        "apps/ze-api/ze_api/container.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Add inline relevance, pin-order, cap, hedge, and unrelated-top tests",
+      "files": [
+        "core/arbitration/ze-priority/tests/test_turn.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Rewrite surface_loops tests for turn_surfacer and open_items",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_loop_surfacing.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Implement relevance-gated inline_mentions with cap, hedge, and loop inline push-log",
+      "files": [
+        "core/arbitration/ze-priority/ze_priority/turn.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Switch surface_loops to turn_surfacer.inline_mentions and open_items components",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py"
+      ]
     }
   }
 }

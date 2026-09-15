@@ -11,18 +11,23 @@ log = get_logger(__name__)
 
 
 async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
-    surfacer: Any = config["configurable"].get("loop_surfacer")
+    surfacer: Any = config["configurable"].get("turn_surfacer")
     if surfacer is None:
         return {}
 
-    entity_ids = _extract_seeds(state.get("memory_context"))
+    prompt = state.get("prompt") or ""
+    if getattr(surfacer, "is_global_open_query", lambda _p: False)(prompt):
+        return {}
+
+    memory_context = state.get("memory_context")
+    entity_ids, entities = _extract_entities(memory_context)
     if not entity_ids:
         return {}
 
     try:
-        mentions = await surfacer.inline_candidates(entity_ids)
+        mentions = await surfacer.inline_mentions(entity_ids, entities=entities)
     except Exception as exc:
-        log.warning("inline_loop_surfacing_error", error=str(exc))
+        log.warning("inline_turn_surfacing_error", error=str(exc))
         return {}
 
     if not mentions:
@@ -35,7 +40,7 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
     result = state.get("agent_result")
     is_compound = bool(envelope and envelope.is_compound and state.get("subtask_results"))
     updates: dict = {
-        "drifting_loop_mentions": mentions,
+        "open_item_mentions": mentions,
         "components": existing_components + [component],
     }
     if not is_compound and result is not None:
@@ -43,24 +48,31 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
             result.response + "\n\n" + _format_text_section(mentions)
         )
 
-    log.info("inline_loop_surfacing_complete", mentions=len(mentions))
+    log.info("inline_turn_surfacing_complete", mentions=len(mentions))
     return updates
 
 
 def _extract_seeds(memory_context: Any) -> list:
+    entity_ids, _entities = _extract_entities(memory_context)
+    return entity_ids
+
+
+def _extract_entities(memory_context: Any) -> tuple[list, list]:
     if memory_context is None:
-        return []
-    entities = getattr(memory_context, "entities", []) or []
-    return [e.id for e in entities if e.id is not None]
+        return [], []
+    entities = list(getattr(memory_context, "entities", []) or [])
+    entity_ids = [e.id for e in entities if getattr(e, "id", None) is not None]
+    return entity_ids, entities
 
 
 def _build_component(mentions: list) -> dict:
     return {
-        "type": "drifting_loops",
+        "type": "open_items",
         "title": "Still open",
-        "loops": [
+        "items": [
             {
-                "id": m.loop_id,
+                "id": m.source_id,
+                "source_kind": m.source_kind,
                 "title": m.title,
                 "mention_text": m.mention_text,
             }

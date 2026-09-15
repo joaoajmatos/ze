@@ -55,6 +55,7 @@ def score_loop(loop: OpenLoop, *, now: datetime | None = None) -> PriorityItem:
             state=loop.state,
             confidence=loop.confidence,
             drift_deadline=loop.drift_deadline,
+            drift_rationale=loop.drift_rationale,
         ),
         priority=Confidence(value=value, decay_profile=DecayProfile.TIME_LINEAR),
         rank=0,
@@ -83,6 +84,7 @@ def score_goal(stuck: StuckGoal, *, now: datetime | None = None) -> PriorityItem
         priority=Confidence(value=urgency, decay_profile=DecayProfile.TIME_LINEAR),
         rank=0,
         activity_at=activity_at,
+        match_text=f"{stuck.goal.title} {stuck.goal.objective}",
     )
 
 
@@ -99,6 +101,8 @@ def score_hypothesis(hyp: Hypothesis, *, now: datetime | None = None) -> Priorit
         priority=Confidence(value=value, decay_profile=DecayProfile.EVIDENCE_WEIGHTED),
         rank=0,
         activity_at=_as_aware(hyp.created_at),
+        linked_entity_ids=tuple(hyp.entities),
+        hedge=not hyp.confirmed,
     )
 
 
@@ -130,6 +134,7 @@ def score_relationship_staleness(
         priority=Confidence(value=urgency, decay_profile=DecayProfile.TIME_LINEAR),
         rank=0,
         activity_at=activity_at,
+        match_text=nudge.name,
     )
 
 
