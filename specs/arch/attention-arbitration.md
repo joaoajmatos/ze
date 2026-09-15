@@ -3,7 +3,9 @@
 > **Status:** Shipped. Implemented as `specs/phases/123-attention-arbitration/spec.md` —
 > `PriorityView` (`core/arbitration/ze-priority`), the shared attention budget (`core/contracts/ze-proactive`), and
 > the greedy cross-mechanism push check are all live. Phase 127 (`specs/phases/127-priority-override/spec.md`)
-> layered user-directed override on top. Loop/goal store reconciliation was explicitly kept out
+> layered user-directed override on top. Phase 132
+> (`specs/phases/132-priority-turn-surfacing/spec.md`) made conversation turns and resume recap
+> consume the same ranking. Loop/goal store reconciliation was explicitly kept out
 > of scope (FR-010) and remains open — see "Open Questions" below.
 > **Scope:** `core/cognition/ze-worldstate`, `ze-automation` (goals), `core/cognition/ze-correlation`,
 > `core/contracts/ze-proactive` (shared push infrastructure).
@@ -83,9 +85,10 @@ shared budget when both have something drift-worthy on the same day.
 
 - **Does not merge the `OpenLoop` and goal stores.** FR-014's reasoning stands; this adds a
   read-side view, not a write-side merge.
-- **Does not change how loops or goals are individually surfaced today** (inline mentions,
-  push-bar gating) — it changes *which one wins* when both want the same interruption slot, and
-  gives the user a single "what's open" read surface that doesn't exist today.
+- **Does not change push-bar gating or merge the stores.** Conversation-turn *which item is
+  mentioned* later moved onto `PriorityView` in Phase 132; push eligibility stays on
+  `LoopSurfacer`. The snapshot page (Phase 127) and explicit what's-open / resume recap
+  (Phase 132) are the "what's open right now" read surfaces.
 - **Does not require the full contribution seam.** `PriorityView` can ship reading directly from
   the three existing stores; expressing its output as a formal `Contribution` is a nice-to-have
   once that type exists, not a blocker.
@@ -102,10 +105,11 @@ shared budget when both have something drift-worthy on the same day.
   depending on `ze-worldstate`, `ze-automation`, and `ze-correlation` (plus `ze-agents`,
   `ze-proactive`, `ze-plugin`, `ze-collision`) without any of those three depending on each
   other, per the dependency graph in the repo's `CLAUDE.md`.
-- [ ] **Surfacing consumer** — Phase 123 shipped `PriorityView` as the arbiter for the shared
-  push budget (backend-only ranking, per FR-007); Phase 127 added a user-facing snapshot view
-  and drag-reorder UI on top. Whether the briefing/conversation-turn assembly path itself reads
-  `PriorityView` directly, replacing per-mechanism inline logic there too, remains open.
+- [x] **Surfacing consumer** — resolved per Phase 132: conversation inline mentions
+  (`surface_loops` via `TurnSurfacing`) and resume recap / explicit what's-open read the
+  merged `PriorityView` snapshot, including Phase 127 pins. Unsolicited mentions stay
+  relevance-gated. The morning briefing already reads relationship nudges from
+  `PriorityView` (Phase 128); rewriting the rest of the briefing is out of scope.
 - [x] **Definition of "shared budget"** — resolved as the simple system-wide number per Phase
   123 FR-005: the single migrated limit is the minimum of the two prior per-mechanism
   `max_pushes_per_day` values, not a load-varying budget.

@@ -946,5 +946,7 @@ class TestBuildSystemPrompt:
             open_priorities_note="[Open priorities]",
         )
         prompt = a._build_system_prompt("INSTRUCTIONS", ctx)
-        assert prompt.index("[Open priorities]") < prompt.index("[Resuming after a gap]")
+        assert prompt.index("[Open priorities]") < prompt.index(
+            "[Resuming after a gap]"
+        )
         assert prompt.index("[Resuming after a gap]") < prompt.index("INSTRUCTIONS")

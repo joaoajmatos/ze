@@ -3,7 +3,7 @@
   "specName": "Priority Turn Surfacing",
   "branch": "main",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "completed",
   "history": [
     {
       "step": "specify",
@@ -194,9 +194,40 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-15T19:51:08.651Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:53:35.146Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:53:35.501Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:53:35.877Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T19:53:36.090Z"
     }
   ],
-  "last_action": "living specs evaluated — skipped (not configured)",
+  "last_action": "all 18 tasks done — test-priority 63 and test-core 640 pass",
   "telemetryInstanceId": "56005fb3-0d1d-427d-b6e5-51978dce3ac9",
   "coverage": {
     "FR-001": {
@@ -228,6 +259,9 @@
       "tasks": [
         "T014",
         "T015"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_context.py::TestFetchContextResumeRecap::test_gap_over_threshold_lists_open_items_in_rank_order"
       ]
     },
     "FR-005": {
@@ -238,6 +272,10 @@
         "T013",
         "T014",
         "T015"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_context.py::TestFetchContextWhatsOpen",
+        "core/arbitration/ze-priority/tests/test_turn.py::test_is_global_open_query_positive"
       ]
     },
     "FR-006": {
@@ -265,6 +303,10 @@
         "T004",
         "T005",
         "T015"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_context.py::TestFetchContextResumeRecap::test_turn_surfacer_failure_still_completes_the_turn",
+        "core/arbitration/ze-priority/tests/test_turn.py"
       ]
     },
     "FR-010": {
@@ -328,9 +370,12 @@
     },
     "tasks": {
       "summary": "18 tasks: foundational TurnSurfacing, US1 inline mentions, US2 recap/whats-open, polish"
+    },
+    "implement": {
+      "summary": "Conversation turns, resume recap, and whats-open consume merged PriorityView via TurnSurfacing"
     }
   },
-  "currentTask": "T015",
+  "currentTask": "T018",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -440,6 +485,45 @@
       "files": [
         "core/engine/ze-core/tests/orchestration/nodes/test_context.py"
       ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Close the attention-arbitration Surfacing consumer open question as Phase 132",
+      "files": [
+        "specs/arch/attention-arbitration.md"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Mark Phase 132 Implemented in spec, README, and CLAUDE.md",
+      "files": [
+        "specs/phases/132-priority-turn-surfacing/spec.md",
+        "specs/README.md",
+        "CLAUDE.md"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Validate SC-001–SC-004 with test-priority and test-core; ruff clean on touched files",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py"
+      ]
     }
-  }
+  },
+  "verified": [
+    {
+      "what": "make test-priority && make test-core",
+      "command": "make test-priority && make test-core",
+      "result": "63 priority + 640 core passed",
+      "warnings": []
+    },
+    {
+      "what": "ruff on phase 132 files",
+      "command": "ruff check <touched python>",
+      "result": "clean",
+      "warnings": [
+        "make lint fails repo-wide on pre-existing ze-skills store F811 and diagram-design NoReturn"
+      ]
+    }
+  ]
 }

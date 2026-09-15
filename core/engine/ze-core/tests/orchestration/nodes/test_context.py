@@ -64,7 +64,9 @@ def _mention(title: str, *, kind: str = "goal") -> SimpleNamespace:
     )
 
 
-def _surfacer(mentions=None, *, global_query: bool = False, error: Exception | None = None):
+def _surfacer(
+    mentions=None, *, global_query: bool = False, error: Exception | None = None
+):
     s = AsyncMock()
     if error is not None:
         s.recap_mentions = AsyncMock(side_effect=error)
@@ -139,7 +141,9 @@ class TestFetchContextResumeRecap:
             ]
         )
         workflow_store.list_executions = AsyncMock(
-            return_value=[WorkflowExecution(id=uuid4(), workflow_id=wf_id, status="running")]
+            return_value=[
+                WorkflowExecution(id=uuid4(), workflow_id=wf_id, status="running")
+            ]
         )
 
         state = _state(

@@ -33,7 +33,9 @@ class ResumeRecap:
         )
 
     def render(self) -> str:
-        lines = ["[Resuming after a gap — outstanding context, not visible to the user]"]
+        lines = [
+            "[Resuming after a gap — outstanding context, not visible to the user]"
+        ]
         if self.session_narrative:
             lines.append(f"Last session: {self.session_narrative}")
         if self.open_item_lines:
@@ -161,9 +163,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         history: list[dict] = []
         log.info("session_expired", session_id=state["session_id"])
         gap_minutes = (now - last_active) / 60
-        recap = await _assemble_resume_recap(
-            state["session_id"], config, gap_minutes
-        )
+        recap = await _assemble_resume_recap(state["session_id"], config, gap_minutes)
         resume_recap_applied = recap is not None
     else:
         history = list(state.get("messages") or [])

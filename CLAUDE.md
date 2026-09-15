@@ -528,6 +528,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Done |
 | 122 | Data Overview Charts — storage-composition chart replacing `StorageDonutChart` on the data overview widget | Done |
 | 127 | User-Directed Priority Override — `PriorityOverride` (`ze-priority`'s first store, `zpri` migration chain), snapshot view + drag reorder + conversational `reprioritize_item` tool, decaying/pinned overrides merged into `PriorityView.rank()` at render time, `ze_collision` skip rule narrowed to `(source_function, provenance)` so user-vs-executive priority disagreement is observable | Done |
+| 132 | Priority Turn Surfacing — conversation inline mentions, resume recap, and explicit what's-open consume merged `PriorityView` (including Phase 127 pins) via `TurnSurfacing` injected as `config["configurable"]["turn_surfacer"]`; relevance still gates unsolicited mentions; component type `open_items`; no store merge, no push-budget change | Done |
 
 ## graphify
 

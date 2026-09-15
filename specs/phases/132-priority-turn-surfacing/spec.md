@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-14
 
-**Status**: Planned
+**Status**: Implemented
 
 **Input**: User description: "Spec the leftover open question in
 specs/arch/attention-arbitration.md: conversation-turn assembly still mentions open

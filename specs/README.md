@@ -172,7 +172,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 129 | [Workspace Run Journal](phases/129-workspace-run-journal/spec.md) | ✅ Done |
 | 130 | [Social Cognition Co-Occurrence](phases/130-social-cognition-co-occurrence/spec.md) | ✅ Done |
 | 131 | [Workspace Live Output](phases/131-workspace-live-output/spec.md) | ✅ Done |
-| 132 | [Priority Turn Surfacing](phases/132-priority-turn-surfacing/spec.md) | 🔲 Pending |
+| 132 | [Priority Turn Surfacing](phases/132-priority-turn-surfacing/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 

@@ -38,7 +38,9 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
 
     envelope = state.get("envelope")
     result = state.get("agent_result")
-    is_compound = bool(envelope and envelope.is_compound and state.get("subtask_results"))
+    is_compound = bool(
+        envelope and envelope.is_compound and state.get("subtask_results")
+    )
     updates: dict = {
         "open_item_mentions": mentions,
         "components": existing_components + [component],
@@ -50,11 +52,6 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
 
     log.info("inline_turn_surfacing_complete", mentions=len(mentions))
     return updates
-
-
-def _extract_seeds(memory_context: Any) -> list:
-    entity_ids, _entities = _extract_entities(memory_context)
-    return entity_ids
 
 
 def _extract_entities(memory_context: Any) -> tuple[list, list]:

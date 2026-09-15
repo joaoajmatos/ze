@@ -117,12 +117,12 @@ description: "Task list for Priority Turn Surfacing (Phase 132)"
 
 **Wave 1 — independent (different files):**
 
-- [ ] **T016** [P] Close the "Surfacing consumer" open question in `specs/arch/attention-arbitration.md` as resolved by this phase
-- [ ] **T017** [P] Set spec **Status** to Implemented and update the phase index row · `specs/phases/132-priority-turn-surfacing/spec.md`, `specs/README.md`, `CLAUDE.md`
+- [x] **T016** [P] Close the "Surfacing consumer" open question in `specs/arch/attention-arbitration.md` as resolved by this phase
+- [x] **T017** [P] Set spec **Status** to Implemented and update the phase index row · `specs/phases/132-priority-turn-surfacing/spec.md`, `specs/README.md`, `CLAUDE.md`
 
 **⟶ Wait for Wave 1 to finish, then:**
 
-- [ ] **T018** `make test-priority && make test-core && make lint` — validate SC-001–SC-004 (quickstart.md)
+- [x] **T018** `make test-priority && make test-core && make lint` — validate SC-001–SC-004 (quickstart.md)
 
 ---
 
