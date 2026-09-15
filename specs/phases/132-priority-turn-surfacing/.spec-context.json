@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "Priority Turn Surfacing",
   "branch": "main",
-  "currentStep": "plan",
-  "status": "planned",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
   "history": [
     {
       "step": "specify",
@@ -46,43 +46,114 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-15T19:36:28.468Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T19:37:17.561Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:38:08.398Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T19:38:12.798Z"
     }
   ],
   "last_action": "living specs evaluated — skipped (not configured)",
   "telemetryInstanceId": "56005fb3-0d1d-427d-b6e5-51978dce3ac9",
   "coverage": {
     "FR-001": {
-      "title": "Inline mentions are chosen from items topically relevant to the turn"
+      "title": "Inline mentions are chosen from items topically relevant to the turn",
+      "tasks": [
+        "T007",
+        "T009",
+        "T010"
+      ]
     },
     "FR-002": {
-      "title": "Among relevant candidates, mention follows PriorityView ranking including user pins"
+      "title": "Among relevant candidates, mention follows PriorityView ranking including user pins",
+      "tasks": [
+        "T004",
+        "T005",
+        "T007",
+        "T009"
+      ]
     },
     "FR-003": {
-      "title": "Globally high-ranked items with no topical overlap are not injected"
+      "title": "Globally high-ranked items with no topical overlap are not injected",
+      "tasks": [
+        "T007",
+        "T009"
+      ]
     },
     "FR-004": {
-      "title": "Resume recap of what is open lists items in PriorityView order"
+      "title": "Resume recap of what is open lists items in PriorityView order",
+      "tasks": [
+        "T014",
+        "T015"
+      ]
     },
     "FR-005": {
-      "title": "Explicit what's-open questions are answered from PriorityView as one ordered list"
+      "title": "Explicit what's-open questions are answered from PriorityView as one ordered list",
+      "tasks": [
+        "T011",
+        "T012",
+        "T013",
+        "T014",
+        "T015"
+      ]
     },
     "FR-006": {
-      "title": "Loop and goal stores remain separate; this is a read-side consumer"
+      "title": "Loop and goal stores remain separate; this is a read-side consumer",
+      "tasks": [
+        "T018"
+      ]
     },
     "FR-007": {
-      "title": "Must not change the shared daily push budget or greedy push check"
+      "title": "Must not change the shared daily push budget or greedy push check",
+      "tasks": [
+        "T009",
+        "T018"
+      ]
     },
     "FR-008": {
-      "title": "Must not build contribution-seam conflict resolution"
+      "title": "Must not build contribution-seam conflict resolution",
+      "tasks": [
+        "T018"
+      ]
     },
     "FR-009": {
-      "title": "One failed PriorityView source degrades; total ranking failure omits the mention"
+      "title": "One failed PriorityView source degrades; total ranking failure omits the mention",
+      "tasks": [
+        "T004",
+        "T005",
+        "T015"
+      ]
     },
     "FR-010": {
-      "title": "Unconfirmed social-cognition inferences keep Phase 130 posture"
+      "title": "Unconfirmed social-cognition inferences keep Phase 130 posture",
+      "tasks": [
+        "T002",
+        "T007",
+        "T009"
+      ]
     },
     "FR-011": {
-      "title": "Inline mentions stay a short bounded list, not a dump of the snapshot"
+      "title": "Inline mentions stay a short bounded list, not a dump of the snapshot",
+      "tasks": [
+        "T007",
+        "T009"
+      ]
     }
   },
   "size": "normal",
@@ -127,6 +198,9 @@
     "plan": {
       "summary": "TurnSurfacing consumes merged PriorityView in conversation and recap",
       "key_finding": "rank() does not apply pins; conversation must merge then filter, and ze-core must stay duck-typed"
+    },
+    "tasks": {
+      "summary": "18 tasks: foundational TurnSurfacing, US1 inline mentions, US2 recap/whats-open, polish"
     }
   }
 }
