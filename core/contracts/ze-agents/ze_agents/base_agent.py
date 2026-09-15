@@ -186,6 +186,8 @@ class BaseAgent(ABC):
             rendered = f"{ctx.screen_context_note}\n\n{rendered}"
         if ctx.resume_recap:
             rendered = f"{ctx.resume_recap}\n\n{rendered}"
+        if ctx.open_priorities_note:
+            rendered = f"{ctx.open_priorities_note}\n\n{rendered}"
         skills_block = self._format_active_skills(ctx)
         if skills_block:
             rendered = f"{skills_block}\n\n{rendered}"

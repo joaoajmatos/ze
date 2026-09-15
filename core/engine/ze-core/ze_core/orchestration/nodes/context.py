@@ -10,7 +10,6 @@ from langchain_core.runnables import RunnableConfig
 
 from ze_logging import get_logger
 from ze_agents.types import AgentContext, RetrievalRequest
-from ze_core.orchestration.nodes.loop_surfacing import _extract_seeds
 from ze_core.orchestration.state import AgentState
 
 log = get_logger(__name__)
@@ -22,16 +21,14 @@ _DEFAULT_INACTIVITY_MINUTES = 30
 @dataclass
 class ResumeRecap:
     session_narrative: str | None
-    open_loop_lines: list[str] = field(default_factory=list)
-    in_flight_goal_lines: list[str] = field(default_factory=list)
+    open_item_lines: list[str] = field(default_factory=list)
     in_flight_workflow_lines: list[str] = field(default_factory=list)
     gap_minutes: float = 0.0
 
     def has_content(self) -> bool:
         return bool(
             self.session_narrative
-            or self.open_loop_lines
-            or self.in_flight_goal_lines
+            or self.open_item_lines
             or self.in_flight_workflow_lines
         )
 
@@ -39,12 +36,9 @@ class ResumeRecap:
         lines = ["[Resuming after a gap — outstanding context, not visible to the user]"]
         if self.session_narrative:
             lines.append(f"Last session: {self.session_narrative}")
-        if self.open_loop_lines:
+        if self.open_item_lines:
             lines.append("Still open:")
-            lines.extend(f"- {line}" for line in self.open_loop_lines)
-        if self.in_flight_goal_lines:
-            lines.append("In-flight goals:")
-            lines.extend(f"- {line}" for line in self.in_flight_goal_lines)
+            lines.extend(f"- {line}" for line in self.open_item_lines)
         if self.in_flight_workflow_lines:
             lines.append("In-flight workflows:")
             lines.extend(f"- {line}" for line in self.in_flight_workflow_lines)
@@ -53,7 +47,6 @@ class ResumeRecap:
 
 async def _assemble_resume_recap(
     session_id: str,
-    memory_context: Any,
     config: RunnableConfig,
     gap_minutes: float,
 ) -> ResumeRecap | None:
@@ -68,25 +61,14 @@ async def _assemble_resume_recap(
         except Exception as exc:
             log.warning("resume_recap_session_summary_failed", error=str(exc))
 
-    open_loop_lines: list[str] = []
-    surfacer = configurable.get("loop_surfacer")
+    open_item_lines: list[str] = []
+    surfacer = configurable.get("turn_surfacer")
     if surfacer is not None:
         try:
-            entity_ids = _extract_seeds(memory_context)
-            if entity_ids:
-                mentions = await surfacer.inline_candidates(entity_ids)
-                open_loop_lines = [m.mention_text for m in mentions]
+            mentions = await surfacer.recap_mentions()
+            open_item_lines = [m.mention_text for m in mentions]
         except Exception as exc:
-            log.warning("resume_recap_loop_surfacing_failed", error=str(exc))
-
-    in_flight_goal_lines: list[str] = []
-    goal_store = configurable.get("goal_store")
-    if goal_store is not None:
-        try:
-            active_goals = await goal_store.list_active()
-            in_flight_goal_lines = [f"{g.title}: {g.objective}" for g in active_goals]
-        except Exception as exc:
-            log.warning("resume_recap_goal_listing_failed", error=str(exc))
+            log.warning("resume_recap_turn_surfacing_failed", error=str(exc))
 
     in_flight_workflow_lines: list[str] = []
     workflow_store = configurable.get("workflow_store")
@@ -102,12 +84,31 @@ async def _assemble_resume_recap(
 
     recap = ResumeRecap(
         session_narrative=session_narrative,
-        open_loop_lines=open_loop_lines,
-        in_flight_goal_lines=in_flight_goal_lines,
+        open_item_lines=open_item_lines,
         in_flight_workflow_lines=in_flight_workflow_lines,
         gap_minutes=gap_minutes,
     )
     return recap if recap.has_content() else None
+
+
+async def _open_priorities_note(prompt: str, config: RunnableConfig) -> str | None:
+    surfacer = config["configurable"].get("turn_surfacer")
+    if surfacer is None:
+        return None
+    checker = getattr(surfacer, "is_global_open_query", None)
+    if checker is None or not checker(prompt):
+        return None
+    try:
+        mentions = await surfacer.recap_mentions()
+    except Exception as exc:
+        log.warning("open_priorities_note_failed", error=str(exc))
+        return None
+    if not mentions:
+        return None
+    lines = ["[Open priorities — ranked, including items you pinned:]"]
+    for mention in mentions:
+        lines.append(f"- {mention.mention_text}")
+    return "\n".join(lines)
 
 
 async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
@@ -161,7 +162,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         log.info("session_expired", session_id=state["session_id"])
         gap_minutes = (now - last_active) / 60
         recap = await _assemble_resume_recap(
-            state["session_id"], memory_context, config, gap_minutes
+            state["session_id"], config, gap_minutes
         )
         resume_recap_applied = recap is not None
     else:
@@ -197,6 +198,9 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     )
     if recap is not None:
         agent_context.resume_recap = recap.render()
+    note = await _open_priorities_note(prompt_for_ctx, config)
+    if note is not None:
+        agent_context.open_priorities_note = note
 
     user_message_id = config["configurable"].get("user_message_id")
     if user_message_id is not None:

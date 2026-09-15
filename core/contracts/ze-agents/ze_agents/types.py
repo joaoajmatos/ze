@@ -123,6 +123,10 @@ class AgentContext:
     # on a long-gap turn. Rendered into the system prompt, never appended to
     # messages — must never surface as a visible chat message. Never checkpoint.
     resume_recap: str | None = field(default=None, repr=False)
+    # open_priorities_note is runtime-only; injected by fetch_context when the
+    # user explicitly asks what's open. Rendered into the system prompt, never
+    # appended to messages. Never checkpoint.
+    open_priorities_note: str | None = field(default=None, repr=False)
     # active_skills / skill_tool_names are populated by the `match_skills` orchestration
     # node from the turn's `SkillMatch` list (core/automation/ze-skills). `active_skills` holds the
     # matched `Skill` objects (name/description/instructions injected into the system

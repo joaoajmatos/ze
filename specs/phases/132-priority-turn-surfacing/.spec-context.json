@@ -154,6 +154,46 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-15T19:44:20.514Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:50:58.085Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:51:06.768Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:51:07.258Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:51:07.934Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:51:08.651Z"
     }
   ],
   "last_action": "living specs evaluated — skipped (not configured)",
@@ -290,7 +330,7 @@
       "summary": "18 tasks: foundational TurnSurfacing, US1 inline mentions, US2 recap/whats-open, polish"
     }
   },
-  "currentTask": "T010",
+  "currentTask": "T015",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -363,6 +403,42 @@
       "did": "Switch surface_loops to turn_surfacer.inline_mentions and open_items components",
       "files": [
         "core/engine/ze-core/ze_core/orchestration/nodes/loop_surfacing.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Add runtime-only AgentContext.open_priorities_note",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/types.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Add is_global_open_query positive and negative prompt tests",
+      "files": [
+        "core/arbitration/ze-priority/tests/test_turn.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Prepend open_priorities_note in the system prompt immediately after resume_recap",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py",
+        "core/engine/ze-core/tests/orchestration/test_base_agent.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Resume recap uses turn_surfacer.recap_mentions; whats-open injects open_priorities_note",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/context.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Rewrite fetch_context tests for ranked recap, missing surfacer, and whats-open note",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_context.py"
       ]
     }
   }

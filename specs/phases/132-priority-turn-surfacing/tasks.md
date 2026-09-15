@@ -95,19 +95,19 @@ description: "Task list for Priority Turn Surfacing (Phase 132)"
 
 **Wave 1 — independent (different files):**
 
-- [ ] **T011** [P] [US2] Add runtime-only `AgentContext.open_priorities_note` (data-model.md) · `core/contracts/ze-agents/ze_agents/types.py`
-- [ ] **T012** [P] [US2] Tests for `is_global_open_query` (positive/negative prompts) · `core/arbitration/ze-priority/tests/test_turn.py`
+- [x] **T011** [P] [US2] Add runtime-only `AgentContext.open_priorities_note` (data-model.md) · `core/contracts/ze-agents/ze_agents/types.py`
+- [x] **T012** [P] [US2] Tests for `is_global_open_query` (positive/negative prompts) · `core/arbitration/ze-priority/tests/test_turn.py`
 
 **⟶ Wait for Wave 1 to finish, then:**
 
 **Wave 2 — independent (different files):**
 
-- [ ] **T013** [P] [US2] Prepend `open_priorities_note` in `_build_system_prompt` immediately after `resume_recap` · `core/contracts/ze-agents/ze_agents/base_agent.py`
-- [ ] **T014** [P] [US2] Reshape `ResumeRecap` to `open_item_lines` from `turn_surfacer.recap_mentions()` (drop `loop_surfacer` + `goal_store.list_active()`); on what's-open prompts set `open_priorities_note` from the same recap list (FR-004, FR-005, research.md R6–R7) · `core/engine/ze-core/ze_core/orchestration/nodes/context.py`
+- [x] **T013** [P] [US2] Prepend `open_priorities_note` in `_build_system_prompt` immediately after `resume_recap` · `core/contracts/ze-agents/ze_agents/base_agent.py`
+- [x] **T014** [P] [US2] Reshape `ResumeRecap` to `open_item_lines` from `turn_surfacer.recap_mentions()` (drop `loop_surfacer` + `goal_store.list_active()`); on what's-open prompts set `open_priorities_note` from the same recap list (FR-004, FR-005, research.md R6–R7) · `core/engine/ze-core/ze_core/orchestration/nodes/context.py`
 
 **⟶ Wait for Wave 2 to finish, then:**
 
-- [ ] **T015** [US2] Resume-recap tests: mixed items appear in rank order, not loops-then-goals; workflows still listed; missing `turn_surfacer` still completes the turn. What's-open tests: `open_priorities_note` set, `surface_loops` does not also append (FR-004, FR-005, FR-009) · `core/engine/ze-core/tests/orchestration/nodes/test_context.py`
+- [x] **T015** [US2] Resume-recap tests: mixed items appear in rank order, not loops-then-goals; workflows still listed; missing `turn_surfacer` still completes the turn. What's-open tests: `open_priorities_note` set, `surface_loops` does not also append (FR-004, FR-005, FR-009) · `core/engine/ze-core/tests/orchestration/nodes/test_context.py`
 
 **Checkpoint**: User Stories 1 and 2 both work independently.
 

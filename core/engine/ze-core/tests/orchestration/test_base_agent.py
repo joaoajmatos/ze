@@ -933,3 +933,18 @@ class TestToolExecutorContextFetch:
         )
 
         assert result == "done"
+
+
+class TestBuildSystemPrompt:
+    def test_open_priorities_note_is_prepended_after_resume_recap(self):
+        a = _agent()
+        ctx = AgentContext(
+            session_id="s1",
+            prompt="what's open",
+            intent="read",
+            resume_recap="[Resuming after a gap]",
+            open_priorities_note="[Open priorities]",
+        )
+        prompt = a._build_system_prompt("INSTRUCTIONS", ctx)
+        assert prompt.index("[Open priorities]") < prompt.index("[Resuming after a gap]")
+        assert prompt.index("[Resuming after a gap]") < prompt.index("INSTRUCTIONS")
