@@ -50,6 +50,7 @@ Thumbs.db
 .idea/
 .vscode/
 .cursor/hooks/state/
+.cursor/rules/
 *.swp
 *.swo
 *~
