@@ -54,6 +54,15 @@ make web           # React web app on :5173
 
 5. We will not merge PRs that break tests or lint.
 
+## Compatibility (pre-v1)
+
+Ze is not at v1 and has never been deployed. Break APIs, schemas, and types when
+the design is wrong. Do not add compatibility shims, deprecated aliases, or dual
+write paths. Local databases may be wiped and remigrated. This default reverses
+when a versioned v1 is declared. See
+[specs/arch/pre-v1-hard-cuts.md](specs/arch/pre-v1-hard-cuts.md) and constitution
+Principle VIII.
+
 ---
 
 ## Code conventions

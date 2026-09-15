@@ -256,6 +256,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 | Migrations | Alembic raw SQL, no ORM | Explicit schema control |
 | Client interface | React + WebSocket | Browser-first SPA; Tauri desktop wrapper deferred |
 | Push notifications | ntfy | Self-hostable, no vendor lock-in, deep-link support |
+| Compatibility | None until v1 | Never deployed; hard-cut rather than shim. See constitution Principle VIII and `specs/arch/pre-v1-hard-cuts.md` |
 
 ## Coding conventions
 
@@ -277,6 +278,9 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.
   Never `asyncio.run()` inside a running event loop.
 - **Comments**: Default to none. Only add a comment when the *why* is non-obvious.
+- **Pre-v1**: Until a versioned v1, break APIs and schemas when the design is wrong.
+  Do not add compatibility shims, dual-write, or wrap-then-replace across phases.
+  See constitution Principle VIII and `specs/arch/pre-v1-hard-cuts.md`.
 - **Imports**: Plugin code imports from `ze_sdk.*` (agent API, types, proactive, memory,
   channels, errors, automation). Automation types (goals, workflows) from `ze_automation.*`
   or `ze_sdk.automation`. Contact/persona domain from `ze_personal.*`. Calendar/reminder

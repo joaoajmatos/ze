@@ -1,3 +1,17 @@
+<!--
+Sync Impact Report
+- Version change: 1.1.0 → 1.2.0 (MINOR — new principle, no redefinition of existing ones)
+- Modified principles: none renamed
+- Added sections: VIII. Pre-v1 Hard Cuts
+- Removed sections: none
+- Templates: `.specify/templates/plan-template.md` Constitution Check placeholder
+  expanded to list principles I–VIII (✅ updated). spec-template.md and
+  tasks-template.md need no new sections (⚠ none pending).
+- Runtime guidance: CLAUDE.md, AGENTS.md, CONTRIBUTING.md, specs/README.md (✅).
+- Follow-up TODOs: none. Principle VIII expires by amendment at the v1 declaration;
+  do not leave a silent dual regime.
+-->
+
 # Ze Constitution
 
 Ze is a single-user personal AI assistant: a Python/FastAPI backend with a LangGraph
@@ -58,6 +72,19 @@ All LLM calls go through OpenRouter via the injected `LLMClient`; embeddings are
 local `paraphrase-multilingual-MiniLM-L12-v2` singleton. No direct provider SDKs, no
 per-feature API keys.
 
+### VIII. Pre-v1 Hard Cuts
+Ze has never been deployed. Until a versioned v1 release is declared, breaking
+changes are the default. Public APIs, store method signatures, table columns, REST
+paths, and WebSocket frames MAY be deleted or reshaped without shims, deprecation
+windows, dual-write, or dual-read. Compatibility adapters and wrap-then-replace
+migrations are forbidden unless they exist only to serve in-tree callers during a
+single phase and are deleted in that same phase. "Don't break existing data" is not
+a reason to keep a second vocabulary or a back-door write path. Dev databases are
+expected to be wiped and remigrated. This principle expires at v1: the ADR that
+declares v1 MUST amend this constitution in the same change and replace this
+principle with an explicit compatibility policy. See
+`specs/arch/pre-v1-hard-cuts.md`.
+
 ## Additional Constraints
 
 - Frontend follows Feature-Sliced Design: `pages → widgets → features → entities →
@@ -84,4 +111,4 @@ This constitution supersedes ad-hoc practice. Amendments are made via an ADR in
 removed or justified in the plan's Complexity Tracking section. Runtime development
 guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.1.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-07-27
+**Version**: 1.2.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-09-15

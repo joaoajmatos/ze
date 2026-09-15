@@ -170,8 +170,9 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 127 | [User-Directed Priority Override](phases/127-priority-override/spec.md) | ✅ Done |
 | 128 | [Social Cognition Foundation](phases/128-social-cognition-foundation/spec.md) | ✅ Done |
 | 129 | [Workspace Run Journal](phases/129-workspace-run-journal/spec.md) | ✅ Done |
-| 130 | [Social Cognition Co-Occurrence](phases/130-social-cognition-co-occurrence/spec.md) | 🔲 Pending |
+| 130 | [Social Cognition Co-Occurrence](phases/130-social-cognition-co-occurrence/spec.md) | ✅ Done |
 | 131 | [Workspace Live Output](phases/131-workspace-live-output/spec.md) | ✅ Done |
+| 132 | [Priority Turn Surfacing](phases/132-priority-turn-surfacing/spec.md) | 🔲 Pending |
 
 ## Ze Core specs (`core/`)
 
@@ -216,8 +217,9 @@ should read them before changing anything structural.
 | ADR | Decision |
 |-----|----------|
 | [**Ze Doctrine**](arch/ze-doctrine.md) | **Constitutional.** Ze's continuous spine is the world-state (model of you + active concerns); epistemic ontology (identity/fact/inference/suspicion/priority); provenance + arbitration order. Every spec is checked against it. See also [Cognitive Architecture](../docs/cognitive-architecture.md). |
+| [Pre-v1 Hard Cuts](arch/pre-v1-hard-cuts.md) | **Accepted.** Until a versioned v1, breaking APIs and schemas is the default. No shims, dual-write, or wrap-then-replace across phases. Expires at v1. |
 | [Aperture Decision](arch/aperture-decision.md) | **Open decision brief.** Which projection of the world-state the executive layer optimises for — open loops vs life-graph + intervention. Grounds the executive-layer phase spec. |
-| [Contribution Seam](arch/contribution-seam.md) | **Mostly shipped.** `Contribution` type + `OpenLoop`/`Signal`/reflection retrofits done (Phase 124); collision detection done (Phase 126). Real cross-function arbitration is still design-only, gated on collision evidence. |
+| [Contribution Seam](arch/contribution-seam.md) | **Mostly shipped.** Remaining work: perception facts onto the seam, then hard-cut `memory_facts` onto the shared vocabulary (rollout steps 5–6). Collision detection done (Phase 126). Real cross-function arbitration is still design-only, gated on collision evidence. |
 | [Single-User Model](arch/single-user-model.md) | No `user_id` anywhere; auth is a single API key; Ze serves one person |
 | [OpenRouter Gateway](arch/openrouter-gateway.md) | All LLM calls through OpenRouter only — single billing, config-driven model swaps |
 | [LangGraph Orchestration](arch/langgraph-orchestration.md) | LangGraph + AsyncPostgresSaver — durable graph execution with confirmation-flow pause/resume |

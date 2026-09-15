@@ -198,6 +198,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 | Migrations | Alembic raw SQL, no ORM | Explicit schema control |
 | Client interface | React + WebSocket | Browser-first SPA; Tauri desktop wrapper deferred |
 | Push notifications | ntfy | Self-hostable, no vendor lock-in, deep-link support |
+| Compatibility | None until v1 | Never deployed; hard-cut rather than shim. See constitution Principle VIII and `specs/arch/pre-v1-hard-cuts.md` |
 
 ## Coding conventions
 
@@ -219,6 +220,9 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.
   Never `asyncio.run()` inside a running event loop.
 - **Comments**: Default to none. Only add a comment when the *why* is non-obvious.
+- **Pre-v1**: Until a versioned v1, break APIs and schemas when the design is wrong.
+  Do not add compatibility shims, dual-write, or wrap-then-replace across phases.
+  See constitution Principle VIII and `specs/arch/pre-v1-hard-cuts.md`.
 - **Imports**: Plugin code imports from `ze_sdk.*` (agent API, types, proactive, memory,
   channels, errors, automation). Automation types (goals, workflows) from `ze_automation.*`
   or `ze_sdk.automation`. Contact/persona domain from `ze_personal.*`. Calendar/reminder
@@ -447,6 +451,7 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 ## Learned User Preferences
 
 - Write a spec before significant new features: `/speckit-specify` for `specs/phases/` features, or an ADR in `specs/arch/` (follow the existing ones) for cross-cutting decisions.
+- Until v1, break APIs and schemas when the design is wrong. Do not add compatibility shims, dual-write, or wrap-then-replace across phases (`specs/arch/pre-v1-hard-cuts.md`, constitution Principle VIII).
 - When implementing from an attached Cursor plan: do not edit the plan file; use the pre-created todos and mark them in_progress/completed as you work.
 - Ze's user-facing interface is the React web app (`ze-web`), not Telegram — do not describe Telegram-style UI capabilities to users.
 - Only create git commits when explicitly asked. When asked to commit a large batch, split by logical phase or spec user story rather than one dump.

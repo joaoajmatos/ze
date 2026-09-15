@@ -19,7 +19,9 @@ subsystem runs an offline consolidation loop.
 ## Responsibilities
 
 - **Write path** — `MemoryStore.add_fact`, `add_episode`: write new facts and episodes;
-  `admission.py` gates writes (NLI contradiction check, novelty filter)
+  `admission.py` gates writes (NLI contradiction check, novelty filter). Conversation and
+  ingestion still reach facts through public `propose_facts()`; that back door closes in
+  [`contribution-seam.md`](../arch/contribution-seam.md) steps 5–6.
 - **Retrieval** — `MemoryRetriever`: semantic search over facts and episodes using the
   shared embedding singleton; `retrieval_rerank.py` re-ranks with NLI cross-encoder
 - **Graph** — `MemoryGraph`: entity and relationship store; neighbourhood traversal for

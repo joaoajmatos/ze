@@ -39,8 +39,19 @@
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*Source: `.specify/memory/constitution.md`. Assess every principle. PASS or
+justified violation (Complexity Tracking).*
 
-[Gates determined based on constitution file]
+- **I. Spec-First Development**
+- **II. Single-User Model**
+- **III. Layered Package Architecture**
+- **IV. Typed, Explicit Python**
+- **V. Test Discipline**
+- **VI. Explicit Persistence**
+- **VII. One LLM Gateway, Local Embeddings**
+- **VIII. Pre-v1 Hard Cuts** — breaking APIs/schemas is allowed until v1;
+  compatibility shims, dual-write, and wrap-then-replace across phases are
+  violations, not virtues. See `specs/arch/pre-v1-hard-cuts.md`.
 
 ## Project Structure
 

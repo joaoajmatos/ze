@@ -203,7 +203,11 @@ class MemoryContext:
 
 After each agent run, the `write_memory` graph node fires (fire-and-forget). The
 `gather_fact_proposals` extractor (`ze_memory/extractor.py`) asks an LLM to extract
-declarative facts from the turn. These are written via `store.propose_facts(proposals)`:
+declarative facts from the turn. These currently write via
+`store.propose_facts(proposals)`. That write bypasses the contribution seam. After
+Phase 132 it will submit a `Contribution` instead. See
+[`specs/arch/contribution-seam.md`](../specs/arch/contribution-seam.md) rollout
+step 5.
 
 - The store writes facts with `reviewed = False` and `contradicted = False`.
 - Before inserting, the store checks for exact-predicate matches, then runs an NLI
