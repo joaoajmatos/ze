@@ -1,0 +1,218 @@
+{
+  "workflow": "companion",
+  "specName": "workspace live output",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-14T22:02:53.900Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:05:44.723Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:26:11.930Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:28:22.297Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-14T22:52:39.225Z"
+    }
+  ],
+  "telemetryInstanceId": "0f2381ae-850c-4b09-9423-63a3a57142a4",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Detached in-progress run shows growing printed output in the originating conversation before exit"
+    },
+    "FR-002": {
+      "title": "Opening or returning mid-run replays already-produced printable lines then continues"
+    },
+    "FR-003": {
+      "title": "Workspace view in-progress run shows the same unfolding preview as the conversation"
+    },
+    "FR-004": {
+      "title": "Live watching does not replace follow-through; exactly one follow-up; no extra connected push"
+    },
+    "FR-005": {
+      "title": "Live output stays a truncated preview; remainder is a workspace file"
+    },
+    "FR-006": {
+      "title": "Shown live output uses existing command-output redaction"
+    },
+    "FR-007": {
+      "title": "Must not change isolation, modes, skill-script approval, busy rule, or run contract"
+    },
+    "FR-008": {
+      "title": "Must not add a terminal emulator, second backend, named egress, or new completion channel"
+    },
+    "FR-009": {
+      "title": "Cancel from workspace view stops that handle and stops preview growth"
+    },
+    "FR-010": {
+      "title": "If the watch stream cannot be read, still-running stays honest and output is not invented"
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 14,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "context": [
+    "area: apps/ze-web chat still-running chip and /workspace run banner",
+    "constraint: Phase 129 run journal and events contract unchanged",
+    "constraint: follow-through still fires exactly once"
+  ],
+  "intent": "Show a detached workspace run's printed output live in chat and on the workspace page without replacing follow-through",
+  "expectations": [
+    "full terminal emulator",
+    "named egress or isolate backends",
+    "changing isolation, modes, or the run contract"
+  ],
+  "currentTask": "T015"
+}

@@ -34,6 +34,32 @@ async def test_extract_workspace_projects_in_progress_only_for_still_running(
     assert trace.runs[0].get("status") == expected_status
 
 
+async def test_extract_workspace_still_running_extracts_run_id():
+    """Phase 131 FR-001/002: the chat live-output view needs the handle, which
+    the tool reply already embeds ('run <id>:') but the trace never surfaced."""
+    agent_result = SimpleNamespace(
+        tool_calls=[
+            _call(
+                "workspace_run",
+                "[still running] run 8f14e45f-ceea-4b19-9b8e-3f9b5c1e2a3d: "
+                "`sleep 60` is taking longer than 25s and is continuing in "
+                "the background. I'll follow up on this thread once it finishes.",
+                args={"command": "sleep 60"},
+            )
+        ]
+    )
+    trace = await _extract_workspace(agent_result, config={})
+    assert trace.runs[0]["id"] == "8f14e45f-ceea-4b19-9b8e-3f9b5c1e2a3d"
+
+
+async def test_extract_workspace_terminal_run_has_no_id():
+    agent_result = SimpleNamespace(
+        tool_calls=[_call("workspace_run", "ok\n(exit 0)", args={"command": "echo ok"})]
+    )
+    trace = await _extract_workspace(agent_result, config={})
+    assert "id" not in trace.runs[0]
+
+
 async def test_extract_workspace_in_progress_never_touches_workspace_run_status():
     agent_result = SimpleNamespace(
         tool_calls=[

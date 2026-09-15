@@ -92,3 +92,46 @@ def test_events_two_watchers_both_get_full_replay(app_and_client):
     first = test_client.get(f"/api/v0/workspace/runs/{run_id}/events").text
     second = test_client.get(f"/api/v0/workspace/runs/{run_id}/events").text
     assert first == second
+
+
+def test_events_stream_redacts_denylisted_key_in_stdout_and_stderr(app_and_client):
+    """Phase 131 FR-006: shown live output MUST pass the same redaction as the
+    terminal preview — the raw sidecar journal is unredacted, so the /events
+    proxy itself MUST redact stdout/stderr data before it reaches the wire."""
+    run_id = uuid4()
+    events = [
+        JournalEventDTO(
+            seq=0, type="stdout", data="OPENROUTER_API_KEY=sk-or-fake123\n"
+        ),
+        JournalEventDTO(seq=1, type="stderr", data="ZE_API_KEY: super-secret\n"),
+        JournalEventDTO(seq=2, type="exit", data="", exit_code=0, timed_out=False),
+    ]
+    client = FakeClient(status=_status(), events=events)
+    test_client = app_and_client(client)
+
+    resp = test_client.get(f"/api/v0/workspace/runs/{run_id}/events")
+
+    lines = [json.loads(line) for line in resp.text.strip().splitlines() if line]
+    assert "sk-or-fake123" not in lines[0]["data"]
+    assert "[redacted]" in lines[0]["data"]
+    assert "super-secret" not in lines[1]["data"]
+    assert "[redacted]" in lines[1]["data"]
+
+
+def test_events_stream_does_not_redact_exit_line(app_and_client):
+    """exit events carry no free text — redact() must not be applied there."""
+    run_id = uuid4()
+    events = [JournalEventDTO(seq=0, type="exit", data="", exit_code=1, timed_out=False)]
+    client = FakeClient(status=_status(), events=events)
+    test_client = app_and_client(client)
+
+    resp = test_client.get(f"/api/v0/workspace/runs/{run_id}/events")
+
+    lines = [json.loads(line) for line in resp.text.strip().splitlines() if line]
+    assert lines[0] == {
+        "seq": 0,
+        "type": "exit",
+        "data": "",
+        "exit_code": 1,
+        "timed_out": False,
+    }

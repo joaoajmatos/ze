@@ -48,6 +48,7 @@ from ze_workspace.errors import (
     WorkspaceUnavailableError,
 )
 from ze_workspace.followthrough import RunWatcher
+from ze_workspace.sanitize import redact
 from ze_workspace.store import WorkspaceStore
 
 router = APIRouter(
@@ -286,7 +287,10 @@ async def watch_workspace_run_events(
 
     async def _proxy():
         async for event in client.watch_run(run_id):
-            line: dict = {"seq": event.seq, "type": event.type, "data": event.data}
+            data = event.data
+            if event.type in ("stdout", "stderr"):
+                data = redact(data)
+            line: dict = {"seq": event.seq, "type": event.type, "data": data}
             if event.type == "exit":
                 line["exit_code"] = event.exit_code
                 line["timed_out"] = event.timed_out

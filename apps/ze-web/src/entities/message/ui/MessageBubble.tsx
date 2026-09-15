@@ -2,18 +2,39 @@ import type { MessageSchema as Message, WsTraceUpdateFrame } from "@myguyze/ze-c
 import { Info } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
-import { useTraceStore } from "@/features/trace-state";
 import { MessageTracePanel } from "@/widgets/message-trace";
+import { useTraceStore } from "@/features/trace-state";
+import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
+import { useWorkspaceRunEventsQuery } from "@/entities/workspace";
 
 type WorkspaceChipTrace = WsTraceUpdateFrame & {
   workspace?: {
     mode?: string;
     unavailable?: boolean;
     script_ran?: boolean;
-    runs?: { command?: string; status?: string }[];
+    runs?: { id?: string; command?: string; status?: string }[];
   } | null;
 };
+
+function LiveRunOutput({ runId }: { runId: string }) {
+  const { lines, looksBinary } = useWorkspaceRunEventsQuery(runId);
+  if (!lines) return null;
+  if (looksBinary) {
+    return (
+      <p className="mt-1 max-w-full text-[10px] italic text-smoke">
+        output is not printable — retrieve it from the workspace file
+      </p>
+    );
+  }
+  return (
+    <pre
+      data-testid="workspace-live-output"
+      className="mt-1 max-h-32 max-w-full overflow-y-auto whitespace-pre-wrap rounded-lg bg-foreground/5 p-2 text-[10px] font-mono text-smoke"
+    >
+      {lines}
+    </pre>
+  );
+}
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -115,13 +136,16 @@ export function MessageBubble({
           const stillRunning = (workspace.runs ?? []).find((r) => r.status === "in_progress");
           if (stillRunning) {
             return (
-              <span
-                data-testid="workspace-still-running-chip"
-                className="mt-1 inline-flex w-fit items-center gap-1 rounded-full border border-amber-spark/40 bg-amber-spark/10 px-2 py-0.5 text-[10px] text-amber-spark"
-              >
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-spark" />
-                Still running · {stillRunning.command ?? "workspace run"}
-              </span>
+              <div className="mt-1 flex w-full min-w-0 flex-col items-start">
+                <span
+                  data-testid="workspace-still-running-chip"
+                  className="inline-flex w-fit items-center gap-1 rounded-full border border-amber-spark/40 bg-amber-spark/10 px-2 py-0.5 text-[10px] text-amber-spark"
+                >
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-spark" />
+                  Still running · {stillRunning.command ?? "workspace run"}
+                </span>
+                {stillRunning.id && <LiveRunOutput runId={stillRunning.id} />}
+              </div>
             );
           }
           return (

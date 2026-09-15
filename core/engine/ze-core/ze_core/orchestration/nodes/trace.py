@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
@@ -14,6 +15,8 @@ from ze_core.conversation.messages.types import (
 )
 from ze_core.orchestration.state import AgentState
 
+
+_STILL_RUNNING_ID_PATTERN = re.compile(r"^\[still running\] run ([^:]+):")
 
 _MAX_MEMORY_CHUNKS = 10
 _WORKSPACE_TOOL_NAMES = frozenset(
@@ -178,6 +181,12 @@ async def _extract_workspace(
                 # never written to workspace_runs.status, which stays one of
                 # WorkspaceRunStatus's five closed terminal values.
                 run_entry["status"] = "in_progress"
+                # The handle is already embedded in the tool's reply text
+                # (ze_workspace/tools.py) — surfaced here so Phase 131's live
+                # output view has something to open the watch stream with.
+                id_match = _STILL_RUNNING_ID_PATTERN.match(result)
+                if id_match:
+                    run_entry["id"] = id_match.group(1)
             runs.append(run_entry)
         if name == "workspace_run_skill_script" and getattr(call, "success", False):
             script_ran = True
