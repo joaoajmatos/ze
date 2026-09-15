@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "Priority Turn Surfacing",
   "branch": "main",
-  "currentStep": "specify",
-  "status": "specified",
+  "currentStep": "plan",
+  "status": "planned",
   "history": [
     {
       "step": "specify",
@@ -18,6 +18,34 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-14T22:06:15.790Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T19:34:24.633Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:35:59.155Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T19:36:07.484Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T19:36:28.468Z"
     }
   ],
   "last_action": "living specs evaluated — skipped (not configured)",
@@ -75,5 +103,30 @@
     "contribution-seam arbitration",
     "changing the shared push budget",
     "rewriting the morning briefing"
-  ]
+  ],
+  "unattended": true,
+  "approach": "TurnSurfacing in ze-priority reads the merged PriorityView snapshot, relevance-filters unsolicited mentions, and is injected into surface_loops / fetch_context so ze-core never imports ze-priority.",
+  "decisions": [
+    {
+      "decision": "Put TurnSurfacing in ze-priority and inject it as turn_surfacer; keep the surface_loops node name",
+      "why": "Ranking and override merge already live in ze-priority; ze-core must not import it; the spec pins surface_loops as the existing path",
+      "rejected": "Extend LoopSurfacer or have ze-core call PriorityView.rank() directly"
+    },
+    {
+      "decision": "Merge overrides first, then relevance-filter; do not rank_subset the relevant candidates",
+      "why": "Pins are defined on the global snapshot; trimming before merge would drop anchor-relative order",
+      "rejected": "rank_subset on already-relevant refs"
+    },
+    {
+      "decision": "Explicit whats-open injects AgentContext.open_priorities_note; do not add a companion tool",
+      "why": "Companion has no tools and answers with complete(); the resume_recap pattern already injects into every agent system prompt",
+      "rejected": "list_open_priorities tool on PriorityAgent only"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "TurnSurfacing consumes merged PriorityView in conversation and recap",
+      "key_finding": "rank() does not apply pins; conversation must merge then filter, and ze-core must stay duck-typed"
+    }
+  }
 }
