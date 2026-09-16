@@ -317,6 +317,7 @@ class PersonalPlugin(ZePlugin):
             "ze_personal.contacts.tools",
             "ze_personal.social.tools",
             "ze_personal.agents.research.agent",
+            "ze_personal.agents.companion.tools",
             "ze_personal.agents.companion.agent",
         ]
 

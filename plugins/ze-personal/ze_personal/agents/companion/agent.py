@@ -10,6 +10,7 @@ from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_agents.types import Intent, Mode
+from ze_sdk.memory import PostgresMemoryStore
 
 _AGENT_INSTRUCTIONS = """\
 You reason from what you know and what the user tells you — you do not search the web.
@@ -18,7 +19,31 @@ or "I'm here to". Just respond naturally.
 
 - Reflect, explore ideas, and help the user think through problems.
 - Be honest when you don't know something or when a question requires current data you lack.
-- Match the user's energy: casual for casual topics, substantive when they need depth.\
+- Match the user's energy: casual for casual topics, substantive when they need depth.
+
+Memory tools:
+- remember_fact: durable identity, preference, relationship, constraint, or contact \
+detail the user asked you to remember (no fire time). Call it before claiming you will remember. \
+Confirm only if the tool returns ok true.
+- forget_fact: the user asked to forget a biography fact. Confirm only if ok is true. \
+Do not use this to cancel reminders, close loops, or abandon goals.
+If a memory tool returns ok false, say you could not store or retract it — never pretend you did.
+
+Routing (time beats biography):
+- Timed ping / "remind me at …" / "remember to … on Tuesday": delegate_to_agent \
+agent_name=reminders. Do not remember_fact that task.
+- Lingering concern with no time and no multi-week plan: that is an open loop, not a fact.
+- Multi-week outcome with a deadline: delegate_to_agent agent_name=goals.
+- Ingest a file/PDF: not remember_fact.
+- Ambiguous "keep this in mind" with no durable predicate: ask one clarifying question \
+or treat as a loop — do not silently write a fact.
+- Standing constraint ("never email after 22:00") is a fact. Do not block mail/calendar \
+tools in this turn (veto is a later phase).
+
+Using what you already know:
+- Apply retrieved facts silently when they change the answer (tone, constraints, names).
+- Do not announce "I remember that you…" or dump the biography unsolicited.
+- If the user asks what you know about them, answer from the biography block.\
 """
 
 _EVENT_KEYWORDS: dict[str, list[str]] = {
@@ -46,13 +71,15 @@ class CompanionAgent(BaseAgent):
       stressed"), brainstorming, writing help, "explain X to me", "help me think through X",
       "what can you do", "what do you know about me", "tell me something interesting",
       and open-ended questions with no specific domain. Not for web search, calendar,
-      email, reminders, news, or any query that needs fetching live data.
+      email, reminders, news, or any query that needs fetching live data — delegate those.
+      Timed "remember to / remind me" is a reminder, not a biography fact. Multi-week
+      outcomes go to the goal agent. Lingering concerns without a fire time are open loops.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 60
-    tools = []
+    tools = ["remember_fact", "forget_fact", "delegate_to_agent"]
     intents = {
         "reason": Intent(
             Mode.AUTONOMOUS, "Reason, converse, and answer questions directly."
@@ -66,21 +93,25 @@ class CompanionAgent(BaseAgent):
         settings: Settings,
         person_store: PersonStore,
         pool: asyncpg.Pool,
+        memory_store: PostgresMemoryStore,
     ) -> None:
         self._settings = settings
         self._client = openrouter_client
         self._person_store = person_store
         self._pool = pool
+        self._memory_store = memory_store
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "companion.thinking")
-        response = await self._client.complete(
-            messages=ctx.messages,
-            model=self._model(ctx),
+        response, loop_tool_calls = await self.agentic_loop(
+            ctx,
+            client=self._client,
+            messages=list(ctx.messages),
             system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
+            deps={"memory_store": self._memory_store},
         )
 
-        tool_calls = []
+        tool_calls = list(loop_tool_calls)
         outreach_tc = await self._attempt_log_outreach(ctx)
         if outreach_tc is not None and outreach_tc.success:
             tool_calls.append(outreach_tc)

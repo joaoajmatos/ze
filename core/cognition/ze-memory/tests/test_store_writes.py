@@ -363,7 +363,7 @@ class TestPromoteEventOutcome:
     async def test_creates_promotes_to_edge(self):
         gs = _make_graph_store()
         event_id = uuid4()
-        fact_json = '[{"predicate": "prefers_async", "value": "prefers async communication", "confidence": 0.9}]'
+        fact_json = '{"family": "preference", "facts": [{"value": "prefers async communication", "confidence": 0.9}]}'
         store, conn, client, fact_id = self._make_store_with_client(
             graph_store=gs, client_response=fact_json
         )

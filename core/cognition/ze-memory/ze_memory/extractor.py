@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
+from enum import StrEnum
 from typing import Any
 
 from typing import TYPE_CHECKING
@@ -11,21 +13,55 @@ from typing import TYPE_CHECKING
 from ze_logging import get_logger
 
 from ze_memory.defaults import MODEL_SYNTHESIS
-from ze_memory.types import Event, Fact
+from ze_memory.types import Event, Fact, SpeechAct
 
 if TYPE_CHECKING:
     from ze_memory.types import Entity
 
 log = get_logger(__name__)
 
-_SYSTEM = (
-    "You extract facts about the user from AI assistant conversations. "
-    "Only extract facts the user explicitly revealed about themselves "
-    "(name, preferences, job, location, habits, goals, etc.). "
-    "Return a JSON array — no markdown, no explanation, just the array. "
-    'Each item: {"predicate": "snake_case_label", "value": "what was revealed", "confidence": 0.0-1.0}. '
-    "If no user facts are present, return []."
+
+class PredicateFamily(StrEnum):
+    IDENTITY = "identity"
+    PREFERENCE = "preference"
+    RELATIONSHIP = "relationship"
+    CONSTRAINT = "constraint"
+    CONTACT_DETAIL = "contact_detail"
+
+
+KEEP_FAMILIES: frozenset[str] = frozenset(f.value for f in PredicateFamily)
+DROP_FAMILIES: frozenset[str] = frozenset(
+    {"ephemeral", "commitment", "schedule", "mood", "other", "drop"}
 )
+
+_TRIVIAL_RE = re.compile(
+    r"^(hi|hello|hey|thanks|thank you|ok|okay|yo|sup|good morning|good night)"
+    r"[\s!.?]*$",
+    re.IGNORECASE,
+)
+
+_SYSTEM = """You are the admission gate for durable facts about the USER.
+
+First classify the user speech act. Time-bound reminders, commitments with a
+when, lingering concerns, multi-week goals, ingest requests, and filler are
+NOT biography facts.
+
+speech_act must be one of:
+fact, forget, reminder, loop, goal, ingest, drop, clarify.
+
+Keep facts ONLY when speech_act is fact AND the content is a durable self-fact
+in a closed family. Drop greetings, thanks, filler, right-now location, mood,
+weather, timed to-dos, and "remember to … on Tuesday".
+
+Closed keep families: identity, preference, relationship, constraint, contact_detail.
+If speech_act is not fact, family must be drop and facts must be [].
+
+Respond with JSON only — no markdown:
+{"speech_act": "<fact|forget|reminder|loop|goal|ingest|drop|clarify>",
+ "family": "<identity|preference|relationship|constraint|contact_detail|drop>",
+ "facts": [{"value": "what was revealed", "confidence": 0.0-1.0}]}
+facts must be empty unless speech_act is fact. Predicate of each kept fact is the family name.
+"""
 
 
 def fact_extraction_model(settings: Any = None) -> str:
@@ -51,30 +87,95 @@ def fact_extraction_model(settings: Any = None) -> str:
     return MODEL_SYNTHESIS
 
 
-def parse_fact_response(raw: str) -> list[dict]:
+def _strip_json_fence(raw: str) -> str:
     text = raw.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
         if text.startswith("json"):
             text = text[4:]
-    text = text.strip()
+    return text.strip()
+
+
+def is_trivial_turn(prompt: str) -> bool:
+    stripped = prompt.strip()
+    if not stripped:
+        return True
+    return bool(_TRIVIAL_RE.match(stripped))
+
+
+def admit_speech_act(raw: str | None) -> SpeechAct:
+    if not raw:
+        return SpeechAct.DROP
+    key = raw.strip().lower()
+    try:
+        return SpeechAct(key)
+    except ValueError:
+        return SpeechAct.DROP
+
+
+def admit_family(family: str | None) -> str | None:
+    if not family:
+        return None
+    key = family.strip().lower()
+    if key in KEEP_FAMILIES:
+        return key
+    return None
+
+
+def parse_fact_response(raw: str) -> list[dict]:
+    text = _strip_json_fence(raw)
     try:
         parsed = json.loads(text)
-        if not isinstance(parsed, list):
-            return []
-        return [
-            {
-                "predicate": str(f.get("predicate") or f.get("key", "")),
-                "value": str(f["value"]),
-                "confidence": float(f.get("confidence", 0.8)),
-            }
-            for f in parsed
-            if isinstance(f, dict)
-            and f.get("value")
-            and (f.get("predicate") or f.get("key"))
-        ]
-    except (json.JSONDecodeError, KeyError, ValueError):
+    except json.JSONDecodeError:
         return []
+    return _admit_parsed(parsed)
+
+
+def _admit_parsed(parsed: Any) -> list[dict]:
+    if isinstance(parsed, dict):
+        if "speech_act" not in parsed:
+            act = SpeechAct.FACT
+        else:
+            act = admit_speech_act(parsed.get("speech_act"))
+        if act is not SpeechAct.FACT:
+            return []
+        family = admit_family(parsed.get("family"))
+        if family is None:
+            return []
+        items = parsed.get("facts")
+        if not isinstance(items, list):
+            return []
+        admitted: list[dict] = []
+        for item in items:
+            if not isinstance(item, dict) or not item.get("value"):
+                continue
+            admitted.append(
+                {
+                    "predicate": family,
+                    "value": str(item["value"]),
+                    "confidence": float(item.get("confidence", 0.8)),
+                }
+            )
+        return admitted
+    if isinstance(parsed, list):
+        admitted = []
+        for item in parsed:
+            if not isinstance(item, dict) or not item.get("value"):
+                continue
+            family = admit_family(
+                item.get("family") or item.get("predicate") or item.get("key")
+            )
+            if family is None:
+                continue
+            admitted.append(
+                {
+                    "predicate": family,
+                    "value": str(item["value"]),
+                    "confidence": float(item.get("confidence", 0.8)),
+                }
+            )
+        return admitted
+    return []
 
 
 def raw_to_facts(raw: list[dict]) -> list[Fact]:
@@ -110,6 +211,8 @@ async def extract_facts(
 ) -> list[Fact]:
     if response.startswith("[ERROR]"):
         return []
+    if is_trivial_turn(prompt):
+        return []
     try:
         raw = await client.complete(
             messages=[
@@ -126,25 +229,6 @@ async def extract_facts(
     except Exception as exc:
         log.warning("memory_fact_extraction_failed", error=str(exc))
         return []
-
-
-def _coerce_fact(item: Any) -> Fact | None:
-    if isinstance(item, Fact):
-        return item
-    if isinstance(item, dict) and item.get("value"):
-        predicate = item.get("predicate") or item.get("key")
-        if not predicate:
-            return None
-        return Fact(
-            id=None,
-            subject_id=None,
-            predicate=str(predicate),
-            object_text=None,
-            object_id=None,
-            value=str(item["value"]),
-            confidence=float(item.get("confidence", 0.8)),
-        )
-    return None
 
 
 _EVENT_SYSTEM = (
@@ -360,17 +444,11 @@ async def gather_fact_proposals(
     agent: str,
     prompt: str,
     response: str,
-    explicit: list,
 ) -> list[Fact]:
-    """Merge agent-supplied proposals with LLM-extracted facts from the turn."""
-    explicit_facts = [_coerce_fact(f) for f in explicit]
-    explicit_facts = [f for f in explicit_facts if f is not None]
-
+    """LLM-extract durable facts from the turn. Explicit remember writes are tools."""
     client = configurable.get("openrouter_client")
     if client is None:
-        for f in explicit_facts:
-            f.agent = agent
-        return explicit_facts
+        return []
 
     settings = configurable.get("settings")
     settings_dict = (
@@ -385,7 +463,6 @@ async def gather_fact_proposals(
         response=response,
         model=model,
     )
-    merged = merge_fact_proposals(explicit_facts, extracted)
-    for f in merged:
-        f.agent = agent
-    return merged
+    for fact in extracted:
+        fact.agent = agent
+    return extracted

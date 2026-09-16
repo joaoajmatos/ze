@@ -11,7 +11,7 @@ from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 from ze_memory.extractor import gather_fact_proposals
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.routing.types import RoutingEnvelope, SubTask
 
 
@@ -129,7 +129,7 @@ class TestWriteMemory:
         store = _make_store()
         client = AsyncMock()
         client.complete = AsyncMock(
-            return_value='[{"key": "city", "value": "Lisbon", "confidence": 0.9}]'
+            return_value='{"family": "identity", "facts": [{"value": "lives in Lisbon", "confidence": 0.9}]}'
         )
         state = {
             "session_id": "s1",
@@ -155,24 +155,23 @@ class TestWriteMemory:
         store.propose_facts.assert_not_awaited()
         submit.assert_awaited_once()
         items = submit.await_args.args[1]
-        assert any(i.fact.predicate == "city" for i in items)
+        assert any(i.fact.predicate == "identity" for i in items)
         assert all(i.provenance == Provenance.SYNTHESIZED for i in items)
         assert all(i.target_face == TargetFace.USER for i in items)
 
-    async def test_explicit_memory_proposals_are_prompt_supplied(self):
+    async def test_extracted_facts_are_synthesized(self):
         store = _make_store()
-        explicit = [Fact(predicate="city", value="Lisbon")]
+        extracted = [Fact(predicate="preference", value="dark mode")]
 
         async def extractor(_cfg, **_kwargs):
-            return explicit
+            return extracted
 
         state = {
             "session_id": "s1",
-            "agent_context": _ctx("I live in Lisbon"),
+            "agent_context": _ctx("I prefer dark mode"),
             "agent_result": AgentResult(
                 agent="companion",
-                response="Nice city!",
-                memory_proposals=explicit,
+                response="Nice",
             ),
             "subtask_results": [],
             "messages": [],
@@ -188,26 +187,33 @@ class TestWriteMemory:
             )
         store.propose_facts.assert_not_awaited()
         items = submit.await_args.args[1]
-        assert items[0].provenance == Provenance.PROMPT_SUPPLIED
+        assert items[0].provenance == Provenance.SYNTHESIZED
 
-    async def test_mixed_batch_stamps_provenance_per_predicate_after_merge(self):
+    async def test_skips_extractor_predicates_already_remembered_this_turn(self):
         store = _make_store()
-        explicit = [Fact(predicate="city", value="Paris")]
-        merged = [
-            Fact(predicate="city", value="Paris"),
-            Fact(predicate="job", value="engineer"),
+        extracted = [
+            Fact(predicate="preference", value="dark mode"),
+            Fact(predicate="identity", value="lives in Lisbon"),
         ]
 
         async def extractor(_cfg, **_kwargs):
-            return merged
+            return extracted
 
         state = {
             "session_id": "s1",
-            "agent_context": _ctx("I live in Lisbon and I am an engineer"),
+            "agent_context": _ctx("Remember I prefer dark mode. I live in Lisbon."),
             "agent_result": AgentResult(
                 agent="companion",
                 response="Got it",
-                memory_proposals=explicit,
+                tool_calls=[
+                    ToolCall(
+                        tool_name="remember_fact",
+                        args={"predicate": "preference", "value": "dark mode"},
+                        result={"ok": True},
+                        duration_ms=1,
+                        success=True,
+                    )
+                ],
             ),
             "subtask_results": [],
             "messages": [],
@@ -221,9 +227,8 @@ class TestWriteMemory:
                 state,
                 _config(store=store, thread_id="s1", fact_extractor=extractor),
             )
-        by_pred = {i.fact.predicate: i.provenance for i in submit.await_args.args[1]}
-        assert by_pred["city"] == Provenance.PROMPT_SUPPLIED
-        assert by_pred["job"] == Provenance.SYNTHESIZED
+        predicates = [i.fact.predicate for i in submit.await_args.args[1]]
+        assert predicates == ["identity"]
 
     async def test_wrong_claim_kind_rejected_before_persist(self):
         store = _make_store()

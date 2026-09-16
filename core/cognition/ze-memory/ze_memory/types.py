@@ -2,11 +2,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import StrEnum
 from typing import Any, Literal
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.types import RetrievalRequest as RetrievalRequest  # noqa: F401 — re-export
+
+
+class SpeechAct(StrEnum):
+    FACT = "fact"
+    FORGET = "forget"
+    REMINDER = "reminder"
+    LOOP = "loop"
+    GOAL = "goal"
+    INGEST = "ingest"
+    DROP = "drop"
+    CLARIFY = "clarify"
 
 
 @dataclass
@@ -90,6 +102,7 @@ class Fact:
     agent: str = "unknown"
     relevance_score: float | None = field(default=None, compare=False)
     retrieval_provenance: str | None = field(default=None, compare=False)
+    created_at: datetime | None = None
 
 
 @dataclass

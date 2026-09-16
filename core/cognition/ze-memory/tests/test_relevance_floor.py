@@ -155,13 +155,16 @@ def _request(**overrides):
     return RetrievalRequest(**defaults)
 
 
+@patch("ze_memory.policies._fetch_reviewed_facts", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_session_summary_rows", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_events_by_similarity", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_entities_by_similarity", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_facts_by_similarity", new_callable=AsyncMock)
 async def test_companion_policy_excludes_low_similarity_facts(
-    mock_facts, mock_entities, mock_events, mock_summaries
+    mock_facts, mock_entities, mock_events, mock_summaries, mock_reviewed
 ):
+    mock_reviewed.return_value = []
+    mock_facts.return_value = [_fact_row(0.9), _fact_row(0.1)]
     mock_facts.return_value = [_fact_row(0.9), _fact_row(0.1)]
     mock_entities.return_value = []
     mock_events.return_value = []
@@ -202,13 +205,16 @@ async def test_research_policy_excludes_low_similarity_episodes(
     assert ctx.episodes[0].relevance_score == 0.9
 
 
+@patch("ze_memory.policies._fetch_reviewed_facts", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_session_summary_rows", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_events_by_similarity", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_entities_by_similarity", new_callable=AsyncMock)
 @patch("ze_memory.policies._fetch_facts_by_similarity", new_callable=AsyncMock)
 async def test_companion_policy_floor_zero_reproduces_pre_phase_106_ordering(
-    mock_facts, mock_entities, mock_events, mock_summaries
+    mock_facts, mock_entities, mock_events, mock_summaries, mock_reviewed
 ):
+    mock_reviewed.return_value = []
+    mock_facts.return_value = [_fact_row(0.9), _fact_row(0.01), _fact_row(None)]
     mock_facts.return_value = [_fact_row(0.9), _fact_row(0.01), _fact_row(None)]
     mock_entities.return_value = []
     mock_events.return_value = []

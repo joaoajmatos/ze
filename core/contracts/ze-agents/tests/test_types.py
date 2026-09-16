@@ -29,5 +29,4 @@ def test_object_missing_fields_does_not_satisfy_protocol():
 
 def test_agent_result_proposal_fields_default_to_empty_list():
     result = AgentResult(agent="companion", response="hi")
-    assert result.memory_proposals == []
     assert result.contact_proposals == []

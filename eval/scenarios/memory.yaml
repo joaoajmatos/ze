@@ -175,6 +175,76 @@
     - Turn 13 should not claim to have no memory of the flight
     - The turn should complete without an error about context length or capacity
 
+- id: memory_admission_ephemeral
+  prompt: "I'm tired today and it's raining."
+  description: Ephemeral mood/weather must not persist as a durable fact
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: tired, contradicted: false}
+      expect: empty
+  tags: [companion, memory, phase-140]
+  criteria:
+    - Should respond naturally to the feeling
+    - Must not claim to have stored a durable fact about being tired today
+
+- id: memory_admission_constraint
+  prompt: "I'm allergic to peanuts."
+  description: Durable constraint may be extracted into a closed family
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: peanut, contradicted: false}
+      expect: exists
+  tags: [companion, memory, phase-140]
+  criteria:
+    - Should acknowledge the allergy
+    - Should not treat it as a one-off mood
+
+- id: memory_admission_commitment
+  prompt: "I'll call Mom Tuesday."
+  description: Time-bound commitment must not persist as a durable fact
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: call Mom, contradicted: false}
+      expect: empty
+  tags: [companion, memory, phase-140]
+  criteria:
+    - May acknowledge the plan
+    - Must not store it as a lasting user fact
+
+- id: memory_remember_explicit
+  prompt: "Remember that I prefer dark mode."
+  description: Explicit remember speech act writes only after remember_fact succeeds
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: dark mode, contradicted: false, reviewed: true}
+      expect: exists
+  tags: [companion, memory, phase-140]
+  criteria:
+    - Must call remember_fact before claiming the fact is stored
+    - Must not confirm memory if the tool returns ok false
+
+- id: memory_forget_explicit
+  description: "Multi-turn: remember a fact then forget it"
+  verify:
+    - table: memory_facts
+      where: {value__icontains: dark mode, contradicted: false}
+      expect: empty
+  turns:
+    - prompt: "Remember that I prefer dark mode."
+      description: "Turn 1: store via remember_fact"
+    - prompt: "Forget that I prefer dark mode."
+      description: "Turn 2: retract via forget_fact"
+  expected_agent: companion
+  tags: [companion, memory, phase-140]
+  criteria:
+    - Turn 1 should confirm only after remember_fact ok
+    - Turn 2 should confirm forgotten only after forget_fact ok
+    - Must not claim forgotten if no matching fact
+
 - id: memory_defaults_enabled_no_regression
   description: >
     Phase 106 SC-004: with relevance-floor/entity-anchor/composite/live-rerank
@@ -194,3 +264,42 @@
   criteria:
     - Turn 2 should correctly recall Rust
     - Behaviour should match memory_recall_stored_fact with phase-106 features enabled
+
+- id: memory_speech_act_timed_reminder
+  prompt: "Remind me Tuesday at 3 to call the dentist."
+  description: Timed remember is a reminder, not a biography fact
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: dentist, contradicted: false}
+      expect: empty
+  tags: [companion, memory, phase-142]
+  criteria:
+    - Must not store a durable fact about the dentist appointment
+    - Should hand the timed ping to reminders, not remember_fact
+
+- id: memory_speech_act_loop
+  prompt: "I need to figure out whether to switch jobs."
+  description: Lingering concern is an open loop, not a fact
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: switch jobs, contradicted: false}
+      expect: empty
+  tags: [companion, memory, phase-142]
+  criteria:
+    - Must not write the career dilemma as a biography fact
+
+- id: memory_speech_act_goal
+  prompt: "Help me ship the thesis by June."
+  description: Multi-week outcome routes to goals, not a fact of the goal text
+  expected_agent: companion
+  verify:
+    - table: memory_facts
+      where: {value__icontains: thesis, contradicted: false}
+      expect: empty
+  tags: [companion, memory, phase-142]
+  criteria:
+    - Must not store the thesis as a standing identity fact
+    - Should treat it as a goal handoff
+

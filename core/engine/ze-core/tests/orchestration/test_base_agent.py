@@ -950,3 +950,55 @@ class TestBuildSystemPrompt:
             "[Resuming after a gap]"
         )
         assert prompt.index("[Resuming after a gap]") < prompt.index("INSTRUCTIONS")
+
+    def test_format_memory_includes_provenance_confidence_recency(self):
+        from datetime import datetime, timedelta, timezone
+
+        from ze_agents.claims import Provenance
+        from ze_memory.types import Fact, MemoryContext
+
+        a = _agent()
+        created = datetime.now(timezone.utc) - timedelta(days=3)
+        ctx = AgentContext(
+            session_id="s1",
+            prompt="hi",
+            intent="read",
+            memory=MemoryContext(
+                facts=[
+                    Fact(
+                        predicate="preference",
+                        value="dark mode",
+                        confidence=0.95,
+                        provenance=Provenance.SYNTHESIZED,
+                        created_at=created,
+                    )
+                ]
+            ),
+        )
+        text = a._format_memory(ctx)
+        assert "inferred" in text
+        assert "confidence 0.95" in text
+        assert "stored 3d ago" in text
+        assert "raw" not in text
+
+    def test_constitution_and_job_precede_biography(self):
+        from ze_memory.types import Fact, MemoryContext
+
+        a = _agent()
+
+        def builder(persona, memory_context, *, profile, contacts_context):
+            return f"PERSONA BLOCK\n\n## Retrieved biography\n{memory_context}"
+
+        ctx = AgentContext(
+            session_id="s1",
+            prompt="hi",
+            intent="read",
+            identity_builder=builder,
+            memory=MemoryContext(
+                facts=[Fact(predicate="preference", value="dark mode")]
+            ),
+        )
+        prompt = a._build_system_prompt("JOB INSTRUCTIONS", ctx)
+        assert prompt.index("## Memory constitution") < prompt.index("JOB INSTRUCTIONS")
+        assert prompt.index("JOB INSTRUCTIONS") < prompt.index("## Retrieved biography")
+        assert "dark mode" in prompt

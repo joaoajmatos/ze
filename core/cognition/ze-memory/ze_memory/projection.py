@@ -143,6 +143,7 @@ def _fact_from_row(row: Any) -> Fact:
         if row_dict.get("claim_kind") is not None
         else None,
         relevance_score=row_dict.get("similarity"),
+        created_at=row_dict.get("created_at"),
     )
 
 

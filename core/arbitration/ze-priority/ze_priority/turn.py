@@ -1,3 +1,10 @@
+"""Turn surfacing for open items (loops, goals, workflows).
+
+Memory facts are not mention chips. Retrieved biography is injected into the
+system prompt; unsolicited fact recitation is forbidden. Do not extend this
+module to dump preference/identity facts as inline mentions.
+"""
+
 from __future__ import annotations
 
 import re

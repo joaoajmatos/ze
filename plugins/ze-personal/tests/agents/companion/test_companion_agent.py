@@ -1,3 +1,4 @@
+import ze_personal.agents.companion.tools  # noqa: F401 — registers remember/forget
 from unittest.mock import AsyncMock, MagicMock
 
 import ze_prospecting.agents.tools  # noqa: F401 — registers log_outreach_event
@@ -20,6 +21,7 @@ def make_settings():
 
 def make_client(response: str = "I'm here to help.") -> AsyncMock:
     client = AsyncMock()
+    client.complete_with_tools = AsyncMock(return_value=(response, None))
     client.complete = AsyncMock(return_value=response)
 
     async def _stream(*args, **kwargs):
@@ -69,6 +71,7 @@ def make_agent(client=None) -> CompanionAgent:
         settings=make_settings(),
         person_store=make_person_store(),
         pool=make_pool(),
+        memory_store=AsyncMock(),
     )
 
 
@@ -117,11 +120,11 @@ async def test_run_sends_prompt_as_user_message():
 
     client = AsyncMock()
 
-    async def _complete(messages, **kwargs):
+    async def _complete_with_tools(messages, **kwargs):
         captured.append(messages)
-        return "ok"
+        return "ok", None
 
-    client.complete = _complete
+    client.complete_with_tools = _complete_with_tools
 
     agent = make_agent(client=client)
     await agent.run(make_ctx("tell me a story"))
@@ -136,12 +139,12 @@ async def test_run_injects_memory_facts_into_system_prompt():
 
     client = AsyncMock()
 
-    async def _complete(messages, system=None, **kwargs):
+    async def _complete_with_tools(messages, system=None, **kwargs):
         if system:
             captured_system.append(system)
-        return "ok"
+        return "ok", None
 
-    client.complete = _complete
+    client.complete_with_tools = _complete_with_tools
 
     agent = make_agent(client=client)
     await agent.run(make_ctx(memory=memory))
@@ -155,12 +158,12 @@ async def test_run_no_memory_shows_none_placeholder():
 
     client = AsyncMock()
 
-    async def _complete(messages, system=None, **kwargs):
+    async def _complete_with_tools(messages, system=None, **kwargs):
         if system:
             captured_system.append(system)
-        return "ok"
+        return "ok", None
 
-    client.complete = _complete
+    client.complete_with_tools = _complete_with_tools
 
     agent = make_agent(client=client)
     await agent.run(make_ctx())
@@ -173,17 +176,25 @@ async def test_run_uses_model_from_settings():
 
     client = AsyncMock()
 
-    async def _complete(messages, model=None, **kwargs):
+    async def _complete_with_tools(messages, model=None, **kwargs):
         captured_models.append(model)
-        return "ok"
+        return "ok", None
 
-    client.complete = _complete
+    client.complete_with_tools = _complete_with_tools
 
     agent = make_agent(client=client)
     await agent.run(make_ctx())
 
     assert captured_models[0] is not None
     assert "claude" in captured_models[0]
+
+
+async def test_companion_instructions_require_silent_memory_use():
+    from ze_personal.agents.companion.agent import _AGENT_INSTRUCTIONS
+
+    assert "silently" in _AGENT_INSTRUCTIONS
+    assert "I remember that you" in _AGENT_INSTRUCTIONS
+    assert "unsolicited" in _AGENT_INSTRUCTIONS
 
 
 # ── stream() ─────────────────────────────────────────────────────────────────

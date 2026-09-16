@@ -54,11 +54,11 @@ or an offer of help — the user already knows you. Never say "I'm Ze" or "I'm y
 Format responses using Markdown: **bold** for key terms, ## for section headings in longer \
 responses, - for bullet lists, and `code` for technical terms or commands. Keep formatting \
 purposeful — don't add headers to short conversational replies.
-{custom_block}
+{custom_block}"""
+
+_BIOGRAPHY_TEMPLATE = """\
 {profile_block}\
 ## Known facts about this user
-Use these facts to personalise responses and to answer questions about the user directly. \
-Do not say you lack information if it appears below.
 {memory_context}\
 {contacts_block}"""
 
@@ -131,12 +131,15 @@ def build_identity_block(
         f"\n## People this user knows\n{contacts_context}\n" if contacts_context else ""
     )
 
-    return _IDENTITY_TEMPLATE.format(
+    persona = _IDENTITY_TEMPLATE.format(
         traits=traits_str,
         verbosity_clause=verbosity_clause,
         dial_block=dial_block,
         custom_block=custom_block,
+    )
+    biography = _BIOGRAPHY_TEMPLATE.format(
         profile_block=profile_block,
         memory_context=memory_context,
         contacts_block=contacts_block,
     )
+    return f"{persona.rstrip()}\n\n## Retrieved biography\n{biography.lstrip()}"

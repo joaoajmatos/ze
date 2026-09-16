@@ -101,11 +101,12 @@ def _persist_claim_kind(fact: Fact, provenance: Provenance) -> ClaimKind:
 
 _EVENT_OUTCOME_SYSTEM = (
     "You extract generalizable declarative facts from an event outcome. "
-    "Only extract durable learnings: preferences, decisions, patterns, or capabilities — "
-    "not ephemeral or event-specific details. "
-    "Return a JSON array — no markdown, just the array. "
-    'Each item: {"predicate": "snake_case_label", "value": "the generalizable fact", "confidence": 0.0-1.0}. '
-    "If no generalizable facts can be extracted, return []."
+    "Keep ONLY durable self-facts in a closed family: identity, preference, "
+    "relationship, constraint, contact_detail. Drop ephemeral or event-specific details. "
+    "Respond with JSON only — no markdown: "
+    '{"family": "<identity|preference|relationship|constraint|contact_detail|drop>", '
+    '"facts": [{"value": "the generalizable fact", "confidence": 0.0-1.0}]}. '
+    "facts must be empty when family is drop."
 )
 
 
@@ -305,6 +306,46 @@ class PostgresMemoryStore:
                     predicate=fact.predicate,
                     error=str(exc),
                 )
+
+    async def _retract_facts_matching(self, query: str) -> list[UUID]:
+        needle = query.strip()
+        if not needle:
+            return []
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT id, predicate, value, embedding
+                  FROM memory_facts
+                 WHERE contradicted = false
+                 LIMIT 200
+                """
+            )
+        lowered = needle.lower()
+        matched: list[UUID] = []
+        for row in rows:
+            predicate = str(row["predicate"] or "").lower()
+            value = str(row["value"] or "").lower()
+            if lowered == predicate or lowered in predicate or lowered in value:
+                matched.append(row["id"])
+        if not matched and self._embedder is not None:
+            query_emb = self._embedder.encode(needle)
+            scored: list[tuple[float, UUID]] = []
+            for row in rows:
+                if row["embedding"] is None:
+                    continue
+                sim = _cosine_similarity(query_emb, row["embedding"])
+                if sim >= 0.75:
+                    scored.append((sim, row["id"]))
+            scored.sort(reverse=True)
+            matched = [fact_id for _, fact_id in scored[:5]]
+        if not matched:
+            return []
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE memory_facts SET contradicted = true WHERE id = ANY($1::uuid[])",
+                matched,
+            )
+        return matched
 
     async def upsert_task_state(self, state: TaskState) -> None:
         async with self._pool.acquire() as conn:

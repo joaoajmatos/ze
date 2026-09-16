@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import cached_property
 from typing import Any, AsyncIterator
 
@@ -58,6 +58,52 @@ _PLATFORM_TOOLS = (
 _PROCEDURE_INVOKE_TOOL = "invoke_procedure"
 
 log = get_logger(__name__)
+
+MEMORY_CONSTITUTION = (
+    "## Memory constitution\n"
+    "Use retrieved facts silently when they change the answer. "
+    "Do not recite them unsolicited and do not say you remember something "
+    "unless the user asked what you know. "
+    "Treat inferred, low-confidence, or stale lines as approximate. "
+    "Never invent identity that is not in the biography block.\n"
+)
+
+BIOGRAPHY_HEADING = "## Retrieved biography"
+
+
+def _fact_origin(provenance: Any) -> str:
+    key = provenance.value if hasattr(provenance, "value") else str(provenance or "")
+    key = key.lower()
+    if key in {"synthesized"}:
+        return "inferred"
+    if key in {"prompt_supplied", ""}:
+        return "user-stated"
+    return key.replace("_", "-")
+
+
+def _format_fact_recency(created_at: Any) -> str:
+    if created_at is None:
+        return "recency unknown"
+    when = created_at
+    if getattr(when, "tzinfo", None) is None:
+        when = when.replace(tzinfo=timezone.utc)
+    delta = datetime.now(timezone.utc) - when
+    days = max(0, int(delta.total_seconds() // 86400))
+    if days == 0:
+        return "stored today"
+    if days == 1:
+        return "stored 1d ago"
+    return f"stored {days}d ago"
+
+
+def _split_identity(identity: str) -> tuple[str, str]:
+    marker = f"\n{BIOGRAPHY_HEADING}\n"
+    if marker in identity:
+        persona, biography = identity.split(marker, 1)
+        return persona.strip(), biography.strip()
+    if identity.startswith(BIOGRAPHY_HEADING):
+        return "", identity[len(BIOGRAPHY_HEADING) :].strip()
+    return identity.strip(), ""
 
 
 def _is_openrouter_server_tool(name: str) -> bool:
@@ -133,12 +179,13 @@ class BaseAgent(ABC):
         for f in facts:
             predicate = getattr(f, "predicate", getattr(f, "key", "?"))
             value = f.value
-            if getattr(f, "provenance", "raw") == "synthesized":
-                lines.append(
-                    f"- {predicate}: {value} (Ze inferred this from a pattern — treat as approximate)"
-                )
-            else:
-                lines.append(f"- {predicate}: {value}")
+            origin = _fact_origin(getattr(f, "provenance", None))
+            conf = getattr(f, "confidence", None)
+            conf_s = f"{float(conf):.2f}" if conf is not None else "?"
+            recency = _format_fact_recency(getattr(f, "created_at", None))
+            lines.append(
+                f"- {predicate}: {value} ({origin}, confidence {conf_s}, {recency})"
+            )
         return "\n".join(lines) if lines else "(none)"
 
     def _format_contacts(self, ctx: AgentContext) -> str:
@@ -170,6 +217,8 @@ class BaseAgent(ABC):
         datetime_line = f"Current date and time: {now}\n\n"
 
         identity_builder = ctx.identity_builder
+        persona_block = ""
+        biography_block = ""
         if identity_builder is not None:
             identity = identity_builder(
                 ctx.persona,
@@ -179,9 +228,7 @@ class BaseAgent(ABC):
                 else None,
                 contacts_context=self._format_contacts(ctx),
             )
-            prefix = f"{identity}\n\n"
-        else:
-            prefix = ""
+            persona_block, biography_block = _split_identity(identity)
         rendered = agent_instructions.format(**extra) if extra else agent_instructions
         if ctx.screen_context_note:
             rendered = f"{ctx.screen_context_note}\n\n{rendered}"
@@ -195,7 +242,13 @@ class BaseAgent(ABC):
         procedure_block = getattr(ctx, "procedure_guidance", None)
         if procedure_block:
             rendered = f"{procedure_block}\n\n{rendered}"
-        return f"{datetime_line}{prefix}{rendered}"
+        sections = [datetime_line.rstrip(), MEMORY_CONSTITUTION.rstrip()]
+        if persona_block:
+            sections.append(persona_block.rstrip())
+        sections.append(rendered.rstrip())
+        if biography_block:
+            sections.append(f"{BIOGRAPHY_HEADING}\n{biography_block.rstrip()}")
+        return "\n\n".join(sections) + "\n"
 
     def _visible_tool_names(self, ctx: AgentContext, names: list[str]) -> list[str]:
         visible = list(names)

@@ -57,7 +57,7 @@ class AbortToken:
 @runtime_checkable
 class ClaimBearingProposal(Protocol):
     """Structural shape any producer's proposal type must satisfy to sit on
-    `AgentResult.memory_proposals`/`.contact_proposals` — referenced without this
+    `AgentResult.contact_proposals` — referenced without this
     package depending on any concrete producer type (Principle III)."""
 
     claim_kind: ClaimKind
@@ -168,6 +168,5 @@ class AgentResult:
     response: str
     tool_calls: list[ToolCall] = field(default_factory=list)
     tokens_used: int = 0
-    memory_proposals: list[ClaimBearingProposal] = field(default_factory=list)
     contact_proposals: list[ClaimBearingProposal] = field(default_factory=list)
     extensions: dict[str, Any] = field(default_factory=dict)

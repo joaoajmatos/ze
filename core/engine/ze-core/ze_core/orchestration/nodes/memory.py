@@ -15,7 +15,6 @@ from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
-from ze_memory.extractor import _coerce_fact
 from ze_plugin.contribution import TargetFace
 
 log = get_logger(__name__)
@@ -30,6 +29,17 @@ _COMPACTION_SYSTEM = (
     "questions, and outcomes of prior actions. Do not add information not present "
     "in the source. Be concise."
 )
+
+
+def _remembered_predicates(result: AgentResult) -> set[str]:
+    predicates: set[str] = set()
+    for tc in result.tool_calls or []:
+        if tc.tool_name != "remember_fact" or not tc.success:
+            continue
+        pred = (tc.args or {}).get("predicate")
+        if pred:
+            predicates.add(str(pred).strip().lower())
+    return predicates
 
 
 def _estimate_tokens(messages: list[dict]) -> int:
@@ -53,18 +63,15 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     is_eval = thread_id.startswith("eval-")
 
     result: AgentResult | None = state.get("agent_result")
-    subtask_results: list[AgentResult] = state.get("subtask_results") or []
     final_response = state.get("final_response")
 
     if result is None:
         envelope = state.get("envelope")
         agent_name = envelope.primary_agent if envelope else "unknown"
         if final_response:
-            all_proposals = [p for sr in subtask_results for p in sr.memory_proposals]
             result = AgentResult(
                 agent=agent_name,
                 response=final_response,
-                memory_proposals=all_proposals,
             )
         else:
             error_msg = state.get("error") or "unknown error"
@@ -74,6 +81,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
     await complete_procedure_invocation(ctx, result, config)
 
+    proposals: list = []
     if not is_eval:
         embedding = embedder.encode(ctx.prompt)
         fire_and_forget(
@@ -87,29 +95,25 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             label="write_episode",
         )
         fact_extractor = config["configurable"].get("fact_extractor")
-        proposals = []
         if fact_extractor is not None:
             proposals = await fact_extractor(
                 config["configurable"],
                 agent=result.agent,
                 prompt=ctx.prompt,
                 response=result.response,
-                explicit=result.memory_proposals,
             )
+        remembered = _remembered_predicates(result)
+        if remembered:
+            proposals = [
+                fact
+                for fact in proposals
+                if fact.predicate.strip().lower() not in remembered
+            ]
         if proposals:
-            explicit_predicates = set()
-            for item in result.memory_proposals:
-                coerced = _coerce_fact(item)
-                if coerced is not None:
-                    explicit_predicates.add(coerced.predicate)
             items = [
                 PerceptionFactSubmit(
                     fact=fact,
-                    provenance=(
-                        Provenance.PROMPT_SUPPLIED
-                        if fact.predicate in explicit_predicates
-                        else Provenance.SYNTHESIZED
-                    ),
+                    provenance=Provenance.SYNTHESIZED,
                     target_face=TargetFace.USER,
                     evidence=[],
                 )
@@ -146,7 +150,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     log.debug(
         "orchestration_memory_write_scheduled",
         session_id=state["session_id"],
-        explicit_proposals=len(result.memory_proposals) if not is_eval else 0,
+        extracted_facts=len(proposals) if not is_eval else 0,
         eval=is_eval,
     )
 

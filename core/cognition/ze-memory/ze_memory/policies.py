@@ -44,7 +44,7 @@ from ze_memory.types import MemoryContext, RetrievalRequest
 _FACT_SELECT = """
     SELECT id, subject_id, predicate, object_text, object_id, value,
            confidence, reviewed, contradicted, source_episode_id, source_refs,
-           provenance, claim_kind, updated_at
+           provenance, claim_kind, updated_at, created_at
 """
 
 _ENTITY_SELECT = """
@@ -110,6 +110,24 @@ def _prepare_candidates(
     filtered = apply_relevance_floor(rows, memory_type, cfg)
     return sort_by_composite_score(
         filtered, cfg.composite_weights, datetime.now(timezone.utc)
+    )
+
+
+def _merge_reviewed_facts(reviewed_rows: list[Any], retrieved_rows: list[Any]) -> list[Any]:
+    seen = {row["id"] for row in reviewed_rows}
+    rest = [row for row in retrieved_rows if row["id"] not in seen]
+    return list(reviewed_rows) + rest
+
+
+async def _fetch_reviewed_facts(conn: Any) -> list:
+    return await conn.fetch(
+        f"""
+        {_FACT_SELECT}, NULL::float8 AS similarity
+        FROM memory_facts
+        WHERE contradicted = false AND reviewed = true
+        ORDER BY created_at DESC
+        LIMIT 50
+        """
     )
 
 
@@ -260,6 +278,7 @@ class CompanionPolicy:
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
+            reviewed_rows = await _fetch_reviewed_facts(conn)
             fact_rows = await _fetch_facts_by_similarity(conn, emb, 50)
             episode_rows = await conn.fetch(
                 _episode_select("$2", "$3"),
@@ -275,7 +294,9 @@ class CompanionPolicy:
             event_rows = await _fetch_events_by_similarity(conn, emb)
             session_summary_rows = await _fetch_session_summary_rows(conn, emb)
 
-        fact_rows = _prepare_candidates(fact_rows, "fact", cfg)
+        fact_rows = _merge_reviewed_facts(
+            reviewed_rows, _prepare_candidates(fact_rows, "fact", cfg)
+        )
         episode_rows = _prepare_candidates(episode_rows, "episode", cfg)
         entity_rows = _prepare_candidates(entity_rows, "entity", cfg)
         event_rows = _prepare_candidates(event_rows, "event", cfg)

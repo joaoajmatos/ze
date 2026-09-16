@@ -158,7 +158,7 @@ async def test_extract_facts_calls_propose_facts():
 
     llm = AsyncMock()
     llm.complete = AsyncMock(
-        return_value='[{"predicate": "name", "value": "Alice", "confidence": 0.9}]'
+        return_value='{"family": "identity", "facts": [{"value": "Alice", "confidence": 0.9}]}'
     )
     processor._llm_client = llm
 

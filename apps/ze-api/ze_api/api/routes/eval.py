@@ -104,7 +104,6 @@ async def eval_chat(
             for tc in (agent_result.tool_calls or [])
         ]
         tokens_used = agent_result.tokens_used or 0
-        memory_proposals_count = len(agent_result.memory_proposals or [])
 
     return EvalChatResponse(
         session_id=body.session_id,
