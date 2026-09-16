@@ -3,7 +3,7 @@
   "specName": "perception facts seam",
   "branch": "133-perception-facts-seam",
   "currentStep": "implement",
-  "status": "implemented",
+  "status": "completed",
   "history": [
     {
       "step": "specify",

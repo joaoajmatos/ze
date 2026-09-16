@@ -135,6 +135,14 @@ class AgentContext:
     # `tools` (FR-008). Never checkpoint: skills are re-matched fresh on resume.
     active_skills: list[Any] = field(default_factory=list, repr=False)
     skill_tool_names: list[str] | None = field(default=None, repr=False)
+    # Procedure discovery/activation (Phase 139). Matches are advisory until
+    # invoke_procedure; procedure_tool_names only ever narrows. Never checkpoint.
+    procedure_guidance: str | None = field(default=None, repr=False)
+    procedure_matches: list[Any] | None = field(default=None, repr=False)
+    procedure_tool_names: list[str] | None = field(default=None, repr=False)
+    procedure_invocation_id: str | None = field(default=None, repr=False)
+    procedure_invoked_id: str | None = field(default=None, repr=False)
+    procedure_invoked_version_id: str | None = field(default=None, repr=False)
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

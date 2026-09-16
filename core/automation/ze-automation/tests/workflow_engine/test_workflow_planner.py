@@ -193,6 +193,49 @@ class TestPlan:
         assert all(s.default_next is None for s in steps)
         assert [s.id for s in steps] == ["s0", "s1", "s2"]
 
+    async def test_plan_includes_advisory_procedure_guidance(self):
+        from uuid import uuid4
+        from unittest.mock import AsyncMock
+
+        from ze_memory.procedures.types import MatchState, ProcedureMatch
+
+        payload = json.dumps(
+            [
+                {
+                    "task": "Send reminder",
+                    "agent_hint": "email",
+                    "intent": "create",
+                    "verify": None,
+                },
+            ]
+        )
+        client = MagicMock()
+        client.complete = AsyncMock(return_value=payload)
+        discovery = AsyncMock()
+        discovery.match = AsyncMock(
+            return_value=[
+                ProcedureMatch(
+                    procedure_id=uuid4(),
+                    version_id=uuid4(),
+                    version_number=1,
+                    name="Inbox sweep",
+                    trigger="clear inbox",
+                    steps=["open"],
+                    state=MatchState.READY,
+                    matched_trigger="clear inbox",
+                    satisfied_preconditions=[],
+                    unmet_preconditions=[],
+                )
+            ]
+        )
+        planner = WorkflowPlanner(
+            openrouter_client=client, procedure_discovery=discovery
+        )
+        await planner.plan("Remind João to water plants")
+        prompt = client.complete.call_args[1]["messages"][0]["content"]
+        assert "Inbox sweep" in prompt
+        assert "advisory" in prompt
+
 
 class TestExtractSchedule:
     async def test_parses_markdown_fenced_json_object(self):

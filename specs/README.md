@@ -175,6 +175,11 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 132 | [Priority Turn Surfacing](phases/132-priority-turn-surfacing/spec.md) | ✅ Done |
 | 133 | [Perception Facts Seam](phases/133-perception-facts-seam/spec.md) | ✅ Done |
 | 134 | [Memory Facts Hard-Cut](phases/134-memory-facts-hard-cut/spec.md) | ✅ Done |
+| 135 | [Action Record Ledger](phases/135-action-record-ledger/spec.md) | ✅ Done |
+| 136 | [Action Instrumentation](phases/136-action-instrumentation/spec.md) | ✅ Done |
+| 137 | [Evidence-Backed Goal Learning](phases/137-evidence-backed-learning/spec.md) | ✅ Done |
+| 138 | [Governed Procedure Lifecycle](phases/138-procedure-lifecycle/spec.md) | ✅ Done |
+| 139 | [Governed Procedure Activation](phases/139-procedure-activation/spec.md) | ✅ Done |
 
 ## Ze Core specs (`core/`)
 
@@ -221,7 +226,7 @@ should read them before changing anything structural.
 | [**Ze Doctrine**](arch/ze-doctrine.md) | **Constitutional.** Ze's continuous spine is the world-state (model of you + active concerns); epistemic ontology (identity/fact/inference/suspicion/priority); provenance + arbitration order. Every spec is checked against it. See also [Cognitive Architecture](../docs/cognitive-architecture.md). |
 | [Pre-v1 Hard Cuts](arch/pre-v1-hard-cuts.md) | **Accepted.** Until a versioned v1, breaking APIs and schemas is the default. No shims, dual-write, or wrap-then-replace across phases. Expires at v1. |
 | [Aperture Decision](arch/aperture-decision.md) | **Open decision brief.** Which projection of the world-state the executive layer optimises for — open loops vs life-graph + intervention. Grounds the executive-layer phase spec. |
-| [Contribution Seam](arch/contribution-seam.md) | **Shipped through step 6.** Perception facts (Phase 133) and `memory_facts` doctrine provenance / no public `propose_facts` (Phase 134). Collision detection done (Phase 126). Ranking via `PriorityView` + turn surfacing (123/127/132). Remaining: action result records (step 7), `signal_sources()` rewiring, real cross-function arbitration (step 8). |
+| [Contribution Seam](arch/contribution-seam.md) | **Shipped through step 7.** Perception facts (Phase 133), `memory_facts` doctrine (Phase 134), ActionRecord ledger and producer instrumentation (135–136), evidence-backed goal learning (Phase 137). Collision detection done (Phase 126). Ranking via `PriorityView` + turn surfacing (123/127/132). Remaining: `signal_sources()` rewiring, real cross-function arbitration (step 8). |
 | [Single-User Model](arch/single-user-model.md) | No `user_id` anywhere; auth is a single API key; Ze serves one person |
 | [OpenRouter Gateway](arch/openrouter-gateway.md) | All LLM calls through OpenRouter only — single billing, config-driven model swaps |
 | [LangGraph Orchestration](arch/langgraph-orchestration.md) | LangGraph + AsyncPostgresSaver — durable graph execution with confirmation-flow pause/resume |

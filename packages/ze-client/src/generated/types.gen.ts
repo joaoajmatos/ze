@@ -1318,6 +1318,116 @@ export type IngestResponse = {
 };
 
 /**
+ * LearningDetailResponse
+ */
+export type LearningDetailResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Content
+     */
+    content: string;
+    /**
+     * Claim Kind
+     */
+    claim_kind: string;
+    /**
+     * Provenance
+     */
+    provenance: string;
+    /**
+     * Confidence
+     */
+    confidence: number;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Evidence Count
+     */
+    evidence_count: number;
+    /**
+     * Promotion State
+     */
+    promotion_state: string | null;
+    /**
+     * Review Needed
+     */
+    review_needed: boolean;
+    /**
+     * Created At
+     */
+    created_at: string | null;
+    /**
+     * Evidence
+     */
+    evidence: Array<LearningEvidenceSummary>;
+};
+
+/**
+ * LearningEvidenceSummary
+ */
+export type LearningEvidenceSummary = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Evidence Kind
+     */
+    evidence_kind: string;
+    /**
+     * Role
+     */
+    role: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Action Record Id
+     */
+    action_record_id?: string | null;
+    /**
+     * Execution Context Key
+     */
+    execution_context_key?: string | null;
+};
+
+/**
+ * LearningPromotionResponse
+ */
+export type LearningPromotionResponse = {
+    /**
+     * Id
+     */
+    id: string | null;
+    /**
+     * Learning Id
+     */
+    learning_id: string;
+    /**
+     * State
+     */
+    state: string;
+    /**
+     * Memory Fact Id
+     */
+    memory_fact_id: string | null;
+    /**
+     * Failure Reason
+     */
+    failure_reason: string | null;
+    /**
+     * Created At
+     */
+    created_at: string | null;
+};
+
+/**
  * LearningResponse
  */
 export type LearningResponse = {
@@ -1330,13 +1440,55 @@ export type LearningResponse = {
      */
     content: string;
     /**
-     * Source
+     * Claim Kind
      */
-    source: string;
+    claim_kind: string;
+    /**
+     * Provenance
+     */
+    provenance: string;
+    /**
+     * Confidence
+     */
+    confidence: number;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Evidence Count
+     */
+    evidence_count: number;
+    /**
+     * Promotion State
+     */
+    promotion_state: string | null;
+    /**
+     * Review Needed
+     */
+    review_needed: boolean;
     /**
      * Created At
      */
-    created_at: string;
+    created_at: string | null;
+};
+
+/**
+ * LearningReviewRequest
+ */
+export type LearningReviewRequest = {
+    /**
+     * Decision
+     */
+    decision: 'approve' | 'reject' | 'correct' | 'defer';
+    /**
+     * Rationale
+     */
+    rationale?: string | null;
+    /**
+     * Corrected Content
+     */
+    corrected_content?: string | null;
 };
 
 /**
@@ -1801,6 +1953,7 @@ export type MessageTraceResponse = {
      */
     skills_used?: Array<SkillUsageTraceResponse>;
     workspace?: WorkspaceUsageTraceResponse | null;
+    procedure?: ProcedureUsageTraceResponse | null;
 };
 
 /**
@@ -2016,6 +2169,332 @@ export type PrioritySnapshotItem = {
      */
     overridden_from_computed: boolean;
     override: PriorityOverrideSchema | null;
+};
+
+/**
+ * ProcedureAdmissionResultResponse
+ */
+export type ProcedureAdmissionResultResponse = {
+    candidate: ProcedureCandidateResponse;
+    version?: ProcedureVersionResponse | null;
+};
+
+/**
+ * ProcedureCandidateResponse
+ */
+export type ProcedureCandidateResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Source Kind
+     */
+    source_kind: string;
+    /**
+     * Provenance
+     */
+    provenance: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Preconditions
+     */
+    preconditions: Array<string>;
+    /**
+     * Steps
+     */
+    steps: Array<string>;
+    /**
+     * Success Criteria
+     */
+    success_criteria: Array<string>;
+    /**
+     * Limits
+     */
+    limits: Array<string>;
+    /**
+     * Evidence Refs
+     */
+    evidence_refs: Array<ProcedureEvidenceRefResponse>;
+    /**
+     * Learning Refs
+     */
+    learning_refs: Array<string>;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Submitted At
+     */
+    submitted_at: string | null;
+    /**
+     * Resolved At
+     */
+    resolved_at: string | null;
+};
+
+/**
+ * ProcedureDetailResponse
+ */
+export type ProcedureDetailResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Identity Status
+     */
+    identity_status: string;
+    /**
+     * Current Version Id
+     */
+    current_version_id?: string | null;
+    /**
+     * Versions
+     */
+    versions: Array<ProcedureVersionResponse>;
+    /**
+     * Events
+     */
+    events: Array<ProcedureLifecycleEventResponse>;
+    /**
+     * Outcomes
+     */
+    outcomes: Array<ProcedureFeedbackResponse>;
+};
+
+/**
+ * ProcedureDisableRequest
+ */
+export type ProcedureDisableRequest = {
+    /**
+     * Reason
+     */
+    reason?: string;
+};
+
+/**
+ * ProcedureEditRequest
+ */
+export type ProcedureEditRequest = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Preconditions
+     */
+    preconditions?: Array<string>;
+    /**
+     * Steps
+     */
+    steps: Array<string>;
+    /**
+     * Success Criteria
+     */
+    success_criteria: Array<string>;
+    /**
+     * Limits
+     */
+    limits?: Array<string>;
+    /**
+     * Reason
+     */
+    reason?: string;
+};
+
+/**
+ * ProcedureEvidenceRefResponse
+ */
+export type ProcedureEvidenceRefResponse = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Id
+     */
+    id: string;
+};
+
+/**
+ * ProcedureFeedbackResponse
+ */
+export type ProcedureFeedbackResponse = {
+    /**
+     * Outcome
+     */
+    outcome: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Procedure Version Id
+     */
+    procedure_version_id: string;
+};
+
+/**
+ * ProcedureLifecycleEventResponse
+ */
+export type ProcedureLifecycleEventResponse = {
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Version Id
+     */
+    version_id?: string | null;
+};
+
+/**
+ * ProcedureReviewRequest
+ */
+export type ProcedureReviewRequest = {
+    /**
+     * Decision
+     */
+    decision: 'approve' | 'reject' | 'needs_review' | 'withdraw';
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
+ * ProcedureSummaryResponse
+ */
+export type ProcedureSummaryResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Identity Status
+     */
+    identity_status: string;
+    /**
+     * Version Status
+     */
+    version_status: string;
+    /**
+     * Version Number
+     */
+    version_number: number;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Current Version Id
+     */
+    current_version_id?: string | null;
+    /**
+     * Evidence Refs
+     */
+    evidence_refs: Array<ProcedureEvidenceRefResponse>;
+};
+
+/**
+ * ProcedureUsageTraceResponse
+ */
+export type ProcedureUsageTraceResponse = {
+    /**
+     * Invocation Id
+     */
+    invocation_id: string;
+    /**
+     * Procedure Id
+     */
+    procedure_id: string;
+    /**
+     * Version Id
+     */
+    version_id: string;
+};
+
+/**
+ * ProcedureVersionResponse
+ */
+export type ProcedureVersionResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Procedure Id
+     */
+    procedure_id: string;
+    /**
+     * Version Number
+     */
+    version_number: number;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Trigger
+     */
+    trigger: string;
+    /**
+     * Preconditions
+     */
+    preconditions: Array<string>;
+    /**
+     * Steps
+     */
+    steps: Array<string>;
+    /**
+     * Success Criteria
+     */
+    success_criteria: Array<string>;
+    /**
+     * Limits
+     */
+    limits: Array<string>;
+    /**
+     * Provenance
+     */
+    provenance: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Evidence Refs
+     */
+    evidence_refs: Array<ProcedureEvidenceRefResponse>;
+    /**
+     * Learning Refs
+     */
+    learning_refs: Array<string>;
 };
 
 /**
@@ -4176,6 +4655,145 @@ export type GetGoalDetailResponses = {
 
 export type GetGoalDetailResponse = GetGoalDetailResponses[keyof GetGoalDetailResponses];
 
+export type ListGoalLearningsData = {
+    body?: never;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+    };
+    query?: {
+        /**
+         * Include History
+         */
+        include_history?: boolean;
+    };
+    url: '/api/v0/goals/{goal_id}/learnings';
+};
+
+export type ListGoalLearningsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListGoalLearningsError = ListGoalLearningsErrors[keyof ListGoalLearningsErrors];
+
+export type ListGoalLearningsResponses = {
+    /**
+     * Response Listgoallearnings
+     *
+     * Successful Response
+     */
+    200: Array<LearningResponse>;
+};
+
+export type ListGoalLearningsResponse = ListGoalLearningsResponses[keyof ListGoalLearningsResponses];
+
+export type GetGoalLearningData = {
+    body?: never;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+        /**
+         * Learning Id
+         */
+        learning_id: string;
+    };
+    query?: never;
+    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}';
+};
+
+export type GetGoalLearningErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetGoalLearningError = GetGoalLearningErrors[keyof GetGoalLearningErrors];
+
+export type GetGoalLearningResponses = {
+    /**
+     * Successful Response
+     */
+    200: LearningDetailResponse;
+};
+
+export type GetGoalLearningResponse = GetGoalLearningResponses[keyof GetGoalLearningResponses];
+
+export type ReviewGoalLearningData = {
+    body: LearningReviewRequest;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+        /**
+         * Learning Id
+         */
+        learning_id: string;
+    };
+    query?: never;
+    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}/review';
+};
+
+export type ReviewGoalLearningErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReviewGoalLearningError = ReviewGoalLearningErrors[keyof ReviewGoalLearningErrors];
+
+export type ReviewGoalLearningResponses = {
+    /**
+     * Successful Response
+     */
+    200: LearningResponse;
+};
+
+export type ReviewGoalLearningResponse = ReviewGoalLearningResponses[keyof ReviewGoalLearningResponses];
+
+export type PromoteGoalLearningData = {
+    body?: never;
+    path: {
+        /**
+         * Goal Id
+         */
+        goal_id: string;
+        /**
+         * Learning Id
+         */
+        learning_id: string;
+    };
+    query?: never;
+    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}/promote';
+};
+
+export type PromoteGoalLearningErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type PromoteGoalLearningError = PromoteGoalLearningErrors[keyof PromoteGoalLearningErrors];
+
+export type PromoteGoalLearningResponses = {
+    /**
+     * Successful Response
+     */
+    200: LearningPromotionResponse;
+};
+
+export type PromoteGoalLearningResponse = PromoteGoalLearningResponses[keyof PromoteGoalLearningResponses];
+
 export type ListGoalTracesData = {
     body?: never;
     path: {
@@ -5180,6 +5798,194 @@ export type UnpinPriorityOverrideResponses = {
 
 export type UnpinPriorityOverrideResponse = UnpinPriorityOverrideResponses[keyof UnpinPriorityOverrideResponses];
 
+export type ListProcedureCandidatesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Status
+         */
+        status?: string | null;
+    };
+    url: '/api/v0/procedures/candidates';
+};
+
+export type ListProcedureCandidatesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListProcedureCandidatesError = ListProcedureCandidatesErrors[keyof ListProcedureCandidatesErrors];
+
+export type ListProcedureCandidatesResponses = {
+    /**
+     * Response Listprocedurecandidates
+     *
+     * Successful Response
+     */
+    200: Array<ProcedureCandidateResponse>;
+};
+
+export type ListProcedureCandidatesResponse = ListProcedureCandidatesResponses[keyof ListProcedureCandidatesResponses];
+
+export type ListActiveProceduresData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/procedures';
+};
+
+export type ListActiveProceduresResponses = {
+    /**
+     * Response Listactiveprocedures
+     *
+     * Successful Response
+     */
+    200: Array<ProcedureVersionResponse>;
+};
+
+export type ListActiveProceduresResponse = ListActiveProceduresResponses[keyof ListActiveProceduresResponses];
+
+export type ListProcedureLibraryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/procedures/library';
+};
+
+export type ListProcedureLibraryResponses = {
+    /**
+     * Response Listprocedurelibrary
+     *
+     * Successful Response
+     */
+    200: Array<ProcedureSummaryResponse>;
+};
+
+export type ListProcedureLibraryResponse = ListProcedureLibraryResponses[keyof ListProcedureLibraryResponses];
+
+export type GetProcedureData = {
+    body?: never;
+    path: {
+        /**
+         * Procedure Id
+         */
+        procedure_id: string;
+    };
+    query?: never;
+    url: '/api/v0/procedures/{procedure_id}';
+};
+
+export type GetProcedureErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetProcedureError = GetProcedureErrors[keyof GetProcedureErrors];
+
+export type GetProcedureResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProcedureDetailResponse;
+};
+
+export type GetProcedureResponse = GetProcedureResponses[keyof GetProcedureResponses];
+
+export type EditProcedureData = {
+    body: ProcedureEditRequest;
+    path: {
+        /**
+         * Procedure Id
+         */
+        procedure_id: string;
+    };
+    query?: never;
+    url: '/api/v0/procedures/{procedure_id}/edit';
+};
+
+export type EditProcedureErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EditProcedureError = EditProcedureErrors[keyof EditProcedureErrors];
+
+export type EditProcedureResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProcedureAdmissionResultResponse;
+};
+
+export type EditProcedureResponse = EditProcedureResponses[keyof EditProcedureResponses];
+
+export type ReviewProcedureCandidateData = {
+    body: ProcedureReviewRequest;
+    path: {
+        /**
+         * Candidate Id
+         */
+        candidate_id: string;
+    };
+    query?: never;
+    url: '/api/v0/procedures/candidates/{candidate_id}/review';
+};
+
+export type ReviewProcedureCandidateErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReviewProcedureCandidateError = ReviewProcedureCandidateErrors[keyof ReviewProcedureCandidateErrors];
+
+export type ReviewProcedureCandidateResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProcedureAdmissionResultResponse;
+};
+
+export type ReviewProcedureCandidateResponse = ReviewProcedureCandidateResponses[keyof ReviewProcedureCandidateResponses];
+
+export type DisableProcedureData = {
+    body: ProcedureDisableRequest;
+    path: {
+        /**
+         * Procedure Id
+         */
+        procedure_id: string;
+    };
+    query?: never;
+    url: '/api/v0/procedures/{procedure_id}/disable';
+};
+
+export type DisableProcedureErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DisableProcedureError = DisableProcedureErrors[keyof DisableProcedureErrors];
+
+export type DisableProcedureResponses = {
+    /**
+     * Successful Response
+     */
+    200: ProcedureVersionResponse;
+};
+
+export type DisableProcedureResponse = DisableProcedureResponses[keyof DisableProcedureResponses];
+
 export type ListSkillsData = {
     body?: never;
     path?: never;
@@ -5746,6 +6552,34 @@ export type ListWorkspaceRunsResponses = {
 };
 
 export type ListWorkspaceRunsResponse = ListWorkspaceRunsResponses[keyof ListWorkspaceRunsResponses];
+
+export type WatchWorkspaceRunEventsData = {
+    body?: never;
+    path: {
+        /**
+         * Run Id
+         */
+        run_id: string;
+    };
+    query?: never;
+    url: '/api/v0/workspace/runs/{run_id}/events';
+};
+
+export type WatchWorkspaceRunEventsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type WatchWorkspaceRunEventsError = WatchWorkspaceRunEventsErrors[keyof WatchWorkspaceRunEventsErrors];
+
+export type WatchWorkspaceRunEventsResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type CancelWorkspaceRunData = {
     body?: never;

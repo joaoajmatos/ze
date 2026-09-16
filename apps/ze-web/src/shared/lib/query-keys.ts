@@ -35,6 +35,9 @@ export const queryKeys = {
   workspace: () => ["workspace"] as const,
   workspaceFiles: (path?: string) => ["workspace-files", path ?? ""] as const,
   workspaceRuns: (origin?: string) => ["workspace-runs", origin ?? ""] as const,
+  procedureCandidates: () => ["procedure-candidates"] as const,
+  procedureLibrary: () => ["procedure-library"] as const,
+  procedureDetail: (procedureId: string) => ["procedure-detail", procedureId] as const,
 };
 
 const CORE_REFRESH_SCREEN_MAP: Record<string, readonly string[]> = {

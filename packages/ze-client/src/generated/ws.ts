@@ -97,6 +97,9 @@ export type Files = {
 export type ScriptRan1 = boolean;
 export type Unavailable = boolean;
 export type Planned = string[] | null;
+export type InvocationId = string;
+export type ProcedureId = string;
+export type VersionId = string;
 export type Type10 = "notification";
 export type Id4 = string;
 export type EventType = string;
@@ -286,6 +289,7 @@ export interface WsTraceUpdateFrame {
   total_duration_ms: TotalDurationMs;
   skills_used?: SkillsUsed;
   workspace?: WorkspaceUsageTraceResponse | null;
+  procedure?: ProcedureUsageTraceResponse | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -330,6 +334,15 @@ export interface WorkspaceUsageTraceResponse {
   script_ran?: ScriptRan1;
   unavailable?: Unavailable;
   planned?: Planned;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "ProcedureUsageTraceResponse".
+ */
+export interface ProcedureUsageTraceResponse {
+  invocation_id: InvocationId;
+  procedure_id: ProcedureId;
+  version_id: VersionId;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

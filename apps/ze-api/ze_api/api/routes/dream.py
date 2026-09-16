@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ze_api.api.dependencies import (
     get_dream_store,
-    get_pool,
     get_embedder,
+    get_pool,
+    get_procedure_admission,
     require_api_key,
 )
 from ze_api.api.schemas import (
@@ -27,8 +28,14 @@ def _get_promoter(
     pool=Depends(get_pool),
     dream_store=Depends(get_dream_store),
     embedder=Depends(get_embedder),
+    procedure_admission=Depends(get_procedure_admission),
 ) -> DreamPromoter:
-    return DreamPromoter(pool=pool, dream_store=dream_store, embedder=embedder)
+    return DreamPromoter(
+        pool=pool,
+        dream_store=dream_store,
+        embedder=embedder,
+        procedure_admission=procedure_admission,
+    )
 
 
 @router.get(

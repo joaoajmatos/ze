@@ -93,6 +93,10 @@ def get_skill_store(request: Request):
     return request.app.state.container.skill_store
 
 
+def get_procedure_admission(request: Request):
+    return request.app.state.container.procedure_admission
+
+
 def get_collision_store(request: Request):
     return request.app.state.container.collision_store
 

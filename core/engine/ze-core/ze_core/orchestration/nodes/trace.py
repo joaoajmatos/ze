@@ -9,6 +9,7 @@ from ze_core.conversation.messages.types import (
     CompactionTrace,
     MemoryChunkTrace,
     MessageTrace,
+    ProcedureUsageTrace,
     SkillUsageTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
@@ -70,6 +71,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         resume_recap_applied=bool(state.get("resume_recap_applied")),
         skills_used=_extract_skills_used(state.get("skill_matches"), agent_result),
         workspace=await _extract_workspace(agent_result, config),
+        procedure=_extract_procedure(state.get("agent_context")),
     )
     return {"message_trace": trace}
 
@@ -252,3 +254,12 @@ def _extract_tool_calls(agent_result: Any) -> list[ToolCallTrace]:
             )
         )
     return result
+
+
+def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:
+    from ze_core.orchestration.procedure_activation import procedure_usage_trace
+
+    payload = procedure_usage_trace(agent_context)
+    if payload is None:
+        return None
+    return ProcedureUsageTrace(**payload)

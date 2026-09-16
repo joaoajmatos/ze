@@ -12,6 +12,7 @@ from ze_core.conversation.messages.types import (
     Message,
     MessageTrace,
     MemoryChunkTrace,
+    ProcedureUsageTrace,
     SkillUsageTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
@@ -185,6 +186,8 @@ def _parse_trace(data: dict) -> MessageTrace:
     workspace = (
         WorkspaceUsageTrace(**workspace_raw) if workspace_raw else None
     )
+    procedure_raw = data.get("procedure")
+    procedure = ProcedureUsageTrace(**procedure_raw) if procedure_raw else None
     return MessageTrace(
         agent=data["agent"],
         routing_method=data["routing_method"],
@@ -197,6 +200,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         total_duration_ms=data.get("total_duration_ms", 0),
         skills_used=[SkillUsageTrace(**s) for s in data.get("skills_used", [])],
         workspace=workspace,
+        procedure=procedure,
     )
 
 

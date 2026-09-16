@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ze_api.api.dependencies import get_skill_store, require_api_key
+from ze_api.api.dependencies import get_container, get_skill_store, require_api_key
 from ze_api.api.schemas import (
     SkillDetailResponse,
     SkillImportRequest,
@@ -112,9 +112,14 @@ async def import_skill(
 async def approve_skill(
     skill_id: UUID,
     store: SkillStore = Depends(get_skill_store),
+    container=Depends(get_container),
 ) -> SkillDetailResponse:
     try:
-        skill = await skills_rest.approve(store, skill_id)
+        skill = await skills_rest.approve(
+            store,
+            skill_id,
+            procedure_admission=getattr(container, "procedure_admission", None),
+        )
     except SkillNotFoundError:
         raise HTTPException(status_code=404, detail="Skill not found")
     except InvalidSkillTransitionError as exc:

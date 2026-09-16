@@ -17,6 +17,19 @@ from ze_agents.types import AgentContext, AgentResult
 log = get_logger(__name__)
 
 
+def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
+    return {
+        "procedure_guidance": getattr(base_ctx, "procedure_guidance", None),
+        "procedure_matches": getattr(base_ctx, "procedure_matches", None),
+        "procedure_tool_names": getattr(base_ctx, "procedure_tool_names", None),
+        "procedure_invocation_id": getattr(base_ctx, "procedure_invocation_id", None),
+        "procedure_invoked_id": getattr(base_ctx, "procedure_invoked_id", None),
+        "procedure_invoked_version_id": getattr(
+            base_ctx, "procedure_invoked_version_id", None
+        ),
+    }
+
+
 _GATE_RANK: dict[GateDecision, int] = {
     GateDecision.BLOCKED: 0,
     GateDecision.DRAFT: 1,
@@ -76,6 +89,7 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
             base_ctx,
             gate_decision,
             state,
+            config,
             is_sequential=envelope.is_sequential,
             reporter=reporter,
             identity_builder=identity_builder,
@@ -88,6 +102,7 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
         base_ctx,
         gate_decision,
         state,
+        config,
         token_queue=token_queue,
         token_sink=token_sink,
         reporter=reporter,
@@ -121,6 +136,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         embed_fn=_embed_fn(config),
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
+        **_procedure_kwargs(base_ctx),
     )
     result = await _run_with_timeout(subtask.agent, ctx)
 
@@ -186,11 +202,21 @@ def _build_image_message(state: dict) -> dict:
     return {"role": "user", "content": content}
 
 
+def _sync_procedure_invocation(source: AgentContext, dest: AgentContext) -> None:
+    dest.procedure_invocation_id = getattr(source, "procedure_invocation_id", None)
+    dest.procedure_invoked_id = getattr(source, "procedure_invoked_id", None)
+    dest.procedure_invoked_version_id = getattr(
+        source, "procedure_invoked_version_id", None
+    )
+    dest.procedure_tool_names = getattr(source, "procedure_tool_names", None)
+
+
 async def _execute_single(
     subtask: Any,
     base_ctx: AgentContext,
     gate_decision: GateDecision,
     state: dict,
+    config: RunnableConfig,
     token_queue: asyncio.Queue | None = None,
     token_sink: Any = None,
     reporter: Any = None,
@@ -216,12 +242,22 @@ async def _execute_single(
         token_sink=token_sink,
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
+        **_procedure_kwargs(base_ctx),
     )
     result = await _run_with_timeout(subtask.agent, ctx, token_queue=token_queue)
+    from ze_core.orchestration.procedure_activation import record_guided_actions
+
+    await record_guided_actions(ctx, result, config)
+    _sync_procedure_invocation(ctx, base_ctx)
     components: list = []
     if component_hook is not None:
         components = component_hook.pop_components(ctx.session_id)
-    return {"agent_result": result, "subtask_results": [], "components": components}
+    return {
+        "agent_result": result,
+        "subtask_results": [],
+        "components": components,
+        "agent_context": base_ctx,
+    }
 
 
 async def _execute_compound(
@@ -229,6 +265,7 @@ async def _execute_compound(
     base_ctx: AgentContext,
     gate_decision: GateDecision,
     state: dict,
+    config: RunnableConfig,
     is_sequential: bool = False,
     reporter: Any = None,
     identity_builder: Any = None,
@@ -244,6 +281,7 @@ async def _execute_compound(
             base_ctx,
             gate_decision,
             state,
+            config,
             token_queue=token_queue,
             token_sink=token_sink,
             reporter=reporter,
@@ -270,12 +308,18 @@ async def _execute_compound(
             embed_fn=embed_fn,
             active_skills=base_ctx.active_skills,
             skill_tool_names=base_ctx.skill_tool_names,
+            **_procedure_kwargs(base_ctx),
         )
+
+    from ze_core.orchestration.procedure_activation import record_guided_actions
 
     if is_sequential:
         results: list[AgentResult] = []
         for subtask in subtasks:
-            result = await _run_with_timeout(subtask.agent, _make_ctx(subtask))
+            ctx = _make_ctx(subtask)
+            result = await _run_with_timeout(subtask.agent, ctx)
+            await record_guided_actions(ctx, result, config)
+            _sync_procedure_invocation(ctx, base_ctx)
             results.append(result)
     else:
         results = list(
@@ -284,7 +328,11 @@ async def _execute_compound(
             )
         )
 
-    return {"agent_result": None, "subtask_results": results}
+    return {
+        "agent_result": None,
+        "subtask_results": results,
+        "agent_context": base_ctx,
+    }
 
 
 async def _run_with_timeout(

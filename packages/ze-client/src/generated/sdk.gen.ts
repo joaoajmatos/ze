@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProfileData, GetProfileResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceModeData, GetWorkspaceModeResponses, GetWorkspaceResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, IngestWorkspaceFileData, IngestWorkspaceFileErrors, IngestWorkspaceFileResponses, ListCapabilitiesData, ListCapabilitiesResponses, ListChannelsData, ListChannelsResponses, ListCollisionsData, ListCollisionsErrors, ListCollisionsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RefreshSkillData, RefreshSkillErrors, RefreshSkillResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ResetWorkspaceData, ResetWorkspaceErrors, ResetWorkspaceResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateCapabilityData, UpdateCapabilityErrors, UpdateCapabilityResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses, UpdateWorkspaceModeData, UpdateWorkspaceModeErrors, UpdateWorkspaceModeResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses } from './types.gen';
+import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetGoalLearningData, GetGoalLearningErrors, GetGoalLearningResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetProfileData, GetProfileResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceModeData, GetWorkspaceModeResponses, GetWorkspaceResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, IngestWorkspaceFileData, IngestWorkspaceFileErrors, IngestWorkspaceFileResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListCapabilitiesData, ListCapabilitiesResponses, ListChannelsData, ListChannelsResponses, ListCollisionsData, ListCollisionsErrors, ListCollisionsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalLearningsData, ListGoalLearningsErrors, ListGoalLearningsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, PromoteGoalLearningData, PromoteGoalLearningErrors, PromoteGoalLearningResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RefreshSkillData, RefreshSkillErrors, RefreshSkillResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ResetWorkspaceData, ResetWorkspaceErrors, ResetWorkspaceResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateCapabilityData, UpdateCapabilityErrors, UpdateCapabilityResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses, UpdateWorkspaceModeData, UpdateWorkspaceModeErrors, UpdateWorkspaceModeResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -363,6 +363,54 @@ export const listGoals = <ThrowOnError extends boolean = false>(options?: Option
 export const getGoalDetail = <ThrowOnError extends boolean = false>(options: Options<GetGoalDetailData, ThrowOnError>): RequestResult<GetGoalDetailResponses, GetGoalDetailErrors, ThrowOnError> => (options.client ?? client).get<GetGoalDetailResponses, GetGoalDetailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/goals/{goal_id}',
+    ...options
+});
+
+/**
+ * List goal learnings
+ *
+ * Returns evidence-backed learning summaries. History includes retracted and superseded claims.
+ */
+export const listGoalLearnings = <ThrowOnError extends boolean = false>(options: Options<ListGoalLearningsData, ThrowOnError>): RequestResult<ListGoalLearningsResponses, ListGoalLearningsErrors, ThrowOnError> => (options.client ?? client).get<ListGoalLearningsResponses, ListGoalLearningsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/goals/{goal_id}/learnings',
+    ...options
+});
+
+/**
+ * Get a goal learning
+ *
+ * Returns one learning with redaction-safe evidence summaries.
+ */
+export const getGoalLearning = <ThrowOnError extends boolean = false>(options: Options<GetGoalLearningData, ThrowOnError>): RequestResult<GetGoalLearningResponses, GetGoalLearningErrors, ThrowOnError> => (options.client ?? client).get<GetGoalLearningResponses, GetGoalLearningErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}',
+    ...options
+});
+
+/**
+ * Review a goal learning
+ *
+ * Approve, reject, correct, or defer an evidence-backed learning.
+ */
+export const reviewGoalLearning = <ThrowOnError extends boolean = false>(options: Options<ReviewGoalLearningData, ThrowOnError>): RequestResult<ReviewGoalLearningResponses, ReviewGoalLearningErrors, ThrowOnError> => (options.client ?? client).post<ReviewGoalLearningResponses, ReviewGoalLearningErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}/review',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Promote a goal learning
+ *
+ * Publishes a user-confirmed FACT through the licensed perception-fact path. Inferences remain labeled learnings and are not written to memory_facts.
+ */
+export const promoteGoalLearning = <ThrowOnError extends boolean = false>(options: Options<PromoteGoalLearningData, ThrowOnError>): RequestResult<PromoteGoalLearningResponses, PromoteGoalLearningErrors, ThrowOnError> => (options.client ?? client).post<PromoteGoalLearningResponses, PromoteGoalLearningErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}/promote',
     ...options
 });
 
@@ -778,6 +826,95 @@ export const unpinPriorityOverride = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
+ * List procedure candidates
+ *
+ * Pending and needs-review procedure candidates awaiting admission.
+ */
+export const listProcedureCandidates = <ThrowOnError extends boolean = false>(options?: Options<ListProcedureCandidatesData, ThrowOnError>): RequestResult<ListProcedureCandidatesResponses, ListProcedureCandidatesErrors, ThrowOnError> => (options?.client ?? client).get<ListProcedureCandidatesResponses, ListProcedureCandidatesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures/candidates',
+    ...options
+});
+
+/**
+ * List active procedures
+ *
+ * Admitted active procedure versions only.
+ */
+export const listActiveProcedures = <ThrowOnError extends boolean = false>(options?: Options<ListActiveProceduresData, ThrowOnError>): RequestResult<ListActiveProceduresResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListActiveProceduresResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures',
+    ...options
+});
+
+/**
+ * List procedure identities
+ *
+ * Current identity status and latest version for every procedure, including retired.
+ */
+export const listProcedureLibrary = <ThrowOnError extends boolean = false>(options?: Options<ListProcedureLibraryData, ThrowOnError>): RequestResult<ListProcedureLibraryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListProcedureLibraryResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures/library',
+    ...options
+});
+
+/**
+ * Get procedure detail
+ *
+ * Identity, versions, evidence, lifecycle events, and outcome feedback.
+ */
+export const getProcedure = <ThrowOnError extends boolean = false>(options: Options<GetProcedureData, ThrowOnError>): RequestResult<GetProcedureResponses, GetProcedureErrors, ThrowOnError> => (options.client ?? client).get<GetProcedureResponses, GetProcedureErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures/{procedure_id}',
+    ...options
+});
+
+/**
+ * Edit a procedure
+ *
+ * Submit a user-authored revision through the governed admission door.
+ */
+export const editProcedure = <ThrowOnError extends boolean = false>(options: Options<EditProcedureData, ThrowOnError>): RequestResult<EditProcedureResponses, EditProcedureErrors, ThrowOnError> => (options.client ?? client).post<EditProcedureResponses, EditProcedureErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures/{procedure_id}/edit',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Review a procedure candidate
+ *
+ * Approve, reject, hold, or withdraw a procedure candidate.
+ */
+export const reviewProcedureCandidate = <ThrowOnError extends boolean = false>(options: Options<ReviewProcedureCandidateData, ThrowOnError>): RequestResult<ReviewProcedureCandidateResponses, ReviewProcedureCandidateErrors, ThrowOnError> => (options.client ?? client).post<ReviewProcedureCandidateResponses, ReviewProcedureCandidateErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures/candidates/{candidate_id}/review',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Disable a procedure
+ *
+ * Immediately retire the procedure identity so it cannot match as ready.
+ */
+export const disableProcedure = <ThrowOnError extends boolean = false>(options: Options<DisableProcedureData, ThrowOnError>): RequestResult<DisableProcedureResponses, DisableProcedureErrors, ThrowOnError> => (options.client ?? client).post<DisableProcedureResponses, DisableProcedureErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/procedures/{procedure_id}/disable',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List skills
  *
  * Return every skill (bundled and imported), optionally filtered by status and/or source (FR-012).
@@ -1007,6 +1144,17 @@ export const getWorkspaceFile = <ThrowOnError extends boolean = false>(options: 
 export const listWorkspaceRuns = <ThrowOnError extends boolean = false>(options?: Options<ListWorkspaceRunsData, ThrowOnError>): RequestResult<ListWorkspaceRunsResponses, ListWorkspaceRunsErrors, ThrowOnError> => (options?.client ?? client).get<ListWorkspaceRunsResponses, ListWorkspaceRunsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/workspace/runs',
+    ...options
+});
+
+/**
+ * Watch a workspace run's live output
+ *
+ * Streams already-produced output then live output as it happens (newline-delimited JSON), closing after the exit event (FR-005). Does not replace follow-through — the follow-up turn still fires exactly once when the run becomes terminal (FR-011).
+ */
+export const watchWorkspaceRunEvents = <ThrowOnError extends boolean = false>(options: Options<WatchWorkspaceRunEventsData, ThrowOnError>): RequestResult<WatchWorkspaceRunEventsResponses, WatchWorkspaceRunEventsErrors, ThrowOnError> => (options.client ?? client).get<WatchWorkspaceRunEventsResponses, WatchWorkspaceRunEventsErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/workspace/runs/{run_id}/events',
     ...options
 });
 

@@ -5,8 +5,11 @@ from datetime import datetime, timedelta, timezone
 
 from ze_seed.context import SeedContext
 from ze_seed.domain import SeedDomain
-from ze_seed.domains._helpers import delete_by_ids
+from ze_seed.domains._helpers import delete_by_column_ids, delete_by_ids
 from ze_seed.narrative.ids import (
+    ACTION_RECORD_IDS,
+    ACTION_RECORD_PT_1,
+    ACTION_RECORD_PT_2,
     EXECUTION_IDS,
     EXEC_HEALTH_LOOP_FAIL,
     EXEC_INV_FOUND,
@@ -54,7 +57,17 @@ async def _clear_automation(ctx: SeedContext) -> None:
         await delete_by_ids(conn, "workflow_executions", EXECUTION_IDS)
         await delete_by_ids(conn, "workflows", WORKFLOW_IDS)
         await delete_by_ids(conn, "goal_execution_traces", TRACE_IDS)
-        await delete_by_ids(conn, "goal_learnings", LEARNING_IDS)
+        await delete_by_column_ids(
+            conn, "goal_learning_evidence", "learning_id", LEARNING_IDS
+        )
+        await delete_by_column_ids(
+            conn, "goal_learning_reviews", "learning_id", LEARNING_IDS
+        )
+        await delete_by_column_ids(
+            conn, "goal_learning_promotions", "learning_id", LEARNING_IDS
+        )
+        await delete_by_ids(conn, "goal_learning_claims", LEARNING_IDS)
+        await delete_by_ids(conn, "action_records", ACTION_RECORD_IDS)
         await delete_by_ids(conn, "goal_gates", GATE_IDS)
         await delete_by_ids(conn, "goal_milestones", MILESTONE_IDS)
         await delete_by_ids(conn, "goals", GOAL_IDS)
@@ -66,8 +79,8 @@ async def _apply_automation(ctx: SeedContext) -> int:
     async with ctx.pool.acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO goals (id, title, objective, success_condition, time_horizon, status, type, learnings)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO goals (id, title, objective, success_condition, time_horizon, status, type)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT (id) DO NOTHING
             """,
             GOAL_PORTUGUESE,
@@ -77,12 +90,11 @@ async def _apply_automation(ctx: SeedContext) -> int:
             "3 months",
             "awaiting_gate",
             "learning",
-            "Duolingo streak helps daily habit; conversation practice is the bottleneck",
         )
         await conn.execute(
             """
-            INSERT INTO goals (id, title, objective, success_condition, time_horizon, status, type, learnings, retrospective_text)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO goals (id, title, objective, success_condition, time_horizon, status, type, retrospective_text)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (id) DO NOTHING
             """,
             GOAL_SIDE_PROJECT,
@@ -92,13 +104,12 @@ async def _apply_automation(ctx: SeedContext) -> int:
             "6 weeks",
             "completed",
             "project",
-            "Indie hacker communities respond well to build-in-public posts",
             "Shipped on time. Product Hunt launch drove most signups. CSV import was the most requested feature.",
         )
         await conn.execute(
             """
-            INSERT INTO goals (id, title, objective, success_condition, time_horizon, status, type, learnings)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO goals (id, title, objective, success_condition, time_horizon, status, type)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT (id) DO NOTHING
             """,
             GOAL_SLEEP,
@@ -108,7 +119,6 @@ async def _apply_automation(ctx: SeedContext) -> int:
             "8 weeks",
             "planning",
             "health",
-            "",
         )
         count += 3
 
@@ -250,25 +260,108 @@ async def _apply_automation(ctx: SeedContext) -> int:
 
         await conn.execute(
             """
-            INSERT INTO goal_learnings (id, goal_id, content, source)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO action_records (
+                id, idempotency_key, action_type, actor, producer_plugin,
+                lifecycle, outcome, occurred_at, provenance, confidence,
+                target_face, summary, authoritative_domain, authoritative_record_id,
+                context
+            )
+            VALUES (
+                $1, $2, 'goal.milestone', 'goal_executor', 'ze-automation',
+                'succeeded', 'success', $3, 'synthesized', 0.9, 'user',
+                'A2 assessment completed', 'goal.goal_execution_trace', $4, $5::jsonb
+            )
+            ON CONFLICT (id) DO NOTHING
+            """,
+            ACTION_RECORD_PT_1,
+            f"seed:goal:trace:{TRACE_PT_1}",
+            now - timedelta(days=40),
+            str(TRACE_PT_1),
+            json.dumps(
+                {
+                    "goal_id": str(GOAL_PORTUGUESE),
+                    "milestone_id": str(MS_PT_1),
+                }
+            ),
+        )
+        await conn.execute(
+            """
+            INSERT INTO action_records (
+                id, idempotency_key, action_type, actor, producer_plugin,
+                lifecycle, outcome, occurred_at, provenance, confidence,
+                target_face, summary, authoritative_domain, authoritative_record_id,
+                context
+            )
+            VALUES (
+                $1, $2, 'goal.milestone', 'goal_executor', 'ze-automation',
+                'succeeded', 'success', $3, 'synthesized', 0.9, 'user',
+                'Tutor conversation completed', 'goal.goal_execution_trace', $4, $5::jsonb
+            )
+            ON CONFLICT (id) DO NOTHING
+            """,
+            ACTION_RECORD_PT_2,
+            f"seed:goal:trace:{TRACE_PT_2}",
+            now - timedelta(days=20),
+            str(TRACE_PT_2),
+            json.dumps(
+                {
+                    "goal_id": str(GOAL_PORTUGUESE),
+                    "milestone_id": str(MS_PT_2),
+                }
+            ),
+        )
+
+        await conn.execute(
+            """
+            INSERT INTO goal_learning_claims (
+                id, goal_id, content, claim_kind, provenance, confidence, status
+            )
+            VALUES ($1, $2, $3, 'inference', 'synthesized', 0.4, 'review_needed')
             ON CONFLICT (id) DO NOTHING
             """,
             LEARNING_IDS[0],
             GOAL_PORTUGUESE,
             "Conversation practice is more effective than grammar drills at A2→B1 transition",
-            "milestone_retrospective",
         )
         await conn.execute(
             """
-            INSERT INTO goal_learnings (id, goal_id, content, source)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO goal_learning_claims (
+                id, goal_id, content, claim_kind, provenance, confidence, status
+            )
+            VALUES ($1, $2, $3, 'inference', 'synthesized', 0.4, 'review_needed')
             ON CONFLICT (id) DO NOTHING
             """,
             LEARNING_IDS[1],
             GOAL_PORTUGUESE,
             "Duolingo maintains daily habit but does not build conversational fluency alone",
-            "executor",
+        )
+        await conn.execute(
+            """
+            INSERT INTO goal_learning_evidence (
+                learning_id, evidence_kind, action_record_id, role,
+                execution_context_key, excerpt
+            )
+            VALUES ($1, 'action_record', $2, 'supports', $3, $4)
+            ON CONFLICT DO NOTHING
+            """,
+            LEARNING_IDS[0],
+            ACTION_RECORD_PT_1,
+            f"milestone:{MS_PT_1}",
+            "A2 assessment completed",
+        )
+        await conn.execute(
+            """
+            INSERT INTO goal_learning_evidence (
+                learning_id, evidence_kind, action_record_id, role,
+                execution_context_key, excerpt
+            )
+            VALUES ($1, 'action_record', $2, 'supports', $3, $4)
+            ON CONFLICT DO NOTHING
+            """,
+            LEARNING_IDS[1],
+            ACTION_RECORD_PT_2,
+            f"milestone:{MS_PT_2}",
+            "Tutor conversation completed",
         )
         count += 2
 

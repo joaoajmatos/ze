@@ -20,6 +20,7 @@ from ze_api.api.routes import (
     memory,
     notifications,
     priority,
+    procedures,
     routing,
     sessions,
     skills,
@@ -141,6 +142,7 @@ def create_app() -> FastAPI:
     app.include_router(loops.router, prefix="/api/v0")
     app.include_router(collisions.router, prefix="/api/v0")
     app.include_router(priority.router, prefix="/api/v0")
+    app.include_router(procedures.router, prefix="/api/v0")
     app.include_router(skills.router, prefix="/api/v0")
     app.include_router(workspace.router, prefix="/api/v0")
     app.include_router(channels.router)

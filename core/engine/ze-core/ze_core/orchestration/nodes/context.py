@@ -202,6 +202,10 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     if note is not None:
         agent_context.open_priorities_note = note
 
+    from ze_core.orchestration.procedure_activation import attach_procedure_matches
+
+    await attach_procedure_matches(agent_context, config, agent_name)
+
     user_message_id = config["configurable"].get("user_message_id")
     if user_message_id is not None:
         agent_context.extensions["user_message_id"] = user_message_id
@@ -255,6 +259,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         "agent_context": agent_context,
         "last_active_at": now,
         "resume_recap_applied": resume_recap_applied,
+        "procedure_matches": getattr(agent_context, "procedure_matches", None),
     }
 
 

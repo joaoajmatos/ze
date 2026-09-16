@@ -70,6 +70,9 @@ class AgentState(TypedDict):
         Any | None
     )  # list[SkillMatch] (ze_skills, kept untyped — no ze_core dep)
 
+    # ── Procedures (Phase 139 — advisory matches live on AgentContext) ──────
+    procedure_matches: Any | None
+
 
 def build_state_type(plugins: list[ZePlugin]) -> type:
     """Return a TypedDict class that merges AgentState with all plugin state extensions.

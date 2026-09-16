@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ze_agents import defaults
 from ze_agents.errors import WorkflowPlanError
@@ -145,12 +146,21 @@ def _parse_step(item: dict, index: int) -> WorkflowStep:
 
 
 class WorkflowPlanner:
-    def __init__(self, openrouter_client: LLMClient) -> None:
+    def __init__(
+        self,
+        openrouter_client: LLMClient,
+        procedure_discovery: Any | None = None,
+    ) -> None:
         self._client = openrouter_client
+        self._discovery = procedure_discovery
 
     async def plan(self, description: str) -> list[WorkflowStep]:
+        prompt = description
+        procedures = await self._fetch_procedures(description)
+        if procedures:
+            prompt = f"{description}\n\n{procedures}"
         raw = await self._client.complete(
-            messages=[{"role": "user", "content": description}],
+            messages=[{"role": "user", "content": prompt}],
             model=defaults.MODEL_WORKFLOW_PLAN,
             system=_PLAN_SYSTEM,
         )
@@ -166,6 +176,26 @@ class WorkflowPlanner:
         validate_workflow_steps(steps)
         log.info("workflow_planned", steps=len(steps))
         return steps
+
+    async def _fetch_procedures(self, query: str) -> str:
+        if self._discovery is None:
+            return ""
+        try:
+            from ze_memory.procedures.types import ProcedureTaskContext
+
+            matches = await self._discovery.match(
+                ProcedureTaskContext(caller="workflow_planner", task_text=query),
+                agent_allowed_tools=frozenset(),
+                capability_allowed_tools=frozenset(),
+            )
+        except Exception as exc:
+            log.warning("workflow_procedure_discovery_failed", error=str(exc))
+            return ""
+        if not matches:
+            return ""
+        from ze_memory.procedures.discovery import format_procedure_guidance
+
+        return format_procedure_guidance(matches) or ""
 
     async def extract_procedure(
         self,

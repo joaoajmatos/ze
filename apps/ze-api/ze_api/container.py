@@ -18,6 +18,7 @@ from ze_automation.bootstrap import (
     configure_workflow_executor,
     import_agent_modules as import_automation_agents,
 )
+from ze_automation.action_records import configure_action_recorder as configure_automation_action_recorder
 from ze_worldstate.bootstrap import build_worldstate_stack, worldstate_data_domains
 from ze_worldstate.store import LoopStore
 from ze_skills.bootstrap import (
@@ -27,6 +28,7 @@ from ze_skills.bootstrap import (
 )
 from ze_skills.store import SkillStore
 from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
+from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
 from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
 from ze_priority import import_agent_modules as import_priority_agents
 from ze_browser import BrowserClient
@@ -252,6 +254,9 @@ class ZeContainer(CoreContainer):
     collision_store: Any = None
     nli_client: Any = None
     budget_checker: SpendBudgetChecker | None = None
+    procedure_admission: Any = None
+    procedure_discovery: Any = None
+    procedure_activator: Any = None
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}
@@ -287,6 +292,9 @@ class ZeContainer(CoreContainer):
             "workspace_client": self.workspace_client,
             "workspace_gate": self.workspace_gate,
             "workspace_store": self.workspace_store,
+            "procedure_admission": self.procedure_admission,
+            "procedure_discovery": self.procedure_discovery,
+            "procedure_activator": self.procedure_activator,
             **plugin_services,
         }
         configurable["memory_hooks"] = [
@@ -386,11 +394,36 @@ async def build_container(settings: Settings) -> ZeContainer:
     turn_lock = ThreadTurnLock()
     turn_starter = _ContainerTurnStarter()
     push_sender = _NotifierPushSender()
+    action_record_store = PostgresActionRecordStore(pool=pool)
+    configure_automation_action_recorder(action_record_store)
+    from ze_memory.procedures.admission import ProcedureAdmissionService
+    from ze_memory.procedures.activation import ProcedureActivator
+    from ze_memory.procedures.discovery import ProcedureDiscovery
+    from ze_memory.procedures.store import PostgresProcedureStore
+
+    procedure_store = PostgresProcedureStore(pool, embedder=shared.embedder)
+    procedure_admission = ProcedureAdmissionService(procedure_store)
+    procedure_discovery = ProcedureDiscovery(procedure_store)
+    procedure_activator = ProcedureActivator(procedure_store)
+    import ze_memory.procedures.tools as procedure_tools
+
+    procedure_tools.configure(activator=procedure_activator)
     workspace = build_workspace_stack(
-        shared, settings, turn_starter=turn_starter, push_sender=push_sender
+        shared,
+        settings,
+        turn_starter=turn_starter,
+        push_sender=push_sender,
+        action_record_store=action_record_store,
     )
     automation.goal_executor._workspace_gate = workspace.gate
     automation.goal_executor._get_workspace_mode = workspace.store.get_mode
+    automation.goal_executor._action_records = action_record_store
+    automation.goal_executor._nli = shared.nli_client
+    automation.goal_executor._procedures = procedure_admission
+    automation.goal_planner._discovery = procedure_discovery
+    automation.workflow_planner._discovery = procedure_discovery
+    automation.goal_store._action_records = action_record_store
+    automation.goal_store._memory_store = shared.memory_store
     shared.dep_map.update(automation.deps)
     shared.dep_map.update(worldstate.deps)
     shared.dep_map.update(skills_stack.deps)
@@ -497,6 +530,9 @@ async def build_container(settings: Settings) -> ZeContainer:
             PriorityOverrideStore: priority_override_store,
             CollisionLogStore: collision_store,
             PostgresHypothesisStore: correlation.hypothesis_store,
+            ActionRecordStore: action_record_store,
+            PostgresActionRecordStore: action_record_store,
+            ProcedureAdmissionService: procedure_admission,
         }
     )
 
@@ -595,6 +631,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     plugin_stores: dict = {}
     for plugin in plugins:
         plugin_stores.update(plugin.rest_stores())
+    plugin_stores["procedure_admission"] = procedure_admission
 
     person_store = plugin_stores.get("person_store")
     if person_store is not None:
@@ -717,6 +754,9 @@ async def build_container(settings: Settings) -> ZeContainer:
         priority_override_store=priority_override_store,
         collision_store=collision_store,
         nli_client=shared.nli_client,
+        procedure_admission=procedure_admission,
+        procedure_discovery=procedure_discovery,
+        procedure_activator=procedure_activator,
     )
 
     webhook_dispatcher._container = container
@@ -784,6 +824,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         nli_client=shared.nli_client,
         settings=settings,
         notifier=notifier,
+        procedure_admission=procedure_admission,
     )
     if dream_job._dream_pass is not None:
         dream_job._dream_pass._collision_store = collision_store

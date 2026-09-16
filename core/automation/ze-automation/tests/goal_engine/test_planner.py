@@ -189,15 +189,35 @@ async def test_extract_learning_returns_string(planner, client):
     )
     assert isinstance(result, str)
     assert len(result) > 0
+    system = client.complete.await_args.kwargs["system"]
+    assert "INFERENCE" in system
+    assert "never FACT" in system
 
 
 async def test_plan_uses_learnings_in_prompt(planner, client):
-    goal = _make_goal(learnings="Previous attempt revealed email bounces.")
-    await planner.plan(goal)
+    from ze_automation.goals.types import EligibleLearning
+    from ze_agents.claims import ClaimKind, Provenance
+
+    goal = _make_goal()
+    await planner.plan(
+        goal,
+        eligible_learnings=[
+            EligibleLearning(
+                id=uuid4(),
+                content="Previous attempt revealed email bounces.",
+                claim_kind=ClaimKind.INFERENCE,
+                provenance=Provenance.SYNTHESIZED,
+                confidence=0.4,
+                evidence_summary="two traces",
+                relevance=1.0,
+            )
+        ],
+    )
     call_kwargs = client.complete.call_args
     messages = call_kwargs.kwargs.get("messages") or call_kwargs.args[0]
     content = messages[0]["content"]
     assert "Previous attempt" in content
+    assert "INFERENCE" in content
 
 
 # ── extract_procedure ─────────────────────────────────────────────────────────
@@ -291,37 +311,77 @@ async def test_replan_remaining_injects_local_procedures_into_prompt(planner, cl
 async def test_replan_remaining_local_procedure_wins_over_global_on_name_collision(
     client,
 ):
-    from ze_sdk.memory import Procedure
+    from uuid import uuid4
 
-    global_proc = Procedure(
-        id=None, name="Interview loop", trigger="global version", steps=["old"]
-    )
+    from ze_sdk.memory import Procedure
+    from ze_memory.procedures.types import MatchState, ProcedureMatch
+
     local_proc = Procedure(
         id=None, name="Interview loop", trigger="local version", steps=["new"]
     )
-
-    memory = AsyncMock()
-    ctx = AsyncMock()
-    ctx.procedures = [global_proc]
-    memory.retrieve = AsyncMock(return_value=ctx)
-
-    embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1, 0.2])
+    discovery = AsyncMock()
+    discovery.match = AsyncMock(
+        return_value=[
+            ProcedureMatch(
+                procedure_id=uuid4(),
+                version_id=uuid4(),
+                version_number=1,
+                name="Interview loop",
+                trigger="global version",
+                steps=["old"],
+                state=MatchState.READY,
+                matched_trigger="global version",
+                satisfied_preconditions=[],
+                unmet_preconditions=[],
+            )
+        ]
+    )
 
     from ze_automation.goals.planner import GoalPlanner
 
-    planner_with_memory = GoalPlanner(
-        client=client, model="test-model", memory_store=memory, embedder=embedder
+    planner_with_discovery = GoalPlanner(
+        client=client, model="test-model", procedure_discovery=discovery
     )
 
     goal = _make_goal()
-    await planner_with_memory.replan_remaining(
+    await planner_with_discovery.replan_remaining(
         goal, [], "pivot", next_sequence=2, local_procedures=[local_proc]
     )
 
     content = client.complete.call_args.kwargs["messages"][0]["content"]
     assert "local version" in content
     assert "global version" not in content
+
+
+async def test_plan_injects_discovery_matches(client):
+    from uuid import uuid4
+
+    from ze_memory.procedures.types import MatchState, ProcedureMatch
+    from ze_automation.goals.planner import GoalPlanner
+
+    discovery = AsyncMock()
+    discovery.match = AsyncMock(
+        return_value=[
+            ProcedureMatch(
+                procedure_id=uuid4(),
+                version_id=uuid4(),
+                version_number=2,
+                name="Inbox sweep",
+                trigger="clear inbox [blocked]",
+                steps=["open"],
+                state=MatchState.BLOCKED,
+                matched_trigger="clear inbox",
+                satisfied_preconditions=[],
+                unmet_preconditions=["inbox is connected"],
+            )
+        ]
+    )
+    planner = GoalPlanner(client=client, model="test-model", procedure_discovery=discovery)
+    await planner.plan(_make_goal())
+    content = client.complete.call_args.kwargs["messages"][0]["content"]
+    assert "Inbox sweep" in content
+    assert "blocked" in content
+    discovery.match.assert_awaited()
 
 
 async def test_replan_remaining_omits_procedures_section_when_none(planner, client):

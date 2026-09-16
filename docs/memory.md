@@ -125,7 +125,7 @@ class Procedure:
     source_refs: list[UUID] = ...
 ```
 
-**Table:** `memory_procedures` — pgvector embedding on `trigger + name`.
+**Tables:** `procedure_candidates`, `procedure_versions` — pgvector embedding on `trigger + name` of admitted versions. Direct writes to a procedure table are hard-cut; sources submit candidates through `ProcedureAdmissionService`. `ProcedureDiscovery.match` returns ready or blocked guidance for agents and planners. Invocation is explicit (`invoke_procedure`) and never grants tools.
 
 ### `TaskState`
 
@@ -497,7 +497,7 @@ memory:
 | `memory_entities` | Named entities with canonical names, aliases, pgvector embeddings |
 | `memory_relationships` | Typed graph edges between memory objects |
 | `memory_events` | Discrete real-world events with participants and outcomes |
-| `memory_procedures` | Reusable step lists with pgvector embeddings |
+| `procedure_versions` | Admitted reusable playbooks with pgvector embeddings |
 | `memory_task_state` | Goal/workflow in-flight progress checkpoints |
 | `memory_profile_facets` | Structured user portrait — key/value facets with confidence |
 | `memory_retrieval_cache` | Session-scoped NLI rerank order for facts/summaries (`zm010`; 1-day TTL) |

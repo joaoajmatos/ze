@@ -70,6 +70,10 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             error_msg = state.get("error") or "unknown error"
             result = AgentResult(agent=agent_name, response=f"[ERROR] {error_msg}")
 
+    from ze_core.orchestration.procedure_activation import complete_procedure_invocation
+
+    await complete_procedure_invocation(ctx, result, config)
+
     if not is_eval:
         embedding = embedder.encode(ctx.prompt)
         fire_and_forget(

@@ -90,8 +90,11 @@ async def get_goal_status(store: GoalStore, goal_id: str) -> dict:
             else None
         ),
     }
-    if goal.learnings:
-        result["learnings"] = goal.learnings[:500]
+    eligible = await store.list_eligible_learnings("", goal_id=goal.id, limit=5)
+    if eligible:
+        result["learnings"] = [
+            f"[{item.claim_kind.value}] {item.content}" for item in eligible
+        ]
     return result
 
 

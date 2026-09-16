@@ -14,6 +14,7 @@ import {
   PenTool,
   FolderOpen,
   ListOrdered,
+  BookOpen,
 } from "lucide-react";
 import { redirectHintPath } from "@/shared/lib/redirect-hint";
 
@@ -36,6 +37,7 @@ export const navRoutes: NavRouteMeta[] = [
   { path: "brain-graph", label: "Graph", icon: Network, showInMobileNav: false },
   { path: "data", label: "Data", icon: Database, showInMobileNav: false },
   { path: "skills", label: "Skills", icon: PenTool, showInMobileNav: false },
+  { path: "procedures", label: "Procedures", icon: BookOpen, showInMobileNav: false },
   { path: "workspace", label: "Workspace", icon: FolderOpen, showInMobileNav: false },
 ];
 
@@ -51,7 +53,12 @@ export const knowledgeNavRoutes: NavRouteMeta[] = navRoutes.filter(
 
 /** System sub-routes — rendered inside the collapsible System group. */
 export const systemNavRoutes: NavRouteMeta[] = navRoutes.filter(
-  (r) => r.path === "costs" || r.path === "data" || r.path === "skills" || r.path === "workspace",
+  (r) =>
+    r.path === "costs" ||
+    r.path === "data" ||
+    r.path === "skills" ||
+    r.path === "procedures" ||
+    r.path === "workspace",
 );
 
 export { Library as KnowledgeIcon, Server as SystemIcon, Briefcase as WorkIcon };

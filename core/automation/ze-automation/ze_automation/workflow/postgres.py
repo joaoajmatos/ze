@@ -8,6 +8,7 @@ import asyncpg
 
 from ze_agents.errors import WorkflowPlanError
 from ze_logging import get_logger
+from ze_automation.action_records import emit_workflow_finished, emit_workflow_started
 from ze_automation.workflow.revision_summary import build_change_summary
 from ze_automation.workflow.types import (
     ActorContext,
@@ -375,7 +376,9 @@ class PostgresWorkflowStore:
                 workflow_id,
                 snapshot,
             )
-            return row["id"]
+            execution_id = row["id"]
+        await emit_workflow_started(execution_id, workflow_id)
+        return execution_id
 
     async def record_step(self, execution_id: UUID, result: StepResult) -> None:
         async with self._pool.acquire() as conn:
@@ -408,6 +411,7 @@ class PostgresWorkflowStore:
                 summary,
                 execution_id,
             )
+        await emit_workflow_finished(execution_id, status)
 
     async def list_executions(
         self, workflow_id: UUID, limit: int = 20

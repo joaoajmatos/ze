@@ -9,7 +9,8 @@ from ze_agents import defaults
 from ze_agents.client import LLMClient
 from ze_agents.errors import GoalPlanError
 from typing import Any
-from ze_sdk.memory import Episode, Fact, Procedure, RetrievalRequest
+from ze_sdk.memory import Episode, Fact, Procedure
+from ze_memory.procedures.types import ProcedureTaskContext
 from ze_automation.goals.types import (
     Goal,
     GateStatus,
@@ -297,16 +298,19 @@ class GoalPlanner:
         model: str = defaults.MODEL_GOAL_PLAN,
         memory_store: Any = None,
         embedder: Any = None,
+        procedure_discovery: Any | None = None,
     ) -> None:
         self._client = client
         self._model = model
         self._memory = memory_store
         self._embedder = embedder
+        self._discovery = procedure_discovery
 
     async def plan(
         self,
         goal: Goal,
         prior_work: list[PriorMilestoneOutput] | None = None,
+        eligible_learnings: list | None = None,
     ) -> tuple[list[Milestone], list[VerificationGate]]:
         """Decompose a goal into milestones and gates. Returns unsaved instances."""
         prompt = (
@@ -315,8 +319,17 @@ class GoalPlanner:
             f"Success condition: {goal.success_condition}\n"
             f"Time horizon: {goal.time_horizon or 'not specified'}"
         )
-        if goal.learnings:
-            prompt += f"\nLearnings so far:\n{goal.learnings}"
+        if eligible_learnings:
+            lines = []
+            for item in eligible_learnings:
+                label = (
+                    "FACT"
+                    if getattr(item, "claim_kind", None)
+                    and item.claim_kind.value == "fact"
+                    else "INFERENCE (tentative)"
+                )
+                lines.append(f"- [{label}] {item.content}")
+            prompt += "\nLearnings so far:\n" + "\n".join(lines)
         procedures = await self._fetch_procedures(goal.title)
         if procedures:
             lines = [
@@ -502,7 +515,7 @@ class GoalPlanner:
     ) -> list[Fact]:
         """Extract generalizable user facts from goal learnings. Returns [] on any error."""
         learnings_text = "\n".join(
-            f"  - [{lr.source}] {lr.content}" for lr in learnings
+            f"  - [{lr.claim_kind.value}] {lr.content}" for lr in learnings
         )
         prompt = (
             f"Goal: {goal.title}\n"
@@ -571,33 +584,50 @@ class GoalPlanner:
             return None
 
     async def _fetch_procedures(self, query: str) -> list[Procedure]:
-        if self._memory is None or self._embedder is None:
-            return []
-        try:
-            embedding = self._embedder.encode(query)
-            request = RetrievalRequest(
-                module="planner",
-                agent="planner",
-                query_text=query,
-                query_embedding=embedding,
-            )
-            ctx = await self._memory.retrieve(request)
-            return ctx.procedures
-        except Exception as exc:
-            log.warning("planner_procedure_fetch_failed", error=str(exc))
-            return []
+        if self._discovery is not None:
+            try:
+                matches = await self._discovery.match(
+                    ProcedureTaskContext(caller="goal_planner", task_text=query),
+                    agent_allowed_tools=frozenset(),
+                    capability_allowed_tools=frozenset(),
+                )
+            except Exception as exc:
+                log.warning("planner_procedure_discovery_failed", error=str(exc))
+                return []
+            return [
+                Procedure(
+                    id=match.version_id,
+                    name=match.name,
+                    trigger=(
+                        f"{match.trigger} [{match.state.value}]"
+                        if match.unmet_preconditions
+                        else match.trigger
+                    ),
+                    preconditions=list(match.satisfied_preconditions)
+                    + list(match.unmet_preconditions),
+                    steps=list(match.steps),
+                    version=match.version_number,
+                )
+                for match in matches
+            ]
+        return []
 
     async def extract_learning(self, milestone_title: str, output: str) -> str:
         """Extract a one-sentence learning from milestone output."""
         prompt = (
             f"Milestone: {milestone_title}\n"
             f"Output summary: {output[:500]}\n\n"
-            "Write one concise sentence capturing the key insight or result from this milestone."
+            "Write one concise INFERENCE candidate from this milestone. "
+            "Do not present it as a FACT. Cite only what the output supports."
         )
         return await self._client.complete(
             messages=[{"role": "user", "content": prompt}],
             model=self._model,
-            system="You extract one-sentence learnings from task outputs. Output only the sentence — no quotes, no explanation.",
+            system=(
+                "You extract one-sentence learning candidates. "
+                "They are INFERENCE claims, never FACT. "
+                "Output only the sentence — no quotes, no explanation."
+            ),
         )
 
     async def detect_convergence(

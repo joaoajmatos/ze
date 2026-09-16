@@ -203,9 +203,9 @@ from ze_automation.goals.types import GoalLearning  # noqa: E402
 
 
 def _learning(
-    content="User prefers bullet-point summaries.", source="milestone"
+    content="User prefers bullet-point summaries.",
 ) -> GoalLearning:
-    return GoalLearning(goal_id=uuid4(), content=content, source=source)
+    return GoalLearning(goal_id=uuid4(), content=content)
 
 
 async def test_promote_learnings_returns_generalizable_facts():
@@ -249,7 +249,7 @@ async def test_promote_learnings_includes_goal_context_in_prompt():
     planner = _make_planner(_json.dumps({"facts": []}))
     goal = _goal()
     await planner.promote_learnings(
-        goal, [_learning(content="Learned X", source="milestone")]
+        goal, [_learning(content="Learned X")]
     )
     prompt = planner._client.complete.call_args.kwargs["messages"][0]["content"]
     assert goal.title in prompt

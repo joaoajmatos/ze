@@ -62,6 +62,13 @@ class WorkspaceUsageTrace:
 
 
 @dataclass
+class ProcedureUsageTrace:
+    invocation_id: str
+    procedure_id: str
+    version_id: str
+
+
+@dataclass
 class MessageTrace:
     agent: str
     routing_method: str  # "embedding" | "haiku" | "fallback"
@@ -76,3 +83,4 @@ class MessageTrace:
     resume_recap_applied: bool = False
     skills_used: list[SkillUsageTrace] = field(default_factory=list)
     workspace: WorkspaceUsageTrace | None = None
+    procedure: ProcedureUsageTrace | None = None

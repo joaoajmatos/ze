@@ -335,9 +335,7 @@ Five memory layers, all backed by Postgres + pgvector:
   after each run.
 - **Events** (`memory_events`) — discrete real-world events (meetings, calls) extracted
   from conversation or calendar. Can have entity participants.
-- **Procedures** (`memory_procedures`) — reusable step lists (how to do X) captured when
-  Ze executes a multi-step task successfully and surfaced back into the active goal
-  while the goal is still running when a stable method emerges.
+- **Procedures** (`procedure_identities` / `procedure_versions`) — reusable step lists (how to do X). Candidates enter through `ProcedureAdmissionService`. `ProcedureDiscovery` matches active versions as advisory guidance. Agents must call `invoke_procedure` before following steps. Matching only narrows already-authorized tools.
 - **Profile facets** (`memory_profile_facets`) — a structured, key-value portrait of the
   user synthesized nightly from facts and episodes.
 
@@ -360,7 +358,7 @@ Memory accumulates into progressively richer representations through a nightly p
 - **Sleep pass (NREM-like):** replays high-priority episodes, compresses sessions, decays stale traces, detects schema and policy clusters from structural analysis. No LLM calls.
 - **Dream pass (REM-like):** synthesizes clusters into insights, procedures, hindsight facts, and plan stress-tests using a haiku-class generator. All outputs land in a staging buffer (`memory_dream_artifacts`).
 - **Scoring pipeline:** every staged artifact passes NLI groundedness gate + embedding novelty gate + retrievability gate, then two adversarial LLM critic calls (sonnet-class, different framings). Both critics must pass.
-- **Morning integration:** artifacts with sufficient session diversity and temporal spread auto-promote to `memory_facts` / `memory_procedures` with `provenance=synthesized`, `valid_until`, and `dream_run_id` lineage for per-run rollback. Borderline cases go to a review queue surfaced in the morning briefing.
+- **Morning integration:** artifacts with sufficient session diversity and temporal spread auto-promote to `memory_facts` or submit procedure candidates with `provenance=synthesized`, `valid_until`, and `dream_run_id` lineage for per-run rollback.
 - **Expiry:** synthesized facts that go uncorroborated by raw episodes for 90 days (`valid_until`) are automatically contradicted on the next integration run.
 
 See [docs/dreaming.md](dreaming.md) for a full walkthrough of the pipeline, configuration, REST API, and safety model. See [docs/memory.md](memory.md) for a deep-dive on types, tables, graph, retrieval
@@ -787,7 +785,7 @@ it owns no tables and no revision files.
 | `memory_entities` | Named entities with canonical names, aliases, and attributes |
 | `memory_relationships` | Typed edges between entities, facts, episodes, events |
 | `memory_events` | Real-world events with participants and outcomes |
-| `memory_procedures` | Reusable step lists captured from successful task executions |
+| `procedure_identities` / `procedure_candidates` / `procedure_versions` | Governed reusable playbooks; default retrieval is active versions only |
 | `memory_task_state` | Goal/workflow task progress checkpoints |
 | `memory_profile_facets` | Structured user portrait — key/value facets with stability and confidence |
 | `checkpoints` | LangGraph `AsyncPostgresSaver` graph state — pruned hourly, see [scheduled-jobs.md](scheduled-jobs.md#checkpoint-pruning-hourly) |

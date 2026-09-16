@@ -55,6 +55,7 @@ _PLATFORM_TOOLS = (
     "workspace_run_skill_script",
     "ingest_workspace_file",
 )
+_PROCEDURE_INVOKE_TOOL = "invoke_procedure"
 
 log = get_logger(__name__)
 
@@ -191,7 +192,22 @@ class BaseAgent(ABC):
         skills_block = self._format_active_skills(ctx)
         if skills_block:
             rendered = f"{skills_block}\n\n{rendered}"
+        procedure_block = getattr(ctx, "procedure_guidance", None)
+        if procedure_block:
+            rendered = f"{procedure_block}\n\n{rendered}"
         return f"{datetime_line}{prefix}{rendered}"
+
+    def _visible_tool_names(self, ctx: AgentContext, names: list[str]) -> list[str]:
+        visible = list(names)
+        skill_tool_names = getattr(ctx, "skill_tool_names", None)
+        if skill_tool_names is not None:
+            allowed = set(skill_tool_names)
+            visible = [n for n in visible if n in allowed or n == _PROCEDURE_INVOKE_TOOL]
+        procedure_tool_names = getattr(ctx, "procedure_tool_names", None)
+        if procedure_tool_names is not None:
+            allowed = set(procedure_tool_names)
+            visible = [n for n in visible if n in allowed]
+        return visible
 
     def _format_active_skills(self, ctx: AgentContext) -> str:
         """Render each active skill's instructions (and any reference-file content,
@@ -375,28 +391,15 @@ class BaseAgent(ABC):
         from ze_agents.tool import get_tool
 
         names = tool_names if tool_names is not None else list(self.tools)
-        if not getattr(self, "workspace_opt_out", False):
-            from ze_agents.tool import registered_tools
+        from ze_agents.tool import registered_tools
 
-            registered = registered_tools()
+        registered = registered_tools()
+        if not getattr(self, "workspace_opt_out", False):
             for platform_name in _PLATFORM_TOOLS:
                 if platform_name in registered and platform_name not in names:
                     names.append(platform_name)
-        skill_tool_names = getattr(ctx, "skill_tool_names", None)
-        if skill_tool_names is not None:
-            # A skill's `allowed_tools` only ever narrows — never unions — the
-            # agent's own tool list (FR-008). Naming a tool the agent doesn't
-            # have has no effect since it's absent from `names` already.
-            allowed = set(skill_tool_names)
-            names = [n for n in names if n in allowed]
-        tool_schemas = [
-            _OPENROUTER_TOOL_SCHEMAS[n]
-            if n in _OPENROUTER_TOOL_SCHEMAS
-            else DELEGATE_TOOL_SCHEMA
-            if n == DELEGATE_TOOL_NAME
-            else get_tool(n).llm_schema()
-            for n in names
-        ]
+        if _PROCEDURE_INVOKE_TOOL in registered and _PROCEDURE_INVOKE_TOOL not in names:
+            names.append(_PROCEDURE_INVOKE_TOOL)
         accumulated: list[ToolCall] = []
         _deps = deps or {}
         hooks = get_hooks()
@@ -414,6 +417,16 @@ class BaseAgent(ABC):
         for iteration in range(max_iterations):
             if ctx.abort_token is not None and ctx.abort_token.is_set:
                 raise AgentAbortedError(ctx.abort_token.reason)
+
+            visible = self._visible_tool_names(ctx, names)
+            tool_schemas = [
+                _OPENROUTER_TOOL_SCHEMAS[n]
+                if n in _OPENROUTER_TOOL_SCHEMAS
+                else DELEGATE_TOOL_SCHEMA
+                if n == DELEGATE_TOOL_NAME
+                else get_tool(n).llm_schema()
+                for n in visible
+            ]
 
             if max_history_tokens is not None:
                 _truncate_messages(messages, max_history_tokens)
@@ -479,6 +492,12 @@ class BaseAgent(ABC):
                 }
             )
 
+            invoke_calls = [
+                tc for tc in tool_calls if tc["name"] == _PROCEDURE_INVOKE_TOOL
+            ]
+            if invoke_calls and getattr(ctx, "procedure_invocation_id", None) is None:
+                tool_calls = invoke_calls[:1]
+
             for tc in tool_calls:
                 if _is_openrouter_server_tool(tc["name"]):
                     canonical = _canonical_openrouter_tool_name(tc["name"])
@@ -508,7 +527,7 @@ class BaseAgent(ABC):
                         }
                     )
                 else:
-                    merged = _merge_deps(tc["name"], tc["arguments"], _deps)
+                    merged = _merge_deps(tc["name"], tc["arguments"], {**_deps, "ctx": ctx})
                     tool_call = await self.call_tool(
                         tc["name"],
                         ctx,

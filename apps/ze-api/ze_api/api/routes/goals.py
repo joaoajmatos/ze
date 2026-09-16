@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
+from ze_automation.goals.types import LearningReviewDecision
 from ze_api.api.dependencies import require_api_key
 from ze_api.api.schemas import (
     ExecutionTraceResponse,
@@ -11,11 +12,30 @@ from ze_api.api.schemas import (
     GoalActionResponse,
     GoalDetailResponse,
     GoalListItem,
+    LearningDetailResponse,
+    LearningEvidenceSummary,
+    LearningPromotionResponse,
     LearningResponse,
+    LearningReviewRequest,
     MilestoneResponse,
 )
 
 router = APIRouter(tags=["goals"], dependencies=[Depends(require_api_key)])
+
+
+def _learning_response(row) -> LearningResponse:
+    return LearningResponse(
+        id=row.id,
+        content=row.content,
+        claim_kind=row.claim_kind.value,
+        provenance=row.provenance.value,
+        confidence=row.confidence,
+        status=row.status.value,
+        evidence_count=row.evidence_count,
+        promotion_state=row.promotion_state.value if row.promotion_state else None,
+        review_needed=row.review_needed,
+        created_at=row.created_at,
+    )
 
 
 @router.get(
@@ -71,7 +91,7 @@ async def get_goal_detail(request: Request, goal_id: UUID) -> GoalDetailResponse
         status=g.status.value,
         type=g.type,
         time_horizon=g.time_horizon or None,
-        learnings_summary=g.learnings or None,
+        learnings_summary=None,
         retrospective_text=g.retrospective_text,
         created_at=g.created_at,
         updated_at=g.updated_at,
@@ -103,15 +123,128 @@ async def get_goal_detail(request: Request, goal_id: UUID) -> GoalDetailResponse
             )
             for gate in detail.gates
         ],
-        learnings=[
-            LearningResponse(
-                id=lr.id,
-                content=lr.content,
-                source=lr.source,
-                created_at=lr.created_at,
+        learnings=[_learning_response(lr) for lr in detail.learnings],
+    )
+
+
+@router.get(
+    "/goals/{goal_id}/learnings",
+    response_model=list[LearningResponse],
+    operation_id="listGoalLearnings",
+    summary="List goal learnings",
+    description="Returns evidence-backed learning summaries. History includes retracted and superseded claims.",
+)
+async def list_goal_learnings(
+    request: Request,
+    goal_id: UUID,
+    include_history: bool = Query(default=False),
+) -> list[LearningResponse]:
+    store = request.app.state.container._plugin_stores.get("goal_store")
+    if store is None:
+        raise HTTPException(status_code=503, detail="Goal engine unavailable")
+    rows = await store.list_goal_learnings(goal_id, include_history=include_history)
+    return [_learning_response(lr) for lr in rows]
+
+
+@router.get(
+    "/goals/{goal_id}/learnings/{learning_id}",
+    response_model=LearningDetailResponse,
+    operation_id="getGoalLearning",
+    summary="Get a goal learning",
+    description="Returns one learning with redaction-safe evidence summaries.",
+)
+async def get_goal_learning(
+    request: Request, goal_id: UUID, learning_id: UUID
+) -> LearningDetailResponse:
+    store = request.app.state.container._plugin_stores.get("goal_store")
+    if store is None:
+        raise HTTPException(status_code=503, detail="Goal engine unavailable")
+    learning = await store.get_learning(learning_id)
+    if learning is None or learning.goal_id != goal_id:
+        raise HTTPException(status_code=404, detail="Learning not found")
+    summary = await store.list_goal_learnings(goal_id, include_history=True)
+    match = next((row for row in summary if row.id == learning.id), None)
+    if match is None:
+        raise HTTPException(status_code=404, detail="Learning not found")
+    base = _learning_response(match)
+    return LearningDetailResponse(
+        **base.model_dump(),
+        evidence=[
+            LearningEvidenceSummary(
+                id=item.id,
+                evidence_kind=item.evidence_kind.value,
+                role=item.role.value,
+                excerpt=item.excerpt,
+                action_record_id=item.action_record_id,
+                execution_context_key=item.execution_context_key,
             )
-            for lr in detail.learnings
+            for item in learning.evidence
         ],
+    )
+
+
+@router.post(
+    "/goals/{goal_id}/learnings/{learning_id}/review",
+    response_model=LearningResponse,
+    operation_id="reviewGoalLearning",
+    summary="Review a goal learning",
+    description="Approve, reject, correct, or defer an evidence-backed learning.",
+)
+async def review_goal_learning(
+    request: Request,
+    goal_id: UUID,
+    learning_id: UUID,
+    body: LearningReviewRequest,
+) -> LearningResponse:
+    store = request.app.state.container._plugin_stores.get("goal_store")
+    if store is None:
+        raise HTTPException(status_code=503, detail="Goal engine unavailable")
+    try:
+        decision = LearningReviewDecision(body.decision)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="invalid review decision") from exc
+    learning = await store.review_learning(
+        learning_id,
+        decision,
+        rationale=body.rationale,
+        corrected_content=body.corrected_content,
+    )
+    if learning is None or learning.goal_id != goal_id:
+        raise HTTPException(status_code=404, detail="Learning not found")
+    summary = await store.list_goal_learnings(goal_id, include_history=True)
+    match = next((row for row in summary if row.id == learning.id), None)
+    if match is None:
+        raise HTTPException(status_code=404, detail="Learning not found")
+    return _learning_response(match)
+
+
+@router.post(
+    "/goals/{goal_id}/learnings/{learning_id}/promote",
+    response_model=LearningPromotionResponse,
+    operation_id="promoteGoalLearning",
+    summary="Promote a goal learning",
+    description=(
+        "Publishes a user-confirmed FACT through the licensed perception-fact path. "
+        "Inferences remain labeled learnings and are not written to memory_facts."
+    ),
+)
+async def promote_goal_learning(
+    request: Request, goal_id: UUID, learning_id: UUID
+) -> LearningPromotionResponse:
+    store = request.app.state.container._plugin_stores.get("goal_store")
+    if store is None:
+        raise HTTPException(status_code=503, detail="Goal engine unavailable")
+    learning = await store.get_learning(learning_id)
+    if learning is None or learning.goal_id != goal_id:
+        raise HTTPException(status_code=404, detail="Learning not found")
+    promotion = await store.promote_learning(learning_id)
+    return LearningPromotionResponse(
+        id=promotion.id,
+        learning_id=promotion.learning_id,
+        state=promotion.state.value,
+        memory_fact_id=promotion.memory_fact_id,
+        failure_reason=promotion.failure_reason,
+        created_at=promotion.created_at,
     )
 
 

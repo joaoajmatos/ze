@@ -91,6 +91,12 @@ class SkillUsageTraceResponse(BaseModel):
     script_ran: bool = False
 
 
+class ProcedureUsageTraceResponse(BaseModel):
+    invocation_id: str
+    procedure_id: str
+    version_id: str
+
+
 class WorkspaceUsageTraceResponse(BaseModel):
     mode: str
     runs: list[dict] = []
@@ -112,6 +118,7 @@ class MessageTraceResponse(BaseModel):
     total_duration_ms: int
     skills_used: list[SkillUsageTraceResponse] = []
     workspace: WorkspaceUsageTraceResponse | None = None
+    procedure: ProcedureUsageTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):
@@ -294,11 +301,45 @@ class GateResponse(BaseModel):
     resolved_at: datetime | None
 
 
+class LearningReviewRequest(BaseModel):
+    decision: Literal["approve", "reject", "correct", "defer"]
+    rationale: str | None = None
+    corrected_content: str | None = None
+
+
+class LearningEvidenceSummary(BaseModel):
+    id: UUIDType
+    evidence_kind: str
+    role: str
+    excerpt: str
+    action_record_id: UUIDType | None = None
+    execution_context_key: str | None = None
+
+
 class LearningResponse(BaseModel):
     id: UUIDType
     content: str
-    source: str
-    created_at: datetime
+    claim_kind: str
+    provenance: str
+    confidence: float
+    status: str
+    evidence_count: int
+    promotion_state: str | None
+    review_needed: bool
+    created_at: datetime | None
+
+
+class LearningDetailResponse(LearningResponse):
+    evidence: list[LearningEvidenceSummary]
+
+
+class LearningPromotionResponse(BaseModel):
+    id: UUIDType | None
+    learning_id: UUIDType
+    state: str
+    memory_fact_id: UUIDType | None
+    failure_reason: str | None
+    created_at: datetime | None
 
 
 class GoalDetailResponse(BaseModel):
@@ -654,6 +695,7 @@ class WsTraceUpdateFrame(BaseModel):
     total_duration_ms: int
     skills_used: list[SkillUsageTraceResponse] = []
     workspace: WorkspaceUsageTraceResponse | None = None
+    procedure: ProcedureUsageTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):
@@ -1298,3 +1340,99 @@ class WorkspaceIngestResponse(BaseModel):
     summary: str
     facts_count: int
     tags: list[str]
+
+
+class ProcedureEvidenceRefResponse(BaseModel):
+    kind: str
+    id: UUIDType
+
+
+class ProcedureCandidateResponse(BaseModel):
+    id: UUIDType
+    source_kind: str
+    provenance: str
+    name: str
+    trigger: str
+    preconditions: list[str]
+    steps: list[str]
+    success_criteria: list[str]
+    limits: list[str]
+    evidence_refs: list[ProcedureEvidenceRefResponse]
+    learning_refs: list[UUIDType]
+    status: str
+    submitted_at: datetime | None
+    resolved_at: datetime | None
+
+
+class ProcedureVersionResponse(BaseModel):
+    id: UUIDType
+    procedure_id: UUIDType
+    version_number: int
+    name: str
+    trigger: str
+    preconditions: list[str]
+    steps: list[str]
+    success_criteria: list[str]
+    limits: list[str]
+    provenance: str
+    status: str
+    evidence_refs: list[ProcedureEvidenceRefResponse]
+    learning_refs: list[UUIDType]
+
+
+class ProcedureReviewRequest(BaseModel):
+    decision: Literal["approve", "reject", "needs_review", "withdraw"]
+    reason: str
+
+
+class ProcedureDisableRequest(BaseModel):
+    reason: str = "disabled by user"
+
+
+class ProcedureEditRequest(BaseModel):
+    name: str
+    trigger: str
+    preconditions: list[str] = []
+    steps: list[str]
+    success_criteria: list[str]
+    limits: list[str] = []
+    reason: str = "edited by user"
+
+
+class ProcedureLifecycleEventResponse(BaseModel):
+    kind: str
+    reason: str
+    version_id: UUIDType | None = None
+
+
+class ProcedureFeedbackResponse(BaseModel):
+    outcome: str
+    summary: str
+    procedure_version_id: UUIDType
+
+
+class ProcedureSummaryResponse(BaseModel):
+    id: UUIDType
+    name: str
+    identity_status: str
+    version_status: str
+    version_number: int
+    trigger: str
+    current_version_id: UUIDType | None = None
+    evidence_refs: list[ProcedureEvidenceRefResponse]
+
+
+class ProcedureDetailResponse(BaseModel):
+    id: UUIDType
+    name: str
+    identity_status: str
+    current_version_id: UUIDType | None = None
+    versions: list[ProcedureVersionResponse]
+    events: list[ProcedureLifecycleEventResponse]
+    outcomes: list[ProcedureFeedbackResponse]
+
+
+class ProcedureAdmissionResultResponse(BaseModel):
+    candidate: ProcedureCandidateResponse
+    version: ProcedureVersionResponse | None = None
+

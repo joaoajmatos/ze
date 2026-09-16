@@ -1,0 +1,52 @@
+{
+  "workflow": "speckit",
+  "specName": "Governed Procedure Activation",
+  "branch": "139-procedure-activation",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    }
+  ],
+  "telemetryInstanceId": "44fb287d-54a9-43ef-8bf5-ecfe84d2e931"
+}

@@ -81,6 +81,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
             for s in getattr(trace, "skills_used", [])
         ],
         workspace=_workspace_to_response(getattr(trace, "workspace", None)),
+        procedure=_procedure_to_response(getattr(trace, "procedure", None)),
     )
 
 
@@ -94,6 +95,16 @@ def _workspace_to_response(workspace) -> dict | None:
         "script_ran": bool(workspace.script_ran),
         "unavailable": bool(workspace.unavailable),
         "planned": workspace.planned,
+    }
+
+
+def _procedure_to_response(procedure) -> dict | None:
+    if procedure is None:
+        return None
+    return {
+        "invocation_id": procedure.invocation_id,
+        "procedure_id": procedure.procedure_id,
+        "version_id": procedure.version_id,
     }
 
 
