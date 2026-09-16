@@ -83,8 +83,8 @@ def _make_store(
     store.replace_pending_gates = AsyncMock(return_value=[])
     store.resolve_gate = AsyncMock()
     store.update_status = AsyncMock()
-    store.add_learning = AsyncMock()
-    store.append_learnings = AsyncMock()
+    store.create_learning = AsyncMock()
+    store.list_eligible_learnings = AsyncMock(return_value=[])
     store.reset_consecutive_failures = AsyncMock()
     return store
 
@@ -276,7 +276,7 @@ from ze_automation.goals.types import GoalLearning  # noqa: E402
 
 
 def _learning(content="User prefers concise summaries.") -> GoalLearning:
-    return GoalLearning(goal_id=uuid4(), content=content, source="milestone")
+    return GoalLearning(goal_id=uuid4(), content=content)
 
 
 _USE_DEFAULT_MEMORY = (
@@ -319,152 +319,41 @@ async def test_promote_learnings_skips_when_no_learnings():
     memory.propose_facts.assert_not_called()
 
 
-async def test_promote_learnings_submits_synthesized_perception_with_goal_evidence():
-    from ze_agents.claims import Provenance
-    from ze_plugin.contribution import TargetFace
-
-    fact = Fact(predicate="style", value="prefers bullets")
+async def test_promote_learnings_does_not_write_memory_facts():
     planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(return_value=[fact])
+    planner.promote_learnings = AsyncMock(return_value=[Fact(predicate="style", value="x")])
     executor, _, _, memory = _make_executor_with_memory(planner=planner)
-    goal = _goal()
-
-    with patch(
-        "ze_automation.goals.executor.submit_perception_facts",
-        new_callable=AsyncMock,
-    ) as submit:
-        await executor._promote_learnings(goal, [_learning()])
-
+    await executor._promote_learnings(_goal(), [_learning()])
+    planner.promote_learnings.assert_not_called()
     memory.propose_facts.assert_not_called()
-    submit.assert_awaited_once()
-    items = submit.await_args.args[1]
-    assert items[0].provenance == Provenance.SYNTHESIZED
-    assert items[0].target_face == TargetFace.USER
-    assert items[0].evidence[0].kind == "goal"
-    assert items[0].evidence[0].id == goal.id
-    assert goal.id in items[0].fact.source_refs
-    contrib_src = items[0]
-    from ze_memory.contribution import fact_to_contribution
-
-    envelope = fact_to_contribution(
-        contrib_src.fact,
-        provenance=contrib_src.provenance,
-        target_face=contrib_src.target_face,
-        evidence=contrib_src.evidence,
-    )
-    from ze_agents.claims import ClaimKind
-    from ze_plugin.contribution import SourceFunction
-
-    assert envelope.claim_kind == ClaimKind.FACT
-    assert envelope.source_function == SourceFunction.PERCEPTION
 
 
-async def test_promote_learnings_calls_propose_facts_on_happy_path():
-    fact = Fact(predicate="style", value="prefers bullets")
-    planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(return_value=[fact])
-    executor, _, _, memory = _make_executor_with_memory(planner=planner)
-
-    with patch(
-        "ze_automation.goals.executor.submit_perception_facts",
-        new_callable=AsyncMock,
-    ) as submit:
-        await executor._promote_learnings(_goal(), [_learning()])
-
-    memory.propose_facts.assert_not_called()
-    submit.assert_awaited_once()
-
-
-async def test_promote_learnings_logs_count_on_success():
+async def test_promote_learnings_logs_inferences_remain_unpromoted():
     import structlog.testing
 
-    fact = Fact(predicate="k", value="v")
-    planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(return_value=[fact])
-    executor, _, _, _ = _make_executor_with_memory(planner=planner)
-
-    with patch(
-        "ze_automation.goals.executor.submit_perception_facts",
-        new_callable=AsyncMock,
-    ):
-        with structlog.testing.capture_logs() as logs:
-            await executor._promote_learnings(_goal(), [_learning()])
-
-    assert any(e.get("event") == "goal_learning_promoted" for e in logs)
-
-
-async def test_promote_learnings_logs_none_when_no_facts_returned():
-    import structlog.testing
-
-    planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(return_value=[])
-    executor, _, _, _ = _make_executor_with_memory(planner=planner)
-
+    executor, _, _, _ = _make_executor_with_memory()
     with structlog.testing.capture_logs() as logs:
         await executor._promote_learnings(_goal(), [_learning()])
-
-    assert any(e.get("event") == "goal_learning_promotion_none" for e in logs)
-
-
-async def test_promote_learnings_swallows_planner_exception():
-    import structlog.testing
-
-    planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(side_effect=RuntimeError("LLM error"))
-    executor, _, _, memory = _make_executor_with_memory(planner=planner)
-
-    with structlog.testing.capture_logs() as logs:
-        await executor._promote_learnings(_goal(), [_learning()])
-
-    assert any(e.get("event") == "goal_learning_promotion_failed" for e in logs)
-    memory.propose_facts.assert_not_called()
+    assert any(e.get("event") == "goal_learning_inferences_remain_unpromoted" for e in logs)
 
 
-async def test_promote_learnings_swallows_propose_facts_exception():
-    import structlog.testing
-
-    fact = Fact(predicate="k", value="v")
-    planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(return_value=[fact])
-    executor, _, _, memory = _make_executor_with_memory(planner=planner)
-
-    with patch(
-        "ze_automation.goals.executor.submit_perception_facts",
-        new_callable=AsyncMock,
-        side_effect=RuntimeError("DB error"),
-    ):
-        with structlog.testing.capture_logs() as logs:
-            await executor._promote_learnings(_goal(), [_learning()])
-
-    assert any(e.get("event") == "goal_learning_promotion_write_failed" for e in logs)
-    memory.propose_facts.assert_not_called()
-
-
-async def test_push_retrospective_fires_promote_learnings_as_task():
+async def test_push_retrospective_uses_authoritative_learnings():
     learnings = [_learning(content="Unique content XYZ")]
     store = _make_store()
     store.list_milestones = AsyncMock(return_value=[])
-    store.list_learnings = AsyncMock(return_value=learnings)
+    store.list_goal_learnings = AsyncMock(return_value=learnings)
     store.save_retrospective = AsyncMock()
 
     planner = AsyncMock()
     planner.synthesize_retrospective = AsyncMock(return_value="Done.")
-    planner.promote_learnings = AsyncMock(return_value=[])
 
-    executor, _, _, memory = _make_executor_with_memory(store=store, planner=planner)
+    executor, _, _, _ = _make_executor_with_memory(store=store, planner=planner)
     goal = _goal()
 
     await executor._push_retrospective(goal, goal.id)
 
-    import asyncio
-
-    await asyncio.sleep(0)
-
-    planner.promote_learnings.assert_called_once()
-    call_goal, call_learnings = planner.promote_learnings.call_args.args
-    assert call_goal.title == goal.title
-    assert len(call_learnings) == 1
-    assert call_learnings[0].content == "Unique content XYZ"
+    planner.synthesize_retrospective.assert_awaited()
+    assert planner.synthesize_retrospective.await_args.args[2] == learnings
 
 
 async def test_executor_without_memory_store_passes_existing_tests():

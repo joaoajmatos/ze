@@ -8,8 +8,14 @@ from ze_automation.goals.types import (
     Goal,
     GoalDetail,
     GoalLearning,
+    GoalLearningSummary,
     GoalStatus,
     GateStatus,
+    EligibleLearning,
+    LearningEvidenceDraft,
+    LearningPromotion,
+    LearningPromotionState,
+    LearningReviewDecision,
     Milestone,
     MilestoneStatus,
     PriorMilestoneOutput,
@@ -38,8 +44,6 @@ class GoalStore(Protocol):
     async def list_all(self) -> list[Goal]: ...
 
     async def update_status(self, goal_id: UUID, status: GoalStatus) -> None: ...
-
-    async def append_learnings(self, goal_id: UUID, text: str) -> None: ...
 
     # ── Milestones ─────────────────────────────────────────────────────────────
 
@@ -90,9 +94,61 @@ class GoalStore(Protocol):
 
     # ── Learnings ──────────────────────────────────────────────────────────────
 
-    async def add_learning(self, learning: GoalLearning) -> None: ...
+    async def create_learning(
+        self,
+        learning: GoalLearning,
+        evidence: list[LearningEvidenceDraft],
+    ) -> GoalLearning: ...
 
-    async def list_learnings(self, goal_id: UUID) -> list[GoalLearning]: ...
+    async def get_learning(self, learning_id: UUID) -> GoalLearning | None: ...
+
+    async def list_goal_learnings(
+        self,
+        goal_id: UUID,
+        *,
+        include_history: bool = False,
+    ) -> list[GoalLearningSummary]: ...
+
+    async def list_eligible_learnings(
+        self,
+        query: str,
+        *,
+        goal_id: UUID | None = None,
+        limit: int = 10,
+    ) -> list[EligibleLearning]: ...
+
+    async def record_contradiction(
+        self,
+        learning_id: UUID,
+        evidence: LearningEvidenceDraft,
+        *,
+        rationale: str,
+    ) -> GoalLearning: ...
+
+    async def record_promotion(
+        self,
+        learning_id: UUID,
+        *,
+        state: LearningPromotionState,
+        snapshot: dict,
+        memory_fact_id: UUID | None = None,
+        failure_reason: str | None = None,
+    ) -> LearningPromotion: ...
+
+    async def get_latest_promotion(
+        self, learning_id: UUID
+    ) -> LearningPromotion | None: ...
+
+    async def promote_learning(self, learning_id: UUID) -> LearningPromotion: ...
+
+    async def review_learning(
+        self,
+        learning_id: UUID,
+        decision: LearningReviewDecision,
+        *,
+        rationale: str | None = None,
+        corrected_content: str | None = None,
+    ) -> GoalLearning: ...
 
     # ── Goal detail ────────────────────────────────────────────────────────────
 

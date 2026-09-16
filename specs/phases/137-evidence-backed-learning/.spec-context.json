@@ -1,0 +1,195 @@
+{
+  "workflow": "speckit",
+  "specName": "evidence backed learning",
+  "branch": "137-evidence-backed-learning",
+  "currentStep": "implement",
+  "status": "specified",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "ai",
+      "at": "2026-09-16T10:02:50.756Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T10:02:50.951Z"
+    }
+  ],
+  "context": [
+    "area: ze_automation goal learning persistence and consumers",
+    "dependency: Phase 136 uniformly shaped ActionRecords",
+    "hard cut: remove goals.learnings and goal_learnings without shims or dual writes",
+    "doctrine: outcomes are ActionRecords; generalizations are INFERENCE pending corroboration or user confirmation",
+    "constraint: no signal_sources rewiring or generic contribution arbitration"
+  ],
+  "approach": "Replace dual legacy learning persistence with one claim/evidence/review model. Link automated learnings to Phase 136 ActionRecords, gate promotion on evidence diversity, preserve review/contradiction/retraction history, and provide only active labeled claims to retrieval and priority consumers.",
+  "decisions": [
+    {
+      "decision": "ActionRecords remain evidence, not learning records",
+      "why": "Verified outcomes and reusable claims have distinct epistemic roles and lifecycles",
+      "rejected": "Embedding action outcomes in a new learning table or creating a second action ledger"
+    },
+    {
+      "decision": "Outcome-derived generalizations start as INFERENCE",
+      "why": "A generalization exceeds any single observed outcome",
+      "rejected": "Promoting repeated model summaries directly to FACT"
+    },
+    {
+      "decision": "Automatic promotion requires independent evidence contexts",
+      "why": "Retries and homogeneous actions are correlated, not corroborating",
+      "rejected": "Counting multiple evidence rows from one action/milestone"
+    },
+    {
+      "decision": "Contradictions enter review rather than arbitration",
+      "why": "Detection supplies evidence but must not silently decide truth",
+      "rejected": "Automatic winner selection or generic contribution arbitration"
+    }
+  ],
+  "coverage": {
+    "FR-001": {
+      "tasks": [
+        "T002",
+        "T005",
+        "T007",
+        "T008",
+        "T009",
+        "T031"
+      ]
+    },
+    "FR-002": {
+      "tasks": [
+        "T001",
+        "T004",
+        "T010",
+        "T013",
+        "T014"
+      ]
+    },
+    "FR-003": {
+      "tasks": [
+        "T004",
+        "T007",
+        "T009",
+        "T015"
+      ]
+    },
+    "FR-004": {
+      "tasks": [
+        "T011",
+        "T013"
+      ]
+    },
+    "FR-005": {
+      "tasks": [
+        "T012",
+        "T016",
+        "T019"
+      ]
+    },
+    "FR-006": {
+      "tasks": [
+        "T017",
+        "T020",
+        "T024",
+        "T029"
+      ]
+    },
+    "FR-007": {
+      "tasks": [
+        "T018",
+        "T021"
+      ]
+    },
+    "FR-008": {
+      "tasks": [
+        "T017",
+        "T020",
+        "T022",
+        "T023"
+      ]
+    },
+    "FR-009": {
+      "tasks": [
+        "T024",
+        "T028",
+        "T029"
+      ]
+    },
+    "FR-010": {
+      "tasks": [
+        "T022",
+        "T026"
+      ]
+    },
+    "FR-011": {
+      "tasks": [
+        "T023",
+        "T027",
+        "T033"
+      ]
+    },
+    "FR-012": {
+      "tasks": [
+        "T005",
+        "T008",
+        "T030",
+        "T031"
+      ]
+    },
+    "FR-013": {
+      "tasks": [
+        "T027",
+        "T033"
+      ]
+    },
+    "FR-014": {
+      "tasks": [
+        "T004",
+        "T013",
+        "T016",
+        "T033"
+      ]
+    }
+  },
+  "size": "large",
+  "classification": {
+    "projectedFiles": 20,
+    "projectedTasks": 33,
+    "scopeSignal": "cross-layer hard-cut",
+    "verdict": "large"
+  },
+  "telemetryInstanceId": "b5c31c89-9b08-4104-b066-0523d9eaeb6f"
+}

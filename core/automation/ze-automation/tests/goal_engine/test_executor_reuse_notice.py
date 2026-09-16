@@ -97,8 +97,9 @@ async def test_advance_fires_reuse_notice_when_hint_set():
     store.update_milestone = AsyncMock()
     store.save_traces = AsyncMock()
     store.reset_consecutive_failures = AsyncMock()
-    store.add_learning = AsyncMock()
-    store.append_learnings = AsyncMock()
+    store.create_learning = AsyncMock()
+    store.review_learning = AsyncMock()
+    store.list_eligible_learnings = AsyncMock(return_value=[])
     store.list_active = AsyncMock(return_value=[goal])
 
     agent_mock = AsyncMock()
@@ -140,8 +141,9 @@ async def test_advance_does_not_fire_reuse_notice_when_hint_empty():
     store.update_milestone = AsyncMock()
     store.save_traces = AsyncMock()
     store.reset_consecutive_failures = AsyncMock()
-    store.add_learning = AsyncMock()
-    store.append_learnings = AsyncMock()
+    store.create_learning = AsyncMock()
+    store.review_learning = AsyncMock()
+    store.list_eligible_learnings = AsyncMock(return_value=[])
 
     agent_mock = AsyncMock()
     agent_result = MagicMock()

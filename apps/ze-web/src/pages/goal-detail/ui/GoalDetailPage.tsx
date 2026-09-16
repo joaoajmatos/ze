@@ -5,6 +5,7 @@ import { useSetBreadcrumbTitle } from "@/shared/lib";
 import { MilestoneTimeline } from "@/widgets/milestone-timeline";
 import { GateStatusCard } from "@/widgets/gate-status";
 import { GoalLearningsList } from "@/widgets/goal-learnings";
+import { ReviewGoalLearning } from "@/features/review-goal-learning";
 import { ListSkeleton, ErrorState, PageShell, SectionPanel } from "@/shared/ui";
 
 const ACTIVE_STATUSES = new Set(["active", "planning"]);
@@ -93,7 +94,12 @@ export function GoalDetailPage() {
           <h2 className="text-xs font-semibold text-foreground/40 uppercase tracking-widest mb-5">
             Learnings
           </h2>
-          <GoalLearningsList learnings={detail.learnings} />
+          <GoalLearningsList
+            learnings={detail.learnings}
+            reviewSlot={(learning) => (
+              <ReviewGoalLearning goalId={detail.id} learning={learning} />
+            )}
+          />
           {detail.learnings_summary && !detail.learnings.length && (
             <p className="text-xs text-smoke mt-2">{detail.learnings_summary}</p>
           )}

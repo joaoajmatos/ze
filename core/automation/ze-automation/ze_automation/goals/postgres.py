@@ -7,13 +7,30 @@ from ze_sdk import DBPool
 from ze_proactive.staleness import is_stale
 import json
 
+from ze_agents.claims import ClaimKind, Provenance
+from ze_automation.action_records import emit_goal_traces
+from ze_automation.goals.learning import (
+    format_eligible,
+    promote_eligible_learning,
+    resolve_action_records,
+    validate_learning_draft,
+)
 from ze_automation.goals.types import (
     ExecutionTrace,
     Goal,
     GoalDetail,
     GoalLearning,
+    GoalLearningSummary,
     GoalStatus,
     GateStatus,
+    LearningEvidence,
+    LearningEvidenceDraft,
+    LearningEvidenceKind,
+    LearningEvidenceRole,
+    LearningPromotion,
+    LearningPromotionState,
+    LearningReviewDecision,
+    LearningStatus,
     Milestone,
     MilestoneStatus,
     PriorMilestoneOutput,
@@ -35,7 +52,6 @@ def _goal_from_row(row) -> Goal:
         time_horizon=row["time_horizon"],
         status=GoalStatus(row["status"]),
         type=row["type"],
-        learnings=row["learnings"],
         retrospective_text=row["retrospective_text"]
         if "retrospective_text" in keys
         else None,
@@ -86,7 +102,45 @@ def _learning_from_row(row) -> GoalLearning:
         id=row["id"],
         goal_id=row["goal_id"],
         content=row["content"],
-        source=row["source"],
+        claim_kind=ClaimKind(row["claim_kind"]),
+        provenance=Provenance(row["provenance"]),
+        confidence=float(row["confidence"]),
+        status=LearningStatus(row["status"]),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        activated_at=row["activated_at"],
+        retracted_at=row["retracted_at"],
+        superseded_by_id=row["superseded_by_id"],
+    )
+
+
+def _evidence_from_row(row) -> LearningEvidence:
+    return LearningEvidence(
+        id=row["id"],
+        learning_id=row["learning_id"],
+        evidence_kind=LearningEvidenceKind(row["evidence_kind"]),
+        role=LearningEvidenceRole(row["role"]),
+        excerpt=row["excerpt"],
+        action_record_id=row["action_record_id"],
+        review_id=row["review_id"],
+        execution_context_key=row["execution_context_key"],
+        created_at=row["created_at"],
+    )
+
+
+def _summary_from_row(row) -> GoalLearningSummary:
+    status = LearningStatus(row["status"])
+    promo = row.get("promotion_state") if hasattr(row, "get") else row["promotion_state"]
+    return GoalLearningSummary(
+        id=row["id"],
+        content=row["content"],
+        claim_kind=ClaimKind(row["claim_kind"]),
+        provenance=Provenance(row["provenance"]),
+        confidence=float(row["confidence"]),
+        status=status,
+        evidence_count=int(row["evidence_count"] or 0),
+        promotion_state=LearningPromotionState(promo) if promo else None,
+        review_needed=status is LearningStatus.REVIEW_NEEDED,
         created_at=row["created_at"],
     )
 
@@ -94,6 +148,8 @@ def _learning_from_row(row) -> GoalLearning:
 class PostgresGoalStore:
     def __init__(self, pool: DBPool) -> None:
         self._pool = pool
+        self._action_records = None
+        self._memory_store = None
 
     # ── Goals ──────────────────────────────────────────────────────────────────
 
@@ -101,8 +157,8 @@ class PostgresGoalStore:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                INSERT INTO goals (title, objective, success_condition, time_horizon, status, type, learnings)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                INSERT INTO goals (title, objective, success_condition, time_horizon, status, type)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING *
                 """,
                 goal.title,
@@ -111,7 +167,6 @@ class PostgresGoalStore:
                 goal.time_horizon,
                 goal.status.value,
                 goal.type,
-                goal.learnings,
             )
         result = _goal_from_row(row)
         log.info("goal_created", goal_id=str(result.id), title=goal.title)
@@ -155,19 +210,6 @@ class PostgresGoalStore:
             await conn.execute(
                 "UPDATE goals SET status = $1, updated_at = NOW() WHERE id = $2",
                 status.value,
-                goal_id,
-            )
-
-    async def append_learnings(self, goal_id: UUID, text: str) -> None:
-        async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                UPDATE goals
-                SET learnings = CASE WHEN learnings = '' THEN $1 ELSE learnings || E'\n' || $1 END,
-                    updated_at = NOW()
-                WHERE id = $2
-                """,
-                text,
                 goal_id,
             )
 
@@ -354,25 +396,349 @@ class PostgresGoalStore:
 
     # ── Learnings ──────────────────────────────────────────────────────────────
 
-    async def add_learning(self, learning: GoalLearning) -> None:
+    async def create_learning(
+        self,
+        learning: GoalLearning,
+        evidence: list[LearningEvidenceDraft],
+    ) -> GoalLearning:
+        resolved, _found = await resolve_action_records(self._action_records, evidence)
+        validate_learning_draft(learning, resolved)
         async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO goal_learnings (goal_id, content, source)
-                VALUES ($1, $2, $3)
-                """,
-                learning.goal_id,
-                learning.content,
-                learning.source,
-            )
+            async with conn.transaction():
+                row = await conn.fetchrow(
+                    """
+                    INSERT INTO goal_learning_claims (
+                        goal_id, content, claim_kind, provenance, confidence, status,
+                        activated_at, retracted_at, superseded_by_id
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    RETURNING *
+                    """,
+                    learning.goal_id,
+                    learning.content,
+                    learning.claim_kind.value,
+                    learning.provenance.value,
+                    learning.confidence,
+                    learning.status.value,
+                    learning.activated_at,
+                    learning.retracted_at,
+                    learning.superseded_by_id,
+                )
+                learning_id = row["id"]
+                stored: list[LearningEvidence] = []
+                for item in resolved:
+                    erow = await conn.fetchrow(
+                        """
+                        INSERT INTO goal_learning_evidence (
+                            learning_id, evidence_kind, action_record_id, review_id,
+                            role, execution_context_key, excerpt
+                        )
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        RETURNING *
+                        """,
+                        learning_id,
+                        item.evidence_kind.value,
+                        item.action_record_id,
+                        item.review_id,
+                        item.role.value,
+                        item.execution_context_key,
+                        item.excerpt,
+                    )
+                    stored.append(_evidence_from_row(erow))
+        created = _learning_from_row(row)
+        created.evidence = stored
+        return created
 
-    async def list_learnings(self, goal_id: UUID) -> list[GoalLearning]:
+    async def get_learning(self, learning_id: UUID) -> GoalLearning | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM goal_learning_claims WHERE id = $1", learning_id
+            )
+            if row is None:
+                return None
+            evidence_rows = await conn.fetch(
+                """
+                SELECT * FROM goal_learning_evidence
+                WHERE learning_id = $1 ORDER BY created_at ASC
+                """,
+                learning_id,
+            )
+        learning = _learning_from_row(row)
+        learning.evidence = [_evidence_from_row(r) for r in evidence_rows]
+        return learning
+
+    async def list_goal_learnings(
+        self,
+        goal_id: UUID,
+        *,
+        include_history: bool = False,
+    ) -> list[GoalLearningSummary]:
+        status_filter = ""
+        if not include_history:
+            status_filter = "AND c.status IN ('pending_review', 'active', 'review_needed')"
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT * FROM goal_learnings WHERE goal_id = $1 ORDER BY created_at DESC",
+                f"""
+                SELECT c.*,
+                       (SELECT COUNT(*) FROM goal_learning_evidence e WHERE e.learning_id = c.id)
+                         AS evidence_count,
+                       (
+                         SELECT p.state FROM goal_learning_promotions p
+                         WHERE p.learning_id = c.id
+                         ORDER BY p.created_at DESC LIMIT 1
+                       ) AS promotion_state
+                FROM goal_learning_claims c
+                WHERE c.goal_id = $1 {status_filter}
+                ORDER BY c.created_at DESC
+                """,
                 goal_id,
             )
-        return [_learning_from_row(r) for r in rows]
+        return [_summary_from_row(r) for r in rows]
+
+    async def list_eligible_learnings(
+        self,
+        query: str,
+        *,
+        goal_id: UUID | None = None,
+        limit: int = 10,
+    ) -> list:
+        sql = """
+            SELECT * FROM goal_learning_claims
+            WHERE status = 'active'
+              AND ($1 = '' OR content ILIKE '%' || $1 || '%')
+              AND ($2::uuid IS NULL OR goal_id = $2)
+            ORDER BY confidence DESC, created_at DESC
+            LIMIT $3
+        """
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(sql, query, goal_id, limit)
+            results = []
+            for row in rows:
+                learning = _learning_from_row(row)
+                evidence_rows = await conn.fetch(
+                    "SELECT * FROM goal_learning_evidence WHERE learning_id = $1",
+                    learning.id,
+                )
+                learning.evidence = [_evidence_from_row(r) for r in evidence_rows]
+                results.append(format_eligible(learning))
+        return results
+
+    async def review_learning(
+        self,
+        learning_id: UUID,
+        decision: LearningReviewDecision,
+        *,
+        rationale: str | None = None,
+        corrected_content: str | None = None,
+    ) -> GoalLearning:
+        learning = await self.get_learning(learning_id)
+        if learning is None:
+            raise LookupError(learning_id)
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                review = await conn.fetchrow(
+                    """
+                    INSERT INTO goal_learning_reviews (
+                        learning_id, decision, actor_kind, rationale, corrected_content
+                    )
+                    VALUES ($1, $2, 'user', $3, $4)
+                    RETURNING *
+                    """,
+                    learning_id,
+                    decision.value,
+                    rationale,
+                    corrected_content,
+                )
+                if decision is LearningReviewDecision.APPROVE:
+                    await conn.execute(
+                        """
+                        UPDATE goal_learning_claims
+                        SET status = 'active', activated_at = NOW(), updated_at = NOW()
+                        WHERE id = $1
+                        """,
+                        learning_id,
+                    )
+                    await conn.execute(
+                        """
+                        INSERT INTO goal_learning_evidence (
+                            learning_id, evidence_kind, review_id, role, excerpt
+                        )
+                        VALUES ($1, 'user_confirmation', $2, 'supports', $3)
+                        """,
+                        learning_id,
+                        review["id"],
+                        rationale or "user approved",
+                    )
+                elif decision is LearningReviewDecision.REJECT:
+                    await conn.execute(
+                        """
+                        UPDATE goal_learning_claims
+                        SET status = 'retracted', retracted_at = NOW(), updated_at = NOW()
+                        WHERE id = $1
+                        """,
+                        learning_id,
+                    )
+                elif decision is LearningReviewDecision.CORRECT:
+                    if not (corrected_content or "").strip():
+                        raise ValueError("corrected_content required")
+                    new_row = await conn.fetchrow(
+                        """
+                        INSERT INTO goal_learning_claims (
+                            goal_id, content, claim_kind, provenance, confidence, status, activated_at
+                        )
+                        VALUES ($1, $2, $3, 'prompt_supplied', $4, 'active', NOW())
+                        RETURNING *
+                        """,
+                        learning.goal_id,
+                        corrected_content,
+                        learning.claim_kind.value,
+                        learning.confidence,
+                    )
+                    await conn.execute(
+                        """
+                        UPDATE goal_learning_claims
+                        SET status = 'superseded', superseded_by_id = $2, updated_at = NOW()
+                        WHERE id = $1
+                        """,
+                        learning_id,
+                        new_row["id"],
+                    )
+                    await conn.execute(
+                        """
+                        INSERT INTO goal_learning_relationships (
+                            from_learning_id, to_learning_id, relationship, basis
+                        )
+                        VALUES ($1, $2, 'supersedes', $3)
+                        """,
+                        new_row["id"],
+                        learning_id,
+                        rationale or "user correction",
+                    )
+                    learning_id = new_row["id"]
+                elif decision is LearningReviewDecision.DEFER:
+                    await conn.execute(
+                        """
+                        UPDATE goal_learning_claims
+                        SET status = 'pending_review', updated_at = NOW()
+                        WHERE id = $1
+                        """,
+                        learning_id,
+                    )
+                elif decision is LearningReviewDecision.RETAIN:
+                    await conn.execute(
+                        """
+                        UPDATE goal_learning_claims
+                        SET status = 'active', updated_at = NOW()
+                        WHERE id = $1
+                        """,
+                        learning_id,
+                    )
+        return await self.get_learning(learning_id)
+
+    async def record_contradiction(
+        self,
+        learning_id: UUID,
+        evidence: LearningEvidenceDraft,
+        *,
+        rationale: str,
+    ) -> GoalLearning:
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.fetchrow(
+                    """
+                    INSERT INTO goal_learning_evidence (
+                        learning_id, evidence_kind, action_record_id, review_id,
+                        role, execution_context_key, excerpt
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    RETURNING *
+                    """,
+                    learning_id,
+                    evidence.evidence_kind.value,
+                    evidence.action_record_id,
+                    evidence.review_id,
+                    LearningEvidenceRole.CONTRADICTS.value,
+                    evidence.execution_context_key,
+                    evidence.excerpt or rationale,
+                )
+                await conn.execute(
+                    """
+                    UPDATE goal_learning_claims
+                    SET status = 'review_needed', updated_at = NOW()
+                    WHERE id = $1
+                    """,
+                    learning_id,
+                )
+        return await self.get_learning(learning_id)
+
+    async def record_promotion(
+        self,
+        learning_id: UUID,
+        *,
+        state: LearningPromotionState,
+        snapshot: dict,
+        memory_fact_id: UUID | None = None,
+        failure_reason: str | None = None,
+    ) -> LearningPromotion:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO goal_learning_promotions (
+                    learning_id, state, memory_fact_id, eligibility_snapshot, failure_reason
+                )
+                VALUES ($1, $2, $3, $4::jsonb, $5)
+                RETURNING *
+                """,
+                learning_id,
+                state.value,
+                memory_fact_id,
+                json.dumps(snapshot),
+                failure_reason,
+            )
+        return LearningPromotion(
+            id=row["id"],
+            learning_id=row["learning_id"],
+            state=LearningPromotionState(row["state"]),
+            memory_fact_id=row["memory_fact_id"],
+            eligibility_snapshot=row["eligibility_snapshot"],
+            failure_reason=row["failure_reason"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
+    async def get_latest_promotion(
+        self, learning_id: UUID
+    ) -> LearningPromotion | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT * FROM goal_learning_promotions
+                WHERE learning_id = $1
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                learning_id,
+            )
+        if row is None:
+            return None
+        return LearningPromotion(
+            id=row["id"],
+            learning_id=row["learning_id"],
+            state=LearningPromotionState(row["state"]),
+            memory_fact_id=row["memory_fact_id"],
+            eligibility_snapshot=row["eligibility_snapshot"],
+            failure_reason=row["failure_reason"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
+    async def promote_learning(self, learning_id: UUID) -> LearningPromotion:
+        learning = await self.get_learning(learning_id)
+        if learning is None:
+            raise LookupError(learning_id)
+        return await promote_eligible_learning(
+            self, learning, memory_store=self._memory_store
+        )
 
     # ── Goal detail ────────────────────────────────────────────────────────────
 
@@ -389,15 +755,12 @@ class PostgresGoalStore:
                 "SELECT * FROM goal_gates WHERE goal_id = $1 ORDER BY after_sequence ASC",
                 goal_id,
             )
-            learning_rows = await conn.fetch(
-                "SELECT * FROM goal_learnings WHERE goal_id = $1 ORDER BY created_at DESC",
-                goal_id,
-            )
+        learnings = await self.list_goal_learnings(goal_id, include_history=False)
         return GoalDetail(
             goal=_goal_from_row(goal_row),
             milestones=[_milestone_from_row(r) for r in milestone_rows],
             gates=[_gate_from_row(r) for r in gate_rows],
-            learnings=[_learning_from_row(r) for r in learning_rows],
+            learnings=learnings,
         )
 
     # ── Execution traces ───────────────────────────────────────────────────────
@@ -427,6 +790,7 @@ class PostgresGoalStore:
                     for t in traces
                 ],
             )
+        await emit_goal_traces(traces)
 
     async def list_traces(
         self,
@@ -530,7 +894,7 @@ class PostgresGoalStore:
             rows = await conn.fetch(
                 """
                 SELECT id, title, objective, success_condition, time_horizon, status,
-                       type, learnings, retrospective_text, created_at, updated_at
+                       type, retrospective_text, created_at, updated_at
                 FROM goals
                 WHERE status = 'completed'
                   AND retrospective_text IS NOT NULL
@@ -560,7 +924,7 @@ class PostgresGoalStore:
                 """
                 SELECT
                     g.id, g.title, g.objective, g.success_condition, g.time_horizon,
-                    g.status, g.type, g.learnings, g.retrospective_text,
+                    g.status, g.type, g.retrospective_text,
                     g.last_stuck_alert_at, g.created_at, g.updated_at,
                     MAX(m.completed_at) AS last_milestone_at,
                     (
@@ -588,7 +952,7 @@ class PostgresGoalStore:
                 """
                 SELECT
                     g.id, g.title, g.objective, g.success_condition, g.time_horizon,
-                    g.status, g.type, g.learnings, g.retrospective_text,
+                    g.status, g.type, g.retrospective_text,
                     g.last_stuck_alert_at, g.created_at, g.updated_at,
                     vg.id AS gate_id,
                     vg.goal_id AS gate_goal_id,

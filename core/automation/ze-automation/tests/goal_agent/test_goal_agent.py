@@ -46,7 +46,7 @@ def make_store() -> MagicMock:
     store.create_milestone = AsyncMock()
     store.create_gate = AsyncMock()
     store.list_milestones = AsyncMock(return_value=[])
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_eligible_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     return store
 
