@@ -1,0 +1,475 @@
+{
+  "workflow": "companion",
+  "specName": "Memory Admission and Conversational Remember/Forget",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implemented",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:23:08.909Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T11:23:26.924Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:24:56.956Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:27:52.343Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:28:12.014Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T11:28:12.829Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:28:26.684Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:30:34.051Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T11:30:34.951Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:30:55.997Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:46:22.990Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:54.954Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:55.237Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:55.507Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:55.793Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:56.058Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:56.263Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:56.439Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:56.607Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:56.851Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:57.158Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:57.457Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:57.736Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:58.033Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:58.382Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:58.622Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:58.810Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:58.988Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:59.190Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:59.480Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:04:59.813Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:00.123Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:00.433Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T12:05:00.808Z"
+    }
+  ],
+  "unattended": true,
+  "telemetryInstanceId": "75fdafc0-2f30-409f-9bf4-0104f5dd6aa4",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-010": {
+      "title": "Constraint facts allowed; mail/calendar veto out of scope",
+      "tasks": [
+        "T006",
+        "T007"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 18,
+    "projectedTasks": 22,
+    "scopeSignal": "larger",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: ze_memory/extractor.py",
+    "area: write_memory node",
+    "constraint: contribution seam + no dual door"
+  ],
+  "intent": "Admit durable facts conservatively and give companion honest remember/forget tools through the seam.",
+  "expectations": [
+    "read-side prompt constitution",
+    "cross-store speech-act routing",
+    "constraint veto on mail/calendar",
+    "specialist agent catalog rewrites",
+    "Claude-style memories filesystem"
+  ],
+  "approach": "Keep/drop extractor plus companion remember/forget tools through the seam; hard-cut memory_proposals.",
+  "decisions": [
+    {
+      "decision": "Tools replace memory_proposals",
+      "why": "Unused dual door",
+      "rejected": "Wire proposals as remember path"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Admission gate + remember/forget tools; seam required",
+      "key_finding": "No production memory_proposals producer"
+    },
+    "tasks": {
+      "summary": "22 tasks in 7 phases; US1 extractor MVP then remember/forget tools then hard-cut proposals"
+    }
+  },
+  "currentTask": "T022",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Implemented T001",
+      "files": [
+        "."
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Implemented T002",
+      "files": [
+        "."
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Implemented T003",
+      "files": [
+        "."
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Implemented T004",
+      "files": [
+        "."
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Implemented T005",
+      "files": [
+        "."
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Implemented T006",
+      "files": [
+        "."
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Implemented T007",
+      "files": [
+        "."
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Implemented T008",
+      "files": [
+        "."
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Implemented T009",
+      "files": [
+        "."
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Implemented T010",
+      "files": [
+        "."
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Implemented T011",
+      "files": [
+        "."
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Implemented T012",
+      "files": [
+        "."
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Implemented T013",
+      "files": [
+        "."
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Implemented T014",
+      "files": [
+        "."
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Implemented T015",
+      "files": [
+        "."
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Implemented T016",
+      "files": [
+        "."
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Implemented T017",
+      "files": [
+        "."
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Implemented T018",
+      "files": [
+        "."
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Implemented T019",
+      "files": [
+        "."
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Implemented T020",
+      "files": [
+        "."
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Implemented T021",
+      "files": [
+        "."
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Implemented T022",
+      "files": [
+        "."
+      ]
+    }
+  }
+}

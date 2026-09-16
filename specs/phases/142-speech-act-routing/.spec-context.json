@@ -1,0 +1,419 @@
+{
+  "workflow": "companion",
+  "specName": "Speech-Act Routing Across Stores",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "implemented",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:23:55.326Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T11:23:59.093Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:24:57.663Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:27:52.810Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:28:14.897Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T11:28:16.220Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T11:28:27.265Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:30:36.118Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T11:30:37.361Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T11:30:56.672Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:06.170Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:06.413Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:06.605Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:06.778Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:07.023Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:07.351Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:07.654Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:07.959Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:08.312Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:08.643Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:08.879Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:09.075Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:09.257Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:09.556Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:09.859Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:10.147Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:10.467Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:10.830Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T12:05:11.141Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T12:05:11.374Z"
+    }
+  ],
+  "telemetryInstanceId": "dd4898d4-de4b-4943-8dec-7e0f2cf3159e",
+  "unattended": true,
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-008": {
+      "title": "No silent fact write when utterance matches no row",
+      "tasks": [
+        "T015"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 16,
+    "projectedTasks": 20,
+    "scopeSignal": "larger",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: speech-act routing table",
+    "constraint: Phase 140 tools; no dual-write"
+  ],
+  "intent": "Route remember vs remind vs loop vs goal vs ingest vs forget to one primary store.",
+  "expectations": [
+    "constraint veto P5",
+    "specialist catalog rewrites",
+    "memories filesystem"
+  ],
+  "approach": "One classifier JSON with extractor; companion hands off via delegate_to_agent; time beats fact.",
+  "decisions": [
+    {
+      "decision": "delegate_to_agent not cloned set_reminder",
+      "why": "Do not fork reminder tools",
+      "rejected": "Put set_reminder on companion"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "R1-R14 classifier + handoff; no dual-write",
+      "key_finding": "Remember-to-act must not hit companion-only extraction"
+    },
+    "tasks": {
+      "summary": "19 tasks; classifier plus companion delegate_to_agent; depends on 140"
+    }
+  },
+  "currentTask": "T019",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Implemented T001",
+      "files": [
+        "."
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Implemented T002",
+      "files": [
+        "."
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Implemented T003",
+      "files": [
+        "."
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Implemented T004",
+      "files": [
+        "."
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Implemented T005",
+      "files": [
+        "."
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Implemented T006",
+      "files": [
+        "."
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Implemented T007",
+      "files": [
+        "."
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Implemented T008",
+      "files": [
+        "."
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Implemented T009",
+      "files": [
+        "."
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Implemented T010",
+      "files": [
+        "."
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Implemented T011",
+      "files": [
+        "."
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Implemented T012",
+      "files": [
+        "."
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Implemented T013",
+      "files": [
+        "."
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Implemented T014",
+      "files": [
+        "."
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Implemented T015",
+      "files": [
+        "."
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Implemented T016",
+      "files": [
+        "."
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Implemented T017",
+      "files": [
+        "."
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Implemented T018",
+      "files": [
+        "."
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Implemented T019",
+      "files": [
+        "."
+      ]
+    }
+  }
+}
