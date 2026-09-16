@@ -180,6 +180,10 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 137 | [Evidence-Backed Goal Learning](phases/137-evidence-backed-learning/spec.md) | ✅ Done |
 | 138 | [Governed Procedure Lifecycle](phases/138-procedure-lifecycle/spec.md) | ✅ Done |
 | 139 | [Governed Procedure Activation](phases/139-procedure-activation/spec.md) | ✅ Done |
+| 140 | [Memory Admission + Remember/Forget](phases/140-memory-admission/spec.md) | ✅ Implemented |
+| 141 | [Memory Read Contract + Prompt Constitution](phases/141-memory-prompt-constitution/spec.md) | ✅ Implemented |
+| 142 | [Speech-Act Routing Across Stores](phases/142-speech-act-routing/spec.md) | ✅ Implemented |
+| 143 | [Earned Memory Confirmations and Precise Forget](phases/143-memory-claim-honesty/spec.md) | 🔲 Tasks |
 
 ## Ze Core specs (`core/`)
 
@@ -253,4 +257,5 @@ Made when a significant restructuring forced the question.
 | [Plugin UI](arch/plugin-ui.md) | Three-tier plugin UI model (SDUI, manifest + generic shell, optional frontend modules) |
 | [spec-kit Adoption](arch/spec-kit-adoption.md) | Feature specs use GitHub spec-kit (`specs/phases/NNN-<name>/` dirs, `.specify/` scaffolding, `/speckit-*` pipeline) |
 | [Attention Arbitration](arch/attention-arbitration.md) | One ranked `PriorityView` + one shared attention budget across loops, goals, and correlation hypotheses — shipped as Phase 123/127 |
+| [Memory Honesty Roadmap](arch/memory-honesty-roadmap.md) | **Living.** After Phase 143: constraint veto (P5), reply-path recitation, forget vs cancel, ingest honesty, extractor dual-write/classifier, specialist constitution, eval field hard-cut, guide index drift |
 | [Social Cognition](arch/social-cognition.md) | **Open decision brief.** People/projects/relationships as evolving state extending the memory graph, not a new store; reconciles an existing parallel `contact_relationships` table into it |

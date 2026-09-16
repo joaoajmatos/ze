@@ -1,0 +1,207 @@
+{
+  "workflow": "companion",
+  "specName": "memory claim honesty",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T13:12:59.619Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T13:16:53.088Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T13:18:13.446Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:19:29.986Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:21:03.441Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T13:21:25.604Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T13:21:56.953Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:22:52.467Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T13:22:52.728Z"
+    }
+  ],
+  "telemetryInstanceId": "6ca9e1c3-dbbd-4626-9098-58f73d7111df",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "User-visible remembered confirmation only after remember_fact returns ok true in the same turn",
+      "tasks": [
+        "T004",
+        "T006",
+        "T007"
+      ]
+    },
+    "FR-002": {
+      "title": "User-visible forgotten confirmation only after forget_fact returns ok true in the same turn",
+      "tasks": [
+        "T004",
+        "T006",
+        "T007"
+      ]
+    },
+    "FR-003": {
+      "title": "Enforce earned confirmations on the turn path that produces the user-visible reply",
+      "tasks": [
+        "T005",
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-004": {
+      "title": "Confirmation keys off tool ok payload, not Python-level non-exception",
+      "tasks": [
+        "T004",
+        "T006"
+      ]
+    },
+    "FR-005": {
+      "title": "No ungated companion reply path for remembered/forgotten confirmations",
+      "tasks": [
+        "T005",
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-006": {
+      "title": "Forget matching prefers precision over recall; miss returns ok false",
+      "tasks": [
+        "T010",
+        "T011",
+        "T012"
+      ]
+    },
+    "FR-007": {
+      "title": "Forget must not retract on short substring or batch of merely similar facts",
+      "tasks": [
+        "T010",
+        "T011"
+      ]
+    },
+    "FR-008": {
+      "title": "Forget still retracts a clearly identified predicate or value",
+      "tasks": [
+        "T010",
+        "T011"
+      ]
+    },
+    "FR-009": {
+      "title": "Hard-cut eval criteria that reward unearned I'll remember wording",
+      "tasks": [
+        "T009"
+      ]
+    },
+    "FR-010": {
+      "title": "Do not implement P5 veto, hard classifier, specialist catalogs, memories FS, or 140-142 rewrites",
+      "tasks": [
+        "T014",
+        "T016"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 12,
+    "projectedTasks": 16,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: plugins/ze-personal/ze_personal/agents/companion",
+    "area: core/cognition/ze-memory/ze_memory/retriever.py _retract_facts_matching",
+    "area: core/contracts/ze-agents/ze_agents/base_agent.py agentic_loop",
+    "constraint: Principle VIII no shim no dual door",
+    "constraint: confirm only after remember_fact/forget_fact ok",
+    "constraint: out of scope P5 hard classifier specialist catalogs memories FS 140-142 rewrites"
+  ],
+  "intent": "Earn remembered/forgotten confirmations on the turn path and make forget matching precise so Ze does not lie or retract the wrong facts.",
+  "expectations": [
+    "mail/calendar constraint veto P5",
+    "hard non-LLM speech-act classifier",
+    "specialist catalog rewrites / specialist prompt constitution",
+    "Claude-style /memories filesystem",
+    "rewriting Phase 140-142 write/read/routing",
+    "making extraction non-LLM",
+    "eval memory_proposals_count hard-cut (roadmap, not this phase)"
+  ],
+  "approach": "Companion buffers token_sink, gates AgentResult.response on remember_fact/forget_fact ok, and hard-cuts tool-free stream. Forget matching is a precision ladder in _retract_facts_matching (exact, named value, long phrase, unique high cosine) — substring and top-5 cosine are deleted.",
+  "decisions": [
+    {
+      "decision": "Gate in ze-personal with buffered token_sink; rewrite CompanionAgent.stream",
+      "why": "agentic_loop streams unearned text before run can rewrite; stream() is a tool-free dual door",
+      "rejected": "prompt-only fix; gate only AgentResult.response; dialect inside BaseAgent.agentic_loop"
+    },
+    {
+      "decision": "Earned iff tool payload ok is true",
+      "why": "tools return ok false without raising",
+      "rejected": "ToolCall.success or mere invocation"
+    },
+    {
+      "decision": "Deterministic sentence strip plus fallback copy; no LLM judge",
+      "why": "testable fail-closed honesty",
+      "rejected": "second LLM rewrite"
+    },
+    {
+      "decision": "Forget ladder: exact then named value in query then long phrase then unique cosine 0.88/0.80 gap",
+      "why": "precision over recall; current substring and top-5 0.75 over-forget",
+      "rejected": "exact-only; keep 0.75 top-5 behind a flag; SQL ILIKE"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Turn-path confirmation gate plus precision forget matcher; no shims",
+      "key_finding": "token_sink streams the lie before CompanionAgent.run returns"
+    },
+    "tasks": {
+      "summary": "16 tasks: setup, honesty stub, US1 gate+sink+stream+eval, US2 matcher, polish+tests"
+    }
+  }
+}
