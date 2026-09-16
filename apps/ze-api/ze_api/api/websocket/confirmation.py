@@ -117,7 +117,13 @@ async def handle_confirm(
                 trace=trace,
             )
         if outcome.interrupted:
-            return request_id, pending_config
+            return await send_confirmation_request(
+                conn_mgr,
+                container,
+                outcome,
+                thread_id,
+                confirmation_store=confirmation_store,
+            )
         return None
 
     try:
@@ -145,6 +151,14 @@ async def handle_confirm(
         if outcome.response:
             await container.interface.send_with_thread(
                 outcome.response, thread_id=thread_id
+            )
+        if outcome.interrupted:
+            return await send_confirmation_request(
+                conn_mgr,
+                container,
+                outcome,
+                thread_id,
+                confirmation_store=confirmation_store,
             )
         return None
 

@@ -440,6 +440,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 155 | Mixed gather+act → conductor | Done |
 | 156 | Conductor stall / replan | Done |
 | 157 | Promote conductor instance to workflow/goal | Done |
+| 158 | Parallel per-subtask gates (independent fan-out) | Done |
 
 ## graphify
 

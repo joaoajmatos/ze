@@ -17,7 +17,12 @@ def after_decompose(state: AgentState) -> str:
 
 
 def after_capability_check(state: AgentState) -> str:
-    match state["gate_decision"]:
+    envelope = state.get("envelope")
+    if envelope and envelope.is_compound and len(envelope.subtasks) > 1:
+        if state.get("gate_decision") == GateDecision.BLOCKED:
+            return "end_blocked"
+        return "execute_tool"
+    match state.get("gate_decision"):
         case GateDecision.EXECUTE:
             return "execute_tool"
         case GateDecision.DRAFT | GateDecision.AWAIT_CONFIRMATION:
@@ -27,7 +32,13 @@ def after_capability_check(state: AgentState) -> str:
 
 
 def after_execute_tool(state: AgentState) -> str:
+    if state.get("pending_subtask_awaits"):
+        return "await_subtask_confirmation"
     return "correlate"
+
+
+def after_await_subtask_confirmation(state: AgentState) -> str:
+    return "execute_tool"
 
 
 def after_correlate(state: AgentState) -> str:

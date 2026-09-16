@@ -42,8 +42,13 @@ def make_graph_input(
         "memory_context": None,
         "agent_context": None,
         "gate_decision": None,
+        "subtask_gate_decisions": [],
         "agent_result": None,
         "subtask_results": [],
+        "completed_subtask_indexes": [],
+        "pending_subtask_awaits": [],
+        "approved_subtask_indexes": [],
+        "denied_subtask_indexes": [],
         "pending_confirmation": False,
         "final_response": None,
         "error": None,
@@ -216,6 +221,10 @@ async def invoke_raw_turn(
     payload = _interrupt_payload(graph_state_obj)
     if payload.get("prompt"):
         draft = str(payload["prompt"])
+    if payload.get("agent"):
+        agent = str(payload["agent"])
+    if payload.get("intent"):
+        action = str(payload["intent"])
 
     return TurnResult(
         final_state=final_state,

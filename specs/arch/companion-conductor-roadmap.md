@@ -1,6 +1,6 @@
 # Companion conductor roadmap
 
-> **Status:** Living note. Phases 151–157 Implemented. Procedures are **not** 157.
+> **Status:** Living note. Phases 151–158 Implemented. Procedures are **not** 157.
 > **Date:** 2026-09-16
 > **Related:** [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), [Ze Doctrine](ze-doctrine.md),
 > harness [`030-agent-harness`](../phases/030-agent-harness/spec.md),
@@ -142,10 +142,18 @@ in-chat conductor (pin holds). No swarm. Depends on 155/156.
 
 ---
 
-## After 157 (not these three)
+### 158 — Parallel per-subtask gates — S/M — Implemented
 
-- Per-subtask gate on the **parallel** graph path (if strictest-wins still
-  hurts independent read+write fan-out).
+Independent parallel compound still uses strictest-wins: one write that needs
+approval holds every sibling. Mixed gather+act is already conductor (155/152).
+**158:** evaluate each remaining fan-out subtask; EXECUTE/DRAFT run now; AWAIT
+confirms by `request_id`; BLOCKED skips. Conductor path unchanged. Sequential
+`_execute_compound` stays deleted.
+
+Spec: [`specs/phases/158-parallel-subtask-gates/`](../phases/158-parallel-subtask-gates/spec.md).
+
+## After 158
+
 - Procedures / procedure activation (135–139) — **not** a promote substitute.
 - Feeding prior outputs inside `_execute_compound` sequential — **do not do
   this**; that path is deleted in 153.

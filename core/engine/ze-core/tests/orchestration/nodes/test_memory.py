@@ -293,11 +293,15 @@ class TestWriteMemory:
 
 
 class TestWriteMemoryCompaction:
-    def _big_existing(self, n: int = 9, big_at: int = 0, size: int = 100_000) -> list[dict]:
+    def _big_existing(
+        self, n: int = 9, big_at: int = 0, size: int = 100_000
+    ) -> list[dict]:
         msgs = []
         for i in range(n):
             content = "x" * size if i == big_at else f"m{i}"
-            msgs.append({"role": "user" if i % 2 == 0 else "assistant", "content": content})
+            msgs.append(
+                {"role": "user" if i % 2 == 0 else "assistant", "content": content}
+            )
         return msgs
 
     def _compacting_ctx(self) -> AgentContext:
@@ -418,7 +422,10 @@ class TestSynthesize:
         result = await synthesize(state, _config(client=client))
         assert result["final_response"] == "merged answer"
         call_args = client.complete.call_args
-        assert "answer A" in call_args[1]["messages"][0]["content"]
+        content = call_args[1]["messages"][0]["content"]
+        assert "answer A" in content
+        assert "Only these specialists finished" in content
+        assert "blocked" in content
 
     async def test_empty_subtasks_returns_empty(self):
         state = {"session_id": "s1", "prompt": "q", "subtask_results": []}

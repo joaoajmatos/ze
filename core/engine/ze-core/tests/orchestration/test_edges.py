@@ -1,5 +1,6 @@
 from ze_agents.types import GateDecision
 from ze_core.orchestration.edges import (
+    after_await_subtask_confirmation,
     after_capability_check,
     after_correlate,
     after_decompose,
@@ -117,12 +118,48 @@ def test_after_capability_check_none_goes_to_end_blocked():
     assert after_capability_check(state) == "end_blocked"
 
 
+def test_after_capability_check_compound_mixed_goes_to_execute_tool():
+    state = base_state(
+        envelope=make_envelope(is_compound=True, agents=("calendar", "messenger")),
+        gate_decision=GateDecision.AWAIT_CONFIRMATION,
+    )
+    assert after_capability_check(state) == "execute_tool"
+
+
+def test_after_capability_check_compound_all_blocked_ends():
+    state = base_state(
+        envelope=make_envelope(is_compound=True, agents=("alpha", "beta")),
+        gate_decision=GateDecision.BLOCKED,
+    )
+    assert after_capability_check(state) == "end_blocked"
+
+
 # ── after_execute_tool ────────────────────────────────────────────────────────
 
 
 def test_after_execute_tool_always_goes_to_correlate():
     state = base_state(subtask_results=[])
     assert after_execute_tool(state) == "correlate"
+
+
+def test_after_execute_tool_pending_awaits_goes_to_subtask_confirmation():
+    state = base_state(
+        pending_subtask_awaits=[
+            {
+                "index": 1,
+                "agent": "messenger",
+                "intent": "create",
+                "prompt": "mail",
+                "request_id": "req-1",
+            }
+        ]
+    )
+    assert after_execute_tool(state) == "await_subtask_confirmation"
+
+
+def test_after_await_subtask_confirmation_returns_to_execute_tool():
+    state = base_state(approved_subtask_indexes=[1])
+    assert after_await_subtask_confirmation(state) == "execute_tool"
 
 
 def test_after_execute_tool_compound_also_goes_to_correlate():

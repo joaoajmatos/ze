@@ -60,6 +60,7 @@ def graph_builder(
     from ze_core.orchestration import nodes
     from ze_core.orchestration.edges import (
         after_await_confirmation,
+        after_await_subtask_confirmation,
         after_capability_check,
         after_execute_tool,
         after_surface_loops,
@@ -78,6 +79,10 @@ def graph_builder(
         "capability_check", ov.get("capability_check", nodes.capability_check)
     )
     builder.add_node("execute_tool", ov.get("execute_tool", nodes.execute_tool))
+    builder.add_node(
+        "await_subtask_confirmation",
+        ov.get("await_subtask_confirmation", nodes.await_subtask_confirmation),
+    )
     builder.add_node("correlate", ov.get("correlate", nodes.correlate))
     builder.add_node("surface_loops", ov.get("surface_loops", nodes.surface_loops))
     builder.add_node("draft_response", ov.get("draft_response", nodes.draft_response))
@@ -112,7 +117,15 @@ def graph_builder(
     builder.add_conditional_edges(
         "execute_tool",
         after_execute_tool,
-        {"correlate": "correlate"},
+        {
+            "correlate": "correlate",
+            "await_subtask_confirmation": "await_subtask_confirmation",
+        },
+    )
+    builder.add_conditional_edges(
+        "await_subtask_confirmation",
+        after_await_subtask_confirmation,
+        {"execute_tool": "execute_tool"},
     )
     builder.add_edge("correlate", "surface_loops")
     builder.add_conditional_edges(

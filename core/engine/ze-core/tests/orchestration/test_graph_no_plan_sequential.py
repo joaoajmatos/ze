@@ -13,6 +13,7 @@ def test_plan_sequential_not_exported():
 def test_graph_builder_has_no_plan_sequential_node():
     builder = graph_builder()
     assert "plan_sequential" not in builder.nodes
+    assert "await_subtask_confirmation" in builder.nodes
 
 
 def test_agent_state_has_no_dynamic_plan_fields():

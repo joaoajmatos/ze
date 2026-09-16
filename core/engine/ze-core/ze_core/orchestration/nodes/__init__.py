@@ -2,6 +2,7 @@ from ze_core.orchestration.nodes.context import fetch_context
 from ze_core.orchestration.nodes.correlation import correlate
 from ze_core.orchestration.nodes.execution import (
     await_confirmation,
+    await_subtask_confirmation,
     capability_check,
     draft_response,
     execute_tool,
@@ -15,6 +16,7 @@ from ze_core.orchestration.nodes.trace import record_trace
 
 __all__ = [
     "await_confirmation",
+    "await_subtask_confirmation",
     "capability_check",
     "correlate",
     "decompose",

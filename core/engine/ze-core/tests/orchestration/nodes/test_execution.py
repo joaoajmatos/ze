@@ -9,6 +9,7 @@ from ze_memory.types import MemoryContext
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_core.orchestration.nodes.execution import (
     await_confirmation,
+    await_subtask_confirmation,
     capability_check,
     draft_response,
     execute_tool,
@@ -168,7 +169,7 @@ class TestCapabilityCheck:
         assert result["gate_decision"] == GateDecision.EXECUTE
         assert "budget_status" not in result
 
-    async def test_compound_mixed_read_write_still_strictest_wins(self):
+    async def test_compound_mixed_read_write_execute_sibling_not_held(self):
         from ze_agents.types import Intent, Mode
         from ze_core.capability import CapabilityGate
 
@@ -191,7 +192,70 @@ class TestCapabilityCheck:
         )
         state = {"envelope": env, "session_overrides": {}}
         result = await capability_check(state, _config(gate))
-        assert result["gate_decision"] == GateDecision.AWAIT_CONFIRMATION
+        by_agent = {
+            row["agent"]: row["decision"] for row in result["subtask_gate_decisions"]
+        }
+        assert by_agent["calendar"] == GateDecision.EXECUTE
+        assert by_agent["messenger"] == GateDecision.AWAIT_CONFIRMATION
+        assert result["gate_decision"] != GateDecision.AWAIT_CONFIRMATION
+
+    async def test_compound_all_execute_independent_reads(self):
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+
+        news_cls = _make_agent_class("news")
+        news_cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        research_cls = _make_agent_class("research")
+        research_cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        agent(news_cls)
+        agent(research_cls)
+        register_instance("news", object.__new__(news_cls))
+        register_instance("research", object.__new__(research_cls))
+        gate = CapabilityGate()
+        env = _envelope(
+            "news",
+            is_compound=True,
+            subtasks=[
+                SubTask(agent="news", intent="read", prompt="headlines"),
+                SubTask(agent="research", intent="read", prompt="notes"),
+            ],
+        )
+        result = await capability_check(
+            {"envelope": env, "session_overrides": {}}, _config(gate)
+        )
+        decisions = [row["decision"] for row in result["subtask_gate_decisions"]]
+        assert decisions == [GateDecision.EXECUTE, GateDecision.EXECUTE]
+        assert result["gate_decision"] != GateDecision.BLOCKED
+
+    async def test_compound_all_blocked_still_blocks(self):
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+
+        alpha_cls = _make_agent_class("alpha")
+        alpha_cls.intents = {"read": Intent(Mode.DISABLED)}
+        beta_cls = _make_agent_class("beta")
+        beta_cls.intents = {"read": Intent(Mode.DISABLED)}
+        agent(alpha_cls)
+        agent(beta_cls)
+        register_instance("alpha", object.__new__(alpha_cls))
+        register_instance("beta", object.__new__(beta_cls))
+        gate = CapabilityGate()
+        env = _envelope(
+            "alpha",
+            is_compound=True,
+            subtasks=[
+                SubTask(agent="alpha", intent="read", prompt="p1"),
+                SubTask(agent="beta", intent="read", prompt="p2"),
+            ],
+        )
+        result = await capability_check(
+            {"envelope": env, "session_overrides": {}}, _config(gate)
+        )
+        assert result["gate_decision"] == GateDecision.BLOCKED
+        assert all(
+            row["decision"] == GateDecision.BLOCKED
+            for row in result["subtask_gate_decisions"]
+        )
 
     async def test_bind_delegate_evaluator_budget_holds_execute(self):
         from ze_agents.types import Intent, Mode
@@ -221,6 +285,50 @@ class TestCapabilityCheck:
         )
         decision = await ctx.evaluate_delegate("calendar", "read")
         assert decision == GateDecision.AWAIT_CONFIRMATION
+
+    async def test_compound_budget_overage_composes_per_subtask(self):
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+        from ze_core.telemetry.budget import BudgetStatus
+
+        read_cls = _make_agent_class("calendar")
+        read_cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        draft_cls = _make_agent_class("messenger")
+        draft_cls.intents = {"create": Intent(Mode.DRAFT_ONLY)}
+        agent(read_cls)
+        agent(draft_cls)
+        register_instance("calendar", object.__new__(read_cls))
+        register_instance("messenger", object.__new__(draft_cls))
+        gate = CapabilityGate()
+        budget_checker = AsyncMock()
+        budget_checker.check = AsyncMock(
+            return_value=BudgetStatus(
+                within_budget=False,
+                scope="session",
+                current_spend_usd=5.0,
+                limit_usd=2.0,
+            )
+        )
+        config = _config(gate)
+        config["configurable"]["budget_checker"] = budget_checker
+        env = _envelope(
+            "calendar",
+            is_compound=True,
+            subtasks=[
+                SubTask(agent="calendar", intent="read", prompt="tue"),
+                SubTask(agent="messenger", intent="create", prompt="mail"),
+            ],
+        )
+        result = await capability_check(
+            {"envelope": env, "session_overrides": {}, "session_id": "s1"},
+            config,
+        )
+        by_agent = {
+            row["agent"]: row["decision"] for row in result["subtask_gate_decisions"]
+        }
+        assert by_agent["calendar"] == GateDecision.AWAIT_CONFIRMATION
+        assert by_agent["messenger"] == GateDecision.DRAFT
+        assert result["gate_decision"] == GateDecision.EXECUTE
 
 
 # ── execute_tool ──────────────────────────────────────────────────────────────
@@ -260,6 +368,18 @@ class TestExecuteTool:
             "envelope": env,
             "agent_context": _ctx("alpha"),
             "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "alpha",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+                {
+                    "agent": "beta",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+            ],
             "image_data": None,
         }
         result = await execute_tool(state, {"configurable": {}})
@@ -267,6 +387,360 @@ class TestExecuteTool:
         assert len(result["subtask_results"]) == 2
         responses = {r.response for r in result["subtask_results"]}
         assert responses == {"r1", "r2"}
+        assert not result.get("pending_subtask_awaits")
+
+    async def test_compound_mixed_execute_runs_while_sibling_awaits(self):
+        calendar = _register_and_wire("calendar", response="tue free")
+        messenger = _register_and_wire("messenger", response="sent")
+        calendar_runs = {"n": 0}
+        messenger_runs = {"n": 0}
+        orig_cal = calendar.run
+        orig_msg = messenger.run
+
+        async def cal_run(ctx):
+            calendar_runs["n"] += 1
+            return await orig_cal(ctx)
+
+        async def msg_run(ctx):
+            messenger_runs["n"] += 1
+            return await orig_msg(ctx)
+
+        calendar.run = cal_run
+        messenger.run = msg_run
+        subtasks = [
+            SubTask(agent="calendar", intent="read", prompt="tue"),
+            SubTask(agent="messenger", intent="create", prompt="mail"),
+        ]
+        env = _envelope("calendar", is_compound=True, subtasks=subtasks)
+        state = {
+            "envelope": env,
+            "agent_context": _ctx("calendar"),
+            "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "calendar",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+                {
+                    "agent": "messenger",
+                    "intent": "create",
+                    "decision": GateDecision.AWAIT_CONFIRMATION,
+                },
+            ],
+            "image_data": None,
+        }
+        result = await execute_tool(state, {"configurable": {}})
+        assert calendar_runs["n"] == 1
+        assert messenger_runs["n"] == 0
+        assert [r.agent for r in result["subtask_results"]] == ["calendar"]
+        pending = result["pending_subtask_awaits"]
+        assert len(pending) == 1
+        assert pending[0]["agent"] == "messenger"
+        assert pending[0]["request_id"]
+
+    async def test_compound_approve_runs_only_that_subtask(self):
+        calendar = _register_and_wire("calendar", response="tue free")
+        messenger = _register_and_wire("messenger", response="sent")
+        calendar_runs = {"n": 0}
+        messenger_runs = {"n": 0}
+        orig_cal = calendar.run
+        orig_msg = messenger.run
+
+        async def cal_run(ctx):
+            calendar_runs["n"] += 1
+            return await orig_cal(ctx)
+
+        async def msg_run(ctx):
+            messenger_runs["n"] += 1
+            return await orig_msg(ctx)
+
+        calendar.run = cal_run
+        messenger.run = msg_run
+        subtasks = [
+            SubTask(agent="calendar", intent="read", prompt="tue"),
+            SubTask(agent="messenger", intent="create", prompt="mail"),
+        ]
+        env = _envelope("calendar", is_compound=True, subtasks=subtasks)
+        prior = AgentResult(agent="calendar", response="tue free")
+        state = {
+            "envelope": env,
+            "agent_context": _ctx("calendar"),
+            "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "calendar",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+                {
+                    "agent": "messenger",
+                    "intent": "create",
+                    "decision": GateDecision.AWAIT_CONFIRMATION,
+                },
+            ],
+            "completed_subtask_indexes": [0],
+            "subtask_results": [prior],
+            "approved_subtask_indexes": [1],
+            "pending_subtask_awaits": [],
+            "image_data": None,
+        }
+        result = await execute_tool(state, {"configurable": {}})
+        assert calendar_runs["n"] == 0
+        assert messenger_runs["n"] == 1
+        assert [r.agent for r in result["subtask_results"]] == ["calendar", "messenger"]
+        assert result["pending_subtask_awaits"] == []
+
+    async def test_compound_deny_skips_write(self):
+        calendar = _register_and_wire("calendar", response="tue free")
+        messenger = _register_and_wire("messenger", response="sent")
+        calendar_runs = {"n": 0}
+        messenger_runs = {"n": 0}
+        orig_cal = calendar.run
+        orig_msg = messenger.run
+
+        async def cal_run(ctx):
+            calendar_runs["n"] += 1
+            return await orig_cal(ctx)
+
+        async def msg_run(ctx):
+            messenger_runs["n"] += 1
+            return await orig_msg(ctx)
+
+        calendar.run = cal_run
+        messenger.run = msg_run
+        subtasks = [
+            SubTask(agent="calendar", intent="read", prompt="tue"),
+            SubTask(agent="messenger", intent="create", prompt="mail"),
+        ]
+        env = _envelope("calendar", is_compound=True, subtasks=subtasks)
+        prior = AgentResult(agent="calendar", response="tue free")
+        state = {
+            "envelope": env,
+            "agent_context": _ctx("calendar"),
+            "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "calendar",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+                {
+                    "agent": "messenger",
+                    "intent": "create",
+                    "decision": GateDecision.AWAIT_CONFIRMATION,
+                },
+            ],
+            "completed_subtask_indexes": [0],
+            "subtask_results": [prior],
+            "denied_subtask_indexes": [1],
+            "pending_subtask_awaits": [],
+            "image_data": None,
+        }
+        result = await execute_tool(state, {"configurable": {}})
+        assert calendar_runs["n"] == 0
+        assert messenger_runs["n"] == 0
+        assert [r.agent for r in result["subtask_results"]] == ["calendar"]
+        assert result["pending_subtask_awaits"] == []
+
+    async def test_compound_two_await_neither_runs_until_confirm(self):
+        calendar = _register_and_wire("calendar", response="created")
+        messenger = _register_and_wire("messenger", response="sent")
+        calendar_runs = {"n": 0}
+        messenger_runs = {"n": 0}
+        orig_cal = calendar.run
+        orig_msg = messenger.run
+
+        async def cal_run(ctx):
+            calendar_runs["n"] += 1
+            return await orig_cal(ctx)
+
+        async def msg_run(ctx):
+            messenger_runs["n"] += 1
+            return await orig_msg(ctx)
+
+        calendar.run = cal_run
+        messenger.run = msg_run
+        subtasks = [
+            SubTask(agent="calendar", intent="create", prompt="event"),
+            SubTask(agent="messenger", intent="create", prompt="mail"),
+        ]
+        env = _envelope("calendar", is_compound=True, subtasks=subtasks)
+        state = {
+            "envelope": env,
+            "agent_context": _ctx("calendar"),
+            "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "calendar",
+                    "intent": "create",
+                    "decision": GateDecision.AWAIT_CONFIRMATION,
+                },
+                {
+                    "agent": "messenger",
+                    "intent": "create",
+                    "decision": GateDecision.AWAIT_CONFIRMATION,
+                },
+            ],
+            "image_data": None,
+        }
+        result = await execute_tool(state, {"configurable": {}})
+        assert calendar_runs["n"] == 0
+        assert messenger_runs["n"] == 0
+        assert result["subtask_results"] == []
+        pending = result["pending_subtask_awaits"]
+        assert [p["agent"] for p in pending] == ["calendar", "messenger"]
+        assert pending[0]["request_id"] != pending[1]["request_id"]
+
+    async def test_compound_execute_and_draft_per_specialist(self):
+        received: dict[str, GateDecision] = {}
+
+        class _Capture:
+            name = "alpha"
+            description = "alpha"
+            enabled = True
+            timeout = 30
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                received[ctx.intent] = ctx.gate_decision
+                return AgentResult(agent="alpha", response=ctx.intent)
+
+        class _CaptureBeta(_Capture):
+            name = "beta"
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                received[ctx.intent] = ctx.gate_decision
+                return AgentResult(agent="beta", response=ctx.intent)
+
+        agent(_Capture)
+        agent(_CaptureBeta)
+        register_instance("alpha", _Capture())
+        register_instance("beta", _CaptureBeta())
+        subtasks = [
+            SubTask(agent="alpha", intent="read", prompt="lookup"),
+            SubTask(agent="beta", intent="create", prompt="draft it"),
+        ]
+        env = _envelope("alpha", is_compound=True, subtasks=subtasks)
+        state = {
+            "envelope": env,
+            "agent_context": _ctx("alpha"),
+            "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "alpha",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+                {
+                    "agent": "beta",
+                    "intent": "create",
+                    "decision": GateDecision.DRAFT,
+                },
+            ],
+            "image_data": None,
+        }
+        result = await execute_tool(state, {"configurable": {}})
+        assert received["read"] == GateDecision.EXECUTE
+        assert received["create"] == GateDecision.DRAFT
+        assert {r.agent for r in result["subtask_results"]} == {"alpha", "beta"}
+
+    async def test_compound_blocked_sibling_does_not_run(self):
+        alpha = _register_and_wire("alpha", response="ok")
+        beta = _register_and_wire("beta", response="nope")
+        alpha_runs = {"n": 0}
+        beta_runs = {"n": 0}
+        orig_a = alpha.run
+        orig_b = beta.run
+
+        async def a_run(ctx):
+            alpha_runs["n"] += 1
+            return await orig_a(ctx)
+
+        async def b_run(ctx):
+            beta_runs["n"] += 1
+            return await orig_b(ctx)
+
+        alpha.run = a_run
+        beta.run = b_run
+        subtasks = [
+            SubTask(agent="alpha", intent="read", prompt="p1"),
+            SubTask(agent="beta", intent="read", prompt="p2"),
+        ]
+        env = _envelope("alpha", is_compound=True, subtasks=subtasks)
+        state = {
+            "envelope": env,
+            "agent_context": _ctx("alpha"),
+            "gate_decision": GateDecision.EXECUTE,
+            "subtask_gate_decisions": [
+                {
+                    "agent": "alpha",
+                    "intent": "read",
+                    "decision": GateDecision.EXECUTE,
+                },
+                {
+                    "agent": "beta",
+                    "intent": "read",
+                    "decision": GateDecision.BLOCKED,
+                },
+            ],
+            "image_data": None,
+        }
+        result = await execute_tool(state, {"configurable": {}})
+        assert alpha_runs["n"] == 1
+        assert beta_runs["n"] == 0
+        assert [r.agent for r in result["subtask_results"]] == ["alpha"]
+
+    async def test_await_subtask_approve_isolates_request_id(self, monkeypatch):
+        monkeypatch.setattr(
+            "ze_core.orchestration.nodes.execution.interrupt",
+            lambda payload: {"choice": "approve"},
+        )
+        second = {
+            "index": 1,
+            "agent": "messenger",
+            "intent": "create",
+            "prompt": "mail",
+            "request_id": "req-b",
+        }
+        result = await await_subtask_confirmation(
+            {
+                "pending_subtask_awaits": [
+                    {
+                        "index": 0,
+                        "agent": "calendar",
+                        "intent": "create",
+                        "prompt": "event",
+                        "request_id": "req-a",
+                    },
+                    second,
+                ]
+            },
+            {"configurable": {}},
+        )
+        assert result["approved_subtask_indexes"] == [0]
+        assert result["pending_subtask_awaits"] == [second]
+
+    async def test_await_subtask_deny_skips_that_index(self, monkeypatch):
+        monkeypatch.setattr(
+            "ze_core.orchestration.nodes.execution.interrupt",
+            lambda payload: {"choice": "deny"},
+        )
+        result = await await_subtask_confirmation(
+            {
+                "pending_subtask_awaits": [
+                    {
+                        "index": 1,
+                        "agent": "messenger",
+                        "intent": "create",
+                        "prompt": "mail",
+                        "request_id": "req-m",
+                    }
+                ]
+            },
+            {"configurable": {}},
+        )
+        assert result["denied_subtask_indexes"] == [1]
+        assert result["pending_subtask_awaits"] == []
 
     async def test_compound_single_subtask_uses_agent_result(self):
         _register_and_wire("news", response="headlines")

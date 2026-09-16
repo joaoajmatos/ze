@@ -1,0 +1,423 @@
+{
+  "workflow": "companion",
+  "specName": "parallel subtask gates",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T20:47:44.873Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T20:49:04.057Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T20:49:36.704Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:51:06.359Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:51:07.312Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T20:51:08.379Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T20:51:37.468Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:51:39.129Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T20:51:39.473Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:05:13.462Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:05:23.811Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:06:18.393Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:06:20.186Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:12:27.347Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:12:28.992Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:12:30.617Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:12:32.303Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:01.525Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:02.862Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:03.691Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:05.088Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:06.339Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:17.945Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:19.184Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:13:20.569Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:13:21.462Z"
+    }
+  ],
+  "telemetryInstanceId": "f5aa8bad-57ee-4f85-b88a-b1279cf4e92f",
+  "last_action": "all tasks done — make test-core 732 passed",
+  "coverage": {
+    "FR-001": {
+      "title": "Evaluate capability per parallel subtask; no single strictest gate_decision for the envelope",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestCapabilityCheck::test_compound_mixed_read_write_execute_sibling_not_held",
+        "core/engine/ze-core/tests/orchestration/test_edges.py::test_after_capability_check_compound_mixed_goes_to_execute_tool"
+      ]
+    },
+    "FR-002": {
+      "title": "EXECUTE subtasks run without waiting for sibling AWAIT/DRAFT/BLOCKED",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestExecuteTool::test_compound_mixed_execute_runs_while_sibling_awaits"
+      ]
+    },
+    "FR-003": {
+      "title": "AWAIT subtasks pause that job only; request_id confirm; approve runs that specialist",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestExecuteTool::test_compound_approve_runs_only_that_subtask",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestExecuteTool::test_await_subtask_approve_isolates_request_id"
+      ]
+    },
+    "FR-004": {
+      "title": "DRAFT and BLOCKED apply only to that specialist",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestExecuteTool::test_compound_execute_and_draft_per_specialist",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestCapabilityCheck::test_compound_budget_overage_composes_per_subtask"
+      ]
+    },
+    "FR-005": {
+      "title": "Synthesize only completed subtask results; no false success",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_memory.py::TestSynthesize::test_merges_subtask_responses",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestExecuteTool::test_compound_deny_skips_write"
+      ]
+    },
+    "FR-006": {
+      "title": "Do not change conductor 152, sequential execute, 153/155, promote, procedures",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py::test_apply_conductor_rewrite_mixed_gather_act_sequential_false_research_messenger",
+        "core/engine/ze-core/tests/orchestration/test_graph_no_plan_sequential.py::test_plan_sequential_not_exported"
+      ]
+    },
+    "FR-007": {
+      "title": "Single-agent turns keep one gate decision",
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestCapabilityCheck::test_execute_decision",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py::TestCapabilityCheck::test_compound_all_blocked_still_blocks"
+      ]
+    }
+  },
+  "context": [
+    "area: core/engine/ze-core/ze_core/orchestration/nodes/execution.py",
+    "constraint: 152 conductor path unchanged",
+    "constraint: 155 mixed rewrite unchanged"
+  ],
+  "intent": "Split capability gates on independent parallel fan-out so an allowed job is not held for a sibling that needs approval",
+  "expectations": [
+    "Do not restore sequential _execute_compound",
+    "Do not change run_delegate / 152",
+    "Do not change 153/155 conductor rewrite",
+    "No promote or procedures"
+  ],
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 7,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "approach": "Per-subtask CapabilityGate on independent compound; execute_tool partitions EXECUTE/DRAFT vs AWAIT request_id; no envelope min()",
+  "currentTask": "T015",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed 155 mixed gather+act still rewrites to companion; 158 only remaining is_compound fan-out",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/routing.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Replaced strictest-wins with per-subtask EXECUTE-not-held assertions (red)",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added fail-first all-EXECUTE gather and all-BLOCKED compound tests (red)",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "capability_check writes per-subtask decisions; compound no longer min() to one AWAIT",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Mixed compound edges go to execute_tool, not envelope draft_response",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/edges.py",
+        "core/engine/ze-core/ze_core/orchestration/graph.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Partitioned _execute_compound: EXECUTE/DRAFT run now; AWAIT persists request_id",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py",
+        "core/engine/ze-core/ze_core/orchestration/state.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Approve runs only that subtask; deny skips write; request_id isolation",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py",
+        "apps/ze-api/ze_api/api/websocket/confirmation.py",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "All-EXECUTE independent reads still gather; synthesize unchanged for completed pair",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Synthesize uses only completed subtask_results; prompt forbids claiming blocked/denied success",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/memory.py",
+        "core/engine/ze-core/tests/orchestration/nodes/test_memory.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Two AWAIT act-only jobs neither run until their own request_id confirm",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "EXECUTE sibling runs for real; DRAFT sibling receives DRAFT only",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Budget overage composes per subtask like 152, not append-then-min",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Conductor and run_delegate tests pass; plan_sequential still absent",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py",
+        "core/engine/ze-core/tests/orchestration/test_graph_no_plan_sequential.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Added optional parallel act+act eval id; 154/155 conductor ids unchanged",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Marked 158 Implemented; ruff clean; make test-core 732 passed",
+      "files": [
+        "specs/README.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "specs/arch/companion-conductor-roadmap.md"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "ze-core orchestration tests",
+      "command": "uv run pytest core/engine/ze-core/tests/orchestration -m not slow",
+      "result": "376 passed",
+      "warnings": [
+        "datetime.utcnow deprecation in unrelated resume-recap test"
+      ]
+    },
+    {
+      "what": "make test-core",
+      "command": "make test-core",
+      "result": "732 passed, 45 skipped, 7 deselected"
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Commit EXECUTE/DRAFT results in execute_tool then interrupt in a separate await_subtask_confirmation node",
+      "why": "In-node interrupt would replay gather and re-run allowed siblings; a completed node checkpoints partial results before the 113 request_id pause",
+      "rejected": "interrupt() inside _execute_compound or envelope-wide draft_response"
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "Split parallel compound gates so EXECUTE/DRAFT run now and AWAIT confirms per request_id"
+    }
+  }
+}

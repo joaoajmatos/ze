@@ -198,6 +198,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 155 | [Mixed Gather+Act → Conductor](phases/155-mixed-gather-act-conductor/spec.md) | ✅ Implemented |
 | 156 | [Conductor Stall / Replan](phases/156-conductor-stall-replan/spec.md) | ✅ Implemented |
 | 157 | [Promote Conductor Instance to Workflow/Goal](phases/157-promote-conductor-instance/spec.md) | ✅ Implemented |
+| 158 | [Parallel Per-Subtask Gates](phases/158-parallel-subtask-gates/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 
@@ -272,5 +273,5 @@ Made when a significant restructuring forced the question.
 | [spec-kit Adoption](arch/spec-kit-adoption.md) | Feature specs use GitHub spec-kit (`specs/phases/NNN-<name>/` dirs, `.specify/` scaffolding, `/speckit-*` pipeline) |
 | [Attention Arbitration](arch/attention-arbitration.md) | One ranked `PriorityView` + one shared attention budget across loops, goals, and correlation hypotheses — shipped as Phase 123/127 |
 | [Memory Honesty Roadmap](arch/memory-honesty-roadmap.md) | **Living.** After Phase 143: constraint veto (P5), reply-path recitation, forget vs cancel, ingest honesty, extractor dual-write/classifier, specialist constitution, eval field hard-cut, guide index drift |
-| [Companion Conductor Roadmap](arch/companion-conductor-roadmap.md) | **Living.** One speaker, one conductor; 151–157 Implemented (promote is a workflow or goal instance, not a procedure). Directory 151 is conductor ACI, not memory-honesty item 151 (bundled in phase 150). |
+| [Companion Conductor Roadmap](arch/companion-conductor-roadmap.md) | **Living.** One speaker, one conductor; 151–158 Implemented. Promote is a workflow or goal instance, not a procedure. Directory 151 is conductor ACI, not memory-honesty item 151 (bundled in phase 150). |
 | [Social Cognition](arch/social-cognition.md) | **Open decision brief.** People/projects/relationships as evolving state extending the memory graph, not a new store; reconciles an existing parallel `contact_relationships` table into it |

@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import base64
 from typing import Any
+from uuid import uuid4
 
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import interrupt
 
 from ze_agents.types import GateDecision
 from ze_agents.errors import AgentTimeoutError
@@ -36,11 +38,7 @@ def bind_delegate_evaluator(
         )
         if budget_checker is not None:
             status = await budget_checker.check(session_id=session_id)
-            if not status.within_budget:
-                decision = min(
-                    (decision, GateDecision.AWAIT_CONFIRMATION),
-                    key=lambda d: _GATE_RANK.get(d, 0),
-                )
+            decision = _compose_budget(decision, status.within_budget)
         return decision
 
     ctx.evaluate_delegate = evaluate_delegate
@@ -81,6 +79,33 @@ _GATE_RANK: dict[GateDecision, int] = {
 }
 
 
+def _compose_budget(decision: GateDecision, within_budget: bool) -> GateDecision:
+    if within_budget:
+        return decision
+    return min(
+        (decision, GateDecision.AWAIT_CONFIRMATION),
+        key=lambda d: _GATE_RANK.get(d, 0),
+    )
+
+
+def _decision_for_subtask(
+    index: int,
+    decisions: list,
+    fallback: GateDecision,
+) -> GateDecision:
+    if index < len(decisions):
+        item = decisions[index]
+        raw = item.get("decision") if isinstance(item, dict) else item
+        if isinstance(raw, GateDecision):
+            return raw
+        if isinstance(raw, str):
+            try:
+                return GateDecision(raw)
+            except ValueError:
+                pass
+    return fallback or GateDecision.EXECUTE
+
+
 async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
     from ze_core.capability.gate import CapabilityGate
 
@@ -102,10 +127,22 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
     if budget_checker is not None:
         status = await budget_checker.check(session_id=state["session_id"])
         if not status.within_budget:
-            decisions.append(GateDecision.AWAIT_CONFIRMATION)
+            decisions = [_compose_budget(d, False) for d in decisions]
             state_updates["budget_status"] = status
 
-    # Take the strictest (most restrictive) decision across all subtasks.
+    is_parallel_compound = bool(envelope and envelope.is_compound and len(subtasks) > 1)
+    if is_parallel_compound:
+        state_updates["subtask_gate_decisions"] = [
+            {"agent": st.agent, "intent": st.intent, "decision": d}
+            for st, d in zip(subtasks, decisions)
+        ]
+        overall = (
+            GateDecision.BLOCKED
+            if all(d == GateDecision.BLOCKED for d in decisions)
+            else GateDecision.EXECUTE
+        )
+        return {"gate_decision": overall, **state_updates}
+
     decision = min(decisions, key=lambda d: _GATE_RANK.get(d, 0))
     return {"gate_decision": decision, **state_updates}
 
@@ -210,6 +247,44 @@ async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
             "final_response": draft.response if draft else "",
         }
     return {"pending_confirmation": False, "gate_decision": GateDecision.EXECUTE}
+
+
+async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) -> dict:
+    pending = list(state.get("pending_subtask_awaits") or [])
+    if not pending:
+        return {}
+    item = pending[0]
+    resume = interrupt(
+        {
+            "kind": "compound_subtask",
+            "request_id": item["request_id"],
+            "prompt": f"Allow {item['agent']} to: {item['prompt']}",
+            "agent": item["agent"],
+            "intent": item["intent"],
+            "editable": False,
+            "proposed": "",
+            "subtask_index": item["index"],
+        }
+    )
+    choice = "approve"
+    if isinstance(resume, dict):
+        choice = str(resume.get("choice") or "approve")
+    elif isinstance(resume, str):
+        choice = resume
+    remaining = pending[1:]
+    updates: dict[str, Any] = {
+        "pending_subtask_awaits": remaining,
+        "pending_confirmation": bool(remaining),
+    }
+    if choice == "approve":
+        approved = list(state.get("approved_subtask_indexes") or [])
+        approved.append(int(item["index"]))
+        updates["approved_subtask_indexes"] = approved
+    else:
+        denied = list(state.get("denied_subtask_indexes") or [])
+        denied.append(int(item["index"]))
+        updates["denied_subtask_indexes"] = denied
+    return updates
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -349,12 +424,24 @@ async def _execute_compound(
             embed_fn=embed_fn,
         )
 
-    def _make_ctx(subtask: Any) -> AgentContext:
+    decisions = state.get("subtask_gate_decisions") or []
+    completed_indexes = [int(i) for i in (state.get("completed_subtask_indexes") or [])]
+    completed_set = set(completed_indexes)
+    denied = {int(i) for i in (state.get("denied_subtask_indexes") or [])}
+    approved = {int(i) for i in (state.get("approved_subtask_indexes") or [])}
+    pending = list(state.get("pending_subtask_awaits") or [])
+    pending_indexes = {int(item["index"]) for item in pending}
+    existing_results = list(state.get("subtask_results") or [])
+    results_by_index: dict[int, AgentResult] = {}
+    for idx, result in zip(completed_indexes, existing_results):
+        results_by_index[idx] = result
+
+    def _make_ctx(subtask: Any, decision: GateDecision) -> AgentContext:
         ctx = AgentContext(
             session_id=base_ctx.session_id,
             prompt=subtask.prompt,
             intent=subtask.intent,
-            gate_decision=gate_decision,
+            gate_decision=decision,
             memory=base_ctx.memory,
             contacts=base_ctx.contacts,
             persona=base_ctx.persona,
@@ -372,15 +459,47 @@ async def _execute_compound(
         bind_delegate_evaluator(ctx, config, state)
         return ctx
 
-    results = list(
-        await asyncio.gather(
-            *[_run_with_timeout(st.agent, _make_ctx(st)) for st in subtasks]
-        )
-    )
+    to_run: list[tuple[int, Any, GateDecision]] = []
+    new_awaits: list[dict[str, Any]] = []
+    for i, st in enumerate(subtasks):
+        if i in completed_set or i in denied or i in pending_indexes:
+            continue
+        decision = _decision_for_subtask(i, decisions, gate_decision)
+        if decision == GateDecision.BLOCKED:
+            continue
+        if i in approved:
+            to_run.append((i, st, GateDecision.EXECUTE))
+            continue
+        if decision == GateDecision.AWAIT_CONFIRMATION:
+            new_awaits.append(
+                {
+                    "index": i,
+                    "agent": st.agent,
+                    "intent": st.intent,
+                    "prompt": st.prompt,
+                    "request_id": str(uuid4()),
+                }
+            )
+            continue
+        to_run.append((i, st, decision))
 
+    if to_run:
+        ran = await asyncio.gather(
+            *[
+                _run_with_timeout(st.agent, _make_ctx(st, decision))
+                for _, st, decision in to_run
+            ]
+        )
+        for (i, _, _), result in zip(to_run, ran):
+            results_by_index[i] = result
+
+    ordered_indexes = sorted(results_by_index)
     return {
         "agent_result": None,
-        "subtask_results": results,
+        "subtask_results": [results_by_index[i] for i in ordered_indexes],
+        "completed_subtask_indexes": ordered_indexes,
+        "pending_subtask_awaits": pending + new_awaits,
+        "approved_subtask_indexes": [],
         "agent_context": base_ctx,
     }
 
@@ -396,8 +515,6 @@ async def _run_with_timeout(
 
     instance = get_agent(agent_name)
     timeout = float(getattr(type(instance), "timeout", 30))
-
-    from langgraph.types import interrupt
 
     interrupt_token = tool_interrupt_fn.set(interrupt)
     try:

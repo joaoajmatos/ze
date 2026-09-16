@@ -35,10 +35,17 @@ class AgentState(TypedDict):
 
     # ── Capability ─────────────────────────────────────────────────────────
     gate_decision: GateDecision | None
+    subtask_gate_decisions: (
+        list  # list[{agent, intent, decision}] aligned with envelope.subtasks
+    )
 
     # ── Execution ──────────────────────────────────────────────────────────
     agent_result: AgentResult | None
     subtask_results: list[AgentResult]
+    completed_subtask_indexes: list[int]
+    pending_subtask_awaits: list  # list[{index, agent, intent, prompt, request_id}]
+    approved_subtask_indexes: list[int]
+    denied_subtask_indexes: list[int]
     pending_confirmation: bool
 
     # ── Conversation history ───────────────────────────────────────────────

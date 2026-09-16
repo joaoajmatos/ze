@@ -38,7 +38,9 @@ def _estimate_tokens(messages: list[dict]) -> int:
 
 
 def _format_transcript(messages: list[dict]) -> str:
-    return "\n".join(f"{m.get('role', 'user')}: {m.get('content', '')}" for m in messages)
+    return "\n".join(
+        f"{m.get('role', 'user')}: {m.get('content', '')}" for m in messages
+    )
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
@@ -177,10 +179,14 @@ def _should_compact(updated: list[dict], ctx: Any, config: RunnableConfig) -> bo
         app_config = cfg if isinstance(cfg, dict) else getattr(cfg, "config", {})
     model = ctx.model or resolve_model("synthesis", MODEL_SYNTHESIS, app_config)
     context_window = get_context_window(model)
-    return _estimate_tokens(updated) >= context_window * _COMPACTION_TOKEN_BUDGET_FRACTION
+    return (
+        _estimate_tokens(updated) >= context_window * _COMPACTION_TOKEN_BUDGET_FRACTION
+    )
 
 
-async def _compact(older_span: list[dict], ctx: Any, config: RunnableConfig) -> dict | None:
+async def _compact(
+    older_span: list[dict], ctx: Any, config: RunnableConfig
+) -> dict | None:
     client: Any = config["configurable"].get("openrouter_client")
     cfg: Any = config["configurable"].get("settings")
     app_config: dict = {}
@@ -222,8 +228,9 @@ async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
 
     parts = "\n\n".join(f"[{r.agent}]: {r.response}" for r in subtask_results)
     synthesis_prompt = (
-        "The following are responses from multiple agents for a compound user request.\n"
-        "Synthesize them into a single, coherent, well-structured response.\n\n"
+        "The following are responses from specialists that completed this compound request.\n"
+        "Synthesize them into a single, coherent, well-structured response.\n"
+        "Only these specialists finished. Do not claim that a missing, denied, or blocked job succeeded.\n\n"
         f"User request: {state['prompt']}\n\n"
         f"Agent responses:\n{parts}"
     )

@@ -289,6 +289,42 @@ class TestConfirmationApproveFlow:
         )
         assert result is None  # gate resolved
 
+    async def test_approve_interrupted_sends_next_request_id(self):
+        ws = _make_ws()
+        mgr = ConnectionManager()
+        store = _make_msg_store([])
+        await mgr.connect(ws, store)
+        ws.send_json.reset_mock()
+
+        container = _make_container()
+        pending_config = _make_pending_config()
+        outcome = container.resume_turn.return_value
+        outcome.interrupted = True
+        outcome.response = None
+        outcome.draft = "Allow messenger to: mail"
+        outcome.confirm_request_id = "req-next"
+        outcome.config = pending_config
+        outcome.confirm_editable = False
+        outcome.confirm_proposed = ""
+        outcome.final_state = {}
+        container.settings.confirm_timeout_seconds = 900
+        container.notifier = None
+
+        result = await handle_confirm(
+            ws,
+            {"type": "confirm", "id": "req-1", "choice": "approve"},
+            container,
+            mgr,
+            pending_config,
+            thread_id="t1",
+        )
+
+        assert result == ("req-next", pending_config)
+        frames = _frames_sent(ws)
+        confirm_frames = [f for f in frames if f.get("type") == "confirm_request"]
+        assert len(confirm_frames) == 1
+        assert confirm_frames[0]["id"] == "req-next"
+
     async def test_approve_sends_typing_before_resume(self):
         ws = _make_ws()
         mgr = ConnectionManager()

@@ -79,3 +79,14 @@
     - Successful all-done conductor does not auto-offer
     - Must not write memory_procedures
     - Must not restore plan_sequential
+
+- id: routing_parallel_act_act_independent_gates
+  prompt: "Create a calendar event called Dentist Tuesday 3pm and also email Alex a hello."
+  description: Independent act+act stays graph fan-out; each write confirms on its own request_id
+  expected_agent: calendar
+  tags: [routing, compound, phase-158]
+  criteria:
+    - Must not rewrite this turn as companion-primary (both act, not mixed gather+act)
+    - Each write waits on its own request_id; approving one must not run the other write
+    - Must not restore plan_sequential
+    - Must not change 154/155 conductor scenario ids
