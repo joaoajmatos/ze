@@ -262,11 +262,13 @@ Step 6 only removes memory's accidental role as an ungated writer.
 - [x] **Wrap or replace `propose_facts()`?** Replace. See Design questions and
   `specs/arch/pre-v1-hard-cuts.md`.
 - [x] **Epistemic provenance for extracted facts.** LLM-extracted facts (conversation
-  turn or ingested document) stamp `Provenance.SYNTHESIZED`. Explicit
-  `memory_proposals` from the user/agent stamp `Provenance.PROMPT_SUPPLIED`. The
-  inflow channel (`conversation`, `ingestion`, plugin key, …) is the plugin-owned
-  string from `specs/arch/plugin-domain-vocabulary.md`, not a `Provenance` member.
-  Ingestion's archive id travels as evidence / `source_refs`, not as provenance.
+  turn or ingested document) stamp `Provenance.SYNTHESIZED`. Explicit user remember
+  via companion `remember_fact` (and onboarding `memory_fact` seeds) stamp
+  `Provenance.PROMPT_SUPPLIED`. `AgentResult.memory_proposals` is not a persist API
+  (removed, Phase 140). The inflow channel (`conversation`, `ingestion`, plugin key, …)
+  is the plugin-owned string from `specs/arch/plugin-domain-vocabulary.md`, not a
+  `Provenance` member. Ingestion's archive id travels as evidence / `source_refs`,
+  not as provenance.
 - [ ] **Confidence source** — resolved in *shape* by `specs/arch/claim-topology.md` (one
   `Confidence` value type, shared decay function); still open in *calibration* — LLM
   self-rating vs. corroboration count vs. feedback remains unresolved system-wide, per the

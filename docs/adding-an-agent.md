@@ -134,7 +134,7 @@ class MyAgent(BaseAgent):
 
 | Helper | Description |
 |---|---|
-| `self._build_system_prompt(instructions, ctx)` | Prepends the identity block (traits, memory, profile) to your agent instructions |
+| `self._build_system_prompt(instructions, ctx)` | Assembles datetime, memory constitution, persona, your job instructions, then retrieved biography |
 | `self.agentic_loop(ctx, client=…)` | Runs the LLM-driven ReAct tool loop; returns `(response, tool_calls)` |
 | `self.call_tool(name, ctx, **kwargs)` | Executes a single tool with draft-mode suppression and structured logging |
 | `self._model(ctx)` | Returns the correct model string — primary or `model_simple` based on complexity |

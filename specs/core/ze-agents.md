@@ -107,3 +107,14 @@ No other Ze package dependencies — this is the base layer.
 dispatch them, repeat until the LLM produces a final text response or the tool-call
 cap hook fires. It calls `HarnessHook.on_tool_call` before each dispatch so the engine
 can abort, log, or transform.
+
+`AgentResult` carries `response`, `tool_calls`, `tokens_used`, `contact_proposals`, and
+`extensions`. It does **not** carry `memory_proposals`; explicit fact writes are tools
+(`remember_fact` / `forget_fact` on companion).
+
+`_build_system_prompt` order: current datetime, shared `MEMORY_CONSTITUTION`, persona
+traits, agent job (plus resume recap / open-priority / skills / procedure preambles
+folded into the job), then `## Retrieved biography` from `_format_memory` (origin,
+confidence, recency — not a synthesized-vs-raw dialect). Companion retrieval pins
+reviewed facts always-on via `CompanionPolicy`; `TurnSurfacing` still owns unsolicited
+open-item mentions (loops/goals), not trivia facts.

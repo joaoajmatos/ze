@@ -195,11 +195,11 @@ contribution model); the rule with the most teeth is that **reflection may never
 inference or suspicion until perception or the user corroborates it). Every contribution is a
 *proposal* carrying claim-kind + provenance + confidence, and governance arbitrates. The
 `Contribution` type (`core/contracts/ze-plugin`, Phase 124) is now that uniform proposal seam: `Signal`,
-`OpenLoop`, the dream pipeline, the correlation engine, contacts, and social co-occurrence
-hypotheses all route their writes through it, and its claim-kind license check is what makes
+`OpenLoop`, the dream pipeline, the correlation engine, contacts, social co-occurrence
+hypotheses, and **perception facts** all route their writes through it, and its claim-kind license check is what makes
 "reflection may never emit a fact" a type-level guarantee rather than a convention. Conversation
-and ingestion **facts** still call `propose_facts()` ungated — that is the next substrate
-work after Phase 132, sequenced in `specs/arch/contribution-seam.md` steps 5–6. What the
+extraction and ingest `MemorySink` call `submit_perception_facts` (Phases 133–134). Companion
+`remember_fact` uses the same seam with `PROMPT_SUPPLIED` (Phase 140). What the
 seam does *not* yet do is arbitrate *between* colliding contributions from different
 functions — Phase 126 logs when that happens but doesn't resolve it.
 
@@ -248,15 +248,16 @@ have since shipped:
    representation of *people and projects as evolving states*, not a directory. Design brief:
    `specs/arch/social-cognition.md`. Steps 1–2 shipped as Phase 128; step 3 (co-occurrence
    inference) shipped as Phase 130.
-4. **Perception facts still bypass the contribution seam.** Conversation `write_memory` and
-   ingestion `MemorySink` call `propose_facts()` ungated; `memory_facts` still uses a private
-   `"raw"`/`"synthesized"` dialect. After Phase 132, two feature specs (contribution-seam
-   rollout steps 5 then 6) hard-cut those writes onto `Contribution` and the shared claim
-   vocabulary. No wrap-then-replace — see `specs/arch/pre-v1-hard-cuts.md`.
+4. ~~Perception facts still bypass the contribution seam.~~ **Done** — Phases 133–134 put
+   conversation, ingest, onboarding, and goal-learning facts on `submit_perception_facts`
+   and doctrine provenance. Phase 140 removed `AgentResult.memory_proposals` and added
+   companion `remember_fact` / `forget_fact`. Remaining honesty gaps: extraction is still
+   LLM-gated (not a hard classifier); companion may still narrate memory if it skips tools;
+   constraint veto on mail/calendar writes is deferred.
 5. **Confidence calibration's *source*, not its shape.** `claim-topology.md` fixes the
    mechanical half (one decay function, one type) but not whether a confidence value comes from
    LLM self-rating, corroboration counting, or user feedback — that still varies by producer
    and is unresolved system-wide, per the doctrine's own open question.
 6. Perception, Action need **consumers, not more capability** — largely satisfied now that item
    1 has shipped. Perception's "sensors" (location/device/ambient) gap remains explicitly not
-   urgent. Action result-records on the seam are contribution-seam step 7, low urgency.
+   urgent. Action result-records on the seam shipped in Phases 135–136.

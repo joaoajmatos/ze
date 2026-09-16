@@ -1,4 +1,6 @@
-> ⚠️ **Status: Stale** — Written pre-split (Phases 1–20). References `ze_core/...` paths that no longer exist. See the [package specs below](../README.md#ze-core-specs-core) for current documentation.
+> ⚠️ **Status: Stale** — Written pre-split (Phases 1–20). References `ze_core/...` paths that no longer exist. See [ze-memory.md](ze-memory.md) for the current package spec.
+>
+> **Current write/read/routing (Phases 140–142, high level):** Conversation facts are not persisted from `AgentResult.memory_proposals` (field removed). Explicit remember/forget is companion tools (`remember_fact` / `forget_fact`) through `submit_perception_facts`. Post-turn extraction is a keep/drop gate with closed predicate families and a `speech_act` field; non-`fact` acts write no facts. Companion retrieval pins reviewed facts always-on; `_format_memory` shows origin/confidence/recency; `_build_system_prompt` leads with constitution + job, then biography. Timed “remember to”, loops, and goals are not biography facts (Phase 142). Constraint veto on mail/calendar writes is not implemented.
 
 ---
 
@@ -32,8 +34,8 @@ users confirm (or consolidation merges them automatically on a schedule).
 - Does not handle cross-user memory (single-user system).
 - Does not authenticate or authorise memory access.
 
-Agents may still attach explicit `memory_proposals` on `AgentResult`; these override
-extracted facts with the same key. Otherwise the framework extracts and proposes.
+Historical: agents used to attach explicit `memory_proposals` on `AgentResult`. That
+field and persist path are gone (Phase 140). Explicit writes are companion tools.
 
 ---
 

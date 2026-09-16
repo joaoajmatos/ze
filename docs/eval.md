@@ -351,7 +351,7 @@ Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 | `pending_confirmation` | bool | True if Ze paused for user approval |
 | `tool_calls` | array | Tools invoked: name, args, duration_ms, success, error |
 | `tokens_used` | int | Total tokens consumed by the agent |
-| `memory_proposals_count` | int | Explicit `AgentResult.memory_proposals` only (eval threads skip `write_memory` extraction) |
+| `memory_proposals_count` | int | Always `0`. `AgentResult.memory_proposals` is gone. Eval threads skip `write_memory` extraction. Judge remember/forget from `tool_calls` (`remember_fact` / `forget_fact`) |
 | `error` | string | Error message if the graph failed |
 
 ---

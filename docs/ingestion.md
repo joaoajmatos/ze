@@ -76,12 +76,10 @@ If an extractor raises, the pipeline skips its result and logs the error. At lea
 
 ### 6. Sink
 
-`MemorySink` calls `ze-memory`'s `propose_facts()` with each extracted fact string.
-Facts then enter long-term memory and later retrieval. This call currently bypasses
-the contribution seam. Signals and open loops from the same pipeline already use
-the seam. Closing that door is steps 5–6 in
-[`specs/arch/contribution-seam.md`](../specs/arch/contribution-seam.md). The sink
-does not yet attach `ingestion_id` as evidence. That work lands in the same change.
+`MemorySink` calls `submit_perception_facts` with each extracted fact
+(`Provenance.SYNTHESIZED`). Facts then enter long-term memory. Companion does not
+call `remember_fact` on a raw ingest file. The sink attaches archive ids as evidence
+where the ingest pipeline supplies them.
 
 ---
 

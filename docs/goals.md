@@ -133,7 +133,7 @@ When all milestones finish, `GoalExecutor` runs three things automatically:
 
 1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Sent via `ProactiveNotifier` as the completion message.
 2. **Procedure promotion** — Ze submits reusable procedures extracted during the goal to `MemoryStore.propose_procedure()` so later goals can retrieve them. If a procedure is still provisional while the goal is active, Ze can reuse it inside the same goal before completion.
-3. **Learning promotion** — Ze submits generalizable facts extracted from the goal's `GoalLearning` records to `MemoryStore.propose_facts()` as `reviewed=False`. They enter the normal memory pipeline (dedup via nightly consolidation) and appear at `GET /memory/facts`. Ze promotes only facts that describe the user's preferences or patterns; it excludes goal-specific research findings.
+3. **Learning promotion** — Ze submits generalizable facts extracted from the goal's `GoalLearning` records through `submit_perception_facts` as synthesized, `reviewed=False`. They enter the normal memory pipeline (dedup via nightly consolidation) and appear at `GET /memory/facts`. Ze promotes only facts that describe the user's preferences or patterns; it excludes goal-specific research findings.
 4. **Retrospective stored** — Ze saves the narrative to `goals.retrospective_text`, making it available to the weekly goal narrative job and future goal suggestion synthesis.
 
 ---

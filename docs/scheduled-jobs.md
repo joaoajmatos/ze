@@ -21,13 +21,13 @@ richer:
 
 ## What happens during a conversation
 
-**Facts** (`ze_memory/retriever.py`)
+**Facts** (`ze_memory/extractor.py`)
 
-After each `execute_tool` or `draft_response` node, the `write_memory` graph node
-fires (fire-and-forget). The `gather_fact_proposals` extractor extracts declarative
-facts from the turn and writes them via `store.propose_facts()` with `reviewed = False`.
-The native app's `POST /memory/facts/review` endpoint exposes the review/edit/reject
-flow.
+After each `execute_tool` or `draft_response` node, `write_memory` fires
+(fire-and-forget). Explicit companion writes already landed via `remember_fact`.
+The extractor then runs a keep/drop + `speech_act` gate. It writes remaining facts
+through `submit_perception_facts` as synthesized, `reviewed = false`. Eval threads
+skip extraction. `POST /memory/facts/review` exposes review/edit/reject.
 
 **Episodes** (`ze_memory/retriever.py`)
 
@@ -45,12 +45,12 @@ the eager summary already exists.
 
 **Memory injection**
 
-On the _next_ conversation, `fetch_context` runs pgvector semantic searches over
-facts, raw episodes (current session only), and session summaries (closed sessions),
-injecting the top-k most relevant results into the agent's system prompt as
-`memory_context`. Ze excludes sessions with a summary from the raw episode query so
-the agent never sees both fragments and the narrative for the same session. Ze also
-injects the user profile into every system prompt.
+On the _next_ conversation, `fetch_context` retrieves facts (companion pins reviewed
+facts always-on, then similarity-ranks the rest), raw episodes (current session only),
+and session summaries (closed sessions). `_build_system_prompt` places constitution
+and the agent job before that biography. Ze excludes sessions with a summary from the
+raw episode query so the agent never sees both fragments and the narrative for the
+same session. Ze also injects the user profile.
 
 ---
 

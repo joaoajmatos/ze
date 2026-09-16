@@ -201,23 +201,31 @@ class MemoryContext:
 
 ## How memory is written
 
-### Facts (proposed after each turn)
+### Facts (explicit tools + gated extraction)
 
-After each agent run, the `write_memory` graph node fires (fire-and-forget). The
-`gather_fact_proposals` extractor (`ze_memory/extractor.py`) asks an LLM to extract
-declarative facts from the turn. These currently write via
-`store.propose_facts(proposals)`. That write bypasses the contribution seam. After
-Phase 132 it will submit a `Contribution` instead. See
-[`specs/arch/contribution-seam.md`](../specs/arch/contribution-seam.md) rollout
-step 5.
+Two write doors, both through `submit_perception_facts` (contribution seam + NLI).
+There is no `AgentResult.memory_proposals` persist path and no public
+`propose_facts()`.
 
-- The store writes facts with `reviewed = False` and `contradicted = False`.
-- Before inserting, the store checks for exact-predicate matches, then runs an NLI
-  semantic contradiction pass (`nli_write_time_check`, default `true`) on same-subject
-  candidates with cosine ≥ `nli_lower_cosine_bound` (0.60). It marks hits
-  `contradicted = true`. Controlled by `memory.nli_*` keys in `config.yaml`.
-- The `POST /memory/facts/review` REST endpoint exposes review/edit/reject for the
-  native app.
+**Explicit remember.** Companion runs `agentic_loop` with `remember_fact` /
+`forget_fact`. A successful `remember_fact` writes `PROMPT_SUPPLIED`,
+`reviewed=true`. Confirm memory only after the tool returns `ok: true`.
+`forget_fact` marks matching rows `contradicted=true`. Do not use it to cancel
+reminders, close loops, or abandon goals.
+
+**Post-turn extraction.** After each agent run, `write_memory` calls
+`gather_fact_proposals` (`ze_memory/extractor.py`). The extractor classifies
+`speech_act` and keeps facts only when the act is `fact` and the family is one of
+`identity`, `preference`, `relationship`, `constraint`, `contact_detail`. Other
+acts (reminder, loop, goal, ingest, drop, forget, clarify) yield `[]`. Predicates
+already written this turn by `remember_fact` are dropped. Kept rows are
+`SYNTHESIZED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
+
+- Before insert, the store checks exact-predicate matches, then NLI contradiction
+  (`nli_write_time_check`, default `true`) on same-subject candidates with cosine ≥
+  `nli_lower_cosine_bound` (0.60). Hits are marked `contradicted = true`. Controlled
+  by `memory.nli_*` keys in `config.yaml`.
+- `POST /memory/facts/review` exposes review/edit/reject for the native app.
 
 **Reviewed facts are never auto-merged or auto-expired.**
 
@@ -288,12 +296,14 @@ Before every agent execution, `fetch_context` runs:
    context one hop. It appends neighbor entities, facts, episodes, and procedures
    to the context. Failures are silently swallowed — the base context is
    always returned.
-6. **Identity block assembly** — `build_identity_block()` from `ze_personal.persona`
-   assembles the system prompt identity section from the persona profile + memory
-   context.
+6. **Prompt assembly** — `build_identity_block()` from `ze_personal.persona` renders
+   persona traits. `BaseAgent._build_system_prompt()` puts constitution and the agent
+   job before the retrieved biography. `_format_memory` prints origin, confidence,
+   and recency. Companion retrieval pins reviewed facts always-on (`CompanionPolicy`).
+   `TurnSurfacing` still owns unsolicited open-item mentions.
 
-Agents never query memory themselves — they receive the assembled `MemoryContext` via
-`AgentContext` and `_build_system_prompt()`.
+Agents never query memory themselves. They receive `MemoryContext` on
+`AgentContext` and see it through `_build_system_prompt()`.
 
 ### `RetrievalRequest`
 

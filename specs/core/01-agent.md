@@ -1,4 +1,6 @@
-> ⚠️ **Status: Stale** — Written pre-split (Phases 1–20). References `ze_core/...` paths that no longer exist. See the [package specs below](../README.md#ze-core-specs-core) for current documentation.
+> ⚠️ **Status: Stale** — Written pre-split (Phases 1–20). References `ze_core/...` paths that no longer exist. See [ze-agents.md](ze-agents.md) for the current package spec.
+>
+> **Current agent contract (Phases 140–141, high level):** `AgentResult` has no `memory_proposals` field. Companion uses `agentic_loop` with `remember_fact`, `forget_fact`, and `delegate_to_agent` — not `complete()` with `tools=[]`. `_build_system_prompt` injects `MEMORY_CONSTITUTION` and the agent job before retrieved biography; `_format_memory` is origin/confidence/recency, not a synthesized-vs-raw dialect.
 
 ---
 
@@ -231,7 +233,10 @@ allows session override comparisons without explicit conversion.
 
 ## Shared Types
 
-`ze_core/orchestration/types.py`
+`ze_core/orchestration/types.py` *(historical paths; live types are `ze_agents.types`)*
+
+`memory_proposals` on `AgentResult` was removed in Phase 140. The snippet below is
+the old shape.
 
 ```python
 @dataclass

@@ -109,9 +109,10 @@ Returned from `BaseAgent.run()`.
 | `response` | `str` | Final text response to show the user. |
 | `tool_calls` | `list[ToolCall]` | All tool calls made during this turn. |
 | `tokens_used` | `int` | Token count for telemetry. |
-| `memory_proposals` | `list` | Proposed facts for memory extraction. |
 | `contact_proposals` | `list` | Proposed contacts for consolidation. |
 | `extensions` | `dict[str, Any]` | Arbitrary data forwarded to graph state. |
+
+There is no `memory_proposals` field. Companion persists explicit facts with `remember_fact` / `forget_fact`, not by stuffing the result object.
 
 ### `ToolCall`
 
@@ -200,7 +201,7 @@ async def run(self, ctx: AgentContext) -> AgentResult: ...
 
 #### `self._build_system_prompt(instructions, ctx, **extra) -> str`
 
-Prepends the persona/memory identity block to your agent instructions. Always call this instead of concatenating manually.
+Builds the system prompt. Order: current datetime, shared memory constitution, persona traits, then your agent instructions (job), then retrieved biography from `_format_memory` (origin, confidence, recency). Always call this instead of concatenating manually. Do not treat the biography as a recitation duty.
 
 ```python
 system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)

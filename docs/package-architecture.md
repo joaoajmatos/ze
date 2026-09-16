@@ -242,7 +242,7 @@ depends on `ze-agents` for logging and settings abstractions.
 |--------|-----------------|
 | `retriever.py` | `PostgresMemoryStore` — the central memory store implementing the full MemoryStore protocol |
 | `consolidator.py` | `MemoryConsolidator` — nightly fact dedup, expiry, episode archival, profile synthesis |
-| `extractor.py` | `gather_fact_proposals` — LLM-driven fact extraction from conversation turns |
+| `extractor.py` | `gather_fact_proposals` — keep/drop admission + `speech_act` gate |
 | `policies.py` | `DefaultPolicyRegistry` — maps module names to retrieval policies |
 | `projection.py` | Budget-aware result projection — `budget_facts`, `budget_episodes`, `facets_from_rows` |
 | `types.py` | `Fact`, `Episode`, `Event`, `Procedure`, `TaskState`, `ProfileFacet`, `MemoryContext`, `RetrievalRequest` |
@@ -304,7 +304,7 @@ accountability live in `ze-automation`, not here.
 | `persona/` | `PostgresPersonaStore`, `build_identity_block`, named profiles, dial overrides |
 | `contacts/` | `PersonStore`, `ContactChannelStore`, extractors, consolidator, tools |
 | `agents/research/` | `ResearchAgent` — web search and synthesis |
-| `agents/companion/` | `CompanionAgent` — reasoning and conversation |
+| `agents/companion/` | `CompanionAgent` — conversation with `remember_fact` / `forget_fact` / `delegate_to_agent` |
 | `jobs/briefing.py` | Morning briefing job |
 | `jobs/insights.py` | Weekly insight generation job |
 | `jobs/contacts.py` | Contact review suggestions job |

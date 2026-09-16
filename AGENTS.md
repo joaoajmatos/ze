@@ -456,6 +456,8 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - Ze's user-facing interface is the React web app (`ze-web`), not Telegram — do not describe Telegram-style UI capabilities to users.
 - Only create git commits when explicitly asked. When asked to commit a large batch, split by logical phase or spec user story rather than one dump.
 - Chat chrome: the generic side panel is **trace** (not "Ze's Mind"); session history lives there too. Do not duplicate page titles already shown in the top bar.
+- Discuss and pin spec scope before creating speckit files unless explicitly asked to write them.
+- Implement multi-phase roadmaps in order: finish tests and mark the current spec Implemented before starting the next.
 
 ## Learned Workspace Facts
 
@@ -467,3 +469,6 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - `journal/` is gitignored local writing for a public narrative (weekly LinkedIn posts plus a technical blog); treat it as authoring notes, not product source.
 - Optional page quick actions sit in the top bar left of the notification icon (with a separator), via a reusable slot rather than per-page chrome.
 - Keep the phase 115 workspace sidecar (`core/ops/ze-workspace` + `sidecar/workspace`); do not replace it with Cloudflare Computer — borrow run-handle / exec-journal ideas instead.
+- Perception/memory fact writes go through the contribution seam (`specs/arch/contribution-seam.md`): Phase 133 wraps writers; Phase 134 hard-cuts `memory_facts` onto shared claim vocabulary and removes public `propose_facts`.
+- Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
+- `.cursor/rules/` is gitignored; do not commit Cursor rules.

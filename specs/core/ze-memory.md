@@ -18,10 +18,14 @@ subsystem runs an offline consolidation loop.
 
 ## Responsibilities
 
-- **Write path** — `MemoryStore.add_fact`, `add_episode`: write new facts and episodes;
-  `admission.py` gates writes (NLI contradiction check, novelty filter). Conversation and
-  ingestion still reach facts through public `propose_facts()`; that back door closes in
-  [`contribution-seam.md`](../arch/contribution-seam.md) steps 5–6.
+- **Write path** — Perception facts (conversation extraction, ingest sink, onboarding seeds,
+  goal-learning promotion, companion `remember_fact`) go through `submit_perception_facts`
+  (contribution seam + NLI). There is no public `MemoryStore.propose_facts` and no
+  `AgentResult.memory_proposals` persist door. Post-turn `extractor.py` is a keep/drop
+  admission gate: closed families (`identity`, `preference`, `relationship`, `constraint`,
+  `contact_detail`), `speech_act` must be `fact` or `facts` is `[]`. Explicit remember stamps
+  `PROMPT_SUPPLIED` + `reviewed=true`. `forget_fact` retracts matching rows (`contradicted=true`).
+  Episode writes remain `write_episode`.
 - **Retrieval** — `MemoryRetriever`: semantic search over facts and episodes using the
   shared embedding singleton; `retrieval_rerank.py` re-ranks with NLI cross-encoder
 - **Graph** — `MemoryGraph`: entity and relationship store; neighbourhood traversal for
@@ -63,7 +67,7 @@ core/cognition/ze-memory/ze_memory/
   session_summary.py    ← session-grouped summarisation
   retrieval_rerank.py   ← NLI-based re-ranking
   retrieval_cache.py    ← embedding lookup cache
-  extractor.py          ← entity extraction from episodes
+  extractor.py          ← keep/drop fact admission + speech_act gate from conversation turns
   relevance.py          ← salience / relevance model
   projection.py         ← structured user profile projection
   policies.py           ← MemoryPolicy definitions
@@ -100,6 +104,9 @@ core/cognition/ze-memory/ze_memory/
 
 ## Links
 
-- [Phase 78 — Dream Memory](../phases/078-dream-memory/spec.md)
-- [Phase 79 — NLI Cross-Encoder](../phases/079-nli-model/spec.md)
-- [Phase 57 — Correlation Engine](../phases/057-correlation-engine/spec.md)
+- [Phase 140 — Memory Admission](../phases/140-memory-admission/spec.md)
+- [Phase 141 — Read Contract + Prompt Constitution](../phases/141-memory-prompt-constitution/spec.md)
+- [Phase 142 — Speech-Act Routing](../phases/142-speech-act-routing/spec.md)
+- [Phase 140 — Memory Admission](../phases/140-memory-admission/spec.md)
+- [Phase 141 — Read Contract + Prompt Constitution](../phases/141-memory-prompt-constitution/spec.md)
+- [Phase 142 — Speech-Act Routing](../phases/142-speech-act-routing/spec.md)

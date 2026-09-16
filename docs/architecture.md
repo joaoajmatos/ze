@@ -164,7 +164,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `draft_response` | `nodes/draft.py` | Generate response, do not execute |
 | `await_confirmation` | `nodes/confirmation.py` | Pause graph, emit confirm_request frame |
 | `synthesize` | `nodes/synthesis.py` | Merge subtask results into one response |
-| `write_memory` | `nodes/memory.py` | Propose facts/episodes (fire-and-forget) |
+| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction (fire-and-forget); skips eval threads |
 | `plan_sequential` | `nodes/routing.py` | Execute compound routing plans one step at a time |
 
 </details>
@@ -327,10 +327,12 @@ See [docs/eval.md](eval.md) for scenarios, runners, and judge workflow.
 
 Five memory layers, all backed by Postgres + pgvector:
 
-- **Facts** (`memory_facts`) — short declarative statements extracted from conversations
-  (e.g. "user prefers morning meetings"). Written via `store.propose_facts()`. No
-  user confirmation gate in the graph; the REST `POST /memory/facts/review` endpoint
-  exposes the review flow for the native app.
+- **Facts** (`memory_facts`) — short declarative statements about the user. Companion
+  `remember_fact` writes prompt-supplied, reviewed facts through the contribution
+  seam. Post-turn extraction may add synthesized facts only after a keep/drop gate
+  (closed families; `speech_act` must be `fact`). Timed reminders, loops, and goals
+  are not stored as facts. There is no `AgentResult.memory_proposals` persist path.
+  The REST `POST /memory/facts/review` endpoint exposes review for the native app.
 - **Episodes** (`memory_episodes`) — summaries of conversation turns. Written automatically
   after each run.
 - **Events** (`memory_events`) — discrete real-world events (meetings, calls) extracted
@@ -369,15 +371,18 @@ the full lifecycle, schedule, and configuration of every background job.
 
 ## System prompt structure
 
-`BaseAgent._build_system_prompt()` assembles every agent's system prompt from two sections:
+`BaseAgent._build_system_prompt()` assembles every agent's system prompt in this
+order: current datetime, shared memory constitution, persona traits, the agent's
+job instructions, then retrieved biography.
 
 ![Nested diagram showing the system prompt container holding an identity block panel and an agent instructions panel](diagrams/docs/system-prompt.svg)
 
 <sub>[Interactive version](diagrams/docs/system-prompt.html)</sub>
 
-The identity block ensures Ze sounds like the same assistant regardless of which
-agent handles the request. Agents only define `_AGENT_INSTRUCTIONS` — they never
-set the identity or inject memory themselves.
+The constitution tells the model to use retrieved facts silently. It must not
+recite them unsolicited or invent identity that is missing from the biography.
+`_format_memory` prints origin, confidence, and recency on each fact line.
+Agents only define `_AGENT_INSTRUCTIONS` — they never inject memory themselves.
 
 **Configurable identity fields** (in `config/persona.yaml` under `profiles.<name>:`):
 
@@ -398,10 +403,12 @@ overrides. `fetch_context` calls `await persona_store.get_active()` once per gra
 invocation. Profile switches can be driven conversationally or via the REST API.
 YAML values serve as profile defaults; DB overrides take precedence.
 
-**Memory injection** — `fetch_context` runs a pgvector semantic search before every
-agent execution and injects the top-k relevant facts and episodes as text into the
-identity block. The profile facets are also included. Agents always have contextual
-awareness of the user without needing to query memory themselves.
+**Memory injection** — `fetch_context` runs retrieval before every agent execution.
+Companion pins reviewed profile facts always-on, then similarity-retrieves the rest
+under a token budget. Formatted facts land in the biography section after the job
+instructions, not before constitution. Profile facets are included. Open items
+(loops, goals) still surface through `TurnSurfacing`, not as unsolicited fact
+name-dropping. Agents do not query memory themselves.
 
 ---
 
