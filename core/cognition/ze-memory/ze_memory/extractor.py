@@ -49,6 +49,13 @@ NOT biography facts.
 speech_act must be one of:
 fact, forget, reminder, loop, goal, ingest, drop, clarify.
 
+Cancel, drop, or abandon aimed at a reminder, open loop, or goal is that
+speech_act (reminder / loop / goal), never forget. "Forget the dentist" as
+cancelling a ping is reminder. Biography retract ("forget that I like aisle
+seats") is forget. Time-bound reminders still beat biography (time wins).
+Do not emit two primary acts for one clause.
+
+
 Keep facts ONLY when speech_act is fact AND the content is a durable self-fact
 in a closed family. Drop greetings, thanks, filler, right-now location, mood,
 weather, timed to-dos, and "remember to … on Tuesday".

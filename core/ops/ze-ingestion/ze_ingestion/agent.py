@@ -10,12 +10,14 @@ from ze_agents.types import AgentContext, AgentResult, Intent, Mode
 log = get_logger(__name__)
 
 _AGENT_INSTRUCTIONS = """\
-You are Ze's ingestion assistant. When the user sends you a URL, file, or block of
-text they want Ze to learn from, extract it and run the ingestion pipeline.
+You are Ze's ingestion assistant. When the user sends a URL, file, or block of
+text to ingest, extract it and run the ingestion pipeline.
 
-Use the `ingest_url` tool for URLs and `ingest_text` for raw text or file content
-already extracted. Always confirm to the user what was ingested: content type,
-number of facts extracted, and the summary.
+Use ingest_url for URLs and ingest_text for raw text or already-extracted file
+content. Confirm ingest/extraction: content type, number of facts extracted, and
+the summary. That is archive extraction via MemorySink, not remember_fact.
+Never say you remembered the file or that the remember tool stored it.
+If ingest fails, do not claim ingest or remember success.
 """
 
 _pipeline = None  # injected at container wiring time
@@ -28,7 +30,7 @@ def _set_pipeline(pipeline: object) -> None:
 
 @tool(
     access=ToolAccess.WRITE,
-    description="Fetch, process, and ingest content at the given URL into Ze's memory.",
+    description="Fetch, process, and ingest content at the given URL (extraction, not remember_fact).",
 )
 async def ingest_url(url: str) -> dict:
     if _pipeline is None:
@@ -48,7 +50,7 @@ async def ingest_url(url: str) -> dict:
 
 @tool(
     access=ToolAccess.WRITE,
-    description="Ingest raw text or pre-extracted document content into Ze's memory.",
+    description="Ingest raw text or pre-extracted document content (extraction, not remember_fact).",
 )
 async def ingest_text(text: str, label: str = "") -> dict:
     if _pipeline is None:
@@ -77,12 +79,12 @@ class IngestionAgent(BaseAgent):
     name = "ingestion"
     display_name = "Content ingestion"
     description = (
-        "Ingest external content — URLs, PDFs, videos, audio — into Ze's memory"
+        "Ingest external content — URLs, PDFs, videos, audio — via the ingestion pipeline"
     )
     model = "anthropic/claude-sonnet-4-5"
     timeout = 120
     intents = {
-        "write": Intent(Mode.AUTONOMOUS, "Ingest content into Ze's memory."),
+        "write": Intent(Mode.AUTONOMOUS, "Ingest content via the extraction pipeline."),
     }
     default_mode = Mode.AUTONOMOUS
     tools = ["ingest_url", "ingest_text"]

@@ -1,0 +1,299 @@
+{
+  "workflow": "companion",
+  "specName": "unsolicited recitation",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:17:23.278Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:18:47.732Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:18:48.081Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:18:48.251Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:18:48.425Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:18:48.628Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:00:59.658Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:01:07.733Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:02:38.125Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:48:37.876Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:50:59.372Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:51:01.849Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:51:05.439Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:51:07.984Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:51:10.125Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:51:12.487Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:51:14.168Z"
+    }
+  ],
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "telemetryInstanceId": "f26b7272-0c89-486f-bd77-171d59b05b51",
+  "coverage": {
+    "FR-001": {
+      "title": "Enforce unsolicited biography recitation ban on the companion turn path that produces the user-visible reply",
+      "tasks": [
+        "T001",
+        "T003",
+        "T004",
+        "T005"
+      ]
+    },
+    "FR-002": {
+      "title": "Still allow stating facts when the user asked for recall, and silent use without recitation framing",
+      "tasks": [
+        "T001",
+        "T003",
+        "T004",
+        "T005"
+      ]
+    },
+    "FR-003": {
+      "title": "Do not treat Phase 143 earned remembered/forgotten confirmations as unsolicited recitation",
+      "tasks": [
+        "T001",
+        "T004"
+      ]
+    },
+    "FR-004": {
+      "title": "Leave open-item mentions to TurnSurfacing; do not move or duplicate that ownership",
+      "tasks": [
+        "T001",
+        "T005"
+      ]
+    },
+    "FR-005": {
+      "title": "No ungated companion reply path that can deliver unsolicited I-remember-that-you recitation",
+      "tasks": [
+        "T002",
+        "T005"
+      ]
+    },
+    "FR-006": {
+      "title": "Do not implement 144 veto, forget-vs-cancel, ingest honesty, extractor races, specialist constitution bundle, or /memories filesystem",
+      "tasks": [
+        "T005",
+        "T006"
+      ]
+    }
+  },
+  "size": "simple",
+  "classification": {
+    "projectedFiles": 4,
+    "projectedTasks": 6,
+    "scopeSignal": "none",
+    "verdict": "simple"
+  },
+  "context": [
+    "area: plugins/ze-personal companion honesty reply gate",
+    "area: Phase 141 prompt constitution and TurnSurfacing",
+    "area: Phase 143 earned confirmations",
+    "constraint: Principle VIII no shim no dual door",
+    "constraint: out of scope 144 veto"
+  ],
+  "intent": "Stop unsolicited biography recitation on the companion reply path the way 143 earned confirmations, without taking open items from TurnSurfacing.",
+  "expectations": [
+    "Constraint veto on mail/calendar writes (144)",
+    "Forget vs cancel across stores (146)",
+    "Ingest vs remember honesty (147)",
+    "Extractor dual-write races (148)",
+    "Specialist memory constitution (149)",
+    "Claude-style /memories filesystem"
+  ],
+  "approach": "Extend enforce_memory_confirmations with user_text; same sink/run door",
+  "decisions": [
+    {
+      "decision": "Extend enforce_memory_confirmations instead of a second gate or prompt-only paragraph",
+      "why": "FR-001/FR-005 and Principle VIII — one user-visible reply door",
+      "rejected": "parallel recitation module, graph-node rewrite, prompt-only fix"
+    },
+    {
+      "decision": "Add optional user_text; CompanionAgent.run passes the latest user message",
+      "why": "Asked recall (FR-002) cannot be judged from the model reply alone",
+      "rejected": "infer recall only from the assistant text; new public dataclass"
+    },
+    {
+      "decision": "Conservative memory-reveal regex; recitation-only empty remainder is a short non-biography ack, not COULD_NOT_STORE",
+      "why": "143 fallbacks would lie about store/forget; spec forbids failing the turn",
+      "rejected": "LLM rewrite of the reply; treating earned I will remember as recitation"
+    },
+    {
+      "decision": "Do not re-home TurnSurfacing or implement 144; do not re-plumb token_sink",
+      "why": "FR-004/FR-006; sink already buffers in CompanionAgent.run",
+      "rejected": "open-item stripping in this gate; mail/calendar veto in this tree"
+    },
+    {
+      "decision": "optional user_text on enforce_memory_confirmations; recitation-only fallback Okay.",
+      "why": "same reply door as 143; COULD_NOT_STORE would lie",
+      "rejected": "second recitation module in ze_agents"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Strip unsolicited biography recitation on companion reply path",
+      "key_finding": "token_sink is already buffered; only honesty.py plus user_text wiring in run() are missing"
+    },
+    "tasks": {
+      "summary": "Strip unsolicited biography recitation on companion reply path"
+    },
+    "implement": {
+      "summary": "Strip unsolicited I remember that you recitation on companion reply path; asked recall and 143 confirmations kept."
+    }
+  },
+  "currentTask": "T006",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Fail-first recitation strip, asked-recall keep, earned confirmations, open-item/task/in-turn, recitation fallback not COULD_NOT_STORE.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Companion.run passes user_text; token_sink sees only gated recitation-stripped text.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_companion_agent.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Eval criteria for non-recall recitation vs explicit recall.",
+      "files": [
+        "eval/scenarios/memory.yaml"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Extended enforce_memory_confirmations with recitation framing and optional user_text.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "CompanionAgent.run passes ctx.prompt into the honesty gate; sink still buffered.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "make test-personal passed for recitation gate.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "make test-personal",
+      "command": "uv run pytest plugins/ze-personal/tests",
+      "result": "288 passed"
+    }
+  ]
+}

@@ -261,6 +261,43 @@ async def test_run_cancel_reminder_via_tool():
     assert "Take medication" in result.response
 
 
+async def test_does_not_confirm_cancel_when_tool_returns_error():
+    import ze_calendar.agents.reminders.tools  # noqa
+
+    store = AsyncMock()
+    store.list_pending = AsyncMock(return_value=[])
+    store.get = AsyncMock(return_value=None)
+    scheduler = MagicMock()
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(
+        side_effect=[
+            (
+                None,
+                [
+                    {
+                        "id": "c2",
+                        "name": "cancel_reminder",
+                        "arguments": {"reminder_id": "not-a-uuid"},
+                    }
+                ],
+            ),
+            ("I've cancelled your reminder.", None),
+        ]
+    )
+    client.complete = AsyncMock(return_value="ok")
+    agent = RemindersAgent(
+        openrouter_client=client,
+        reminder_store=store,
+        workflow_scheduler=scheduler,
+        notifier=AsyncMock(),
+        settings=make_settings(),
+    )
+    result = await agent.run(make_ctx("cancel my dentist reminder"))
+    store.delete.assert_not_called()
+    assert "cancelled" not in result.response.lower()
+    assert "canceled" not in result.response.lower()
+
+
 async def test_run_no_tool_calls_when_llm_answers_directly():
     result = await make_agent().run(make_ctx())
     assert len(result.tool_calls) == 0

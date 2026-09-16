@@ -19,7 +19,11 @@ from ze_automation.bootstrap import (
     import_agent_modules as import_automation_agents,
 )
 from ze_automation.action_records import configure_action_recorder as configure_automation_action_recorder
-from ze_worldstate.bootstrap import build_worldstate_stack, worldstate_data_domains
+from ze_worldstate.bootstrap import (
+    build_worldstate_stack,
+    import_agent_modules as import_worldstate_agents,
+    worldstate_data_domains,
+)
 from ze_worldstate.store import LoopStore
 from ze_skills.bootstrap import (
     build_skill_matcher,
@@ -655,11 +659,14 @@ async def build_container(settings: Settings) -> ZeContainer:
     import_automation_agents()
     import_ingestion_agents()
     import_priority_agents()
+    import_worldstate_agents()
     bootstrap_agents(deps=agent_deps, plugins=plugins)
     await register_bundled_skills(skills_stack.skill_store, plugins)
 
     router = build_router(shared)
-    component_hook = register_harness_hooks(settings)
+    component_hook = register_harness_hooks(
+        settings, memory_store=shared.memory_store
+    )
     graph = build_graph(checkpointer=checkpointer, plugins=plugins)
 
     budget_cfg = settings.config.get("budget", {}) or {}

@@ -142,7 +142,7 @@ The user asks Ze to forget something specific. Forget looks for biography facts 
 
 Ordered follow-ons. None of these is this phase. Sizes are suggested starting points for later specify runs. See also [`specs/arch/memory-honesty-roadmap.md`](../../arch/memory-honesty-roadmap.md).
 
-1. **Phase 144 — Constraint veto on mail/calendar writes (P5)** — Standing constraint facts still do not block or confirm outbound mail and calendar actions. Wait until remembered/forgotten claims are earned so a veto is not itself an unearned “I won’t email after 22:00” line. Size: M.
+1. **Phase 144 — Constraint veto on gated writes (P5)** — Standing constraint facts still do not block side-effecting writes. One plugin-opt-in write gate (`constraint_gate`); first adopters are mail send, calendar mutations, reminders, and prospecting outreach. Wait until remembered/forgotten claims are earned so a veto is not itself an unearned “I won’t email after 22:00” line. Size: M.
 2. **Phase 145 — Response-level unsolicited recitation** — Phase 141 forbids “I remember that you…” in the prompt; the reply path can still recite. Same turn-path philosophy as this phase, after confirmations are gated. Size: S.
 3. **Phase 146 — Forget vs cancel across stores (R14 honesty)** — Users still say “forget the dentist” meaning a reminder. Companion may miss or hit biography by accident. Needs earned forget first so cancel is not a second fake success. Size: M.
 4. **Phase 147 — Ingest vs remember honesty (R7)** — File ingest still writes synthesized facts while the model can talk as if `remember_fact` ran. Size: S.

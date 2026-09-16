@@ -127,10 +127,21 @@ async def run_delegate(
 
     duration_ms = int((time.monotonic() - start) * 1000)
     log.info("delegate_done", to_agent=agent_name, duration_ms=duration_ms)
+    nested = [
+        {
+            "tool_name": call.tool_name,
+            "args": call.args,
+            "result": call.result,
+            "duration_ms": call.duration_ms,
+            "success": call.success,
+            "error": call.error,
+        }
+        for call in result.tool_calls
+    ]
     return ToolCall(
         tool_name=DELEGATE_TOOL_NAME,
         args=arguments,
-        result=result.response,
+        result={"response": result.response, "tool_calls": nested},
         duration_ms=duration_ms,
         success=True,
     )

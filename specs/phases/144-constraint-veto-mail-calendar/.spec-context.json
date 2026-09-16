@@ -1,0 +1,531 @@
+{
+  "workflow": "companion",
+  "specName": "constraint veto on gated writes",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:15:24.360Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:17:04.933Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:58:15.561Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:00:15.103Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:00:16.470Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:00:21.369Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:06:26.742Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:06:30.476Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:06:34.957Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:36:37.205Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:28.019Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:30.444Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:32.367Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:34.423Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:36.452Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:38.741Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:40.860Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:42.859Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:44.929Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:46.955Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:49.244Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:51.344Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:54.354Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:56.462Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:46:58.683Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:47:00.692Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:47:02.927Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:47:05.082Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:47:07.200Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:47:09.184Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:47:11.601Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:47:13.102Z"
+    }
+  ],
+  "telemetryInstanceId": "cda66888-ecdc-4b26-96a2-209196b29f59",
+  "last_action": "all 144 tasks done — dummy gate + adopters + honesty tests pass",
+  "coverage": {
+    "FR-001": {
+      "title": "Evaluate reviewed constraint-family facts before a plugin-marked constraint-gated write completes; not a core mail/calendar name list",
+      "tests": [
+        "core/cognition/ze-memory/tests/test_constraint_veto.py::test_marked_dummy_tool_is_blocked_without_running_body"
+      ]
+    },
+    "FR-002": {
+      "title": "Refuse the write or hold it for explicit user confirmation when a reviewed constraint applies; silent complete against an applicable constraint is forbidden"
+    },
+    "FR-003": {
+      "title": "Allow a user-visible constraint-refusal claim only after the veto actually ran this turn",
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py::test_unearned_veto_claim_is_stripped"
+      ]
+    },
+    "FR-004": {
+      "title": "Do not veto from unreviewed, retracted, or non-constraint facts"
+    },
+    "FR-005": {
+      "title": "No ungated twin of a constraint-gated write; new outbound plugins join this gate"
+    },
+    "FR-006": {
+      "title": "Do not add a new remember API; constraints still enter via remember_fact / gated extraction"
+    },
+    "FR-007": {
+      "title": "Plugin implementation imports ze_sdk / owning plugin, never ze_core"
+    },
+    "FR-008": {
+      "title": "Mark in-tree mail send, calendar mutations, reminder writes, and prospecting outreach as constraint-gated; do not gate remember_fact/forget_fact/reads/internal stores",
+      "tests": [
+        "plugins/ze-messenger/tests/test_constraint_gate.py",
+        "plugins/ze-calendar/tests/test_constraint_gate.py",
+        "plugins/ze-prospecting/tests/test_constraint_gate.py"
+      ]
+    },
+    "FR-010": {
+      "title": "Do not implement recitation, forget-vs-cancel, ingest honesty, extractor races, specialist constitution bundle, or /memories filesystem"
+    },
+    "FR-009": {
+      "title": "Conservative matching on write description; unclear applicability confirms rather than silent send or stretch refuse"
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 10,
+    "projectedTasks": 14,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: plugins/ze-messenger send_email/draft_email",
+    "area: plugins/ze-calendar create_event/update_event/delete_event",
+    "area: reviewed constraint family facts",
+    "constraint: Principle VIII no shim no dual door",
+    "constraint: no new remember API",
+    "constraint: earned veto claim only if veto ran",
+    "area: constraint_gate opt-in on writes",
+    "area: reminders and prospecting outreach as first adopters with mail/calendar"
+  ],
+  "intent": "One plugin-opt-in constraint_gate for side-effecting writes; reviewed constraints refuse or confirm; first adopters mail, calendar, reminders, prospecting.",
+  "expectations": [
+    "Response-level unsolicited recitation (145)",
+    "Forget vs cancel across stores (146)",
+    "Ingest vs remember honesty (147)",
+    "Extractor dual-write races (148)",
+    "Specialist constitution bundle (149)",
+    "Claude-style /memories filesystem",
+    "New remember API",
+    "Rewriting 140-142 write/read/routing as a bundle"
+  ],
+  "approach": "Opt-in ToolSpec.constraint_gate plus HarnessHook; dummy-tool test; first adopters mail/calendar/reminders; earned veto claims",
+  "decisions": [
+    {
+      "decision": "Opt-in constraint_gate on ToolSpec plus one HarnessHook",
+      "why": "plugins extend; no core name list",
+      "rejected": "if send_email in messenger; gate all WRITE"
+    },
+    {
+      "decision": "Prospecting send is send_email; do not gate add_prospect",
+      "why": "no SMTP tool in ze-prospecting",
+      "rejected": "fake-gate add_prospect"
+    },
+    {
+      "decision": "constraint_describe returns dict or ConstraintWriteView; messenger uses dicts to avoid a new ze-memory plugin dep",
+      "why": "opt-in lives on ToolSpec; plugins must not import ze_core",
+      "rejected": "core frozenset of send_email/calendar names"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Shared constraint write gate; no core name list",
+      "key_finding": "prospecting has no send tool; send_email is the door"
+    },
+    "tasks": {
+      "summary": "Shared constraint write gate; no core name list"
+    },
+    "implement": {
+      "summary": "Opt-in constraint_gate harness hook blocks or confirms marked writes; earned veto claims; first adopters mail/calendar/reminders."
+    }
+  },
+  "currentTask": "T021",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed HarnessHook.on_tool_start and register_hook in ze-core bootstrap; ToolSpec lives in ze_agents.tool.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/tool.py",
+        "core/engine/ze-core/ze_core/bootstrap.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Confirmed reviewed constraints are reviewed=true and contradicted=false on memory_facts.",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/policies.py",
+        "core/cognition/ze-memory/ze_memory/constraint_veto.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added constraint_gate (default false) and optional constraint_describe on @tool/ToolSpec.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/tool.py",
+        "core/engine/ze-core/tests/orchestration/test_tool.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Added ConstraintWriteView, matcher, and ConstraintVetoHook that skips unmarked tools and refuses/confirms without executing.",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/constraint_veto.py",
+        "core/contracts/ze-agents/ze_agents/errors.py",
+        "core/contracts/ze-agents/ze_agents/base_agent.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Registered ConstraintVetoHook at composition root via register_harness_hooks and ze-api container.",
+      "files": [
+        "core/engine/ze-core/ze_core/bootstrap.py",
+        "apps/ze-api/ze_api/container.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Dummy gated tool tests: marked blocked; unmarked and remember_fact not intercepted.",
+      "files": [
+        "core/cognition/ze-memory/tests/test_constraint_veto.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Conservative matcher: time window, channel tokens, party names; email-only does not auto-hit calendar; ambiguous confirms.",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/constraint_veto.py",
+        "core/cognition/ze-memory/tests/test_constraint_veto.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "send_email/draft_email person-level never-contact and time-window draft ignore tests.",
+      "files": [
+        "plugins/ze-messenger/tests/test_constraint_gate.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "create_event/update_event/delete_event gate tests.",
+      "files": [
+        "plugins/ze-calendar/tests/test_constraint_gate.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "set_reminder/cancel_reminder gate tests.",
+      "files": [
+        "plugins/ze-calendar/tests/test_constraint_gate.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Marked send_email gated; draft_email gated as outbound_draft.",
+      "files": [
+        "plugins/ze-messenger/ze_messenger/agents/messenger/tools.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Marked create_event, update_event, delete_event constraint_gate.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/calendar/tools.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Marked set_reminder and cancel_reminder constraint_gate.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/reminders/tools.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Prospecting outbound send is send_email; add_prospect unmarked.",
+      "files": [
+        "plugins/ze-prospecting/tests/test_constraint_gate.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Unearned veto claim stripped; veto true may keep; sink gated.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py",
+        "plugins/ze-personal/tests/agents/companion/test_companion_agent.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Extended enforce_memory_confirmations for earned veto claims; buffered sink helpers.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py",
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Applied honesty helper and buffered sinks on messenger, calendar, and reminders run.",
+      "files": [
+        "plugins/ze-messenger/ze_messenger/agents/messenger/agent.py",
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py",
+        "plugins/ze-calendar/ze_calendar/agents/reminders/agent.py"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Hard-cut companion copy that deferred mail/calendar veto to a later phase.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py",
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Documented the write gate as opt-in constraint_gate, not a mail-only if-list.",
+      "files": [
+        "docs/memory.md",
+        "specs/core/ze-agents.md",
+        "specs/core/ze-memory.md"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Marked roadmap 144 shipped; did not start 145 in this tree.",
+      "files": [
+        "specs/arch/memory-honesty-roadmap.md"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Validated agents/memory/personal/calendar/messenger/prospecting tests and ruff on touched files.",
+      "files": [
+        "core/cognition/ze-memory/tests/test_constraint_veto.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "constraint veto unit + adopter + honesty tests",
+      "command": "pytest memory/personal/calendar/messenger/prospecting + core orchestration tool/base_agent",
+      "result": "pass",
+      "warnings": [
+        "make test-core aborted under sandbox torch import; reran targeted with full perms"
+      ]
+    }
+  ]
+}

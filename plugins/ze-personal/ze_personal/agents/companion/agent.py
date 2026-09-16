@@ -10,6 +10,7 @@ from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_agents.types import Intent, Mode
+from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
 from ze_sdk.memory import PostgresMemoryStore
 
 _AGENT_INSTRUCTIONS = """\
@@ -25,20 +26,30 @@ Memory tools:
 - remember_fact: durable identity, preference, relationship, constraint, or contact \
 detail the user asked you to remember (no fire time). Call it before claiming you will remember. \
 Confirm only if the tool returns ok true.
-- forget_fact: the user asked to forget a biography fact. Confirm only if ok is true. \
-Do not use this to cancel reminders, close loops, or abandon goals.
+- forget_fact: biography only ("forget that I like aisle seats"). Confirm only if ok is true. \
+Never forget_fact for "forget the dentist" cancel speech, and never dual-write forget_fact \
+after a reminder/loop/goal cancel on the same utterance.
 If a memory tool returns ok false, say you could not store or retract it — never pretend you did.
 
 Routing (time beats biography):
+- Forget/cancel/drop/abandon a timed ping, lingering concern, or multi-week goal \
+("forget the dentist"): delegate_to_agent agent_name=reminders, loops, or goals. \
+Do not call forget_fact for that speech act. Two named targets are two delegate calls, \
+never one batch retract.
 - Timed ping / "remind me at …" / "remember to … on Tuesday": delegate_to_agent \
 agent_name=reminders. Do not remember_fact that task.
-- Lingering concern with no time and no multi-week plan: that is an open loop, not a fact.
+- Lingering concern with no time and no multi-week plan: delegate_to_agent agent_name=loops.
 - Multi-week outcome with a deadline: delegate_to_agent agent_name=goals.
-- Ingest a file/PDF: not remember_fact.
+- Named workflow only if the user clearly names that workflow.
+- Ingest a file/PDF: not remember_fact. Acknowledge ingest or extraction. \
+Do not confirm the file as a whole was remembered even if remember_fact also \
+succeeded for a separate preference this turn.
 - Ambiguous "keep this in mind" with no durable predicate: ask one clarifying question \
 or treat as a loop — do not silently write a fact.
-- Standing constraint ("never email after 22:00") is a fact. Do not block mail/calendar \
-tools in this turn (veto is a later phase).
+- Standing constraint ("never email after 22:00") is a fact. Gated mail, calendar, \
+and reminder writes are checked against reviewed constraints. You may say you will \
+not send or schedule because of a constraint only after that veto actually ran.\
+
 
 Using what you already know:
 - Apply retrieved facts silently when they change the answer (tone, constraints, names).
@@ -103,29 +114,33 @@ class CompanionAgent(BaseAgent):
 
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "companion.thinking")
-        response, loop_tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            messages=list(ctx.messages),
-            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
-            deps={"memory_store": self._memory_store},
-        )
+        original_sink = hold_token_sink(ctx)
+        try:
+            response, loop_tool_calls = await self.agentic_loop(
+                ctx,
+                client=self._client,
+                messages=list(ctx.messages),
+                system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
+                deps={"memory_store": self._memory_store},
+            )
+        finally:
+            ctx.token_sink = original_sink
 
         tool_calls = list(loop_tool_calls)
         outreach_tc = await self._attempt_log_outreach(ctx)
         if outreach_tc is not None and outreach_tc.success:
             tool_calls.append(outreach_tc)
 
+        gated = await publish_honest_reply(
+            original_sink, response, tool_calls, user_text=ctx.prompt
+        )
+
         self._log.info("companion_agent_complete", session_id=ctx.session_id)
-        return AgentResult(agent=self.name, response=response, tool_calls=tool_calls)
+        return AgentResult(agent=self.name, response=gated, tool_calls=tool_calls)
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
-        async for token in self._client.stream(
-            messages=ctx.messages,
-            model=self._model(ctx),
-            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
-        ):
-            yield token
+        result = await self.run(ctx)
+        yield result.response
 
     async def _attempt_log_outreach(self, ctx: AgentContext) -> ToolCall | None:
         event = _detect_outreach_event(ctx.prompt)

@@ -1,0 +1,624 @@
+{
+  "workflow": "companion",
+  "specName": "specialist memory constitution",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:22:36.937Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:23:39.875Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:00:10.743Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:02:00.559Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:02:48.021Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:03:15.942Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:03:38.190Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:04:40.489Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:05:20.643Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:55.576Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:56.126Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:56.681Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:57.138Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:57.641Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:58.203Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:58.680Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:59.279Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:51:59.728Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:00.217Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:00.794Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:01.364Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:01.956Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:02.380Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:02.863Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:03.470Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:04.132Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:04.812Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:05.189Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:05.695Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:06.233Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:06.781Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:07.623Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:08.089Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:08.704Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:09.272Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:09.762Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:10.200Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T16:52:11.220Z"
+    }
+  ],
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "telemetryInstanceId": "9bcde302-acfc-422f-aa30-1f4128441809",
+  "coverage": {
+    "FR-001": {
+      "title": "Calendar, mail, and news system prompts place shared constitution and the agent job before retrieved biography",
+      "tasks": [
+        "T001",
+        "T007",
+        "T008",
+        "T009",
+        "T010",
+        "T011",
+        "T012"
+      ]
+    },
+    "FR-002": {
+      "title": "Those agents follow silent fact use and must not use unsolicited I-remember-that-you framing",
+      "tasks": [
+        "T019",
+        "T020",
+        "T021",
+        "T022",
+        "T023",
+        "T024"
+      ]
+    },
+    "FR-003": {
+      "title": "Those agents must not add remember_fact or forget_fact to their tool catalogs",
+      "tasks": [
+        "T002",
+        "T013",
+        "T014",
+        "T015"
+      ]
+    },
+    "FR-004": {
+      "title": "Those agents must not claim remember-tool or forget-tool success in user-visible replies",
+      "tasks": [
+        "T004",
+        "T005",
+        "T006",
+        "T013",
+        "T014",
+        "T015",
+        "T016",
+        "T017",
+        "T018"
+      ]
+    },
+    "FR-005": {
+      "title": "Plugin implementation imports ze_sdk / owning plugin, never ze_core",
+      "tasks": [
+        "T005",
+        "T016",
+        "T017",
+        "T018",
+        "T027"
+      ]
+    },
+    "FR-006": {
+      "title": "Do not implement 144 veto, 146-148 as a bundle, /memories filesystem, or rewrite 140-142 as a bundle",
+      "tasks": [
+        "T025",
+        "T026",
+        "T028"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: calendar messenger news agent instructions",
+    "area: Phase 141 constitution and job order",
+    "constraint: no new remember API",
+    "constraint: Principle VIII",
+    "constraint: plugin imports not ze_core"
+  ],
+  "intent": "Apply constitution and job-before-biography to calendar, mail, and news without adding remember_fact to those catalogs.",
+  "expectations": [
+    "New remember API on specialist catalogs",
+    "Phase 144 constraint veto",
+    "146-148 as a bundle",
+    "Prospecting/goals rewrite",
+    "Claude-style /memories filesystem"
+  ],
+  "approach": "Keep shared prompt builder; rewrite specialist job copy; strip fake remember claims; no new remember API",
+  "decisions": [
+    {
+      "decision": "No second specialist prompt builder",
+      "why": "All three agents already call BaseAgent._build_system_prompt; a plugin copy would be a dual door",
+      "rejected": "Per-plugin assembler or overriding order to put biography first"
+    },
+    {
+      "decision": "Lift 143 enforce_memory_confirmations into ze_agents and apply on specialist run/stream",
+      "why": "US2 requires user-visible replies not to claim remember-tool success; news cannot import companion",
+      "rejected": "Prompt-only FR-004, copying the regex into three plugins, or implementing 145 recitation strip"
+    },
+    {
+      "decision": "Do not add remember_fact or forget_fact to specialist catalogs",
+      "why": "Phase 142 and FR-003; honesty is silent use plus no fake claims",
+      "rejected": "Giving specialists companion memory tools so claims can be earned"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Calendar mail news constitution and catalogs",
+      "key_finding": "Calendar, messenger, and news already inherit constitution+job-before-biography; the gap is job copy and ungated remember-success claims"
+    },
+    "tasks": {
+      "summary": "Calendar mail news constitution and catalogs"
+    }
+  },
+  "currentTask": "T028",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed calendar uses BaseAgent._build_system_prompt; no local assembler.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Confirmed remember_fact/forget_fact absent from calendar/messenger/news catalogs.",
+      "files": [
+        "plugins/ze-messenger/ze_messenger/agents/messenger/agent.py",
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py",
+        "plugins/ze-news/ze_news/agents/agent.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Confirmed enforce_memory_confirmations stays in companion honesty.py.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Added ze-personal dependency to ze-news.",
+      "files": [
+        "plugins/ze-news/pyproject.toml"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Confirmed calendar and messenger already depend on ze-personal.",
+      "files": [
+        "plugins/ze-calendar/pyproject.toml",
+        "plugins/ze-messenger/pyproject.toml"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Left companion on honesty.py import; no ze_agents.memory_honesty.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Fail-first calendar prompt-order tests (constitution, job, biography).",
+      "files": [
+        "plugins/ze-calendar/tests/agents/calendar/test_calendar_agent.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Fail-first messenger prompt-order tests.",
+      "files": [
+        "plugins/ze-messenger/tests/agents/messenger/test_messenger_agent.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Fail-first news prompt-order tests.",
+      "files": [
+        "plugins/ze-news/tests/agents/test_news_agent.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Kept calendar on shared _build_system_prompt; no second builder.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Kept messenger on shared _build_system_prompt.",
+      "files": [
+        "plugins/ze-messenger/ze_messenger/agents/messenger/agent.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "News grounded loop uses same constitution+job-before-biography order.",
+      "files": [
+        "plugins/ze-news/ze_news/agents/agent.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Fail-first calendar catalog and unearned remember-claim tests.",
+      "files": [
+        "plugins/ze-calendar/tests/agents/calendar/test_calendar_agent.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Fail-first messenger catalog and unearned remember-claim tests.",
+      "files": [
+        "plugins/ze-messenger/tests/agents/messenger/test_messenger_agent.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Fail-first news catalog and unearned remember-claim tests.",
+      "files": [
+        "plugins/ze-news/tests/agents/test_news_agent.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Imported honesty into calendar run/stream so stream is not an ungated twin.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Imported honesty into messenger run/stream.",
+      "files": [
+        "plugins/ze-messenger/ze_messenger/agents/messenger/agent.py"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Imported honesty into news grounded loop via hold_token_sink.",
+      "files": [
+        "plugins/ze-news/ze_news/agents/agent.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Fail-first calendar silent-use instruction family tests.",
+      "files": [
+        "plugins/ze-calendar/tests/agents/calendar/test_calendar_agent.py"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Fail-first messenger silent-use instruction family tests.",
+      "files": [
+        "plugins/ze-messenger/tests/agents/messenger/test_messenger_agent.py"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "Fail-first news silent-use instruction family tests.",
+      "files": [
+        "plugins/ze-news/tests/agents/test_news_agent.py"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Rewrote calendar job copy to silent use; kept ISO/timezone job.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Rewrote messenger job copy to silent use; kept send/list rules.",
+      "files": [
+        "plugins/ze-messenger/ze_messenger/agents/messenger/agent.py"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Rewrote news job copy; kept store-grounding and freshness.",
+      "files": [
+        "plugins/ze-news/ze_news/agents/agent.py"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Documented specialist constitution order and no remember API on those catalogs.",
+      "files": [
+        "docs/memory.md"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Kept ze-agents spec from claiming honesty dialect lives in ze_agents.",
+      "files": [
+        "specs/core/ze-agents.md"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "News honesty import is ze_personal; no ze_core in plugin wiring.",
+      "files": [
+        "plugins/ze-news/ze_news/agents/agent.py"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Validated make test-personal test-calendar test-messenger test-news and ruff.",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/calendar/agent.py",
+        "plugins/ze-messenger/ze_messenger/agents/messenger/agent.py",
+        "plugins/ze-news/ze_news/agents/agent.py"
+      ]
+    }
+  }
+}

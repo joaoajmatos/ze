@@ -34,6 +34,8 @@ class ToolSpec:
     description: str
     func: Callable
     _schema_override: dict | None = None
+    constraint_gate: bool = False
+    constraint_describe: Callable[[dict[str, Any]], Any] | None = None
 
     def llm_schema(self) -> dict:
         if self._schema_override is not None:
@@ -70,7 +72,13 @@ class ToolSpec:
         }
 
 
-def tool(*, access: ToolAccess | str, description: str) -> Callable:
+def tool(
+    *,
+    access: ToolAccess | str,
+    description: str,
+    constraint_gate: bool = False,
+    constraint_describe: Callable[[dict[str, Any]], Any] | None = None,
+) -> Callable:
     """Decorator that registers an async function as a Ze tool."""
     access_val = ToolAccess(access) if isinstance(access, str) else access
 
@@ -81,7 +89,12 @@ def tool(*, access: ToolAccess | str, description: str) -> Callable:
         if name in _tools:
             raise AgentConfigError(f"Duplicate tool name {name!r}")
         _tools[name] = ToolSpec(
-            name=name, access=access_val, description=description, func=func
+            name=name,
+            access=access_val,
+            description=description,
+            func=func,
+            constraint_gate=constraint_gate,
+            constraint_describe=constraint_describe,
         )
         return func
 

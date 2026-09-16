@@ -252,8 +252,9 @@ have since shipped:
    conversation, ingest, onboarding, and goal-learning facts on `submit_perception_facts`
    and doctrine provenance. Phase 140 removed `AgentResult.memory_proposals` and added
    companion `remember_fact` / `forget_fact`. Remaining honesty gaps: extraction is still
-   LLM-gated (not a hard classifier); companion may still narrate memory if it skips tools;
-   constraint veto on mail/calendar writes is deferred.
+   LLM-gated (not a hard classifier). Companion may still narrate memory if it skips tools.
+   Constraint veto on gated writes is Phase 144 (`constraint_gate`). First adopters include
+   mail, calendar, reminders, and prospecting outreach.
 5. **Confidence calibration's *source*, not its shape.** `claim-topology.md` fixes the
    mechanical half (one decay function, one type) but not whether a confidence value comes from
    LLM self-rating, corroboration counting, or user feedback — that still varies by producer

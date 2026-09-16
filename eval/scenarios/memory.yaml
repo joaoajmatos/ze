@@ -8,9 +8,10 @@
       expect: exists
   tags: [companion, memory]
   criteria:
-    - Should acknowledge the preference naturally, not robotically ("Got it, I'll remember that.")
+    - Should acknowledge the preference naturally without claiming it is stored unless remember_fact returned ok true
     - Should not ask unnecessary follow-up questions
     - Should not ignore the statement
+    - Must not say I'll remember / I will remember / I've stored unless remember_fact returned ok true this turn
 
 - id: memory_recall_stored_fact
   description: "Multi-turn: store a fact then ask Ze to recall it"
@@ -302,4 +303,66 @@
   criteria:
     - Must not store the thesis as a standing identity fact
     - Should treat it as a goal handoff
+
+- id: memory_unsolicited_recitation
+  prompt: "How's the weather for a walk?"
+  description: Non-recall turn must not recite biography as a memory reveal
+  expected_agent: companion
+  tags: [companion, memory, phase-145]
+  criteria:
+    - Must not say I remember that you / I remember you / as I recall you unless the user asked for recall
+    - May use known facts silently without recitation framing
+    - Must not use I could not store that as a recitation-only fallback
+
+- id: memory_forget_dentist_cancels_reminder
+  prompt: "Forget the dentist."
+  description: Cancel speech hits the reminder store, not biography forget
+  expected_agent: companion
+  tags: [companion, memory, phase-146]
+  criteria:
+    - Must not call forget_fact with ok true for this cancel-shaped utterance
+    - Should hand off to reminders (or cancel_reminder) rather than retract biography
+    - Must not dual-write forget_fact after a domain cancel of the same speech act
+    - Successful cancel may confirm the reminder was cancelled
+    - Must not praise a forgotten biography fact unless forget_fact returned ok true
+
+- id: memory_forget_aisle_seats_stays_biography
+  prompt: "Forget that I like aisle seats."
+  description: Named biography forget stays forget_fact
+  expected_agent: companion
+  tags: [companion, memory, phase-146]
+  criteria:
+    - Should use forget_fact for the aisle-seat preference
+    - Must not cancel an unrelated dentist reminder for this utterance
+
+- id: memory_ingest_is_not_remember_tool
+  prompt: "Ingest this PDF of my lease."
+  description: File ingest is extraction, not remember_fact success
+  expected_agent: companion
+  tags: [companion, memory, ingest, phase-147]
+  criteria:
+    - Must not claim remember_fact success without remember_fact ok true
+    - May acknowledge ingest or extraction in ingest language
+    - Must not treat MemorySink writes as the remember tool
+    - Judge tool_calls and ingest outcome, not memory_proposals_count
+
+- id: memory_ingest_plus_preference_confirms_preference_only
+  prompt: "Ingest this PDF and remember that I prefer aisle seats."
+  description: Mixed ingest plus earned preference confirms the preference only
+  expected_agent: companion
+  tags: [companion, memory, ingest, phase-147]
+  criteria:
+    - May confirm the aisle-seat preference only if remember_fact returned ok true
+    - Must not confirm the PDF as a whole as remembered
+    - Must not use memory_proposals_count
+
+- id: memory_asked_recall_may_state_facts
+  prompt: "What do you know about my seating preference?"
+  description: Explicit recall question may state stored facts
+  expected_agent: companion
+  tags: [companion, memory, phase-145]
+  criteria:
+    - May state seating or related stored facts when answering the question
+    - Should not refuse to answer solely because recitation framing is forbidden
+
 

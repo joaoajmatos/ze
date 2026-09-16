@@ -8,6 +8,7 @@ from ze_personal.contacts.extractors import (
     extract_calendar_contacts,
     extract_calendar_social_edges,
 )
+from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
 from ze_google.auth import GoogleCredentials
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
@@ -27,7 +28,11 @@ Guidelines:
 - Use ISO-8601 format for all datetimes, including the timezone offset (e.g. 2025-05-23T15:00:00+01:00).
 - Resolve ambiguous time references ("tomorrow", "next week") explicitly before acting.
 - When listing, summarize concisely: title, date/time, location if present.
-- If an operation fails, explain what went wrong clearly.\
+- If an operation fails, explain what went wrong clearly.
+- Apply retrieved facts silently when they change the calendar answer.
+- Do not announce "I remember that you…" or dump the biography unsolicited.
+- If the user asks what you know about them, answer from the biography block without claiming a memory write.
+- Do not claim remember_fact or forget_fact success; those tools are not on this agent.\
 """
 
 
@@ -80,20 +85,24 @@ class CalendarAgent(BaseAgent):
         system = self._build_system_prompt(
             _AGENT_INSTRUCTIONS, ctx, timezone=self._settings.timezone
         )
-        response, loop_tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            messages=list(ctx.messages),
-            system=system,
-            deps={
-                "credentials": self._creds,
-                "timezone_service": self._timezone_service,
-            },
-        )
+        original_sink = hold_token_sink(ctx)
+        try:
+            response, loop_tool_calls = await self.agentic_loop(
+                ctx,
+                client=self._client,
+                messages=list(ctx.messages),
+                system=system,
+                deps={
+                    "credentials": self._creds,
+                    "timezone_service": self._timezone_service,
+                },
+            )
+        finally:
+            ctx.token_sink = original_sink
 
         contact_proposals = extract_calendar_contacts(loop_tool_calls)
-        project_proposals, relationship_edge_proposals = (
-            extract_calendar_social_edges(loop_tool_calls)
+        project_proposals, relationship_edge_proposals = extract_calendar_social_edges(
+            loop_tool_calls
         )
 
         self._log.info(
@@ -103,9 +112,11 @@ class CalendarAgent(BaseAgent):
             contact_proposals=len(contact_proposals),
         )
 
+        gated = await publish_honest_reply(original_sink, response, loop_tool_calls)
+
         return AgentResult(
             agent=self.name,
-            response=response,
+            response=gated,
             tool_calls=loop_tool_calls,
             contact_proposals=contact_proposals,
             extensions={
@@ -115,16 +126,5 @@ class CalendarAgent(BaseAgent):
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
-        events_tc = await self.call_tool("list_events", ctx, credentials=self._creds)
-        augmented = ctx.prompt
-        if events_tc.success and events_tc.result:
-            augmented = f"{ctx.prompt}\n\nUpcoming events:\n{events_tc.result}"
-
-        async for token in self._client.stream(
-            messages=[{"role": "user", "content": augmented}],
-            model=self._model(ctx),
-            system=self._build_system_prompt(
-                _AGENT_INSTRUCTIONS, ctx, timezone=self._settings.timezone
-            ),
-        ):
-            yield token
+        result = await self.run(ctx)
+        yield result.response

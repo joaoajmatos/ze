@@ -209,16 +209,30 @@ There is no `AgentResult.memory_proposals` persist path and no public
 
 **Explicit remember.** Companion runs `agentic_loop` with `remember_fact` /
 `forget_fact`. A successful `remember_fact` writes `PROMPT_SUPPLIED`,
-`reviewed=true`. Confirm memory only after the tool returns `ok: true`.
-`forget_fact` marks matching rows `contradicted=true`. Do not use it to cancel
-reminders, close loops, or abandon goals.
+`reviewed=true`. Companion may confirm remembered or forgotten only after that
+tool returns `ok: true` on this turn. The turn path enforces that: it strips
+unearned confirmation sentences and holds `token_sink` until the gated reply
+is ready. Post-turn extraction does not license “I’ll remember.”
+`forget_fact` marks matching rows `contradicted=true`. Match is precise: exact
+predicate or value, the stored value named in the query, a long query phrase
+inside the value, or one unique high-similarity embedding. A short substring
+or a batch of loose neighbors is a miss (`ok: false`), not a retract. Do not
+use `forget_fact` to cancel reminders, close loops, or abandon goals.
+Cancel speech (“forget the dentist”) is `delegate_to_agent` to `reminders`,
+`loops`, or `goals`. Nested `delegate_to_agent` results are
+`{response, tool_calls}` so earned cancel/close/abandon (and forgotten-fact)
+claims can see the inner payload. Domain agents list pending items, run
+`precise_label_match`, and write at most once on a unique label. A domain
+success may confirm cancelled/closed/abandoned; it does not earn “I forgot”
+a fact.
 
 **Post-turn extraction.** After each agent run, `write_memory` calls
 `gather_fact_proposals` (`ze_memory/extractor.py`). The extractor classifies
 `speech_act` and keeps facts only when the act is `fact` and the family is one of
 `identity`, `preference`, `relationship`, `constraint`, `contact_detail`. Other
 acts (reminder, loop, goal, ingest, drop, forget, clarify) yield `[]`. Predicates
-already written this turn by `remember_fact` are dropped. Kept rows are
+already written this turn by `remember_fact` (`ok` true, same predicate+value
+identity after normalize) are dropped. Kept rows are
 `SYNTHESIZED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.
 
 - Before insert, the store checks exact-predicate matches, then NLI contradiction
@@ -228,6 +242,18 @@ already written this turn by `remember_fact` are dropped. Kept rows are
 - `POST /memory/facts/review` exposes review/edit/reject for the native app.
 
 **Reviewed facts are never auto-merged or auto-expired.**
+
+### Constraint-gated writes
+
+Reviewed `constraint` facts also sit on a **write gate**, not a mail-only if-list.
+Plugins mark a tool `constraint_gate=True` (optional `constraint_describe`). One
+harness hook in `ze_memory.constraint_veto` runs before those tools execute: it
+loads reviewed, non-contradicted constraint rows and allows, confirms, or refuses.
+Refuse and confirm-hold do not call the tool body. The first adopters are
+`send_email`, calendar create/update/delete, and reminder set/cancel. Prospecting
+outreach send is the same `send_email` tool; `add_prospect` stays unmarked.
+`remember_fact` is unmarked. User-visible “I won’t send because of your constraint”
+is earned only when a this-turn tool payload has `veto: true`.
 
 ### Episodes (automatic, no approval)
 
@@ -300,6 +326,11 @@ Before every agent execution, `fetch_context` runs:
    persona traits. `BaseAgent._build_system_prompt()` puts constitution and the agent
    job before the retrieved biography. `_format_memory` prints origin, confidence,
    and recency. Companion retrieval pins reviewed facts always-on (`CompanionPolicy`).
+   Calendar, messenger, and news share that assembler (no second builder) and the
+   same silent-use / no unsolicited “I remember that you…” job family. They do not
+   list `remember_fact` / `forget_fact`; they import companion `enforce_memory_confirmations`
+   so they cannot claim those tools succeeded. Constraint write veto is a separate
+   gate (144). Recitation stripping as its own product is 145.
    `TurnSurfacing` still owns unsolicited open-item mentions.
 
 Agents never query memory themselves. They receive `MemoryContext` on

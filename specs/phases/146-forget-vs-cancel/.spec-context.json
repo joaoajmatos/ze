@@ -1,0 +1,676 @@
+{
+  "workflow": "companion",
+  "specName": "forget vs cancel",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:18:56.866Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:20:11.389Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:59:05.131Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:03:24.597Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:05:05.627Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:05:13.724Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:06:26.369Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:07:13.616Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:07:16.425Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "ai",
+      "at": "2026-09-16T16:08:56.720Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:02.043Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:03.023Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:03.794Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:04.681Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:05.426Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:06.006Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:06.787Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:07.588Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:08.461Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:09.240Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:10.083Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:10.898Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:11.702Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:12.546Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:13.187Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:13.835Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:14.729Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:15.685Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:16.709Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:17.350Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:18.107Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:19.017Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:19.798Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:20.749Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:21.315Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:22.108Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:23.032Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:23.847Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:24.663Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:12:25.155Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T16:12:26.409Z"
+    }
+  ],
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "telemetryInstanceId": "c66b3ac6-b90f-4384-a3c8-e5f593257ed8",
+  "coverage": {
+    "FR-001": {
+      "title": "Route forget/cancel/drop/abandon speech targeting a reminder, loop, or goal to that domain's existing tools, not forget_fact",
+      "tasks": [
+        "T006",
+        "T009",
+        "T010",
+        "T013",
+        "T014",
+        "T015",
+        "T016",
+        "T017"
+      ]
+    },
+    "FR-002": {
+      "title": "Do not dual-write forget_fact for the same cancel speech act handled as a domain cancel (R14)",
+      "tasks": [
+        "T010",
+        "T016",
+        "T017",
+        "T018"
+      ]
+    },
+    "FR-003": {
+      "title": "Keep forget_fact for clearly identified biography facts with Phase 143 precision",
+      "tasks": [
+        "T006",
+        "T009",
+        "T018",
+        "T019"
+      ]
+    },
+    "FR-004": {
+      "title": "Forgotten-fact claims only when forget_fact returns ok true; domain cancel success does not license that claim",
+      "tasks": [
+        "T008",
+        "T020",
+        "T022",
+        "T026"
+      ]
+    },
+    "FR-005": {
+      "title": "Confirm cancelled reminder, closed loop, or abandoned goal only when that domain action succeeded this turn",
+      "tasks": [
+        "T008",
+        "T020",
+        "T021",
+        "T022",
+        "T023",
+        "T024",
+        "T025"
+      ]
+    },
+    "FR-006": {
+      "title": "No companion path that still treats forget-the-dentist as biography retract by default",
+      "tasks": [
+        "T009",
+        "T010",
+        "T016",
+        "T017"
+      ]
+    },
+    "FR-007": {
+      "title": "Do not implement 144 veto, recitation, ingest honesty, extractor races, specialist constitution bundle, or /memories filesystem",
+      "tasks": [
+        "T029"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: companion speech-act routing R14",
+    "area: cancel_reminder abandon_goal close_loop",
+    "area: Phase 143 forget_fact ok and precise miss",
+    "constraint: Principle VIII no dual-write forget",
+    "constraint: out of scope 144 veto"
+  ],
+  "intent": "Route forget-the-dentist cancel speech to reminder, loop, and goal tools without dual-writing forget_fact or unearned forgotten-fact claims.",
+  "expectations": [
+    "Constraint veto on mail/calendar writes (144)",
+    "Unsolicited recitation (145) as a bundle",
+    "Ingest vs remember honesty (147)",
+    "Extractor dual-write races (148)",
+    "Specialist constitution (149)",
+    "Claude-style /memories filesystem"
+  ],
+  "approach": "Route cancel speech to existing domain tools; no dual-write forget_fact; 143 claims stay",
+  "decisions": [
+    {
+      "decision": "Extractor classifies cancel/drop/abandon of reminder/loop/goal as those acts, not forget; companion delegates to owning agents",
+      "why": "142 prompt and R14 table still leave forget the dentist as biography forget",
+      "rejected": "Prompt-only companion paragraph; graph-router all forget-* to reminders"
+    },
+    {
+      "decision": "One primary domain write per cancel speech act; never fall back to forget_fact",
+      "why": "Principle VIII forbids a just-in-case biography retract after domain cancel",
+      "rejected": "Try forget_fact after a domain miss"
+    },
+    {
+      "decision": "Add a loops agent wrapping existing close_loop/drop_loop; companion does not own those tools",
+      "why": "Loops are REST-only today; US1 requires a conversational close path without a fourth store",
+      "rejected": "Inject LoopStore into CompanionAgent; skip loops this phase"
+    },
+    {
+      "decision": "Hard-cut delegate result to {response, tool_calls} so honesty can earn domain cancel from nested payloads",
+      "why": "Delegate currently returns only specialist text; success is not cancel success",
+      "rejected": "Treat delegate_to_agent success as earned cancel; put cancel_reminder on companion"
+    },
+    {
+      "decision": "Forgotten-fact claims stay 143 forget_fact ok; add domain-claim strip for cancel/close/abandon wording",
+      "why": "FR-004 and FR-005 are different licenses",
+      "rejected": "Treat domain cancel success as earned forget"
+    },
+    {
+      "decision": "precise_label_match unique/miss/ambiguous before at most one write; no batch substring cancel",
+      "why": "Short token dentist must not cancel every dentist reminder",
+      "rejected": "Query ILIKE on cancel_reminder; reuse _retract_facts_matching"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Forget the dentist is cancel not biography",
+      "key_finding": "run_delegate drops nested tool_calls, so companion cannot earn cancel_reminder today"
+    },
+    "tasks": {
+      "summary": "30 tasks, 6 phases: setup, foundational match+delegate+extractor, US1 cancel MVP, US2 biography forget, US3 earned claims, polish"
+    }
+  },
+  "currentTask": "T030",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed companion tools and domain cancel tools exist",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Confirmed run_delegate was string result then hard-cut in T008",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Confirmed extractor lacked R14 then T009 rewrote it",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/extractor.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Added precise_label_match unit tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_label_match.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Added nested delegate mapping tests",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Added forget-the-dentist speech_act gate cases",
+      "files": [
+        "core/cognition/ze-memory/tests/test_speech_act_gate.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Implemented precise_label_match Unique/Miss/Ambiguous",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/label_match.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Hard-cut run_delegate to response+tool_calls mapping",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Extractor R14 cancel vs biography forget wording",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/extractor.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Companion instruction tests for R14 handoff",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Reminders unique-label cancel tests",
+      "files": [
+        "plugins/ze-calendar/tests/agents/reminders/test_cancel_match.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Loops unique-title cancel tests",
+      "files": [
+        "core/cognition/ze-worldstate/tests/test_loop_agent_cancel.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Added loops agent wrapping review close/drop",
+      "files": [
+        "core/cognition/ze-worldstate/ze_worldstate/agents/"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Reminders unique-label cancel instructions",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/reminders/agent.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Goals unique-label abandon instructions",
+      "files": [
+        "core/automation/ze-automation/ze_automation/agents/goals/agent.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Companion R14 instructions and loops delegate",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Eval forget-the-dentist cancel criteria",
+      "files": [
+        "eval/scenarios/memory.yaml"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Biography forget vs vague dentist miss tests",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Kept forget_fact biography-only instructions",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Honesty nested cancel vs forgotten-fact tests",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "RemindersAgent strips unearned cancel confirmation",
+      "files": [
+        "plugins/ze-calendar/tests/agents/reminders/test_agent.py"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Honesty flatten nested tool_calls and domain claims",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "RemindersAgent already gates via honesty publish",
+      "files": [
+        "plugins/ze-calendar/ze_calendar/agents/reminders/agent.py"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "GoalAgent domain-claim strip on AgentResult",
+      "files": [
+        "core/automation/ze-automation/ze_automation/agents/goals/agent.py"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "LoopsAgent domain-claim strip on AgentResult",
+      "files": [
+        "core/cognition/ze-worldstate/ze_worldstate/agents/agent.py"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Eval dual-write and forgotten-biography criteria",
+      "files": [
+        "eval/scenarios/memory.yaml"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "Documented R14 cancel vs forget_fact in docs/memory.md",
+      "files": [
+        "docs/memory.md"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Aligned ze-memory and ze-agents one-liners",
+      "files": [
+        "specs/core/ze-memory.md",
+        "specs/core/ze-agents.md"
+      ]
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "Roadmap 146 shipped; do not start 147 in this tree",
+      "files": [
+        "specs/arch/memory-honesty-roadmap.md"
+      ]
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "Ran test-agents memory personal calendar automation worldstate",
+      "files": [
+        "Makefile"
+      ]
+    }
+  }
+}

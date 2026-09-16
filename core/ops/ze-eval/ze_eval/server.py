@@ -128,7 +128,6 @@ async def ze_run_scenario(scenario_id: str) -> str:
       - matches_expected_agent: true if Ze used the expected agent (null if no expectation set)
       - tool_calls: list of tools invoked during execution (name, args, duration_ms, success)
       - tokens_used: total tokens consumed
-      - memory_proposals_count: always 0 (legacy field; remember/forget is in tool_calls)
 
     You (the evaluator) should read the criteria and judge whether Ze's response passes.
     """
@@ -164,7 +163,7 @@ async def ze_run_suite(tag: str = "") -> str:
     Returns a JSON summary with:
       - total, routing_correct, routing_wrong, routing_unchecked, errors counts
       - results: per-scenario objects with scenario definition, Ze's response(s),
-        routing metadata, tool_calls, tokens_used, and memory_proposals_count (always 0)
+        routing metadata, tool_calls, tokens_used
 
     Use this to get a broad picture of Ze's current behaviour before making changes,
     then run again after to detect regressions.

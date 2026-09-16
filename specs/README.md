@@ -183,7 +183,14 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 140 | [Memory Admission + Remember/Forget](phases/140-memory-admission/spec.md) | ✅ Implemented |
 | 141 | [Memory Read Contract + Prompt Constitution](phases/141-memory-prompt-constitution/spec.md) | ✅ Implemented |
 | 142 | [Speech-Act Routing Across Stores](phases/142-speech-act-routing/spec.md) | ✅ Implemented |
-| 143 | [Earned Memory Confirmations and Precise Forget](phases/143-memory-claim-honesty/spec.md) | 🔲 Tasks |
+| 143 | [Earned Memory Confirmations and Precise Forget](phases/143-memory-claim-honesty/spec.md) | ✅ Implemented |
+| 144 | [Constraint Veto on Gated Writes](phases/144-constraint-veto-mail-calendar/spec.md) | ✅ Implemented |
+| 145 | [Response-Level Unsolicited Recitation](phases/145-unsolicited-recitation/spec.md) | ✅ Implemented |
+| 146 | [Forget vs Cancel Across Stores](phases/146-forget-vs-cancel/spec.md) | ✅ Implemented |
+| 147 | [Ingest vs Remember Honesty](phases/147-ingest-remember-honesty/spec.md) | ✅ Implemented |
+| 148 | [Extractor Dual-Write and Dedup Races](phases/148-extractor-dual-write/spec.md) | ✅ Implemented |
+| 149 | [Specialist Memory Constitution](phases/149-specialist-memory-constitution/spec.md) | ✅ Implemented |
+| 150 | [Eval `memory_proposals_count` Hard-Cut and Guide Phase-Index Honesty](phases/150-eval-guide-honesty/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 

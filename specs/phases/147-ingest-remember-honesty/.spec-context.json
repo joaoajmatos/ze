@@ -1,0 +1,281 @@
+{
+  "workflow": "companion",
+  "specName": "ingest remember honesty",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:20:17.181Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:21:17.019Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:21:17.433Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:21:17.621Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:21:17.792Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:21:17.963Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:00:49.181Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:00:57.635Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:04:05.079Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "ai",
+      "at": "2026-09-16T16:15:26.657Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:42.170Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:42.954Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:43.871Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:44.478Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:45.130Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:46.038Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:15:46.818Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T16:15:48.981Z"
+    }
+  ],
+  "telemetryInstanceId": "26f3d9b2-6524-4bb6-91ac-e96893f4e7e1",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Do not present file ingest / MemorySink writes as remember_fact success; remembered confirmations stay gated on remember_fact ok true",
+      "tasks": [
+        "T001",
+        "T002",
+        "T006"
+      ]
+    },
+    "FR-002": {
+      "title": "Ingest and companion user-visible copy must describe ingest as ingest, not as the remember tool",
+      "tasks": [
+        "T002",
+        "T003",
+        "T005"
+      ]
+    },
+    "FR-003": {
+      "title": "Hard-cut eval scenarios and graders that treat ingest as remember-tool success",
+      "tasks": [
+        "T004"
+      ]
+    },
+    "FR-004": {
+      "title": "Do not replace MemorySink with remember_fact, add a new remember API, or implement 144-146/148-149 or /memories",
+      "tasks": [
+        "T003"
+      ]
+    }
+  },
+  "size": "simple",
+  "classification": {
+    "projectedFiles": 5,
+    "projectedTasks": 5,
+    "scopeSignal": "none",
+    "verdict": "simple"
+  },
+  "context": [
+    "area: MemorySink ingest writes",
+    "area: companion honesty / copy",
+    "area: eval/scenarios/memory.yaml",
+    "constraint: R7 ingest is not remember_fact",
+    "constraint: Principle VIII"
+  ],
+  "intent": "File ingest via MemorySink must not be confirmed as remember_fact success in companion copy or eval.",
+  "expectations": [
+    "Redesign MemorySink as remember_fact",
+    "Phase 144 veto",
+    "Forget vs cancel (146)",
+    "Extractor races (148)",
+    "Specialist constitution (149)",
+    "Claude-style /memories filesystem"
+  ],
+  "approach": "Keep MemorySink; apply 143 honesty on ingest speaker; hard-cut eval copy",
+  "decisions": [
+    {
+      "decision": "Do not change MemorySink or add a remember API",
+      "why": "FR-004 / R7: ingest stays synthesized perception",
+      "rejected": "Route ingest through remember_fact"
+    },
+    {
+      "decision": "Reuse enforce_memory_confirmations and wire IngestionAgent.run",
+      "why": "143 already strips unearned remember; ingestion speaker was ungated",
+      "rejected": "Parallel ingest gate or treating ingest_url success as earned remember"
+    },
+    {
+      "decision": "Eval scores tool_calls and ingest outcome, not memory_proposals_count",
+      "why": "FR-003; 150 owns deleting the field",
+      "rejected": "Dual grader that accepts I will remember after ingest"
+    },
+    {
+      "decision": "IngestionAgent must not import ze_personal honesty; lift to ze_agents only if ingest turns need the mechanical strip",
+      "why": "ze-ingestion depends on ze-agents, not plugins",
+      "rejected": "Plugin import from ze_ingestion"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Ingest is not remember_fact success",
+      "key_finding": "IngestionAgent.run does not call enforce_memory_confirmations"
+    },
+    "tasks": {
+      "summary": "Ingest is not remember_fact success"
+    }
+  },
+  "currentTask": "T007",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "File-as-whole remember claims not earned from MemorySink or sibling remember_fact",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Companion ingest acknowledgements in ingest/extraction language",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "IngestionAgent copy never remember_fact success; no ze_personal import",
+      "files": [
+        "core/ops/ze-ingestion/ze_ingestion/agent.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Eval ingest-only fails unearned remember-tool claims",
+      "files": [
+        "eval/scenarios/memory.yaml"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "docs/ingestion.md no longer equates ingest with remember-it",
+      "files": [
+        "docs/ingestion.md"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Honesty tests for ingest language, unearned PDF remember, mixed preference",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "make test-personal passed",
+      "files": [
+        "plugins/ze-personal/tests"
+      ]
+    }
+  }
+}

@@ -85,6 +85,32 @@ async def test_run_returns_response_from_agentic_loop():
     assert result.response == "You have 2 active goals."
 
 
+async def test_does_not_confirm_abandon_when_tool_errors():
+    import ze_automation.agents.goals.tools  # noqa
+
+    store = make_store()
+    store.get_goal = AsyncMock(return_value=None)
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(
+        side_effect=[
+            (
+                None,
+                [
+                    {
+                        "id": "c1",
+                        "name": "abandon_goal",
+                        "arguments": {"goal_id": str(uuid4())},
+                    }
+                ],
+            ),
+            ("I've abandoned the goal.", None),
+        ]
+    )
+    client.complete = AsyncMock(return_value="ok")
+    result = await make_agent(client=client, store=store).run(make_ctx("abandon it"))
+    assert "abandoned" not in result.response.lower()
+
+
 # ── run() — tool call round-trips ────────────────────────────────────────────
 
 

@@ -147,7 +147,7 @@ The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but befo
 
 ## `IngestionAgent`
 
-`IngestionAgent` routes user requests such as "save this link", "learn from this PDF", "watch this video and remember it". It exposes two tools:
+`IngestionAgent` routes user requests such as "save this link", "learn from this PDF", "watch this video and ingest it". It exposes two tools:
 
 | Tool | When used |
 |---|---|

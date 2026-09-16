@@ -335,7 +335,7 @@ class BaseAgent(ABC):
                 return ToolCall(
                     tool_name=name,
                     args=stored_args,
-                    result=None,
+                    result=e.result,
                     duration_ms=0,
                     success=False,
                     error=f"skipped: {e.reason}",

@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "memory claim honesty",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "completed",
   "history": [
     {
       "step": "specify",
@@ -67,10 +67,152 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-16T13:22:52.728Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T13:47:07.636Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:47:19.545Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:47:26.474Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:47:43.601Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:48:26.391Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:48:46.984Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:49:28.521Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:49:37.269Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:49:41.583Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:50:19.328Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:51:20.601Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:51:37.614Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:52:13.984Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:52:25.597Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:52:26.131Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:52:26.676Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T13:54:48.102Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T13:54:48.706Z"
     }
   ],
   "telemetryInstanceId": "6ca9e1c3-dbbd-4626-9098-58f73d7111df",
-  "last_action": "living specs evaluated — skipped (not configured)",
+  "last_action": "all 143 tasks done — test-memory/personal/core/agents pass; 143 files lint clean",
   "coverage": {
     "FR-001": {
       "title": "User-visible remembered confirmation only after remember_fact returns ok true in the same turn",
@@ -78,6 +220,10 @@
         "T004",
         "T006",
         "T007"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py",
+        "plugins/ze-personal/tests/agents/companion/test_companion_agent.py"
       ]
     },
     "FR-002": {
@@ -86,6 +232,9 @@
         "T004",
         "T006",
         "T007"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
       ]
     },
     "FR-003": {
@@ -94,6 +243,9 @@
         "T005",
         "T007",
         "T008"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_companion_agent.py"
       ]
     },
     "FR-004": {
@@ -101,6 +253,9 @@
       "tasks": [
         "T004",
         "T006"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
       ]
     },
     "FR-005": {
@@ -109,6 +264,9 @@
         "T005",
         "T007",
         "T008"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_companion_agent.py"
       ]
     },
     "FR-006": {
@@ -117,6 +275,9 @@
         "T010",
         "T011",
         "T012"
+      ],
+      "tests": [
+        "core/cognition/ze-memory/tests/test_forget_retract.py"
       ]
     },
     "FR-007": {
@@ -124,6 +285,9 @@
       "tasks": [
         "T010",
         "T011"
+      ],
+      "tests": [
+        "core/cognition/ze-memory/tests/test_forget_retract.py"
       ]
     },
     "FR-008": {
@@ -131,12 +295,18 @@
       "tasks": [
         "T010",
         "T011"
+      ],
+      "tests": [
+        "core/cognition/ze-memory/tests/test_forget_retract.py"
       ]
     },
     "FR-009": {
       "title": "Hard-cut eval criteria that reward unearned I'll remember wording",
       "tasks": [
         "T009"
+      ],
+      "tests": [
+        "eval/scenarios/memory.yaml"
       ]
     },
     "FR-010": {
@@ -193,6 +363,16 @@
       "decision": "Forget ladder: exact then named value in query then long phrase then unique cosine 0.88/0.80 gap",
       "why": "precision over recall; current substring and top-5 0.75 over-forget",
       "rejected": "exact-only; keep 0.75 top-5 behind a flag; SQL ILIKE"
+    },
+    {
+      "decision": "Discard raw token_sink chunks then flush gated full reply",
+      "why": "WS tokens must not outrun the gate; single flush is allowed",
+      "rejected": "gate only AgentResult.response after streaming"
+    },
+    {
+      "decision": "Forget ladder stop at first non-empty class; unique cosine 0.88 with runner-up under 0.80",
+      "why": "precision over recall; no substring or top-5 0.75",
+      "rejected": "keep old matcher behind a flag"
     }
   ],
   "step_summaries": {
@@ -202,6 +382,171 @@
     },
     "tasks": {
       "summary": "16 tasks: setup, honesty stub, US1 gate+sink+stream+eval, US2 matcher, polish+tests"
+    },
+    "implement": {
+      "summary": "Turn-path earned memory confirmations plus precise forget matcher; no 144+"
     }
-  }
+  },
+  "currentTask": "T016",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed remember_fact/forget_fact already return ok true|false payloads and companion lists those tools",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/tools.py",
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Confirmed live _retract_facts_matching is substring-then-cosine-0.75-top-5 to replace in place",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/retriever.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added companion honesty module with fallback copy constants and pass-through stub",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Fail-first honesty tests: unearned strip, ok false not earned, earned ok true may keep confirmation",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Fail-first companion tests: run gate, buffered token_sink, stream not tool-free _client.stream",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_companion_agent.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Implemented deterministic sentence gate on tool ok payload with strip/fallback and fail-closed mixed sentences",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Buffered token_sink around agentic_loop, gated response, flushed gated text, set AgentResult.response",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Hard-cut CompanionAgent.stream to the gated run result; removed raw _client.stream",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Hard-cut eval criteria so unearned I'll remember is not rewarded",
+      "files": [
+        "eval/scenarios/memory.yaml"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Fail-first forget matcher table: exact, named value, reject short substring, reject 0.75 top-5, unique high cosine",
+      "files": [
+        "core/cognition/ze-memory/tests/test_forget_retract.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Replaced _retract_facts_matching with exact/named-value/long-phrase/unique-embedding ladder; deleted substring and 0.75 top-5",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/retriever.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Confirmed forget_fact still maps empty ids to ok false and error no matching fact",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_tools.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Documented turn-path confirmation and precise forget in docs/memory.md",
+      "files": [
+        "docs/memory.md"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Pointed honesty follow-ons at 144+; did not start P5",
+      "files": [
+        "specs/arch/memory-honesty-roadmap.md"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Aligned ze-memory and ze-agents one-liners with turn-path gate and precision forget",
+      "files": [
+        "specs/core/ze-memory.md",
+        "specs/core/ze-agents.md"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Validated make test-memory test-personal test-core test-agents; 143 files pass ruff (repo-wide make lint has unrelated pre-existing errors)",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/honesty.py",
+        "core/cognition/ze-memory/ze_memory/retriever.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "make test-memory",
+      "command": "make test-memory",
+      "result": "381 passed",
+      "warnings": [
+        "unrelated unawaited coroutine warnings"
+      ]
+    },
+    {
+      "what": "make test-personal",
+      "command": "make test-personal",
+      "result": "275 passed",
+      "warnings": [
+        "person_store utcnow deprecations"
+      ]
+    },
+    {
+      "what": "make test-core",
+      "command": "make test-core",
+      "result": "653 passed, 45 skipped (unsandboxed torch)",
+      "warnings": []
+    },
+    {
+      "what": "make test-agents",
+      "command": "make test-agents",
+      "result": "28 passed",
+      "warnings": []
+    },
+    {
+      "what": "ruff on 143 files",
+      "command": "uv run ruff check honesty agent retriever tests",
+      "result": "All checks passed",
+      "warnings": [
+        "make lint repo-wide still fails on unrelated pre-existing F401/F821"
+      ]
+    }
+  ],
+  "concerns": [
+    {
+      "note": "make lint at repo root fails on files outside 143. 143 Python files are clean.",
+      "step": "implement"
+    }
+  ]
 }

@@ -29,6 +29,7 @@ from ze_core.telemetry.reconciler import CostReconciler
 from ze_core.telemetry.tracker import CostTracker
 from ze_data.domain import DataDomain
 from ze_data.portability.assembler import bulk_insert
+from ze_memory.constraint_veto import ConstraintVetoHook
 from ze_memory.consolidation_store import PostgresConsolidationStore
 from ze_memory.consolidator import MemoryConsolidator
 from ze_memory.graph import PostgresGraphStore
@@ -158,7 +159,9 @@ def build_router(stack: EngineStack) -> EmbeddingRouter:
     )
 
 
-def register_harness_hooks(settings: Any) -> ComponentCollectionHook:
+def register_harness_hooks(
+    settings: Any, memory_store: Any = None
+) -> ComponentCollectionHook:
     component_hook = ComponentCollectionHook()
     register_hook(component_hook)
     log.info("component_collection_hook_registered")
@@ -167,6 +170,20 @@ def register_harness_hooks(settings: Any) -> ComponentCollectionHook:
     log.info(
         "tool_call_cap_hook_registered", max_tool_calls=settings.max_tool_calls_per_turn
     )
+
+    core = (
+        settings.to_core_settings()
+        if hasattr(settings, "to_core_settings")
+        else settings
+    )
+    user_timezone = getattr(core, "timezone", None) or "UTC"
+    register_hook(
+        ConstraintVetoHook(
+            store=memory_store,
+            user_timezone=user_timezone,
+        )
+    )
+    log.info("constraint_veto_hook_registered", timezone=user_timezone)
     return component_hook
 
 

@@ -15,6 +15,7 @@ from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
+from ze_memory.fact_identity import fact_identity, identities_from_remember_calls
 from ze_plugin.contribution import TargetFace
 
 log = get_logger(__name__)
@@ -29,17 +30,6 @@ _COMPACTION_SYSTEM = (
     "questions, and outcomes of prior actions. Do not add information not present "
     "in the source. Be concise."
 )
-
-
-def _remembered_predicates(result: AgentResult) -> set[str]:
-    predicates: set[str] = set()
-    for tc in result.tool_calls or []:
-        if tc.tool_name != "remember_fact" or not tc.success:
-            continue
-        pred = (tc.args or {}).get("predicate")
-        if pred:
-            predicates.add(str(pred).strip().lower())
-    return predicates
 
 
 def _estimate_tokens(messages: list[dict]) -> int:
@@ -102,12 +92,12 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                 prompt=ctx.prompt,
                 response=result.response,
             )
-        remembered = _remembered_predicates(result)
+        remembered = identities_from_remember_calls(result.tool_calls or [])
         if remembered:
             proposals = [
                 fact
                 for fact in proposals
-                if fact.predicate.strip().lower() not in remembered
+                if fact_identity(fact.predicate, fact.value) not in remembered
             ]
         if proposals:
             items = [

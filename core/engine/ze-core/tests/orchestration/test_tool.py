@@ -166,6 +166,25 @@ class TestToolSpecLlmSchema:
         assert schema["function"]["parameters"] is override
         assert "items" in schema["function"]["parameters"]["properties"]
 
+    def test_constraint_gate_defaults_false(self):
+        @tool(access=ToolAccess.WRITE, description="ungated")
+        async def remember_nothing(x: str) -> str: ...
+
+        spec = get_tool("remember_nothing")
+        assert spec.constraint_gate is False
+        assert spec.constraint_describe is None
+
+    def test_constraint_gate_opt_in(self):
+        @tool(
+            access=ToolAccess.WRITE,
+            description="gated",
+            constraint_gate=True,
+        )
+        async def ping_contact(to: str) -> str: ...
+
+        spec = get_tool("ping_contact")
+        assert spec.constraint_gate is True
+
     def test_auto_schema_when_override_is_none(self):
         async def _inner(query: str) -> str: ...
 

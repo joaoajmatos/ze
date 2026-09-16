@@ -833,10 +833,6 @@ export type EvalChatResponse = {
      * Tokens Used
      */
     tokens_used?: number;
-    /**
-     * Memory Proposals Count
-     */
-    memory_proposals_count?: number;
 };
 
 /**

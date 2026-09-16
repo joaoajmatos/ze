@@ -84,6 +84,24 @@ from ze_memory.types import SpeechAct
             SpeechAct.INGEST,
             [],
         ),
+        (
+            {
+                "speech_act": "reminder",
+                "family": "drop",
+                "facts": [{"value": "forget the dentist"}],
+            },
+            SpeechAct.REMINDER,
+            [],
+        ),
+        (
+            {
+                "speech_act": "forget",
+                "family": "drop",
+                "facts": [{"value": "forget that I like aisle seats"}],
+            },
+            SpeechAct.FORGET,
+            [],
+        ),
     ],
 )
 def test_speech_act_gate_table(payload, expected_act, expect_facts):

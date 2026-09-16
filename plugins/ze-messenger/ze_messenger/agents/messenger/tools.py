@@ -14,6 +14,28 @@ from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.channels.user_channel_store import UserChannelStore
 
 
+def _outbound_message_view(args: dict) -> dict:
+    to = args.get("to") or ""
+    return {
+        "kind": "outbound_message",
+        "channel": "email",
+        "parties": [to] if to else [],
+        "when": None,
+        "summary": f"send email to {to}",
+    }
+
+
+def _outbound_draft_view(args: dict) -> dict:
+    to = args.get("to") or ""
+    return {
+        "kind": "outbound_draft",
+        "channel": "email",
+        "parties": [to] if to else [],
+        "when": None,
+        "summary": f"draft email to {to}",
+    }
+
+
 @tool(
     access=ToolAccess.READ, description="List recent Gmail messages matching a query."
 )
@@ -57,7 +79,12 @@ async def get_email(
     return _parse_message(msg)
 
 
-@tool(access=ToolAccess.WRITE, description="Create a Gmail draft without sending.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Create a Gmail draft without sending.",
+    constraint_gate=True,
+    constraint_describe=_outbound_draft_view,
+)
 async def draft_email(
     credentials: GoogleCredentials,
     to: str,
@@ -77,7 +104,12 @@ async def draft_email(
     return {"id": result.get("id")}
 
 
-@tool(access=ToolAccess.WRITE, description="Send an email or reply to a thread.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Send an email or reply to a thread.",
+    constraint_gate=True,
+    constraint_describe=_outbound_message_view,
+)
 async def send_email(
     channel_registry: ChannelRegistry,
     thread_channel_map: ThreadChannelMap,

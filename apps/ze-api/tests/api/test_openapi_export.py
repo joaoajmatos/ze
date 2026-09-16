@@ -30,3 +30,13 @@ def test_collect_openapi_operation_ids_includes_plugin_pages():
     assert "getNewsSettings" in operation_ids
     assert "getContactsPage" in operation_ids
     assert "getRemindersPage" in operation_ids
+
+
+def test_eval_chat_response_omits_memory_proposals_count():
+    schema = export_openapi()
+    dumped = str(schema)
+    assert "memory_proposals_count" not in dumped
+    eval_schema = schema["components"]["schemas"].get("EvalChatResponse", {})
+    props = eval_schema.get("properties", {})
+    assert "memory_proposals_count" not in props
+    assert "tool_calls" in props

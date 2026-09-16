@@ -11,6 +11,7 @@ from ze_agents.client import LLMClient
 from ze_sdk.proactive import ProactiveNotifier
 from ze_agents.settings import Settings
 from ze_calendar.reminders.store import ReminderStore
+from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
 from ze_automation.workflow.scheduler import WorkflowScheduler
 
 _AGENT_INSTRUCTIONS = """\
@@ -25,7 +26,11 @@ Guidelines:
 - Convert relative times ("in 2 hours", "tomorrow at 9am") to absolute UTC ISO-8601 before
   calling set_reminder.
 - Format times in the user's local timezone ({timezone}) when confirming or listing.
-- When cancelling, always call list_reminders first so you can pass the correct ID.
+- When cancelling, always call list_reminders first. Match a unique label. If two labels
+  share the query, ask which one. If none match, say so. Call cancel_reminder at most
+  once, only on a unique match. Never batch-cancel on a short token like "dentist".
+- Confirm a cancel only if cancel_reminder succeeded this turn. Do not claim a biography
+  fact was forgotten.
 - Do NOT use this agent for recurring tasks — those belong to the workflow agent.\
 """
 
@@ -70,25 +75,28 @@ class RemindersAgent(BaseAgent):
         system = self._build_system_prompt(
             _AGENT_INSTRUCTIONS, ctx, now=now, timezone=self._settings.timezone
         )
-        response, loop_tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            messages=list(ctx.messages),
-            system=system,
-            deps={
-                "store": self._store,
-                "scheduler": self._scheduler,
-                "notifier": self._notifier,
-            },
-        )
+        original_sink = hold_token_sink(ctx)
+        try:
+            response, loop_tool_calls = await self.agentic_loop(
+                ctx,
+                client=self._client,
+                messages=list(ctx.messages),
+                system=system,
+                deps={
+                    "store": self._store,
+                    "scheduler": self._scheduler,
+                    "notifier": self._notifier,
+                },
+            )
+        finally:
+            ctx.token_sink = original_sink
         self._log.info(
             "reminders_agent_complete",
             session_id=ctx.session_id,
             tool_calls=len(loop_tool_calls),
         )
-        return AgentResult(
-            agent=self.name, response=response, tool_calls=loop_tool_calls
-        )
+        gated = await publish_honest_reply(original_sink, response, loop_tool_calls)
+        return AgentResult(agent=self.name, response=gated, tool_calls=loop_tool_calls)
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
         result = await self.run(ctx)

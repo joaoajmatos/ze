@@ -18,4 +18,6 @@ ALL_AGENT_MODULE_PATHS = [
     "ze_prospecting.agents.tools",
     "ze_prospecting.agents.agent",
     "ze_ingestion.agent",
+    "ze_worldstate.agents.tools",
+    "ze_worldstate.agents.agent",
 ]

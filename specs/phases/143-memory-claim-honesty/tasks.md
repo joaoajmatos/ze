@@ -12,8 +12,8 @@
 
 **Wave 1 — independent (different files):**
 
-- [ ] **T001** [P] Confirm `remember_fact` / `forget_fact` already return `{ok: true|false, ...}` and companion lists those tools · `plugins/ze-personal/ze_personal/agents/companion/tools.py`
-- [ ] **T002** [P] Confirm live `_retract_facts_matching` is substring-then-cosine-0.75-top-5 (to delete, not wrap) · `core/cognition/ze-memory/ze_memory/retriever.py`
+- [x] **T001** [P] Confirm `remember_fact` / `forget_fact` already return `{ok: true|false, ...}` and companion lists those tools · `plugins/ze-personal/ze_personal/agents/companion/tools.py`
+- [x] **T002** [P] Confirm live `_retract_facts_matching` is substring-then-cosine-0.75-top-5 (to delete, not wrap) · `core/cognition/ze-memory/ze_memory/retriever.py`
 
 ---
 
@@ -21,7 +21,7 @@
 
 **⟶ Wait for Wave 1 to finish, then:**
 
-- [ ] **T003** Add companion honesty module with fallback copy constants (`I could not store that.` / `I could not forget that.`) and `enforce_memory_confirmations` stub that returns the input unchanged · `plugins/ze-personal/ze_personal/agents/companion/honesty.py`
+- [x] **T003** Add companion honesty module with fallback copy constants (`I could not store that.` / `I could not forget that.`) and `enforce_memory_confirmations` stub that returns the input unchanged · `plugins/ze-personal/ze_personal/agents/companion/honesty.py`
 
 **Checkpoint**: Module exists; stories can proceed (US2 does not import this file).
 
@@ -37,26 +37,26 @@
 
 **Wave 2 — independent (different files):**
 
-- [ ] **T004** [P] [US1] Fail-first: unearned remember/forget claims stripped; `ok` false not earned even if `ToolCall.success`; earned `ok` true may keep confirmation · `plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py`
-- [ ] **T005** [P] [US1] Fail-first: `run` applies the gate; buffered `token_sink` sees gated text only; `stream` is not tool-free `_client.stream` · `plugins/ze-personal/tests/agents/companion/test_companion_agent.py`
+- [x] **T004** [P] [US1] Fail-first: unearned remember/forget claims stripped; `ok` false not earned even if `ToolCall.success`; earned `ok` true may keep confirmation · `plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py`
+- [x] **T005** [P] [US1] Fail-first: `run` applies the gate; buffered `token_sink` sees gated text only; `stream` is not tool-free `_client.stream` · `plugins/ze-personal/tests/agents/companion/test_companion_agent.py`
 
 ### Implementation
 
 **⟶ Wait for Wave 2 to finish, then:**
 
-- [ ] **T006** [US1] Implement deterministic sentence gate (`ok` payload, strip/fallback, fail-closed mixed sentences) · `plugins/ze-personal/ze_personal/agents/companion/honesty.py`
+- [x] **T006** [US1] Implement deterministic sentence gate (`ok` payload, strip/fallback, fail-closed mixed sentences) · `plugins/ze-personal/ze_personal/agents/companion/honesty.py`
 
 **⟶ Wait for T006, then Wave 3:**
 
-- [ ] **T007** [US1] Buffer `ctx.token_sink` around `agentic_loop`, apply the gate to the returned text, flush gated text, set `AgentResult.response` · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
+- [x] **T007** [US1] Buffer `ctx.token_sink` around `agentic_loop`, apply the gate to the returned text, flush gated text, set `AgentResult.response` · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
 
 **⟶ Wait for T007, then:**
 
-- [ ] **T008** [US1] Hard-cut `CompanionAgent.stream`: same gated `run` result (single-chunk yield allowed); delete raw `_client.stream` completion · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
+- [x] **T008** [US1] Hard-cut `CompanionAgent.stream`: same gated `run` result (single-chunk yield allowed); delete raw `_client.stream` completion · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
 
 **⟶ Wait for T008, then:**
 
-- [ ] **T009** [US1] Hard-cut eval criteria that reward unearned “I’ll remember” (especially `memory_store_explicit_fact`) · `eval/scenarios/memory.yaml`
+- [x] **T009** [US1] Hard-cut eval criteria that reward unearned “I’ll remember” (especially `memory_store_explicit_fact`) · `eval/scenarios/memory.yaml`
 
 **Checkpoint**: SC-001, SC-002, SC-003, SC-006 for the companion turn path. MVP.
 
@@ -72,17 +72,17 @@
 
 **Wave 4:**
 
-- [ ] **T010** [P] [US2] Fail-first matcher table: exact identity, named value in query, reject short substring, reject cosine 0.75 top-5 batch, unique high-cosine single hit · `core/cognition/ze-memory/tests/test_forget_retract.py`
+- [x] **T010** [P] [US2] Fail-first matcher table: exact identity, named value in query, reject short substring, reject cosine 0.75 top-5 batch, unique high-cosine single hit · `core/cognition/ze-memory/tests/test_forget_retract.py`
 
 ### Implementation
 
 **⟶ Wait for Wave 4 to finish, then:**
 
-- [ ] **T011** [US2] Replace `_retract_facts_matching` with the contract ladder (delete substring/`in` and top-5 0.75; no flag) · `core/cognition/ze-memory/ze_memory/retriever.py`
+- [x] **T011** [US2] Replace `_retract_facts_matching` with the contract ladder (delete substring/`in` and top-5 0.75; no flag) · `core/cognition/ze-memory/ze_memory/retriever.py`
 
 **⟶ Wait for T011, then:**
 
-- [ ] **T012** [US2] Confirm `forget_fact` still maps empty ids to `{ok: false, error: "no matching fact"}` · `plugins/ze-personal/tests/agents/companion/test_memory_tools.py`
+- [x] **T012** [US2] Confirm `forget_fact` still maps empty ids to `{ok: false, error: "no matching fact"}` · `plugins/ze-personal/tests/agents/companion/test_memory_tools.py`
 
 **Checkpoint**: SC-004, SC-005. Forget success is trustworthy enough for US1 confirmations.
 
@@ -92,13 +92,13 @@
 
 **⟶ Wait for Phases 3 and 4, then Wave 5 — independent (different files):**
 
-- [ ] **T013** [P] Document turn-path confirmation + precise forget (not prompt-only) · `docs/memory.md`
-- [ ] **T014** [P] Point living honesty follow-ons; do not start P5 · `specs/arch/memory-honesty-roadmap.md`
-- [ ] **T015** [P] Align `specs/core/ze-memory.md` / `specs/core/ze-agents.md` one-liners if they still describe prompt-only confirm or the old matcher
+- [x] **T013** [P] Document turn-path confirmation + precise forget (not prompt-only) · `docs/memory.md`
+- [x] **T014** [P] Point living honesty follow-ons; do not start P5 · `specs/arch/memory-honesty-roadmap.md`
+- [x] **T015** [P] Align `specs/core/ze-memory.md` / `specs/core/ze-agents.md` one-liners if they still describe prompt-only confirm or the old matcher
 
 **⟶ Wait for Wave 5, then:**
 
-- [ ] **T016** Validate against Success Criteria: `make test-memory`, `make test-personal`, and `make lint` (no `companion.yml` validation hook)
+- [x] **T016** Validate against Success Criteria: `make test-memory`, `make test-personal`, and `make lint` (no `companion.yml` validation hook)
 
 ---
 

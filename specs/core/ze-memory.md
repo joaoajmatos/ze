@@ -24,8 +24,19 @@ subsystem runs an offline consolidation loop.
   `AgentResult.memory_proposals` persist door. Post-turn `extractor.py` is a keep/drop
   admission gate: closed families (`identity`, `preference`, `relationship`, `constraint`,
   `contact_detail`), `speech_act` must be `fact` or `facts` is `[]`. Explicit remember stamps
-  `PROMPT_SUPPLIED` + `reviewed=true`. `forget_fact` retracts matching rows (`contradicted=true`).
-  Episode writes remain `write_episode`.
+  `PROMPT_SUPPLIED` + `reviewed=true`. Companion user-visible remembered/forgotten
+  confirmations are earned on the turn path (`remember_fact` / `forget_fact` payload
+  `ok` true), not by prompt wording alone. Same-turn post-turn extraction must not
+  persist a second current fact for an identity already written by `remember_fact`
+  `ok` true (predicate+value after normalize). `forget_fact` retracts matching rows
+  (`contradicted=true`) via a precision ladder (exact identity, named value, long
+  query phrase, unique high-cosine hit); a miss is `ok` false, not a short-substring
+  or top-5 cosine batch. Cancel/drop/abandon of a reminder, loop, or goal is that
+  `speech_act`, not `forget`; `forget_fact` stays biography-only. Nested
+  `delegate_to_agent` results expose specialist `tool_calls` so forgotten and
+  domain-cancel claims stay earned. Reviewed `constraint` facts also veto plugin writes marked
+  `constraint_gate` (`ze_memory.constraint_veto` harness hook) before the tool body
+  runs. Episode writes remain `write_episode`.
 - **Retrieval** — `MemoryRetriever`: semantic search over facts and episodes using the
   shared embedding singleton; `retrieval_rerank.py` re-ranks with NLI cross-encoder
 - **Graph** — `MemoryGraph`: entity and relationship store; neighbourhood traversal for

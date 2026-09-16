@@ -115,6 +115,53 @@ def _to_list(embedding: Any) -> str:
     return "[" + ",".join(str(v) for v in vals) + "]"
 
 
+def _normalize_forget_text(text: str) -> str:
+    return " ".join(text.strip().casefold().split())
+
+
+def _select_forget_match_ids(
+    rows: list[Any], query: str, embedder: Any
+) -> list[UUID]:
+    needle = _normalize_forget_text(query)
+    if not needle:
+        return []
+    exact: list[UUID] = []
+    named: list[UUID] = []
+    long_phrase: list[UUID] = []
+    for row in rows:
+        fact_id = row["id"]
+        pred = _normalize_forget_text(str(row["predicate"] or ""))
+        value = _normalize_forget_text(str(row["value"] or ""))
+        if needle == pred or needle == value:
+            exact.append(fact_id)
+        value_tokens = len(value.split()) if value else 0
+        if value and (len(value) >= 8 or value_tokens >= 2) and value in needle:
+            named.append(fact_id)
+        if len(needle.split()) >= 3 and needle in value:
+            long_phrase.append(fact_id)
+    if exact:
+        return exact
+    if named:
+        return named
+    if long_phrase:
+        return long_phrase
+    if embedder is None:
+        return []
+    query_emb = embedder.encode(query)
+    scored: list[tuple[float, UUID]] = []
+    for row in rows:
+        if row["embedding"] is None:
+            continue
+        sim = _cosine_similarity(query_emb, row["embedding"])
+        scored.append((sim, row["id"]))
+    scored.sort(reverse=True)
+    if not scored or scored[0][0] < 0.88:
+        return []
+    if len(scored) > 1 and scored[1][0] >= 0.80:
+        return []
+    return [scored[0][1]]
+
+
 class PostgresMemoryStore:
     def __init__(
         self,
@@ -320,24 +367,7 @@ class PostgresMemoryStore:
                  LIMIT 200
                 """
             )
-        lowered = needle.lower()
-        matched: list[UUID] = []
-        for row in rows:
-            predicate = str(row["predicate"] or "").lower()
-            value = str(row["value"] or "").lower()
-            if lowered == predicate or lowered in predicate or lowered in value:
-                matched.append(row["id"])
-        if not matched and self._embedder is not None:
-            query_emb = self._embedder.encode(needle)
-            scored: list[tuple[float, UUID]] = []
-            for row in rows:
-                if row["embedding"] is None:
-                    continue
-                sim = _cosine_similarity(query_emb, row["embedding"])
-                if sim >= 0.75:
-                    scored.append((sim, row["id"]))
-            scored.sort(reverse=True)
-            matched = [fact_id for _, fact_id in scored[:5]]
+        matched = _select_forget_match_ids(rows, needle, self._embedder)
         if not matched:
             return []
         async with self._pool.acquire() as conn:

@@ -531,7 +531,15 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 132 | Priority Turn Surfacing — conversation inline mentions, resume recap, and explicit what's-open consume merged `PriorityView` (including Phase 127 pins) via `TurnSurfacing` injected as `config["configurable"]["turn_surfacer"]`; relevance still gates unsolicited mentions; component type `open_items`; no store merge, no push-budget change | Done |
 | 140 | Memory admission + remember/forget — keep/drop extractor with closed families; companion `remember_fact`/`forget_fact` through the contribution seam; `AgentResult.memory_proposals` removed | Done |
 | 141 | Memory read contract + prompt constitution — reviewed facts always-on; `_format_memory` origin/confidence/recency; constitution + job before biography; silent fact use; `TurnSurfacing` stays for open items | Done |
-| 142 | Speech-act routing — extractor `speech_act` gate; companion routes timed remember to reminders, lingering concerns to loops, multi-week outcomes to goals; constraint veto on mail/calendar deferred | Done |
+| 142 | Speech-act routing — extractor `speech_act` gate; companion routes timed remember to reminders, lingering concerns to loops, multi-week outcomes to goals | Done |
+| 143 | Earned memory confirmations and precise forget | Done |
+| 144 | Constraint veto on gated writes | Done |
+| 145 | Unsolicited recitation reply gate | Done |
+| 146 | Forget vs cancel across stores | Done |
+| 147 | Ingest vs remember honesty | Done |
+| 148 | Extractor dual-write identity skip | Done |
+| 149 | Specialist memory constitution (calendar, messenger, news) | Done |
+| 150 | Eval `memory_proposals_count` hard-cut and guide phase-index honesty | Done |
 
 ## graphify
 

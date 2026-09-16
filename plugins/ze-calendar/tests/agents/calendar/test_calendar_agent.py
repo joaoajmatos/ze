@@ -280,3 +280,119 @@ async def test_stream_yields_tokens():
     tokens = [t async for t in make_agent(client=client).stream(make_ctx())]
     assert len(tokens) > 0
     assert "".join(tokens).strip() != ""
+
+
+def test_calendar_prompt_order_constitution_job_then_biography():
+    from ze_agents.base_agent import BIOGRAPHY_HEADING
+    from ze_calendar.agents.calendar.agent import _AGENT_INSTRUCTIONS
+
+    agent = make_agent()
+    ctx = make_ctx()
+    ctx.identity_builder = lambda persona, memory, **kwargs: (
+        "persona\n\n## Retrieved biography\n- prefers aisle seats"
+    )
+    prompt = agent._build_system_prompt(
+        _AGENT_INSTRUCTIONS, ctx, timezone="Europe/Lisbon"
+    )
+    constitution = prompt.find("## Memory constitution")
+    job = prompt.find("ISO-8601")
+    biography = prompt.find(BIOGRAPHY_HEADING)
+    assert 0 <= constitution < job < biography
+    assert "aisle seats" in prompt[biography:]
+
+
+def test_calendar_empty_biography_still_leads_with_constitution_and_job():
+    from ze_calendar.agents.calendar.agent import _AGENT_INSTRUCTIONS
+
+    agent = make_agent()
+    prompt = agent._build_system_prompt(
+        _AGENT_INSTRUCTIONS, make_ctx(), timezone="Europe/Lisbon"
+    )
+    constitution = prompt.find("## Memory constitution")
+    job = prompt.find("ISO-8601")
+    assert 0 <= constitution < job
+
+
+def test_calendar_catalog_excludes_remember_forget():
+    assert "remember_fact" not in CalendarAgent.tools
+    assert "forget_fact" not in CalendarAgent.tools
+
+
+async def test_calendar_unearned_remember_claim_is_stripped():
+    client = make_client("I'll remember that.")
+    result = await make_agent(client=client).run(make_ctx())
+    assert "remember" not in result.response.lower()
+
+
+async def test_calendar_stream_is_gated():
+    client = make_client("I'll remember that.")
+    tokens = [t async for t in make_agent(client=client).stream(make_ctx())]
+    assert "remember" not in "".join(tokens).lower()
+
+
+def test_calendar_instructions_silent_use_family():
+    from ze_calendar.agents.calendar.agent import _AGENT_INSTRUCTIONS
+
+    text = _AGENT_INSTRUCTIONS.lower()
+    assert "silently" in text
+    assert "i remember that you" in text
+    assert "remember_fact" in text
+    assert "those tools are not on this agent" in text
+
+
+def test_calendar_prompt_order_constitution_job_then_biography():
+    from ze_agents.base_agent import BIOGRAPHY_HEADING
+    from ze_calendar.agents.calendar.agent import _AGENT_INSTRUCTIONS
+
+    agent = make_agent()
+    ctx = make_ctx()
+    ctx.identity_builder = lambda persona, memory, **kwargs: (
+        "persona\n\n## Retrieved biography\n- prefers aisle seats"
+    )
+    prompt = agent._build_system_prompt(
+        _AGENT_INSTRUCTIONS, ctx, timezone="Europe/Lisbon"
+    )
+    constitution = prompt.find("## Memory constitution")
+    job = prompt.find("ISO-8601")
+    biography = prompt.find(BIOGRAPHY_HEADING)
+    assert 0 <= constitution < job < biography
+    assert "aisle seats" in prompt[biography:]
+
+
+def test_calendar_empty_biography_still_leads_with_constitution_and_job():
+    from ze_calendar.agents.calendar.agent import _AGENT_INSTRUCTIONS
+
+    agent = make_agent()
+    prompt = agent._build_system_prompt(
+        _AGENT_INSTRUCTIONS, make_ctx(), timezone="Europe/Lisbon"
+    )
+    constitution = prompt.find("## Memory constitution")
+    job = prompt.find("ISO-8601")
+    assert 0 <= constitution < job
+
+
+def test_calendar_catalog_excludes_remember_forget():
+    assert "remember_fact" not in CalendarAgent.tools
+    assert "forget_fact" not in CalendarAgent.tools
+
+
+async def test_calendar_unearned_remember_claim_is_stripped():
+    client = make_client("I'll remember that.")
+    result = await make_agent(client=client).run(make_ctx())
+    assert "remember" not in result.response.lower()
+
+
+async def test_calendar_stream_is_gated():
+    client = make_client("I'll remember that.")
+    tokens = [t async for t in make_agent(client=client).stream(make_ctx())]
+    assert "remember" not in "".join(tokens).lower()
+
+
+def test_calendar_instructions_silent_use_family():
+    from ze_calendar.agents.calendar.agent import _AGENT_INSTRUCTIONS
+
+    text = _AGENT_INSTRUCTIONS.lower()
+    assert "silently" in text
+    assert "i remember that you" in text
+    assert "remember_fact" in text
+    assert "those tools are not on this agent" in text

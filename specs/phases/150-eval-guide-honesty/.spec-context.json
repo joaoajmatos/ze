@@ -1,0 +1,368 @@
+{
+  "workflow": "companion",
+  "specName": "eval guide honesty",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:23:52.281Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:25:13.671Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:59:10.734Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:01:30.994Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:02:16.157Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:02:54.242Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:03:01.858Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:04:10.191Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:04:34.810Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:11.856Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:12.483Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:12.947Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:13.547Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:14.005Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:14.493Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:14.967Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:15.410Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:15.939Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:16.416Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:16.908Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:17.414Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:52:17.958Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T16:52:18.944Z"
+    }
+  ],
+  "telemetryInstanceId": "0a5d3665-2e19-4206-99da-459640bd3487",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Delete EvalChatResponse.memory_proposals_count from eval API schema, eval server, generated clients, and tests; update in-tree callers in this phase",
+      "tasks": [
+        "T003",
+        "T004",
+        "T005",
+        "T006",
+        "T007",
+        "T009",
+        "T010",
+        "T014"
+      ]
+    },
+    "FR-002": {
+      "title": "Eval judges and docs treat remember/forget as tool_calls (remember_fact / forget_fact), not a proposals count",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-003": {
+      "title": "AGENTS.md and CLAUDE.md phase indexes synced through Phase 143 and list 144-150 as pending when those indexes list phases",
+      "tasks": [
+        "T002",
+        "T011",
+        "T012"
+      ]
+    },
+    "FR-004": {
+      "title": "The two guides must not disagree on presence or status of phases 140-150",
+      "tasks": [
+        "T013"
+      ]
+    },
+    "FR-005": {
+      "title": "Do not implement 144-149 product behavior, a /memories filesystem, or restore AgentResult.memory_proposals",
+      "tasks": [
+        "T015"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 10,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: EvalChatResponse and ze-eval server",
+    "area: AGENTS.md CLAUDE.md phase indexes",
+    "constraint: Principle VIII delete not shim",
+    "constraint: bundle roadmap 150 and 151 in one directory"
+  ],
+  "intent": "Hard-cut memory_proposals_count from eval and sync AGENTS.md/CLAUDE.md phase indexes through 143 (144-150 pending).",
+  "expectations": [
+    "Product implementation of 144-149",
+    "Restore AgentResult.memory_proposals",
+    "A separate Phase 151 directory",
+    "Claude-style /memories filesystem"
+  ],
+  "approach": "Delete memory_proposals_count; regen client; sync AGENTS.md and CLAUDE.md; no 151 dir",
+  "decisions": [
+    {
+      "decision": "Hard-cut memory_proposals_count; no always-0 leftover",
+      "why": "Principle VIII; AgentResult.memory_proposals already gone; judges use tool_calls",
+      "rejected": "Keep documented unused field or MCP strip-filter"
+    },
+    {
+      "decision": "Regenerate ze-client via bun run scripts/codegen.ts after Python schema deletion",
+      "why": "Hand-edit TS while Python still has the field is a dual door",
+      "rejected": "Manual types.gen.ts edit only"
+    },
+    {
+      "decision": "Sync both guide indexes 140-150 from specs/README.md; no 151 directory",
+      "why": "FR-003/FR-004 and bundled roadmap 151",
+      "rejected": "CLAUDE-only sync or separate 151 spec dir"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Eval tool_calls only plus guide index honesty",
+      "key_finding": "Eval handler hard-codes count=0; no in-tree ==0 tests; MCP passthrough follows schema"
+    },
+    "tasks": {
+      "summary": "Eval tool_calls only plus guide index honesty"
+    }
+  },
+  "currentTask": "T013",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Grep: memory_proposals_count only in 150 spec/docs/tests omit-assert; AgentResult.memory_proposals not restored.",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Fail-first OpenAPI test that EvalChatResponse omits memory_proposals_count.",
+      "files": [
+        "apps/ze-api/tests/api/test_openapi_export.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Deleted memory_proposals_count from EvalChatResponse.",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Stopped assigning the field on the eval chat route.",
+      "files": [
+        "apps/ze-api/ze_api/api/routes/eval.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Hard-cut MCP docs mentioning the field.",
+      "files": [
+        "core/ops/ze-eval/ze_eval/server.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Hard-cut docs/eval.md table row; judges use tool_calls.",
+      "files": [
+        "docs/eval.md"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Regenerated @ze/client; types.gen.ts has no memory_proposals_count.",
+      "files": [
+        "packages/ze-client/src/generated/types.gen.ts"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Deleted always-0 assertions; added omit-field OpenAPI test only.",
+      "files": [
+        "apps/ze-api/tests/api/test_openapi_export.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Synced AGENTS.md phase index 140-150 to specs/README.md Implemented.",
+      "files": [
+        "AGENTS.md"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Synced CLAUDE.md the same way; AGENTS and CLAUDE agree.",
+      "files": [
+        "CLAUDE.md"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Confirmed no specs/phases/151-* directory.",
+      "files": [
+        "specs/README.md"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "150 tree only deletes eval field and syncs guides; did not re-implement 144-149 product here.",
+      "files": [
+        "specs/phases/150-eval-guide-honesty/spec.md"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "OpenAPI omit test + make test-eval passed; ruff on touched Python. Full make test has 5 unrelated failures.",
+      "files": [
+        "apps/ze-api/tests/api/test_openapi_export.py"
+      ]
+    }
+  }
+}

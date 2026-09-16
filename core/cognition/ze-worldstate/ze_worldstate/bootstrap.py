@@ -21,6 +21,22 @@ from ze_worldstate.surfacing import LoopSurfacer
 
 log = get_logger(__name__)
 
+_AGENT_MODULE_PATHS = [
+    "ze_worldstate.agents.tools",
+    "ze_worldstate.agents.agent",
+]
+
+
+def agent_module_paths() -> list[str]:
+    return list(_AGENT_MODULE_PATHS)
+
+
+def import_agent_modules() -> None:
+    import importlib
+
+    for module_path in _AGENT_MODULE_PATHS:
+        importlib.import_module(module_path)
+
 
 @dataclass
 class WorldstateStack:

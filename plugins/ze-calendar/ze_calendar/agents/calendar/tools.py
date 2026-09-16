@@ -6,6 +6,21 @@ from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
 from ze_calendar.action_records import emit_calendar_mutation
 
 
+def _calendar_write_view(args: dict) -> dict:
+    parties = []
+    summary = args.get("summary") or ""
+    location = args.get("location") or ""
+    if summary:
+        parties.append(summary)
+    return {
+        "kind": "calendar_mutation",
+        "channel": "calendar",
+        "parties": parties,
+        "when": args.get("start"),
+        "summary": summary or args.get("event_id") or location or "calendar write",
+    }
+
+
 @tool(access=ToolAccess.READ, description="List upcoming Google Calendar events.")
 async def list_events(
     credentials: GoogleCredentials,
@@ -34,7 +49,12 @@ async def list_events(
     return result.get("items", [])
 
 
-@tool(access=ToolAccess.WRITE, description="Create a new Google Calendar event.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Create a new Google Calendar event.",
+    constraint_gate=True,
+    constraint_describe=_calendar_write_view,
+)
 async def create_event(
     credentials: GoogleCredentials,
     summary: str,
@@ -79,7 +99,12 @@ async def create_event(
     return {"id": event_id, "htmlLink": result.get("htmlLink")}
 
 
-@tool(access=ToolAccess.WRITE, description="Update an existing Google Calendar event.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Update an existing Google Calendar event.",
+    constraint_gate=True,
+    constraint_describe=_calendar_write_view,
+)
 async def update_event(
     credentials: GoogleCredentials,
     event_id: str,
@@ -128,7 +153,12 @@ async def update_event(
     return {"id": result.get("id"), "htmlLink": result.get("htmlLink")}
 
 
-@tool(access=ToolAccess.WRITE, description="Delete a Google Calendar event.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Delete a Google Calendar event.",
+    constraint_gate=True,
+    constraint_describe=_calendar_write_view,
+)
 async def delete_event(
     credentials: GoogleCredentials,
     event_id: str,

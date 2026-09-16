@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import ze_prospecting.agents.tools  # noqa: F401 — registers log_outreach_event
 
 from ze_personal.agents.companion.agent import CompanionAgent, _detect_outreach_event
+from ze_personal.agents.companion.honesty import COULD_NOT_APPLY_CONSTRAINT, COULD_NOT_STORE
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.settings import Settings
 from ze_sdk.memory import MemoryContext, Fact
@@ -189,12 +190,89 @@ async def test_run_uses_model_from_settings():
     assert "claude" in captured_models[0]
 
 
-async def test_companion_instructions_require_silent_memory_use():
+def test_companion_instructions_require_silent_memory_use():
     from ze_personal.agents.companion.agent import _AGENT_INSTRUCTIONS
 
     assert "silently" in _AGENT_INSTRUCTIONS
     assert "I remember that you" in _AGENT_INSTRUCTIONS
     assert "unsolicited" in _AGENT_INSTRUCTIONS
+
+
+async def test_run_strips_unearned_remember_confirmation():
+    client = make_client("I'll remember that.")
+    agent = make_agent(client=client)
+    result = await agent.run(make_ctx("Remember that I prefer dark mode"))
+    assert result.response == COULD_NOT_STORE
+
+
+async def test_run_token_sink_sees_gated_text_only():
+    seen: list[str] = []
+
+    async def sink(chunk: str) -> None:
+        seen.append(chunk)
+
+    async def stream_complete_with_tools(*, token_sink=None, **kwargs):
+        lie = "I'll remember that."
+        if token_sink is not None:
+            await token_sink(lie)
+        return lie, None
+
+    client = AsyncMock()
+    client.stream_complete_with_tools = stream_complete_with_tools
+    agent = make_agent(client=client)
+    ctx = make_ctx("Remember that I prefer dark mode")
+    ctx.token_sink = sink
+    result = await agent.run(ctx)
+    assert result.response == COULD_NOT_STORE
+    assert seen == [COULD_NOT_STORE]
+    assert all("I'll remember" not in chunk for chunk in seen)
+
+
+async def test_run_token_sink_never_sees_unearned_veto_claim():
+    seen: list[str] = []
+
+    async def sink(chunk: str) -> None:
+        seen.append(chunk)
+
+    async def stream_complete_with_tools(*, token_sink=None, **kwargs):
+        lie = "I won't send that because of your constraint."
+        if token_sink is not None:
+            await token_sink(lie)
+        return lie, None
+
+    client = AsyncMock()
+    client.stream_complete_with_tools = stream_complete_with_tools
+    agent = make_agent(client=client)
+    ctx = make_ctx("Email Bob after 10pm")
+    ctx.token_sink = sink
+    result = await agent.run(ctx)
+    assert result.response == COULD_NOT_APPLY_CONSTRAINT
+    assert seen == [COULD_NOT_APPLY_CONSTRAINT]
+
+
+async def test_run_passes_user_text_and_strips_unsolicited_recitation():
+    seen: list[str] = []
+
+    async def sink(chunk: str) -> None:
+        seen.append(chunk)
+
+    recitation = "I remember that you like aisle seats."
+
+    async def stream_complete_with_tools(*, token_sink=None, **kwargs):
+        if token_sink is not None:
+            await token_sink(recitation)
+        return recitation, None
+
+    client = AsyncMock()
+    client.stream_complete_with_tools = stream_complete_with_tools
+    agent = make_agent(client=client)
+    ctx = make_ctx("How's the weather for a walk?")
+    ctx.token_sink = sink
+    result = await agent.run(ctx)
+    assert "i remember that you" not in result.response.lower()
+    assert result.response != COULD_NOT_STORE
+    assert seen == [result.response]
+    assert all("I remember that you" not in chunk for chunk in seen)
 
 
 # ── stream() ─────────────────────────────────────────────────────────────────
@@ -211,7 +289,22 @@ async def test_stream_reconstructs_response():
     client = make_client("one two three")
     agent = make_agent(client=client)
     tokens = [t async for t in agent.stream(make_ctx())]
-    assert " ".join(tokens) == "one two three"
+    assert "".join(tokens) == "one two three"
+
+
+async def test_stream_is_not_tool_free_client_stream():
+    client = make_client("I'll remember that.")
+    streamed: list[str] = []
+
+    async def _raw_stream(*args, **kwargs):
+        streamed.append("used")
+        yield "I'll remember that."
+
+    client.stream = _raw_stream
+    agent = make_agent(client=client)
+    tokens = [t async for t in agent.stream(make_ctx("Remember that I prefer dark mode"))]
+    assert streamed == []
+    assert tokens == [COULD_NOT_STORE]
 
 
 # ── _detect_outreach_event ────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_news.jobs.fetch import NewsFetchJob
 from ze_news.preferences import NewsPreferenceBuilder, is_diagnostic_query
 from ze_news.store import NewsStore
+from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
 from ze_news.types import (
     GoalTitleProvider,
     PersonalizationContext,
@@ -70,7 +71,11 @@ Guidelines:
   that the local store may not reflect events from the last 30 minutes and suggest
   they ask Ze to search the web directly.
 - Summarise concisely — one or two sentences per article is enough unless the user
-  asks for more detail.\
+  asks for more detail.
+- Apply retrieved facts silently when they change which stories or tone to emphasise.
+- Do not announce "I remember that you…" or dump the biography unsolicited.
+- If the user asks what you know about them, answer from the biography block without claiming a memory write.
+- Do not claim remember_fact or forget_fact success; those tools are not on this agent.\
 """
 
 _CANDIDATE_LIMIT = 8
@@ -190,13 +195,18 @@ class NewsAgent(BaseAgent):
             candidate_articles=_format_candidates(candidates),
             store_freshness_note=_freshness_note(candidates),
         )
-        response, tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            messages=list(ctx.messages),
-            system=system,
-            deps=deps,
-        )
+        original_sink = hold_token_sink(ctx)
+        try:
+            response, tool_calls = await self.agentic_loop(
+                ctx,
+                client=self._client,
+                messages=list(ctx.messages),
+                system=system,
+                deps=deps,
+            )
+        finally:
+            ctx.token_sink = original_sink
+        gated = await publish_honest_reply(original_sink, response, tool_calls)
         provenance = ToolCall(
             tool_name="search_news",
             args={"query": ctx.prompt, "limit": _CANDIDATE_LIMIT, "prefetched": True},
@@ -204,7 +214,7 @@ class NewsAgent(BaseAgent):
             duration_ms=0,
             success=True,
         )
-        return response, [provenance, *tool_calls]
+        return gated, [provenance, *tool_calls]
 
     async def _fetch_candidates(self, prompt: str) -> list:
         try:

@@ -181,10 +181,13 @@ class HookAbort(AgentError):
     The loop records the skipped call and continues to the next LLM turn.
     """
 
-    def __init__(self, tool_name: str, reason: str = "") -> None:
+    def __init__(
+        self, tool_name: str, reason: str = "", result: object | None = None
+    ) -> None:
         super().__init__(f"hook aborted {tool_name!r}: {reason}")
         self.tool_name = tool_name
         self.reason = reason
+        self.result = result
 
 
 # ── Onboarding ────────────────────────────────────────────────────────────────

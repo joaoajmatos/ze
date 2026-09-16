@@ -11,9 +11,22 @@ from ze_automation.workflow.scheduler import WorkflowScheduler
 from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
 
 
+def _reminder_write_view(args: dict) -> dict:
+    label = args.get("label") or ""
+    return {
+        "kind": "reminder_write",
+        "channel": "reminder",
+        "parties": [label] if label else [],
+        "when": args.get("fire_at"),
+        "summary": label or args.get("reminder_id") or "reminder write",
+    }
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Set a new reminder. fire_at must be an ISO-8601 UTC datetime string.",
+    constraint_gate=True,
+    constraint_describe=_reminder_write_view,
 )
 async def set_reminder(
     store: ReminderStore,
@@ -72,6 +85,8 @@ async def list_reminders(store: ReminderStore) -> list:
 @tool(
     access=ToolAccess.WRITE,
     description="Cancel a pending reminder by its ID. Call list_reminders first to find the ID.",
+    constraint_gate=True,
+    constraint_describe=_reminder_write_view,
 )
 async def cancel_reminder(
     store: ReminderStore, scheduler: WorkflowScheduler, reminder_id: str

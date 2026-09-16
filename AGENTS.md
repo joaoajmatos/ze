@@ -422,6 +422,17 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Done |
 | 81 | Plugin NLI adoption — news dedup, finance merchant merging | Pending |
 | 115 | Workspace Environment — `core/ops/ze-workspace` + `sidecar/workspace`; modes Off/Plan/Ask/Auto-edit/Auto; skill scripts after executable approval (`zsk002`); System `/workspace` page; unattended Auto only. `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
+| 140 | Memory admission + remember/forget — keep/drop extractor with closed families; companion `remember_fact`/`forget_fact` through the contribution seam; `AgentResult.memory_proposals` removed | Done |
+| 141 | Memory read contract + prompt constitution — reviewed facts always-on; `_format_memory` origin/confidence/recency; constitution + job before biography; silent fact use; `TurnSurfacing` stays for open items | Done |
+| 142 | Speech-act routing — extractor `speech_act` gate; companion routes timed remember to reminders, lingering concerns to loops, multi-week outcomes to goals | Done |
+| 143 | Earned memory confirmations and precise forget | Done |
+| 144 | Constraint veto on gated writes | Done |
+| 145 | Unsolicited recitation reply gate | Done |
+| 146 | Forget vs cancel across stores | Done |
+| 147 | Ingest vs remember honesty | Done |
+| 148 | Extractor dual-write identity skip | Done |
+| 149 | Specialist memory constitution (calendar, messenger, news) | Done |
+| 150 | Eval `memory_proposals_count` hard-cut and guide phase-index honesty | Done |
 
 ## graphify
 
@@ -452,7 +463,7 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 
 - Write a spec before significant new features: `/speckit-specify` for `specs/phases/` features, or an ADR in `specs/arch/` (follow the existing ones) for cross-cutting decisions.
 - Until v1, break APIs and schemas when the design is wrong. Do not add compatibility shims, dual-write, or wrap-then-replace across phases (`specs/arch/pre-v1-hard-cuts.md`, constitution Principle VIII).
-- When implementing from an attached Cursor plan: do not edit the plan file; use the pre-created todos and mark them in_progress/completed as you work.
+- When implementing from an attached Cursor plan or a speckit phase: do not edit `plan.md`; use the pre-created todos. Check off speckit `tasks.md` via companion `write-context.py --append` then `--materialize` (never hand-edit checkboxes); run the speckit after-implement hook when implementation finishes.
 - Ze's user-facing interface is the React web app (`ze-web`), not Telegram — do not describe Telegram-style UI capabilities to users.
 - Only create git commits when explicitly asked. When asked to commit a large batch, split by logical phase or spec user story rather than one dump.
 - Chat chrome: the generic side panel is **trace** (not "Ze's Mind"); session history lives there too. Do not duplicate page titles already shown in the top bar.
@@ -471,4 +482,5 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - Keep the phase 115 workspace sidecar (`core/ops/ze-workspace` + `sidecar/workspace`); do not replace it with Cloudflare Computer — borrow run-handle / exec-journal ideas instead.
 - Perception/memory fact writes go through the contribution seam (`specs/arch/contribution-seam.md`): Phase 133 wraps writers; Phase 134 hard-cuts `memory_facts` onto shared claim vocabulary and removes public `propose_facts`.
 - Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
+- Memory honesty/admission is phases 140–151 in `specs/arch/memory-honesty-roadmap.md` (140 admission + remember/forget, 141 read constitution, 142 speech-act routing, 143 earned claims + forget-match ladder); implement in order and do not skip to later specialist/catalog phases.
 - `.cursor/rules/` is gitignored; do not commit Cursor rules.

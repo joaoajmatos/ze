@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import AsyncIterator
 
 from ze_agents.base_agent import BaseAgent
+from ze_agents.nested_tools import enforce_domain_cancel_confirmations
 from ze_agents.registry import agent
 from ze_agents.types import Intent, Mode
 from ze_agents.types import AgentContext, AgentResult
@@ -36,7 +37,10 @@ Available tools:
 
 Guidelines:
 - For status, pause, resume, steer, or abandon: call list_goals first if the user hasn't provided
-  a goal ID, so you can identify the correct goal.
+  a goal ID, so you can identify the correct goal. Match a unique title. If two titles share
+  the query, ask which one. If none match, say so. Call abandon_goal at most once, only on a
+  unique match. Never batch. Confirm abandon only if abandon_goal succeeded this turn.
+  Do not claim a biography fact was forgotten.
 - create_goal pushes the milestone plan to the app (and ntfy if backgrounded) with Start/Cancel
   buttons — tell the user to approve there or reply conversationally to start or cancel.
 - Use get_milestone_trace when the user asks what Ze did during a specific step.
@@ -119,26 +123,37 @@ class GoalAgent(BaseAgent):
     async def run(self, ctx: AgentContext) -> AgentResult:
         await self.emit(ctx, "goals.managing")
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
-        response, loop_tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            messages=list(ctx.messages),
-            system=system,
-            deps={
-                "store": self._store,
-                "planner": self._planner,
-                "executor": self._executor,
-                "notifier": self._notifier,
-            },
-        )
+        original_sink = ctx.token_sink
+
+        async def _buffer(_chunk: str) -> None:
+            return None
+
+        if original_sink is not None:
+            ctx.token_sink = _buffer
+        try:
+            response, loop_tool_calls = await self.agentic_loop(
+                ctx,
+                client=self._client,
+                messages=list(ctx.messages),
+                system=system,
+                deps={
+                    "store": self._store,
+                    "planner": self._planner,
+                    "executor": self._executor,
+                    "notifier": self._notifier,
+                },
+            )
+        finally:
+            ctx.token_sink = original_sink
         self._log.info(
             "goal_agent_complete",
             session_id=ctx.session_id,
             tool_calls=len(loop_tool_calls),
         )
-        return AgentResult(
-            agent=self.name, response=response, tool_calls=loop_tool_calls
-        )
+        gated = enforce_domain_cancel_confirmations(response, loop_tool_calls)
+        if original_sink is not None:
+            await original_sink(gated)
+        return AgentResult(agent=self.name, response=gated, tool_calls=loop_tool_calls)
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
         result = await self.run(ctx)

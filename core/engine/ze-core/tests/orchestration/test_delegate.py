@@ -15,7 +15,7 @@ from ze_agents.delegate import (
     run_delegate,
 )
 from ze_agents.tool import clear_tool_registry
-from ze_agents.types import AbortToken, AgentContext, AgentResult
+from ze_agents.types import AbortToken, AgentContext, AgentResult, ToolCall
 
 
 @pytest.fixture(autouse=True)
@@ -105,8 +105,45 @@ class TestRunDelegate:
         )
 
         assert tc.success is True
-        assert tc.result == "you have 3 events"
+        assert tc.result == {
+            "response": "you have 3 events",
+            "tool_calls": [],
+        }
         assert tc.tool_name == DELEGATE_TOOL_NAME
+
+    async def test_nested_cancel_payload_is_visible(self):
+        @agent
+        class _R(BaseAgent):
+            name = "reminders"
+            description = "reminders"
+            tools = []
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                nested = ToolCall(
+                    tool_name="cancel_reminder",
+                    args={"reminder_id": "r1"},
+                    result={"cancelled": "Call the dentist"},
+                    duration_ms=1,
+                    success=True,
+                )
+                return AgentResult(
+                    agent="reminders",
+                    response="Cancelled the dentist reminder.",
+                    tool_calls=[nested],
+                )
+
+        register_instance("reminders", _R())
+        tc = await run_delegate(
+            {"agent_name": "reminders", "task": "forget the dentist"},
+            _ctx(),
+            iteration=0,
+        )
+        assert tc.success is True
+        assert isinstance(tc.result, dict)
+        assert tc.result["response"] == "Cancelled the dentist reminder."
+        assert tc.result["tool_calls"][0]["tool_name"] == "cancel_reminder"
+        assert tc.result["tool_calls"][0]["result"]["cancelled"] == "Call the dentist"
+
 
     async def test_context_prepended_to_prompt(self):
         received = {}
@@ -425,4 +462,4 @@ class TestDelegateInAgenticLoop:
         assert len(calls) == 1
         assert calls[0].tool_name == DELEGATE_TOOL_NAME
         assert calls[0].success is True
-        assert calls[0].result == "target result"
+        assert calls[0].result == {"response": "target result", "tool_calls": []}

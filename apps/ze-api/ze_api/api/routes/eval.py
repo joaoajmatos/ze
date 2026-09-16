@@ -90,7 +90,6 @@ async def eval_chat(
 
     tool_calls: list[EvalToolCall] = []
     tokens_used = 0
-    memory_proposals_count = 0
     if agent_result is not None:
         tool_calls = [
             EvalToolCall(
@@ -114,5 +113,4 @@ async def eval_chat(
         error=final_state.get("error"),
         tool_calls=tool_calls,
         tokens_used=tokens_used,
-        memory_proposals_count=memory_proposals_count,
     )

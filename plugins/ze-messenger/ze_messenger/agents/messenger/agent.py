@@ -13,6 +13,7 @@ from ze_personal.contacts.extractors import (
     extract_email_contacts,
     extract_email_social_edges,
 )
+from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
 
 _AGENT_INSTRUCTIONS = """\
 You manage the user's messaging inbox across communication channels.
@@ -29,7 +30,11 @@ Guidelines:
 - Use list_emails then get_email to read content before drafting replies.
 - Summarize email content concisely: sender, subject, key points.
 - Use send_email with thread_id to reply within an existing thread.
-- If an operation fails, explain what went wrong clearly.\
+- If an operation fails, explain what went wrong clearly.
+- Apply retrieved facts silently when they change the mail answer.
+- Do not announce "I remember that you…" or dump the biography unsolicited.
+- If the user asks what you know about them, answer from the biography block without claiming a memory write.
+- Do not claim remember_fact or forget_fact success; those tools are not on this agent.\
 """
 
 
@@ -86,13 +91,17 @@ class MessengerAgent(BaseAgent):
             deps["credentials"] = default_channel._creds
 
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
-        response, loop_tool_calls = await self.agentic_loop(
-            ctx,
-            client=self._client,
-            messages=list(ctx.messages),
-            system=system,
-            deps=deps,
-        )
+        original_sink = hold_token_sink(ctx)
+        try:
+            response, loop_tool_calls = await self.agentic_loop(
+                ctx,
+                client=self._client,
+                messages=list(ctx.messages),
+                system=system,
+                deps=deps,
+            )
+        finally:
+            ctx.token_sink = original_sink
 
         contact_proposals = extract_email_contacts(loop_tool_calls)
         project_proposals, relationship_edge_proposals = extract_email_social_edges(
@@ -106,9 +115,11 @@ class MessengerAgent(BaseAgent):
             contact_proposals=len(contact_proposals),
         )
 
+        gated = await publish_honest_reply(original_sink, response, loop_tool_calls)
+
         return AgentResult(
             agent=self.name,
-            response=response,
+            response=gated,
             tool_calls=loop_tool_calls,
             contact_proposals=contact_proposals,
             extensions={
@@ -118,22 +129,8 @@ class MessengerAgent(BaseAgent):
         )
 
     async def stream(self, ctx: AgentContext) -> AsyncIterator[str]:
-        default_channel = await self._default_channel()
-        creds = getattr(default_channel, "_creds", None) if default_channel else None
-        inbox_tc = None
-        if creds is not None:
-            inbox_tc = await self.call_tool("list_emails", ctx, credentials=creds)
-
-        augmented = ctx.prompt
-        if inbox_tc and inbox_tc.success and inbox_tc.result:
-            augmented = f"{ctx.prompt}\n\nRecent emails:\n{inbox_tc.result}"
-
-        async for token in self._client.stream(
-            messages=[{"role": "user", "content": augmented}],
-            model=self._model(ctx),
-            system=self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx),
-        ):
-            yield token
+        result = await self.run(ctx)
+        yield result.response
 
     async def _default_channel(self) -> InboundChannel | None:
         uc = await self._user_channels.get_default_outbound("email")

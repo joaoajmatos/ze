@@ -604,7 +604,6 @@ class EvalChatResponse(BaseModel):
     error: str | None
     tool_calls: list[EvalToolCall] = []
     tokens_used: int = 0
-    memory_proposals_count: int = 0
 
 
 # ── WebSocket protocol — Server → Client (inbound frames) ─────────────────────
@@ -1435,4 +1434,3 @@ class ProcedureDetailResponse(BaseModel):
 class ProcedureAdmissionResultResponse(BaseModel):
     candidate: ProcedureCandidateResponse
     version: ProcedureVersionResponse | None = None
-

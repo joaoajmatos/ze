@@ -1,0 +1,362 @@
+{
+  "workflow": "companion",
+  "specName": "extractor dual write",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:21:24.215Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T14:22:25.353Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T14:58:57.284Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:01:15.090Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:02:08.369Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:02:14.657Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T15:02:37.494Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T15:03:35.785Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T15:03:40.484Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "ai",
+      "at": "2026-09-16T16:25:40.681Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:42.722Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:43.775Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:44.342Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:45.218Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:46.199Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:47.069Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:47.907Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:48.808Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:49.723Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:50.730Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T16:25:51.795Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T16:25:53.529Z"
+    }
+  ],
+  "telemetryInstanceId": "569e6cf3-c7ff-4893-844e-6b3cd4441be3",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Prevent post-turn extraction from persisting a second current fact for the same identity as a successful in-turn remember_fact",
+      "tasks": [
+        "T004",
+        "T005",
+        "T006"
+      ]
+    },
+    "FR-002": {
+      "title": "Keep extraction available for turns that did not already remember that identity via remember_fact",
+      "tasks": [
+        "T004",
+        "T005"
+      ]
+    },
+    "FR-003": {
+      "title": "Tests must distinguish Phase 143 model-lie from extractor-duplicated writes",
+      "tasks": [
+        "T004",
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-004": {
+      "title": "Do not ship a hard non-LLM speech-act classifier in this phase",
+      "tasks": [
+        "T013",
+        "T014"
+      ]
+    },
+    "FR-005": {
+      "title": "Do not leave a second extract path that ignores FR-001",
+      "tasks": [
+        "T005",
+        "T013"
+      ]
+    },
+    "FR-006": {
+      "title": "Plugin changes import ze_sdk / ze_personal, never ze_core",
+      "tasks": [
+        "T007",
+        "T013"
+      ]
+    },
+    "FR-007": {
+      "title": "Do not implement 144-147/149 bundles or /memories filesystem",
+      "tasks": [
+        "T013"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 7,
+    "projectedTasks": 11,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "context": [
+    "area: ze_memory extractor and write_memory",
+    "area: Phase 140 speech_act admission",
+    "area: Phase 143 model-lie tests",
+    "constraint: races/dedup only; hard classifier out",
+    "constraint: Principle VIII"
+  ],
+  "intent": "Stop post-turn extraction from duplicating an in-turn remember_fact write, with tests that are not 143 model-lie tests.",
+  "expectations": [
+    "Hard non-LLM speech-act classifier",
+    "Phase 144 veto",
+    "Recitation/forget-cancel/ingest as bundles",
+    "Specialist constitution (149)",
+    "Claude-style /memories filesystem"
+  ],
+  "approach": "Replace success plus predicate skip with ok plus identity filter in write_memory",
+  "decisions": [
+    {
+      "decision": "Skip extract persist in write_memory only",
+      "why": "That node sees both tool_calls and extractor proposals; gather_fact_proposals has no tools",
+      "rejected": "Changing extractor signatures or inbound mail extract"
+    },
+    {
+      "decision": "Skip set requires payload ok true not ToolCall.success",
+      "why": "143 already treats success+ok false as unearned; FR-002 keeps extract when remember did not land",
+      "rejected": "Predicate skip on success"
+    },
+    {
+      "decision": "Identity is normalized predicate plus value",
+      "why": "Extractor families share predicates; predicate-only drop kills other facts this turn",
+      "rejected": "Predicate-only skip and embedding merge"
+    },
+    {
+      "decision": "Separate test files for 143 model-lie vs 148 extractor-duplicate",
+      "why": "FR-003 forbids one overloaded assertion",
+      "rejected": "Parametrized combo test"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Same-turn remember vs extract one current fact",
+      "key_finding": "_remembered_predicates keys ToolCall.success and predicate only, so ok-false still skips and one preference remember drops all preference extracts"
+    },
+    "tasks": {
+      "summary": "Same-turn remember vs extract one current fact"
+    }
+  },
+  "currentTask": "T011",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed live skip used ToolCall.success and predicate-only",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/memory.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Added fact_identity helper and ok payload parse",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/fact_identity.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Extractor duplicate cardinality tests in ze-core",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Identity unit tests including different predicates",
+      "files": [
+        "core/cognition/ze-memory/tests/test_fact_identity.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "write_memory skips extract on remember ok plus identity",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/memory.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Failed remember_fact does not skip extract as a second door",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Model-lie tests remain in companion honesty file",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Duplicate-race tests assert store cardinality not model lie",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "No hard non-LLM speech-act classifier module shipped",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/extractor.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Documented same-turn remember vs extract identity skip",
+      "files": [
+        "docs/memory.md"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "make test-memory personal and ze-core extractor tests passed",
+      "files": [
+        "Makefile"
+      ]
+    }
+  }
+}

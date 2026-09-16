@@ -22,7 +22,7 @@ of routing, graph execution, or dependency injection — those live in `ze-core`
 
 - `@agent` — registers a class in `AgentRegistry` at import time; raises at duplicate name
 - `BaseAgent` — ABC that every agent subclasses; owns `agentic_loop` (ReAct: call LLM → dispatch tool → repeat)
-- `@tool` — registers a callable in the tool registry; enforces type annotations
+- `@tool` — registers a callable in the tool registry; enforces type annotations; optional `constraint_gate` (default false) plus `constraint_describe` for writes that must check reviewed constraint facts
 - `LLMClient` — Protocol for `complete` / `stream_complete_with_tools`; injected by engine, never constructed by agents
 - `DBPool` — Protocol for `asyncpg.Pool`; injected by engine
 - `HarnessHook` — ABC for step-level hooks (tool-call cap, abort signal, delegation)
@@ -110,7 +110,12 @@ can abort, log, or transform.
 
 `AgentResult` carries `response`, `tool_calls`, `tokens_used`, `contact_proposals`, and
 `extensions`. It does **not** carry `memory_proposals`; explicit fact writes are tools
-(`remember_fact` / `forget_fact` on companion).
+(`remember_fact` / `forget_fact` on companion). Companion, calendar, messenger, and
+news apply `enforce_memory_confirmations` from
+`ze_personal.agents.companion.honesty` (not a `ze_agents` dialect module).
+`run_delegate` returns `{response, tool_calls}` (not a bare string). Domain cancel
+claims inspect nested `cancel_reminder` / `close_loop` / `drop_loop` / `abandon_goal`.
+`precise_label_match` is the shared unique/miss/ambiguous matcher for those writes.
 
 `_build_system_prompt` order: current datetime, shared `MEMORY_CONSTITUTION`, persona
 traits, agent job (plus resume recap / open-priority / skills / procedure preambles

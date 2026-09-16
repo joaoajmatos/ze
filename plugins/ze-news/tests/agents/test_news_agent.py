@@ -150,3 +150,51 @@ async def test_get_headlines_skips_for_diagnostic_query():
     assert result["discovery"] == []
     assert "Diagnostic" in result["note"]
     news_store.get_personalized.assert_not_called()
+
+
+def test_news_prompt_order_constitution_job_then_biography():
+    from ze_agents.base_agent import BIOGRAPHY_HEADING
+    from ze_news.agents.agent import _AGENT_INSTRUCTIONS
+
+    agent = make_agent()
+    ctx = make_ctx()
+    ctx.identity_builder = lambda persona, memory, **kwargs: (
+        "persona\n\n## Retrieved biography\n- prefers aisle seats"
+    )
+    prompt = agent._build_system_prompt(
+        _AGENT_INSTRUCTIONS,
+        ctx,
+        candidate_articles="(none)",
+        store_freshness_note="FRESH",
+    )
+    constitution = prompt.find("## Memory constitution")
+    job = prompt.find("Grounding rules")
+    biography = prompt.find(BIOGRAPHY_HEADING)
+    assert 0 <= constitution < job < biography
+    assert "aisle seats" in prompt[biography:]
+
+
+def test_news_catalog_excludes_remember_forget():
+    assert "remember_fact" not in NewsAgent.tools
+    assert "forget_fact" not in NewsAgent.tools
+
+
+async def test_news_unearned_remember_claim_is_stripped():
+    agent = make_agent()
+
+    async def fake_loop(ctx, *, client, messages, system, deps, **kwargs):
+        return "I'll remember that.", []
+
+    with patch.object(agent, "agentic_loop", side_effect=fake_loop):
+        result = await agent.run(make_ctx())
+    assert "remember" not in result.response.lower()
+
+
+def test_news_instructions_silent_use_family():
+    from ze_news.agents.agent import _AGENT_INSTRUCTIONS
+
+    text = _AGENT_INSTRUCTIONS.lower()
+    assert "silently" in text
+    assert "i remember that you" in text
+    assert "grounding rules" in text
+    assert "those tools are not on this agent" in text

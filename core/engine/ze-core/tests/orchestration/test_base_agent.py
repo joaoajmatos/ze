@@ -207,6 +207,26 @@ class TestCallToolHooks:
         assert "skipped" in tc.error
         assert "quota exceeded" in tc.error
         assert called == []
+        assert tc.result is None
+
+    async def test_hook_abort_can_attach_structured_result(self):
+        class _H(BaseHarnessHook):
+            async def on_tool_start(self, e: ToolStartEvent):
+                raise HookAbort(
+                    e.tool_name,
+                    "constraint",
+                    result={"ok": False, "veto": True, "constraint_ids": ["c1"]},
+                )
+
+        register_hook(_H())
+
+        @tool(access=ToolAccess.WRITE, description="t")
+        async def gated_write(x: str) -> str:
+            return x
+
+        tc = await _agent().call_tool("gated_write", _ctx(), x="v")
+        assert tc.success is False
+        assert tc.result == {"ok": False, "veto": True, "constraint_ids": ["c1"]}
 
     async def test_on_tool_end_fires_on_tool_error(self):
         end_events = []
