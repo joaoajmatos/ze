@@ -217,7 +217,7 @@ async def send_confirmation_request(
     confirmation_store: Any | None = None,
 ) -> tuple[str, dict]:
     """Persist, notify, and frame a confirmation request; returns (request_id, graph config)."""
-    request_id = str(uuid4())
+    request_id = str(getattr(outcome, "confirm_request_id", "") or "") or str(uuid4())
     effective_thread_id = extract_thread_id(outcome.config) or thread_id or ""
     confirm_timeout = getattr(container.settings, "confirm_timeout_seconds", 900)
 

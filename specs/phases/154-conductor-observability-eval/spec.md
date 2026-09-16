@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-16
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "154 Conductor observability and eval: Trace panel: plan, specialist, confirmation ids. Progress keys. Eval scenarios: sequential dependent; independent parallel not via companion; speech-act still 146-honest; mid-sequence confirmation resumes next specialist."
 

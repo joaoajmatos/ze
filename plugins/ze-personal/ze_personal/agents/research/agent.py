@@ -15,7 +15,7 @@ You are Ze's research capability. Use web search to find accurate, up-to-date in
 - If search results are insufficient, say so rather than guessing.
 - Never fabricate URLs or quotes.
 - If the question requires calendar data (e.g. "when am I free?", "what's on my schedule?"), \
-delegate to the calendar agent using delegate_to_agent rather than guessing.\
+say you need the calendar agent rather than guessing the schedule.\
 """
 
 
@@ -36,7 +36,7 @@ class ResearchAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 90
-    tools = ["openrouter:web_search", "delegate_to_agent"]
+    tools = ["openrouter:web_search"]
     intents = {
         "read": Intent(Mode.AUTONOMOUS, "Search the web and retrieve information."),
     }

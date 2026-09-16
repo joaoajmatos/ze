@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-16
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "151 Fat delegate ACI: Upgrade `delegate_to_agent` (objective, prior outputs/inputs, output shape, stop). Nested `tool_calls` preserved for 146 honesty. Only companion may call it; max depth 1. Research loses the tool. Do not change conversation graph, companion embedding `description`, or `plan_sequential`. Speech-act one-shot delegates must keep working."
 

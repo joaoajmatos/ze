@@ -12,8 +12,8 @@
 
 **Wave 1 — independent (different files):**
 
-- [ ] **T001** [P] Grep `delegate_to_agent` listings and `"task"` / `"context"` on delegate call sites; list files this phase must hard-cut · repo
-- [ ] **T002** [P] Snapshot companion class `description` so this tree cannot change embeddings · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
+- [x] **T001** [P] Grep `delegate_to_agent` listings and `"task"` / `"context"` on delegate call sites; list files this phase must hard-cut · repo
+- [x] **T002** [P] Snapshot companion class `description` so this tree cannot change embeddings · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
 
 ---
 
@@ -21,14 +21,14 @@
 
 **⟶ Wait for Wave 1, then Wave 2 — sequential (same test file):**
 
-- [ ] **T003** Fail-first: schema required `agent_name`+`objective`; properties omit `task`/`context`; max depth 1 · `core/engine/ze-core/tests/orchestration/test_delegate.py`
-- [ ] **T004** Fail-first: non-companion caller and target `companion` fail without `run` · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T003** Fail-first: schema required `agent_name`+`objective`; properties omit `task`/`context`; max depth 1 · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T004** Fail-first: non-companion caller and target `companion` fail without `run` · `core/engine/ze-core/tests/orchestration/test_delegate.py`
 
 **⟶ Wait for Wave 2, then Wave 3 — harness implementation (same files, sequential):**
 
-- [ ] **T005** Hard-cut `DELEGATE_TOOL_SCHEMA` and prompt assembly (`objective`, `prior_outputs`, `inputs`, `output_shape`, `stop_condition`) · `core/contracts/ze-agents/ze_agents/delegate.py`
-- [ ] **T006** Pass `self.name` into `run_delegate`; enforce companion-only caller, non-companion target, depth 1 · `core/contracts/ze-agents/ze_agents/base_agent.py`
-- [ ] **T007** Keep `{response, tool_calls}` result; inherit `gate_decision`; isolated `messages` · `core/contracts/ze-agents/ze_agents/delegate.py`
+- [x] **T005** Hard-cut `DELEGATE_TOOL_SCHEMA` and prompt assembly (`objective`, `prior_outputs`, `inputs`, `output_shape`, `stop_condition`) · `core/contracts/ze-agents/ze_agents/delegate.py`
+- [x] **T006** Pass `self.name` into `run_delegate`; enforce companion-only caller, non-companion target, depth 1 · `core/contracts/ze-agents/ze_agents/base_agent.py`
+- [x] **T007** Keep `{response, tool_calls}` result; inherit `gate_decision`; isolated `messages` · `core/contracts/ze-agents/ze_agents/delegate.py`
 
 **Checkpoint**: Fat ACI and refuse rules exist; stories can use them.
 
@@ -44,18 +44,18 @@
 
 **Wave 4 — sequential then independent:**
 
-- [ ] **T008** [US1] Fail-first: fat fields appear in worker prompt; omitted optionals do not · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T008** [US1] Fail-first: fat fields appear in worker prompt; omitted optionals do not · `core/engine/ze-core/tests/orchestration/test_delegate.py`
 
 **⟶ After T008 (same-file join), then:**
 
-- [ ] **T009** [P] [US1] Fail-first: companion/speech-act tests use `objective` not `task`; nested domain tools still earn confirmations · `plugins/ze-personal/tests/agents/companion/`
+- [x] **T009** [P] [US1] Fail-first: companion/speech-act tests use `objective` not `task`; nested domain tools still earn confirmations · `plugins/ze-personal/tests/agents/companion/`
 
 ### Implementation
 
 **⟶ Wait for Wave 4, then Wave 5:**
 
-- [ ] **T010** [US1] Companion instructions: `delegate_to_agent` uses `objective` and may pass optional fat fields; do not edit `description` · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
-- [ ] **T011** [US1] Update remaining 146/honesty tests and prompt strings that still pass `task`/`context`; 151 contract supersedes 146’s `task` wording (do not reopen 146 product) · `plugins/ze-personal/tests/`
+- [x] **T010** [US1] Companion instructions: `delegate_to_agent` uses `objective` and may pass optional fat fields; do not edit `description` · `plugins/ze-personal/ze_personal/agents/companion/agent.py`
+- [x] **T011** [US1] Update remaining 146/honesty tests and prompt strings that still pass `task`/`context`; 151 contract supersedes 146’s `task` wording (do not reopen 146 product) · `plugins/ze-personal/tests/`
 
 **Checkpoint**: US1 independently testable. Companion `description` matches T002 snapshot.
 
@@ -71,15 +71,15 @@
 
 **Wave 6 — independent (different files):**
 
-- [ ] **T012** [P] [US2] Fail-first: every registered agent except companion omits `delegate_to_agent` from `tools` · `plugins/ze-personal/tests/agents/research/` or a registry test
-- [ ] **T013** [US2] Fail-first: depth 1 `run_delegate` fails · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T012** [P] [US2] Fail-first: every registered agent except companion omits `delegate_to_agent` from `tools` · `plugins/ze-personal/tests/agents/research/` or a registry test
+- [x] **T013** [US2] Fail-first: depth 1 `run_delegate` fails · `core/engine/ze-core/tests/orchestration/test_delegate.py`
 
 ### Implementation
 
 **⟶ Wait for Wave 6, then Wave 7:**
 
-- [ ] **T014** [US2] Remove `delegate_to_agent` from research `tools`; replace calendar-delegate copy with the limitation · `plugins/ze-personal/ze_personal/agents/research/agent.py`
-- [ ] **T015** [US2] Delete or rewrite research tests that stub nested delegate · `plugins/ze-personal/tests/agents/research/`
+- [x] **T014** [US2] Remove `delegate_to_agent` from research `tools`; replace calendar-delegate copy with the limitation · `plugins/ze-personal/ze_personal/agents/research/agent.py`
+- [x] **T015** [US2] Delete or rewrite research tests that stub nested delegate · `plugins/ze-personal/tests/agents/research/`
 
 **Checkpoint**: US2 independently testable. No agent other than companion lists the tool.
 
@@ -93,8 +93,8 @@
 
 **Wave 8:**
 
-- [ ] **T016** [P] [US3] Lock test: sequential compound still routes to `plan_sequential` · `core/engine/ze-core/tests/orchestration/test_edges.py`
-- [ ] **T017** [P] [US3] Lock test: companion `description` unchanged vs T002; `run_delegate` still copies `gate_decision` · tests
+- [x] **T016** [P] [US3] Lock test: sequential compound still routes to `plan_sequential` · `core/engine/ze-core/tests/orchestration/test_edges.py`
+- [x] **T017** [P] [US3] Lock test: companion `description` unchanged vs T002; `run_delegate` still copies `gate_decision` · tests
 
 **Checkpoint**: This tree did not start 152/153.
 
@@ -104,8 +104,8 @@
 
 **Wave 9:**
 
-- [ ] **T018** Grep: no remaining delegate `task`/`context`; no 152 CapabilityGate in `run_delegate`; no graph node deletes · repo
-- [ ] **T019** Validate: `make test-core` (or ze-core + ze-personal tests covering delegate/companion/research) and ruff on touched Python
+- [x] **T018** Grep: no remaining delegate `task`/`context`; no 152 CapabilityGate in `run_delegate`; no graph node deletes · repo
+- [x] **T019** Validate: `make test-core` (or ze-core + ze-personal tests covering delegate/companion/research) and ruff on touched Python
 
 ---
 

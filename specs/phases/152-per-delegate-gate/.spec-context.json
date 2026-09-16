@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "per delegate gate",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "completed",
   "history": [
     {
       "step": "specify",
@@ -67,9 +67,159 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-16T18:19:01.180Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:38:18.548Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:45.972Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:47.162Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:48.588Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:50.291Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:51.272Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:52.778Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:54.988Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:56.711Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:58.094Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:42:59.499Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:00.959Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:02.265Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:03.647Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:05.174Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:06.519Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:08.074Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:43:09.627Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:43:10.593Z"
     }
   ],
-  "last_action": "living specs evaluated — skipped (not configured)",
+  "last_action": "152 implemented — make test-core 678 passed",
   "telemetryInstanceId": "84ee8ab2-1fea-4b18-8a96-70845a3417d0",
   "coverage": {
     "FR-001": {
@@ -158,6 +308,11 @@
       "decision": "Reuse 113 request_id confirmations",
       "why": "Pin 7 and existing interrupt",
       "rejected": "New confirmation table"
+    },
+    {
+      "decision": "Inject evaluate_delegate callable on AgentContext, not extensions",
+      "why": "extensions must stay msgpack-serializable",
+      "rejected": "Store callback in extensions"
     }
   ],
   "step_summaries": {
@@ -167,6 +322,145 @@
     },
     "tasks": {
       "summary": "17 tasks: evaluate, pause/resume, optional intent"
+    },
+    "implement": {
+      "summary": "Per-delegate CapabilityGate plus spend budget; AWAIT pauses via request_id interrupt"
     }
-  }
+  },
+  "currentTask": "T017",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "151 fat ACI and companion-only caller remain; task/context not restored.",
+      "files": [
+        "specs/phases/151-fat-delegate-aci/spec.md",
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Confirmation store PK remains request_id (ON CONFLICT request_id).",
+      "files": [
+        "core/engine/ze-core/ze_core/conversation/confirmations/store.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Evaluator sets worker gate_decision; parent EXECUTE is not copied.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "EXECUTE lookup then AWAIT write: lookup ran, write did not.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Runtime-only evaluate_delegate on AgentContext; no ze_core import in ze-agents.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/types.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "execute_tool binds CapabilityGate plus spend-budget wrapper onto ctx.",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "run_delegate applies evaluated decision; parent copy deleted.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Spend over ceiling composed to AWAIT_CONFIRMATION like capability_check.",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Lock: graph parallel capability_check still strictest-wins on mixed subtasks.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "AWAIT_CONFIRMATION does not call specialist run until approve.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Pause via tool_interrupt_fn kind=delegate with request_id; WS reuses that id.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py",
+        "apps/ze-api/ze_api/api/websocket/confirmation.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Approve runs worker once with EXECUTE; deny does not write.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "clear one request_id leaves sibling get_pending on the same thread.",
+      "files": [
+        "core/engine/ze-core/tests/conversation/test_confirmation_store.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Optional intent on schema and run_delegate; 151 fields kept.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "read vs create yield different decisions; omitted intent still runs.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "No parent gate copy; no plan_sequential deletes; no ze_core in delegate.py.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "make test-core 678 passed; companion/research 77 passed; ruff clean.",
+      "files": [
+        "core/engine/ze-core/tests"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "ze-core tests",
+      "command": "make test-core",
+      "result": "678 passed, 45 skipped"
+    },
+    {
+      "what": "companion/research tests",
+      "command": "pytest personal companion+research",
+      "result": "77 passed"
+    }
+  ]
 }

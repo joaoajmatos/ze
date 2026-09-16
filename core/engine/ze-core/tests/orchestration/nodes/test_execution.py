@@ -168,6 +168,60 @@ class TestCapabilityCheck:
         assert result["gate_decision"] == GateDecision.EXECUTE
         assert "budget_status" not in result
 
+    async def test_compound_mixed_read_write_still_strictest_wins(self):
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+
+        read_cls = _make_agent_class("calendar")
+        read_cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        write_cls = _make_agent_class("messenger")
+        write_cls.intents = {"create": Intent(Mode.CONFIRM)}
+        agent(read_cls)
+        agent(write_cls)
+        register_instance("calendar", object.__new__(read_cls))
+        register_instance("messenger", object.__new__(write_cls))
+        gate = CapabilityGate()
+        env = _envelope(
+            "calendar",
+            is_compound=True,
+            subtasks=[
+                SubTask(agent="calendar", intent="read", prompt="tue"),
+                SubTask(agent="messenger", intent="create", prompt="mail"),
+            ],
+        )
+        state = {"envelope": env, "session_overrides": {}}
+        result = await capability_check(state, _config(gate))
+        assert result["gate_decision"] == GateDecision.AWAIT_CONFIRMATION
+
+    async def test_bind_delegate_evaluator_budget_holds_execute(self):
+        from ze_agents.types import Intent, Mode
+        from ze_core.capability import CapabilityGate
+        from ze_core.orchestration.nodes.execution import bind_delegate_evaluator
+        from ze_core.telemetry.budget import BudgetStatus
+
+        cls = _make_agent_class("calendar")
+        cls.intents = {"read": Intent(Mode.AUTONOMOUS)}
+        agent(cls)
+        register_instance("calendar", object.__new__(cls))
+        gate = CapabilityGate()
+        budget_checker = AsyncMock()
+        budget_checker.check = AsyncMock(
+            return_value=BudgetStatus(
+                within_budget=False,
+                scope="session",
+                current_spend_usd=5.0,
+                limit_usd=2.0,
+            )
+        )
+        ctx = _ctx("calendar")
+        config = _config(gate)
+        config["configurable"]["budget_checker"] = budget_checker
+        bind_delegate_evaluator(
+            ctx, config, {"session_id": "s1", "session_overrides": {}}
+        )
+        decision = await ctx.evaluate_delegate("calendar", "read")
+        assert decision == GateDecision.AWAIT_CONFIRMATION
+
 
 # ── execute_tool ──────────────────────────────────────────────────────────────
 
@@ -228,7 +282,8 @@ class TestExecuteTool:
         assert result["agent_result"].response == "headlines"
         assert result["subtask_results"] == []
 
-    async def test_compound_sequential(self):
+    async def test_compound_sequential_flag_still_fans_out(self):
+        """Sequential execute loop is gone; compound still gathers in parallel."""
         _register_and_wire("alpha", response="r1")
         _register_and_wire("beta", response="r2")
         subtasks = [
@@ -245,6 +300,7 @@ class TestExecuteTool:
             "image_data": None,
         }
         result = await execute_tool(state, {"configurable": {}})
+        assert result["agent_result"] is None
         assert len(result["subtask_results"]) == 2
 
     async def test_timeout_raises(self):

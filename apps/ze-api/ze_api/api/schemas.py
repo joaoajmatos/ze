@@ -97,6 +97,12 @@ class ProcedureUsageTraceResponse(BaseModel):
     version_id: str
 
 
+class ConductorLedgerEntryResponse(BaseModel):
+    agent: str
+    status: str
+    request_id: str | None = None
+
+
 class WorkspaceUsageTraceResponse(BaseModel):
     mode: str
     runs: list[dict] = []
@@ -119,6 +125,8 @@ class MessageTraceResponse(BaseModel):
     skills_used: list[SkillUsageTraceResponse] = []
     workspace: WorkspaceUsageTraceResponse | None = None
     procedure: ProcedureUsageTraceResponse | None = None
+    conductor_hint: list[dict[str, str]] | None = None
+    conductor_ledger: list[ConductorLedgerEntryResponse] = []
 
 
 class MessageTraceEntry(BaseModel):
@@ -695,6 +703,8 @@ class WsTraceUpdateFrame(BaseModel):
     skills_used: list[SkillUsageTraceResponse] = []
     workspace: WorkspaceUsageTraceResponse | None = None
     procedure: ProcedureUsageTraceResponse | None = None
+    conductor_hint: list[dict[str, str]] | None = None
+    conductor_ledger: list[ConductorLedgerEntryResponse] = []
 
 
 class WsNotificationFrame(BaseModel):

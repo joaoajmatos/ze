@@ -322,6 +322,24 @@ export type CollisionLogEntrySchema = {
 };
 
 /**
+ * ConductorLedgerEntryResponse
+ */
+export type ConductorLedgerEntryResponse = {
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Status
+     */
+    status: string;
+    /**
+     * Request Id
+     */
+    request_id?: string | null;
+};
+
+/**
  * ConsolidationReportResponse
  */
 export type ConsolidationReportResponse = {
@@ -1950,6 +1968,16 @@ export type MessageTraceResponse = {
     skills_used?: Array<SkillUsageTraceResponse>;
     workspace?: WorkspaceUsageTraceResponse | null;
     procedure?: ProcedureUsageTraceResponse | null;
+    /**
+     * Conductor Hint
+     */
+    conductor_hint?: Array<{
+        [key: string]: string;
+    }> | null;
+    /**
+     * Conductor Ledger
+     */
+    conductor_ledger?: Array<ConductorLedgerEntryResponse>;
 };
 
 /**

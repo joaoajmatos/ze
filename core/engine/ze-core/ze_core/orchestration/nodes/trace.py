@@ -72,6 +72,8 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         skills_used=_extract_skills_used(state.get("skill_matches"), agent_result),
         workspace=await _extract_workspace(agent_result, config),
         procedure=_extract_procedure(state.get("agent_context")),
+        conductor_hint=state.get("conductor_hint"),
+        conductor_ledger=_conductor_ledger(state),
     )
     return {"message_trace": trace}
 
@@ -235,6 +237,14 @@ def _extract_memory_chunks(memory_context: Any) -> list[MemoryChunkTrace]:
         )
 
     return chunks[:_MAX_MEMORY_CHUNKS]
+
+
+def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:
+    ctx = state.get("agent_context")
+    from_ctx = getattr(ctx, "conductor_ledger", None) if ctx is not None else None
+    if from_ctx:
+        return list(from_ctx)
+    return list(state.get("conductor_ledger") or [])
 
 
 def _extract_tool_calls(agent_result: Any) -> list[ToolCallTrace]:

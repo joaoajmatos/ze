@@ -84,3 +84,5 @@ class MessageTrace:
     skills_used: list[SkillUsageTrace] = field(default_factory=list)
     workspace: WorkspaceUsageTrace | None = None
     procedure: ProcedureUsageTrace | None = None
+    conductor_hint: list[dict[str, str]] | None = None
+    conductor_ledger: list[dict[str, str]] = field(default_factory=list)

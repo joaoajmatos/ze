@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-16
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "153 Sequential routing hard-cut: Sequential/mixed/dependent → companion as primary. Update companion description + conductor instructions. Independent multi-read stays fan-out+synthesize. Single-domain stays specialist. DELETE `plan_sequential`, sequential edge to END, unused `dynamic_plan_steps`. Haiku `is_sequential` means conductor. Turn-local progress ledger + MessageTrace. Scale effort. No durable promote."
 

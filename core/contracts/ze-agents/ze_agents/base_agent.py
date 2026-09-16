@@ -242,6 +242,16 @@ class BaseAgent(ABC):
         procedure_block = getattr(ctx, "procedure_guidance", None)
         if procedure_block:
             rendered = f"{procedure_block}\n\n{rendered}"
+        hint = getattr(ctx, "conductor_hint", None)
+        if hint:
+            lines = [
+                "Routing hint (optional, not a DAG — scale effort; skip unused agents):"
+            ]
+            for item in hint:
+                agent = item.get("agent", "")
+                prompt = item.get("prompt", "")
+                lines.append(f"- {agent}: {prompt}")
+            rendered = "\n".join(lines) + "\n\n" + rendered
         sections = [datetime_line.rstrip(), MEMORY_CONSTITUTION.rstrip()]
         if persona_block:
             sections.append(persona_block.rstrip())
@@ -570,7 +580,12 @@ class BaseAgent(ABC):
                         }
                     )
                 elif tc["name"] == DELEGATE_TOOL_NAME:
-                    tool_call = await run_delegate(tc["arguments"], ctx, iteration)
+                    tool_call = await run_delegate(
+                        tc["arguments"],
+                        ctx,
+                        iteration,
+                        caller_name=self.name,
+                    )
                     accumulated.append(tool_call)
                     messages.append(
                         {

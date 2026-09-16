@@ -25,3 +25,9 @@ workflow:
     - "⚙️ Setting that up..."
     - "🔧 Managing that for you..."
     - "⚙️ On it..."
+
+conductor:
+  checking_calendar:
+    - "📅 Checking the calendar..."
+  drafting_mail:
+    - "✉️ Drafting the mail..."

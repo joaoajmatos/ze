@@ -9,7 +9,7 @@ from ze_core.orchestration.nodes.execution import (
 from ze_core.orchestration.nodes.loop_surfacing import surface_loops
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
 from ze_core.orchestration.nodes.preprocessing import preprocess
-from ze_core.orchestration.nodes.routing import decompose, embed_route, plan_sequential
+from ze_core.orchestration.nodes.routing import decompose, embed_route
 from ze_core.orchestration.nodes.skills import match_skills
 from ze_core.orchestration.nodes.trace import record_trace
 
@@ -23,7 +23,6 @@ __all__ = [
     "execute_tool",
     "fetch_context",
     "match_skills",
-    "plan_sequential",
     "preprocess",
     "record_trace",
     "surface_loops",

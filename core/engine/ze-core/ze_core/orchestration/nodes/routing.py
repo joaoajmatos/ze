@@ -3,10 +3,9 @@ from __future__ import annotations
 import time
 
 from langchain_core.runnables import RunnableConfig
-from ze_agents.types import GateDecision
-from ze_agents.errors import WorkflowPlanError
 from ze_logging import get_logger
 from ze_core.orchestration.state import AgentState
+from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze_core.telemetry.context import set_agent_context
 
 log = get_logger(__name__)
@@ -118,42 +117,41 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
         subtask_count=len(new_envelope.subtasks),
         is_sequential=new_envelope.is_sequential,
     )
-    return {"envelope": new_envelope}
-
-
-async def plan_sequential(state: AgentState, config: RunnableConfig) -> dict:
-    """Call WorkflowPlanner to produce an ordered step list, then pre-check each step
-    against the capability gate to identify any steps requiring user approval."""
-    from ze_core.capability.gate import CapabilityGate
-
-    planner = config["configurable"]["workflow_planner"]
-    gate: CapabilityGate = config["configurable"]["capability_gate"]
-    session_overrides: dict = state.get("session_overrides") or {}
-
-    set_agent_context("workflow_planner")
-    try:
-        steps = await planner.plan(state["prompt"])
-    except WorkflowPlanError as exc:
-        log.warning("plan_sequential_failed", error=str(exc))
-        return {
-            "final_response": f"I couldn't plan that as a workflow: {exc}",
-            "dynamic_plan_steps": None,
-            "dynamic_plan_high_risk": [],
-        }
-
-    high_risk: list[int] = []
-    for i, step in enumerate(steps):
-        agent = step.agent_hint or "research"
-        decision = gate.evaluate(agent, step.intent, session_overrides)
-        if decision in (
-            GateDecision.AWAIT_CONFIRMATION,
-            GateDecision.DRAFT,
-            GateDecision.BLOCKED,
-        ):
-            high_risk.append(i)
-
-    log.info("plan_sequential_ready", steps=len(steps), high_risk=high_risk)
+    rewritten, hint = apply_conductor_rewrite(new_envelope, state["prompt"])
+    ledger = [{"agent": h["agent"], "status": "planned"} for h in hint] if hint else []
+    if hint is not None:
+        log.info(
+            "conductor_rewrite",
+            session_id=state["session_id"],
+            specialists=[h["agent"] for h in hint],
+        )
     return {
-        "dynamic_plan_steps": steps,
-        "dynamic_plan_high_risk": high_risk,
+        "envelope": rewritten,
+        "conductor_hint": hint,
+        "conductor_ledger": ledger,
     }
+
+
+def apply_conductor_rewrite(
+    envelope: RoutingEnvelope, user_prompt: str
+) -> tuple[RoutingEnvelope, list[dict[str, str]] | None]:
+    """Sequential multi-specialist turns become companion-primary; hint is not a DAG."""
+    if not envelope.is_sequential or len(envelope.subtasks) <= 1:
+        return envelope, None
+    hint = [
+        {"agent": s.agent, "intent": s.intent, "prompt": s.prompt}
+        for s in envelope.subtasks
+    ]
+    rewritten = RoutingEnvelope(
+        primary_agent="companion",
+        confidence=envelope.confidence,
+        score_gap=envelope.score_gap,
+        routing_method=envelope.routing_method,
+        is_compound=False,
+        subtasks=[SubTask(agent="companion", intent="reason", prompt=user_prompt)],
+        requires_synthesis=False,
+        raw_scores=envelope.raw_scores,
+        is_sequential=True,
+        complexity=envelope.complexity,
+    )
+    return rewritten, hint

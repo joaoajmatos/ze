@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "conductor observability eval",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "completed",
   "history": [
     {
       "step": "specify",
@@ -74,6 +74,148 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-09-16T18:24:53.707Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:00:59.140Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:13.039Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:14.769Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:16.198Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:18.017Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:19.399Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:21.407Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:22.858Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:25.615Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:27.112Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:28.619Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:30.417Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:32.552Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:34.805Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:36.753Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:37.985Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:39.469Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:09:42.669Z"
     }
   ],
   "telemetryInstanceId": "13f79a00-6837-424d-9b33-26d71808db23",
@@ -160,6 +302,126 @@
     },
     "tasks": {
       "summary": "16 tasks: trace, progress keys, four eval ids"
+    }
+  },
+  "currentTask": "T016",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed MessageTrace conductor fields from 153",
+      "files": [
+        "core/engine/ze-core/ze_core/conversation/messages/types.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "OpenAPI schema tests for conductor hint and ledger",
+      "files": [
+        "apps/ze-api/tests/api/test_conductor_trace_schema.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Serialized conductor fields on REST and WS; codegen",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py",
+        "apps/ze-api/ze_api/api/messages.py",
+        "packages/ze-client/src/generated"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Vitest fixture renders specialists and request_id",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/ConductorSection.test.tsx"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Conductor section in TraceEntry omitted when empty",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/ConductorSection.tsx",
+        "apps/ze-web/src/widgets/trace-panel/ui/TraceEntry.tsx"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Independent parallel fixture omits conductor section",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/ConductorSection.test.tsx"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Added conductor.checking_calendar and drafting_mail locales",
+      "files": [
+        "plugins/ze-personal/ze_personal/locales/en.yaml"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Emit conductor progress keys from run_delegate",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Unit test calendar then mail progress emit order",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Eval conductor_sequential_calendar_email",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Eval routing_independent_parallel_not_companion",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Eval conductor_speech_act_146_honest",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Eval conductor_mid_sequence_confirmation",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Documented conductor section on the trace panel",
+      "files": [
+        "docs/skills.md"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Grep plan_sequential still absent; 151 ACI intact",
+      "files": [
+        "core/engine/ze-core/ze_core",
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "test-core personal web tests; codegen committed artifacts",
+      "files": [
+        "packages/ze-client/src/generated",
+        "apps/ze-web"
+      ]
     }
   }
 }

@@ -41,9 +41,9 @@ def graph_builder(
 ) -> Any:
     """Return a fully-wired but uncompiled StateGraph.
 
-    All standard nodes and internal edges are added. The ``embed_route``
-    conditional edge is intentionally omitted so callers can extend the
-    graph (e.g. add a ``plan_sequential`` node) before wiring routing.
+    All standard nodes and internal edges are added. The ``embed_route`` and
+    ``decompose`` conditional edges are intentionally omitted so callers can
+    extend routing before compile.
 
     Pass ``node_overrides`` to replace specific nodes with application-specific
     implementations without touching LangGraph internals.
@@ -134,10 +134,7 @@ def graph_builder(
 
 
 def build_graph(checkpointer: Any, plugins: list[ZePlugin] | None = None) -> Any:
-    """Build and compile the standard conversation graph with plan_sequential routing."""
-    from langgraph.constants import END
-
-    from ze_core.orchestration import nodes
+    """Build and compile the standard conversation graph."""
     from ze_core.orchestration.edges import after_decompose, after_embed_route
     from ze_core.orchestration.state import build_state_type
 
@@ -147,7 +144,6 @@ def build_graph(checkpointer: Any, plugins: list[ZePlugin] | None = None) -> Any
     ]
     pre_route = _compose_pre_route_nodes(pre_route_fns) if pre_route_fns else None
     builder = graph_builder(state_type=state_type, pre_route_node=pre_route)
-    builder.add_node("plan_sequential", nodes.plan_sequential)
 
     builder.add_conditional_edges(
         "embed_route",
@@ -157,9 +153,8 @@ def build_graph(checkpointer: Any, plugins: list[ZePlugin] | None = None) -> Any
     builder.add_conditional_edges(
         "decompose",
         after_decompose,
-        {"plan_sequential": "plan_sequential", "fetch_context": "fetch_context"},
+        {"fetch_context": "fetch_context"},
     )
-    builder.add_edge("plan_sequential", END)
 
     for plugin in plugins or []:
         for name, fn in plugin.graph_nodes().items():

@@ -63,3 +63,30 @@ async def test_record_trace_omits_procedure_when_not_invoked() -> None:
         {"configurable": {}},
     )
     assert result["message_trace"].procedure is None
+
+
+async def test_record_trace_copies_conductor_ledger() -> None:
+    hint = [{"agent": "calendar", "intent": "read", "prompt": "tue"}]
+    ledger = [{"agent": "calendar", "status": "done"}]
+    result = await record_trace(
+        {
+            "envelope": SimpleNamespace(
+                primary_agent="companion",
+                routing_method="haiku",
+                confidence=0.8,
+                score_gap=0.2,
+                is_compound=False,
+                subtasks=[],
+            ),
+            "agent_result": AgentResult(agent="companion", response="ok"),
+            "conductor_hint": hint,
+            "conductor_ledger": ledger,
+            "agent_context": AgentContext(
+                session_id="s1", prompt="hello", intent="reason"
+            ),
+        },
+        {"configurable": {}},
+    )
+    trace = result["message_trace"]
+    assert trace.conductor_hint == hint
+    assert trace.conductor_ledger == ledger

@@ -143,6 +143,12 @@ class AgentContext:
     procedure_invocation_id: str | None = field(default=None, repr=False)
     procedure_invoked_id: str | None = field(default=None, repr=False)
     procedure_invoked_version_id: str | None = field(default=None, repr=False)
+    # evaluate_delegate is runtime-only (engine-injected). Never checkpoint.
+    # Signature: (agent: str, intent: str) -> GateDecision (sync or async).
+    evaluate_delegate: Any = field(default=None, repr=False)
+    # Turn-local conductor hint/ledger (Phase 153). Lists of primitives only.
+    conductor_hint: list[dict[str, str]] | None = None
+    conductor_ledger: list[dict[str, str]] = field(default_factory=list)
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

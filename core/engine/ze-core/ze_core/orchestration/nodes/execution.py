@@ -17,6 +17,42 @@ from ze_agents.types import AgentContext, AgentResult
 log = get_logger(__name__)
 
 
+def bind_delegate_evaluator(
+    ctx: AgentContext,
+    config: RunnableConfig,
+    state: AgentState,
+) -> None:
+    """Inject per-delegate CapabilityGate + spend-budget evaluation onto ctx."""
+    gate = config["configurable"].get("capability_gate")
+    budget_checker = config["configurable"].get("budget_checker")
+    overrides = state.get("session_overrides") or {}
+    session_id = ctx.session_id
+
+    async def evaluate_delegate(agent: str, intent: str) -> GateDecision:
+        if gate is None:
+            return GateDecision.EXECUTE
+        decision = gate.evaluate(
+            agent=agent, intent=intent, session_overrides=overrides
+        )
+        if budget_checker is not None:
+            status = await budget_checker.check(session_id=session_id)
+            if not status.within_budget:
+                decision = min(
+                    (decision, GateDecision.AWAIT_CONFIRMATION),
+                    key=lambda d: _GATE_RANK.get(d, 0),
+                )
+        return decision
+
+    ctx.evaluate_delegate = evaluate_delegate
+
+
+def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
+    return {
+        "conductor_hint": getattr(base_ctx, "conductor_hint", None),
+        "conductor_ledger": getattr(base_ctx, "conductor_ledger", None) or [],
+    }
+
+
 def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
     return {
         "procedure_guidance": getattr(base_ctx, "procedure_guidance", None),
@@ -90,7 +126,6 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
             gate_decision,
             state,
             config,
-            is_sequential=envelope.is_sequential,
             reporter=reporter,
             identity_builder=identity_builder,
             abort_token=abort_token,
@@ -137,6 +172,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
         **_procedure_kwargs(base_ctx),
+        **_conductor_kwargs(base_ctx),
     )
     result = await _run_with_timeout(subtask.agent, ctx)
 
@@ -243,12 +279,16 @@ async def _execute_single(
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
         **_procedure_kwargs(base_ctx),
+        **_conductor_kwargs(base_ctx),
     )
+    bind_delegate_evaluator(ctx, config, state)
     result = await _run_with_timeout(subtask.agent, ctx, token_queue=token_queue)
     from ze_core.orchestration.procedure_activation import record_guided_actions
 
     await record_guided_actions(ctx, result, config)
     _sync_procedure_invocation(ctx, base_ctx)
+    if getattr(ctx, "conductor_ledger", None) is not None:
+        base_ctx.conductor_ledger = ctx.conductor_ledger
     components: list = []
     if component_hook is not None:
         components = component_hook.pop_components(ctx.session_id)
@@ -257,6 +297,7 @@ async def _execute_single(
         "subtask_results": [],
         "components": components,
         "agent_context": base_ctx,
+        "conductor_ledger": list(getattr(ctx, "conductor_ledger", None) or []),
     }
 
 
@@ -266,7 +307,6 @@ async def _execute_compound(
     gate_decision: GateDecision,
     state: dict,
     config: RunnableConfig,
-    is_sequential: bool = False,
     reporter: Any = None,
     identity_builder: Any = None,
     abort_token: Any = None,
@@ -292,7 +332,7 @@ async def _execute_compound(
         )
 
     def _make_ctx(subtask: Any) -> AgentContext:
-        return AgentContext(
+        ctx = AgentContext(
             session_id=base_ctx.session_id,
             prompt=subtask.prompt,
             intent=subtask.intent,
@@ -309,24 +349,16 @@ async def _execute_compound(
             active_skills=base_ctx.active_skills,
             skill_tool_names=base_ctx.skill_tool_names,
             **_procedure_kwargs(base_ctx),
+            **_conductor_kwargs(base_ctx),
         )
+        bind_delegate_evaluator(ctx, config, state)
+        return ctx
 
-    from ze_core.orchestration.procedure_activation import record_guided_actions
-
-    if is_sequential:
-        results: list[AgentResult] = []
-        for subtask in subtasks:
-            ctx = _make_ctx(subtask)
-            result = await _run_with_timeout(subtask.agent, ctx)
-            await record_guided_actions(ctx, result, config)
-            _sync_procedure_invocation(ctx, base_ctx)
-            results.append(result)
-    else:
-        results = list(
-            await asyncio.gather(
-                *[_run_with_timeout(st.agent, _make_ctx(st)) for st in subtasks]
-            )
+    results = list(
+        await asyncio.gather(
+            *[_run_with_timeout(st.agent, _make_ctx(st)) for st in subtasks]
         )
+    )
 
     return {
         "agent_result": None,

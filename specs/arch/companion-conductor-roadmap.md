@@ -1,6 +1,6 @@
 # Companion conductor roadmap
 
-> **Status:** Living note. Do not start Phase 152 in the 151 tree.
+> **Status:** Living note. Phases 151–154 Implemented. Promote-to-workflow/goal is after 154.
 > **Date:** 2026-09-16
 > **Related:** [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), [Ze Doctrine](ze-doctrine.md),
 > harness [`030-agent-harness`](../phases/030-agent-harness/spec.md),
@@ -11,11 +11,12 @@
 
 ## Context
 
-Ze has specialists and two incomplete coordination paths: graph **compound**
-(parallel fan-out + synthesize; sequential currently `plan_sequential → END`)
-and nested **`delegate_to_agent`** (thin brief, inherited gate, fresh messages,
-depth 2). Companion already uses delegate for speech-act handoffs. Research
-also lists the tool. That is not a conductor.
+Ze has specialists and two coordination paths: graph **compound** (independent
+parallel fan-out + synthesize) and nested **`delegate_to_agent`** (fat brief,
+per-invocation gate, isolated worker, depth 1, companion-only). Sequential /
+mixed / dependent multi-specialist turns route to companion as the in-chat
+conductor. `plan_sequential` is gone. Durable promote to workflow/goal is
+still later.
 
 The product decision: **one user-facing voice (companion / Ze), specialists as
 tools, sequence owned in-chat by that conductor.** Independent parallel work
@@ -51,13 +52,13 @@ specs do not relitigate it.
 
 ## Ordered phases
 
-Numbers are the next free spec-kit slots after 150. Specs exist under
-`specs/phases/151-*` … `154-*` at **Ready to implement**. Product status stays
-Pending until each spec header is Implemented. Do not start N+1 **implementation**
-in N’s tree. Phase **151** here is the conductor series, not memory-honesty
-roadmap item 151 (already bundled into directory 150).
+Numbers are the spec-kit slots after 150. Specs live under
+`specs/phases/151-*` … `154-*`; all four headers are **Implemented**. Do not
+start N+1 **implementation** in N’s tree on a future series. Phase **151**
+here is the conductor series, not memory-honesty roadmap item 151 (already
+bundled into directory 150).
 
-### 151 — Fat delegate ACI — M — Specified (ready to implement)
+### 151 — Fat delegate ACI — M — Implemented
 
 Upgrade `delegate_to_agent` so a conductor *can* brief a specialist. Objective,
 prior outputs / inputs, output shape, stop condition. Structured result keeps
@@ -71,7 +72,7 @@ Do not change the conversation graph, companion `description` embeddings, or
 
 Do not start 152 in the 151 tree.
 
-### 152 — Per-delegate capability and confirmation — M — Specified (ready to implement)
+### 152 — Per-delegate capability and confirmation — M — Implemented
 
 Stop inheriting the parent turn’s `gate_decision` wholesale. At each
 `run_delegate`, evaluate that specialist + inferred/declared intent against
@@ -82,7 +83,7 @@ strictest-wins until a later pass — this phase is the nested-tool path.
 
 Do not start 153 in the 152 tree.
 
-### 153 — Sequential routing hard-cut — L — Specified (ready to implement)
+### 153 — Sequential routing hard-cut — L — Done
 
 This is the product change. Router sends sequential / mixed / dependent turns
 to companion as `primary_agent`. Companion `description` and instructions
@@ -99,7 +100,7 @@ progress ledger in graph/agent state, recorded on `MessageTrace`.
 
 Do not start 154 in the 153 tree.
 
-### 154 — Conductor observability and eval — S/M — Specified (ready to implement)
+### 154 — Conductor observability and eval — S/M — Done
 
 Trace panel shows the plan, each specialist, confirmation ids, stall/ask.
 Progress keys for “checking calendar…” / “drafting the mail…” so the user

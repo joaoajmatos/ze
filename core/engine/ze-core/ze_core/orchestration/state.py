@@ -52,9 +52,9 @@ class AgentState(TypedDict):
     error: str | None
     components: list[dict]
 
-    # ── Dynamic plan (plan_sequential node) ────────────────────────────────
-    dynamic_plan_steps: list | None  # list[WorkflowStep]
-    dynamic_plan_high_risk: list  # indices requiring approval
+    # ── Conductor (Phase 153 — sequential rewrite; not a DAG) ──────────────
+    conductor_hint: list | None  # list[{agent, intent, prompt}]
+    conductor_ledger: list  # list[{agent, status, request_id?}]
 
     # ── Correlation (Phase 58 — populated by correlate node) ──────────────────
     correlations: list  # list[Hypothesis]; qualifying inline hypotheses

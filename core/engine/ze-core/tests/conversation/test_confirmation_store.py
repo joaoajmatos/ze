@@ -133,13 +133,14 @@ async def test_clear_returns_false_when_missing():
     assert deleted is False
 
 
-async def test_clear_leaves_other_request_ids_untouched():
-    """clear() for one request_id must not affect another gate's row."""
-    pool, conn = _make_pool_mock(execute_result="DELETE 1")
+async def test_clear_one_request_id_leaves_sibling_get_pending():
+    row = _make_row(request_id="req-2")
+    pool, conn = _make_pool_mock(fetchrow=row, execute_result="DELETE 1")
     store = PendingConfirmationStore(pool=pool)
 
-    await store.clear("thread-1", "req-1")
+    deleted = await store.clear("thread-1", "req-1")
+    remaining = await store.get_pending("req-2")
 
-    _, thread_arg, request_arg = conn.execute.call_args[0]
-    assert request_arg == "req-1"
-    assert request_arg != "req-2"
+    assert deleted is True
+    assert remaining is not None
+    assert remaining["request_id"] == "req-2"

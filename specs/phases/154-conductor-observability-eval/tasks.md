@@ -8,14 +8,14 @@
 
 ## Phase 1: Setup
 
-- [ ] **T001** Confirm 153 `MessageTrace` ledger fields exist in spec/code at implement time · `core/engine/ze-core/ze_core/conversation/messages/types.py`
+- [x] **T001** Confirm 153 `MessageTrace` ledger fields exist in spec/code at implement time · `core/engine/ze-core/ze_core/conversation/messages/types.py`
 
 ---
 
 ## Phase 2: Foundational
 
-- [ ] **T002** Fail-first: OpenAPI/trace schema includes conductor hint + ledger + `request_id` · `apps/ze-api/tests/`
-- [ ] **T003** Serialize ledger on REST + `trace_update`; regenerate `@ze/client` · schemas + codegen
+- [x] **T002** Fail-first: OpenAPI/trace schema includes conductor hint + ledger + `request_id` · `apps/ze-api/tests/`
+- [x] **T003** Serialize ledger on REST + `trace_update`; regenerate `@ze/client` · schemas + codegen
 
 **Checkpoint**: Clients can type the fields.
 
@@ -25,9 +25,9 @@
 
 **Goal**: Panel shows plan, specialists, confirmation ids, ask/stall. Parallel turns do not fake a conductor plan.
 
-- [ ] **T004** [P] [US1] Fail-first vitest: fixture conductor trace renders specialists + `request_id` · `apps/ze-web/src/widgets/trace-panel/`
-- [ ] **T005** [US1] Conductor section in `TraceEntry` / `TraceContent`; omit when fields null · ze-web
-- [ ] **T006** [US1] Independent parallel fixture: no conductor plan section · ze-web test
+- [x] **T004** [P] [US1] Fail-first vitest: fixture conductor trace renders specialists + `request_id` · `apps/ze-web/src/widgets/trace-panel/`
+- [x] **T005** [US1] Conductor section in `TraceEntry` / `TraceContent`; omit when fields null · ze-web
+- [x] **T006** [US1] Independent parallel fixture: no conductor plan section · ze-web test
 
 **Checkpoint**: US1 independently demoable.
 
@@ -37,9 +37,9 @@
 
 **Goal**: Sequence-visible waiting copy.
 
-- [ ] **T007** [US2] Add locale strings for `conductor.checking_calendar` and `conductor.drafting_mail` · companion/personal locales
-- [ ] **T008** [US2] Emit those keys when companion starts calendar vs messenger delegates · `plugins/ze-personal/ze_personal/agents/companion/` + locale YAML (not hardcoded in `ze_core`)
-- [ ] **T009** [US2] Unit test emit order calendar then mail · tests
+- [x] **T007** [US2] Add locale strings for `conductor.checking_calendar` and `conductor.drafting_mail` · companion/personal locales
+- [x] **T008** [US2] Emit those keys when companion starts calendar vs messenger delegates · `plugins/ze-personal/ze_personal/agents/companion/` + locale YAML (not hardcoded in `ze_core`)
+- [x] **T009** [US2] Unit test emit order calendar then mail · tests
 
 **Checkpoint**: US2 testable without eval.
 
@@ -49,10 +49,10 @@
 
 **Goal**: YAML ids lock the product claims.
 
-- [ ] **T010** [US3] Add `conductor_sequential_calendar_email` · `eval/scenarios/`
-- [ ] **T011** [P] [US3] Add `routing_independent_parallel_not_companion` · `eval/scenarios/`
-- [ ] **T012** [P] [US3] Add `conductor_speech_act_146_honest` · `eval/scenarios/`
-- [ ] **T013** [US3] Add `conductor_mid_sequence_confirmation` · `eval/scenarios/`
+- [x] **T010** [US3] Add `conductor_sequential_calendar_email` · `eval/scenarios/`
+- [x] **T011** [P] [US3] Add `routing_independent_parallel_not_companion` · `eval/scenarios/`
+- [x] **T012** [P] [US3] Add `conductor_speech_act_146_honest` · `eval/scenarios/`
+- [x] **T013** [US3] Add `conductor_mid_sequence_confirmation` · `eval/scenarios/`
 
 **Checkpoint**: Grep finds all four ids. Criteria match FRs.
 
@@ -60,9 +60,9 @@
 
 ## Phase 6: Polish
 
-- [ ] **T014** Docs: mention conductor trace if `docs/` describes the trace panel
-- [ ] **T015** Grep: no `plan_sequential` restore; 151 fields intact
-- [ ] **T016** Validate: `make test-core` / `make test` as needed, `make test-web`, ruff; codegen committed
+- [x] **T014** Docs: mention conductor trace if `docs/` describes the trace panel
+- [x] **T015** Grep: no `plan_sequential` restore; 151 fields intact
+- [x] **T016** Validate: `make test-core` / `make test` as needed, `make test-web`, ruff; codegen committed
 
 ---
 

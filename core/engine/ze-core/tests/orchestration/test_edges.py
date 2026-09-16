@@ -73,13 +73,13 @@ def test_after_embed_route_sequential_compound_still_goes_to_decompose():
     assert after_embed_route(state) == "decompose"
 
 
-def test_after_decompose_sequential_goes_to_plan_sequential():
+def test_after_decompose_always_goes_to_fetch_context():
     state = base_state(
         envelope=make_envelope(
             is_compound=True, agents=("research", "email"), is_sequential=True
         )
     )
-    assert after_decompose(state) == "plan_sequential"
+    assert after_decompose(state) == "fetch_context"
 
 
 def test_after_decompose_non_sequential_goes_to_fetch_context():

@@ -206,6 +206,11 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
 
     await attach_procedure_matches(agent_context, config, agent_name)
 
+    hint = state.get("conductor_hint")
+    ledger = state.get("conductor_ledger")
+    agent_context.conductor_hint = hint
+    agent_context.conductor_ledger = ledger if ledger is not None else []
+
     user_message_id = config["configurable"].get("user_message_id")
     if user_message_id is not None:
         agent_context.extensions["user_message_id"] = user_message_id

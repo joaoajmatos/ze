@@ -15,6 +15,8 @@ describe("toTraceFrame", () => {
       tool_calls: [{ name: "search_web", result_snippet: "ok", duration_ms: 120, success: true }],
       total_duration_ms: 450,
       skills_used: [],
+      conductor_hint: null,
+      conductor_ledger: [],
     };
 
     expect(toTraceFrame("msg-1", trace)).toEqual({

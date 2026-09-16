@@ -12,10 +12,7 @@ def after_embed_route(state: AgentState) -> str:
 
 
 def after_decompose(state: AgentState) -> str:
-    """Sequential compound tasks need WorkflowPlanner before fetch_context."""
-    envelope = state.get("envelope")
-    if envelope and envelope.is_sequential:
-        return "plan_sequential"
+    """Haiku sequential multi-specialist turns are rewritten to companion in decompose."""
     return "fetch_context"
 
 

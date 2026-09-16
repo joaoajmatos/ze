@@ -220,8 +220,8 @@ def test_full_agent_state_dict_round_trips(serde: JsonPlusSerializer) -> None:
         "last_active_at": 1_700_000_000.0,
         "final_response": "You have a standup at 10am.",
         "error": None,
-        "dynamic_plan_steps": None,
-        "dynamic_plan_high_risk": [],
+        "conductor_hint": None,
+        "conductor_ledger": [],
         "message_trace": MessageTrace(
             agent="calendar",
             routing_method="embedding",
@@ -284,6 +284,20 @@ def test_non_serializable_identity_builder_raises(serde: JsonPlusSerializer) -> 
         prompt="p",
         intent="read",
         identity_builder=_some_builder,
+    )
+    with pytest.raises((TypeError, Exception)):
+        serde.dumps_typed(ctx)
+
+
+def test_non_serializable_evaluate_delegate_raises(serde: JsonPlusSerializer) -> None:
+    async def _eval(_agent: str, _intent: str) -> GateDecision:
+        return GateDecision.EXECUTE
+
+    ctx = AgentContext(
+        session_id="s",
+        prompt="p",
+        intent="read",
+        evaluate_delegate=_eval,
     )
     with pytest.raises((TypeError, Exception)):
         serde.dumps_typed(ctx)

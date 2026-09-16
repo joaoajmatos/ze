@@ -251,10 +251,14 @@ def _make_container(thread_id: str = "t1") -> Any:
     result = MagicMock()
     result.response = "Action completed."
     result.final_state = {"components": []}
+    result.interrupted = False
     container.resume_turn = AsyncMock(return_value=result)
     container.abort_pending_checkpoint = AsyncMock()
     container.interface = AsyncMock()
     container.interface.send_with_thread = AsyncMock()
+    graph_state = MagicMock()
+    graph_state.interrupts = ()
+    container.graph.aget_state = AsyncMock(return_value=graph_state)
     return container
 
 
@@ -279,7 +283,10 @@ class TestConfirmationApproveFlow:
             thread_id="t1",
         )
 
-        container.resume_turn.assert_awaited_once_with(pending_config)
+        container.resume_turn.assert_awaited_once_with(
+            pending_config,
+            resume={"choice": "approve", "edited_content": None},
+        )
         assert result is None  # gate resolved
 
     async def test_approve_sends_typing_before_resume(self):
@@ -372,6 +379,35 @@ class TestConfirmationDenyFlow:
         )
 
         container.abort_pending_checkpoint.assert_awaited_once_with(pending_config)
+        container.resume_turn.assert_not_awaited()
+
+    async def test_deny_in_node_interrupt_resumes_with_choice(self):
+        """152: LangGraph tool interrupt (delegate) deny resumes; does not abort."""
+        ws = _make_ws()
+        mgr = ConnectionManager()
+        store = _make_msg_store([])
+        await mgr.connect(ws, store)
+
+        container = _make_container()
+        graph_state = MagicMock()
+        graph_state.interrupts = ({"kind": "delegate"},)
+        container.graph.aget_state = AsyncMock(return_value=graph_state)
+        pending_config = _make_pending_config()
+
+        result = await handle_confirm(
+            ws,
+            {"type": "confirm", "id": "req-1", "choice": "deny"},
+            container,
+            mgr,
+            pending_config,
+            thread_id="t1",
+        )
+
+        container.resume_turn.assert_awaited_once_with(
+            pending_config, resume={"choice": "deny"}
+        )
+        container.abort_pending_checkpoint.assert_not_awaited()
+        assert result is None
 
     async def test_deny_sends_confirm_cancel_frame(self):
         ws = _make_ws()

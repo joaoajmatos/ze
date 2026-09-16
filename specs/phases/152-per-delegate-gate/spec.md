@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-16
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "152 Per-delegate capability and confirmation: Stop inheriting parent `gate_decision` wholesale. Evaluate specialist+intent at each `run_delegate`. Write confirmation pauses conductor loop and resumes; a lookup in the same turn is not held for a later send. Graph parallel compound may keep strictest-wins (out of 152)."
 

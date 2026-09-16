@@ -48,8 +48,8 @@ def make_graph_input(
         "final_response": None,
         "error": None,
         "components": [],
-        "dynamic_plan_steps": None,
-        "dynamic_plan_high_risk": [],
+        "conductor_hint": None,
+        "conductor_ledger": [],
         "routing_hints": None,
         "correlations": [],
         "message_trace": None,
@@ -83,8 +83,8 @@ class TurnResult:
     confirm_action: str = ""
     confirm_editable: bool = False
     confirm_proposed: str = ""
-    dynamic_plan_steps: list | None = None
-    dynamic_plan_high_risk: list | None = None
+    confirm_request_id: str = ""
+    confirm_kind: str = ""
     error: str | None = None
     response: str | None = None
     message_id: str = ""
@@ -224,8 +224,8 @@ async def invoke_raw_turn(
         confirm_action=action,
         confirm_editable=bool(payload.get("editable", False)),
         confirm_proposed=str(payload.get("proposed") or ""),
-        dynamic_plan_steps=final_state.get("dynamic_plan_steps"),
-        dynamic_plan_high_risk=final_state.get("dynamic_plan_high_risk"),
+        confirm_request_id=str(payload.get("request_id") or ""),
+        confirm_kind=str(payload.get("kind") or ""),
         error=final_state.get("error"),
         response=None if interrupted else extract_response(final_state),
         message_id=pending_message_id,
@@ -258,6 +258,8 @@ async def resume_turn(
             draft=draft,
             confirm_editable=bool(payload.get("editable", False)),
             confirm_proposed=str(payload.get("proposed") or ""),
+            confirm_request_id=str(payload.get("request_id") or ""),
+            confirm_kind=str(payload.get("kind") or ""),
             error=(new_state.values or {}).get("error") if new_state.values else None,
             response=None,
         )

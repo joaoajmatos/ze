@@ -170,6 +170,10 @@ The Mind trace panel lists every skill used on the turn: name, source
 automatic matches, and a **script ran** mark when
 `workspace_run_skill_script` succeeded.
 
+On conductor turns the same panel shows a **Conductor** section: the Haiku
+hint (not a DAG), each specialist’s ledger status, and confirmation
+`request_id`s. Independent parallel compounds omit that section.
+
 The assistant bubble also shows a workspace chip when the sidecar ran on that
 turn. Skill attribution itself lives on the trace, not as a separate bubble chip.
 

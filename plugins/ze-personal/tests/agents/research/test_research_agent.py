@@ -63,6 +63,24 @@ def test_research_agent_is_registered():
     assert "research" in _registry
 
 
+def test_research_omits_delegate_to_agent():
+    from ze_personal.agents.research.agent import _AGENT_INSTRUCTIONS
+
+    assert "delegate_to_agent" not in ResearchAgent.tools
+    assert "delegate_to_agent" not in _AGENT_INSTRUCTIONS
+    assert "calendar agent" in _AGENT_INSTRUCTIONS.lower()
+
+
+def test_non_companion_agents_from_personal_deps_omit_delegate():
+    from ze_automation.agents.goals.agent import GoalAgent
+    from ze_automation.agents.workflow.agent import WorkflowManagerAgent
+    from ze_news.agents.agent import NewsAgent
+    from ze_priority.agent import PriorityAgent
+
+    for cls in (ResearchAgent, GoalAgent, WorkflowManagerAgent, NewsAgent, PriorityAgent):
+        assert "delegate_to_agent" not in cls.tools, cls.name
+
+
 # ── run() — basic structure ───────────────────────────────────────────────────
 
 

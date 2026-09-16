@@ -39,8 +39,6 @@ def container():
                         "final_response": "Done.",
                         "agent_result": None,
                         "envelope": None,
-                        "dynamic_plan_steps": None,
-                        "dynamic_plan_high_risk": [],
                         "error": None,
                     }
                 },
@@ -74,8 +72,6 @@ async def test_invoke_raw_turn_interrupted(container):
     state_values = {
         "agent_result": _Result(),
         "envelope": _Envelope(),
-        "dynamic_plan_steps": None,
-        "dynamic_plan_high_risk": [],
         "error": None,
     }
     graph_state = MagicMock(next=("await_confirmation",))

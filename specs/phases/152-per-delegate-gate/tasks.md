@@ -10,8 +10,8 @@
 
 **Wave 1:**
 
-- [ ] **T001** [P] Confirm 151 result shape `{response, tool_calls}` and companion-only caller still specified; do not reintroduce `task` · `specs/phases/151-fat-delegate-aci/spec.md`
-- [ ] **T002** [P] Confirm confirmation store PK is `request_id` · `core/engine/ze-core/ze_core/conversation/confirmations/store.py`
+- [x] **T001** [P] Confirm 151 result shape `{response, tool_calls}` and companion-only caller still specified; do not reintroduce `task` · `specs/phases/151-fat-delegate-aci/spec.md`
+- [x] **T002** [P] Confirm confirmation store PK is `request_id` · `core/engine/ze-core/ze_core/conversation/confirmations/store.py`
 
 ---
 
@@ -19,13 +19,13 @@
 
 **⟶ Wave 2 — sequential tests on delegate test file:**
 
-- [ ] **T003** Fail-first: injected evaluator sets worker `gate_decision`; parent EXECUTE is not copied · `core/engine/ze-core/tests/orchestration/test_delegate.py`
-- [ ] **T004** Fail-first: EXECUTE lookup then AWAIT_CONFIRMATION write; lookup `run` happened, write `run` did not · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T003** Fail-first: injected evaluator sets worker `gate_decision`; parent EXECUTE is not copied · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T004** Fail-first: EXECUTE lookup then AWAIT_CONFIRMATION write; lookup `run` happened, write `run` did not · `core/engine/ze-core/tests/orchestration/test_delegate.py`
 
 **⟶ Wave 3 — protocol + wiring:**
 
-- [ ] **T005** Define engine-injected evaluate callback (no `ze_core` import in `ze_agents`) · `core/contracts/ze-agents/ze_agents/`
-- [ ] **T006** `execute_tool` / single-agent context supplies CapabilityGate + spend budget wrapper · `core/engine/ze-core/ze_core/orchestration/nodes/execution.py`
+- [x] **T005** Define engine-injected evaluate callback (no `ze_core` import in `ze_agents`) · `core/contracts/ze-agents/ze_agents/`
+- [x] **T006** `execute_tool` / single-agent context supplies CapabilityGate + spend budget wrapper · `core/engine/ze-core/ze_core/orchestration/nodes/execution.py`
 
 **Checkpoint**: Evaluation can be stubbed in unit tests.
 
@@ -39,9 +39,9 @@
 
 **Wave 4:**
 
-- [ ] **T007** [US1] Apply evaluated decision in `run_delegate`; delete parent copy · `core/contracts/ze-agents/ze_agents/delegate.py`
-- [ ] **T008** [US1] Compose spend over-ceiling with AWAIT_CONFIRMATION like `capability_check` · engine wrapper + `run_delegate`
-- [ ] **T009** [P] [US1] Lock: graph parallel `capability_check` still strictest-wins · `core/engine/ze-core/tests/orchestration/nodes/` or existing capability tests
+- [x] **T007** [US1] Apply evaluated decision in `run_delegate`; delete parent copy · `core/contracts/ze-agents/ze_agents/delegate.py`
+- [x] **T008** [US1] Compose spend over-ceiling with AWAIT_CONFIRMATION like `capability_check` · engine wrapper + `run_delegate`
+- [x] **T009** [P] [US1] Lock: graph parallel `capability_check` still strictest-wins · `core/engine/ze-core/tests/orchestration/nodes/` or existing capability tests
 
 **Checkpoint**: US1 testable without UI.
 
@@ -55,10 +55,10 @@
 
 **Wave 5:**
 
-- [ ] **T010** [US2] Fail-first: AWAIT_CONFIRMATION does not call specialist `run` until approve · `core/engine/ze-core/tests/orchestration/test_delegate.py`
-- [ ] **T011** [US2] Persist/pause using `request_id`; kind distinguishes delegate invocation · confirmations + interrupt wiring
-- [ ] **T012** [US2] Resume: approved invocation EXECUTE `run` once; deny does not write · tests + implementation
-- [ ] **T013** [P] [US2] Dual `request_id` on one thread: answering one does not clear the other · `core/engine/ze-core/tests/`
+- [x] **T010** [US2] Fail-first: AWAIT_CONFIRMATION does not call specialist `run` until approve · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T011** [US2] Persist/pause using `request_id`; kind distinguishes delegate invocation · confirmations + interrupt wiring
+- [x] **T012** [US2] Resume: approved invocation EXECUTE `run` once; deny does not write · tests + implementation
+- [x] **T013** [P] [US2] Dual `request_id` on one thread: answering one does not clear the other · `core/engine/ze-core/tests/`
 
 **Checkpoint**: US2 independently testable.
 
@@ -70,8 +70,8 @@
 
 **Wave 6:**
 
-- [ ] **T014** [US3] Schema + `run_delegate` read optional `intent` · `core/contracts/ze-agents/ze_agents/delegate.py`
-- [ ] **T015** [US3] Tests: `read` vs `create` different decisions; omitted intent still runs speech-act style · `core/engine/ze-core/tests/orchestration/test_delegate.py`
+- [x] **T014** [US3] Schema + `run_delegate` read optional `intent` · `core/contracts/ze-agents/ze_agents/delegate.py`
+- [x] **T015** [US3] Tests: `read` vs `create` different decisions; omitted intent still runs speech-act style · `core/engine/ze-core/tests/orchestration/test_delegate.py`
 
 **Checkpoint**: Speech-act one-shots without `intent` still work.
 
@@ -79,8 +79,8 @@
 
 ## Phase 6: Polish
 
-- [ ] **T016** Grep: no parent `gate_decision=` copy in `run_delegate`; no `plan_sequential` deletes; companion `description` untouched; no `ze_core` import in `delegate.py`
-- [ ] **T017** Validate: `make test-core` (delegate + confirmation + capability) and ruff
+- [x] **T016** Grep: no parent `gate_decision=` copy in `run_delegate`; no `plan_sequential` deletes; companion `description` untouched; no `ze_core` import in `delegate.py`
+- [x] **T017** Validate: `make test-core` (delegate + confirmation + capability) and ruff
 
 ---
 

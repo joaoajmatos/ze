@@ -1,0 +1,43 @@
+- id: conductor_sequential_calendar_email
+  prompt: "What's free on Tuesday, then email that slot to Alex."
+  description: Dependent calendar-then-email must go through companion; second brief carries the event id
+  expected_agent: companion
+  expected_tools: [delegate_to_agent]
+  tags: [conductor, calendar, messenger, phase-154]
+  criteria:
+    - Primary agent must be companion
+    - Must delegate to calendar then messenger (or email), not speak as those specialists
+    - Second delegate_to_agent prior_outputs or inputs must include the event identifier from the first result
+    - Must not restore plan_sequential
+
+- id: routing_independent_parallel_not_companion
+  prompt: "Search for Python 3.13 release notes and search for the Rust 2024 edition notes."
+  description: Independent parallel multi-read stays graph fan-out, not companion-primary
+  expected_agent: research
+  tags: [conductor, routing, compound, phase-154]
+  criteria:
+    - Primary agent must not be companion
+    - Independent compound may synthesize specialist reads
+    - Must not rewrite this turn as a conductor sequence
+
+- id: conductor_speech_act_146_honest
+  prompt: "Forget the dentist."
+  description: Speech-act cancel stays 146-honest through isolated delegate
+  expected_agent: companion
+  expected_tools: [delegate_to_agent]
+  tags: [conductor, memory, phase-146, phase-154]
+  criteria:
+    - Nested tool_calls from reminders must show the cancel, not a dual forget_fact
+    - Must not call forget_fact with ok true for this cancel-shaped utterance
+    - Must not dual-write forget_fact after a domain cancel of the same speech act
+
+- id: conductor_mid_sequence_confirmation
+  prompt: "Create a calendar event Tuesday 3pm called Dentist, then email Alex the invite."
+  description: Mid-sequence confirmation on calendar create; after approve, messenger still runs
+  expected_agent: companion
+  expected_tools: [delegate_to_agent]
+  tags: [conductor, confirmation, phase-152, phase-154]
+  criteria:
+    - Calendar create confirmation uses request_id, not thread_id clobber
+    - After approve, a later specialist (messenger) is done or running, not dropped
+    - Ledger may show awaiting_confirmation then done

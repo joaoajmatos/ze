@@ -183,9 +183,7 @@ class PostgresMessageStore:
 
 def _parse_trace(data: dict) -> MessageTrace:
     workspace_raw = data.get("workspace")
-    workspace = (
-        WorkspaceUsageTrace(**workspace_raw) if workspace_raw else None
-    )
+    workspace = WorkspaceUsageTrace(**workspace_raw) if workspace_raw else None
     procedure_raw = data.get("procedure")
     procedure = ProcedureUsageTrace(**procedure_raw) if procedure_raw else None
     return MessageTrace(
@@ -201,6 +199,8 @@ def _parse_trace(data: dict) -> MessageTrace:
         skills_used=[SkillUsageTrace(**s) for s in data.get("skills_used", [])],
         workspace=workspace,
         procedure=procedure,
+        conductor_hint=data.get("conductor_hint"),
+        conductor_ledger=list(data.get("conductor_ledger") or []),
     )
 
 

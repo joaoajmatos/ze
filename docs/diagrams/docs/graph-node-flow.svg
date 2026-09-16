@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1480 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="graphnode-title graphnode-desc">
       <title id="graphnode-title">Orchestration graph, node by node</title>
-      <desc id="graphnode-desc">Flowchart of the twelve LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and a compound check that either loops plan_sequential for the next subtask or proceeds to synthesize, write_memory, and the response.</desc>
+      <desc id="graphnode-desc">Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and independent compound proceeds to synthesize, write_memory, and the response.</desc>
       <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
@@ -33,7 +33,7 @@
 
       <!-- correlate -> compound? (vertical, accent) -->
       <line x1="1332" y1="168" x2="1332" y2="240" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
-      <!-- compound? -> plan_sequential (vertical, "MORE") -->
+      <!-- compound? -> record_trace (vertical, leftover gather) -->
       <line x1="1332" y1="304" x2="1332" y2="376" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
       <!-- compound? -> synthesize (elbow, "DONE") -->
       <path d="M1248,272 H1132 Q1132,272 1132,280 V376" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -43,7 +43,7 @@
       <!-- write_memory -> Response -->
       <line x1="848" y1="400" x2="816" y2="400" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <!-- plan_sequential self-loop -->
+      <!-- no sequential planner loop -->
       <path d="M1296,376 Q1296,352 1332,352 Q1368,352 1368,372" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
 
       <!-- edge labels -->
@@ -64,7 +64,7 @@
       <rect x="1148" y="266" width="44" height="12" rx="2" fill="#f7f6f4"/>
       <text x="1170" y="275" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">DONE</text>
       <rect x="1338" y="336" width="52" height="12" rx="2" fill="#f7f6f4"/>
-      <text x="1364" y="345" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PER STEP</text>
+      <text x="1364" y="345" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">TRACE</text>
 
       <!-- ===== Nodes ===== -->
       <!-- Input (start pill) -->
@@ -132,11 +132,11 @@
       <polygon points="1332,240 1416,272 1332,304 1248,272" fill="rgba(128,82,255,0.06)" stroke="#8052ff" stroke-width="1.2"/>
       <text x="1332" y="276" fill="#0a0a0a" font-size="10.5" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">compound?</text>
 
-      <!-- plan_sequential (row3) -->
+      <!-- record_trace (row3) -->
       <rect x="1248" y="376" width="168" height="48" rx="6" fill="#f7f6f4"/>
-      <rect x="1248" y="376" width="168" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
-      <text x="1332" y="397" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">plan_</text>
-      <text x="1332" y="409" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">sequential</text>
+      <rect x="1248" y="376" width="168" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
+      <text x="1332" y="397" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">record_</text>
+      <text x="1332" y="409" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">trace</text>
 
       <!-- synthesize (row3) -->
       <rect x="1048" y="376" width="168" height="48" rx="6" fill="#f7f6f4"/>

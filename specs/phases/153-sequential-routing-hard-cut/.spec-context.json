@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "sequential routing hard cut",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "completed",
   "history": [
     {
       "step": "specify",
@@ -67,6 +67,148 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-16T18:21:19.721Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:45:32.934Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:48.031Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:48.772Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:49.537Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:50.558Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:51.324Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:51.846Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:52.613Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:53.468Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:54.217Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:55.012Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:55.490Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:56.225Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:57.039Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:57.747Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:58.591Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:58:59.253Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:59:00.693Z"
     }
   ],
   "telemetryInstanceId": "855c5c24-3521-454d-a071-2eec5acbe819",
@@ -166,6 +308,135 @@
     },
     "tasks": {
       "summary": "16 tasks: delete planner, rewrite routing, description, ledger"
+    }
+  },
+  "currentTask": "T016",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Grepped sequential planner symbols",
+      "files": [
+        "core/engine/ze-core"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Sequential rewrite tests and after_decompose fetch_context",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_edges.py",
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Independent compound still fan-out",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "plan_sequential absent from graph and state",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_graph_no_plan_sequential.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "apply_conductor_rewrite sequential multi to companion",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/routing.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Removed plan_sequential node and edges",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/graph.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/__init__.py",
+        "core/engine/ze-core/ze_core/orchestration/edges.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Deleted dynamic_plan fields from state and turn",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/state.py",
+        "core/engine/ze-core/ze_core/conversation/turn.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Deleted sequential execute compound loop",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Parallel gather and one-subtask specialist preserved",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py",
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Research still omits delegate_to_agent",
+      "files": [
+        "plugins/ze-personal/tests/agents/research/test_research_agent.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Rewrote companion description and conductor instructions",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Turn-local conductor ledger on state and MessageTrace",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/state.py",
+        "core/engine/ze-core/ze_core/conversation/messages/types.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/trace.py",
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Tests for description ledger no auto workflow",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py",
+        "core/engine/ze-core/tests/orchestration/test_message_trace.py",
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Updated architecture docs and graph diagrams",
+      "files": [
+        "docs/architecture.md",
+        "docs/diagrams/docs/graph-node-flow.svg",
+        "docs/diagrams/docs/graph-node-flow.html"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Grep zero conversation-graph plan_sequential",
+      "files": [
+        "core/engine/ze-core/ze_core",
+        "plugins/ze-personal/ze_personal/agents/companion"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "test-core and test-personal passed ruff clean",
+      "files": [
+        "core/engine/ze-core/tests",
+        "plugins/ze-personal/tests"
+      ]
     }
   }
 }

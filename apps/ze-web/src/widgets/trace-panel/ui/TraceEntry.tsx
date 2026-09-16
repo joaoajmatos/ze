@@ -1,6 +1,7 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { ConductorSection } from "./ConductorSection";
 import { MemorySection } from "./MemorySection";
 import { RoutingSection } from "./RoutingSection";
 import { SkillsSection } from "./SkillsSection";
@@ -49,6 +50,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEnt
       {open && (
         <div className="pb-1">
           <RoutingSection trace={trace} live={live} />
+          <ConductorSection trace={trace} live={live} />
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
           <SkillsSection skillsUsed={trace.skills_used} live={live} />

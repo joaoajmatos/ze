@@ -440,101 +440,61 @@ async def test_synthesize_returns_empty_when_no_subtasks():
     assert result == {}
 
 
-# ── routing.plan_sequential ───────────────────────────────────────────────────
+# ── routing.apply_conductor_rewrite ───────────────────────────────────────────
 
 
-async def test_plan_sequential_identifies_high_risk_steps():
-    from ze_automation.workflow.planner import WorkflowPlanner
-    from ze_automation.workflow.types import WorkflowStep
-
-    steps = [
-        WorkflowStep(task="Research AI news", agent_hint="research", intent="read"),
-        WorkflowStep(task="Draft email summary", agent_hint="email", intent="create"),
-        WorkflowStep(task="Schedule meeting", agent_hint="calendar", intent="create"),
-    ]
-    planner = AsyncMock(spec=WorkflowPlanner)
-    planner.plan = AsyncMock(return_value=steps)
-
-    gate = MagicMock(spec=CapabilityGate)
-    gate.evaluate = MagicMock(
-        side_effect=[
-            GateDecision.EXECUTE,  # research.read — autonomous
-            GateDecision.DRAFT,  # email.create — high-risk
-            GateDecision.AWAIT_CONFIRMATION,  # calendar.create — high-risk
-        ]
+def test_apply_conductor_rewrite_sequential_multi_becomes_companion():
+    env = RoutingEnvelope(
+        primary_agent="calendar",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="calendar", intent="read", prompt="tuesday"),
+            SubTask(agent="email", intent="create", prompt="mail them"),
+        ],
+        requires_synthesis=False,
+        is_sequential=True,
     )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "check tue then email")
+    assert rewritten.primary_agent == "companion"
+    assert rewritten.is_compound is False
+    assert rewritten.subtasks[0].prompt == "check tue then email"
+    assert hint is not None
+    assert [h["agent"] for h in hint] == ["calendar", "email"]
 
-    cfg = make_config(capability_gate=gate)
-    cfg["configurable"]["workflow_planner"] = planner
 
-    state = base_state(prompt="Research AI news, draft email, schedule meeting")
-    result = await routing.plan_sequential(state, cfg)
-
-    assert result["dynamic_plan_steps"] == steps
-    assert result["dynamic_plan_high_risk"] == [1, 2]
-    planner.plan.assert_awaited_once_with(
-        "Research AI news, draft email, schedule meeting"
+def test_apply_conductor_rewrite_skips_independent_compound():
+    env = RoutingEnvelope(
+        primary_agent="research",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="research", intent="read", prompt="a"),
+            SubTask(agent="news", intent="read", prompt="b"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
     )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "a and b")
+    assert rewritten is env
+    assert hint is None
 
 
-async def test_plan_sequential_empty_high_risk_when_all_autonomous():
-    from ze_automation.workflow.planner import WorkflowPlanner
-    from ze_automation.workflow.types import WorkflowStep
-
-    steps = [
-        WorkflowStep(task="Look up AI news", agent_hint="research", intent="read"),
-        WorkflowStep(task="Look up stock prices", agent_hint="research", intent="read"),
-    ]
-    planner = AsyncMock(spec=WorkflowPlanner)
-    planner.plan = AsyncMock(return_value=steps)
-
-    gate = MagicMock(spec=CapabilityGate)
-    gate.evaluate = MagicMock(return_value=GateDecision.EXECUTE)
-
-    cfg = make_config(capability_gate=gate)
-    cfg["configurable"]["workflow_planner"] = planner
-
-    state = base_state(prompt="Look up AI news and stock prices")
-    result = await routing.plan_sequential(state, cfg)
-
-    assert result["dynamic_plan_steps"] == steps
-    assert result["dynamic_plan_high_risk"] == []
-
-
-async def test_plan_sequential_returns_error_on_plan_failure():
-    from ze_agents.errors import WorkflowPlanError
-    from ze_automation.workflow.planner import WorkflowPlanner
-
-    planner = AsyncMock(spec=WorkflowPlanner)
-    planner.plan = AsyncMock(side_effect=WorkflowPlanError("malformed plan"))
-
-    cfg = make_config()
-    cfg["configurable"]["workflow_planner"] = planner
-
-    state = base_state(prompt="do something complex")
-    result = await routing.plan_sequential(state, cfg)
-
-    assert "couldn't plan" in result["final_response"]
-    assert result["dynamic_plan_steps"] is None
-    assert result["dynamic_plan_high_risk"] == []
-
-
-async def test_plan_sequential_uses_agent_hint_for_gate_check():
-    from ze_automation.workflow.planner import WorkflowPlanner
-    from ze_automation.workflow.types import WorkflowStep
-
-    steps = [WorkflowStep(task="Do something", agent_hint=None, intent="execute")]
-    planner = AsyncMock(spec=WorkflowPlanner)
-    planner.plan = AsyncMock(return_value=steps)
-
-    gate = MagicMock(spec=CapabilityGate)
-    gate.evaluate = MagicMock(return_value=GateDecision.EXECUTE)
-
-    cfg = make_config(capability_gate=gate)
-    cfg["configurable"]["workflow_planner"] = planner
-
-    state = base_state(prompt="do something")
-    await routing.plan_sequential(state, cfg)
-
-    # Falls back to "research" when agent_hint is None
-    gate.evaluate.assert_called_once_with("research", "execute", {})
+def test_apply_conductor_rewrite_skips_sequential_one_subtask():
+    env = RoutingEnvelope(
+        primary_agent="calendar",
+        confidence=0.9,
+        score_gap=0.2,
+        routing_method="haiku",
+        is_compound=False,
+        subtasks=[SubTask(agent="calendar", intent="read", prompt="tuesday")],
+        requires_synthesis=False,
+        is_sequential=True,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "what's on tuesday")
+    assert rewritten.primary_agent == "calendar"
+    assert hint is None

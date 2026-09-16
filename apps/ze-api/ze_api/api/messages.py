@@ -82,6 +82,8 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         ],
         workspace=_workspace_to_response(getattr(trace, "workspace", None)),
         procedure=_procedure_to_response(getattr(trace, "procedure", None)),
+        conductor_hint=getattr(trace, "conductor_hint", None),
+        conductor_ledger=list(getattr(trace, "conductor_ledger", None) or []),
     )
 
 

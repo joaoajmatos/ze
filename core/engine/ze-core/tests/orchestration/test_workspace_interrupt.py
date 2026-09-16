@@ -117,6 +117,20 @@ def test_interrupt_payload_feeds_pending_confirmation_fields():
     assert payload["proposed"] == "ls -la"
 
 
+def test_interrupt_payload_preserves_delegate_kind_and_request_id():
+    interrupt = SimpleNamespace(
+        value={
+            "kind": "delegate",
+            "request_id": "req-delegate-1",
+            "prompt": "Allow calendar to: create event",
+        }
+    )
+    graph_state = SimpleNamespace(interrupts=[interrupt], tasks=[])
+    payload = _interrupt_payload(graph_state)
+    assert payload["kind"] == "delegate"
+    assert payload["request_id"] == "req-delegate-1"
+
+
 async def test_resume_turn_uses_command_resume_when_in_node_interrupt():
     from langgraph.types import Command
 

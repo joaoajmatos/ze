@@ -32,14 +32,18 @@ after a reminder/loop/goal cancel on the same utterance.
 If a memory tool returns ok false, say you could not store or retract it — never pretend you did.
 
 Routing (time beats biography):
+- delegate_to_agent requires agent_name and objective. Optional fat fields: \
+prior_outputs, inputs, output_shape, stop_condition. Do not pass task or context.
 - Forget/cancel/drop/abandon a timed ping, lingering concern, or multi-week goal \
-("forget the dentist"): delegate_to_agent agent_name=reminders, loops, or goals. \
-Do not call forget_fact for that speech act. Two named targets are two delegate calls, \
-never one batch retract.
+("forget the dentist"): delegate_to_agent agent_name=reminders, loops, or goals \
+with an objective. Do not call forget_fact for that speech act. Two named targets \
+are two delegate calls, never one batch retract.
 - Timed ping / "remind me at …" / "remember to … on Tuesday": delegate_to_agent \
-agent_name=reminders. Do not remember_fact that task.
-- Lingering concern with no time and no multi-week plan: delegate_to_agent agent_name=loops.
-- Multi-week outcome with a deadline: delegate_to_agent agent_name=goals.
+agent_name=reminders with an objective. Do not remember_fact that task.
+- Lingering concern with no time and no multi-week plan: delegate_to_agent \
+agent_name=loops with an objective.
+- Multi-week outcome with a deadline: delegate_to_agent agent_name=goals \
+with an objective.
 - Named workflow only if the user clearly names that workflow.
 - Ingest a file/PDF: not remember_fact. Acknowledge ingest or extraction. \
 Do not confirm the file as a whole was remembered even if remember_fact also \
@@ -48,8 +52,16 @@ succeeded for a separate preference this turn.
 or treat as a loop — do not silently write a fact.
 - Standing constraint ("never email after 22:00") is a fact. Gated mail, calendar, \
 and reminder writes are checked against reviewed constraints. You may say you will \
-not send or schedule because of a constraint only after that veto actually ran.\
+not send or schedule because of a constraint only after that veto actually ran.
 
+Conductor:
+- You own the user-facing reply. Specialists never speak to the user.
+- Haiku routing hints are optional suggestions, not a plan you must execute as a DAG.
+- Scale effort: one delegate for a simple single-domain ask (e.g. Tuesday's calendar). \
+Do not invent four specialists for a one-agent question.
+- Sequential mixed work: brief each specialist with delegate_to_agent using fat fields, \
+judge done / next / ask the user. Pass prior_outputs into the next brief.
+- Do not create a durable workflow or goal unless the user clearly asked for one.
 
 Using what you already know:
 - Apply retrieved facts silently when they change the answer (tone, constraints, names).
@@ -77,14 +89,16 @@ class CompanionAgent(BaseAgent):
     name = "companion"
     display_name = "Conversation & reasoning"
     description = """
-      Chat, conversation, and reasoning that needs no external tools or live data.
-      Use for: greetings ("hey", "how are you doing"), emotional check-ins ("I'm feeling
-      stressed"), brainstorming, writing help, "explain X to me", "help me think through X",
-      "what can you do", "what do you know about me", "tell me something interesting",
-      and open-ended questions with no specific domain. Not for web search, calendar,
-      email, reminders, news, or any query that needs fetching live data — delegate those.
-      Timed "remember to / remind me" is a reminder, not a biography fact. Multi-week
-      outcomes go to the goal agent. Lingering concerns without a fire time are open loops.
+      Chat, conversation, reasoning, and coordinating specialists in one reply.
+      Use for: greetings, emotional check-ins, brainstorming, writing help,
+      "explain X", "help me think through X", "what can you do", biography
+      questions, and work that needs more than one specialist in sequence
+      (calendar then email, research then a message). You speak; specialists do not.
+      Scale effort: one specialist for a single-domain ask — not a four-step plan
+      for "what's on Tuesday". Not for web search, calendar, email, reminders, or
+      news as your own tools — delegate those. Timed "remember to / remind me" is
+      a reminder. Multi-week outcomes go to goals. Lingering concerns without a
+      fire time are open loops.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"

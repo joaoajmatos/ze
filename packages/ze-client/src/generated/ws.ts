@@ -100,6 +100,15 @@ export type Planned = string[] | null;
 export type InvocationId = string;
 export type ProcedureId = string;
 export type VersionId = string;
+export type ConductorHint =
+  | {
+      [k: string]: string;
+    }[]
+  | null;
+export type Agent1 = string;
+export type Status = string;
+export type RequestId = string | null;
+export type ConductorLedger = ConductorLedgerEntryResponse[];
 export type Type10 = "notification";
 export type Id4 = string;
 export type EventType = string;
@@ -290,6 +299,8 @@ export interface WsTraceUpdateFrame {
   skills_used?: SkillsUsed;
   workspace?: WorkspaceUsageTraceResponse | null;
   procedure?: ProcedureUsageTraceResponse | null;
+  conductor_hint?: ConductorHint;
+  conductor_ledger?: ConductorLedger;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -343,6 +354,15 @@ export interface ProcedureUsageTraceResponse {
   invocation_id: InvocationId;
   procedure_id: ProcedureId;
   version_id: VersionId;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "ConductorLedgerEntryResponse".
+ */
+export interface ConductorLedgerEntryResponse {
+  agent: Agent1;
+  status: Status;
+  request_id?: RequestId;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

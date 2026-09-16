@@ -84,9 +84,10 @@ the request as simple (word count, question marks, conjunctions — no extra LLM
 `thread_id`. Ze also compiles a separate `workflow_graph` for multi-step workflow
 execution.
 
-At the top level, the runtime graph now includes a preprocessing node for multimodal
-input, a correlation node for inline connection surfacing, and a `plan_sequential`
-branch for compound routing results. Ze layers plugin graph nodes and edges in at
+At the top level, the runtime graph includes a preprocessing node for multimodal
+input, a correlation node for inline connection surfacing, and Haiku decompose
+for independent compound turns. Sequential multi-specialist turns rewrite to
+companion as primary (conductor). Ze layers plugin graph nodes and edges in at
 startup.
 
 ### Graph input factory
@@ -144,7 +145,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 ### Nodes
 
-![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, match_skills then capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate and a compound check that either loops plan_sequential for the next subtask or proceeds to synthesize, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
+![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, match_skills then capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate then independent compound synthesizes, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
 
 <sub>[Interactive version](diagrams/docs/graph-node-flow.html)</sub>
 
@@ -163,9 +164,8 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `correlate` | `nodes/correlation.py` | Surface inline relationship hypotheses when relevant |
 | `draft_response` | `nodes/draft.py` | Generate response, do not execute |
 | `await_confirmation` | `nodes/confirmation.py` | Pause graph, emit confirm_request frame |
-| `synthesize` | `nodes/synthesis.py` | Merge subtask results into one response |
+| `synthesize` | `nodes/synthesis.py` | Merge independent parallel subtask results into one response |
 | `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction (fire-and-forget); skips eval threads |
-| `plan_sequential` | `nodes/routing.py` | Execute compound routing plans one step at a time |
 
 </details>
 

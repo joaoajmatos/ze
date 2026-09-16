@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "fat delegate aci",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "completed",
   "history": [
     {
       "step": "specify",
@@ -67,10 +67,176 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-16T18:15:41.247Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:29:41.639Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:30:02.467Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:30:15.424Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:19.867Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:21.273Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:22.663Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:23.723Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:24.498Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:25.102Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:25.914Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:26.889Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:27.745Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:28.266Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:29.020Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:29.968Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:30.980Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:31.637Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:32.415Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:33.314Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:35:33.849Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:35:34.056Z"
     }
   ],
   "telemetryInstanceId": "8efea6e9-15fd-42ce-baf1-777577218302",
-  "last_action": "living specs evaluated — skipped (not configured)",
+  "last_action": "151 implemented — make test-core and test-personal pass",
   "coverage": {
     "FR-001": {
       "title": "Hard-cut delegate_to_agent to agent_name+objective plus optional fat fields; remove task and context",
@@ -78,6 +244,9 @@
         "T003",
         "T005",
         "T018"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py::TestDelegateToolSchema"
       ]
     },
     "FR-002": {
@@ -85,6 +254,9 @@
       "tasks": [
         "T007",
         "T008"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py::TestRunDelegate.test_fat_fields_appear_in_worker_prompt"
       ]
     },
     "FR-003": {
@@ -92,6 +264,9 @@
       "tasks": [
         "T012",
         "T014"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/research/test_research_agent.py::test_research_omits_delegate_to_agent"
       ]
     },
     "FR-004": {
@@ -100,6 +275,9 @@
         "T004",
         "T006",
         "T013"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py::TestRunDelegate.test_non_companion_caller_fails_without_run"
       ]
     },
     "FR-005": {
@@ -108,6 +286,10 @@
         "T009",
         "T010",
         "T011"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py",
+        "core/engine/ze-core/tests/orchestration/test_delegate.py::test_nested_cancel_payload_is_visible"
       ]
     },
     "FR-006": {
@@ -115,6 +297,9 @@
       "tasks": [
         "T014",
         "T015"
+      ],
+      "tests": [
+        "plugins/ze-personal/tests/agents/research/test_research_agent.py::test_research_omits_delegate_to_agent"
       ]
     },
     "FR-007": {
@@ -124,6 +309,10 @@
         "T016",
         "T017",
         "T018"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/test_edges.py::test_after_decompose_sequential_goes_to_plan_sequential",
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py::test_companion_description_unchanged_for_embeddings"
       ]
     },
     "FR-008": {
@@ -131,6 +320,9 @@
       "tasks": [
         "T007",
         "T017"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py::TestRunDelegate.test_inherits_gate_decision"
       ]
     }
   },
@@ -172,6 +364,11 @@
       "decision": "Max depth 1",
       "why": "One conductor pin",
       "rejected": "Keep depth 2 with allow-list only"
+    },
+    {
+      "decision": "Pass BaseAgent.name as caller_name keyword, not ctx.intent",
+      "why": "companion intent is reason",
+      "rejected": "Gate on ctx.intent"
     }
   ],
   "step_summaries": {
@@ -181,6 +378,173 @@
     },
     "tasks": {
       "summary": "19 tasks, US1 fat ACI, US2 companion-only, US3 graph lock"
+    },
+    "implement": {
+      "summary": "Fat isolated-worker ACI: objective plus optional fields, companion-only, depth 1"
     }
-  }
+  },
+  "currentTask": "T019",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Listed hard-cut files: delegate.py, base_agent.py, companion/research agents, test_delegate.py, speech-act/honesty tests; only companion and research list the tool; callers still use task/context.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py",
+        "plugins/ze-personal/ze_personal/agents/research/agent.py",
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Snapshotted CompanionAgent.description for embedding lock; will not edit that class attribute in this tree.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Fail-first schema tests: required agent_name+objective; omit task/context; max depth 1.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Fail-first refuse tests: non-companion caller and target companion do not run.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Hard-cut DELEGATE_TOOL_SCHEMA and assemble_delegate_prompt fat brief.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Pass self.name into run_delegate; companion-only, non-companion target, depth 1.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py",
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Keep {response, tool_calls}; inherit gate_decision; isolated worker messages.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Fat fields appear in worker prompt; omitted optionals do not.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Speech-act tests require objective and forbid task/context ACI wording.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Companion instructions: objective plus optional fat fields; description untouched.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Honesty tests still use nested tool_calls; no remaining task/context delegate callers.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_memory_claim_honesty.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Research and personal-dep specialists omit delegate_to_agent from tools.",
+      "files": [
+        "plugins/ze-personal/tests/agents/research/test_research_agent.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Depth 1 run_delegate fails without invoking another agent.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Removed research listing; calendar copy is a user-visible limitation.",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/research/agent.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Research tests assert no delegate tool and no delegate_to_agent in instructions.",
+      "files": [
+        "plugins/ze-personal/tests/agents/research/test_research_agent.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Lock: after_decompose sequential still routes to plan_sequential.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_edges.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Lock: companion description snapshot; run_delegate still copies gate_decision.",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_speech_act_routing.py",
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Grep: only companion lists the tool; no task/context ACI; no CapabilityGate in run_delegate.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "make test-core 667 passed; make test-personal 302 passed; ruff clean on touched files.",
+      "files": [
+        "core/engine/ze-core/tests",
+        "plugins/ze-personal/tests"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "ze-core tests",
+      "command": "make test-core",
+      "result": "667 passed, 45 skipped",
+      "warnings": [
+        "existing utcnow and unawaited mock warnings"
+      ]
+    },
+    {
+      "what": "ze-personal tests",
+      "command": "make test-personal",
+      "result": "302 passed",
+      "warnings": [
+        "existing utcnow warnings"
+      ]
+    },
+    {
+      "what": "ruff on touched Python",
+      "command": "ruff check touched files",
+      "result": "All checks passed"
+    }
+  ]
 }

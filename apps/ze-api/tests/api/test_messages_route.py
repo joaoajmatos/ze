@@ -150,3 +150,34 @@ async def test_get_message_trace_skills_used_empty_when_no_skill_matched():
 
     assert resp.status_code == 200
     assert resp.json()["skills_used"] == []
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_includes_conductor_ledger():
+    message_id = uuid4()
+    store = AsyncMock()
+    trace = _trace()
+    trace.conductor_hint = [{"agent": "calendar", "intent": "read", "prompt": "tue"}]
+    trace.conductor_ledger = [
+        {"agent": "calendar", "status": "done"},
+        {
+            "agent": "messenger",
+            "status": "awaiting_confirmation",
+            "request_id": "req-1",
+        },
+    ]
+    store.get_trace = AsyncMock(return_value=trace)
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/messages/{message_id}/trace",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["conductor_hint"][0]["agent"] == "calendar"
+    assert data["conductor_ledger"][1]["request_id"] == "req-1"
