@@ -2,12 +2,14 @@ import asyncio
 import base64
 from email.mime.text import MIMEText
 
-from ze_agents.errors import ChannelNotFoundError
+from ze_agents.errors import ChannelNotFoundError, ChannelSendError
 from ze_agents.tool import ToolAccess, tool
 from ze_communication.channel import InboundChannel
 from ze_communication.registry import ChannelRegistry
 from ze_communication.types import ChannelType, Message
 from ze_google.auth import GoogleCredentials
+from ze_messenger.outbound.adapter import persist_outbound_send, record_outbound_message
+from ze_messenger.outbound.types import OutboundSendOutcome
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.channels.user_channel_store import UserChannelStore
 
@@ -95,7 +97,28 @@ async def send_email(
         body=body,
         thread_id=thread_id,
     )
-    sent = await channel.send(msg)
+    try:
+        sent = await channel.send(msg)
+    except Exception as exc:
+        recorded = await persist_outbound_send(
+            sent=None,
+            channel_id=channel.channel_id,
+            outcome=OutboundSendOutcome.UNKNOWN
+            if not isinstance(exc, ChannelSendError)
+            else OutboundSendOutcome.FAILURE,
+            failure_code=type(exc).__name__,
+        )
+        if recorded is not None:
+            await record_outbound_message(recorded)
+        raise
+
+    recorded = await persist_outbound_send(
+        sent=sent,
+        channel_id=channel.channel_id,
+        outcome=OutboundSendOutcome.SUCCESS,
+    )
+    if recorded is not None:
+        await record_outbound_message(recorded)
 
     if sent.thread_id:
         await thread_channel_map.set(sent.thread_id, channel.channel_id)

@@ -11,6 +11,8 @@ dependencies = [
     "ze-agents",
     "ze-logging",
     "ze-data",
+    "ze-memory",
+    "ze-plugin",
     "httpx",
     "asyncpg==0.31.0",
 ]
@@ -32,6 +34,8 @@ testpaths = ["tests"]
 ze-agents  = { workspace = true }
 ze-logging = { workspace = true }
 ze-data    = { workspace = true }
+ze-memory  = { workspace = true }
+ze-plugin  = { workspace = true }
 ze-sdk     = { workspace = true }
 
 [tool.hatch.build.targets.wheel]

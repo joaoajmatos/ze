@@ -5,6 +5,7 @@ from typing import Any
 
 from ze_logging import get_logger
 
+from ze_workspace.action_handoff import configure_action_ledger, record_workspace_run
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.gate import WorkspaceGate
@@ -46,6 +47,7 @@ def build_workspace_stack(
     *,
     turn_starter: Any = None,
     push_sender: Any = None,
+    action_record_store: Any = None,
 ) -> WorkspaceStack:
     import ze_workspace.tools  # noqa: F401
 
@@ -67,6 +69,10 @@ def build_workspace_stack(
         timeout=timeout,
     )
     store = PostgresWorkspaceStore(pool=shared.pool)
+    configure_action_ledger(
+        action_record_store=action_record_store, workspace_store=store
+    )
+    store.on_run_persisted = record_workspace_run
     gate = WorkspaceGate()
     run_watcher = RunWatcher(
         store=store,

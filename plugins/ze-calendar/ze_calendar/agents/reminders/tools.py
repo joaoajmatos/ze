@@ -5,8 +5,10 @@ from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
 from ze_sdk.proactive import ProactiveNotifier
+from ze_calendar.action_records import emit_reminder_mutation
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
 from ze_automation.workflow.scheduler import WorkflowScheduler
+from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
 
 
 @tool(
@@ -42,6 +44,12 @@ async def set_reminder(
         dt=fire_dt,
         job_id=f"user_reminder:{rid}",
         args=(store, notifier, rid),
+    )
+    await emit_reminder_mutation(
+        action_kind="create",
+        reminder_id=str(rid),
+        lifecycle=ActionLifecycle.SUCCEEDED,
+        outcome=ActionOutcome.SUCCESS,
     )
     return {"id": str(rid), "label": label, "fire_at": fire_dt.isoformat()}
 
@@ -79,4 +87,11 @@ async def cancel_reminder(
 
     scheduler.remove_job_if_exists(f"user_reminder:{uid}")
     await store.delete(uid)
+    await emit_reminder_mutation(
+        action_kind="cancel",
+        reminder_id=str(uid),
+        lifecycle=ActionLifecycle.CANCELLED,
+        outcome=ActionOutcome.CANCELLED,
+        failure_code="cancelled",
+    )
     return {"cancelled": reminder.label}

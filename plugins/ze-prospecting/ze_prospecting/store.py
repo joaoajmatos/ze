@@ -5,6 +5,7 @@ from uuid import UUID
 import asyncpg
 
 from ze_logging import get_logger
+from ze_prospecting.action_records import emit_outreach_event
 
 log = get_logger(__name__)
 
@@ -94,7 +95,10 @@ class ProspectCampaignStore:
                 contact_id,
                 channel,
             )
-        return row["id"] if row else None
+        outreach_id = row["id"] if row else None
+        if outreach_id is not None:
+            await emit_outreach_event(outreach_id, "pending")
+        return outreach_id
 
     async def save_draft(self, campaign_id: UUID, contact_id: UUID, draft: str) -> None:
         async with self._pool.acquire() as conn:
@@ -129,3 +133,4 @@ class ProspectCampaignStore:
                 status,
                 notes,
             )
+        await emit_outreach_event(outreach_id, status)

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import asyncpg
 
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_logging import get_logger
+from ze_memory.action_records.store import ActionRecordStore
 from ze_memory.store import MemoryStore
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.channels.user_channel_store import UserChannelStore
@@ -37,6 +41,8 @@ class MessengerPlugin(ZePlugin):
         google_credentials: GoogleCredentials | None = None,
         embedder: Any = None,
         public_url: str = "",
+        pool: asyncpg.Pool | None = None,
+        action_record_store: ActionRecordStore | None = None,
     ) -> None:
         self._google_credentials = google_credentials
         self._public_url = public_url or ""
@@ -49,6 +55,18 @@ class MessengerPlugin(ZePlugin):
         self._llm_client = openrouter_client
         self._settings = settings
         self._embedder = embedder
+        self._pool = pool
+        self._action_record_store = action_record_store
+        self._outbound_store = None
+        if pool is not None:
+            from ze_messenger.outbound.adapter import configure_outbound_ledger
+            from ze_messenger.outbound.store import PostgresOutboundSendStore
+
+            self._outbound_store = PostgresOutboundSendStore(pool)
+            configure_outbound_ledger(
+                outbound_store=self._outbound_store,
+                action_record_store=action_record_store,
+            )
 
         from ze_messenger.signals import MessagingSignalSource
 
@@ -100,6 +118,10 @@ class MessengerPlugin(ZePlugin):
             "ze_messenger.agents.messenger.tools",
             "ze_messenger.agents.messenger.agent",
         ]
+
+    @classmethod
+    def migrations_path(cls) -> Path | None:
+        return Path(__file__).parent / "migrations"
 
     async def startup(self, container: Any) -> None:
         from ze_messenger.inbound.processor import InboundMessageProcessor

@@ -9,6 +9,8 @@ from ze_logging import get_logger
 from ze_sdk import ZePlugin
 from ze_agents.settings import Settings as CoreSettings
 from ze_sdk.proactive import ProactiveScheduler
+from ze_memory.action_records.store import ActionRecordStore
+from ze_prospecting.action_records import configure_action_recorder
 from ze_prospecting.jobs.campaigns import recover_stale_campaigns
 from ze_prospecting.store import ProspectCampaignStore
 from ze_prospecting.types import ProspectingSettings
@@ -24,6 +26,7 @@ class ProspectingPlugin(ZePlugin):
         *,
         pool: asyncpg.Pool,
         settings: CoreSettings,
+        action_record_store: ActionRecordStore | None = None,
     ) -> None:
         self._pool = pool
         prospecting_cfg = settings.config.get("prospecting", {})
@@ -42,6 +45,7 @@ class ProspectingPlugin(ZePlugin):
         else:
             self._prospecting_settings = ProspectingSettings.from_env()
         self.campaign_store = ProspectCampaignStore(pool=pool)
+        configure_action_recorder(action_record_store)
 
     def data_domains(self):
         from ze_sdk import DataDomain

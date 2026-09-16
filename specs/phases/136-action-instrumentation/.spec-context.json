@@ -1,0 +1,399 @@
+{
+  "workflow": "speckit",
+  "specName": "Action Instrumentation",
+  "branch": "136-action-instrumentation",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T21:38:00.000Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T22:33:38.944Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.798Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.798Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.799Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.800Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.801Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.802Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.802Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.802Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.802Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.802Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:42:43.802Z"
+    }
+  ],
+  "context": [
+    "depends on Phase 135 ActionRecord ledger",
+    "instrument workspace, outbound messenger, calendar/reminders, goals/workflows, prospecting outreach",
+    "domain stores remain source of truth; ledger cites them",
+    "record factual observations after known; exact-one source-derived idempotency",
+    "exclude inbound perception, signal_sources rewiring, learning/procedures, arbitration"
+  ],
+  "approach": "Inject the Phase 135 recorder at each producer terminalization boundary. Record one source-cited immutable ActionRecord per durable producer observation, causally link pending to its terminal observation, and retain producer-domain lifecycle ownership.",
+  "decisions": [
+    {
+      "decision": "Record terminal outcomes after source persistence",
+      "why": "An action audit must describe observed results, not intentions",
+      "rejected": "Record success at dispatch and append a correction later"
+    },
+    {
+      "decision": "Use source-derived stable idempotency",
+      "why": "Retries and callbacks must converge without repeating side effects",
+      "rejected": "Deduplicate by callback ID, timestamp, or summary text"
+    },
+    {
+      "decision": "Keep domain records canonical",
+      "why": "Recovery and provider lifecycle belong to their producing domain",
+      "rejected": "Make ActionRecord a replacement operational store"
+    }
+  ],
+  "coverage": {
+    "FR-001": {
+      "tasks": [
+        "T007",
+        "T008",
+        "T009",
+        "T010",
+        "T011",
+        "T012",
+        "T013",
+        "T014",
+        "T015",
+        "T016",
+        "T017",
+        "T018",
+        "T019",
+        "T020"
+      ]
+    },
+    "FR-002": {
+      "tasks": [
+        "T002",
+        "T018",
+        "T019",
+        "T024"
+      ]
+    },
+    "FR-003": {
+      "tasks": [
+        "T003",
+        "T005",
+        "T022"
+      ]
+    },
+    "FR-004": {
+      "tasks": [
+        "T007",
+        "T008",
+        "T009",
+        "T010",
+        "T021"
+      ]
+    },
+    "FR-005": {
+      "tasks": [
+        "T007",
+        "T008",
+        "T011",
+        "T012",
+        "T015",
+        "T016",
+        "T017"
+      ]
+    },
+    "FR-006": {
+      "tasks": [
+        "T003",
+        "T021",
+        "T022"
+      ]
+    },
+    "FR-007": {
+      "tasks": [
+        "T004",
+        "T005",
+        "T023"
+      ]
+    },
+    "FR-008": {
+      "tasks": [
+        "T002",
+        "T004",
+        "T024"
+      ]
+    },
+    "FR-009": {
+      "tasks": [
+        "T006",
+        "T021",
+        "T022"
+      ]
+    },
+    "FR-010": {
+      "tasks": [
+        "T005",
+        "T007",
+        "T008",
+        "T011",
+        "T012",
+        "T015",
+        "T016",
+        "T017",
+        "T025"
+      ]
+    },
+    "FR-011": {
+      "tasks": [
+        "T024"
+      ]
+    },
+    "FR-012": {
+      "tasks": [
+        "T026"
+      ]
+    }
+  },
+  "size": "large",
+  "classification": {
+    "projectedFiles": 16,
+    "projectedTasks": 26,
+    "scopeSignal": "cross-package",
+    "verdict": "large but cohesive producer instrumentation"
+  },
+  "telemetryInstanceId": "2aa6e155-618c-4ce5-8c39-d539a7307cb3",
+  "currentTask": "T026"
+}

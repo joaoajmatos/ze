@@ -76,6 +76,12 @@ def _run_from_row(row) -> WorkspaceRun:
         error_summary=row["error_summary"],
         follow_through_notified=bool(row["follow_through_notified"]),
         sidecar_dispatched=bool(row["sidecar_dispatched"]),
+        ledger_idempotency_key=row["ledger_idempotency_key"]
+        if "ledger_idempotency_key" in row.keys()
+        else None,
+        ledger_pending=bool(row["ledger_pending"])
+        if "ledger_pending" in row.keys()
+        else False,
     )
 
 
@@ -123,10 +129,21 @@ class WorkspaceStore(Protocol):
         origin: WorkspaceRunOrigin | None = None,
     ) -> list[WorkspaceRun]: ...
 
+    async def mark_ledger_handoff(
+        self,
+        run_id: UUID,
+        *,
+        key: str,
+        pending: bool,
+    ) -> None: ...
+
+    async def list_ledger_pending(self) -> list[WorkspaceRun]: ...
+
 
 class PostgresWorkspaceStore:
     def __init__(self, pool: DBPool) -> None:
         self._pool = pool
+        self.on_run_persisted = None
 
     async def get_state(self) -> WorkspaceState:
         async with self._pool.acquire() as conn:
@@ -226,6 +243,7 @@ class PostgresWorkspaceStore:
             origin=result.origin.value,
             status=result.status.value,
         )
+        await self._notify_persisted(result)
         return result
 
     async def insert_in_progress_run(self, run: WorkspaceRun) -> WorkspaceRun:
@@ -261,6 +279,7 @@ class PostgresWorkspaceStore:
             run_id=str(result.id),
             origin=result.origin.value,
         )
+        await self._notify_persisted(result)
         return result
 
     async def complete_run(
@@ -305,6 +324,7 @@ class PostgresWorkspaceStore:
             run_id=str(result.id),
             status=status.value,
         )
+        await self._notify_persisted(result)
         return result
 
     async def list_in_progress(self) -> list[WorkspaceRun]:
@@ -344,6 +364,7 @@ class PostgresWorkspaceStore:
             return None
         result = _run_from_row(row)
         log.info("workspace_run_cancelled", run_id=str(result.id))
+        await self._notify_persisted(result)
         return result
 
     async def mark_follow_through_notified(self, run_id: UUID) -> bool:
@@ -398,3 +419,36 @@ class PostgresWorkspaceStore:
                     limit,
                 )
         return [_run_from_row(r) for r in rows]
+
+    async def mark_ledger_handoff(
+        self,
+        run_id: UUID,
+        *,
+        key: str,
+        pending: bool,
+    ) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE workspace_runs
+                   SET ledger_idempotency_key = $2, ledger_pending = $3
+                 WHERE id = $1
+                """,
+                run_id,
+                key,
+                pending,
+            )
+
+    async def list_ledger_pending(self) -> list[WorkspaceRun]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM workspace_runs WHERE ledger_pending = true"
+                " ORDER BY started_at ASC"
+            )
+        return [_run_from_row(r) for r in rows]
+
+    async def _notify_persisted(self, run: WorkspaceRun) -> None:
+        callback = self.on_run_persisted
+        if callback is None:
+            return
+        await callback(run)

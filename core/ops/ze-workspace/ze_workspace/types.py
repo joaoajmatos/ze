@@ -81,6 +81,8 @@ class WorkspaceRun:
     error_summary: str | None = None
     follow_through_notified: bool = False
     sidecar_dispatched: bool = False
+    ledger_idempotency_key: str | None = None
+    ledger_pending: bool = False
 
 
 @dataclass

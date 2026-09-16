@@ -2,6 +2,8 @@ import asyncio
 
 from ze_agents.tool import ToolAccess, tool
 from ze_google.auth import GoogleCredentials
+from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
+from ze_calendar.action_records import emit_calendar_mutation
 
 
 @tool(access=ToolAccess.READ, description="List upcoming Google Calendar events.")
@@ -53,10 +55,28 @@ async def create_event(
         body["location"] = location
 
     service = credentials.calendar()
-    result = await asyncio.to_thread(
-        lambda: service.events().insert(calendarId=calendar_id, body=body).execute()
+    try:
+        result = await asyncio.to_thread(
+            lambda: service.events().insert(calendarId=calendar_id, body=body).execute()
+        )
+    except Exception as exc:
+        log_id = ""
+        await emit_calendar_mutation(
+            action_kind="create",
+            event_id=log_id,
+            lifecycle=ActionLifecycle.FAILED,
+            outcome=ActionOutcome.FAILURE,
+            failure_code=type(exc).__name__,
+        )
+        raise
+    event_id = result.get("id") or ""
+    await emit_calendar_mutation(
+        action_kind="create",
+        event_id=event_id,
+        lifecycle=ActionLifecycle.SUCCEEDED,
+        outcome=ActionOutcome.SUCCESS,
     )
-    return {"id": result.get("id"), "htmlLink": result.get("htmlLink")}
+    return {"id": event_id, "htmlLink": result.get("htmlLink")}
 
 
 @tool(access=ToolAccess.WRITE, description="Update an existing Google Calendar event.")
@@ -82,12 +102,28 @@ async def update_event(
     if description is not None:
         existing["description"] = description
 
-    result = await asyncio.to_thread(
-        lambda: (
-            service.events()
-            .update(calendarId=calendar_id, eventId=event_id, body=existing)
-            .execute()
+    try:
+        result = await asyncio.to_thread(
+            lambda: (
+                service.events()
+                .update(calendarId=calendar_id, eventId=event_id, body=existing)
+                .execute()
+            )
         )
+    except Exception as exc:
+        await emit_calendar_mutation(
+            action_kind="update",
+            event_id=event_id,
+            lifecycle=ActionLifecycle.FAILED,
+            outcome=ActionOutcome.FAILURE,
+            failure_code=type(exc).__name__,
+        )
+        raise
+    await emit_calendar_mutation(
+        action_kind="update",
+        event_id=result.get("id") or event_id,
+        lifecycle=ActionLifecycle.SUCCEEDED,
+        outcome=ActionOutcome.SUCCESS,
     )
     return {"id": result.get("id"), "htmlLink": result.get("htmlLink")}
 
@@ -99,8 +135,24 @@ async def delete_event(
     calendar_id: str = "primary",
 ) -> None:
     service = credentials.calendar()
-    await asyncio.to_thread(
-        lambda: (
-            service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+    try:
+        await asyncio.to_thread(
+            lambda: (
+                service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+            )
         )
+    except Exception as exc:
+        await emit_calendar_mutation(
+            action_kind="delete",
+            event_id=event_id,
+            lifecycle=ActionLifecycle.FAILED,
+            outcome=ActionOutcome.FAILURE,
+            failure_code=type(exc).__name__,
+        )
+        raise
+    await emit_calendar_mutation(
+        action_kind="delete",
+        event_id=event_id,
+        lifecycle=ActionLifecycle.SUCCEEDED,
+        outcome=ActionOutcome.SUCCESS,
     )

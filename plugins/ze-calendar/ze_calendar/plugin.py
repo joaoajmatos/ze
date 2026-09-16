@@ -13,8 +13,10 @@ from ze_sdk.ui import UiContribution
 from ze_agents.settings import Settings as CoreSettings
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
+from ze_calendar.action_records import configure_action_recorder
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
+from ze_memory.action_records.store import ActionRecordStore
 
 if TYPE_CHECKING:
     from ze_google.auth import GoogleCredentials
@@ -34,6 +36,7 @@ class CalendarPlugin(ZePlugin):
         openrouter_client: LLMClient,
         settings: CoreSettings,
         google_credentials: "GoogleCredentials | None" = None,
+        action_record_store: ActionRecordStore | None = None,
     ) -> None:
         self._pool = pool
         self._notifier = notifier
@@ -44,6 +47,7 @@ class CalendarPlugin(ZePlugin):
 
         self.reminder_store = ReminderStore(pool=pool)
         self._calendar_reminder_store = CalendarReminderStore(pool=pool)
+        configure_action_recorder(action_record_store)
 
     @classmethod
     def integration_types(cls) -> list[type]:
