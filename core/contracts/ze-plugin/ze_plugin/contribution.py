@@ -11,11 +11,12 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Literal, TypeVar
+from typing import Any, Literal, TypeVar
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Confidence, Provenance
 from ze_agents.errors import (
+    ActionRecordPayloadError,
     DanglingEvidenceError,
     MissingEvidenceError,
     UnlicensedClaimKindError,
@@ -60,14 +61,14 @@ _LICENSE: dict[SourceFunction, frozenset[ClaimKind]] = {
     ),
     SourceFunction.SOCIAL_COGNITION: frozenset({ClaimKind.IDENTITY}),
     SourceFunction.REFLECTION: frozenset({ClaimKind.INFERENCE, ClaimKind.SUSPICION}),
-    SourceFunction.ACTION: frozenset(),
+    SourceFunction.ACTION: frozenset({ClaimKind.ACTION_RECORD}),
     SourceFunction.GOVERNANCE: frozenset(),
 }
 
 
 @dataclass
 class EvidenceRef:
-    kind: Literal["fact", "episode", "signal", "ingestion", "goal"]
+    kind: Literal["fact", "episode", "signal", "ingestion", "goal", "action_record"]
     id: UUID
 
 
@@ -84,6 +85,7 @@ class Contribution:
     evidence: list[EvidenceRef] = field(default_factory=list)
     content: str | None = None
     entity_ids: list[UUID] = field(default_factory=list)
+    action_record: Any | None = None
 
 
 async def validate_and_submit(
@@ -93,6 +95,7 @@ async def validate_and_submit(
     check_fact_exists: Callable[[UUID], Awaitable[bool]] | None = None,
     check_episode_exists: Callable[[UUID], Awaitable[bool]] | None = None,
     check_signal_exists: Callable[[UUID], Awaitable[bool]] | None = None,
+    check_action_record_exists: Callable[[UUID], Awaitable[bool]] | None = None,
 ) -> T:
     """Validate `contribution`'s licensing and evidence, then delegate to `write()`.
 
@@ -113,6 +116,28 @@ async def validate_and_submit(
             f"{contribution.source_function!r}"
         )
 
+    if contribution.claim_kind is ClaimKind.ACTION_RECORD:
+        if contribution.action_record is None:
+            log.warning(
+                "contribution_rejected",
+                source_function=contribution.source_function,
+                claim_kind=contribution.claim_kind,
+                reason="missing_action_record_payload",
+            )
+            raise ActionRecordPayloadError(
+                "ACTION_RECORD contributions require a non-null action_record payload"
+            )
+    elif contribution.action_record is not None:
+        log.warning(
+            "contribution_rejected",
+            source_function=contribution.source_function,
+            claim_kind=contribution.claim_kind,
+            reason="action_record_kind_mismatch",
+        )
+        raise ActionRecordPayloadError(
+            "action_record payload is only valid with claim_kind ACTION_RECORD"
+        )
+
     if (
         contribution.claim_kind in _EVIDENCE_REQUIRED_KINDS
         and not contribution.evidence
@@ -131,6 +156,7 @@ async def validate_and_submit(
         "fact": check_fact_exists,
         "episode": check_episode_exists,
         "signal": check_signal_exists,
+        "action_record": check_action_record_exists,
     }
     for ref in contribution.evidence:
         checker = checkers.get(ref.kind)

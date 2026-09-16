@@ -3,6 +3,7 @@ from uuid import uuid4
 import pytest
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_agents.errors import (
+    ActionRecordPayloadError,
     DanglingEvidenceError,
     MissingEvidenceError,
     UnlicensedClaimKindError,
@@ -32,6 +33,7 @@ async def _write() -> str:
         (SourceFunction.REFLECTION, ClaimKind.SUSPICION),
         (SourceFunction.EXECUTIVE, ClaimKind.PRIORITY),
         (SourceFunction.SOCIAL_COGNITION, ClaimKind.IDENTITY),
+        (SourceFunction.ACTION, ClaimKind.ACTION_RECORD),
     ],
 )
 async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> None:
@@ -47,6 +49,7 @@ async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> N
         target_face=TargetFace.SELF,
         source_function=source_function,
         evidence=evidence,
+        action_record=object() if claim_kind is ClaimKind.ACTION_RECORD else None,
     )
 
     async def check_fact_exists(_id):
@@ -69,6 +72,14 @@ async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> N
         (SourceFunction.SOCIAL_COGNITION, ClaimKind.INFERENCE),
         (SourceFunction.SOCIAL_COGNITION, ClaimKind.SUSPICION),
         (SourceFunction.SOCIAL_COGNITION, ClaimKind.PRIORITY),
+        (SourceFunction.ACTION, ClaimKind.FACT),
+        (SourceFunction.ACTION, ClaimKind.INFERENCE),
+        (SourceFunction.PERCEPTION, ClaimKind.ACTION_RECORD),
+        (SourceFunction.MEMORY, ClaimKind.ACTION_RECORD),
+        (SourceFunction.EXECUTIVE, ClaimKind.ACTION_RECORD),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.ACTION_RECORD),
+        (SourceFunction.REFLECTION, ClaimKind.ACTION_RECORD),
+        (SourceFunction.GOVERNANCE, ClaimKind.ACTION_RECORD),
     ],
 )
 async def test_unlicensed_claim_kind_is_rejected(source_function, claim_kind) -> None:
@@ -202,4 +213,64 @@ async def test_validate_and_submit_ignores_content_and_entity_ids() -> None:
     )
 
     result = await validate_and_submit(contribution, _write)
+    assert result == "written"
+
+
+async def test_action_record_without_payload_is_rejected() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.ACTION_RECORD,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        confidence=_confidence(1.0),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.ACTION,
+        action_record=None,
+    )
+    with pytest.raises(ActionRecordPayloadError):
+        await validate_and_submit(contribution, _write)
+
+
+async def test_non_action_kind_rejects_action_payload() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        confidence=_confidence(1.0),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.PERCEPTION,
+        action_record=object(),
+    )
+    with pytest.raises(ActionRecordPayloadError):
+        await validate_and_submit(contribution, _write)
+
+
+async def test_action_record_evidence_without_checker_is_dangling() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.ACTION_RECORD,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        confidence=_confidence(1.0),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.ACTION,
+        action_record=object(),
+        evidence=[EvidenceRef(kind="action_record", id=uuid4())],
+    )
+    with pytest.raises(DanglingEvidenceError):
+        await validate_and_submit(contribution, _write)
+
+
+async def test_action_record_evidence_with_checker_is_accepted() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.ACTION_RECORD,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        confidence=_confidence(1.0),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.ACTION,
+        action_record=object(),
+        evidence=[EvidenceRef(kind="action_record", id=uuid4())],
+    )
+
+    async def check_action_record_exists(_id):
+        return True
+
+    result = await validate_and_submit(
+        contribution, _write, check_action_record_exists=check_action_record_exists
+    )
     assert result == "written"

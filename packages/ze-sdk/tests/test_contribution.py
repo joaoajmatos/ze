@@ -28,3 +28,12 @@ def test_perception_fact_helpers_reexport_from_ze_memory() -> None:
     assert _sdk.submit_perception_facts is _memory.submit_perception_facts
     assert _sdk.fact_to_contribution is _memory.fact_to_contribution
     assert _sdk.PerceptionFactSubmit is _memory.PerceptionFactSubmit
+
+
+def test_action_record_helpers_reexport_from_ze_memory() -> None:
+    import ze_memory.action_records as _memory
+    import ze_sdk.contribution as _sdk
+
+    assert _sdk.submit_action_record is _memory.submit_action_record
+    assert _sdk.ActionRecordDraft is _memory.ActionRecordDraft
+    assert not hasattr(_sdk, "PostgresActionRecordStore")

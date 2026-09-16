@@ -122,6 +122,18 @@ class GoalExecutionError(GoalError):
     """A milestone failed during goal execution."""
 
 
+class GoalLearningError(GoalError):
+    """Goal learning validation or persistence failed."""
+
+
+class GoalLearningEvidenceError(GoalLearningError):
+    """A learning is missing required evidence or cites an invalid source."""
+
+
+class GoalLearningPromotionError(GoalLearningError):
+    """FACT publication of a learning was blocked or failed."""
+
+
 # ── Persona ───────────────────────────────────────────────────────────────────
 
 
@@ -225,3 +237,15 @@ class MissingEvidenceError(ContributionError):
 
 class DanglingEvidenceError(ContributionError):
     """A cited evidence reference does not exist."""
+
+
+class ActionRecordPayloadError(ContributionError):
+    """ACTION_RECORD payload missing or paired with the wrong claim kind."""
+
+
+class ActionRecordValidationError(ContributionError):
+    """Action record fields failed validation before persist."""
+
+
+class ActionRecordIdempotencyConflictError(ContributionError):
+    """Reuse of an idempotency key with a materially different draft."""

@@ -1,40 +1,39 @@
-import pytest
-
-from ze_agents.claims import CONFIDENCE_FLOOR, DecayProfile, decay
+from ze_agents.claims import ClaimKind, DecayProfile, Provenance, decay
 from ze_agents.errors import MissingDecayParameterError
 
 
-def test_evidence_weighted_floors_at_total_evidence_le_1():
-    assert decay(0.8, DecayProfile.EVIDENCE_WEIGHTED, remaining_evidence=0, total_evidence=1) == (
-        CONFIDENCE_FLOOR
-    )
-    assert decay(0.8, DecayProfile.EVIDENCE_WEIGHTED, remaining_evidence=0, total_evidence=0) == (
-        CONFIDENCE_FLOOR
-    )
+def test_claim_kind_is_closed_and_includes_action_record() -> None:
+    assert set(ClaimKind) == {
+        ClaimKind.IDENTITY,
+        ClaimKind.FACT,
+        ClaimKind.INFERENCE,
+        ClaimKind.SUSPICION,
+        ClaimKind.PRIORITY,
+        ClaimKind.ACTION_RECORD,
+    }
+    assert ClaimKind.ACTION_RECORD.value == "action_record"
 
 
-def test_evidence_weighted_recomputes_from_remaining_evidence():
-    result = decay(
-        0.9, DecayProfile.EVIDENCE_WEIGHTED, remaining_evidence=2, total_evidence=3
-    )
-    assert result == pytest.approx(0.9 * 2 / 3)
+def test_unknown_decay_profile_raises() -> None:
+    try:
+        decay(0.5, "not-a-profile")  # type: ignore[arg-type]
+    except MissingDecayParameterError as exc:
+        assert "unknown decay_profile" in str(exc)
+        return
+    raise AssertionError("expected MissingDecayParameterError")
 
 
-def test_time_linear_decays_by_rate_per_30_day_period():
-    result = decay(0.8, DecayProfile.TIME_LINEAR, elapsed_days=30)
-    assert result == pytest.approx(0.77)
+def test_provenance_remains_closed() -> None:
+    assert set(Provenance) == {
+        Provenance.GRAPH_RECALL,
+        Provenance.LIVE_SEARCH,
+        Provenance.PROMPT_SUPPLIED,
+        Provenance.SYNTHESIZED,
+    }
 
 
-def test_time_linear_never_goes_below_zero():
-    result = decay(0.01, DecayProfile.TIME_LINEAR, elapsed_days=3000)
-    assert result == 0.0
-
-
-def test_evidence_weighted_missing_params_raises_typed_error():
-    with pytest.raises(MissingDecayParameterError):
-        decay(0.8, DecayProfile.EVIDENCE_WEIGHTED)
-
-
-def test_time_linear_missing_params_raises_typed_error():
-    with pytest.raises(MissingDecayParameterError):
-        decay(0.8, DecayProfile.TIME_LINEAR)
+def test_decay_profiles_remain_closed() -> None:
+    assert set(DecayProfile) == {
+        DecayProfile.EVIDENCE_WEIGHTED,
+        DecayProfile.TIME_LINEAR,
+    }

@@ -98,6 +98,7 @@ async def submit_perception_facts(
             fact_id = await store._write_fact_with_contradiction_check(fact)
             if fact_id is None:
                 raise StoreError("perception fact insert returned no id")
+            fact.id = fact_id
             return fact_id
 
         try:

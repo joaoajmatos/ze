@@ -49,15 +49,14 @@ The type and the validated write path shipped. Perception facts are on that
 path. These producers already call `validate_and_submit` /
 `submit_and_detect_collisions`: `Signal` ingest, open-loop extraction (including
 ingestion's loop hook), dream artifacts, correlation hypotheses, contact identity
-writes, social co-occurrence hypotheses, and **perception facts** (conversation
-`write_memory`, ingestion `MemorySink`, inbound extract, onboarding `memory_fact`
-seeds, goal-learning promotion).
+writes, social co-occurrence hypotheses, **perception facts**, and **ActionRecords**
+(Phase 135: `submit_action_record`; Phase 136 instruments workspace runs, outbound messenger sends, calendar/reminder mutations, goal/workflow traces, and prospecting outreach).
 
 `memory_facts` stores doctrine `Provenance` (`prompt_supplied` / `synthesized` /
 `graph_recall` / `live_search`) and `ClaimKind`. There is no public
-`MemoryStore.propose_facts()`. Remaining seam work is **not** those doors: action
-result records (step 7), genuine cross-function arbitration (step 8), and rewiring
-`signal_sources()` polling.
+`MemoryStore.propose_facts()`. Action evidence is `ClaimKind.ACTION_RECORD`, not a Fact.
+Remaining: genuine cross-function
+arbitration (step 8), and rewiring `signal_sources()` polling.
 
 That house-cleaning for ranking consumers (`PriorityView`, Phase 132) and for
 perception-fact writes (133–134) is shipped. Pre-v1 hard cuts
@@ -102,7 +101,7 @@ like" and how far each is from the seam today.
 | Executive | priorities, open-loop state | OpenLoop writes on the seam (Phases 109–110, 124); `PriorityView` ranks (123, 127, 132) | Write path done. Ranking consumer is Phase 132, not this brief |
 | Social cognition | identity/relationship claims | Contacts on the seam (125); co-occurrence hypotheses on the seam (130) | Done for current producers |
 | Reflection | inferences, suspicions | **On the seam** (Phase 124) — `dream_pass.py` and `ze_correlation/engine.py` route their writes through `Contribution`, which rejects `claim_kind=FACT` before the store is reached | Done — "no facts from reflection" is now type-enforced, not conventional |
-| Action | records of what it did | agents write results directly | Low priority — side effects, already grounded (step 7) |
+| Action | records of what it did | **On the seam** (Phases 135–136): `ACTION_RECORD` via `ActionRecorder` / `submit_action_record` after workspace, messenger, calendar/reminder, goal/workflow, and prospecting source commits | Ledger and listed producer coverage done |
 | Governance | confidence/consent/provenance metadata | capability gate, review flows | Governance *is* the arbiter, not a contributor |
 
 Two functions are special: **memory is the target** (contributions land in it), and
@@ -193,13 +192,18 @@ the rollout has since moved past step 6. Remaining steps are a commitment, not a
    contacts (125), social-cognition foundation (128), co-occurrence hypotheses (130).
 5. ~~**Perception facts on the seam**.~~ **Done** — Phase 133. Conversation `write_memory`,
    ingestion `MemorySink`, messenger inbound extract, onboarding `memory_fact` seeds, and
-   goal-learning promotion submit via `submit_perception_facts` (`PERCEPTION` / `FACT`,
-   per-fact provenance). Persist is the seam `write=` callback, not ungated `propose_facts()`.
+   goal-learning FACT publication via `submit_perception_facts` (`PERCEPTION` / `FACT`,
+   per-fact provenance) only at user confirmation or a directly supported assertion
+   (Phase 137). Synthesized generalizations remain `INFERENCE` and are not written to
+   `memory_facts`. Persist is the seam `write=` callback, not ungated `propose_facts()`.
 6. ~~**Hard-cut `memory_facts` onto the shared vocabulary**.~~ **Done** — Phase 134.
    `Fact.provenance` is doctrine `Provenance`; `claim_kind` is on the dataclass; INSERT
    persists both; public `propose_facts` is gone (`_persist_facts` is private).
-7. **Action** (result records) as convenience allows. Low urgency. Same seam, same
-   hard-cut rule, not bundled into steps 5–6.
+7. ~~**Action** (result records).~~ **Done** — Phases 135–136. `ACTION_RECORD` is a
+   first-class contribution, not a FACT; `ze-memory` owns the append-only ledger;
+   `ActionRecorder` is the injected producer API. Instrumented after source commit:
+   workspace runs, outbound messenger sends, calendar/reminder mutations, goal traces,
+   workflow executions, and prospecting outreach. Not bundled into steps 5–6.
 8. **Add genuine arbitration** only once two functions demonstrably collide on the same
    world-state face. Phase 126 (contribution collision *detection*) exists to make that trigger
    condition observable — it logs collisions but still doesn't arbitrate them. No cross-function

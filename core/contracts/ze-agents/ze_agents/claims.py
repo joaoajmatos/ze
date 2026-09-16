@@ -24,6 +24,7 @@ class ClaimKind(StrEnum):
     INFERENCE = "inference"
     SUSPICION = "suspicion"
     PRIORITY = "priority"
+    ACTION_RECORD = "action_record"
 
 
 class Provenance(StrEnum):
@@ -64,9 +65,7 @@ def decay(
 
     if decay_profile == DecayProfile.TIME_LINEAR:
         if elapsed_days is None:
-            raise MissingDecayParameterError(
-                "TIME_LINEAR decay requires elapsed_days"
-            )
+            raise MissingDecayParameterError("TIME_LINEAR decay requires elapsed_days")
         periods = int(elapsed_days // _TIME_LINEAR_PERIOD_DAYS)
         return max(0.0, value - _TIME_LINEAR_RATE * periods)
 

@@ -1,0 +1,621 @@
+{
+  "workflow": "speckit",
+  "specName": "Action Record Ledger",
+  "branch": "135-action-record-ledger",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00.000Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00.000Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00.000Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00.000Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-15T22:24:33.199Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:13.154Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:13.353Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:13.556Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:13.747Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:13.929Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:14.152Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:14.366Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:14.541Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:14.701Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:14.988Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:15.159Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:15.364Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:15.569Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:15.776Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:15.962Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:16.133Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:16.385Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:16.601Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:16.758Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:16.911Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:17.068Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:17.257Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:17.458Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:17.661Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:17.860Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:18.031Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:18.209Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:18.432Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:18.618Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:33:18.829Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-15T22:33:19.009Z"
+    }
+  ],
+  "context": [
+    "area: contribution seam rollout step 7",
+    "area: ze-memory append-only cross-domain action evidence",
+    "source owners: workspace runs and outbound messenger messages",
+    "constraint: no generic arbitration or signal_sources rewiring",
+    "constraint: pre-v1 hard cut; no shims or dual write"
+  ],
+  "approach": "License Action only for ACTION_RECORD, validate it through Contribution, and append a normalized ze-memory ledger row that cites the existing authoritative domain record.",
+  "decisions": [
+    {
+      "decision": "ActionRecord is a distinct claim kind and payload",
+      "why": "Action records execution evidence without treating it as a Fact",
+      "rejected": "License Action for FACT or reuse Fact with a marker"
+    },
+    {
+      "decision": "ze-memory owns a thin ledger; source domains stay authoritative",
+      "why": "Cross-domain queries need one evidence ledger without duplicate domain truth",
+      "rejected": "Per-plugin ledgers or moving source state into ze-memory"
+    },
+    {
+      "decision": "Lifecycle is append-only and idempotency-keyed",
+      "why": "At-least-once completion delivery must not duplicate or rewrite evidence",
+      "rejected": "A mutable status row or timestamp-based deduplication"
+    },
+    {
+      "decision": "Ledger failures retry delivery, never side effects",
+      "why": "A completed source action cannot safely be rerun to repair observability",
+      "rejected": "Distributed rollback or automatic action replay"
+    }
+  ],
+  "coverage": {
+    "FR-001": [
+      "T003",
+      "T004",
+      "T005"
+    ],
+    "FR-002": [
+      "T005",
+      "T006",
+      "T010"
+    ],
+    "FR-003": [
+      "T002",
+      "T008",
+      "T009"
+    ],
+    "FR-004": [
+      "T006",
+      "T007",
+      "T008",
+      "T009"
+    ],
+    "FR-005": [
+      "T009",
+      "T015"
+    ],
+    "FR-006": [
+      "T016",
+      "T017"
+    ],
+    "FR-007": [
+      "T007",
+      "T012",
+      "T013"
+    ],
+    "FR-008": [
+      "T018",
+      "T019",
+      "T020"
+    ],
+    "FR-009": [
+      "T005",
+      "T007",
+      "T017"
+    ],
+    "FR-010": [
+      "T001",
+      "T021",
+      "T022",
+      "T023",
+      "T024"
+    ],
+    "FR-011": [
+      "T014"
+    ],
+    "FR-012": [
+      "T027"
+    ],
+    "FR-013": [
+      "T027",
+      "T030"
+    ]
+  },
+  "size": "large",
+  "classification": {
+    "projectedFiles": 18,
+    "projectedTasks": 30,
+    "scopeSignal": "cross-package substrate",
+    "verdict": "ready to implement in sequenced waves"
+  },
+  "telemetryInstanceId": "b981cdfb-4274-4891-a99d-6716509cee6d",
+  "currentTask": "T030",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "implemented",
+      "files": [
+        "phase-135"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "package tests",
+      "command": "make test-plugin test-agents test-memory test-workspace test-messenger test-sdk",
+      "result": "all passed",
+      "warnings": [
+        "make lint has pre-existing unrelated F811/F821 failures"
+      ]
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "ACTION_RECORD ledger, contribution hard cut, workspace and messenger reference producers"
+    }
+  },
+  "last_action": "all tasks done — plugin/memory/workspace/messenger/sdk tests pass"
+}

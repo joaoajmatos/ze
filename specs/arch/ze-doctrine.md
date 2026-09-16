@@ -320,5 +320,7 @@ will resolve which projection to build first. This document does not pre-empt it
 - [x] **Contribution seam timing** — extracted. Type + validated write path (124),
   collision detection (126), perception facts (133), `memory_facts` doctrine provenance
   and no public `propose_facts` (134). Ranking consumers of the spine are Phase 132.
-  Still deferred: action result records (step 7), `signal_sources()` consumer rewiring,
-  and real contribution arbitration (step 8).
+  Action's record ontology shipped in Phase 135: a first-class `ACTION_RECORD`
+  contribution is operational evidence, never a FACT. Phase 136 instruments the
+  listed action producers onto that ledger. Still deferred: `signal_sources()`
+  consumer rewiring, and real contribution arbitration (step 8).

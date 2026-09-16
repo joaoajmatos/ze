@@ -379,7 +379,7 @@ Unknown modules fall back to `CompanionPolicy` with a warning log.
 
 | Memory type | Writer |
 |---|---|
-| `Fact` | fact extractor after every turn; `GoalExecutor._promote_learnings()` on goal completion |
+| `Fact` | fact extractor after every turn; user-confirmed goal-learning FACT publication via `submit_perception_facts` (Phase 137) |
 | `Episode` | `write_memory` node after every turn |
 | `ProfileFacet` | `ProfileSynthesizer` on consolidation schedule |
 | `Event` | event extractor (`gather_event_proposals`) after every turn via `write_memory` node |
