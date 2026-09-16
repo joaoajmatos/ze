@@ -190,7 +190,7 @@ class PersonalPlugin(ZePlugin):
             _domain("memory.profile_facets", "memory_profile_facets", 10),
             _domain("memory.entities", "memory_entities", 10),
             _domain("memory.events", "memory_events", 10),
-            _domain("memory.procedures", "memory_procedures", 10),
+            _domain("memory.procedures", "procedure_versions", 10),
             _domain("memory.relationships", "memory_relationships", 10),
             _domain("memory.task_state", "memory_task_state", 10),
             _domain("memory.insights", "insights", 10),
@@ -201,7 +201,8 @@ class PersonalPlugin(ZePlugin):
             # Goal children (FK to goals) — order 20
             _domain("goals.milestones", "goal_milestones", 20),
             _domain("goals.gates", "goal_gates", 20),
-            _domain("goals.learnings", "goal_learnings", 20),
+            _domain("goals.learnings", "goal_learning_claims", 20),
+            _domain("goals.learning_evidence", "goal_learning_evidence", 19),
             _domain("goals.traces", "goal_execution_traces", 20),
             _domain("goals.suggestions", "goal_suggestions", 20),
             # Workflow children (FK to workflows) — order 20

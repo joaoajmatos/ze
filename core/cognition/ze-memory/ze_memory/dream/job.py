@@ -29,6 +29,7 @@ class DreamJob:
         nli_client: Any | None = None,
         settings: Any = None,
         notifier: Any | None = None,
+        procedure_admission: Any | None = None,
     ) -> None:
         self._pool = pool
         self._dream_store = dream_store
@@ -59,6 +60,7 @@ class DreamJob:
             dream_store=dream_store,
             embedder=embedder,
             settings=settings,
+            procedure_admission=procedure_admission,
         )
         self._journal = (
             DreamJournal(client=client, dream_store=dream_store)

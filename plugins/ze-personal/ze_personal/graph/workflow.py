@@ -15,7 +15,9 @@ from uuid import UUID
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_agents.types import GateDecision
+from ze_agents.claims import Provenance
+from ze_plugin.contribution import EvidenceRef
+from ze_sdk.memory import candidate_from_procedure, ProcedureSourceKind
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.model_resolution import resolve_model
 from ze_logging import get_logger
@@ -690,9 +692,9 @@ async def _extract_and_store_workflow_procedure(
     step_results: list[StepResult],
 ) -> None:
     """Extract a reusable procedure from a completed workflow and store it with a graph link."""
-    memory_store = config["configurable"].get("memory_store")
     workflow_planner = config["configurable"].get("workflow_planner")
-    if memory_store is None or workflow_planner is None:
+    procedures = config["configurable"].get("procedure_admission")
+    if workflow_planner is None or procedures is None:
         return
     workflow_id = state.get("workflow_id")
     workflow_name = state.get("prompt") or "Unnamed workflow"
@@ -710,10 +712,16 @@ async def _extract_and_store_workflow_procedure(
     if procedure is None:
         return
     try:
-        await memory_store.propose_procedure(
-            procedure,
-            linked_task_id=workflow_id,
-            linked_task_type="workflow",
+        evidence_refs = (
+            [EvidenceRef(kind="goal", id=workflow_id)] if workflow_id else []
+        )
+        await procedures.submit_procedure_candidate(
+            candidate_from_procedure(
+                procedure,
+                source_kind=ProcedureSourceKind.WORKFLOW,
+                provenance=Provenance.SYNTHESIZED,
+                evidence_refs=evidence_refs,
+            )
         )
         log.info(
             "workflow_procedure_stored",

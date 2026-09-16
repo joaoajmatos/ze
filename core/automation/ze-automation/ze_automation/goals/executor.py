@@ -6,10 +6,9 @@ from collections import defaultdict
 from typing import Awaitable, Callable
 from uuid import UUID
 
-from ze_agents.claims import Provenance
+from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.errors import GoalExecutionError
-from ze_sdk.contribution import EvidenceRef, TargetFace
-from ze_sdk.memory import MemoryStore, PerceptionFactSubmit, Procedure, TaskState, submit_perception_facts
+from ze_sdk.memory import MemoryStore, Procedure, TaskState
 from ze_agents.types import AgentContext, GateDecision, ToolCall
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
@@ -19,10 +18,21 @@ from ze_automation.goals.types import (
     GoalLearning,
     GoalStatus,
     GateStatus,
+    LearningEvidenceDraft,
+    LearningEvidenceKind,
+    LearningEvidenceRole,
+    LearningReviewDecision,
+    LearningStatus,
     Milestone,
     MilestoneStatus,
     PriorMilestoneOutput,
 )
+from ze_automation.goals.learning import apply_nli_contradictions
+from ze_memory.action_records.store import ActionRecordStore
+from ze_memory.action_records.types import AuthoritativeRef
+from ze_memory.procedures.sources import candidate_from_procedure
+from ze_memory.procedures.types import ProcedureSourceKind, ProvisionalProcedure
+from ze_plugin.contribution import EvidenceRef
 from ze_agents.interface.types import Action, Notification
 from ze_automation.workspace_unattended import unattended_workspace
 from ze_logging import get_logger
@@ -46,6 +56,7 @@ def _build_milestone_prompt(
     goal: Goal,
     all_milestones: list[Milestone],
     provisional_procedures: list[Procedure] | None = None,
+    learnings_block: str = "(none yet)",
 ) -> str:
     completed = sorted(
         [m for m in all_milestones if m.status == MilestoneStatus.COMPLETED],
@@ -75,7 +86,7 @@ def _build_milestone_prompt(
         f"Progress so far (step {milestone.sequence} of {total}):\n"
         f"{prior_outputs_block}\n\n"
         f"Learnings from this goal:\n"
-        f"{goal.learnings or '(none yet)'}\n\n"
+        f"{learnings_block}\n\n"
         f"[YOUR TASK]\n"
         f"{milestone.description}"
     )
@@ -125,6 +136,9 @@ class GoalExecutor:
         notify: Callable[..., Awaitable[None]] | None = None,
         workspace_gate: object | None = None,
         get_workspace_mode: Callable[[], Awaitable[object]] | None = None,
+        action_record_store: ActionRecordStore | None = None,
+        nli_client: object | None = None,
+        procedure_admission: object | None = None,
     ) -> None:
         self._store = goal_store
         self._planner = goal_planner
@@ -137,6 +151,9 @@ class GoalExecutor:
         self._notify = notify
         self._workspace_gate = workspace_gate
         self._get_workspace_mode = get_workspace_mode
+        self._action_records = action_record_store
+        self._nli = nli_client
+        self._procedures = procedure_admission
         self._advance_locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._steer_queues: dict[UUID, asyncio.Queue] = defaultdict(asyncio.Queue)
         self._provisional_procedures: dict[UUID, list[Procedure]] = {}
@@ -215,9 +232,7 @@ class GoalExecutor:
             await self._store.update_milestone(
                 next_milestone.id, MilestoneStatus.COMPLETED, output=output
             )
-            asyncio.create_task(
-                self._store.save_traces(_to_traces(next_milestone, tool_calls))
-            )
+            await self._store.save_traces(_to_traces(next_milestone, tool_calls))
             if next_milestone.reuse_hint:
                 asyncio.create_task(self._push_reuse_notice(goal, next_milestone))
             await self._store.reset_consecutive_failures(goal_id)
@@ -247,12 +262,14 @@ class GoalExecutor:
                 MilestoneStatus.SKIPPED,
                 output=f"Failed: {error_msg}",
             )
-            await self._store.add_learning(
-                GoalLearning(
-                    goal_id=goal_id,
-                    content=f"Milestone {next_milestone.sequence} ({next_milestone.title}) failed: {error_msg}",
-                    source="milestone_completion",
-                )
+            await self._record_action_linked_learning(
+                goal_id=goal_id,
+                milestone=next_milestone,
+                content=(
+                    f"Milestone {next_milestone.sequence} ({next_milestone.title}) "
+                    f"failed: {error_msg}"
+                ),
+                traces=[],
             )
 
             failures = await self._store.increment_consecutive_failures(goal_id)
@@ -291,14 +308,12 @@ class GoalExecutor:
             learning_text = await self._planner.extract_learning(
                 next_milestone.title, output
             )
-            await self._store.add_learning(
-                GoalLearning(
-                    goal_id=goal_id,
-                    content=learning_text,
-                    source="milestone_completion",
-                )
+            await self._record_action_linked_learning(
+                goal_id=goal_id,
+                milestone=next_milestone,
+                content=learning_text,
+                traces=_to_traces(next_milestone, tool_calls),
             )
-            await self._store.append_learnings(goal_id, learning_text)
         except Exception as exc:
             log.warning("learning_extraction_failed", error=str(exc))
 
@@ -331,6 +346,11 @@ class GoalExecutor:
         if goal is None or goal.status != GoalStatus.PLANNING:
             return False
         await self._store.update_status(goal_id, GoalStatus.ABANDONED)
+        if self._procedures is not None:
+            await self._procedures.resolve_provisional(
+                goal_id, discard=True, reason="goal abandoned"
+            )
+        self._provisional_procedures.pop(goal_id, None)
         log.info("goal_plan_rejected", goal_id=str(goal_id))
         return True
 
@@ -349,6 +369,11 @@ class GoalExecutor:
             return
         await self._store.resolve_gate(gate_id, GateStatus.STOPPED)
         await self._store.update_status(gate.goal_id, GoalStatus.ABANDONED)
+        if self._procedures is not None:
+            await self._procedures.resolve_provisional(
+                gate.goal_id, discard=True, reason="goal stopped"
+            )
+        self._provisional_procedures.pop(gate.goal_id, None)
         goal = await self._store.get_goal(gate.goal_id)
         title = goal.title if goal else str(gate.goal_id)
         await self._push(
@@ -369,14 +394,22 @@ class GoalExecutor:
         if goal is None:
             return
 
-        await self._store.add_learning(
+        created = await self._store.create_learning(
             GoalLearning(
                 goal_id=gate.goal_id,
                 content=f"User redirect at checkpoint '{gate.title}': {feedback}",
-                source="gate_feedback",
-            )
+                claim_kind=ClaimKind.INFERENCE,
+                provenance=Provenance.PROMPT_SUPPLIED,
+                status=LearningStatus.PENDING_REVIEW,
+            ),
+            [],
         )
-        await self._store.append_learnings(gate.goal_id, f"User redirect: {feedback}")
+        if created.id is not None:
+            await self._store.review_learning(
+                created.id,
+                LearningReviewDecision.APPROVE,
+                rationale=feedback,
+            )
 
         milestones = await self._store.list_milestones(gate.goal_id)
         completed = [m for m in milestones if m.status == MilestoneStatus.COMPLETED]
@@ -427,7 +460,7 @@ class GoalExecutor:
 
     async def _push_retrospective(self, goal: Goal, goal_id: UUID) -> None:
         milestones = await self._store.list_milestones(goal_id)
-        learnings = await self._store.list_learnings(goal_id)
+        learnings = await self._store.list_goal_learnings(goal_id)
         try:
             narrative = await self._planner.synthesize_retrospective(
                 goal, milestones, learnings
@@ -450,13 +483,17 @@ class GoalExecutor:
             )
         )
         self._provisional_procedures.pop(goal_id, None)
+        if self._procedures is not None:
+            await self._procedures.resolve_provisional(
+                goal_id, discard=False, reason="goal completed"
+            )
         asyncio.create_task(self._promote_learnings(goal, learnings))
         asyncio.create_task(self._extract_and_store_procedure(goal, milestones))
 
     async def _extract_and_store_procedure(
         self, goal: Goal, milestones: list[Milestone]
     ) -> None:
-        if self._memory is None:
+        if self._procedures is None:
             return
         try:
             procedure = await self._planner.extract_procedure(goal, milestones)
@@ -468,10 +505,13 @@ class GoalExecutor:
         if procedure is None:
             return
         try:
-            await self._memory.propose_procedure(
-                procedure,
-                linked_task_id=goal.id,
-                linked_task_type="goal",
+            await self._procedures.submit_procedure_candidate(
+                candidate_from_procedure(
+                    procedure,
+                    source_kind=ProcedureSourceKind.GOAL,
+                    provenance=Provenance.SYNTHESIZED,
+                    evidence_refs=[EvidenceRef(kind="goal", id=goal.id)],
+                )
             )
             log.info("goal_procedure_stored", goal_id=str(goal.id), name=procedure.name)
         except Exception as exc:
@@ -486,6 +526,18 @@ class GoalExecutor:
             procedure = await self._planner.extract_procedure(goal, completed)
             if procedure is not None:
                 self._provisional_procedures[goal_id] = [procedure]
+                if self._procedures is not None:
+                    await self._procedures.remember_provisional(
+                        ProvisionalProcedure(
+                            goal_id=goal_id,
+                            candidate=candidate_from_procedure(
+                                procedure,
+                                source_kind=ProcedureSourceKind.GOAL,
+                                provenance=Provenance.SYNTHESIZED,
+                                evidence_refs=[EvidenceRef(kind="goal", id=goal_id)],
+                            ),
+                        )
+                    )
                 log.info(
                     "goal_provisional_procedure_extracted",
                     goal_id=str(goal_id),
@@ -499,38 +551,82 @@ class GoalExecutor:
             )
 
     async def _promote_learnings(
-        self, goal: Goal, learnings: list[GoalLearning]
+        self, goal: Goal, learnings: list
     ) -> None:
-        if self._memory is None or not learnings:
+        if not learnings:
             return
-        try:
-            facts = await self._planner.promote_learnings(goal, learnings)
-        except Exception as exc:
-            log.warning("goal_learning_promotion_failed", error=str(exc))
-            return
-        if not facts:
-            log.info("goal_learning_promotion_none", goal_id=str(goal.id))
-            return
-        try:
-            evidence = [EvidenceRef(kind="goal", id=goal.id)]
-            items = []
-            for fact in facts:
-                refs = list(fact.source_refs)
-                if goal.id not in refs:
-                    refs.append(goal.id)
-                fact.source_refs = refs
-                items.append(
-                    PerceptionFactSubmit(
-                        fact=fact,
-                        provenance=Provenance.SYNTHESIZED,
-                        target_face=TargetFace.USER,
-                        evidence=evidence,
-                    )
+        log.info(
+            "goal_learning_inferences_remain_unpromoted",
+            goal_id=str(goal.id),
+            count=len(learnings),
+        )
+
+    async def _eligible_learnings_block(self, goal_id: UUID | None) -> str:
+        if goal_id is None:
+            return "(none yet)"
+        items = await self._store.list_eligible_learnings("", goal_id=goal_id, limit=10)
+        if not items:
+            return "(none yet)"
+        lines = []
+        for item in items:
+            label = (
+                "FACT"
+                if item.claim_kind is ClaimKind.FACT
+                else "INFERENCE (tentative)"
+            )
+            lines.append(f"- [{label}] {item.content}")
+        return "\n".join(lines)
+
+    async def _record_action_linked_learning(
+        self,
+        *,
+        goal_id: UUID,
+        milestone: Milestone,
+        content: str,
+        traces: list[ExecutionTrace],
+    ) -> None:
+        evidence: list[LearningEvidenceDraft] = []
+        if self._action_records is not None:
+            for trace in traces:
+                source_id = str(
+                    trace.id or f"{trace.goal_id}:{trace.milestone_id}:{trace.seq}"
                 )
-            await submit_perception_facts(self._memory, items)
-            log.info("goal_learning_promoted", goal_id=str(goal.id), count=len(facts))
-        except Exception as exc:
-            log.warning("goal_learning_promotion_write_failed", error=str(exc))
+                listed = await self._action_records.list(
+                    authoritative_ref=AuthoritativeRef(
+                        domain="goal.goal_execution_trace", record_id=source_id
+                    ),
+                    limit=5,
+                )
+                for rec in listed or []:
+                    evidence.append(
+                        LearningEvidenceDraft(
+                            evidence_kind=LearningEvidenceKind.ACTION_RECORD,
+                            role=LearningEvidenceRole.SUPPORTS,
+                            excerpt=getattr(rec, "summary", "goal trace"),
+                            action_record_id=rec.id,
+                            execution_context_key=f"milestone:{milestone.id}",
+                        )
+                    )
+        if not evidence:
+            log.warning(
+                "learning_skipped_missing_action_record",
+                goal_id=str(goal_id),
+            )
+            return
+        created = await self._store.create_learning(
+            GoalLearning(
+                goal_id=goal_id,
+                content=content,
+                claim_kind=ClaimKind.INFERENCE,
+                provenance=Provenance.SYNTHESIZED,
+                status=LearningStatus.PENDING_REVIEW,
+            ),
+            evidence,
+        )
+        if isinstance(created.id, UUID):
+            await apply_nli_contradictions(
+                self._store, getattr(self, "_nli", None), created
+            )
 
     async def _push_reuse_notice(self, goal: Goal, milestone: Milestone) -> None:
         log.info(
@@ -647,7 +743,11 @@ class GoalExecutor:
 
         provisional = self._provisional_procedures.get(goal.id)
         prompt = _build_milestone_prompt(
-            milestone, goal, all_milestones, provisional_procedures=provisional or None
+            milestone,
+            goal,
+            all_milestones,
+            provisional_procedures=provisional or None,
+            learnings_block=await self._eligible_learnings_block(goal.id),
         )
 
         ctx = AgentContext(

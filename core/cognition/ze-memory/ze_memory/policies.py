@@ -681,11 +681,11 @@ class PlannerPolicy:
             fact_rows = await _fetch_facts_by_similarity(conn, emb, 30)
             proc_rows = await conn.fetch(
                 """
-                SELECT id, name, trigger, preconditions, steps, success_criteria,
-                       version, source_refs
-                FROM memory_procedures
-                WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> $1::vector
+                SELECT v.id, v.name, v.trigger, v.preconditions, v.steps, v.success_criteria,
+                       v.version_number AS version, v.learning_refs AS source_refs
+                FROM procedure_versions v
+                WHERE v.status = 'active' AND v.embedding IS NOT NULL
+                ORDER BY v.embedding <=> $1::vector
                 LIMIT 10
                 """,
                 emb,

@@ -7,9 +7,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
-from ze_agents.claims import DecayProfile, decay
+from ze_agents.claims import DecayProfile, Provenance, decay
 from ze_logging import get_logger
 from ze_memory.dream.types import ArtifactStatus, ArtifactType
+from ze_memory.procedures.errors import ProcedureLifecycleError
+from ze_memory.procedures.types import ProcedureCandidate, ProcedureSourceKind
+from ze_plugin.contribution import EvidenceRef
 
 log = get_logger(__name__)
 
@@ -28,11 +31,13 @@ class DreamPromoter:
         dream_store: Any,
         embedder: Any | None = None,
         settings: Any = None,
+        procedure_admission: Any | None = None,
     ) -> None:
         self._pool = pool
         self._dream_store = dream_store
         self._embedder = embedder
         self._settings = settings
+        self._procedures = procedure_admission
 
     async def run_morning_integration(self, run_id: UUID) -> dict:
         start = time.monotonic()
@@ -158,10 +163,12 @@ class DreamPromoter:
             ArtifactType.SYNTHESIZED_PROCEDURE.value,
             ArtifactType.PLAN_STRESS_TEST.value,
         ):
-            proc_id = await self._insert_procedure(content=content, run_id=run_id)
+            proc_id = await self._insert_procedure(
+                content=content, run_id=run_id, artifact_id=artifact_id
+            )
             await self._dream_store.mark_artifact_promoted(
                 artifact_id,
-                promoted_to="memory_procedures",
+                promoted_to="procedure_candidates",
                 promoted_id=proc_id,
             )
         else:
@@ -204,21 +211,31 @@ class DreamPromoter:
             )
         return row["id"]
 
-    async def _insert_procedure(self, content: str, run_id: UUID) -> UUID:
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                INSERT INTO memory_procedures (
-                    name, trigger, steps, creation_method, dream_run_id
-                ) VALUES (
-                    $1, '', ARRAY[$1], 'synthesized', $2
-                )
-                RETURNING id
-                """,
-                content[:200],
-                run_id,
+    async def _insert_procedure(
+        self, content: str, run_id: UUID, artifact_id: UUID
+    ) -> UUID:
+        if self._procedures is None:
+            raise ProcedureLifecycleError(
+                "procedure admission is required for dream procedure promotion"
             )
-        return row["id"]
+        steps = [line.strip() for line in content.splitlines() if line.strip()] or [
+            content[:200]
+        ]
+        saved = await self._procedures.submit_procedure_candidate(
+            ProcedureCandidate(
+                source_kind=ProcedureSourceKind.REFLECTION,
+                provenance=Provenance.SYNTHESIZED,
+                name=content[:200],
+                trigger="reviewed dream procedure",
+                preconditions=[],
+                steps=steps[:20],
+                success_criteria=["procedure remains useful after review"],
+                evidence_refs=[EvidenceRef(kind="episode", id=artifact_id)],
+            )
+        )
+        if saved.id is None:
+            raise ProcedureLifecycleError("dream procedure candidate missing id")
+        return saved.id
 
     async def apply_user_decision(
         self,

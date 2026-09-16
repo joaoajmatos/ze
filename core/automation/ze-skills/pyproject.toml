@@ -12,6 +12,7 @@ dependencies = [
     "ze-proactive",
     "ze-logging",
     "ze-data",
+    "ze-memory",
     "httpx",
     "asyncpg==0.31.0",
 ]
@@ -34,6 +35,7 @@ ze-agents    = { workspace = true }
 ze-logging   = { workspace = true }
 ze-proactive = { workspace = true }
 ze-data      = { workspace = true }
+ze-memory    = { workspace = true }
 ze-sdk       = { workspace = true }
 
 [tool.hatch.build.targets.wheel]

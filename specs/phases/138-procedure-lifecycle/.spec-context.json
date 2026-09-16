@@ -1,0 +1,190 @@
+{
+  "workflow": "speckit",
+  "specName": "Governed Procedure Lifecycle",
+  "branch": "138-procedure-lifecycle",
+  "currentStep": "tasks",
+  "status": "planned",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-15T22:38:00+01:00"
+    }
+  ],
+  "coverage": {
+    "FR-001": {
+      "tasks": [
+        "T004",
+        "T007",
+        "T010"
+      ]
+    },
+    "FR-002": {
+      "tasks": [
+        "T006",
+        "T007",
+        "T010"
+      ]
+    },
+    "FR-003": {
+      "tasks": [
+        "T012",
+        "T013",
+        "T014",
+        "T015",
+        "T016",
+        "T017",
+        "T018",
+        "T019",
+        "T020",
+        "T021"
+      ]
+    },
+    "FR-004": {
+      "tasks": [
+        "T002",
+        "T004",
+        "T008",
+        "T010",
+        "T017"
+      ]
+    },
+    "FR-005": {
+      "tasks": [
+        "T007",
+        "T010",
+        "T022",
+        "T024"
+      ]
+    },
+    "FR-006": {
+      "tasks": [
+        "T004",
+        "T007",
+        "T022",
+        "T024"
+      ]
+    },
+    "FR-007": {
+      "tasks": [
+        "T006",
+        "T007",
+        "T026",
+        "T027"
+      ]
+    },
+    "FR-008": {
+      "tasks": [
+        "T026",
+        "T027",
+        "T028"
+      ]
+    },
+    "FR-009": {
+      "tasks": [
+        "T029",
+        "T030"
+      ]
+    },
+    "FR-010": {
+      "tasks": [
+        "T031",
+        "T032"
+      ]
+    },
+    "FR-011": {
+      "tasks": [
+        "T001",
+        "T018",
+        "T019",
+        "T021",
+        "T034"
+      ]
+    },
+    "FR-012": {
+      "tasks": [
+        "T001",
+        "T011",
+        "T021",
+        "T033",
+        "T034"
+      ]
+    },
+    "FR-013": {
+      "tasks": [
+        "T023",
+        "T028"
+      ]
+    },
+    "FR-014": {
+      "tasks": [
+        "T016",
+        "T020",
+        "T025",
+        "T030",
+        "T034"
+      ]
+    }
+  },
+  "context": [
+    "area: reusable memory procedures and procedure retrieval",
+    "area: goal/workflow extraction, dream promotion, workspace runs, skills",
+    "dependency: Phase 137 canonical evidence and learning vocabulary",
+    "constraint: hard-cut direct procedure writers; no generic arbitration or skill execution expansion"
+  ],
+  "approach": "All sources submit evidence-backed ProcedureCandidate values to one admission service. Approved candidates create immutable versions; feedback, supersession, rollback, and provisional resolution remain attributable.",
+  "decisions": [
+    {
+      "decision": "Procedure is a reusable playbook, not a plan or ActionRecord",
+      "why": "Guidance requires independent review and version lineage."
+    },
+    {
+      "decision": "Use Phase 137 evidence and learning references",
+      "why": "Avoid a competing provenance and evidence model."
+    },
+    {
+      "decision": "Remove all direct procedure writers in one hard cut",
+      "why": "A public or dream-specific fallback would defeat governed admission."
+    },
+    {
+      "decision": "Resolve provisional goal procedures explicitly",
+      "why": "Process-local state cannot silently become durable knowledge."
+    }
+  ],
+  "step_summaries": {
+    "specify": {
+      "summary": "Defines trusted reusable-playbook admission and lifecycle."
+    },
+    "plan": {
+      "summary": "Places one admission boundary in ze-memory with source adapters."
+    },
+    "tasks": {
+      "summary": "35 tasks cover foundation, sources, review, versions, feedback, and recovery."
+    }
+  },
+  "currentTask": null,
+  "telemetryInstanceId": "ef67eb4d-2e5b-4578-a595-20c6f2044e51"
+}

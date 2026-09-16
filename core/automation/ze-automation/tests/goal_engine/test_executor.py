@@ -59,8 +59,10 @@ def store():
     s.update_milestone = AsyncMock()
     s.update_status = AsyncMock()
     s.get_pending_gate = AsyncMock(return_value=None)
-    s.add_learning = AsyncMock()
-    s.append_learnings = AsyncMock()
+    s.create_learning = AsyncMock()
+    s.review_learning = AsyncMock()
+    s.list_goal_learnings = AsyncMock(return_value=[])
+    s.list_eligible_learnings = AsyncMock(return_value=[])
     s.fire_gate = AsyncMock()
     s.replace_pending_milestones = AsyncMock(return_value=[])
     s.replace_pending_gates = AsyncMock(return_value=[])
@@ -70,7 +72,7 @@ def store():
     s.reset_consecutive_failures = AsyncMock()
     s.increment_consecutive_failures = AsyncMock(return_value=1)
     s.increment_replan_count = AsyncMock(return_value=1)
-    s.list_learnings = AsyncMock(return_value=[])
+    s.list_goal_learnings = AsyncMock(return_value=[])
     s.save_retrospective = AsyncMock()
     s.list_completed_milestone_summaries = AsyncMock(return_value=[])
     return s
@@ -335,9 +337,11 @@ def test_build_milestone_prompt_truncates_older_steps():
 def test_build_milestone_prompt_includes_learnings():
     from ze_automation.goals.executor import _build_milestone_prompt
 
-    goal = _goal(learnings="Key insight from last week")
+    goal = _goal()
     m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
-    prompt = _build_milestone_prompt(m1, goal, [m1])
+    prompt = _build_milestone_prompt(
+        m1, goal, [m1], learnings_block="Key insight from last week"
+    )
 
     assert "Key insight from last week" in prompt
 
@@ -578,7 +582,7 @@ async def test_completion_pushes_retrospective(executor, store, push, planner):
             ],  # retrospective fetch
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     planner.synthesize_retrospective = AsyncMock(
         return_value="You accomplished the objective."
@@ -602,7 +606,7 @@ async def test_retrospective_failure_falls_back_to_success_condition(
             _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     planner.synthesize_retrospective = AsyncMock(side_effect=RuntimeError("LLM down"))
 
@@ -622,7 +626,7 @@ async def test_push_retrospective_calls_save_retrospective(
             _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     store.save_retrospective = AsyncMock()
     planner.synthesize_retrospective = AsyncMock(
@@ -646,7 +650,7 @@ async def test_push_retrospective_still_pushes_when_save_retrospective_fails(
             _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     store.save_retrospective = AsyncMock(side_effect=RuntimeError("DB write failed"))
     planner.synthesize_retrospective = AsyncMock(
@@ -709,7 +713,7 @@ async def test_task_state_written_as_completed_when_no_pending(
             _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     planner.synthesize_retrospective = AsyncMock(return_value="Done.")
 
@@ -758,7 +762,7 @@ async def test_task_state_sync_skipped_when_no_memory_store(
             _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     planner.synthesize_retrospective = AsyncMock(return_value="Done.")
 
@@ -887,7 +891,7 @@ async def test_provisional_procedure_cleared_on_goal_completion(
             _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id),
         ]
     )
-    store.list_learnings = AsyncMock(return_value=[])
+    store.list_goal_learnings = AsyncMock(return_value=[])
     store.get_pending_gate = AsyncMock(return_value=None)
     planner.synthesize_retrospective = AsyncMock(return_value="Done.")
 
@@ -974,3 +978,114 @@ async def test_provisional_procedure_extracted_on_steer(executor, store, planner
         t.cr_qualname if hasattr(t, "cr_qualname") else str(t) for t in captured_tasks
     ]
     assert any("provisional" in name for name in coro_names)
+
+
+async def test_milestone_completion_creates_action_backed_learning(
+    store, planner, push, agent_getter, agent_mock
+):
+    from datetime import datetime, timezone
+
+    from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+    from ze_agents.types import ToolCall
+    from ze_memory.action_records.types import (
+        ActionContext,
+        ActionLifecycle,
+        ActionOutcome,
+        ActionRecord,
+        AuthoritativeRef,
+    )
+    from ze_plugin.contribution import TargetFace
+
+    goal = _goal()
+    m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
+    record_id = uuid4()
+    record = ActionRecord(
+        id=record_id,
+        idempotency_key="goal:trace:1",
+        action_type="goal.milestone",
+        actor="goal_executor",
+        producer_plugin="ze-automation",
+        lifecycle=ActionLifecycle.SUCCEEDED,
+        outcome=ActionOutcome.SUCCESS,
+        occurred_at=datetime.now(timezone.utc),
+        provenance=Provenance.SYNTHESIZED,
+        confidence=Confidence(value=1.0, decay_profile=DecayProfile.TIME_LINEAR),
+        target_face=TargetFace.USER,
+        summary="trace succeeded",
+        authoritative_ref=AuthoritativeRef(
+            domain="goal.goal_execution_trace", record_id="x"
+        ),
+        context=ActionContext(goal_id=goal.id, milestone_id=m1.id),
+        evidence=[],
+        causal_refs=[],
+        retry_of=None,
+        supersedes=None,
+        failure_code=None,
+    )
+    action_store = AsyncMock()
+    action_store.list = AsyncMock(return_value=[record])
+    agent_mock.run = AsyncMock(
+        return_value=type(
+            "R",
+            (),
+            {
+                "response": "Milestone output",
+                "tool_calls": [
+                    ToolCall(
+                        tool_name="search",
+                        args={},
+                        result="ok",
+                        duration_ms=1,
+                        success=True,
+                    )
+                ],
+            },
+        )()
+    )
+    executor = GoalExecutor(
+        goal_store=store,
+        goal_planner=planner,
+        push=push,
+        agent_getter=agent_getter,
+        action_record_store=action_store,
+    )
+    store.get_goal = AsyncMock(return_value=goal)
+    store.list_milestones = AsyncMock(return_value=[m1])
+    store.get_pending_gate = AsyncMock(return_value=None)
+    with patch("ze_automation.goals.executor.asyncio.create_task"):
+        await executor.advance(goal.id)
+    store.create_learning.assert_awaited()
+    learning, evidence = store.create_learning.await_args.args
+    assert learning.claim_kind is ClaimKind.INFERENCE
+    assert evidence[0].action_record_id == record_id
+
+
+async def test_eligible_learnings_block_labels_inference(
+    store, planner, push, agent_getter
+):
+    from ze_agents.claims import ClaimKind, Provenance
+    from ze_automation.goals.types import EligibleLearning
+
+    store.list_eligible_learnings = AsyncMock(
+        return_value=[
+            EligibleLearning(
+                id=uuid4(),
+                content="short loops work",
+                claim_kind=ClaimKind.INFERENCE,
+                provenance=Provenance.SYNTHESIZED,
+                confidence=0.4,
+                evidence_summary="two traces",
+                relevance=1.0,
+            )
+        ]
+    )
+    executor = GoalExecutor(
+        goal_store=store,
+        goal_planner=planner,
+        push=push,
+        agent_getter=agent_getter,
+    )
+    block = await executor._eligible_learnings_block(uuid4())
+    assert "INFERENCE (tentative)" in block
+    assert "short loops work" in block
+    store.list_eligible_learnings.assert_awaited()

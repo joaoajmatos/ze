@@ -60,7 +60,6 @@ from ze_memory.types import (
     Event,
     Fact,
     MemoryContext,
-    Procedure,
     ProfileFacet,
     RetrievalCacheEntry,
     RetrievalRequest,
@@ -390,51 +389,6 @@ class PostgresMemoryStore:
                 log.warning(
                     "memory_propose_event_failed", title=event.title, error=str(exc)
                 )
-
-    async def propose_procedure(
-        self,
-        procedure: Procedure,
-        linked_task_id: UUID | None = None,
-        linked_task_type: str = "workflow",
-    ) -> UUID | None:
-        try:
-            emb_list = (
-                _to_list(self._embedder.encode(f"{procedure.trigger} {procedure.name}"))
-                if self._embedder is not None
-                else None
-            )
-            async with self._pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """
-                    INSERT INTO memory_procedures
-                      (name, trigger, preconditions, steps, success_criteria,
-                       version, source_refs, embedding)
-                    VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7::jsonb, $8::vector)
-                    RETURNING id
-                    """,
-                    procedure.name,
-                    procedure.trigger,
-                    json.dumps(procedure.preconditions),
-                    json.dumps(procedure.steps),
-                    json.dumps(procedure.success_criteria),
-                    procedure.version,
-                    json.dumps([str(r) for r in procedure.source_refs]),
-                    emb_list,
-                )
-            procedure_id: UUID = row["id"]
-            if self._graph_store is not None and linked_task_id is not None:
-                fire_and_forget(
-                    self._link_procedure_to_task(
-                        procedure_id, linked_task_id, linked_task_type
-                    ),
-                    label="link_procedure_to_task",
-                )
-            return procedure_id
-        except Exception as exc:
-            log.warning(
-                "memory_propose_procedure_failed", name=procedure.name, error=str(exc)
-            )
-            return None
 
     async def upsert_entity(self, entity: Entity) -> UUID:
         sensitive = is_sensitive_entity(

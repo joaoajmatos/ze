@@ -7,7 +7,6 @@ from ze_agents.types import RetrievalRequest
 from ze_memory.types import (
     Entity,
     MemoryContext,
-    Procedure,
     ProfileFacet,
     Signal,
     SignalIngestResult,
@@ -65,13 +64,6 @@ class MemoryStore(Protocol):
     ) -> None: ...
 
     async def propose_events(self, events: list[Any]) -> None: ...
-
-    async def propose_procedure(
-        self,
-        procedure: Procedure,
-        linked_task_id: UUID | None = None,
-        linked_task_type: str = "workflow",
-    ) -> UUID | None: ...
 
     async def upsert_entity(self, entity: Entity) -> UUID: ...
 

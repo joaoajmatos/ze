@@ -16,6 +16,10 @@ vi.mock("@/widgets/memory-feed", () => ({
   MemoryFeed: () => <div data-testid="memory-feed" />,
 }));
 
+vi.mock("@/widgets/procedure-candidates", () => ({
+  ProcedureCandidatesList: () => null,
+}));
+
 vi.mock("@/widgets/timeline-scrubber", () => ({
   TimelineScrubber: ({ onChange }: { onChange: (value: Date | null) => void }) => (
     <button type="button" onClick={() => onChange(new Date("2026-06-01T12:00:00Z"))}>

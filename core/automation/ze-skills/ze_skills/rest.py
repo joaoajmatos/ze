@@ -7,6 +7,7 @@ import httpx
 from ze_skills import review
 from ze_skills.errors import SkillNotFoundError
 from ze_skills.importer import fetch_skill_source
+from ze_skills.procedure_candidates import candidate_from_skill
 from ze_skills.store import SkillStore
 from ze_skills.types import ReferenceFile, Skill, SkillScript, SkillSource, SkillStatus
 
@@ -133,8 +134,14 @@ async def get_reference_file(store: SkillStore, skill_id: UUID, filename: str) -
     }
 
 
-async def approve(store: SkillStore, skill_id: UUID) -> dict:
+async def approve(
+    store: SkillStore,
+    skill_id: UUID,
+    procedure_admission=None,
+) -> dict:
     skill = await review.approve_skill(store, skill_id)
+    if procedure_admission is not None:
+        await procedure_admission.submit_procedure_candidate(candidate_from_skill(skill))
     return await _detail(store, skill)
 
 

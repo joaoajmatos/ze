@@ -243,7 +243,9 @@ def _load_uuids(value: Any) -> list[UUID]:
     result = []
     for item in raw:
         try:
+            if isinstance(item, dict):
+                item = item.get("learning_id") or item.get("id")
             result.append(UUID(str(item)))
-        except (ValueError, AttributeError):
+        except (ValueError, AttributeError, TypeError):
             pass
     return result

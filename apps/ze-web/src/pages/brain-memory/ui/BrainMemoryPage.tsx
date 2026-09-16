@@ -3,6 +3,7 @@ import type { MemoryFeedFilters } from "@/entities/memory-feed-item";
 import { useMemoryActivityQuery, useMemoryTimelineBoundsQuery } from "@/entities/memory-feed-item";
 import { MemoryFeed } from "@/widgets/memory-feed";
 import { TimelineScrubber } from "@/widgets/timeline-scrubber";
+import { ProcedureCandidatesList } from "@/widgets/procedure-candidates";
 import { FilterChips, SearchBar } from "@/shared/ui";
 import type { FilterOption } from "@/shared/ui";
 
@@ -68,6 +69,8 @@ export function BrainMemoryPage() {
           {" "}— filters are disabled in snapshot view.
         </div>
       )}
+
+      <ProcedureCandidatesList />
 
       <MemoryFeed
         filters={isPast ? { type: "all" } : filters}
