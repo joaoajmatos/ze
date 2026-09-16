@@ -1,0 +1,171 @@
+{
+  "workflow": "companion",
+  "specName": "sequential routing hard cut",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:19:22.309Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:21:15.450Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:21:15.714Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:21:16.088Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:21:16.440Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:21:18.002Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:21:18.310Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:21:18.704Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:21:19.721Z"
+    }
+  ],
+  "telemetryInstanceId": "855c5c24-3521-454d-a071-2eec5acbe819",
+  "coverage": {
+    "FR-001": {
+      "title": "Sequential multi-specialist turns execute companion as primary; Haiku is a hint",
+      "tasks": [
+        "T002",
+        "T005"
+      ]
+    },
+    "FR-002": {
+      "title": "Independent compound stays fan-out; single-domain stays specialist",
+      "tasks": [
+        "T003",
+        "T009"
+      ]
+    },
+    "FR-003": {
+      "title": "Delete plan_sequential, dynamic_plan_steps, sequential compound execute",
+      "tasks": [
+        "T004",
+        "T006",
+        "T007",
+        "T008",
+        "T015"
+      ]
+    },
+    "FR-004": {
+      "title": "is_sequential means conductor not workflow planner",
+      "tasks": [
+        "T005"
+      ]
+    },
+    "FR-005": {
+      "title": "Update companion description and conductor instructions",
+      "tasks": [
+        "T011"
+      ]
+    },
+    "FR-006": {
+      "title": "Turn-local ledger recorded on MessageTrace; no durable promote",
+      "tasks": [
+        "T012",
+        "T013"
+      ]
+    },
+    "FR-007": {
+      "title": "Companion does not import specialist tools; research does not regain delegate",
+      "tasks": [
+        "T010",
+        "T015"
+      ]
+    },
+    "FR-008": {
+      "title": "Do not implement 154 panel/eval or promote-to-workflow",
+      "tasks": [
+        "T015"
+      ]
+    }
+  },
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 18,
+    "projectedTasks": 16,
+    "scopeSignal": "larger",
+    "verdict": "oversized"
+  },
+  "intent": "Companion is the only in-chat sequence owner; delete graph sequential planner",
+  "expectations": [
+    "Trace panel and eval YAML (154)",
+    "Promote to workflow/goal",
+    "Reintroduce graph sequential execute"
+  ],
+  "context": [
+    "constraint: Principle VIII delete plan_sequential now",
+    "constraint: 151-152 must be Implemented first",
+    "area: conversation graph"
+  ],
+  "approach": "Rewrite sequential multi envelopes to companion; delete plan_sequential and sequential compound execute; update embeddings; ledger on MessageTrace",
+  "decisions": [
+    {
+      "decision": "Delete plan_sequential this phase",
+      "why": "Two sequence owners if delayed",
+      "rejected": "Wrap planner then END"
+    },
+    {
+      "decision": "Sequential plus one subtask stays specialist",
+      "why": "Do not steal Tuesday calendar",
+      "rejected": "All is_sequential to companion"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Conductor routing hard-cut",
+      "key_finding": "is_sequential means companion, not WorkflowPlanner"
+    },
+    "tasks": {
+      "summary": "16 tasks: delete planner, rewrite routing, description, ledger"
+    }
+  }
+}

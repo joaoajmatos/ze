@@ -1,0 +1,172 @@
+{
+  "workflow": "companion",
+  "specName": "per delegate gate",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:16:42.433Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:18:57.600Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:18:57.807Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:18:58.032Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:18:58.353Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:19:00.098Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:19:00.308Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:19:00.536Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:19:01.180Z"
+    }
+  ],
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "telemetryInstanceId": "84ee8ab2-1fea-4b18-8a96-70845a3417d0",
+  "coverage": {
+    "FR-001": {
+      "title": "Evaluate CapabilityGate per run_delegate; do not copy parent gate_decision",
+      "tasks": [
+        "T003",
+        "T005",
+        "T006",
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-002": {
+      "title": "EXECUTE and DRAFT run now; lookups not held for later writes",
+      "tasks": [
+        "T004",
+        "T007"
+      ]
+    },
+    "FR-003": {
+      "title": "AWAIT_CONFIRMATION pauses conductor; request_id resume runs that invocation",
+      "tasks": [
+        "T010",
+        "T011",
+        "T012"
+      ]
+    },
+    "FR-004": {
+      "title": "Concurrent confirmations isolated by request_id",
+      "tasks": [
+        "T002",
+        "T013"
+      ]
+    },
+    "FR-005": {
+      "title": "Optional intent on delegate_to_agent; 151 fields remain",
+      "tasks": [
+        "T014",
+        "T015"
+      ]
+    },
+    "FR-006": {
+      "title": "Injected protocol; ze-agents must not import ze_core",
+      "tasks": [
+        "T005",
+        "T016"
+      ]
+    },
+    "FR-007": {
+      "title": "Do not change parallel compound, plan_sequential, companion description, or 153-154",
+      "tasks": [
+        "T001",
+        "T009",
+        "T016"
+      ]
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 10,
+    "projectedTasks": 17,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "intent": "Gate each nested specialist invocation; confirmation pauses and resumes the conductor",
+  "expectations": [
+    "Delete plan_sequential (153)",
+    "Trace panel (154)",
+    "Per-subtask parallel graph gates",
+    "Retune specialist Mode tables"
+  ],
+  "context": [
+    "constraint: 113 request_id",
+    "constraint: 151 fat ACI",
+    "area: CapabilityGate",
+    "constraint: no ze_core import from ze_agents"
+  ],
+  "approach": "Inject CapabilityGate+budget into run_delegate; pause AWAIT_CONFIRMATION on request_id; do not inherit parent EXECUTE",
+  "decisions": [
+    {
+      "decision": "Inject evaluate callback",
+      "why": "ze-agents cannot import ze_core",
+      "rejected": "Import CapabilityGate in delegate.py"
+    },
+    {
+      "decision": "Reuse 113 request_id confirmations",
+      "why": "Pin 7 and existing interrupt",
+      "rejected": "New confirmation table"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Per-delegate gate + confirmation pause",
+      "key_finding": "Lookups must not inherit a later write hold"
+    },
+    "tasks": {
+      "summary": "17 tasks: evaluate, pause/resume, optional intent"
+    }
+  }
+}

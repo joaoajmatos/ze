@@ -191,6 +191,10 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 148 | [Extractor Dual-Write and Dedup Races](phases/148-extractor-dual-write/spec.md) | ✅ Implemented |
 | 149 | [Specialist Memory Constitution](phases/149-specialist-memory-constitution/spec.md) | ✅ Implemented |
 | 150 | [Eval `memory_proposals_count` Hard-Cut and Guide Phase-Index Honesty](phases/150-eval-guide-honesty/spec.md) | ✅ Implemented |
+| 151 | [Fat Delegate ACI](phases/151-fat-delegate-aci/spec.md) | 🔲 Ready to implement |
+| 152 | [Per-Delegate Capability and Confirmation](phases/152-per-delegate-gate/spec.md) | 🔲 Ready to implement |
+| 153 | [Sequential Routing Hard-Cut](phases/153-sequential-routing-hard-cut/spec.md) | 🔲 Ready to implement |
+| 154 | [Conductor Observability and Eval](phases/154-conductor-observability-eval/spec.md) | 🔲 Ready to implement |
 
 ## Ze Core specs (`core/`)
 
@@ -265,4 +269,5 @@ Made when a significant restructuring forced the question.
 | [spec-kit Adoption](arch/spec-kit-adoption.md) | Feature specs use GitHub spec-kit (`specs/phases/NNN-<name>/` dirs, `.specify/` scaffolding, `/speckit-*` pipeline) |
 | [Attention Arbitration](arch/attention-arbitration.md) | One ranked `PriorityView` + one shared attention budget across loops, goals, and correlation hypotheses — shipped as Phase 123/127 |
 | [Memory Honesty Roadmap](arch/memory-honesty-roadmap.md) | **Living.** After Phase 143: constraint veto (P5), reply-path recitation, forget vs cancel, ingest honesty, extractor dual-write/classifier, specialist constitution, eval field hard-cut, guide index drift |
+| [Companion Conductor Roadmap](arch/companion-conductor-roadmap.md) | **Living.** One speaker, one conductor; phases 151–154 specified (ready to implement). Directory 151 is conductor ACI, not memory-honesty item 151 (bundled in phase 150). |
 | [Social Cognition](arch/social-cognition.md) | **Open decision brief.** People/projects/relationships as evolving state extending the memory graph, not a new store; reconciles an existing parallel `contact_relationships` table into it |

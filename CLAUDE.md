@@ -540,6 +540,10 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 148 | Extractor dual-write identity skip | Done |
 | 149 | Specialist memory constitution (calendar, messenger, news) | Done |
 | 150 | Eval `memory_proposals_count` hard-cut and guide phase-index honesty | Done |
+| 151 | Fat delegate ACI | Ready to implement |
+| 152 | Per-delegate capability and confirmation | Ready to implement |
+| 153 | Sequential routing hard-cut | Ready to implement |
+| 154 | Conductor observability and eval | Ready to implement |
 
 ## graphify
 

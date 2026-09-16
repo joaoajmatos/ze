@@ -1,0 +1,186 @@
+{
+  "workflow": "companion",
+  "specName": "fat delegate aci",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:10:35.996Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:12:24.123Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:13:20.509Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:14:20.626Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:14:21.844Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:14:26.402Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:14:36.181Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:15:40.001Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:15:41.247Z"
+    }
+  ],
+  "telemetryInstanceId": "8efea6e9-15fd-42ce-baf1-777577218302",
+  "last_action": "living specs evaluated — skipped (not configured)",
+  "coverage": {
+    "FR-001": {
+      "title": "Hard-cut delegate_to_agent to agent_name+objective plus optional fat fields; remove task and context",
+      "tasks": [
+        "T003",
+        "T005",
+        "T018"
+      ]
+    },
+    "FR-002": {
+      "title": "Fat brief in; result is response plus nested tool_calls; no specialist transcript in session messages",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-003": {
+      "title": "Only companion lists delegate_to_agent; research and others lose it",
+      "tasks": [
+        "T012",
+        "T014"
+      ]
+    },
+    "FR-004": {
+      "title": "Refuse run_delegate unless parent is companion, target is not companion, depth would not exceed 1",
+      "tasks": [
+        "T004",
+        "T006",
+        "T013"
+      ]
+    },
+    "FR-005": {
+      "title": "Speech-act one-shot delegates keep working with agent_name plus objective",
+      "tasks": [
+        "T009",
+        "T010",
+        "T011"
+      ]
+    },
+    "FR-006": {
+      "title": "Research must not tell the model to delegate for calendar",
+      "tasks": [
+        "T014",
+        "T015"
+      ]
+    },
+    "FR-007": {
+      "title": "Do not change graph, companion description, plan_sequential, or start 152-154 product",
+      "tasks": [
+        "T002",
+        "T016",
+        "T017",
+        "T018"
+      ]
+    },
+    "FR-008": {
+      "title": "Still inherit parent gate_decision this phase",
+      "tasks": [
+        "T007",
+        "T017"
+      ]
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 12,
+    "projectedTasks": 18,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "intent": "Upgrade delegate_to_agent to a fat isolated-worker ACI owned only by companion at depth 1",
+  "expectations": [
+    "Per-delegate CapabilityGate (152)",
+    "Sequential routing to companion / delete plan_sequential (153)",
+    "Trace panel and eval scenarios (154)",
+    "Promote to workflow/goal",
+    "Change companion embedding description"
+  ],
+  "context": [
+    "area: ze_agents/delegate.py",
+    "area: companion and research agents",
+    "constraint: 146 nested tool_calls",
+    "constraint: one conductor one speaker",
+    "constraint: do not start 152 in this tree"
+  ],
+  "approach": "Hard-cut delegate ACI to objective plus optional fat fields; only companion may call; depth 1; isolated worker; 146 result shape; graph and companion description untouched",
+  "decisions": [
+    {
+      "decision": "Delete task/context; require objective",
+      "why": "Principle VIII no dual ACI",
+      "rejected": "Keep task as alias of objective"
+    },
+    {
+      "decision": "Pass BaseAgent.name as caller",
+      "why": "intent is reason not companion",
+      "rejected": "Gate on ctx.intent"
+    },
+    {
+      "decision": "Max depth 1",
+      "why": "One conductor pin",
+      "rejected": "Keep depth 2 with allow-list only"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Fat isolated-worker ACI owned by companion",
+      "key_finding": "Caller must be BaseAgent.name because companion intent is reason"
+    },
+    "tasks": {
+      "summary": "19 tasks, US1 fat ACI, US2 companion-only, US3 graph lock"
+    }
+  }
+}

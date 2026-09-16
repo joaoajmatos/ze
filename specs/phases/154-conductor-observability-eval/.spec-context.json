@@ -1,0 +1,165 @@
+{
+  "workflow": "companion",
+  "specName": "conductor observability eval",
+  "branch": "main",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:21:49.930Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:23:38.315Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:23:38.651Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:23:39.004Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:23:39.364Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:23:41.009Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T18:23:41.302Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:23:41.634Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T18:23:42.342Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T18:24:53.707Z"
+    }
+  ],
+  "telemetryInstanceId": "13f79a00-6837-424d-9b33-26d71808db23",
+  "coverage": {
+    "FR-001": {
+      "title": "Trace API and panel show plan, specialists, confirmation ids",
+      "tasks": [
+        "T002",
+        "T003",
+        "T004",
+        "T005",
+        "T006"
+      ]
+    },
+    "FR-002": {
+      "title": "Emit conductor.checking_calendar and conductor.drafting_mail",
+      "tasks": [
+        "T007",
+        "T008",
+        "T009"
+      ]
+    },
+    "FR-003": {
+      "title": "Eval conductor_sequential_calendar_email",
+      "tasks": [
+        "T010"
+      ]
+    },
+    "FR-004": {
+      "title": "Eval routing_independent_parallel_not_companion",
+      "tasks": [
+        "T011"
+      ]
+    },
+    "FR-005": {
+      "title": "Eval conductor_speech_act_146_honest",
+      "tasks": [
+        "T012"
+      ]
+    },
+    "FR-006": {
+      "title": "Eval conductor_mid_sequence_confirmation",
+      "tasks": [
+        "T013"
+      ]
+    },
+    "FR-007": {
+      "title": "Do not restore plan_sequential or undo 151-153",
+      "tasks": [
+        "T015"
+      ]
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 12,
+    "projectedTasks": 16,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "intent": "Make conductor sequences visible in trace and progress, and lock them with eval",
+  "expectations": [
+    "Promote to workflow/goal",
+    "Restore plan_sequential",
+    "Parallel per-subtask graph gates"
+  ],
+  "context": [
+    "constraint: 153 ledger fields",
+    "area: trace panel",
+    "area: eval/scenarios"
+  ],
+  "approach": "Serialize 153 ledger to trace UI and WS; pinned progress keys; four eval scenario ids",
+  "decisions": [
+    {
+      "decision": "Progress keys in companion locales",
+      "why": "Plugin-local progress contract",
+      "rejected": "Hardcode English in ze_core"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Trace + progress + four evals",
+      "key_finding": "Eval ids are the proof 153 is true"
+    },
+    "tasks": {
+      "summary": "16 tasks: trace, progress keys, four eval ids"
+    }
+  }
+}
