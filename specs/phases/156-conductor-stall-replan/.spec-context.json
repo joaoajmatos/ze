@@ -1,0 +1,431 @@
+{
+  "workflow": "companion",
+  "specName": "Conductor Stall / Replan",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:39:22.405Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:40:37.778Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:40:37.978Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:40:38.942Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:40:39.138Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:40:39.318Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:40:39.530Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:40:41.254Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:40:41.426Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:40:41.634Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T20:25:18.615Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:25:35.329Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:26:53.037Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:00.678Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:01.633Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:02.785Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:03.893Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:05.043Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:06.127Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:07.315Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:08.380Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:09.609Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:10.875Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:12.080Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:30:13.195Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T20:30:14.054Z"
+    }
+  ],
+  "last_action": "156 implemented — stall/replan engine-enforced",
+  "telemetryInstanceId": "9bb04557-9eed-4593-a9ce-628ac1e7276c",
+  "coverage": {
+    "FR-001": {
+      "title": "Detect stall and write stalled on the ledger",
+      "tasks": [
+        "T004",
+        "T005"
+      ],
+      "tests": [
+        "test_delegate.py::TestConductorStallReplan::test_empty_response_is_stall_success_is_not"
+      ]
+    },
+    "FR-002": {
+      "title": "One silent retry per specialist with prior_outputs; write replanned",
+      "tasks": [
+        "T002",
+        "T004",
+        "T005"
+      ]
+    },
+    "FR-003": {
+      "title": "After retry or cap, block delegates and ask_user",
+      "tasks": [
+        "T002",
+        "T006",
+        "T007"
+      ],
+      "tests": [
+        "test_delegate.py::TestConductorStallReplan::test_first_stall_allows_one_retry_third_same_agent_does_not_run",
+        "test_delegate.py::TestConductorStallReplan::test_turn_cap_blocks_seventh_delegate"
+      ]
+    },
+    "FR-004": {
+      "title": "Enforce in delegate path not only companion prompt",
+      "tasks": [
+        "T004",
+        "T011"
+      ]
+    },
+    "FR-005": {
+      "title": "Confirmation is not stall; parallel graph is not this loop",
+      "tasks": [
+        "T008",
+        "T009"
+      ]
+    },
+    "FR-006": {
+      "title": "Keep 151-155 contracts; additive ledger statuses",
+      "tasks": [
+        "T003",
+        "T010"
+      ]
+    },
+    "FR-007": {
+      "title": "No promote, procedures, swarm, sequential compound, or parallel gate split",
+      "tasks": [
+        "T013"
+      ]
+    }
+  },
+  "context": [
+    "area: core/contracts/ze-agents/ze_agents/delegate.py",
+    "constraint: engine-enforced caps",
+    "constraint: depends on 155"
+  ],
+  "intent": "Turn-local Magentic stall/replan on conductor delegates with engine caps",
+  "expectations": [
+    "promote to workflow/goal (157)",
+    "procedures 135-139",
+    "parallel per-subtask gates"
+  ],
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 10,
+    "projectedTasks": 14,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "approach": "Enforce stall detector and caps in run_delegate; additive ledger statuses; companion prompt mirrors policy",
+  "decisions": [
+    {
+      "decision": "Enforce in run_delegate with caps 2 per specialist and 6 per turn",
+      "why": "Prompt-only judge cannot stop flailing",
+      "rejected": "Prompt-only or new graph node"
+    },
+    {
+      "decision": "Deterministic empty/error stall detector; one silent same-agent retry then ask",
+      "why": "No extra LLM judge this phase",
+      "rejected": "Ask on first stall; unlimited retries"
+    },
+    {
+      "decision": "Enforce stall/replan in run_delegate with turn counters on AgentContext/AgentState",
+      "why": "Engine-enforced not prompt-only; confirmation resume keeps caps",
+      "rejected": "Prompt-only judge or new LangGraph outer node"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Delegate-path Magentic caps",
+      "key_finding": "Silent retry is same specialist; engine does not auto-switch agents"
+    },
+    "tasks": {
+      "summary": "14 tasks: delegate caps, ledger statuses, companion prompt, eval id"
+    },
+    "implement": {
+      "summary": "Turn-local stall detector, one same-specialist retry, caps 2/6, ask_user, ledger stalled/replanned"
+    }
+  },
+  "currentTask": "T014",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed 155 mixed rewrite and 153 ledger statuses exist",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/routing.py",
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Fail-first: third same-agent stall still invoked the specialist",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added conductor_delegate_counts and conductor_delegate_total on context/state and copy through execute/resume",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/types.py",
+        "core/engine/ze-core/ze_core/orchestration/state.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/execution.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/context.py",
+        "core/engine/ze-core/ze_core/conversation/turn.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Engine stall detector, caps, stalled/replanned/ask_user, inject stall prior_outputs in run_delegate",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Tests for empty/error stall vs success and nonempty retry prior_outputs",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Blocked delegate returns ask_user error and ledger status",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py",
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Turn cap 6 blocks seventh delegate",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Confirmation is not stall; speech-act one-shot stays under cap",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_delegate.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Parallel compound execute tests still gather without stall wrapper",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_execution.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Trace copies stalled/replanned/ask_user ledger statuses",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_message_trace.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Companion instructions: one silent retry then ask, no unlimited replan",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Added eval conductor_stall_then_ask",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Grep: no workflow/goal insert on stall path; no plan_sequential; 151 fields intact",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "orchestration+routing 407 passed; companion tests 9 passed; ruff clean",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "orchestration+routing pytest",
+      "command": "uv run pytest -m not slow -q core/engine/ze-core/tests/orchestration core/engine/ze-core/tests/routing",
+      "result": "407 passed",
+      "warnings": [
+        "datetime.utcnow deprecation in unrelated resume recap test"
+      ]
+    }
+  ]
+}

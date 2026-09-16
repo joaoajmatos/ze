@@ -17,6 +17,7 @@ from ze_api.api.websocket.serializers import (
 from ze_api.api.websocket.session_titles import schedule_session_title_from_thread
 from ze_logging import get_logger
 from ze_workspace import rest as workspace_rest
+from ze_core.orchestration.promote import confirmation_timeout_message
 
 log = get_logger(__name__)
 
@@ -190,9 +191,8 @@ async def confirmation_timeout(
         except Exception as exc:
             log.warning("ws_timeout_checkpoint_abort_failed", error=str(exc))
 
-    timeout_msg = (
-        "I waited for your approval but the window elapsed — "
-        "let me know if you'd like me to try again."
+    timeout_msg = confirmation_timeout_message(
+        await _conductor_ledger_from_graph(container, graph_config)
     )
     await conn_mgr.send_frame(
         {
@@ -267,3 +267,24 @@ async def send_confirmation_request(
         )
 
     return request_id, outcome.config
+
+
+async def _conductor_ledger_from_graph(
+    container: Any | None, graph_config: dict | None
+) -> list:
+    if container is None or graph_config is None:
+        return []
+    graph = getattr(container, "graph", None)
+    aget_state = getattr(graph, "aget_state", None) if graph is not None else None
+    if aget_state is None:
+        return []
+    try:
+        snapshot = await aget_state(graph_config)
+    except Exception as exc:
+        log.warning("ws_timeout_ledger_lookup_failed", error=str(exc))
+        return []
+    values = getattr(snapshot, "values", None)
+    if not isinstance(values, dict):
+        return []
+    ledger = values.get("conductor_ledger")
+    return list(ledger) if isinstance(ledger, list) else []

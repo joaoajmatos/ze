@@ -1,6 +1,6 @@
 # Companion conductor roadmap
 
-> **Status:** Living note. Phases 151–154 Implemented. Promote-to-workflow/goal is after 154.
+> **Status:** Living note. Phases 151–157 Implemented. Procedures are **not** 157.
 > **Date:** 2026-09-16
 > **Related:** [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), [Ze Doctrine](ze-doctrine.md),
 > harness [`030-agent-harness`](../phases/030-agent-harness/spec.md),
@@ -16,7 +16,7 @@ parallel fan-out + synthesize) and nested **`delegate_to_agent`** (fat brief,
 per-invocation gate, isolated worker, depth 1, companion-only). Sequential /
 mixed / dependent multi-specialist turns route to companion as the in-chat
 conductor. `plan_sequential` is gone. Durable promote to workflow/goal is
-still later.
+phase **157** (not a procedure).
 
 The product decision: **one user-facing voice (companion / Ze), specialists as
 tools, sequence owned in-chat by that conductor.** Independent parallel work
@@ -46,17 +46,18 @@ specs do not relitigate it.
    `messages`.
 7. **Gate the invocation, not the pre-plan.** Each delegate evaluates
    specialist + intent. Confirmations stay `request_id`-keyed (phase 113).
-8. **Durable escape is later.** Promote-to-workflow/goal is not in 151–154.
+8. **Durable escape is 157.** Promote-to-workflow/goal is not in 151–156.
+   Promote is a **workflow or goal instance**, never a procedure
+   (`memory_procedures` / 135–139).
 
 ---
 
 ## Ordered phases
 
 Numbers are the spec-kit slots after 150. Specs live under
-`specs/phases/151-*` … `154-*`; all four headers are **Implemented**. Do not
-start N+1 **implementation** in N’s tree on a future series. Phase **151**
-here is the conductor series, not memory-honesty roadmap item 151 (already
-bundled into directory 150).
+`specs/phases/151-*` … `157-*`. Do not start N+1 **implementation** in N’s tree.
+Phase **151** here is the conductor series, not memory-honesty roadmap item 151
+(already bundled into directory 150).
 
 ### 151 — Fat delegate ACI — M — Implemented
 
@@ -83,24 +84,23 @@ strictest-wins until a later pass — this phase is the nested-tool path.
 
 Do not start 153 in the 152 tree.
 
-### 153 — Sequential routing hard-cut — L — Done
+### 153 — Sequential routing hard-cut — L — Implemented
 
-This is the product change. Router sends sequential / mixed / dependent turns
-to companion as `primary_agent`. Companion `description` and instructions
-change so embeddings and the conductor job agree (chat *and* calendar/email
-coordination). Independent multi-read stays fan-out + synthesize.
-Single-domain stays the specialist.
+This is the first product routing change. Router sends sequential / dependent
+turns to companion as `primary_agent` when `is_sequential && len(subtasks)>1`.
+Companion `description` and instructions match that job. Independent multi-read
+stays fan-out + synthesize. Single-domain stays the specialist.
 
 Hard-cut: delete `plan_sequential`, the `after_decompose` sequential edge to
-END, and unused `dynamic_plan_steps` plumbing. Haiku `is_sequential` (or a
-replacement flag) means “conductor,” not “workflow planner.” Companion prompt
-gains the inner loop: short plan, fat briefs, judge done/next/ask-user; scale
-effort (do not spawn four specialists for “what’s on Tuesday”). Turn-local
+END, and unused `dynamic_plan_steps` plumbing. Haiku `is_sequential` means
+“conductor,” not “workflow planner.” Companion prompt gains the inner loop:
+short plan, fat briefs, judge done/next/ask-user; scale effort. Turn-local
 progress ledger in graph/agent state, recorded on `MessageTrace`.
 
-Do not start 154 in the 153 tree.
+Do not start 154 in the 153 tree. Mixed gather+act when Haiku leaves sequential
+false is **155**, not a silent extra in 153.
 
-### 154 — Conductor observability and eval — S/M — Done
+### 154 — Conductor observability and eval — S/M — Implemented
 
 Trace panel shows the plan, each specialist, confirmation ids, stall/ask.
 Progress keys for “checking calendar…” / “drafting the mail…” so the user
@@ -109,24 +109,55 @@ sees sequence, not a mute wait. Eval scenarios: sequential dependent
 still not going through companion, speech-act one-shot still 146-honest,
 confirmation mid-sequence resumes the next specialist.
 
+### 155 — Mixed gather+act → conductor — S — Implemented
+
+`apply_conductor_rewrite` today is only sequential multi-subtask. Dependent
+gather+act (“research X and email Y”) often has `sequential: false`, so graph
+fan-out runs research and messenger together. **155:** more than one specialist
+**and** mixed gather+act intents (read/lookup/search vs create/update/delete/send
+— not a `{research, messenger}` name list) rewrite to companion the same way
+153 does. Independent multi-read still fans out. Single-domain stays the
+specialist. Do **not** split parallel capability gates. Do not stall. Do not
+promote.
+
+Do not start 156 in the 155 tree.
+
+### 156 — Stall / replan — M — Implemented
+
+153/companion judge is prompt-only. Add a **turn-local** Magentic-One-style
+outer loop: stall detector, one silent same-specialist retry with new
+`prior_outputs`, caps, ledger `stalled` / `replanned`, then user-visible ask.
+Engine-enforced in `delegate_to_agent`, not only a prompt. No durable
+workflow/goal rows. Depends on 155.
+
+Do not start 157 in the 156 tree.
+
+### 157 — Promote this instance to workflow/goal — L — Implemented
+
+When the job must outlive the turn (unfinished close, abort, confirmation that
+never returns, “keep going on this”, clearly multi-session), companion offers
+or creates a **workflow or goal instance**. Not a procedure, not
+`memory_procedures`, not 135–139 activation. Goals/workflows are not the
+in-chat conductor (pin holds). No swarm. Depends on 155/156.
+
 ---
 
-## After 154 (not scheduled)
+## After 157 (not these three)
 
-- **Stall / replan** as an explicit Magentic-One outer loop (153’s judge may
-  be a prompt-only version).
-- **Promote to workflow/goal** when the job must outlive the turn.
 - Per-subtask gate on the **parallel** graph path (if strictest-wins still
   hurts independent read+write fan-out).
+- Procedures / procedure activation (135–139) — **not** a promote substitute.
 - Feeding prior outputs inside `_execute_compound` sequential — **do not do
   this**; that path is deleted in 153.
+- Swarm / specialist-as-speaker.
 
 ## Explicitly not this series
 
 - Specialist-as-speaker / peer swarm / shared chat blackboard.
 - Anthropic-style 15× parallel research fan-out for personal-assistant turns.
 - Rewriting goals/workflows to be the in-chat conductor.
-- Bundling 151–153 into one spec-kit directory.
+- Bundling 151–157 into one spec-kit directory.
+- Treating promote as procedure learning.
 
 ---
 
@@ -138,7 +169,11 @@ confirmation mid-sequence resumes the next specialist.
 | Routing before per-delegate gate | Conductor can look up the calendar then send mail under a single inherited EXECUTE |
 | Observability inside 153 | Trace/eval slip, or 153 never ships because the panel is unfinished |
 | Killing `plan_sequential` later | Wrap-then-replace; two sequence owners in production |
+| Mixed rewrite inside 153 | 153 ships without the sequential-false gather+act hole, or never ships |
+| Stall inside 155 | Routing PR blocked on Magentic caps |
+| Promote inside 156 | Stall-ask becomes silent durable jobs |
 
 151 is the smallest change that makes 142/146 handoffs *better* even before
 mixed routing exists. 153 is the first user-visible collaboration. 154 is
-how we know 153 is true.
+how we know 153 is true. 155 is how mixed gather+act actually reaches the
+conductor. 156 is how flailing stops. 157 is how a job survives the turn.

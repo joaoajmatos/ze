@@ -831,3 +831,153 @@ class TestPerDelegateGate:
         tc = await _run({"agent_name": "calendar", "objective": "x"}, ctx)
         assert tc.success is False
         assert ran["n"] == 0
+
+
+class TestConductorStallReplan:
+    async def test_first_stall_allows_one_retry_third_same_agent_does_not_run(self):
+        ran = {"n": 0}
+
+        @agent
+        class _S(BaseAgent):
+            name = "research"
+            description = "research"
+            tools = []
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                ran["n"] += 1
+                return AgentResult(agent="research", response="  ")
+
+        register_instance("research", _S())
+        ctx = _ctx()
+        first = await _run({"agent_name": "research", "objective": "look up X"}, ctx)
+        assert ran["n"] == 1
+        second = await _run(
+            {"agent_name": "research", "objective": "look up X again"}, ctx
+        )
+        assert ran["n"] == 2
+        third = await _run(
+            {"agent_name": "research", "objective": "look up X still"}, ctx
+        )
+        assert ran["n"] == 2
+        assert third.success is False
+        statuses = [e["status"] for e in ctx.conductor_ledger]
+        assert "stalled" in statuses
+        assert "replanned" in statuses
+        assert "ask_user" in statuses
+        assert first.success is False
+        assert second.success is False
+
+    async def test_empty_response_is_stall_success_is_not(self):
+        _make_agent("research", response="findings")
+        ctx = _ctx()
+        ok = await _run({"agent_name": "research", "objective": "look"}, ctx)
+        assert ok.success is True
+        assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
+
+        ran = {"n": 0}
+
+        @agent
+        class _E(BaseAgent):
+            name = "news"
+            description = "news"
+            tools = []
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                ran["n"] += 1
+                return AgentResult(agent="news", response="")
+
+        register_instance("news", _E())
+        stalled = await _run({"agent_name": "news", "objective": "headlines"}, ctx)
+        assert stalled.success is False
+        assert "stalled" in (stalled.error or "")
+        assert ran["n"] == 1
+
+    async def test_retry_injects_stall_context_into_prior_outputs(self):
+        received: list[str] = []
+
+        @agent
+        class _R(BaseAgent):
+            name = "research"
+            description = "research"
+            tools = []
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                received.append(ctx.prompt)
+                if len(received) == 1:
+                    return AgentResult(agent="research", response="")
+                return AgentResult(agent="research", response="ok now")
+
+        register_instance("research", _R())
+        ctx = _ctx()
+        await _run({"agent_name": "research", "objective": "look"}, ctx)
+        retry = await _run({"agent_name": "research", "objective": "look"}, ctx)
+        assert retry.success is True
+        assert retry.args["prior_outputs"]
+        assert "stalled" in retry.args["prior_outputs"].lower()
+        assert "Prior outputs:" in received[1]
+        assert "replanned" in [e["status"] for e in ctx.conductor_ledger]
+
+    async def test_block_requires_ask_user(self):
+        _make_agent("research", response="")
+        ctx = _ctx()
+        await _run({"agent_name": "research", "objective": "a"}, ctx)
+        await _run({"agent_name": "research", "objective": "b"}, ctx)
+        blocked = await _run({"agent_name": "research", "objective": "c"}, ctx)
+        assert blocked.success is False
+        assert "ask_user" in (blocked.error or "")
+        assert any(e["status"] == "ask_user" for e in ctx.conductor_ledger)
+
+    async def test_turn_cap_blocks_seventh_delegate(self):
+        for i in range(7):
+            _make_agent(f"agent{i}", response="ok")
+        ctx = _ctx()
+        for i in range(6):
+            tc = await _run({"agent_name": f"agent{i}", "objective": "do"}, ctx)
+            assert tc.success is True
+        seventh = await _run({"agent_name": "agent6", "objective": "do"}, ctx)
+        assert seventh.success is False
+        assert "ask_user" in (seventh.error or "")
+        assert ctx.conductor_delegate_total == 6
+
+    async def test_confirmation_wait_is_not_stall(self):
+        ran = {"n": 0}
+
+        @agent
+        class _W(BaseAgent):
+            name = "calendar"
+            description = "cal"
+            tools = []
+
+            async def run(self, ctx: AgentContext) -> AgentResult:
+                ran["n"] += 1
+                return AgentResult(agent="calendar", response="created")
+
+        register_instance("calendar", _W())
+
+        async def _eval(_a: str, _i: str) -> GateDecision:
+            return GateDecision.AWAIT_CONFIRMATION
+
+        token = tool_interrupt_fn.set(lambda _p: {"choice": "approve"})
+        ctx = _ctx(evaluate_delegate=_eval)
+        try:
+            tc = await _run(
+                {"agent_name": "calendar", "objective": "create event"},
+                ctx,
+            )
+        finally:
+            tool_interrupt_fn.reset(token)
+
+        assert tc.success is True
+        assert ran["n"] == 1
+        assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
+
+    async def test_speech_act_one_shot_under_cap(self):
+        _make_agent("reminders", response="cancelled dentist")
+        ctx = _ctx()
+        tc = await _run(
+            {"agent_name": "reminders", "objective": "forget the dentist"}, ctx
+        )
+        assert tc.success is True
+        assert ctx.conductor_delegate_total == 1
+        assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
+        assert "ask_user" not in [e["status"] for e in ctx.conductor_ledger]

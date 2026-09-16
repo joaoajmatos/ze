@@ -14,6 +14,7 @@ from ze_core.conversation.messages.types import (
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
+from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
 
 
@@ -73,7 +74,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         workspace=await _extract_workspace(agent_result, config),
         procedure=_extract_procedure(state.get("agent_context")),
         conductor_hint=state.get("conductor_hint"),
-        conductor_ledger=_conductor_ledger(state),
+        conductor_ledger=ledger_with_promote_offer(_conductor_ledger(state)),
     )
     return {"message_trace": trace}
 
@@ -142,7 +143,9 @@ async def _extract_workspace(
     if store is not None:
         try:
             stored_mode = await store.get_mode()
-            mode = stored_mode.value if hasattr(stored_mode, "value") else str(stored_mode)
+            mode = (
+                stored_mode.value if hasattr(stored_mode, "value") else str(stored_mode)
+            )
         except Exception:
             pass
 

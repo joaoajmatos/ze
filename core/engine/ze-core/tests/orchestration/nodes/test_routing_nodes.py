@@ -84,9 +84,15 @@ class TestDecomposeNode:
 
         assert "envelope" in result
         env = result["envelope"]
-        assert len(env.subtasks) == 2
+        assert env.primary_agent == "companion"
+        assert env.is_compound is False
         assert env.routing_method == "haiku"
-        assert env.is_compound is True
+        assert result["conductor_hint"] is not None
+        assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]
+        assert result["conductor_ledger"] == [
+            {"agent": "alpha", "status": "planned"},
+            {"agent": "beta", "status": "planned"},
+        ]
         client.complete.assert_awaited_once()
 
     async def test_single_subtask_result_is_not_compound(self):
@@ -169,8 +175,11 @@ class TestDecomposeNode:
         )
 
         result = await decompose(_state(), _config(client))
+        assert result["envelope"].primary_agent == "companion"
         assert result["envelope"].is_sequential is True
         assert result["envelope"].requires_synthesis is False
+        assert result["conductor_hint"] is not None
+        assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]
 
     async def test_llm_failure_falls_back_to_hard_fallback(self):
         _register("alpha")

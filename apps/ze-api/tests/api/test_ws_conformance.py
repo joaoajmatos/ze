@@ -607,6 +607,51 @@ class TestConfirmationTimeoutFlow:
         frames = _frames_sent(ws)
         assert any(f.get("type") == "message" for f in frames)
 
+    async def test_timeout_unfinished_conductor_offers_promote_without_create(self):
+        confirmation_store = AsyncMock()
+        confirmation_store.clear = AsyncMock(return_value=True)
+
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        store = _make_msg_store([])
+        await mgr.connect(ws, store)
+        ws.send_json.reset_mock()
+
+        snapshot = MagicMock()
+        snapshot.values = {
+            "conductor_ledger": [
+                {"agent": "calendar", "status": "awaiting_confirmation"}
+            ]
+        }
+        container = AsyncMock()
+        container.abort_pending_checkpoint = AsyncMock()
+        container.graph.aget_state = AsyncMock(return_value=snapshot)
+        container.create_goal = AsyncMock()
+        container.goal_store = AsyncMock()
+        container.workflow_store = AsyncMock()
+
+        await confirmation_timeout(
+            confirmation_store,
+            mgr,
+            None,
+            "thread-promote",
+            0,
+            "req-promote",
+            container=container,
+            graph_config=_make_pending_config("thread-promote"),
+        )
+
+        frames = _frames_sent(ws)
+        msg_frames = [f for f in frames if f.get("type") == "message"]
+        assert len(msg_frames) == 1
+        text = msg_frames[0]["message"]["text"]
+        assert "elapsed" in text
+        assert "goal" in text
+        assert "workflow" in text
+        container.create_goal.assert_not_called()
+        container.goal_store.create.assert_not_called()
+        container.workflow_store.create.assert_not_called()
+
 
 # ── Unread replay — multi-conversation ───────────────────────────────────────
 

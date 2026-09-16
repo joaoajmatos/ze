@@ -47,9 +47,16 @@ def bind_delegate_evaluator(
 
 
 def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
+    counts = getattr(base_ctx, "conductor_delegate_counts", None)
+    if counts is None:
+        base_ctx.conductor_delegate_counts = counts = {}
     return {
         "conductor_hint": getattr(base_ctx, "conductor_hint", None),
         "conductor_ledger": getattr(base_ctx, "conductor_ledger", None) or [],
+        "conductor_delegate_counts": counts,
+        "conductor_delegate_total": int(
+            getattr(base_ctx, "conductor_delegate_total", 0) or 0
+        ),
     }
 
 
@@ -289,6 +296,11 @@ async def _execute_single(
     _sync_procedure_invocation(ctx, base_ctx)
     if getattr(ctx, "conductor_ledger", None) is not None:
         base_ctx.conductor_ledger = ctx.conductor_ledger
+    if getattr(ctx, "conductor_delegate_counts", None) is not None:
+        base_ctx.conductor_delegate_counts = ctx.conductor_delegate_counts
+    base_ctx.conductor_delegate_total = int(
+        getattr(ctx, "conductor_delegate_total", 0) or 0
+    )
     components: list = []
     if component_hook is not None:
         components = component_hook.pop_components(ctx.session_id)
@@ -298,6 +310,12 @@ async def _execute_single(
         "components": components,
         "agent_context": base_ctx,
         "conductor_ledger": list(getattr(ctx, "conductor_ledger", None) or []),
+        "conductor_delegate_counts": dict(
+            getattr(ctx, "conductor_delegate_counts", None) or {}
+        ),
+        "conductor_delegate_total": int(
+            getattr(ctx, "conductor_delegate_total", 0) or 0
+        ),
     }
 
 

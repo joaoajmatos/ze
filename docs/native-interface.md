@@ -187,6 +187,9 @@ user response, Ze sends:
 "I waited for your approval but the window elapsed — let me know if you'd like me to try again."
 ```
 
+If the turn still has unfinished conductor work, Ze appends an offer to continue that
+job as a goal or as a workflow. Ze does not create either until the user accepts.
+
 Ze deletes the `pending_confirmations` row. If the app is still connected the message
 appears in-chat; otherwise it goes via ntfy (urgency `low`).
 

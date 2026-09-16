@@ -1,0 +1,405 @@
+{
+  "workflow": "companion",
+  "specName": "mixed gather act conductor",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:34:56.101Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:36:23.880Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:36:32.631Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:37:17.925Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:37:18.729Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:37:19.039Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:37:38.341Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:38:07.035Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:38:07.305Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:38:25.764Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T20:17:52.331Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:18:06.755Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:19:27.665Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:19:28.783Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:20:13.085Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:21:24.346Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:21:25.491Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:21:26.552Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:21:27.701Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:21:28.786Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:22:39.057Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:22:40.107Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:22:41.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T20:22:42.049Z"
+    }
+  ],
+  "last_action": "155 implemented — rewrite tests pass, eval id added",
+  "telemetryInstanceId": "ec3e5566-f852-4a5c-aefc-b4e33156f669",
+  "coverage": {
+    "FR-001": {
+      "title": "Mixed gather+act multi-specialist uses 153 companion-primary rewrite even if sequential false",
+      "tasks": [
+        "T002",
+        "T004",
+        "T007"
+      ],
+      "tests": [
+        "test_nodes.py::test_apply_conductor_rewrite_mixed_gather_act_sequential_false_research_messenger",
+        "eval/scenarios/conductor.yaml::conductor_mixed_gather_act_research_messenger"
+      ]
+    },
+    "FR-002": {
+      "title": "Sequential multi-specialist rewrite from 153 still works",
+      "tasks": [
+        "T001",
+        "T005"
+      ]
+    },
+    "FR-003": {
+      "title": "Independent multi-read and single-domain stay off conductor rewrite",
+      "tasks": [
+        "T002",
+        "T008"
+      ],
+      "tests": [
+        "test_nodes.py::test_apply_conductor_rewrite_skips_independent_compound",
+        "test_nodes.py::test_apply_conductor_rewrite_news_research_all_read_identity"
+      ]
+    },
+    "FR-004": {
+      "title": "Classify gather vs act from intent families not a two-agent list",
+      "tasks": [
+        "T003",
+        "T005",
+        "T009"
+      ],
+      "tests": [
+        "test_nodes.py::test_apply_conductor_rewrite_intent_family_aliases",
+        "test_nodes.py::test_apply_conductor_rewrite_calendar_read_messenger_create_not_name_list"
+      ]
+    },
+    "FR-005": {
+      "title": "Do not split parallel graph capability gates",
+      "tasks": [
+        "T003",
+        "T010"
+      ]
+    },
+    "FR-006": {
+      "title": "Keep 151/152/154 contracts; mixed turns look like conductor in trace",
+      "tasks": [
+        "T006",
+        "T007",
+        "T011"
+      ]
+    },
+    "FR-007": {
+      "title": "Do not implement stall, promote, procedures, swarm, or sequential compound",
+      "tasks": [
+        "T010"
+      ]
+    }
+  },
+  "context": [
+    "area: core/engine/ze-core/ze_core/orchestration/nodes/routing.py",
+    "constraint: 153 apply_conductor_rewrite only sequential+len>1 today",
+    "constraint: 151/152/154 must not be undone"
+  ],
+  "intent": "Route mixed gather+act multi-specialist turns to companion conductor the same way 153 routes sequential ones",
+  "expectations": [
+    "stall/replan (156)",
+    "promote to workflow/goal (157)",
+    "per-subtask parallel graph gates",
+    "procedures 135-139",
+    "restore _execute_compound sequential"
+  ],
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "approach": "Widen apply_conductor_rewrite with intent-family mixed gather+act; keep 153 sequential rule; no parallel-gate split",
+  "decisions": [
+    {
+      "decision": "One rewrite function with sequential_multi OR mixed intent families",
+      "why": "Haiku sequential flag under-marks gather-then-act",
+      "rejected": "Agent-name pair allowlist or prompt-only Haiku fix"
+    },
+    {
+      "decision": "Gather=read/lookup/search Act=create/update/delete/send; unique agents for mixed",
+      "why": "Generalizes beyond research+messenger",
+      "rejected": "Registry Mode.CONFIRM inference; manage/reason as act"
+    },
+    {
+      "decision": "Widen apply_conductor_rewrite in place with sequential_multi OR mixed intent families",
+      "why": "Principle VIII: no dual sequential-only shim",
+      "rejected": "research+messenger name allowlist"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Widen conductor rewrite for mixed gather+act",
+      "key_finding": "153 sequential_multi bar stays len>1; mixed uses distinct agents"
+    },
+    "tasks": {
+      "summary": "12 tasks: rewrite helpers, table tests, one eval id"
+    },
+    "implement": {
+      "summary": "Mixed gather+act multi-specialist envelopes rewrite to companion even when sequential is false"
+    }
+  },
+  "currentTask": "T012",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed apply_conductor_rewrite exists; 154 eval ids still in conductor.yaml",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/routing.py",
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Fail-first: mixed sequential-false research read + messenger create rewrites; all-read still identity",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Fail-first: calendar read + messenger create rewrites; two create sequential-false stays compound",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Widened apply_conductor_rewrite with gather/act intent helpers and mixed distinct-agent predicate",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/routing.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Cover send as act and sequential-true mixed still rewrites",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Decompose mixed sequential-false now sets companion hint and ledger",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_routing_nodes.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Added eval conductor_mixed_gather_act_research_messenger",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Added news+research sequential-false identity; all-read and one-subtask still green",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Table-driven lookup/search aliases and unclassified manage/reason/empty",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Grep: no plan_sequential in ze_core; no research/messenger allowlist; 151 ACI fields intact",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/routing.py",
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "154 eval ids still present plus conductor_mixed_gather_act_research_messenger",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "orchestration+routing 400 passed; ruff check clean; ruff format applied to test_nodes.py",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "orchestration+routing pytest",
+      "command": "uv run pytest -m not slow -q core/engine/ze-core/tests/orchestration core/engine/ze-core/tests/routing",
+      "result": "400 passed",
+      "warnings": [
+        "datetime.utcnow deprecation in unrelated resume recap test"
+      ]
+    }
+  ]
+}

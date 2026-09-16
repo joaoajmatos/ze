@@ -50,6 +50,8 @@ def make_graph_input(
         "components": [],
         "conductor_hint": None,
         "conductor_ledger": [],
+        "conductor_delegate_counts": {},
+        "conductor_delegate_total": 0,
         "routing_hints": None,
         "correlations": [],
         "message_trace": None,

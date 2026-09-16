@@ -23,6 +23,13 @@ log = get_logger(__name__)
 DELEGATE_TOOL_NAME = "delegate_to_agent"
 _DELEGATE_MAX_DEPTH = 1
 _CONDUCTOR_NAME = "companion"
+DELEGATE_PER_SPECIALIST_CAP = 2
+DELEGATE_TURN_CAP = 6
+_ASK_USER_ERROR = (
+    "ask_user: tell the user this specialist stalled or the turn delegate cap "
+    "was reached; do not retry silently"
+)
+_IN_FLIGHT_LEDGER = frozenset({"planned", "running", "awaiting_confirmation"})
 
 DELEGATE_TOOL_SCHEMA: dict = {
     "type": "function",
@@ -110,11 +117,26 @@ def _update_conductor_ledger(
     ledger = getattr(ctx, "conductor_ledger", None)
     if ledger is None:
         ctx.conductor_ledger = ledger = []
+    if status in {"stalled", "replanned", "ask_user"}:
+        if status == "stalled":
+            for item in ledger:
+                if item.get("agent") != agent_name:
+                    continue
+                if item.get("status") in {"planned", "running"}:
+                    item["status"] = status
+                    if request_id:
+                        item["request_id"] = request_id
+                    return
+        entry = {"agent": agent_name, "status": status}
+        if request_id:
+            entry["request_id"] = request_id
+        ledger.append(entry)
+        return
     entry: dict[str, str] | None = None
     for item in ledger:
         if item.get("agent") != agent_name:
             continue
-        if item.get("status") in ("planned", "running", "awaiting_confirmation"):
+        if item.get("status") in _IN_FLIGHT_LEDGER:
             entry = item
             break
     if entry is None:
@@ -123,6 +145,60 @@ def _update_conductor_ledger(
     entry["status"] = status
     if request_id:
         entry["request_id"] = request_id
+
+
+def _delegate_counts(ctx: AgentContext) -> dict[str, int]:
+    counts = getattr(ctx, "conductor_delegate_counts", None)
+    if counts is None:
+        ctx.conductor_delegate_counts = counts = {}
+    return counts
+
+
+def _would_exceed_delegate_caps(ctx: AgentContext, agent_name: str) -> bool:
+    counts = _delegate_counts(ctx)
+    total = int(getattr(ctx, "conductor_delegate_total", 0) or 0)
+    return (
+        counts.get(agent_name, 0) >= DELEGATE_PER_SPECIALIST_CAP
+        or total >= DELEGATE_TURN_CAP
+    )
+
+
+def _bump_delegate_counts(ctx: AgentContext, agent_name: str) -> None:
+    counts = _delegate_counts(ctx)
+    counts[agent_name] = counts.get(agent_name, 0) + 1
+    ctx.conductor_delegate_counts = counts
+    ctx.conductor_delegate_total = (
+        int(getattr(ctx, "conductor_delegate_total", 0) or 0) + 1
+    )
+
+
+def _has_stalled(ctx: AgentContext, agent_name: str) -> bool:
+    return any(
+        item.get("agent") == agent_name and item.get("status") == "stalled"
+        for item in (getattr(ctx, "conductor_ledger", None) or [])
+    )
+
+
+def _stall_key(agent_name: str) -> str:
+    return f"stall:{agent_name}"
+
+
+def _inject_stall_context(arguments: dict[str, Any], detail: str) -> dict[str, Any]:
+    args = dict(arguments)
+    prior = args.get("prior_outputs")
+    extra = args.get("inputs")
+    has_prior = isinstance(prior, str) and prior.strip()
+    has_inputs = isinstance(extra, str) and extra.strip()
+    if not has_prior and not has_inputs:
+        args["prior_outputs"] = (
+            f"Previous attempt stalled: {detail}. "
+            "Try a different approach or smaller scope."
+        )
+    return args
+
+
+def _is_empty_response(response: str | None) -> bool:
+    return not (response or "").strip()
 
 
 async def _emit_conductor_progress(ctx: AgentContext, agent_name: str) -> None:
@@ -169,10 +245,27 @@ async def run_delegate(
         log.warning("delegate_depth_exceeded", agent=agent_name, depth=depth)
         return _failed(arguments, msg)
 
+    agent_name = agent_name.strip()
+
+    if _would_exceed_delegate_caps(ctx, agent_name):
+        log.warning("delegate_cap_exceeded", to_agent=agent_name)
+        _update_conductor_ledger(ctx, agent_name, "ask_user")
+        return _failed(arguments, _ASK_USER_ERROR)
+
+    if _has_stalled(ctx, agent_name):
+        detail = str(ctx.extensions.get(_stall_key(agent_name)) or "empty or error")
+        arguments = _inject_stall_context(arguments, detail)
+        _update_conductor_ledger(ctx, agent_name, "replanned")
+
     try:
         instance = get_agent(agent_name)
     except Exception as exc:
+        _bump_delegate_counts(ctx, agent_name)
+        ctx.extensions[_stall_key(agent_name)] = str(exc)
+        _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc))
+
+    _bump_delegate_counts(ctx, agent_name)
 
     declared_intent = arguments.get("intent")
     intent = declared_intent.strip() if isinstance(declared_intent, str) else ""
@@ -244,12 +337,11 @@ async def run_delegate(
     except Exception as exc:
         duration_ms = int((time.monotonic() - start) * 1000)
         log.warning("delegate_error", to_agent=agent_name, error=str(exc))
-        _update_conductor_ledger(ctx, agent_name, "skipped")
+        ctx.extensions[_stall_key(agent_name)] = str(exc)
+        _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc), duration_ms=duration_ms)
 
     duration_ms = int((time.monotonic() - start) * 1000)
-    log.info("delegate_done", to_agent=agent_name, duration_ms=duration_ms)
-    _update_conductor_ledger(ctx, agent_name, "done")
     nested = [
         {
             "tool_name": call.tool_name,
@@ -261,6 +353,21 @@ async def run_delegate(
         }
         for call in result.tool_calls
     ]
+    if _is_empty_response(result.response):
+        log.warning("delegate_stalled_empty", to_agent=agent_name)
+        ctx.extensions[_stall_key(agent_name)] = "empty response"
+        _update_conductor_ledger(ctx, agent_name, "stalled")
+        return ToolCall(
+            tool_name=DELEGATE_TOOL_NAME,
+            args=arguments,
+            result={"response": result.response, "tool_calls": nested},
+            duration_ms=duration_ms,
+            success=False,
+            error="stalled: empty response",
+        )
+
+    log.info("delegate_done", to_agent=agent_name, duration_ms=duration_ms)
+    _update_conductor_ledger(ctx, agent_name, "done")
     return ToolCall(
         tool_name=DELEGATE_TOOL_NAME,
         args=arguments,

@@ -222,6 +222,8 @@ def test_full_agent_state_dict_round_trips(serde: JsonPlusSerializer) -> None:
         "error": None,
         "conductor_hint": None,
         "conductor_ledger": [],
+        "conductor_delegate_counts": {},
+        "conductor_delegate_total": 0,
         "message_trace": MessageTrace(
             agent="calendar",
             routing_method="embedding",

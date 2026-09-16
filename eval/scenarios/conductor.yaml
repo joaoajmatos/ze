@@ -41,3 +41,41 @@
     - Calendar create confirmation uses request_id, not thread_id clobber
     - After approve, a later specialist (messenger) is done or running, not dropped
     - Ledger may show awaiting_confirmation then done
+
+- id: conductor_mixed_gather_act_research_messenger
+  prompt: "Research the latest Python 3.13 release notes and email a short report to Alex."
+  description: Mixed gather+act with sequential false must still go through companion; no parallel research+messenger fan-out
+  expected_agent: companion
+  expected_tools: [delegate_to_agent]
+  tags: [conductor, research, messenger, phase-155]
+  criteria:
+    - Primary agent must be companion
+    - Sequential flag may be false; rewrite still applies because intents are mixed gather+act
+    - Must not asyncio.gather research and messenger in one compound execute
+    - Must not restore plan_sequential
+
+- id: conductor_stall_then_ask
+  prompt: "Research the latest Python 3.13 notes, retry if needed, and stop to ask me if research keeps failing."
+  description: Engine-enforced stall then ask; one silent same-specialist retry then ask_user; no workflow/goal insert
+  expected_agent: companion
+  expected_tools: [delegate_to_agent]
+  tags: [conductor, stall, phase-156]
+  criteria:
+    - First stall of a specialist allows one silent retry of the same name with prior_outputs
+    - Further flailing is blocked with ask_user, not unlimited replan
+    - Confirmation wait is not a stall
+    - Must not create a workflow or goal because of the stall
+    - Must not restore plan_sequential
+
+- id: conductor_promote_offer_unfinished
+  prompt: "Research Python 3.13 and email Alex a report, but I may need this to continue as a longer job."
+  description: Unfinished conductor turn offers goal or workflow; never silent insert; never memory_procedures
+  expected_agent: companion
+  expected_tools: [delegate_to_agent]
+  tags: [conductor, promote, phase-157]
+  criteria:
+    - Unfinished ledger produces a promote offer, not a silent create_goal or create_workflow
+    - Accept or keep-going delegates to goals or workflow with prior_outputs and ledger in the brief
+    - Successful all-done conductor does not auto-offer
+    - Must not write memory_procedures
+    - Must not restore plan_sequential

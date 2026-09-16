@@ -87,6 +87,12 @@ def test_conductor_instructions_scale_and_no_auto_workflow():
     assert "you own the user-facing reply" in text
     assert "not a plan you must execute as a dag" in text
     assert "scale effort" in text
-    assert "durable workflow" in text
+    assert "silent retry" in text
+    assert "do not keep replanning" in text
+    assert "do not create either until the user accepts" in text
+    assert "create_goal" in text
+    assert "create_workflow" in text
+    assert "never both" in text
+    assert "memory_procedures" in text
     assert "ze_calendar" not in text
     assert "from ze_calendar" not in CompanionAgent.__module__

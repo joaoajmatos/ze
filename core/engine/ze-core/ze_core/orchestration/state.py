@@ -55,6 +55,8 @@ class AgentState(TypedDict):
     # ── Conductor (Phase 153 — sequential rewrite; not a DAG) ──────────────
     conductor_hint: list | None  # list[{agent, intent, prompt}]
     conductor_ledger: list  # list[{agent, status, request_id?}]
+    conductor_delegate_counts: dict  # agent name → attempted delegates this turn
+    conductor_delegate_total: int
 
     # ── Correlation (Phase 58 — populated by correlate node) ──────────────────
     correlations: list  # list[Hypothesis]; qualifying inline hypotheses

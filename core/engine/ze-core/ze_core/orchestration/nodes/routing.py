@@ -132,11 +132,39 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
     }
 
 
+_GATHER_INTENTS = frozenset({"read", "lookup", "search"})
+_ACT_INTENTS = frozenset({"create", "update", "delete", "send"})
+
+
+def _normalize_intent(intent: str) -> str:
+    return (intent or "").strip().casefold()
+
+
+def _is_gather_intent(intent: str) -> bool:
+    return _normalize_intent(intent) in _GATHER_INTENTS
+
+
+def _is_act_intent(intent: str) -> bool:
+    return _normalize_intent(intent) in _ACT_INTENTS
+
+
+def is_mixed_gather_act(subtasks: list[SubTask]) -> bool:
+    """True when more than one specialist and both gather and act intents are present."""
+    agents = {s.agent for s in subtasks}
+    if len(agents) <= 1:
+        return False
+    has_gather = any(_is_gather_intent(s.intent) for s in subtasks)
+    has_act = any(_is_act_intent(s.intent) for s in subtasks)
+    return has_gather and has_act
+
+
 def apply_conductor_rewrite(
     envelope: RoutingEnvelope, user_prompt: str
 ) -> tuple[RoutingEnvelope, list[dict[str, str]] | None]:
-    """Sequential multi-specialist turns become companion-primary; hint is not a DAG."""
-    if not envelope.is_sequential or len(envelope.subtasks) <= 1:
+    """Sequential multi or mixed gather+act turns become companion-primary; hint is not a DAG."""
+    sequential_multi = envelope.is_sequential and len(envelope.subtasks) > 1
+    mixed = is_mixed_gather_act(envelope.subtasks)
+    if not sequential_multi and not mixed:
         return envelope, None
     hint = [
         {"agent": s.agent, "intent": s.intent, "prompt": s.prompt}

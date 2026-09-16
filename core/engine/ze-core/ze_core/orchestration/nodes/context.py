@@ -210,6 +210,12 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     ledger = state.get("conductor_ledger")
     agent_context.conductor_hint = hint
     agent_context.conductor_ledger = ledger if ledger is not None else []
+    agent_context.conductor_delegate_counts = dict(
+        state.get("conductor_delegate_counts") or {}
+    )
+    agent_context.conductor_delegate_total = int(
+        state.get("conductor_delegate_total") or 0
+    )
 
     user_message_id = config["configurable"].get("user_message_id")
     if user_message_id is not None:

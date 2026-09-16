@@ -498,3 +498,183 @@ def test_apply_conductor_rewrite_skips_sequential_one_subtask():
     rewritten, hint = routing.apply_conductor_rewrite(env, "what's on tuesday")
     assert rewritten.primary_agent == "calendar"
     assert hint is None
+
+
+def test_apply_conductor_rewrite_mixed_gather_act_sequential_false_research_messenger():
+    env = RoutingEnvelope(
+        primary_agent="research",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="research", intent="read", prompt="latest X"),
+            SubTask(agent="messenger", intent="create", prompt="email Y"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "research X and email Y")
+    assert rewritten.primary_agent == "companion"
+    assert rewritten.is_compound is False
+    assert rewritten.subtasks[0].prompt == "research X and email Y"
+    assert hint is not None
+    assert [h["agent"] for h in hint] == ["research", "messenger"]
+
+
+def test_apply_conductor_rewrite_calendar_read_messenger_create_not_name_list():
+    env = RoutingEnvelope(
+        primary_agent="calendar",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="calendar", intent="read", prompt="tuesday"),
+            SubTask(agent="messenger", intent="create", prompt="mail alex"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(
+        env, "what's on tuesday then email alex"
+    )
+    assert rewritten.primary_agent == "companion"
+    assert hint is not None
+    assert [h["agent"] for h in hint] == ["calendar", "messenger"]
+
+
+def test_apply_conductor_rewrite_two_act_only_sequential_false_stays_compound():
+    env = RoutingEnvelope(
+        primary_agent="calendar",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="calendar", intent="create", prompt="event"),
+            SubTask(agent="messenger", intent="create", prompt="mail"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "create event and mail")
+    assert rewritten is env
+    assert hint is None
+
+
+def test_apply_conductor_rewrite_send_alias_is_act():
+    env = RoutingEnvelope(
+        primary_agent="research",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="research", intent="read", prompt="latest X"),
+            SubTask(agent="messenger", intent="send", prompt="email Y"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(
+        env, "research X and send email Y"
+    )
+    assert rewritten.primary_agent == "companion"
+    assert hint is not None
+    assert [h["intent"] for h in hint] == ["read", "send"]
+
+
+def test_apply_conductor_rewrite_sequential_true_mixed_still_rewrites():
+    env = RoutingEnvelope(
+        primary_agent="research",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="research", intent="read", prompt="latest X"),
+            SubTask(agent="messenger", intent="create", prompt="email Y"),
+        ],
+        requires_synthesis=False,
+        is_sequential=True,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "research X then email Y")
+    assert rewritten.primary_agent == "companion"
+    assert rewritten.is_sequential is True
+    assert hint is not None
+
+
+def test_apply_conductor_rewrite_news_research_all_read_identity():
+    env = RoutingEnvelope(
+        primary_agent="news",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="news", intent="read", prompt="headlines"),
+            SubTask(agent="research", intent="read", prompt="context"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "news and research")
+    assert rewritten is env
+    assert hint is None
+
+
+@pytest.mark.parametrize(
+    "gather,act,expect_rewrite",
+    [
+        ("lookup", "send", True),
+        ("search", "delete", True),
+        ("SEARCH", "CREATE", True),
+        ("lookup", "update", True),
+        ("manage", "create", False),
+        ("reason", "create", False),
+        ("", "create", False),
+        ("read", "manage", False),
+        ("  Read  ", "Send", True),
+    ],
+)
+def test_apply_conductor_rewrite_intent_family_aliases(gather, act, expect_rewrite):
+    env = RoutingEnvelope(
+        primary_agent="alpha",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="alpha", intent=gather, prompt="g"),
+            SubTask(agent="beta", intent=act, prompt="a"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "mixed intents")
+    if expect_rewrite:
+        assert rewritten.primary_agent == "companion"
+        assert hint is not None
+    else:
+        assert rewritten is env
+        assert hint is None
+
+
+def test_apply_conductor_rewrite_same_agent_mixed_intents_stays_specialist():
+    env = RoutingEnvelope(
+        primary_agent="messenger",
+        confidence=0.8,
+        score_gap=0.1,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="messenger", intent="read", prompt="inbox"),
+            SubTask(agent="messenger", intent="create", prompt="draft"),
+        ],
+        requires_synthesis=True,
+        is_sequential=False,
+    )
+    rewritten, hint = routing.apply_conductor_rewrite(env, "inbox then draft")
+    assert rewritten is env
+    assert hint is None

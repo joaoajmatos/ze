@@ -149,6 +149,8 @@ class AgentContext:
     # Turn-local conductor hint/ledger (Phase 153). Lists of primitives only.
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
+    conductor_delegate_counts: dict[str, int] = field(default_factory=dict)
+    conductor_delegate_total: int = 0
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

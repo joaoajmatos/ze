@@ -1,0 +1,419 @@
+{
+  "workflow": "companion",
+  "specName": "Promote Conductor Instance to Workflow/Goal",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:42:56.414Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:42:59.331Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:42:59.500Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:43:00.470Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:43:00.668Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:43:00.832Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T19:43:01.012Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:43:02.718Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T19:43:02.879Z"
+    },
+    {
+      "step": "analyze",
+      "substep": null,
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T19:43:03.130Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T20:31:49.966Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:06.114Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:07.689Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:09.266Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:10.435Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:12.009Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:14.095Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:15.667Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:17.544Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:18.967Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:20.905Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:22.721Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:24.893Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:26.870Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T20:36:28.806Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T20:36:30.415Z"
+    }
+  ],
+  "telemetryInstanceId": "7a065dcc-7172-4e79-bc6b-32b706a01d94",
+  "last_action": "157 implemented — promote offer path",
+  "coverage": {
+    "FR-001": {
+      "title": "Offer or create workflow/goal instance when conductor job must outlive the turn",
+      "tasks": [
+        "T003",
+        "T005",
+        "T006",
+        "T007"
+      ]
+    },
+    "FR-002": {
+      "title": "Timeout/abort offer only; create after explicit keep-going or accept",
+      "tasks": [
+        "T004",
+        "T005",
+        "T008"
+      ]
+    },
+    "FR-003": {
+      "title": "Goal vs workflow per research; never both",
+      "tasks": [
+        "T007",
+        "T009"
+      ]
+    },
+    "FR-004": {
+      "title": "Create via delegate_to_agent to goals/workflow with fat brief",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    },
+    "FR-005": {
+      "title": "Successful in-turn conductor does not auto-offer",
+      "tasks": [
+        "T010"
+      ]
+    },
+    "FR-006": {
+      "title": "Keep in-chat conductor; do not replace it with goals/workflows",
+      "tasks": [
+        "T001",
+        "T014"
+      ]
+    },
+    "FR-007": {
+      "title": "No procedures, swarm, parallel gate split, or sequential compound restore",
+      "tasks": [
+        "T011"
+      ]
+    }
+  },
+  "context": [
+    "area: confirmation_timeout and companion conductor",
+    "constraint: not procedures 135-139",
+    "constraint: 151/152 create gates"
+  ],
+  "intent": "Promote unfinished conductor jobs to a goal or workflow instance without making automation the in-chat conductor",
+  "expectations": [
+    "procedures 135-139",
+    "swarm",
+    "per-subtask parallel gates",
+    "restore _execute_compound sequential"
+  ],
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 12,
+    "projectedTasks": 14,
+    "scopeSignal": "larger",
+    "verdict": "oversized"
+  },
+  "approach": "Deterministic unfinished-ledger offer; create only via nested goals/workflow tools after accept; extend confirmation timeout copy",
+  "decisions": [
+    {
+      "decision": "Offer default; create only after keep-going or accept; still 152",
+      "why": "Silent durable jobs on timeout would bypass confirmation",
+      "rejected": "Auto-insert workflow on every unfinished turn"
+    },
+    {
+      "decision": "Goal for multi-week outcome; workflow for repeatable/scheduled; never procedures",
+      "why": "Roadmap pin and 142 R6",
+      "rejected": "Procedure as third type"
+    },
+    {
+      "decision": "Offer-only helper in ze_core.orchestration.promote; create stays nested delegate",
+      "why": "No silent insert; plugin isolation",
+      "rejected": "Auto-create on timeout; procedure as third type"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Durable escape to goal or workflow instance",
+      "key_finding": "confirmation_timeout currently only says try again"
+    },
+    "tasks": {
+      "summary": "14 tasks: offer helper, timeout copy, companion create-via-delegate, no procedures"
+    },
+    "implement": {
+      "summary": "Unfinished conductor offers goal or workflow; timeout copy; never silent insert or procedures"
+    }
+  },
+  "currentTask": "T014",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed confirmation_timeout and goals/workflow agent names",
+      "files": [
+        "apps/ze-api/ze_api/api/websocket/confirmation.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Fail-first/unit: unfinished offer true; all-done false; no store",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_promote.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Implemented should_offer_promote and timeout copy helper",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/promote.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Timeout unfinished conductor offers without create_goal/workflow",
+      "files": [
+        "apps/ze-api/tests/api/test_ws_conformance.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "confirmation_timeout uses unfinished ledger offer copy",
+      "files": [
+        "apps/ze-api/ze_api/api/websocket/confirmation.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Companion offers on unfinished close; trace promote_offered; no stack on ask_user",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/trace.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Companion keep-going delegates to goals or workflow with ledger/prior_outputs",
+      "files": [
+        "plugins/ze-personal/ze_personal/agents/companion/agent.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Companion has no create_goal tools; decline until accept",
+      "files": [
+        "plugins/ze-personal/tests/agents/companion/test_promote_conductor.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Goal vs workflow classifier never returns both",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/promote.py",
+        "plugins/ze-personal/tests/agents/companion/test_promote_conductor.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "All-done conductor does not offer",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_promote.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Promote helper and timeout path do not call memory_procedures",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/promote.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Added eval conductor_promote_offer_unfinished",
+      "files": [
+        "eval/scenarios/conductor.yaml"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Documented timeout promote offer in native-interface.md",
+      "files": [
+        "docs/native-interface.md"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "api confirmation 29 passed; companion 14; orchestration 416; ruff clean",
+      "files": [
+        "apps/ze-api/tests/api/test_ws_conformance.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "ws confirmation + companion + orchestration",
+      "command": "pytest test_ws_conformance, companion promote, orchestration+routing",
+      "result": "29 + 14 + 416 passed",
+      "warnings": []
+    }
+  ]
+}

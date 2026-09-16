@@ -437,6 +437,9 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 152 | Per-delegate capability and confirmation | Done |
 | 153 | Sequential routing hard-cut | Done |
 | 154 | Conductor observability and eval | Done |
+| 155 | Mixed gather+act → conductor | Done |
+| 156 | Conductor stall / replan | Done |
+| 157 | Promote conductor instance to workflow/goal | Done |
 
 ## graphify
 
