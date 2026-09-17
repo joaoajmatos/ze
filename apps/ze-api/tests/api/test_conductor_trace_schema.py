@@ -15,3 +15,9 @@ def test_ws_trace_update_schema_includes_conductor_fields():
     props = WsTraceUpdateFrame.model_json_schema()["properties"]
     assert "conductor_hint" in props
     assert "conductor_ledger" in props
+
+
+def test_ws_trace_update_schema_requires_thread_id():
+    schema = WsTraceUpdateFrame.model_json_schema()
+    assert "thread_id" in schema["properties"]
+    assert "thread_id" in schema.get("required", [])

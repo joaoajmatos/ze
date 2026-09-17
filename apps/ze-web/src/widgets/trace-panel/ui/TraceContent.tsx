@@ -1,11 +1,18 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { useSessionTraces, useTraceSocket, useTraceStore } from "@/features/trace-state";
+import {
+  threadTraceBucket,
+  useSessionTraces,
+  useTraceSocket,
+  useTraceStore,
+} from "@/features/trace-state";
+import { useWsStore } from "@/shared/api";
 import { TraceEmptyState } from "./TraceEmptyState";
 import { TraceEntry } from "./TraceEntry";
 
 const EMPTY_TRACE: Omit<WsTraceUpdateFrame, "type" | "message_id"> = {
+  thread_id: "",
   agent: "",
   routing_method: "",
   confidence: 0,
@@ -29,9 +36,11 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
   useTraceSocket();
   const hydrating = useSessionTraces(threadId, assistantMessageIds);
 
-  const traces = useTraceStore((s) => s.traces);
-  const pending = useTraceStore((s) => s.pending);
-  const pendingTrace = useTraceStore((s) => s.pendingTrace);
+  const bucket = useTraceStore((s) => threadTraceBucket(s, threadId));
+  const thinking = useWsStore((s) => s.thinkingThreads[threadId] ?? false);
+  const traces = bucket.traces;
+  const pending = bucket.pending || thinking;
+  const pendingTrace = bucket.pendingTrace;
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +50,7 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
   }, [traces.length, pendingTrace]);
 
   const liveTrace: WsTraceUpdateFrame | null = pendingTrace
-    ? { type: "trace_update", message_id: "", ...EMPTY_TRACE, ...pendingTrace }
+    ? { type: "trace_update", message_id: "", ...EMPTY_TRACE, thread_id: threadId, ...pendingTrace }
     : null;
 
   const showEmpty = traces.length === 0 && !pending && !liveTrace && !hydrating;
@@ -73,7 +82,7 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
       )}
 
       {hydrating && traces.length === 0 && !liveTrace && (
-        <div className="flex items-center justify-center gap-2 px-3 py-8 text-xs text-smoke">
+        <div className="flex items-center gap-2 justify-center px-3 py-8 text-xs text-smoke">
           <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
           Loading traces…
         </div>

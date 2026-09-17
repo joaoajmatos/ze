@@ -31,25 +31,43 @@ def build_capabilities_summary() -> str:
     return "\n".join(lines)
 
 
+def _drop_thread_pendings(
+    pending_configs: dict[str, dict],
+    thread_pending_requests: dict[str, set[str]],
+    thread_id: str,
+) -> None:
+    request_ids = list(thread_pending_requests.get(thread_id, ()))
+    for request_id in request_ids:
+        pending_configs.pop(request_id, None)
+    thread_pending_requests.pop(thread_id, None)
+
+
 async def handle_command(
     ws: WebSocket,
     data: dict,
     container: Any,
     conn_mgr: ConnectionManager,
-    pending_config: dict | None,
-) -> dict | None:
+    pending_configs: dict[str, dict],
+    thread_pending_requests: dict[str, set[str]],
+) -> None:
     name = data.get("name", "")
 
     if name == "cancel":
-        if pending_config is not None:
-            thread_id = pending_config.get("configurable", {}).get("thread_id", "")
-            try:
-                await container.abort_invocation(thread_id)
-            except Exception as exc:
-                log.warning("ws_cancel_abort_failed", error=str(exc))
-            await conn_mgr.send_frame({"type": "confirm_cancel", "id": ""})
-            return None
-        return None
+        thread_id = data.get("thread_id") or ""
+        if not thread_id:
+            await conn_mgr.send_frame(
+                {"type": "error", "detail": "thread_id required"}
+            )
+            return
+        try:
+            await container.abort_invocation(thread_id)
+        except Exception as exc:
+            log.warning("ws_cancel_abort_failed", error=str(exc))
+        _drop_thread_pendings(
+            pending_configs, thread_pending_requests, thread_id
+        )
+        await conn_mgr.send_frame({"type": "confirm_cancel", "id": ""}, thread_id)
+        return
 
     if name == "costs":
         from ze_core.telemetry.rest import build_cost_summary
@@ -64,7 +82,7 @@ async def handle_command(
             )
         except Exception as exc:
             log.warning("ws_costs_command_failed", error=str(exc))
-        return pending_config
+        return
 
     if name == "status":
         from ze_automation.rest import build_status_summary
@@ -80,7 +98,7 @@ async def handle_command(
             )
         except Exception as exc:
             log.warning("ws_status_command_failed", error=str(exc))
-        return pending_config
+        return
 
     if name == "onboarding":
         try:
@@ -91,7 +109,7 @@ async def handle_command(
             await conn_mgr.send_frame(
                 {"type": "error", "detail": "Could not start onboarding."}
             )
-        return pending_config
+        return
 
     if name == "reset_preview":
         scope = data.get("scope", "memory")
@@ -112,7 +130,7 @@ async def handle_command(
             await conn_mgr.send_frame(
                 {"type": "error", "detail": "Could not preview reset."}
             )
-        return pending_config
+        return
 
     if name == "reset":
         scope = data.get("scope", "memory")
@@ -134,7 +152,7 @@ async def handle_command(
             await conn_mgr.send_frame(
                 {"type": "error", "detail": "Could not reset state."}
             )
-        return pending_config
+        return
 
     if name == "capabilities":
         try:
@@ -147,7 +165,7 @@ async def handle_command(
             )
         except Exception as exc:
             log.warning("ws_capabilities_command_failed", error=str(exc))
-        return pending_config
+        return
 
     log.warning("ws_unknown_command", name=name)
-    return pending_config
+    return

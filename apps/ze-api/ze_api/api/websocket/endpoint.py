@@ -114,15 +114,14 @@ async def websocket_endpoint(
                 await msg_store.mark_read(ids)
 
             elif frame_type == "command":
-                # Commands are not per-thread (they operate on global session state).
-                # Pass the first pending config for compatibility with cancel command.
-                first_pending = next(iter(pending_configs.values()), None)
-                new_pending = await handle_command(
-                    ws, data, container, conn_mgr, first_pending
+                await handle_command(
+                    ws,
+                    data,
+                    container,
+                    conn_mgr,
+                    pending_configs,
+                    thread_pending_requests,
                 )
-                if new_pending is None and first_pending is not None:
-                    pending_configs.clear()
-                    thread_pending_requests.clear()
 
             elif frame_type == "component_submit":
                 thread_id = data.get("thread_id") or ""

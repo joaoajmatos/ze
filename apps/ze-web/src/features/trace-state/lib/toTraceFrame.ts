@@ -3,9 +3,11 @@ import type { MessageTraceResponse, WsTraceUpdateFrame } from "@myguyze/ze-clien
 export function toTraceFrame(
   messageId: string,
   trace: MessageTraceResponse,
+  threadId: string,
 ): WsTraceUpdateFrame {
   return {
     type: "trace_update",
+    thread_id: threadId,
     message_id: messageId,
     agent: trace.agent,
     routing_method: trace.routing_method,

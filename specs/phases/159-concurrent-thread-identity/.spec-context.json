@@ -1,0 +1,429 @@
+{
+  "workflow": "companion",
+  "specName": "concurrent thread identity",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:46:36.542Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:53:10.868Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:53:25.273Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:53:31.400Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:53:32.426Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:53:32.764Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:53:47.315Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:53:55.206Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:53:55.513Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-17T18:18:41.858Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:19:13.793Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:20:36.528Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:20:37.791Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:30:46.372Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:30:48.989Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:30:51.085Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:31:08.189Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:31:10.149Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:31:12.095Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:31:14.213Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:31:16.344Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:33:32.798Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-17T18:33:34.149Z"
+    }
+  ],
+  "telemetryInstanceId": "a0a0903f-d2c8-470e-b037-ed272535613b",
+  "last_action": "159 tasks done — web tests pass; WS/cancel tests pass",
+  "coverage": {
+    "FR-001": {
+      "title": "Trace / mind panel state MUST be per thread_id. A trace_update MUST NOT be applied to a thread it does not name.",
+      "tasks": [
+        "T002",
+        "T004",
+        "T005"
+      ],
+      "tests": [
+        "useTraceStore.test.ts",
+        "TraceContent.test.tsx"
+      ]
+    },
+    "FR-002": {
+      "title": "Cancel/abort and pending graph configs MUST be selected by the user's thread (and request_id for confirmations). The server MUST NOT abort the first pending config when more than one thread has work.",
+      "tasks": [
+        "T003",
+        "T007"
+      ],
+      "tests": [
+        "test_ws_cancel_thread.py"
+      ]
+    },
+    "FR-003": {
+      "title": "157 promote / confirmation-timeout user-visible notices MUST carry the unfinished conductor's thread_id.",
+      "tasks": [
+        "T008"
+      ],
+      "tests": [
+        "test_ws_conformance.py::TestConfirmationTimeoutFlow"
+      ]
+    },
+    "FR-004": {
+      "title": "Per-thread busy (99) MUST remain. A conductor on A MUST NOT mark the whole client busy.",
+      "tasks": [
+        "T001",
+        "T009"
+      ],
+      "tests": [
+        "test_ws.py::test_conductor_on_one_thread_does_not_mark_client_busy"
+      ]
+    },
+    "FR-005": {
+      "title": "Close code 4000 (one live WebSocket) MUST remain. Session switch MUST NOT reconnect. This phase MUST NOT add a second concurrent socket per user.",
+      "tasks": [
+        "T010"
+      ],
+      "tests": [
+        "test_ws.py::test_connection_manager_closes_first_on_second_connect",
+        "session-store.test.ts"
+      ]
+    },
+    "FR-006": {
+      "title": "This phase MUST NOT rebuild ConnectionManager multiplexing, MUST NOT change 151-158 conductor rewrite/gates, MUST NOT restore plan_sequential.",
+      "tasks": [
+        "T001",
+        "T012"
+      ]
+    }
+  },
+  "context": [
+    "area: apps/ze-web/src/features/trace-state (global useTraceStore + useTraceSocket applies every trace_update)",
+    "area: apps/ze-api/ze_api/api/websocket/endpoint.py (command uses next(iter(pending_configs)) then clear all)",
+    "area: apps/ze-api/ze_api/api/websocket/connection.py (99 ThreadSlot busy shipped; 4000 stays)",
+    "constraint: one live client (4000); many conversations; do not rebuild ConnectionManager",
+    "constraint: pending_configs stay request_id-keyed (113); 159 fixes selection"
+  ],
+  "intent": "Finish 99 for conductor/promote: per-thread trace, cancel, and timeout identity without a second WebSocket.",
+  "expectations": [
+    "Multi-user / multi-account",
+    "Split-view two chats on one screen",
+    "Embedding model / routing thresholds (160)",
+    "Procedures, swarm, sequential graph execute",
+    "Remove close code 4000 or reconnect on selectSession"
+  ],
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "approach": "Keep 99 multiplexer and 4000. Key the client trace store by thread_id; cancel/command must name a thread and abort only that thread's abort token and request_ids; timeout/promote frames carry thread_id.",
+  "decisions": [
+    {
+      "decision": "Do not re-implement 99 multiplexing",
+      "why": "Transport already ships; remainder is conductor-era globals",
+      "rejected": "Rewriting connection.py or a socket per thread"
+    },
+    {
+      "decision": "Close 4000 stays",
+      "why": "One live client, not one conversation",
+      "rejected": "Multiple concurrent tabs as in-scope"
+    },
+    {
+      "decision": "Trace keyed by thread_id",
+      "why": "154 ConductorSection is a lie if the store is global",
+      "rejected": "Latest trace_update wins"
+    },
+    {
+      "decision": "Cancel uses thread_pending_requests",
+      "why": "First-pending pointer aborts the wrong conductor",
+      "rejected": "next(iter(pending_configs))"
+    },
+    {
+      "decision": "per-thread byThread map rather than ignore-other-thread",
+      "why": "switching chats must show B without losing A in-flight traces",
+      "rejected": "latest global trace_update wins"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Per-thread trace + cancel/timeout identity; 4000 and ConnectionManager stay.",
+      "key_finding": "endpoint.py command handler still uses first pending config and clears all pendings."
+    },
+    "tasks": {
+      "summary": "12 tasks: setup, dual-thread fail-first, per-thread trace, cancel/promote identity, 4000 pin, polish."
+    },
+    "implement": {
+      "summary": "Per-thread trace store, cancel, and timeout identity; 4000 and ConnectionManager multiplexer unchanged."
+    }
+  },
+  "currentTask": "T012",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed ConnectionManager multiplexes one WS with ThreadSlot.try_set_busy per thread_id and test_ws 4000 displace still exists.",
+      "files": [
+        "apps/ze-api/ze_api/api/websocket/connection.py",
+        "apps/ze-api/tests/api/test_ws.py"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Wrote fail-first vitest: B trace_update must not become A's visible traces; missing thread_id must drop.",
+      "files": [
+        "apps/ze-web/src/features/trace-state/model/useTraceStore.test.ts"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Wrote fail-first pytest: cancel with two pendings drops only thread A; missing thread_id is error no-op.",
+      "files": [
+        "apps/ze-api/tests/api/test_ws_cancel_thread.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Keyed trace store by thread_id; dropped unnamed frames; useTraceSocket buckets other threads.",
+      "files": [
+        "apps/ze-web/src/features/trace-state/model/useTraceStore.ts",
+        "apps/ze-web/src/features/trace-state/model/useTraceSocket.ts",
+        "apps/ze-web/src/features/trace-state/model/useSessionTraces.ts",
+        "apps/ze-web/src/features/trace-state/lib/toTraceFrame.ts"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Made WsTraceUpdateFrame.thread_id required and added optional thread_id on command frames; regenerated ze-client.",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py",
+        "packages/ze-client/src/generated/ws.ts",
+        "apps/ze-api/tests/api/test_conductor_trace_schema.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Trace panel and ConductorSection read only the active session bucket.",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/TraceContent.tsx",
+        "apps/ze-web/src/widgets/trace-panel/ui/TraceContent.test.tsx",
+        "apps/ze-web/src/widgets/chat-workspace/ui/ChatSidePanel.tsx",
+        "apps/ze-web/src/entities/message/ui/MessageBubble.tsx"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Cancel requires thread_id and drops only that thread abort token plus pending request_ids.",
+      "files": [
+        "apps/ze-api/ze_api/api/websocket/commands.py",
+        "apps/ze-api/ze_api/api/websocket/endpoint.py",
+        "apps/ze-api/tests/api/test_ws_cancel_thread.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Timeout and 157 promote notices carry thread_id on WS frames and ntfy metadata.",
+      "files": [
+        "apps/ze-api/ze_api/api/websocket/confirmation.py",
+        "apps/ze-api/tests/api/test_ws_conformance.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Pinned per-thread busy: conductor on A does not busy B.",
+      "files": [
+        "apps/ze-api/tests/api/test_ws.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Kept 4000 displace test; selectSession does not reconnect().",
+      "files": [
+        "apps/ze-api/tests/api/test_ws.py",
+        "apps/ze-web/src/entities/session/model/session-store.test.ts"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Confirmed README 99 row is transport-shipped with remainder 159.",
+      "files": [
+        "specs/README.md"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "make test-web passed; WS/cancel/timeout tests passed; ruff clean; routing.py and ConnectionManager multiplexer unchanged.",
+      "files": [
+        "apps/ze-web/src/features/trace-state/model/useTraceStore.test.ts",
+        "apps/ze-api/tests/api/test_ws_cancel_thread.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "per-thread trace store + panel tests",
+      "command": "bun run test (trace-state/trace-panel)",
+      "result": "pass",
+      "warnings": []
+    },
+    {
+      "what": "cancel/timeout/4000/busy WS tests",
+      "command": "pytest test_ws*.py test_conductor_trace_schema.py",
+      "result": "55 passed",
+      "warnings": [
+        "full make test has 2 pre-existing failures: bootstrap PostgresMemoryStore and routing_config YAML"
+      ]
+    },
+    {
+      "what": "ruff on 159 python files",
+      "command": "ruff check",
+      "result": "clean",
+      "warnings": []
+    }
+  ]
+}

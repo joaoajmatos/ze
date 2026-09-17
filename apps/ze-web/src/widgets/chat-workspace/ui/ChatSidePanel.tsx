@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TraceContent } from "@/widgets/trace-panel";
 import { useChatSidePanelStore } from "@/features/chat-side-panel";
-import { useTraceStore } from "@/features/trace-state";
+import { threadTraceBucket, useTraceStore } from "@/features/trace-state";
 import { useSessionsQuery } from "@/entities/session";
 import { cn, motion } from "@/shared/lib";
 import { SearchBar, SidePanel } from "@/shared/ui";
@@ -12,9 +12,10 @@ interface ChatSidePanelProps {
   assistantMessageIds: string[];
 }
 
-function TracePanelHeader() {
-  const traces = useTraceStore((s) => s.traces);
-  const pending = useTraceStore((s) => s.pending);
+function TracePanelHeader({ threadId }: { threadId: string }) {
+  const bucket = useTraceStore((s) => threadTraceBucket(s, threadId));
+  const traces = bucket.traces;
+  const pending = bucket.pending;
 
   let detail = "Routing, memory, and tools per message";
   if (pending) {
@@ -68,9 +69,11 @@ function HistoryPanelHeader({ searchQuery, onSearchChange }: HistoryPanelHeaderP
 }
 
 function ChatSidePanelHeader({
+  threadId,
   searchQuery,
   onSearchChange,
 }: {
+  threadId: string;
   searchQuery: string;
   onSearchChange: (value: string) => void;
 }) {
@@ -85,7 +88,7 @@ function ChatSidePanelHeader({
           isTrace ? "relative opacity-100" : "pointer-events-none absolute inset-x-0 top-0 opacity-0",
         )}
       >
-        <TracePanelHeader />
+        <TracePanelHeader threadId={threadId} />
       </div>
       <div
         className={cn(
@@ -113,7 +116,13 @@ export function ChatSidePanel({ threadId, assistantMessageIds }: ChatSidePanelPr
       width={width}
       onWidthChange={setWidth}
       onClose={() => setOpen(false)}
-      header={<ChatSidePanelHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />}
+      header={
+        <ChatSidePanelHeader
+          threadId={threadId}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+      }
     >
       <div
         className={cn(

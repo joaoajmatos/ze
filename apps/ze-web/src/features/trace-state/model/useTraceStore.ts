@@ -1,6 +1,36 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { create } from "zustand";
 
+export interface ThreadTraceBucket {
+  traces: WsTraceUpdateFrame[];
+  pending: boolean;
+  pendingTrace: Partial<WsTraceUpdateFrame> | null;
+  hydrating: boolean;
+}
+
+export function emptyThreadTrace(): ThreadTraceBucket {
+  return { traces: [], pending: false, pendingTrace: null, hydrating: false };
+}
+
+export function tracesForThread(
+  state: Pick<TraceState, "byThread">,
+  threadId: string,
+): WsTraceUpdateFrame[] {
+  return state.byThread[threadId]?.traces ?? [];
+}
+
+export function threadTraceBucket(
+  state: Pick<TraceState, "byThread">,
+  threadId: string,
+): ThreadTraceBucket {
+  return state.byThread[threadId] ?? emptyThreadTrace();
+}
+
+function namedThreadId(value: unknown): string | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  return value;
+}
+
 function dedupeAppend(traces: WsTraceUpdateFrame[], trace: WsTraceUpdateFrame): WsTraceUpdateFrame[] {
   const without = traces.filter((t) => t.message_id !== trace.message_id);
   return [...without, trace];
@@ -25,53 +55,100 @@ function tracesEqual(a: WsTraceUpdateFrame[], b: WsTraceUpdateFrame[]): boolean 
   return a.every((t, i) => t.message_id === b[i]?.message_id);
 }
 
+function updateThread(
+  byThread: Record<string, ThreadTraceBucket>,
+  threadId: string,
+  updater: (bucket: ThreadTraceBucket) => ThreadTraceBucket,
+): Record<string, ThreadTraceBucket> {
+  const current = byThread[threadId] ?? emptyThreadTrace();
+  return { ...byThread, [threadId]: updater(current) };
+}
+
 interface TraceState {
-  traces: WsTraceUpdateFrame[];
-  pending: boolean;
-  pendingTrace: Partial<WsTraceUpdateFrame> | null;
-  hydrating: boolean;
+  byThread: Record<string, ThreadTraceBucket>;
   appendTrace: (t: WsTraceUpdateFrame) => void;
-  clearTraces: () => void;
-  setPending: (v: boolean) => void;
-  setHydrating: (v: boolean) => void;
-  mergeTraces: (incoming: WsTraceUpdateFrame[], orderedIds: string[]) => void;
+  clearTraces: (threadId: string) => void;
+  setPending: (threadId: string, v: boolean) => void;
+  setHydrating: (threadId: string, v: boolean) => void;
+  mergeTraces: (threadId: string, incoming: WsTraceUpdateFrame[], orderedIds: string[]) => void;
   mergePartialTrace: (fields: Partial<WsTraceUpdateFrame>) => void;
   commitPendingTrace: (final: WsTraceUpdateFrame) => void;
 }
 
 export const useTraceStore = create<TraceState>()((set) => ({
-  traces: [],
-  pending: false,
-  pendingTrace: null,
-  hydrating: false,
+  byThread: {},
   appendTrace: (t) =>
-    set((s) => ({ traces: dedupeAppend(s.traces, t), pending: false })),
-  clearTraces: () => set({ traces: [], pending: false, pendingTrace: null, hydrating: false }),
-  setPending: (v) => set({ pending: v }),
-  setHydrating: (v) => set((s) => (s.hydrating === v ? s : { hydrating: v })),
-  mergeTraces: (incoming, orderedIds) =>
     set((s) => {
-      const merged = mergeOrdered(s.traces, incoming, orderedIds);
-      if (tracesEqual(merged, s.traces) && !s.hydrating) return s;
-      return { traces: merged, hydrating: false };
+      const threadId = namedThreadId(t.thread_id);
+      if (!threadId) return s;
+      return {
+        byThread: updateThread(s.byThread, threadId, (bucket) => ({
+          ...bucket,
+          traces: dedupeAppend(bucket.traces, t),
+          pending: false,
+        })),
+      };
+    }),
+  clearTraces: (threadId) =>
+    set((s) => ({
+      byThread: updateThread(s.byThread, threadId, () => emptyThreadTrace()),
+    })),
+  setPending: (threadId, v) =>
+    set((s) => ({
+      byThread: updateThread(s.byThread, threadId, (bucket) =>
+        bucket.pending === v ? bucket : { ...bucket, pending: v },
+      ),
+    })),
+  setHydrating: (threadId, v) =>
+    set((s) => ({
+      byThread: updateThread(s.byThread, threadId, (bucket) =>
+        bucket.hydrating === v ? bucket : { ...bucket, hydrating: v },
+      ),
+    })),
+  mergeTraces: (threadId, incoming, orderedIds) =>
+    set((s) => {
+      const current = s.byThread[threadId] ?? emptyThreadTrace();
+      const merged = mergeOrdered(current.traces, incoming, orderedIds);
+      if (tracesEqual(merged, current.traces) && !current.hydrating) return s;
+      return {
+        byThread: updateThread(s.byThread, threadId, (bucket) => ({
+          ...bucket,
+          traces: merged,
+          hydrating: false,
+        })),
+      };
     }),
   mergePartialTrace: (fields) =>
     set((s) => {
-      const base = s.pendingTrace ?? {};
-      const { memory_chunks: newChunks = [], tool_calls: newCalls = [], ...rest } = fields;
+      const threadId = namedThreadId(fields.thread_id);
+      if (!threadId) return s;
       return {
-        pendingTrace: {
-          ...base,
-          ...rest,
-          memory_chunks: [...(base.memory_chunks ?? []), ...newChunks],
-          tool_calls: [...(base.tool_calls ?? []), ...newCalls],
-        },
+        byThread: updateThread(s.byThread, threadId, (bucket) => {
+          const base = bucket.pendingTrace ?? {};
+          const { memory_chunks: newChunks = [], tool_calls: newCalls = [], ...rest } = fields;
+          return {
+            ...bucket,
+            pendingTrace: {
+              ...base,
+              ...rest,
+              memory_chunks: [...(base.memory_chunks ?? []), ...newChunks],
+              tool_calls: [...(base.tool_calls ?? []), ...newCalls],
+            },
+          };
+        }),
       };
     }),
   commitPendingTrace: (final) =>
-    set((s) => ({
-      traces: dedupeAppend(s.traces, final),
-      pendingTrace: null,
-      pending: false,
-    })),
+    set((s) => {
+      const threadId = namedThreadId(final.thread_id);
+      if (!threadId) return s;
+      return {
+        byThread: updateThread(s.byThread, threadId, (bucket) => ({
+          ...bucket,
+          traces: dedupeAppend(bucket.traces, final),
+          pendingTrace: null,
+          pending: false,
+        })),
+      };
+    }),
 }));

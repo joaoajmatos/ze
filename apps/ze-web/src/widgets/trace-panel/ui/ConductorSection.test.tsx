@@ -8,6 +8,7 @@ function frame(
 ): WsTraceUpdateFrame {
   return {
     type: "trace_update",
+    thread_id: "thread-a",
     message_id: "m1",
     agent: "companion",
     routing_method: "haiku",

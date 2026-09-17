@@ -587,6 +587,7 @@ class TestConfirmationTimeoutFlow:
         msg_frames = [f for f in frames if f.get("type") == "message"]
         assert len(msg_frames) == 1
         assert "elapsed" in msg_frames[0]["message"]["text"]
+        assert msg_frames[0]["thread_id"] == "thread-1"
 
     async def test_timeout_noop_when_already_cleared(self):
         """If the user already responded, clear() returns False — no message sent."""
@@ -681,12 +682,40 @@ class TestConfirmationTimeoutFlow:
         msg_frames = [f for f in frames if f.get("type") == "message"]
         assert len(msg_frames) == 1
         text = msg_frames[0]["message"]["text"]
+        assert msg_frames[0]["thread_id"] == "thread-promote"
         assert "elapsed" in text
         assert "goal" in text
         assert "workflow" in text
         container.create_goal.assert_not_called()
         container.goal_store.create.assert_not_called()
         container.workflow_store.create.assert_not_called()
+
+    async def test_timeout_ntfy_is_tagged_with_thread_id(self):
+        confirmation_store = AsyncMock()
+        confirmation_store.clear = AsyncMock(return_value=True)
+
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        store = _make_msg_store([])
+        await mgr.connect(ws, store)
+
+        notifier = AsyncMock()
+        notifier.push_notification = AsyncMock()
+
+        await confirmation_timeout(
+            confirmation_store,
+            mgr,
+            notifier,
+            "thread-a",
+            0,
+            "req-a",
+        )
+
+        notifier.push_notification.assert_awaited_once()
+        notice = notifier.push_notification.await_args.args[0]
+        assert notice.metadata["thread_id"] == "thread-a"
+        assert notice.target_id == "thread-a"
+        assert notice.target_type == "thread"
 
 
 # ── Unread replay — multi-conversation ───────────────────────────────────────

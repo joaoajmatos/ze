@@ -1,6 +1,6 @@
 # Phase 99 — Multi-Conversation Support
 
-> **Status:** Pending
+> **Status:** Transport shipped (multiplexed one socket, per-thread busy, ChatNav thinking/attention). Remainder: [159-concurrent-thread-identity](../159-concurrent-thread-identity/spec.md) (trace/cancel/promote still assume “the” thread). Close 4000 stays.
 > **Depends on:** Phase 45 — NativeAppInterface, ConnectionManager, WebSocket transport
 > **Enables:** Side-by-side chat panels, conversation history navigation without losing context
 > **Packages touched:** `core/engine/ze-core`, `apps/ze-api`, `apps/ze-web`

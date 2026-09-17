@@ -119,6 +119,16 @@ async def test_connection_manager_busy_flag_per_thread():
     assert mgr.try_set_busy("thread-1") is True
 
 
+async def test_conductor_on_one_thread_does_not_mark_client_busy():
+    mgr = ConnectionManager()
+    assert mgr.try_set_busy("thread-a") is True
+    assert mgr.try_set_busy("thread-b") is True
+    mgr.clear_busy("thread-a")
+    assert mgr.try_set_busy("thread-b") is False
+    mgr.clear_busy("thread-b")
+    assert mgr.try_set_busy("thread-b") is True
+
+
 async def test_connection_manager_busy_resets_on_reconnect():
     mgr = ConnectionManager()
     ws = _make_ws()
@@ -382,6 +392,9 @@ def _make_gate_container() -> AsyncMock:
     container = AsyncMock()
     container.settings.confirm_timeout_seconds = 900
     container.notifier = None
+    snapshot = MagicMock()
+    snapshot.interrupts = None
+    container.graph.aget_state = AsyncMock(return_value=snapshot)
     return container
 
 

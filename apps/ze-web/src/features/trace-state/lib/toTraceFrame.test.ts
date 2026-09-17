@@ -19,8 +19,9 @@ describe("toTraceFrame", () => {
       conductor_ledger: [],
     };
 
-    expect(toTraceFrame("msg-1", trace)).toEqual({
+    expect(toTraceFrame("msg-1", trace, "thread-a")).toEqual({
       type: "trace_update",
+      thread_id: "thread-a",
       message_id: "msg-1",
       ...trace,
       workspace: undefined,

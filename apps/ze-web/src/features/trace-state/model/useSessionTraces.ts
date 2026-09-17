@@ -8,16 +8,11 @@ import { useTraceStore } from "./useTraceStore";
 
 export function useSessionTraces(threadId: string, assistantMessageIds: string[]) {
   const queryClient = useQueryClient();
-  const clearTraces = useTraceStore((s) => s.clearTraces);
   const mergeTraces = useTraceStore((s) => s.mergeTraces);
   const setHydrating = useTraceStore((s) => s.setHydrating);
-  const hydrating = useTraceStore((s) => s.hydrating);
+  const hydrating = useTraceStore((s) => s.byThread[threadId]?.hydrating ?? false);
 
   const idsKey = assistantMessageIds.join(",");
-
-  useEffect(() => {
-    clearTraces();
-  }, [threadId, clearTraces]);
 
   const { data: traceFrames, isLoading } = useQuery({
     queryKey: queryKeys.messageTraces(threadId, idsKey),
@@ -30,7 +25,7 @@ export function useSessionTraces(threadId: string, assistantMessageIds: string[]
       const byId = new Map(
         data.traces.map((entry) => [
           entry.message_id,
-          toTraceFrame(entry.message_id, entry.trace),
+          toTraceFrame(entry.message_id, entry.trace, threadId),
         ]),
       );
       return assistantMessageIds
@@ -44,15 +39,15 @@ export function useSessionTraces(threadId: string, assistantMessageIds: string[]
 
   useEffect(() => {
     if (idsKey.length === 0) {
-      setHydrating(false);
+      setHydrating(threadId, false);
       return;
     }
 
-    setHydrating(isLoading);
+    setHydrating(threadId, isLoading);
     if (isLoading) return;
 
     const messageIds = idsKey.split(",");
-    mergeTraces(traceFrames ?? [], messageIds);
+    mergeTraces(threadId, traceFrames ?? [], messageIds);
     for (const frame of traceFrames ?? []) {
       queryClient.setQueryData(queryKeys.messageTrace(frame.message_id), frame);
     }
