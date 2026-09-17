@@ -33,12 +33,16 @@ help:
 	@echo "    migrate-history  List all migrations"
 	@echo "    migrate-stamp    Stamp existing DB to squashed heads (run once after squash)"
 	@echo ""
+	@echo "  Workspace sidecar"
+	@echo "    workspace-up     Start the workspace sidecar via docker-compose (:8081)"
+	@echo "    workspace-down   Stop the workspace sidecar"
+	@echo ""
 	@echo "  Development"
-	@echo "    dev              Start backend only (uvicorn --reload on :8000)"
+	@echo "    dev              Start backend (uvicorn --reload on :8000); also brings up the workspace sidecar"
 	@echo "    seed             Apply dev narrative fixtures to the database"
 	@echo "    db-reset-seed    Reset DB, migrate, and apply dev fixtures"
 	@echo "    web              Start React web app (bun dev on :5173)"
-	@echo "    dev-full         Start backend + React web app (Ctrl-C stops both)"
+	@echo "    dev-full         Start backend + React web app + workspace sidecar (Ctrl-C stops backend/web)"
 	@echo "    dev-eval         Start backend without background jobs (use before evals)"
 	@echo "    logs             Tail the server log file (LOG_FILE=$(LOG_FILE))"
 	@echo ""
@@ -134,6 +138,18 @@ db-up:
 db-down:
 	docker compose stop postgres
 
+# ── Workspace sidecar ─────────────────────────────────────────────────────────
+.PHONY: workspace-up workspace-down
+
+workspace-up:
+	docker compose up -d workspace
+	@echo "Waiting for the workspace sidecar to be ready..."
+	@until curl -sf http://localhost:8081/health >/dev/null 2>&1; do sleep 1; done
+	@echo "Workspace sidecar is ready on :8081."
+
+workspace-down:
+	docker compose stop workspace
+
 db-reset:
 	docker compose exec -T postgres psql -U ze -c "DROP DATABASE IF EXISTS ze"
 	docker compose exec -T postgres psql -U ze -c "CREATE DATABASE ze"
@@ -166,7 +182,7 @@ migrate-stamp:
 # ── Development ───────────────────────────────────────────────────────────────
 .PHONY: dev web dev-full dev-eval logs seed db-reset-seed
 
-dev:
+dev: workspace-up
 	uv sync -q --package ze-api
 	AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
 
@@ -175,7 +191,7 @@ web:
 
 # Starts the backend in the background, waits for :8000 to be ready, then starts
 # the React web app. Ctrl-C stops both.
-dev-full:
+dev-full: workspace-up
 	@trap 'kill %1 2>/dev/null; exit 0' INT TERM; \
 	uv sync -q --package ze-api; \
 	AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000 & \
