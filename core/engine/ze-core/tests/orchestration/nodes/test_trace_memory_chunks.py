@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
 from ze_core.conversation.messages.types import CompactionTrace
 from ze_core.orchestration.nodes.trace import _extract_memory_chunks, record_trace
@@ -218,16 +217,12 @@ async def test_record_trace_workspace_from_tool_calls():
         success=True,
         error=None,
     )
-    store = SimpleNamespace(get_mode=AsyncMock(return_value=SimpleNamespace(value="ask")))
     state = {
         "envelope": _envelope(),
         "agent_result": SimpleNamespace(tool_calls=[tool]),
         "memory_context": None,
     }
-    result = await record_trace(
-        state, config={"configurable": {"workspace_store": store}}
-    )
+    result = await record_trace(state, config={})
     workspace = result["message_trace"].workspace
     assert workspace is not None
-    assert workspace.mode == "ask"
     assert workspace.files == [{"path": "notes.txt", "op": "write"}]

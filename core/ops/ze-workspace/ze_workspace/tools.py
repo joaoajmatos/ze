@@ -23,7 +23,6 @@ from ze_workspace.types import (
     WorkspaceAction,
     WorkspaceFileTouch,
     WorkspaceGateDecision,
-    WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
     WorkspaceRunStatus,
@@ -45,6 +44,7 @@ WORKSPACE_TOOLS = [
     "workspace_run",
     "workspace_run_skill_script",
     "ingest_workspace_file",
+    "workspace_reset",
 ]
 
 _client: Any = None
@@ -88,12 +88,6 @@ def configure(
         )
 
 
-async def _mode() -> WorkspaceMode:
-    if _store is None:
-        raise WorkspaceUnavailableError("workspace is not configured")
-    return await _store.get_mode()
-
-
 async def _ensure_client() -> Any:
     if _client is None:
         raise WorkspaceUnavailableError("workspace is not configured")
@@ -105,13 +99,12 @@ async def _ensure_client() -> Any:
 async def _decide(
     action: WorkspaceAction,
     origin: WorkspaceRunOrigin | None = None,
-) -> tuple[WorkspaceMode, WorkspaceGateDecision]:
+) -> WorkspaceGateDecision:
     if _gate is None:
         raise WorkspaceUnavailableError("workspace is not configured")
-    mode = await _mode()
     if origin is None:
         origin = WorkspaceRunOrigin(workspace_run_origin.get())
-    return mode, _gate.decide(mode=mode, action=action, origin=origin)
+    return _gate.decide(action=action, origin=origin)
 
 
 def _confirm(prompt: str, proposed: str, *, editable: bool = True) -> None:
@@ -282,9 +275,9 @@ async def _run_and_maybe_detach(
     description="List files in the workspace directory. Path is relative to the workspace root.",
 )
 async def workspace_list(path: str = "") -> str:
-    mode, decision = await _decide(WorkspaceAction.LIST)
+    decision = await _decide(WorkspaceAction.LIST)
     if decision is WorkspaceGateDecision.DENY:
-        return f"Workspace is {mode.value}; listing is not allowed."
+        return "Listing the workspace is not allowed."
     client = await _ensure_client()
     files = await client.list_dir(path)
     if not files:
@@ -301,9 +294,9 @@ async def workspace_list(path: str = "") -> str:
     description="Read a text file from the workspace. Path is relative to the workspace root.",
 )
 async def workspace_read(path: str) -> str:
-    mode, decision = await _decide(WorkspaceAction.READ)
+    decision = await _decide(WorkspaceAction.READ)
     if decision is WorkspaceGateDecision.DENY:
-        return f"Workspace is {mode.value}; reading is not allowed."
+        return "Reading the workspace is not allowed."
     client = await _ensure_client()
     data = await client.download(path)
     return data.decode("utf-8", errors="replace")
@@ -314,14 +307,12 @@ async def workspace_read(path: str) -> str:
     description="Write a text file in the workspace. Path is relative to the workspace root.",
 )
 async def workspace_write(path: str, content: str) -> str:
-    mode, decision = await _decide(WorkspaceAction.WRITE)
+    decision = await _decide(WorkspaceAction.WRITE)
     if decision is WorkspaceGateDecision.DENY:
-        return f"Workspace is {mode.value}; writing is not allowed."
-    if decision is WorkspaceGateDecision.PLAN:
-        return f"[plan] would write {len(content)} bytes to {path}"
+        return "Writing to the workspace is not allowed."
     if decision is WorkspaceGateDecision.CONFIRM:
         _confirm(
-            f"Write file {path} ({len(content)} characters) in workspace mode {mode.value}?",
+            f"Write file {path} ({len(content)} characters) in the workspace?",
             content,
         )
     client = await _ensure_client()
@@ -336,14 +327,12 @@ async def workspace_write(path: str, content: str) -> str:
     description="Delete a file or directory in the workspace.",
 )
 async def workspace_delete(path: str) -> str:
-    mode, decision = await _decide(WorkspaceAction.DELETE)
+    decision = await _decide(WorkspaceAction.DELETE)
     if decision is WorkspaceGateDecision.DENY:
-        return f"Workspace is {mode.value}; deleting is not allowed."
-    if decision is WorkspaceGateDecision.PLAN:
-        return f"[plan] would delete {path}"
+        return "Deleting from the workspace is not allowed."
     if decision is WorkspaceGateDecision.CONFIRM:
         _confirm(
-            f"Delete {path} from the workspace (mode {mode.value})?",
+            f"Delete {path} from the workspace?",
             path,
         )
     client = await _ensure_client()
@@ -357,20 +346,18 @@ async def workspace_delete(path: str) -> str:
     description="Run a shell command in the workspace. Command is a single string executed via bash -lc.",
 )
 async def workspace_run(command: str) -> str:
-    mode, decision = await _decide(WorkspaceAction.RUN)
+    decision = await _decide(WorkspaceAction.RUN)
     if decision is WorkspaceGateDecision.DENY:
         await _record_run(
             command=command,
             origin=WorkspaceRunOrigin(workspace_run_origin.get()),
             status=WorkspaceRunStatus.REFUSED,
-            error_summary=f"denied in mode {mode.value}",
+            error_summary="command refused",
         )
-        return f"Workspace is {mode.value}; running commands is not allowed."
-    if decision is WorkspaceGateDecision.PLAN:
-        return f"[plan] would run: {command}"
+        return "Running commands in the workspace is not allowed."
     if decision is WorkspaceGateDecision.CONFIRM:
         _confirm(
-            f"Run in workspace (mode {mode.value}): {command}",
+            f"Run in the workspace: {command}",
             command,
         )
     refusal = await _refusal_if_busy()
@@ -419,22 +406,20 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     if script is None:
         return f"Script {filename} was not found on skill {skill_id}."
 
-    mode, decision = await _decide(WorkspaceAction.RUN_SCRIPT)
+    decision = await _decide(WorkspaceAction.RUN_SCRIPT)
     if decision is WorkspaceGateDecision.DENY:
         await _record_run(
             command=f"skill-script {filename}",
             origin=WorkspaceRunOrigin(workspace_run_origin.get()),
             status=WorkspaceRunStatus.REFUSED,
-            error_summary=f"denied in mode {mode.value}",
+            error_summary="skill script refused",
             skill_id=skill.id,
             skill_script_path=filename,
         )
-        return f"Workspace is {mode.value}; running skill scripts is not allowed."
-    if decision is WorkspaceGateDecision.PLAN:
-        return f"[plan] would run skill script {filename}"
+        return "Running skill scripts in the workspace is not allowed."
     if decision is WorkspaceGateDecision.CONFIRM:
         _confirm(
-            f"Run skill script {filename} in workspace (mode {mode.value})?",
+            f"Run skill script {filename} in the workspace?",
             filename,
         )
 
@@ -465,14 +450,12 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     ),
 )
 async def ingest_workspace_file(path: str) -> str:
-    mode, decision = await _decide(WorkspaceAction.INGEST)
+    decision = await _decide(WorkspaceAction.INGEST)
     if decision is WorkspaceGateDecision.DENY:
-        return f"Workspace is {mode.value}; ingest is not allowed."
-    if decision is WorkspaceGateDecision.PLAN:
-        return f"[plan] would ingest {path} into memory"
+        return "Ingesting a workspace file is not allowed."
     if decision is WorkspaceGateDecision.CONFIRM:
         _confirm(
-            f"Ingest workspace file {path} into memory (mode {mode.value})?",
+            f"Ingest workspace file {path} into memory?",
             path,
         )
     if _ingestion is None:
@@ -486,3 +469,27 @@ async def ingest_workspace_file(path: str) -> str:
         f"Ingested {path} ({getattr(result, 'facts_count', 0)} facts). "
         "The workspace file was not deleted."
     )
+
+
+@tool(
+    access=ToolAccess.WRITE,
+    description=(
+        "Empty the workspace after confirmation. Stops an in-progress run, "
+        "then removes all files."
+    ),
+)
+async def workspace_reset() -> str:
+    decision = await _decide(WorkspaceAction.RESET)
+    if decision is WorkspaceGateDecision.DENY:
+        return "Resetting the workspace is not allowed."
+    if decision is WorkspaceGateDecision.CONFIRM:
+        _confirm(
+            "Reset the workspace? All files will be removed.",
+            "reset",
+            editable=False,
+        )
+    client = await _ensure_client()
+    await client.reset()
+    if _store is not None:
+        await _store.mark_reset()
+    return "Workspace reset. All files were removed."

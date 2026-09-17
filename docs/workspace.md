@@ -14,31 +14,22 @@ This is **not** a browsing session. Web pages stay in the [browser sidecar](brow
 |---|---|---|
 | Sidecar service | `sidecar/workspace/` | FastAPI — files, run, cancel, reset |
 | Python package | `core/ops/ze-workspace/` | Client, gate, tools, store, REST |
-| Web UI | `apps/ze-web` System `/workspace` | Mode, files, confirmed reset |
+| Web UI | `apps/ze-web` System `/workspace` | Tree and occupancy (map only) |
 
 If the sidecar is unreachable, workspace tools return an error the agent can skip.
-User-initiated list, read, place, and retrieve in the workspace view still talk to
-the sidecar; they never ask for confirmation.
+Chat attachments still place files through the API. The System page lists the tree;
+it does not run commands, reset, or switch a mode.
 
 See [configuration.md](configuration.md#workspace-sidecar) for env vars.
 
 ---
 
-## Modes
+## Access
 
-The user picks a mode. It lasts until they change it. It survives closing the chat
-app and starting a new conversation. Default is **Ask**.
-
-| Mode | Conversation file writes | Conversation commands / skill scripts | Unattended file writes | Unattended commands / scripts |
-|---|---|---|---|---|
-| Off | Deny | Deny | Deny | Deny |
-| Plan | Plan only (no write) | Plan only | Deny | Deny |
-| Ask (default) | Confirm | Confirm | Deny | Deny |
-| Auto-edit | Allow | Confirm | Allow | Deny |
-| Auto | Allow | Allow | Allow | Allow |
-
-Reset always asks. User-initiated place, read, and retrieve never ask. Off still
-lets the user inspect files in the workspace view.
+There is no stored execution mode. Conversation always may use the workspace when
+it is available: reads proceed, writes and commands confirm in the thread, reset
+confirms. Unattended work (goals, workflows) uses the same computer without that
+pause. Skill scripts still need executable approval.
 
 Detached runs, automatic follow-up turns, and push when a run finishes are spec 116,
 not this sidecar.
@@ -51,8 +42,9 @@ Approving a skill's instructions does not approve its scripts.
 1. Import and approve the skill on `/skills` (instructions become active).
 2. Approve executables (`POST /api/v0/skills/{id}/approve-executables`).
 3. When the skill matches a turn, the agent may call `workspace_run_skill_script`.
-   The sidecar writes the stored bytes under `/workspace` and runs them under the
-   same mode table as other commands.
+   The sidecar writes the stored bytes under `/workspace` and runs them after
+   the same conversation confirmation as other commands (unattended work does
+   not pause).
 
 Matching a skill never auto-executes scripts. Disabled and pending skills never run
 them. A source-content change clears `executable_approved` and sends the skill back

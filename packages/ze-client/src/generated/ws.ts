@@ -60,7 +60,7 @@ export type ThreadId7 = string | null;
 export type Screen = string;
 export type Type8 = "pong";
 export type Type9 = "trace_update";
-export type ThreadId8 = string | null;
+export type ThreadId8 = string;
 export type MessageId = string;
 export type Partial = boolean;
 export type Agent = string;
@@ -87,7 +87,6 @@ export type Trigger = string;
 export type Similarity = number | null;
 export type ScriptRan = boolean;
 export type SkillsUsed = SkillUsageTraceResponse[];
-export type Mode = string;
 export type Runs = {
   [k: string]: unknown;
 }[];
@@ -152,11 +151,12 @@ export type Type14 = "action";
 export type Payload = string;
 export type ThreadId11 = string | null;
 export type Type15 = "command";
+export type ThreadId12 = string | null;
 export type Name2 = "cancel" | "costs" | "capabilities" | "status" | "onboarding" | "reset" | "reset_preview";
 export type Type16 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
-export type ThreadId12 = string | null;
+export type ThreadId13 = string | null;
 export type Type17 = "ping";
 
 export interface WsProtocol {
@@ -284,7 +284,7 @@ export interface WsPongFrame {
  */
 export interface WsTraceUpdateFrame {
   type: Type9;
-  thread_id?: ThreadId8;
+  thread_id: ThreadId8;
   message_id: MessageId;
   partial?: Partial;
   agent: Agent;
@@ -339,7 +339,6 @@ export interface SkillUsageTraceResponse {
  * via the `definition` "WorkspaceUsageTraceResponse".
  */
 export interface WorkspaceUsageTraceResponse {
-  mode: Mode;
   runs?: Runs;
   files?: Files;
   script_ran?: ScriptRan1;
@@ -443,6 +442,7 @@ export interface WsActionFrame {
  */
 export interface WsCommandFrame {
   type: Type15;
+  thread_id?: ThreadId12;
   name: Name2;
 }
 /**
@@ -454,7 +454,7 @@ export interface WsComponentSubmitFrame {
   step_id: StepId;
   values: Values;
   session_id?: SessionId1;
-  thread_id?: ThreadId12;
+  thread_id?: ThreadId13;
 }
 export interface Values {
   [k: string]: unknown;

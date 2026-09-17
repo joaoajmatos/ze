@@ -104,7 +104,6 @@ class ConductorLedgerEntryResponse(BaseModel):
 
 
 class WorkspaceUsageTraceResponse(BaseModel):
-    mode: str
     runs: list[dict] = []
     files: list[dict] = []
     script_ran: bool = False
@@ -688,7 +687,7 @@ class WsPongFrame(BaseModel):
 
 class WsTraceUpdateFrame(BaseModel):
     type: Literal["trace_update"]
-    thread_id: str | None = None
+    thread_id: str
     message_id: str
     partial: bool = False
     agent: str
@@ -782,6 +781,7 @@ class WsActionFrame(BaseModel):
 
 class WsCommandFrame(BaseModel):
     type: Literal["command"]
+    thread_id: str | None = None
     name: Literal[
         "cancel",
         "costs",
@@ -1255,7 +1255,6 @@ class SkillImportRequest(BaseModel):
 # ── REST: workspace ───────────────────────────────────────────────────────────
 
 
-WorkspaceModeLiteral = Literal["off", "plan", "ask", "auto_edit", "auto"]
 WorkspaceRunOriginLiteral = Literal["conversation", "user", "unattended"]
 WorkspaceRunStatusLiteral = Literal[
     "succeeded", "failed", "timed_out", "cancelled", "refused", "in_progress"
@@ -1267,20 +1266,11 @@ WorkspaceRunStatusLiteral = Literal[
 
 class WorkspaceStatusResponse(BaseModel):
     available: bool
-    mode: WorkspaceModeLiteral
     bytes_used: int
     bytes_ceiling: int
     busy: bool
     last_reset_at: str | None
     last_used_at: str | None
-
-
-class WorkspaceModeResponse(BaseModel):
-    mode: WorkspaceModeLiteral
-
-
-class WorkspaceModeUpdate(BaseModel):
-    mode: WorkspaceModeLiteral
 
 
 class WorkspaceFileItem(BaseModel):

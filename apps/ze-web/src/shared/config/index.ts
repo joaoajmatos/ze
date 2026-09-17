@@ -8,10 +8,10 @@ export {
 export {
   type NavRouteMeta,
   navRoutes,
-  workNavRoutes,
+  automationNavRoutes,
   knowledgeNavRoutes,
   systemNavRoutes,
-  WorkIcon,
+  AutomationIcon,
   KnowledgeIcon,
   SystemIcon,
   settingsNavRoute,

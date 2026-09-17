@@ -143,9 +143,9 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 94 | [Memory Graph View](phases/094-memory-graph-view/spec.md) | 🔲 Pending |
 | 95 | [Unified Streaming Architecture](phases/095-live-trace-streaming/spec.md) | ✅ Done |
 | 96 | [Dev Data Seeder](phases/096-dev-data-seeder/spec.md) | 🔲 Pending |
-| 97 | [Embedding Model Upgrade (MiniLM → E5)](phases/097-embedding-model-upgrade/spec.md) | 🔲 Pending |
+| 97 | [Embedding Model Upgrade (MiniLM → E5)](phases/097-embedding-model-upgrade/spec.md) | ✅ Model shipped — remainder [160](phases/160-e5-routing-confidence/spec.md) Implemented |
 | 98 | [Workflow Run Chat](phases/098-workflow-run-chat/spec.md) | 🔲 Pending |
-| 99 | [Multi-Conversation Support](phases/099-multi-conversation/spec.md) | 🔲 Pending |
+| 99 | [Multi-Conversation Support](phases/099-multi-conversation/spec.md) | ✅ Transport shipped — remainder [159](phases/159-concurrent-thread-identity/spec.md) |
 | 101 | [Session Search & Titles](phases/101-session-search/spec.md) | ✅ Done |
 | 102 | [Workflow Conditional Branching](phases/102-workflow-branching/spec.md) | ✅ Done |
 | 103 | [Model Default with Overrides](phases/103-model-default-overrides/spec.md) | ✅ Done |
@@ -199,6 +199,9 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 156 | [Conductor Stall / Replan](phases/156-conductor-stall-replan/spec.md) | ✅ Implemented |
 | 157 | [Promote Conductor Instance to Workflow/Goal](phases/157-promote-conductor-instance/spec.md) | ✅ Implemented |
 | 158 | [Parallel Per-Subtask Gates](phases/158-parallel-subtask-gates/spec.md) | ✅ Implemented |
+| 159 | [Concurrent Thread Identity](phases/159-concurrent-thread-identity/spec.md) | ✅ Implemented |
+| 160 | [E5 Routing Confidence](phases/160-e5-routing-confidence/spec.md) | ✅ Implemented |
+| 161 | [Workspace Chat-First](phases/161-workspace-chat-first/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 
@@ -273,5 +276,5 @@ Made when a significant restructuring forced the question.
 | [spec-kit Adoption](arch/spec-kit-adoption.md) | Feature specs use GitHub spec-kit (`specs/phases/NNN-<name>/` dirs, `.specify/` scaffolding, `/speckit-*` pipeline) |
 | [Attention Arbitration](arch/attention-arbitration.md) | One ranked `PriorityView` + one shared attention budget across loops, goals, and correlation hypotheses — shipped as Phase 123/127 |
 | [Memory Honesty Roadmap](arch/memory-honesty-roadmap.md) | **Living.** After Phase 143: constraint veto (P5), reply-path recitation, forget vs cancel, ingest honesty, extractor dual-write/classifier, specialist constitution, eval field hard-cut, guide index drift |
-| [Companion Conductor Roadmap](arch/companion-conductor-roadmap.md) | **Living.** One speaker, one conductor; 151–158 Implemented. Promote is a workflow or goal instance, not a procedure. Directory 151 is conductor ACI, not memory-honesty item 151 (bundled in phase 150). |
+| [Companion Conductor Roadmap](arch/companion-conductor-roadmap.md) | **Living.** One speaker, one conductor; 151–158 Implemented. Adjacent remainders: 159 (99 thread identity), 160 (97 E5 confidence). Promote is a workflow or goal instance, not a procedure. Directory 151 is conductor ACI, not memory-honesty item 151 (bundled in phase 150). |
 | [Social Cognition](arch/social-cognition.md) | **Open decision brief.** People/projects/relationships as evolving state extending the memory graph, not a new store; reconciles an existing parallel `contact_relationships` table into it |

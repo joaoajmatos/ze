@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 from scipy.special import softmax
 
+from ze_core.torch_lock import MODEL_LOCK
+
 if TYPE_CHECKING:
     from sentence_transformers.cross_encoder import CrossEncoder
 
@@ -15,9 +17,11 @@ _model: CrossEncoder | None = None
 def get_nli_model() -> CrossEncoder:
     global _model
     if _model is None:
-        from sentence_transformers.cross_encoder import CrossEncoder
+        with MODEL_LOCK:
+            if _model is None:
+                from sentence_transformers.cross_encoder import CrossEncoder
 
-        _model = CrossEncoder(_NLI_MODEL_ID)
+                _model = CrossEncoder(_NLI_MODEL_ID)
     return _model
 
 
@@ -54,7 +58,8 @@ def nli_scores(pairs: list[tuple[str, str]]) -> list[dict[str, float] | None]:
 
     if scorable:
         model = get_nli_model()
-        raw = model.predict(scorable)
+        with MODEL_LOCK:
+            raw = model.predict(scorable)
         probs = softmax(raw, axis=1)
         for idx, prob in zip(scorable_indices, probs):
             scored_by_index[idx] = {

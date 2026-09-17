@@ -30,6 +30,7 @@ _WORKSPACE_TOOL_NAMES = frozenset(
         "workspace_run",
         "workspace_run_skill_script",
         "ingest_workspace_file",
+        "workspace_reset",
     }
 )
 
@@ -137,18 +138,6 @@ async def _extract_workspace(
     if not calls:
         return None
 
-    mode = "ask"
-    configurable = (config or {}).get("configurable") or {}
-    store = configurable.get("workspace_store")
-    if store is not None:
-        try:
-            stored_mode = await store.get_mode()
-            mode = (
-                stored_mode.value if hasattr(stored_mode, "value") else str(stored_mode)
-            )
-        except Exception:
-            pass
-
     planned: list[str] = []
     files: list[dict[str, str]] = []
     runs: list[dict[str, Any]] = []
@@ -199,7 +188,6 @@ async def _extract_workspace(
             script_ran = True
 
     return WorkspaceUsageTrace(
-        mode=mode,
         runs=runs,
         files=files,
         script_ran=script_ran,

@@ -7,7 +7,6 @@ from ze_workspace.procedure_candidates import (
     workspace_run_is_approved,
 )
 from ze_workspace.types import (
-    WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
     WorkspaceRunStatus,
@@ -27,13 +26,13 @@ def _run(**overrides) -> WorkspaceRun:
 
 def test_user_success_is_approved() -> None:
     run = _run()
-    assert workspace_run_is_approved(run, WorkspaceMode.ASK) is True
-    candidate = candidate_from_workspace_run(run, mode=WorkspaceMode.ASK)
+    assert workspace_run_is_approved(run) is True
+    candidate = candidate_from_workspace_run(run)
     assert candidate.workspace_run_approved is True
     assert candidate.source_kind.value == "workspace_run"
 
 
 def test_unapproved_failed_run_is_rejected() -> None:
     run = _run(status=WorkspaceRunStatus.FAILED)
-    candidate = candidate_from_workspace_run(run, mode=WorkspaceMode.AUTO)
+    candidate = candidate_from_workspace_run(run)
     assert candidate.workspace_run_approved is False

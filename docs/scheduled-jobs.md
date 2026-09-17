@@ -404,7 +404,7 @@ campaigns from blocking new runs.
 When the `ze-news` plugin is loaded, a fetch job runs on a configurable cron (default
 `*/30 * * * *`). For each enabled source in `news.sources`, it fetches the RSS feed,
 embeds each new article title + summary using the shared
-`paraphrase-multilingual-MiniLM-L12-v2` model, and upserts into the `news_articles`
+`intfloat/multilingual-e5-base` model, and upserts into the `news_articles`
 table. It skips duplicate URLs and prunes old articles after `news.retention_days`
 (default: 7 days).
 

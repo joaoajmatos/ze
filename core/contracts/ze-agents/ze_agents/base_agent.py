@@ -45,7 +45,8 @@ _OPENROUTER_TOOL_SCHEMAS: dict[str, dict] = {
 }
 
 # Platform tools merged into every agent unless `workspace_opt_out` is set.
-# Names only — registration lives in ze_workspace.tools; unknown names are skipped.
+# Names only — registration lives in ze_workspace.tools / ze_skills.tools;
+# unknown names are skipped.
 _PLATFORM_TOOLS = (
     "workspace_list",
     "workspace_read",
@@ -54,6 +55,8 @@ _PLATFORM_TOOLS = (
     "workspace_run",
     "workspace_run_skill_script",
     "ingest_workspace_file",
+    "workspace_reset",
+    "list_skills",
 )
 _PROCEDURE_INVOKE_TOOL = "invoke_procedure"
 

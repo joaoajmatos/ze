@@ -27,8 +27,6 @@ from ze_api.api.dependencies import (
 from ze_api.api.schemas import (
     WorkspaceFileListResponse,
     WorkspaceIngestResponse,
-    WorkspaceModeResponse,
-    WorkspaceModeUpdate,
     WorkspaceResetQueuedResponse,
     WorkspaceResetRequest,
     WorkspaceResetResultResponse,
@@ -69,7 +67,7 @@ def _raise_workspace(exc: Exception) -> None:
     response_model=WorkspaceStatusResponse,
     operation_id="getWorkspace",
     summary="Get workspace status",
-    description="Live sidecar health plus persisted mode and last-used timestamps.",
+    description="Live sidecar health plus occupancy and last-used timestamps.",
 )
 async def get_workspace(
     store: WorkspaceStore = Depends(get_workspace_store),
@@ -80,38 +78,6 @@ async def get_workspace(
     except WorkspaceError as exc:
         _raise_workspace(exc)
     return WorkspaceStatusResponse.model_validate(data)
-
-
-@router.get(
-    "/mode",
-    response_model=WorkspaceModeResponse,
-    operation_id="getWorkspaceMode",
-    summary="Get workspace mode",
-    description="Return the persisted workspace mode (Off / Plan / Ask / Auto-edit / Auto).",
-)
-async def get_workspace_mode(
-    store: WorkspaceStore = Depends(get_workspace_store),
-) -> WorkspaceModeResponse:
-    data = await workspace_rest.get_mode(store)
-    return WorkspaceModeResponse.model_validate(data)
-
-
-@router.patch(
-    "/mode",
-    response_model=WorkspaceModeResponse,
-    operation_id="updateWorkspaceMode",
-    summary="Set workspace mode",
-    description="Persist the workspace mode until the user changes it again. Does not confirm.",
-)
-async def update_workspace_mode(
-    body: WorkspaceModeUpdate,
-    store: WorkspaceStore = Depends(get_workspace_store),
-) -> WorkspaceModeResponse:
-    try:
-        data = await workspace_rest.set_mode(store, body.mode)
-    except WorkspaceError as exc:
-        _raise_workspace(exc)
-    return WorkspaceModeResponse.model_validate(data)
 
 
 @router.get(

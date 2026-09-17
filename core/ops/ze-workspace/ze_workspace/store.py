@@ -12,7 +12,6 @@ from ze_workspace.errors import WorkspaceError
 from ze_workspace.sanitize import redact
 from ze_workspace.types import (
     WorkspaceFileTouch,
-    WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
     WorkspaceRunStatus,
@@ -21,20 +20,12 @@ from ze_workspace.types import (
 
 log = get_logger(__name__)
 
-_VALID_MODES = {m.value for m in WorkspaceMode}
 _VALID_ORIGINS = {o.value for o in WorkspaceRunOrigin}
 _VALID_STATUSES = {s.value for s in WorkspaceRunStatus}
 
 
-def _parse_mode(raw: str) -> WorkspaceMode:
-    if raw not in _VALID_MODES:
-        raise WorkspaceError(f"unknown workspace mode: {raw!r}")
-    return WorkspaceMode(raw)
-
-
 def _state_from_row(row) -> WorkspaceState:
     return WorkspaceState(
-        mode=_parse_mode(row["mode"]),
         last_reset_at=row["last_reset_at"],
         last_used_at=row["last_used_at"],
         updated_at=row["updated_at"],
@@ -87,10 +78,6 @@ def _run_from_row(row) -> WorkspaceRun:
 
 class WorkspaceStore(Protocol):
     async def get_state(self) -> WorkspaceState: ...
-
-    async def get_mode(self) -> WorkspaceMode: ...
-
-    async def set_mode(self, mode: WorkspaceMode) -> WorkspaceState: ...
 
     async def touch_used(self) -> None: ...
 
@@ -151,41 +138,12 @@ class PostgresWorkspaceStore:
             if row is None:
                 row = await conn.fetchrow(
                     """
-                    INSERT INTO workspace_state (id, mode)
-                    VALUES (1, 'ask')
+                    INSERT INTO workspace_state (id)
+                    VALUES (1)
                     ON CONFLICT (id) DO UPDATE SET id = workspace_state.id
                     RETURNING *
                     """
                 )
-        return _state_from_row(row)
-
-    async def get_mode(self) -> WorkspaceMode:
-        state = await self.get_state()
-        return state.mode
-
-    async def set_mode(self, mode: WorkspaceMode) -> WorkspaceState:
-        if mode.value not in _VALID_MODES:
-            raise WorkspaceError(f"unknown workspace mode: {mode!r}")
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                UPDATE workspace_state
-                   SET mode = $1, updated_at = now()
-                 WHERE id = 1
-             RETURNING *
-                """,
-                mode.value,
-            )
-            if row is None:
-                row = await conn.fetchrow(
-                    """
-                    INSERT INTO workspace_state (id, mode, updated_at)
-                    VALUES (1, $1, now())
-                    RETURNING *
-                    """,
-                    mode.value,
-                )
-        log.info("workspace_mode_set", mode=mode.value)
         return _state_from_row(row)
 
     async def touch_used(self) -> None:

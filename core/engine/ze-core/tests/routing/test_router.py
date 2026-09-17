@@ -153,6 +153,14 @@ class TestEmbeddingRouting:
         assert env.primary_agent == "alpha"
         assert env.routing_method == "embedding"
         assert env.score_gap == pytest.approx(0.6)
+        assert env.is_compound is False
+
+    async def test_e5_band_clear_winner_is_not_compound_under_default_config(self):
+        # Measured E5 calendar EN: top 0.844, second 0.812, gap 0.033.
+        r = self._two_agent_router(0.844, 0.812)
+        env = await r.route("what's on my calendar tomorrow", "s1")
+        assert env.is_compound is False
+        assert env.routing_method == "embedding"
 
     async def test_below_threshold_signals_compound_for_decompose(self):
         _register("alpha", intent_map={"read": "Read"})
@@ -174,20 +182,31 @@ class TestEmbeddingRouting:
         _register("alpha", intent_map={"read": "Read"})
         _register("beta", intent_map={"create": "Create"})
         embedder = _FakeEmbedder(
-            {"alpha": [0.7, 0.0], "beta": [0.65, 0.0]},
+            {"alpha": [0.830, 0.0], "beta": [0.827, 0.0]},
             [1.0, 0.0],
         )
         client = _make_client()
-        r = EmbeddingRouter(
-            embedder,
-            client,
-            _make_routing_store(),
-            config=RouterConfig(gap_threshold=0.10),
-        )
+        r = EmbeddingRouter(embedder, client, _make_routing_store())
         env = await r.route("hello", "s1")
         assert env.routing_method == "embedding"
         assert env.is_compound is True
         client.complete.assert_not_called()
+
+    async def test_e5_below_floor_still_compound_without_haiku(self):
+        r = self._two_agent_router(0.50, 0.20)
+        client = r._client
+        env = await r.route("hello", "s1")
+        assert env.is_compound is True
+        client.complete.assert_not_called()
+
+    async def test_clear_english_and_portuguese_winners_skip_decompose(self):
+        # Measured E5: calendar EN gap 0.033; calendar PT gap 0.023.
+        for top, second in ((0.844, 0.812), (0.814, 0.790)):
+            clear_registry()
+            r = self._two_agent_router(top, second)
+            env = await r.route("prompt", "s1")
+            assert env.is_compound is False
+            r._client.complete.assert_not_called()
 
 
 class TestModelResolution:

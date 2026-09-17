@@ -20,7 +20,7 @@ ze/                           # monorepo root
 │   │       ├── routing/      # EmbeddingRouter, ComplexityEstimator, fallback, store
 │   │       ├── telemetry/    # CostTracker, CostReconciler, PostgresCostStore, ContextVar
 │   │       ├── container.py  # Base Container with DI wiring and invoke/resume entry points
-│   │       └── embeddings.py # Shared paraphrase-multilingual-MiniLM-L12-v2 singleton
+│   │       └── embeddings.py # Shared intfloat/multilingual-e5-base singleton
 │   ├── ze-agents/            # Developer API — BaseAgent, @agent, @tool, shared types
 │   │   └── ze_agents/
 │   │       ├── interface/    # AppInterface ABC, InputPreprocessor, validation, types
@@ -191,7 +191,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 |---|---|---|
 | LLM gateway | OpenRouter only | Single billing, easy model swap |
 | Web search | OpenRouter `openrouter:web_search` server tool | No separate search API key; LLM decides when to search; billed via OpenRouter credits |
-| Embeddings | paraphrase-multilingual-MiniLM-L12-v2 local | No API cost, multilingual, 384-dim |
+| Embeddings | intfloat/multilingual-e5-base local (`query:` / `passage:`) | No API cost, multilingual, 768-dim |
 | Orchestration | LangGraph + AsyncPostgresSaver | Graph persistence survives restarts |
 | DB driver | asyncpg (runtime), psycopg2 (Alembic CLI) | asyncpg has no sync mode |
 | Config | Pydantic BaseSettings + YAML files | Secrets in .env, structure in YAML |
@@ -421,7 +421,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 79 | NLI cross-encoder — contradiction detection, retrieval re-rank cache, correlation grounding (`ze_core/nli.py`) | Done |
 | 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Done |
 | 81 | Plugin NLI adoption — news dedup, finance merchant merging | Pending |
-| 115 | Workspace Environment — `core/ops/ze-workspace` + `sidecar/workspace`; modes Off/Plan/Ask/Auto-edit/Auto; skill scripts after executable approval (`zsk002`); System `/workspace` page; unattended Auto only. `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
+| 115 | Workspace Environment — `core/ops/ze-workspace` + `sidecar/workspace`; chat-first computer (no execution modes; map at `/workspace`); skill scripts after executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
 | 140 | Memory admission + remember/forget — keep/drop extractor with closed families; companion `remember_fact`/`forget_fact` through the contribution seam; `AgentResult.memory_proposals` removed | Done |
 | 141 | Memory read contract + prompt constitution — reviewed facts always-on; `_format_memory` origin/confidence/recency; constitution + job before biography; silent fact use; `TurnSurfacing` stays for open items | Done |
 | 142 | Speech-act routing — extractor `speech_act` gate; companion routes timed remember to reminders, lingering concerns to loops, multi-week outcomes to goals | Done |
@@ -441,6 +441,9 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 156 | Conductor stall / replan | Done |
 | 157 | Promote conductor instance to workflow/goal | Done |
 | 158 | Parallel per-subtask gates (independent fan-out) | Done |
+| 159 | Concurrent thread identity (99 remainder: per-thread trace/cancel; 4000 stays) | Implemented |
+| 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
+| 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
 
 ## graphify
 

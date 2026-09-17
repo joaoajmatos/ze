@@ -60,8 +60,9 @@ embeddings and simple heuristics; `preprocess` may still call OpenRouter first f
 transcription or image captioning.
 
 1. At startup, Ze embeds each enabled agent's description (from `@agent` class
-   attributes) using the shared `paraphrase-multilingual-MiniLM-L12-v2` instance.
-2. Ze embeds the incoming prompt at request time.
+   attributes) using the shared `intfloat/multilingual-e5-base` instance with a
+   `passage:` prefix.
+2. Ze embeds the incoming prompt at request time with a `query:` prefix.
 3. Ze computes cosine similarity scores against all agent embeddings.
 4. **Routing outcomes:**
    - Score above `confidence_threshold` and gap above `gap_threshold` → route directly.
@@ -764,7 +765,7 @@ monorepo split, what belongs in each package, and how the ZePlugin extension poi
 | `ze_api/settings.py` | `ZeApiSettings` — shell secrets + YAML accessors + `to_core_settings()` bridge |
 | `ze_logging` | structlog setup (`configure_logging`, `get_logger`, `bind_context`) — configured at app startup |
 | `ze_agents/errors.py` | Exception hierarchy — typed `ZeError` subclasses (re-exported via `ze_sdk.errors`) |
-| `ze_core/embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton — loaded once at startup |
+| `ze_core/embeddings.py` | Shared `intfloat/multilingual-e5-base` singleton — loaded once at startup |
 | `ze_api/db.py` | asyncpg pool factory — lifespan-managed |
 | `ze_plugin/bootstrap.py` | Plugin discovery, DI resolution, `build_integrations()` |
 | `ze_agents/bootstrap.py` | `bootstrap_agents()` — agent registration via plugin `agent_module_paths()` |

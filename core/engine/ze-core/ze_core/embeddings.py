@@ -6,6 +6,7 @@ from typing import Union
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
+from ze_core.torch_lock import MODEL_LOCK
 
 _DEFAULT_MODEL = "intfloat/multilingual-e5-base"
 
@@ -31,11 +32,12 @@ class E5Embedder:
         normalize_embeddings: bool = True,
         **kwargs,
     ) -> np.ndarray:
-        return self._model.encode(
-            f"query: {text}",
-            normalize_embeddings=normalize_embeddings,
-            **kwargs,
-        )
+        with MODEL_LOCK:
+            return self._model.encode(
+                f"query: {text}",
+                normalize_embeddings=normalize_embeddings,
+                **kwargs,
+            )
 
     def encode_passage(
         self,
@@ -47,11 +49,12 @@ class E5Embedder:
             prefixed = [f"passage: {t}" for t in text]
         else:
             prefixed = f"passage: {text}"
-        return self._model.encode(
-            prefixed,
-            normalize_embeddings=normalize_embeddings,
-            **kwargs,
-        )
+        with MODEL_LOCK:
+            return self._model.encode(
+                prefixed,
+                normalize_embeddings=normalize_embeddings,
+                **kwargs,
+            )
 
     def encode(
         self,

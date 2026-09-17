@@ -6,11 +6,20 @@ every magic number has a name and a single point of change.
 
 # ── Routing ───────────────────────────────────────────────────────────────────
 
-ROUTING_THRESHOLD: float = 0.55
-"""Minimum cosine similarity for a confident single-agent match."""
+ROUTING_THRESHOLD: float = 0.73
+"""Minimum cosine similarity for a confident single-agent match.
 
-ROUTING_GAP_THRESHOLD: float = 0.10
-"""Minimum score gap between top-two agents before triggering LLM decomposition."""
+Calibrated on intfloat/multilingual-e5-base (query:/passage:). Measured clear
+tops sit in ~0.78–0.84; MiniLM's 0.55 floor was below the whole E5 band.
+"""
+
+ROUTING_GAP_THRESHOLD: float = 0.02
+"""Minimum score gap between top-two agents before triggering LLM decomposition.
+
+Measured E5 gaps: clear calendar EN 0.033, calendar PT 0.023; mixed
+research-then-email 0.003. MiniLM's 0.10 gap and the YAML 0.03 overlay both
+marked ordinary PT calendar turns as compound.
+"""
 
 # ── Models ────────────────────────────────────────────────────────────────────
 

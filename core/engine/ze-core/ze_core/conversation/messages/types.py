@@ -53,7 +53,6 @@ class SkillUsageTrace:
 
 @dataclass
 class WorkspaceUsageTrace:
-    mode: str
     runs: list[dict[str, Any]] = field(default_factory=list)
     files: list[dict[str, str]] = field(default_factory=list)
     script_ran: bool = False

@@ -5,7 +5,7 @@ import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { useOverlay } from "@/features/open-context-overlay";
 import { NoticeBanner } from "@/features/send-context-notice";
 import { mergeMobileNavRoutes, pluginNavRoutes, useUiManifestQuery } from "@/entities/ui-manifest";
-import { WorkIcon, KnowledgeIcon, SystemIcon, workNavRoutes, knowledgeNavRoutes, systemNavRoutes, navRoutes, settingsNavRoute } from "@/shared/config";
+import { AutomationIcon, KnowledgeIcon, SystemIcon, automationNavRoutes, knowledgeNavRoutes, systemNavRoutes, navRoutes, settingsNavRoute } from "@/shared/config";
 import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider } from "@/shared/lib";
 import { cn } from "@/shared/lib/cn";
 import { TopBar } from "@/shared/ui";
@@ -67,13 +67,13 @@ export function AppShell() {
           {/* Chat + recent sessions */}
           <ChatNavGroup />
 
-          {/* Work group: Goals, Workflows */}
+          {/* Automation group: Goals, Priority, Workflows, Skills */}
           <NavGroup
-            icon={WorkIcon}
-            label="Work"
-            childPaths={workNavRoutes.map((r) => r.path)}
+            icon={AutomationIcon}
+            label="Automation"
+            childPaths={automationNavRoutes.map((r) => r.path)}
           >
-            {workNavRoutes.map(({ path, icon: Icon, label }) => (
+            {automationNavRoutes.map(({ path, icon: Icon, label }) => (
               <NavLink key={path} to={path} className={childNavLinkClass}>
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{label}</span>
@@ -81,7 +81,7 @@ export function AppShell() {
             ))}
           </NavGroup>
 
-          {/* Knowledge group: Memory, Graph */}
+          {/* Knowledge group: Memory, Graph, Procedures */}
           <NavGroup
             icon={KnowledgeIcon}
             label="Knowledge"
@@ -95,7 +95,7 @@ export function AppShell() {
             ))}
           </NavGroup>
 
-          {/* System group: Usage, Data */}
+          {/* System group: Usage, Data, Workspace */}
           <NavGroup
             icon={SystemIcon}
             label="System"

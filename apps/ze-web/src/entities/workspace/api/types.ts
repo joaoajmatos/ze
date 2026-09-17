@@ -1,8 +1,5 @@
-export type WorkspaceMode = "off" | "plan" | "ask" | "auto_edit" | "auto";
-
 export interface WorkspaceStatus {
   available: boolean;
-  mode: WorkspaceMode;
   bytes_used: number;
   bytes_ceiling: number;
   busy: boolean;

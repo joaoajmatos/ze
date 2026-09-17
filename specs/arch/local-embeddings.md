@@ -30,17 +30,22 @@ local model.
 
 1. **OpenAI `text-embedding-3-small`** — 1536-dim, hosted, $0.02/1M tokens
 2. **Hosted via OpenRouter** — embedding APIs are not currently supported by OpenRouter
-3. **Local `paraphrase-multilingual-MiniLM-L12-v2`** — 384-dim, ~90MB, sentence-transformers
+3. **Local `paraphrase-multilingual-MiniLM-L12-v2`** — 384-dim, ~90MB, sentence-transformers (superseded)
+4. **Local `intfloat/multilingual-e5-base`** — 768-dim, sentence-transformers, required `query:` / `passage:` prefixes
 
 ---
 
 ## Decision Outcome
 
-**Chosen option: Local `paraphrase-multilingual-MiniLM-L12-v2` (Option 3).**
+**Chosen option: Local `intfloat/multilingual-e5-base` (Option 4).** MiniLM (Option 3) was the Phase 1 choice and is superseded as of the Phase 97 model swap plus Phase 160 confidence calibration.
 
 Zero per-call cost, no external dependency for the hot path, and native multilingual
 support. The model is loaded as a singleton at startup via `sentence-transformers`
-and kept in memory for the process lifetime.
+and kept in memory for the process lifetime. Callers must use `encode_query` for
+user text and `encode_passage` for agent descriptions and stored content.
+
+Routing confidence defaults (`ROUTING_THRESHOLD` 0.73, `ROUTING_GAP_THRESHOLD` 0.02)
+are calibrated to E5's compressed high band, not MiniLM's 0.55 / 0.10.
 
 ### Positive Consequences
 
@@ -52,11 +57,14 @@ and kept in memory for the process lifetime.
 
 ### Negative Consequences / Trade-offs
 
-- ~90MB model resident in the Python process — increases container memory footprint
-- 384 dimensions: sufficient for routing and dedup, but lower fidelity than 1536-dim
-  models for nuanced semantic retrieval
+- ~420MB+ model resident in the Python process — increases container memory footprint
+- 768 dimensions: richer than MiniLM's 384-dim vectors; still lower fidelity than
+  hosted 1536-dim models for nuanced semantic retrieval
 - Marked `@pytest.mark.slow` in tests — slow to load in CI, excluded from default
   test runs (pass `SLOW=1` to include)
+- Prefixes are mandatory. Encoding without `query:` / `passage:` collapses scores
+  into a useless band. Routing confidence (threshold 0.73, gap 0.02) is calibrated
+  to prefixed E5 scores, not MiniLM.
 - If a significantly better multilingual model emerges, swapping it requires changing
   the singleton in `core/engine/ze-core/ze_core/embeddings.py` and re-indexing stored vectors
 

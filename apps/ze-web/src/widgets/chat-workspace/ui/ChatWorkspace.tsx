@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChatMessageList, ChatInput, ConfirmBar } from "@/entities/message";
 import type { ChatAttachment } from "@/entities/message";
-import { placeWorkspaceFile, useWorkspaceModeMutation, useWorkspaceQuery } from "@/entities/workspace";
+import { placeWorkspaceFile } from "@/entities/workspace";
 import { reconnect, send } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";
 import { useSendNotice } from "@/features/send-context-notice";
 import { BackgroundBeamsCanvas } from "@/shared/effects/background-beams";
 import { GlowingStars } from "@/shared/effects/glowing-stars";
-import { WorkspaceModeSwitcher } from "@/widgets/workspace-management";
 import { useChatWorkspace } from "../model/useChatWorkspace";
 import { ChatLayout } from "./ChatLayout";
 import { ChatSidePanel } from "./ChatSidePanel";
@@ -33,8 +32,6 @@ export function ChatWorkspace() {
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [attaching, setAttaching] = useState(false);
   const [connTimedOut, setConnTimedOut] = useState(false);
-  const workspaceStatus = useWorkspaceQuery(Boolean(pendingConfirm));
-  const setWorkspaceMode = useWorkspaceModeMutation();
   const connState: ConnectionState =
     isConnected ? "connected" : connTimedOut ? "disconnected" : "connecting";
 
@@ -141,16 +138,6 @@ export function ChatWorkspace() {
           onConfirm={respondToConfirm}
           editable={pendingConfirm.editable}
           proposed={pendingConfirm.proposed}
-          modeSwitcher={
-            workspaceStatus.data ? (
-              <WorkspaceModeSwitcher
-                compact
-                mode={workspaceStatus.data.mode}
-                disabled={setWorkspaceMode.isPending}
-                onChange={(mode) => setWorkspaceMode.mutate(mode)}
-              />
-            ) : null
-          }
         />
       )}
 

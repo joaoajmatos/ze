@@ -6,14 +6,6 @@ from enum import StrEnum
 from uuid import UUID
 
 
-class WorkspaceMode(StrEnum):
-    OFF = "off"
-    PLAN = "plan"
-    ASK = "ask"
-    AUTO_EDIT = "auto_edit"
-    AUTO = "auto"
-
-
 class WorkspaceRunStatus(StrEnum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
@@ -44,7 +36,6 @@ class WorkspaceAction(StrEnum):
 class WorkspaceGateDecision(StrEnum):
     ALLOW = "allow"
     CONFIRM = "confirm"
-    PLAN = "plan"
     DENY = "deny"
 
 
@@ -87,7 +78,6 @@ class WorkspaceRun:
 
 @dataclass
 class WorkspaceState:
-    mode: WorkspaceMode = WorkspaceMode.ASK
     last_reset_at: datetime | None = None
     last_used_at: datetime | None = None
     updated_at: datetime | None = None

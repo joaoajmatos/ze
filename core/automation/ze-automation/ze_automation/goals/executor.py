@@ -135,7 +135,6 @@ class GoalExecutor:
         memory_store: MemoryStore | None = None,
         notify: Callable[..., Awaitable[None]] | None = None,
         workspace_gate: object | None = None,
-        get_workspace_mode: Callable[[], Awaitable[object]] | None = None,
         action_record_store: ActionRecordStore | None = None,
         nli_client: object | None = None,
         procedure_admission: object | None = None,
@@ -150,7 +149,6 @@ class GoalExecutor:
         # that construct GoalExecutor directly don't need to supply it.
         self._notify = notify
         self._workspace_gate = workspace_gate
-        self._get_workspace_mode = get_workspace_mode
         self._action_records = action_record_store
         self._nli = nli_client
         self._procedures = procedure_admission
@@ -760,9 +758,7 @@ class GoalExecutor:
         )
 
         try:
-            async with unattended_workspace(
-                self._workspace_gate, self._get_workspace_mode
-            ):
+            async with unattended_workspace(self._workspace_gate):
                 result = await agent.run(ctx)
         except GoalExecutionError:
             raise

@@ -1,6 +1,6 @@
 # Companion conductor roadmap
 
-> **Status:** Living note. Phases 151–158 Implemented. Procedures are **not** 157.
+> **Status:** Living note. Phases 151–160 Implemented. Procedures are **not** 157.
 > **Date:** 2026-09-16
 > **Related:** [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), [Ze Doctrine](ze-doctrine.md),
 > harness [`030-agent-harness`](../phases/030-agent-harness/spec.md),
@@ -153,6 +153,24 @@ confirms by `request_id`; BLOCKED skips. Conductor path unchanged. Sequential
 Spec: [`specs/phases/158-parallel-subtask-gates/`](../phases/158-parallel-subtask-gates/spec.md).
 
 ## After 158
+
+Conductor series stops at 158. Two adjacent holes (not swarm, not procedures):
+
+### 159 — Concurrent thread identity — M — Implemented
+
+99 **transport** is already in tree (one multiplexed socket, per-thread busy,
+ChatNav thinking). Close **4000** stays (one live *client*). What still assumes
+“the” thread is conductor-era control: global `trace_update` store, cancel via
+first pending config, promote/timeout copy without `thread_id`. Spec:
+[`specs/phases/159-concurrent-thread-identity/`](../phases/159-concurrent-thread-identity/spec.md).
+
+### 160 — E5 routing confidence — S/M — Implemented
+
+97 **model** is already in tree (`E5Embedder`, `intfloat/multilingual-e5-base`).
+`ROUTING_THRESHOLD` / `ROUTING_GAP` are still MiniLM-era, so ordinary turns still
+become `is_compound` → Haiku decompose → 153/155 rewrite. Calibrate defaults to
+E5; hard-cut MiniLM in living docs. Do not change rewrite rules. Spec:
+[`specs/phases/160-e5-routing-confidence/`](../phases/160-e5-routing-confidence/spec.md).
 
 - Procedures / procedure activation (135–139) — **not** a promote substitute.
 - Feeding prior outputs inside `_execute_compound` sequential — **do not do

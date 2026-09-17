@@ -51,7 +51,7 @@ ze/                           # monorepo root
 │   │           ├── routing/     # EmbeddingRouter, ComplexityEstimator, fallback, store
 │   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar
 │   │           ├── container.py # Base Container with DI wiring and invoke/resume entry points
-│   │           └── embeddings.py # Shared paraphrase-multilingual-MiniLM-L12-v2 singleton
+│   │           └── embeddings.py # Shared intfloat/multilingual-e5-base singleton
 │   ├── seam/                   # Cross-cutting substrate consumed by every domain layer below
 │   │   └── ze-collision/        # Contribution collision detection — cross-function conflict logging
 │   │       └── ze_collision/
@@ -249,7 +249,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 |---|---|---|
 | LLM gateway | OpenRouter only | Single billing, easy model swap |
 | Web search | OpenRouter `openrouter:web_search` server tool | No separate search API key; LLM decides when to search; billed via OpenRouter credits |
-| Embeddings | paraphrase-multilingual-MiniLM-L12-v2 local | No API cost, multilingual, 384-dim |
+| Embeddings | intfloat/multilingual-e5-base local (`query:` / `passage:`) | No API cost, multilingual, 768-dim |
 | Orchestration | LangGraph + AsyncPostgresSaver | Graph persistence survives restarts |
 | DB driver | asyncpg (runtime), psycopg2 (Alembic CLI) | asyncpg has no sync mode |
 | Config | Pydantic BaseSettings + YAML files | Secrets in .env, structure in YAML |
@@ -521,7 +521,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 112 | Session Context Continuity — replaces `write_memory`'s blind `[-SESSION_HISTORY_LIMIT:]` trim with a 70%-of-context-window compaction check (`ze_core/openrouter/context_windows.py`, LLM-produced rolling summary folded ahead of the verbatim tail, graceful fallback to the old trim on LLM failure); replaces `fetch_context`'s blank-history-on-gap side effect with a silent resume recap (`ResumeRecap`, session narrative + open loops + in-flight goals/workflows) injected into the system prompt via `AgentContext.resume_recap`, never appended to `messages`; both recorded on `MessageTrace` (`compaction`, `resume_recap_applied`) for trace-panel inspectability; no new graph nodes, no new tables | Done |
 | 113 | Proactive/Concurrency Hardening Sweep — three independent reliability fixes: `pending_confirmations` + in-process `pending_configs` rekeyed from `thread_id` to `request_id` (`zc027`) so concurrent confirmation gates on one thread can't clobber or cross-cancel each other; opt-in `budget:` config block + `SpendBudgetChecker`/`ze_core/telemetry/pricing.py` composed into `capability_check` (strictest-wins with `CapabilityGate`), holding execution via the existing `AWAIT_CONFIRMATION` gate when session/day spend would exceed a configured ceiling; `push_log` idempotency key + unique index (`zpro003`) turns `LoopSurfacer.log_push`/`PushSweepJob` from notify-then-log into claim-then-notify (`claim_push`/`release_push_claim`), closing the concurrent-sweep double-notify race and rolling back the claim on notifier failure | Done |
 | 114 | Agent Skills — new core `ze-skills` package: import `SKILL.md` from a URL or zip, pending-review gate before any conversation effect, embedding-similarity + `/skill-name` matching applied globally across agents, `allowed-tools` intersects (never unions) an agent's tools, usage on `MessageTrace.skills_used`/`trace_update`; bundled skills via `ZePlugin.bundled_skill_paths()`; daily `SkillRecheckJob` reverts to pending review on source content change; `GET/POST /api/v0/skills` + `widgets/skill-management` | Done |
-| 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); modes Off / Plan / Ask / Auto-edit / Auto; in-turn files and commands; skill scripts after a second executable approval (`zsk002`); System `/workspace` page; unattended Auto only. `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Done |
+| 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Done |
 | 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Done |
 | 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Done |
 | 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Done |
@@ -548,6 +548,9 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 156 | Conductor stall / replan | Done |
 | 157 | Promote conductor instance to workflow/goal | Done |
 | 158 | Parallel per-subtask gates (independent fan-out) | Done |
+| 159 | Concurrent thread identity (99 remainder: per-thread trace/cancel; 4000 stays) | Implemented |
+| 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
+| 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
 
 ## graphify
 

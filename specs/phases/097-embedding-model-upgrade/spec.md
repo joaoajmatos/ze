@@ -1,6 +1,6 @@
 # Phase 97 — Embedding Model Upgrade (MiniLM → multilingual-E5)
 
-> **Status:** Pending
+> **Status:** Model shipped (`E5Embedder`, `intfloat/multilingual-e5-base` in tree). Remainder: [160-e5-routing-confidence](../160-e5-routing-confidence/spec.md) (threshold/gap calibration + MiniLM doc hard-cut). Threshold retune was a 97 non-goal.
 > **Depends on:** Phase 2 (memory retrieval), Phase 1 (routing)
 > **Enables:** Reliable embedding-based routing without LLM fallback for most messages
 > **Packages touched:** `core/engine/ze-core`, `core/cognition/ze-memory`, `apps/ze-api`

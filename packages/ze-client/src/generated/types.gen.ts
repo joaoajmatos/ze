@@ -3581,26 +3581,6 @@ export type WorkspaceIngestResponse = {
 };
 
 /**
- * WorkspaceModeResponse
- */
-export type WorkspaceModeResponse = {
-    /**
-     * Mode
-     */
-    mode: 'off' | 'plan' | 'ask' | 'auto_edit' | 'auto';
-};
-
-/**
- * WorkspaceModeUpdate
- */
-export type WorkspaceModeUpdate = {
-    /**
-     * Mode
-     */
-    mode: 'off' | 'plan' | 'ask' | 'auto_edit' | 'auto';
-};
-
-/**
  * WorkspaceResetRequest
  */
 export type WorkspaceResetRequest = {
@@ -3703,10 +3683,6 @@ export type WorkspaceStatusResponse = {
      */
     available: boolean;
     /**
-     * Mode
-     */
-    mode: 'off' | 'plan' | 'ask' | 'auto_edit' | 'auto';
-    /**
      * Bytes Used
      */
     bytes_used: number;
@@ -3754,10 +3730,6 @@ export type WorkspaceUploadResponse = {
  * WorkspaceUsageTraceResponse
  */
 export type WorkspaceUsageTraceResponse = {
-    /**
-     * Mode
-     */
-    mode: string;
     /**
      * Runs
      */
@@ -6358,47 +6330,6 @@ export type GetWorkspaceResponses = {
 };
 
 export type GetWorkspaceResponse = GetWorkspaceResponses[keyof GetWorkspaceResponses];
-
-export type GetWorkspaceModeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/workspace/mode';
-};
-
-export type GetWorkspaceModeResponses = {
-    /**
-     * Successful Response
-     */
-    200: WorkspaceModeResponse;
-};
-
-export type GetWorkspaceModeResponse = GetWorkspaceModeResponses[keyof GetWorkspaceModeResponses];
-
-export type UpdateWorkspaceModeData = {
-    body: WorkspaceModeUpdate;
-    path?: never;
-    query?: never;
-    url: '/api/v0/workspace/mode';
-};
-
-export type UpdateWorkspaceModeErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateWorkspaceModeError = UpdateWorkspaceModeErrors[keyof UpdateWorkspaceModeErrors];
-
-export type UpdateWorkspaceModeResponses = {
-    /**
-     * Successful Response
-     */
-    200: WorkspaceModeResponse;
-};
-
-export type UpdateWorkspaceModeResponse = UpdateWorkspaceModeResponses[keyof UpdateWorkspaceModeResponses];
 
 export type ListWorkspaceFilesData = {
     body?: never;

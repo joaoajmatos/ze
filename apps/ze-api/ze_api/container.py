@@ -420,7 +420,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         action_record_store=action_record_store,
     )
     automation.goal_executor._workspace_gate = workspace.gate
-    automation.goal_executor._get_workspace_mode = workspace.store.get_mode
     automation.goal_executor._action_records = action_record_store
     automation.goal_executor._nli = shared.nli_client
     automation.goal_executor._procedures = procedure_admission
@@ -557,6 +556,9 @@ async def build_container(settings: Settings) -> ZeContainer:
         skill_store=skills_stack.skill_store,
         ingestion_pipeline=ingestion.pipeline,
     )
+    import ze_skills.tools as skills_tools
+
+    skills_tools.configure(skill_store=skills_stack.skill_store)
     from ze_worldstate.inflow import make_loop_extractor_from_parts
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
@@ -817,7 +819,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         persona_store=persona_store,
         workflow_graph_builder=build_workflow_graph,
         workspace_gate=workspace.gate,
-        get_workspace_mode=workspace.store.get_mode,
     )
 
     from ze_memory.dream.job import DreamJob

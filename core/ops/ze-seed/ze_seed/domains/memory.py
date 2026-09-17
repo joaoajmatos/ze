@@ -91,14 +91,15 @@ async def _apply_memory(ctx: SeedContext) -> int:
         for fact in ctx.narrative.facts:
             emb = embedding_vector(ctx.embedder, fact.value)
             created_at = now - timedelta(days=fact.days_ago)
+            claim_kind = "inference" if fact.provenance == "synthesized" else "fact"
             await conn.execute(
                 """
                 INSERT INTO memory_facts
                     (id, subject_id, object_id, predicate, value, confidence,
                      reviewed, contradicted, source_episode_id, source_refs,
-                     embedding, agent, provenance, created_at)
+                     embedding, agent, provenance, claim_kind, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-                        '[]'::jsonb, $10::vector, $11, $12, $13)
+                        '[]'::jsonb, $10::vector, $11, $12, $13, $14)
                 ON CONFLICT (id) DO NOTHING
                 """,
                 fact.id,
@@ -113,6 +114,7 @@ async def _apply_memory(ctx: SeedContext) -> int:
                 emb,
                 fact.agent,
                 fact.provenance,
+                claim_kind,
                 created_at,
             )
             count += 1

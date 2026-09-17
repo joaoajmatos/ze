@@ -15,7 +15,7 @@ OPENAPI_TAGS = [
     },
     {
         "name": "workspace",
-        "description": "Isolated workspace sidecar: files, commands, mode, and runs.",
+        "description": "Isolated workspace sidecar: files, commands, and runs.",
     },
 ]
 

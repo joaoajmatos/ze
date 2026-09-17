@@ -36,8 +36,8 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
   persists paused confirmation requests for replay after restart
 - **NLI** — `NLIClient` singleton (`cross-encoder/nli-deberta-v3-small`) shared across
   memory and correlation
-- **Embeddings** — `paraphrase-multilingual-MiniLM-L12-v2` singleton used by router and
-  memory; loaded once at startup
+- **Embeddings** — `intfloat/multilingual-e5-base` singleton (`query:` / `passage:`
+  prefixes) used by router and memory; loaded once at startup
 
 ---
 

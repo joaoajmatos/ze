@@ -91,7 +91,6 @@ def _workspace_to_response(workspace) -> dict | None:
     if workspace is None:
         return None
     return {
-        "mode": workspace.mode,
         "runs": list(workspace.runs or []),
         "files": list(workspace.files or []),
         "script_ran": bool(workspace.script_ran),

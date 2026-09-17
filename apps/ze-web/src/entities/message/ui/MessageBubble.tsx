@@ -9,7 +9,6 @@ import { useWorkspaceRunEventsQuery } from "@/entities/workspace";
 
 type WorkspaceChipTrace = WsTraceUpdateFrame & {
   workspace?: {
-    mode?: string;
     unavailable?: boolean;
     script_ran?: boolean;
     runs?: { id?: string; command?: string; status?: string }[];
@@ -50,7 +49,8 @@ export function MessageBubble({
   const isUser = message.role === "user";
   const [traceOpen, setTraceOpen] = useState(false);
   const workspace = useTraceStore((s) => {
-    const match = s.traces.find((t) => t.message_id === message.id) as
+    const traces = s.byThread[message.thread_id ?? ""]?.traces ?? [];
+    const match = traces.find((t) => t.message_id === message.id) as
       | WorkspaceChipTrace
       | undefined;
     return match?.workspace ?? null;
@@ -153,7 +153,7 @@ export function MessageBubble({
               data-testid="workspace-chip"
               className="mt-1 inline-flex w-fit items-center rounded-full border border-plum-voltage/40 bg-plum-voltage/10 px-2 py-0.5 text-[10px] text-plum-voltage"
             >
-              Workspace · {workspace.unavailable ? "unavailable" : workspace.mode ?? "used"}
+              Workspace · {workspace.unavailable ? "unavailable" : "used"}
             </span>
           );
         })()}

@@ -1,0 +1,584 @@
+{
+  "workflow": "speckit",
+  "specName": "workspace chat first",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-17T19:21:58.323Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-17T19:38:33.197Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-17T19:38:33.999Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-17T19:38:34.928Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-17T19:38:35.761Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-17T19:38:36.522Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-17T19:38:37.478Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:56.629Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:56.793Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:56.978Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:57.216Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:57.482Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:57.708Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:57.933Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:58.203Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:58.529Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:58.736Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:58.909Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:59.075Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:59.241Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:59.473Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:42:59.767Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:00.042Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:00.325Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:00.603Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:00.891Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:01.151Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:01.487Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:01.685Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:02.041Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:02.383Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T19:43:02.678Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-17T19:43:02.983Z"
+    }
+  ],
+  "telemetryInstanceId": "df2bf321-c22d-40b2-8b35-4f933159d114",
+  "last_action": "161 implemented — workspace/automation/trace/web pass; make test bootstrap still red unrelated",
+  "coverage": {
+    "FR-001": {
+      "title": "Users MUST do all workspace file and command work through conversation",
+      "tests": [
+        "core/ops/ze-workspace/tests/test_tools.py"
+      ]
+    },
+    "FR-002": {
+      "title": "No workspace execution modes as product policy",
+      "tests": [
+        "core/ops/ze-workspace/tests/test_gate.py",
+        "apps/ze-api/tests/api/routes/test_workspace.py"
+      ]
+    },
+    "FR-003": {
+      "title": "Conversation always allowed to use the workspace when available",
+      "tests": [
+        "core/ops/ze-workspace/tests/test_tools.py"
+      ]
+    },
+    "FR-004": {
+      "title": "Unattended work always allowed to use the same workspace",
+      "tests": [
+        "core/automation/ze-automation/tests/test_workspace_unattended.py"
+      ]
+    },
+    "FR-005": {
+      "title": "Workspace screen shows only tree and occupancy facts",
+      "tests": [
+        "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.test.tsx"
+      ]
+    },
+    "FR-006": {
+      "title": "Chat confirms writes/commands/reset; unattended does not pause",
+      "tests": [
+        "core/ops/ze-workspace/tests/test_gate.py",
+        "core/ops/ze-workspace/tests/test_tools.py"
+      ]
+    },
+    "FR-007": {
+      "title": "Workspace screen MUST NOT offer console controls",
+      "tests": [
+        "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.test.tsx"
+      ]
+    },
+    "FR-008": {
+      "title": "Runs and output appear in conversation not on the map",
+      "tests": [
+        "apps/ze-web/src/entities/message/ui/MessageBubble.test.tsx"
+      ]
+    },
+    "FR-009": {
+      "title": "Hard-cut modes with no compatibility shim",
+      "tests": [
+        "apps/ze-api/tests/api/routes/test_workspace.py"
+      ]
+    },
+    "FR-010": {
+      "title": "Keep 115/116/129/131 isolation detach journal and skill approval"
+    },
+    "FR-011": {
+      "title": "Living docs describe chat-first map not modes"
+    },
+    "FR-012": {
+      "title": "Unavailable workspace fails clearly never fabricates success",
+      "tests": [
+        "core/ops/ze-workspace/tests/test_tools.py"
+      ]
+    }
+  },
+  "currentTask": "T025",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Pointed feature.json at 161-workspace-chat-first",
+      "files": [
+        ".specify/feature.json"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Removed WorkspaceMode, PLAN, and mode from WorkspaceState",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/types.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added zws005 dropping workspace_state.mode",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/migrations/versions/zws005_drop_workspace_mode.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Rewrote WorkspaceGate as action times origin",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/gate.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Rewrote gate tests for the new table",
+      "files": [
+        "core/ops/ze-workspace/tests/test_gate.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Removed get_mode/set_mode and mode from get_state",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/store.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Rewrote store tests without mode",
+      "files": [
+        "core/ops/ze-workspace/tests/test_store.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Tools decide without mode; added workspace_reset",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/tools.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Rewrote tool tests for confirm vs unattended allow",
+      "files": [
+        "core/ops/ze-workspace/tests/test_tools.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Unattended helper uses gate without mode",
+      "files": [
+        "core/automation/ze-automation/ze_automation/workspace_unattended.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Stopped injecting get_workspace_mode",
+      "files": [
+        "core/automation/ze-automation/ze_automation/goals/executor.py",
+        "core/automation/ze-automation/ze_automation/bootstrap.py",
+        "apps/ze-api/ze_api/container.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Rewrote unattended workspace tests",
+      "files": [
+        "core/automation/ze-automation/tests/test_workspace_unattended.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Procedure candidates without mode",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/procedure_candidates.py",
+        "core/ops/ze-workspace/tests/test_procedure_candidates.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "Map-only workspace page; dropped run banner",
+      "files": [
+        "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.tsx"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "Deleted mode switcher and confirm-bar switcher",
+      "files": [
+        "apps/ze-web/src/widgets/workspace-management/index.ts"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Dropped mode from entity types and unused console mutations",
+      "files": [
+        "apps/ze-web/src/entities/workspace/"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Rewrote WorkspaceManagement tests for map-only",
+      "files": [
+        "apps/ze-web/src/widgets/workspace-management/ui/WorkspaceManagement.test.tsx"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Removed mode REST routes and status.mode",
+      "files": [
+        "apps/ze-api/ze_api/api/routes/workspace.py",
+        "core/ops/ze-workspace/ze_workspace/rest.py",
+        "apps/ze-api/ze_api/api/schemas.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "Dropped mode from WorkspaceUsageTrace",
+      "files": [
+        "core/engine/ze-core/ze_core/conversation/messages/types.py",
+        "core/engine/ze-core/ze_core/orchestration/nodes/trace.py"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "Trace panel and message chip without mode",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/WorkspaceSection.tsx",
+        "apps/ze-web/src/entities/message/ui/MessageBubble.tsx"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "API tests expect mode routes gone",
+      "files": [
+        "apps/ze-api/tests/api/routes/test_workspace.py"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "Regenerated @ze/client without mode APIs",
+      "files": [
+        "packages/ze-client/src/generated/"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Living docs describe chat-first map",
+      "files": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "core/ops/ze-workspace/README.md",
+        "specs/README.md"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Marked spec Implemented",
+      "files": [
+        "specs/phases/161-workspace-chat-first/spec.md",
+        "specs/README.md"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Validated workspace, automation, trace, web; api bootstrap still red unrelated",
+      "files": [
+        "core/ops/ze-workspace/tests"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "workspace package tests",
+      "command": "make test-workspace",
+      "result": "76 passed",
+      "warnings": []
+    },
+    {
+      "what": "automation package tests",
+      "command": "make test-automation",
+      "result": "passed (existing GoalExecutor unawaited warnings)",
+      "warnings": [
+        "GoalExecutor.advance never awaited in unrelated tests"
+      ]
+    },
+    {
+      "what": "trace node tests",
+      "command": "pytest core/engine/ze-core/tests/orchestration/nodes/test_trace_memory_chunks.py",
+      "result": "16 passed",
+      "warnings": []
+    },
+    {
+      "what": "workspace API and followthrough tests",
+      "command": "pytest apps/ze-api/tests/api/routes/test_workspace.py apps/ze-api/tests/api/test_workspace_followthrough.py",
+      "result": "passed as part of 31 tests",
+      "warnings": []
+    },
+    {
+      "what": "web vitest",
+      "command": "make test-web",
+      "result": "passed",
+      "warnings": []
+    },
+    {
+      "what": "codegen",
+      "command": "make codegen",
+      "result": "client has no workspace mode APIs",
+      "warnings": []
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "Gate is action x origin only; conversation confirms write/run/reset; unattended allows the same computer except reset",
+      "why": "Hard-cut modes without a shim while keeping isolation and busy/full",
+      "rejected": "Keep Ask as default stored mode"
+    }
+  ],
+  "concerns": [
+    {
+      "note": "make test still fails on test_bootstrap_registers_companion_and_research (missing LoopStore for LoopsAgent). make lint still fails on files outside this phase.",
+      "step": "implement"
+    }
+  ],
+  "step_summaries": {
+    "implement": {
+      "summary": "Hard-cut workspace modes; chat confirms writes/commands/reset; unattended always has the computer; /workspace is tree plus occupancy."
+    }
+  }
+}

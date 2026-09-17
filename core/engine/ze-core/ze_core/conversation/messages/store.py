@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -183,7 +183,12 @@ class PostgresMessageStore:
 
 def _parse_trace(data: dict) -> MessageTrace:
     workspace_raw = data.get("workspace")
-    workspace = WorkspaceUsageTrace(**workspace_raw) if workspace_raw else None
+    workspace = None
+    if workspace_raw:
+        allowed = {f.name for f in fields(WorkspaceUsageTrace)}
+        workspace = WorkspaceUsageTrace(
+            **{k: v for k, v in workspace_raw.items() if k in allowed}
+        )
     procedure_raw = data.get("procedure")
     procedure = ProcedureUsageTrace(**procedure_raw) if procedure_raw else None
     return MessageTrace(

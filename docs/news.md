@@ -66,7 +66,7 @@ class Article:
 | `summary` | `TEXT` | RSS summary / lede |
 | `published_at` | `TIMESTAMPTZ` | Publication timestamp from RSS |
 | `tags` | `TEXT[]` | Tags from source config |
-| `embedding` | `VECTOR(384)` | `paraphrase-multilingual-MiniLM-L12-v2` on `title + summary` |
+| `embedding` | `VECTOR(384)` | Shared local embedder on `title + summary` |
 | `credibility_analysis` | `JSONB` | `CredibilityReport` serialised; `NULL` until scored |
 | `fetched_at` | `TIMESTAMPTZ` | When Ze first ingested the article |
 
@@ -78,7 +78,7 @@ class Article:
 
 1. Calls `source.fetch(limit=50)` — fetches and parses the RSS feed.
 2. Embeds each article (`title + summary`) using the shared
-   `paraphrase-multilingual-MiniLM-L12-v2` singleton.
+   `intfloat/multilingual-e5-base` singleton.
 3. Upserts into `news_articles` (`ON CONFLICT (url) DO NOTHING`).
 4. Returns the list of newly inserted articles.
 5. If `news.credibility.enabled: true` and new articles exist, fires an
@@ -362,7 +362,7 @@ the current session's `PersonalizationContext` automatically and returns:
 
 ## Multilingual support
 
-The embedding model (`paraphrase-multilingual-MiniLM-L12-v2`) handles all source
+The embedding model (`intfloat/multilingual-e5-base`) handles all source
 languages without changes. Portuguese sources (DN, Observador, Jornal de Leiria) are
 embedded and ranked correctly alongside English sources.
 

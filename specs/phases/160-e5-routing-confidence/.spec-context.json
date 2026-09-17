@@ -1,0 +1,422 @@
+{
+  "workflow": "companion",
+  "specName": "E5 Routing Confidence",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:54:29.646Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:54:42.679Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:54:57.774Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:55:04.812Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:55:05.846Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:55:06.098Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-16T21:55:21.706Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-16T21:55:29.849Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-16T21:55:30.246Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-17T18:35:34.055Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:38:45.913Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:00.486Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:02.489Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:04.735Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:06.768Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:08.782Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:11.076Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:29.251Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:30.952Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:32.247Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:33.890Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:35.733Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-17T18:45:37.459Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-17T18:45:38.721Z"
+    }
+  ],
+  "last_action": "160 tasks done — test-core green; live E5 smoke passed",
+  "telemetryInstanceId": "e2468f4f-e2f0-4087-8054-677af4ce91d4",
+  "coverage": {
+    "FR-001": {
+      "title": "Framework routing defaults (ROUTING_THRESHOLD, ROUTING_GAP) MUST be calibrated to E5 so a clear single-agent match does not set is_compound. MiniLM 0.55 / 0.10 MUST NOT remain the code default.",
+      "tasks": [
+        "T002",
+        "T004"
+      ],
+      "tests": [
+        "test_router.py::test_e5_band_clear_winner"
+      ]
+    },
+    "FR-002": {
+      "title": "YAML MAY repeat the same pair; it MUST NOT be the only source of E5 calibration. A router with no YAML overlay MUST use the E5 defaults.",
+      "tasks": [
+        "T005",
+        "T006"
+      ]
+    },
+    "FR-003": {
+      "title": "Turns that fail the E5 confidence test MUST still set is_compound and still use Haiku decompose. This phase MUST NOT delete decompose.",
+      "tasks": [
+        "T003",
+        "T008"
+      ]
+    },
+    "FR-004": {
+      "title": "Phases 153 and 155 (apply_conductor_rewrite, sequential/mixed rules) MUST NOT change.",
+      "tasks": [
+        "T009"
+      ]
+    },
+    "FR-005": {
+      "title": "This phase MUST NOT swap the embedding model, MUST NOT restore MiniLM, MUST NOT add a second embedder for routing vs memory.",
+      "tasks": [
+        "T001",
+        "T013"
+      ]
+    },
+    "FR-006": {
+      "title": "Living documentation MUST name intfloat/multilingual-e5-base as the current local model. Historical phase specs MAY keep MiniLM as written.",
+      "tasks": [
+        "T010",
+        "T011",
+        "T012"
+      ]
+    },
+    "FR-007": {
+      "title": "Clear single-agent fixtures in English and Portuguese MUST route by embedding without decompose under the new defaults. Ambiguous/close-score fixtures MUST still decompose.",
+      "tasks": [
+        "T007",
+        "T008"
+      ]
+    }
+  },
+  "context": [
+    "area: ze_agents/defaults.py ROUTING_THRESHOLD 0.55 ROUTING_GAP 0.10 MiniLM-era",
+    "area: config.yaml routing.gap_threshold 0.03 E5 overlay; threshold not set so still 0.55",
+    "area: E5Embedder already default intfloat/multilingual-e5-base with query:/passage:",
+    "constraint: 153/155 rewrite frozen; fewer false compounds is the lever",
+    "constraint: Principle VIII no MiniLM+E5 dual; Principle VII name must match the live model"
+  ],
+  "intent": "Calibrate routing confidence to E5 so clear single-agent turns skip Haiku decompose; hard-cut MiniLM from living docs.",
+  "expectations": [
+    "Concurrent thread identity (159)",
+    "Changing conductor rewrite, stall, promote, or parallel gates",
+    "Fine-tuning E5 or hosted embedding APIs",
+    "Memory relevance floors (106)",
+    "Restore MiniLM or add a second embedder"
+  ],
+  "size": "oversized",
+  "classification": {
+    "projectedFiles": 10,
+    "projectedTasks": 13,
+    "scopeSignal": "none",
+    "verdict": "oversized"
+  },
+  "approach": "Keep E5Embedder. Lift E5-calibrated ROUTING_THRESHOLD and ROUTING_GAP into ze_agents.defaults so tests and missing YAML do not revert to MiniLM 0.55/0.10; mirror in config.yaml; hard-cut MiniLM in constitution/ADR/stack tables. Do not change apply_conductor_rewrite.",
+  "decisions": [
+    {
+      "decision": "Do not swap the model again",
+      "why": "E5Embedder already ships; 97 remainder is confidence and docs",
+      "rejected": "MiniLM beside E5 or e5-small in this phase"
+    },
+    {
+      "decision": "Defaults, not YAML-only",
+      "why": "YAML gap 0.03 already exists but defaults 0.10 still govern tests and missing YAML",
+      "rejected": "Documenting the overlay and leaving MiniLM defaults"
+    },
+    {
+      "decision": "Measure both floor and gap",
+      "why": "0.55 is below the E5 band so gap is the main false-compound lever; floor may still need raising",
+      "rejected": "Inventing 0.60 without measurement; deleting Haiku decompose"
+    },
+    {
+      "decision": "Conductor rewrite is a consumer",
+      "why": "153/155 stay; success is fewer false is_compound envelopes",
+      "rejected": "Tweaking rewrite predicates"
+    },
+    {
+      "decision": "ROUTING_THRESHOLD 0.73 and ROUTING_GAP 0.02",
+      "why": "measured E5 clear tops 0.78-0.84; PT calendar gap 0.023; mixed research-then-email gap 0.003; YAML 0.03 rejected PT calendar",
+      "rejected": "invented 0.60 floor; keeping YAML-only 0.03"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "Retune routing defaults to E5; hard-cut MiniLM docs; 153/155 frozen.",
+      "key_finding": "YAML already sets gap 0.03 for E5 compression; framework defaults are still MiniLM 0.55/0.10."
+    },
+    "tasks": {
+      "summary": "13 tasks: fail-first E5-band routing, lift defaults, YAML mirror, 153/155 freeze, MiniLM doc hard-cut."
+    },
+    "implement": {
+      "summary": "E5-calibrated routing defaults 0.73/0.02; living docs name multilingual-e5-base."
+    }
+  },
+  "currentTask": "T013",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Confirmed E5Embedder prefixes, YAML gap 0.03 overlay, and MiniLM-era 0.55/0.10 still in defaults.py.",
+      "files": [
+        "core/engine/ze-core/ze_core/embeddings.py",
+        "core/contracts/ze-agents/ze_agents/defaults.py",
+        "apps/ze-api/config/config.yaml"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Fail-first then green: E5-band clear winner is not compound under RouterConfig() defaults.",
+      "files": [
+        "core/engine/ze-core/tests/routing/test_router.py"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Low-gap and below-floor fixtures stay is_compound; router does not call Haiku.",
+      "files": [
+        "core/engine/ze-core/tests/routing/test_router.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Set ROUTING_THRESHOLD 0.73 and ROUTING_GAP_THRESHOLD 0.02 from live E5 measurement.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/defaults.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Mirrored 0.73/0.02 in config.yaml; comment that defaults own the pair.",
+      "files": [
+        "apps/ze-api/config/config.yaml"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Settings tests: YAML mirrors E5 pair; missing routing block still uses RouterConfig defaults.",
+      "files": [
+        "apps/ze-api/tests/test_settings.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "EN and PT clear-winner fixtures skip decompose under RouterConfig().",
+      "files": [
+        "core/engine/ze-core/tests/routing/test_router.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Close-score fixture still compound; decompose remains Haiku-owned; no router complete().",
+      "files": [
+        "core/engine/ze-core/tests/routing/test_router.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Confirmed apply_conductor_rewrite and 153/155 tests were not edited.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_nodes.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "Constitution Principle VII names intfloat/multilingual-e5-base and query/passage prefixes.",
+      "files": [
+        ".specify/memory/constitution.md"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "ADR local-embeddings current decision is E5; MiniLM marked superseded.",
+      "files": [
+        "specs/arch/local-embeddings.md"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Hard-cut MiniLM as current in AGENTS/CLAUDE stack tables, architecture, ze-core, related docs.",
+      "files": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/architecture.md",
+        "specs/core/ze-core.md",
+        "specs/README.md"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "Slow live-E5 calendar smoke passed; make test-core green; ruff clean.",
+      "files": [
+        "core/engine/ze-core/tests/routing/test_e5_routing_confidence.py"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "make test-core",
+      "command": "make test-core",
+      "result": "735 passed",
+      "warnings": []
+    },
+    {
+      "what": "live E5 calendar smoke",
+      "command": "SLOW=1 pytest test_e5_routing_confidence.py",
+      "result": "1 passed",
+      "warnings": []
+    }
+  ]
+}

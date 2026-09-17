@@ -202,7 +202,6 @@ async def configure_workflow_executor(
     persona_store: Any,
     workflow_graph_builder: Any,
     workspace_gate: Any = None,
-    get_workspace_mode: Any = None,
 ) -> None:
     workflow_graph = workflow_graph_builder(
         checkpointer=checkpointer,
@@ -249,7 +248,7 @@ async def configure_workflow_executor(
                 "workflow_store": stack.workflow_store,
             },
         }
-        async with unattended_workspace(workspace_gate, get_workspace_mode):
+        async with unattended_workspace(workspace_gate):
             await workflow_graph.ainvoke(initial_state, run_config)
 
     async def _workflow_failure_handler(workflow: Any, exc: Exception) -> None:

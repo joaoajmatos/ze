@@ -24,11 +24,11 @@ import pytest
 
 import ze_workspace.bootstrap as bootstrap
 import ze_workspace.tools as tools
+from ze_agents.interrupt import workspace_confirmed
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.turn_lock import ThreadTurnLock
 from ze_workspace.types import (
     JournalEventDTO,
-    WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
     WorkspaceRunStatus,
@@ -44,12 +44,8 @@ from ze_proactive.types import NotificationRow
 class FakeInMemoryStore:
     """Minimal WorkspaceStore stand-in — enough surface for workspace_run's path."""
 
-    def __init__(self, mode: WorkspaceMode = WorkspaceMode.AUTO) -> None:
-        self._mode = mode
+    def __init__(self) -> None:
         self.runs: dict = {}
-
-    async def get_mode(self):
-        return self._mode
 
     async def insert_in_progress_run(self, run: WorkspaceRun) -> WorkspaceRun:
         recorded = WorkspaceRun(
@@ -129,11 +125,11 @@ def _settings(short_wait: float) -> SimpleNamespace:
 
 
 def _wire(
-    monkeypatch, *, short_wait: float, run_seconds: float, mode=WorkspaceMode.AUTO
+    monkeypatch, *, short_wait: float, run_seconds: float
 ):
     import time as _time
 
-    store = FakeInMemoryStore(mode)
+    store = FakeInMemoryStore()
     monkeypatch.setattr(bootstrap, "PostgresWorkspaceStore", lambda pool: store)
     shared = SimpleNamespace(pool=None)
     stack = bootstrap.build_workspace_stack(shared, _settings(short_wait))
@@ -181,6 +177,7 @@ def _wire(
     stack.client.start_run = AsyncMock(side_effect=fake_start_run)
     stack.client.get_run = AsyncMock(side_effect=fake_get_run)
     stack.client.watch_run = fake_watch_run
+    workspace_confirmed.set(True)
     return stack, store
 
 

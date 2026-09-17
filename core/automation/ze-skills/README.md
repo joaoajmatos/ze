@@ -22,7 +22,7 @@ agent's own `tools` list, and show up on `MessageTrace.skills_used`.
 Scripts are a separate gate. Approving instructions does not set
 `executable_approved`. After that second approval, the agent may call
 `workspace_run_skill_script`; the [workspace sidecar](../../docs/workspace.md)
-writes the stored bytes under `/workspace` and runs them under the workspace mode table.
+writes the stored bytes under `/workspace` and runs them after the workspace gate (conversation confirms; unattended may run).
 
 ### Key features
 

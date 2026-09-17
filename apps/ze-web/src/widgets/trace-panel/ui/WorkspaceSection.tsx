@@ -4,7 +4,6 @@ import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
 type WorkspaceTrace = NonNullable<
   (WsTraceUpdateFrame & {
     workspace?: {
-      mode: string;
       runs?: { command?: string; status?: string }[];
       files?: { path: string; op?: string }[];
       script_ran?: boolean;
@@ -31,8 +30,7 @@ export function WorkspaceSection({ workspace, live }: WorkspaceSectionProps) {
       ) : (
         <div className="space-y-1.5 text-xs">
           <p className="text-foreground/90">
-            Mode {workspace.mode}
-            {workspace.unavailable ? " · unavailable" : ""}
+            {workspace.unavailable ? "Unavailable" : "Used"}
             {workspace.script_ran ? " · script ran" : ""}
           </p>
           {planned.map((item) => (

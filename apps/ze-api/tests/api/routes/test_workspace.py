@@ -19,7 +19,6 @@ from ze_workspace.errors import (
 )
 from ze_workspace.types import (
     WorkspaceFile,
-    WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
     WorkspaceRunStatus,
@@ -56,10 +55,9 @@ def _file(path="notes.txt", size=5) -> WorkspaceFile:
 
 
 @pytest.mark.asyncio
-async def test_get_status_and_mode():
+async def test_get_status():
     store = AsyncMock()
-    store.get_state = AsyncMock(return_value=WorkspaceState(mode=WorkspaceMode.ASK))
-    store.get_mode = AsyncMock(return_value=WorkspaceMode.ASK)
+    store.get_state = AsyncMock(return_value=WorkspaceState())
     client = AsyncMock()
     client.health = AsyncMock(return_value=True)
     client.stat = AsyncMock(
@@ -74,23 +72,19 @@ async def test_get_status_and_mode():
         status = await http.get("/api/v0/workspace")
         mode = await http.get("/api/v0/workspace/mode")
     assert status.status_code == 200
-    assert status.json()["mode"] == "ask"
+    assert "mode" not in status.json()
     assert status.json()["available"] is True
-    assert mode.json() == {"mode": "ask"}
+    assert mode.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_patch_mode_persists():
-    store = AsyncMock()
-    store.set_mode = AsyncMock(return_value=WorkspaceState(mode=WorkspaceMode.AUTO))
-    app = _make_app(store=store)
+async def test_patch_mode_gone():
+    app = _make_app()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as http:
         resp = await http.patch("/api/v0/workspace/mode", json={"mode": "auto"})
-    assert resp.status_code == 200
-    assert resp.json()["mode"] == "auto"
-    store.set_mode.assert_awaited_once()
+    assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -277,10 +271,9 @@ async def test_reset_deny_leaves_workspace_unchanged():
 
 
 @pytest.mark.asyncio
-async def test_list_and_upload_work_when_mode_is_off():
+async def test_list_and_upload_without_mode():
     store = AsyncMock()
-    store.get_mode = AsyncMock(return_value=WorkspaceMode.OFF)
-    store.get_state = AsyncMock(return_value=WorkspaceState(mode=WorkspaceMode.OFF))
+    store.get_state = AsyncMock(return_value=WorkspaceState())
     client = AsyncMock()
     client.list_dir = AsyncMock(return_value=[_file()])
     client.upload = AsyncMock(return_value={"path": "notes.txt", "size": 5})

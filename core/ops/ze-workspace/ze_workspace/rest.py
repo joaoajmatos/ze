@@ -15,7 +15,7 @@ from ze_workspace.errors import (
     WorkspaceUnavailableError,
 )
 from ze_workspace.store import WorkspaceStore
-from ze_workspace.types import WorkspaceMode, WorkspaceRunOrigin
+from ze_workspace.types import WorkspaceRunOrigin
 
 _pending_resets: dict[str, bool] = {}
 
@@ -73,23 +73,12 @@ async def get_status(store: WorkspaceStore, client: WorkspaceClient) -> dict:
             available = False
     return {
         "available": available,
-        "mode": state.mode.value,
         "bytes_used": bytes_used,
         "bytes_ceiling": bytes_ceiling,
         "busy": busy,
         "last_reset_at": state.last_reset_at.isoformat() if state.last_reset_at else None,
         "last_used_at": state.last_used_at.isoformat() if state.last_used_at else None,
     }
-
-
-async def get_mode(store: WorkspaceStore) -> dict:
-    mode = await store.get_mode()
-    return {"mode": mode.value}
-
-
-async def set_mode(store: WorkspaceStore, mode: str) -> dict:
-    state = await store.set_mode(WorkspaceMode(mode))
-    return {"mode": state.mode.value}
 
 
 async def list_files(client: WorkspaceClient, path: str = "") -> dict:

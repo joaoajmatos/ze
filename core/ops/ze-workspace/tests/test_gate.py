@@ -7,139 +7,72 @@ from ze_workspace.gate import WorkspaceGate
 from ze_workspace.types import (
     WorkspaceAction,
     WorkspaceGateDecision,
-    WorkspaceMode,
     WorkspaceRunOrigin,
 )
 
 gate = WorkspaceGate()
 
 
-def _d(mode: WorkspaceMode, action: WorkspaceAction, origin: WorkspaceRunOrigin):
-    return gate.decide(mode=mode, action=action, origin=origin)
+def _d(action: WorkspaceAction, origin: WorkspaceRunOrigin):
+    return gate.decide(action=action, origin=origin)
 
 
-def test_conversation_off_denies_list():
+def test_conversation_reads_allow():
     assert (
-        _d(WorkspaceMode.OFF, WorkspaceAction.LIST, WorkspaceRunOrigin.CONVERSATION)
-        is WorkspaceGateDecision.DENY
+        _d(WorkspaceAction.LIST, WorkspaceRunOrigin.CONVERSATION)
+        is WorkspaceGateDecision.ALLOW
     )
-
-
-def test_user_rest_list_allows_in_off():
     assert (
-        _d(WorkspaceMode.OFF, WorkspaceAction.LIST, WorkspaceRunOrigin.USER)
+        _d(WorkspaceAction.READ, WorkspaceRunOrigin.CONVERSATION)
         is WorkspaceGateDecision.ALLOW
     )
 
 
-def test_user_place_read_retrieve_allow_in_off():
+def test_conversation_writes_and_runs_confirm():
     for action in (
-        WorkspaceAction.PLACE,
-        WorkspaceAction.READ,
-        WorkspaceAction.RETRIEVE,
+        WorkspaceAction.WRITE,
+        WorkspaceAction.DELETE,
+        WorkspaceAction.INGEST,
+        WorkspaceAction.RUN,
+        WorkspaceAction.RUN_SCRIPT,
+        WorkspaceAction.RESET,
     ):
         assert (
-            _d(WorkspaceMode.OFF, action, WorkspaceRunOrigin.USER)
-            is WorkspaceGateDecision.ALLOW
+            _d(action, WorkspaceRunOrigin.CONVERSATION)
+            is WorkspaceGateDecision.CONFIRM
         )
 
 
-def test_unattended_run_only_auto():
+def test_unattended_allows_write_and_run_denies_reset():
     assert (
-        _d(WorkspaceMode.ASK, WorkspaceAction.RUN, WorkspaceRunOrigin.UNATTENDED)
+        _d(WorkspaceAction.RUN, WorkspaceRunOrigin.UNATTENDED)
+        is WorkspaceGateDecision.ALLOW
+    )
+    assert (
+        _d(WorkspaceAction.WRITE, WorkspaceRunOrigin.UNATTENDED)
+        is WorkspaceGateDecision.ALLOW
+    )
+    assert (
+        _d(WorkspaceAction.RESET, WorkspaceRunOrigin.UNATTENDED)
         is WorkspaceGateDecision.DENY
     )
-    assert (
-        _d(WorkspaceMode.AUTO_EDIT, WorkspaceAction.RUN, WorkspaceRunOrigin.UNATTENDED)
-        is WorkspaceGateDecision.DENY
-    )
-    assert (
-        _d(WorkspaceMode.AUTO, WorkspaceAction.RUN, WorkspaceRunOrigin.UNATTENDED)
-        is WorkspaceGateDecision.ALLOW
-    )
 
 
-def test_unattended_write_auto_edit_or_auto():
+def test_user_rest_list_and_place_allow_run_deny():
+    assert _d(WorkspaceAction.LIST, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.ALLOW
+    assert _d(WorkspaceAction.PLACE, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.ALLOW
+    assert _d(WorkspaceAction.RUN, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.DENY
     assert (
-        _d(WorkspaceMode.ASK, WorkspaceAction.WRITE, WorkspaceRunOrigin.UNATTENDED)
-        is WorkspaceGateDecision.DENY
-    )
-    assert (
-        _d(
-            WorkspaceMode.AUTO_EDIT,
-            WorkspaceAction.WRITE,
-            WorkspaceRunOrigin.UNATTENDED,
-        )
-        is WorkspaceGateDecision.ALLOW
-    )
-    assert (
-        _d(WorkspaceMode.AUTO, WorkspaceAction.WRITE, WorkspaceRunOrigin.UNATTENDED)
-        is WorkspaceGateDecision.ALLOW
-    )
-
-
-def test_reset_always_confirm():
-    for mode in WorkspaceMode:
-        for origin in WorkspaceRunOrigin:
-            assert (
-                _d(mode, WorkspaceAction.RESET, origin)
-                is WorkspaceGateDecision.CONFIRM
-            )
-
-
-def test_ask_confirms_write_and_run():
-    assert (
-        _d(WorkspaceMode.ASK, WorkspaceAction.WRITE, WorkspaceRunOrigin.CONVERSATION)
+        _d(WorkspaceAction.RESET, WorkspaceRunOrigin.USER)
         is WorkspaceGateDecision.CONFIRM
-    )
-    assert (
-        _d(WorkspaceMode.ASK, WorkspaceAction.RUN, WorkspaceRunOrigin.CONVERSATION)
-        is WorkspaceGateDecision.CONFIRM
-    )
-
-
-def test_auto_edit_allows_write_confirms_run():
-    assert (
-        _d(
-            WorkspaceMode.AUTO_EDIT,
-            WorkspaceAction.WRITE,
-            WorkspaceRunOrigin.CONVERSATION,
-        )
-        is WorkspaceGateDecision.ALLOW
-    )
-    assert (
-        _d(
-            WorkspaceMode.AUTO_EDIT,
-            WorkspaceAction.RUN,
-            WorkspaceRunOrigin.CONVERSATION,
-        )
-        is WorkspaceGateDecision.CONFIRM
-    )
-
-
-def test_plan_dry_run():
-    assert (
-        _d(WorkspaceMode.PLAN, WorkspaceAction.WRITE, WorkspaceRunOrigin.CONVERSATION)
-        is WorkspaceGateDecision.PLAN
-    )
-    assert (
-        _d(WorkspaceMode.PLAN, WorkspaceAction.RUN, WorkspaceRunOrigin.CONVERSATION)
-        is WorkspaceGateDecision.PLAN
     )
 
 
 def test_workspace_action_has_no_cancel_member():
-    """Cancel (User Story 3, FR-009) is not a gated action at all — there is no
-    WorkspaceGateDecision to reach for it, so it can never land on CONFIRM."""
     assert not hasattr(WorkspaceAction, "CANCEL")
 
 
 def test_cancel_run_never_calls_workspace_gate():
-    """Source-level guard: ze_workspace.rest.cancel_run's body must never
-    reference WorkspaceGate or call .decide() — cancel bypasses the confirm
-    path entirely, it is not a second confirmation on top of the original
-    run. Checked against the function's parameter names and body, not its
-    docstring, which is free to mention WorkspaceGate in prose."""
     source = inspect.getsource(workspace_rest.cancel_run)
     body = source.split('"""', 2)[-1]
     assert "WorkspaceGate" not in body

@@ -11,8 +11,8 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 ### Key features
 
 - `WorkspaceClient` — async HTTP client for the sidecar
-- `WorkspaceGate` — mode × action × origin → allow, confirm, plan, or deny
-- `workspace_*` tools — list, read, write, delete, run, run skill script, ingest
+- `WorkspaceGate` — action × origin → allow, confirm, or deny
+- `workspace_*` tools — list, read, write, delete, run, run skill script, ingest, reset
 - Durable `workspace_state` and `workspace_runs` in Postgres
 - REST routes under `/api/v0/workspace`
 
@@ -29,12 +29,12 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 | Module | What it provides |
 |---|---|
 | `client.py` | `WorkspaceClient` — async HTTP client for the sidecar |
-| `gate.py` | `WorkspaceGate` — mode × action × origin decisions |
+| `gate.py` | `WorkspaceGate` — action × origin decisions |
 | `tools.py` | `workspace_*` `@tool`s; `WORKSPACE_TOOLS` name list |
 | `store.py` | `workspace_state` and `workspace_runs` |
-| `rest.py` | FastAPI routes: status, files, mode, reset |
+| `rest.py` | FastAPI helpers: status, files, reset |
 | `sanitize.py` | Path confinement and secret redaction |
-| `types.py` | Mode, action, origin, run, and file types |
+| `types.py` | Action, origin, run, and file types |
 | `errors.py` | `WorkspaceError` and subtypes |
 | `bootstrap.py` | Container wiring helpers |
 
@@ -65,7 +65,7 @@ stat = await client.stat()
 | `WORKSPACE_API_TOKEN` | Bearer token for the sidecar control API |
 | `WORKSPACE_TIMEOUT_SECONDS` | Per-request HTTP timeout |
 
-See [docs/workspace.md](../../docs/workspace.md) for modes, isolation, and local/Fly setup.
+See [docs/workspace.md](../../docs/workspace.md) for access, isolation, and local/Fly setup.
 See [docs/skills.md](../../docs/skills.md) for how skill scripts reach this sidecar.
 
 ## Testing

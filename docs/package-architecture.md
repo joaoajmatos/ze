@@ -157,7 +157,7 @@ packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instea
 | `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`) |
 | `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
-| `embeddings.py` | Shared `paraphrase-multilingual-MiniLM-L12-v2` singleton |
+| `embeddings.py` | Shared `intfloat/multilingual-e5-base` singleton |
 | `nli.py` | `LocalNLIClient` — `cross-encoder/nli-deberta-v3-small` singleton (satisfies `NLIClient`) |
 | `container.py` | Base `Container` with DI wiring, plugin support |
 

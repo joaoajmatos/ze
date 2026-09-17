@@ -212,16 +212,16 @@ That tool:
 
 1. Loads the skill. Refuses unless `status == active` and `executable_approved`.
 2. Loads the stored script bytes from `skill_scripts`.
-3. Asks `WorkspaceGate` (mode × action `run_script` × origin). Same table as
-   other commands — see [workspace.md](workspace.md#modes).
+3. Asks `WorkspaceGate` (action `run_script` × origin). Conversation confirms;
+   unattended may run. See [workspace.md](workspace.md#access).
 4. Writes the file under `/workspace` and runs it in the sidecar (`python3` or
    `bash`). Ze secrets are not in the child environment.
 5. Records a `workspace_runs` row with `skill_id` and `skill_script_path`, and
    sets `skills_used[].script_ran` on the turn's trace.
 
-Plan mode returns a dry-run note. Ask and Auto-edit still confirm conversation
-commands. Unattended goals and workflows may run scripts only when the workspace
-mode is **Auto**.
+Plan-only dry-run is gone. Conversation still confirms each script run.
+Unattended goals and workflows may run approved scripts when the workspace is
+available.
 
 The workspace page is `/workspace`. Executable approval stays on `/skills`.
 

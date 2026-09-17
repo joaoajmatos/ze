@@ -32,9 +32,26 @@ def test_config_loads_yaml():
     assert "default" in config["models"]
 
 
-def test_routing_config_defaults_empty_without_yaml_block():
+def test_routing_yaml_mirrors_e5_defaults():
+    from ze_agents.defaults import ROUTING_GAP_THRESHOLD, ROUTING_THRESHOLD
+
     s = make_settings()
+    assert s.routing_config["threshold"] == ROUTING_THRESHOLD
+    assert s.routing_config["gap_threshold"] == ROUTING_GAP_THRESHOLD
+
+
+def test_settings_without_routing_yaml_overlay_is_empty(tmp_path):
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "config.yaml").write_text("models:\n  default: test\n")
+    s = make_settings(config_dir=config_dir)
     assert s.routing_config == {}
+    from ze_agents.defaults import ROUTING_GAP_THRESHOLD, ROUTING_THRESHOLD
+    from ze_core.routing.types import RouterConfig
+
+    cfg = RouterConfig()
+    assert cfg.threshold == ROUTING_THRESHOLD == 0.73
+    assert cfg.gap_threshold == ROUTING_GAP_THRESHOLD == 0.02
 
 
 def test_config_has_no_agents_block():

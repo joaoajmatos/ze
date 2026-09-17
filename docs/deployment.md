@@ -130,7 +130,7 @@ fly ssh console
 ### Scale
 
 The default config uses one shared-cpu-1x machine with 1 GB RAM. Two local models
-load at startup: the embedding model (`paraphrase-multilingual-MiniLM-L12-v2`, ~450 MB)
+load at startup: the embedding model (`intfloat/multilingual-e5-base`)
 and the NLI cross-encoder (`cross-encoder/nli-deberta-v3-small`, ~90 MB). The Docker
 build (`apps/ze-api/Dockerfile`) pre-downloads both.
 

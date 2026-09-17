@@ -9,7 +9,7 @@ import {
   Network,
   Database,
   Server,
-  Briefcase,
+  Bot,
   Settings,
   PenTool,
   FolderOpen,
@@ -32,36 +32,35 @@ export const navRoutes: NavRouteMeta[] = [
   { path: "goals", label: "Goals", icon: Target, showInMobileNav: true },
   { path: "priority", label: "Priority", icon: ListOrdered, showInMobileNav: false },
   { path: "workflows", label: "Workflows", icon: Workflow, showInMobileNav: true },
+  { path: "skills", label: "Skills", icon: PenTool, showInMobileNav: false },
   { path: "costs", label: "Usage", icon: BarChart2, showInMobileNav: true },
   { path: "brain-memory", label: "Memory", icon: Brain, showInMobileNav: false },
   { path: "brain-graph", label: "Graph", icon: Network, showInMobileNav: false },
-  { path: "data", label: "Data", icon: Database, showInMobileNav: false },
-  { path: "skills", label: "Skills", icon: PenTool, showInMobileNav: false },
   { path: "procedures", label: "Procedures", icon: BookOpen, showInMobileNav: false },
+  { path: "data", label: "Data", icon: Database, showInMobileNav: false },
   { path: "workspace", label: "Workspace", icon: FolderOpen, showInMobileNav: false },
 ];
 
-/** Work sub-routes — rendered inside the collapsible Work group. */
-export const workNavRoutes: NavRouteMeta[] = navRoutes.filter(
-  (r) => r.path === "goals" || r.path === "workflows" || r.path === "priority",
+/** Automation sub-routes — rendered inside the collapsible Automation group. */
+export const automationNavRoutes: NavRouteMeta[] = navRoutes.filter(
+  (r) =>
+    r.path === "goals" ||
+    r.path === "workflows" ||
+    r.path === "priority" ||
+    r.path === "skills",
 );
 
 /** Knowledge sub-routes — rendered inside the collapsible Knowledge group. */
 export const knowledgeNavRoutes: NavRouteMeta[] = navRoutes.filter(
-  (r) => r.path === "brain-memory" || r.path === "brain-graph",
+  (r) => r.path === "brain-memory" || r.path === "brain-graph" || r.path === "procedures",
 );
 
 /** System sub-routes — rendered inside the collapsible System group. */
 export const systemNavRoutes: NavRouteMeta[] = navRoutes.filter(
-  (r) =>
-    r.path === "costs" ||
-    r.path === "data" ||
-    r.path === "skills" ||
-    r.path === "procedures" ||
-    r.path === "workspace",
+  (r) => r.path === "costs" || r.path === "data" || r.path === "workspace",
 );
 
-export { Library as KnowledgeIcon, Server as SystemIcon, Briefcase as WorkIcon };
+export { Library as KnowledgeIcon, Server as SystemIcon, Bot as AutomationIcon };
 
 export const settingsNavRoute: NavRouteMeta = {
   path: "settings",

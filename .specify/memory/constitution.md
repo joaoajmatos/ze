@@ -69,8 +69,8 @@ runs all chains but owns no tables. Cross-package ordering uses `depends_on`.
 
 ### VII. One LLM Gateway, Local Embeddings
 All LLM calls go through OpenRouter via the injected `LLMClient`; embeddings are the
-local `paraphrase-multilingual-MiniLM-L12-v2` singleton. No direct provider SDKs, no
-per-feature API keys.
+local `intfloat/multilingual-e5-base` singleton with required `query:` / `passage:`
+prefixes. No direct provider SDKs, no per-feature API keys.
 
 ### VIII. Pre-v1 Hard Cuts
 Ze has never been deployed. Until a versioned v1 release is declared, breaking

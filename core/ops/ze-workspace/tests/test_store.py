@@ -4,11 +4,8 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import pytest
-
 from ze_workspace.store import PostgresWorkspaceStore
 from ze_workspace.types import (
-    WorkspaceMode,
     WorkspaceRun,
     WorkspaceRunOrigin,
     WorkspaceRunStatus,
@@ -17,11 +14,10 @@ from ze_workspace.types import (
 from tests.conftest import make_pool
 
 
-def _state_row(mode: str = "ask"):
+def _state_row():
     now = datetime.now(timezone.utc)
     return {
         "id": 1,
-        "mode": mode,
         "last_reset_at": None,
         "last_used_at": None,
         "updated_at": now,
@@ -53,27 +49,11 @@ def _run_row(**overrides):
     return row
 
 
-async def test_get_mode_defaults_to_ask():
-    pool, conn = make_pool(fetchrow=_state_row("ask"))
+async def test_get_state_inserts_singleton():
+    pool, conn = make_pool(fetchrow=_state_row())
     store = PostgresWorkspaceStore(pool)
-    assert await store.get_mode() == WorkspaceMode.ASK
-
-
-async def test_set_mode_persists():
-    pool, conn = make_pool(fetchrow=_state_row("auto"))
-    store = PostgresWorkspaceStore(pool)
-    state = await store.set_mode(WorkspaceMode.AUTO)
-    assert state.mode == WorkspaceMode.AUTO
-    sql = conn.fetchrow.await_args.args[0]
-    assert "UPDATE workspace_state" in sql
-    assert conn.fetchrow.await_args.args[1] == "auto"
-
-
-async def test_unknown_mode_refused():
-    pool, conn = make_pool(fetchrow=_state_row("not-a-mode"))
-    store = PostgresWorkspaceStore(pool)
-    with pytest.raises(Exception, match="unknown workspace mode"):
-        await store.get_mode()
+    state = await store.get_state()
+    assert state.last_reset_at is None
 
 
 async def test_insert_run_redacts_preview():
