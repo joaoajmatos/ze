@@ -111,6 +111,19 @@ class WorkspaceUsageTraceResponse(BaseModel):
     planned: list[str] | None = None
 
 
+class JudgmentTraceResponse(BaseModel):
+    question_id: str
+    kind: str
+    latency_ms: int
+    answer: str | float | None = None
+    probabilities: dict[str, float] | None = None
+    peakedness: float | None = None
+    model: str | None = None
+    input_tokens: int | None = None
+    consumed: bool = False
+    skip_reason: str | None = None
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -126,6 +139,7 @@ class MessageTraceResponse(BaseModel):
     procedure: ProcedureUsageTraceResponse | None = None
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
+    judgments: list[JudgmentTraceResponse] = []
 
 
 class MessageTraceEntry(BaseModel):
@@ -704,6 +718,7 @@ class WsTraceUpdateFrame(BaseModel):
     procedure: ProcedureUsageTraceResponse | None = None
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
+    judgments: list[JudgmentTraceResponse] = []
 
 
 class WsNotificationFrame(BaseModel):

@@ -9,6 +9,7 @@ from uuid import UUID
 import asyncpg
 
 from ze_core.conversation.messages.types import (
+    JudgmentTrace,
     Message,
     MessageTrace,
     MemoryChunkTrace,
@@ -191,6 +192,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         )
     procedure_raw = data.get("procedure")
     procedure = ProcedureUsageTrace(**procedure_raw) if procedure_raw else None
+    judgment_fields = {f.name for f in fields(JudgmentTrace)}
     return MessageTrace(
         agent=data["agent"],
         routing_method=data["routing_method"],
@@ -206,6 +208,11 @@ def _parse_trace(data: dict) -> MessageTrace:
         procedure=procedure,
         conductor_hint=data.get("conductor_hint"),
         conductor_ledger=list(data.get("conductor_ledger") or []),
+        judgments=[
+            JudgmentTrace(**{k: v for k, v in raw.items() if k in judgment_fields})
+            for raw in data.get("judgments") or []
+            if isinstance(raw, dict)
+        ],
     )
 
 

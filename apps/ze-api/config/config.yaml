@@ -13,6 +13,13 @@ routing:
   threshold: 0.73
   gap_threshold: 0.02
 
+# Typed judgments (Jev via OpenRouter System One). Default off — 163/164 consume the client.
+system_one:
+  enabled: false
+  model: typesafe/jev-1.13
+  timeout_ms: 2000
+  surfaces: {}
+
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.
 budget:

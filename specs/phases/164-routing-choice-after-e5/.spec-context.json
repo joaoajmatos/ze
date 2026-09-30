@@ -1,0 +1,74 @@
+{
+  "workflow": "companion",
+  "specName": "Routing Choice After E5",
+  "branch": "main",
+  "currentStep": "specify",
+  "status": "specified",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-30T22:41:26.389Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-30T22:42:24.830Z"
+    }
+  ],
+  "telemetryInstanceId": "40af2510-7e19-4ec2-a0b1-9f2e7385edfc",
+  "coverage": {
+    "FR-001": {
+      "title": "E5 still produces a ranked list; System One sees only a shortlist plus none"
+    },
+    "FR-002": {
+      "title": "Consumed Choice: shortlisted agent at sufficient peakedness is not compound; none or low peakedness decomposes"
+    },
+    "FR-003": {
+      "title": "Speculative multiple-specialist yes-probability uses its own threshold"
+    },
+    "FR-004": {
+      "title": "Complexity is a graded Score; regex remains skip fallback"
+    },
+    "FR-005": {
+      "title": "Phases 153 and 155 must not change; decompose must not be deleted"
+    },
+    "FR-006": {
+      "title": "On skip, behavior matches 160 exactly"
+    },
+    "FR-007": {
+      "title": "Trace records Choice, none probability, complexity Score, and whether decompose ran"
+    },
+    "FR-008": {
+      "title": "160 clear-single EN and PT fixtures still skip decompose when Choice agrees"
+    },
+    "FR-009": {
+      "title": "Must not change speech-act admission, skills, or capability modes"
+    },
+    "FR-010": {
+      "title": "Default tests mock the judgment client"
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "intent": "Complement E5 routing with a typed Choice over the shortlist plus none so cosine stops pretending to be calibrated confidence.",
+  "expectations": [
+    "Do not delete Haiku decompose",
+    "Do not change 153/155 conductor rewrite",
+    "Do not change speech-act admission"
+  ],
+  "context": [
+    "living spec: specs/arch/system-one-models.md",
+    "area: EmbeddingRouter ComplexityEstimator fallback.decompose",
+    "constraint: 160 bars remain shortlist; Principle VII embeddings stay E5"
+  ]
+}

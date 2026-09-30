@@ -76,6 +76,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         procedure=_extract_procedure(state.get("agent_context")),
         conductor_hint=state.get("conductor_hint"),
         conductor_ledger=ledger_with_promote_offer(_conductor_ledger(state)),
+        judgments=list(state.get("judgments") or []),
     )
     return {"message_trace": trace}
 

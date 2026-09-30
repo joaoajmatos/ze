@@ -1,0 +1,74 @@
+{
+  "workflow": "companion",
+  "specName": "Speech-Act System One",
+  "branch": "main",
+  "currentStep": "specify",
+  "status": "specified",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-30T22:41:17.813Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-30T22:42:16.019Z"
+    }
+  ],
+  "telemetryInstanceId": "d72ee565-e763-4979-aa08-66499afd756d",
+  "coverage": {
+    "FR-001": {
+      "title": "Post-turn admission obtains speech_act as a Choice over the eight existing labels"
+    },
+    "FR-002": {
+      "title": "When act may be fact, also obtain family Choice and a separate biography yes-probability"
+    },
+    "FR-003": {
+      "title": "admit_speech_act and admit_family remain the only persist filters"
+    },
+    "FR-004": {
+      "title": "Facts persist only when act is fact, family is keep, and biography probability clears hold bar"
+    },
+    "FR-005": {
+      "title": "State is user plus length-capped assistant text only"
+    },
+    "FR-006": {
+      "title": "Skip uses current LLM extractor; low peakedness does not persist and does not double-judge"
+    },
+    "FR-007": {
+      "title": "Trivial-turn skip, 148 identity skip, and contribution seam remain"
+    },
+    "FR-008": {
+      "title": "Must not change routing, skill match, or companion tool names"
+    },
+    "FR-009": {
+      "title": "Default tests mock the client; existing no-fact evals still forbid a fact row"
+    },
+    "FR-010": {
+      "title": "Thresholds in config; cookbook numbers must not ship as production defaults"
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 8,
+    "projectedTasks": 12,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "intent": "Replace the Haiku speech-act judge with a typed Choice over the existing closed set so timed reminders and cancels stop becoming biography.",
+  "expectations": [
+    "Do not start routing Choice 164",
+    "Do not hard-couple post-turn act to in-turn tools",
+    "Do not create loops/goals/reminders from this judge"
+  ],
+  "context": [
+    "living spec: specs/arch/system-one-models.md",
+    "area: ze_memory/extractor.py speech_act",
+    "constraint: 142 routing table; 148 dual-write skip"
+  ]
+}

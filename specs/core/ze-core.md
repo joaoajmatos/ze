@@ -36,6 +36,11 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
   persists paused confirmation requests for replay after restart
 - **NLI** — `NLIClient` singleton (`cross-encoder/nli-deberta-v3-small`) shared across
   memory and correlation
+- **System One** — `OpenRouterSystemOneClient` posts typed noul/choice/score questions
+  to `{openrouter_base_url}/systemone` (model `typesafe/jev-1.13`, same
+  `OPENROUTER_API_KEY` as chat). Default-off via `system_one.enabled`; missing key,
+  timeout, and 429/529 skip rather than raising. Plugins type against
+  `SystemOneClient` and never import this module.
 - **Embeddings** — `intfloat/multilingual-e5-base` singleton (`query:` / `passage:`
   prefixes) used by router and memory; loaded once at startup
 
@@ -58,7 +63,7 @@ core/engine/ze-core/ze_core/
   routing/            ← EmbeddingRouter, ComplexityEstimator, fallback, RouterStore
   capability/         ← CapabilityGate, PostgresCapabilityOverrideStore, Mode
   telemetry/          ← CostTracker, CostReconciler, PostgresCostStore, ContextVar
-  openrouter/         ← OpenRouterClient (engine-internal; plugins use LLMClient Protocol)
+  openrouter/         ← OpenRouterClient + OpenRouterSystemOneClient (engine-internal)
   interface/          ← AppInterface wiring, InputPreprocessor
   conversation/       ← MessageStore, PendingConfirmationStore, SessionStore
   messages/           ← message types used in graph state
@@ -74,8 +79,9 @@ core/engine/ze-core/ze_core/
 
 ## Key invariants
 
-- `OpenRouterClient` is engine-internal. Plugins receive `LLMClient` (Protocol) via DI
-  and never import `ze_core.openrouter` directly.
+- `OpenRouterClient` and `OpenRouterSystemOneClient` are engine-internal. Plugins
+  receive `LLMClient` / `SystemOneClient` (Protocols) via DI and never import
+  `ze_core.openrouter` directly.
 - The graph is compiled once at startup (`graph_builder(plugins)`). Adding a node
   requires a restart.
 - `invoke_raw_turn` uses `graph.astream_events` (Phase 95+); prior to Phase 95 it used
@@ -89,7 +95,7 @@ core/engine/ze-core/ze_core/
 
 | Dependency | Purpose |
 |------------|---------|
-| `ze-agents` | `BaseAgent`, `AgentRegistry`, `AppInterface`, `LLMClient` |
+| `ze-agents` | `BaseAgent`, `AgentRegistry`, `AppInterface`, `LLMClient`, `SystemOneClient` |
 | `ze-communication` | `ChannelRegistry` |
 | `ze-plugin` | `ZePlugin`, plugin discovery |
 | `ze-logging` | `get_logger` |

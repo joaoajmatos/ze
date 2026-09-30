@@ -480,6 +480,8 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - Chat chrome: the generic side panel is **trace** (not "Ze's Mind"); session history lives there too. Do not duplicate page titles already shown in the top bar.
 - Discuss and pin spec scope before creating speckit files unless explicitly asked to write them.
 - Implement multi-phase roadmaps in order: finish tests and mark the current spec Implemented before starting the next.
+- Workspace is chat-first: interact via chat; `/workspace` is a high-level map (tree/info only), not a run console; do not bring back execution modes; unattended always has the computer.
+- After a multi-spec batch is Ready to implement, leave a copy-paste handoff/goal prompt for the next session.
 
 ## Learned Workspace Facts
 
@@ -488,10 +490,10 @@ no API cost). Full rebuild only when the graph is missing or badly stale.
 - Plugin management UI registers via `ZePlugin.ui_contributions()`; `ze-web` loads nav/settings from `GET /api/v0/ui/manifest`; plugin REST routes mount via `rest_routes()`.
 - `apps/ze-web` follows Feature-Sliced Design: `pages → widgets → features → entities → shared`; query hooks live in `entities/<name>/api/`.
 - Chat inline UI uses `ze-components` `render_*` tools (table, metric, list, timeline, progress, confirm, form) rendered by `PrimitiveRenderer` below message bubbles.
-- `journal/` is gitignored local writing for a public narrative (weekly LinkedIn posts plus a technical blog); treat it as authoring notes, not product source.
-- Optional page quick actions sit in the top bar left of the notification icon (with a separator), via a reusable slot rather than per-page chrome.
-- Keep the phase 115 workspace sidecar (`core/ops/ze-workspace` + `sidecar/workspace`); do not replace it with Cloudflare Computer — borrow run-handle / exec-journal ideas instead.
+- `journal/` and `brag-output/` are gitignored local writing; treat as authoring notes, not product source.
+- Web nav groups: Knowledge (memory, graph, procedures); Automation (goals, workflows, priority, skills — Bot icon); System (usage, data, workspace).
+- Keep the phase 115 workspace sidecar (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first map at `/workspace`; do not replace with Cloudflare Computer — borrow run-handle / exec-journal ideas instead.
 - Perception/memory fact writes go through the contribution seam (`specs/arch/contribution-seam.md`): Phase 133 wraps writers; Phase 134 hard-cuts `memory_facts` onto shared claim vocabulary and removes public `propose_facts`.
 - Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
-- Memory honesty/admission is phases 140–151 in `specs/arch/memory-honesty-roadmap.md` (140 admission + remember/forget, 141 read constitution, 142 speech-act routing, 143 earned claims + forget-match ladder); implement in order and do not skip to later specialist/catalog phases.
+- Memory honesty is phases 140–150 in `specs/arch/memory-honesty-roadmap.md`. Companion-conductor is `specs/arch/companion-conductor-roadmap.md` (151–161): companion sole speaker/conductor, fat `delegate_to_agent`, no `plan_sequential`/swarm; phase dir 151 is conductor ACI, not memory-honesty.
 - `.cursor/rules/` is gitignored; do not commit Cursor rules.

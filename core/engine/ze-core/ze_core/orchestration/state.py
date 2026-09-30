@@ -73,6 +73,7 @@ class AgentState(TypedDict):
 
     # ── Trace (Phase 89 — populated by record_trace node) ────────────────────
     message_trace: Any | None  # MessageTrace; saved to DB after message is persisted
+    judgments: list  # list[JudgmentTrace]; reset each turn, copied by record_trace
 
     # ── Skills (Phase 114 — populated by match_skills node) ──────────────────
     skill_matches: (

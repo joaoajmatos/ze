@@ -22,5 +22,6 @@ export function toTraceFrame(
     workspace: (trace as MessageTraceResponse & { workspace?: unknown }).workspace,
     conductor_hint: trace.conductor_hint,
     conductor_ledger: trace.conductor_ledger,
+    judgments: trace.judgments ?? [],
   } as WsTraceUpdateFrame;
 }

@@ -1332,6 +1332,54 @@ export type IngestResponse = {
 };
 
 /**
+ * JudgmentTraceResponse
+ */
+export type JudgmentTraceResponse = {
+    /**
+     * Question Id
+     */
+    question_id: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Latency Ms
+     */
+    latency_ms: number;
+    /**
+     * Answer
+     */
+    answer?: string | number | null;
+    /**
+     * Probabilities
+     */
+    probabilities?: {
+        [key: string]: number;
+    } | null;
+    /**
+     * Peakedness
+     */
+    peakedness?: number | null;
+    /**
+     * Model
+     */
+    model?: string | null;
+    /**
+     * Input Tokens
+     */
+    input_tokens?: number | null;
+    /**
+     * Consumed
+     */
+    consumed?: boolean;
+    /**
+     * Skip Reason
+     */
+    skip_reason?: string | null;
+};
+
+/**
  * LearningDetailResponse
  */
 export type LearningDetailResponse = {
@@ -1978,6 +2026,10 @@ export type MessageTraceResponse = {
      * Conductor Ledger
      */
     conductor_ledger?: Array<ConductorLedgerEntryResponse>;
+    /**
+     * Judgments
+     */
+    judgments?: Array<JudgmentTraceResponse>;
 };
 
 /**

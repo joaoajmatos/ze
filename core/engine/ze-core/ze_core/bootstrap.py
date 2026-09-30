@@ -8,6 +8,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from ze_agents.client import LLMClient
 from ze_agents.nli import NLIClient
+from ze_agents.system_one import SystemOneClient
 from ze_agents.hooks import register_hook
 from ze_logging import get_logger
 from ze_agents.settings import Settings as CoreSettings
@@ -20,6 +21,7 @@ from ze_core.embeddings import get_embedder
 from ze_core.orchestration.checkpoint_pruner import CheckpointPruner
 from ze_core.nli import LocalNLIClient
 from ze_core.openrouter.client import OpenRouterClient
+from ze_core.openrouter.system_one import build_system_one_client
 from ze_core.routing.complexity import ComplexityEstimator
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.store import PostgresRoutingStore
@@ -46,6 +48,7 @@ class EngineStack:
     checkpointer_pool: Any
     embedder: Any
     nli_client: LocalNLIClient
+    system_one_client: Any
     openrouter_client: OpenRouterClient
     cost_store: PostgresCostStore
     cost_tracker: CostTracker
@@ -78,6 +81,8 @@ async def build_engine_stack(
         title=settings.openrouter_title,
         cost_tracker=cost_tracker,
     )
+
+    system_one_client = build_system_one_client(settings, cost_tracker=cost_tracker)
 
     graph_store = PostgresGraphStore(pool=pool)
     memory_store = PostgresMemoryStore(
@@ -115,6 +120,7 @@ async def build_engine_stack(
         LLMClient: openrouter_client,
         NLIClient: nli_client,
         LocalNLIClient: nli_client,
+        SystemOneClient: system_one_client,
         MemoryStore: memory_store,
         PostgresMemoryStore: memory_store,
     }
@@ -124,6 +130,7 @@ async def build_engine_stack(
         checkpointer_pool=checkpointer_pool,
         embedder=embedder,
         nli_client=nli_client,
+        system_one_client=system_one_client,
         openrouter_client=openrouter_client,
         cost_store=cost_store,
         cost_tracker=cost_tracker,

@@ -84,7 +84,28 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         procedure=_procedure_to_response(getattr(trace, "procedure", None)),
         conductor_hint=getattr(trace, "conductor_hint", None),
         conductor_ledger=list(getattr(trace, "conductor_ledger", None) or []),
+        judgments=_judgments_to_response(getattr(trace, "judgments", None)),
     )
+
+
+def _judgments_to_response(judgments) -> list[dict]:
+    rows = []
+    for item in judgments or []:
+        rows.append(
+            {
+                "question_id": item.question_id,
+                "kind": item.kind,
+                "latency_ms": item.latency_ms,
+                "answer": item.answer,
+                "probabilities": item.probabilities,
+                "peakedness": item.peakedness,
+                "model": item.model,
+                "input_tokens": item.input_tokens,
+                "consumed": item.consumed,
+                "skip_reason": item.skip_reason,
+            }
+        )
+    return rows
 
 
 def _workspace_to_response(workspace) -> dict | None:

@@ -17,6 +17,7 @@ describe("toTraceFrame", () => {
       skills_used: [],
       conductor_hint: null,
       conductor_ledger: [],
+      judgments: [],
     };
 
     expect(toTraceFrame("msg-1", trace, "thread-a")).toEqual({

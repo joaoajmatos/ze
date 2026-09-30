@@ -54,6 +54,14 @@ decides when to search, and it's billed the same way.
 - Adds latency vs. direct calls (small but non-zero)
 - OpenRouter's model IDs can lag behind provider releases by days
 
+### Amendment (2026-09-30, phase 162)
+
+OpenRouter also hosts **System One** (Jev) at `POST /api/v1/systemone`, billed to the
+same `OPENROUTER_API_KEY`. That path is **not** chat and MUST NOT go through
+`LLMClient.complete`. Typed judgments use a sibling `SystemOneClient`. Local E5
+embeddings and local NLI are unchanged. See [system-one-models.md](system-one-models.md)
+and [162](../phases/162-system-one-client/spec.md).
+
 ---
 
 ## Pros and Cons of the Options
@@ -84,4 +92,5 @@ a commercial service that could change pricing or availability.
 ## Links
 
 - [Phase 6 — OpenRouter Client](../phases/006-openrouter-client/spec.md)
+- [Phase 162 — System One Client](../phases/162-system-one-client/spec.md)
 - `core/engine/ze-core/ze_core/openrouter/` — `OpenRouterClient` implementation

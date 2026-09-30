@@ -202,6 +202,9 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 159 | [Concurrent Thread Identity](phases/159-concurrent-thread-identity/spec.md) | ✅ Implemented |
 | 160 | [E5 Routing Confidence](phases/160-e5-routing-confidence/spec.md) | ✅ Implemented |
 | 161 | [Workspace Chat-First](phases/161-workspace-chat-first/spec.md) | ✅ Implemented |
+| 162 | [System One Client](phases/162-system-one-client/spec.md) | ✅ Implemented |
+| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
+| 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
 
 ## Ze Core specs (`core/`)
 
@@ -251,6 +254,7 @@ should read them before changing anything structural.
 | [Contribution Seam](arch/contribution-seam.md) | **Shipped through step 7.** Perception facts (Phase 133), `memory_facts` doctrine (Phase 134), ActionRecord ledger and producer instrumentation (135–136), evidence-backed goal learning (Phase 137). Collision detection done (Phase 126). Ranking via `PriorityView` + turn surfacing (123/127/132). Remaining: `signal_sources()` rewiring, real cross-function arbitration (step 8). |
 | [Single-User Model](arch/single-user-model.md) | No `user_id` anywhere; auth is a single API key; Ze serves one person |
 | [OpenRouter Gateway](arch/openrouter-gateway.md) | All LLM calls through OpenRouter only — single billing, config-driven model swaps |
+| [System One Models](arch/system-one-models.md) | **Living.** Typed judgments (Choice/Noul/Score) as an extra decision layer beside OpenRouter and local E5/NLI. First slices: [162](phases/162-system-one-client/spec.md)–[164](phases/164-routing-choice-after-e5/spec.md). Not a package spec. |
 | [LangGraph Orchestration](arch/langgraph-orchestration.md) | LangGraph + AsyncPostgresSaver — durable graph execution with confirmation-flow pause/resume |
 | [Local Embeddings](arch/local-embeddings.md) | `paraphrase-multilingual-MiniLM-L12-v2` in-process — zero cost, multilingual, hot-path safe |
 | [Dataclasses over Pydantic](arch/dataclasses-over-pydantic.md) | `@dataclass` in all domain code; Pydantic only in `ze_api/api/schemas.py` |

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "system-one-models": {
+      "source": "joaoajmatos/system-one-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "8828c19d76187f8dcbc9e1de67ed1942986e4a284e6b49a7add4d307bd9400d0"
+    }
+  }
+}

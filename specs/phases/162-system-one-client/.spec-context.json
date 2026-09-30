@@ -1,0 +1,705 @@
+{
+  "workflow": "companion",
+  "specName": "System One Client",
+  "branch": "main",
+  "currentStep": "implement",
+  "status": "completed",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-30T22:40:26.618Z"
+    },
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-30T22:41:02.993Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-30T22:48:33.988Z"
+    },
+    {
+      "step": "plan",
+      "substep": "research",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T22:51:51.062Z"
+    },
+    {
+      "step": "plan",
+      "substep": "design",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T22:54:16.542Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-30T22:55:07.385Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-30T23:06:48.292Z"
+    },
+    {
+      "step": "tasks",
+      "substep": "generate",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:07:15.083Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-30T23:08:06.700Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-09-30T23:10:14.291Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:33.048Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:36.122Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:39.395Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:42.726Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:45.764Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:48.959Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:11:52.610Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:19:43.240Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:19:46.676Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:19:49.663Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:19:53.064Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:19:56.313Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:19:59.377Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:03.021Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:06.744Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:10.581Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:14.230Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:17.747Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:21.546Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:25.149Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:29.065Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:32.696Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:36.057Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:39.566Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:20:43.036Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-09-30T23:26:40.671Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-09-30T23:26:43.489Z"
+    }
+  ],
+  "telemetryInstanceId": "15d7c89f-21ba-4e16-bb9b-c11c9130bd04",
+  "coverage": {
+    "FR-001": {
+      "title": "Constructor-injected SystemOneClient Protocol, sibling of NLI and LLM clients",
+      "tasks": [
+        "T003",
+        "T005",
+        "T010",
+        "T014",
+        "T015"
+      ],
+      "tests": [
+        "core/contracts/ze-agents/tests/test_system_one.py::test_ok_result_exposes_noul_without_json_parsing",
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_ok_maps_noul_choice_score"
+      ]
+    },
+    "FR-002": {
+      "title": "Plugin code types against SystemOneClient via ze_sdk and must not import the engine",
+      "tasks": [
+        "T009",
+        "T011"
+      ],
+      "tests": [
+        "packages/ze-sdk/tests/test_imports.py::test_system_one_client_reexport"
+      ]
+    },
+    "FR-003": {
+      "title": "Engine owns the HTTP implementation; plugins must not ship a second vendor SDK",
+      "tasks": [
+        "T001",
+        "T010"
+      ]
+    },
+    "FR-004": {
+      "title": "Config includes enable flag, pinned model, timeout, per-surface flags; default fail-open",
+      "tasks": [
+        "T002",
+        "T014"
+      ]
+    },
+    "FR-005": {
+      "title": "API key lives in environment secrets, not committed YAML",
+      "tasks": [
+        "T002",
+        "T012",
+        "T013"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_disabled_skips_without_http",
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_timeout_skips",
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_429_skips_overload"
+      ]
+    },
+    "FR-006": {
+      "title": "Timeout, missing key, and vendor overload skip to existing behavior",
+      "tasks": [
+        "T012",
+        "T013",
+        "T016"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_enabled_blank_key_evaluate_skips_without_crash",
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_build_disabled_when_flag_off"
+      ]
+    },
+    "FR-007": {
+      "title": "Message explainability can store a list of judgments with consumed flag",
+      "tasks": [
+        "T004",
+        "T006",
+        "T017",
+        "T019",
+        "T020",
+        "T022"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_trace_judgments.py",
+        "apps/ze-api/tests/api/test_judgments_trace_schema.py",
+        "apps/ze-web/src/widgets/trace-panel/ui/JudgmentsSection.test.tsx"
+      ]
+    },
+    "FR-008": {
+      "title": "Default tests mock the client; live vendor calls opt-in and slow",
+      "tasks": [
+        "T003",
+        "T008",
+        "T012",
+        "T026"
+      ]
+    },
+    "FR-009": {
+      "title": "This phase must not change speech-act, routing, skills, retrieval, push, or dream",
+      "tasks": [
+        "T016",
+        "T025",
+        "T026"
+      ]
+    },
+    "FR-010": {
+      "title": "LLM via LLMClient chat; judgments via OpenRouter System One typesafe/jev-1.13 and OPENROUTER_API_KEY",
+      "tasks": [
+        "T008",
+        "T010",
+        "T025"
+      ],
+      "tests": [
+        "core/engine/ze-core/tests/openrouter/test_system_one.py::test_ok_maps_noul_choice_score",
+        "core/contracts/ze-agents/tests/test_system_one.py::test_protocol_is_not_llm_client"
+      ]
+    }
+  },
+  "size": "normal",
+  "classification": {
+    "projectedFiles": 12,
+    "projectedTasks": 14,
+    "scopeSignal": "none",
+    "verdict": "normal"
+  },
+  "intent": "Add a fail-open typed-judgment client beside NLIClient so later phases can ask closed questions without changing turn behavior yet.",
+  "expectations": [
+    "Do not change speech-act admission",
+    "Do not change routing",
+    "Do not add agent tools that dump session state",
+    "Do not tunnel judgments through OpenRouter"
+  ],
+  "context": [
+    "living spec: specs/arch/system-one-models.md",
+    "area: ze_agents NLIClient / ze_core LocalNLIClient / MessageTrace",
+    "constraint: Principle VII LLM gateway; sibling Protocol not LLMClient"
+  ],
+  "last_action": "162 implement complete — T001-T026 journaled; after_implement + mark-complete next",
+  "approach": "Sibling SystemOneClient posts to OpenRouter POST /api/v1/systemone with typesafe/jev-1.13 and OPENROUTER_API_KEY. Fail-open evaluate; MessageTrace.judgments; default disabled so admission and routing stay unchanged.",
+  "decisions": [
+    {
+      "decision": "OpenRouter native System One for Jev",
+      "why": "Same billing key as chat; OpenRouter implements TypeSafe request shape; user pinned typesafe/jev-1.13",
+      "rejected": "TYPESAFE_API_KEY + typesafe-sdk, or chat-completions tunnel, or Decisions alpha"
+    },
+    {
+      "decision": "SystemOneClient sibling of NLIClient not LLMClient",
+      "why": "080 pattern; judgments are not generated text",
+      "rejected": "Methods on LLMClient.complete or a mega-protocol"
+    },
+    {
+      "decision": "httpx POST /systemone until openrouter SDK exposes system_one.create",
+      "why": "Pinned openrouter==0.9.1 has no system_one",
+      "rejected": "Blocking 162 on an SDK bump; adding typesafe-sdk"
+    },
+    {
+      "decision": "Fail-open inside evaluate; disabled client when flag off",
+      "why": "Callers cannot forget a helper; 162 must not become an outage class",
+      "rejected": "Raising RateLimitError into the graph"
+    },
+    {
+      "decision": "MessageTrace.judgments JSONB field, no new table or graph node",
+      "why": "Explainability already lives on the message; 162 production lists stay empty",
+      "rejected": "judgment_log table"
+    },
+    {
+      "decision": "codegen.ts invokes workspace @hey-api/openapi-ts instead of bunx openapi-ts@latest",
+      "why": "bunx openapi-ts resolved the wrong npm package and failed missing commander",
+      "rejected": "hand-edit generated ws.ts/types.gen.ts"
+    },
+    {
+      "decision": "httpx POST {base_url}/systemone with OPENROUTER_API_KEY",
+      "why": "openrouter==0.9.1 has no system_one.create; constitution VII forbids TYPESAFE_API_KEY",
+      "rejected": "typesafe-sdk and chat-completions JSON tunnel"
+    }
+  ],
+  "step_summaries": {
+    "plan": {
+      "summary": "162 plans OpenRouter Jev client (typesafe/jev-1.13) with fail-open Protocol, DI, and empty judgments trace.",
+      "key_finding": "OpenRouter POST /api/v1/systemone is the TypeSafe-compatible path; FR-010 hard-cut off a second vendor key."
+    },
+    "tasks": {
+      "summary": "26 tasks in 6 phases: Setup, Foundational types, US1 typed evaluate, US2 fail-open DI, US3 trace/UI, Polish."
+    },
+    "implement": {
+      "summary": "SystemOneClient Protocol + OpenRouter /systemone impl, default-off DI, MessageTrace.judgments through REST/WS/trace panel; 163/164 not started"
+    }
+  },
+  "currentTask": "T026",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "Pinned httpx==0.28.1 on ze-core for System One POST.",
+      "files": [
+        "core/engine/ze-core/pyproject.toml"
+      ]
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Added default-off system_one YAML block with typesafe/jev-1.13.",
+      "files": [
+        "apps/ze-api/config/config.yaml"
+      ]
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "Added Protocol/dataclass unit tests for noul/choice/score and skip vs ok.",
+      "files": [
+        "core/contracts/ze-agents/tests/test_system_one.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Added MessageTrace.judgments default and consumed asdict tests.",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_trace_judgments.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Added SystemOneClient Protocol and noul/choice/score dataclasses.",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/system_one.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "Added JudgmentTrace and MessageTrace.judgments default empty list.",
+      "files": [
+        "core/engine/ze-core/ze_core/conversation/messages/types.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "Reset AgentState.judgments to [] on each turn input.",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/state.py",
+        "core/engine/ze-core/ze_core/conversation/turn.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "Fail-first mocked HTTP 200 maps noul/choice/score, reported model, input_tokens; POST /systemone not /chat/completions",
+      "files": [
+        "core/engine/ze-core/tests/openrouter/test_system_one.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "Assert ze_sdk.SystemOneClient is ze_agents.system_one.SystemOneClient",
+      "files": [
+        "packages/ze-sdk/tests/test_imports.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "OpenRouterSystemOneClient POSTs /systemone with typesafe/jev-1.13, Bearer OPENROUTER_API_KEY, CostTracker.record on ok",
+      "files": [
+        "core/engine/ze-core/ze_core/openrouter/system_one.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "Re-export SystemOneClient next to NLIClient from ze_sdk",
+      "files": [
+        "packages/ze-sdk/ze_sdk/__init__.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "Fail-first skip reasons: disabled, missing_key, timeout, overload 429/529, error, invalid_request — no exception",
+      "files": [
+        "core/engine/ze-core/tests/openrouter/test_system_one.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "DisabledSystemOneClient plus fail-open evaluate; empty payload never POSTs",
+      "files": [
+        "core/engine/ze-core/ze_core/openrouter/system_one.py"
+      ]
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "build_engine_stack constructs live/disabled client from YAML + openrouter_api_key; dep_map[SystemOneClient]",
+      "files": [
+        "core/engine/ze-core/ze_core/bootstrap.py"
+      ]
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "ZeContainer holds system_one_client and sets configurable[system_one_client]",
+      "files": [
+        "apps/ze-api/ze_api/container.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "Default-off injects disabled client; enabled+blank key skips without crash; empty judgments when evaluate unused",
+      "files": [
+        "core/engine/ze-core/tests/openrouter/test_system_one.py",
+        "core/engine/ze-core/tests/orchestration/nodes/test_trace_judgments.py"
+      ]
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "Fail-first: record_trace copies state judgments including skip rows with null answer",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/nodes/test_trace_judgments.py"
+      ]
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "Fail-first: judgments on MessageTraceResponse and WsTraceUpdateFrame default []",
+      "files": [
+        "apps/ze-api/tests/api/test_judgments_trace_schema.py"
+      ]
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "record_trace copies state judgments onto MessageTrace; _parse_trace reconstructs JudgmentTrace",
+      "files": [
+        "core/engine/ze-core/ze_core/orchestration/nodes/trace.py",
+        "core/engine/ze-core/ze_core/conversation/messages/store.py"
+      ]
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "JudgmentTraceResponse plus judgments=[] on REST and WS; _judgments_to_response mapper",
+      "files": [
+        "apps/ze-api/ze_api/api/schemas.py",
+        "apps/ze-api/ze_api/api/messages.py"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "make codegen regenerated @ze/client REST and WS types with judgments; codegen.ts uses workspace @hey-api/openapi-ts",
+      "files": [
+        "packages/ze-client/src/generated/",
+        "scripts/codegen.ts"
+      ]
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "JudgmentsSection hides when empty; consumed vs skip; wired TraceEntry, EMPTY_TRACE, toTraceFrame",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/JudgmentsSection.tsx",
+        "apps/ze-web/src/widgets/trace-panel/ui/JudgmentsSection.test.tsx",
+        "apps/ze-web/src/widgets/trace-panel/ui/TraceEntry.tsx",
+        "apps/ze-web/src/widgets/trace-panel/ui/TraceContent.tsx",
+        "apps/ze-web/src/features/trace-state/lib/toTraceFrame.ts"
+      ]
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "Document SystemOneClient Protocol beside NLIClient in ze-agents core spec",
+      "files": [
+        "specs/core/ze-agents.md"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "Document OpenRouter System One HTTP impl, default-off, fail-open in ze-core spec",
+      "files": [
+        "specs/core/ze-core.md"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "Grep: no TYPESAFE_API_KEY or typesafe-sdk in runtime; evaluate not on LLMClient; extractor/router/skills/memory/push/dream untouched",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/client.py"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Validation: test-agents 40, test-sdk 7, test-core 752, test-web pass, ze-api 270 excluding pre-existing bootstrap; 162 files ruff-clean",
+      "files": [
+        "specs/phases/162-system-one-client/tasks.md"
+      ]
+    }
+  },
+  "verified": [
+    {
+      "what": "agents/sdk/core tests",
+      "command": "make test-agents && make test-sdk && make test-core",
+      "result": "40+7+752 passed, 45 skipped slow, no live vendor",
+      "warnings": []
+    },
+    {
+      "what": "web vitest",
+      "command": "make test-web",
+      "result": "pass including JudgmentsSection hide/consumed/skip",
+      "warnings": []
+    },
+    {
+      "what": "ze-api tests",
+      "command": "make test",
+      "result": "270 passed excluding test_bootstrap_registers_companion_and_research",
+      "warnings": [
+        "pre-existing bootstrap test missing companion.tools/PostgresMemoryStore/LoopStore — not caused by 162"
+      ]
+    },
+    {
+      "what": "ruff on 162 files",
+      "command": "uv run ruff check <162 python files>",
+      "result": "All checks passed",
+      "warnings": [
+        "make lint is pre-existing dirty outside 162"
+      ]
+    }
+  ],
+  "concerns": [
+    {
+      "note": "make test still fails on pre-existing test_bootstrap_registers_companion_and_research (ALL_AGENT_MODULE_PATHS missing companion.tools plus LoopStore/PostgresMemoryStore). make lint is dirty outside 162. Left both untouched.",
+      "step": "implement"
+    }
+  ]
+}

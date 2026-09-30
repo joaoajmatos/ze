@@ -108,6 +108,19 @@ export type Agent1 = string;
 export type Status = string;
 export type RequestId = string | null;
 export type ConductorLedger = ConductorLedgerEntryResponse[];
+export type QuestionId = string;
+export type Kind = string;
+export type LatencyMs = number;
+export type Answer = string | number | null;
+export type Probabilities = {
+  [k: string]: number;
+} | null;
+export type Peakedness = number | null;
+export type Model = string | null;
+export type InputTokens = number | null;
+export type Consumed = boolean;
+export type SkipReason = string | null;
+export type Judgments = JudgmentTraceResponse[];
 export type Type10 = "notification";
 export type Id4 = string;
 export type EventType = string;
@@ -301,6 +314,7 @@ export interface WsTraceUpdateFrame {
   procedure?: ProcedureUsageTraceResponse | null;
   conductor_hint?: ConductorHint;
   conductor_ledger?: ConductorLedger;
+  judgments?: Judgments;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -362,6 +376,22 @@ export interface ConductorLedgerEntryResponse {
   agent: Agent1;
   status: Status;
   request_id?: RequestId;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "JudgmentTraceResponse".
+ */
+export interface JudgmentTraceResponse {
+  question_id: QuestionId;
+  kind: Kind;
+  latency_ms: LatencyMs;
+  answer?: Answer;
+  probabilities?: Probabilities;
+  peakedness?: Peakedness;
+  model?: Model;
+  input_tokens?: InputTokens;
+  consumed?: Consumed;
+  skip_reason?: SkipReason;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

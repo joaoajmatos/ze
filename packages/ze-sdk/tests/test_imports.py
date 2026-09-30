@@ -17,6 +17,14 @@ def test_public_api_imports() -> None:
     assert ProactiveScheduler is not None
 
 
+def test_system_one_client_reexport():
+    from ze_agents.system_one import SystemOneClient as AgentsSystemOneClient
+    from ze_sdk import SystemOneClient
+
+    assert SystemOneClient is AgentsSystemOneClient
+    assert SystemOneClient.__module__ == "ze_agents.system_one"
+
+
 def test_correlation_reexports_are_the_real_classes() -> None:
     import ze_correlation.store
     import ze_correlation.types

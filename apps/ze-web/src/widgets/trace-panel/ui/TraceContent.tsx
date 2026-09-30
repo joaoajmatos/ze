@@ -25,6 +25,7 @@ const EMPTY_TRACE: Omit<WsTraceUpdateFrame, "type" | "message_id"> = {
   skills_used: [],
   conductor_hint: null,
   conductor_ledger: [],
+  judgments: [],
 };
 
 interface TraceContentProps {

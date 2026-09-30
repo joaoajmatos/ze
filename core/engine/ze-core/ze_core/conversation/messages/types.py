@@ -68,6 +68,20 @@ class ProcedureUsageTrace:
 
 
 @dataclass
+class JudgmentTrace:
+    question_id: str
+    kind: str  # "noul" | "choice" | "score"
+    latency_ms: int
+    answer: str | float | None = None
+    probabilities: dict[str, float] | None = None
+    peakedness: float | None = None
+    model: str | None = None
+    input_tokens: int | None = None
+    consumed: bool = False
+    skip_reason: str | None = None
+
+
+@dataclass
 class MessageTrace:
     agent: str
     routing_method: str  # "embedding" | "haiku" | "fallback"
@@ -85,3 +99,4 @@ class MessageTrace:
     procedure: ProcedureUsageTrace | None = None
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
+    judgments: list[JudgmentTrace] = field(default_factory=list)

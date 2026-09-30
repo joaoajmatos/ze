@@ -8,6 +8,7 @@ import aiohttp
 from sentence_transformers import SentenceTransformer
 
 from ze_agents.nli import NLIClient
+from ze_agents.system_one import SystemOneClient
 from ze_agents.bootstrap import bootstrap_agents
 from ze_agents.interface.types import RawInput
 from ze_agents.interface.validation import validate_interface
@@ -257,6 +258,7 @@ class ZeContainer(CoreContainer):
     priority_override_store: PriorityOverrideStore = None
     collision_store: Any = None
     nli_client: Any = None
+    system_one_client: Any = None
     budget_checker: SpendBudgetChecker | None = None
     procedure_admission: Any = None
     procedure_discovery: Any = None
@@ -291,6 +293,7 @@ class ZeContainer(CoreContainer):
             "turn_surfacer": self.turn_surfacer,
             "collision_store": self.collision_store,
             "nli_client": self.nli_client,
+            "system_one_client": self.system_one_client,
             "skill_matcher": self.skill_matcher,
             "budget_checker": self.budget_checker,
             "workspace_client": self.workspace_client,
@@ -521,6 +524,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             SentenceTransformer: shared.embedder,
             NLIClient: shared.nli_client,
             LocalNLIClient: shared.nli_client,
+            SystemOneClient: shared.system_one_client,
             BrowserClient: browser_client,
             WorkspaceClient: workspace.client,
             WorkspaceGate: workspace.gate,
@@ -763,6 +767,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         priority_override_store=priority_override_store,
         collision_store=collision_store,
         nli_client=shared.nli_client,
+        system_one_client=shared.system_one_client,
         procedure_admission=procedure_admission,
         procedure_discovery=procedure_discovery,
         procedure_activator=procedure_activator,

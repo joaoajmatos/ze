@@ -40,7 +40,7 @@ writeFileSync(tmpSchema, openapiJson);
 console.log("Generating REST SDK (@hey-api/openapi-ts)...");
 
 execSync(
-  `cd ${root} && bunx openapi-ts -i ${tmpSchema} -o packages/ze-client/src/generated --client @hey-api/client-fetch --silent`,
+  `cd ${root} && bun x --bun @hey-api/openapi-ts -i ${tmpSchema} -o packages/ze-client/src/generated --client @hey-api/client-fetch --silent`,
   { stdio: "inherit" },
 );
 

@@ -59,6 +59,7 @@ core/contracts/ze-agents/ze_agents/
   progress/           ← ProgressReporter, locale translations
   channels/           ← channel tool helpers
   nli.py              ← NLIClient Protocol
+  system_one.py       ← SystemOneClient Protocol (typed noul/choice/score judgments)
   types.py            ← AgentContext, AgentResult, ToolCall, shared types
 ```
 
@@ -87,7 +88,14 @@ async def do_something(arg: str) -> str: ...
 class LLMClient(Protocol):
     async def complete(self, messages, *, model, system, tools) -> str: ...
     async def stream_complete_with_tools(self, ...) -> AsyncIterator[str | ToolCall]: ...
+
+# System One Protocol (sibling of NLIClient — not methods on LLMClient)
+class SystemOneClient(Protocol):
+    async def evaluate(self, state, questions) -> SystemOneResult: ...
 ```
+
+Plugins import `SystemOneClient` from `ze_sdk`. The engine injects a live or disabled
+implementation; `evaluate` is fail-open and never raises into the graph.
 
 ---
 

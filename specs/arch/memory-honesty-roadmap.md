@@ -46,7 +46,7 @@ Do not start 148 (extractor dual-write) in the 147 tree.
 
 ### 148 — Extractor dual-write, then hard speech-act classifier — M then L — races shipped
 
-Same-turn `remember_fact` `ok` true skips extract persist for that predicate+value identity. LLM `speech_act` remains. Hard classifier is still later L.
+Same-turn `remember_fact` `ok` true skips extract persist for that predicate+value identity. LLM `speech_act` remains. Hard classifier is Phase [163](../phases/163-speech-act-system-one/spec.md) (System One), sequenced in [`system-one-models.md`](system-one-models.md) — not in this tree.
 
 Spec: [`specs/phases/148-extractor-dual-write/`](../phases/148-extractor-dual-write/spec.md).
 

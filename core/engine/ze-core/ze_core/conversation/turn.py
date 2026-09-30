@@ -60,6 +60,7 @@ def make_graph_input(
         "routing_hints": None,
         "correlations": [],
         "message_trace": None,
+        "judgments": [],
         "skill_matches": None,
     }
 
