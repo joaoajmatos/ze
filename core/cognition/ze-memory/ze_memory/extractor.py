@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from ze_logging import get_logger
 
+from ze_memory.speech_act_gate import judge_admission, thresholds_from_settings
 from ze_memory.defaults import MODEL_SYNTHESIS
 from ze_memory.types import Event, Fact, SpeechAct
 
@@ -445,6 +446,45 @@ async def gather_entity_proposals(
     return await extract_entities(client, prompt=prompt, response=response, model=model)
 
 
+_WORDING_SYSTEM = """You word ONE durable fact about the USER.
+
+The admission gate already decided this message states a durable self-fact in
+the family given below. Restate only what the user said, in third person, short.
+Do not infer. If nothing durable is stated, return an empty list.
+
+Respond with JSON only — no markdown:
+{"facts": [{"value": "what was revealed", "confidence": 0.0-1.0}]}
+"""
+
+
+async def _word_admitted_facts(
+    client: Any, *, prompt: str, response: str, model: str, family: str
+) -> list[Fact]:
+    try:
+        raw = await client.complete(
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"Family: {family}\n\nUser said: {prompt}\n\n"
+                        f"Assistant replied: {response[:1000]}"
+                    ),
+                }
+            ],
+            model=model,
+            system=_WORDING_SYSTEM,
+            max_tokens=200,
+        )
+        parsed = json.loads(_strip_json_fence(raw))
+    except Exception as exc:
+        log.warning("memory_fact_wording_failed", error=str(exc))
+        return []
+    items = parsed.get("facts") if isinstance(parsed, dict) else None
+    return raw_to_facts(
+        _admit_parsed({"speech_act": "fact", "family": family, "facts": items})
+    )
+
+
 async def gather_fact_proposals(
     configurable: dict,
     *,
@@ -452,7 +492,11 @@ async def gather_fact_proposals(
     prompt: str,
     response: str,
 ) -> list[Fact]:
-    """LLM-extract durable facts from the turn. Explicit remember writes are tools."""
+    """Admit durable facts from the turn. Explicit remember writes are tools.
+
+    System One gates admission when its speech_act surface is on; the LLM only
+    words an admitted fact. A System One skip runs the pre-163 LLM judge once.
+    """
     client = configurable.get("openrouter_client")
     if client is None:
         return []
@@ -464,6 +508,38 @@ async def gather_fact_proposals(
         else settings
     )
     model = fact_extraction_model(settings_dict)
+
+    if response.startswith("[ERROR]") or is_trivial_turn(prompt):
+        return []
+
+    system_one = configurable.get("system_one_client")
+    thresholds = thresholds_from_settings(settings_dict)
+    if system_one is not None and thresholds is not None:
+        decision = await judge_admission(
+            system_one,
+            prompt=prompt,
+            response=response,
+            thresholds=thresholds,
+            admit_speech_act=admit_speech_act,
+            admit_family=admit_family,
+        )
+        sink = configurable.get("admission_judgments")
+        if isinstance(sink, list):
+            sink.extend(decision.judgments or [])
+        if decision.outcome == "hold":
+            return []
+        if decision.outcome == "admit":
+            admitted = await _word_admitted_facts(
+                client,
+                prompt=prompt,
+                response=response,
+                model=model,
+                family=decision.family or "",
+            )
+            for fact in admitted:
+                fact.agent = agent
+            return admitted
+
     extracted = await extract_facts(
         client,
         prompt=prompt,

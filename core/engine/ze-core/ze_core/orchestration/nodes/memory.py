@@ -9,6 +9,7 @@ from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
+from ze_core.conversation.messages.types import JudgmentTrace
 from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
@@ -41,6 +42,13 @@ def _format_transcript(messages: list[dict]) -> str:
     return "\n".join(
         f"{m.get('role', 'user')}: {m.get('content', '')}" for m in messages
     )
+
+
+def _attach_admission_judgments(state: AgentState, rows: list[dict]) -> None:
+    trace = state.get("message_trace")
+    if not rows or trace is None:
+        return
+    trace.judgments.extend(JudgmentTrace(**row) for row in rows)
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
@@ -88,12 +96,14 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         )
         fact_extractor = config["configurable"].get("fact_extractor")
         if fact_extractor is not None:
+            admission_sink: list[dict] = []
             proposals = await fact_extractor(
-                config["configurable"],
+                {**config["configurable"], "admission_judgments": admission_sink},
                 agent=result.agent,
                 prompt=ctx.prompt,
                 response=result.response,
             )
+            _attach_admission_judgments(state, admission_sink)
         remembered = identities_from_remember_calls(result.tool_calls or [])
         if remembered:
             proposals = [

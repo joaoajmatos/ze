@@ -18,7 +18,15 @@ system_one:
   enabled: false
   model: typesafe/jev-1.13
   timeout_ms: 2000
-  surfaces: {}
+  # speech_act (phase 163): System One gates fact admission; the LLM only words an
+  # admitted fact. All three bars are UNCALIBRATED — measure on Ze fixtures (incl.
+  # Portuguese) before enabling. Missing bars keep the surface off (pre-163 judge).
+  surfaces:
+    speech_act:
+      enabled: false
+      # act_min_peakedness: null     # Choice peakedness floor for speech_act
+      # family_min_peakedness: null  # Choice peakedness floor for family
+      # biography_min: null          # Noul floor for "durable biography"
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.

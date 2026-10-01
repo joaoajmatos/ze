@@ -203,7 +203,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 160 | [E5 Routing Confidence](phases/160-e5-routing-confidence/spec.md) | ✅ Implemented |
 | 161 | [Workspace Chat-First](phases/161-workspace-chat-first/spec.md) | ✅ Implemented |
 | 162 | [System One Client](phases/162-system-one-client/spec.md) | ✅ Implemented |
-| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
+| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | ✅ Implemented (surface off until bars calibrated) |
 | 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
 
 ## Ze Core specs (`core/`)
