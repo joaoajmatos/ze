@@ -88,7 +88,7 @@ The closed-set answer is spread across several labels, or the yes-probability th
 ### Functional Requirements
 
 - **FR-001**: Post-turn admission MUST obtain `speech_act` as a Choice over exactly `fact`, `forget`, `reminder`, `loop`, `goal`, `ingest`, `drop`, `clarify`.
-- **FR-002**: When the act may be `fact`, admission MUST also obtain a family Choice over the existing keep families plus `drop`, and a separate biography yes-probability. The yes-probability threshold MUST NOT be copied from Choice peakedness.
+- **FR-002**: Admission MUST also obtain, in the same batched request, a family Choice over the existing keep families plus `drop`, and a separate biography yes-probability. Their values are only consulted when the act is `fact`. The yes-probability threshold MUST NOT be copied from Choice peakedness.
 - **FR-003**: Existing `admit_speech_act` and `admit_family` MUST remain the only persist filters for labels. Unknown → drop.
 - **FR-004**: Facts MUST persist only when act is `fact`, family is a keep family, and the biography yes-probability clears a hold bar measured on Ze fixtures. Otherwise `facts` is empty.
 - **FR-005**: State MUST be `{user text, assistant text}` (assistant already length-capped). MUST NOT send the full session or memory tables.

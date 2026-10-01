@@ -28,7 +28,7 @@ To enable, set `system_one.enabled: true`, `speech_act.enabled: true`, and **all
       biography_min: <measured>
 ```
 
-Do not copy cookbook numbers. Measure on Ze fixtures first, including Portuguese (T015).
+Do not copy cookbook numbers. Measure on Ze fixtures first, including Portuguese (T014).
 
 ## Unit checks (no live vendor)
 

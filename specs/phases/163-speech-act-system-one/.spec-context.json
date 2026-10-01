@@ -153,14 +153,6 @@
       "kind": "complete",
       "by": "ai",
       "task": "T010",
-      "at": "2026-10-01T18:14:13.000Z"
-    },
-    {
-      "step": "implement",
-      "substep": null,
-      "kind": "complete",
-      "by": "ai",
-      "task": "T011",
       "at": "2026-10-01T18:14:16.000Z"
     },
     {
@@ -168,7 +160,7 @@
       "substep": null,
       "kind": "complete",
       "by": "ai",
-      "task": "T012",
+      "task": "T011",
       "at": "2026-10-01T18:14:19.000Z"
     },
     {
@@ -176,7 +168,7 @@
       "substep": null,
       "kind": "complete",
       "by": "ai",
-      "task": "T013",
+      "task": "T012",
       "at": "2026-10-01T18:14:22.000Z"
     },
     {
@@ -184,7 +176,7 @@
       "substep": null,
       "kind": "complete",
       "by": "ai",
-      "task": "T014",
+      "task": "T013",
       "at": "2026-10-01T18:14:25.000Z"
     },
     {
@@ -203,22 +195,27 @@
         "T003",
         "T004",
         "T005",
-        "T006"
+        "T006",
+        "T007"
       ],
       "tests": [
         "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_forget_vs_reminder_gold_direction",
-        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_timed_reminder_persists_no_fact"
+        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_timed_reminder_persists_no_fact",
+        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_every_non_fact_act_persists_nothing",
+        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_question_option_sets_are_the_closed_sets_in_stable_order"
       ]
     },
     "FR-002": {
       "title": "When act may be fact, also obtain family Choice and a separate biography yes-probability",
       "tasks": [
         "T003",
-        "T004"
+        "T004",
+        "T007"
       ],
       "tests": [
         "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_durable_preference_is_admitted_and_worded_by_llm",
-        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_trace_marks_only_consumed_judgments"
+        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_trace_marks_only_consumed_judgments",
+        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_question_option_sets_are_the_closed_sets_in_stable_order"
       ]
     },
     "FR-003": {
@@ -247,7 +244,11 @@
     "FR-005": {
       "title": "State is user plus length-capped assistant text only",
       "tasks": [
-        "T003"
+        "T003",
+        "T007"
+      ],
+      "tests": [
+        "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_state_is_user_and_capped_assistant_only"
       ]
     },
     "FR-006": {
@@ -266,7 +267,7 @@
       "tasks": [
         "T005",
         "T007",
-        "T013"
+        "T012"
       ],
       "tests": [
         "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_trivial_turn_does_not_call_system_one",
@@ -276,8 +277,8 @@
     "FR-008": {
       "title": "Must not change routing, skill match, or companion tool names",
       "tasks": [
-        "T013",
-        "T014"
+        "T012",
+        "T013"
       ]
     },
     "FR-009": {
@@ -285,7 +286,7 @@
       "tasks": [
         "T002",
         "T004",
-        "T014"
+        "T013"
       ]
     },
     "FR-010": {
@@ -293,7 +294,7 @@
       "tasks": [
         "T001",
         "T002",
-        "T015"
+        "T014"
       ],
       "tests": [
         "core/cognition/ze-memory/tests/test_speech_act_system_one.py::test_thresholds_require_explicit_numbers"
@@ -303,7 +304,7 @@
   "size": "normal",
   "classification": {
     "projectedFiles": 8,
-    "projectedTasks": 15,
+    "projectedTasks": 14,
     "scopeSignal": "none",
     "verdict": "normal"
   },
@@ -318,7 +319,7 @@
     "area: ze_memory/extractor.py speech_act",
     "constraint: 142 routing table; 148 dual-write skip"
   ],
-  "last_action": "163 implement complete \u2014 T001-T014 journaled; T015 (bar calibration) deliberately open",
+  "last_action": "163 implement complete \u2014 T001-T013 journaled; T014 (bar calibration) deliberately open",
   "approach": "Batched System One Choice (speech_act, family) + Noul (biography) decide admit/hold in ze_memory/speech_act_gate.py; hold = no fact and no LLM call; admit = narrow LLM wording call; System One skip or surface off = pre-163 judge once. Bars are required config; surface ships off.",
   "decisions": [
     {
@@ -358,13 +359,13 @@
       "key_finding": "System One cannot produce fact text, so the cascade is judge-then-word; holds make zero LLM calls."
     },
     "tasks": {
-      "summary": "15 tasks in 6 phases: Setup, Foundational, US1 reminder-not-fact, US2 cancel-vs-forget, US3 unsure/skip/trace, Polish (+ T015 calibration follow-up)."
+      "summary": "14 tasks in 6 phases: Setup, Foundational, US1 reminder-not-fact, US2 cancel-vs-forget, US3 unsure/skip/trace, Polish (T014 calibration is an out-of-phase follow-up)."
     },
     "implement": {
-      "summary": "speech_act_gate.py + gated gather_fact_proposals + trace attach in write_memory; surface off by default; 12 gate tests + 1 engine test."
+      "summary": "speech_act_gate.py + gated gather_fact_proposals + trace attach in write_memory; surface off by default; 21 gate tests + 1 engine test."
     }
   },
-  "currentTask": "T014",
+  "currentTask": "T013",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -410,7 +411,7 @@
     },
     "T007": {
       "status": "DONE",
-      "did": "Fail-first low peakedness, even Noul, skip fallback once, surface off, trivial turn.",
+      "did": "Fail-first low peakedness, even Noul, skip fallback once, surface off, trivial turn, consumed flags, state shape, option sets, every non-fact act.",
       "files": [
         "core/cognition/ze-memory/tests/test_speech_act_system_one.py"
       ]
@@ -432,13 +433,6 @@
     },
     "T010": {
       "status": "DONE",
-      "did": "consumed-flag tests for fact and non-fact paths.",
-      "files": [
-        "core/cognition/ze-memory/tests/test_speech_act_system_one.py"
-      ]
-    },
-    "T011": {
-      "status": "DONE",
       "did": "Spec status, phase index row, CLAUDE.md phase table.",
       "files": [
         "specs/phases/163-speech-act-system-one/spec.md",
@@ -446,23 +440,23 @@
         "CLAUDE.md"
       ]
     },
-    "T012": {
+    "T011": {
       "status": "DONE",
       "did": "Arch note O1 row updated.",
       "files": [
         "specs/arch/system-one-models.md"
       ]
     },
-    "T013": {
+    "T012": {
       "status": "DONE",
       "did": "Grep: routing, skills, companion tools, admit_*, contribution seam untouched.",
       "files": [
         "core/cognition/ze-memory/ze_memory/extractor.py"
       ]
     },
-    "T014": {
+    "T013": {
       "status": "DONE",
-      "did": "Validation: test-memory 409, test-core 753 passed; ruff clean on touched files.",
+      "did": "Validation: test-memory 418, test-core 753 passed; ruff clean on touched files; live eval scenarios not run (need server).",
       "files": [
         "specs/phases/163-speech-act-system-one/tasks.md"
       ]
@@ -472,7 +466,7 @@
     {
       "what": "memory tests",
       "command": "make test-memory",
-      "result": "409 passed",
+      "result": "418 passed",
       "warnings": []
     },
     {

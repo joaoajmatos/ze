@@ -45,5 +45,5 @@
 
 ## Open (not this phase)
 
-- Calibrating the three bars on Ze fixtures including Portuguese (T009).
+- Calibrating the three bars on Ze fixtures including Portuguese (T014).
 - Measuring disagreement between post-turn act and in-turn companion tools (arch open question).
