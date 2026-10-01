@@ -75,7 +75,7 @@ Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selec
 | # | Opportunity | Current | Shape | Cascade | vs E5/NLI | Effort | Phase |
 |---|---|---|---|---|---|---|---|
 | O0 | Client, DI, trace, fail-open | Nothing | Protocol sibling of `NLIClient` | — | New layer | S–M | **162** |
-| O1 | Speech-act + keep/drop | Haiku JSON every turn | Choice `{fact,forget,reminder,loop,goal,ingest,drop,clarify}` + family Choice + Noul biography | 4 + 1 (wording) | **Replace LLM judge**; keep `admit_*` | M | **163** |
+| O1 | Speech-act + keep/drop | Haiku JSON every turn | Choice `{fact,forget,reminder,loop,goal,ingest,drop,clarify}` + family Choice + Noul biography | 4 + 1 (wording) | **Replace LLM judge** (LLM now only words admitted facts); keep `admit_*` | M | **163** (Implemented; surface off until bars calibrated) |
 | O2 | Agent after E5 shortlist + complexity | Cosine-as-confidence; regex complexity; Haiku on low gap | Choice shortlist ∪ `none`; Score complexity | 4 + 1 (decompose) | **Complement E5**; keep decompose | M | **164** |
 
 ### Queued (do not start in 162–164)

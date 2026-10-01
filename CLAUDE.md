@@ -551,6 +551,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 159 | Concurrent thread identity (99 remainder: per-thread trace/cancel; 4000 stays) | Implemented |
 | 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
 | 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
+| 163 | Speech-act System One — batched System One Choice (speech act, family) + Noul (biography) gates fact admission in `ze_memory/speech_act_gate.py`; hold = no fact and no LLM call; admit = narrow LLM wording call; skip/surface off = pre-163 judge once; bars are config, uncalibrated, surface ships off; judgments appended to `MessageTrace` by `write_memory` | Implemented |
 
 ## graphify
 

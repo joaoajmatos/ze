@@ -128,3 +128,47 @@ async def test_failed_remember_is_not_a_second_remember_door():
         await write_memory(state, _config(store, extractor))
     facts = [item.fact for item in submit.await_args.args[1]]
     assert [(f.predicate, f.value) for f in facts] == [("preference", "dark mode")]
+
+
+async def test_admission_judgments_land_on_recorded_trace():
+    from ze_core.conversation.messages.types import MessageTrace
+
+    row = {
+        "question_id": "speech_act",
+        "kind": "choice",
+        "latency_ms": 80,
+        "answer": "reminder",
+        "probabilities": None,
+        "peakedness": 0.9,
+        "model": "typesafe/jev-1.13",
+        "input_tokens": 40,
+        "consumed": True,
+        "skip_reason": None,
+    }
+
+    async def extractor(cfg, **_kwargs):
+        cfg["admission_judgments"].append(row)
+        return []
+
+    trace = MessageTrace(
+        agent="companion",
+        routing_method="embedding",
+        confidence=0.8,
+        score_gap=0.1,
+        is_compound=False,
+        subtasks=["companion"],
+    )
+    state = {
+        "session_id": "s1",
+        "agent_context": _ctx("remind me Tuesday"),
+        "agent_result": AgentResult(agent="companion", response="ok"),
+        "subtask_results": [],
+        "messages": [],
+        "input_modality": "text",
+        "message_trace": trace,
+    }
+    store = AsyncMock()
+    store.write_episode = AsyncMock()
+    await write_memory(state, _config(store, extractor))
+    assert [j.answer for j in trace.judgments] == ["reminder"]
+    assert trace.judgments[0].consumed is True

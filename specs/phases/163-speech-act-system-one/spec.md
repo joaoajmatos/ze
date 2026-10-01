@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-30
 
-**Status**: Draft
+**Status**: Implemented (surface ships off; bars await calibration)
 
 **Input**: User description: "Replace the Haiku speech_act + keep/drop judge with System One Choice over the existing closed set, plus family Choice and biography Noul. Keep admit_* filters, trivial-turn regex, dual-write skip, contribution seam. Depends on 162. Do not start routing Choice (164)."
 
