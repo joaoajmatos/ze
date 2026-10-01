@@ -45,6 +45,13 @@ Post-turn fact admission today asks one Haiku call for `{speech_act, family, fac
 ## Project Structure
 
 ```text
+specs/phases/163-speech-act-system-one/
+├── spec.md  plan.md  research.md  data-model.md  quickstart.md  tasks.md
+├── checklists/requirements.md
+└── contracts/  speech-act-gate.md  trace-judgments-admission.md
+```
+
+```text
 core/cognition/ze-memory/ze_memory/speech_act_gate.py   # NEW: questions, thresholds, decide(), judge_admission()
 core/cognition/ze-memory/ze_memory/extractor.py          # gather_fact_proposals gate + wording call
 core/engine/ze-core/ze_core/orchestration/nodes/memory.py # sink + attach to trace

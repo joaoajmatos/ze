@@ -1,6 +1,6 @@
 # Tasks: Speech-Act System One
 
-**Input**: [spec.md](./spec.md), [plan.md](./plan.md). **Tests**: required, fail-first, mocked clients.
+**Input**: [spec.md](./spec.md), [plan.md](./plan.md), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [quickstart.md](./quickstart.md). **Tests**: required, fail-first, mocked clients.
 
 ## Phase 1: Setup
 
