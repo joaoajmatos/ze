@@ -17,22 +17,39 @@ Post-turn fact admission today asks one Haiku call for `{speech_act, family, fac
 
 **Language/Version**: Python 3.11+. No web changes (162 already renders `judgments`).
 
+**Primary Dependencies**: Existing `ze-agents` (`SystemOneClient` Protocol), `ze-memory` (`SpeechAct`, `KEEP_FAMILIES`, `admit_*`), `ze-core` node. No new package, no new third-party dependency.
+
 **Storage**: None. Judgments ride the existing `MessageTrace.judgments` JSONB.
 
 **Testing**: pytest, mocked `SystemOneClient` and `LLMClient`. Zero vendor calls.
+
+**Target Platform**: ze-api process (post-turn `write_memory` node).
+
+**Project Type**: monorepo feature (memory gate + engine node wiring + config).
+
+**Performance Goals**: One batched System One request per non-trivial turn (~100 ms class, 162's 2000 ms timeout). Holds add no LLM call; admits add one short wording call.
+
+**Scale/Scope**: Single-user. One new module, two edited modules, one config block.
 
 **Constraints**: ze-memory already depends on ze-agents, which owns the Protocol — no new package edge. No `ze_core` import. Thresholds are config, never code defaults (FR-010).
 
 ## Constitution Check
 
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*Source: `.specify/memory/constitution.md`.*
+
 | Principle | Assessment |
 |---|---|
-| I. Spec-First | PASS — spec 163 + arch note O1 |
-| III. Layering | PASS — gate in `ze_memory`; trace attach in `ze_core` node; Protocol from `ze_agents` |
-| IV. Typed Python | PASS — frozen dataclass thresholds, dataclass decision, `get_logger` |
-| V. Test Discipline | PASS — fail-first, mocked clients |
-| VII. One LLM Gateway | PASS — wording still `LLMClient`; judgments use 162's OpenRouter System One |
-| VIII. Pre-v1 | PASS — no shim; legacy path is the documented fail-open fallback, not a dual-write |
+| I. Spec-First Development | PASS — phase spec + governing arch note (O1) before implement |
+| II. Single-User Model | PASS — no tenant scoping; one config surface |
+| III. Layered Package Architecture | PASS — gate in `ze_memory` (already depends on `ze_agents`, which owns the Protocol); trace attach in the `ze_core` node; no `ze_core` import from `ze_memory`; no new package edge |
+| IV. Typed, Explicit Python | PASS — frozen dataclass thresholds, dataclass decision, `get_logger`; no Pydantic in the domain module |
+| V. Test Discipline | PASS — fail-first, mocked `SystemOneClient` and `LLMClient`, no real DB, no live vendor |
+| VI. Explicit Persistence | PASS — no migration; reuses `MessageTrace.judgments` JSONB from 162 |
+| VII. One LLM Gateway, Local Embeddings | PASS — wording stays on `LLMClient`; judgments use 162's OpenRouter System One on the same key; E5/NLI untouched |
+| VIII. Pre-v1 Hard Cuts | PASS — no dual-write: a hold never runs the legacy judge, and only a System One skip does (the documented fail-open path), so two judges never write two rows |
+
+**Post-design re-check**: Thresholds are required config (no code defaults), so the surface cannot turn on by accident. The data model has no new table. PASS.
 
 ## Design decisions
 
@@ -44,19 +61,42 @@ Post-turn fact admission today asks one Haiku call for `{speech_act, family, fac
 
 ## Project Structure
 
+### Documentation (this feature)
+
 ```text
 specs/phases/163-speech-act-system-one/
-├── spec.md  plan.md  research.md  data-model.md  quickstart.md  tasks.md
-├── checklists/requirements.md
-└── contracts/  speech-act-gate.md  trace-judgments-admission.md
+├── spec.md
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
+├── tasks.md
+├── checklists/
+│   └── requirements.md
+└── contracts/
+    ├── speech-act-gate.md
+    └── trace-judgments-admission.md
 ```
+
+### Source Code (repository root)
 
 ```text
 core/cognition/ze-memory/ze_memory/speech_act_gate.py   # NEW: questions, thresholds, decide(), judge_admission()
-core/cognition/ze-memory/ze_memory/extractor.py          # gather_fact_proposals gate + wording call
-core/engine/ze-core/ze_core/orchestration/nodes/memory.py # sink + attach to trace
+core/cognition/ze-memory/ze_memory/extractor.py          # gather_fact_proposals gate + _word_admitted_facts
+core/cognition/ze-memory/tests/test_speech_act_system_one.py
+core/engine/ze-core/ze_core/orchestration/nodes/memory.py # per-turn sink + attach to trace
+core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py
 apps/ze-api/config/config.yaml                           # speech_act surface, off
+specs/arch/system-one-models.md
+specs/README.md
+CLAUDE.md
 ```
+
+**Structure Decision**: Reuse 162's client, DI, and trace type unchanged. The gate lives beside the extractor it gates, in its own module (`admission.py` already owns the unrelated `AdmissionGate`).
+
+## Complexity Tracking
+
+> No constitution violations.
 
 ## Risks
 
