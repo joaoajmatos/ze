@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
+import pytest
+
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 from ze_memory.speech_act_gate import (
     AdmissionThresholds,
@@ -191,3 +193,37 @@ def test_thresholds_require_explicit_numbers():
     assert thresholds_from_settings(full) == AdmissionThresholds(0.5, 0.4, 0.7)
     off = {"system_one": {"enabled": False, "surfaces": full["system_one"]["surfaces"]}}
     assert thresholds_from_settings(off) is None
+
+
+async def test_state_is_user_and_capped_assistant_only():
+    cfg, s1, _ = _configurable(_ok("drop", "drop", 0.1))
+    await gather_fact_proposals(
+        cfg, agent="companion", prompt="I prefer aisle seats", response="x" * 5000
+    )
+    state, questions = s1.evaluate.await_args.args
+    assert set(state) == {"user", "assistant"}
+    assert len(state["assistant"]) == 1000
+    assert list(questions) == ["speech_act", "family", "biography"]
+
+
+def test_question_option_sets_are_the_closed_sets_in_stable_order():
+    from ze_memory.extractor import KEEP_FAMILIES
+    from ze_memory.speech_act_gate import build_questions
+    from ze_memory.types import SpeechAct
+
+    questions = build_questions()
+    assert list(questions["speech_act"].criteria) == [a.value for a in SpeechAct]
+    family_options = list(questions["family"].criteria)
+    assert set(family_options) == set(KEEP_FAMILIES) | {"drop"}
+    assert family_options[-1] == "drop"
+    assert questions["biography"].type == "noul"
+    assert "lembra-me" in questions["speech_act"].criteria["reminder"]
+
+
+@pytest.mark.parametrize(
+    "act", ["forget", "reminder", "loop", "goal", "ingest", "drop", "clarify"]
+)
+async def test_every_non_fact_act_persists_nothing(act):
+    cfg, _, llm = _configurable(_ok(act, "preference", 0.99))
+    assert await _run(cfg) == []
+    llm.complete.assert_not_called()

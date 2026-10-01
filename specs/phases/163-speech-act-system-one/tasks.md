@@ -80,7 +80,7 @@
 
 **Wave 1 — independent (different files):**
 
-- [x] **T007** [P] [US3] Fail-first: low act peakedness holds with no Haiku tie-break; biography Noul `0.5` holds despite Choice `fact`; skip → legacy extractor awaited once; surface off → System One never called; trivial turn → System One never called · `core/cognition/ze-memory/tests/test_speech_act_system_one.py`
+- [x] **T007** [P] [US3] Fail-first: low act peakedness holds with no Haiku tie-break; biography Noul `0.5` holds despite Choice `fact`; skip → legacy extractor awaited once; surface off → System One never called; trivial turn → System One never called; `consumed` flags (all three on a fact path, only `speech_act` when the act is not `fact`); state is `{user, assistant[:1000]}` only; option sets equal the closed sets in stable order; every non-fact act persists nothing (SC-001) · `core/cognition/ze-memory/tests/test_speech_act_system_one.py`
 - [x] **T008** [P] [US3] Fail-first: judgments from the gate land on the already-recorded `MessageTrace` (record_trace runs before write_memory) · `core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py`
 
 **⟶ Wait for Wave 1 to finish, then:**
@@ -89,7 +89,6 @@
 
 - [x] **T009** [US3] Per-turn `admission_judgments` sink passed to the extractor; `_attach_admission_judgments` extends `state["message_trace"].judgments`; skip row carries `skip_reason`; only deciding questions are `consumed` · `core/engine/ze-core/ze_core/orchestration/nodes/memory.py`, `core/cognition/ze-memory/ze_memory/speech_act_gate.py`
 
-- [x] **T010** [US3] Fail-first + verify: `consumed` flags (all three on a fact path; only `speech_act` when the act is not `fact`) · `core/cognition/ze-memory/tests/test_speech_act_system_one.py`
 
 **Checkpoint**: US3 independently testable (`make test-memory`, `make test-core`). Existing 148 dual-write tests still pass.
 
@@ -99,27 +98,27 @@
 
 **Wave 1 — independent (different files):**
 
-- [x] **T011** [P] Spec status Implemented; phase index row; `CLAUDE.md` phase table · `specs/phases/163-speech-act-system-one/spec.md`, `specs/README.md`, `CLAUDE.md`
-- [x] **T012** [P] Arch note O1 row notes the LLM only words admitted facts and the surface ships off · `specs/arch/system-one-models.md`
-- [x] **T013** [P] Grep: routing, skill match, companion tool names, `admit_*`, contribution seam untouched (FR-007, FR-008) · repo grep
+- [x] **T010** [P] Spec status Implemented; phase index row; `CLAUDE.md` phase table · `specs/phases/163-speech-act-system-one/spec.md`, `specs/README.md`, `CLAUDE.md`
+- [x] **T011** [P] Arch note O1 row notes the LLM only words admitted facts and the surface ships off · `specs/arch/system-one-models.md`
+- [x] **T012** [P] Grep: routing, skill match, companion tool names, `admit_*`, contribution seam untouched (FR-007, FR-008) · repo grep
 
 **⟶ Wait for Wave 1 to finish, then:**
 
-- [x] **T014** Validate against Success Criteria: `make test-memory`, `make test-core`, ruff on touched files (no live vendor; SC-001–SC-005)
+- [x] **T013** Validate against Success Criteria: `make test-memory`, `make test-core`, ruff on touched files (no live vendor; SC-001–SC-005). The live `eval/scenarios/memory.yaml` `memory_speech_act_*` scenarios are not run here (they need a running server); SC-001 is covered by the mocked-gold per-act test in T007
 
 ---
 
 ## Out of phase (follow-up)
 
-- [ ] **T015** Calibrate `act_min_peakedness`, `family_min_peakedness`, `biography_min` on Ze fixtures including Portuguese, then flip `speech_act.enabled`. FR-010 forbids shipping guessed bars, so this stays open until measured. · `apps/ze-api/config/config.yaml`
+- [ ] **T014** Calibrate `act_min_peakedness`, `family_min_peakedness`, `biography_min` on Ze fixtures including Portuguese, then flip `speech_act.enabled`. FR-010 forbids shipping guessed bars, so this stays open until measured. · `apps/ze-api/config/config.yaml`
 
 ---
 
 ## Dependencies & Execution Order
 
-Setup (T001) → Foundational (T002 then T003) → US1 (T004 then T005) → US2 (T006) → US3 (T007 ∥ T008, then T009, then T010) → Polish (T011 ∥ T012 ∥ T013, then T014). T015 is outside the phase.
+Setup (T001) → Foundational (T002 then T003) → US1 (T004 then T005) → US2 (T006) → US3 (T007 ∥ T008, then T009) → Polish (T010 ∥ T011 ∥ T012, then T013). T014 is outside the phase.
 
-T002, T004, T006, T007, T010 share `test_speech_act_system_one.py` — sequential. T003 and T009 both touch `speech_act_gate.py` — sequential.
+T002, T004, T006, T007 share `test_speech_act_system_one.py` — sequential. T003 and T009 both touch `speech_act_gate.py` — sequential.
 
 ### User story independence
 
@@ -130,7 +129,7 @@ T002, T004, T006, T007, T010 share `test_speech_act_system_one.py` — sequentia
 ### Parallel opportunities
 
 - T007 ∥ T008
-- T011 ∥ T012 ∥ T013
+- T010 ∥ T011 ∥ T012
 
 ### MVP
 
@@ -142,13 +141,13 @@ Phase 1 + 2 + US1 (T001–T005). Stop and validate reminder-vs-fact before the h
 
 | FR | Tasks |
 |---|---|
-| FR-001 | T003, T004, T005, T006 |
-| FR-002 | T003, T004 |
+| FR-001 | T003, T004, T005, T006, T007 |
+| FR-002 | T003, T004, T007 |
 | FR-003 | T003, T006 |
 | FR-004 | T003, T004, T007 |
-| FR-005 | T003 |
+| FR-005 | T003, T007 |
 | FR-006 | T005, T007 |
-| FR-007 | T005, T007, T013 |
-| FR-008 | T013, T014 |
-| FR-009 | T002, T004, T014 |
-| FR-010 | T001, T002, T015 |
+| FR-007 | T005, T007, T012 |
+| FR-008 | T012, T013 |
+| FR-009 | T002, T004, T013 |
+| FR-010 | T001, T002, T014 |
