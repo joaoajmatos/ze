@@ -1,0 +1,56 @@
+{"id": "single-calendar-en", "lang": "en", "prompt": "what's on my calendar tomorrow", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "single-messenger-en", "lang": "en", "prompt": "do I have any new emails from my landlord", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "single-reminders-en", "lang": "en", "prompt": "remind me to call the dentist on Friday at 10am", "gold_agent": "reminders", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-research-en", "lang": "en", "prompt": "what are the main differences between Postgres and MySQL replication", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "single-goals-en", "lang": "en", "prompt": "I want to run a half marathon by March, help me set up a goal for it", "gold_agent": "goals", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "single-workflow-en", "lang": "en", "prompt": "run my weekly report workflow now", "gold_agent": "workflow", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-loops-en", "lang": "en", "prompt": "close the loop about the job-switch worry", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-prospecting-en", "lang": "en", "prompt": "find leads for B2B payroll software among Portuguese startups", "gold_agent": "prospecting", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "single-companion-en", "lang": "en", "prompt": "I'm feeling a bit overwhelmed today, can we just talk for a minute", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "single-ingestion-en", "lang": "en", "prompt": "ingest this PDF into my knowledge base: https://example.com/whitepaper.pdf", "gold_agent": "ingestion", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-calendar-pt", "lang": "pt", "prompt": "o que tenho na agenda amanhã", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "single-messenger-pt", "lang": "pt", "prompt": "tenho emails novos do meu senhorio", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "single-reminders-pt", "lang": "pt", "prompt": "lembra-me de ligar ao dentista na sexta às 10h", "gold_agent": "reminders", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-research-pt", "lang": "pt", "prompt": "quais são as principais diferenças entre a replicação do Postgres e do MySQL", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "single-goals-pt", "lang": "pt", "prompt": "quero correr uma meia maratona até março, ajuda-me a criar um objetivo para isso", "gold_agent": "goals", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "single-workflow-pt", "lang": "pt", "prompt": "executa agora o meu workflow do relatório semanal", "gold_agent": "workflow", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-loops-pt", "lang": "pt", "prompt": "fecha a preocupação sobre a mudança de emprego", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "single-prospecting-pt", "lang": "pt", "prompt": "procura leads de software de salários B2B entre startups portuguesas", "gold_agent": "prospecting", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "single-companion-pt", "lang": "pt", "prompt": "hoje estou um bocado sobrecarregado, podemos só conversar um minuto", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "single-ingestion-pt", "lang": "pt", "prompt": "guarda este PDF na minha base de conhecimento: https://example.com/whitepaper.pdf", "gold_agent": "ingestion", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-calendar-en", "lang": "en", "prompt": "move my 3pm meeting with Ana to Thursday", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-reminders-en", "lang": "en", "prompt": "ping me tomorrow morning to renew the car insurance", "gold_agent": "reminders", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-workflow-en", "lang": "en", "prompt": "schedule the invoice-chasing automation to run every Monday", "gold_agent": "workflow", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-goals-en", "lang": "en", "prompt": "keep track of my progress towards saving 5000 euros this year", "gold_agent": "goals", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "close-loops-en", "lang": "en", "prompt": "I keep worrying about the lease renewal, hold that thought for me", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-research-en", "lang": "en", "prompt": "how do I explain async await to a junior engineer", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "close-messenger-en", "lang": "en", "prompt": "draft a reply to Rui saying I can make the meeting", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-calendar-pt", "lang": "pt", "prompt": "passa a reunião das 15h com a Ana para quinta", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-reminders-pt", "lang": "pt", "prompt": "avisa-me amanhã de manhã para renovar o seguro do carro", "gold_agent": "reminders", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-workflow-pt", "lang": "pt", "prompt": "agenda a automação de cobrança de faturas para correr todas as segundas", "gold_agent": "workflow", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-goals-pt", "lang": "pt", "prompt": "acompanha o meu progresso para poupar 5000 euros este ano", "gold_agent": "goals", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "close-loops-pt", "lang": "pt", "prompt": "ando sempre preocupado com a renovação do contrato, guarda isso por mim", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "close-research-pt", "lang": "pt", "prompt": "como explico async await a um engenheiro júnior", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "close-messenger-pt", "lang": "pt", "prompt": "escreve uma resposta ao Rui a dizer que consigo ir à reunião", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "followup-messenger-en", "lang": "en", "prompt": "reply to the second one and say yes", "history": "[Recent conversation]\nuser: any emails from Rui or Ana?\nassistant: Two new emails: one from Rui about Friday, one from Ana about the budget.", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "followup-messenger-pt", "lang": "pt", "prompt": "responde à segunda e diz que sim", "history": "[Recent conversation]\nuser: tenho emails do Rui ou da Ana?\nassistant: Dois emails novos: um do Rui sobre sexta, outro da Ana sobre o orçamento.", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-1-en", "lang": "en", "prompt": "turn off the lights in the living room", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-2-en", "lang": "en", "prompt": "book me a table for two at a sushi place tonight", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-3-en", "lang": "en", "prompt": "order a large pepperoni pizza", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-4-en", "lang": "en", "prompt": "what is my current bank account balance", "gold_agent": "none", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "none-5-en", "lang": "en", "prompt": "play some jazz on the speaker", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-1-pt", "lang": "pt", "prompt": "apaga as luzes da sala", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-2-pt", "lang": "pt", "prompt": "reserva-me uma mesa para dois num sushi esta noite", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-3-pt", "lang": "pt", "prompt": "pede uma pizza grande de pepperoni", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "none-4-pt", "lang": "pt", "prompt": "qual é o saldo atual da minha conta bancária", "gold_agent": "none", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "none-5-pt", "lang": "pt", "prompt": "põe jazz na coluna", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "mixed-1-en", "lang": "en", "prompt": "check my inbox for Ana's invoice and then add a reminder to pay it on Friday", "gold_agent": "messenger", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-2-en", "lang": "en", "prompt": "look up the best-reviewed cowork spaces in Lisbon and book a visit on my calendar for Tuesday", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-3-en", "lang": "en", "prompt": "see what I have free next week and email Rui three slots", "gold_agent": "calendar", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-4-en", "lang": "en", "prompt": "find out what the latest Postgres release changed, then write it up as a note for my team", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-5-en", "lang": "en", "prompt": "read the thread with the landlord and set a reminder for every deadline mentioned", "gold_agent": "messenger", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-1-pt", "lang": "pt", "prompt": "vê na caixa de entrada a fatura da Ana e depois cria um lembrete para a pagar na sexta", "gold_agent": "messenger", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-2-pt", "lang": "pt", "prompt": "pesquisa os coworks mais bem avaliados em Lisboa e marca uma visita na minha agenda para terça", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-3-pt", "lang": "pt", "prompt": "vê o que tenho livre na próxima semana e envia ao Rui três horários por email", "gold_agent": "calendar", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-4-pt", "lang": "pt", "prompt": "descobre o que mudou na última versão do Postgres e depois escreve uma nota para a minha equipa", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "mixed-5-pt", "lang": "pt", "prompt": "lê a conversa com o senhorio e cria um lembrete para cada prazo mencionado", "gold_agent": "messenger", "gold_multi": true, "gold_complexity": "multi_hop"}
