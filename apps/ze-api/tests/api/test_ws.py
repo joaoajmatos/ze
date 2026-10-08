@@ -465,3 +465,95 @@ async def test_two_gates_on_same_thread_both_tracked_independently():
     assert request_id_a not in pending_configs
     assert pending_configs[request_id_b] == config_b
     assert thread_pending_requests[thread_id] == {request_id_b}
+
+
+# ── terminal frame + tagged errors (117) ──────────────────────────────────────
+
+
+def _turn_container(outcome):
+    container = MagicMock()
+    container.invoke_raw_turn = AsyncMock(return_value=outcome)
+    container.interface = MagicMock()
+    container.interface.send_with_thread = AsyncMock()
+    container.translations = None
+    return container
+
+
+async def test_empty_response_sends_terminal_error_and_frees_slot():
+    from ze_api.api.websocket.endpoint import _run_message_task
+
+    ws = _make_ws()
+    mgr = ConnectionManager()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+    await mgr.connect(ws, store)
+    ws.send_json.reset_mock()
+
+    outcome = MagicMock(interrupted=False, response=None, final_state={}, config={})
+    container = _turn_container(outcome)
+    assert mgr.try_set_busy("t1")
+
+    await _run_message_task(
+        ws,
+        {"type": "message", "text": "hi", "thread_id": "t1"},
+        container,
+        AsyncMock(),
+        mgr,
+        {},
+        {},
+        "t1",
+        confirmation_store=None,
+        session_store=None,
+    )
+
+    frames = [c.args[0] for c in ws.send_json.call_args_list]
+    errors = [f for f in frames if f["type"] == "error"]
+    assert len(errors) == 1
+    assert errors[0]["thread_id"] == "t1"
+    container.interface.send_with_thread.assert_not_called()
+    assert mgr.try_set_busy("t1")
+
+
+async def test_message_without_thread_id_yields_error_frame():
+    from ze_api.api.websocket.turns import handle_message
+
+    ws = _make_ws()
+    mgr = ConnectionManager()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+    await mgr.connect(ws, store)
+    ws.send_json.reset_mock()
+
+    await handle_message(
+        ws, {"type": "message", "text": "hi"}, MagicMock(), AsyncMock(), mgr, None
+    )
+
+    frame = ws.send_json.call_args[0][0]
+    assert frame["type"] == "error"
+
+
+async def test_invoke_failure_error_frame_carries_thread_id():
+    from ze_api.api.websocket.turns import handle_message
+
+    ws = _make_ws()
+    mgr = ConnectionManager()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[])
+    await mgr.connect(ws, store)
+    ws.send_json.reset_mock()
+    container = _turn_container(None)
+    container.invoke_raw_turn.side_effect = RuntimeError("boom")
+
+    await handle_message(
+        ws,
+        {"type": "message", "text": "hi", "thread_id": "t9"},
+        container,
+        AsyncMock(),
+        mgr,
+        None,
+    )
+
+    errors = [
+        c.args[0] for c in ws.send_json.call_args_list if c.args[0]["type"] == "error"
+    ]
+    assert errors and errors[0]["thread_id"] == "t9"

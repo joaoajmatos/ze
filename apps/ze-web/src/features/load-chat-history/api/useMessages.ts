@@ -40,29 +40,31 @@ export function useMessages(threadId: string) {
     });
   }, []);
 
-  const loadHistory = useCallback(async () => {
-    if (loadedThreadRef.current === threadId) return;
+  const loadHistory = useCallback(async (): Promise<Message[] | null> => {
+    if (loadedThreadRef.current === threadId) return null;
     loadedThreadRef.current = threadId;
 
     try {
       const { data: history } = await listMessages({
         query: { thread_id: threadId, limit: 200 },
       });
-      if (!history) return;
+      if (!history) return null;
       setMessages(new Map(history.map((msg) => [String(msg.id), msg])));
 
       const unread = history
         .filter((m) => m.role === "assistant" && !m.read && m.id)
         .map((m) => String(m.id));
       if (unread.length > 0) send({ type: "ack", ids: unread });
+      return history;
     } catch {
       loadedThreadRef.current = null;
+      return null;
     }
   }, [threadId]);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (): Promise<Message[] | null> => {
     loadedThreadRef.current = null;
-    await loadHistory();
+    return loadHistory();
   }, [loadHistory]);
 
   const sorted = useMemo(

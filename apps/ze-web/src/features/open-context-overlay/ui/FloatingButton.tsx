@@ -1,19 +1,21 @@
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useOverlayStore } from "@/features/open-context-overlay";
 import { useWsStore } from "@/shared/api";
 import { cn } from "@/shared/lib";
 
 export function FloatingButton({ screen, entityId }: { screen: string; entityId?: string }) {
   const { openFor, setScreen } = useOverlayStore();
+  const { pathname } = useLocation();
   const isThinking = useWsStore((s) => Object.values(s.thinkingThreads).some(Boolean));
 
-  // Register this page's context so the desktop FAB opens with the right screen label.
+  // Register this page's entity-scoped context. It is bound to this pathname, so it
+  // needs no cleanup: the overlay ignores it on any other route.
   useEffect(() => {
-    setScreen(screen, entityId);
-    return () => setScreen("chat");
-  }, [screen, entityId, setScreen]);
+    setScreen(screen, entityId, pathname);
+  }, [screen, entityId, pathname, setScreen]);
 
   // On desktop the widget provides its own FAB — hide this one to avoid duplicates.
   return (

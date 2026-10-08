@@ -5,6 +5,8 @@ source and, where practical, reproducing the behavior live against a running
 dev backend + seeded data. Findings are recorded as Decision / Rationale /
 Alternatives so implementation doesn't re-derive them from scratch.
 
+> **Superseded 2026-10-08**: the root cause was traced (see spec.md Clarifications and plan.md [BE] block). It includes backend defects (`connection.py` nulls the socket on any send error; `turns.py` sends no terminal frame on an empty response). The "no server-side evidence" statement below no longer holds.
+
 ## Unknown 1 — Root cause of the stuck "Ze is thinking..." state (User Story 1, FR-001/FR-002)
 
 **Decision**: Treat this as a live-delivery reliability problem to be

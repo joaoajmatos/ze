@@ -8,10 +8,13 @@ interface WsStore {
   thinkingThreads: Record<string, boolean>;
   typingTextThreads: Record<string, string | null>;
   attentionThreads: Record<string, boolean>;
+  /** Threads whose turn was in flight when the socket dropped; consumed on reconnect. */
+  interruptedThreads: Record<string, boolean>;
   setConnected: (v: boolean) => void;
   setThreadThinking: (threadId: string, v: boolean) => void;
   setThreadTypingText: (threadId: string, text: string | null) => void;
   setThreadAttention: (threadId: string, v: boolean) => void;
+  clearThreadInterrupted: (threadId: string) => void;
 }
 
 export const useWsStore = create<WsStore>((set) => ({
@@ -19,6 +22,7 @@ export const useWsStore = create<WsStore>((set) => ({
   thinkingThreads: {},
   typingTextThreads: {},
   attentionThreads: {},
+  interruptedThreads: {},
   setConnected: (v) => set({ isConnected: v }),
   setThreadThinking: (threadId, v) =>
     set((s) => ({ thinkingThreads: { ...s.thinkingThreads, [threadId]: v } })),
@@ -26,6 +30,12 @@ export const useWsStore = create<WsStore>((set) => ({
     set((s) => ({ typingTextThreads: { ...s.typingTextThreads, [threadId]: text } })),
   setThreadAttention: (threadId, v) =>
     set((s) => ({ attentionThreads: { ...s.attentionThreads, [threadId]: v } })),
+  clearThreadInterrupted: (threadId) =>
+    set((s) => {
+      const rest = { ...s.interruptedThreads };
+      delete rest[threadId];
+      return { interruptedThreads: rest };
+    }),
 }));
 
 type FrameType = InboundFrame["type"];
@@ -39,6 +49,12 @@ let ws: WebSocket | null = null;
 let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 let retryDelay = 1000;
 let pingInterval: ReturnType<typeof setInterval> | null = null;
+let lastFrameAt = 0;
+
+const PING_INTERVAL_MS = 30_000;
+// A live server answers every ping with a pong, so two silent intervals mean a
+// half-open socket the browser has not noticed yet.
+const SILENCE_LIMIT_MS = PING_INTERVAL_MS * 2;
 
 function buildUrl() {
   const cfg = getConfig();
@@ -56,21 +72,68 @@ function scheduleReconnect() {
   retryDelay = Math.min(retryDelay * 2, 30_000);
 }
 
+function stopPing() {
+  if (pingInterval) clearInterval(pingInterval);
+  pingInterval = null;
+}
+
+function handleClosed(socket: WebSocket) {
+  // A replaced socket (reconnect() opens a new one before the old one closes)
+  // must not tear down its successor.
+  if (ws !== socket) return;
+  ws = null;
+  stopPing();
+  // In-flight turns on this connection are unobservable now. Unlock the composer;
+  // the reply is stored server-side and arrives via unread replay or history.
+  const inFlight = Object.keys(useWsStore.getState().thinkingThreads).filter(
+    (id) => useWsStore.getState().thinkingThreads[id],
+  );
+  useWsStore.setState((s) => ({
+    thinkingThreads: {},
+    typingTextThreads: {},
+    isConnected: false,
+    interruptedThreads: {
+      ...s.interruptedThreads,
+      ...Object.fromEntries(inFlight.map((id) => [id, true])),
+    },
+  }));
+  scheduleReconnect();
+}
+
 function connect() {
   const url = buildUrl();
   if (!url) return;
 
-  ws = new WebSocket(url);
+  const socket = new WebSocket(url);
+  ws = socket;
 
-  ws.onopen = () => {
+  socket.onopen = () => {
+    if (ws !== socket) return;
     retryDelay = 1000;
-    // Clear stale per-thread state — any in-flight requests from the previous
-    // connection are gone, so the backend is no longer busy.
-    useWsStore.setState({ thinkingThreads: {}, typingTextThreads: {}, isConnected: true });
-    pingInterval = setInterval(() => send({ type: "ping" }), 30_000);
+    lastFrameAt = Date.now();
+    // Thinking state is deliberately kept: a turn that started before a
+    // reconnect may still finish. useChatWorkspace reconciles it from history.
+    useWsStore.getState().setConnected(true);
+    stopPing();
+    pingInterval = setInterval(() => {
+      if (Date.now() - lastFrameAt > SILENCE_LIMIT_MS) {
+        socket.onclose = null;
+        socket.onerror = null;
+        socket.onmessage = null;
+        try {
+          socket.close();
+        } catch {
+          // already closed
+        }
+        handleClosed(socket);
+        return;
+      }
+      send({ type: "ping" });
+    }, PING_INTERVAL_MS);
   };
 
-  ws.onmessage = (event) => {
+  socket.onmessage = (event) => {
+    lastFrameAt = Date.now();
     let frame: InboundFrame;
     try {
       frame = JSON.parse(event.data as string) as InboundFrame;
@@ -80,15 +143,10 @@ function connect() {
     dispatch(frame);
   };
 
-  ws.onclose = () => {
-    ws = null;
-    useWsStore.getState().setConnected(false);
-    if (pingInterval) clearInterval(pingInterval);
-    scheduleReconnect();
-  };
+  socket.onclose = () => handleClosed(socket);
 
-  ws.onerror = () => {
-    ws?.close();
+  socket.onerror = () => {
+    socket.close();
   };
 }
 

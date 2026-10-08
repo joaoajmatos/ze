@@ -748,3 +748,63 @@ class TestScopedUnreadReplay:
         assert len(msg_frames) == 2
         texts = {f["message"]["text"] for f in msg_frames}
         assert texts == {"Thread A", "Thread B"}
+
+
+class TestErrorFrameSchemaConformance:
+    """Every error frame the handlers emit validates against WsErrorFrame."""
+
+    async def _connected(self):
+        mgr = ConnectionManager()
+        ws = _make_ws()
+        await mgr.connect(ws, _make_msg_store([]))
+        ws.send_json.reset_mock()
+        return mgr, ws
+
+    async def test_turn_error_frames_validate_and_carry_thread_id(self):
+        from ze_api.api.schemas import WsErrorFrame
+        from ze_api.api.websocket.turns import handle_message
+
+        mgr, ws = await self._connected()
+        container = MagicMock()
+        container.translations = None
+        container.invoke_raw_turn = AsyncMock(side_effect=RuntimeError("boom"))
+        await handle_message(
+            ws,
+            {"type": "message", "text": "hi", "thread_id": "t1"},
+            container,
+            AsyncMock(),
+            mgr,
+            None,
+        )
+        container.invoke_raw_turn = AsyncMock(
+            return_value=MagicMock(interrupted=False, response=None, config={})
+        )
+        await handle_message(
+            ws,
+            {"type": "message", "text": "hi", "thread_id": "t2"},
+            container,
+            AsyncMock(),
+            mgr,
+            None,
+        )
+        await handle_message(
+            ws, {"type": "message", "text": "hi"}, container, AsyncMock(), mgr, None
+        )
+
+        errors = [f for f in _frames_sent(ws) if f["type"] == "error"]
+        assert len(errors) == 3
+        for frame in errors:
+            WsErrorFrame.model_validate(frame)
+        assert [f.get("thread_id") for f in errors] == ["t1", "t2", None]
+
+    async def test_component_submit_error_carries_thread_id(self):
+        from ze_api.api.schemas import WsErrorFrame
+        from ze_api.api.websocket.component_submit import handle_component_submit
+
+        mgr, ws = await self._connected()
+        await handle_component_submit(
+            ws, {"thread_id": "t3", "values": {}}, MagicMock(), mgr, AsyncMock(), None
+        )
+        frame = _frames_sent(ws)[0]
+        WsErrorFrame.model_validate(frame)
+        assert frame["thread_id"] == "t3"

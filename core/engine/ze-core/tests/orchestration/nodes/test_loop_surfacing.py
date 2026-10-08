@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 from unittest.mock import AsyncMock
@@ -84,6 +85,14 @@ async def test_surfaces_mention_when_surfacer_present():
     assert len(result["components"]) == 1
     assert result["components"][0]["type"] == "open_items"
     surfacer.inline_mentions.assert_awaited_once()
+
+
+async def test_component_is_json_serializable_so_the_reply_can_be_stored_and_sent():
+    mention = _Mention()
+    surfacer = _surfacer([mention])
+    result = await surface_loops(_state(), _config(surfacer=surfacer))
+    payload = json.loads(json.dumps(result["components"]))
+    assert payload[0]["items"][0]["id"] == str(mention.source_id)
 
 
 async def test_no_surfacer_configured_returns_empty():

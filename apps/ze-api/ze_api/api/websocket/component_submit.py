@@ -33,7 +33,8 @@ async def handle_component_submit(
             {
                 "type": "error",
                 "detail": "component_submit requires step_id and object values",
-            }
+            },
+            data.get("thread_id") or None,
         )
         return pending_config
 
@@ -55,7 +56,8 @@ async def handle_component_submit(
         except Exception as exc:
             log.warning("ws_component_submit_onboarding_failed", error=str(exc))
             await conn_mgr.send_frame(
-                {"type": "error", "detail": "Could not submit component."}
+                {"type": "error", "detail": "Could not submit component."},
+                data.get("thread_id") or None,
             )
             return pending_config
 

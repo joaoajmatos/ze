@@ -13,3 +13,4 @@ export {
 export { redirectHintPath, REDIRECT_HINT_DURATION_MS } from "./redirect-hint";
 export { humanizeStatus, humanizeIdentifier } from "./humanize";
 export { useOptionalCharts } from "./optional-charts";
+export { useMediaQuery } from "./use-media-query";

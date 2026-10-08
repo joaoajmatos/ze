@@ -20,10 +20,12 @@ interface OverlayStore {
   open: boolean;
   screen: string;
   entityId?: string;
+  /** Pathname that registered `screen`/`entityId`; the override only applies on that route. */
+  overridePath?: string;
   prefillMessage?: string;
   overlayThreadId: string;
   toggle: () => void;
-  setScreen: (screen: string, entityId?: string) => void;
+  setScreen: (screen: string, entityId?: string, overridePath?: string) => void;
   openFor: (screen: string, entityId?: string) => void;
   openForExecution: (params: OpenForExecutionParams) => void;
   close: () => void;
@@ -36,7 +38,7 @@ export const useOverlayStore = create<OverlayStore>((set) => ({
   screen: "chat",
   overlayThreadId: loadOverlayThreadId(),
   toggle: () => set((s) => ({ open: !s.open })),
-  setScreen: (screen, entityId) => set({ screen, entityId }),
+  setScreen: (screen, entityId, overridePath) => set({ screen, entityId, overridePath }),
   openFor: (screen, entityId) => set({ open: true, screen, entityId, prefillMessage: undefined }),
   openForExecution: ({ screen, entityId, prefillMessage }) =>
     set({ open: true, screen, entityId, prefillMessage }),

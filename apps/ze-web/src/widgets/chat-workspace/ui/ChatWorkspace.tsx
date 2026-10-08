@@ -23,8 +23,10 @@ export function ChatWorkspace() {
     streamingText,
     isThinking,
     isConnected,
+    deliveryFailed,
     pendingConfirm,
     sendMessage,
+    retry,
     respondToConfirm,
   } = useChatWorkspace();
 
@@ -127,6 +129,8 @@ export function ChatWorkspace() {
             showTyping={showTyping}
             typingText={typingText}
             streamingText={streamingText}
+            deliveryFailed={deliveryFailed}
+            onRetry={retry}
           />
         </div>
       )}
