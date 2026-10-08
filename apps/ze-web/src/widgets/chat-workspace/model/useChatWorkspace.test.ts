@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DELIVERY_WATCHDOG_MS, useChatWorkspace } from "./useChatWorkspace";
@@ -217,5 +217,57 @@ describe("useChatWorkspace delivery watchdog", () => {
     expect(sendMock).toHaveBeenCalledWith(
       expect.objectContaining({ type: "message", text: "hello", thread_id: THREAD }),
     );
+  });
+});
+
+describe("useChatWorkspace recovery after a dropped socket", () => {
+  beforeEach(() => {
+    handlers.clear();
+    sendMock.mockClear();
+    sendMock.mockReturnValue(true);
+    listMessagesMock.mockReset();
+    listMessagesMock.mockResolvedValue({ data: [] });
+    useWsStore.setState({
+      isConnected: true,
+      thinkingThreads: {},
+      typingTextThreads: {},
+      attentionThreads: {},
+      interruptedThreads: {},
+    });
+  });
+
+  it("shows the retry state when reconnect finds no reply for an interrupted turn", async () => {
+    const hook = setup();
+    await flush();
+    act(() => useWsStore.setState({ isConnected: false, interruptedThreads: { [THREAD]: true } }));
+    act(() => useWsStore.setState({ isConnected: true }));
+    await waitFor(() => expect(hook.result.current.deliveryFailed).toBe(true));
+    expect(listMessagesMock).toHaveBeenCalled();
+    expect(useWsStore.getState().interruptedThreads[THREAD]).toBeUndefined();
+  });
+
+  it("stays quiet when the stored reply is found after reconnect", async () => {
+    const hook = setup();
+    await flush();
+    listMessagesMock.mockResolvedValue({ data: [message("a1", "assistant", "late reply")] });
+    act(() => useWsStore.setState({ isConnected: false, interruptedThreads: { [THREAD]: true } }));
+    act(() => useWsStore.setState({ isConnected: true }));
+    await waitFor(() =>
+      expect(hook.result.current.messages.map((m) => m.text)).toEqual(["late reply"]),
+    );
+    expect(hook.result.current.deliveryFailed).toBe(false);
+  });
+
+  it("unlocks and keeps the reply when a message lands for an inactive hook", async () => {
+    const hook = setup({ active: false });
+    await flush();
+    act(() => useWsStore.getState().setThreadThinking(THREAD, true));
+
+    act(() =>
+      handlers.get("message")?.({ type: "message", message: message("a1", "assistant", "hi") }),
+    );
+
+    expect(hook.result.current.isThinking).toBe(false);
+    expect(hook.result.current.messages.map((m) => m.text)).toEqual(["hi"]);
   });
 });

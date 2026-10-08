@@ -61,6 +61,7 @@ describe("connection lifecycle", () => {
     expect(useWsStore.getState().thinkingThreads).toEqual({});
     expect(useWsStore.getState().typingTextThreads).toEqual({});
     expect(useWsStore.getState().isConnected).toBe(false);
+    expect(useWsStore.getState().interruptedThreads).toEqual({ t1: true });
   });
 
   it("keeps in-flight thinking state when a new connection opens", async () => {

@@ -72,6 +72,8 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   const setThreadTypingText = useWsStore((s) => s.setThreadTypingText);
   const setThreadAttention = useWsStore((s) => s.setThreadAttention);
   const isConnected = useWsStore((s) => s.isConnected);
+  const interrupted = useWsStore((s) => s.interruptedThreads[threadId] ?? false);
+  const clearThreadInterrupted = useWsStore((s) => s.clearThreadInterrupted);
 
   // showTyping mirrors isThinking so the chat bubble is visible whenever
   // the backend is processing, regardless of which session was active
@@ -154,6 +156,16 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stopThinking only closes over threadId and stable setters
   }, [isThinking, active, threadId]);
 
+  // The socket dropped mid-turn. Once reconnected, the stored reply either is in
+  // history or the turn is lost; say so instead of leaving a silent empty composer.
+  useEffect(() => {
+    if (!interrupted || !isConnected || !active) return;
+    clearThreadInterrupted(threadId);
+    void checkForReplyRef.current().then((replied) => {
+      if (!replied) setFailedThread(threadId);
+    });
+  }, [interrupted, isConnected, active, threadId, clearThreadInterrupted]);
+
   useFrame("typing", (frame) => {
     const frameThread = frame.thread_id ?? null;
     if (frameThread && frameThread !== threadId) {
@@ -199,7 +211,12 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     // Message for our own thread — clear any stale attention.
     setThreadAttention(threadId, false);
 
-    if (!active) return;
+    if (!active) {
+      // Closed overlay or hidden page: keep the reply, never leave the spinner stuck.
+      if (!ephemeral) upsert(frame.message);
+      stopThinking();
+      return;
+    }
 
     if (frame.onboarding) {
       useOnboardingSession.getState().setSession(

@@ -493,7 +493,7 @@ frames ignored by hooks without a send in flight. US2/US7: click flyout at
 US10/US9: `text-[11px]` mobile labels, 44 px back target, static AI-disclosure
 line under the composer (`ChatInput.tsx`, shared by chat and overlay).
 Verification: `make test-web` equivalent (`bun run test` in `apps/ze-web`):
-49 files, 181 tests passed. `bun run lint`: 103 problems, identical to the
+49 files, 184 tests passed. `bun run lint`: 103 problems, identical to the
 pre-change baseline (none introduced). `tsc -b`: 12 errors, all in files this
 block did not touch (no `typecheck-web` target exists). The [BE] block
 (T001-T009, T028) and the quickstart manual pass at 390/800/1280 px are

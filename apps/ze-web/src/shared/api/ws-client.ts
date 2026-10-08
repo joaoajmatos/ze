@@ -8,10 +8,13 @@ interface WsStore {
   thinkingThreads: Record<string, boolean>;
   typingTextThreads: Record<string, string | null>;
   attentionThreads: Record<string, boolean>;
+  /** Threads whose turn was in flight when the socket dropped; consumed on reconnect. */
+  interruptedThreads: Record<string, boolean>;
   setConnected: (v: boolean) => void;
   setThreadThinking: (threadId: string, v: boolean) => void;
   setThreadTypingText: (threadId: string, text: string | null) => void;
   setThreadAttention: (threadId: string, v: boolean) => void;
+  clearThreadInterrupted: (threadId: string) => void;
 }
 
 export const useWsStore = create<WsStore>((set) => ({
@@ -19,6 +22,7 @@ export const useWsStore = create<WsStore>((set) => ({
   thinkingThreads: {},
   typingTextThreads: {},
   attentionThreads: {},
+  interruptedThreads: {},
   setConnected: (v) => set({ isConnected: v }),
   setThreadThinking: (threadId, v) =>
     set((s) => ({ thinkingThreads: { ...s.thinkingThreads, [threadId]: v } })),
@@ -26,6 +30,12 @@ export const useWsStore = create<WsStore>((set) => ({
     set((s) => ({ typingTextThreads: { ...s.typingTextThreads, [threadId]: text } })),
   setThreadAttention: (threadId, v) =>
     set((s) => ({ attentionThreads: { ...s.attentionThreads, [threadId]: v } })),
+  clearThreadInterrupted: (threadId) =>
+    set((s) => {
+      const rest = { ...s.interruptedThreads };
+      delete rest[threadId];
+      return { interruptedThreads: rest };
+    }),
 }));
 
 type FrameType = InboundFrame["type"];
@@ -75,7 +85,18 @@ function handleClosed(socket: WebSocket) {
   stopPing();
   // In-flight turns on this connection are unobservable now. Unlock the composer;
   // the reply is stored server-side and arrives via unread replay or history.
-  useWsStore.setState({ thinkingThreads: {}, typingTextThreads: {}, isConnected: false });
+  const inFlight = Object.keys(useWsStore.getState().thinkingThreads).filter(
+    (id) => useWsStore.getState().thinkingThreads[id],
+  );
+  useWsStore.setState((s) => ({
+    thinkingThreads: {},
+    typingTextThreads: {},
+    isConnected: false,
+    interruptedThreads: {
+      ...s.interruptedThreads,
+      ...Object.fromEntries(inFlight.map((id) => [id, true])),
+    },
+  }));
   scheduleReconnect();
 }
 
