@@ -4,6 +4,7 @@ import math
 import re
 from dataclasses import asdict
 from datetime import datetime, timezone
+from numbers import Integral, Real
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from uuid import uuid4
 
@@ -34,6 +35,13 @@ def _json_safe(value: Any) -> Any:
         return value
     if isinstance(value, float):
         return value if math.isfinite(value) else None
+    if isinstance(value, Integral):
+        # numpy int scalars reach traces via embedding scores — keep them numeric.
+        return int(value)
+    if isinstance(value, Real):
+        # numpy float scalars (float32/float64) — keep the JSON number, not a string.
+        num = float(value)
+        return num if math.isfinite(num) else None
     if isinstance(value, dict):
         return {str(k): _json_safe(v) for k, v in value.items()}
     if isinstance(value, (list, tuple, set, frozenset)):

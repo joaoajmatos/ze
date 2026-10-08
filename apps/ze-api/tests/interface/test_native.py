@@ -213,3 +213,36 @@ async def test_trace_update_payload_is_json_safe():
     frame = conn.send_frame.call_args[0][0]
     assert frame["type"] == "trace_update"
     json.dumps(frame)
+
+
+async def test_trace_update_keeps_numbers_numeric():
+    import json
+    from datetime import datetime, timezone
+    from fractions import Fraction
+
+    from ze_core.conversation.messages.types import MessageTrace
+
+    iface, store, conn, _ = _make_interface(connected=True)
+    trace = MessageTrace(
+        agent="research",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.1,
+        is_compound=False,
+        subtasks=[],
+    )
+    # Fraction is not JSON-serializable by default and is not a builtin float —
+    # the "real number" scalar branch covers numpy float32/int64 too.
+    trace.agent = {
+        "score": Fraction(3, 4),
+        "span": 7,
+        "when": datetime.now(timezone.utc),
+    }  # type: ignore[assignment]
+
+    await iface.send_with_thread("hi", thread_id="t1", trace=trace)
+
+    frame = conn.send_frame.call_args[0][0]
+    assert frame["type"] == "trace_update"
+    assert frame["agent"]["score"] == 0.75
+    assert isinstance(frame["agent"]["score"], float)
+    json.dumps(frame)
