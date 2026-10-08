@@ -54,7 +54,9 @@ from ze_core.routing.judge import (
 ROOT = Path(__file__).resolve().parents[2]
 DATASET = Path(__file__).with_name("routing.jsonl")
 CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
-AGENT_MODULES = ROOT / "core" / "engine" / "ze-core" / "tests" / "support" / "agent_modules.py"
+AGENT_MODULES = (
+    ROOT / "core" / "engine" / "ze-core" / "tests" / "support" / "agent_modules.py"
+)
 GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
 BINS = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0001]
 LEVELS = ["lookup", "single_tool", "multi_hop"]
@@ -87,7 +89,10 @@ class Outcome:
 
     @property
     def would_decompose_160(self) -> bool:
-        return self.cosine_top < ROUTING_THRESHOLD or self.cosine_gap < ROUTING_GAP_THRESHOLD
+        return (
+            self.cosine_top < ROUTING_THRESHOLD
+            or self.cosine_gap < ROUTING_GAP_THRESHOLD
+        )
 
 
 def load_rows(path: Path) -> list[Row]:
@@ -101,7 +106,11 @@ def load_rows(path: Path) -> list[Row]:
             gold_complexity=raw["gold_complexity"],
             history=raw.get("history"),
         )
-        for raw in (json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+        for raw in (
+            json.loads(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
     ]
     if len({r.id for r in rows}) != len(rows):
         raise SystemExit("duplicate ids in calibration set")
@@ -112,16 +121,23 @@ def load_roster() -> dict[str, str]:
     """Enabled agents and their descriptions from the checked-in agent modules."""
     from ze_agents.bootstrap import reload_agent_modules
 
-    spec = importlib.util.spec_from_file_location("_routing_agent_modules", AGENT_MODULES)
+    spec = importlib.util.spec_from_file_location(
+        "_routing_agent_modules", AGENT_MODULES
+    )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     reload_agent_modules(module.ALL_AGENT_MODULE_PATHS)
-    return {name: cls.description.strip() for name, cls in sorted(get_enabled_agents().items())}
+    return {
+        name: cls.description.strip()
+        for name, cls in sorted(get_enabled_agents().items())
+    }
 
 
 def rank(embedder: Any, roster: dict[str, str], text: str) -> list[tuple[str, float]]:
     names = sorted(roster)
-    matrix = embedder.encode_passage([roster[n] for n in names], normalize_embeddings=True)
+    matrix = embedder.encode_passage(
+        [roster[n] for n in names], normalize_embeddings=True
+    )
     vec = embedder.encode_query(text, normalize_embeddings=True)
     scores = (matrix @ vec).tolist()
     return sorted(zip(names, scores), key=lambda p: p[1], reverse=True)
@@ -149,7 +165,9 @@ async def run_rows(
         text = row.prompt if not row.history else f"{row.prompt}\n\n{row.history}"
         ranked = rank(embedder, roster, text)
         names = shortlist([n for n, _ in ranked], k)
-        questions = shuffled_questions(roster, names, random.Random(seed * 100003 + index))
+        questions = shuffled_questions(
+            roster, names, random.Random(seed * 100003 + index)
+        )
         state = build_state(row.prompt, row.history, None)
         async with sem:
             result = await client.evaluate(state, questions, max_attempts=1)
@@ -174,13 +192,22 @@ def report_accuracy(outcomes: list[Outcome]) -> None:
         scoped = [o for o in single_rows(outcomes) if o.row.lang == lang]
         hits = sum(predicted(o)[0] == o.row.gold_agent for o in scoped)
         if scoped:
-            print(f"\n== [{lang}] Choice accuracy vs gold agent: {hits}/{len(scoped)} = {hits / len(scoped):.3f}")
+            print(
+                f"\n== [{lang}] Choice accuracy vs gold agent: {hits}/{len(scoped)} = {hits / len(scoped):.3f}"
+            )
         misses = [o for o in scoped if predicted(o)[0] != o.row.gold_agent]
         for o in misses:
             print(f"   miss {o.row.id}: gold={o.row.gold_agent} pred={predicted(o)[0]}")
-    outside = [o for o in single_rows(outcomes) if o.row.gold_agent not in o.names + ["none"]]
-    print(f"\ngold agent outside the shortlist (k too small?): {len(outside)}"
-          + "".join(f"\n   {o.row.id}: gold={o.row.gold_agent} shortlist={o.names}" for o in outside))
+    outside = [
+        o for o in single_rows(outcomes) if o.row.gold_agent not in o.names + ["none"]
+    ]
+    print(
+        f"\ngold agent outside the shortlist (k too small?): {len(outside)}"
+        + "".join(
+            f"\n   {o.row.id}: gold={o.row.gold_agent} shortlist={o.names}"
+            for o in outside
+        )
+    )
 
 
 def report_reliability(outcomes: list[Outcome]) -> None:
@@ -199,7 +226,10 @@ def report_reliability(outcomes: list[Outcome]) -> None:
             conf = sum(c for c, _ in bucket) / len(bucket)
             acc = sum(ok for _, ok in bucket) / len(bucket)
             ece += len(bucket) * abs(conf - acc)
-            print(f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11) + f"{len(bucket):4d}   {conf:8.3f}   {acc:8.3f}")
+            print(
+                f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
+                + f"{len(bucket):4d}   {conf:8.3f}   {acc:8.3f}"
+            )
     if points:
         print(f"ECE = {ece / len(points):.3f}")
 
@@ -211,7 +241,9 @@ def report_none(outcomes: list[Outcome]) -> None:
     fn = sum(predicted(o)[0] != "none" and o.row.gold_agent == "none" for o in scoped)
     precision = tp / (tp + fp) if tp + fp else 1.0
     recall = tp / (tp + fn) if tp + fn else 0.0
-    print(f"\n== none: precision {precision:.2f} recall {recall:.2f} (tp={tp} fp={fp} fn={fn})")
+    print(
+        f"\n== none: precision {precision:.2f} recall {recall:.2f} (tp={tp} fp={fp} fn={fn})"
+    )
 
 
 def noul_values(outcomes: list[Outcome], multi: bool) -> list[float]:
@@ -228,8 +260,10 @@ def report_noul(outcomes: list[Outcome]) -> None:
     print("\n== multiple-specialist Noul")
     for label, values in (("gold mixed", mixed), ("gold single", single)):
         if values:
-            print(f"{label:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
-                  f" min={min(values):.2f} max={max(values):.2f}")
+            print(
+                f"{label:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
+                f" min={min(values):.2f} max={max(values):.2f}"
+            )
 
 
 def score_values(outcomes: list[Outcome]) -> dict[str, list[float]]:
@@ -260,8 +294,10 @@ def report_score(outcomes: list[Outcome]) -> float | None:
     for level in LEVELS:
         values = by_level[level]
         if values:
-            print(f"{level:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
-                  f" min={min(values):.2f} max={max(values):.2f}")
+            print(
+                f"{level:12s} n={len(values):3d} mean={statistics.mean(values):.2f}"
+                f" min={min(values):.2f} max={max(values):.2f}"
+            )
     bar = suggest_lookup_max(by_level)
     if bar is not None:
         print(f"Suggested complexity_lookup_max: {bar}")
@@ -290,26 +326,35 @@ def grid_metrics(outcomes: list[Outcome]) -> list[dict[str, float]]:
                     removed += 1
                 elif not correct:
                     harmful += 1
-            out.append({"trust": trust, "hold": hold, "removed": removed, "harmful": harmful})
+            out.append(
+                {"trust": trust, "hold": hold, "removed": removed, "harmful": harmful}
+            )
     return out
 
 
 def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
-    print("\n== false compounds removed / harmful trusts (choice_trust rows, multi_specialist_hold cols)")
+    print(
+        "\n== false compounds removed / harmful trusts (choice_trust rows, multi_specialist_hold cols)"
+    )
     print("trust\\hold ".ljust(11) + "".join(f"{h:>10.2f}" for h in GRID))
     by_pair = {(m["trust"], m["hold"]): m for m in metrics}
     for t in GRID:
         cells = "".join(
-            f"{int(by_pair[(t, h)]['removed']):>6d}/{int(by_pair[(t, h)]['harmful']):<3d}" for h in GRID
+            f"{int(by_pair[(t, h)]['removed']):>6d}/{int(by_pair[(t, h)]['harmful']):<3d}"
+            for h in GRID
         )
         print(f"{t:>9.2f}  " + cells)
     safe = [m for m in metrics if m["harmful"] == 0 and m["removed"] > 0]
     if not safe:
-        print("\nNo bar pair removes a false compound with zero harmful trusts on this set.")
+        print(
+            "\nNo bar pair removes a false compound with zero harmful trusts on this set."
+        )
         return None
     best = max(safe, key=lambda m: (m["removed"], -(m["trust"] + m["hold"])))
-    print(f"\nSuggested: choice_trust: {best['trust']}  multi_specialist_hold: {best['hold']}"
-          f"  (removes {int(best['removed'])} false compounds, 0 harmful trusts)")
+    print(
+        f"\nSuggested: choice_trust: {best['trust']}  multi_specialist_hold: {best['hold']}"
+        f"  (removes {int(best['removed'])} false compounds, 0 harmful trusts)"
+    )
     return best["trust"], best["hold"]
 
 
@@ -329,13 +374,18 @@ def report(outcomes: list[Outcome]) -> dict[str, float | None]:
 
 
 def system_one_config() -> dict:
-    return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get("system_one") or {}
+    return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
+        "system_one"
+    ) or {}
 
 
 async def main_async(args: argparse.Namespace) -> int:
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
-        print("OPENROUTER_API_KEY is required (this run is live and costs credits).", file=sys.stderr)
+        print(
+            "OPENROUTER_API_KEY is required (this run is live and costs credits).",
+            file=sys.stderr,
+        )
         return 2
     from ze_core.embeddings import get_embedder
 
@@ -347,9 +397,17 @@ async def main_async(args: argparse.Namespace) -> int:
     )
     roster = load_roster()
     rows = load_rows(args.dataset)
-    print(f"model={client._model} rows={len(rows)} agents={len(roster)} k={args.k} seed={args.seed}")
+    print(
+        f"model={client._model} rows={len(rows)} agents={len(roster)} k={args.k} seed={args.seed}"
+    )
     outcomes = await run_rows(
-        client, get_embedder(), roster, rows, seed=args.seed, concurrency=args.concurrency, k=args.k
+        client,
+        get_embedder(),
+        roster,
+        rows,
+        seed=args.seed,
+        concurrency=args.concurrency,
+        k=args.k,
     )
     skipped = Counter(o.result.skip_reason for o in outcomes if not o.ok)
     if skipped:
@@ -358,10 +416,14 @@ async def main_async(args: argparse.Namespace) -> int:
         print("Every call was skipped; nothing to calibrate.", file=sys.stderr)
         return 1
     suggestion = report(outcomes)
-    print("\nCopy into apps/ze-api/config/config.yaml under system_one.surfaces.routing,"
-          " then enable system_one and the surface:")
+    print(
+        "\nCopy into apps/ze-api/config/config.yaml under system_one.surfaces.routing,"
+        " then enable system_one and the surface:"
+    )
     for key, value in suggestion.items():
-        print(f"  {key}: {value if value is not None else 'null  # no safe value on this set'}")
+        print(
+            f"  {key}: {value if value is not None else 'null  # no safe value on this set'}"
+        )
     return 0
 
 

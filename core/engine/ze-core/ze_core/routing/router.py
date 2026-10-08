@@ -143,9 +143,7 @@ class EmbeddingRouter:
         enabled = get_enabled_agents()
         questions = build_questions({n: enabled[n].description for n in names})
         try:
-            result = await self._system_one.evaluate(
-                state, questions, max_attempts=1
-            )
+            result = await self._system_one.evaluate(state, questions, max_attempts=1)
         except Exception as exc:
             log.warning("routing_judgment_error", error=str(exc))
             result = SystemOneResult(outcome="skip", skip_reason="error")
@@ -191,7 +189,9 @@ class EmbeddingRouter:
             score_gap=score_gap,
             routing_method="embedding",
             is_compound=compound,
-            subtasks=[SubTask(agent=primary, intent=intent, prompt=prompt, model=model)],
+            subtasks=[
+                SubTask(agent=primary, intent=intent, prompt=prompt, model=model)
+            ],
             requires_synthesis=False,
             raw_scores=raw_scores,
             complexity=complexity,

@@ -46,7 +46,9 @@ class TestRouterConfigFrom:
         assert cfg.fallback_model == MODEL_ROUTER_FALLBACK
 
     def test_yaml_threshold_and_gap(self):
-        cfg = router_config_from({"routing": {"threshold": 0.61, "gap_threshold": 0.05}})
+        cfg = router_config_from(
+            {"routing": {"threshold": 0.61, "gap_threshold": 0.05}}
+        )
         assert (cfg.threshold, cfg.gap_threshold) == (0.61, 0.05)
 
     def test_router_fallback_override(self):

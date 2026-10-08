@@ -38,7 +38,9 @@ class _OracleClient:
         self.orders.append(list(agent_q.criteria))
         row = self.gold[state["user"]]
         choice = row.gold_agent if row.gold_agent in agent_q.criteria else "none"
-        level = {"lookup": 0.1, "single_tool": 0.5, "multi_hop": 0.9}[row.gold_complexity]
+        level = {"lookup": 0.1, "single_tool": 0.5, "multi_hop": 0.9}[
+            row.gold_complexity
+        ]
         return SystemOneResult(
             outcome="ok",
             model="oracle",
@@ -71,7 +73,9 @@ async def test_offline_run_reports_and_suggests(calib, capsys):
     gold = {r.prompt: r for r in rows}
     client = _OracleClient(gold)
     # Every agent's cosine is a fixed close band so 160 alone would decompose.
-    embedder = cosine_embedder({n: 0.80 - 0.001 * i for i, n in enumerate(sorted(roster))})
+    embedder = cosine_embedder(
+        {n: 0.80 - 0.001 * i for i, n in enumerate(sorted(roster))}
+    )
 
     outcomes = await calib.run_rows(
         client, embedder, roster, rows, seed=164, concurrency=4, k=3
@@ -93,7 +97,9 @@ async def test_option_order_is_shuffled_per_row(calib):
     roster = _roster()
     rows = calib.load_rows(calib.DATASET)
     client = _OracleClient({r.prompt: r for r in rows})
-    embedder = cosine_embedder({n: 0.8 - 0.01 * i for i, n in enumerate(sorted(roster))})
+    embedder = cosine_embedder(
+        {n: 0.8 - 0.01 * i for i, n in enumerate(sorted(roster))}
+    )
     await calib.run_rows(client, embedder, roster, rows, seed=1, concurrency=4, k=4)
     shortlist_orders = {tuple(o[:-1]) for o in client.orders}
     assert len(shortlist_orders) > 1
@@ -101,9 +107,16 @@ async def test_option_order_is_shuffled_per_row(calib):
 
 
 def test_suggest_lookup_max_separates_levels(calib):
-    by_level = {"lookup": [0.05, 0.2], "single_tool": [0.5, 0.6], "multi_hop": [0.8, 0.9]}
+    by_level = {
+        "lookup": [0.05, 0.2],
+        "single_tool": [0.5, 0.6],
+        "multi_hop": [0.8, 0.9],
+    }
     assert 0.2 <= calib.suggest_lookup_max(by_level) < 0.5
-    assert calib.suggest_lookup_max({"lookup": [], "single_tool": [0.5], "multi_hop": []}) is None
+    assert (
+        calib.suggest_lookup_max({"lookup": [], "single_tool": [0.5], "multi_hop": []})
+        is None
+    )
 
 
 def test_grid_counts_harm_when_trusting_the_wrong_agent(calib):

@@ -226,6 +226,14 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-08T11:49:23.762Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:51:55.565Z"
     }
   ],
   "telemetryInstanceId": "40af2510-7e19-4ec2-a0b1-9f2e7385edfc",
@@ -279,7 +287,7 @@
     "area: EmbeddingRouter ComplexityEstimator fallback.decompose",
     "constraint: 160 bars remain shortlist; Principle VII embeddings stay E5"
   ],
-  "currentTask": "T026",
+  "currentTask": "T027",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -357,6 +365,9 @@
       "status": "DONE"
     },
     "T026": {
+      "status": "DONE"
+    },
+    "T031": {
       "status": "DONE"
     }
   }

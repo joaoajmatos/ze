@@ -133,9 +133,7 @@ def build_questions(descriptions: Mapping[str, str]) -> dict[str, SystemOneQuest
     }
 
 
-def build_state(
-    user: str, history: str | None, context: str | None
-) -> dict[str, str]:
+def build_state(user: str, history: str | None, context: str | None) -> dict[str, str]:
     state = {"user": user[:USER_CAP]}
     if history and history.strip():
         state["history"] = history[:HISTORY_CAP]
