@@ -53,6 +53,9 @@ describe("AppShell", () => {
     links.forEach((link) => {
       expect(link.className).not.toContain("text-[10px]");
       expect(link.className).toMatch(/text-\[11px\]|text-xs/);
+      // eight items share 390px; tight tracking keeps "Workflows"/"Reminders" off their neighbours
+      expect(link.className).toContain("tracking-tighter");
+      expect(link.className).toContain("whitespace-nowrap");
     });
   });
 
