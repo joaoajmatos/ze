@@ -41,7 +41,7 @@ logs/
 .claude/*
 !.claude/skills/
 
-# graphify knowledge graph (full-repo local cache; see AGENTS.md / CLAUDE.md)
+# graphify knowledge graph (full-repo local cache; see AGENTS.md)
 graphify-out/
 
 # OS / IDE

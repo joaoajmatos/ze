@@ -17,7 +17,7 @@ Sync Impact Report
 Ze is a single-user personal AI assistant: a Python/FastAPI backend with a LangGraph
 orchestration layer routing messages to specialised agents, a React web client over
 WebSocket, and ntfy push notifications. This constitution states the non-negotiable
-principles every feature must respect. The detailed conventions live in `CLAUDE.md`
+principles every feature must respect. The detailed conventions live in `AGENTS.md`
 and the ADRs in `specs/arch/` — when in doubt, those documents elaborate; this one
 governs.
 
@@ -109,6 +109,6 @@ This constitution supersedes ad-hoc practice. Amendments are made via an ADR in
 `specs/arch/` plus a version bump here, in the same commit. Plans produced by
 `/speckit-plan` must include a Constitution Check gate; violations must be either
 removed or justified in the plan's Complexity Tracking section. Runtime development
-guidance for agents lives in `CLAUDE.md`.
+guidance for agents lives in `AGENTS.md` (`CLAUDE.md` imports it).
 
 **Version**: 1.2.0 | **Ratified**: 2026-07-09 | **Last Amended**: 2026-09-15

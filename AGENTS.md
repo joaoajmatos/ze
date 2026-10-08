@@ -1,4 +1,4 @@
-# Ze — Codex Guide
+# Ze — Agent Guide
 
 ## What this is
 
@@ -11,53 +11,103 @@ Push notifications are delivered via ntfy. All LLM calls go through OpenRouter.
 
 ```
 ze/                           # monorepo root
-├── core/                     # Shared infrastructure — no domain knowledge
-│   ├── ze-core/              # Engine — routing, orchestration, telemetry, DI container
-│   │   └── ze_core/
-│   │       ├── capability/   # CapabilityGate, PostgresCapabilityOverrideStore, modes
-│   │       ├── openrouter/   # OpenRouterClient (engine internal — use LLMClient Protocol in plugins)
-│   │       ├── orchestration/# graph_builder, graph nodes, AgentState, edges
-│   │       ├── routing/      # EmbeddingRouter, ComplexityEstimator, fallback, store
-│   │       ├── telemetry/    # CostTracker, CostReconciler, PostgresCostStore, ContextVar
-│   │       ├── container.py  # Base Container with DI wiring and invoke/resume entry points
-│   │       └── embeddings.py # Shared intfloat/multilingual-e5-base singleton
-│   ├── ze-agents/            # Developer API — BaseAgent, @agent, @tool, shared types
-│   │   └── ze_agents/
-│   │       ├── interface/    # AppInterface ABC, InputPreprocessor, validation, types
-│   │       ├── progress/     # ProgressReporter, translations
-│   │       ├── base_agent.py # BaseAgent ABC with agentic_loop
-│   │       ├── client.py     # LLMClient Protocol
-│   │       ├── db.py         # DBPool Protocol
-│   │       ├── errors.py     # Full ZeError hierarchy
-│   │       ├── hooks.py      # HarnessHook ABC (agentic loop — not a plugin concern)
-│   │       ├── registry.py   # @agent decorator + AgentRegistry
-│   │       ├── settings.py   # Settings dataclass
-│   │       └── tool.py       # @tool decorator, ToolAccess
-│   ├── ze-plugin/            # Plugin extension framework — ZePlugin ABC, channels, signals
-│   │   └── ze_plugin/
-│   │       ├── channels/     # Channel ABC, ChannelRegistry, types
-│   │       ├── integration.py# ZeIntegration protocol
-│   │       ├── plugin.py     # ZePlugin ABC + DataDomain
-│   │       ├── registry.py   # plugin registry (_registry, get_plugin_registry)
-│   │       └── signals.py    # SignalSource protocol
-│   ├── ze-proactive/         # Job scheduling framework
-│   │   └── ze_proactive/     # ProactiveJob, ProactiveScheduler, ProactiveNotifier, PushLogStore
-│   ├── ze-automation/        # Core automation engine — goals, workflows, accountability, planners, executors, agents
-│   │   └── ze_automation/
-│   │       ├── goals/        # GoalStore, GoalPlanner, GoalExecutor, PostgresGoalStore, GoalSuggestionStore, types
-│   │       ├── workflow/     # WorkflowStore, WorkflowPlanner, WorkflowScheduler, PostgresWorkflowStore, types
-│   │       ├── accountability/ # AccountabilityStore, ActivitySummary, AnomalyRecord, build_narrative
-│   │       ├── agents/       # GoalAgent, WorkflowAgent
-│   │       ├── jobs/         # goal/workflow/accountability proactive jobs
-│   │       ├── runtime/      # AutomationPlanner, AutomationStore contracts
-│   │       └── migrations/   # zc006–zc009 (goal traces/suggestions/stuck/reuse), zc011 (workflows), zc014 (accountability)
-│   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
-│   ├── ze-logging/           # structlog setup, get_logger, context binding
-│   ├── ze-components/        # Server-driven UI component descriptors
-│   └── ze-eval/              # Eval infrastructure — runner, judge, verifier, MCP server
-│
-│   (core/ is now grouped into kernel/, contracts/, engine/, seam/, cognition/,
-│   automation/, arbitration/, ops/ — see CLAUDE.md's Repository layout for the full tree)
+├── core/                     # Shared infrastructure — no domain knowledge, grouped by role
+│   ├── kernel/                # Zero/near-zero Ze deps — pure infra leaves
+│   │   ├── ze-logging/         # structlog setup, get_logger, context binding
+│   │   ├── ze-data/            # DataDomain, DataPortabilityService (no Ze deps)
+│   │   └── ze-components/      # Server-driven UI component descriptors
+│   ├── contracts/              # Developer-facing ABCs/protocols the engine implements against
+│   │   ├── ze-agents/           # Developer API — BaseAgent, @agent, @tool, shared types
+│   │   │   └── ze_agents/
+│   │   │       ├── interface/   # AppInterface ABC, InputPreprocessor, validation, types
+│   │   │       ├── progress/    # ProgressReporter, translations
+│   │   │       ├── base_agent.py # BaseAgent ABC with agentic_loop
+│   │   │       ├── client.py    # LLMClient Protocol
+│   │   │       ├── db.py        # DBPool Protocol
+│   │   │       ├── errors.py    # Full ZeError hierarchy
+│   │   │       ├── hooks.py     # HarnessHook ABC (agentic loop — not a plugin concern)
+│   │   │       ├── registry.py  # @agent decorator + AgentRegistry
+│   │   │       ├── settings.py  # Settings dataclass
+│   │   │       └── tool.py      # @tool decorator, ToolAccess
+│   │   ├── ze-communication/    # Channel contract — types, outbound/inbound ABCs, registry
+│   │   │   └── ze_communication/
+│   │   │       ├── types.py     # ChannelType, ChannelHandle, Message, SentMessage, Thread, InboundMessage
+│   │   │       ├── channel.py   # Channel ABC (outbound), InboundChannel ABC
+│   │   │       └── registry.py  # ChannelRegistry
+│   │   ├── ze-plugin/           # Plugin extension framework — ZePlugin ABC, signals
+│   │   │   └── ze_plugin/
+│   │   │       ├── integration.py# ZeIntegration protocol
+│   │   │       ├── plugin.py    # ZePlugin ABC + DataDomain
+│   │   │       ├── registry.py  # plugin registry (_registry, get_plugin_registry)
+│   │   │       └── signals.py   # SignalSource protocol
+│   │   └── ze-proactive/        # Job scheduling framework
+│   │       └── ze_proactive/    # ProactiveJob, ProactiveScheduler, ProactiveNotifier, PushLogStore
+│   ├── engine/                 # The orchestration engine itself
+│   │   └── ze-core/             # Engine — routing, orchestration, telemetry, DI container
+│   │       └── ze_core/
+│   │           ├── capability/  # CapabilityGate, PostgresCapabilityOverrideStore, modes
+│   │           ├── openrouter/  # OpenRouterClient (engine internal — use LLMClient Protocol in plugins)
+│   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges
+│   │           ├── routing/     # EmbeddingRouter, ComplexityEstimator, fallback, store
+│   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar
+│   │           ├── container.py # Base Container with DI wiring and invoke/resume entry points
+│   │           └── embeddings.py # Shared intfloat/multilingual-e5-base singleton
+│   ├── seam/                   # Cross-cutting substrate consumed by every domain layer below
+│   │   └── ze-collision/        # Contribution collision detection — cross-function conflict logging
+│   │       └── ze_collision/
+│   │           ├── types.py     # CollisionCandidate, CollisionLogEntry
+│   │           ├── store.py     # CollisionLogStore Protocol + PostgresCollisionLogStore
+│   │           ├── detect.py    # submit_and_detect_collisions() wrapper over validate_and_submit
+│   │           ├── rest.py      # list_collisions() query surface
+│   │           └── migrations/  # zcol001 (contribution_collisions)
+│   ├── cognition/               # Memory, correlation, world-state — the "mind" substrate
+│   │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
+│   │   ├── ze-correlation/       # Cross-domain hypothesis formation
+│   │   └── ze-worldstate/        # Open-loop substrate — active concerns, honest provenance, evidence-linked confidence
+│   │       └── ze_worldstate/
+│   │           ├── types.py     # OpenLoop, LoopState, LoopClaimKind, LoopProvenance
+│   │           ├── store.py     # LoopStore Protocol + PostgresLoopStore
+│   │           ├── matching.py  # entity-overlap + embedding-similarity dedup
+│   │           ├── decay.py     # confidence decay cascade, called at the evidence-writing code path
+│   │           ├── extraction.py # conservative relevance-gated loop extraction
+│   │           ├── review.py    # confirm/close/drop lifecycle transitions
+│   │           ├── inflow.py    # inflow wiring helpers (conversation hook, messenger/calendar/ingestion extractors)
+│   │           ├── jobs/        # stale-suspicion expiry job
+│   │           └── migrations/  # zw001 (open_loops)
+│   ├── automation/              # Goals, workflows, skills — built on cognition
+│   │   ├── ze-automation/        # Core automation engine — goals, workflows, accountability, planners, executors, agents
+│   │   │   └── ze_automation/
+│   │   │       ├── goals/       # GoalStore, GoalPlanner, GoalExecutor, PostgresGoalStore, GoalSuggestionStore, types
+│   │   │       ├── workflow/    # WorkflowStore, WorkflowPlanner, WorkflowScheduler, PostgresWorkflowStore, types
+│   │   │       ├── accountability/ # AccountabilityStore, ActivitySummary, AnomalyRecord, build_narrative
+│   │   │       ├── agents/      # GoalAgent, WorkflowAgent
+│   │   │       ├── jobs/        # goal/workflow/accountability proactive jobs
+│   │   │       ├── runtime/     # AutomationPlanner, AutomationStore contracts
+│   │   │       └── migrations/  # zc006–zc009 (goal traces/suggestions/stuck/reuse), zc011 (workflows), zc014 (accountability)
+│   │   └── ze-skills/            # Agent Skills — import, review, matching, tool-narrowing
+│   │       └── ze_skills/
+│   │           ├── types.py     # Skill, SkillReview, ReferenceFile, SkillStatus/Source/Trigger
+│   │           ├── store.py     # SkillStore Protocol + PostgresSkillStore
+│   │           ├── parser.py    # parse_skill_md — YAML frontmatter + Markdown body
+│   │           ├── importer.py  # fetch_skill_source — URL/zip fetch
+│   │           ├── matching.py  # SkillMatcher — embedding similarity + /skill-name
+│   │           ├── review.py    # approve/reject/disable/enable/remove/refresh
+│   │           ├── jobs/        # SkillRecheckJob (daily source-content recheck)
+│   │           └── migrations/  # zsk001 (skills), zsk002 (skill_scripts + executable approval)
+│   ├── arbitration/             # Consumes cognition + automation to rank/order attention
+│   │   └── ze-priority/          # PriorityView + shared push budget + user-directed priority override
+│   └── ops/                     # Environment, onboarding, ingestion, seed data, eval
+│       ├── ze-workspace/         # Isolated computer — files, shell, skill scripts
+│       │   └── ze_workspace/
+│       │       ├── client.py    # WorkspaceClient HTTP to sidecar
+│       │       ├── gate.py      # WorkspaceGate (mode × action × origin)
+│       │       ├── tools.py     # workspace_* @tools (not imported by ze-core/ze-agents)
+│       │       ├── store.py     # workspace_state + workspace_runs
+│       │       └── migrations/  # zws001 (workspace_state, workspace_runs)
+│       ├── ze-onboarding/        # Onboarding sessions/steps/seeds
+│       ├── ze-ingestion/         # Ingestion pipeline
+│       ├── ze-seed/              # Dev data seeding
+│       └── ze-eval/              # Eval infrastructure — runner, judge, verifier, MCP server
 ├── packages/                 # Shared packages (Python SDK + frontend npm)
 │   ├── ze-sdk/               # Public SDK surface — flat re-export layer for plugin authors
 │   │   └── ze_sdk/           # ze_sdk, ze_sdk.types, ze_sdk.proactive, ze_sdk.channels,
@@ -72,11 +122,10 @@ ze/                           # monorepo root
 │   │       ├── agents/       # research, companion agents (goal/workflow agents live in ze-automation)
 │   │       ├── jobs/         # briefing, insights, contacts jobs
 │   │       └── plugin.py     # PersonalPlugin(ZePlugin) — wires persona + contacts into graphs
-│   ├── ze-email/             # Gmail channel + email agent (ZePlugin)
-│   │   └── ze_email/
-│   │       ├── channel/      # GmailChannel
-│   │       ├── agents/email/ # EmailAgent + tools
-│   │       └── plugin.py     # EmailPlugin(ZePlugin)
+│   ├── ze-messenger/         # Cross-channel messenger agent (ZePlugin)
+│   │   └── ze_messenger/
+│   │       ├── agents/messenger/ # MessengerAgent + Gmail tools
+│   │       └── plugin.py     # MessengerPlugin(ZePlugin)
 │   ├── ze-calendar/          # Calendar, reminders, and timezone domain (ZePlugin)
 │   │   └── ze_calendar/
 │   │       ├── agents/       # CalendarAgent, RemindersAgent + tools
@@ -94,7 +143,7 @@ ze/                           # monorepo root
 │   ├── ze-finance/           # Finance domain (ZePlugin) — in progress
 │   └── ze-legal/             # Legal domain (ZePlugin) — in progress
 ├── integrations/             # External service wrappers — no Ze domain knowledge
-│   ├── ze-google/            # Google OAuth2 credentials and service client factories
+│   ├── ze-google/            # Google OAuth2 credentials, service client factories, GmailChannel
 │   ├── ze-browser/           # Browser sidecar client (BrowserClient + tool)
 │   └── ze-notifications/     # Push notification abstraction (ntfy)
 ├── apps/                     # Deployment units
@@ -125,29 +174,38 @@ ze/                           # monorepo root
 ### Package dependency graph
 
 ```
-ze-logging      (no ze deps)             core/kernel/
-ze-data         (no ze deps)             core/kernel/
-ze-components   (no ze deps)             core/kernel/
-ze-agents     → ze-logging               core/contracts/
-ze-plugin     → ze-agents, ze-data       core/contracts/
-ze-proactive  → ze-agents                core/contracts/
-ze-core       → ze-agents, ze-plugin     core/engine/  ← engine; never a plugin dep
-ze-memory     → ze-agents                core/cognition/
-ze-eval         (no ze deps — HTTP only) core/ops/  ← eval infrastructure
-ze-automation → ze-agents, ze-proactive, ze-memory  core/automation/  ← goals + workflows; wired by ze-api directly
-ze-workspace  → ze-agents, ze-logging, ze-data  core/ops/  ← isolated computer; ze-core/ze-agents must not import it
-ze-sdk        → ze-agents, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation  packages/  ← plugin entry point
-ze-browser      (no ze deps)             integrations/
-ze-notifications(no ze deps)             integrations/
-ze-google       (no ze deps)             integrations/
-ze-personal   → ze-sdk                   plugins/
-ze-email      → ze-sdk, ze-google, ze-personal             plugins/
-ze-prospecting→ ze-sdk, ze-browser, ze-personal            plugins/
-ze-calendar   → ze-sdk, ze-google, ze-personal             plugins/
-ze-news       → ze-sdk                   plugins/
-ze-api        → ze-core, ze-data, ze-logging, ze-sdk, ze-personal, ze-automation, ze-email, ze-prospecting,
-                  ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components   apps/
-ze-web          (React — connects to ze-api over WebSocket, no Python deps)         apps/
+ze-logging        (no ze deps)             core/kernel/
+ze-data           (no ze deps)             core/kernel/
+ze-components     (no ze deps)             core/kernel/
+ze-agents       → ze-logging               core/contracts/
+ze-communication→ ze-agents                core/contracts/  ← channel types, ABCs, registry
+ze-plugin       → ze-agents, ze-data       core/contracts/
+ze-proactive    → ze-agents                core/contracts/
+ze-core         → ze-agents, ze-communication, ze-plugin  core/engine/  ← engine; never a plugin dep
+ze-collision    → ze-agents, ze-plugin, ze-logging  core/seam/  ← contribution collision detection; wired by ze-api directly
+ze-memory       → ze-agents, ze-plugin, ze-collision      core/cognition/  ← ze-plugin: Contribution seam (Signal write path)
+ze-correlation  → ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision  core/cognition/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
+ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision  core/cognition/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
+ze-automation   → ze-agents, ze-proactive, ze-memory  core/automation/  ← goals + workflows; wired by ze-api directly
+ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data  core/automation/  ← agent skills; wired by ze-api directly
+ze-priority     → ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation, ze-plugin, ze-collision  core/arbitration/  ← attention arbitration (PriorityView + shared push budget) + user-directed priority override; wired by ze-api directly; ze-plugin: Contribution seam (reprioritization write path)
+ze-workspace    → ze-agents, ze-logging, ze-data  core/ops/  ← isolated computer; wired by ze-api; ze-core/ze-agents must not import it
+ze-onboarding                              core/ops/
+ze-ingestion                               core/ops/
+ze-seed                                    core/ops/
+ze-eval           (no ze deps — HTTP only) core/ops/  ← eval infrastructure
+ze-sdk          → ze-agents, ze-communication, ze-data, ze-logging, ze-plugin, ze-proactive, ze-memory, ze-automation, ze-collision  packages/  ← plugin entry point
+ze-browser        (no ze deps)             integrations/
+ze-notifications  (no ze deps)             integrations/
+ze-google       → ze-communication         integrations/  ← GmailChannel now lives here
+ze-personal     → ze-sdk, ze-memory (read-only: ze_memory.dream.store for dream journal)   plugins/
+ze-messenger    → ze-sdk, ze-google, ze-personal            plugins/
+ze-prospecting  → ze-sdk, ze-browser, ze-personal           plugins/
+ze-calendar     → ze-sdk, ze-google, ze-personal            plugins/
+ze-news         → ze-sdk                   plugins/
+ze-api          → ze-core, ze-data, ze-logging, ze-sdk, ze-personal, ze-automation, ze-worldstate, ze-skills, ze-priority, ze-workspace, ze-messenger, ze-prospecting,
+                    ze-calendar, ze-google, ze-browser, ze-news, ze-notifications, ze-components   apps/
+ze-web            (React — connects to ze-api over WebSocket, no Python deps)         apps/
 ```
 
 ## Essential commands
@@ -245,6 +303,26 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 - Slow tests (embedding model): mark with `@pytest.mark.slow`, skipped by default.
   Pass `SLOW=1` (e.g. `make test-core SLOW=1`) or run `make test-all`.
 
+### ze-web (React / FSD)
+
+`apps/ze-web/src/` follows **Feature-Sliced Design**. Layer order (higher may import lower, never reverse):
+
+```
+pages → widgets → features → entities → shared
+```
+
+**Query hooks** — always in `entities/<name>/api/use<Name>Query.ts`, exported from `entities/<name>/index.ts`. Widgets import from the entity index, never call SDK directly.
+
+**Mutations** — entity-bound mutations in `entities/<name>/api/use<Name>Mutation.ts`; side-effect features (delete, export) in `features/<name>/api/use<Name>.ts`.
+
+**Format / util helpers** — in `<slice>/lib/format.ts` within the slice that owns them. Do not add to `shared/lib/` unless used by ≥ 2 unrelated slices.
+
+**SDK types** — import `type { Foo }` directly from `@ze/client` in any layer; no re-export wrapper needed.
+
+**Tailwind opacity** — non-standard steps must use arbitrary-value syntax: `bg-white/[0.03]` not `bg-white/3`. Standard steps (5, 10, 15, 20 …) use the shorthand form.
+
+**Routes** — core-owned routes declared in `shared/config/nav-routes.ts` + `app/router/routes.ts`. Plugin routes injected at runtime via `GET /api/v0/ui/manifest`.
+
 ### Native app interface
 
 - The `NativeAppInterface` in `ze_api/interface/native.py` handles all outbound delivery:
@@ -282,7 +360,7 @@ Hot-reloaded on SIGHUP without restart.
 ## Adding a new agent
 
 1. Write a spec first via spec-kit: `/speckit-specify` creates `specs/phases/NNN-<name>/spec.md` (see `specs/README.md` for the pipeline and index).
-2. Create the agent in the appropriate package — `ze_personal/agents/`, `ze_email/agents/`,
+2. Create the agent in the appropriate package — `ze_personal/agents/`, `ze_messenger/agents/`,
    `ze_prospecting/agents/`, or `ze_calendar/agents/` — decorate with `@agent` from
    `ze_sdk`, subclass `BaseAgent` from `ze_sdk`.
    Put `description`, `model`, `intents`, `tools`, and `timeout` as class
@@ -326,16 +404,18 @@ and runs them against a single `alembic_version` table.
 |---|---|---|
 | ze-core | `zc` | user_facts, episodes, user_profile, goals/milestones/gates, persona_state, capability_overrides, LangGraph checkpoints, messages, sessions, pending_confirmations |
 | ze-automation | `zc` (continues ze-core chain) | goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, accountability_anomalies |
-| ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, insights, episodes.contacts_extracted |
+| ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map |
 | ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_procedures, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache |
 | ze-onboarding | `zo` | onboarding_sessions, onboarding_steps, onboarding_seeds |
 | ze-correlation | `zcor` | correlation_hypothesis |
-| ze-proactive | `zpro` | push_log |
+| ze-proactive | `zpro` | push_log, notifications |
 | ze-calendar | `zcal` | calendar_reminders, user_reminders |
 | ze-prospecting | `zpros` | prospect_campaigns, prospect_outreach |
 | ze-news | `zn` | news_articles |
 | ze-skills | `zsk` | skills, skill_reference_files, skill_reviews, skill_scripts (`zsk002`) |
 | ze-workspace | `zws` | workspace_state, workspace_runs |
+| ze-collision | `zcol` | contribution_collisions |
+| ze-priority | `zpri` | priority_overrides |
 
 **Naming conventions:**
 - One prefix per package (`zc`, `zm`, `zcal`, …).
@@ -347,14 +427,14 @@ and runs them against a single `alembic_version` table.
 - ze-api runs migrations but owns no tables.
 - Never add plugin-owned tables to ze-api migrations.
 - For `ZePlugin` subclasses: create `<pkg>/migrations/` and override `migrations_path()` — the runner discovers it automatically.
-- For non-plugin core packages (ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-automation, ze-skills, ze-workspace): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
+- For non-plugin core packages (ze-memory, ze-onboarding, ze-correlation, ze-proactive, ze-automation, ze-worldstate, ze-skills, ze-workspace): add an explicit `_ZE_*_VERSIONS` constant in `ze_api/migrate.py`.
 - Use `depends_on` in migration files for cross-package ordering (e.g. ze-prospecting depends on `zc005` for the contacts table).
 
 ## LangGraph graph flow
 
 ```
 [voice/image] → transcribe/caption ─┐
-[text]                               ├→ embed_route → (compound?) → decompose → fetch_context → capability_check
+[text]                               ├→ embed_route → (compound?) → decompose → fetch_context → match_skills → capability_check
                                                                   ↘ fetch_context ↗
 capability_check → execute_tool → (compound?) → synthesize → write_memory → END
                  → draft_response → await_confirmation → END  (graph pauses here)
@@ -411,17 +491,44 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 64 | Plugin package extraction — `ze-plugin` package carved from `ze-agents`; `ZePlugin`, `channels/`, `SignalSource`, `ZeIntegration` in their own package; `ze-agents` focused on agent execution API | Done |
 | 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/kernel/ze-data`; no Ze deps | Done |
 | 70 | Finance recurring detection — algorithmic recurring expense/subscription detection, staleness-aware proactive job, CSV nudge flow, price-change resurface | Done |
-| 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Pending |
+| 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Done |
 | 72 | API client codegen — `@ze/client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Done |
 | 73 | API surface cleanup — all routes under `/api/v0/`; `HTTPBearer` security scheme; explicit `operation_id` on every route; auth extracted into `require_api_key` Depends; duplicate cost route removed; `GET /api/v0/version` | Done |
 | 74 | Automation substrate — `ze-automation` core package owns full automation stack (types, stores, planners, executors, agents, migrations); `ze-personal` reduced to persona + contacts + onboarding | Done |
 | 76 | ze-api shell cleanup — domain bootstrap into package modules; `ZeApiSettings` shell; test relocation; delete `ze_api/bootstrap.py`; `compose.py` for proactive jobs | Done |
 | 77 | ze-logging — structlog configuration extracted from ze-api/ze-agents into `core/kernel/ze-logging`; `get_logger` via ze-sdk | Done |
-| 78 | Dream Memory — sleep pass, dream journal, retrieval weight, sensitive tagging (78a); dream synthesis + gates pending (78b) | In Progress |
+| 78 | Dream Memory — sleep pass (78a) + dream synthesis, NLI gates, two-critic pipeline, promoter, REST API (78b) | Done |
 | 79 | NLI cross-encoder — contradiction detection, retrieval re-rank cache, correlation grounding (`ze_core/nli.py`) | Done |
 | 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Done |
-| 81 | Plugin NLI adoption — news dedup, finance merchant merging | Pending |
-| 115 | Workspace Environment — `core/ops/ze-workspace` + `sidecar/workspace`; chat-first computer (no execution modes; map at `/workspace`); skill scripts after executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. | Done |
+| 81 | Plugin NLI adoption — news dedup, finance merchant merging | Done |
+| 83 | ze-communication + ze-messenger — channel contract extracted to `core/contracts/ze-communication`; `GmailChannel` moved to `ze-google` as `InboundChannel`; `ze-email` renamed to `ze-messenger` | Done |
+| 85 | Messaging Hub — `channel_id` identity, `UserChannelStore`/`ChannelWatermarkStore`/`ThreadChannelMap` (ze-personal), `InboundPollingJob`, `InboundMessageProcessor`, `MessagingSignalSource` (ze-messenger), thread-aware `send_email`, `ChannelRegistry` on container, `GET/PATCH /api/v0/channels` | Done |
+| 88 | Memory Feed — reverse-chronological paginated stream of facts + episodes; `GET /api/v0/memory/feed` with cursor pagination + type/agent filters; `/brain/memory` React page with infinite scroll + inline fact review | Done |
+| 89 | Message Trace — per-message explainability; `trace` JSONB column on `messages`; `record_trace` graph node; `GET /api/v0/messages/{id}/trace`; collapsible "Why?" panel in chat UI | Done |
+| 90 | Ze's Mind Split-Pane — real-time context sidebar in chat; `trace_update` WS frame emitted post-graph; 320 px resizable right panel showing routing/memory/tools for latest message | Done |
+| 91 | Goal Dashboard v2 — `GET /api/v0/goals/{id}` detail + `GET /api/v0/goals/{id}/traces`; milestone timeline, gate status, execution trace log, learnings sidebar at `/goals/:goalId` | Done |
+| 92 | Agent Activity Heatmap — calendar heatmap of agent usage by day; `GET /api/v0/activity/heatmap` aggregates `messages.trace`; section on Usage (`/costs`) using `@uiw/react-heat-map` | Done |
+| 93 | Temporal Memory Timeline — `as_of` param on `GET /api/v0/memory/feed`; `GET /api/v0/memory/timeline-bounds`; date scrubber on Memory Feed page for time-travel memory view | Done |
+| 94 | Memory Graph View — interactive entity/relationship graph; `GET /api/v0/memory/graph` + entity detail endpoint; `/brain/graph` page using React Flow + dagre layout; click-to-expand neighbourhoods | Done |
+| 95 | Unified Streaming Architecture — switch `invoke_raw_turn` (now in `ze_core/conversation/turn.py`) to `astream_events`; emit partial `trace_update` frames as graph nodes complete (routing → memory → tools → final); token streaming for messages already works; trace panel fills progressively | Done |
+| 104 | Workflow Flowchart View — replace the flat timeline run view with a top-to-bottom flowchart (`@xyflow/react` + `dagre`); steps as nodes, `branches`/`default_next` as labeled edges, executed path highlighted via `branch_taken`; full replacement of `WorkflowStepsList` | Done |
+| 105 | Notification Center — `notifications` table owned by `ze-proactive` (`zpro002`); `ProactiveNotifier.notify()` structured path; `GET/POST /api/v0/notifications` REST surface; live `notification` WS frame; `entities/notification` + `widgets/notification-bell` replacing the decorative Bell in `TopBar` | Done |
+| 106 | Memory Retrieval Relevance — real cosine similarity + configurable relevance floor across all `ze-memory` policies; entity-anchored retrieval (`entity_anchor.py`, one-hop `GraphStore.expand()` from query-text entity matches); composite ranking (`composite.py`, similarity × recency decay × confidence) before token budgeting; synchronous live NLI rerank (`retrieval_rerank.live_rerank`) distinct from the async session cache; Mind panel shows real relevance, not extraction confidence | Done |
+| 108 | Workflow Revision Audit — append-only `workflow_revisions` log (`zc026`) on every workflow create/step-edit (agent tool + REST), before/after steps, human-readable diff summary, actor context (agent session/message id or API); `GET /api/v0/workflows/{id}/revisions`; "Change History" section on workflow detail page with "View conversation" deep link and a link from the 107b definition-changed banner | Done |
+| 109 | Open-Loop Substrate — new core `ze-worldstate` package: `OpenLoop` (`suspected`→`active`→`drifting`→`closed`\|`dropped`), honest provenance, continuous confidence with evidence-linked decay cascade, entity-overlap/embedding dedup, stale-suspicion expiry job; loops reuse `ze-memory`'s `memory_relationships`/`GraphStore` (new `open_loop` bucket) rather than a parallel model; wired into all four inflows (conversation, email, calendar, ingestion); `GET/POST /api/v0/loops` REST surface; `widgets/loop-review` | Done |
+| 110 | Open-Loop Drift Detection & Surfacing (Phase B) — `drift_deadline`/`drift_rationale` columns (`zw002`), scheduled `DriftSweepJob` + immediate contradiction path (`decay.py`) moving `active`→`drifting`; `ze_core` `surface_loops` node (entity-overlap inline mentions, no gating); `ze-worldstate → ze-correlation` dependency reusing extracted push-bar functions (`ze_correlation/push.py`) via `LoopSurfacer.passes_push_bar` + `PushSweepJob`, sibling `push_log` budget and inline-then-push cooldown | Done |
+| 111 | Claim Topology — shared `ClaimKind`/`Provenance`/`Confidence`/`decay()` vocabulary in `core/contracts/ze-agents/ze_agents/claims.py`; fixes frozen `Hypothesis.confidence` via new `HypothesisDecayJob` (`zcor002`); retrofits `OpenLoop`, `memory_facts` (`zm016`), and `Signal` (`zm017`) onto the shared vocabulary, `OpenLoop.provenance` unvalidated against a closed core whitelist; extracts `is_stale()` staleness helper into `core/contracts/ze-proactive`, shared by `StaleSuspicionJob`/`DriftSweepJob`/`PostgresGoalStore.list_stuck` | Done |
+| 112 | Session Context Continuity — replaces `write_memory`'s blind `[-SESSION_HISTORY_LIMIT:]` trim with a 70%-of-context-window compaction check (`ze_core/openrouter/context_windows.py`, LLM-produced rolling summary folded ahead of the verbatim tail, graceful fallback to the old trim on LLM failure); replaces `fetch_context`'s blank-history-on-gap side effect with a silent resume recap (`ResumeRecap`, session narrative + open loops + in-flight goals/workflows) injected into the system prompt via `AgentContext.resume_recap`, never appended to `messages`; both recorded on `MessageTrace` (`compaction`, `resume_recap_applied`) for trace-panel inspectability; no new graph nodes, no new tables | Done |
+| 113 | Proactive/Concurrency Hardening Sweep — three independent reliability fixes: `pending_confirmations` + in-process `pending_configs` rekeyed from `thread_id` to `request_id` (`zc027`) so concurrent confirmation gates on one thread can't clobber or cross-cancel each other; opt-in `budget:` config block + `SpendBudgetChecker`/`ze_core/telemetry/pricing.py` composed into `capability_check` (strictest-wins with `CapabilityGate`), holding execution via the existing `AWAIT_CONFIRMATION` gate when session/day spend would exceed a configured ceiling; `push_log` idempotency key + unique index (`zpro003`) turns `LoopSurfacer.log_push`/`PushSweepJob` from notify-then-log into claim-then-notify (`claim_push`/`release_push_claim`), closing the concurrent-sweep double-notify race and rolling back the claim on notifier failure | Done |
+| 114 | Agent Skills — new core `ze-skills` package: import `SKILL.md` from a URL or zip, pending-review gate before any conversation effect, embedding-similarity + `/skill-name` matching applied globally across agents, `allowed-tools` intersects (never unions) an agent's tools, usage on `MessageTrace.skills_used`/`trace_update`; bundled skills via `ZePlugin.bundled_skill_paths()`; daily `SkillRecheckJob` reverts to pending review on source content change; `GET/POST /api/v0/skills` + `widgets/skill-management` | Done |
+| 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Done |
+| 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Done |
+| 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Done |
+| 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Done |
+| 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Done |
+| 122 | Data Overview Charts — storage-composition chart replacing `StorageDonutChart` on the data overview widget | Done |
+| 127 | User-Directed Priority Override — `PriorityOverride` (`ze-priority`'s first store, `zpri` migration chain), snapshot view + drag reorder + conversational `reprioritize_item` tool, decaying/pinned overrides merged into `PriorityView.rank()` at render time, `ze_collision` skip rule narrowed to `(source_function, provenance)` so user-vs-executive priority disagreement is observable | Done |
+| 132 | Priority Turn Surfacing — conversation inline mentions, resume recap, and explicit what's-open consume merged `PriorityView` (including Phase 127 pins) via `TurnSurfacing` injected as `config["configurable"]["turn_surfacer"]`; relevance still gates unsolicited mentions; component type `open_items`; no store merge, no push-budget change | Done |
 | 140 | Memory admission + remember/forget — keep/drop extractor with closed families; companion `remember_fact`/`forget_fact` through the contribution seam; `AgentResult.memory_proposals` removed | Done |
 | 141 | Memory read contract + prompt constitution — reviewed facts always-on; `_format_memory` origin/confidence/recency; constitution + job before biography; silent fact use; `TurnSurfacing` stays for open items | Done |
 | 142 | Speech-act routing — extractor `speech_act` gate; companion routes timed remember to reminders, lingering concerns to loops, multi-week outcomes to goals | Done |
@@ -469,6 +576,26 @@ shapes). Use Grep / Read / specs instead, then optionally confirm with `explain`
 **Keep it fresh:** after substantial code changes, `graphify update .` (AST-only,
 no API cost). Full rebuild only when the graph is missing or badly stale.
 `graphify-out/` is gitignored — local/cache only.
+
+When the user types `/graphify`, follow the graphify skill before other exploration.
+
+## Documentation style
+
+Public-facing docs (root READMEs, `VISION.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+`docs/*.md`) follow Orwell's six rules plus an ASD-STE100-inspired plain-English
+discipline — active voice, short sentences, no needless words, American spelling.
+Does not apply to `specs/`, `CLAUDE.md`, or `AGENTS.md`. See the `doc-style` skill
+(`.claude/skills/doc-style/SKILL.md`) before drafting or editing these files.
+
+### Diagrams in docs
+
+When drafting or editing `docs/*.md`, ask whether a reader would learn more from
+a visual than from prose — architecture, request/data flow, state machines,
+sequence interactions, layered systems, timelines. If yes, use the `diagram-design`
+skill (`.claude/skills/diagram-design/SKILL.md`) to produce a branded SVG/HTML
+diagram instead of hand-rolled ASCII box-drawing art. Don't diagram what a short
+paragraph already says clearly — see the skill's own density guidance (§1–2)
+before adding one.
 
 ## Learned User Preferences
 
