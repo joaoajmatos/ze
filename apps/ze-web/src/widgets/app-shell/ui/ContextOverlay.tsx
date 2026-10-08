@@ -26,8 +26,9 @@ function useIsMobile() {
 
 function useOverlayChat(open: boolean, screen: string, entityId?: string, overlayThreadId?: string) {
   const [input, setInput] = useState("");
-  const { messages, showTyping, typingText, streamingText, isThinking, sendMessage } =
-    useChatWorkspace({
+  const {
+    messages, showTyping, typingText, streamingText, isThinking, deliveryFailed, retry, sendMessage,
+  } = useChatWorkspace({
       active: open,
       context: { screen, ...(entityId && { goal_id: entityId }) },
       threadId: overlayThreadId,
@@ -41,7 +42,10 @@ function useOverlayChat(open: boolean, screen: string, entityId?: string, overla
     if (sendMessage(input)) setInput("");
   }
 
-  return { input, setInput, messages, showTyping, typingText, streamingText, isThinking, handleSend };
+  return {
+    input, setInput, messages, showTyping, typingText, streamingText, isThinking,
+    deliveryFailed, retry, handleSend,
+  };
 }
 
 // ─── Open-in-chat action ──────────────────────────────────────────────────────
@@ -142,6 +146,8 @@ function MobileChatSheet({
               showTyping={chat.showTyping}
               typingText={chat.typingText}
               streamingText={chat.streamingText}
+              deliveryFailed={chat.deliveryFailed}
+              onRetry={chat.retry}
               className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0"
             />
 
@@ -283,6 +289,8 @@ function DesktopChatWidget({
                 showTyping={chat.showTyping}
                 typingText={chat.typingText}
                 streamingText={chat.streamingText}
+                deliveryFailed={chat.deliveryFailed}
+                onRetry={chat.retry}
                 className="h-full overflow-y-auto px-3 py-3 space-y-3"
               />
             </div>

@@ -11,6 +11,15 @@ import { queryKeys } from "@/shared/lib";
 
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
 
+// Longest silence (no reply, typing or token frame) tolerated before the client
+// stops waiting on the live connection and checks stored history instead.
+export const DELIVERY_WATCHDOG_MS = 120_000;
+
+interface SentMessage {
+  text: string;
+  workspacePlaced?: { path: string; size: number }[];
+}
+
 interface UseChatWorkspaceOptions {
   ephemeral?: boolean;
   active?: boolean;
@@ -23,11 +32,18 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   const sessionThreadId = useSession((s) => s.threadId);
   const threadId = threadIdOverride ?? sessionThreadId;
   const queryClient = useQueryClient();
-  const { messages: persistedMessages, upsert, edit, loadHistory } = useMessages(threadId);
+  const { messages: persistedMessages, upsert, edit, loadHistory, reload } = useMessages(threadId);
 
   const [ephemeralMessages, setEphemeralMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [failedThread, setFailedThread] = useState<string | null>(null);
   const prevActiveRef = useRef(active);
+  const messagesRef = useRef(persistedMessages);
+  const knownAssistantIdsRef = useRef<Set<string>>(new Set());
+  const activityAtRef = useRef(0);
+  const awaitingRef = useRef(false);
+  const lastSentRef = useRef<SentMessage | null>(null);
+  const checkForReplyRef = useRef<() => Promise<boolean>>(async () => false);
   const sessionsInvalidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const debouncedInvalidateSessions = () => {
@@ -61,6 +77,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   // the backend is processing, regardless of which session was active
   // when the typing frame originally arrived.
   const showTyping = isThinking;
+  const deliveryFailed = failedThread === threadId;
 
   const { pendingConfirm, respond: respondToConfirm, clear: clearConfirm } = useConfirmation(
     active,
@@ -83,6 +100,60 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     }
   }, [ephemeral, isConnected, active, threadId, loadHistory]);
 
+  useEffect(() => {
+    messagesRef.current = persistedMessages;
+  });
+
+  // Reloads stored history and reports whether an assistant reply arrived that
+  // this client had not seen when the wait began.
+  async function checkForReply(): Promise<boolean> {
+    if (ephemeral) return false;
+    const history = await reload();
+    return (
+      history?.some(
+        (m) => m.role === "assistant" && m.id && !knownAssistantIdsRef.current.has(String(m.id)),
+      ) ?? false
+    );
+  }
+
+  useEffect(() => {
+    checkForReplyRef.current = checkForReply;
+  });
+
+  // Bounded wait: whatever flipped the thread to thinking, it ends in a visible
+  // reply or a visible failure, never an indefinite spinner.
+  useEffect(() => {
+    if (!isThinking || !active) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    knownAssistantIdsRef.current = new Set(
+      messagesRef.current.filter((m) => m.role === "assistant" && m.id).map((m) => String(m.id)),
+    );
+    activityAtRef.current = Date.now();
+
+    const arm = (ms: number) => {
+      timer = setTimeout(() => void onDeadline(), ms);
+    };
+    const onDeadline = async () => {
+      const idle = Date.now() - activityAtRef.current;
+      if (idle < DELIVERY_WATCHDOG_MS) {
+        arm(DELIVERY_WATCHDOG_MS - idle);
+        return;
+      }
+      const replied = await checkForReplyRef.current();
+      if (cancelled) return;
+      stopThinking();
+      if (!replied) setFailedThread(threadId);
+    };
+    arm(DELIVERY_WATCHDOG_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stopThinking only closes over threadId and stable setters
+  }, [isThinking, active, threadId]);
+
   useFrame("typing", (frame) => {
     const frameThread = frame.thread_id ?? null;
     if (frameThread && frameThread !== threadId) {
@@ -95,11 +166,13 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       return;
     }
     // Typing for our own thread.
+    activityAtRef.current = Date.now();
     setThreadTypingText(threadId, frame.text ?? null);
     debouncedInvalidateSessions();
   });
 
   function stopThinking() {
+    awaitingRef.current = false;
     setThreadThinking(threadId, false);
     setThreadTypingText(threadId, null);
     setStreamingText(null);
@@ -147,6 +220,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       }
     }
 
+    setFailedThread(null);
     stopThinking();
   });
 
@@ -159,6 +233,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     const frameThread = frame.thread_id ?? null;
     if (frameThread && frameThread !== threadId) return;
     if (!active) return;
+    activityAtRef.current = Date.now();
     setStreamingText((prev) => (prev ?? "") + (frame.text ?? ""));
   });
 
@@ -169,13 +244,19 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       setThreadTypingText(frameThread, null);
       return;
     }
+    // An untagged error belongs to whichever hook just sent; the others must not
+    // unlock a turn that is still running.
+    if (!frameThread && !awaitingRef.current) return;
     if (!active) return;
+    const wasAwaiting = awaitingRef.current;
     stopThinking();
+    if (wasAwaiting) setFailedThread(threadId);
   });
 
   function sendMessage(
     text: string,
     workspacePlaced?: { path: string; size: number }[],
+    { resend = false }: { resend?: boolean } = {},
   ): boolean {
     const trimmed = text.trim();
     if (!trimmed || isThinking) return false;
@@ -184,16 +265,6 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       ...context,
       ...(workspacePlaced?.length ? { workspace_placed: workspacePlaced } : {}),
     } as typeof context;
-
-    if (ephemeral) {
-      const sent = send({ type: "message", text: trimmed, context: mergedContext });
-      if (!sent) {
-        useSendNotice.getState().showNotice(NOT_CONNECTED_NOTICE);
-        return false;
-      }
-      setThreadThinking(threadId, true);
-      return true;
-    }
 
     const sent = send({
       type: "message",
@@ -206,18 +277,32 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
       return false;
     }
 
-    upsert({
-      id: crypto.randomUUID(),
-      role: "user",
-      text: trimmed,
-      components: [],
-      read: true,
-      created_at: new Date().toISOString(),
-      thread_id: threadId,
-    });
+    lastSentRef.current = { text: trimmed, workspacePlaced };
+    awaitingRef.current = true;
+    setFailedThread(null);
+
+    // A resend keeps the original bubble unless a history reload dropped it.
+    const lastUser = [...messagesRef.current].reverse().find((m) => m.role === "user");
+    if (!ephemeral && !(resend && lastUser?.text === trimmed)) {
+      upsert({
+        id: crypto.randomUUID(),
+        role: "user",
+        text: trimmed,
+        components: [],
+        read: true,
+        created_at: new Date().toISOString(),
+        thread_id: threadId,
+      });
+    }
 
     setThreadThinking(threadId, true);
     return true;
+  }
+
+  function retry(): boolean {
+    const last = lastSentRef.current;
+    if (!last) return false;
+    return sendMessage(last.text, last.workspacePlaced, { resend: true });
   }
 
   function resetInteraction() {
@@ -234,8 +319,10 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     streamingText,
     isThinking,
     isConnected,
+    deliveryFailed,
     pendingConfirm,
     sendMessage,
+    retry,
     respondToConfirm,
     resetInteraction,
   };
