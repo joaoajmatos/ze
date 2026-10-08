@@ -21,7 +21,14 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
 
 - **Routing** — `EmbeddingRouter` embeds the message, cosine-similarity matches to
   agent intents; `ComplexityEstimator` decides compound vs. single-agent; fallback
-  to haiku-class on low-confidence
+  to haiku-class on low-confidence. With `system_one.surfaces.routing` on and
+  calibrated (Phase 164), E5 stays the shortlist and one batched System One request
+  (`ze_core/routing/judge.py`) asks a Choice over the shortlist plus `none`, a Noul
+  ("more than one specialist?") and a Score (complexity). Pure `decide()` turns the
+  answers into trust / decompose / abstain / skip; abstain and skip fall back to the
+  E5 bars and the regex `ComplexityEstimator`. `embed_route` records the judgments on
+  the trace. Both call sites (`Container` and `bootstrap.build_router`) build the
+  router through `build_embedding_router` in `ze_core/routing/factory.py`.
 - **Capability gate** — `CapabilityGate` checks the current `Mode` against the matched
   agent; `PostgresCapabilityOverrideStore` persists per-agent overrides
 - **Orchestration graph** — `graph_builder` compiles the LangGraph graph; nodes are

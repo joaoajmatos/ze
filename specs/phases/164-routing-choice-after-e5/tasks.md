@@ -158,12 +158,12 @@
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] **T027** [P] [DOCS] Document `system_one.surfaces.routing` keys: off by default, three separate uncalibrated bars, `shortlist_k`, the calibration command, and that `routing_log.confidence` is the Choice peakedness when `method=embedding` and a Choice was consumed. Follow the `doc-style` skill. · `docs/configuration.md`
-- [ ] **T028** [P] [DOCS] Document the routing judgment and the single router factory (and that both call sites use it). · `specs/core/ze-core.md`
-- [ ] **T029** [P] [DOCS] Mark sequencing step 3 / O2 as Implemented, set Appendix A rows for `EmbeddingRouter`, `ComplexityEstimator` and Haiku `decompose`, and add notes under O2 (single attempt, bars, drift fix, Score mapping). · `specs/arch/system-one-models.md`
-- [ ] **T030** [P] [DOCS] Update the 164 phase-table row to Implemented with the one-line scope. · `AGENTS.md`
+- [x] **T027** [P] [DOCS] Document `system_one.surfaces.routing` keys: off by default, three separate uncalibrated bars, `shortlist_k`, the calibration command, and that `routing_log.confidence` is the Choice peakedness when `method=embedding` and a Choice was consumed. Follow the `doc-style` skill. · `docs/configuration.md`
+- [x] **T028** [P] [DOCS] Document the routing judgment and the single router factory (and that both call sites use it). · `specs/core/ze-core.md`
+- [x] **T029** [P] [DOCS] Mark sequencing step 3 / O2 as Implemented, set Appendix A rows for `EmbeddingRouter`, `ComplexityEstimator` and Haiku `decompose`, and add notes under O2 (single attempt, bars, drift fix, Score mapping). · `specs/arch/system-one-models.md`
+- [x] **T030** [P] [DOCS] Update the 164 phase-table row to Implemented with the one-line scope. · `AGENTS.md`
 - [x] **T031** [BE] Run `make test-agents test-core test-memory test lint`. SC-005: confirm every new test injects a fake `SystemOneClient` and none constructs `OpenRouterSystemOneClient` against a real transport. Fix any failures. · repo root
-- [ ] **T032** [DOCS] Set spec `**Status**:` to Implemented. · `specs/phases/164-routing-choice-after-e5/spec.md`
+- [x] **T032** [DOCS] Set spec `**Status**:` to Implemented. · `specs/phases/164-routing-choice-after-e5/spec.md`
 
 ---
 

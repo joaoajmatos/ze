@@ -345,6 +345,12 @@ system_one:
       enabled: false
       choice_hold: null           # uncalibrated — set from make calibrate-speech-act
       biography_hold: null        # uncalibrated — set from make calibrate-speech-act
+    routing:                      # Agent choice after E5 (Phase 164)
+      enabled: false
+      choice_trust: null          # uncalibrated — set from make calibrate-routing
+      multi_specialist_hold: null # uncalibrated — set from make calibrate-routing
+      complexity_lookup_max: null # uncalibrated — set from make calibrate-routing
+      shortlist_k: 4
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -355,6 +361,26 @@ The two bars are not the same number:
 - `biography_hold` is the minimum yes-probability that the message states a durable fact about the user.
 
 If you enable the surface and leave a bar `null`, Ze logs `speech_act_system_one_uncalibrated` and uses the Haiku judge. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-speech-act`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.speech_act.enabled` to `true`. Run it again when you change the model.
+
+#### `surfaces.routing`
+
+E5 stays the shortlist. When `routing` is on, one System One request asks three questions about the message: which of the top agents should handle it (or `none`), whether it needs more than one specialist, and how much work it needs. Ze makes one attempt, with no retries. Code then decides:
+
+- A confident choice of one agent routes straight to that agent.
+- A `none` answer, or a high multi-specialist probability, sends the turn to the Haiku decompose step.
+- An unsure choice or a System One skip falls back to the E5 threshold and gap rules (`routing.threshold`, `routing.gap_threshold`).
+
+The three bars are separate numbers:
+
+- `choice_trust` is the minimum peakedness of the agent choice for Ze to trust one agent.
+- `multi_specialist_hold` is the minimum probability that the message needs more than one specialist.
+- `complexity_lookup_max` is the highest complexity score that still counts as a simple turn. When it is `null`, the word-count classifier picks the model tier.
+
+`shortlist_k` sets how many E5-ranked agents the choice sees. The default is 4. Values below 2 fall back to 4. With fewer than two enabled agents, Ze makes no call.
+
+The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.routing.enabled` to `true`.
+
+When System One routes a turn, `routing_log.confidence` holds the peakedness of the agent choice instead of the E5 cosine score. Turns that fall back to E5 keep the cosine score.
 
 ## `config/persona.yaml`
 

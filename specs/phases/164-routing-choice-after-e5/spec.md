@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-30
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "Complement EmbeddingRouter with System One Choice over the E5 shortlist plus none, and a complexity Score. Keep E5 encode, 160 bars as shortlist, Haiku decompose when none/low confidence/multi-specialist. Do not change 153/155. Depends on 162. Do not start in the 163 tree."
 

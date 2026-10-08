@@ -3,7 +3,7 @@
   "specName": "Routing Choice After E5",
   "branch": "164-routing-choice-after-e5",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -234,6 +234,53 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-08T11:51:55.565Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:53:14.514Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:53:14.640Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:53:14.770Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:53:14.903Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:53:15.031Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:53:15.579Z"
     }
   ],
   "telemetryInstanceId": "40af2510-7e19-4ec2-a0b1-9f2e7385edfc",
@@ -287,7 +334,7 @@
     "area: EmbeddingRouter ComplexityEstimator fallback.decompose",
     "constraint: 160 bars remain shortlist; Principle VII embeddings stay E5"
   ],
-  "currentTask": "T027",
+  "currentTask": "T032",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -368,6 +415,21 @@
       "status": "DONE"
     },
     "T031": {
+      "status": "DONE"
+    },
+    "T027": {
+      "status": "DONE"
+    },
+    "T028": {
+      "status": "DONE"
+    },
+    "T029": {
+      "status": "DONE"
+    },
+    "T030": {
+      "status": "DONE"
+    },
+    "T032": {
       "status": "DONE"
     }
   }
