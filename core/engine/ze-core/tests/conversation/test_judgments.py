@@ -77,3 +77,18 @@ def test_decision_skip_reason_stamped_on_ok_rows():
     )
     assert all(r.skip_reason == "invalid_answer" for r in rows)
     assert all(not r.consumed for r in rows)
+
+
+def test_missing_answer_gets_its_own_skip_row():
+    result = _ok()
+    del result.answers["biography"]
+    rows = judgments_from_result(
+        result,
+        question_ids=_IDS,
+        consumed=frozenset(),
+        skip_reason="invalid_answer",
+    )
+    assert [r.question_id for r in rows] == list(_IDS)
+    bio = rows[-1]
+    assert bio.answer is None and bio.kind == "noul"
+    assert bio.skip_reason == "invalid_answer" and not bio.consumed

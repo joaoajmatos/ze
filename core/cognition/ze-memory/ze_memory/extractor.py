@@ -531,9 +531,18 @@ async def gather_fact_proposals(
 
     system_one = configurable.get("system_one_client")
     if surface.calibrated and system_one is not None:
-        result = await system_one.evaluate(
-            build_state(prompt, response), SPEECH_ACT_QUESTIONS, max_attempts=1
-        )
+        try:
+            result = await system_one.evaluate(
+                build_state(prompt, response), SPEECH_ACT_QUESTIONS, max_attempts=1
+            )
+        except Exception as exc:
+            log.warning("speech_act_system_one_call_failed", error=str(exc))
+            extracted = await extract_facts(
+                client, prompt=prompt, response=response, model=model
+            )
+            for fact in extracted:
+                fact.agent = agent
+            return FactAdmission(facts=extracted, path="haiku", skip_reason="error")
         decision = decide(result, surface)
         log.info(
             "speech_act_system_one_decision",

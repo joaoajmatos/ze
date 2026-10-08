@@ -28,7 +28,18 @@ def judgments_from_result(
             for qid in question_ids
         ]
     rows: list[JudgmentTrace] = []
-    for qid, answer in result.answers.items():
+    for qid in question_ids:
+        answer = result.answers.get(qid)
+        if answer is None:
+            rows.append(
+                JudgmentTrace(
+                    question_id=qid,
+                    kind=_skipped_kind(qid),
+                    latency_ms=result.latency_ms,
+                    skip_reason=skip_reason,
+                )
+            )
+            continue
         is_noul = answer.type == "noul"
         rows.append(
             JudgmentTrace(

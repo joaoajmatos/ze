@@ -253,3 +253,18 @@ async def test_calibrated_but_no_system_one_client_uses_haiku():
     assert admission.path == "haiku"
     assert admission.judgment is None
     llm.complete.assert_awaited_once()
+
+
+async def test_raising_client_fails_open_to_one_haiku_judge():
+    configurable, llm, fake = _configurable(PERSIST[0].result(), _HAIKU_JSON)
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("boom")
+
+    fake.evaluate = boom
+    admission = await _gather(PERSIST[0], configurable)
+    llm.complete.assert_awaited_once()
+    assert llm.complete.await_args.kwargs["system"] == _SYSTEM
+    assert admission.path == "haiku"
+    assert admission.skip_reason == "error"
+    assert admission.judgment is None
