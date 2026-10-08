@@ -68,7 +68,11 @@ class ConnectionManager:
                     await self._ws.send_json(
                         {"type": "message", "message": message_to_dict(msg)}
                     )
+                except (TypeError, ValueError) as exc:
+                    # Data-level failure: skip the bad message, keep the socket.
+                    log.warning("ws_replay_unserializable", error=str(exc))
                 except Exception:
+                    # Transport failure: the socket is gone.
                     self._ws = None
                     break
 

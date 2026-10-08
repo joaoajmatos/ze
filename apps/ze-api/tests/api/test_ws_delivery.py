@@ -83,6 +83,39 @@ async def test_push_transport_error_clears_socket():
     assert not mgr.connected
 
 
+async def test_replay_serialization_error_keeps_socket():
+    from unittest.mock import patch
+
+    from ze_api.api.websocket import connection as connection_module
+
+    ws = _make_ws()
+    mgr = ConnectionManager()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[_message(), _message()])
+    with patch.object(
+        connection_module,
+        "message_to_dict",
+        side_effect=[TypeError("not JSON serializable"), {"text": "ok"}],
+    ):
+        await mgr.connect(ws, store)
+    assert mgr.connected
+    ws.send_json.assert_awaited_once_with(
+        {"type": "message", "message": {"text": "ok"}}
+    )
+
+
+async def test_replay_transport_error_clears_socket():
+    ws = _make_ws()
+    mgr = ConnectionManager()
+    store = AsyncMock()
+    store.list_unread = AsyncMock(return_value=[_message()])
+    ws.send_json.side_effect = RuntimeError("Cannot call send once closed")
+
+    await mgr.connect(ws, store)
+
+    assert not mgr.connected
+
+
 async def test_reply_delivered_after_failed_trace_update_frame():
     ws = _make_ws()
     mgr = await _connected(ws)
