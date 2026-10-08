@@ -1,9 +1,9 @@
 # Social Cognition — People, Projects, and Relationships as Evolving State
 
 > **Status:** Proposed — design questions resolved. Rollout steps 1–2 shipped as
-> Phase 128; step 3 is specced as
+> Phase 128; step 3 shipped as
 > [`specs/phases/130-social-cognition-co-occurrence/spec.md`](../phases/130-social-cognition-co-occurrence/spec.md)
-> (not yet implemented). Step 4 remains deferred.
+> (Implemented in `ze_personal/social/` with hypotheses in `ze_correlation`). Step 4 remains deferred.
 > **Scope:** `core/cognition/ze-memory` (the graph), `plugins/ze-personal` (contacts, the existing
 > partial implementation), `core/cognition/ze-correlation` (co-occurrence inference), `core/arbitration/ze-priority`
 > (surfacing), `core/contracts/ze-proactive` (the shared staleness helper reused below),

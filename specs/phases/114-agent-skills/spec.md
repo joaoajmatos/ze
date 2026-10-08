@@ -4,7 +4,7 @@
 
 **Created**: 2026-08-11
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Agent Skills — standard-compatible skill system for Ze. Users can import skills (from a URL or file) written in the open Agent Skills format, review and approve them before they take effect, and see when Ze uses one during a conversation. Developers can also ship skills bundled inside Ze's own domain packages. Skills add reusable instructions/knowledge to a conversation; they do not grant new tool access beyond what an agent already has, and they cannot bundle executable code in this phase."
 

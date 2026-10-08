@@ -4,7 +4,9 @@
 
 **Created**: 2026-08-14
 
-**Status**: Draft
+**Status**: Implemented
+
+**Note**: User Stories 1–3 shipped in `43befd4f`, `a03b180a`, and `b41ea9af`. User Story 4 (one run at a time) shipped with Phase 129 as `_refusal_if_busy` in `ze_workspace/tools.py`, so tasks T038–T042 are superseded by 129 rather than done here.
 
 **Input**: User description: "Specify the sibling to Phase 115 Workspace Environment: detached runs and follow-through. Destination UX from 115 clarification: wait-then-detach (Cursor-like). Short workspace runs finish on the same conversation turn. Longer runs continue after the turn ends. When a detached run finishes, Ze starts an automatic follow-up turn on that same thread. If the client is offline, Ze also sends a push notification. User can cancel a running detached run. Only one workspace run at a time (busy). Do not rewrite conversations to be generally async — reuse starting a turn and notifying, the same way other background work already talks to the user. Do not re-specify the workspace computer (files, shell, isolation, modes) — that is 115. This spec attaches to 115's durable workspace-run records."
 
