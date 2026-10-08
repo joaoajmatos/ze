@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-30
 
-**Status**: Draft
+**Status**: Ready to implement
 
 **Input**: User description: "Complement EmbeddingRouter with System One Choice over the E5 shortlist plus none, and a complexity Score. Keep E5 encode, 160 bars as shortlist, Haiku decompose when none/low confidence/multi-specialist. Do not change 153/155. Depends on 162. Do not start in the 163 tree."
 
@@ -21,6 +21,19 @@
 Phase 160 made E5 cosine bars honest enough that clear singles skip Haiku. The envelope still stores **cosine as `confidence`**. Low score or low gap still means `is_compound` and Haiku decompose — including some turns that are one specialist with a close runner-up description.
 
 This phase keeps E5 as the **shortlist**. A typed Choice over those agents plus `none` decides whether to trust a single specialist. A graded complexity question replaces the regex word-count classifier for model tiering. True mixed/sequential work still decomposes; 153/155 still rewrite those envelopes.
+
+## Clarifications
+
+### Session 2026-10-08
+
+- Q: When does the Choice run? → A: On every multi-agent turn (not only ambiguous ones), so a clear single also gets an honest confidence. Single enabled agent: no call (unchanged).
+- Q: E5 top below the 160 threshold but the Choice is confident? → A: Treated like a close gap: the Choice may trust one agent. Separate bar names (`choice_trust`, `multi_specialist_hold`), both `null` until calibrated; never cookbook numbers.
+- Q: What is `envelope.confidence` once a Choice is consumed? → A: The Choice peakedness. Cosine stays in `raw_scores`; `score_gap` stays the cosine gap. On skip the field stays cosine, so 160 is exact. No `routing_log` migration (the column keeps its name; the method and judgment rows say which meaning applies).
+- Q: Complexity Score levels and reach? → A: Three descriptive levels (lookup / single tool / multi-hop). Lookup = `simple`; the other two = `complex`. Applies on the embedding path and, when a Score exists, in the `decompose` node for the primary subtask. Regex `ComplexityEstimator` on skip. One batched System One request carries Choice, multiple-specialist Noul and Score, with `max_attempts=1`.
+- Q: How does the multiple-specialist Noul act? → A: It only forces decompose when the Choice would otherwise trust a single agent, using its own bar (null until calibrated). `eval/calibration/routing.jsonl` ships EN+PT rows including `none` and mixed rows; option order is randomized in eval only; `make calibrate-routing` measures the bars. The surface ships off with null bars.
+- Q: Production wiring drift (user decision, hard cut) → A: `bootstrap.build_router` builds `RouterConfig()` defaults with no `app_config`, while `ze_core/container.py` honors YAML `routing:`, `models.overrides` and `router_fallback`. This phase deletes the duplication: one router factory used by both call sites, honoring all of them and injecting the `SystemOneClient`. No shim.
+- Q: What does "low peakedness" do (FR-002, US2 AC2)? → A: The Choice abstains: the existing 160 cosine bars decide, in both directions. Only Choice `none` forces decompose regardless of cosine. "Whether decompose ran" (FR-007) is `routing_method == "haiku"` on the envelope and trace; no new field.
+- Q: `_skipped_kind` mis-kinds Score skip rows → A: Fixed in this phase; the kind is derived from the question definition, not a hard-coded id.
 
 ---
 
@@ -96,6 +109,13 @@ Two jobs that need a plan still become compound. Sequential/mixed still rewrite 
 - **FR-008**: Clear single-agent EN and PT fixtures from 160 MUST still skip decompose when Choice agrees.
 - **FR-009**: This phase MUST NOT change speech-act admission (163), skills, or capability modes.
 - **FR-010**: Default tests MUST mock the judgment client.
+- **FR-011**: The Choice MUST run on every multi-agent turn when the `routing` surface is enabled and calibrated. Choice, multiple-specialist Noul and complexity Score MUST go in one batched request with `max_attempts=1`.
+- **FR-012**: A consumed Choice sets `envelope.confidence` to its peakedness. `raw_scores` keeps cosine and `score_gap` stays the cosine gap. On skip, `confidence` stays cosine. `routing_log` has no migration.
+- **FR-013**: A low E5 top (below the 160 threshold) with a Choice above its bar MUST be treated like a close gap. Bars are `system_one.surfaces.routing.choice_trust` and `multi_specialist_hold`, both `null` until calibrated; enabled with a null bar means skip with a warning log and the 160 path.
+- **FR-014**: The Score is `lookup` / `single_tool` / `multi_hop`; lookup maps to `simple`, the others to `complex`. It applies to the embedding path and to the `decompose` node's primary subtask when a Score exists; the regex classifier remains the skip fallback.
+- **FR-015**: One router factory MUST build `EmbeddingRouter` for both `bootstrap.build_router` and `ze_core/container.py`. It MUST honor `routing:` YAML, `models.overrides`, `router_fallback` and inject the `SystemOneClient`. The duplicate construction MUST be deleted.
+- **FR-016**: Judgment rows for Score questions MUST carry `kind="score"` on skip; row kind MUST come from the question definition.
+- **FR-017**: `eval/calibration/routing.jsonl` (EN+PT, including `none` and mixed rows) and `make calibrate-routing` MUST exist; option order is shuffled in eval only.
 
 ### Key Entities
 

@@ -1,9 +1,9 @@
 {
   "workflow": "companion",
   "specName": "Routing Choice After E5",
-  "branch": "main",
-  "currentStep": "specify",
-  "status": "specified",
+  "branch": "164-routing-choice-after-e5",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
   "history": [
     {
       "step": "specify",
