@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ExternalLink, GripHorizontal, X } from "lucide-react";
+import { ExternalLink, GripHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChatInput, ChatMessageList } from "@/entities/message";
 import { useSession } from "@/entities/session";
-import { useOverlayStore } from "@/features/open-context-overlay";
+import { resolveOverlayScreen, useOverlayStore } from "@/features/open-context-overlay";
 import { useChatWorkspace } from "@/widgets/chat-workspace";
 
 const DESKTOP_W = 368;
@@ -24,13 +24,18 @@ function useIsMobile() {
 
 // ─── Shared chat hook for the overlay ────────────────────────────────────────
 
-function useOverlayChat(open: boolean, screen: string, entityId?: string, overlayThreadId?: string) {
+function useOverlayChat(
+  open: boolean,
+  contextScreen: string,
+  entityId?: string,
+  overlayThreadId?: string,
+) {
   const [input, setInput] = useState("");
   const {
     messages, showTyping, typingText, streamingText, isThinking, deliveryFailed, retry, sendMessage,
   } = useChatWorkspace({
       active: open,
-      context: { screen, ...(entityId && { goal_id: entityId }) },
+      context: { screen: contextScreen, ...(entityId && { goal_id: entityId }) },
       threadId: overlayThreadId,
     });
 
@@ -66,7 +71,10 @@ function useOpenInChat(overlayThreadId: string, close: () => void) {
 interface SheetProps {
   open: boolean;
   close: () => void;
+  /** Human-readable panel title. */
   screen: string;
+  /** Machine id sent as chat context. */
+  contextScreen: string;
   entityId?: string;
   prefillMessage?: string;
   clearPrefill: () => void;
@@ -74,9 +82,9 @@ interface SheetProps {
 }
 
 function MobileChatSheet({
-  open, close, screen, entityId, prefillMessage, clearPrefill, overlayThreadId,
+  open, close, screen, contextScreen, entityId, prefillMessage, clearPrefill, overlayThreadId,
 }: SheetProps) {
-  const chat = useOverlayChat(open, screen, entityId, overlayThreadId);
+  const chat = useOverlayChat(open, contextScreen, entityId, overlayThreadId);
   const openInChat = useOpenInChat(overlayThreadId, close);
 
   useEffect(() => {
@@ -156,7 +164,7 @@ function MobileChatSheet({
               onChange={chat.setInput}
               onSend={chat.handleSend}
               disabled={chat.isThinking}
-              placeholder={`Ask Ze about ${screen}…`}
+              placeholder={`Ask Ze about ${screen.toLowerCase()}…`}
             />
           </motion.div>
         </>
@@ -172,9 +180,9 @@ interface WidgetProps extends SheetProps {
 }
 
 function DesktopChatWidget({
-  open, toggle, close, screen, entityId, prefillMessage, clearPrefill, overlayThreadId,
+  open, toggle, close, screen, contextScreen, entityId, prefillMessage, clearPrefill, overlayThreadId,
 }: WidgetProps) {
-  const chat = useOverlayChat(open, screen, entityId, overlayThreadId);
+  const chat = useOverlayChat(open, contextScreen, entityId, overlayThreadId);
   const openInChat = useOpenInChat(overlayThreadId, close);
   const location = useLocation();
 
@@ -270,11 +278,11 @@ function DesktopChatWidget({
                 <button
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={close}
-                  aria-label="Collapse"
-                  title="Collapse"
+                  aria-label="Close"
+                  title="Close"
                   className="w-7 h-7 flex items-center justify-center rounded-lg text-smoke hover:text-foreground hover:bg-foreground/[0.06] transition-colors"
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -302,7 +310,7 @@ function DesktopChatWidget({
                 onChange={chat.setInput}
                 onSend={chat.handleSend}
                 disabled={chat.isThinking}
-                placeholder={`Ask Ze about ${screen}…`}
+                placeholder={`Ask Ze about ${screen.toLowerCase()}…`}
               />
             </div>
           </motion.div>
@@ -316,9 +324,17 @@ function DesktopChatWidget({
 
 export function ContextOverlay() {
   const {
-    open, close, toggle, screen, entityId, prefillMessage, clearPrefill, overlayThreadId,
+    open, close, toggle, screen: registeredScreen, entityId: registeredEntityId, overridePath,
+    prefillMessage, clearPrefill, overlayThreadId,
   } = useOverlayStore();
+  const { pathname } = useLocation();
   const isMobile = useIsMobile();
+  const { label: screen, contextScreen, entityId } = resolveOverlayScreen({
+    pathname,
+    screen: registeredScreen,
+    entityId: registeredEntityId,
+    overridePath,
+  });
 
   if (isMobile) {
     return (
@@ -326,6 +342,7 @@ export function ContextOverlay() {
         open={open}
         close={close}
         screen={screen}
+        contextScreen={contextScreen}
         entityId={entityId}
         prefillMessage={prefillMessage}
         clearPrefill={clearPrefill}
@@ -340,6 +357,7 @@ export function ContextOverlay() {
       toggle={toggle}
       close={close}
       screen={screen}
+      contextScreen={contextScreen}
       entityId={entityId}
       prefillMessage={prefillMessage}
       clearPrefill={clearPrefill}

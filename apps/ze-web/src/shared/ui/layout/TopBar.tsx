@@ -1,17 +1,11 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { navRoutes, settingsNavRoute } from "@/shared/config";
+import { getRoute, navRoutes, settingsNavRoute } from "@/shared/config";
 import { useBreadcrumb } from "@/shared/lib/breadcrumb";
 import { usePageHeader } from "@/shared/lib/page-header";
 import { useTopBarActions } from "@/shared/lib/top-bar-actions";
 import { NotificationBell } from "@/widgets/notification-bell";
 
 const allRoutes = [...navRoutes, settingsNavRoute];
-
-function getCurrentRoute(pathname: string) {
-  if (pathname === "/") return navRoutes.find((r) => r.index) ?? null;
-  const segment = pathname.replace(/^\//, "").split("/")[0];
-  return allRoutes.find((r) => r.path === segment) ?? null;
-}
 
 const DETAIL_ROUTES: Record<string, { label: string; path: string }> = {
   goals: { label: "Goals", path: "/goals" },
@@ -34,7 +28,7 @@ export function TopBar() {
   const { quickActions } = useTopBarActions();
 
   const detail = parseDetailRoute(pathname);
-  const currentRoute = detail ? null : getCurrentRoute(pathname);
+  const currentRoute = detail ? null : getRoute(pathname);
   const CurrentIcon = pageHeader?.icon ?? currentRoute?.icon ?? null;
   const currentTitle = pageHeader?.title ?? currentRoute?.label ?? "";
 

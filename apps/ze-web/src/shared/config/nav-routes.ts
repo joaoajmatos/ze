@@ -80,3 +80,16 @@ export const mobileNavRoutes = [
   ...navRoutes.filter((r) => r.showInMobileNav),
   settingsNavRoute,
 ];
+
+const allRoutes: NavRouteMeta[] = [...navRoutes, settingsNavRoute];
+
+/** The nav route owning `pathname` (detail pages resolve to their parent list). */
+export function getRoute(pathname: string): NavRouteMeta | null {
+  if (pathname === "/") return navRoutes.find((r) => r.index) ?? null;
+  const segment = pathname.replace(/^\//, "").split("/")[0];
+  return allRoutes.find((r) => r.path === segment) ?? null;
+}
+
+export function getRouteLabel(pathname: string): string | null {
+  return getRoute(pathname)?.label ?? null;
+}

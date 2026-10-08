@@ -59,10 +59,10 @@
 
 ## Phase W3: US5 and US4 contextual panel (P2)
 
-- [ ] T020 [US3] [WEB] Replace the desktop "Collapse" chevron with an X icon and label "Close" in `apps/ze-web/src/widgets/app-shell/ui/ContextOverlay.tsx:264-272` (US3 nit). Update the test in `ContextOverlay.test.tsx` (new, shared with T021).
-- [ ] T021 [US5] [WEB] Add tests in `apps/ze-web/src/widgets/app-shell/ui/ContextOverlay.test.tsx` (new): at routes `/memory`, `/data`, `/settings`, `/goals` the panel label derives from the route; ⌘K and launcher give the same label; a registered override (entity or detail screen) still wins.
-- [ ] T022 [US5] [WEB] Derive the screen label from `useLocation()` in `ContextOverlay.tsx` (reuse the route-label lookup logic in `shared/ui/layout/TopBar.tsx:10-27`, moved to `shared/config/nav-routes.ts` as `getRouteLabel(pathname)` so both use it). Keep `FloatingButton`'s `setScreen` as an optional override for entity-scoped context (`entityId`). Remove the unmount reset to `"chat"` (`FloatingButton.tsx:15`). Depends on T021.
-- [ ] T023 [US4] [WEB] Stop the mobile launcher covering row actions: in `AppShell.tsx:143` raise bottom padding of the scroll container on mobile (`pb-28`), and/or move `FloatingButton` (`features/open-context-overlay/ui/FloatingButton.tsx:23`) so it clears the bottom bar and list content. Add a RTL class assertion test. Manually check on Goals, Workflows and Usage at 390px per `quickstart.md`.
+- [x] T020 [US3] [WEB] Replace the desktop "Collapse" chevron with an X icon and label "Close" in `apps/ze-web/src/widgets/app-shell/ui/ContextOverlay.tsx:264-272` (US3 nit). Update the test in `ContextOverlay.test.tsx` (new, shared with T021).
+- [x] T021 [US5] [WEB] Add tests in `apps/ze-web/src/widgets/app-shell/ui/ContextOverlay.test.tsx` (new): at routes `/memory`, `/data`, `/settings`, `/goals` the panel label derives from the route; ⌘K and launcher give the same label; a registered override (entity or detail screen) still wins.
+- [x] T022 [US5] [WEB] Derive the screen label from `useLocation()` in `ContextOverlay.tsx` (reuse the route-label lookup logic in `shared/ui/layout/TopBar.tsx:10-27`, moved to `shared/config/nav-routes.ts` as `getRouteLabel(pathname)` so both use it). Keep `FloatingButton`'s `setScreen` as an optional override for entity-scoped context (`entityId`). Remove the unmount reset to `"chat"` (`FloatingButton.tsx:15`). Depends on T021.
+- [x] T023 [US4] [WEB] Stop the mobile launcher covering row actions: in `AppShell.tsx:143` raise bottom padding of the scroll container on mobile (`pb-28`), and/or move `FloatingButton` (`features/open-context-overlay/ui/FloatingButton.tsx:23`) so it clears the bottom bar and list content. Add a RTL class assertion test. Manually check on Goals, Workflows and Usage at 390px per `quickstart.md`.
 
 ## Phase W4: US10 remainder, US9 disclosure (P3/P4)
 
