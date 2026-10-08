@@ -77,20 +77,23 @@ _FAMILY_CRITERIA: dict[str, str] = {
     ),
 }
 
+_USER_ONLY = " Judge the user's words; the assistant reply is context only."
+
 _BIOGRAPHY_INSTRUCTIONS = (
     "Does the user's message state a durable fact about themselves "
-    "that would still be true in a month?"
+    "that would still be true in a month?" + _USER_ONLY
 )
 
 SPEECH_ACT_QUESTIONS: dict[str, SystemOneQuestion] = {
     "speech_act": SystemOneQuestion(
         type="choice",
-        instructions="Which speech act is the user's message?",
+        instructions="Which speech act is the user's message?" + _USER_ONLY,
         criteria={a.value: _SPEECH_ACT_CRITERIA[a.value] for a in SpeechAct},
     ),
     "family": SystemOneQuestion(
         type="choice",
-        instructions="Which kind of durable self-fact does the user's message state?",
+        instructions="Which kind of durable self-fact does the user's message state?"
+        + _USER_ONLY,
         criteria={
             **{f.value: _FAMILY_CRITERIA[f.value] for f in PredicateFamily},
             "drop": _FAMILY_CRITERIA["drop"],
@@ -132,7 +135,9 @@ def _bar(value: Any, name: str) -> float | None:
 
 
 def speech_act_surface_config(settings: Any) -> SpeechActSurfaceConfig:
-    config = settings if isinstance(settings, dict) else getattr(settings, "config", None)
+    config = (
+        settings if isinstance(settings, dict) else getattr(settings, "config", None)
+    )
     if not isinstance(config, dict):
         return SpeechActSurfaceConfig()
     system_one = config.get("system_one")
@@ -194,7 +199,9 @@ def decide(result: SystemOneResult, cfg: SpeechActSurfaceConfig) -> AdmissionDec
     if admit_speech_act(act.choice) is not SpeechAct.FACT:
         return AdmissionDecision("hold", "not_fact", consumed=frozenset({"speech_act"}))
     if act.confidence < cfg.choice_hold:
-        return AdmissionDecision("hold", "act_unsure", consumed=frozenset({"speech_act"}))
+        return AdmissionDecision(
+            "hold", "act_unsure", consumed=frozenset({"speech_act"})
+        )
     kept = admit_family(family.choice)
     if kept is None:
         return AdmissionDecision("hold", "family_drop", consumed=_ACT_AND_FAMILY)
