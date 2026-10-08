@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-16
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "Make I’ll remember / I forgot earned. Companion can still narrate success if the model skips tools. Close it on the turn path, not another prompt paragraph: Ze may confirm remembered/forgotten only after remember_fact / forget_fact returns ok. If the model claims memory without a successful tool, the response must be corrected/blocked/stripped so the user is not lied to. No shim, no dual door. Principle VIII. Same spec: forget match quality — today’s substring-then-loose cosine retracts too many facts; precision over recall (better ok false than retract the wrong facts). Out of this spec: P5 mail/calendar constraint veto; hard speech-act classifier; specialist catalog rewrites; Claude /memories filesystem; rewriting 140–142 write/read/routing."
 
