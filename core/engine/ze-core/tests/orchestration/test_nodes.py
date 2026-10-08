@@ -112,7 +112,11 @@ async def test_embed_route_calls_router_with_prompt_and_session():
     cfg = make_config(router=mock_router)
     state = base_state(prompt="latest AI", session_id="sess-42")
     await embed_route(state, cfg)
-    mock_router.route.assert_awaited_once_with(prompt="latest AI", session_id="sess-42")
+    mock_router.route.assert_awaited_once_with(
+        prompt="latest AI",
+        session_id="sess-42",
+        judgment_state={"user": "latest AI"},
+    )
 
 
 # ── context.fetch_context ─────────────────────────────────────────────────────

@@ -377,3 +377,119 @@ class TestEmbedRouteFollowUps:
             }
         )
         assert len(routing_text) < 1000
+
+
+class TestEmbedRouteJudgment:
+    """Phase 164: named judgment parts, trace rows and cost attribution."""
+
+    def _envelope(self, judgment=None) -> RoutingEnvelope:
+        return RoutingEnvelope(
+            primary_agent="calendar",
+            confidence=0.93,
+            score_gap=0.3,
+            routing_method="embedding",
+            is_compound=False,
+            subtasks=[SubTask(agent="calendar", intent="read", prompt="x")],
+            requires_synthesis=False,
+            raw_scores={"calendar": 0.84},
+            judgment=judgment,
+        )
+
+    def _judgment(self):
+        from ze_agents.system_one import SystemOneAnswer, SystemOneResult
+        from ze_core.routing.types import RoutingJudgment
+
+        result = SystemOneResult(
+            outcome="ok",
+            model="jev",
+            answers={
+                "agent": SystemOneAnswer(
+                    type="choice",
+                    choice="calendar",
+                    confidence=0.93,
+                    probabilities={"calendar": 0.93, "none": 0.07},
+                ),
+                "multi_specialist": SystemOneAnswer(type="noul", noul=0.1),
+                "complexity": SystemOneAnswer(type="score", score=0.2),
+            },
+        )
+        return RoutingJudgment(
+            result=result,
+            question_kinds={
+                "agent": "choice",
+                "multi_specialist": "noul",
+                "complexity": "score",
+            },
+            consumed=frozenset({"agent", "multi_specialist"}),
+        )
+
+    def _router(self, envelope):
+        router = AsyncMock()
+        router.route = AsyncMock(return_value=envelope)
+        return router
+
+    def _state(self, **extra) -> dict:
+        return {
+            "session_id": "s1",
+            "prompt": "what's on my calendar",
+            "image_caption": None,
+            "routing_hints": None,
+            **extra,
+        }
+
+    async def test_judgment_state_keeps_user_history_and_context_apart(self):
+        router = self._router(self._envelope())
+        state = self._state(
+            messages=[{"role": "user", "content": "hello there"}],
+            last_active_at=time.time(),
+            routing_hints="[Active goals: x]",
+        )
+        await embed_route(state, {"configurable": {"router": router}})
+        kwargs = router.route.call_args.kwargs
+        js = kwargs["judgment_state"]
+        assert js["user"] == "what's on my calendar"
+        assert js["history"].startswith("[Recent conversation]")
+        assert "hello there" in js["history"]
+        assert js["context"] == "[Active goals: x]"
+        assert "[Recent conversation]" in kwargs["prompt"]
+        assert kwargs["prompt"].startswith("what's on my calendar")
+
+    async def test_user_text_is_the_image_caption_for_image_turns(self):
+        router = self._router(self._envelope())
+        state = self._state(image_caption="a photo of a receipt")
+        await embed_route(state, {"configurable": {"router": router}})
+        js = router.route.call_args.kwargs["judgment_state"]
+        assert js["user"] == "a photo of a receipt"
+        assert "history" not in js and "context" not in js
+
+    async def test_returns_judgment_rows_with_consumed_flags(self):
+        router = self._router(self._envelope(self._judgment()))
+        out = await embed_route(self._state(), {"configurable": {"router": router}})
+        rows = {r.question_id: r for r in out["judgments"]}
+        assert set(rows) == {"agent", "multi_specialist", "complexity"}
+        assert rows["agent"].consumed and rows["multi_specialist"].consumed
+        assert not rows["complexity"].consumed
+        assert rows["agent"].kind == "choice" and rows["agent"].peakedness == 0.93
+        assert rows["complexity"].kind == "score" and rows["complexity"].answer == 0.2
+        assert out["envelope"].primary_agent == "calendar"
+
+    async def test_no_judgment_means_no_rows(self):
+        router = self._router(self._envelope())
+        out = await embed_route(self._state(), {"configurable": {"router": router}})
+        assert out["judgments"] == []
+
+    async def test_agent_context_is_router_during_the_call(self):
+        from ze_core.telemetry.context import get_cost_context, set_flow_context
+
+        set_flow_context("chat", "s1")
+        seen: list[str] = []
+        envelope = self._envelope()
+        router = AsyncMock()
+
+        async def route(**kwargs):
+            seen.append(get_cost_context().agent)
+            return envelope
+
+        router.route = route
+        await embed_route(self._state(), {"configurable": {"router": router}})
+        assert seen == ["router"]

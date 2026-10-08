@@ -147,3 +147,77 @@ class TestState:
         assert state["context"] == "ctx"
         long_state = build_state("hi", "h" * (HISTORY_CAP + 10), None)
         assert len(long_state["history"]) == HISTORY_CAP
+
+
+# ── decide() ──────────────────────────────────────────────────────────────────
+
+from ze_agents.system_one import SystemOneResult  # noqa: E402
+from tests.support.routing import choice_answer, ok_result  # noqa: E402
+from ze_core.routing.judge import decide  # noqa: E402
+
+_SHORT = ["calendar", "messenger"]
+_CAL = RoutingSurfaceConfig(
+    enabled=True, choice_trust=0.8, multi_specialist_hold=0.6, shortlist_k=4
+)
+
+
+class TestDecideTrustAndSkip:
+    def test_confident_choice_with_low_noul_is_trust(self):
+        d = decide(ok_result(choice="calendar", peakedness=0.95, noul=0.1), _CAL, _SHORT)
+        assert d.kind == "trust"
+        assert d.agent == "calendar"
+        assert d.reason == "trusted"
+        assert d.confidence == 0.95
+        assert d.consumed == frozenset({"agent", "multi_specialist"})
+
+    def test_choice_exactly_at_bar_is_trusted(self):
+        d = decide(ok_result(choice="calendar", peakedness=0.8, noul=0.1), _CAL, _SHORT)
+        assert d.kind == "trust"
+
+    def test_client_skip_keeps_its_reason(self):
+        result = SystemOneResult(outcome="skip", skip_reason="timeout")
+        d = decide(result, _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("skip", "timeout")
+        assert d.consumed == frozenset()
+
+    def test_missing_choice_is_invalid_answer(self):
+        d = decide(ok_result(choice=None, noul=0.1), _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("skip", "invalid_answer")
+
+    def test_unknown_agent_is_invalid_answer(self):
+        d = decide(ok_result(choice="finance", peakedness=0.99), _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("skip", "invalid_answer")
+
+    def test_null_confidence_is_invalid_answer(self):
+        result = ok_result(choice="calendar")
+        result.answers["agent"].confidence = None
+        assert decide(result, _CAL, _SHORT).reason == "invalid_answer"
+
+    def test_wrong_answer_type_is_invalid_answer(self):
+        result = ok_result(choice="calendar")
+        result.answers["agent"] = result.answers["multi_specialist"]
+        assert decide(result, _CAL, _SHORT).reason == "invalid_answer"
+
+    def test_uncalibrated_bar_skips(self):
+        cfg = RoutingSurfaceConfig(enabled=True, choice_trust=None)
+        d = decide(ok_result(choice="calendar"), cfg, _SHORT)
+        assert (d.kind, d.reason) == ("skip", "uncalibrated")
+
+    def test_choice_bar_does_not_read_noul_and_vice_versa(self):
+        # Noul above the Choice bar but below its own hold bar must not decompose.
+        cfg = RoutingSurfaceConfig(
+            enabled=True, choice_trust=0.3, multi_specialist_hold=0.99
+        )
+        d = decide(ok_result(choice="calendar", peakedness=0.5, noul=0.9), cfg, _SHORT)
+        assert d.kind == "trust"
+        # Peakedness above the Noul hold bar must not matter to the Noul gate.
+        cfg = RoutingSurfaceConfig(
+            enabled=True, choice_trust=0.9, multi_specialist_hold=0.1
+        )
+        d = decide(ok_result(choice="calendar", peakedness=0.5, noul=0.05), cfg, _SHORT)
+        assert d.kind == "abstain"
+
+    def test_never_raises_on_garbage(self):
+        result = SystemOneResult(outcome="ok", answers={"agent": choice_answer("x", 1)})
+        result.answers["agent"].choice = None
+        assert decide(result, _CAL, _SHORT).kind == "skip"

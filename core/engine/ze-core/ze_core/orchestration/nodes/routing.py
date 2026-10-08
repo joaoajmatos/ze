@@ -4,9 +4,11 @@ import time
 
 from langchain_core.runnables import RunnableConfig
 from ze_logging import get_logger
+from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.orchestration.state import AgentState
+from ze_core.routing.judge import build_state
 from ze_core.routing.types import RoutingEnvelope, SubTask
-from ze_core.telemetry.context import set_agent_context
+from ze_core.telemetry.context import get_cost_context, set_agent_context
 
 log = get_logger(__name__)
 
@@ -55,7 +57,21 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     if hints:
         routing_text = f"{routing_text}\n\n{hints}"
 
-    envelope = await router.route(prompt=routing_text, session_id=state["session_id"])
+    judgment_state = build_state(
+        user=state.get("image_caption") or state["prompt"],
+        history=history_hint,
+        context=hints,
+    )
+    previous_agent = get_cost_context().agent
+    set_agent_context("router")
+    try:
+        envelope = await router.route(
+            prompt=routing_text,
+            session_id=state["session_id"],
+            judgment_state=judgment_state,
+        )
+    finally:
+        set_agent_context(previous_agent)
     log.info(
         "orchestration_routed",
         session_id=state["session_id"],
@@ -63,7 +79,18 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
         routing_method=envelope.routing_method,
         is_compound=envelope.is_compound,
     )
-    return {"envelope": envelope}
+    judgment = envelope.judgment
+    rows = (
+        judgments_from_result(
+            judgment.result,
+            question_kinds=judgment.question_kinds,
+            consumed=judgment.consumed,
+            skip_reason=judgment.skip_reason,
+        )
+        if judgment is not None
+        else []
+    )
+    return {"envelope": envelope, "judgments": rows}
 
 
 async def decompose(state: AgentState, config: RunnableConfig) -> dict:

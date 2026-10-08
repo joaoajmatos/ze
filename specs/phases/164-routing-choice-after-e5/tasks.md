@@ -78,8 +78,8 @@
 
 **Independent Test**: `make test-core` router and node tests with a fake client.
 
-- [ ] **T011** [P] [US1] [BE] Fail-first, `decide()` trust and skip rows: Choice agent ≥ `choice_trust` with Noul below the bar → `trust` (consumed `agent`, `multi_specialist`); client skip → `skip` with the client reason; missing/unknown Choice or null confidence → `skip` `invalid_answer`; bars never read the Noul for the Choice and vice versa. · `core/engine/ze-core/tests/routing/test_routing_judge.py`
-- [ ] **T012** [P] [US1] [BE] Fail-first, router (`EmbeddingRouter` + fake client + `make_embedder`):
+- [x] **T011** [P] [US1] [BE] Fail-first, `decide()` trust and skip rows: Choice agent ≥ `choice_trust` with Noul below the bar → `trust` (consumed `agent`, `multi_specialist`); client skip → `skip` with the client reason; missing/unknown Choice or null confidence → `skip` `invalid_answer`; bars never read the Noul for the Choice and vice versa. · `core/engine/ze-core/tests/routing/test_routing_judge.py`
+- [x] **T012** [P] [US1] [BE] Fail-first, router (`EmbeddingRouter` + fake client + `make_embedder`):
   - 160 clear calendar EN and PT with Choice = calendar at high peakedness → `is_compound` false, `routing_method` `embedding`, `confidence` = peakedness, `raw_scores` cosine, `score_gap` cosine gap;
   - the fake saw exactly one `evaluate` call with `max_attempts=1`, a shortlist of at most `shortlist_k` agents plus `none`, and a state that keeps `user` separate from `history`;
   - skip (`DisabledSystemOneClient`, null bar, surface off, `judgment_state=None`) → envelope field-for-field equal to the 160 result (SC-004);
@@ -87,7 +87,7 @@
   - a client that raises is treated as skip.
 
   · `core/engine/ze-core/tests/routing/test_router_choice.py`
-- [ ] **T013** [P] [US1] [BE] Fail-first, `embed_route`:
+- [x] **T013** [P] [US1] [BE] Fail-first, `embed_route`:
   - passes `judgment_state` with `user` equal to the raw prompt (or image caption) and `history` equal to the existing hint, while the E5 text stays combined as today;
   - returns `state["judgments"]` rows converted from `envelope.judgment` with the right `consumed` flags;
   - sets the telemetry agent context to `router` around the router call.
@@ -96,9 +96,9 @@
 
 **⟶ Wait for T011–T013, then:**
 
-- [ ] **T014** [US1] [BE] Implement `decide()` for skip, invalid and trust per research R2 (pure; no I/O; never raises). · `core/engine/ze-core/ze_core/routing/judge.py`
-- [ ] **T015** [US1] [BE] Implement the Choice flow in `EmbeddingRouter._score_and_route`: build the shortlist (top `shortlist_k`, clamped), call `evaluate(state, questions, max_attempts=1)` inside try/except (exception → skip `error`), run `decide`, and build the envelope per the contract (trust: `is_compound=False`, `primary_agent` = Choice agent, `confidence` = peakedness; log `routing_choice_disagrees_e5` on mismatch; set `envelope.judgment`). No call when the surface is not calibrated, `judgment_state` is `None`, or fewer than two agents. · `core/engine/ze-core/ze_core/routing/router.py`
-- [ ] **T016** [US1] [BE] `embed_route`: build `judgment_state` from the raw prompt/caption, the history hint and `routing_hints`; pass it to `router.route`; convert `envelope.judgment` with `judgments_from_result(question_kinds=…, consumed=…)`; return `{"envelope": envelope, "judgments": rows}`; wrap with `set_agent_context("router")`. · `core/engine/ze-core/ze_core/orchestration/nodes/routing.py`
+- [x] **T014** [US1] [BE] Implement `decide()` for skip, invalid and trust per research R2 (pure; no I/O; never raises). · `core/engine/ze-core/ze_core/routing/judge.py`
+- [x] **T015** [US1] [BE] Implement the Choice flow in `EmbeddingRouter._score_and_route`: build the shortlist (top `shortlist_k`, clamped), call `evaluate(state, questions, max_attempts=1)` inside try/except (exception → skip `error`), run `decide`, and build the envelope per the contract (trust: `is_compound=False`, `primary_agent` = Choice agent, `confidence` = peakedness; log `routing_choice_disagrees_e5` on mismatch; set `envelope.judgment`). No call when the surface is not calibrated, `judgment_state` is `None`, or fewer than two agents. · `core/engine/ze-core/ze_core/routing/router.py`
+- [x] **T016** [US1] [BE] `embed_route`: build `judgment_state` from the raw prompt/caption, the history hint and `routing_hints`; pass it to `router.route`; convert `envelope.judgment` with `judgments_from_result(question_kinds=…, consumed=…)`; return `{"envelope": envelope, "judgments": rows}`; wrap with `set_agent_context("router")`. · `core/engine/ze-core/ze_core/orchestration/nodes/routing.py`
 
 **Checkpoint**: US1 tests pass; `make test-core` still passes. Clear singles skip decompose with a Choice; skip equals 160.
 

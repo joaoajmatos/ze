@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from ze_agents.system_one import SystemOneQuestion
+from ze_agents.system_one import SystemOneAnswer, SystemOneQuestion, SystemOneResult
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -155,3 +155,105 @@ class RoutingDecision:
     confidence: float | None = None
     complexity: Literal["simple", "complex"] | None = None
     consumed: frozenset[str] = frozenset()
+
+
+def _valid_choice(answer: SystemOneAnswer | None, allowed: Sequence[str]) -> bool:
+    return (
+        answer is not None
+        and answer.type == "choice"
+        and answer.choice is not None
+        and answer.confidence is not None
+        and (answer.choice == NONE_KEY or answer.choice in allowed)
+    )
+
+
+def _valid_noul(answer: SystemOneAnswer | None) -> bool:
+    return (
+        answer is not None
+        and answer.type == "noul"
+        and isinstance(answer.noul, (int, float))
+        and not math.isnan(answer.noul)
+    )
+
+
+def _complexity(
+    result: SystemOneResult, cfg: RoutingSurfaceConfig
+) -> Literal["simple", "complex"] | None:
+    """Score level → model tier. ``None`` means the regex classifier runs."""
+    bar = cfg.complexity_lookup_max
+    answer = result.answers.get(Q_COMPLEXITY)
+    if bar is None or answer is None or answer.type != "score":
+        return None
+    score = answer.score
+    if (
+        isinstance(score, bool)
+        or not isinstance(score, (int, float))
+        or math.isnan(score)
+        or not 0.0 <= score <= 1.0
+    ):
+        return None
+    return "simple" if score <= bar else "complex"
+
+
+def decide(
+    result: SystemOneResult, cfg: RoutingSurfaceConfig, names: Sequence[str]
+) -> RoutingDecision:
+    """Pure decision over one System One result (research R2, rules 3-7). Never raises.
+
+    Rules 1-2 (surface off, bar unset, fewer than two agents) never reach a result.
+    """
+    if result.outcome == "skip":
+        return RoutingDecision("skip", result.skip_reason or "error")
+    trust_bar = cfg.choice_trust
+    hold_bar = cfg.multi_specialist_hold
+    if trust_bar is None or hold_bar is None:
+        return RoutingDecision("skip", "uncalibrated")
+
+    choice = result.answers.get(Q_AGENT)
+    if choice is None or not _valid_choice(choice, names):
+        return RoutingDecision("skip", "invalid_answer")
+    peakedness = float(choice.confidence or 0.0)
+
+    complexity = _complexity(result, cfg)
+    extra = frozenset({Q_COMPLEXITY}) if complexity is not None else frozenset()
+
+    if choice.choice == NONE_KEY:
+        return RoutingDecision(
+            "decompose",
+            "choice_none",
+            confidence=peakedness,
+            complexity=complexity,
+            consumed=frozenset({Q_AGENT}) | extra,
+        )
+    if peakedness < trust_bar:
+        return RoutingDecision(
+            "abstain", "choice_unsure", complexity=complexity, consumed=extra
+        )
+
+    noul = result.answers.get(Q_MULTI)
+    if not _valid_noul(noul):
+        return RoutingDecision(
+            "trust",
+            "trusted",
+            agent=choice.choice,
+            confidence=peakedness,
+            complexity=complexity,
+            consumed=frozenset({Q_AGENT}) | extra,
+        )
+    consumed = frozenset({Q_AGENT, Q_MULTI}) | extra
+    if float(noul.noul or 0.0) >= hold_bar:
+        return RoutingDecision(
+            "decompose",
+            "multi_specialist",
+            confidence=peakedness,
+            complexity=complexity,
+            consumed=consumed,
+        )
+    return RoutingDecision(
+        "trust",
+        "trusted",
+        agent=choice.choice,
+        confidence=peakedness,
+        complexity=complexity,
+        consumed=consumed,
+    )
