@@ -128,15 +128,21 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
         logger=log,
     )
 
-    # Patch per-subtask model using complexity estimation when router is available.
+    # Patch per-subtask model. A Score tier chosen on the embedding path is kept.
     if router is not None and new_envelope.subtasks:
-        primary_intent = new_envelope.subtasks[0].intent
-        complexity = router._estimator.classify(
-            state["prompt"], primary_intent, new_envelope.confidence
-        )
+        keep_score = envelope is not None and envelope.complexity_source == "score"
+        if keep_score:
+            complexity = envelope.complexity
+        else:
+            complexity = router._estimator.classify(
+                state["prompt"],
+                new_envelope.subtasks[0].intent,
+                new_envelope.confidence,
+            )
         for subtask in new_envelope.subtasks:
             subtask.model = router._resolve_model(subtask.agent, complexity)
         new_envelope.complexity = complexity
+        new_envelope.complexity_source = "score" if keep_score else "regex"
 
     log.info(
         "orchestration_decomposed",

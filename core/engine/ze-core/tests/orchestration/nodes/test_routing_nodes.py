@@ -493,3 +493,76 @@ class TestEmbedRouteJudgment:
         router.route = route
         await embed_route(self._state(), {"configurable": {"router": router}})
         assert seen == ["router"]
+
+
+class TestDecomposeKeepsScoreComplexity:
+    """Phase 164: a Score tier chosen on the embedding path survives decompose."""
+
+    def _router(self):
+        router = MagicMock()
+        router._config = RouterConfig()
+        router._estimator.classify = MagicMock(return_value="complex")
+        router._resolve_model = MagicMock(side_effect=lambda agent, cx: f"{agent}:{cx}")
+        return router
+
+    def _client(self, subtasks, sequential=False):
+        client = AsyncMock()
+        client.complete = AsyncMock(
+            return_value=json.dumps({"subtasks": subtasks, "sequential": sequential})
+        )
+        return client
+
+    async def test_score_source_skips_classify_and_keeps_complexity(self):
+        _register("alpha")
+        _register("beta")
+        envelope = _envelope()
+        envelope.complexity = "simple"
+        envelope.complexity_source = "score"
+        router = self._router()
+        client = self._client(
+            [
+                {"agent": "alpha", "intent": "read", "prompt": "a"},
+                {"agent": "beta", "intent": "read", "prompt": "b"},
+            ]
+        )
+
+        result = await decompose(
+            _state(envelope=envelope), _config(client, router=router)
+        )
+
+        router._estimator.classify.assert_not_called()
+        assert result["envelope"].complexity == "simple"
+        # subtask models are still resolved per agent with the kept tier
+        router._resolve_model.assert_any_call("alpha", "simple")
+        router._resolve_model.assert_any_call("beta", "simple")
+
+    async def test_regex_source_still_calls_classify(self):
+        _register("alpha")
+        router = self._router()
+        client = self._client([{"agent": "alpha", "intent": "read", "prompt": "a"}])
+
+        result = await decompose(_state(), _config(client, router=router))
+
+        router._estimator.classify.assert_called_once()
+        assert result["envelope"].complexity == "complex"
+
+    async def test_mixed_gather_act_still_rewrites_to_companion(self):
+        _register("alpha", {"read": "Read"})
+        _register("beta", {"create": "Create"})
+        envelope = _envelope()
+        envelope.complexity = "simple"
+        envelope.complexity_source = "score"
+        client = self._client(
+            [
+                {"agent": "alpha", "intent": "read", "prompt": "look it up"},
+                {"agent": "beta", "intent": "create", "prompt": "then act"},
+            ]
+        )
+
+        result = await decompose(
+            _state(envelope=envelope), _config(client, router=self._router())
+        )
+
+        assert result["envelope"].primary_agent == "companion"
+        assert result["envelope"].complexity == "simple"
+        assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]

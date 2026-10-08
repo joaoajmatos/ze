@@ -146,6 +146,54 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-08T11:45:09.335Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:46:39.192Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:46:39.320Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:46:39.450Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:46:39.579Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:46:39.703Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:46:39.842Z"
     }
   ],
   "telemetryInstanceId": "40af2510-7e19-4ec2-a0b1-9f2e7385edfc",
@@ -199,7 +247,7 @@
     "area: EmbeddingRouter ComplexityEstimator fallback.decompose",
     "constraint: 160 bars remain shortlist; Principle VII embeddings stay E5"
   ],
-  "currentTask": "T016",
+  "currentTask": "T022",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -247,6 +295,24 @@
       "status": "DONE"
     },
     "T016": {
+      "status": "DONE"
+    },
+    "T017": {
+      "status": "DONE"
+    },
+    "T018": {
+      "status": "DONE"
+    },
+    "T019": {
+      "status": "DONE"
+    },
+    "T020": {
+      "status": "DONE"
+    },
+    "T021": {
+      "status": "DONE"
+    },
+    "T022": {
       "status": "DONE"
     }
   }

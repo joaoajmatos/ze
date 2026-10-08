@@ -110,7 +110,7 @@
 
 **Independent Test**: Router fixtures with a fake Choice.
 
-- [ ] **T017** [P] [US2] [BE] Fail-first:
+- [x] **T017** [P] [US2] [BE] Fail-first:
   - cosine gap below `ROUTING_GAP_THRESHOLD` and Choice = agent A at high peakedness → `is_compound` false (SC-002);
   - cosine top below `ROUTING_THRESHOLD` and Choice confident → `is_compound` false (Clarification Q2);
   - Choice `none` at high or low peakedness with a clear cosine top → `is_compound` true, `confidence` = peakedness, `primary_agent` = E5 top;
@@ -119,7 +119,7 @@
   - `decide()` rows for `choice_none` and `choice_unsure`.
 
   · `core/engine/ze-core/tests/routing/test_router_choice.py`, `core/engine/ze-core/tests/routing/test_routing_judge.py`
-- [ ] **T018** [US2] [BE] Implement `decide()` `none` → `decompose`, unsure → `abstain`; ensure the router skips the 160 bar test on `trust` and uses it unchanged on `abstain`/`skip`; the decompose envelope keeps the E5 top as `primary_agent` and sets `confidence` to the Choice peakedness. · `core/engine/ze-core/ze_core/routing/judge.py`, `core/engine/ze-core/ze_core/routing/router.py`
+- [x] **T018** [US2] [BE] Implement `decide()` `none` → `decompose`, unsure → `abstain`; ensure the router skips the 160 bar test on `trust` and uses it unchanged on `abstain`/`skip`; the decompose envelope keeps the E5 top as `primary_agent` and sets `confidence` to the Choice peakedness. · `core/engine/ze-core/ze_core/routing/judge.py`, `core/engine/ze-core/ze_core/routing/router.py`
 
 **Checkpoint**: US1 + US2 tests pass.
 
@@ -131,15 +131,15 @@
 
 **Independent Test**: Router + node tests; existing 153/155 tests unchanged.
 
-- [ ] **T019** [P] [US3] [BE] Fail-first:
+- [x] **T019** [P] [US3] [BE] Fail-first:
   - Choice agent ≥ `choice_trust` with Noul ≥ `multi_specialist_hold` → `is_compound` true (consumed `agent`, `multi_specialist`); Noul below the bar → single; Noul is not read when the Choice is `none` or unsure;
   - Score valid and `complexity_lookup_max` set: score at or below → `complexity="simple"`, above → `"complex"`, `complexity_source="score"`, same `primary_agent` as without a Score (US3 AC3); bar null or Score missing → regex complexity and the Score row unused;
   - `decompose` node: an incoming envelope with `complexity_source="score"` keeps its complexity for the primary subtask and `_resolve_model` still sets subtask models; `"regex"` still calls `classify`; a mixed gather+act Haiku result still comes out companion-primary with the conductor hint (the existing `apply_conductor_rewrite` tests in `test_nodes.py` pass unchanged).
 
   · `core/engine/ze-core/tests/routing/test_router_choice.py`, `core/engine/ze-core/tests/orchestration/nodes/test_routing_nodes.py`
-- [ ] **T020** [US3] [BE] Implement `decide()` Noul gate and Score mapping per research R2/R6; thread `complexity` and `complexity_source` into the envelope for trust, decompose and abstain outcomes when the Score is consumed. · `core/engine/ze-core/ze_core/routing/judge.py`, `core/engine/ze-core/ze_core/routing/router.py`
-- [ ] **T021** [US3] [BE] `decompose` node: when the incoming envelope has `complexity_source == "score"`, keep its complexity for the new envelope's primary subtask instead of calling `classify`; set `new_envelope.complexity_source` accordingly. Do not touch `apply_conductor_rewrite`. · `core/engine/ze-core/ze_core/orchestration/nodes/routing.py`
-- [ ] **T022** [US3] [BE] SC-003 check: run `make test-core` and confirm `test_nodes.py` conductor rewrite cases and the 153/155 tests pass with no edits to their expectations.
+- [x] **T020** [US3] [BE] Implement `decide()` Noul gate and Score mapping per research R2/R6; thread `complexity` and `complexity_source` into the envelope for trust, decompose and abstain outcomes when the Score is consumed. · `core/engine/ze-core/ze_core/routing/judge.py`, `core/engine/ze-core/ze_core/routing/router.py`
+- [x] **T021** [US3] [BE] `decompose` node: when the incoming envelope has `complexity_source == "score"`, keep its complexity for the new envelope's primary subtask instead of calling `classify`; set `new_envelope.complexity_source` accordingly. Do not touch `apply_conductor_rewrite`. · `core/engine/ze-core/ze_core/orchestration/nodes/routing.py`
+- [x] **T022** [US3] [BE] SC-003 check: run `make test-core` and confirm `test_nodes.py` conductor rewrite cases and the 153/155 tests pass with no edits to their expectations.
 
 **Checkpoint**: US1–US3 tests pass. The surface is still off in committed config.
 

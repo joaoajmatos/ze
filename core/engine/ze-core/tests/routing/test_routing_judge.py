@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from ze_core.routing.judge import (
     HISTORY_CAP,
     CONTEXT_CAP,
@@ -45,11 +47,15 @@ class TestSurfaceConfig:
         assert as_dict.calibrated
 
     def test_enabled_with_null_bar_is_not_calibrated(self):
-        cfg = _cfg({"enabled": True, "choice_trust": 0.8, "multi_specialist_hold": None})
+        cfg = _cfg(
+            {"enabled": True, "choice_trust": 0.8, "multi_specialist_hold": None}
+        )
         assert cfg.enabled and not cfg.calibrated
 
     def test_disabled_with_bars_is_not_calibrated(self):
-        cfg = _cfg({"enabled": False, "choice_trust": 0.8, "multi_specialist_hold": 0.6})
+        cfg = _cfg(
+            {"enabled": False, "choice_trust": 0.8, "multi_specialist_hold": 0.6}
+        )
         assert not cfg.calibrated
 
     def test_bad_bars_become_none(self):
@@ -163,7 +169,9 @@ _CAL = RoutingSurfaceConfig(
 
 class TestDecideTrustAndSkip:
     def test_confident_choice_with_low_noul_is_trust(self):
-        d = decide(ok_result(choice="calendar", peakedness=0.95, noul=0.1), _CAL, _SHORT)
+        d = decide(
+            ok_result(choice="calendar", peakedness=0.95, noul=0.1), _CAL, _SHORT
+        )
         assert d.kind == "trust"
         assert d.agent == "calendar"
         assert d.reason == "trusted"
@@ -221,3 +229,90 @@ class TestDecideTrustAndSkip:
         result = SystemOneResult(outcome="ok", answers={"agent": choice_answer("x", 1)})
         result.answers["agent"].choice = None
         assert decide(result, _CAL, _SHORT).kind == "skip"
+
+
+class TestDecideNoneAndUnsure:
+    def test_none_at_high_peakedness_decomposes(self):
+        d = decide(ok_result(choice="none", peakedness=0.95), _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("decompose", "choice_none")
+        assert d.confidence == 0.95
+        assert d.agent is None
+        assert d.consumed == frozenset({"agent"})
+
+    def test_none_at_low_peakedness_still_decomposes(self):
+        d = decide(ok_result(choice="none", peakedness=0.2), _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("decompose", "choice_none")
+
+    def test_choice_below_bar_abstains_and_consumes_nothing(self):
+        d = decide(ok_result(choice="calendar", peakedness=0.5), _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("abstain", "choice_unsure")
+        assert d.consumed == frozenset()
+        assert d.confidence is None and d.agent is None
+
+
+class TestDecideMultiSpecialistAndScore:
+    def test_noul_at_hold_bar_decomposes(self):
+        d = decide(ok_result(choice="calendar", noul=0.6), _CAL, _SHORT)
+        assert (d.kind, d.reason) == ("decompose", "multi_specialist")
+        assert d.consumed == frozenset({"agent", "multi_specialist"})
+        assert d.confidence == 0.95
+
+    def test_noul_below_hold_bar_is_trust(self):
+        d = decide(ok_result(choice="calendar", noul=0.59), _CAL, _SHORT)
+        assert d.kind == "trust"
+
+    def test_noul_missing_is_trust_and_unconsumed(self):
+        d = decide(ok_result(choice="calendar", noul=None), _CAL, _SHORT)
+        assert d.kind == "trust"
+        assert d.consumed == frozenset({"agent"})
+
+    def test_noul_is_not_read_when_choice_is_none_or_unsure(self):
+        none = decide(ok_result(choice="none", noul=0.99), _CAL, _SHORT)
+        unsure = decide(
+            ok_result(choice="calendar", peakedness=0.1, noul=0.99), _CAL, _SHORT
+        )
+        assert "multi_specialist" not in none.consumed
+        assert "multi_specialist" not in unsure.consumed
+
+    @pytest.mark.parametrize(
+        ("score", "expected"),
+        [(0.0, "simple"), (0.4, "simple"), (0.41, "complex"), (1.0, "complex")],
+    )
+    def test_score_maps_to_tier_at_the_lookup_bar(self, score, expected):
+        cfg = RoutingSurfaceConfig(
+            enabled=True,
+            choice_trust=0.8,
+            multi_specialist_hold=0.6,
+            complexity_lookup_max=0.4,
+        )
+        d = decide(ok_result(choice="calendar", score=score), cfg, _SHORT)
+        assert d.complexity == expected
+        assert "complexity" in d.consumed
+
+    def test_null_bar_or_missing_or_invalid_score_is_not_consumed(self):
+        with_bar = RoutingSurfaceConfig(
+            enabled=True,
+            choice_trust=0.8,
+            multi_specialist_hold=0.6,
+            complexity_lookup_max=0.4,
+        )
+        no_bar = _CAL
+        assert (
+            decide(ok_result(choice="calendar", score=0.1), no_bar, _SHORT).complexity
+            is None
+        )
+        assert decide(ok_result(choice="calendar"), with_bar, _SHORT).complexity is None
+        for bad in (2.0, -0.1, float("nan")):
+            d = decide(ok_result(choice="calendar", score=bad), with_bar, _SHORT)
+            assert d.complexity is None and "complexity" not in d.consumed
+
+    def test_score_never_picks_the_agent(self):
+        cfg = RoutingSurfaceConfig(
+            enabled=True,
+            choice_trust=0.8,
+            multi_specialist_hold=0.6,
+            complexity_lookup_max=0.4,
+        )
+        a = decide(ok_result(choice="calendar", score=0.1), cfg, _SHORT)
+        b = decide(ok_result(choice="calendar", score=0.9), cfg, _SHORT)
+        assert a.agent == b.agent == "calendar"

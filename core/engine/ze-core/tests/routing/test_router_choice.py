@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -26,7 +26,10 @@ CAL = RoutingSurfaceConfig(
     complexity_lookup_max=0.4,
     shortlist_k=3,
 )
-STATE = {"user": "what's on my calendar tomorrow", "history": "[Recent conversation]\nuser: hi"}
+STATE = {
+    "user": "what's on my calendar tomorrow",
+    "history": "[Recent conversation]\nuser: hi",
+}
 
 
 @pytest.fixture(autouse=True)
@@ -146,7 +149,9 @@ class TestSkipIsTheOneSixtyPath:
 
     async def test_client_skip_equals_baseline_and_keeps_reason(self):
         baseline = await _skip_envelope(CLOSE)
-        client = FakeSystemOneClient(SystemOneResult(outcome="skip", skip_reason="timeout"))
+        client = FakeSystemOneClient(
+            SystemOneResult(outcome="skip", skip_reason="timeout")
+        )
         router = _router(CLOSE, client)
         env = await router.route("hello", "s1", judgment_state=STATE)
         assert _fields(env) == _fields(baseline)
@@ -167,3 +172,144 @@ def _fields(env):
         env.complexity,
         env.complexity_source,
     )
+
+
+class TestCloseScoresCanBeOneSpecialist:
+    async def test_close_gap_with_confident_choice_is_not_compound(self):
+        baseline = await _skip_envelope(CLOSE)
+        assert baseline.is_compound is True  # what 160 alone would do
+        client = FakeSystemOneClient(ok_result(choice="calendar", peakedness=0.9))
+        router = _router(CLOSE, client)
+        env = await router.route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is False
+        assert env.primary_agent == "calendar"
+
+    async def test_low_cosine_top_with_confident_choice_is_not_compound(self):
+        baseline = await _skip_envelope(LOW)
+        assert baseline.is_compound is True
+        client = FakeSystemOneClient(ok_result(choice="calendar", peakedness=0.9))
+        env = await _router(LOW, client).route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is False
+        assert env.confidence == 0.9
+        assert env.raw_scores == LOW
+
+    @pytest.mark.parametrize("peakedness", [0.95, 0.2])
+    async def test_choice_none_decomposes_even_when_cosine_is_clear(self, peakedness):
+        client = FakeSystemOneClient(ok_result(choice="none", peakedness=peakedness))
+        env = await _router(CLEAR, client).route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is True
+        assert env.primary_agent == "calendar"  # E5 top
+        assert env.confidence == peakedness
+        assert env.routing_method == "embedding"
+
+    async def test_unsure_choice_abstains_clear_top_stays_single(self):
+        client = FakeSystemOneClient(ok_result(choice="messenger", peakedness=0.5))
+        env = await _router(CLEAR, client).route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is False
+        assert env.primary_agent == "calendar"
+        assert env.confidence == CLEAR["calendar"]
+        assert env.judgment.consumed == frozenset()
+
+    async def test_unsure_choice_abstains_close_gap_stays_compound(self):
+        client = FakeSystemOneClient(ok_result(choice="messenger", peakedness=0.5))
+        env = await _router(CLOSE, client).route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is True
+        assert env.confidence == CLOSE["calendar"]
+
+    async def test_choice_may_disagree_with_e5_top(self):
+        client = FakeSystemOneClient(ok_result(choice="messenger", peakedness=0.9))
+        env = await _router(CLOSE, client).route("x", "s1", judgment_state=STATE)
+        assert env.primary_agent == "messenger"
+        assert env.is_compound is False
+        assert env.subtasks[0].agent == "messenger"
+
+    async def test_disagreement_is_logged(self):
+        client = FakeSystemOneClient(ok_result(choice="messenger", peakedness=0.9))
+        router = _router(CLOSE, client)
+        with patch("ze_core.routing.router.log") as log:
+            await router.route("x", "s1", judgment_state=STATE)
+        events = [
+            c
+            for c in log.info.call_args_list
+            if c.args[0] == "routing_choice_disagrees_e5"
+        ]
+        assert events
+        assert events[0].kwargs["e5_top"] == "calendar"
+        assert events[0].kwargs["choice"] == "messenger"
+
+
+class TestMixedWorkAndComplexity:
+    async def test_high_noul_decomposes_a_trusted_choice(self):
+        client = FakeSystemOneClient(
+            ok_result(choice="calendar", peakedness=0.9, noul=0.8)
+        )
+        env = await _router(CLEAR, client).route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is True
+        assert env.primary_agent == "calendar"
+        assert env.confidence == 0.9
+        assert {"agent", "multi_specialist"} <= env.judgment.consumed
+
+    async def test_low_noul_stays_single(self):
+        client = FakeSystemOneClient(
+            ok_result(choice="calendar", peakedness=0.9, noul=0.1)
+        )
+        env = await _router(CLEAR, client).route("x", "s1", judgment_state=STATE)
+        assert env.is_compound is False
+
+    async def test_score_sets_tier_and_source_without_changing_the_agent(self):
+        simple = await _router(
+            CLEAR, FakeSystemOneClient(ok_result(choice="calendar", score=0.2))
+        ).route("x", "s1", judgment_state=STATE)
+        complex_ = await _router(
+            CLEAR, FakeSystemOneClient(ok_result(choice="calendar", score=0.9))
+        ).route("x", "s1", judgment_state=STATE)
+        assert (simple.complexity, simple.complexity_source) == ("simple", "score")
+        assert (complex_.complexity, complex_.complexity_source) == ("complex", "score")
+        assert simple.primary_agent == complex_.primary_agent == "calendar"
+        assert "complexity" in simple.judgment.consumed
+
+    async def test_score_missing_or_bar_null_uses_regex(self):
+        no_score = await _router(
+            CLEAR, FakeSystemOneClient(ok_result(choice="calendar"))
+        ).route("hello", "s1", judgment_state=STATE)
+        assert no_score.complexity_source == "regex"
+        assert "complexity" not in no_score.judgment.consumed
+
+        null_bar = RoutingSurfaceConfig(
+            enabled=True, choice_trust=0.8, multi_specialist_hold=0.6
+        )
+        env = await _router(
+            CLEAR,
+            FakeSystemOneClient(ok_result(choice="calendar", score=0.1)),
+            surface=null_bar,
+        ).route("hello", "s1", judgment_state=STATE)
+        assert env.complexity_source == "regex"
+
+    async def test_score_also_applies_on_decompose_and_abstain_outcomes(self):
+        none = await _router(
+            CLEAR, FakeSystemOneClient(ok_result(choice="none", score=0.9))
+        ).route("x", "s1", judgment_state=STATE)
+        unsure = await _router(
+            CLEAR,
+            FakeSystemOneClient(
+                ok_result(choice="calendar", peakedness=0.3, score=0.1)
+            ),
+        ).route("x", "s1", judgment_state=STATE)
+        assert (none.complexity, none.complexity_source) == ("complex", "score")
+        assert (unsure.complexity, unsure.complexity_source) == ("simple", "score")
+
+    async def test_score_picks_the_subtask_model_tier(self):
+        clear_registry()
+        register_agent("calendar", model="big", model_simple="small")
+        register_agent("messenger")
+        router = EmbeddingRouter(
+            cosine_embedder({"calendar": 0.84, "messenger": 0.5}),
+            AsyncMock(),
+            config=RouterConfig(),
+            system_one_client=FakeSystemOneClient(
+                ok_result(choice="calendar", score=0.1)
+            ),
+            surface=CAL,
+        )
+        env = await router.route("x", "s1", judgment_state=STATE)
+        assert env.subtasks[0].model == "small"
