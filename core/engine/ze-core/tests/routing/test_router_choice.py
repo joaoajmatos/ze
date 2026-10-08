@@ -313,3 +313,16 @@ class TestMixedWorkAndComplexity:
         )
         env = await router.route("x", "s1", judgment_state=STATE)
         assert env.subtasks[0].model == "small"
+
+
+async def test_agent_missing_from_the_registry_is_skipped_not_raised():
+    client = FakeSystemOneClient(ok_result(choice="calendar"))
+    router = _router(CLEAR, client)
+    from ze_agents.registry import get_enabled_agents
+
+    drifted = {n: c for n, c in get_enabled_agents().items() if n != "research"}
+    with patch("ze_core.routing.router.get_enabled_agents", return_value=drifted):
+        env = await router.route("x", "s1", judgment_state=STATE)
+    criteria = client.calls[0]["questions"]["agent"].criteria
+    assert "research" not in criteria
+    assert env.primary_agent == "calendar"

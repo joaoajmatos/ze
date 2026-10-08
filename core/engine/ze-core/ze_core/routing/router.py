@@ -139,8 +139,10 @@ class EmbeddingRouter:
                 log.warning("routing_surface_uncalibrated")
             return None, None
 
-        names = shortlist(ranked, surface.shortlist_k)
         enabled = get_enabled_agents()
+        names = shortlist([n for n in ranked if n in enabled], surface.shortlist_k)
+        if len(names) < 2:
+            return None, None
         questions = build_questions({n: enabled[n].description for n in names})
         try:
             result = await self._system_one.evaluate(state, questions, max_attempts=1)
