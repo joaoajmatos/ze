@@ -2,7 +2,7 @@
 
 > **Package:** `ze_seed`
 > **Phase:** 96
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 62 (data portability), Phase 20 (ZePlugin)
 
 ---

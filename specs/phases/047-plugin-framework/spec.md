@@ -2,7 +2,7 @@
 
 > **Packages:** `ze_core` (plugin ABC), `ze_api` (bootstrapper, container)
 > **Phase:** 47
-> **Status:** Done (tool namespacing deferred)
+> **Status:** Implemented (tool namespacing deferred)
 
 ---
 

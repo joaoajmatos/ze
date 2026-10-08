@@ -2,7 +2,7 @@
 
 > **Package:** `ze-web` (new React app under `apps/ze-web/`)
 > **Phase:** 43
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 40 ([40-notifications.md](../040-notifications/spec.md)), Phase 41 ([41-component-descriptors.md](../041-component-descriptors/spec.md)), Phase 42 ([42-native-ui-foundation.md](../042-native-ui-foundation/spec.md))
 
 ---

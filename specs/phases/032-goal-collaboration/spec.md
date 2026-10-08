@@ -2,7 +2,7 @@
 
 > **Package:** `ze_core` (state, routing node), `ze_personal` (plugin, executor, planner, tools), `ze` (job)
 > **Phase:** 24
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 23 ([31-goal-engine-v2.md](../031-goal-engine-v2/spec.md))
 
 ---

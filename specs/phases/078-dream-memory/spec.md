@@ -4,7 +4,7 @@
 > **Phase:** 78a (Sleep pass + foundation) / 78b (Dream pass + synthesis)
 > **Architecture:** [arch/dream-memory.md](../arch/dream-memory.md)
 > **Developer guide:** [docs/dreaming.md](../../docs/dreaming.md)
-> **Status:** 78a Done — 78b Done
+> **Status:** 78a Implemented — 78b Implemented
 
 **Architectural decisions locked:**
 - Phase split: 78a = Sleep pass + foundation; 78b = Dream pass + NLI gates + two-critic pipeline

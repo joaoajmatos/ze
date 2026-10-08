@@ -2,7 +2,7 @@
 
 > **Package:** `ze-correlation` (new core package)
 > **Phase:** 57
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Signal Substrate ([55-signal-substrate.md](../055-signal-substrate/spec.md)), Salience Model ([56-salience-relevance-model.md](../056-salience-relevance-model/spec.md)), Correlation Engine ADR ([../arch/correlation-engine.md](../arch/correlation-engine.md))
 
 ---

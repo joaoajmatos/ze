@@ -1,6 +1,6 @@
 # Phase 80 — NLI Client + Plugin Access
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 79 (NLI cross-encoder integration)
 **Packages touched:** `core/contracts/ze-agents`, `core/engine/ze-core`, `core/cognition/ze-memory`, `core/cognition/ze-correlation`, `packages/ze-sdk`, `apps/ze-api`
 

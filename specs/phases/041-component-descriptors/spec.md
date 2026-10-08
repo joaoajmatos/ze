@@ -2,7 +2,7 @@
 
 > **Package:** `ze-components` (new package, no ze deps) + `ze` (hook wiring, AgentState propagation)
 > **Phase:** 41
-> **Status:** Done — component type model superseded by Phase 66 ([66-primitive-ui.md](../066-primitive-ui/spec.md))
+> **Status:** Implemented — component type model superseded by Phase 66 ([66-primitive-ui.md](../066-primitive-ui/spec.md))
 > **Depends on:** Phase 42 ([42-native-ui-foundation.md](../042-native-ui-foundation/spec.md)), Phase 21 ([30-agent-harness.md](../030-agent-harness/spec.md))
 
 > **Note:** Phase 41 established the infrastructure (ContextVar side-channel, `@render_tool` decorator,

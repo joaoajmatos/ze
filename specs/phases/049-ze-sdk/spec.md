@@ -2,7 +2,7 @@
 
 > **Package:** `ze-sdk` (`packages/ze-sdk/`)
 > **Phase:** 49
-> **Status:** Done
+> **Status:** Implemented
 > **Prerequisite:** Phase 48 (ze-core split into ze-agents + ze-proactive) must be complete first.
 
 ---

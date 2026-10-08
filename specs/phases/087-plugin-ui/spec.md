@@ -1,6 +1,6 @@
 # Phase 87 — Plugin UI Platform
 
-**Status:** Done (87a–87d)
+**Status:** Implemented (87a–87d)
 **Depends on:** Phase 66 (Primitive UI), Phase 72 (API Client Codegen), Phase 75 (`@ze/ui`), Phase 76 (ze-api shell), Phase 82 (ze-web FSD)
 **Architecture:** [arch/plugin-ui.md](../arch/plugin-ui.md)
 

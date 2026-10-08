@@ -2,7 +2,7 @@
 
 > **Package:** `core/kernel/ze-logging`
 > **Phase:** 77
-> **Status:** Done
+> **Status:** Implemented
 > **Prerequisite:** Phase 76 (ze-api shell cleanup — removes duplicate `ze_api/logging.py`)
 
 ---

@@ -1,6 +1,6 @@
 # Phase 88 — Memory Feed
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 2 (Memory), Phase 45 (Native App Interface), Phase 82 (ze-web FSD)
 **Packages touched:** `apps/ze-api`, `apps/ze-web`
 

@@ -2,7 +2,7 @@
 
 > **Package:** `@ze/ui` (`packages/ze-ui/`)
 > **Phase:** 75
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 43 ([43-react-web-app.md](../043-react-web-app/spec.md)), Phase 66 ([66-primitive-ui.md](../066-primitive-ui/spec.md)), Phase 72 ([72-api-client-codegen.md](../072-api-client-codegen/spec.md)), Phase 73 ([73-api-surface.md](../073-api-surface/spec.md))
 
 ---

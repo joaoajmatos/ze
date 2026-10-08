@@ -1,6 +1,6 @@
 # Phase 81 — Plugin NLI Adoption
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 80 (NLIClient + DI)
 **Packages touched:** `plugins/ze-news`, `plugins/ze-finance`
 

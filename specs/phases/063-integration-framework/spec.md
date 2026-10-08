@@ -2,7 +2,7 @@
 
 > **Packages:** `ze_plugin` (Protocol + ZePlugin hook), `ze_plugin/bootstrap.py` (wiring), integration packages (`integrations/`)
 > **Phase:** 63
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

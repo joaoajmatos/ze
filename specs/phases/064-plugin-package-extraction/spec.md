@@ -2,7 +2,7 @@
 
 > **Package:** `ze_plugin` (new) · `ze_agents` (trimmed)
 > **Phase:** 64
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

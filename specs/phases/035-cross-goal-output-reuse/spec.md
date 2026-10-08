@@ -2,7 +2,7 @@
 
 > **Package:** `ze_personal` (types, store, planner, executor, tools)
 > **Phase:** 27
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 26 ([34-stuck-goal-detection.md](../034-stuck-goal-detection/spec.md))
 
 ---

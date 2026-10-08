@@ -1,6 +1,6 @@
 # Phase 54 — Progress Messages
 
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 49 (ze-sdk), Phase 37 (ze-news)
 
 ---

@@ -2,7 +2,7 @@
 
 > **Package:** `ze_personal` (planner, executor), `ze_core` (MemoryStore interface, unchanged)
 > **Phase:** 28
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 24 ([32-goal-collaboration.md](../032-goal-collaboration/spec.md)), Phase 5 ([13-phase5-memory.md](../013-phase5-memory/spec.md))
 
 ---

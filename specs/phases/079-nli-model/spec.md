@@ -1,6 +1,6 @@
 # Phase 79 — NLI Cross-Encoder Integration
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 78a (shares the `cross-encoder/nli-deberta-v3-small` singleton)
 **Packages touched:** `core/cognition/ze-memory`, `core/cognition/ze-correlation` (correlation grounding)
 

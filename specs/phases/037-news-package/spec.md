@@ -2,7 +2,7 @@
 
 > **Package:** `ze-news` (new standalone package, peer to `ze-personal`)
 > **Phase:** 37
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 20 ([28-goal-engine.md](../028-goal-engine/spec.md) package reorg), ZePlugin ABC ([arch/plugin-agents.md](../arch/plugin-agents.md))
 
 ---

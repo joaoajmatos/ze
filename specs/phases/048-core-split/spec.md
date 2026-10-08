@@ -2,7 +2,7 @@
 
 > **Packages:** `core/contracts/ze-agents/` (new), `core/contracts/ze-proactive/` (new), `core/engine/ze-core/` (slimmed)
 > **Phase:** 48
-> **Status:** Done
+> **Status:** Implemented
 > **Prerequisite:** Phase 49 (ze-sdk) depends on this split; implement this phase first.
 
 ---

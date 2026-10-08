@@ -2,7 +2,7 @@
 
 > **Package:** `apps/ze-web`
 > **Phase:** 82
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

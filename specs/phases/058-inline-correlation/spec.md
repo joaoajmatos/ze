@@ -2,7 +2,7 @@
 
 > **Package:** `ze-correlation` (consumer), `ze-core` (orchestration node), `ze-components`, `ze-web`
 > **Phase:** 58
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Correlation Engine ([57-correlation-engine.md](../057-correlation-engine/spec.md)), Salience Model ([56-salience-relevance-model.md](../056-salience-relevance-model/spec.md)), Signal Substrate ([55-signal-substrate.md](../055-signal-substrate/spec.md)), Orchestration ([../core/05-orchestration.md](../core/05-orchestration.md)), Component Descriptors ([41-component-descriptors.md](../041-component-descriptors/spec.md))
 
 ---

@@ -1,6 +1,6 @@
 # Phase 89 — Message Trace ("Why did Ze do that?")
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 73 (API surface), Phase 82 (ze-web FSD), Phase 87 (Plugin UI)
 **Packages touched:** `core/engine/ze-core`, `apps/ze-api`, `apps/ze-web`
 

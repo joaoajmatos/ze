@@ -2,7 +2,7 @@
 
 > **Package:** `ze-eval` (`core/ops/ze-eval/`)
 > **Phase:** 53
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

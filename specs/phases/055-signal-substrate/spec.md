@@ -2,7 +2,7 @@
 
 > **Package:** `ze-memory`, `ze-news` (first emitter)
 > **Phase:** 55
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Core Memory ([../core/06-memory.md](../core/06-memory.md)), Memory Graph Augmentation ([../arch/memory-graph-augmentation.md](../arch/memory-graph-augmentation.md)), Correlation Engine ADR ([../arch/correlation-engine.md](../arch/correlation-engine.md))
 
 ---

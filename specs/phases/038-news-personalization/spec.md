@@ -2,7 +2,7 @@
 
 > **Package:** `ze-news` (scoring layer), `ze` (briefing wiring)
 > **Phase:** 38
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 37 ([37-news-package.md](../037-news-package/spec.md)), Phase 3 ([03-memory.md](../003-memory/spec.md)), Phase 19 ([28-goal-engine.md](../028-goal-engine/spec.md))
 
 ---

@@ -2,7 +2,7 @@
 
 > **Package:** `packages/ze-client` (npm) · `ze_api/api/schemas.py` (Python)
 > **Phase:** 72
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

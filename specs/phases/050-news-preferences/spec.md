@@ -2,7 +2,7 @@
 
 > **Package:** `ze-news`, `ze-memory`
 > **Phase:** 50
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 38 ([38-news-personalization.md](../038-news-personalization/spec.md)), Phase 39 ([39-news-credibility.md](../039-news-credibility/spec.md)), Core Memory ([../core/06-memory.md](../core/06-memory.md))
 
 ---

@@ -2,7 +2,7 @@
 
 > **Package:** `ze-finance` (`plugins/ze-finance`)
 > **Phase:** 70
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

@@ -1,6 +1,6 @@
 # Phase 62 — Data Portability (Export, Import & Deletion)
 
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 49 (ze-sdk), Phase 46 (accountability / confirmation flow), Phase 20 (ZePlugin)
 
 ---

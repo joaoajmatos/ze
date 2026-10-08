@@ -2,7 +2,7 @@
 
 > **Package:** `ze-agents` (`ZePlugin`), `ze-sdk`, all signal-emitting plugins
 > **Phase:** 60
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Signal Substrate ([55-signal-substrate.md](../055-signal-substrate/spec.md)), Correlation Engine ([57-correlation-engine.md](../057-correlation-engine/spec.md)), Plugin Framework ([47-plugin-framework.md](../047-plugin-framework/spec.md))
 
 ---

@@ -2,7 +2,7 @@
 
 > **Package:** `ze_personal`, `ze_core` (migration only)
 > **Phase:** 23
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

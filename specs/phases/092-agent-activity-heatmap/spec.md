@@ -1,6 +1,6 @@
 # Phase 92 — Agent Activity Heatmap
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 89 (Message Trace — adds `trace` column to `messages`)
 **Packages touched:** `apps/ze-api`, `apps/ze-web`
 

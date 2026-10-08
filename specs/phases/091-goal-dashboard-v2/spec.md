@@ -1,6 +1,6 @@
 # Phase 91 — Goal Dashboard v2
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 19 (Goal Engine), Phase 23 (Goal Engine v2), Phase 45 (Native App Interface), Phase 72 (API Client Codegen)
 **Packages touched:** `apps/ze-api`, `apps/ze-web`
 

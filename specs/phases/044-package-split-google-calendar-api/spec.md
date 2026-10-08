@@ -2,7 +2,7 @@
 
 > **Packages:** `ze-google` (new), `ze-calendar` (new), `ze-api` (renamed from `ze`)
 > **Phase:** 44
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 20 ([package-reorg ADR](../../arch/package-reorg.md))
 
 ---

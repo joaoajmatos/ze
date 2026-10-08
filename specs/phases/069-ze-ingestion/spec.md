@@ -2,7 +2,7 @@
 
 > **Package:** `core/ops/ze-ingestion`
 > **Phase:** 69
-> **Status:** Done
+> **Status:** Implemented
 
 ---
 

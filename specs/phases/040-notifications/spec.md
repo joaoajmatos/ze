@@ -2,7 +2,7 @@
 
 > **Package:** `ze-notifications` (new package, no ze deps)
 > **Phase:** 40
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 42 ([native-ui-foundation](../042-native-ui-foundation/spec.md))
 
 ---

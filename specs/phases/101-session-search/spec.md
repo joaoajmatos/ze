@@ -1,6 +1,6 @@
 # Phase 101 — Session Search & Titles
 
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 90 — History side panel (`ChatSidePanel` / `SessionList`); Phase 45 — `messages` table + WebSocket turns; Phase 52 — session-grouped episode consolidation (`memory_session_summaries`)
 > **Enables:** Jump-to-message in chat (future), nav sidebar search, smarter session list at scale
 > **Packages touched:** `core/engine/ze-core`, `core/cognition/ze-memory`, `apps/ze-api`, `apps/ze-web`

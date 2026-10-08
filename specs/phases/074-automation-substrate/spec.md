@@ -2,7 +2,7 @@
 
 > **Packages:** `core/automation/ze-automation/` (core), `core/contracts/ze-proactive/` (unchanged), `plugins/ze-personal/` (shrunk to persona + contacts only)
 > **Phase:** 74
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 47 ([47-plugin-framework.md](../047-plugin-framework/spec.md)), Phase 48 ([48-core-split.md](../048-core-split/spec.md))
 
 ---

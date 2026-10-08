@@ -2,7 +2,7 @@
 
 > **Package:** `ze-memory`, `ze-correlation` (consumer)
 > **Phase:** 56
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Signal Substrate ([55-signal-substrate.md](../055-signal-substrate/spec.md)), News Preferences ([50-news-preferences.md](../050-news-preferences/spec.md)), User Profile ([14-user-profile.md](../014-user-profile/spec.md)), Core Memory ([../core/06-memory.md](../core/06-memory.md))
 
 ---

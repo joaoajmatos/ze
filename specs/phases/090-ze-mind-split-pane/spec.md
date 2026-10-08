@@ -1,6 +1,6 @@
 # Phase 90 — Ze's Mind Split-Pane
 
-**Status:** Done
+**Status:** Implemented
 **Depends on:** Phase 89 (Message Trace), Phase 45 (Native App Interface / WebSocket)
 **Packages touched:** `core/engine/ze-core`, `apps/ze-api`, `apps/ze-web`
 

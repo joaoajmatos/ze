@@ -2,7 +2,7 @@
 
 > **Package:** `ze_core` (message types + store), `ze` (WebSocket endpoint, NativeAppInterface)
 > **Phase:** 42
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 40 ([40-notifications.md](../040-notifications/spec.md)), Phase 1 (AppInterface ABC), Phase 7 (ProactiveNotifier)
 
 ---

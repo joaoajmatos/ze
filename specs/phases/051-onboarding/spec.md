@@ -2,7 +2,7 @@
 
 > **Packages:** `ze-onboarding`, `ze-sdk`, `ze-components`, `ze-api`, `ze-app`
 > **Phase:** 51
-> **Status:** Done
+> **Status:** Implemented
 > **Depends on:** Phase 41 ([41-component-descriptors.md](../041-component-descriptors/spec.md)), Phase 42 ([42-native-ui-foundation.md](../042-native-ui-foundation/spec.md)), Phase 47 ([47-plugin-framework.md](../047-plugin-framework/spec.md)), Phase 49 ([49-ze-sdk.md](../049-ze-sdk/spec.md)), Phase 50 ([50-news-preferences.md](../050-news-preferences/spec.md))
 
 ---
