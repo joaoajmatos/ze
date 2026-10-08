@@ -122,7 +122,7 @@ install:
 	@echo "Tip: run 'make hooks' to install git pre-commit / pre-push quality gates"
 
 web-install:
-	cd $(ZE_WEB) && bun install
+	bun install
 
 google-auth:
 	uv run python scripts/google_auth.py
