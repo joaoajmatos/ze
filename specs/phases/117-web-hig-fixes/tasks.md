@@ -66,9 +66,9 @@
 
 ## Phase W4: US10 remainder, US9 disclosure (P3/P4)
 
-- [ ] T024 [P] [US10] [WEB] Raise the mobile bottom-nav label from `text-[10px]` to at least `text-[11px]` (target `text-xs`) in `apps/ze-web/src/widgets/app-shell/ui/AppShell.tsx:30`, and verify 8 items still fit at 390px.
-- [ ] T025 [P] [US10] [WEB] Enlarge the breadcrumb back-button hit target to at least 44px in `apps/ze-web/src/shared/ui/layout/TopBar.tsx:49` (`min-h-11`, keep visual size). Add a test in `TopBar.test.tsx` (new).
-- [ ] T026 [P] [US9] [WEB] Add a static, unobtrusive "Ze is AI and can make mistakes." line under the composer in `apps/ze-web/src/entities/message/ui/ChatInput.tsx` (shared by chat and overlay) and in the empty state in `widgets/chat-workspace/ui/ChatWorkspace.tsx`. Add a test in `ChatInput.test.tsx` (new). No feedback or retry UI (future phase).
+- [x] T024 [P] [US10] [WEB] Raise the mobile bottom-nav label from `text-[10px]` to at least `text-[11px]` (target `text-xs`) in `apps/ze-web/src/widgets/app-shell/ui/AppShell.tsx:30`, and verify 8 items still fit at 390px.
+- [x] T025 [P] [US10] [WEB] Enlarge the breadcrumb back-button hit target to at least 44px in `apps/ze-web/src/shared/ui/layout/TopBar.tsx:49` (`min-h-11`, keep visual size). Add a test in `TopBar.test.tsx` (new).
+- [x] T026 [P] [US9] [WEB] Add a static, unobtrusive "Ze is AI and can make mistakes." line under the composer in `apps/ze-web/src/entities/message/ui/ChatInput.tsx` (shared by chat and overlay) and in the empty state in `widgets/chat-workspace/ui/ChatWorkspace.tsx`. Add a test in `ChatInput.test.tsx` (new). No feedback or retry UI (future phase).
 
 **Checkpoint B**: `make test-web`, `bun run lint`, quickstart manual pass at 390 / 800 / 1280px.
 
@@ -76,10 +76,10 @@
 
 # Cross-cutting [WEB]/[BE]
 
-- [ ] T027 [WEB] Run `make test-web` and `bun run lint` and record results in the spec's implementation status.
+- [x] T027 [WEB] Run `make test-web` and `bun run lint` and record results in the spec's implementation status.
 - [ ] T028 [BE] Run `make test` and `make lint`; add one eval/manual scenario note to `quickstart.md`: send a message, kill the socket mid-turn, confirm recovery.
 - [ ] T029 [WEB] Update `specs/phases/117-web-hig-fixes/spec.md` status to `Implemented` when T001-T028 are checked, using companion `write-context.py --append` then `--materialize` (never hand-edit checkboxes), and run the speckit after-implement hook.
-- [ ] T030 [WEB] Open a stub spec entry in `specs/README.md` for the split-out "Assistant response feedback and retry" phase (US9 remainder) so it is not lost. No spec files beyond the index line.
+- [x] T030 [WEB] Open a stub spec entry in `specs/README.md` for the split-out "Assistant response feedback and retry" phase (US9 remainder) so it is not lost. No spec files beyond the index line.
 
 ---
 

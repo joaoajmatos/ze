@@ -40,7 +40,7 @@ export function TopBar() {
           <>
             <button
               onClick={() => navigate(detail.path)}
-              className="flex items-center gap-2 py-1.5 px-2 -mx-2 text-smoke hover:text-foreground transition-colors shrink-0"
+              className="flex min-h-11 min-w-11 items-center gap-2 py-1.5 px-2 -mx-2 text-smoke hover:text-foreground transition-colors shrink-0"
             >
               {detail.Icon && <detail.Icon className="w-4 h-4" />}
               <span className="text-sm">{detail.label}</span>

@@ -478,6 +478,27 @@ point rather than three static dots.
   is limited to neutrals, typography, and the one signature motion moment
   (User Story 11, Acceptance Scenario 4).
 
+**Implementation status ([WEB] block, 2026-10-08)**: T010-T026 applied in
+`apps/ze-web` (commits `dcf8af11` W1, `ab6f506d` W2, `4334ab65` W3, plus W4).
+US1 client recovery: delivery watchdog in `useChatWorkspace.ts` (120 s idle
+bound, reset by typing/token frames, history check through `useMessages().reload()`,
+visible "Something went wrong. Retry" row via `ChatMessageList`), thinking
+cleared on socket close and on a silent half-open socket (`ws-client.ts`),
+no blanket clear on reconnect, `thread_id` on every send, untagged `error`
+frames ignored by hooks without a send in flight. US2/US7: click flyout at
+`md` plus `aria-label`/`title` on icon-only controls (`NavGroup.tsx`,
+`AppShell.tsx`). US5/US3/US4: route-derived panel label through
+`getRoute`/`getRouteLabel` (`shared/config/nav-routes.ts`) and
+`resolveOverlayScreen`, desktop X close, `pb-32` mobile scroll clearance.
+US10/US9: `text-[11px]` mobile labels, 44 px back target, static AI-disclosure
+line under the composer (`ChatInput.tsx`, shared by chat and overlay).
+Verification: `make test-web` equivalent (`bun run test` in `apps/ze-web`):
+49 files, 181 tests passed. `bun run lint`: 103 problems, identical to the
+pre-change baseline (none introduced). `tsc -b`: 12 errors, all in files this
+block did not touch (no `typecheck-web` target exists). The [BE] block
+(T001-T009, T028) and the quickstart manual pass at 390/800/1280 px are
+still open, so `Status` stays `Ready to implement`.
+
 **Implementation status (2026-08-19)**: FR-015 through FR-017 are applied
 at the token/shared-component level — `apps/ze-web/src/app/styles/globals.css`
 (retinted `--color-void`/`--color-bone`/`--color-ash`/`--color-smoke`,

@@ -27,7 +27,7 @@ const childNavLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex-1 flex flex-col items-center py-3 gap-1 text-[10px] transition-colors",
+    "flex-1 min-w-0 flex flex-col items-center py-3 gap-1 text-[11px] transition-colors",
     isActive ? "text-foreground" : "text-smoke",
   );
 
@@ -139,7 +139,7 @@ export function AppShell() {
         </div>
       </nav>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <BreadcrumbProvider>
           <PageHeaderProvider>
             <TopBarActionsProvider>

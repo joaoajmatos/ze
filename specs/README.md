@@ -205,6 +205,7 @@ Legend: ✅ Done · 🔄 In Progress · 🔲 Pending · ⏸ Deferred · ⚠️ D
 | 162 | [System One Client](phases/162-system-one-client/spec.md) | ✅ Implemented |
 | 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
 | 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
+| — | Assistant Response Feedback and Retry (split from [117](phases/117-web-hig-fixes/spec.md) US9: per-reply feedback, retry, store + endpoint) | 🔲 Stub — no spec yet |
 
 ## Ze Core specs (`core/`)
 
