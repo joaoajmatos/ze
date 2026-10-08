@@ -120,6 +120,8 @@ class ConnectionManager:
                 await self._ws.send_json(
                     {"type": "message", "message": message_to_dict(message)}
                 )
+            except (TypeError, ValueError) as exc:
+                log.warning("ws_push_unserializable", error=str(exc))
             except Exception as exc:
                 log.warning("ws_push_failed", error=str(exc))
                 self._ws = None
@@ -133,6 +135,12 @@ class ConnectionManager:
                 return
             try:
                 await self._ws.send_json(frame)
+            except (TypeError, ValueError) as exc:
+                log.warning(
+                    "ws_send_frame_unserializable",
+                    frame_type=frame.get("type"),
+                    error=str(exc),
+                )
             except Exception as exc:
                 log.warning("ws_send_frame_failed", error=str(exc))
                 self._ws = None

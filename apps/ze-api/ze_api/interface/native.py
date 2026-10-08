@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import math
 import re
+from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 from uuid import uuid4
@@ -24,6 +26,21 @@ log = get_logger(__name__)
 _NTFY_PRIORITY_MAP = {"normal": 3, "high": 5}
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _DANGER_LABELS = frozenset({"stop", "cancel", "abandon", "dismiss"})
+
+
+def _json_safe(value: Any) -> Any:
+    """Coerce a trace payload to strict-JSON types so a frame send cannot raise."""
+    if value is None or isinstance(value, (bool, int, str)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
 
 
 class NativeAppInterface:
@@ -110,13 +127,11 @@ class NativeAppInterface:
             except Exception as exc:
                 log.warning("native_interface_save_trace_failed", error=str(exc))
             try:
-                from dataclasses import asdict
-
                 await self._conn.send_frame(
                     {
                         "type": "trace_update",
                         "message_id": str(msg.id),
-                        **asdict(trace),
+                        **_json_safe(asdict(trace)),
                     },
                     thread_id,
                 )
