@@ -484,84 +484,103 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Routing, research + companion agents, orchestration, API | Done |
-| 2 | Memory — contradiction detection, episode summarisation, semantic retrieval | Done |
-| 3 | Calendar + email agents, Google OAuth2 | Done |
-| 4 | Workflow agent, multi-step planning, Postgres-persisted scheduler | Done |
-| 5 | Memory consolidation — dedup facts, expire stale, summarise episodes | Done |
-| 6 | User profile — synthesise facts + episodes into a structured portrait | Done |
-| 7 | Proactive Ze — morning briefing, workflow failure alerts, calendar reminders | Done |
-| 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | Done |
-| 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | Done |
-| 10 | Multimodal input — voice transcription + image/vision support | Done |
-| 11 | Persona profiles + dials — named profiles, TARS-style numeric dials | Done |
-| 12 | Contacts — person tracking, extraction from email/calendar/conversation, confirmation flow | Done |
-| 13 | Reminders agent — NL time parsing, APScheduler firing, startup replay | Done |
-| 14 | Progress messages — per-agent status messages, locale keys, atomic delete | Done |
-| 15 | Introspection commands — costs, memory, contacts | Done |
-| 16 | Agentic tool loop — LLM-driven ReAct loop in `BaseAgent`, calendar + email migrated | Done |
-| 17 | Prospecting agent — autonomous target research, browser sidecar, outreach drafting | Done |
-| 18 | Communication channel abstraction — `Channel` ABC, `EmailChannel`, contact channel handles | Done |
-| 19 | Goal Engine — autonomous multi-week goal execution, verification gates, milestone loop | Done |
-| 20 | Package architecture reorg — ze_core pure infra, ze-personal domain layer, ZePlugin ABC | Done |
-| 21 | Agent harness — hook points, step-level abort, multi-agent handoffs | Done |
-| 22 | Harness adoption — tool-call cap hook, research delegation, cancel command | Done |
-| 23 | Goal engine v2 — milestone context injection, execution traces, adaptive replanning, enriched gate narrative | Done |
-| 24 | Goal collaboration — goal-aware routing, conversational steering, post-goal retrospective, weekly narrative job | Done |
-| 25 | Proactive goal suggestions — weekly LLM-generated goal proposals | Done |
-| 26 | Stuck goal detection — idle milestone/gate alerts, recovery actions | Done |
-| 27 | Cross-goal output reuse — prior milestone summaries injected into planner and executor prompts | Done |
-| 28 | Cross-goal learning promotion — generalizable facts extracted from goal learnings and promoted to user memory on completion | Done |
-| 44 | Calendar package split — ze-google (credentials), ze-calendar (agents, reminders, timezone), ze renamed to ze-api | Done |
-| 45 | Native app interface — React web client, WebSocket transport, ntfy push notifications, ze-notifications + ze-components packages | Done |
-| 46 | Accountability layer — weekly narrative, cost anomaly detection, confirmation persistence + replay + ntfy + timeout, `/status` command | Done |
-| 48 | Core split — ze-agents (developer API), ze-proactive (job framework) extracted from ze-core | Done |
-| 49 | Ze SDK — `ze-sdk` flat re-export layer; plugins import from `ze_sdk.*`, no direct ze-core dep | Done |
-| 52 | Session-grouped episode consolidation — group episodes by session before archiving, one LLM summary per session | Done |
-| 54 | Progress messages — plugin-local locale files, `ProgressTranslations.build()`, reporter wired end-to-end, `typing` frame carries text, `news.fetching` key for refresh | Done |
-| 57 | Correlation engine — `ze-correlation` package, `CorrelationEngine`, `PostgresHypothesisStore`, graph neighbourhood expansion, recall guarantee, signal pinning | Done |
-| 60 | Cross-plugin signal contract — `SignalSource` protocol, `ZePlugin.signal_sources()` hook, `NewsSignalSource`, `CalendarSignalSource`, container collection + dedup | Done |
-| 64 | Plugin package extraction — `ze-plugin` package carved from `ze-agents`; `ZePlugin`, `channels/`, `SignalSource`, `ZeIntegration` in their own package; `ze-agents` focused on agent execution API | Done |
-| 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/kernel/ze-data`; no Ze deps | Done |
-| 70 | Finance recurring detection — algorithmic recurring expense/subscription detection, staleness-aware proactive job, CSV nudge flow, price-change resurface | Done |
-| 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Done |
-| 72 | API client codegen — `@ze/client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Done |
-| 73 | API surface cleanup — all routes under `/api/v0/`; `HTTPBearer` security scheme; explicit `operation_id` on every route; auth extracted into `require_api_key` Depends; duplicate cost route removed; `GET /api/v0/version` | Done |
-| 74 | Automation substrate — `ze-automation` core package owns full automation stack (types, stores, planners, executors, agents, migrations); `ze-personal` reduced to persona + contacts + onboarding | Done |
-| 76 | ze-api shell cleanup — domain bootstrap into package modules; `ZeApiSettings` shell; test relocation; delete `ze_api/bootstrap.py`; `compose.py` for proactive jobs | Done |
-| 77 | ze-logging — structlog configuration extracted from ze-api/ze-agents into `core/kernel/ze-logging`; `get_logger` via ze-sdk | Done |
-| 78 | Dream Memory — sleep pass (78a) + dream synthesis, NLI gates, two-critic pipeline, promoter, REST API (78b) | Done |
-| 79 | NLI cross-encoder — contradiction detection, retrieval re-rank cache, correlation grounding (`ze_core/nli.py`) | Done |
-| 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Done |
-| 81 | Plugin NLI adoption — news dedup, finance merchant merging | Done |
-| 83 | ze-communication + ze-messenger — channel contract extracted to `core/contracts/ze-communication`; `GmailChannel` moved to `ze-google` as `InboundChannel`; `ze-email` renamed to `ze-messenger` | Done |
-| 85 | Messaging Hub — `channel_id` identity, `UserChannelStore`/`ChannelWatermarkStore`/`ThreadChannelMap` (ze-personal), `InboundPollingJob`, `InboundMessageProcessor`, `MessagingSignalSource` (ze-messenger), thread-aware `send_email`, `ChannelRegistry` on container, `GET/PATCH /api/v0/channels` | Done |
-| 88 | Memory Feed — reverse-chronological paginated stream of facts + episodes; `GET /api/v0/memory/feed` with cursor pagination + type/agent filters; `/brain/memory` React page with infinite scroll + inline fact review | Done |
-| 89 | Message Trace — per-message explainability; `trace` JSONB column on `messages`; `record_trace` graph node; `GET /api/v0/messages/{id}/trace`; collapsible "Why?" panel in chat UI | Done |
-| 90 | Ze's Mind Split-Pane — real-time context sidebar in chat; `trace_update` WS frame emitted post-graph; 320 px resizable right panel showing routing/memory/tools for latest message | Done |
-| 91 | Goal Dashboard v2 — `GET /api/v0/goals/{id}` detail + `GET /api/v0/goals/{id}/traces`; milestone timeline, gate status, execution trace log, learnings sidebar at `/goals/:goalId` | Done |
-| 92 | Agent Activity Heatmap — calendar heatmap of agent usage by day; `GET /api/v0/activity/heatmap` aggregates `messages.trace`; section on Usage (`/costs`) using `@uiw/react-heat-map` | Done |
-| 93 | Temporal Memory Timeline — `as_of` param on `GET /api/v0/memory/feed`; `GET /api/v0/memory/timeline-bounds`; date scrubber on Memory Feed page for time-travel memory view | Done |
-| 94 | Memory Graph View — interactive entity/relationship graph; `GET /api/v0/memory/graph` + entity detail endpoint; `/brain/graph` page using React Flow + dagre layout; click-to-expand neighbourhoods | Done |
-| 95 | Unified Streaming Architecture — switch `invoke_raw_turn` (now in `ze_core/conversation/turn.py`) to `astream_events`; emit partial `trace_update` frames as graph nodes complete (routing → memory → tools → final); token streaming for messages already works; trace panel fills progressively | Done |
-| 104 | Workflow Flowchart View — replace the flat timeline run view with a top-to-bottom flowchart (`@xyflow/react` + `dagre`); steps as nodes, `branches`/`default_next` as labeled edges, executed path highlighted via `branch_taken`; full replacement of `WorkflowStepsList` | Done |
-| 105 | Notification Center — `notifications` table owned by `ze-proactive` (`zpro002`); `ProactiveNotifier.notify()` structured path; `GET/POST /api/v0/notifications` REST surface; live `notification` WS frame; `entities/notification` + `widgets/notification-bell` replacing the decorative Bell in `TopBar` | Done |
-| 106 | Memory Retrieval Relevance — real cosine similarity + configurable relevance floor across all `ze-memory` policies; entity-anchored retrieval (`entity_anchor.py`, one-hop `GraphStore.expand()` from query-text entity matches); composite ranking (`composite.py`, similarity × recency decay × confidence) before token budgeting; synchronous live NLI rerank (`retrieval_rerank.live_rerank`) distinct from the async session cache; Mind panel shows real relevance, not extraction confidence | Done |
-| 108 | Workflow Revision Audit — append-only `workflow_revisions` log (`zc026`) on every workflow create/step-edit (agent tool + REST), before/after steps, human-readable diff summary, actor context (agent session/message id or API); `GET /api/v0/workflows/{id}/revisions`; "Change History" section on workflow detail page with "View conversation" deep link and a link from the 107b definition-changed banner | Done |
-| 109 | Open-Loop Substrate — new core `ze-worldstate` package: `OpenLoop` (`suspected`→`active`→`drifting`→`closed`\|`dropped`), honest provenance, continuous confidence with evidence-linked decay cascade, entity-overlap/embedding dedup, stale-suspicion expiry job; loops reuse `ze-memory`'s `memory_relationships`/`GraphStore` (new `open_loop` bucket) rather than a parallel model; wired into all four inflows (conversation, email, calendar, ingestion); `GET/POST /api/v0/loops` REST surface; `widgets/loop-review` | Done |
-| 110 | Open-Loop Drift Detection & Surfacing (Phase B) — `drift_deadline`/`drift_rationale` columns (`zw002`), scheduled `DriftSweepJob` + immediate contradiction path (`decay.py`) moving `active`→`drifting`; `ze_core` `surface_loops` node (entity-overlap inline mentions, no gating); `ze-worldstate → ze-correlation` dependency reusing extracted push-bar functions (`ze_correlation/push.py`) via `LoopSurfacer.passes_push_bar` + `PushSweepJob`, sibling `push_log` budget and inline-then-push cooldown | Done |
-| 111 | Claim Topology — shared `ClaimKind`/`Provenance`/`Confidence`/`decay()` vocabulary in `core/contracts/ze-agents/ze_agents/claims.py`; fixes frozen `Hypothesis.confidence` via new `HypothesisDecayJob` (`zcor002`); retrofits `OpenLoop`, `memory_facts` (`zm016`), and `Signal` (`zm017`) onto the shared vocabulary, `OpenLoop.provenance` unvalidated against a closed core whitelist; extracts `is_stale()` staleness helper into `core/contracts/ze-proactive`, shared by `StaleSuspicionJob`/`DriftSweepJob`/`PostgresGoalStore.list_stuck` | Done |
-| 112 | Session Context Continuity — replaces `write_memory`'s blind `[-SESSION_HISTORY_LIMIT:]` trim with a 70%-of-context-window compaction check (`ze_core/openrouter/context_windows.py`, LLM-produced rolling summary folded ahead of the verbatim tail, graceful fallback to the old trim on LLM failure); replaces `fetch_context`'s blank-history-on-gap side effect with a silent resume recap (`ResumeRecap`, session narrative + open loops + in-flight goals/workflows) injected into the system prompt via `AgentContext.resume_recap`, never appended to `messages`; both recorded on `MessageTrace` (`compaction`, `resume_recap_applied`) for trace-panel inspectability; no new graph nodes, no new tables | Done |
-| 113 | Proactive/Concurrency Hardening Sweep — three independent reliability fixes: `pending_confirmations` + in-process `pending_configs` rekeyed from `thread_id` to `request_id` (`zc027`) so concurrent confirmation gates on one thread can't clobber or cross-cancel each other; opt-in `budget:` config block + `SpendBudgetChecker`/`ze_core/telemetry/pricing.py` composed into `capability_check` (strictest-wins with `CapabilityGate`), holding execution via the existing `AWAIT_CONFIRMATION` gate when session/day spend would exceed a configured ceiling; `push_log` idempotency key + unique index (`zpro003`) turns `LoopSurfacer.log_push`/`PushSweepJob` from notify-then-log into claim-then-notify (`claim_push`/`release_push_claim`), closing the concurrent-sweep double-notify race and rolling back the claim on notifier failure | Done |
-| 114 | Agent Skills — new core `ze-skills` package: import `SKILL.md` from a URL or zip, pending-review gate before any conversation effect, embedding-similarity + `/skill-name` matching applied globally across agents, `allowed-tools` intersects (never unions) an agent's tools, usage on `MessageTrace.skills_used`/`trace_update`; bundled skills via `ZePlugin.bundled_skill_paths()`; daily `SkillRecheckJob` reverts to pending review on source content change; `GET/POST /api/v0/skills` + `widgets/skill-management` | Done |
-| 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Done |
-| 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Done |
-| 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Done |
-| 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Done |
-| 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Done |
-| 122 | Data Overview Charts — storage-composition chart replacing `StorageDonutChart` on the data overview widget | Done |
-| 127 | User-Directed Priority Override — `PriorityOverride` (`ze-priority`'s first store, `zpri` migration chain), snapshot view + drag reorder + conversational `reprioritize_item` tool, decaying/pinned overrides merged into `PriorityView.rank()` at render time, `ze_collision` skip rule narrowed to `(source_function, provenance)` so user-vs-executive priority disagreement is observable | Done |
-| 132 | Priority Turn Surfacing — conversation inline mentions, resume recap, and explicit what's-open consume merged `PriorityView` (including Phase 127 pins) via `TurnSurfacing` injected as `config["configurable"]["turn_surfacer"]`; relevance still gates unsolicited mentions; component type `open_items`; no store merge, no push-budget change | Done |
+| 1 | Routing, research + companion agents, orchestration, API | Implemented |
+| 2 | Memory — contradiction detection, episode summarisation, semantic retrieval | Implemented |
+| 3 | Calendar + email agents, Google OAuth2 | Implemented |
+| 4 | Workflow agent, multi-step planning, Postgres-persisted scheduler | Implemented |
+| 5 | Memory consolidation — dedup facts, expire stale, summarise episodes | Implemented |
+| 6 | User profile — synthesise facts + episodes into a structured portrait | Implemented |
+| 7 | Proactive Ze — morning briefing, workflow failure alerts, calendar reminders | Implemented |
+| 8 | Insight engine — weekly synthesis of facts + episodes into actionable insights | Implemented |
+| 9 | Cost telemetry — per-flow/agent token tracking, automatic cost reconciliation | Implemented |
+| 10 | Multimodal input — voice transcription + image/vision support | Implemented |
+| 11 | Persona profiles + dials — named profiles, TARS-style numeric dials | Implemented |
+| 12 | Contacts — person tracking, extraction from email/calendar/conversation, confirmation flow | Implemented |
+| 13 | Reminders agent — NL time parsing, APScheduler firing, startup replay | Implemented |
+| 14 | Progress messages — per-agent status messages, locale keys, atomic delete | Implemented |
+| 15 | Introspection commands — costs, memory, contacts | Implemented |
+| 16 | Agentic tool loop — LLM-driven ReAct loop in `BaseAgent`, calendar + email migrated | Implemented |
+| 17 | Prospecting agent — autonomous target research, browser sidecar, outreach drafting | Implemented |
+| 18 | Communication channel abstraction — `Channel` ABC, `EmailChannel`, contact channel handles | Implemented |
+| 19 | Goal Engine — autonomous multi-week goal execution, verification gates, milestone loop | Implemented |
+| 20 | Package architecture reorg — ze_core pure infra, ze-personal domain layer, ZePlugin ABC | Implemented |
+| 21 | Agent harness — hook points, step-level abort, multi-agent handoffs | Implemented |
+| 22 | Harness adoption — tool-call cap hook, research delegation, cancel command | Implemented |
+| 23 | Goal engine v2 — milestone context injection, execution traces, adaptive replanning, enriched gate narrative | Implemented |
+| 24 | Goal collaboration — goal-aware routing, conversational steering, post-goal retrospective, weekly narrative job | Implemented |
+| 25 | Proactive goal suggestions — weekly LLM-generated goal proposals | Implemented |
+| 26 | Stuck goal detection — idle milestone/gate alerts, recovery actions | Implemented |
+| 27 | Cross-goal output reuse — prior milestone summaries injected into planner and executor prompts | Implemented |
+| 28 | Cross-goal learning promotion — generalizable facts extracted from goal learnings and promoted to user memory on completion | Implemented |
+| 44 | Calendar package split — ze-google (credentials), ze-calendar (agents, reminders, timezone), ze renamed to ze-api | Implemented |
+| 45 | Native app interface — React web client, WebSocket transport, ntfy push notifications, ze-notifications + ze-components packages | Implemented |
+| 46 | Accountability layer — weekly narrative, cost anomaly detection, confirmation persistence + replay + ntfy + timeout, `/status` command | Implemented |
+| 48 | Core split — ze-agents (developer API), ze-proactive (job framework) extracted from ze-core | Implemented |
+| 49 | Ze SDK — `ze-sdk` flat re-export layer; plugins import from `ze_sdk.*`, no direct ze-core dep | Implemented |
+| 52 | Session-grouped episode consolidation — group episodes by session before archiving, one LLM summary per session | Implemented |
+| 54 | Progress messages — plugin-local locale files, `ProgressTranslations.build()`, reporter wired end-to-end, `typing` frame carries text, `news.fetching` key for refresh | Implemented |
+| 57 | Correlation engine — `ze-correlation` package, `CorrelationEngine`, `PostgresHypothesisStore`, graph neighbourhood expansion, recall guarantee, signal pinning | Implemented |
+| 60 | Cross-plugin signal contract — `SignalSource` protocol, `ZePlugin.signal_sources()` hook, `NewsSignalSource`, `CalendarSignalSource`, container collection + dedup | Implemented |
+| 64 | Plugin package extraction — `ze-plugin` package carved from `ze-agents`; `ZePlugin`, `channels/`, `SignalSource`, `ZeIntegration` in their own package; `ze-agents` focused on agent execution API | Implemented |
+| 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/kernel/ze-data`; no Ze deps | Implemented |
+| 70 | Finance recurring detection — algorithmic recurring expense/subscription detection, staleness-aware proactive job, CSV nudge flow, price-change resurface | Implemented |
+| 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Implemented |
+| 72 | API client codegen — `@ze/client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Implemented |
+| 73 | API surface cleanup — all routes under `/api/v0/`; `HTTPBearer` security scheme; explicit `operation_id` on every route; auth extracted into `require_api_key` Depends; duplicate cost route removed; `GET /api/v0/version` | Implemented |
+| 74 | Automation substrate — `ze-automation` core package owns full automation stack (types, stores, planners, executors, agents, migrations); `ze-personal` reduced to persona + contacts + onboarding | Implemented |
+| 76 | ze-api shell cleanup — domain bootstrap into package modules; `ZeApiSettings` shell; test relocation; delete `ze_api/bootstrap.py`; `compose.py` for proactive jobs | Implemented |
+| 77 | ze-logging — structlog configuration extracted from ze-api/ze-agents into `core/kernel/ze-logging`; `get_logger` via ze-sdk | Implemented |
+| 78 | Dream Memory — sleep pass (78a) + dream synthesis, NLI gates, two-critic pipeline, promoter, REST API (78b) | Implemented |
+| 79 | NLI cross-encoder — contradiction detection, retrieval re-rank cache, correlation grounding (`ze_core/nli.py`) | Implemented |
+| 80 | NLI Client + plugin access — `NLIClient` Protocol, DI, shared `@tool`s | Implemented |
+| 81 | Plugin NLI adoption — news dedup, finance merchant merging | Implemented |
+| 83 | ze-communication + ze-messenger — channel contract extracted to `core/contracts/ze-communication`; `GmailChannel` moved to `ze-google` as `InboundChannel`; `ze-email` renamed to `ze-messenger` | Implemented |
+| 85 | Messaging Hub — `channel_id` identity, `UserChannelStore`/`ChannelWatermarkStore`/`ThreadChannelMap` (ze-personal), `InboundPollingJob`, `InboundMessageProcessor`, `MessagingSignalSource` (ze-messenger), thread-aware `send_email`, `ChannelRegistry` on container, `GET/PATCH /api/v0/channels` | Implemented |
+| 88 | Memory Feed — reverse-chronological paginated stream of facts + episodes; `GET /api/v0/memory/feed` with cursor pagination + type/agent filters; `/brain/memory` React page with infinite scroll + inline fact review | Implemented |
+| 89 | Message Trace — per-message explainability; `trace` JSONB column on `messages`; `record_trace` graph node; `GET /api/v0/messages/{id}/trace`; collapsible "Why?" panel in chat UI | Implemented |
+| 90 | Ze's Mind Split-Pane — real-time context sidebar in chat; `trace_update` WS frame emitted post-graph; 320 px resizable right panel showing routing/memory/tools for latest message | Implemented |
+| 91 | Goal Dashboard v2 — `GET /api/v0/goals/{id}` detail + `GET /api/v0/goals/{id}/traces`; milestone timeline, gate status, execution trace log, learnings sidebar at `/goals/:goalId` | Implemented |
+| 92 | Agent Activity Heatmap — calendar heatmap of agent usage by day; `GET /api/v0/activity/heatmap` aggregates `messages.trace`; section on Usage (`/costs`) using `@uiw/react-heat-map` | Implemented |
+| 93 | Temporal Memory Timeline — `as_of` param on `GET /api/v0/memory/feed`; `GET /api/v0/memory/timeline-bounds`; date scrubber on Memory Feed page for time-travel memory view | Implemented |
+| 94 | Memory Graph View — interactive entity/relationship graph; `GET /api/v0/memory/graph` + entity detail endpoint; `/brain/graph` page using React Flow + dagre layout; click-to-expand neighbourhoods | Implemented |
+| 95 | Unified Streaming Architecture — switch `invoke_raw_turn` (now in `ze_core/conversation/turn.py`) to `astream_events`; emit partial `trace_update` frames as graph nodes complete (routing → memory → tools → final); token streaming for messages already works; trace panel fills progressively | Implemented |
+| 102 | Workflow Conditional Branching — stable step ids, per-step `branches` (condition → target) and `default_next`, falling back to sequential order | Implemented |
+| 103 | Model Default with Overrides — `models.default` + `models.overrides` in `config.yaml`; resolution order override → agent's declared model → default | Implemented |
+| 104 | Workflow Flowchart View — replace the flat timeline run view with a top-to-bottom flowchart (`@xyflow/react` + `dagre`); steps as nodes, `branches`/`default_next` as labeled edges, executed path highlighted via `branch_taken`; full replacement of `WorkflowStepsList` | Implemented |
+| 105 | Notification Center — `notifications` table owned by `ze-proactive` (`zpro002`); `ProactiveNotifier.notify()` structured path; `GET/POST /api/v0/notifications` REST surface; live `notification` WS frame; `entities/notification` + `widgets/notification-bell` replacing the decorative Bell in `TopBar` | Implemented |
+| 106 | Memory Retrieval Relevance — real cosine similarity + configurable relevance floor across all `ze-memory` policies; entity-anchored retrieval (`entity_anchor.py`, one-hop `GraphStore.expand()` from query-text entity matches); composite ranking (`composite.py`, similarity × recency decay × confidence) before token budgeting; synchronous live NLI rerank (`retrieval_rerank.live_rerank`) distinct from the async session cache; Mind panel shows real relevance, not extraction confidence | Implemented |
+| 107 | Workflow Resilience and Control — per-step failure policy (`on_failure` / criticality), transient-failure handling, partial-result synthesis when a critical step fails | Implemented |
+| 108 | Workflow Revision Audit — append-only `workflow_revisions` log (`zc026`) on every workflow create/step-edit (agent tool + REST), before/after steps, human-readable diff summary, actor context (agent session/message id or API); `GET /api/v0/workflows/{id}/revisions`; "Change History" section on workflow detail page with "View conversation" deep link and a link from the 107b definition-changed banner | Implemented |
+| 109 | Open-Loop Substrate — new core `ze-worldstate` package: `OpenLoop` (`suspected`→`active`→`drifting`→`closed`\|`dropped`), honest provenance, continuous confidence with evidence-linked decay cascade, entity-overlap/embedding dedup, stale-suspicion expiry job; loops reuse `ze-memory`'s `memory_relationships`/`GraphStore` (new `open_loop` bucket) rather than a parallel model; wired into all four inflows (conversation, email, calendar, ingestion); `GET/POST /api/v0/loops` REST surface; `widgets/loop-review` | Implemented |
+| 110 | Open-Loop Drift Detection & Surfacing (Phase B) — `drift_deadline`/`drift_rationale` columns (`zw002`), scheduled `DriftSweepJob` + immediate contradiction path (`decay.py`) moving `active`→`drifting`; `ze_core` `surface_loops` node (entity-overlap inline mentions, no gating); `ze-worldstate → ze-correlation` dependency reusing extracted push-bar functions (`ze_correlation/push.py`) via `LoopSurfacer.passes_push_bar` + `PushSweepJob`, sibling `push_log` budget and inline-then-push cooldown | Implemented |
+| 111 | Claim Topology — shared `ClaimKind`/`Provenance`/`Confidence`/`decay()` vocabulary in `core/contracts/ze-agents/ze_agents/claims.py`; fixes frozen `Hypothesis.confidence` via new `HypothesisDecayJob` (`zcor002`); retrofits `OpenLoop`, `memory_facts` (`zm016`), and `Signal` (`zm017`) onto the shared vocabulary, `OpenLoop.provenance` unvalidated against a closed core whitelist; extracts `is_stale()` staleness helper into `core/contracts/ze-proactive`, shared by `StaleSuspicionJob`/`DriftSweepJob`/`PostgresGoalStore.list_stuck` | Implemented |
+| 112 | Session Context Continuity — replaces `write_memory`'s blind `[-SESSION_HISTORY_LIMIT:]` trim with a 70%-of-context-window compaction check (`ze_core/openrouter/context_windows.py`, LLM-produced rolling summary folded ahead of the verbatim tail, graceful fallback to the old trim on LLM failure); replaces `fetch_context`'s blank-history-on-gap side effect with a silent resume recap (`ResumeRecap`, session narrative + open loops + in-flight goals/workflows) injected into the system prompt via `AgentContext.resume_recap`, never appended to `messages`; both recorded on `MessageTrace` (`compaction`, `resume_recap_applied`) for trace-panel inspectability; no new graph nodes, no new tables | Implemented |
+| 113 | Proactive/Concurrency Hardening Sweep — three independent reliability fixes: `pending_confirmations` + in-process `pending_configs` rekeyed from `thread_id` to `request_id` (`zc027`) so concurrent confirmation gates on one thread can't clobber or cross-cancel each other; opt-in `budget:` config block + `SpendBudgetChecker`/`ze_core/telemetry/pricing.py` composed into `capability_check` (strictest-wins with `CapabilityGate`), holding execution via the existing `AWAIT_CONFIRMATION` gate when session/day spend would exceed a configured ceiling; `push_log` idempotency key + unique index (`zpro003`) turns `LoopSurfacer.log_push`/`PushSweepJob` from notify-then-log into claim-then-notify (`claim_push`/`release_push_claim`), closing the concurrent-sweep double-notify race and rolling back the claim on notifier failure | Implemented |
+| 114 | Agent Skills — new core `ze-skills` package: import `SKILL.md` from a URL or zip, pending-review gate before any conversation effect, embedding-similarity + `/skill-name` matching applied globally across agents, `allowed-tools` intersects (never unions) an agent's tools, usage on `MessageTrace.skills_used`/`trace_update`; bundled skills via `ZePlugin.bundled_skill_paths()`; daily `SkillRecheckJob` reverts to pending review on source content change; `GET/POST /api/v0/skills` + `widgets/skill-management` | Implemented |
+| 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Implemented |
+| 116 | Workspace Follow-Through — wait-then-detach workspace runs, automatic follow-up turn on the same thread, push when offline, cancel; one-run-at-a-time busy rule delivered by Phase 129 (`_refusal_if_busy`) | Implemented |
+| 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Implemented |
+| 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Implemented |
+| 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Implemented |
+| 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Implemented |
+| 122 | Data Overview Charts — storage-composition chart replacing `StorageDonutChart` on the data overview widget | Implemented |
+| 123 | Attention Arbitration — `PriorityView` ranks drifting loops, stuck goals, and hypotheses on one scale; shared push budget across proactive sources | Implemented |
+| 124 | Contribution Seam Core — typed `Contribution` proposals with `validate_and_submit`; reflection migrated onto the seam | Implemented |
+| 125 | Contribution Seam Extension — social cognition (contacts/relationships) and action producers onto the seam | Implemented |
+| 126 | Contribution Collision Detection — `ze-collision` package, `contribution_collisions` log (`zcol001`), `submit_and_detect_collisions` | Implemented |
+| 127 | User-Directed Priority Override — `PriorityOverride` (`ze-priority`'s first store, `zpri` migration chain), snapshot view + drag reorder + conversational `reprioritize_item` tool, decaying/pinned overrides merged into `PriorityView.rank()` at render time, `ze_collision` skip rule narrowed to `(source_function, provenance)` so user-vs-executive priority disagreement is observable | Implemented |
+| 128 | Social Cognition Foundation — `project` entity and `WORKS_ON` / `COLLABORATES_WITH` edges in the memory graph, decaying `last_contact`, stale follow-up nudges in the shared push budget | Implemented |
+| 129 | Workspace Run Journal — run handles the mind can reattach to after restart (`zws003`), watch stream, busy refusal | Implemented |
+| 130 | Social Cognition Co-Occurrence — project-person co-occurrence inference (`ze_personal/social/`, `SOURCE_WEIGHTS`, 30-day window) as correlation hypotheses, promoted to identity on corroboration | Implemented |
+| 131 | Workspace Live Output — live output of a detached workspace run shown to the user in chat | Implemented |
+| 132 | Priority Turn Surfacing — conversation inline mentions, resume recap, and explicit what's-open consume merged `PriorityView` (including Phase 127 pins) via `TurnSurfacing` injected as `config["configurable"]["turn_surfacer"]`; relevance still gates unsolicited mentions; component type `open_items`; no store merge, no push-budget change | Implemented |
+| 133 | Perception Facts onto the Contribution Seam — conversation, ingestion, inbound-message, and onboarding facts submitted as `PERCEPTION` / `FACT` contributions | Implemented |
+| 134 | Memory Facts Hard-Cut — `memory_facts` onto the shared claim vocabulary; public `propose_facts` removed | Implemented |
+| 135 | Action Record Ledger — append-only `ActionRecord` ledger (`action_records`, `zm021`) | Implemented |
+| 136 | Action Instrumentation — workspace, messaging, calendar/reminders, goal/workflow, and prospecting producers each submit an `ActionRecord` citing their domain record | Implemented |
+| 137 | Evidence-Backed Goal Learning — one evidence-bearing `GoalLearning` model (`zc030`) replaces `goal_learnings` and the `goals.learnings` blob | Implemented |
+| 138 | Governed Procedure Lifecycle — procedure candidates, admissions, versions, and lifecycle events (`zm022`) replace direct writes to `memory_procedures` | Implemented |
+| 139 | Governed Procedure Activation — validated procedures discoverable and explicitly invocable (`invoke_procedure`), never granting tools; invocations and feedback recorded (`zm023`) | Implemented |
 | 140 | Memory admission + remember/forget — keep/drop extractor with closed families; companion `remember_fact`/`forget_fact` through the contribution seam; `AgentResult.memory_proposals` removed | Implemented |
 | 141 | Memory read contract + prompt constitution — reviewed facts always-on; `_format_memory` origin/confidence/recency; constitution + job before biography; silent fact use; `TurnSurfacing` stays for open items | Implemented |
 | 142 | Speech-act routing — extractor `speech_act` gate; companion routes timed remember to reminders, lingering concerns to loops, multi-week outcomes to goals | Implemented |
@@ -585,6 +604,8 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
 | 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
 | 162 | System One client — `SystemOneClient` Protocol (`ze_agents/system_one.py`) for typed judgments (noul / choice / score); `OpenRouterSystemOneClient` + `DisabledSystemOneClient` in `ze_core/openrouter/system_one.py`; `system_one:` config block, off by default; no routing or admission change yet | Implemented |
+| 163 | Speech-Act System One — System One replaces the LLM speech-act/family judge in fact extraction; same closed sets, fail open to the current extractor (depends on 162) | Draft (queued) |
+| 164 | Routing Choice After E5 — E5 stays the shortlist; a typed System One Choice decides single-specialist trust and a graded complexity question replaces the word-count classifier (depends on 162) | Draft (queued) |
 
 ## graphify
 
