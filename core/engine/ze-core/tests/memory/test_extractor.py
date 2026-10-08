@@ -53,8 +53,9 @@ async def test_gather_fact_proposals_merges_llm_output():
         prompt="I love Python",
         response="Great choice!",
     )
-    assert len(proposals) == 1
-    assert proposals[0].predicate == "preference"
+    assert proposals.path == "haiku"
+    assert len(proposals.facts) == 1
+    assert proposals.facts[0].predicate == "preference"
 
 
 @pytest.mark.asyncio
@@ -65,4 +66,5 @@ async def test_gather_without_client_returns_empty():
         prompt="I love Python",
         response="hello",
     )
-    assert proposals == []
+    assert proposals.facts == []
+    assert proposals.path == "none"

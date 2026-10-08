@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from ze_logging import get_logger
 
 from ze_memory.defaults import MODEL_SYNTHESIS
-from ze_memory.types import Event, Fact, SpeechAct
+from ze_memory.types import Event, Fact, FactAdmission, SpeechAct
 
 if TYPE_CHECKING:
     from ze_memory.types import Entity
@@ -451,11 +451,11 @@ async def gather_fact_proposals(
     agent: str,
     prompt: str,
     response: str,
-) -> list[Fact]:
-    """LLM-extract durable facts from the turn. Explicit remember writes are tools."""
+) -> FactAdmission:
+    """Admit durable facts from the turn. Explicit remember writes are tools."""
     client = configurable.get("openrouter_client")
-    if client is None:
-        return []
+    if client is None or is_trivial_turn(prompt) or response.startswith("[ERROR]"):
+        return FactAdmission(path="none")
 
     settings = configurable.get("settings")
     settings_dict = (
@@ -464,6 +464,15 @@ async def gather_fact_proposals(
         else settings
     )
     model = fact_extraction_model(settings_dict)
+
+    from ze_memory.speech_act_judge import speech_act_surface_config
+
+    surface = speech_act_surface_config(settings)
+    skip_reason: str | None = None
+    if surface.enabled and not surface.calibrated:
+        log.warning("speech_act_system_one_uncalibrated")
+        skip_reason = "uncalibrated"
+
     extracted = await extract_facts(
         client,
         prompt=prompt,
@@ -472,4 +481,4 @@ async def gather_fact_proposals(
     )
     for fact in extracted:
         fact.agent = agent
-    return extracted
+    return FactAdmission(facts=extracted, path="haiku", skip_reason=skip_reason)

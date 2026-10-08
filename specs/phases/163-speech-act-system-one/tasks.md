@@ -18,7 +18,7 @@
 
 **Purpose**: Default-off surface config.
 
-- [ ] **T001** [P] [PLATFORM] Under the existing `system_one:` block, replace `surfaces: {}` with `surfaces.speech_act` (`enabled: false`, `choice_hold: null`, `biography_hold: null`). Mark both bars with the comment `# uncalibrated — set from make calibrate-speech-act`. · `apps/ze-api/config/config.yaml`
+- [x] **T001** [P] [PLATFORM] Under the existing `system_one:` block, replace `surfaces: {}` with `surfaces.speech_act` (`enabled: false`, `choice_hold: null`, `biography_hold: null`). Mark both bars with the comment `# uncalibrated — set from make calibrate-speech-act`. · `apps/ze-api/config/config.yaml`
 
 ---
 
@@ -30,8 +30,8 @@
 
 **Wave 1 — fail-first tests (different files):**
 
-- [ ] **T002** [P] [BE] Fail-first: `SystemOneClient.evaluate` accepts the keyword-only `max_attempts`, and the fake used in tests satisfies `isinstance(fake, SystemOneClient)`. · `core/contracts/ze-agents/tests/test_system_one.py`
-- [ ] **T003** [P] [BE] Fail-first, mocked `httpx`, patched `asyncio.sleep`:
+- [x] **T002** [P] [BE] Fail-first: `SystemOneClient.evaluate` accepts the keyword-only `max_attempts`, and the fake used in tests satisfies `isinstance(fake, SystemOneClient)`. · `core/contracts/ze-agents/tests/test_system_one.py`
+- [x] **T003** [P] [BE] Fail-first, mocked `httpx`, patched `asyncio.sleep`:
   - `max_attempts=1` with a 429 makes one POST, never sleeps, and returns skip `overload`;
   - `max_attempts=1` with a 503 makes one POST and returns skip `error`;
   - `max_attempts=None` keeps the three-attempt 162 behavior;
@@ -39,13 +39,13 @@
   - `DisabledSystemOneClient.evaluate(..., max_attempts=1)` returns skip `disabled`.
 
   · `core/engine/ze-core/tests/openrouter/test_system_one.py`
-- [ ] **T004** [P] [BE] Fail-first, `judgments_from_result`:
+- [x] **T004** [P] [BE] Fail-first, `judgments_from_result`:
   - an ok result with Choice `speech_act`, Choice `family` and Noul `biography` gives three rows. Choice rows carry `answer`, `probabilities` and `peakedness=confidence`. The Noul row has `answer=noul` and `peakedness=None`. `model` and `input_tokens` come from the result. `consumed` is true only for ids in `consumed`;
   - a skip result with `question_ids=("speech_act","family","biography")` gives three rows with `answer=None`, `skip_reason` set and `consumed=False`;
   - an ok result with `skip_reason="invalid_answer"` stamps that reason on every row.
 
   · `core/engine/ze-core/tests/conversation/test_judgments.py`
-- [ ] **T005** [P] [BE] Fail-first, `speech_act_surface_config`:
+- [x] **T005** [P] [BE] Fail-first, `speech_act_surface_config`:
   - a missing block gives disabled;
   - `enabled: true` with either bar `null` gives `calibrated=False`;
   - a bar out of `[0,1]` or not numeric becomes `None` with a warning;
@@ -59,11 +59,11 @@
 
 **Wave 2 — independent (different files):**
 
-- [ ] **T006** [P] [BE] Add the keyword-only `max_attempts: int | None = None` to the `SystemOneClient.evaluate` Protocol. · `core/contracts/ze-agents/ze_agents/system_one.py`
-- [ ] **T007** [P] [BE] Honor `max_attempts` in `OpenRouterSystemOneClient.evaluate`: `None` means `len(_BACKOFFS)`, otherwise `min(n, len(_BACKOFFS))`. `< 1` returns skip `invalid_request` before the network. Never sleep after the final allowed attempt. Map the final retryable status to `overload` (429/529) or `error`. `DisabledSystemOneClient.evaluate` gains the same keyword. · `core/engine/ze-core/ze_core/openrouter/system_one.py`
-- [ ] **T008** [P] [BE] Add the `FactAdmission` dataclass (`facts`, `path`, `judgment`, `question_ids`, `consumed`, `skip_reason`) per data-model.md, and export it. · `core/cognition/ze-memory/ze_memory/types.py`, `core/cognition/ze-memory/ze_memory/__init__.py`
-- [ ] **T009** [P] [BE] Add `judgments_from_result(result, *, question_ids, consumed, skip_reason=None) -> list[JudgmentTrace]` per research R4 and data-model.md. · `core/engine/ze-core/ze_core/conversation/messages/judgments.py`
-- [ ] **T010** [P] [BE] Create `speech_act_judge.py` with:
+- [x] **T006** [P] [BE] Add the keyword-only `max_attempts: int | None = None` to the `SystemOneClient.evaluate` Protocol. · `core/contracts/ze-agents/ze_agents/system_one.py`
+- [x] **T007** [P] [BE] Honor `max_attempts` in `OpenRouterSystemOneClient.evaluate`: `None` means `len(_BACKOFFS)`, otherwise `min(n, len(_BACKOFFS))`. `< 1` returns skip `invalid_request` before the network. Never sleep after the final allowed attempt. Map the final retryable status to `overload` (429/529) or `error`. `DisabledSystemOneClient.evaluate` gains the same keyword. · `core/engine/ze-core/ze_core/openrouter/system_one.py`
+- [x] **T008** [P] [BE] Add the `FactAdmission` dataclass (`facts`, `path`, `judgment`, `question_ids`, `consumed`, `skip_reason`) per data-model.md, and export it. · `core/cognition/ze-memory/ze_memory/types.py`, `core/cognition/ze-memory/ze_memory/__init__.py`
+- [x] **T009** [P] [BE] Add `judgments_from_result(result, *, question_ids, consumed, skip_reason=None) -> list[JudgmentTrace]` per research R4 and data-model.md. · `core/engine/ze-core/ze_core/conversation/messages/judgments.py`
+- [x] **T010** [P] [BE] Create `speech_act_judge.py` with:
   - `SpeechActSurfaceConfig` and `speech_act_surface_config(settings)`;
   - `build_state(prompt, response)`;
   - `SPEECH_ACT_QUESTIONS`: a `speech_act` Choice with per-label criteria from 142 R11 / 146 / 147, each criterion holding ≥1 EN and ≥1 PT example; a `family` Choice with per-family criteria and a `drop` criterion; a `biography` Noul whose wording comes from the contract;
@@ -75,14 +75,14 @@
 
 **Wave 3 — hard cut of the extractor return type (sequential; same call chain):**
 
-- [ ] **T011** [BE] Fail-first: update the existing tests to the `FactAdmission` return:
+- [x] **T011** [BE] Fail-first: update the existing tests to the `FactAdmission` return:
   - `gather_fact_proposals` with the surface disabled returns `path="haiku"`, the same facts as before and `judgment=None`;
   - with no `openrouter_client` it returns `path="none"`;
   - a trivial prompt returns `path="none"` with no `complete` call.
 
   · `core/cognition/ze-memory/tests/test_extractor.py`, `core/cognition/ze-memory/tests/test_extractor_admission.py`
-- [ ] **T012** [BE] Hard-cut `gather_fact_proposals` to return `FactAdmission`. Also short-circuit trivial and `[ERROR]` turns at its top (`path="none"`); `extract_facts` keeps its own trivial check unchanged. When the surface is disabled, there is no `system_one_client`, or the config is uncalibrated, run `extract_facts` (the unchanged pre-163 `_SYSTEM` judge). When uncalibrated, also log `speech_act_system_one_uncalibrated` (warning) and set `skip_reason="uncalibrated"`. Set `fact.agent`. · `core/cognition/ze-memory/ze_memory/extractor.py`
-- [ ] **T013** [BE] Fail-first, with a fake extractor returning `FactAdmission`. `write_memory`:
+- [x] **T012** [BE] Hard-cut `gather_fact_proposals` to return `FactAdmission`. Also short-circuit trivial and `[ERROR]` turns at its top (`path="none"`); `extract_facts` keeps its own trivial check unchanged. When the surface is disabled, there is no `system_one_client`, or the config is uncalibrated, run `extract_facts` (the unchanged pre-163 `_SYSTEM` judge). When uncalibrated, also log `speech_act_system_one_uncalibrated` (warning) and set `skip_reason="uncalibrated"`. Set `fact.agent`. · `core/cognition/ze-memory/ze_memory/extractor.py`
+- [x] **T013** [BE] Fail-first, with a fake extractor returning `FactAdmission`. `write_memory`:
   - submits `admission.facts` through the 148 identity filter as before;
   - with `judgment=None` leaves `message_trace` unchanged and returns no `message_trace` key;
   - with an ok judgment and a `message_trace` in state returns `message_trace` with the rows appended after any existing judgments, including in the compaction branch;
@@ -90,8 +90,8 @@
   - an `eval-` thread never calls the extractor (FR-013).
 
   · `core/engine/ze-core/tests/orchestration/nodes/test_memory_judgments.py`
-- [ ] **T014** [BE] Update `write_memory` to consume `FactAdmission`. When `admission.judgment is not None` and `state["message_trace"]` is set, return `message_trace=dataclasses.replace(trace, judgments=[*trace.judgments, *judgments_from_result(...)])` from every return dict. Add `admission_path` to the existing debug log. · `core/engine/ze-core/ze_core/orchestration/nodes/memory.py`
-- [ ] **T015** [BE] Update the existing fakes and assertions that expect a `list[Fact]` from `fact_extractor` to return or read `FactAdmission`. · `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`, `core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py`
+- [x] **T014** [BE] Update `write_memory` to consume `FactAdmission`. When `admission.judgment is not None` and `state["message_trace"]` is set, return `message_trace=dataclasses.replace(trace, judgments=[*trace.judgments, *judgments_from_result(...)])` from every return dict. Add `admission_path` to the existing debug log. · `core/engine/ze-core/ze_core/orchestration/nodes/memory.py`
+- [x] **T015** [BE] Update the existing fakes and assertions that expect a `list[Fact]` from `fact_extractor` to return or read `FactAdmission`. · `core/engine/ze-core/tests/orchestration/nodes/test_memory.py`, `core/engine/ze-core/tests/orchestration/nodes/test_extractor_dual_write.py`
 
 **Checkpoint**: `make test-agents test-core test-memory` is green. With the default config, admission behaves exactly as before (SC-007).
 

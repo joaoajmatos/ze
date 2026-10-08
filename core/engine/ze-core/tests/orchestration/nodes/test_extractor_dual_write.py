@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.orchestration.nodes.memory import write_memory
-from ze_memory.types import Fact, MemoryContext
+from ze_memory.types import Fact, FactAdmission, MemoryContext
 
 
 def _ctx(prompt: str = "hello") -> AgentContext:
@@ -43,7 +43,7 @@ async def test_extractor_duplicate_same_identity_is_skipped():
     store.write_episode = AsyncMock()
 
     async def extractor(_cfg, **_kwargs):
-        return [Fact(predicate="preference", value="dark mode")]
+        return FactAdmission(facts=[Fact(predicate="preference", value="dark mode")], path="haiku")
 
     state = {
         "session_id": "s1",
@@ -72,10 +72,10 @@ async def test_extractor_may_write_a_different_identity():
     store.write_episode = AsyncMock()
 
     async def extractor(_cfg, **_kwargs):
-        return [
+        return FactAdmission(facts=[
             Fact(predicate="preference", value="dark mode"),
             Fact(predicate="preference", value="aisle seats"),
-        ]
+        ], path="haiku")
 
     state = {
         "session_id": "s1",
@@ -105,7 +105,7 @@ async def test_failed_remember_is_not_a_second_remember_door():
     store.write_episode = AsyncMock()
 
     async def extractor(_cfg, **_kwargs):
-        return [Fact(predicate="preference", value="dark mode")]
+        return FactAdmission(facts=[Fact(predicate="preference", value="dark mode")], path="haiku")
 
     state = {
         "session_id": "s1",

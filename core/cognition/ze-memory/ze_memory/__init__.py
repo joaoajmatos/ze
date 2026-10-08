@@ -19,6 +19,7 @@ from ze_memory.types import (
     Episode,
     Event,
     Fact,
+    FactAdmission,
     MemoryContext,
     Procedure,
     ProfileFacet,
@@ -30,6 +31,7 @@ __all__ = [
     # types
     "Entity",
     "Fact",
+    "FactAdmission",
     "Episode",
     "Event",
     "Procedure",

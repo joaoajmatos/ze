@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "Speech-Act System One",
   "branch": "main",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -32,6 +32,126 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-08T01:39:32.654Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:25.744Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:40.567Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:41.165Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:42.097Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:42.738Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:43.417Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:43.980Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:44.472Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:45.064Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:45.649Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:46.366Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:46.972Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:47.577Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:48.164Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:56:48.697Z"
     }
   ],
   "telemetryInstanceId": "d72ee565-e763-4979-aa08-66499afd756d",
@@ -84,5 +204,68 @@
     "living spec: specs/arch/system-one-models.md",
     "area: ze_memory/extractor.py speech_act",
     "constraint: 142 routing table; 148 dual-write skip"
-  ]
+  ],
+  "currentTask": "T015",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "config"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "implemented"
+    }
+  }
 }

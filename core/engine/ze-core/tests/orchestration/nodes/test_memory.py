@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_agents.errors import UnlicensedClaimKindError
-from ze_memory.types import Fact, MemoryContext
+from ze_memory.types import Fact, FactAdmission, MemoryContext
 from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 
 
@@ -164,7 +164,7 @@ class TestWriteMemory:
         extracted = [Fact(predicate="preference", value="dark mode")]
 
         async def extractor(_cfg, **_kwargs):
-            return extracted
+            return FactAdmission(facts=extracted, path="haiku")
 
         state = {
             "session_id": "s1",
@@ -197,7 +197,7 @@ class TestWriteMemory:
         ]
 
         async def extractor(_cfg, **_kwargs):
-            return extracted
+            return FactAdmission(facts=extracted, path="haiku")
 
         state = {
             "session_id": "s1",
@@ -238,7 +238,7 @@ class TestWriteMemory:
         fact = Fact(predicate="city", value="Lisbon")
 
         async def extractor(_cfg, **_kwargs):
-            return [fact]
+            return FactAdmission(facts=[fact], path="haiku")
 
         mistagged = Contribution(
             claim_kind=ClaimKind.INFERENCE,
