@@ -165,3 +165,91 @@ async def test_unknown_label_from_client_is_dropped_not_persisted():
     admission = await _gather(turn, configurable)
     assert admission.facts == []
     llm.complete.assert_not_awaited()
+
+
+# ── US3: unsure holds; skip runs one Haiku judge ─────────────────────────────
+
+import logging  # noqa: E402
+
+from ze_agents.system_one import SystemOneResult  # noqa: E402
+from tests.fixtures.speech_act_gold import make_result  # noqa: E402
+
+_HAIKU_JSON = (
+    '{"speech_act": "fact", "family": "preference", '
+    '"facts": [{"value": "aisle seats"}]}'
+)
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        make_result("fact", "preference", act_confidence=0.3),
+        make_result("fact", "preference", family_confidence=0.3),
+        make_result("fact", "preference", noul=0.5),
+        make_result("fact", "drop"),
+    ],
+    ids=["act_unsure", "family_unsure", "noul_even", "family_drop"],
+)
+async def test_hold_makes_no_generative_call_and_no_tie_break(result):
+    configurable, llm, _ = _configurable(result)
+    admission = await _gather(PERSIST[0], configurable)
+    assert admission.facts == []
+    assert admission.path == "system_one"
+    llm.complete.assert_not_awaited()
+
+
+@pytest.mark.parametrize("reason", ["timeout", "overload", "missing_key", "disabled"])
+async def test_client_skip_runs_exactly_one_haiku_judge(reason):
+    skip = SystemOneResult(outcome="skip", skip_reason=reason, latency_ms=12)
+    configurable, llm, _ = _configurable(skip, _HAIKU_JSON)
+    admission = await _gather(PERSIST[0], configurable)
+    llm.complete.assert_awaited_once()
+    assert llm.complete.await_args.kwargs["system"] == _SYSTEM
+    assert admission.path == "haiku"
+    assert admission.judgment is skip
+    assert admission.consumed == frozenset()
+    assert admission.question_ids == ("speech_act", "family", "biography")
+    assert admission.skip_reason == reason
+    assert [f.value for f in admission.facts] == ["aisle seats"]
+
+
+async def test_invalid_answer_runs_one_haiku_judge_and_records_reason():
+    result = make_result("fact", "preference")
+    result.answers.pop("biography")
+    configurable, llm, _ = _configurable(result, _HAIKU_JSON)
+    admission = await _gather(PERSIST[0], configurable)
+    llm.complete.assert_awaited_once()
+    assert llm.complete.await_args.kwargs["system"] == _SYSTEM
+    assert admission.path == "haiku"
+    assert admission.skip_reason == "invalid_answer"
+    assert admission.judgment is result
+    assert admission.consumed == frozenset()
+
+
+async def test_uncalibrated_surface_skips_client_and_warns(caplog):
+    settings = {
+        "system_one": {
+            "surfaces": {
+                "speech_act": {"enabled": True, "choice_hold": None, "biography_hold": 0.7}
+            }
+        }
+    }
+    configurable, llm, fake = _configurable(PERSIST[0].result(), _HAIKU_JSON)
+    configurable["settings"] = settings
+    with caplog.at_level(logging.WARNING):
+        admission = await _gather(PERSIST[0], configurable)
+    assert fake.calls == []
+    llm.complete.assert_awaited_once()
+    assert llm.complete.await_args.kwargs["system"] == _SYSTEM
+    assert admission.path == "haiku"
+    assert admission.skip_reason == "uncalibrated"
+    assert admission.judgment is None
+
+
+async def test_calibrated_but_no_system_one_client_uses_haiku():
+    configurable, llm, _ = _configurable(PERSIST[0].result(), _HAIKU_JSON)
+    del configurable["system_one_client"]
+    admission = await _gather(PERSIST[0], configurable)
+    assert admission.path == "haiku"
+    assert admission.judgment is None
+    llm.complete.assert_awaited_once()

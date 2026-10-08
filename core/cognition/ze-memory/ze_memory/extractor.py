@@ -562,6 +562,20 @@ async def gather_fact_proposals(
                 question_ids=question_ids,
                 consumed=decision.consumed,
             )
+        if decision.reason == "invalid_answer":
+            log.warning("speech_act_system_one_invalid_answer")
+        extracted = await extract_facts(
+            client, prompt=prompt, response=response, model=model
+        )
+        for fact in extracted:
+            fact.agent = agent
+        return FactAdmission(
+            facts=extracted,
+            path="haiku",
+            judgment=result,
+            question_ids=question_ids,
+            skip_reason=decision.reason,
+        )
 
     extracted = await extract_facts(
         client,

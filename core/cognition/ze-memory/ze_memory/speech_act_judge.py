@@ -159,34 +159,47 @@ class AdmissionDecision:
 
 
 _ALL_QUESTIONS = frozenset(SPEECH_ACT_QUESTIONS)
+_ACT_AND_FAMILY = frozenset({"speech_act", "family"})
 
 
-def _choice_confidence(answer: SystemOneAnswer | None) -> float:
-    return answer.confidence if answer is not None and answer.confidence is not None else 0.0
+def _valid_choice(answer: SystemOneAnswer | None) -> bool:
+    return (
+        answer is not None
+        and answer.type == "choice"
+        and answer.choice is not None
+        and answer.confidence is not None
+    )
+
+
+def _valid_noul(answer: SystemOneAnswer | None) -> bool:
+    return answer is not None and answer.type == "noul" and answer.noul is not None
 
 
 def decide(result: SystemOneResult, cfg: SpeechActSurfaceConfig) -> AdmissionDecision:
-    """Pure admission decision over one System One result (research R7)."""
+    """Pure admission decision over one System One result (research R7, rules 3-10).
+
+    Rules 1 and 2 (trivial turn, surface off or bar unset) never reach a result.
+    """
     if result.outcome == "skip":
         return AdmissionDecision("skip", result.skip_reason or "error")
 
-    act_answer = result.answers.get("speech_act")
-    family_answer = result.answers.get("family")
-    bio_answer = result.answers.get("biography")
+    act = result.answers.get("speech_act")
+    family = result.answers.get("family")
+    bio = result.answers.get("biography")
+    if not (_valid_choice(act) and _valid_choice(family) and _valid_noul(bio)):
+        return AdmissionDecision("skip", "invalid_answer")
+    if cfg.choice_hold is None or cfg.biography_hold is None:
+        return AdmissionDecision("skip", "uncalibrated")
 
-    if admit_speech_act(act_answer.choice if act_answer else None) is not SpeechAct.FACT:
+    if admit_speech_act(act.choice) is not SpeechAct.FACT:
         return AdmissionDecision("hold", "not_fact", consumed=frozenset({"speech_act"}))
-
-    # US3 replaces this conservative tail with the exact R7 rules 4 and 6-9.
-    family = admit_family(family_answer.choice if family_answer else None)
-    bio = bio_answer.noul if bio_answer is not None and bio_answer.noul is not None else 0.0
-    if (
-        family is None
-        or cfg.choice_hold is None
-        or cfg.biography_hold is None
-        or _choice_confidence(act_answer) < cfg.choice_hold
-        or _choice_confidence(family_answer) < cfg.choice_hold
-        or bio < cfg.biography_hold
-    ):
-        return AdmissionDecision("hold", "hold", consumed=_ALL_QUESTIONS)
-    return AdmissionDecision("persist", "persist", family=family, consumed=_ALL_QUESTIONS)
+    if act.confidence < cfg.choice_hold:
+        return AdmissionDecision("hold", "act_unsure", consumed=frozenset({"speech_act"}))
+    kept = admit_family(family.choice)
+    if kept is None:
+        return AdmissionDecision("hold", "family_drop", consumed=_ACT_AND_FAMILY)
+    if family.confidence < cfg.choice_hold:
+        return AdmissionDecision("hold", "family_unsure", consumed=_ACT_AND_FAMILY)
+    if bio.noul < cfg.biography_hold:
+        return AdmissionDecision("hold", "not_biography", consumed=_ALL_QUESTIONS)
+    return AdmissionDecision("persist", "persist", family=kept, consumed=_ALL_QUESTIONS)

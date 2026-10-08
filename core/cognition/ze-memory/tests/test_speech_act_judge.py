@@ -143,3 +143,84 @@ def test_unknown_act_label_goes_through_admit_to_drop_and_holds():
     )
     decision = decide(result, _CAL)
     assert (decision.kind, decision.reason) == ("hold", "not_fact")
+
+
+# ── decide(): exact R7 rules 3, 4 and 6-9 (US3) ───────────────────────────────
+
+from ze_agents.system_one import SystemOneResult  # noqa: E402
+
+_ALL = frozenset({"speech_act", "family", "biography"})
+
+
+def test_rule_3_client_skip_is_skip_with_client_reason():
+    decision = decide(SystemOneResult(outcome="skip", skip_reason="timeout"), _CAL)
+    assert (decision.kind, decision.reason) == ("skip", "timeout")
+    assert decision.consumed == frozenset()
+
+
+def test_rule_6_unsure_fact_act_holds():
+    decision = decide(make_result("fact", "preference", act_confidence=0.4), _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "act_unsure")
+    assert decision.consumed == frozenset({"speech_act"})
+
+
+def test_rule_5_runs_before_rule_6_unsure_reminder_is_not_fact():
+    decision = decide(make_result("reminder", "drop", act_confidence=0.3), _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "not_fact")
+
+
+@pytest.mark.parametrize("label", ["drop", "ephemeral", "banana"])
+def test_rule_7_drop_or_unknown_family_holds(label):
+    decision = decide(make_result("fact", label), _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "family_drop")
+    assert decision.consumed == frozenset({"speech_act", "family"})
+
+
+def test_rule_8_unsure_family_holds():
+    decision = decide(make_result("fact", "preference", family_confidence=0.4), _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "family_unsure")
+    assert decision.consumed == frozenset({"speech_act", "family"})
+
+
+def test_rule_9_even_biography_holds_despite_confident_fact():
+    decision = decide(make_result("fact", "preference", noul=0.5), _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "not_biography")
+    assert decision.consumed == _ALL
+
+
+def test_rule_9_boundary_at_bar_persists():
+    decision = decide(make_result("fact", "preference", noul=0.7), _CAL)
+    assert decision.kind == "persist"
+
+
+def test_bars_are_independent():
+    cfg = SpeechActSurfaceConfig(enabled=True, choice_hold=0.9, biography_hold=0.2)
+    assert decide(make_result("fact", "preference", act_confidence=0.8), cfg).reason == "act_unsure"
+    assert decide(make_result("fact", "preference", noul=0.3), cfg).kind == "persist"
+    cfg = SpeechActSurfaceConfig(enabled=True, choice_hold=0.2, biography_hold=0.9)
+    assert decide(make_result("fact", "preference", act_confidence=0.3), cfg).kind == "persist"
+    assert decide(make_result("fact", "preference", noul=0.8), cfg).reason == "not_biography"
+
+
+def _invalid(mutate):
+    result = make_result("fact", "preference")
+    mutate(result.answers)
+    return decide(result, _CAL)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda a: a.pop("speech_act"),
+        lambda a: a.pop("family"),
+        lambda a: a.pop("biography"),
+        lambda a: setattr(a["speech_act"], "confidence", None),
+        lambda a: setattr(a["family"], "choice", None),
+        lambda a: setattr(a["biography"], "noul", None),
+        lambda a: a.update(biography=SystemOneAnswer(type="choice", choice="x", confidence=0.9)),
+    ],
+)
+def test_rule_4_malformed_answer_is_skip_invalid_answer(mutate):
+    decision = _invalid(mutate)
+    assert (decision.kind, decision.reason) == ("skip", "invalid_answer")
+    assert decision.consumed == frozenset()

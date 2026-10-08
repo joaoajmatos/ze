@@ -224,6 +224,46 @@
       "kind": "complete",
       "by": "Keel",
       "at": "2026-10-08T01:58:56.605Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:59:54.227Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:59:54.360Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:59:54.486Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:59:54.612Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:59:54.738Z"
     }
   ],
   "telemetryInstanceId": "d72ee565-e763-4979-aa08-66499afd756d",
@@ -277,7 +317,7 @@
     "area: ze_memory/extractor.py speech_act",
     "constraint: 142 routing table; 148 dual-write skip"
   ],
-  "currentTask": "T024",
+  "currentTask": "T029",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -372,6 +412,26 @@
       "did": "implemented"
     },
     "T024": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T029": {
       "status": "DONE",
       "did": "implemented"
     }

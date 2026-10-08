@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.conversation.messages.types import JudgmentTrace, MessageTrace
 from ze_core.orchestration.nodes.memory import write_memory
 from ze_memory.types import Fact, FactAdmission, MemoryContext
@@ -171,3 +171,30 @@ async def test_eval_thread_never_calls_extractor():
         out = await write_memory(state, _config(extractor, thread_id="eval-1"))
     extractor.assert_not_awaited()
     assert "message_trace" not in out
+
+
+async def test_skip_path_admission_has_no_duplicate_identity_and_skip_rows():
+    skip = SystemOneResult(outcome="skip", skip_reason="timeout", latency_ms=2000)
+    admission = FactAdmission(
+        facts=[
+            Fact(predicate="preference", value="aisle seats"),
+            Fact(predicate="preference", value="window"),
+        ],
+        path="haiku",
+        judgment=skip,
+        question_ids=_IDS,
+        skip_reason="timeout",
+    )
+    remembered = ToolCall(
+        tool_name="remember_fact",
+        args={"predicate": "preference", "value": "aisle seats"},
+        result={"ok": True},
+        duration_ms=1,
+        success=True,
+    )
+    out, submit = await _run(admission, _trace(), tool_calls=[remembered])
+    facts = [i.fact for i in submit.await_args.args[1]]
+    assert [(f.predicate, f.value) for f in facts] == [("preference", "window")]
+    rows = out["message_trace"].judgments
+    assert [r.question_id for r in rows] == list(_IDS)
+    assert all(not r.consumed and r.skip_reason == "timeout" for r in rows)

@@ -165,7 +165,7 @@
 
 ### Tests (fail-first)
 
-- [ ] **T025** [P] [BE] [US3] Fail-first `decide()`:
+- [x] **T025** [P] [BE] [US3] Fail-first `decide()`:
   - rule 6: `fact` below `choice_hold` gives `act_unsure`;
   - rule 7: a `drop`/unknown family gives `family_drop`;
   - rule 8: a family below `choice_hold` gives `family_unsure`;
@@ -174,19 +174,19 @@
   - `choice_hold` and `biography_hold` are read independently: a test sets them to different values and checks each one gates only its own question (FR-002).
 
   · `core/cognition/ze-memory/tests/test_speech_act_judge.py`
-- [ ] **T026** [P] [BE] [US3] Fail-first `gather_fact_proposals`:
+- [x] **T026** [P] [BE] [US3] Fail-first `gather_fact_proposals`:
   - hold cases give `complete.await_count == 0` (SC-006);
   - a client skip (`timeout`, `overload`, `missing_key`, `disabled`) gives exactly one `complete` call with `_SYSTEM`, `path="haiku"`, `judgment` set and `consumed` empty;
   - `invalid_answer` gives one Haiku call and `skip_reason="invalid_answer"`;
   - uncalibrated config gives no `evaluate` call, one Haiku call and the warning logged.
 
   · `core/cognition/ze-memory/tests/test_speech_act_system_one.py`
-- [ ] **T027** [P] [BE] [US3] Fail-first (SC-004): in `write_memory` with a skip-path `FactAdmission` plus a same-turn `remember_fact ok` of the same identity, the submitted facts contain no duplicate identity, and the trace gets skip rows with `consumed=False`. · `core/engine/ze-core/tests/orchestration/nodes/test_memory_judgments.py`
+- [x] **T027** [P] [BE] [US3] Fail-first (SC-004): in `write_memory` with a skip-path `FactAdmission` plus a same-turn `remember_fact ok` of the same identity, the submitted facts contain no duplicate identity, and the trace gets skip rows with `consumed=False`. · `core/engine/ze-core/tests/orchestration/nodes/test_memory_judgments.py`
 
 ### Implementation
 
-- [ ] **T028** [BE] [US3] Replace T019's conservative hold with `decide()` rules 4 and 6–9 in exact R7 order and reasons. · `core/cognition/ze-memory/ze_memory/speech_act_judge.py`
-- [ ] **T029** [BE] [US3] In `gather_fact_proposals`, route `decide().kind == "skip"` (client skip or `invalid_answer`) to one `extract_facts` call. Keep `judgment` and `question_ids`, set `consumed=frozenset()`, and set `skip_reason` from the decision. Log `speech_act_system_one_invalid_answer` on rule 4. · `core/cognition/ze-memory/ze_memory/extractor.py`
+- [x] **T028** [BE] [US3] Replace T019's conservative hold with `decide()` rules 4 and 6–9 in exact R7 order and reasons. · `core/cognition/ze-memory/ze_memory/speech_act_judge.py`
+- [x] **T029** [BE] [US3] In `gather_fact_proposals`, route `decide().kind == "skip"` (client skip or `invalid_answer`) to one `extract_facts` call. Keep `judgment` and `question_ids`, set `consumed=frozenset()`, and set `skip_reason` from the decision. Log `speech_act_system_one_invalid_answer` on rule 4. · `core/cognition/ze-memory/ze_memory/extractor.py`
 
 **Checkpoint**: SC-003, SC-004 and SC-006 hold. FR-006: there is never a Haiku tie-break on an unsure answer.
 
