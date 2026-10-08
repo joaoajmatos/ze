@@ -669,7 +669,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     bootstrap_agents(deps=agent_deps, plugins=plugins)
     await register_bundled_skills(skills_stack.skill_store, plugins)
 
-    router = build_router(shared)
+    router = build_router(shared, settings)
     component_hook = register_harness_hooks(
         settings, memory_store=shared.memory_store
     )

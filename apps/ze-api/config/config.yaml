@@ -23,6 +23,12 @@ system_one:
       enabled: false
       choice_hold: null      # uncalibrated — set from make calibrate-speech-act
       biography_hold: null   # uncalibrated — set from make calibrate-speech-act
+    routing:
+      enabled: false
+      choice_trust: null            # uncalibrated — set from make calibrate-routing
+      multi_specialist_hold: null   # uncalibrated — set from make calibrate-routing
+      complexity_lookup_max: null   # uncalibrated — set from make calibrate-routing
+      shortlist_k: 4
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.

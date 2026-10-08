@@ -2,8 +2,8 @@
   "workflow": "companion",
   "specName": "Routing Choice After E5",
   "branch": "164-routing-choice-after-e5",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -18,6 +18,86 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-09-30T22:42:24.830Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:25.451Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:25.592Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:25.736Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:25.878Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:26.005Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:26.130Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:26.262Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:26.394Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:26.552Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T11:42:26.695Z"
     }
   ],
   "telemetryInstanceId": "40af2510-7e19-4ec2-a0b1-9f2e7385edfc",
@@ -70,5 +150,38 @@
     "living spec: specs/arch/system-one-models.md",
     "area: EmbeddingRouter ComplexityEstimator fallback.decompose",
     "constraint: 160 bars remain shortlist; Principle VII embeddings stay E5"
-  ]
+  ],
+  "currentTask": "T010",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE"
+    },
+    "T002": {
+      "status": "DONE"
+    },
+    "T003": {
+      "status": "DONE"
+    },
+    "T004": {
+      "status": "DONE"
+    },
+    "T005": {
+      "status": "DONE"
+    },
+    "T006": {
+      "status": "DONE"
+    },
+    "T007": {
+      "status": "DONE"
+    },
+    "T008": {
+      "status": "DONE"
+    },
+    "T009": {
+      "status": "DONE"
+    },
+    "T010": {
+      "status": "DONE"
+    }
+  }
 }

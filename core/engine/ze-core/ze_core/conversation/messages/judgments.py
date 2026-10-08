@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping
 
-from ze_agents.system_one import SystemOneResult
+from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 
 from ze_core.conversation.messages.types import JudgmentTrace
 
@@ -12,7 +12,7 @@ from ze_core.conversation.messages.types import JudgmentTrace
 def judgments_from_result(
     result: SystemOneResult,
     *,
-    question_ids: Sequence[str],
+    question_kinds: Mapping[str, str],
     consumed: frozenset[str],
     skip_reason: str | None = None,
 ) -> list[JudgmentTrace]:
@@ -21,34 +21,34 @@ def judgments_from_result(
         return [
             JudgmentTrace(
                 question_id=qid,
-                kind=_skipped_kind(qid),
+                kind=kind,
                 latency_ms=result.latency_ms,
                 skip_reason=reason,
             )
-            for qid in question_ids
+            for qid, kind in question_kinds.items()
         ]
     rows: list[JudgmentTrace] = []
-    for qid in question_ids:
+    for qid, kind in question_kinds.items():
         answer = result.answers.get(qid)
         if answer is None:
             rows.append(
                 JudgmentTrace(
                     question_id=qid,
-                    kind=_skipped_kind(qid),
+                    kind=kind,
                     latency_ms=result.latency_ms,
                     skip_reason=skip_reason,
                 )
             )
             continue
-        is_noul = answer.type == "noul"
+        is_choice = answer.type == "choice"
         rows.append(
             JudgmentTrace(
                 question_id=qid,
                 kind=answer.type,
                 latency_ms=result.latency_ms,
-                answer=answer.noul if is_noul else answer.choice,
-                probabilities=None if is_noul else answer.probabilities,
-                peakedness=None if is_noul else answer.confidence,
+                answer=_answer_value(answer),
+                probabilities=answer.probabilities if is_choice else None,
+                peakedness=answer.confidence if is_choice else None,
                 model=result.model,
                 input_tokens=result.input_tokens,
                 consumed=qid in consumed,
@@ -58,5 +58,9 @@ def judgments_from_result(
     return rows
 
 
-def _skipped_kind(question_id: str) -> str:
-    return "noul" if question_id == "biography" else "choice"
+def _answer_value(answer: SystemOneAnswer) -> str | float | None:
+    if answer.type == "noul":
+        return answer.noul
+    if answer.type == "score":
+        return answer.score
+    return answer.choice

@@ -13,8 +13,10 @@ from ze_agents.interface.types import RawInput
 from ze_logging import get_logger
 from ze_agents.types import AbortToken
 from ze_core.conversation import make_graph_input
+from ze_core.routing.factory import build_embedding_router
 
 if TYPE_CHECKING:
+    from ze_core.routing.router import EmbeddingRouter
     from ze_agents.interface.types import InvokeResult
 
 log = get_logger(__name__)
@@ -316,6 +318,12 @@ class Container:
             logger=log,
         )
 
+        from ze_agents.system_one import SystemOneClient
+
+        from ze_core.openrouter.system_one import build_system_one_client
+
+        system_one_client = build_system_one_client(settings)
+
         # 5. Discover agent modules
         package = _infer_package(app_root)
         _discover_agents(app_root, package)
@@ -332,6 +340,7 @@ class Container:
             Settings: settings,
             DBPool: pool,
             OpenRouterClient: openrouter_client,
+            SystemOneClient: system_one_client,
         }
         merged = {**internal_deps, **(deps or {})}
         instances = _instantiate_agents(get_enabled_agents(), merged)
@@ -343,31 +352,14 @@ class Container:
         )
 
         # 9. Build EmbeddingRouter
-        from ze_agents.defaults import MODEL_ROUTER_FALLBACK
-        from ze_agents.model_resolution import resolve_model
-        from ze_core.routing.router import EmbeddingRouter
-        from ze_core.routing.types import RouterConfig
-
         _validate_model_config(settings)
 
-        routing_cfg = settings.config.get("routing", {})
-        _defaults = RouterConfig()
-        router_config = RouterConfig(
-            threshold=routing_cfg.get("threshold", _defaults.threshold),
-            gap_threshold=routing_cfg.get("gap_threshold", _defaults.gap_threshold),
-            fallback_model=resolve_model(
-                "router_fallback", MODEL_ROUTER_FALLBACK, settings.config
-            ),
-        )
-        from ze_core.routing.store import PostgresRoutingStore
-
-        routing_store = PostgresRoutingStore(pool) if not is_sqlite else None
-        router = EmbeddingRouter(
+        router = _build_router(
+            settings=settings,
             embedder=embedder,
             openrouter_client=openrouter_client,
-            routing_store=routing_store,
-            config=router_config,
-            app_config=settings.config,
+            pool=pool,
+            system_one_client=system_one_client,
         )
 
         # 10. Build CapabilityGate
@@ -450,6 +442,25 @@ class Container:
 
 
 # ── private helpers ───────────────────────────────────────────────────────────
+
+
+def _build_router(
+    *,
+    settings: Any,
+    embedder: Any,
+    openrouter_client: Any,
+    pool: Any,
+    system_one_client: Any,
+) -> EmbeddingRouter:
+    from ze_core.routing.store import PostgresRoutingStore
+
+    return build_embedding_router(
+        embedder=embedder,
+        openrouter_client=openrouter_client,
+        config=settings.config,
+        system_one_client=system_one_client,
+        routing_store=PostgresRoutingStore(pool) if pool is not None else None,
+    )
 
 
 def _discover_agents(app_root: Path, package: str) -> None:

@@ -6,6 +6,7 @@ from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 from ze_core.conversation.messages.judgments import judgments_from_result
 
 _IDS = ("speech_act", "family", "biography")
+_KINDS = {"speech_act": "choice", "family": "choice", "biography": "noul"}
 
 
 def _ok() -> SystemOneResult:
@@ -34,7 +35,7 @@ def _ok() -> SystemOneResult:
 
 def test_ok_result_gives_three_rows():
     rows = judgments_from_result(
-        _ok(), question_ids=_IDS, consumed=frozenset({"speech_act", "family"})
+        _ok(), question_kinds=_KINDS, consumed=frozenset({"speech_act", "family"})
     )
     by_id = {r.question_id: r for r in rows}
     assert set(by_id) == set(_IDS)
@@ -53,7 +54,7 @@ def test_ok_result_gives_three_rows():
 
 def test_skip_result_gives_rows_per_question_id():
     result = SystemOneResult(outcome="skip", skip_reason="timeout", latency_ms=2000)
-    rows = judgments_from_result(result, question_ids=_IDS, consumed=frozenset())
+    rows = judgments_from_result(result, question_kinds=_KINDS, consumed=frozenset())
     assert [r.question_id for r in rows] == list(_IDS)
     assert all(r.answer is None and r.skip_reason == "timeout" for r in rows)
     assert all(not r.consumed for r in rows)
@@ -63,7 +64,7 @@ def test_skip_result_gives_rows_per_question_id():
 def test_skip_result_never_marks_consumed():
     result = SystemOneResult(outcome="skip", skip_reason="overload")
     rows = judgments_from_result(
-        result, question_ids=_IDS, consumed=frozenset(_IDS)
+        result, question_kinds=_KINDS, consumed=frozenset(_IDS)
     )
     assert all(not r.consumed for r in rows)
 
@@ -71,7 +72,7 @@ def test_skip_result_never_marks_consumed():
 def test_decision_skip_reason_stamped_on_ok_rows():
     rows = judgments_from_result(
         _ok(),
-        question_ids=_IDS,
+        question_kinds=_KINDS,
         consumed=frozenset(),
         skip_reason="invalid_answer",
     )
@@ -84,7 +85,7 @@ def test_missing_answer_gets_its_own_skip_row():
     del result.answers["biography"]
     rows = judgments_from_result(
         result,
-        question_ids=_IDS,
+        question_kinds=_KINDS,
         consumed=frozenset(),
         skip_reason="invalid_answer",
     )
@@ -92,3 +93,53 @@ def test_missing_answer_gets_its_own_skip_row():
     bio = rows[-1]
     assert bio.answer is None and bio.kind == "noul"
     assert bio.skip_reason == "invalid_answer" and not bio.consumed
+
+
+_ROUTING_KINDS = {"agent": "choice", "multi_specialist": "noul", "complexity": "score"}
+
+
+def test_skip_rows_take_kind_from_the_question_kinds_map():
+    result = SystemOneResult(outcome="skip", skip_reason="timeout")
+    rows = judgments_from_result(
+        result, question_kinds=_ROUTING_KINDS, consumed=frozenset()
+    )
+    assert {r.question_id: r.kind for r in rows} == _ROUTING_KINDS
+
+
+def test_ok_result_missing_score_answer_gives_score_skip_row():
+    result = SystemOneResult(
+        outcome="ok",
+        answers={
+            "agent": SystemOneAnswer(
+                type="choice", choice="calendar", confidence=0.9, probabilities={}
+            ),
+            "multi_specialist": SystemOneAnswer(type="noul", noul=0.1),
+        },
+    )
+    rows = judgments_from_result(
+        result,
+        question_kinds=_ROUTING_KINDS,
+        consumed=frozenset(),
+        skip_reason="invalid_answer",
+    )
+    score = {r.question_id: r for r in rows}["complexity"]
+    assert score.kind == "score"
+    assert score.answer is None and score.skip_reason == "invalid_answer"
+
+
+def test_ok_score_answer_carries_the_float_only():
+    result = SystemOneResult(
+        outcome="ok",
+        model="jev",
+        answers={"complexity": SystemOneAnswer(type="score", score=0.42)},
+    )
+    rows = judgments_from_result(
+        result,
+        question_kinds={"complexity": "score"},
+        consumed=frozenset({"complexity"}),
+    )
+    (row,) = rows
+    assert row.kind == "score"
+    assert row.answer == 0.42
+    assert row.peakedness is None and row.probabilities is None
+    assert row.consumed

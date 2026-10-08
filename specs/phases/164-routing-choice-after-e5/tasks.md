@@ -18,7 +18,7 @@
 
 **Purpose**: Default-off surface config.
 
-- [ ] **T001** [P] [PLATFORM] Under the existing `system_one.surfaces`, add `routing` with `enabled: false`, `choice_trust: null`, `multi_specialist_hold: null`, `complexity_lookup_max: null`, `shortlist_k: 4`. Comment the three bars `# uncalibrated — set from make calibrate-routing`. · `apps/ze-api/config/config.yaml`
+- [x] **T001** [P] [PLATFORM] Under the existing `system_one.surfaces`, add `routing` with `enabled: false`, `choice_trust: null`, `multi_specialist_hold: null`, `complexity_lookup_max: null`, `shortlist_k: 4`. Comment the three bars `# uncalibrated — set from make calibrate-routing`. · `apps/ze-api/config/config.yaml`
 
 ---
 
@@ -30,14 +30,14 @@
 
 **Wave 1 — fail-first tests (different files):**
 
-- [ ] **T002** [P] [BE] Fail-first, `judgments_from_result(result, *, question_kinds, consumed, skip_reason=None)`:
+- [x] **T002** [P] [BE] Fail-first, `judgments_from_result(result, *, question_kinds, consumed, skip_reason=None)`:
   - a skip result with `question_kinds={"agent":"choice","multi_specialist":"noul","complexity":"score"}` yields three rows whose `kind` matches the map (the Score row is `score`);
   - an ok result missing the Score answer yields a `score` row with `skip_reason` set;
   - an ok Score answer yields `answer=<float>`, `peakedness=None`, `probabilities=None`;
   - the 163 `biography` noul and `speech_act`/`family` choice rows still convert correctly through the map.
 
   · `core/engine/ze-core/tests/conversation/test_judgments.py`
-- [ ] **T003** [P] [BE] Fail-first, router factory:
+- [x] **T003** [P] [BE] Fail-first, router factory:
   - `build_embedding_router` gives `RouterConfig.threshold`/`gap_threshold` from YAML `routing:` and the 160 defaults when absent;
   - `models.overrides.<agent>` changes the model `_resolve_model` returns;
   - `models.overrides.router_fallback` (or `models.default`) sets `fallback_model`;
@@ -45,7 +45,7 @@
   - `bootstrap.build_router(stack, settings)` and the base `Container.build` step 9 both go through the factory (patch the factory and assert it is called once, with the client).
 
   · `core/engine/ze-core/tests/routing/test_router_factory.py`
-- [ ] **T004** [P] [BE] Fail-first, `routing_surface_config` and questions:
+- [x] **T004** [P] [BE] Fail-first, `routing_surface_config` and questions:
   - missing/invalid block → disabled; `enabled: true` with a null bar → `calibrated` false;
   - bad bars (string, NaN, >1) become `None` with a warning; `shortlist_k` invalid or <2 → 4;
   - `build_questions(shortlist)` has `agent` (choice, criteria = shortlist names → descriptions, plus `none`), `multi_specialist` (noul), `complexity` (score, three ordered levels);
@@ -58,15 +58,15 @@
 
 **Wave 2 — implementation:**
 
-- [ ] **T005** [P] [BE] Hard-cut `judgments_from_result`: replace `question_ids` with `question_kinds: Mapping[str, str]`, derive skip/missing-row `kind` from it, delete `_skipped_kind`. Update the 163 caller to pass `{qid: SPEECH_ACT_QUESTIONS[qid].type for qid in admission.question_ids}` and fix `test_memory_judgments.py`/`test_trace_judgments.py` call sites. · `core/engine/ze-core/ze_core/conversation/messages/judgments.py`, `core/engine/ze-core/ze_core/orchestration/nodes/memory.py`
-- [ ] **T006** [P] [BE] Add `RoutingJudgment` and the `RoutingEnvelope` fields `judgment: RoutingJudgment | None = None` and `complexity_source: str = "regex"` per data-model.md. · `core/engine/ze-core/ze_core/routing/types.py`
-- [ ] **T007** [P] [BE] Create `judge.py` with `RoutingSurfaceConfig`, `routing_surface_config(settings)`, `build_questions(shortlist)`, `build_state(user, history, context)`, `shortlist(ranked_agents, k)` (top-k, clamped to the enabled count, minimum 2) and `RoutingDecision` (no `decide()` yet; T014 introduces it). · `core/engine/ze-core/ze_core/routing/judge.py`
+- [x] **T005** [P] [BE] Hard-cut `judgments_from_result`: replace `question_ids` with `question_kinds: Mapping[str, str]`, derive skip/missing-row `kind` from it, delete `_skipped_kind`. Update the 163 caller to pass `{qid: SPEECH_ACT_QUESTIONS[qid].type for qid in admission.question_ids}` and fix `test_memory_judgments.py`/`test_trace_judgments.py` call sites. · `core/engine/ze-core/ze_core/conversation/messages/judgments.py`, `core/engine/ze-core/ze_core/orchestration/nodes/memory.py`
+- [x] **T006** [P] [BE] Add `RoutingJudgment` and the `RoutingEnvelope` fields `judgment: RoutingJudgment | None = None` and `complexity_source: str = "regex"` per data-model.md. · `core/engine/ze-core/ze_core/routing/types.py`
+- [x] **T007** [P] [BE] Create `judge.py` with `RoutingSurfaceConfig`, `routing_surface_config(settings)`, `build_questions(shortlist)`, `build_state(user, history, context)`, `shortlist(ranked_agents, k)` (top-k, clamped to the enabled count, minimum 2) and `RoutingDecision` (no `decide()` yet; T014 introduces it). · `core/engine/ze-core/ze_core/routing/judge.py`
 
 **⟶ Wait for T006 and T007, then:**
 
-- [ ] **T008** [BE] Create `factory.py` (`router_config_from`, `build_embedding_router`) per the contract. `EmbeddingRouter.__init__` gains `system_one_client` and `surface` and stores them; no behavior change yet. Export from `routing/__init__.py`. · `core/engine/ze-core/ze_core/routing/factory.py`, `core/engine/ze-core/ze_core/routing/router.py`, `core/engine/ze-core/ze_core/routing/__init__.py`
-- [ ] **T009** [P] [BE] `bootstrap.build_router(stack, settings)` calls the factory with `stack.system_one_client`; update the caller. Delete the `RouterConfig()`-only construction. · `core/engine/ze-core/ze_core/bootstrap.py`, `apps/ze-api/ze_api/container.py`
-- [ ] **T010** [P] [BE] Base `Container.build` step 9: build a `SystemOneClient` with `build_system_one_client(settings)`, register it in `deps`, and replace the inline `RouterConfig(...)`/`EmbeddingRouter(...)` with the factory call. Delete the inline blocks. · `core/engine/ze-core/ze_core/container.py`
+- [x] **T008** [BE] Create `factory.py` (`router_config_from`, `build_embedding_router`) per the contract. `EmbeddingRouter.__init__` gains `system_one_client` and `surface` and stores them; no behavior change yet. Export from `routing/__init__.py`. · `core/engine/ze-core/ze_core/routing/factory.py`, `core/engine/ze-core/ze_core/routing/router.py`, `core/engine/ze-core/ze_core/routing/__init__.py`
+- [x] **T009** [P] [BE] `bootstrap.build_router(stack, settings)` calls the factory with `stack.system_one_client`; update the caller. Delete the `RouterConfig()`-only construction. · `core/engine/ze-core/ze_core/bootstrap.py`, `apps/ze-api/ze_api/container.py`
+- [x] **T010** [P] [BE] Base `Container.build` step 9: build a `SystemOneClient` with `build_system_one_client(settings)`, register it in `deps`, and replace the inline `RouterConfig(...)`/`EmbeddingRouter(...)` with the factory call. Delete the inline blocks. · `core/engine/ze-core/ze_core/container.py`
 
 **Checkpoint**: Run `make test-core test`. SC-004: with the surface off the existing routing tests (`test_router.py`, `test_router_integration.py`, `test_e5_routing_confidence.py`, `test_haiku_fallback.py`, `test_nodes.py`) pass unchanged.
 

@@ -17,6 +17,7 @@ from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
+from ze_memory.speech_act_judge import SPEECH_ACT_QUESTIONS
 from ze_memory.fact_identity import fact_identity, identities_from_remember_calls
 from ze_plugin.contribution import TargetFace
 
@@ -104,7 +105,10 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             if admission.judgment is not None and trace is not None:
                 rows = judgments_from_result(
                     admission.judgment,
-                    question_ids=admission.question_ids,
+                    question_kinds={
+                        qid: SPEECH_ACT_QUESTIONS[qid].type
+                        for qid in admission.question_ids
+                    },
                     consumed=admission.consumed,
                     skip_reason=admission.skip_reason,
                 )

@@ -23,9 +23,9 @@ from ze_core.nli import LocalNLIClient
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.openrouter.system_one import build_system_one_client
 from ze_core.routing.complexity import ComplexityEstimator
+from ze_core.routing.factory import build_embedding_router
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.store import PostgresRoutingStore
-from ze_core.routing.types import RouterConfig
 from ze_core.telemetry.postgres import PostgresCostStore
 from ze_core.telemetry.reconciler import CostReconciler
 from ze_core.telemetry.tracker import CostTracker
@@ -156,12 +156,13 @@ async def build_checkpointer(
     return checkpointer
 
 
-def build_router(stack: EngineStack) -> EmbeddingRouter:
-    return EmbeddingRouter(
+def build_router(stack: EngineStack, settings: Any) -> EmbeddingRouter:
+    return build_embedding_router(
         embedder=stack.embedder,
         openrouter_client=stack.openrouter_client,
+        config=settings.config,
+        system_one_client=stack.system_one_client,
         routing_store=PostgresRoutingStore(stack.pool),
-        config=RouterConfig(),
         estimator=stack.estimator,
     )
 

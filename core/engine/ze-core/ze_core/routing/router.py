@@ -8,6 +8,7 @@ from ze_logging import get_logger
 from ze_agents.registry import get_enabled_agents
 from ze_agents.tasks import fire_and_forget
 from ze_core.routing.complexity import ComplexityEstimator
+from ze_core.routing.judge import RoutingSurfaceConfig
 from ze_core.routing.store import RoutingStore
 from ze_core.routing.types import LLMClient, RouterConfig, RoutingEnvelope, SubTask
 
@@ -23,6 +24,8 @@ class EmbeddingRouter:
         config: RouterConfig | None = None,
         estimator: ComplexityEstimator | None = None,
         app_config: dict | None = None,
+        system_one_client: Any = None,
+        surface: RoutingSurfaceConfig | None = None,
     ) -> None:
         self._embedder = embedder
         self._client = openrouter_client
@@ -30,6 +33,8 @@ class EmbeddingRouter:
         self._config = config or RouterConfig()
         self._estimator = estimator or ComplexityEstimator()
         self._app_config = app_config or {}
+        self._system_one = system_one_client
+        self._surface = surface or RoutingSurfaceConfig()
 
         self._agent_names: list[str] = []
         self._agent_matrix: Any = None

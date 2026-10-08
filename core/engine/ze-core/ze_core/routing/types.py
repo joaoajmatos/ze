@@ -19,6 +19,16 @@ class SubTask:
 
 
 @dataclass
+class RoutingJudgment:
+    """One attempted System One request, carried so embed_route can build trace rows."""
+
+    result: Any  # ze_agents.system_one.SystemOneResult
+    question_kinds: dict[str, str]
+    consumed: frozenset[str] = frozenset()
+    skip_reason: str | None = None
+
+
+@dataclass
 class RoutingEnvelope:
     primary_agent: str
     confidence: float
@@ -30,6 +40,8 @@ class RoutingEnvelope:
     raw_scores: dict[str, float] = field(default_factory=dict)
     is_sequential: bool = False
     complexity: str = "complex"  # "simple" | "complex"
+    judgment: RoutingJudgment | None = None
+    complexity_source: str = "regex"  # "regex" | "score"
 
 
 @dataclass
