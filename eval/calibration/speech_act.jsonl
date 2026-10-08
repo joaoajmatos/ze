@@ -1,0 +1,60 @@
+{"id": "fact-pref-aisle-en", "lang": "en", "user": "I prefer aisle seats.", "assistant": "Noted, aisle seats.", "gold_act": "fact", "gold_family": "preference", "gold_persist": true, "source": "146-aisle"}
+{"id": "fact-pref-dark-en", "lang": "en", "user": "I always use dark mode on everything.", "assistant": "Got it.", "gold_act": "fact", "gold_family": "preference", "gold_persist": true}
+{"id": "fact-pref-coffee-en", "lang": "en", "user": "I take my coffee black, no sugar.", "assistant": "Black coffee, noted.", "gold_act": "fact", "gold_family": "preference", "gold_persist": true}
+{"id": "fact-constraint-peanut-en", "lang": "en", "user": "I'm allergic to peanuts.", "assistant": "Good to know. I'll keep that in mind.", "gold_act": "fact", "gold_family": "constraint", "gold_persist": true, "source": "memory_admission_constraint"}
+{"id": "fact-identity-city-en", "lang": "en", "user": "I live in Lisbon and work as a nurse.", "assistant": "Nice, thanks for telling me.", "gold_act": "fact", "gold_family": "identity", "gold_persist": true}
+{"id": "fact-rel-sister-en", "lang": "en", "user": "My sister is called Ana.", "assistant": "Thanks, I'll remember Ana.", "gold_act": "fact", "gold_family": "relationship", "gold_persist": true}
+{"id": "fact-contact-phone-en", "lang": "en", "user": "My phone number is 912 345 678.", "assistant": "Saved.", "gold_act": "fact", "gold_family": "contact_detail", "gold_persist": true}
+{"id": "fact-pref-aisle-pt", "lang": "pt", "user": "Prefiro lugar no corredor.", "assistant": "Anotado, corredor.", "gold_act": "fact", "gold_family": "preference", "gold_persist": true, "source": "146-aisle"}
+{"id": "fact-pref-dark-pt", "lang": "pt", "user": "Uso sempre o modo escuro em tudo.", "assistant": "Percebido.", "gold_act": "fact", "gold_family": "preference", "gold_persist": true}
+{"id": "fact-pref-cafe-pt", "lang": "pt", "user": "Bebo o café sem açúcar.", "assistant": "Anotado.", "gold_act": "fact", "gold_family": "preference", "gold_persist": true}
+{"id": "fact-constraint-peanut-pt", "lang": "pt", "user": "Sou alérgico a amendoins.", "assistant": "Bom saber. Vou ter isso em conta.", "gold_act": "fact", "gold_family": "constraint", "gold_persist": true}
+{"id": "fact-identity-city-pt", "lang": "pt", "user": "Vivo em Lisboa e trabalho como enfermeiro.", "assistant": "Obrigado por partilhares.", "gold_act": "fact", "gold_family": "identity", "gold_persist": true}
+{"id": "fact-rel-sister-pt", "lang": "pt", "user": "A minha irmã chama-se Ana.", "assistant": "Obrigado, fico a saber da Ana.", "gold_act": "fact", "gold_family": "relationship", "gold_persist": true}
+{"id": "fact-contact-phone-pt", "lang": "pt", "user": "O meu número de telemóvel é 912 345 678.", "assistant": "Guardado.", "gold_act": "fact", "gold_family": "contact_detail", "gold_persist": true}
+{"id": "forget-en-1", "lang": "en", "user": "Forget that I like aisle seats.", "assistant": "Okay, forgotten.", "gold_act": "forget", "gold_family": "drop", "gold_persist": false, "source": "146-aisle"}
+{"id": "forget-en-2", "lang": "en", "user": "Please forget that I'm allergic to peanuts, that was a mistake.", "assistant": "Done, removed.", "gold_act": "forget", "gold_family": "drop", "gold_persist": false}
+{"id": "forget-en-3", "lang": "en", "user": "Delete what I told you about my sister's name.", "assistant": "Removed.", "gold_act": "forget", "gold_family": "drop", "gold_persist": false}
+{"id": "forget-pt-4", "lang": "pt", "user": "Esquece que prefiro lugar no corredor.", "assistant": "Esquecido.", "gold_act": "forget", "gold_family": "drop", "gold_persist": false, "source": "146-aisle"}
+{"id": "forget-pt-5", "lang": "pt", "user": "Apaga o que te disse sobre a minha morada.", "assistant": "Apagado.", "gold_act": "forget", "gold_family": "drop", "gold_persist": false}
+{"id": "forget-pt-6", "lang": "pt", "user": "Esquece que sou alérgico a amendoins, foi engano.", "assistant": "Removido.", "gold_act": "forget", "gold_family": "drop", "gold_persist": false}
+{"id": "reminder-en-1", "lang": "en", "user": "Remind me Tuesday at 3 to call the dentist.", "assistant": "Done, Tuesday at 3.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false, "source": "memory_speech_act_timed_reminder"}
+{"id": "reminder-en-2", "lang": "en", "user": "Remember to call Mom at 3.", "assistant": "I'll ping you at 3.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false, "source": "142-remember-to"}
+{"id": "reminder-en-3", "lang": "en", "user": "Forget the dentist.", "assistant": "Cancelled the dentist reminder.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false, "source": "146-dentist"}
+{"id": "reminder-en-4", "lang": "en", "user": "Cancel my reminder to pay rent on Friday.", "assistant": "Cancelled.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false}
+{"id": "reminder-pt-5", "lang": "pt", "user": "Lembra-me terça às 3 de ligar ao dentista.", "assistant": "Feito, terça às 3.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false, "source": "memory_speech_act_timed_reminder"}
+{"id": "reminder-pt-6", "lang": "pt", "user": "Lembra-te de ligar à mãe às 3.", "assistant": "Aviso-te às 3.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false, "source": "142-remember-to"}
+{"id": "reminder-pt-7", "lang": "pt", "user": "Esquece o dentista.", "assistant": "Cancelei o lembrete do dentista.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false, "source": "146-dentist"}
+{"id": "reminder-pt-8", "lang": "pt", "user": "Cancela o lembrete de pagar a renda na sexta.", "assistant": "Cancelado.", "gold_act": "reminder", "gold_family": "drop", "gold_persist": false}
+{"id": "loop-en-1", "lang": "en", "user": "I need to figure out whether to switch jobs.", "assistant": "Want to talk it through?", "gold_act": "loop", "gold_family": "drop", "gold_persist": false, "source": "memory_speech_act_loop"}
+{"id": "loop-en-2", "lang": "en", "user": "I keep wondering if we should move to a bigger apartment.", "assistant": "That sounds worth thinking through.", "gold_act": "loop", "gold_family": "drop", "gold_persist": false}
+{"id": "loop-en-3", "lang": "en", "user": "Stop worrying about the job switch, drop it.", "assistant": "Okay, I'll let that go.", "gold_act": "loop", "gold_family": "drop", "gold_persist": false, "source": "146-loop-cancel"}
+{"id": "loop-pt-4", "lang": "pt", "user": "Preciso de decidir se mudo de emprego.", "assistant": "Queres falar sobre isso?", "gold_act": "loop", "gold_family": "drop", "gold_persist": false, "source": "memory_speech_act_loop"}
+{"id": "loop-pt-5", "lang": "pt", "user": "Ando a pensar se devemos mudar para um apartamento maior.", "assistant": "Vale a pena pensar nisso.", "gold_act": "loop", "gold_family": "drop", "gold_persist": false}
+{"id": "loop-pt-6", "lang": "pt", "user": "Esquece a mudança de emprego, já não me preocupa.", "assistant": "Está bem, deixo isso.", "gold_act": "loop", "gold_family": "drop", "gold_persist": false, "source": "146-loop-cancel"}
+{"id": "goal-en-1", "lang": "en", "user": "Help me ship the thesis by June.", "assistant": "Let's plan it.", "gold_act": "goal", "gold_family": "drop", "gold_persist": false, "source": "memory_speech_act_goal"}
+{"id": "goal-en-2", "lang": "en", "user": "I want to run a half marathon by October.", "assistant": "Great target, let's build a plan.", "gold_act": "goal", "gold_family": "drop", "gold_persist": false}
+{"id": "goal-en-3", "lang": "en", "user": "Cancel the thesis goal, I'm not doing it anymore.", "assistant": "Goal cancelled.", "gold_act": "goal", "gold_family": "drop", "gold_persist": false, "source": "146-goal-cancel"}
+{"id": "goal-pt-4", "lang": "pt", "user": "Ajuda-me a acabar a tese até junho.", "assistant": "Vamos planear.", "gold_act": "goal", "gold_family": "drop", "gold_persist": false, "source": "memory_speech_act_goal"}
+{"id": "goal-pt-5", "lang": "pt", "user": "Quero correr uma meia maratona até outubro.", "assistant": "Boa meta, vamos fazer um plano.", "gold_act": "goal", "gold_family": "drop", "gold_persist": false}
+{"id": "goal-pt-6", "lang": "pt", "user": "Cancela a meta da tese, já não vou fazer.", "assistant": "Meta cancelada.", "gold_act": "goal", "gold_family": "drop", "gold_persist": false, "source": "146-goal-cancel"}
+{"id": "ingest-en-1", "lang": "en", "user": "Read this article and keep it: https://example.com/a", "assistant": "Saved it.", "gold_act": "ingest", "gold_family": "drop", "gold_persist": false}
+{"id": "ingest-en-2", "lang": "en", "user": "Here is my CV, please import it: [pasted text]", "assistant": "Imported.", "gold_act": "ingest", "gold_family": "drop", "gold_persist": false, "source": "147-ingest"}
+{"id": "ingest-en-3", "lang": "en", "user": "Store these meeting notes for later: [pasted text]", "assistant": "Stored.", "gold_act": "ingest", "gold_family": "drop", "gold_persist": false}
+{"id": "ingest-pt-4", "lang": "pt", "user": "Guarda este artigo: https://example.com/a", "assistant": "Guardado.", "gold_act": "ingest", "gold_family": "drop", "gold_persist": false}
+{"id": "ingest-pt-5", "lang": "pt", "user": "Aqui está o meu CV, importa-o: [texto colado]", "assistant": "Importado.", "gold_act": "ingest", "gold_family": "drop", "gold_persist": false, "source": "147-ingest"}
+{"id": "ingest-pt-6", "lang": "pt", "user": "Guarda estas notas da reunião para depois: [texto colado]", "assistant": "Guardadas.", "gold_act": "ingest", "gold_family": "drop", "gold_persist": false}
+{"id": "drop-en-1", "lang": "en", "user": "I'm tired today and it's raining.", "assistant": "Rest up.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false, "source": "memory_admission_ephemeral"}
+{"id": "drop-en-2", "lang": "en", "user": "I'll call Mom Tuesday.", "assistant": "Sounds good.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false, "source": "memory_admission_commitment"}
+{"id": "drop-en-3", "lang": "en", "user": "Thanks, that helps a lot.", "assistant": "Anytime.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "drop-en-4", "lang": "en", "user": "I'm at the airport right now.", "assistant": "Safe travels.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "drop-pt-5", "lang": "pt", "user": "Estou cansado hoje e está a chover.", "assistant": "Descansa.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false, "source": "memory_admission_ephemeral"}
+{"id": "drop-pt-6", "lang": "pt", "user": "Vou ligar à mãe na terça.", "assistant": "Boa ideia.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false, "source": "memory_admission_commitment"}
+{"id": "drop-pt-7", "lang": "pt", "user": "Obrigado, ajudou imenso.", "assistant": "De nada.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "drop-pt-8", "lang": "pt", "user": "Estou no aeroporto agora.", "assistant": "Boa viagem.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "clarify-en-1", "lang": "en", "user": "Remember that.", "assistant": "What would you like me to remember?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
+{"id": "clarify-en-2", "lang": "en", "user": "Do the thing we talked about.", "assistant": "Which thing do you mean?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
+{"id": "clarify-en-3", "lang": "en", "user": "Save it.", "assistant": "Save what exactly?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
+{"id": "clarify-pt-4", "lang": "pt", "user": "Lembra-te disso.", "assistant": "De que queres que me lembre?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
+{"id": "clarify-pt-5", "lang": "pt", "user": "Faz aquilo que falámos.", "assistant": "A que te referes?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
+{"id": "clarify-pt-6", "lang": "pt", "user": "Guarda isso.", "assistant": "Guardar o quê?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}

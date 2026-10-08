@@ -58,6 +58,7 @@ help:
 	@echo "    eval-report      Show last eval run summary"
 	@echo "    eval-diff        Compare last two eval runs (regression detection)"
 	@echo "    eval-server      Start MCP eval server (for Claude Code / Cursor / Codex)"
+	@echo "    calibrate-speech-act  LIVE System One run over eval/calibration/speech_act.jsonl; costs credits (needs OPENROUTER_API_KEY)"
 	@echo "    eval-clean       Delete eval-namespaced rows from DB"
 	@echo ""
 	@echo "  Testing (see docs/testing.md)"
@@ -214,7 +215,7 @@ db-reset-seed: db-reset
 	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_seed apply
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
-.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean
+.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act
 
 eval:
 	uv run python eval/run.py
@@ -230,6 +231,9 @@ eval-diff:
 
 eval-server:
 	uv run python eval/server.py
+
+calibrate-speech-act:
+	uv run python eval/calibration/speech_act.py
 
 eval-clean:
 	@echo "Removing eval-namespaced rows from routing_log, checkpoints, llm_cost_log..."

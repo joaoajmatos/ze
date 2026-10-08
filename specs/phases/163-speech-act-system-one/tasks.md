@@ -196,8 +196,8 @@
 
 **Purpose**: Measured bars. Default runs never execute this phase.
 
-- [ ] **T030** [P] [PLATFORM] Write a labeled set per data-model.md "Calibration row", with ≥3 EN and ≥3 PT rows per act. It must include every `memory_speech_act_*` and `memory_admission_*` prompt from `eval/scenarios/memory.yaml` and the 146 dentist/aisle pair in both languages. · `eval/calibration/speech_act.jsonl`
-- [ ] **T031** [PLATFORM] Write the opt-in calibration script. It loads the JSONL and builds `OpenRouterSystemOneClient` from env `OPENROUTER_API_KEY` with the model `typesafe/jev-1.13` (or the `system_one.model` from config). It uses the production `SPEECH_ACT_QUESTIONS` with option order shuffled per row (eval only) and `build_state`.
+- [x] **T030** [P] [PLATFORM] Write a labeled set per data-model.md "Calibration row", with ≥3 EN and ≥3 PT rows per act. It must include every `memory_speech_act_*` and `memory_admission_*` prompt from `eval/scenarios/memory.yaml` and the 146 dentist/aisle pair in both languages. · `eval/calibration/speech_act.jsonl`
+- [x] **T031** [PLATFORM] Write the opt-in calibration script. It loads the JSONL and builds `OpenRouterSystemOneClient` from env `OPENROUTER_API_KEY` with the model `typesafe/jev-1.13` (or the `system_one.model` from config). It uses the production `SPEECH_ACT_QUESTIONS` with option order shuffled per row (eval only) and `build_state`.
 
   Per language it reports:
   - exact-act accuracy and a confusion matrix;
@@ -206,7 +206,7 @@
   - suggested `choice_hold` and `biography_hold`, chosen as the lowest pair with fact precision = 1.0 on the set.
 
   It exits non-zero without a key. It is not a pytest module and is not collected. · `eval/calibration/speech_act.py`
-- [ ] **T032** [PLATFORM] Add a `calibrate-speech-act` target that runs `uv run python eval/calibration/speech_act.py`, and a `make help` line marking it live and costing credits. · `Makefile`
+- [x] **T032** [PLATFORM] Add a `calibrate-speech-act` target that runs `uv run python eval/calibration/speech_act.py`, and a `make help` line marking it live and costing credits. · `Makefile`
 
 ---
 
