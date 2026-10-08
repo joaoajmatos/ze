@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-30
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Replace the Haiku speech_act + keep/drop judge with System One Choice over the existing closed set, plus family Choice and biography Noul. Keep admit_* filters, trivial-turn regex, dual-write skip, contribution seam. Depends on 162. Do not start routing Choice (164)."
 
@@ -21,6 +21,20 @@
 Every non-trivial conversation turn asks a generative model to emit JSON `{speech_act, family, facts[]}`. Code already knows the closed sets and already drops unknown labels. Phase 148 kept that LLM judge and deferred a hard classifier.
 
 This phase **replaces the judge**, not the store rules. The eight speech acts and the keep/drop families stay exactly those sets. If the judgment service is skipped, Haiku (or the current extractor) remains the fallback — fail open, no dual-write of two facts.
+
+System One cannot write text. When it decides a turn is biography, a narrowed generative call writes the fact **value** only; it carries no act or family field, so there is never a second judge.
+
+---
+
+## Clarifications
+
+### Session 2026-10-08
+
+- Q: System One returns labels, not text — who writes `facts[].value` when the answer is persist? → A: System One gates first. Only on a persist decision does a narrowed Haiku prompt write the value text (no `speech_act`, no family in its output). On skip, the full pre-163 Haiku prompt runs once. Storing the raw utterance as the value is rejected.
+- Q: Eval sessions (`eval-` thread prefix) skip post-turn extraction, so existing evals cannot prove 163 — how is behavior proven? → A: Keep the `eval-` skip. Prove with mocked-client unit fixtures (gold acts, dentist/aisle pair, even band, skip without double write), a labeled EN+PT JSONL set under `eval/`, and an opt-in `slow` calibration script that calls Jev live and reports exact-act accuracy, fact precision/recall, and suggested bars.
+- Q: What is the default posture and what happens with uncalibrated bars? → A: `system_one.surfaces.speech_act.enabled: false`, both bars `null` and commented as uncalibrated. Enabled with a `null` bar → warning log and the pre-163 Haiku path; never cookbook numbers, never "hold everything."
+- Q: Judgments are made in `write_memory`, after `record_trace` — how do they reach the trace? → A: `write_memory` returns `message_trace` with the speech-act judgments appended (`consumed=True` on those that decided persistence). Persisted trace and the "Why?" panel show them on reload; live `trace_update` frames do not. No new WS frame, no graph reorder.
+- Q: The 162 client retries with 1/2/4 s backoffs — acceptable on this surface? → A: No. Speech-act makes a single attempt (per-call `max_attempts` on the 162 client; default stays 3 so 164 chooses for itself). Portuguese trivial-turn regex stays out of scope (follow-up note).
 
 ---
 
@@ -68,9 +82,10 @@ The closed-set answer is spread across several labels, or the yes-probability th
 
 **Acceptance Scenarios**:
 
-1. **Given** a Choice peakedness below the (this-phase, measured) hold bar, **When** admission would otherwise persist, **Then** it persists nothing (or falls back to Haiku only if skip, not if “unsure”).
+1. **Given** a Choice peakedness below the (this-phase, measured) hold bar, **When** admission would otherwise persist, **Then** it persists nothing and no generative call runs (Haiku runs only on skip, never on “unsure”).
 2. **Given** biography Noul near even and Choice `fact`, **When** composing, **Then** code MUST NOT persist on Choice alone.
 3. **Given** System One skip (timeout), **When** admission runs, **Then** the pre-163 extractor path runs once — not both judges writing two rows.
+4. **Given** the surface enabled but a hold bar unset, **When** admission runs, **Then** a warning is logged and the pre-163 extractor path runs.
 
 ---
 
@@ -82,27 +97,38 @@ The closed-set answer is spread across several labels, or the yes-probability th
 - In-turn `remember_fact` `ok` true: dual-write skip (148) still wins over extraction.
 - Contribution seam still rejects illegal kinds; this phase does not write `INFERENCE` as biography.
 - Option order: production order is stable (doctrine / existing enum order); eval MAY shuffle.
+- Eval sessions (`eval-` thread prefix) skip post-turn extraction entirely; this phase keeps that skip. Behavior is proven by unit fixtures and the opt-in calibration set, not by `memory_speech_act_*` eval runs.
+- Persist decision but the value-writer returns nothing usable: persist nothing (no retry, no fallback judge).
+- System One failure on this surface: one attempt, then skip — no backoff sleeps added to the turn.
+- Portuguese greetings are not matched by the trivial-turn regex and will reach System One; accepted cost, follow-up outside this phase.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Post-turn admission MUST obtain `speech_act` as a Choice over exactly `fact`, `forget`, `reminder`, `loop`, `goal`, `ingest`, `drop`, `clarify`.
+- **FR-001**: When the speech-act surface is enabled and calibrated, post-turn admission MUST obtain `speech_act` as a Choice over exactly `fact`, `forget`, `reminder`, `loop`, `goal`, `ingest`, `drop`, `clarify`.
 - **FR-002**: When the act may be `fact`, admission MUST also obtain a family Choice over the existing keep families plus `drop`, and a separate biography yes-probability. The yes-probability threshold MUST NOT be copied from Choice peakedness.
 - **FR-003**: Existing `admit_speech_act` and `admit_family` MUST remain the only persist filters for labels. Unknown → drop.
 - **FR-004**: Facts MUST persist only when act is `fact`, family is a keep family, and the biography yes-probability clears a hold bar measured on Ze fixtures. Otherwise `facts` is empty.
 - **FR-005**: State MUST be `{user text, assistant text}` (assistant already length-capped). MUST NOT send the full session or memory tables.
 - **FR-006**: On System One skip, the current LLM extractor MUST run as today. On a low-peakedness **answer**, MUST NOT persist and MUST NOT also run Haiku to “break the tie” in this phase (avoid double judges).
+- **FR-006a**: On a persist decision, a narrowed generative call MUST write the fact value text only. Its output MUST NOT carry a speech act or family; the family is the one System One chose. If it yields no value, nothing persists.
+- **FR-006b**: The speech-act surface MUST make a single System One attempt with no retry backoff. The client MUST accept a per-call attempt limit whose default preserves the 162 behavior.
 - **FR-007**: Trivial-turn skip, 148 same-turn identity skip, and contribution-seam writes MUST remain.
 - **FR-008**: This phase MUST NOT change routing, skill match, or companion tool names. Companion instructions MAY keep teaching the same eight acts.
 - **FR-009**: Default tests MUST mock the judgment client. Eval scenarios that already forbid a fact row MUST still forbid it.
-- **FR-010**: Thresholds MUST live in config under the System One surface flags, documented as uncalibrated until measured — cookbook numbers MUST NOT ship as production defaults.
+- **FR-010**: Thresholds MUST live in config under `system_one.surfaces.speech_act`, documented as uncalibrated until measured — cookbook numbers MUST NOT ship as production defaults. The surface MUST default to disabled with both bars unset. Enabled with an unset bar MUST log a warning and use the pre-163 path.
+- **FR-011**: Each System One call on this surface MUST be recorded as trace judgments on the turn's persisted message trace, with `consumed` true only for the answers that decided persistence, and skips recorded as skips. No new live frame is required.
+- **FR-012**: A labeled EN+PT fixture set and an opt-in (slow, live) calibration run MUST exist that report exact-act accuracy, fact precision/recall, and suggested hold bars. Default test runs MUST NOT execute it.
+- **FR-013**: The `eval-` session skip of post-turn extraction MUST remain unchanged.
 
 ### Key Entities
 
 - **Speech act**: One of the eight labels already on `SpeechAct`.
 - **Keep family**: identity, preference, relationship, constraint, contact_detail.
 - **Hold**: Low peakedness or middling biography probability → no persist.
+- **Hold bars**: Two independent numbers — Choice peakedness bar and biography yes-probability bar — set from calibration, unset by default.
+- **Value writer**: Narrowed generative call that only phrases the fact value after a persist decision.
 
 ---
 
@@ -110,11 +136,14 @@ The closed-set answer is spread across several labels, or the yes-probability th
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of existing speech-act evals that require no biography row still show no biography row with System One on (mocked gold).
+- **SC-001**: 100% of unit fixtures derived from the `memory_speech_act_*` and `memory_admission_*` eval prompts that require no biography row show no biography row with System One on (mocked gold). (Eval sessions skip post-turn extraction; see Clarifications.)
 - **SC-002**: Dentist-cancel vs aisle-forget fixtures disagree on `forget` vs `reminder` in the gold direction 100% of the labeled pair.
 - **SC-003**: 0 turns persist a fact when biography yes-probability is in the even band (fixture-defined).
 - **SC-004**: Skip path: 0 duplicate fact rows vs Haiku-only on the same identity.
 - **SC-005**: 0 live vendor calls in default `make test-memory` / personal tests for this change.
+- **SC-006**: 0 generative calls on turns where System One answers and holds (mocked fixtures count value-writer invocations).
+- **SC-007**: With the surface disabled (default), extracted facts on existing fixtures are unchanged from pre-163.
+- **SC-008**: The calibration run covers at least the eight acts in both English and Portuguese and prints suggested values for both bars.
 
 ---
 
@@ -122,7 +151,7 @@ The closed-set answer is spread across several labels, or the yes-probability th
 
 - 162 is Implemented before this work starts.
 - In-turn `delegate_to_agent` / remember tools stay the conversational path; this phase owns **post-turn persist**.
-- Hold bars are chosen at implement from fixtures, not invented in this spec as floats.
+- Hold bars are chosen at implement from the opt-in calibration run, not invented in this spec as floats; until then they stay unset and the surface stays off.
 - English-primary model: PT fixtures are required before enabling for a Portuguese-heavy user.
 
 ## Out of Scope

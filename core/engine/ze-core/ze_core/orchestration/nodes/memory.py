@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
@@ -9,6 +10,7 @@ from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
+from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
@@ -74,6 +76,8 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     await complete_procedure_invocation(ctx, result, config)
 
     proposals: list = []
+    admission_path = "none"
+    judged_trace: Any = None
     if not is_eval:
         embedding = embedder.encode(ctx.prompt)
         fire_and_forget(
@@ -88,12 +92,25 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         )
         fact_extractor = config["configurable"].get("fact_extractor")
         if fact_extractor is not None:
-            proposals = await fact_extractor(
+            admission = await fact_extractor(
                 config["configurable"],
                 agent=result.agent,
                 prompt=ctx.prompt,
                 response=result.response,
             )
+            proposals = admission.facts
+            admission_path = admission.path
+            trace = state.get("message_trace")
+            if admission.judgment is not None and trace is not None:
+                rows = judgments_from_result(
+                    admission.judgment,
+                    question_ids=admission.question_ids,
+                    consumed=admission.consumed,
+                    skip_reason=admission.skip_reason,
+                )
+                judged_trace = dataclasses.replace(
+                    trace, judgments=[*trace.judgments, *rows]
+                )
         remembered = identities_from_remember_calls(result.tool_calls or [])
         if remembered:
             proposals = [
@@ -143,8 +160,10 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         "orchestration_memory_write_scheduled",
         session_id=state["session_id"],
         extracted_facts=len(proposals) if not is_eval else 0,
+        admission_path=admission_path,
         eval=is_eval,
     )
+    trace_update: dict = {"message_trace": judged_trace} if judged_trace else {}
 
     if state.get("input_modality") == "image":
         user_content = f"[Image] {state.get('image_caption') or ''}"
@@ -167,9 +186,14 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             return {
                 "messages": [summary_message] + tail,
                 "compaction_span": (0, len(older_span) - 1),
+                **trace_update,
             }
 
-    return {"messages": updated[-SESSION_HISTORY_LIMIT:], "compaction_span": None}
+    return {
+        "messages": updated[-SESSION_HISTORY_LIMIT:],
+        "compaction_span": None,
+        **trace_update,
+    }
 
 
 def _should_compact(updated: list[dict], ctx: Any, config: RunnableConfig) -> bool:

@@ -54,9 +54,17 @@ def test_protocol_is_not_llm_client():
 
 
 class _FakeSystemOne:
-    async def evaluate(self, state, questions):
+    async def evaluate(self, state, questions, *, max_attempts=None):
         return SystemOneResult(outcome="ok")
 
 
 def test_runtime_checkable_protocol():
     assert isinstance(_FakeSystemOne(), SystemOneClient)
+
+
+def test_protocol_evaluate_accepts_keyword_only_max_attempts():
+    import inspect
+
+    param = inspect.signature(SystemOneClient.evaluate).parameters["max_attempts"]
+    assert param.kind is inspect.Parameter.KEYWORD_ONLY
+    assert param.default is None

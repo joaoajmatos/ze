@@ -210,3 +210,61 @@ async def test_enabled_blank_key_evaluate_skips_without_crash():
         result = await client.evaluate("hello", _QUESTIONS)
     assert result.skip_reason == "missing_key"
     mock_cls.assert_not_called()
+
+
+@patch("ze_core.openrouter.system_one.asyncio.sleep", new_callable=AsyncMock)
+@patch("ze_core.openrouter.system_one.httpx.AsyncClient")
+async def test_max_attempts_one_429_single_post_no_sleep(mock_cls, sleep):
+    inst = _mock_http(_json_response(429))
+    mock_cls.return_value = inst
+    result = await _client().evaluate("x", _QUESTIONS, max_attempts=1)
+    assert result.skip_reason == "overload"
+    assert inst.post.await_count == 1
+    sleep.assert_not_awaited()
+
+
+@patch("ze_core.openrouter.system_one.asyncio.sleep", new_callable=AsyncMock)
+@patch("ze_core.openrouter.system_one.httpx.AsyncClient")
+async def test_max_attempts_one_503_single_post_error(mock_cls, sleep):
+    inst = _mock_http(_json_response(503))
+    mock_cls.return_value = inst
+    result = await _client().evaluate("x", _QUESTIONS, max_attempts=1)
+    assert result.skip_reason == "error"
+    assert inst.post.await_count == 1
+    sleep.assert_not_awaited()
+
+
+@patch("ze_core.openrouter.system_one.asyncio.sleep", new_callable=AsyncMock)
+@patch("ze_core.openrouter.system_one.httpx.AsyncClient")
+async def test_max_attempts_none_keeps_three_attempts(mock_cls, sleep):
+    inst = _mock_http([_json_response(503), _json_response(503), _json_response(503)])
+    mock_cls.return_value = inst
+    result = await _client().evaluate("x", _QUESTIONS, max_attempts=None)
+    assert result.skip_reason == "error"
+    assert inst.post.await_count == 3
+    assert sleep.await_count == 2
+
+
+@patch("ze_core.openrouter.system_one.asyncio.sleep", new_callable=AsyncMock)
+@patch("ze_core.openrouter.system_one.httpx.AsyncClient")
+async def test_max_attempts_two_caps_attempts(mock_cls, sleep):
+    inst = _mock_http([_json_response(503), _json_response(503)])
+    mock_cls.return_value = inst
+    result = await _client().evaluate("x", _QUESTIONS, max_attempts=2)
+    assert result.skip_reason == "error"
+    assert inst.post.await_count == 2
+    assert sleep.await_count == 1
+
+
+@patch("ze_core.openrouter.system_one.httpx.AsyncClient")
+async def test_max_attempts_below_one_is_invalid_request(mock_cls):
+    inst = _mock_http(_json_response(200, _OK_PAYLOAD))
+    mock_cls.return_value = inst
+    result = await _client().evaluate("x", _QUESTIONS, max_attempts=0)
+    assert result.skip_reason == "invalid_request"
+    inst.post.assert_not_awaited()
+
+
+async def test_disabled_accepts_max_attempts():
+    result = await DisabledSystemOneClient().evaluate("x", _QUESTIONS, max_attempts=1)
+    assert result.skip_reason == "disabled"

@@ -13,7 +13,7 @@ def _summary(**overrides):
     from datetime import datetime, timezone
 
     from ze_agents.claims import ClaimKind, Provenance
-    from ze_automation.goals.types import LearningPromotionState, LearningStatus
+    from ze_automation.goals.types import LearningStatus
 
     data = dict(
         id=uuid4(),

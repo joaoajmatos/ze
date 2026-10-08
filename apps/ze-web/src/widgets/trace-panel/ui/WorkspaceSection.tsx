@@ -2,7 +2,7 @@ import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
 
 type WorkspaceTrace = NonNullable<
-  (WsTraceUpdateFrame & {
+  (Omit<WsTraceUpdateFrame, "workspace"> & {
     workspace?: {
       runs?: { command?: string; status?: string }[];
       files?: { path: string; op?: string }[];

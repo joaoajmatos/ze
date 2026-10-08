@@ -4,11 +4,12 @@ from uuid import uuid4
 
 import pytest
 
-from ze_agents.types import AgentResult, ToolCall
+from ze_agents.types import AgentResult, GateDecision, ToolCall
 from ze_automation.workflow.types import Branch, StepResult, WorkflowStep
 from ze_personal.graph.workflow import (
     _resolve_step_output,
     _resolve_verify_model,
+    after_capability_check_workflow,
     after_handle_step_failure,
     after_route_branch,
     after_verify_step,
@@ -1073,3 +1074,18 @@ class TestCancellation:
         )
         assert result["current_step_id"] == "CANCELLED"
         assert after_route_branch(result) == "workflow_cancelled"
+
+
+def test_after_capability_check_blocked_fails_workflow():
+    assert (
+        after_capability_check_workflow({"gate_decision": GateDecision.BLOCKED})
+        == "workflow_failed"
+    )
+
+
+def test_after_capability_check_allows_execution():
+    assert after_capability_check_workflow({}) == "execute_tool"
+    assert (
+        after_capability_check_workflow({"gate_decision": GateDecision.EXECUTE})
+        == "execute_tool"
+    )

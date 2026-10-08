@@ -13,6 +13,8 @@ concurrency:
 permissions:
   contents: read
 
+# Gate steps run even when an earlier gate fails, so one red run shows every
+# broken gate instead of only the first.
 jobs:
   web:
     name: Web
@@ -23,13 +25,20 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: cd apps/ze-web && bun install --frozen-lockfile
+        id: install
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make typecheck-web
 
       - name: Build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: make web-build
 
       - name: Test
-        run: cd apps/ze-web && bun run test
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make test-web
 
   backend:
     name: Backend
@@ -44,19 +53,12 @@ jobs:
           cache-dependency-glob: pyproject.toml
 
       - name: Install dependencies
+        id: install
         run: uv sync
 
       - name: Ruff
         run: make lint
 
       - name: Pytest
-        run: |
-          uv run pytest apps/ze-api/tests -m 'not slow' -q
-          uv run pytest core/engine/ze-core/tests -m 'not slow' -q
-          uv run pytest plugins/ze-personal/tests -m 'not slow' -q
-          uv run pytest core/contracts/ze-communication/tests -m 'not slow' -q
-          uv run pytest integrations/ze-google/tests -m 'not slow' -q
-          uv run pytest plugins/ze-messenger/tests -m 'not slow' -q
-          uv run pytest plugins/ze-calendar/tests -m 'not slow' -q
-          uv run pytest plugins/ze-news/tests -m 'not slow' -q
-
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: make test-py

@@ -50,7 +50,7 @@ help:
 	@echo "    web-install      Install React web app dependencies (bun install)"
 	@echo "    web              Start React web dev server (:5173)"
 	@echo "    web-build        Build React web app for production"
-	@echo "    web-test         Run React web app tests (vitest) — alias for test-web"
+	@echo "    web-test         Run @ze/ui + ze-web tests (vitest) — alias for test-web"
 	@echo ""
 	@echo "  Eval (requires 'make dev-eval' running)"
 	@echo "    eval             Run full eval suite — routing accuracy only (cheap)"
@@ -58,6 +58,7 @@ help:
 	@echo "    eval-report      Show last eval run summary"
 	@echo "    eval-diff        Compare last two eval runs (regression detection)"
 	@echo "    eval-server      Start MCP eval server (for Claude Code / Cursor / Codex)"
+	@echo "    calibrate-speech-act  LIVE System One run over eval/calibration/speech_act.jsonl; costs credits (needs OPENROUTER_API_KEY)"
 	@echo "    eval-clean       Delete eval-namespaced rows from DB"
 	@echo ""
 	@echo "  Testing (see docs/testing.md)"
@@ -84,17 +85,21 @@ help:
 	@echo "    test-workspace       Run ze-workspace tests"
 	@echo "    test-collision       Run ze-collision tests"
 	@echo "    test-trading212      Run ze-trading212 tests"
+	@echo "    test-finance         Run ze-finance tests"
+	@echo "    test-workspace-sidecar  Run workspace sidecar tests"
 	@echo "    test-personal        Run ze-personal tests"
 	@echo "    test-communication   Run ze-communication tests"
 	@echo "    test-messenger       Run ze-messenger tests"
 	@echo "    test-calendar        Run ze-calendar tests"
 	@echo "    test-prospecting     Run ze-prospecting tests"
 	@echo "    test-news            Run ze-news tests"
-	@echo "    test-web / web-test  Run ze-web tests (vitest)"
+	@echo "    test-web / web-test  Run @ze/ui + ze-web tests (vitest)"
+	@echo "    test-py              Run every Python package suite, report all failures (CI gate)"
 	@echo "    test-all             Run all package tests (includes slow)"
 	@echo ""
 	@echo "  Code quality"
 	@echo "    check            Lint Python + ze-web build (CI lint gates)"
+	@echo "    typecheck-web    Type-check ze-web and @ze/ui (tsc --noEmit)"
 	@echo "    hooks            Install git pre-commit / pre-push hooks"
 	@echo "    lint             Lint all packages with ruff"
 	@echo "    lint-web         Lint ze-web with ESLint (FSD boundaries)"
@@ -118,7 +123,7 @@ install:
 	@echo "Tip: run 'make hooks' to install git pre-commit / pre-push quality gates"
 
 web-install:
-	cd $(ZE_WEB) && bun install
+	bun install
 
 google-auth:
 	uv run python scripts/google_auth.py
@@ -214,7 +219,7 @@ db-reset-seed: db-reset
 	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_seed apply
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
-.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean
+.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act
 
 eval:
 	uv run python eval/run.py
@@ -230,6 +235,9 @@ eval-diff:
 
 eval-server:
 	uv run python eval/server.py
+
+calibrate-speech-act:
+	uv run python eval/calibration/speech_act.py
 
 eval-clean:
 	@echo "Removing eval-namespaced rows from routing_log, checkpoints, llm_cost_log..."
@@ -286,6 +294,7 @@ TEST_PY_PACKAGES := \
 	test-priority \
 	test-skills \
 	test-workspace \
+	test-workspace-sidecar \
 	test-collision \
 	test-core \
 	test-personal \
@@ -293,12 +302,13 @@ TEST_PY_PACKAGES := \
 	test-calendar \
 	test-prospecting \
 	test-news \
+	test-finance \
 	test-api
 
 .PHONY: test test-api test-core test-logging test-agents test-communication test-plugin test-sdk test-proactive \
 	test-memory test-onboarding test-seed test-correlation test-browser test-notifications \
 	test-components test-eval test-google test-trading212 test-ingestion test-automation test-worldstate test-priority test-skills test-workspace test-collision test-personal test-prospecting test-messenger \
-	test-calendar test-news test-all test-web web-test
+	test-calendar test-news test-finance test-workspace-sidecar test-py test-all test-web web-test
 
 test test-api:
 	$(call pytest_pkg,apps/ze-api/tests)
@@ -390,9 +400,25 @@ test-calendar:
 test-news:
 	$(call pytest_pkg,plugins/ze-news/tests)
 
+test-finance:
+	$(call pytest_pkg,plugins/ze-finance/tests)
+
+# The sidecar is not a uv workspace member; layer its own requirements on the venv.
+test-workspace-sidecar:
+	$(subst uv run,uv run --with-requirements sidecar/workspace/requirements.txt,$(call pytest_pkg,sidecar/workspace/tests))
+
+# Runs every suite even when one fails, then exits non-zero naming the failures.
+test-py:
+	@failed=""; \
+	for t in $(TEST_PY_PACKAGES); do \
+		[ -n "$$GITHUB_ACTIONS" ] && echo "::group::$$t"; \
+		$(MAKE) --no-print-directory $$t || failed="$$failed $$t"; \
+		[ -n "$$GITHUB_ACTIONS" ] && echo "::endgroup::"; \
+	done; \
+	if [ -n "$$failed" ]; then echo "FAILED:$$failed"; exit 1; fi
+
 test-all:
-	@set -e; for t in $(TEST_PY_PACKAGES); do $(MAKE) SLOW=1 $$t; done
-	$(MAKE) test-web
+	@rc=0; $(MAKE) SLOW=1 test-py || rc=1; $(MAKE) test-web || rc=1; exit $$rc
 
 test-web web-test:
 	cd packages/ze-ui && bun run test
@@ -411,7 +437,7 @@ codegen:
 	bun run scripts/codegen.ts
 
 # ── Code quality ──────────────────────────────────────────────────────────────
-.PHONY: check hooks lint lint-web format clean
+.PHONY: check hooks lint lint-web typecheck-web format clean
 
 check: lint web-build
 	@echo "check: ok"
@@ -425,6 +451,12 @@ lint:
 
 lint-web:
 	cd $(ZE_WEB) && bun run lint
+
+typecheck-web:
+	@rc=0; \
+	(cd $(ZE_WEB) && bun x tsc --noEmit -p tsconfig.json) || rc=1; \
+	(cd packages/ze-ui && bun x tsc --noEmit -p tsconfig.json) || rc=1; \
+	exit $$rc
 
 format:
 	uv run ruff format .

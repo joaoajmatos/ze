@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import type { SessionSchema } from "@myguyze/ze-client";
 import { MessageCircle, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";

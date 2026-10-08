@@ -64,6 +64,8 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_priority.store import PriorityOverrideStore
     from ze_collision.store import CollisionLogStore
     from ze_agents.nli import NLIClient
+    from ze_memory.retriever import PostgresMemoryStore
+    from ze_worldstate.store import LoopStore
 
     class _AllPathsPlugin:
         def agent_module_paths(self) -> list[str]:
@@ -99,6 +101,8 @@ def test_bootstrap_registers_companion_and_research(settings):
         PriorityOverrideStore: MM(spec=PriorityOverrideStore),
         CollisionLogStore: MM(spec=CollisionLogStore),
         NLIClient: MM(spec=NLIClient),
+        PostgresMemoryStore: MM(spec=PostgresMemoryStore),
+        LoopStore: MM(spec=LoopStore),
         SentenceTransformer: MM(spec=SentenceTransformer),
         object: client,
     }

@@ -58,6 +58,6 @@ describe("parsePrimitiveTree", () => {
 
   it("parses a single primitive node", () => {
     const node = parsePrimitive({ type: "badge", label: "ok" });
-    expect(node.label).toBe("ok");
+    expect(node).toMatchObject({ type: "badge", label: "ok" });
   });
 });

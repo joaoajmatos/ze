@@ -91,6 +91,8 @@ class DisabledSystemOneClient:
         self,
         state: str | dict,
         questions: dict[str, SystemOneQuestion],
+        *,
+        max_attempts: int | None = None,
     ) -> SystemOneResult:
         return _skip("disabled", 0)
 
@@ -120,8 +122,13 @@ class OpenRouterSystemOneClient:
         self,
         state: str | dict,
         questions: dict[str, SystemOneQuestion],
+        *,
+        max_attempts: int | None = None,
     ) -> SystemOneResult:
         start = time.monotonic()
+        if max_attempts is not None and max_attempts < 1:
+            self._log.warning("system_one_skip", reason="invalid_request")
+            return _skip("invalid_request", _elapsed_ms(start))
         if _invalid_request(state, questions):
             self._log.warning("system_one_skip", reason="invalid_request")
             return _skip("invalid_request", _elapsed_ms(start))
@@ -142,10 +149,11 @@ class OpenRouterSystemOneClient:
             "X-OpenRouter-Title": self._title,
         }
 
+        attempts = len(_BACKOFFS) if max_attempts is None else min(max_attempts, len(_BACKOFFS))
         last_status: int | None = None
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(self._timeout_s)) as http:
-                for attempt, backoff in enumerate(_BACKOFFS, start=1):
+                for attempt, backoff in enumerate(_BACKOFFS[:attempts], start=1):
                     try:
                         response = await http.post(url, json=payload, headers=headers)
                     except httpx.TimeoutException:
@@ -156,7 +164,7 @@ class OpenRouterSystemOneClient:
                         return _skip("error", _elapsed_ms(start))
 
                     last_status = response.status_code
-                    if response.status_code in _RETRYABLE_STATUS and attempt < len(_BACKOFFS):
+                    if response.status_code in _RETRYABLE_STATUS and attempt < attempts:
                         await asyncio.sleep(backoff)
                         continue
                     if response.status_code in _OVERLOAD_STATUS:

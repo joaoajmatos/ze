@@ -21,6 +21,11 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-worldstate` | ze-worldstate | pytest |
 | `make test-skills` | ze-skills | pytest |
 | `make test-workspace` | ze-workspace | pytest |
+| `make test-workspace-sidecar` | workspace sidecar | pytest |
+| `make test-priority` | ze-priority | pytest |
+| `make test-collision` | ze-collision | pytest |
+| `make test-seed` | ze-seed | pytest |
+| `make test-ingestion` | ze-ingestion | pytest |
 | `make test-onboarding` | ze-onboarding | pytest |
 | `make test-correlation` | ze-correlation | pytest |
 | `make test-browser` | ze-browser | pytest |
@@ -28,12 +33,17 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-components` | ze-components | pytest |
 | `make test-eval` | ze-eval | pytest |
 | `make test-google` | ze-google | pytest |
+| `make test-trading212` | ze-trading212 | pytest |
+| `make test-communication` | ze-communication | pytest |
 | `make test-personal` | ze-personal | pytest |
 | `make test-messenger` | ze-messenger | pytest |
 | `make test-calendar` | ze-calendar | pytest |
 | `make test-prospecting` | ze-prospecting | pytest |
 | `make test-news` | ze-news | pytest |
-| `make test-web` / `make web-test` | ze-web | vitest |
+| `make test-finance` | ze-finance | pytest |
+| `make test-web` / `make web-test` | @ze/ui + ze-web | vitest |
+| `make typecheck-web` | @ze/ui + ze-web | tsc |
+| `make test-py` | all Python packages | pytest |
 | `make test-all` | all packages | pytest + vitest |
 
 ---
@@ -51,7 +61,8 @@ All tests run from the **repository root**. Every package has a `make test-<name
 
 - Python packages: tests live in `<package>/tests/`, mirroring the package structure.
 - React app: tests live in `apps/ze-web/src/**/*.test.ts(x)`.
-- Run from the repo root — never `cd` into a package to run tests in CI or docs.
+- Run from the repo root — never `cd` into a package to run tests in CI or docs. The
+  Makefile targets handle any `cd` themselves.
 
 ### Default pytest invocation
 
@@ -67,7 +78,10 @@ Pass `SLOW=1` to include slow tests (embedding model load in ze-core):
 make test-core SLOW=1
 ```
 
-`make test-all` sets `SLOW=1` automatically and runs every package target plus `test-web`.
+`make test-py` runs every Python package target. It keeps going when a suite fails, then
+exits non-zero and names each failed target. CI runs `make test-py`, so a local run matches CI.
+
+`make test-all` runs `make test-py` with `SLOW=1`, then `test-web`.
 
 ### Direct pytest (fallback)
 
@@ -85,8 +99,8 @@ uv run pytest apps/ze-api/tests -k test_health -q
 | Change location | Run |
 |---|---|
 | Any Python package | `make test-<name>` for that package |
-| Multiple packages / unsure | `make test-all` |
-| Before opening a PR | `make test`, `make lint`, and `make test-web` if ze-web changed |
+| Multiple packages / unsure | `make test-py` (what CI runs) or `make test-all` |
+| Before opening a PR | `make lint` and `make test-py`; `make typecheck-web` and `make test-web` if ze-web or @ze/ui changed |
 | Embedding / routing internals | `make test-core SLOW=1` or `make test-all` |
 
 ---
@@ -94,6 +108,6 @@ uv run pytest apps/ze-api/tests -k test_health -q
 ## Adding a new package
 
 1. Create `<package>/tests/` with at least one test module.
-2. Add a `test-<short-name>` target to the Makefile (keep the list in `TEST_PY_PACKAGES` in sync).
+2. Add a `test-<short-name>` target to the Makefile and add it to `TEST_PY_PACKAGES`. CI runs only the targets in that list.
 3. Document the target in the package README `## Testing` section.
 4. Add a row to the table in this file.
