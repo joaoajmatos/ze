@@ -20,6 +20,7 @@ from ze_plugin.contribution import EvidenceRef
 from ze_sdk.memory import candidate_from_procedure, ProcedureSourceKind
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.model_resolution import resolve_model
+from ze_agents.types import GateDecision
 from ze_logging import get_logger
 from ze_core.orchestration.state import AgentState
 from ze_automation.workflow.retry import (

@@ -7,7 +7,7 @@ import { useTraceStore } from "@/features/trace-state";
 import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
 import { useWorkspaceRunEventsQuery } from "@/entities/workspace";
 
-type WorkspaceChipTrace = WsTraceUpdateFrame & {
+type WorkspaceChipTrace = Omit<WsTraceUpdateFrame, "workspace"> & {
   workspace?: {
     unavailable?: boolean;
     script_ran?: boolean;

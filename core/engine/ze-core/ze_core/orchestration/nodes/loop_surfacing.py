@@ -68,7 +68,7 @@ def _build_component(mentions: list) -> dict:
         "title": "Still open",
         "items": [
             {
-                "id": m.source_id,
+                "id": str(m.source_id),
                 "source_kind": m.source_kind,
                 "title": m.title,
                 "mention_text": m.mention_text,

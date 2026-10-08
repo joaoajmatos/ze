@@ -19,13 +19,13 @@ def test_load_persona_has_expected_counts():
     narrative = load_persona()
     assert narrative.name == "Alex"
     assert narrative.communication_style == "direct"
-    assert len(narrative.facts) == 37
-    assert len(narrative.episodes) == 6
+    assert len(narrative.facts) == 62
+    assert len(narrative.episodes) == 10
     assert len(narrative.contacts) == 4
     assert len(narrative.reminders) == 2
     assert len(narrative.messages) == 8
-    assert len(narrative.entities) == 22
-    assert len(narrative.relationships) == 42
+    assert len(narrative.entities) == 44
+    assert len(narrative.relationships) == 92
 
 
 def test_load_persona_fact_ids_match_manifest():
@@ -45,7 +45,7 @@ def test_load_persona_message_with_trace():
 def test_load_persona_source_episode_link():
     narrative = load_persona()
     linked = [f for f in narrative.facts if f.source_episode_id is not None]
-    assert len(linked) == 3
+    assert len(linked) == 7
 
 
 def test_load_persona_graph_ids_match_manifest():
@@ -57,7 +57,7 @@ def test_load_persona_graph_ids_match_manifest():
 def test_load_persona_facts_link_to_entities():
     narrative = load_persona()
     linked = [f for f in narrative.facts if f.subject_id is not None]
-    assert len(linked) == 37
+    assert len(linked) == 62
     entity_ids = {entity.id for entity in narrative.entities}
     assert all(fact.subject_id in entity_ids for fact in linked)
 
@@ -67,9 +67,9 @@ def test_load_persona_memory_variety():
     unreviewed = [f for f in narrative.facts if not f.reviewed]
     contradicted = [f for f in narrative.facts if f.contradicted]
     synthesized = [f for f in narrative.facts if f.provenance == "synthesized"]
-    assert len(unreviewed) == 5
+    assert len(unreviewed) == 9
     assert len(contradicted) == 1
-    assert len(synthesized) == 1
+    assert len(synthesized) == 2
     assert all(ep.summary for ep in narrative.episodes)
     assert len({ep.days_ago for ep in narrative.episodes}) > 1
 
@@ -81,10 +81,10 @@ def test_load_persona_graph_covers_all_entity_types():
     by_type = {}
     for e in narrative.entities:
         by_type.setdefault(e.entity_type, []).append(e)
-    assert len(by_type["person"]) == 7
-    assert len(by_type["place"]) == 4
-    assert len(by_type["org"]) == 2
-    assert len(by_type["topic"]) == 9
+    assert len(by_type["person"]) == 14
+    assert len(by_type["place"]) == 7
+    assert len(by_type["org"]) == 6
+    assert len(by_type["topic"]) == 17
 
 
 def test_load_persona_alex_is_graph_hub():

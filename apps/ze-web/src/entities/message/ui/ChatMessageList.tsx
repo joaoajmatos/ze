@@ -11,6 +11,8 @@ interface ChatMessageListProps {
   typingText?: string | null;
   streamingText?: string | null;
   className?: string;
+  deliveryFailed?: boolean;
+  onRetry?: () => void;
 }
 
 export function ChatMessageList({
@@ -19,6 +21,8 @@ export function ChatMessageList({
   typingText,
   streamingText,
   className,
+  deliveryFailed = false,
+  onRetry,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const highlightMessageId = useSession((s) => s.highlightMessageId);
@@ -27,7 +31,7 @@ export function ChatMessageList({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, showTyping, streamingText]);
+  }, [messages.length, showTyping, streamingText, deliveryFailed]);
 
   useEffect(() => {
     if (!highlightMessageId) return;
@@ -77,6 +81,20 @@ export function ChatMessageList({
         </ChatErrorBoundary>
       )}
       {showTyping && !streamingText && <TypingIndicator text={typingText} />}
+      {deliveryFailed && !showTyping && (
+        <div
+          role="alert"
+          className="mx-auto flex w-fit items-center gap-3 rounded-pill border border-foreground/15 px-4 py-2 text-xs text-foreground"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0" />
+          <span>Something went wrong. Ze did not reply.</span>
+          {onRetry && (
+            <button type="button" onClick={onRetry} className="text-plum-voltage underline">
+              Retry
+            </button>
+          )}
+        </div>
+      )}
       <div ref={bottomRef} />
     </div>
   );

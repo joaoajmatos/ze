@@ -27,7 +27,7 @@ const childNavLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex-1 flex flex-col items-center py-3 gap-1 text-[10px] transition-colors",
+    "flex-1 min-w-0 flex flex-col items-center py-3 gap-1 text-[11px] tracking-tighter whitespace-nowrap transition-colors",
     isActive ? "text-foreground" : "text-smoke",
   );
 
@@ -127,7 +127,12 @@ export function AppShell() {
         </div>
 
         <div className="p-2 border-t border-border">
-          <NavLink to={`/${settingsNavRoute.path}`} className={navLinkClass}>
+          <NavLink
+            to={`/${settingsNavRoute.path}`}
+            aria-label={settingsNavRoute.label}
+            title={settingsNavRoute.label}
+            className={navLinkClass}
+          >
             <Settings className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:block">{settingsNavRoute.label}</span>
           </NavLink>
@@ -140,7 +145,7 @@ export function AppShell() {
             <TopBarActionsProvider>
               <TopBar />
               <NoticeBanner />
-              <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
+              <div className="flex-1 overflow-y-auto pb-32 md:pb-0">
                 <Outlet />
               </div>
             </TopBarActionsProvider>

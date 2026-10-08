@@ -163,7 +163,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 114 | [Agent Skills](phases/114-agent-skills/spec.md) | ✅ Implemented |
 | 115 | [Workspace Environment](phases/115-workspace-sidecar/spec.md) | ✅ Implemented |
 | 116 | [Workspace Follow-Through](phases/116-workspace-follow-through/spec.md) | ✅ Implemented (User Story 4's busy rule delivered by 129) |
-| 117 | [Web UI HIG Audit Fixes](phases/117-web-hig-fixes/spec.md) | 🔄 In Progress |
+| 117 | [Web UI HIG Audit Fixes](phases/117-web-hig-fixes/spec.md) | ✅ Implemented |
 | 118 | [Chart Visualization](phases/118-chart-visualization/spec.md) | ✅ Implemented |
 | 119 | [Memory Graph Charts](phases/119-memory-graph-charts/spec.md) | ✅ Implemented |
 | 120 | [Usage Dashboard Charts](phases/120-usage-dashboard-charts/spec.md) | ✅ Implemented |
@@ -209,8 +209,9 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 160 | [E5 Routing Confidence](phases/160-e5-routing-confidence/spec.md) | ✅ Implemented |
 | 161 | [Workspace Chat-First](phases/161-workspace-chat-first/spec.md) | ✅ Implemented |
 | 162 | [System One Client](phases/162-system-one-client/spec.md) | ✅ Implemented |
-| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
+| 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | ✅ Implemented |
 | 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | 🔲 Pending (spec drafted — depends on 162) |
+| — | Assistant Response Feedback and Retry (split from [117](phases/117-web-hig-fixes/spec.md) US9: per-reply feedback, retry, store + endpoint) | 🔲 Stub — no spec yet |
 
 ## Ze Core specs (`core/`)
 

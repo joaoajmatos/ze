@@ -6,17 +6,29 @@
 
 ## Summary
 
-Fix 13 UI/UX and correctness issues found in a live Apple-HIG-grounded audit of
-`apps/ze-web`, confirmed by resizing the running app across mobile/tablet/desktop
-widths and by reproducing a stuck-chat-loading bug end-to-end against a live
-backend. Three are correctness bugs (chat replies that never render, a
-navigation dead-zone at tablet width, an unreliable contextual-panel
-open/dismiss interaction); the rest are accessibility, layout-adaptability, and
-content-polish gaps. All work is scoped to `apps/ze-web` (React/TypeScript,
-Feature-Sliced Design); no new backend endpoints or schema changes are
-expected — User Story 1 may require a backend-side root-cause check of the
-WebSocket delivery path, but the fix itself is expected to land client-side
-(see Research, Unknown 1).
+> **Amended 2026-10-08** after a re-audit (see spec.md Clarifications). The original
+> "13 issues, ze-web only, no backend" framing is superseded. US3, US6, US11 and the
+> FR-014 part of US10 are already done. US8 is deferred. US9 is split into a future
+> phase except for a static AI-disclosure line. US1 now has a traced root cause that
+> includes **backend** defects, so this phase has two independently testable blocks.
+
+**[WEB] block** (`apps/ze-web`, FSD): US1 client recovery (bounded watchdog, history
+check, visible retry, clear thinking on socket close, no blanket clear on reconnect,
+`thread_id` on the ephemeral send); US2+US7 `md` click flyout with accessible names;
+US4 launcher spacing; US5 route-derived panel label; US10 mobile label size and
+back-button target; US3 desktop X nit; US9 static AI-disclosure line.
+
+**[BE] block** (`apps/ze-api`, independent of the web block; picked up after phase 163):
+1. One failed send must not null the shared socket. `ConnectionManager.push` and
+   `send_frame` set `self._ws = None` on any exception (`connection.py:123-138`) even
+   though the socket may still be open. The reply is stored (`native.py:103`) but later
+   pushes silently no-op. Confirmed mechanism; the trigger (for example a trace that
+   fails JSON serialization in `native.py:115-122`) is suspected.
+2. Send a terminal frame when a turn yields no response (`turns.py:122` has no `else`).
+3. Tag `error` frames with `thread_id` (`endpoint.py:199-203` "thread_id required").
+
+Web recovery (watchdog plus history check) guarantees US1 regardless of which backend
+path fails, so the web block can ship before the backend block.
 
 ## Technical Context
 
@@ -24,7 +36,7 @@ WebSocket delivery path, but the fix itself is expected to land client-side
 
 **Primary Dependencies**: React Router, TanStack Query, Zustand (`useWsStore`, `useSession`, `useOverlayStore`), Tailwind CSS v4 (`@theme` tokens in `globals.css`), framer-motion (`ContextOverlay`), `@myguyze/ze-client` (typed WS/REST SDK) — all already in use, no new dependencies anticipated
 
-**Storage**: N/A — no schema or persistence changes; all fixes are client-side rendering/interaction/layout logic. User Story 1 may touch `ze_api/interface/native.py` (WS frame delivery) if the root cause turns out to be server-side, but no data model changes either way.
+**Storage**: N/A — no schema or persistence changes. The [BE] block touches `apps/ze-api/ze_api/api/websocket/{connection,endpoint,turns}.py` and `ze_api/interface/native.py`; no migrations.
 
 **Testing**: Vitest + React Testing Library (`src/**/*.test.ts(x)`), existing pattern (see `ConfirmBar.test.tsx`, `MessageBubble.test.tsx`, `session-store.test.ts` for the closest analogues to the components touched here). `make test-web`.
 
@@ -34,9 +46,9 @@ WebSocket delivery path, but the fix itself is expected to land client-side
 
 **Performance Goals**: No new performance targets; existing WS/render performance must not regress. The stuck-loading fix (User Story 1) should resolve within the same time budget replies already take today (no slower perceived latency).
 
-**Constraints**: Must not change the WS message contract's external shape (`@myguyze/ze-client` types) unless User Story 1's root cause requires it — if so, treat that as a deliberate, called-out exception, not a silent change. Must preserve existing dark-only visual theme (out of scope per audit — not itself a finding this feature addresses).
+**Constraints**: `WsErrorFrame` already declares optional `thread_id` (`apps/ze-api/ze_api/api/schemas.py:686`), so tagging error frames needs no schema or `@myguyze/ze-client` change; the server just has to populate it. Must not change the WS message contract's external shape (`@myguyze/ze-client` types) unless User Story 1's root cause requires it — if so, treat that as a deliberate, called-out exception, not a silent change. Must preserve existing dark-only visual theme (out of scope per audit — not itself a finding this feature addresses).
 
-**Scale/Scope**: 10 user stories / 13 findings across 4 areas of one frontend app (`AppShell`/`NavGroup` navigation, `ContextOverlay`, `SettingsWorkspace`, `useChatWorkspace`/`MessageBubble` chat loop). No multi-user or scale dimension — Ze is single-user (Constitution Principle II).
+**Scale/Scope**: (amended) 7 in-scope stories; 4 already done, 1 deferred, 1 split out. Originally 10 user stories / 13 findings across 4 areas of one frontend app (`AppShell`/`NavGroup` navigation, `ContextOverlay`, `SettingsWorkspace`, `useChatWorkspace`/`MessageBubble` chat loop). No multi-user or scale dimension — Ze is single-user (Constitution Principle II).
 
 ## Constitution Check
 
@@ -47,7 +59,7 @@ WebSocket delivery path, but the fix itself is expected to land client-side
 | I. Spec-First Development | Yes | Spec exists at `specs/phases/117-web-hig-fixes/spec.md`, status will move to `implemented` in the same commit as the code per this principle. |
 | II. Single-User Model | Yes | No user-scoping introduced; all fixes are UI/interaction-level. Pass. |
 | III. Layered Package Architecture | No | This feature is entirely within `apps/ze-web` (a leaf app, not a `core`/`plugin`/`integration` package) — the layering rule doesn't apply here beyond ze-web's own internal FSD layer order (`pages → widgets → features → entities → shared`), which every fix below respects (no new cross-layer violations introduced). |
-| IV. Typed, Explicit Python | No | No Python changes expected. If User Story 1's root cause is server-side, any touched code in `ze_api`/`ze_core` must still follow this principle (typed errors, no bare `Exception`, `get_logger`). |
+| IV. Typed, Explicit Python | Yes ([BE] block) | Touched `ze_api` code follows typed errors and `get_logger`. Narrow the broad `except Exception` in socket send paths where practical. |
 | V. Test Discipline (NON-NEGOTIABLE) | Yes | Every user story below ships with a Vitest test per FSD slice touched, following the existing `ConfirmBar.test.tsx`/`session-store.test.ts` patterns. `make test-web` and `make lint` must pass before any story is considered done. |
 | VI. Explicit Persistence | No | No schema changes. |
 | VII. One LLM Gateway, Local Embeddings | No | Not touched. |
@@ -93,14 +105,13 @@ apps/ze-web/src/
 │       └── useChatWorkspace.ts    # US1 (stuck loading)
 ├── entities/
 │   ├── message/ui/
-│   │   ├── MessageBubble.tsx      # US9 (feedback/retry affordance)
-│   │   └── ChatMessageList.tsx    # US9 (AI-disclosure copy placement), if the
-│   │                                #     reminder lives at the list/empty-state level
+│   │   ├── ChatInput.tsx          # US9 (static AI-disclosure line only; feedback/retry split out)
+│   │   └── ChatMessageList.tsx    # US1 (delivery-failed retry row)
 │   └── session/model/
 │       └── session-store.ts       # US1 (only if root cause is thread_id related)
 ├── shared/
 │   ├── config/
-│   │   └── nav-routes.ts          # US8 (tab-bar overflow grouping)
+│   │   └── nav-routes.ts          # US5 (getRouteLabel shared with TopBar); US8 deferred
 │   ├── ui/layout/
 │   │   └── TopBar.tsx             # US10 (back-button tap target)
 │   └── api/                       # US1 (WS frame handling, if client-side fix)
@@ -108,10 +119,12 @@ apps/ze-web/src/
     ├── workflows/, goals/          # US10 (humanized workflow/goal titles — display only)
 ```
 
-Backend (only if Research, Unknown 1, concludes the root cause is server-side):
+Backend ([BE] block, confirmed in scope):
 
 ```text
-core/engine/ze-core/ze_core/... or apps/ze-api/ze_api/interface/native.py
+apps/ze-api/ze_api/api/websocket/connection.py, endpoint.py, turns.py
+apps/ze-api/ze_api/interface/native.py
+apps/ze-api/tests/api/ (new WS delivery tests)
 ```
 
 **Structure Decision**: Single existing web app (`apps/ze-web`), FSD layout

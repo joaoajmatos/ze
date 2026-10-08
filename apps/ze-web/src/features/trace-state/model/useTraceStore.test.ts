@@ -35,10 +35,6 @@ function tracesVisibleFor(threadId: string): string[] {
 describe("per-thread trace isolation", () => {
   beforeEach(() => {
     useTraceStore.setState({
-      traces: [],
-      pending: false,
-      pendingTrace: null,
-      hydrating: false,
       byThread: {},
     });
   });

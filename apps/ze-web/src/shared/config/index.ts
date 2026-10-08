@@ -15,6 +15,8 @@ export {
   KnowledgeIcon,
   SystemIcon,
   settingsNavRoute,
+  getRoute,
+  getRouteLabel,
   mobileNavRoutes,
   settingsDataSectionId,
   settingsDataPath,

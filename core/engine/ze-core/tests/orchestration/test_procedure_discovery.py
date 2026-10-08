@@ -4,20 +4,10 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from ze_agents.types import AgentContext, AgentResult, GateDecision, ToolCall
-from ze_core.conversation.messages.types import ProcedureUsageTrace
 from ze_core.orchestration.nodes.context import fetch_context
-from ze_core.orchestration.nodes.trace import record_trace
-from ze_core.orchestration.procedure_activation import (
-    complete_procedure_invocation,
-    record_guided_actions,
-)
 from ze_memory.procedures.types import (
-    CapabilityDecision,
     MatchState,
-    ProcedureActionOutcome,
     ProcedureMatch,
-    ProcedureOutcome,
 )
 from ze_memory.types import MemoryContext
 

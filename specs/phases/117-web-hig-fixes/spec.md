@@ -4,9 +4,38 @@
 
 **Created**: 2026-08-19
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Fix the UI/UX and correctness issues found in today's Apple HIG design audit of ze-web, covering the app shell/navigation, Settings page, the contextual chat overlay, and the chat send/receive loop."
+
+## Clarifications
+
+### Session 2026-10-08
+
+Scope was re-audited against current `apps/ze-web` (post phases 118-122, 159, 162). The user answered five scope questions:
+
+- Q: Does US1 include backend fixes? → A: Yes. US1 is [BE]+[WEB]. Backend: harden the push-failure path so one failed send cannot null the socket, send a terminal frame on an empty response, tag `error` frames with `thread_id`. Web: watchdog with bounded wait, history check, visible retry, clear thinking on socket close, no blanket clear on reconnect. plan.md's "ze-web only" claim is amended.
+- Q: Keep US9 (feedback, retry) in 117? → A: No. It becomes its own future phase (feedback store, endpoint, migration chain, retry semantics). 117 ships only the static AI-disclosure line (FR-011, second sentence).
+- Q: What does the `md` sidebar do for grouped items (US2)? → A: A click flyout from each group icon.
+- Q: Keep US8 (mobile "More" overflow)? → A: Deferred until a ninth route exists. Not in 117 tasks.
+- Q: How is the panel label fixed (US5)? → A: Derive it from the current route in `ContextOverlay`, not from `FloatingButton` registration.
+
+### Re-audit status (2026-10-08, verified against code)
+
+| Item | Status | Evidence |
+|---|---|---|
+| US1 chat stuck on thinking | Open, in scope ([BE]+[WEB]) | `useChatWorkspace.ts:219` sets thinking; cleared only by message/error frame or reconnect (`ws-client.ts:69`). Backend causes in plan.md. |
+| US2 nav unreachable at `md` | Open, in scope | `NavGroup.tsx:120` children `hidden lg:grid`; chevron `hidden lg:flex` (`:108`) |
+| US3 panel close | **Done** (nit only) | Escape: `ContextOverlay.tsx:87,201`; close controls `:130`, `:264-272`. Desktop control is a chevron; swap to X is a P3 nit (T020). |
+| US4 launcher collision | Open, in scope | `FloatingButton.tsx:23` `bottom-20 right-6`; scroll area only `pb-16` (`AppShell.tsx:143`) |
+| US5 panel label | Open, in scope | `overlay-store.ts:36` default `"chat"`; only 4 pages call `FloatingButton` |
+| US6 Settings width | **Done** | `SettingsWorkspace.tsx:57-58` `max-w-4xl` + `lg:grid-cols-2` |
+| US7 icon-only names | Open, in scope | `NavGroup.tsx:56,80`; Settings link `AppShell.tsx:130-133` |
+| US8 mobile overflow | **Deferred** | Needs a ninth route |
+| US9 feedback/retry | **Split out** (AI-disclosure line stays) | No feedback UI or endpoint exists |
+| US10 mobile label size, back target | Open, in scope | `AppShell.tsx:30` `text-[10px]`; `TopBar.tsx:49` `py-1.5 px-2` |
+| US10 / FR-014 humanized names | **Done** | `shared/lib/humanize.ts`, used in `WorkflowCard`, `GoalCard` |
+| US11 / FR-015-018 Open Sky | **Done** | `globals.css:54` `--font-display`, `:117` `sky-settle`; see Implementation status below |
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -80,6 +109,8 @@ require widening the window first.
 ---
 
 ### User Story 3 - The contextual assistant panel can always be closed (Priority: P1)
+
+> **Status 2026-10-08**: Main part DONE; desktop X-icon nit remains (T020).
 
 Opening the floating contextual chat panel (via the launcher button or a
 keyboard shortcut) currently offers no visible close control, and the
@@ -164,6 +195,8 @@ label matches the current page every time, for both trigger methods.
 
 ### User Story 6 - The Settings page uses the space it's given (Priority: P2)
 
+> **Status 2026-10-08**: DONE 2026-08-19, verified 2026-10-08.
+
 On a wide window (a typical laptop or desktop display), the Settings page
 currently renders as a narrow, fixed-width column pinned to the left edge,
 leaving most of the window empty. After the fix, Settings makes reasonable
@@ -215,6 +248,8 @@ navigation control announces a meaningful name.
 
 ### User Story 8 - Mobile navigation stays easy to scan as more sections are added (Priority: P3)
 
+> **Status 2026-10-08**: DEFERRED until a ninth route exists.
+
 The bottom navigation bar on small screens already fits more destinations
 than the core app defines, once additional sections from installed
 add-ons are included — currently 8 items, with no room to add more without
@@ -241,6 +276,8 @@ existing ones.
 ---
 
 ### User Story 9 - People can react to and trust assistant responses (Priority: P3)
+
+> **Status 2026-10-08**: SCOPE CUT: only the static AI-disclosure line ships in 117; feedback/retry is a future phase.
 
 Right now, an assistant reply offers no way to give quick feedback (good or
 bad) or ask for another attempt, and nothing in the chat reminds people
@@ -270,6 +307,8 @@ somewhere in the chat surface.
 ---
 
 ### User Story 10 - Small interface polish across navigation and content (Priority: P4)
+
+> **Status 2026-10-08**: FR-014 part DONE; mobile label size and back-target remain.
 
 A handful of minor rough edges: mobile navigation labels render smaller
 than comfortably readable, a back-navigation control has a cramped tap
@@ -302,6 +341,8 @@ human-friendly text rather than raw internal identifiers.
 ---
 
 ### User Story 11 - A visual identity that reads as Ze's own, not a template (Priority: P3)
+
+> **Status 2026-10-08**: DONE 2026-08-19, verified 2026-10-08.
 
 The app today reads as generic: a flat black background with one accent
 color and a single unpaired body typeface is one of the most common
@@ -380,8 +421,8 @@ point rather than three static dots.
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST ensure every sent chat message reaches a
-  visible terminal state (reply shown, or a clear failure/retry state)
+- **FR-001** ([BE]+[WEB]): The system MUST ensure every sent chat message reaches a
+  visible terminal state within a bounded wait of 120 seconds (single constant, tunable) (reply shown, or a clear failure/retry state)
   without requiring the person to manually reload the app.
 - **FR-002**: The system MUST NOT lose a completed reply — if live delivery
   to the open session fails, the reply MUST still be retrievable the next
@@ -405,11 +446,11 @@ point rather than three static dots.
 - **FR-009**: The Settings page MUST adapt its layout to make reasonable
   use of the available window width, rather than remaining a fixed-width
   column regardless of window size.
-- **FR-010**: The mobile bottom navigation MUST remain comfortably tappable
+- **FR-010** (DEFERRED 2026-10-08 with US8, no tasks until a ninth route exists): The mobile bottom navigation MUST remain comfortably tappable
   and legible as the number of available navigation destinations grows,
   via an overflow/"more" pathway rather than shrinking every item
   indefinitely.
-- **FR-011**: Each assistant chat reply MUST offer a lightweight way to
+- **FR-011** (2026-10-08: only the AI-disclosure sentence is in 117; feedback/retry is a future phase): Each assistant chat reply MUST offer a lightweight way to
   give positive or negative feedback and to request a retry. The chat
   surface (e.g. near the composer or a new conversation's empty state)
   MUST also present a brief, unobtrusive reminder that responses are
@@ -436,6 +477,27 @@ point rather than three static dots.
   pill button/input shapes, or uppercase button-label convention — scope
   is limited to neutrals, typography, and the one signature motion moment
   (User Story 11, Acceptance Scenario 4).
+
+**Implementation status ([WEB] block, 2026-10-08)**: T010-T026 applied in
+`apps/ze-web` (commits `dcf8af11` W1, `ab6f506d` W2, `4334ab65` W3, plus W4).
+US1 client recovery: delivery watchdog in `useChatWorkspace.ts` (120 s idle
+bound, reset by typing/token frames, history check through `useMessages().reload()`,
+visible "Something went wrong. Retry" row via `ChatMessageList`), thinking
+cleared on socket close and on a silent half-open socket (`ws-client.ts`),
+no blanket clear on reconnect, `thread_id` on every send, untagged `error`
+frames ignored by hooks without a send in flight. US2/US7: click flyout at
+`md` plus `aria-label`/`title` on icon-only controls (`NavGroup.tsx`,
+`AppShell.tsx`). US5/US3/US4: route-derived panel label through
+`getRoute`/`getRouteLabel` (`shared/config/nav-routes.ts`) and
+`resolveOverlayScreen`, desktop X close, `pb-32` mobile scroll clearance.
+US10/US9: `text-[11px]` mobile labels, 44 px back target, static AI-disclosure
+line under the composer (`ChatInput.tsx`, shared by chat and overlay).
+Verification: `make test-web` equivalent (`bun run test` in `apps/ze-web`):
+49 files, 184 tests passed. `bun run lint`: 103 problems, identical to the
+pre-change baseline (none introduced). `tsc -b`: 12 errors, all in files this
+block did not touch (no `typecheck-web` target exists). The [BE] block
+(T001-T009, T028) and the quickstart manual pass at 390/800/1280 px are
+still open, so `Status` stays `Ready to implement`.
 
 **Implementation status (2026-08-19)**: FR-015 through FR-017 are applied
 at the token/shared-component level — `apps/ze-web/src/app/styles/globals.css`

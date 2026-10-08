@@ -1,0 +1,2 @@
+# Vendored third-party skill scripts are not ours to lint.
+extend-exclude = [".claude"]

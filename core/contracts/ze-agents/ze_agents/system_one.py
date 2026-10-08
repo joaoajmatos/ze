@@ -62,4 +62,6 @@ class SystemOneClient(Protocol):
         self,
         state: str | dict,
         questions: dict[str, SystemOneQuestion],
+        *,
+        max_attempts: int | None = None,
     ) -> SystemOneResult: ...

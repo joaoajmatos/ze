@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from ze_logging import get_logger
 
 from ze_memory.defaults import MODEL_SYNTHESIS
-from ze_memory.types import Event, Fact, SpeechAct
+from ze_memory.types import Event, Fact, FactAdmission, SpeechAct
 
 if TYPE_CHECKING:
     from ze_memory.types import Entity
@@ -69,6 +69,20 @@ Respond with JSON only — no markdown:
  "facts": [{"value": "what was revealed", "confidence": 0.0-1.0}]}
 facts must be empty unless speech_act is fact. Predicate of each kept fact is the family name.
 """
+
+
+_VALUE_SYSTEM = """You phrase one durable fact about the USER.
+
+The user message has already been judged a durable self-fact. Write the fact
+itself as a short, third-person-free statement in the user's own language
+(for example "prefers aisle seats"). Do not classify. Do not add facts the
+user did not state. If there is nothing worth keeping, return an empty list.
+
+Respond with JSON only — no markdown:
+{"facts": [{"value": "what was revealed"}]}
+"""
+
+_VALUE_CONFIDENCE = 0.8
 
 
 def fact_extraction_model(settings: Any = None) -> str:
@@ -236,6 +250,43 @@ async def extract_facts(
     except Exception as exc:
         log.warning("memory_fact_extraction_failed", error=str(exc))
         return []
+
+
+async def write_fact_values(
+    client: Any,
+    *,
+    prompt: str,
+    response: str,
+    family: str,
+    model: str,
+) -> list[Fact]:
+    """Narrowed value writer: phrases fact text only; the family is already decided."""
+    try:
+        raw = await client.complete(
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"User said: {prompt}\n\nAssistant replied: {response[:1000]}",
+                }
+            ],
+            model=model,
+            system=_VALUE_SYSTEM,
+            max_tokens=200,
+        )
+        parsed = json.loads(_strip_json_fence(raw))
+    except Exception as exc:
+        log.warning("memory_fact_value_writer_failed", error=str(exc))
+        return []
+    items = parsed.get("facts") if isinstance(parsed, dict) else None
+    if not isinstance(items, list):
+        return []
+    return raw_to_facts(
+        [
+            {"predicate": family, "value": str(item["value"]), "confidence": _VALUE_CONFIDENCE}
+            for item in items
+            if isinstance(item, dict) and item.get("value")
+        ]
+    )
 
 
 _EVENT_SYSTEM = (
@@ -451,11 +502,11 @@ async def gather_fact_proposals(
     agent: str,
     prompt: str,
     response: str,
-) -> list[Fact]:
-    """LLM-extract durable facts from the turn. Explicit remember writes are tools."""
+) -> FactAdmission:
+    """Admit durable facts from the turn. Explicit remember writes are tools."""
     client = configurable.get("openrouter_client")
-    if client is None:
-        return []
+    if client is None or is_trivial_turn(prompt) or response.startswith("[ERROR]"):
+        return FactAdmission(path="none")
 
     settings = configurable.get("settings")
     settings_dict = (
@@ -464,6 +515,77 @@ async def gather_fact_proposals(
         else settings
     )
     model = fact_extraction_model(settings_dict)
+
+    from ze_memory.speech_act_judge import (
+        SPEECH_ACT_QUESTIONS,
+        build_state,
+        decide,
+        speech_act_surface_config,
+    )
+
+    surface = speech_act_surface_config(settings)
+    skip_reason: str | None = None
+    if surface.enabled and not surface.calibrated:
+        log.warning("speech_act_system_one_uncalibrated")
+        skip_reason = "uncalibrated"
+
+    system_one = configurable.get("system_one_client")
+    if surface.calibrated and system_one is not None:
+        try:
+            result = await system_one.evaluate(
+                build_state(prompt, response), SPEECH_ACT_QUESTIONS, max_attempts=1
+            )
+        except Exception as exc:
+            log.warning("speech_act_system_one_call_failed", error=str(exc))
+            extracted = await extract_facts(
+                client, prompt=prompt, response=response, model=model
+            )
+            for fact in extracted:
+                fact.agent = agent
+            return FactAdmission(facts=extracted, path="haiku", skip_reason="error")
+        decision = decide(result, surface)
+        log.info(
+            "speech_act_system_one_decision",
+            kind=decision.kind,
+            reason=decision.reason,
+            family=decision.family,
+            latency_ms=result.latency_ms,
+        )
+        question_ids = tuple(SPEECH_ACT_QUESTIONS)
+        if decision.kind != "skip":
+            facts: list[Fact] = []
+            if decision.kind == "persist":
+                facts = await write_fact_values(
+                    client,
+                    prompt=prompt,
+                    response=response,
+                    family=decision.family or "",
+                    model=model,
+                )
+            for fact in facts:
+                fact.agent = agent
+            return FactAdmission(
+                facts=facts,
+                path="system_one",
+                judgment=result,
+                question_ids=question_ids,
+                consumed=decision.consumed,
+            )
+        if decision.reason == "invalid_answer":
+            log.warning("speech_act_system_one_invalid_answer")
+        extracted = await extract_facts(
+            client, prompt=prompt, response=response, model=model
+        )
+        for fact in extracted:
+            fact.agent = agent
+        return FactAdmission(
+            facts=extracted,
+            path="haiku",
+            judgment=result,
+            question_ids=question_ids,
+            skip_reason=decision.reason,
+        )
+
     extracted = await extract_facts(
         client,
         prompt=prompt,
@@ -472,4 +594,4 @@ async def gather_fact_proposals(
     )
     for fact in extracted:
         fact.agent = agent
-    return extracted
+    return FactAdmission(facts=extracted, path="haiku", skip_reason=skip_reason)

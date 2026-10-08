@@ -55,17 +55,13 @@ async def handle_command(
     if name == "cancel":
         thread_id = data.get("thread_id") or ""
         if not thread_id:
-            await conn_mgr.send_frame(
-                {"type": "error", "detail": "thread_id required"}
-            )
+            await conn_mgr.send_frame({"type": "error", "detail": "thread_id required"})
             return
         try:
             await container.abort_invocation(thread_id)
         except Exception as exc:
             log.warning("ws_cancel_abort_failed", error=str(exc))
-        _drop_thread_pendings(
-            pending_configs, thread_pending_requests, thread_id
-        )
+        _drop_thread_pendings(pending_configs, thread_pending_requests, thread_id)
         await conn_mgr.send_frame({"type": "confirm_cancel", "id": ""}, thread_id)
         return
 
@@ -107,7 +103,8 @@ async def handle_command(
         except Exception as exc:
             log.warning("ws_onboarding_command_failed", error=str(exc))
             await conn_mgr.send_frame(
-                {"type": "error", "detail": "Could not start onboarding."}
+                {"type": "error", "detail": "Could not start onboarding."},
+                data.get("thread_id") or None,
             )
         return
 
@@ -128,7 +125,8 @@ async def handle_command(
         except Exception as exc:
             log.warning("ws_reset_preview_failed", error=str(exc))
             await conn_mgr.send_frame(
-                {"type": "error", "detail": "Could not preview reset."}
+                {"type": "error", "detail": "Could not preview reset."},
+                data.get("thread_id") or None,
             )
         return
 
@@ -150,7 +148,8 @@ async def handle_command(
         except Exception as exc:
             log.warning("ws_reset_failed", error=str(exc))
             await conn_mgr.send_frame(
-                {"type": "error", "detail": "Could not reset state."}
+                {"type": "error", "detail": "Could not reset state."},
+                data.get("thread_id") or None,
             )
         return
 

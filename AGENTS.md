@@ -173,6 +173,7 @@ ze/                           # monorepo root
 ├── sidecar/                  # Docker sidecars: browser/ (Playwright), workspace/ (isolated computer)
 ├── eval/                     # Eval test data and entrypoints (uses core/ops/ze-eval)
 │   ├── scenarios/            # YAML scenario definitions — edit these to add tests
+│   ├── calibration/          # System One calibration sets + runner (make calibrate-speech-act)
 │   ├── results/              # JSON run outputs (gitignored)
 │   ├── run.py                # CLI: python eval/run.py [--judge] [--tag X] [report]
 │   └── server.py             # MCP server: python eval/server.py
@@ -236,7 +237,7 @@ make help            # full target list
 
 # Setup
 make install         # Python workspace deps (uv sync)
-make web-install     # React web app deps (bun install)
+make web-install     # JS workspace deps — ze-web, @ze/ui, @ze/client (bun install at repo root)
 
 # Database
 make db-up           # start Postgres via Docker
@@ -252,16 +253,19 @@ make logs            # tail the server log file
 # Testing
 make test            # ze-api tests (skips slow embedding tests)
 make test-<name>     # any package — see docs/testing.md
-make test-all        # all packages, including slow
+make test-py         # every Python package suite; reports all failures (CI gate)
+make test-all        # test-py with slow tests, then test-web
 make test-web        # @ze/ui + React web app (vitest)
+make typecheck-web   # tsc --noEmit for ze-web and @ze/ui
 
 # Code quality
-make lint            # ruff lint across all Python packages
+make lint            # ruff lint across the repo (ruff.toml excludes .claude/)
 make format          # ruff format + fix across all Python packages
 
 # Evals
 make dev-eval        # backend for evals — no dev seed data, PUBLIC_URL cleared (background jobs still start)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
+make calibrate-speech-act  # LIVE System One run over eval/calibration/speech_act.jsonl; costs credits
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)
@@ -559,6 +563,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 114 | Agent Skills — new core `ze-skills` package: import `SKILL.md` from a URL or zip, pending-review gate before any conversation effect, embedding-similarity + `/skill-name` matching applied globally across agents, `allowed-tools` intersects (never unions) an agent's tools, usage on `MessageTrace.skills_used`/`trace_update`; bundled skills via `ZePlugin.bundled_skill_paths()`; daily `SkillRecheckJob` reverts to pending review on source content change; `GET/POST /api/v0/skills` + `widgets/skill-management` | Implemented |
 | 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Implemented |
 | 116 | Workspace Follow-Through — wait-then-detach workspace runs, automatic follow-up turn on the same thread, push when offline, cancel; one-run-at-a-time busy rule delivered by Phase 129 (`_refusal_if_busy`) | Implemented |
+| 117 | Web HIG fixes — chat always resolves (delivery watchdog + retry state in ze-web; backend keeps the socket on unserializable frames, JSON-safe `trace_update`, terminal `error` frame for empty turns, `thread_id` on error frames), md-width nav flyout + accessible names, route-derived contextual panel label, mobile launcher/nav polish, static AI disclosure; feedback/retry split to a later phase | Implemented |
 | 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Implemented |
 | 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Implemented |
 | 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Implemented |
@@ -604,7 +609,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
 | 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
 | 162 | System One client — `SystemOneClient` Protocol (`ze_agents/system_one.py`) for typed judgments (noul / choice / score); `OpenRouterSystemOneClient` + `DisabledSystemOneClient` in `ze_core/openrouter/system_one.py`; `system_one:` config block, off by default; no routing or admission change yet | Implemented |
-| 163 | Speech-Act System One — System One replaces the LLM speech-act/family judge in fact extraction; same closed sets, fail open to the current extractor (depends on 162) | Draft (queued) |
+| 163 | Speech-act System One — post-turn fact admission judged by System One (`speech_act`/family Choice + biography Noul), pure-code persist/hold/skip, Haiku value writer on persist, Haiku judge on skip, single attempt (`evaluate(max_attempts=1)`), judgments on the trace; surface off with null bars until `make calibrate-speech-act` | Implemented |
 | 164 | Routing Choice After E5 — E5 stays the shortlist; a typed System One Choice decides single-specialist trust and a graded complexity question replaces the word-count classifier (depends on 162) | Draft (queued) |
 
 ## graphify

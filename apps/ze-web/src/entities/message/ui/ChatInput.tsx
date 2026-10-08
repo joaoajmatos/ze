@@ -133,6 +133,9 @@ export function ChatInput({
           <ArrowUp className="size-4" />
         </motion.button>
       </div>
+      <p className="px-4 pb-1 pt-2 text-center text-[11px] text-smoke">
+        Ze is AI and can make mistakes.
+      </p>
     </div>
   );
 }
