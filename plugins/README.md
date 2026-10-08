@@ -17,8 +17,8 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 
 | Package | Description |
 |---------|-------------|
-| [ze-personal](ze-personal/) | Personal-assistant domain — goals, workflows, persona, contacts, research and companion agents |
-| [ze-email](ze-email/) | Gmail channel and email agent |
+| [ze-personal](ze-personal/) | Personal-assistant domain — persona, contacts, onboarding, research and companion agents (goals and workflows live in `core/automation/ze-automation`) |
+| [ze-messenger](ze-messenger/) | Cross-channel messenger agent, inbound message polling, and Gmail tools |
 | [ze-calendar](ze-calendar/) | Calendar, reminders, and timezone domain |
 | [ze-prospecting](ze-prospecting/) | Autonomous prospect research, campaign store, outreach drafting |
 | [ze-news](ze-news/) | News ingestion, personalized ranking, credibility analysis, news agent |
@@ -26,12 +26,15 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 
 ## Dependency graph
 
+Each package's `pyproject.toml` declares these dependencies. Note the cycle: `ze-personal` and `ze-news` depend on each other.
+
 ```
-ze-personal    ←  ze-sdk
-ze-email       ←  ze-sdk, ze-google, ze-personal
-ze-calendar    ←  ze-sdk, ze-google, ze-personal
+ze-personal    ←  ze-sdk, ze-news, ze-automation, ze-priority, ze-components, ze-seed
+ze-messenger   ←  ze-sdk, ze-google, ze-personal
+ze-calendar    ←  ze-sdk, ze-google, ze-personal, ze-components, ze-seed
 ze-prospecting ←  ze-sdk, ze-browser, ze-personal
-ze-news        ←  ze-sdk, ze-memory
+ze-news        ←  ze-sdk, ze-personal, ze-components
+ze-finance     ←  ze-sdk, ze-ingestion, ze-trading212
 ```
 
 ## Adding a new plugin

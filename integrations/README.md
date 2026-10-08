@@ -4,7 +4,8 @@ External service integration packages. Each package wraps a third-party API or
 protocol and exposes a clean interface for Ze packages to consume.
 
 **Rule:** an `integrations/` package has no Ze domain knowledge and no dependency
-on `plugins/` or `apps/`. It depends only on third-party libraries.
+on `plugins/` or `apps/`. Most depend only on third-party libraries. `ze-google`,
+`ze-browser`, and `ze-yt` also depend on `core/` packages (see the dependency graph).
 
 Package READMEs follow [docs/package-readme-template.md](../docs/package-readme-template.md).
 Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md](../docs/testing.md).
@@ -15,18 +16,20 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 
 | Package | Description |
 |---------|-------------|
-| [ze-google](ze-google/) | Google OAuth2 credentials and service client factories (Calendar, Gmail) |
+| [ze-google](ze-google/) | Google OAuth2 credentials, service client factories (Calendar, Gmail), and `GmailChannel` |
 | [ze-trading212](ze-trading212/) | Trading212 REST API v0 client (portfolio, orders, history, instruments) |
 | [ze-browser](ze-browser/) | HTTP client for the Playwright browser sidecar |
 | [ze-notifications](ze-notifications/) | Push notification abstraction (ntfy) |
+| [ze-yt](ze-yt/) | `yt-dlp` audio fetcher for video URLs (YouTube, Instagram, TikTok, Vimeo, X); `ze-ingestion` registers it when installed |
 
 ## Dependency graph
 
 ```
-ze-google         ←  no ze deps
+ze-google         ←  ze-communication
 ze-trading212     ←  no ze deps
-ze-browser        ←  no ze deps
+ze-browser        ←  ze-core
 ze-notifications  ←  no ze deps
+ze-yt             ←  ze-ingestion
 ```
 
 ## Where new code goes
@@ -39,8 +42,8 @@ ze-notifications  ←  no ze deps
 | New push notification backend | `ze-notifications` |
 | Any other third-party API wrapper | create `ze-<service>/` here |
 
-`plugins/` (which have domain knowledge) and `apps/ze-api` (which wires everything
-together) consume integration packages.
+`plugins/` (which have domain knowledge), `core/ops/ze-ingestion`, and `apps/ze-api`
+(which wires everything together) consume integration packages.
 
 ## Integration contract
 
@@ -59,7 +62,8 @@ def from_settings(cls, settings) -> "MyCredentials | None":
 ```
 
 Rules:
-1. **No Ze imports** — integration packages have zero Ze dependencies.
+1. **No plugin or app imports** — `ze-trading212` and `ze-notifications` have no Ze
+   imports. `ze-google`, `ze-browser`, and `ze-yt` import only `core/` packages.
 2. **Duck-typed settings** — read named attributes; never import `ze_api.settings.Settings`.
    Add required env var fields to `ze_api/settings.py` as `Optional[str] = None`.
 3. **Return `None` when unconfigured** — plugins enforce required credentials in `startup()`.
