@@ -127,7 +127,12 @@ export function AppShell() {
         </div>
 
         <div className="p-2 border-t border-border">
-          <NavLink to={`/${settingsNavRoute.path}`} className={navLinkClass}>
+          <NavLink
+            to={`/${settingsNavRoute.path}`}
+            aria-label={settingsNavRoute.label}
+            title={settingsNavRoute.label}
+            className={navLinkClass}
+          >
             <Settings className="w-4 h-4 flex-shrink-0" />
             <span className="hidden lg:block">{settingsNavRoute.label}</span>
           </NavLink>

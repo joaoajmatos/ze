@@ -52,10 +52,10 @@
 **Goal**: Every nav destination is reachable at md width and every icon-only control has an accessible name.
 **Independent test**: render `NavGroup`/`AppShell` at md width; clicking a group icon opens a flyout listing all children; every control has an accessible name.
 
-- [ ] T016 [US2] [WEB] Add tests in `apps/ze-web/src/widgets/app-shell/ui/NavGroup.test.tsx` (new): group button has accessible name = group label; clicking opens a flyout containing all child links; Escape and outside click close it; active child marks the group active.
-- [ ] T017 [US2] [WEB] Implement the md click flyout in `apps/ze-web/src/widgets/app-shell/ui/NavGroup.tsx`: below `lg`, render children in an absolutely-positioned popover anchored to the group button (children currently sit in `hidden lg:grid`, `:120`). Keep the inline accordion at `lg+`. Make sure the sidebar `overflow-y-auto` container (`AppShell.tsx:66`) does not clip it (portal or `fixed` positioning). Depends on T016.
-- [ ] T018 [US7] [WEB] Add `aria-label={label}` and `title={label}` to the group button and `href` NavLink in `NavGroup.tsx:56,80`, and to the Settings link in `AppShell.tsx:130-133`. Add `aria-expanded`/`aria-haspopup` on the group button. Depends on T016.
-- [ ] T019 [US2] [WEB] Active indication at md (US2 AC3): when a child route is active, show the group icon with the active pill (`bg-plum-voltage/15`) in `NavGroup.tsx:85-88`, not only a text color change. Covered by T016. Depends on T017.
+- [x] T016 [US2] [WEB] Add tests in `apps/ze-web/src/widgets/app-shell/ui/NavGroup.test.tsx` (new): group button has accessible name = group label; clicking opens a flyout containing all child links; Escape and outside click close it; active child marks the group active.
+- [x] T017 [US2] [WEB] Implement the md click flyout in `apps/ze-web/src/widgets/app-shell/ui/NavGroup.tsx`: below `lg`, render children in an absolutely-positioned popover anchored to the group button (children currently sit in `hidden lg:grid`, `:120`). Keep the inline accordion at `lg+`. Make sure the sidebar `overflow-y-auto` container (`AppShell.tsx:66`) does not clip it (portal or `fixed` positioning). Depends on T016.
+- [x] T018 [US7] [WEB] Add `aria-label={label}` and `title={label}` to the group button and `href` NavLink in `NavGroup.tsx:56,80`, and to the Settings link in `AppShell.tsx:130-133`. Add `aria-expanded`/`aria-haspopup` on the group button. Depends on T016.
+- [x] T019 [US2] [WEB] Active indication at md (US2 AC3): when a child route is active, show the group icon with the active pill (`bg-plum-voltage/15`) in `NavGroup.tsx:85-88`, not only a text color change. Covered by T016. Depends on T017.
 
 ## Phase W3: US5 and US4 contextual panel (P2)
 
