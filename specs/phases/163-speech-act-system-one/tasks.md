@@ -212,12 +212,12 @@
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] **T033** [P] [DOCS] Document the `system_one` block and `surfaces.speech_act` keys: off by default, uncalibrated bars, the calibration command, and the fact that the Noul bar is not the Choice bar. · `docs/configuration.md`
-- [ ] **T034** [P] [DOCS] Update the admission section. The post-turn judge is System One when calibrated: a Haiku value writer on persist, the Haiku judge on skip, and judgments on the trace. `admit_*` remain the filters. · `specs/core/ze-memory.md`
-- [ ] **T035** [P] [DOCS] Mark sequencing step 2 / O1 as Implemented and set Appendix A's "Extractor `speech_act`" row to System One with Haiku fallback. Record the value-writer and single-attempt decisions as notes under O1. · `specs/arch/system-one-models.md`
-- [ ] **T036** [P] [DOCS] Add the phase-table row `163 | Speech-act System One — …` with status Implemented. · `AGENTS.md`
-- [ ] **T037** [BE] Run `make test-agents test-core test-memory test lint`. SC-005: confirm every new test injects a fake `SystemOneClient` or mocks `httpx` transport, and that no new test constructs `OpenRouterSystemOneClient` against a real transport. Fix any failures. · repo root
-- [ ] **T038** [DOCS] Set spec `**Status**:` to Implemented. · `specs/phases/163-speech-act-system-one/spec.md`
+- [x] **T033** [P] [DOCS] Document the `system_one` block and `surfaces.speech_act` keys: off by default, uncalibrated bars, the calibration command, and the fact that the Noul bar is not the Choice bar. · `docs/configuration.md`
+- [x] **T034** [P] [DOCS] Update the admission section. The post-turn judge is System One when calibrated: a Haiku value writer on persist, the Haiku judge on skip, and judgments on the trace. `admit_*` remain the filters. · `specs/core/ze-memory.md`
+- [x] **T035** [P] [DOCS] Mark sequencing step 2 / O1 as Implemented and set Appendix A's "Extractor `speech_act`" row to System One with Haiku fallback. Record the value-writer and single-attempt decisions as notes under O1. · `specs/arch/system-one-models.md`
+- [x] **T036** [P] [DOCS] Add the phase-table row `163 | Speech-act System One — …` with status Implemented. · `AGENTS.md`
+- [x] **T037** [BE] Run `make test-agents test-core test-memory test lint`. SC-005: confirm every new test injects a fake `SystemOneClient` or mocks `httpx` transport, and that no new test constructs `OpenRouterSystemOneClient` against a real transport. Fix any failures. · repo root
+- [x] **T038** [DOCS] Set spec `**Status**:` to Implemented. · `specs/phases/163-speech-act-system-one/spec.md`
 
 ---
 
