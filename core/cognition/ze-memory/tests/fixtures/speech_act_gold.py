@@ -91,7 +91,15 @@ PERSIST = [
     _turn("peanut-en", "en", "I'm allergic to peanuts.", "Good to know.", "fact", "constraint", True),
     _turn("peanut-pt", "pt", "Sou alérgico a amendoins.", "Bom saber.", "fact", "constraint", True),
 ]
-NON_FACT = REMINDER + LOOP + GOAL + INGEST + DROP
+DENTIST_CANCEL = [
+    _turn("dentist-cancel-en", "en", "Forget the dentist.", "Cancelled the dentist reminder.", "reminder", "drop"),
+    _turn("dentist-cancel-pt", "pt", "Esquece o dentista.", "Cancelei o lembrete do dentista.", "reminder", "drop"),
+]
+AISLE_RETRACT = [
+    _turn("aisle-forget-en", "en", "Forget that I like aisle seats.", "Okay, forgotten.", "forget", "drop"),
+    _turn("aisle-forget-pt", "pt", "Esquece que prefiro lugar no corredor.", "Esquecido.", "forget", "drop"),
+]
+NON_FACT = REMINDER + LOOP + GOAL + INGEST + DROP + DENTIST_CANCEL + AISLE_RETRACT
 
 
 class FakeSystemOneClient:

@@ -106,3 +106,62 @@ async def test_client_called_once_with_single_attempt_and_minimal_state():
     assert call["max_attempts"] == 1
     assert call["state"] == build_state(turn.user, turn.assistant)
     assert call["questions"] is SPEECH_ACT_QUESTIONS
+
+
+# ── US2: cancel language is not forget-biography ─────────────────────────────
+
+from tests.fixtures.speech_act_gold import AISLE_RETRACT, DENTIST_CANCEL  # noqa: E402
+
+
+@pytest.mark.parametrize("turn", DENTIST_CANCEL, ids=lambda t: t.id)
+async def test_dentist_cancel_is_reminder_and_writes_nothing(turn):
+    configurable, llm, _ = _configurable(turn.result())
+    admission = await _gather(turn, configurable)
+    assert turn.act == "reminder"
+    assert admission.judgment.answers["speech_act"].choice == "reminder"
+    assert admission.facts == []
+    assert admission.consumed == frozenset({"speech_act"})
+    llm.complete.assert_not_awaited()
+
+
+@pytest.mark.parametrize("turn", AISLE_RETRACT, ids=lambda t: t.id)
+async def test_aisle_retract_is_forget_and_writes_nothing(turn):
+    configurable, llm, _ = _configurable(turn.result())
+    admission = await _gather(turn, configurable)
+    assert admission.judgment.answers["speech_act"].choice == "forget"
+    assert admission.facts == []
+    assert admission.consumed == frozenset({"speech_act"})
+    llm.complete.assert_not_awaited()
+
+
+def _criteria(label: str) -> str:
+    return SPEECH_ACT_QUESTIONS["speech_act"].criteria[label].lower()
+
+
+def test_forget_criterion_encodes_cancel_versus_retract_rule():
+    text = _criteria("forget")
+    assert "reminder, loop or goal" in text
+    assert "cancel" in text
+    assert "esquece que prefiro" in text
+
+
+def test_reminder_criterion_owns_cancelling_a_ping_with_pt_example():
+    text = _criteria("reminder")
+    assert "cancel" in text
+    assert "esquece o dentista" in text
+
+
+@pytest.mark.parametrize("label", ["loop", "goal"])
+def test_loop_and_goal_criteria_own_abandoning_them(label):
+    text = _criteria(label)
+    assert any(word in text for word in ("abandon", "drop", "cancel"))
+
+
+async def test_unknown_label_from_client_is_dropped_not_persisted():
+    turn = PERSIST[0]
+    result = turn.result()
+    result.answers["speech_act"].choice = "remind"
+    configurable, llm, _ = _configurable(result)
+    admission = await _gather(turn, configurable)
+    assert admission.facts == []
+    llm.complete.assert_not_awaited()

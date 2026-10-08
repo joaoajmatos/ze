@@ -139,8 +139,8 @@
 
 ### Tests (fail-first)
 
-- [ ] **T022** [P] [BE] [US2] Add the dentist-cancel and aisle-retract gold rows (EN+PT) to the fixtures. · `core/cognition/ze-memory/tests/fixtures/speech_act_gold.py`
-- [ ] **T023** [P] [BE] [US2] Fail-first:
+- [x] **T022** [P] [BE] [US2] Add the dentist-cancel and aisle-retract gold rows (EN+PT) to the fixtures. · `core/cognition/ze-memory/tests/fixtures/speech_act_gold.py`
+- [x] **T023** [P] [BE] [US2] Fail-first:
   - the dentist rows give `hold`/`not_fact` with `speech_act` consumed and answer `reminder`;
   - the aisle rows give `hold`/`not_fact` with answer `forget`;
   - neither calls `complete`;
@@ -151,7 +151,7 @@
 
 ### Implementation
 
-- [ ] **T024** [BE] [US2] Tighten the `forget` / `reminder` / `loop` / `goal` criteria in `SPEECH_ACT_QUESTIONS`. Cancel, drop or abandon aimed at a ping, loop or goal is that act. Only retracting a standing self-fact is `forget`. Include the PT examples. · `core/cognition/ze-memory/ze_memory/speech_act_judge.py`
+- [x] **T024** [BE] [US2] Tighten the `forget` / `reminder` / `loop` / `goal` criteria in `SPEECH_ACT_QUESTIONS`. Cancel, drop or abandon aimed at a ping, loop or goal is that act. Only retracting a standing self-fact is `forget`. Include the PT examples. · `core/cognition/ze-memory/ze_memory/speech_act_judge.py`
 
 **Checkpoint**: SC-002 holds on the mocked gold pair.
 

@@ -200,6 +200,30 @@
       "kind": "complete",
       "by": "Keel",
       "at": "2026-10-08T01:58:08.852Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:56.336Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:56.473Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:56.605Z"
     }
   ],
   "telemetryInstanceId": "d72ee565-e763-4979-aa08-66499afd756d",
@@ -253,7 +277,7 @@
     "area: ze_memory/extractor.py speech_act",
     "constraint: 142 routing table; 148 dual-write skip"
   ],
-  "currentTask": "T021",
+  "currentTask": "T024",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -336,6 +360,18 @@
       "did": "implemented"
     },
     "T021": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T024": {
       "status": "DONE",
       "did": "implemented"
     }

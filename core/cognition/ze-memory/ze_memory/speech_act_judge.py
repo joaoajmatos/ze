@@ -27,22 +27,28 @@ _SPEECH_ACT_CRITERIA: dict[str, str] = {
         "'my sister is called Ana'."
     ),
     "forget": (
-        "The user asks to erase something they said about themselves. "
-        "Examples: 'forget that I like aisle seats', 'esquece que prefiro lugar no corredor'."
+        "Only when the user retracts a standing fact they told you about themselves. "
+        "Examples: 'forget that I like aisle seats', 'esquece que prefiro lugar no corredor'. "
+        "Cancel, drop or abandon aimed at a reminder, loop or goal is NOT forget: "
+        "'forget the dentist' cancelling a ping is reminder."
     ),
     "reminder": (
-        "The user wants a ping at a specific time or date. Time wins over biography. "
+        "The user wants a ping at a specific time or date, or cancels one. "
+        "Time wins over biography. "
         "Examples: 'remind me Tuesday at 3 to call the dentist', 'remember to call Mom at 3', "
-        "'lembra-me terça às 3 de ligar ao dentista'."
+        "'lembra-me terça às 3 de ligar ao dentista'. "
+        "Cancelling a ping is reminder, not forget: 'forget the dentist', 'esquece o dentista'."
     ),
     "loop": (
-        "The user voices a lingering concern or open question to keep an eye on, with no date. "
-        "Examples: 'I need to figure out whether to switch jobs', "
-        "'preciso de decidir se mudo de emprego'."
+        "The user voices a lingering concern or open question to keep an eye on, with no date, "
+        "or drops one. Examples: 'I need to figure out whether to switch jobs', "
+        "'preciso de decidir se mudo de emprego'. "
+        "Dropping the concern is loop, not forget: 'forget the job switch', 'esquece a mudança de emprego'."
     ),
     "goal": (
-        "The user states a multi-week outcome they want to achieve. "
-        "Examples: 'I want to ship the thesis by June', 'quero acabar a tese até junho'."
+        "The user states a multi-week outcome they want to achieve, or abandons one. "
+        "Examples: 'I want to ship the thesis by June', 'quero acabar a tese até junho'. "
+        "Abandoning the goal is goal, not forget: 'cancel the thesis goal', 'esquece a meta da tese'."
     ),
     "ingest": (
         "The user hands over material to read, import or store, such as a link, document or "
