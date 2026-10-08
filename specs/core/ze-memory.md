@@ -22,7 +22,13 @@ subsystem runs an offline consolidation loop.
   goal-learning promotion, companion `remember_fact`) go through `submit_perception_facts`
   (contribution seam + NLI). There is no public `MemoryStore.propose_facts` and no
   `AgentResult.memory_proposals` persist door. Post-turn `extractor.py` is a keep/drop
-  admission gate: closed families (`identity`, `preference`, `relationship`, `constraint`,
+  admission gate. When `system_one.surfaces.speech_act` is enabled and calibrated
+  (phase 163), a System One judge (`speech_act_judge.py`: `speech_act` Choice, family
+  Choice, biography Noul) decides persist, hold or skip in pure code. Persist runs a
+  narrowed Haiku value writer that returns fact text only; the family is System One's.
+  Hold writes nothing and makes no generative call. Skip (client skip, malformed answer,
+  uncalibrated bar) runs the pre-163 Haiku judge once. Judgments land on the message
+  trace. `admit_speech_act` / `admit_family` remain the label filters. Closed families (`identity`, `preference`, `relationship`, `constraint`,
   `contact_detail`), `speech_act` must be `fact` or `facts` is `[]`. Explicit remember stamps
   `PROMPT_SUPPLIED` + `reviewed=true`. Companion user-visible remembered/forgotten
   confirmations are earned on the turn path (`remember_fact` / `forget_fact` payload

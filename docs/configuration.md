@@ -331,6 +331,31 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ---
 
+### `system_one:`
+
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. Everything is off by default.
+
+```yaml
+system_one:
+  enabled: false                  # Master switch. Off → every call skips with reason "disabled"
+  model: typesafe/jev-1.13
+  timeout_ms: 2000                # Per attempt
+  surfaces:
+    speech_act:                   # Post-turn fact admission (Phase 163)
+      enabled: false
+      choice_hold: null           # uncalibrated — set from make calibrate-speech-act
+      biography_hold: null        # uncalibrated — set from make calibrate-speech-act
+```
+
+When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
+
+The two bars are not the same number:
+
+- `choice_hold` is the minimum peakedness for the act and family answers.
+- `biography_hold` is the minimum yes-probability that the message states a durable fact about the user.
+
+If you enable the surface and leave a bar `null`, Ze logs `speech_act_system_one_uncalibrated` and uses the Haiku judge. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-speech-act`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.speech_act.enabled` to `true`. Run it again when you change the model.
+
 ## `config/persona.yaml`
 
 Controls Ze's tone and personality across all agent responses via named profiles and

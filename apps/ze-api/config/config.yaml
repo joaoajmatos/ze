@@ -18,7 +18,11 @@ system_one:
   enabled: false
   model: typesafe/jev-1.13
   timeout_ms: 2000
-  surfaces: {}
+  surfaces:
+    speech_act:
+      enabled: false
+      choice_hold: null      # uncalibrated — set from make calibrate-speech-act
+      biography_hold: null   # uncalibrated — set from make calibrate-speech-act
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.

@@ -551,6 +551,7 @@ capability_check → execute_tool → (compound?) → synthesize → write_memor
 | 159 | Concurrent thread identity (99 remainder: per-thread trace/cancel; 4000 stays) | Implemented |
 | 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
 | 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
+| 163 | Speech-act System One — post-turn fact admission judged by System One (`speech_act`/family Choice + biography Noul), pure-code persist/hold/skip, Haiku value writer on persist, Haiku judge on skip, single attempt (`evaluate(max_attempts=1)`), judgments on the trace; surface off with null bars until `make calibrate-speech-act` | Implemented |
 
 ## graphify
 

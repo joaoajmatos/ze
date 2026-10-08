@@ -64,3 +64,63 @@ async def test_extract_facts_empty_object_returns_empty():
         client, prompt="I'll call Mom Tuesday", response="ok", model="m"
     )
     assert facts == []
+
+
+# ── gather_fact_proposals returns FactAdmission (163) ────────────────────────
+
+from ze_memory.extractor import gather_fact_proposals  # noqa: E402
+from ze_memory.types import FactAdmission  # noqa: E402
+
+
+async def test_gather_surface_disabled_runs_haiku_judge():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value='{"speech_act": "fact", "family": "preference", '
+        '"facts": [{"value": "aisle seats"}]}'
+    )
+    admission = await gather_fact_proposals(
+        {"openrouter_client": client, "settings": None},
+        agent="companion",
+        prompt="I prefer aisle seats",
+        response="Noted.",
+    )
+    assert isinstance(admission, FactAdmission)
+    assert admission.path == "haiku"
+    assert admission.judgment is None
+    assert admission.consumed == frozenset()
+    assert [(f.predicate, f.value, f.agent) for f in admission.facts] == [
+        ("preference", "aisle seats", "companion")
+    ]
+    client.complete.assert_awaited_once()
+
+
+async def test_gather_without_client_is_path_none():
+    admission = await gather_fact_proposals(
+        {}, agent="companion", prompt="I prefer aisle seats", response="Noted."
+    )
+    assert admission.path == "none"
+    assert admission.facts == []
+
+
+async def test_gather_trivial_prompt_is_path_none_without_call():
+    client = AsyncMock()
+    admission = await gather_fact_proposals(
+        {"openrouter_client": client},
+        agent="companion",
+        prompt="thanks",
+        response="Anytime.",
+    )
+    assert admission.path == "none"
+    client.complete.assert_not_awaited()
+
+
+async def test_gather_error_response_is_path_none_without_call():
+    client = AsyncMock()
+    admission = await gather_fact_proposals(
+        {"openrouter_client": client},
+        agent="companion",
+        prompt="I prefer aisle seats",
+        response="[ERROR] boom",
+    )
+    assert admission.path == "none"
+    client.complete.assert_not_awaited()

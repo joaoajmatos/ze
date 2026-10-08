@@ -7,6 +7,7 @@ from typing import Any, Literal
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
+from ze_agents.system_one import SystemOneResult
 from ze_agents.types import RetrievalRequest as RetrievalRequest  # noqa: F401 — re-export
 
 
@@ -103,6 +104,18 @@ class Fact:
     relevance_score: float | None = field(default=None, compare=False)
     retrieval_provenance: str | None = field(default=None, compare=False)
     created_at: datetime | None = None
+
+
+@dataclass
+class FactAdmission:
+    """Outcome of post-turn fact admission, with the judgment that produced it."""
+
+    facts: list[Fact] = field(default_factory=list)
+    path: Literal["system_one", "haiku", "none"] = "none"
+    judgment: SystemOneResult | None = None
+    question_ids: tuple[str, ...] = ()
+    consumed: frozenset[str] = frozenset()
+    skip_reason: str | None = None
 
 
 @dataclass
