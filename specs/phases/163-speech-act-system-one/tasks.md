@@ -105,14 +105,14 @@
 
 ### Tests (fail-first)
 
-- [ ] **T016** [P] [BE] [US1] Gold fixture module: build `SystemOneResult` ok answers for EN+PT utterances: timed reminder, "remember to call Mom at 3", loop ("I need to figure out whether to switch jobs"), goal ("ship the thesis by June"), ingest, aisle-seat preference, peanut-allergy constraint. Each row holds the utterance, gold act, gold family, a high-confidence Choice distribution and a Noul. · `core/cognition/ze-memory/tests/fixtures/speech_act_gold.py`
-- [ ] **T017** [P] [BE] [US1] Fail-first `decide()` rules 5 and 10 (R7):
+- [x] **T016** [P] [BE] [US1] Gold fixture module: build `SystemOneResult` ok answers for EN+PT utterances: timed reminder, "remember to call Mom at 3", loop ("I need to figure out whether to switch jobs"), goal ("ship the thesis by June"), ingest, aisle-seat preference, peanut-allergy constraint. Each row holds the utterance, gold act, gold family, a high-confidence Choice distribution and a Noul. · `core/cognition/ze-memory/tests/fixtures/speech_act_gold.py`
+- [x] **T017** [P] [BE] [US1] Fail-first `decide()` rules 5 and 10 (R7):
   - each non-`fact` gold act gives `hold`/`not_fact` with `consumed={"speech_act"}`;
   - confident `fact`, a keep family and a Noul above the bar give `persist(family)` with all three consumed;
   - an unknown label (`"remind"`) goes through `admit_speech_act` to `drop` and gives `hold`.
 
   · `core/cognition/ze-memory/tests/test_speech_act_judge.py`
-- [ ] **T018** [P] [BE] [US1] Fail-first `gather_fact_proposals` with a calibrated config, a gold fake client and an `AsyncMock` `complete`. Cover:
+- [x] **T018** [P] [BE] [US1] Fail-first `gather_fact_proposals` with a calibrated config, a gold fake client and an `AsyncMock` `complete`. Cover:
   - reminder, loop and goal fixtures (EN+PT) give `facts==[]`, `path="system_one"` and `complete.await_count == 0`;
   - the aisle preference gives `complete` called once with the value-writer system prompt (not `_SYSTEM`), and one fact with `predicate == "preference"` and `confidence == 0.8`;
   - a value-writer response that includes `speech_act`/`family` keys still uses the System One family;
@@ -123,9 +123,9 @@
 
 ### Implementation
 
-- [ ] **T019** [BE] [US1] Implement `decide()` rules 1–5 and 10 from R7. Both labels pass through `admit_speech_act` / `admit_family`. Until US3 lands, rules 6–9 are implemented conservatively: any `fact` answer that is not confidently a keep family with a Noul at or above the bar **holds** (reason `hold`), so FR-004 is never violated by the MVP. US3 replaces this with the exact R7 reasons and rule 4. · `core/cognition/ze-memory/ze_memory/speech_act_judge.py`
-- [ ] **T020** [BE] [US1] Add the `_VALUE_SYSTEM` prompt and `write_fact_values(client, *, prompt, response, family, model) -> list[Fact]`. The output schema is `{"facts":[{"value": "..."}]}`, with `max_tokens=200` and the `fact_extraction_model` model. Ignore any act or family keys. Confidence is fixed at `0.8`. Log exceptions and return `[]`. · `core/cognition/ze-memory/ze_memory/extractor.py`
-- [ ] **T021** [BE] [US1] Wire the System One path into `gather_fact_proposals`. A calibrated surface plus a client calls `evaluate(build_state(...), SPEECH_ACT_QUESTIONS, max_attempts=1)` and then `decide`. `persist` calls `write_fact_values`; `hold` returns `[]`. Fill in `judgment`, `question_ids`, `consumed` and `path="system_one"`. Log `speech_act_system_one_decision` with kind, reason, family and latency, but never user text. · `core/cognition/ze-memory/ze_memory/extractor.py`
+- [x] **T019** [BE] [US1] Implement `decide()` rules 1–5 and 10 from R7. Both labels pass through `admit_speech_act` / `admit_family`. Until US3 lands, rules 6–9 are implemented conservatively: any `fact` answer that is not confidently a keep family with a Noul at or above the bar **holds** (reason `hold`), so FR-004 is never violated by the MVP. US3 replaces this with the exact R7 reasons and rule 4. · `core/cognition/ze-memory/ze_memory/speech_act_judge.py`
+- [x] **T020** [BE] [US1] Add the `_VALUE_SYSTEM` prompt and `write_fact_values(client, *, prompt, response, family, model) -> list[Fact]`. The output schema is `{"facts":[{"value": "..."}]}`, with `max_tokens=200` and the `fact_extraction_model` model. Ignore any act or family keys. Confidence is fixed at `0.8`. Log exceptions and return `[]`. · `core/cognition/ze-memory/ze_memory/extractor.py`
+- [x] **T021** [BE] [US1] Wire the System One path into `gather_fact_proposals`. A calibrated surface plus a client calls `evaluate(build_state(...), SPEECH_ACT_QUESTIONS, max_attempts=1)` and then `decide`. `persist` calls `write_fact_values`; `hold` returns `[]`. Fill in `judgment`, `question_ids`, `consumed` and `path="system_one"`. Log `speech_act_system_one_decision` with kind, reason, family and latency, but never user text. · `core/cognition/ze-memory/ze_memory/extractor.py`
 
 **Checkpoint**: US1 tests are green. SC-001 holds with mocked gold answers.
 

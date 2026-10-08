@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
+from ze_agents.system_one import SystemOneAnswer
 
 from ze_memory.extractor import KEEP_FAMILIES, PredicateFamily
 from ze_memory.speech_act_judge import (
@@ -105,3 +106,40 @@ def test_build_state_caps_assistant_and_has_only_two_keys():
     assert set(state) == {"user", "assistant"}
     assert state["user"] == "hi there"
     assert len(state["assistant"]) == 1000
+
+
+# ── decide(): rules 5 and 10 (US1) ────────────────────────────────────────────
+
+from ze_memory.speech_act_judge import decide  # noqa: E402
+from tests.fixtures.speech_act_gold import (  # noqa: E402
+    NON_FACT,
+    PERSIST,
+    make_result,
+)
+
+_CAL = SpeechActSurfaceConfig(enabled=True, choice_hold=0.6, biography_hold=0.7)
+
+
+@pytest.mark.parametrize("turn", NON_FACT, ids=lambda t: t.id)
+def test_non_fact_acts_hold_not_fact(turn):
+    decision = decide(turn.result(), _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "not_fact")
+    assert decision.consumed == frozenset({"speech_act"})
+    assert decision.family is None
+
+
+@pytest.mark.parametrize("turn", PERSIST, ids=lambda t: t.id)
+def test_confident_fact_persists_with_chosen_family(turn):
+    decision = decide(turn.result(), _CAL)
+    assert decision.kind == "persist"
+    assert decision.family == turn.family
+    assert decision.consumed == frozenset({"speech_act", "family", "biography"})
+
+
+def test_unknown_act_label_goes_through_admit_to_drop_and_holds():
+    result = make_result("fact", "preference")
+    result.answers["speech_act"] = SystemOneAnswer(
+        type="choice", choice="remind", confidence=0.99
+    )
+    decision = decide(result, _CAL)
+    assert (decision.kind, decision.reason) == ("hold", "not_fact")

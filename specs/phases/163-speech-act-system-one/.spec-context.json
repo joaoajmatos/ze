@@ -152,6 +152,54 @@
       "kind": "complete",
       "by": "Keel",
       "at": "2026-10-08T01:56:48.697Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:08.197Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:08.329Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:08.458Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:08.592Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:08.722Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-08T01:58:08.852Z"
     }
   ],
   "telemetryInstanceId": "d72ee565-e763-4979-aa08-66499afd756d",
@@ -205,7 +253,7 @@
     "area: ze_memory/extractor.py speech_act",
     "constraint: 142 routing table; 148 dual-write skip"
   ],
-  "currentTask": "T015",
+  "currentTask": "T021",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -264,6 +312,30 @@
       "did": "implemented"
     },
     "T015": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "implemented"
+    },
+    "T021": {
       "status": "DONE",
       "did": "implemented"
     }

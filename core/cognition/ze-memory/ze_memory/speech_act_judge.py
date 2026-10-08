@@ -9,10 +9,10 @@ import math
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from ze_agents.system_one import SystemOneQuestion
+from ze_agents.system_one import SystemOneAnswer, SystemOneQuestion, SystemOneResult
 from ze_logging import get_logger
 
-from ze_memory.extractor import PredicateFamily
+from ze_memory.extractor import PredicateFamily, admit_family, admit_speech_act
 from ze_memory.types import SpeechAct
 
 log = get_logger(__name__)
@@ -150,3 +150,37 @@ class AdmissionDecision:
     reason: str
     family: str | None = None
     consumed: frozenset[str] = frozenset()
+
+
+_ALL_QUESTIONS = frozenset(SPEECH_ACT_QUESTIONS)
+
+
+def _choice_confidence(answer: SystemOneAnswer | None) -> float:
+    return answer.confidence if answer is not None and answer.confidence is not None else 0.0
+
+
+def decide(result: SystemOneResult, cfg: SpeechActSurfaceConfig) -> AdmissionDecision:
+    """Pure admission decision over one System One result (research R7)."""
+    if result.outcome == "skip":
+        return AdmissionDecision("skip", result.skip_reason or "error")
+
+    act_answer = result.answers.get("speech_act")
+    family_answer = result.answers.get("family")
+    bio_answer = result.answers.get("biography")
+
+    if admit_speech_act(act_answer.choice if act_answer else None) is not SpeechAct.FACT:
+        return AdmissionDecision("hold", "not_fact", consumed=frozenset({"speech_act"}))
+
+    # US3 replaces this conservative tail with the exact R7 rules 4 and 6-9.
+    family = admit_family(family_answer.choice if family_answer else None)
+    bio = bio_answer.noul if bio_answer is not None and bio_answer.noul is not None else 0.0
+    if (
+        family is None
+        or cfg.choice_hold is None
+        or cfg.biography_hold is None
+        or _choice_confidence(act_answer) < cfg.choice_hold
+        or _choice_confidence(family_answer) < cfg.choice_hold
+        or bio < cfg.biography_hold
+    ):
+        return AdmissionDecision("hold", "hold", consumed=_ALL_QUESTIONS)
+    return AdmissionDecision("persist", "persist", family=family, consumed=_ALL_QUESTIONS)
