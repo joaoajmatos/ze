@@ -152,6 +152,11 @@ async def handle_message(
             trace=trace,
             message_id=outcome.message_id or None,
         )
+    else:
+        log.warning("ws_turn_empty_response", thread_id=thread_id)
+        await conn_mgr.send_frame(
+            {"type": "error", "detail": "Something went wrong."}, thread_id
+        )
 
     return None
 

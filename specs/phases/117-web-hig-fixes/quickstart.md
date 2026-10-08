@@ -65,6 +65,12 @@ the composer.
 target on the breadcrumb back button, and humanized (not raw snake_case)
 titles/statuses in Workflows/Goals lists.
 
+**US1 — Kill the socket mid-turn.** Send a message, then close the socket
+before the reply arrives (devtools offline toggle, or restart the API).
+Reconnect and confirm the composer unlocks: the reply appears from history,
+or the "Something went wrong. Retry" row shows. A turn with no response
+must end in an `error` frame tagged with the thread, never a silent hang.
+
 ## Automated checks
 
 ```bash
