@@ -16,18 +16,18 @@
 
 ## Phase B1: Delivery hardening (US1)
 
-- [ ] T001 [US1] [BE] Add a failing test in `apps/ze-api/tests/api/test_ws_delivery.py`: when `ConnectionManager.send_frame` gets a payload whose `send_json` raises `TypeError` (non-serializable), `_ws` is NOT set to None and a later `push()` still delivers. Also assert a real transport error (`RuntimeError`/closed socket) still clears `_ws`.
-- [ ] T002 [US1] [BE] Fix `ConnectionManager.push` and `send_frame` in `apps/ze-api/ze_api/api/websocket/connection.py:113-138`: only null `_ws` on transport errors (closed or disconnected socket). Serialization errors are logged with `get_logger` and the frame is dropped. Depends on T001.
-- [ ] T003 [US1] [BE] Make the `trace_update` build in `apps/ze-api/ze_api/interface/native.py:108-122` JSON-safe (serialize the trace with the same encoder used for `save_trace`, or drop unserializable fields) so it cannot raise inside the send path. Add a test in `apps/ze-api/tests/interface/` with a trace containing a non-JSON value. Depends on T002.
-- [ ] T004 [US1] [BE] Add a test in `apps/ze-api/tests/api/test_ws_delivery.py` that the assistant reply frame is still delivered after a failed `trace_update` send on the same turn (regression for the "stored but not delivered" symptom).
+- [x] T001 [US1] [BE] Add a failing test in `apps/ze-api/tests/api/test_ws_delivery.py`: when `ConnectionManager.send_frame` gets a payload whose `send_json` raises `TypeError` (non-serializable), `_ws` is NOT set to None and a later `push()` still delivers. Also assert a real transport error (`RuntimeError`/closed socket) still clears `_ws`.
+- [x] T002 [US1] [BE] Fix `ConnectionManager.push` and `send_frame` in `apps/ze-api/ze_api/api/websocket/connection.py:113-138`: only null `_ws` on transport errors (closed or disconnected socket). Serialization errors are logged with `get_logger` and the frame is dropped. Depends on T001.
+- [x] T003 [US1] [BE] Make the `trace_update` build in `apps/ze-api/ze_api/interface/native.py:108-122` JSON-safe (serialize the trace with the same encoder used for `save_trace`, or drop unserializable fields) so it cannot raise inside the send path. Add a test in `apps/ze-api/tests/interface/` with a trace containing a non-JSON value. Depends on T002.
+- [x] T004 [US1] [BE] Add a test in `apps/ze-api/tests/api/test_ws_delivery.py` that the assistant reply frame is still delivered after a failed `trace_update` send on the same turn (regression for the "stored but not delivered" symptom).
 
 ## Phase B2: Terminal frame and tagged errors (US1)
 
-- [ ] T005 [P] [US1] [BE] Add a failing test in `apps/ze-api/tests/api/test_ws.py`: when `invoke_raw_turn` returns an outcome with an empty/None `response` and not interrupted, the client receives an `error` (or equivalent terminal) frame tagged with the thread_id and the thread's busy slot is released.
-- [ ] T006 [US1] [BE] Add the missing `else` branch in `apps/ze-api/ze_api/api/websocket/turns.py` after the `if outcome.response:` block (`:122`): send `{"type":"error","detail":...}` via `conn_mgr.send_frame(..., thread_id)` and log the turn outcome. Depends on T005.
-- [ ] T007 [P] [US1] [BE] Add a failing test in `apps/ze-api/tests/api/test_ws.py`: a `message` frame without `thread_id` yields an `error` frame, and the busy-rejection and invoke-failure error frames carry `thread_id` when one is known.
-- [ ] T008 [US1] [BE] In `apps/ze-api/ze_api/api/websocket/endpoint.py:199-203` keep the "thread_id required" error but echo any `thread_id` field present in the request. Confirm every `error` frame emitted in `endpoint.py`/`turns.py` passes `thread_id` when known. `WsErrorFrame.thread_id` already exists (`schemas.py:686`), so no schema or client change. Depends on T007.
-- [ ] T009 [US1] [BE] Add a test in `apps/ze-api/tests/api/test_ws_conformance.py` that every emitted `error` frame validates against `WsErrorFrame`.
+- [x] T005 [P] [US1] [BE] Add a failing test in `apps/ze-api/tests/api/test_ws.py`: when `invoke_raw_turn` returns an outcome with an empty/None `response` and not interrupted, the client receives an `error` (or equivalent terminal) frame tagged with the thread_id and the thread's busy slot is released.
+- [x] T006 [US1] [BE] Add the missing `else` branch in `apps/ze-api/ze_api/api/websocket/turns.py` after the `if outcome.response:` block (`:122`): send `{"type":"error","detail":...}` via `conn_mgr.send_frame(..., thread_id)` and log the turn outcome. Depends on T005.
+- [x] T007 [P] [US1] [BE] Add a failing test in `apps/ze-api/tests/api/test_ws.py`: a `message` frame without `thread_id` yields an `error` frame, and the busy-rejection and invoke-failure error frames carry `thread_id` when one is known.
+- [x] T008 [US1] [BE] In `apps/ze-api/ze_api/api/websocket/endpoint.py:199-203` keep the "thread_id required" error but echo any `thread_id` field present in the request. Confirm every `error` frame emitted in `endpoint.py`/`turns.py` passes `thread_id` when known. `WsErrorFrame.thread_id` already exists (`schemas.py:686`), so no schema or client change. Depends on T007.
+- [x] T009 [US1] [BE] Add a test in `apps/ze-api/tests/api/test_ws_conformance.py` that every emitted `error` frame validates against `WsErrorFrame`.
 
 **Checkpoint A**: `make test` and `make lint` green. [BE] block mergeable on its own.
 
@@ -77,8 +77,8 @@
 # Cross-cutting [WEB]/[BE]
 
 - [x] T027 [WEB] Run `make test-web` and `bun run lint` and record results in the spec's implementation status.
-- [ ] T028 [BE] Run `make test` and `make lint`; add one eval/manual scenario note to `quickstart.md`: send a message, kill the socket mid-turn, confirm recovery.
-- [ ] T029 [WEB] Update `specs/phases/117-web-hig-fixes/spec.md` status to `Implemented` when T001-T028 are checked, using companion `write-context.py --append` then `--materialize` (never hand-edit checkboxes), and run the speckit after-implement hook.
+- [x] T028 [BE] Run `make test` and `make lint`; add one eval/manual scenario note to `quickstart.md`: send a message, kill the socket mid-turn, confirm recovery.
+- [x] T029 [WEB] Update `specs/phases/117-web-hig-fixes/spec.md` status to `Implemented` when T001-T028 are checked, using companion `write-context.py --append` then `--materialize` (never hand-edit checkboxes), and run the speckit after-implement hook.
 - [x] T030 [WEB] Open a stub spec entry in `specs/README.md` for the split-out "Assistant response feedback and retry" phase (US9 remainder) so it is not lost. No spec files beyond the index line.
 
 ---

@@ -3,7 +3,7 @@
   "specName": "Web UI HIG Audit Fixes",
   "branch": "main",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -177,9 +177,104 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-08T02:19:58.079Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:35.330Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:35.458Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:35.581Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:35.707Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:35.837Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:35.984Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:36.112Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:36.257Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:36.387Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:36.516Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "claude",
+      "at": "2026-10-08T06:54:47.890Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-08T06:54:48.235Z"
     }
   ],
-  "currentTask": "T001",
+  "currentTask": "T030",
   "task_summaries": {
     "T010": {
       "status": "DONE"
@@ -236,6 +331,39 @@
       "status": "DONE"
     },
     "T030": {
+      "status": "DONE"
+    },
+    "T001": {
+      "status": "DONE"
+    },
+    "T002": {
+      "status": "DONE"
+    },
+    "T003": {
+      "status": "DONE"
+    },
+    "T004": {
+      "status": "DONE"
+    },
+    "T005": {
+      "status": "DONE"
+    },
+    "T006": {
+      "status": "DONE"
+    },
+    "T007": {
+      "status": "DONE"
+    },
+    "T008": {
+      "status": "DONE"
+    },
+    "T009": {
+      "status": "DONE"
+    },
+    "T028": {
+      "status": "DONE"
+    },
+    "T029": {
       "status": "DONE"
     }
   }
