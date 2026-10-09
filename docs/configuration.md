@@ -326,6 +326,9 @@ skills:
 of the message against each active skill's name and description). Explicit `/skill-name`
 invocation ignores this floor.
 
+An optional System One gate can narrow automatic matches to one skill. It lives under
+[`system_one.surfaces.skills`](#surfacesskills) and ships off.
+
 Set `recheck.enabled: false` to stop the daily job. Manual
 `POST /api/v0/skills/{id}/refresh` still works.
 
@@ -351,6 +354,12 @@ system_one:
       multi_specialist_hold: null # uncalibrated — set from make calibrate-routing
       complexity_lookup_max: null # uncalibrated — set from make calibrate-routing
       shortlist_k: 4
+    skills:                       # Skill gating after E5 (Phase 166)
+      enabled: false
+      choice_trust: null          # uncalibrated — set from make calibrate-skills
+      needs_skill_hold: null      # uncalibrated — set from make calibrate-skills
+      shortlist_k: 5
+      shortlist_floor: 0.35
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -381,6 +390,28 @@ The three bars are separate numbers:
 The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.routing.enabled` to `true`.
 
 When System One routes a turn, `routing_log.confidence` holds the peakedness of the agent choice instead of the E5 cosine score. Turns that fall back to E5 keep the cosine score.
+
+#### `surfaces.skills`
+
+E5 stays the shortlist. When `skills` is on, Ze embeds the message once and keeps the
+skills that score at or above `shortlist_floor`, best first, up to `shortlist_k`. Skills named with `/skill-name` skip this step. One System One request then asks two questions. A choice picks one shortlisted skill, or `none`. A second question asks whether the request needs a skill at all. Ze makes one attempt, with no retries. Code then decides:
+
+- A confident choice of one skill, plus a high enough need score, applies that skill. It is the only automatic skill for the turn.
+- A confident `none`, or a low need score, applies no automatic skill.
+- An unsure choice, a System One skip, or an invalid answer falls back to the default rule. Every skill at or above `skills.match_threshold` applies.
+
+Explicit `/skill-name` skills always apply and stack with the chosen skill.
+
+The keys:
+
+- `choice_trust` is the minimum peakedness of the skill choice.
+- `needs_skill_hold` is the minimum probability that the request needs a skill.
+- `shortlist_k` sets how many skills the choice sees. Values below 1 fall back to 5.
+- `shortlist_floor` is the lowest cosine score that can enter the shortlist. It can sit below `skills.match_threshold`, so a paraphrase can apply when both answers clear their bars. The trace panel marks such a skill **below floor**. A value above `match_threshold` is clamped to it, with a warning.
+
+The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.skills.enabled` to `true`.
+
+`shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values are starting points until the table sets them.
 
 ## `config/persona.yaml`
 

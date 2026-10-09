@@ -15,7 +15,9 @@ instructions review gate.
 
 Matching is global across every agent. A turn picks up a skill in two ways:
 embedding similarity of the message against the skill's name + description, or an
-explicit `/skill-name` token in the message. Matched skills prepend their
+explicit `/skill-name` token in the message. An optional System One gate (off by
+default) turns similarity into a shortlist and lets a typed judgment pick at most one
+automatic skill. Matched skills prepend their
 instructions to the system prompt, intersect (never union) `allowed-tools` with the
 agent's own `tools` list, and show up on `MessageTrace.skills_used`.
 
@@ -32,7 +34,11 @@ writes the stored bytes under `/workspace` and runs them after the workspace gat
   review, remove (imported only), refresh that reverts to pending review when
   source content changes, `approve_skill_executables()` as a second gate
 - Matching (`matching.py`) — `SkillMatcher` caches embeddings of active skills,
-  cosine-compares the turn's routing embedding, and parses `/skill-name` tokens
+  cosine-compares the message (one E5 query encode in the matcher), and parses
+  `/skill-name` tokens. It returns a `SkillMatchOutcome`: the matches plus the
+  System One judgment, if one ran
+- Skill gating (`judge.py`) — shortlist, Choice + Noul questions, surface config and
+  the pure apply / drop / abstain / skip decision (phase 166)
 - Bundled skills — `ZePlugin.bundled_skill_paths()` entries register at startup as
   `source=bundled`, `status=active`, idempotent on `(slug, source)`
 - Recheck (`jobs/recheck.py`) — daily `SkillRecheckJob` re-fetches every imported
@@ -54,13 +60,14 @@ User-facing guide: [docs/skills.md](../../docs/skills.md).
 
 | Module | What it provides |
 |---|---|
-| `types.py` | `Skill`, `SkillReview`, `SkillScript`, `ReferenceFile`, `SkillMatch`, `SkillStatus` / `SkillSource` / `SkillTrigger` |
+| `types.py` | `Skill`, `SkillReview`, `SkillScript`, `ReferenceFile`, `SkillMatch` (with `below_floor`), `SkillMatchOutcome`, `SkillsJudgment`, `SkillStatus` / `SkillSource` / `SkillTrigger` |
 | `errors.py` | `SkillParseError`, `SkillNotFoundError`, `InvalidSkillTransitionError` |
 | `parser.py` | `parse_skill_md()` — YAML frontmatter + Markdown body, script-ref detection |
 | `importer.py` | `fetch_skill_source()` — HTTP fetch of a `SKILL.md` URL or zip archive |
 | `store.py` | `SkillStore` protocol, `PostgresSkillStore` |
 | `review.py` | approve / reject / disable / enable / remove / refresh / approve executables |
-| `matching.py` | `SkillMatcher` — embedding similarity + `/skill-name` invocation |
+| `matching.py` | `SkillMatcher` — embedding similarity, optional System One gate, `/skill-name` invocation |
+| `judge.py` | `SkillsSurfaceConfig`, `skills_surface_config()`, `shortlist()`, `build_questions()`, `decide()` — the gate's pure logic |
 | `rest.py` | Thin dict-returning wrappers for the `/api/v0/skills` routes |
 | `jobs/` | `SkillRecheckJob` — daily origin-URL content recheck |
 | `bootstrap.py` | `build_skills_stack()`, `build_skill_matcher()`, `register_bundled_skills()`, `register_proactive_jobs()` |
@@ -82,7 +89,20 @@ skills:
   recheck:
     enabled: true
     cron: "0 6 * * *"    # daily source-content recheck
+
+system_one:
+  surfaces:
+    skills:              # phase 166 — off until calibrated
+      enabled: false
+      choice_trust: null
+      needs_skill_hold: null
+      shortlist_k: 5
+      shortlist_floor: 0.35
 ```
+
+The gate also needs `system_one.enabled: true`. See
+[configuration.md](../../docs/configuration.md#surfacesskills). `ze-skills` imports
+`ze_agents.system_one` only; `ze-core` never imports `ze_skills`.
 
 ## Usage
 

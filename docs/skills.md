@@ -115,8 +115,43 @@ Two independent paths combine on the same turn:
 | **Explicit** | `/skill-name` in the message (slash + slug) | Always, if that skill is active |
 
 Explicit matches take precedence in the result list and still combine with any
-other automatic matches. Several skills may apply on one turn; Ze applies all of
-them.
+automatic match. By default, every skill at or above `match_threshold` applies. A
+calibrated System One gate (below) narrows that to one automatic skill.
+
+### Automatic matching with the System One gate
+
+Cosine similarity says how close two texts are. It does not say which skill fits. Two
+skills with close descriptions can both clear the threshold. A paraphrase can score
+just under it. The `system_one.surfaces.skills` surface adds a judgment after the
+similarity step. It ships off.
+
+1. **Shortlist.** The matcher embeds the message once, with the same E5 query
+   encoder as before. Skills that were not named with `/skill-name` and score at or
+   above `shortlist_floor` form the shortlist. The best `shortlist_k` stay.
+2. **Judgment.** One System One request makes one attempt, with no retries. It asks
+   two questions. A Choice picks one skill from the shortlist, or `none`. It sees only
+   each skill's name and description. A Noul (`needs_skill`) gives the probability
+   that the request needs a skill at all.
+3. **Decision.** Code reads the answers:
+
+| Outcome | When | Result |
+|---|---|---|
+| **Apply** | The Choice names a skill with peakedness at or above `choice_trust`, and `needs_skill` is at or above `needs_skill_hold` | That skill is the only automatic skill |
+| **Drop** | The Choice is `none` at or above `choice_trust`, or `needs_skill` is below `needs_skill_hold` | No automatic skill applies |
+| **Abstain** | The Choice peakedness is below `choice_trust` | The default result applies |
+| **Skip** | The surface is off or uncalibrated, System One is unavailable, or an answer is invalid | The default result applies |
+
+With an Apply or a Drop outcome, at most one automatic skill applies. This is
+narrower than the earlier rule that every skill over the threshold applies. Skills
+named with `/skill-name` bypass the judgment and still stack on top.
+
+A skill can apply below `match_threshold`, as long as it scores at or above
+`shortlist_floor` and both answers clear their bars. The trace panel marks it
+**below floor**. No skill under `shortlist_floor` applies, except by `/skill-name`.
+
+The gate fails open. If System One errors, times out, or returns a key outside the
+shortlist, the turn runs the default path. The failure never breaks the turn. Each
+judgment appears on the turn's trace with the reason for any skip.
 
 Matched skills:
 
@@ -125,7 +160,7 @@ Matched skills:
    with no list impose no extra restriction. The result only *narrows* the agent's
    tools, including platform workspace tools.
 3. Show up on `MessageTrace.skills_used` (name, source, trigger, similarity,
-   `script_ran`).
+   `below_floor`, `script_ran`).
 
 Type `/weekly-review` in chat to force that skill for the turn, even if automatic
 matching would miss it.
@@ -167,7 +202,8 @@ permission to execute it.
 
 The Mind trace panel lists every skill used on the turn: name, source
 (`bundled` / `imported`), trigger (`automatic` / `explicit`), similarity for
-automatic matches, and a **script ran** mark when
+automatic matches, a **below floor** mark when the gate applied the skill under
+`match_threshold`, and a **script ran** mark when
 `workspace_run_skill_script` succeeded.
 
 On conductor turns the same panel shows a **Conductor** section: the Haiku
@@ -279,7 +315,9 @@ skills:
     cron: "0 6 * * *"
 ```
 
-See [configuration.md](configuration.md#skills) for the full block.
+The System One gate has its own block, `system_one.surfaces.skills`. It is off until
+you calibrate it. See [configuration.md](configuration.md#skills) for the full
+blocks and [`surfaces.skills`](configuration.md#surfacesskills) for the gate.
 
 ---
 
