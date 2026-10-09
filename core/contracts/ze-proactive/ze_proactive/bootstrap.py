@@ -17,7 +17,9 @@ def shared_push_budget(settings: Any) -> int:
     every push mechanism now claims against (FR-005), for constructor injection
     into `ze-correlation`/`ze-worldstate`/`ze-priority` consumers."""
     cfg = (getattr(settings, "config", None) or {}).get("proactive", {})
-    return int(cfg.get("budget", {}).get("max_pushes_per_day", _DEFAULT_MAX_PUSHES_PER_DAY))
+    return int(
+        cfg.get("budget", {}).get("max_pushes_per_day", _DEFAULT_MAX_PUSHES_PER_DAY)
+    )
 
 
 def register_notification_jobs(

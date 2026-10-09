@@ -62,6 +62,12 @@ _PROCEDURE_INVOKE_TOOL = "invoke_procedure"
 
 log = get_logger(__name__)
 
+RETRY_WRITE_REFUSAL = (
+    "This is a retry of an earlier reply, so tools that change things are "
+    "switched off. Do not claim the action happened. Say in words what you "
+    "would do and offer to do it as a normal request."
+)
+
 MEMORY_CONSTITUTION = (
     "## Memory constitution\n"
     "Use retrieved facts silently when they change the answer. "
@@ -320,6 +326,17 @@ class BaseAgent(ABC):
 
         stored_args = _lm_args if _lm_args is not None else kwargs
         workspace_thread_id.set(ctx.session_id)
+
+        if spec.access.value == "write" and ctx.retry_mode:
+            log.info("tool_blocked_retry", tool=name, agent=self.name)
+            return ToolCall(
+                tool_name=name,
+                args=stored_args,
+                result=RETRY_WRITE_REFUSAL,
+                duration_ms=0,
+                success=False,
+                error="blocked: retry runs cannot change anything",
+            )
 
         if spec.access.value == "write" and ctx.gate_decision == GateDecision.DRAFT:
             log.info("tool_suppressed_draft", tool=name, agent=self.name)

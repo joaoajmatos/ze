@@ -38,8 +38,7 @@ def test_conversation_writes_and_runs_confirm():
         WorkspaceAction.RESET,
     ):
         assert (
-            _d(action, WorkspaceRunOrigin.CONVERSATION)
-            is WorkspaceGateDecision.CONFIRM
+            _d(action, WorkspaceRunOrigin.CONVERSATION) is WorkspaceGateDecision.CONFIRM
         )
 
 
@@ -59,9 +58,16 @@ def test_unattended_allows_write_and_run_denies_reset():
 
 
 def test_user_rest_list_and_place_allow_run_deny():
-    assert _d(WorkspaceAction.LIST, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.ALLOW
-    assert _d(WorkspaceAction.PLACE, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.ALLOW
-    assert _d(WorkspaceAction.RUN, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.DENY
+    assert (
+        _d(WorkspaceAction.LIST, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.ALLOW
+    )
+    assert (
+        _d(WorkspaceAction.PLACE, WorkspaceRunOrigin.USER)
+        is WorkspaceGateDecision.ALLOW
+    )
+    assert (
+        _d(WorkspaceAction.RUN, WorkspaceRunOrigin.USER) is WorkspaceGateDecision.DENY
+    )
     assert (
         _d(WorkspaceAction.RESET, WorkspaceRunOrigin.USER)
         is WorkspaceGateDecision.CONFIRM

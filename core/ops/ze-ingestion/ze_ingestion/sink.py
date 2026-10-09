@@ -46,9 +46,7 @@ class MemorySink:
                 fact=Fact(
                     predicate=text,
                     value=(
-                        text
-                        if source_refs
-                        else f"{text} [ingestion:{ingestion_id}]"
+                        text if source_refs else f"{text} [ingestion:{ingestion_id}]"
                     ),
                     source_refs=list(source_refs),
                 ),

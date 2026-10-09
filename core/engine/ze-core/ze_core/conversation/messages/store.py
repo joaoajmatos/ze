@@ -9,6 +9,7 @@ from uuid import UUID
 import asyncpg
 
 from ze_core.conversation.messages.types import (
+    CompactionTrace,
     JudgmentTrace,
     Message,
     MessageTrace,
@@ -35,6 +36,7 @@ class MessageStore(Protocol):
     async def get_message(self, message_id: UUID) -> Message | None: ...
     async def get_messages(self, message_ids: list[UUID]) -> dict[UUID, Message]: ...
     async def latest_assistant_id(self, thread_id: str) -> UUID | None: ...
+    async def previous_user_message(self, message_id: UUID) -> Message | None: ...
     async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool: ...
     async def save_trace(self, message_id: UUID, trace: MessageTrace) -> None: ...
     async def get_trace(self, message_id: UUID) -> MessageTrace | None: ...
@@ -187,6 +189,26 @@ class PostgresMessageStore:
             )
         return row["id"] if row is not None else None
 
+    async def previous_user_message(self, message_id: UUID) -> Message | None:
+        """The user message a reply answers: the latest one before it in its thread."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT u.id, u.role, u.text, u.components, u.read, u.thread_id,
+                       u.created_at, u.replaces, u.replaced_by
+                FROM messages a
+                JOIN messages u
+                  ON u.thread_id = a.thread_id
+                 AND u.role = 'user'
+                 AND u.created_at < a.created_at
+                WHERE a.id = $1
+                ORDER BY u.created_at DESC
+                LIMIT 1
+                """,
+                message_id,
+            )
+        return _row_to_message(row) if row is not None else None
+
     async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool:
         """Link old to its replacement; only once the replacement is stored."""
         async with self._pool.acquire() as conn:
@@ -298,6 +320,10 @@ def _parse_trace(data: dict) -> MessageTrace:
             if isinstance(raw, dict)
         ],
         effects_known=bool(data.get("effects_known", False)),
+        compaction=CompactionTrace(**data["compaction"])
+        if data.get("compaction")
+        else None,
+        resume_recap_applied=bool(data.get("resume_recap_applied", False)),
     )
 
 

@@ -74,9 +74,7 @@ class TestMarkPromoted:
     async def test_sets_promoted_at(self):
         hyp_id = uuid4()
         promoted_at = datetime.now(UTC)
-        pool, conn = _make_pool(
-            fetchrow_return=_row(hyp_id, promoted_at=promoted_at)
-        )
+        pool, conn = _make_pool(fetchrow_return=_row(hyp_id, promoted_at=promoted_at))
         store = PostgresHypothesisStore(pool=pool)
 
         result = await store.mark_promoted(hyp_id)

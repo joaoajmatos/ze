@@ -7,7 +7,14 @@ from uuid import UUID
 from ze_logging import get_logger
 from ze_sdk import DBPool
 
-from ze_skills.types import ReferenceFile, Skill, SkillReview, SkillScript, SkillSource, SkillStatus
+from ze_skills.types import (
+    ReferenceFile,
+    Skill,
+    SkillReview,
+    SkillScript,
+    SkillSource,
+    SkillStatus,
+)
 
 log = get_logger(__name__)
 
@@ -120,9 +127,7 @@ class SkillStore(Protocol):
 
     async def list_scripts(self, skill_id: UUID) -> list[SkillScript]: ...
 
-    async def get_script(
-        self, skill_id: UUID, filename: str
-    ) -> SkillScript | None: ...
+    async def get_script(self, skill_id: UUID, filename: str) -> SkillScript | None: ...
 
     async def add_review(self, review: SkillReview) -> SkillReview: ...
 
@@ -458,9 +463,7 @@ class PostgresSkillStore:
             )
         return [self._script_from_row(r) for r in rows]
 
-    async def get_script(
-        self, skill_id: UUID, filename: str
-    ) -> SkillScript | None:
+    async def get_script(self, skill_id: UUID, filename: str) -> SkillScript | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT * FROM skill_scripts WHERE skill_id = $1 AND filename = $2",
@@ -468,4 +471,3 @@ class PostgresSkillStore:
                 filename,
             )
         return self._script_from_row(row) if row else None
-

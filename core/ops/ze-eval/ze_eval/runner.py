@@ -32,7 +32,9 @@ from ze_eval.scenario import load_scenarios
 from ze_eval.scoring import outcome_correct, routing_correct, tools_correct
 from ze_eval.verifier import run_verification
 
-_DEFAULT_RESULTS_DIR = Path(__file__).parent.parent.parent.parent.parent / "eval" / "results"
+_DEFAULT_RESULTS_DIR = (
+    Path(__file__).parent.parent.parent.parent.parent / "eval" / "results"
+)
 
 
 # ── Ze chat ───────────────────────────────────────────────────────────────────

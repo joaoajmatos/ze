@@ -51,7 +51,9 @@ def _store() -> AsyncMock:
     store.insert_in_progress_run = AsyncMock(
         side_effect=lambda run: replace(run, id=uuid4())
     )
-    store.complete_run = AsyncMock(side_effect=lambda run_id, **kwargs: SimpleNamespace(id=run_id, **kwargs))
+    store.complete_run = AsyncMock(
+        side_effect=lambda run_id, **kwargs: SimpleNamespace(id=run_id, **kwargs)
+    )
     store.touch_used = AsyncMock()
     store.mark_sidecar_dispatched = AsyncMock(return_value=True)
     store.list_in_progress = AsyncMock(return_value=[])
@@ -157,7 +159,9 @@ async def test_read_and_delete():
 
 
 async def test_ingest_uses_injected_pipeline_and_does_not_delete():
-    pipeline = SimpleNamespace(ingest=AsyncMock(return_value=SimpleNamespace(facts_count=2)))
+    pipeline = SimpleNamespace(
+        ingest=AsyncMock(return_value=SimpleNamespace(facts_count=2))
+    )
     client, _ = _wire(ingestion=pipeline)
     token = workspace_confirmed.set(True)
     try:
@@ -327,13 +331,21 @@ def _in_progress_run() -> WorkspaceRun:
 
 @pytest.mark.parametrize(
     "origin",
-    [WorkspaceRunOrigin.CONVERSATION, WorkspaceRunOrigin.USER, WorkspaceRunOrigin.UNATTENDED],
+    [
+        WorkspaceRunOrigin.CONVERSATION,
+        WorkspaceRunOrigin.USER,
+        WorkspaceRunOrigin.UNATTENDED,
+    ],
 )
 async def test_workspace_run_refuses_while_another_run_in_progress(origin):
     running = _in_progress_run()
     client, store = _wire()
     store.list_in_progress = AsyncMock(return_value=[running])
-    confirm = workspace_confirmed.set(True) if origin is WorkspaceRunOrigin.CONVERSATION else None
+    confirm = (
+        workspace_confirmed.set(True)
+        if origin is WorkspaceRunOrigin.CONVERSATION
+        else None
+    )
     token = workspace_run_origin.set(origin.value)
     try:
         result = await workspace_run("echo hi")

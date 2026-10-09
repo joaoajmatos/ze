@@ -9,7 +9,9 @@ from ze_onboarding.types import StoredOnboardingSeed
 from ze_plugin.contribution import TargetFace
 
 
-def _seed(*, kind: str, key: str = "preferred_name", value: str = "Joao") -> StoredOnboardingSeed:
+def _seed(
+    *, kind: str, key: str = "preferred_name", value: str = "Joao"
+) -> StoredOnboardingSeed:
     return StoredOnboardingSeed(
         id=uuid4(),
         session_id=uuid4(),

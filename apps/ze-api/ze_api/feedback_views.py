@@ -6,7 +6,7 @@ eligibility the same way, on the server.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -45,14 +45,13 @@ async def thread_state(
     thread_id: str | None,
     *,
     message_store: Any,
-    conn_mgr: Any,
-    turn_lock: Any,
+    is_busy: Callable[[str], bool],
     confirmation_store: Any,
 ) -> ThreadState:
     if not thread_id:
         return ThreadState(latest_assistant_id=None, busy=False, pending=False)
     latest = await message_store.latest_assistant_id(thread_id)
-    busy = bool(conn_mgr.is_busy(thread_id)) or bool(turn_lock.is_locked(thread_id))
+    busy = bool(is_busy(thread_id))
     pending = bool(await confirmation_store.get_pending_for_thread(thread_id))
     return ThreadState(latest_assistant_id=latest, busy=busy, pending=pending)
 
@@ -125,8 +124,7 @@ async def build_views(
             states[message.thread_id] = await thread_state(
                 message.thread_id,
                 message_store=message_store,
-                conn_mgr=conn_mgr,
-                turn_lock=turn_lock,
+                is_busy=lambda tid: conn_mgr.is_busy(tid) or turn_lock.is_locked(tid),
                 confirmation_store=confirmation_store,
             )
         views.append(

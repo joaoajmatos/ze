@@ -376,7 +376,9 @@ async def test_plan_injects_discovery_matches(client):
             )
         ]
     )
-    planner = GoalPlanner(client=client, model="test-model", procedure_discovery=discovery)
+    planner = GoalPlanner(
+        client=client, model="test-model", procedure_discovery=discovery
+    )
     await planner.plan(_make_goal())
     content = client.complete.call_args.kwargs["messages"][0]["content"]
     assert "Inbox sweep" in content

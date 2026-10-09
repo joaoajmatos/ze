@@ -56,6 +56,9 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
     thread_id: str = config["configurable"].get("thread_id", "")
     is_eval = thread_id.startswith("eval-")
+    # Phase 165: a retry only regenerates text. It writes no episode, fact, event,
+    # entity, procedure or hook side effect; it still extends session history.
+    is_retry = bool(config["configurable"].get("retry_mode"))
 
     result: AgentResult | None = state.get("agent_result")
     final_response = state.get("final_response")
@@ -74,12 +77,13 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
     from ze_core.orchestration.procedure_activation import complete_procedure_invocation
 
-    await complete_procedure_invocation(ctx, result, config)
+    if not is_retry:
+        await complete_procedure_invocation(ctx, result, config)
 
     proposals: list = []
     admission_path = "none"
     judged_trace: Any = None
-    if not is_eval:
+    if not is_eval and not is_retry:
         embedding = embedder.encode(ctx.prompt)
         fire_and_forget(
             store.write_episode(

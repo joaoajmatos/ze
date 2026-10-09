@@ -16,9 +16,7 @@ _TRANSIENT_MARKERS = (
 )
 
 
-def is_transient_failure(
-    error: str | None, exc: BaseException | None = None
-) -> bool:
+def is_transient_failure(error: str | None, exc: BaseException | None = None) -> bool:
     if isinstance(exc, (RateLimitError, AgentTimeoutError)):
         return True
     if error is None:

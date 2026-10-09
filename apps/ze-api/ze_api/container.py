@@ -36,6 +36,7 @@ from ze_skills.bootstrap import (
 from ze_skills.store import SkillStore
 from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
 from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
+from ze_api.feedback_domain import feedback_data_domains
 from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
 from ze_priority import import_agent_modules as import_priority_agents
@@ -57,7 +58,12 @@ from ze_core.bootstrap import (
 )
 from ze_core.container import Container as CoreContainer
 from ze_core.telemetry.budget import SpendBudgetChecker, SpendBudgetConfig
-from ze_core.conversation import TurnResult, invoke_raw_turn, resume_turn
+from ze_core.conversation import (
+    TurnResult,
+    invoke_raw_turn,
+    invoke_retry_turn,
+    resume_turn,
+)
 from ze_core.conversation.confirmations import PendingConfirmationStore
 from ze_core.conversation.messages import PostgresMessageStore
 from ze_core.conversation.sessions import PostgresSessionStore
@@ -325,6 +331,21 @@ class ZeContainer(CoreContainer):
         return await _locked_invoke_raw_turn(
             self, self.turn_lock, thread_id, raw, config_extra=config_extra
         )
+
+    def is_thread_locked(self, thread_id: str) -> bool:
+        return self.turn_lock.is_locked(thread_id)
+
+    async def invoke_retry_turn(
+        self,
+        thread_id: str,
+        user_text: str,
+        *,
+        config_extra: dict | None = None,
+    ) -> TurnResult:
+        async with self.turn_lock.acquire(thread_id):
+            return await invoke_retry_turn(
+                self, thread_id, user_text, config_extra=config_extra
+            )
 
     async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:
         return await _locked_resume_turn(self, self.turn_lock, config, resume=resume)
@@ -696,6 +717,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         engine_data_domains(pool)
         + automation_data_domains(pool)
         + worldstate_data_domains(pool)
+        + feedback_data_domains(pool)
         + [d for plugin in plugins for d in plugin.data_domains()]
     )
     data_portability_service = DataPortabilityService(pool=pool, domains=all_domains)

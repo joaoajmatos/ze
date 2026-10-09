@@ -19,8 +19,17 @@ class FakeStore:
         self.notified: set = set()
         self.runs: dict = {}
 
-    async def complete_run(self, run_id, *, status, exit_code=None, output_preview="",
-                            output_file_path=None, files_touched=None, error_summary=None):
+    async def complete_run(
+        self,
+        run_id,
+        *,
+        status,
+        exit_code=None,
+        output_preview="",
+        output_file_path=None,
+        files_touched=None,
+        error_summary=None,
+    ):
         run = self.runs.get(run_id)
         if run is None or run.ended_at is not None:
             return None
@@ -85,8 +94,14 @@ class FakePushSender:
 class FakeClient:
     """Stands in for WorkspaceClient's get_run/watch_run surface."""
 
-    def __init__(self, *, events: list | None = None, status: WorkspaceRunStatusDTO | None = None,
-                 get_run_fails: bool = False, watch_fails: Exception | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        events: list | None = None,
+        status: WorkspaceRunStatusDTO | None = None,
+        get_run_fails: bool = False,
+        watch_fails: Exception | None = None,
+    ) -> None:
         self._events = events or []
         self._status = status
         self._get_run_fails = get_run_fails
@@ -113,7 +128,9 @@ class FakeEvent:
         self.type = type
 
 
-def _run(origin=WorkspaceRunOrigin.CONVERSATION, thread_id="t1", **overrides) -> WorkspaceRun:
+def _run(
+    origin=WorkspaceRunOrigin.CONVERSATION, thread_id="t1", **overrides
+) -> WorkspaceRun:
     base = dict(
         id=uuid4(),
         command="sleep 60",
@@ -155,7 +172,9 @@ async def test_detach_dispatches_followup_and_push_once():
     store = FakeStore()
     turn_starter = FakeTurnStarter()
     push_sender = FakePushSender()
-    client = FakeClient(events=[FakeEvent("stdout"), FakeEvent("exit")], status=_status())
+    client = FakeClient(
+        events=[FakeEvent("stdout"), FakeEvent("exit")], status=_status()
+    )
     watcher = RunWatcher(store, turn_starter, push_sender, client)
     run = _run()
 
@@ -233,7 +252,9 @@ async def test_reattach_terminal_status_completes_directly():
     push_sender = FakePushSender()
     run = _run()
     store.runs[run.id] = run
-    client = FakeClient(status=_status(status="failed", exit_code=1, stderr_preview="boom"))
+    client = FakeClient(
+        status=_status(status="failed", exit_code=1, stderr_preview="boom")
+    )
     watcher = RunWatcher(store, turn_starter, push_sender, client)
 
     await watcher.reattach(run)
@@ -370,7 +391,9 @@ async def test_external_watcher_does_not_affect_followthrough_dispatch():
     store = FakeStore()
     turn_starter = FakeTurnStarter()
     push_sender = FakePushSender()
-    client = FakeClient(events=[FakeEvent("stdout"), FakeEvent("exit")], status=_status())
+    client = FakeClient(
+        events=[FakeEvent("stdout"), FakeEvent("exit")], status=_status()
+    )
     watcher = RunWatcher(store, turn_starter, push_sender, client)
     run = _run()
     store.runs[run.id] = run

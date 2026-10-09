@@ -249,3 +249,14 @@ async def test_get_messages_returns_map_and_skips_empty_query():
     conn.fetch.reset_mock()
     assert await store.get_messages([]) == {}
     conn.fetch.assert_not_called()
+
+
+async def test_previous_user_message_joins_same_thread_before_reply():
+    user = _make_message(role="user", text="question")
+    pool, conn = _make_pool_mock(rows=[_make_row(user)])
+    got = await PostgresMessageStore(pool=pool).previous_user_message(uuid4())
+    assert got.text == "question"
+    sql = conn.fetchrow.call_args[0][0]
+    assert "u.role = 'user'" in sql
+    assert "u.created_at < a.created_at" in sql
+    assert "ORDER BY u.created_at DESC" in sql

@@ -99,7 +99,9 @@ def test_score_goal_match_text_includes_title_and_objective():
 
 
 def test_score_relationship_match_text_is_name():
-    item = score_relationship_staleness(RelationshipSignal(name="Maria Silva", days_ago=14))
+    item = score_relationship_staleness(
+        RelationshipSignal(name="Maria Silva", days_ago=14)
+    )
     assert item.match_text == "Maria Silva"
 
 

@@ -37,9 +37,7 @@ def _touches_from_json(raw) -> list[WorkspaceFileTouch]:
         return []
     if isinstance(raw, str):
         raw = json.loads(raw)
-    return [
-        WorkspaceFileTouch(path=item["path"], op=item["op"]) for item in raw
-    ]
+    return [WorkspaceFileTouch(path=item["path"], op=item["op"]) for item in raw]
 
 
 def _run_from_row(row) -> WorkspaceRun:

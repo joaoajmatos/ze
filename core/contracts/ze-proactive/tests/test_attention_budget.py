@@ -97,7 +97,9 @@ async def test_three_hypothesis_claims_exhaust_the_shared_budget_for_a_loop_clai
     async def count_sent_within_hours(_event_type: str, _hours: float) -> int:
         return sent_count
 
-    async def try_claim(_event_type: str, *, idempotency_key: str, payload=None) -> bool:
+    async def try_claim(
+        _event_type: str, *, idempotency_key: str, payload=None
+    ) -> bool:
         nonlocal sent_count
         sent_count += 1
         return True

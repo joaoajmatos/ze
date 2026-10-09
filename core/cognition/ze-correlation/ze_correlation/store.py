@@ -204,8 +204,7 @@ class PostgresHypothesisStore:
         entity_strs = [str(e) for e in entity_ids]
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             rows = await conn.fetch(
-                "SELECT * FROM correlation_hypothesis"
-                " WHERE entities ?| $1::text[]",
+                "SELECT * FROM correlation_hypothesis WHERE entities ?| $1::text[]",
                 entity_strs,
             )
         return [_row_to_hypothesis(r) for r in rows]

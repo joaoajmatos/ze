@@ -144,6 +144,12 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
         return {"gate_decision": overall, **state_updates}
 
     decision = min(decisions, key=lambda d: _GATE_RANK.get(d, 0))
+    if config["configurable"].get("retry_mode") and decision in (
+        GateDecision.AWAIT_CONFIRMATION,
+        GateDecision.DRAFT,
+    ):
+        # A retry never opens a confirmation: WRITE tools are refused at dispatch.
+        decision = GateDecision.EXECUTE
     return {"gate_decision": decision, **state_updates}
 
 
@@ -208,6 +214,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         memory=base_ctx.memory,
         contacts=base_ctx.contacts,
         persona=base_ctx.persona,
+        retry_mode=base_ctx.retry_mode,
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         identity_builder=config["configurable"].get("identity_builder"),
@@ -356,6 +363,7 @@ async def _execute_single(
         memory=base_ctx.memory,
         contacts=base_ctx.contacts,
         persona=base_ctx.persona,
+        retry_mode=base_ctx.retry_mode,
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         reporter=reporter,
@@ -450,6 +458,7 @@ async def _execute_compound(
             memory=base_ctx.memory,
             contacts=base_ctx.contacts,
             persona=base_ctx.persona,
+            retry_mode=base_ctx.retry_mode,
             model=subtask.model or None,
             messages=_build_messages(state, subtask.agent, base_ctx),
             reporter=reporter,

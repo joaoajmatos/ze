@@ -130,7 +130,9 @@ def _evidence_from_row(row) -> LearningEvidence:
 
 def _summary_from_row(row) -> GoalLearningSummary:
     status = LearningStatus(row["status"])
-    promo = row.get("promotion_state") if hasattr(row, "get") else row["promotion_state"]
+    promo = (
+        row.get("promotion_state") if hasattr(row, "get") else row["promotion_state"]
+    )
     return GoalLearningSummary(
         id=row["id"],
         content=row["content"],
@@ -475,7 +477,9 @@ class PostgresGoalStore:
     ) -> list[GoalLearningSummary]:
         status_filter = ""
         if not include_history:
-            status_filter = "AND c.status IN ('pending_review', 'active', 'review_needed')"
+            status_filter = (
+                "AND c.status IN ('pending_review', 'active', 'review_needed')"
+            )
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 f"""
@@ -706,9 +710,7 @@ class PostgresGoalStore:
             updated_at=row["updated_at"],
         )
 
-    async def get_latest_promotion(
-        self, learning_id: UUID
-    ) -> LearningPromotion | None:
+    async def get_latest_promotion(self, learning_id: UUID) -> LearningPromotion | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
@@ -992,7 +994,9 @@ class PostgresGoalStore:
             goal = _goal_from_row(r)
             last_at = r["last_milestone_at"]
             ref_dt = last_at if last_at is not None else goal.created_at
-            ref_dt = ref_dt.replace(tzinfo=timezone.utc) if ref_dt.tzinfo is None else ref_dt
+            ref_dt = (
+                ref_dt.replace(tzinfo=timezone.utc) if ref_dt.tzinfo is None else ref_dt
+            )
             if not is_stale(ref_dt, idle_days):
                 continue
             idle = int((datetime.now(timezone.utc) - ref_dt).days)
@@ -1009,7 +1013,9 @@ class PostgresGoalStore:
         for r in gate_rows:
             fired_at = r["fired_at"]
             fired_at = (
-                fired_at.replace(tzinfo=timezone.utc) if fired_at.tzinfo is None else fired_at
+                fired_at.replace(tzinfo=timezone.utc)
+                if fired_at.tzinfo is None
+                else fired_at
             )
             if not is_stale(fired_at, idle_days):
                 continue

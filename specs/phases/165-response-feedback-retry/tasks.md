@@ -69,19 +69,19 @@
 
 ## Phase 4: User Story 2 — Reconstructable evidence (P1)
 
-- [ ] **T027** [BE] Route writes call `submit_feedback_record` with Perception / `FEEDBACK_RECORD` / `prompt_supplied` / confidence 1.0 / face `WORLD` and `trace_present` from `get_trace`. Test: record + trace joined by message id exposes envelope, judgments (163/164), memory chunks, tool calls, skills, conductor ledger, compaction (SC-002).
-- [ ] **T028** [BE] Guard tests: (a) no `memory_facts` write, no embedding, no memory-feed row from any feedback call; (b) static test asserting no module under `ze_core`, routing, extractor, prompts or `PriorityView` imports `ze_memory.feedback_records`, and the turn-graph deps map has no feedback store (FR-006, FR-007, SC-006/007).
-- [ ] **T029** [BE] Trace retention guard: any code path that clears or rewrites `messages.trace` must skip messages that have feedback (research R6). Test.
+- [x] **T027** [BE] Route writes call `submit_feedback_record` with Perception / `FEEDBACK_RECORD` / `prompt_supplied` / confidence 1.0 / face `WORLD` and `trace_present` from `get_trace`. Test: record + trace joined by message id exposes envelope, judgments (163/164), memory chunks, tool calls, skills, conductor ledger, compaction (SC-002).
+- [x] **T028** [BE] Guard tests: (a) no `memory_facts` write, no embedding, no memory-feed row from any feedback call; (b) static test asserting no module under `ze_core`, routing, extractor, prompts or `PriorityView` imports `ze_memory.feedback_records`, and the turn-graph deps map has no feedback store (FR-006, FR-007, SC-006/007).
+- [x] **T029** [BE] Trace retention guard: any code path that clears or rewrites `messages.trace` must skip messages that have feedback (research R6). Test.
 
 ---
 
 ## Phase 5: User Story 3 — Retry a text-only reply (P1)
 
 - [x] **T030** [BE] `ze_core/conversation/retry.py`: `retry_eligibility(...)` pure function and `RetryEligibility`; reason codes and plain-words text from `effect_phrase` (research R7). Table-driven tests for every reason code and the action matrix in SC-003 (reminder, loop, goal, workflow, remembered fact, workspace run, sent email, outreach, calendar create, approved confirmation, denied confirmation, unknown tool, missing trace, old trace).
-- [ ] **T031** [BE] `retry_mode` in the engine: `config.configurable.retry_mode`; BaseAgent tool dispatch and `delegate_to_agent` refuse WRITE tools with a model-visible message; `write_memory` skips admission, episode and dream hooks but appends the exchange to session `messages`; no goal/workflow/proactive hooks fire. Tests: zero write tool executions and zero `memory_facts` rows (SC-004). Depends on T014.
-- [ ] **T032** [BE] `invoke_retry_turn` in `ze_core/conversation/turn.py`: rewind per T014 decision, run graph with original user text and `retry_mode`, return `TurnResult`. Tests with fake graph.
-- [ ] **T033** [BE] `ze-api` websocket `retry` frame: new `handle_retry` in `turns.py`, dispatch in `endpoint.py`; same busy flag as turns; re-evaluate eligibility server-side; append `retry_requested`; on success save new message with `replaces`, `mark_superseded`, emit `message` then `message_superseded`; on failure emit `error` `code=retry_failed` and change nothing (FR-019); ineligible → `error` `code=retry_unavailable` with reason before any graph run. Fill the `retry` block in `getMessageFeedback`. Tests for all branches, duplicate retry → `busy`.
-- [ ] **T034** [P] [PLATFORM] `ze-api` `DataDomain` for `feedback_records` (export + delete) and include `messages.replaces/replaced_by` in message export; extend `data-portability` tests (FR-027).
+- [x] **T031** [BE] `retry_mode` in the engine: `config.configurable.retry_mode`; BaseAgent tool dispatch and `delegate_to_agent` refuse WRITE tools with a model-visible message; `write_memory` skips admission, episode and dream hooks but appends the exchange to session `messages`; no goal/workflow/proactive hooks fire. Tests: zero write tool executions and zero `memory_facts` rows (SC-004). Depends on T014.
+- [x] **T032** [BE] `invoke_retry_turn` in `ze_core/conversation/turn.py`: rewind per T014 decision, run graph with original user text and `retry_mode`, return `TurnResult`. Tests with fake graph.
+- [x] **T033** [BE] `ze-api` websocket `retry` frame: new `handle_retry` in `turns.py`, dispatch in `endpoint.py`; same busy flag as turns; re-evaluate eligibility server-side; append `retry_requested`; on success save new message with `replaces`, `mark_superseded`, emit `message` then `message_superseded`; on failure emit `error` `code=retry_failed` and change nothing (FR-019); ineligible → `error` `code=retry_unavailable` with reason before any graph run. Fill the `retry` block in `getMessageFeedback`. Tests for all branches, duplicate retry → `busy`.
+- [x] **T034** [P] [PLATFORM] `ze-api` `DataDomain` for `feedback_records` (export + delete) and include `messages.replaces/replaced_by` in message export; extend `data-portability` tests (FR-027).
 - [ ] **T035** [WEB] `features/retry-reply`: `useRetryReply(threadId)` sends the WS frame, tracks retrying per thread, handles `message_superseded` (swap in place, invalidate feedback and trace queries), `retry_failed` (notice, original unchanged), `retry_unavailable`, `busy`. Extend `ws-client` types. Tests.
 - [ ] **T036** [WEB] Retry button in `ReplyActions` (latest assistant reply only), disabled while retrying/busy/disconnected (`disconnected` reason client-side). Thread history query excludes superseded by default. Tests.
 
@@ -90,8 +90,8 @@
 ## Phase 6: User Story 4 — Retry explains when unsafe (P1)
 
 - [ ] **T037** [WEB] Disabled Retry shows `reason_text` as visible/`aria-describedby` text reachable by keyboard and screen reader, on focus and tap, not only a tooltip (FR-023). Tests including axe-style name/description checks. Hide the control for turns pending confirmation.
-- [ ] **T038** [BE] Server refuses hand-built retry requests for every ineligible class with the same reason as the batch endpoint (parametrized test calling the WS handler directly; FR-016, US4-7).
-- [ ] **T039** [BE] Per-delegate confirmation interaction tests (152): approved write → `confirmed_action`; denied/expired → not an action; paused turn → `turn_pending`; two concurrent gates on one thread.
+- [x] **T038** [BE] Server refuses hand-built retry requests for every ineligible class with the same reason as the batch endpoint (parametrized test calling the WS handler directly; FR-016, US4-7).
+- [x] **T039** [BE] Per-delegate confirmation interaction tests (152): approved write → `confirmed_action`; denied/expired → not an action; paused turn → `turn_pending`; two concurrent gates on one thread.
 
 ---
 

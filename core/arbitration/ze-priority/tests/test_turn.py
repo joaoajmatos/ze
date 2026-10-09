@@ -18,7 +18,9 @@ from tests.factories import make_hypothesis, make_loop, make_stuck_goal
 UTC = timezone.utc
 
 
-def _surfacer(view, override_store=None, graph_store=None, loop_store=None, push_log=None):
+def _surfacer(
+    view, override_store=None, graph_store=None, loop_store=None, push_log=None
+):
     return TurnSurfacing(
         priority_view=view,
         override_store=override_store,
@@ -67,7 +69,9 @@ def _view(ranking=None, error=None):
 
 async def test_recap_follows_pinned_goal_above_loop():
     loop = score_loop(make_loop(title="Drifting loop", confidence=0.9))
-    stuck = score_goal(make_stuck_goal(goal_overrides={"title": "Stuck goal"}, idle_days=1))
+    stuck = score_goal(
+        make_stuck_goal(goal_overrides={"title": "Stuck goal"}, idle_days=1)
+    )
     ranking = _ranking(loop, stuck)
     store = AsyncMock()
     store.get_active = AsyncMock(return_value=[_override(stuck, loop)])
@@ -119,7 +123,9 @@ async def test_inline_mentions_goal_beats_overlapping_loop_when_pinned():
         ]
     )
     loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=make_loop(id=loop.source_id, title=loop.title))
+    loop_store.get = AsyncMock(
+        return_value=make_loop(id=loop.source_id, title=loop.title)
+    )
 
     entity = _entity(entity_id, "Maria")
     mentions = await _surfacer(
@@ -138,9 +144,9 @@ async def test_inline_mentions_skips_unrelated_global_top():
     graph_store.list_relationships = AsyncMock(return_value=[])
     entity = _entity(entity_id, "Passport")
 
-    mentions = await _surfacer(
-        _view(ranking), graph_store=graph_store
-    ).inline_mentions([entity_id], entities=[entity])
+    mentions = await _surfacer(_view(ranking), graph_store=graph_store).inline_mentions(
+        [entity_id], entities=[entity]
+    )
 
     assert mentions == []
 

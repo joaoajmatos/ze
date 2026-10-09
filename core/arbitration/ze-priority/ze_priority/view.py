@@ -118,9 +118,7 @@ class PriorityView:
                 items.extend(score_relationship_staleness(n) for n in nudges)
                 succeeded.add("relationship")
             except Exception as exc:
-                log.warning(
-                    "priority_view_relationship_source_failed", error=str(exc)
-                )
+                log.warning("priority_view_relationship_source_failed", error=str(exc))
                 failed.add("relationship")
 
         if len(failed) == total_sources:

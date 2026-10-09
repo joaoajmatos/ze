@@ -321,7 +321,9 @@ async def test_promote_learnings_skips_when_no_learnings():
 
 async def test_promote_learnings_does_not_write_memory_facts():
     planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(return_value=[Fact(predicate="style", value="x")])
+    planner.promote_learnings = AsyncMock(
+        return_value=[Fact(predicate="style", value="x")]
+    )
     executor, _, _, memory = _make_executor_with_memory(planner=planner)
     await executor._promote_learnings(_goal(), [_learning()])
     planner.promote_learnings.assert_not_called()
@@ -334,7 +336,9 @@ async def test_promote_learnings_logs_inferences_remain_unpromoted():
     executor, _, _, _ = _make_executor_with_memory()
     with structlog.testing.capture_logs() as logs:
         await executor._promote_learnings(_goal(), [_learning()])
-    assert any(e.get("event") == "goal_learning_inferences_remain_unpromoted" for e in logs)
+    assert any(
+        e.get("event") == "goal_learning_inferences_remain_unpromoted" for e in logs
+    )
 
 
 async def test_push_retrospective_uses_authoritative_learnings():

@@ -70,7 +70,9 @@ def validate_learning_draft(
             )
         if item.evidence_kind is LearningEvidenceKind.ACTION_RECORD:
             if item.action_record_id is None:
-                raise GoalLearningEvidenceError("action evidence requires action_record_id")
+                raise GoalLearningEvidenceError(
+                    "action evidence requires action_record_id"
+                )
         elif item.review_id is None:
             raise GoalLearningEvidenceError("user evidence requires review_id")
 
@@ -90,8 +92,7 @@ def validate_learning_draft(
     if (
         automated
         and not allow_imported
-        and learning.status
-        in {LearningStatus.ACTIVE, LearningStatus.PENDING_REVIEW}
+        and learning.status in {LearningStatus.ACTIVE, LearningStatus.PENDING_REVIEW}
         and not action_support
         and not user_confirm
     ):
@@ -113,9 +114,7 @@ def evaluate_eligibility(
         and getattr(e, "evidence_kind", None) is LearningEvidenceKind.ACTION_RECORD
         and getattr(e, "action_record_id", None) is not None
     ]
-    contradicting = [
-        e for e in evidence if e.role is LearningEvidenceRole.CONTRADICTS
-    ]
+    contradicting = [e for e in evidence if e.role is LearningEvidenceRole.CONTRADICTS]
     action_ids = tuple(
         dict.fromkeys(e.action_record_id for e in supporting if e.action_record_id)
     )
@@ -316,7 +315,10 @@ async def apply_nli_contradictions(
     for peer in peers:
         if peer.id == learning.id:
             continue
-        if peer.status is LearningStatus.RETRACTED or peer.status is LearningStatus.SUPERSEDED:
+        if (
+            peer.status is LearningStatus.RETRACTED
+            or peer.status is LearningStatus.SUPERSEDED
+        ):
             continue
         pairs.append((peer.content, learning.content))
         targets.append(peer.id)
@@ -340,7 +342,9 @@ async def apply_nli_contradictions(
 
 
 def format_eligible(learning: GoalLearning, relevance: float = 1.0) -> EligibleLearning:
-    excerpts = "; ".join(e.excerpt for e in learning.evidence[:3]) or "no evidence summary"
+    excerpts = (
+        "; ".join(e.excerpt for e in learning.evidence[:3]) or "no evidence summary"
+    )
     return EligibleLearning(
         id=learning.id,  # type: ignore[arg-type]
         content=learning.content,

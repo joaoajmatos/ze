@@ -99,6 +99,10 @@ class RetryError(ZeCoreError):
     """Base class for reply-retry failures (Phase 165)."""
 
 
+class RetryFailedError(RetryError):
+    """A retry run did not produce a usable reply; the original reply is untouched."""
+
+
 class RetryRewindError(RetryError):
     """The thread's checkpointed history cannot be rewound to before the reply."""
 

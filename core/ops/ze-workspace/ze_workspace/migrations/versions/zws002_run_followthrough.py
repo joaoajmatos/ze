@@ -29,4 +29,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("ALTER TABLE workspace_runs ALTER COLUMN status SET NOT NULL")
-    op.execute("ALTER TABLE workspace_runs DROP COLUMN IF EXISTS follow_through_notified")
+    op.execute(
+        "ALTER TABLE workspace_runs DROP COLUMN IF EXISTS follow_through_notified"
+    )

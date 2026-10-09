@@ -104,7 +104,9 @@ def _trace(**overrides) -> ExecutionTrace:
     return ExecutionTrace(**base)
 
 
-async def test_save_traces_records_success_and_failure(ledger: InMemoryActionRecordStore):
+async def test_save_traces_records_success_and_failure(
+    ledger: InMemoryActionRecordStore,
+):
     pool, _ = _pool()
     store = PostgresGoalStore(pool)
     ok = _trace(success=True)

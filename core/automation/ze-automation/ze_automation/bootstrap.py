@@ -262,11 +262,9 @@ async def configure_workflow_executor(
             return
         executions = await stack.workflow_store.list_executions(workflow.id, limit=1)
         execution = executions[0] if executions else None
-        body = (
-            execution.summary
-            if execution and execution.summary
-            else str(exc)
-        )[:200]
+        body = (execution.summary if execution and execution.summary else str(exc))[
+            :200
+        ]
         await notifier.notify(
             "workflow_failure",
             f'Workflow failed: "{workflow.name}"',

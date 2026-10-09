@@ -328,6 +328,7 @@ async def run_delegate(
         reporter=ctx.reporter,
         identity_builder=ctx.identity_builder,
         abort_token=ctx.abort_token,
+        retry_mode=ctx.retry_mode,
         extensions={"_delegate_depth": depth + 1},
     )
 

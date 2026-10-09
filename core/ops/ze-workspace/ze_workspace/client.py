@@ -90,9 +90,7 @@ class WorkspaceClient:
         return _files(data)
 
     async def download(self, path: str) -> bytes:
-        resp = await self._request(
-            "GET", "/fs/download", params={"path": path}
-        )
+        resp = await self._request("GET", "/fs/download", params={"path": path})
         return resp.content
 
     async def put(
@@ -195,9 +193,7 @@ class WorkspaceClient:
         cannot import ze_workspace.sanitize."""
         url = f"{self._base_url}/runs/{run_id}/events"
         try:
-            async with self._client.stream(
-                "GET", url, headers=self._headers()
-            ) as resp:
+            async with self._client.stream("GET", url, headers=self._headers()) as resp:
                 if resp.status_code == 404:
                     await resp.aread()
                     raise WorkspaceNotFoundError(f"workspace run {run_id} not found")
@@ -250,9 +246,7 @@ class WorkspaceClient:
         json_body: dict | None = None,
         params: dict | None = None,
     ) -> dict:
-        resp = await self._request(
-            method, path, json_body=json_body, params=params
-        )
+        resp = await self._request(method, path, json_body=json_body, params=params)
         if not resp.content:
             return {}
         return resp.json()

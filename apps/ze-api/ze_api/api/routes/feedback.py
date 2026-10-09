@@ -90,8 +90,7 @@ async def set_message_feedback(
     state = await thread_state(
         message.thread_id,
         message_store=message_store,
-        conn_mgr=conn_mgr,
-        turn_lock=turn_lock,
+        is_busy=lambda tid: conn_mgr.is_busy(tid) or turn_lock.is_locked(tid),
         confirmation_store=confirmation_store,
     )
     return build_view(message, history, trace, state)

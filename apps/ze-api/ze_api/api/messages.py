@@ -102,6 +102,15 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         conductor_ledger=list(getattr(trace, "conductor_ledger", None) or []),
         judgments=_judgments_to_response(getattr(trace, "judgments", None)),
         effects_known=bool(getattr(trace, "effects_known", False)),
+        compaction=(
+            {
+                "span_start": trace.compaction.span_start,
+                "span_end": trace.compaction.span_end,
+            }
+            if getattr(trace, "compaction", None)
+            else None
+        ),
+        resume_recap_applied=bool(getattr(trace, "resume_recap_applied", False)),
     )
 
 

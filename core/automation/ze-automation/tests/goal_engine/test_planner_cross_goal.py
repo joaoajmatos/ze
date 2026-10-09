@@ -248,9 +248,7 @@ async def test_promote_learnings_caps_at_five_facts():
 async def test_promote_learnings_includes_goal_context_in_prompt():
     planner = _make_planner(_json.dumps({"facts": []}))
     goal = _goal()
-    await planner.promote_learnings(
-        goal, [_learning(content="Learned X")]
-    )
+    await planner.promote_learnings(goal, [_learning(content="Learned X")])
     prompt = planner._client.complete.call_args.kwargs["messages"][0]["content"]
     assert goal.title in prompt
     assert goal.objective in prompt

@@ -131,6 +131,11 @@ class JudgmentTraceResponse(BaseModel):
     skip_reason: str | None = None
 
 
+class CompactionTraceResponse(BaseModel):
+    span_start: int
+    span_end: int
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -148,6 +153,8 @@ class MessageTraceResponse(BaseModel):
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
     judgments: list[JudgmentTraceResponse] = []
     effects_known: bool = False
+    compaction: CompactionTraceResponse | None = None
+    resume_recap_applied: bool = False
 
 
 class MessageTraceEntry(BaseModel):

@@ -33,5 +33,7 @@ async def list_skills() -> str:
     lines = []
     for skill in skills:
         scripts_note = " (has scripts)" if skill.has_scripts else ""
-        lines.append(f"- {skill.name} (/{skill.slug}){scripts_note}: {skill.description}")
+        lines.append(
+            f"- {skill.name} (/{skill.slug}){scripts_note}: {skill.description}"
+        )
     return "\n".join(lines)
