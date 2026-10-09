@@ -14,7 +14,7 @@
 
 ## Phase 1: Setup
 
-- [ ] **T001** [P] [PLATFORM] Add eval scenarios `eval/scenarios/retry_text_only.yaml` (read-only turn: retry offered and replaces reply) and `eval/scenarios/retry_refused_after_write.yaml` (reminder turn: retry refused with a reason). Follow existing scenario schema in `docs/eval.md`.
+- [x] **T001** [P] [PLATFORM] Add eval scenarios `eval/scenarios/retry_text_only.yaml` (read-only turn: retry offered and replaces reply) and `eval/scenarios/retry_refused_after_write.yaml` (reminder turn: retry refused with a reason). Follow existing scenario schema in `docs/eval.md`.
 - [ ] **T002** [P] [DOCS] Mark spec 165 `Status: In progress` when implementation starts and flip the checklist file `checklists/requirements.md` to all-checked (open questions are resolved).
 
 ---
@@ -82,14 +82,14 @@
 - [x] **T032** [BE] `invoke_retry_turn` in `ze_core/conversation/turn.py`: rewind per T014 decision, run graph with original user text and `retry_mode`, return `TurnResult`. Tests with fake graph.
 - [x] **T033** [BE] `ze-api` websocket `retry` frame: new `handle_retry` in `turns.py`, dispatch in `endpoint.py`; same busy flag as turns; re-evaluate eligibility server-side; append `retry_requested`; on success save new message with `replaces`, `mark_superseded`, emit `message` then `message_superseded`; on failure emit `error` `code=retry_failed` and change nothing (FR-019); ineligible → `error` `code=retry_unavailable` with reason before any graph run. Fill the `retry` block in `getMessageFeedback`. Tests for all branches, duplicate retry → `busy`.
 - [x] **T034** [P] [PLATFORM] `ze-api` `DataDomain` for `feedback_records` (export + delete) and include `messages.replaces/replaced_by` in message export; extend `data-portability` tests (FR-027).
-- [ ] **T035** [WEB] `features/retry-reply`: `useRetryReply(threadId)` sends the WS frame, tracks retrying per thread, handles `message_superseded` (swap in place, invalidate feedback and trace queries), `retry_failed` (notice, original unchanged), `retry_unavailable`, `busy`. Extend `ws-client` types. Tests.
-- [ ] **T036** [WEB] Retry button in `ReplyActions` (latest assistant reply only), disabled while retrying/busy/disconnected (`disconnected` reason client-side). Thread history query excludes superseded by default. Tests.
+- [x] **T035** [WEB] `features/retry-reply`: `useRetryReply(threadId)` sends the WS frame, tracks retrying per thread, handles `message_superseded` (swap in place, invalidate feedback and trace queries), `retry_failed` (notice, original unchanged), `retry_unavailable`, `busy`. Extend `ws-client` types. Tests.
+- [x] **T036** [WEB] Retry button in `ReplyActions` (latest assistant reply only), disabled while retrying/busy/disconnected (`disconnected` reason client-side). Thread history query excludes superseded by default. Tests.
 
 ---
 
 ## Phase 6: User Story 4 — Retry explains when unsafe (P1)
 
-- [ ] **T037** [WEB] Disabled Retry shows `reason_text` as visible/`aria-describedby` text reachable by keyboard and screen reader, on focus and tap, not only a tooltip (FR-023). Tests including axe-style name/description checks. Hide the control for turns pending confirmation.
+- [x] **T037** [WEB] Disabled Retry shows `reason_text` as visible/`aria-describedby` text reachable by keyboard and screen reader, on focus and tap, not only a tooltip (FR-023). Tests including axe-style name/description checks. Hide the control for turns pending confirmation.
 - [x] **T038** [BE] Server refuses hand-built retry requests for every ineligible class with the same reason as the batch endpoint (parametrized test calling the WS handler directly; FR-016, US4-7).
 - [x] **T039** [BE] Per-delegate confirmation interaction tests (152): approved write → `confirmed_action`; denied/expired → not an action; paused turn → `turn_pending`; two concurrent gates on one thread.
 
@@ -97,8 +97,8 @@
 
 ## Phase 7: User Story 5 — Feedback in the trace panel (P2)
 
-- [ ] **T040** [WEB] `widgets/trace-panel/ui/FeedbackSection.tsx` inside `TraceEntry`: current rating, history with times, "Retried" with link to replacement, "Replaces an earlier reply" link, "No feedback yet", "no trace recorded" case. Live update on mutation without reload. Tests alongside `JudgmentsSection.test.tsx`.
-- [ ] **T041** [WEB] For messages with feedback but no trace, list them in the panel with the "no trace recorded" marker (US5-5). Test.
+- [x] **T040** [WEB] `widgets/trace-panel/ui/FeedbackSection.tsx` inside `TraceEntry`: current rating, history with times, "Retried" with link to replacement, "Replaces an earlier reply" link, "No feedback yet", "no trace recorded" case. Live update on mutation without reload. Tests alongside `JudgmentsSection.test.tsx`.
+- [x] **T041** [WEB] For messages with feedback but no trace, list them in the panel with the "no trace recorded" marker (US5-5). Test.
 
 ---
 

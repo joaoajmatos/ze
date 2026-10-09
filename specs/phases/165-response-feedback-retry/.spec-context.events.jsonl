@@ -37,3 +37,9 @@
 {"step": "implement", "substep": null, "task": "T034", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:39:24.625Z"}
 {"step": "implement", "substep": null, "task": "T038", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:39:24.764Z"}
 {"step": "implement", "substep": null, "task": "T039", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:39:24.930Z"}
+{"step": "implement", "substep": null, "task": "T001", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:39:59.228Z"}
+{"step": "implement", "substep": null, "task": "T035", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:41:10.544Z", "did": "useRetryReply: retry frame, message_superseded swap, error codes", "files": ["apps/ze-web/src/features/retry-reply"]}
+{"step": "implement", "substep": null, "task": "T036", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:41:10.929Z", "did": "RetryButton in ReplyActions via widget slot; disabled when busy/disconnected/not latest", "files": ["apps/ze-web/src/features/retry-reply", "apps/ze-web/src/widgets/chat-workspace"]}
+{"step": "implement", "substep": null, "task": "T037", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:41:11.243Z", "did": "Disabled Retry reason via aria-describedby, focus/tap reveal; hidden for turn_pending", "files": ["apps/ze-web/src/features/retry-reply/ui"]}
+{"step": "implement", "substep": null, "task": "T040", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:41:11.607Z", "did": "FeedbackSection in TraceEntry", "files": ["apps/ze-web/src/widgets/trace-panel"]}
+{"step": "implement", "substep": null, "task": "T041", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:41:12.046Z", "did": "Untraced rated replies listed with no-trace marker", "files": ["apps/ze-web/src/widgets/trace-panel/ui/TraceContent.tsx"]}
