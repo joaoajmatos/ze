@@ -373,13 +373,13 @@ def grid_metrics(outcomes: list[Outcome]) -> list[dict[str, float]]:
 
 def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
     print(
-        "\n== wrong-skill applies / correct applies (choice_trust rows, needs_skill_hold cols)"
+        "\n== wrong/correct/missed applies (choice_trust rows, needs_skill_hold cols)"
     )
-    print("trust\\hold ".ljust(11) + "".join(f"{h:>10.2f}" for h in GRID))
+    print("trust\\hold ".ljust(11) + "".join(f"{h:>12.2f}" for h in GRID))
     by_pair = {(m["trust"], m["hold"]): m for m in metrics}
     for t in GRID:
         cells = "".join(
-            f"{int(by_pair[(t, h)]['wrong']):>6d}/{int(by_pair[(t, h)]['correct']):<3d}"
+            f"{int(by_pair[(t, h)]['wrong']):>4d}/{int(by_pair[(t, h)]['correct'])}/{int(by_pair[(t, h)]['missed']):<4d}"
             for h in GRID
         )
         print(f"{t:>9.2f}  " + cells)
