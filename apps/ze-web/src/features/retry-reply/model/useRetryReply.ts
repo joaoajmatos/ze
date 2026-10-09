@@ -45,7 +45,7 @@ export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryRepl
   }
 
   useFrame("message_superseded", (frame) => {
-    if (frame.thread_id !== threadId) return;
+    if (frame.thread_id && frame.thread_id !== threadId) return;
     setPendingId(null);
     onSuperseded(frame.message_id, frame.replaced_by);
     refresh();

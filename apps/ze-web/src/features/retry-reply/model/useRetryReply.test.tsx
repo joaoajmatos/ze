@@ -126,4 +126,18 @@ describe("useRetryReply", () => {
     );
     expect(onNotice).toHaveBeenCalledWith("Ze is busy");
   });
+
+  it("still swaps when message_superseded omits thread_id", () => {
+    send.mockReturnValue(true);
+    const { result, onSuperseded } = setup();
+    act(() => void result.current.retry("m1"));
+    act(() =>
+      handlers.get("message_superseded")!({
+        type: "message_superseded",
+        message_id: "m1",
+        replaced_by: "m2",
+      }),
+    );
+    expect(onSuperseded).toHaveBeenCalledWith("m1", "m2");
+  });
 });
