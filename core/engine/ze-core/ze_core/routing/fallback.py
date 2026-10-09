@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING
 
 from ze_agents.errors import RoutingError
 from ze_logging import get_logger
-from ze_core.routing.types import LLMClient, RoutingEnvelope, SubTask
+from ze_agents.client import LLMClient
+from ze_core.routing.types import RoutingEnvelope, SubTask
 
 if TYPE_CHECKING:
     from structlog import BoundLogger

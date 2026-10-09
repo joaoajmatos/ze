@@ -128,3 +128,58 @@ class TestUpdateEvidence:
         assert "UPDATE correlation_hypothesis" in args[0]
         assert args[2] == 0.75
         assert args[3] == hyp_id
+
+
+class TestEvidenceRoundTrip:
+    async def test_persisted_evidence_json_keys_and_round_trip(self):
+        from ze_agents.claims import ClaimKind, Provenance
+
+        from ze_correlation.types import Hypothesis, HypothesisEvidence
+
+        retrieved = datetime(2026, 6, 12, 9, 0, tzinfo=UTC)
+        ingested = datetime(2026, 6, 1, 8, 0, tzinfo=UTC)
+        evidence = [
+            HypothesisEvidence(
+                kind="signal",
+                id=uuid4(),
+                label="Fable 5 ban (Jun 12)",
+                external_ref="https://example.com/a",
+                origin=Provenance.LIVE_SEARCH,
+                retrieved_at=retrieved,
+                ingested_at=ingested,
+            ),
+            HypothesisEvidence(
+                kind="fact",
+                id=uuid4(),
+                label="a fact",
+                external_ref=None,
+                origin=Provenance.GRAPH_RECALL,
+                retrieved_at=retrieved,
+            ),
+        ]
+        hyp = Hypothesis(
+            id=uuid4(),
+            summary="s",
+            narrative="n",
+            relation="pattern",
+            confidence=0.5,
+            relevance=0.5,
+            evidence=evidence,
+            entities=[],
+            created_at=retrieved,
+            claim_kind=ClaimKind.INFERENCE,
+        )
+        pool, conn = _make_pool()
+        await PostgresHypothesisStore(pool=pool).save(hyp)
+
+        stored = json.loads(conn.execute.await_args.args[7])
+        assert [set(e) for e in stored] == [
+            {"kind", "id", "label", "external_ref", "origin", "retrieved_at", "ingested_at"}
+        ] * 2
+
+        row = _row(hyp.id) | {"evidence": json.dumps(stored)}
+        pool2, _ = _make_pool(fetchrow_return=row)
+        loaded = await PostgresHypothesisStore(pool=pool2).get(hyp.id)
+
+        assert loaded is not None
+        assert loaded.evidence == evidence

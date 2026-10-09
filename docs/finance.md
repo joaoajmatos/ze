@@ -45,25 +45,19 @@ The Phase 63 integration framework wires it automatically — you don't need to
 change `container.py` manually.
 
 Data fetched on each sync:
-- Account info and cash balance (`/equity/account/info`, `/equity/account/cash`)
-- Open positions (`/equity/portfolio`)
-- Order and dividend history since the last known `settled_at`
+- Account info and cash balance
+- Open positions
+- Order, dividend, and cash-transaction history
 
 Source ID: `trading212`
 
 ### CSV (Bank Statements)
 
-Ze supports any bank that exports CSV statements. Place the export file in the
-directory configured as `finance.csv_import_dir` (default: `data/finance/imports/`).
+Ze reads bank CSV exports through the ingestion pipeline. Upload or share the file in chat (see the next section). Ze does not watch an import directory.
 
-Ze detects the file's `source_id` from the filename prefix (e.g.
-`revolut_2026-06.csv` → `source_id: csv:revolut`). On first import from a new
-source, Ze infers the column mapping via LLM (see [CSV Import](#csv-import)).
-Subsequent imports from the same source reuse the cached mapping.
+On the first import from a new source, Ze infers the column mapping with an LLM (see [CSV Import](#csv-import)). Later imports from the same source reuse the cached mapping.
 
-**Supported formats:** UTF-8 or UTF-8-BOM, comma or semicolon delimited. Ze
-handles a single amount column (positive/negative) or separate debit/credit
-columns.
+**Supported formats:** comma or semicolon delimited. Ze handles a single amount column (positive/negative) or separate debit/credit columns.
 
 ### Ingestion pipeline (PDF and CSV via chat)
 
@@ -94,11 +88,13 @@ protection layers that cannot be overridden by global configuration.
 
 ### LLM provider pinning
 
-Ze pins all LLM calls in `ze-finance` to **Anthropic** via OpenRouter,
-regardless of the global model setting in `config.yaml`. This applies to:
+Ze pins the LLM calls in `ze-finance` to **Anthropic** via OpenRouter. The
+agent and the CSV and categorization helpers ignore the global model setting. The
+one exception is `models.finance_ingestion`, which you can change. This applies to:
 
 - `FinanceAgent` — the conversational interface
 - `CsvSchemaInferrer` — column mapping inference on first import
+- `FinanceIngestionExtractor` — PDF statement parsing (default model `anthropic/claude-haiku-4-5`; override with `models.finance_ingestion`)
 - `CategoryInferrer` (when `finance.llm_categorization: true`) — transaction
   description classification
 
@@ -160,18 +156,11 @@ Row 3:   2026-06-03, SALARY, +2800.00, 3992.10
 
 Only structural data. No account number, IBAN, name, or personal identifiers.
 
-**To reset a cached mapping** (e.g. if your bank changed its export format):
-
-```bash
-# via ze-api REST (requires API key)
-DELETE /api/finance/csv-mappings/{source_id}
-```
+Ze has no REST route or setting to reset a cached mapping. The `finance_csv_mappings` table holds it, and a full data delete removes it.
 
 ### Date formats
 
-Ze attempts to auto-detect common date formats from the sample rows:
-`%Y-%m-%d`, `%d/%m/%Y`, `%d-%m-%Y`, `%m/%d/%Y`, `%d.%m.%Y`. If
-detection fails, set `finance.csv_date_format` in `config.yaml` to override.
+The LLM returns the `date_format` (a `strftime` string) as part of the mapping. If the mapping omits it, Ze uses `%Y-%m-%d`.
 
 ### Deduplication
 
@@ -240,12 +229,9 @@ manually.
 
 ### Opt-in
 
-Recurring detection is **off by default**. Enable it by telling Ze:
-
-> "Track my recurring expenses" / "Show me my subscriptions"
-
-Ze enables the `finance.recurring_detection` capability, runs a one-shot detection
-pass over the last 90 days of transactions, and notifies you of candidates found.
+Recurring detection is **off by default**. To enable the monthly detection job, set
+`finance.recurring_detection_enabled: true` in `config.yaml` and restart Ze. The job
+looks at the last 90 days of transactions and notifies you of candidates it finds.
 
 ### How detection works
 
@@ -287,8 +273,8 @@ Ze detects any billing cycle that maps to a natural interval — not just monthl
 | 365 days | yearly |
 
 > **Note:** annual charges (365-day cycle) require at least 2 occurrences spanning
-> more than 1.5 years, so a 90-day lookback window will not detect them. The lookback
-> window can be extended via `finance.recurring_lookback_days`.
+> more than 1.5 years, so the fixed 90-day lookback window of the monthly job will not
+> detect them.
 
 ### Candidate lifecycle
 
@@ -324,7 +310,7 @@ Below the threshold, dismissed stays dismissed.
 
 ### Data freshness and CSV nudges
 
-The `RecurringDetectionJob` runs on the 1st of each month at 09:00 (configurable).
+The `RecurringDetectionJob` runs on the 1st of each month at 09:00 when enabled (`finance.recurring_detection_schedule`).
 Before running detection on an account, it checks the age of the most recent
 transaction:
 
@@ -404,7 +390,7 @@ separately.
 
 ### Export
 
-A full export via `GET /api/data/export` includes:
+A full export via `GET /api/v0/data/export` includes:
 
 ```
 finance.accounts.json       — account metadata and balances
@@ -416,7 +402,7 @@ finance.recurring.json      — detected/confirmed/dismissed recurring charges
 
 ### Deletion
 
-`DELETE /api/data` (with typed-phrase confirmation) wipes all four tables. This
+`DELETE /api/v0/data` wipes every finance table. It needs a `confirmation_token` from `POST /api/v0/data/delete-intent`, and the web app asks you to type `DELETE`. This
 is a hard delete with no recovery path. Export your data first.
 
 ---
@@ -444,7 +430,6 @@ finance:
   recurring_staleness_days: 35                # CSV accounts older than this get a nudge
   recurring_nudge_cooldown_days: 14           # minimum days between nudges per account
   recurring_price_change_threshold: 0.10      # resurface dismissed items if amount changes >10%
-  recurring_lookback_days: 90                 # transaction history window for detection
 
   nli_merchant_merge_enabled: false           # merge merchant aliases via NLI before grouping
   nli_merchant_cosine_threshold: 0.70

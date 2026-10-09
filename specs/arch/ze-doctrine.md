@@ -310,7 +310,7 @@ will resolve which projection to build first. This document does not pre-empt it
 - [x] **Confidence calibration** — resolved: `specs/arch/claim-topology.md` (ratified) shipped
   as Phase 111, giving `ClaimKind`/`Provenance`/`Confidence`/`decay()` one shared home
   (`core/contracts/ze-agents/ze_agents/claims.py`) and retrofitting all four producers — `OpenLoop`,
-  `Hypothesis`/`EvidenceRef` (fixing its previously-frozen confidence), `memory_facts`, and
+  `Hypothesis`/`HypothesisEvidence` (fixing its previously-frozen confidence), `memory_facts`, and
   `Signal`. What remains is not calibration but **ranking** — see the next item.
 - [x] **Cross-concern prioritization** — ranking shipped: `PriorityView` (Phases 123, 127)
   plus turn surfacing (Phase 132) consume a merged ranked view (including user-directed

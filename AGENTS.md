@@ -623,19 +623,38 @@ It will not invent DI wiring, shared SQL tables, or “why this design exists.�
 specs/`AGENTS.md` for architecture intent.
 
 **When to use it (prefer in this order):**
-1. `graphify explain "<ExactSymbol>"` — who imports/calls a known type or function
-2. `graphify path "<A>" "<B>"` — shortest structural path between two exact symbols
-3. `graphify-out/GRAPH_REPORT.md` — god nodes, import cycles, hyperedges (broad scan)
-4. `graphify query "<question>" --budget 800` — only with concrete symbol/file names;
+1. `graphify affected "<ExactSymbol>" --depth 2` — reverse traversal: everything that
+   imports/calls/uses the symbol (blast radius of a change)
+2. `graphify explain "<ExactSymbol>"` — who imports/calls a known type or function
+3. `graphify path "<A>" "<B>"` — shortest structural path between two exact symbols
+4. `graphify-out/GRAPH_REPORT.md` / `graphify god-nodes` — hubs, import cycles (broad scan)
+5. `graphify query "<question>" --budget 800` — only with concrete symbol/file names;
    raise `--budget` if truncated. Broad NL queries on this monorepo are noisy.
 
 **When not to lead with graphify:** open-ended “how does X work?”, “why?”, or
 behavior that isn’t an import/call edge (SQL predicates, YAML config, WS frame
 shapes). Use Grep / Read / specs instead, then optionally confirm with `explain`.
 
-**Keep it fresh:** after substantial code changes, `graphify update .` (AST-only,
-no API cost). Full rebuild only when the graph is missing or badly stale.
-`graphify-out/` is gitignored — local/cache only.
+**In the multi-agent workflow (Maestri floors):**
+- *Spec Architect* — run `affected` on every symbol a phase changes and put the
+  blast radius (callers by package) in the scope write-up and plan.
+- *Engineers* — run `affected` before changing a signature, Protocol, or shared type,
+  and update every caller in the same change.
+- *Reviewers* — run `affected` on each changed public symbol to find callers the diff
+  did not touch, and `path "<plugin module>" "ze_core"` (or any forbidden pair from the
+  dependency graph) to catch boundary violations an import grep misses.
+- *Docs Steward* — use `god-nodes` and `GRAPH_REPORT.md` to check architecture docs
+  name the real hubs and package edges.
+- After a query that helped or misled, record it:
+  `graphify save-result --question "…" --answer "…" --type query --outcome useful|dead_end|corrected`.
+  The weekly docs sweep runs `graphify reflect` to turn these into lessons.
+
+**Keep it fresh:** `graphify update .` is AST-only, free, and takes about a minute.
+The Maestro runs it on the ground checkout after every landed floor, so new floors
+start from a current graph. On a floor, run it in your checkout before structural
+queries once your own changes matter. Do not run it on every commit. Full rebuild only
+when the graph is missing or badly stale. `graphify-out/` is gitignored — local/cache only.
+OpenCode agents get a one-line reminder from `.opencode/plugins/graphify.js`.
 
 When the user types `/graphify`, follow the graphify skill before other exploration.
 

@@ -6,6 +6,7 @@ from enum import StrEnum
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind
+from ze_plugin.contribution import EvidenceRef
 
 LoopClaimKind = ClaimKind
 
@@ -46,12 +47,6 @@ class OpenLoop:
     updated_at: datetime | None = None
     confirmed_at: datetime | None = None
     closed_at: datetime | None = None
-
-
-@dataclass
-class EvidenceRef:
-    evidence_type: str  # "fact" | "episode"
-    evidence_id: UUID
 
 
 @dataclass

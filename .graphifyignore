@@ -1,0 +1,19 @@
+# Keep the graph about Ze itself. gitignored paths are already excluded.
+
+# Agent / tooling config, not Ze code
+.claude/
+.specify/
+.agents/
+.opencode/
+.cursor/
+
+# Generated API client (mirrors ze-api schemas; regenerate, don't graph)
+packages/ze-client/src/generated/
+
+# Package-manager and compiler config (dependency names become noise nodes)
+package.json
+**/package.json
+**/tsconfig*.json
+**/components.json
+*.lock
+**/*.lock

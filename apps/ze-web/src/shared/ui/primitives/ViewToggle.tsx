@@ -11,12 +11,15 @@ interface ViewToggleProps {
 
 export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
   return (
-    <div className={cn("flex items-center gap-0.5 rounded-pill border border-foreground/10 p-0.5", className)}>
+    <div role="group" aria-label="View mode" className={cn("flex items-center gap-0.5 rounded-pill border border-foreground/10 p-0.5", className)}>
       {(["list", "grid"] as const).map((mode) => {
         const Icon = mode === "list" ? LayoutList : LayoutGrid;
         return (
           <button
             key={mode}
+            type="button"
+            aria-label={mode === "list" ? "List view" : "Grid view"}
+            aria-pressed={value === mode}
             onClick={() => onChange(mode)}
             className={cn(
               "flex items-center justify-center size-7 rounded-full transition-colors",
@@ -25,7 +28,7 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
                 : "text-smoke hover:text-foreground",
             )}
           >
-            <Icon className="size-3.5" />
+            <Icon className="size-3.5" aria-hidden="true" />
           </button>
         );
       })}

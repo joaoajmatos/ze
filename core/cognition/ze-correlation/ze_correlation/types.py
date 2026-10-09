@@ -9,7 +9,7 @@ from ze_agents.claims import ClaimKind, Provenance
 
 
 @dataclass
-class EvidenceRef:
+class HypothesisEvidence:
     kind: Literal["fact", "episode", "signal"]
     id: UUID
     label: str  # short human label, e.g. "Fable 5 ban (Jun 12)"
@@ -29,7 +29,7 @@ class Hypothesis:
     relation: Literal["pattern", "causal_guess", "tension", "convergence"]
     confidence: float  # LLM self-rating, 0..1
     relevance: float  # Phase 56 RelevanceScore.value
-    evidence: list[EvidenceRef]
+    evidence: list[HypothesisEvidence]
     entities: list[UUID]  # seed entity IDs
     created_at: datetime
     claim_kind: ClaimKind  # INFERENCE | SUSPICION only, never FACT (FR-007)

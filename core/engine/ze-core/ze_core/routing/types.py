@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from ze_agents.defaults import (
     MODEL_ROUTER_FALLBACK,
@@ -49,27 +49,3 @@ class RouterConfig:
     threshold: float = ROUTING_THRESHOLD
     gap_threshold: float = ROUTING_GAP_THRESHOLD
     fallback_model: str = MODEL_ROUTER_FALLBACK
-
-
-@runtime_checkable
-class LLMClient(Protocol):
-    async def complete(
-        self,
-        messages: list[dict],
-        model: str,
-        system: str | None = None,
-        temperature: float = 0.3,
-        max_tokens: int | None = None,
-        response_format: dict | None = None,
-        **kwargs: Any,
-    ) -> str: ...
-
-    async def complete_with_tools(
-        self,
-        messages: list[dict],
-        model: str,
-        tools: list[dict],
-        system: str | None = None,
-        temperature: float = 0.3,
-        max_tokens: int = 2000,
-    ) -> tuple[str | None, list[dict] | None]: ...

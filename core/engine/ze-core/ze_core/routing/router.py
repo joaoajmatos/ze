@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ze_agents.client import LLMClient
 from ze_agents.system_one import SystemOneResult
 from ze_agents.errors import InvalidPromptError, RoutingError
 from ze_agents.model_resolution import resolve_model
@@ -18,7 +19,6 @@ from ze_core.routing.judge import (
 )
 from ze_core.routing.store import RoutingStore
 from ze_core.routing.types import (
-    LLMClient,
     RouterConfig,
     RoutingEnvelope,
     RoutingJudgment,

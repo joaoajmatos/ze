@@ -21,7 +21,7 @@ Start here before writing anything.
 
 <sub>[Interactive version](diagrams/docs/package-routing.html)</sub>
 
-New agent that needs contacts or persona context routes to `ze-personal` (`ze_personal/agents/<name>/`). Goals or workflows go to `ze-automation` (`ze_automation/agents/<name>/`). Email/Gmail agents go to `ze-messenger` (`ze_messenger/agents/messenger/`). Calendar/reminders go to `ze-calendar` (`ze_calendar/agents/<name>/`). Prospecting/outreach goes to `ze-prospecting` (`ze_prospecting/agents/`). A new coherent domain (finance, legal, health) gets a new plugin package — see "Creating a new plugin package" below.
+New agent that needs contacts or persona context routes to `ze-personal` (`ze_personal/agents/<name>/`). Goals or workflows go to `ze-automation` (`ze_automation/agents/<name>/`). Email/Gmail agents go to `ze-messenger` (`ze_messenger/agents/messenger/`). Calendar/reminders go to `ze-calendar` (`ze_calendar/agents/<name>/`). Prospecting/outreach goes to `ze-prospecting` (`ze_prospecting/agents/`). A new coherent domain (finance, health) gets a new plugin package — see "Creating a new plugin package" below.
 
 See [docs/package-architecture.md](package-architecture.md) for the full decision table and the criteria for when a new package is warranted.
 
@@ -234,7 +234,7 @@ class MyPlugin(ZePlugin):
 
     @classmethod
     def migrations_path(cls) -> Path | None:
-        return Path(__file__).parent.parent / "migrations" / "versions"
+        return Path(__file__).parent / "migrations"
 
     def configurable_services(self) -> dict:
         return {"my_store": self._store}
@@ -254,7 +254,7 @@ class MyPlugin(ZePlugin):
 
     def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=True) -> None:
         from ze_myplugin.jobs.myjob import MyJob
-        scheduler.add_cron_job(MyJob(self._store, settings), cron="0 9 * * *")
+        scheduler.register(MyJob(self._store, settings), cron="0 9 * * *")
 ```
 
 Override only what you need — all methods have no-op defaults.
@@ -296,11 +296,11 @@ shared service that is not already in the dep map.
 
 ### 5. Create a database migration
 
-Create `migrations/versions/` in your package and override `migrations_path()` on your
-`ZePlugin` subclass. Use a package-specific revision prefix (`zcal`, `zn`, `zfin`, …)
+Create a `migrations/` directory (with `env.py` and `versions/`) in your package and override `migrations_path()` on your
+`ZePlugin` subclass to return it. Use a package-specific revision prefix (`zcal`, `zn`, `zfin`, …)
 and filename pattern `{revision}_{feature}.py`. Write raw SQL via `op.execute()` — no ORM.
 
-See `specs/core/09-conversation.md` and `CLAUDE.md` § Migration ownership for examples.
+See `AGENTS.md` § Migration ownership and `plugins/ze-calendar/ze_calendar/migrations/` for an example.
 
 ---
 
@@ -328,7 +328,9 @@ class MyJob:
         data = await self._store.fetch_summary()
         if not data:
             return
-        await notifier.send(title="Weekly summary", body=data)
+        await notifier.notify(
+            "weekly_summary", "Weekly summary", data, source="my_plugin"
+        )
 ```
 
 ### 2. Register in the plugin
@@ -336,27 +338,27 @@ class MyJob:
 ```python
 def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=True) -> None:
     from ze_myplugin.jobs.myjob import MyJob
-    scheduler.add_cron_job(MyJob(self._store, settings), cron="0 9 * * 1")
+    scheduler.register(MyJob(self._store, settings), cron="0 9 * * 1")
 ```
 
 ---
 
 ## Adding a channel
 
-Channels represent message transports (email, SMS, etc.).
+Channels represent message transports (email, SMS, etc.). `Channel` has one abstract property (`channel_type`) and two abstract methods (`send`, `get_thread`); `InboundChannel` adds polling for new messages. See [channels.md](channels.md) for the full contract, thread routing, and the inbound pipeline.
 
 ```python
 from ze_sdk.channels import Channel, ChannelType, Message, SentMessage, Thread
 
 class MyChannel(Channel):
-    channel_type = ChannelType.EMAIL   # or define a new ChannelType value
+    @property
+    def channel_type(self) -> ChannelType: ...
 
-    async def send(self, handle: str, message: Message) -> SentMessage: ...
-    async def receive(self, thread_id: str) -> list[Message]: ...
-    async def list_threads(self) -> list[Thread]: ...
+    async def send(self, message: Message) -> SentMessage: ...
+    async def get_thread(self, thread_id: str) -> Thread: ...
 ```
 
-Register the channel in your plugin's `startup()` via the `ChannelRegistry`.
+Return instances from `ZePlugin.channels()`. `ze-api` collects them into the shared `ChannelRegistry`.
 
 ---
 
@@ -412,7 +414,10 @@ The error hierarchy:
     - `AgentAbortedError` — loop cancelled via `AbortToken`
     - `AgentConfigError` — misconfiguration caught at startup
     - `ToolBlockedError` — tool rejected by the capability gate
-  - `ChannelSendError` — channel transport failure
+  - `ChannelError` — channel failure
+    - `ChannelSendError` — channel transport failure
+
+`ze_sdk.errors` re-exports these and the rest of the hierarchy (workflow, goal, persona, contribution errors, and more).
 
 ---
 
@@ -425,7 +430,7 @@ The error hierarchy:
 - [ ] `tools.py` with `@tool` functions — `access` and `description` set on each
 - [ ] Module paths added to `plugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters type-annotated
-- [ ] New dependencies added to `container.py` dep_map
+- [ ] New shared dependencies added to `plugin_deps` in `ze_api/container.py` (only when no plugin already provides the type)
 - [ ] Progress keys added to `locales/en.yaml` (and `pt.yaml`) in the plugin package
 - [ ] Tests cover the golden path, draft mode, and blocked mode
 
@@ -436,8 +441,7 @@ The error hierarchy:
 - [ ] `plugin.py` implementing `ZePlugin` — only overrides methods it needs
 - [ ] `locales/en.yaml` (and `pt.yaml`) with progress keys for all agents in the plugin
 - [ ] `ZePlugin.onboarding()` implemented if the plugin needs first-run setup questions
-- [ ] Plugin instantiated in `ze_api/container.py` and added to `plugins` list
 - [ ] Package added to `ze-api/pyproject.toml` dependencies
-- [ ] At least one Alembic migration in `migrations/versions/`
+- [ ] Alembic migrations in `migrations/versions/` if the plugin owns tables, with `migrations_path()` overridden
 - [ ] `tests/` directory with its own `pyproject.toml` or in-tree conftest
 - [ ] `startup()` and `shutdown()` implemented if the plugin holds long-lived resources

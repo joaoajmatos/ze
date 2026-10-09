@@ -7,12 +7,11 @@ from uuid import uuid4
 import pytest
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_agents.errors import UnlicensedClaimKindError
-from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
+from ze_plugin.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace
 
 from ze_worldstate.contribution import loop_to_contribution
 from ze_worldstate.extraction import propose_loop_candidates
 from ze_worldstate.types import (
-    EvidenceRef,
     LoopClaimKind,
     LoopProvenance,
     LoopState,
@@ -67,12 +66,7 @@ def test_loop_to_contribution_maps_inflow_provenance_to_epistemic():
 
 
 def test_loop_to_contribution_carries_evidence_through():
-    ref = EvidenceRef(evidence_type="fact", evidence_id=uuid4())
-    from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
-
-    contribution_evidence = [
-        ContributionEvidenceRef(kind=ref.evidence_type, id=ref.evidence_id)
-    ]
+    contribution_evidence = [EvidenceRef(kind="fact", id=uuid4())]
 
     contribution = loop_to_contribution(_make_loop(), evidence=contribution_evidence)
 
