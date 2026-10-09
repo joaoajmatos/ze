@@ -24,13 +24,11 @@ class ResearchAgent(BaseAgent):
     name = "research"
     display_name = "Web research"
     description = """
-      Web search and technical fact-finding using live information retrieval.
-      Use for: factual comparisons ("what are the differences between X and Y"),
-      technical deep-dives ("how does async/await work", "how does X work internally"),
-      coding questions ("how do I implement X in Python", "why does X happen in JavaScript"),
-      "look up X", "search for X", "find out about X", "what is X", recent events
-      needing accurate sourced answers, and any query requiring verified facts from the web.
-      Not for calendar, email, reminders, or news digest summaries.
+      Research and technical fact-finding using live web search.
+      Use for: what are the differences between X and Y (databases, languages, tools, products),
+      how does X work, explain X, find out what changed in the latest release of X,
+      coding questions, "look up X", "search for X", "what is X", recent events, and any query
+      needing verified facts from the web. Not for calendar, email, reminders, or news digests.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"

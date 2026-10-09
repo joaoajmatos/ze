@@ -75,10 +75,10 @@ class TestSurfaceConfig:
         assert _cfg({"enabled": True, "choice_trust": True}).choice_trust is None
 
     def test_shortlist_k_defaults_and_falls_back(self):
-        assert _cfg({}).shortlist_k == 4
-        assert _cfg({"shortlist_k": 1}).shortlist_k == 4
-        assert _cfg({"shortlist_k": "3"}).shortlist_k == 4
-        assert _cfg({"shortlist_k": True}).shortlist_k == 4
+        assert _cfg({}).shortlist_k == 5
+        assert _cfg({"shortlist_k": 1}).shortlist_k == 5
+        assert _cfg({"shortlist_k": "3"}).shortlist_k == 5
+        assert _cfg({"shortlist_k": True}).shortlist_k == 5
         assert _cfg({"shortlist_k": 6}).shortlist_k == 6
 
     def test_enabled_must_be_literally_true(self):
@@ -276,7 +276,7 @@ class TestDecideMultiSpecialistAndScore:
 
     @pytest.mark.parametrize(
         ("score", "expected"),
-        [(0.0, "simple"), (0.4, "simple"), (0.41, "complex"), (1.0, "complex")],
+        [(0.0, "simple"), (0.8, "simple"), (0.82, "complex"), (2.0, "complex")],
     )
     def test_score_maps_to_tier_at_the_lookup_bar(self, score, expected):
         cfg = RoutingSurfaceConfig(
@@ -302,7 +302,7 @@ class TestDecideMultiSpecialistAndScore:
             is None
         )
         assert decide(ok_result(choice="calendar"), with_bar, _SHORT).complexity is None
-        for bad in (2.0, -0.1, float("nan")):
+        for bad in (2.5, -0.1, float("nan")):
             d = decide(ok_result(choice="calendar", score=bad), with_bar, _SHORT)
             assert d.complexity is None and "complexity" not in d.consumed
 

@@ -350,7 +350,7 @@ system_one:
       choice_trust: null          # uncalibrated — set from make calibrate-routing
       multi_specialist_hold: null # uncalibrated — set from make calibrate-routing
       complexity_lookup_max: null # uncalibrated — set from make calibrate-routing
-      shortlist_k: 4
+      shortlist_k: 5
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -374,9 +374,9 @@ The three bars are separate numbers:
 
 - `choice_trust` is the minimum peakedness of the agent choice for Ze to trust one agent.
 - `multi_specialist_hold` is the minimum probability that the message needs more than one specialist.
-- `complexity_lookup_max` is the highest complexity score that still counts as a simple turn. When it is `null`, the word-count classifier picks the model tier.
+- `complexity_lookup_max` is the highest complexity score that still counts as a simple turn, on a 0 to 1 scale. The model returns the expected level (0 for lookup, 2 for multi-hop), and Ze divides it by 2 before it compares. When it is `null`, the word-count classifier picks the model tier.
 
-`shortlist_k` sets how many E5-ranked agents the choice sees. The default is 4. Values below 2 fall back to 4. With fewer than two enabled agents, Ze makes no call.
+`shortlist_k` sets how many E5-ranked agents the choice sees. The default is 5. Values below 2 fall back to 5. At 4, the research agent fell out of the shortlist on some factual questions in the calibration set; 5 keeps it in. With fewer than two enabled agents, Ze makes no call.
 
 The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.routing.enabled` to `true`.
 
