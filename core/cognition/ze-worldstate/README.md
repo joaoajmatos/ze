@@ -27,7 +27,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 | Module | What it provides |
 |---|---|
-| `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `EvidenceRef`, `DriftingLoopMention` |
+| `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `DriftingLoopMention` |
 | `store.py` | `LoopStore` protocol, `PostgresLoopStore` |
 | `extraction.py` | Relevance-gated loop extraction from inflow text |
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |

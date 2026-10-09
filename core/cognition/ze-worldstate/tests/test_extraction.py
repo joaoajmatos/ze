@@ -5,7 +5,8 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from ze_worldstate.extraction import propose_loop_candidates
-from ze_worldstate.types import EvidenceRef, LoopProvenance, LoopState
+from ze_plugin.contribution import EvidenceRef
+from ze_worldstate.types import LoopProvenance, LoopState
 
 
 def _llm(response: dict) -> AsyncMock:
@@ -58,7 +59,7 @@ async def test_conversation_creates_suspected_low_confidence():
     result = await propose_loop_candidates(
         "I really need to renew my passport before the trip",
         "conversation",
-        [EvidenceRef(evidence_type="episode", evidence_id=uuid4())],
+        [EvidenceRef(kind="episode", id=uuid4())],
         llm,
         embedder,
         loop_store,
@@ -82,7 +83,7 @@ async def test_all_four_inflow_provenances_create_suspected_loops():
         result = await propose_loop_candidates(
             "some triggering text",
             provenance,
-            [EvidenceRef(evidence_type="episode", evidence_id=uuid4())],
+            [EvidenceRef(kind="episode", id=uuid4())],
             llm,
             embedder,
             loop_store,
@@ -104,7 +105,7 @@ async def test_unrecognized_provenance_string_does_not_raise():
     result = await propose_loop_candidates(
         "some triggering text",
         "a_future_plugins_own_channel",
-        [EvidenceRef(evidence_type="episode", evidence_id=uuid4())],
+        [EvidenceRef(kind="episode", id=uuid4())],
         llm,
         embedder,
         loop_store,
