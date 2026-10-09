@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-09
 
-**Status**: Ready to implement
+**Status**: In progress
 
 **Input**: User description: "Each assistant reply offers thumbs up, thumbs down and Retry on hover/focus. Retry is allowed only when the turn was text-only or every action it took can be rolled back; it regenerates the reply and never re-executes side effects. Feedback is evidence, not a user fact: modeled with the contribution-seam vocabulary close to the Phase 135 action-record ledger. Capture only in v1 (no learning consumer, no procedure promotion): link each feedback item to that message's `MessageTrace` so the routing envelope, System One judgments (163, 164), memory used and tools run are reconstructable. Feedback is visible in the trace panel next to the message's trace."
 
