@@ -107,6 +107,18 @@ async def test_option_order_is_shuffled_per_row(calib):
     assert all(o[-1] == "none" for o in client.orders)
 
 
+def test_shortlist_recall_counts_gold_outside_top_k(calib):
+    roster = _roster()
+    rows = [
+        calib.Row("a", "en", "x", "calendar", False, "lookup", None),
+        calib.Row("b", "en", "y", "research", False, "lookup", None),
+    ]
+    embedder = cosine_embedder({"calendar": 0.9, "research": 0.1, "messenger": 0.5})
+    misses = calib.shortlist_recall(embedder, roster, rows, (2, 5))
+    assert [r.id for r in misses[2]] == ["b"]
+    assert len(misses[5]) <= len(misses[2])
+
+
 def test_score_values_normalise_the_wire_scale(calib):
     gold = SimpleNamespace(gold_complexity="multi_hop")
     ok = SystemOneResult(

@@ -144,6 +144,50 @@ def rank(embedder: Any, roster: dict[str, str], text: str) -> list[tuple[str, fl
     return sorted(zip(names, scores), key=lambda p: p[1], reverse=True)
 
 
+RECALL_KS = (2, 3, 4, 5, 6)
+
+
+def shortlist_recall(
+    embedder: Any,
+    roster: dict[str, str],
+    rows: list[Row],
+    ks: tuple[int, ...] = RECALL_KS,
+) -> dict[int, list[Row]]:
+    """Rows whose gold agent is outside the E5 top-k, per k. Offline: no System One call."""
+    misses: dict[int, list[Row]] = {k: [] for k in ks}
+    for row in rows:
+        if row.gold_agent not in roster:
+            continue
+        text = row.prompt if not row.history else f"{row.prompt}\n\n{row.history}"
+        ranked = [n for n, _ in rank(embedder, roster, text)]
+        for k in ks:
+            if row.gold_agent not in shortlist(ranked, k):
+                misses[k].append(row)
+    return misses
+
+
+def report_recall(
+    embedder: Any,
+    roster: dict[str, str],
+    rows: list[Row],
+    ks: tuple[int, ...] = RECALL_KS,
+) -> None:
+    scored = [r for r in rows if r.gold_agent in roster]
+    misses = shortlist_recall(embedder, roster, rows, ks)
+    print(
+        f"\n== E5 shortlist recall of the gold agent ({len(scored)} rows with a gold agent)"
+    )
+    print("k     recall   missed")
+    for k in ks:
+        hit = len(scored) - len(misses[k])
+        print(f"{k:<5d} {hit / len(scored):.3f}    {len(misses[k])}")
+    worst = ks[0]
+    by_agent: Counter[str] = Counter(r.gold_agent for r in misses[worst])
+    print(f"missed at k={worst} by gold agent: {dict(by_agent)}")
+    for row in misses[DEFAULT_SHORTLIST_K]:
+        print(f"   k={DEFAULT_SHORTLIST_K} miss {row.id}: gold={row.gold_agent}")
+
+
 def shuffled_questions(roster: dict[str, str], names: list[str], rng: random.Random):
     order = list(names)
     rng.shuffle(order)
@@ -383,6 +427,11 @@ def system_one_config() -> dict:
 
 
 async def main_async(args: argparse.Namespace) -> int:
+    if args.recall:
+        from ze_core.embeddings import get_embedder
+
+        report_recall(get_embedder(), load_roster(), load_rows(args.dataset))
+        return 0
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
         print(
@@ -437,6 +486,11 @@ def main() -> None:
     parser.add_argument("--timeout-ms", type=int, default=10_000)
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--seed", type=int, default=164)
+    parser.add_argument(
+        "--recall",
+        action="store_true",
+        help="offline E5 shortlist recall only; no OpenRouter call, no credits",
+    )
     parser.add_argument("--k", type=int, default=DEFAULT_SHORTLIST_K)
     raise SystemExit(asyncio.run(main_async(parser.parse_args())))
 

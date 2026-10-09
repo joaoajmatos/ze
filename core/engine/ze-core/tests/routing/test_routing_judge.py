@@ -75,10 +75,10 @@ class TestSurfaceConfig:
         assert _cfg({"enabled": True, "choice_trust": True}).choice_trust is None
 
     def test_shortlist_k_defaults_and_falls_back(self):
-        assert _cfg({}).shortlist_k == 4
-        assert _cfg({"shortlist_k": 1}).shortlist_k == 4
-        assert _cfg({"shortlist_k": "3"}).shortlist_k == 4
-        assert _cfg({"shortlist_k": True}).shortlist_k == 4
+        assert _cfg({}).shortlist_k == 5
+        assert _cfg({"shortlist_k": 1}).shortlist_k == 5
+        assert _cfg({"shortlist_k": "3"}).shortlist_k == 5
+        assert _cfg({"shortlist_k": True}).shortlist_k == 5
         assert _cfg({"shortlist_k": 6}).shortlist_k == 6
 
     def test_enabled_must_be_literally_true(self):
