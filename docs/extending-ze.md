@@ -345,7 +345,7 @@ def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=
 
 ## Adding a channel
 
-Channels represent message transports (email, SMS, etc.). `Channel` has two abstract methods; `InboundChannel` adds polling for new messages. See [channels.md](channels.md) for the full contract, thread routing, and the inbound pipeline.
+Channels represent message transports (email, SMS, etc.). `Channel` has one abstract property (`channel_type`) and two abstract methods (`send`, `get_thread`); `InboundChannel` adds polling for new messages. See [channels.md](channels.md) for the full contract, thread routing, and the inbound pipeline.
 
 ```python
 from ze_sdk.channels import Channel, ChannelType, Message, SentMessage, Thread
