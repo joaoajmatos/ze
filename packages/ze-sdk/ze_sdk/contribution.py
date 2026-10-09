@@ -10,6 +10,7 @@ from ze_memory.action_records import (
     ActionRecordStore,
     AuthoritativeRef,
     CausalRef,
+    safe_record_action,
     submit_action_record,
 )
 from ze_memory.feedback_records import (
@@ -47,6 +48,7 @@ __all__ = [
     "SourceFunction",
     "TargetFace",
     "feedback_contribution",
+    "safe_record_action",
     "submit_action_record",
     "submit_feedback_record",
     "validate_and_submit",

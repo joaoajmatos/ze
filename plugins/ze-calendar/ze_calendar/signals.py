@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timezone
 
 from ze_agents.claims import ClaimKind, Provenance
-from ze_memory.types import Signal
+from ze_sdk.memory import Signal
 
 
 class CalendarSignalSource:

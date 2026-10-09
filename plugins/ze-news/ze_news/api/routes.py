@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request
 
-from ze_plugin.api_auth import require_api_key
+from ze_sdk.api import require_api_key
 from ze_news.api.schemas import ArticleItem, CredibilityFlagItem, PluginPageResponse
 from ze_news.ui.page import build_news_page
 from ze_news.ui.settings import build_news_settings

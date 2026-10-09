@@ -8,8 +8,8 @@ import asyncpg
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
 from ze_logging import get_logger
-from ze_memory.action_records.store import ActionRecordStore
-from ze_memory.store import MemoryStore
+from ze_sdk.contribution import ActionRecordStore
+from ze_sdk.memory import MemoryStore
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.channels.user_channel_store import UserChannelStore
 from ze_personal.channels.watermark_store import ChannelWatermarkStore

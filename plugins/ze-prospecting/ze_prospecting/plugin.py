@@ -9,7 +9,7 @@ from ze_logging import get_logger
 from ze_sdk import ZePlugin
 from ze_agents.settings import Settings as CoreSettings
 from ze_sdk.proactive import ProactiveScheduler
-from ze_memory.action_records.store import ActionRecordStore
+from ze_sdk.contribution import ActionRecordStore
 from ze_prospecting.action_records import configure_action_recorder
 from ze_prospecting.jobs.campaigns import recover_stale_campaigns
 from ze_prospecting.store import ProspectCampaignStore

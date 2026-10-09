@@ -8,7 +8,7 @@ from typing import Any
 
 from ze_logging import get_logger
 from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
-from ze_plugin.contribution import EvidenceRef
+from ze_sdk.contribution import EvidenceRef
 
 from ze_correlation.types import Hypothesis
 from ze_personal.graph.memory_hooks import write_relationship_edge_via_seam

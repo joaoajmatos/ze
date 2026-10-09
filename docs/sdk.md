@@ -16,6 +16,8 @@ from ze_sdk.types import AgentContext, AgentResult, ToolCall, GateDecision, Mode
 from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushLogStore, PushLogEntry
 from ze_sdk.channels import Channel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus
+from ze_sdk.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace, validate_and_submit, submit_and_detect_collisions
+from ze_sdk.api import require_api_key
 from ze_sdk.onboarding import OnboardingProvider, OnboardingStep, OnboardingField, OnboardingSeed, OnboardingResult
 from ze_sdk.errors import ZeError, AgentError, ToolBlockedError, AgentAbortedError, AgentConfigError, ChannelSendError
 ```
@@ -452,6 +454,9 @@ Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use
 | `Episode` | A summarised conversation episode. |
 | `Procedure` | A user-taught step-by-step procedure. |
 | `Entity` | A named entity extracted from conversations. |
+| `EntityRef` | A reference to an entity, used on `Signal`. |
+| `Signal` | A cross-plugin observation emitted by a `SignalSource`. |
+| `SignalSource` | Protocol a plugin implements to emit signals. |
 | `TaskState` | Current execution state for a running task/goal. |
 | `RetrievalRequest` | Parameters for a `MemoryStore.retrieve()` call. |
 | `MemoryStore` | Protocol for memory stores. |
@@ -462,6 +467,29 @@ Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use
 | `DreamRun` | Metadata for one nightly dream job execution. |
 | `ArtifactType` | Enum: `synthesized_insight`, `synthesized_procedure`, `hindsight_fact`, `plan_stress_test`, `schema_candidate`, `policy_candidate`. |
 | `ArtifactStatus` | Enum: `pending`, `promoted`, `rejected`, `needs_review`, `revised`, `rolled_back`. |
+
+---
+
+## `ze_sdk.contribution` — contribution seam
+
+Plugins that write facts, action records, or other claims go through the contribution seam. See `specs/arch/contribution-seam.md`.
+
+| Symbol | Description |
+|--------|-------------|
+| `Contribution` | A typed proposal for a write. |
+| `EvidenceRef` | A pointer to the evidence behind a contribution. |
+| `SourceFunction`, `TargetFace` | The producing function and the target store of a contribution. |
+| `validate_and_submit` | Validates a contribution and submits it. |
+| `submit_and_detect_collisions` | `validate_and_submit` plus collision logging. |
+| `ActionRecorder`, `ActionRecordStore`, `safe_record_action` | Record actions in the action ledger. |
+
+---
+
+## `ze_sdk.api` — REST helpers
+
+| Symbol | Description |
+|--------|-------------|
+| `require_api_key` | FastAPI dependency that checks the bearer token. Use it on plugin REST routes. |
 
 ---
 

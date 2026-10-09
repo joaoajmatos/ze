@@ -4,16 +4,18 @@ from datetime import datetime, timezone
 
 from ze_communication.types import SentMessage
 from ze_logging import get_logger
-from ze_memory.action_records.recorder import ActionRecorder
-from ze_memory.action_records.store import ActionRecordStore
-from ze_memory.action_records.types import (
+from ze_sdk.contribution import (
     ActionLifecycle,
     ActionOutcome,
     ActionRecord,
     ActionRecordDraft,
+    ActionRecorder,
+    ActionRecordStore,
     AuthoritativeRef,
+    Contribution,
+    SourceFunction,
+    TargetFace,
 )
-from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 
 from ze_messenger.outbound.store import OutboundSendStore

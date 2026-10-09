@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 
 from ze_agents.claims import ClaimKind, Provenance
-from ze_memory.types import EntityRef, Signal
+from ze_sdk.memory import EntityRef, Signal
 from ze_news.types import Article
 
 

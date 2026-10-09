@@ -9,7 +9,7 @@ from ze_sdk.proactive import ProactiveNotifier
 from ze_calendar.action_records import emit_reminder_mutation
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
 from ze_automation.workflow.scheduler import WorkflowScheduler
-from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
+from ze_sdk.contribution import ActionLifecycle, ActionOutcome
 
 
 def _reminder_write_view(args: dict) -> dict:
