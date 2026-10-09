@@ -103,12 +103,14 @@ export type Trigger = string;
 export type Similarity = number | null;
 export type ScriptRan = boolean;
 export type SkillsUsed = SkillUsageTraceResponse[];
-export type Runs = {
-  [k: string]: unknown;
-}[];
-export type Files = {
-  [k: string]: unknown;
-}[];
+export type Command = string;
+export type Success1 = boolean;
+export type Status = "in_progress" | null;
+export type Id4 = string | null;
+export type Runs = WorkspaceRunTraceResponse[];
+export type Path = string;
+export type Op = "read" | "write" | "delete" | "ingest";
+export type Files = WorkspaceFileTraceResponse[];
 export type ScriptRan1 = boolean;
 export type Unavailable = boolean;
 export type Planned = string[] | null;
@@ -121,7 +123,7 @@ export type ConductorHint =
     }[]
   | null;
 export type Agent1 = string;
-export type Status = string;
+export type Status1 = string;
 export type RequestId = string | null;
 export type ConductorLedger = ConductorLedgerEntryResponse[];
 export type QuestionId = string;
@@ -139,7 +141,7 @@ export type SkipReason = string | null;
 export type Judgments = JudgmentTraceResponse[];
 export type EffectsKnown = boolean;
 export type Type11 = "notification";
-export type Id4 = string;
+export type Id5 = string;
 export type EventType = string;
 export type Source2 = string;
 export type Title = string;
@@ -169,12 +171,12 @@ export type GoalId = string | null;
 export type WorkflowId = string | null;
 export type ExecutionId = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
-export type Path = string;
+export type Path1 = string;
 export type Size = number;
 export type Type13 = "ack";
 export type Ids = string[];
 export type Type14 = "confirm";
-export type Id5 = string;
+export type Id6 = string;
 export type ThreadId11 = string;
 export type Choice = "approve" | "deny";
 export type EditedContent = string | null;
@@ -404,6 +406,24 @@ export interface WorkspaceUsageTraceResponse {
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WorkspaceRunTraceResponse".
+ */
+export interface WorkspaceRunTraceResponse {
+  command: Command;
+  success: Success1;
+  status?: Status;
+  id?: Id4;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WorkspaceFileTraceResponse".
+ */
+export interface WorkspaceFileTraceResponse {
+  path: Path;
+  op: Op;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "ProcedureUsageTraceResponse".
  */
 export interface ProcedureUsageTraceResponse {
@@ -417,7 +437,7 @@ export interface ProcedureUsageTraceResponse {
  */
 export interface ConductorLedgerEntryResponse {
   agent: Agent1;
-  status: Status;
+  status: Status1;
   request_id?: RequestId;
 }
 /**
@@ -442,7 +462,7 @@ export interface JudgmentTraceResponse {
  */
 export interface WsNotificationFrame {
   type: Type11;
-  id: Id4;
+  id: Id5;
   event_type: EventType;
   source: Source2;
   title: Title;
@@ -478,7 +498,7 @@ export interface WsScreenContext {
  * via the `definition` "WsWorkspacePlaced".
  */
 export interface WsWorkspacePlaced {
-  path: Path;
+  path: Path1;
   size: Size;
 }
 /**
@@ -495,7 +515,7 @@ export interface WsAckFrame {
  */
 export interface WsConfirmFrame {
   type: Type14;
-  id: Id5;
+  id: Id6;
   thread_id: ThreadId11;
   choice: Choice;
   edited_content?: EditedContent;
