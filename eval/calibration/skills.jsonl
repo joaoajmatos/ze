@@ -1,0 +1,84 @@
+{"id": "skill-001-en", "lang": "en", "text": "Rewrite this email to my landlord so it sounds polite but firm", "gold": "email-tone", "band": "above", "explicit": false}
+{"id": "skill-002-en", "lang": "en", "text": "Draft a professional reply to a client who is upset about the delay", "gold": "email-tone", "band": "above", "explicit": false}
+{"id": "skill-003-pt", "lang": "pt", "text": "Reescreve este email para o meu chefe num tom mais profissional", "gold": "email-tone", "band": "above", "explicit": false}
+{"id": "skill-004-en", "lang": "en", "text": "I need to tell my team lead no without sounding rude, can you word the message?", "gold": "email-tone", "band": "below_floor", "explicit": false}
+{"id": "skill-005-pt", "lang": "pt", "text": "Preciso de dizer ao cliente que o prazo falhou, mas sem soar mal, ajuda-me a escrever", "gold": "email-tone", "band": "below_floor", "explicit": false}
+{"id": "skill-006-en", "lang": "en", "text": "Check this paragraph for typos and grammar mistakes", "gold": "proofread", "band": "above", "explicit": false}
+{"id": "skill-007-en", "lang": "en", "text": "Fix the punctuation in my cover letter but keep my wording", "gold": "proofread", "band": "above", "explicit": false}
+{"id": "skill-008-pt", "lang": "pt", "text": "Revê a ortografia e a gramática deste texto, por favor", "gold": "proofread", "band": "above", "explicit": false}
+{"id": "skill-009-en", "lang": "en", "text": "Can you go over my essay and catch anything that reads wrong?", "gold": "proofread", "band": "below_floor", "explicit": false}
+{"id": "skill-010-pt", "lang": "pt", "text": "Vê se há erros neste resumo antes de eu entregar", "gold": "proofread", "band": "below_floor", "explicit": false}
+{"id": "skill-011-en", "lang": "en", "text": "Turn this meeting transcript into minutes with action items", "gold": "meeting-notes", "band": "above", "explicit": false}
+{"id": "skill-012-en", "lang": "en", "text": "Here are my rough notes from the product sync, structure them with decisions and owners", "gold": "meeting-notes", "band": "above", "explicit": false}
+{"id": "skill-013-pt", "lang": "pt", "text": "Faz a ata desta reunião com as decisões e quem fica responsável", "gold": "meeting-notes", "band": "above", "explicit": false}
+{"id": "skill-014-en", "lang": "en", "text": "We just finished a long call, who was supposed to do what? notes below", "gold": "meeting-notes", "band": "below_floor", "explicit": false}
+{"id": "skill-015-pt", "lang": "pt", "text": "Tenho apontamentos soltos da call de hoje, organiza o que ficou combinado", "gold": "meeting-notes", "band": "below_floor", "explicit": false}
+{"id": "skill-016-en", "lang": "en", "text": "Write my weekly status report from these notes", "gold": "weekly-report", "band": "above", "explicit": false}
+{"id": "skill-017-en", "lang": "en", "text": "Summarize the week: progress, blockers and what's next", "gold": "weekly-report", "band": "above", "explicit": false}
+{"id": "skill-018-pt", "lang": "pt", "text": "Prepara o relatório semanal com o progresso e os bloqueios", "gold": "weekly-report", "band": "above", "explicit": false}
+{"id": "skill-019-en", "lang": "en", "text": "It's Friday, put together what I got done this week for my manager", "gold": "weekly-report", "band": "below_floor", "explicit": false}
+{"id": "skill-020-pt", "lang": "pt", "text": "Resume-me a semana de trabalho para enviar à equipa na sexta", "gold": "weekly-report", "band": "below_floor", "explicit": false}
+{"id": "skill-021-en", "lang": "en", "text": "Draft my standup update: did the API work yesterday, doing tests today", "gold": "standup-summary", "band": "above", "explicit": false}
+{"id": "skill-022-en", "lang": "en", "text": "Write a quick daily standup with yesterday, today and blockers", "gold": "standup-summary", "band": "above", "explicit": false}
+{"id": "skill-023-pt", "lang": "pt", "text": "Escreve o meu standup de hoje com o que fiz ontem e o que vou fazer", "gold": "standup-summary", "band": "above", "explicit": false}
+{"id": "skill-024-en", "lang": "en", "text": "The daily sync starts in five minutes, what should I say about my work?", "gold": "standup-summary", "band": "below_floor", "explicit": false}
+{"id": "skill-025-pt", "lang": "pt", "text": "Tenho de dizer alguma coisa na reunião diária, ajuda-me a resumir o que fiz ontem", "gold": "standup-summary", "band": "below_floor", "explicit": false}
+{"id": "skill-026-en", "lang": "en", "text": "Review this diff and tell me what could break", "gold": "code-review", "band": "above", "explicit": false}
+{"id": "skill-027-en", "lang": "en", "text": "Look at my pull request for bugs and missing tests", "gold": "code-review", "band": "above", "explicit": false}
+{"id": "skill-028-pt", "lang": "pt", "text": "Faz uma revisão deste código e diz-me o que melhorar", "gold": "code-review", "band": "above", "explicit": false}
+{"id": "skill-029-en", "lang": "en", "text": "Can you take a look at this function and tell me if anything seems off?", "gold": "code-review", "band": "below_floor", "explicit": false}
+{"id": "skill-030-pt", "lang": "pt", "text": "Estás a ver este patch? Diz-me se te parece seguro fazer merge", "gold": "code-review", "band": "below_floor", "explicit": false}
+{"id": "skill-031-en", "lang": "en", "text": "Write a commit message for these changes", "gold": "commit-message", "band": "above", "explicit": false}
+{"id": "skill-032-en", "lang": "en", "text": "Give me a conventional commit title for this diff", "gold": "commit-message", "band": "above", "explicit": false}
+{"id": "skill-033-pt", "lang": "pt", "text": "Escreve a mensagem de commit para esta alteração", "gold": "commit-message", "band": "above", "explicit": false}
+{"id": "skill-034-en", "lang": "en", "text": "I just fixed the login redirect, how should I phrase it for git?", "gold": "commit-message", "band": "below_floor", "explicit": false}
+{"id": "skill-035-pt", "lang": "pt", "text": "Como devo descrever no git o que acabei de mudar no módulo de pagamentos?", "gold": "commit-message", "band": "below_floor", "explicit": false}
+{"id": "skill-036-en", "lang": "en", "text": "Translate this paragraph from Portuguese to English", "gold": "translate-pt-en", "band": "above", "explicit": false}
+{"id": "skill-037-en", "lang": "en", "text": "How do I say 'estou a chegar atrasado' naturally in English?", "gold": "translate-pt-en", "band": "above", "explicit": false}
+{"id": "skill-038-pt", "lang": "pt", "text": "Traduz este texto para inglês mantendo o tom informal", "gold": "translate-pt-en", "band": "above", "explicit": false}
+{"id": "skill-039-en", "lang": "en", "text": "My colleague wrote this in Portuguese, what does it say in English?", "gold": "translate-pt-en", "band": "below_floor", "explicit": false}
+{"id": "skill-040-pt", "lang": "pt", "text": "O que quer dizer esta frase em inglês: 'the ball is in your court'?", "gold": "translate-pt-en", "band": "below_floor", "explicit": false}
+{"id": "skill-041-en", "lang": "en", "text": "Scale this recipe from 4 to 10 servings", "gold": "recipe-scaler", "band": "above", "explicit": false}
+{"id": "skill-042-en", "lang": "en", "text": "Convert these ingredient amounts from cups to grams", "gold": "recipe-scaler", "band": "above", "explicit": false}
+{"id": "skill-043-pt", "lang": "pt", "text": "Ajusta esta receita para 6 pessoas em vez de 2", "gold": "recipe-scaler", "band": "above", "explicit": false}
+{"id": "skill-044-en", "lang": "en", "text": "I'm cooking for a big family dinner, this lasagna only feeds four", "gold": "recipe-scaler", "band": "below_floor", "explicit": false}
+{"id": "skill-045-pt", "lang": "pt", "text": "Tenho uma receita em onças e libras, preciso dela em gramas", "gold": "recipe-scaler", "band": "below_floor", "explicit": false}
+{"id": "skill-046-en", "lang": "en", "text": "Plan a three day trip to Porto with a rough budget", "gold": "travel-itinerary", "band": "above", "explicit": false}
+{"id": "skill-047-en", "lang": "en", "text": "Build me an itinerary for a week in Japan with transport between cities", "gold": "travel-itinerary", "band": "above", "explicit": false}
+{"id": "skill-048-pt", "lang": "pt", "text": "Organiza um roteiro de 4 dias em Roma com horários", "gold": "travel-itinerary", "band": "above", "explicit": false}
+{"id": "skill-049-en", "lang": "en", "text": "We land in Lisbon on Friday morning and leave Monday, what should we do?", "gold": "travel-itinerary", "band": "below_floor", "explicit": false}
+{"id": "skill-050-pt", "lang": "pt", "text": "Vou a Madrid no fim de semana, o que sugeres que visite e como me desloco?", "gold": "travel-itinerary", "band": "below_floor", "explicit": false}
+{"id": "skill-051-en", "lang": "en", "text": "Make flashcards from these biology notes", "gold": "study-flashcards", "band": "above", "explicit": false}
+{"id": "skill-052-en", "lang": "en", "text": "Turn this chapter into question and answer cards for spaced repetition", "gold": "study-flashcards", "band": "above", "explicit": false}
+{"id": "skill-053-pt", "lang": "pt", "text": "Cria flashcards a partir destes apontamentos de história", "gold": "study-flashcards", "band": "above", "explicit": false}
+{"id": "skill-054-en", "lang": "en", "text": "I have an exam on Thursday, help me memorize this material", "gold": "study-flashcards", "band": "below_floor", "explicit": false}
+{"id": "skill-055-pt", "lang": "pt", "text": "Quero treinar para o teste de química, faz perguntas com base neste resumo", "gold": "study-flashcards", "band": "below_floor", "explicit": false}
+{"id": "skill-056-en", "lang": "en", "text": "Categorize these bank transactions into budget categories", "gold": "expense-categorizer", "band": "above", "explicit": false}
+{"id": "skill-057-en", "lang": "en", "text": "Flag any unusual spending in this month's card statement", "gold": "expense-categorizer", "band": "above", "explicit": false}
+{"id": "skill-058-pt", "lang": "pt", "text": "Classifica estas despesas do cartão por categoria", "gold": "expense-categorizer", "band": "above", "explicit": false}
+{"id": "skill-059-en", "lang": "en", "text": "Where did my money go last month? statement attached", "gold": "expense-categorizer", "band": "below_floor", "explicit": false}
+{"id": "skill-060-pt", "lang": "pt", "text": "Vê se há algum gasto estranho neste extrato do banco", "gold": "expense-categorizer", "band": "below_floor", "explicit": false}
+{"id": "skill-061-en", "lang": "en", "text": "What's the capital of Australia?", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-062-en", "lang": "en", "text": "Remind me to call mom at 6pm", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-063-en", "lang": "en", "text": "Tell me a joke about cats", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-064-en", "lang": "en", "text": "What's on my calendar tomorrow?", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-065-en", "lang": "en", "text": "How does photosynthesis work?", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-066-en", "lang": "en", "text": "Thanks, that was helpful", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-067-pt", "lang": "pt", "text": "Qual é a capital do Brasil?", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-068-pt", "lang": "pt", "text": "Lembra-me de ir ao ginásio às 7", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-069-pt", "lang": "pt", "text": "Conta-me uma piada", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-070-pt", "lang": "pt", "text": "Que horas são em Tóquio?", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-071-pt", "lang": "pt", "text": "Obrigado, ajudou muito", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-072-pt", "lang": "pt", "text": "Explica-me como funciona a inflação", "gold": "none", "band": "none", "explicit": false}
+{"id": "skill-073-en", "lang": "en", "text": "/email-tone make this friendlier: send me the file now", "gold": "email-tone", "band": "above", "explicit": true}
+{"id": "skill-074-en", "lang": "en", "text": "/code-review please check my parser change", "gold": "code-review", "band": "above", "explicit": true}
+{"id": "skill-075-pt", "lang": "pt", "text": "/translate-pt-en bom dia a todos", "gold": "translate-pt-en", "band": "above", "explicit": true}
+{"id": "skill-076-pt", "lang": "pt", "text": "/recipe-scaler duplica esta receita", "gold": "recipe-scaler", "band": "above", "explicit": true}
+{"id": "skill-077-en", "lang": "en", "text": "/meeting-notes standup was at ten, notes are below", "gold": "meeting-notes", "band": "above", "explicit": true}
+{"id": "skill-078-pt", "lang": "pt", "text": "/study-flashcards capítulo 3 de biologia", "gold": "study-flashcards", "band": "above", "explicit": true}
+{"id": "skill-079-en", "lang": "en", "text": "make it shorter", "gold": "email-tone", "band": "above", "explicit": false, "history": "assistant: Here is the draft email to your landlord.\nuser: thanks"}
+{"id": "skill-080-pt", "lang": "pt", "text": "e para a equipa técnica?", "gold": "weekly-report", "band": "above", "explicit": false, "history": "assistant: Aqui está o relatório semanal para a direção."}
+{"id": "skill-081-en", "lang": "en", "text": "now the same for the second file", "gold": "code-review", "band": "above", "explicit": false, "history": "assistant: Review of parser.py: two bugs and one missing test."}
+{"id": "skill-082-pt", "lang": "pt", "text": "e em inglês?", "gold": "translate-pt-en", "band": "above", "explicit": false, "history": "assistant: Aqui tens o texto revisto.\nuser: ok"}
+{"id": "skill-083-en", "lang": "en", "text": "what about Sunday?", "gold": "travel-itinerary", "band": "above", "explicit": false, "history": "assistant: Day one and two of your Porto trip are planned."}
+{"id": "skill-084-pt", "lang": "pt", "text": "e as despesas de março?", "gold": "expense-categorizer", "band": "above", "explicit": false, "history": "assistant: Categorizei as despesas de fevereiro."}

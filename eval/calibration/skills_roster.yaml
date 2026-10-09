@@ -1,0 +1,53 @@
+# Fixed roster for `make calibrate-skills` (phase 166). Real skills vary per user, so the
+# calibration uses these twelve. Descriptions are written the way a user writes them, with
+# four deliberate near-miss pairs: email-tone/proofread, weekly-report/standup-summary,
+# code-review/commit-message, meeting-notes/weekly-report.
+skills:
+  - slug: email-tone
+    name: Email Tone
+    source: imported
+    description: Draft or rewrite emails so they sound polite, clear and professional, and adjust the tone for the recipient.
+  - slug: proofread
+    name: Proofread
+    source: imported
+    description: Proofread text for grammar, spelling and punctuation mistakes without changing its meaning or style.
+  - slug: meeting-notes
+    name: Meeting Notes
+    source: imported
+    description: Turn a meeting transcript or rough notes into structured minutes with decisions, owners and action items.
+  - slug: weekly-report
+    name: Weekly Report
+    source: imported
+    description: Compile a weekly status report from work notes covering progress, blockers and plans for next week.
+  - slug: standup-summary
+    name: Standup Summary
+    source: imported
+    description: Write a short daily standup update with what was done yesterday, what is planned today and any blockers.
+  - slug: code-review
+    name: Code Review
+    source: imported
+    description: Review a code diff for bugs, readability and missing tests and give prioritized, actionable feedback.
+  - slug: commit-message
+    name: Commit Message
+    source: imported
+    description: Write a concise conventional commit message from a diff or a description of the changes made.
+  - slug: translate-pt-en
+    name: Translate PT EN
+    source: imported
+    description: Translate text between Portuguese and English while keeping the tone, idioms and formatting.
+  - slug: recipe-scaler
+    name: Recipe Scaler
+    source: imported
+    description: Scale recipe ingredient quantities to a different number of servings and convert between metric and imperial units.
+  - slug: travel-itinerary
+    name: Travel Itinerary
+    source: imported
+    description: Plan a day-by-day travel itinerary with timings, transport between stops and a rough budget.
+  - slug: study-flashcards
+    name: Study Flashcards
+    source: imported
+    description: Turn study material into question-and-answer flashcards suited to spaced repetition.
+  - slug: expense-categorizer
+    name: Expense Categorizer
+    source: imported
+    description: Categorize bank or card transactions into budget categories and flag unusual spending.

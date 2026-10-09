@@ -249,9 +249,65 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-09T11:26:03.013Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:33.593Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:33.723Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:33.847Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:33.971Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:34.103Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:34.244Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T11:31:34.374Z"
     }
   ],
-  "currentTask": "T029",
+  "currentTask": "T035",
   "task_summaries": {
     "T021": {
       "status": "DONE"
@@ -362,6 +418,34 @@
     "T028": {
       "status": "DONE",
       "did": "gates green: test-skills, test-core, test, lint"
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "166 T029 done"
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "166 T030 done"
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "166 T031 done"
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "166 T032 done"
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "166 T033 done"
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "166 T034 done"
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "166 T036 done"
     }
   }
 }

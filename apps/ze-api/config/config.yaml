@@ -33,8 +33,8 @@ system_one:
       enabled: false
       choice_trust: null        # uncalibrated — set from make calibrate-skills
       needs_skill_hold: null    # uncalibrated — set from make calibrate-skills
-      shortlist_k: 5            # provisional — pick from make calibrate-skills (T034)
-      shortlist_floor: 0.35     # provisional — pick from make calibrate-skills (T034)
+      shortlist_k: 5            # offline recall 0.985 (research R1); re-check after a live run
+      shortlist_floor: 0.35     # non-binding on the calibration roster (E5 cosines 0.71-0.89)
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.

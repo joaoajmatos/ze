@@ -92,22 +92,22 @@
 
 **Independent Test**: Offline `--recall` prints recall at k = 3..8 with no network; dataset test validates shape.
 
-- [ ] **T029** [P] [US4] [PLATFORM] Write `eval/calibration/skills_roster.yaml`: about 12 realistic skills (slug, name, description, source) including at least three near-miss pairs; descriptions written as a user would write them. · `eval/calibration/skills_roster.yaml`
-- [ ] **T030** [P] [US4] [PLATFORM] Write `eval/calibration/skills.jsonl`: about 80 rows, ≥ 30% PT, covering clear apply, near-miss between similar skills, no-skill turns, below-floor paraphrases, explicit `/slug` and history-dependent follow-ups. · `eval/calibration/skills.jsonl`
-- [ ] **T031** [P] [US4] [BE] Fail-first: dataset shape (ids unique, gold is a roster slug or `none`, band valid, language balance), and script offline mode (`--recall` prints k = 3..8 per language with a fake embedder and makes no network call; live path never imported by default). · `apps/ze-api/tests/calibration/test_skills_calibration.py`
+- [x] **T029** [P] [US4] [PLATFORM] Write `eval/calibration/skills_roster.yaml`: about 12 realistic skills (slug, name, description, source) including at least three near-miss pairs; descriptions written as a user would write them. · `eval/calibration/skills_roster.yaml`
+- [x] **T030** [P] [US4] [PLATFORM] Write `eval/calibration/skills.jsonl`: about 80 rows, ≥ 30% PT, covering clear apply, near-miss between similar skills, no-skill turns, below-floor paraphrases, explicit `/slug` and history-dependent follow-ups. · `eval/calibration/skills.jsonl`
+- [x] **T031** [P] [US4] [BE] Fail-first: dataset shape (ids unique, gold is a roster slug or `none`, band valid, language balance), and script offline mode (`--recall` prints k = 3..8 per language with a fake embedder and makes no network call; live path never imported by default). · `apps/ze-api/tests/calibration/test_skills_calibration.py`
 
 **⟶ Wait for T029–T031, then:**
 
-- [ ] **T032** [US4] [PLATFORM] Write `eval/calibration/skills.py`: roster load, production `shortlist()` with the real E5 singleton, live System One run with shuffled option order, report Choice accuracy and a peakedness reliability table, `none` precision/recall, Noul separation (apply vs no-skill rows), a `choice_trust` × `needs_skill_hold` grid with wrong-skill applies and missed applies, gold recall at k = 3..8 and floors 0.30..0.45 per language, and suggested values. `--recall` runs offline. Never collected by pytest. · `eval/calibration/skills.py`
-- [ ] **T033** [US4] [PLATFORM] Run `--recall` offline against the roster and record the table in `research.md` under R1. Re-read the 164 tuning findings first (ask Keel on the 164 Tuning floor for anything newer than commit `43f9c652`: recall at k=4/5, whether `shortlist_k` default moved, whether live bars were set) and note what changed. · `specs/phases/166-skill-suggestion-system-one/research.md`
-- [ ] **T034** [US4] [PLATFORM] Pick `shortlist_k` and `shortlist_floor` from the T033 table (smallest values reaching the recall target in both languages), set them in `config.yaml` and as the code defaults in `judge.py`, and update the spec Clarifications tuning note. Bars stay `null`. · `apps/ze-api/config/config.yaml`, `core/automation/ze-skills/ze_skills/judge.py`, `spec.md`
+- [x] **T032** [US4] [PLATFORM] Write `eval/calibration/skills.py`: roster load, production `shortlist()` with the real E5 singleton, live System One run with shuffled option order, report Choice accuracy and a peakedness reliability table, `none` precision/recall, Noul separation (apply vs no-skill rows), a `choice_trust` × `needs_skill_hold` grid with wrong-skill applies and missed applies, gold recall at k = 3..8 and floors 0.30..0.45 per language, and suggested values. `--recall` runs offline. Never collected by pytest. · `eval/calibration/skills.py`
+- [x] **T033** [US4] [PLATFORM] Run `--recall` offline against the roster and record the table in `research.md` under R1. Re-read the 164 tuning findings first (ask Keel on the 164 Tuning floor for anything newer than commit `43f9c652`: recall at k=4/5, whether `shortlist_k` default moved, whether live bars were set) and note what changed. · `specs/phases/166-skill-suggestion-system-one/research.md`
+- [x] **T034** [US4] [PLATFORM] Pick `shortlist_k` and `shortlist_floor` from the T033 table (smallest values reaching the recall target in both languages), set them in `config.yaml` and as the code defaults in `judge.py`, and update the spec Clarifications tuning note. Bars stay `null`. · `apps/ze-api/config/config.yaml`, `core/automation/ze-skills/ze_skills/judge.py`, `spec.md`
 - [ ] **T035** [US4] [PLATFORM] (Out-of-band, needs credits) Run `make calibrate-skills` once; if a safe pair of bars exists, set them and enable the surface; if not, leave `null` and record the finding as 164 did. Not required for Implemented status. · `apps/ze-api/config/config.yaml`
 
 ---
 
 ## Phase 7: Polish and Docs
 
-- [ ] **T036** [P] [BE] `make lint` and `make format`; `make typecheck-web`; `graphify update .`. · repo
+- [x] **T036** [P] [BE] `make lint` and `make format`; `make typecheck-web`; `graphify update .`. · repo
 - [ ] **T037** [P] [DOCS] `docs/skills.md`: Matching section covers the shortlist, the Choice/Noul gate, the one-automatic-skill rule (a deliberate narrowing of 114, with explicit still stacking), the below-floor mark, fail-open, and the config block; correct the "existing routing embedding" wording. · `docs/skills.md`
 - [ ] **T038** [P] [DOCS] `docs/configuration.md`: `system_one.surfaces.skills` keys (including `shortlist_k`, `shortlist_floor`), calibration command, and a cross-link from the `skills:` block. · `docs/configuration.md`
 - [ ] **T039** [P] [DOCS] `core/automation/ze-skills/README.md`: matcher, judge module and surface. · `core/automation/ze-skills/README.md`

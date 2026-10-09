@@ -5,6 +5,20 @@
 **Why**: 164's first live run found gold agents outside the top-4 shortlist (recall 0.826 at k=4, 0.870 at k=5; 0.870 and 0.957 after a sharper description). A fixed k guessed up front repeats that. Skill rosters are user-made and variable, so recall depends on roster size and description quality.
 **Consequence**: The calibration reports recall at k = 3..8 and floors 0.30..0.45. A task picks the shipped `shortlist_k` and `shortlist_floor` from the report, noted in the spec tuning note. Ask-Keel input: his 164 numbers are in `43f9c652` on the 164 Tuning floor (offline `--recall`, `RECALL_KS`); 166 reuses the idea, built independently so it does not depend on that branch landing.
 
+**Offline result (T033, 2026-10-09)**: `make calibrate-skills ARGS=--recall` is `uv run python eval/calibration/skills.py --recall`. Real E5, 12-skill roster, 66 judged gold rows (84 rows, 36 PT, 6 explicit excluded).
+
+| lang | k=3 | k=4 | k=5 | k=6 | k=7 | k=8 |
+|---|---|---|---|---|---|---|
+| en | 0.974 | 0.974 | 0.974 | 0.974 | 0.974 | 0.974 |
+| pt | 0.926 | 0.963 | 1.000 | 1.000 | 1.000 | 1.000 |
+| all | 0.955 | 0.970 | 0.985 | 0.985 | 0.985 | 0.985 |
+
+Recall does not move with `shortlist_floor` from 0.30 to 0.75 (0.985 at k=5). The one EN miss is a gold skill at rank 9, so no k fixes it. Smallest k at or above 0.95 in both languages is 4.
+
+**Finding: E5 cosines sit high.** Gold cosines run 0.74 to 0.89 (below-floor paraphrases 0.76 to 0.84). Top cosine on no-skill rows is 0.71 to 0.81. Every skill on this roster clears `match_threshold` 0.5 for every message, so the 114 path would apply all twelve to any turn. The `shortlist_floor` of 0.35 therefore never filters here and the "just under the floor" band is empty for E5-base with `name: description` passages. The Choice and Noul carry the discrimination, which is the reason for this phase; the floor and the 0.5 threshold are a separate retune that needs live data from real rosters. 164 findings (commit `43f9c652`: recall 0.826 at k=4, 0.870 at k=5, 0.957 at k=5 after a description rewrite; default 5) were reread; no newer 164 numbers were available in this tree.
+
+**Pick (T034)**: `shortlist_k` 5 (0.985, one row above k=4's 0.970, matching the 164 default and a margin for rosters larger than twelve), `shortlist_floor` 0.35 (non-binding on this roster; kept as a safety floor below `match_threshold`). Bars stay `null`.
+
 ## R2 — Decision table (normative: contracts/skills-judgment.md)
 Order: skip, abstain, drop, apply. Abstain precedes drop so an unsure `none` cannot silently remove a skill 114 would have applied. An invalid Noul with a trusted named Choice is a skip (not an apply), because gating a tool-narrowing skill on a missing answer is the wrong default; this differs from 164, where an invalid Noul still trusted the Choice.
 
