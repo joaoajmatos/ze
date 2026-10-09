@@ -315,8 +315,19 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `agents()` | `-> list[type[BaseAgent]]` | Agents to register (rarely used — prefer `agent_module_paths`). |
 | `jobs()` | `-> list[Any]` | Proactive job instances to register. |
 | `onboarding()` | `-> OnboardingProvider \| None` | Onboarding provider for first-run setup. |
-| `migrations_path()` | `-> Path \| None` | `classmethod`. Path to the Alembic `versions/` directory. |
+| `migrations_path()` | `-> Path \| None` | `classmethod`. Path to the package's `migrations/` directory (with `env.py` and `versions/`). |
 | `agent_module_paths()` | `-> list[str]` | Module paths imported at bootstrap to trigger `@agent`/`@tool` registration. List tools module before agent module. |
+| `agent_deps(accumulated)` | `-> dict` | Extra types the plugin's agents need injected, merged into the bootstrap dependency map. |
+| `integration_types()` | `classmethod -> list[type]` | Integration credential types the plugin needs (for example `Trading212Client`). |
+| `signal_sources()` | `-> list[SignalSource]` | Signal sources fed into the admission and correlation pipeline. Duplicate `source_key` values raise `AgentConfigError`. |
+| `webhook_handlers()` | `-> list` | `WebhookHandler` instances for inbound webhooks. |
+| `channels()` | `-> list[Any]` | Communication channel instances, collected into the `ChannelRegistry`. |
+| `data_domains()` | `-> list[DataDomain]` | Export, import, and delete contract for the plugin's tables. |
+| `ingestion_fetchers()` / `ingestion_extractors()` | `-> list` | Custom content fetchers and extractors for `ze-ingestion`. |
+| `ui_contributions()` | `-> list` | Nav items, settings sections, and pages for ze-web, served at `GET /api/v0/ui/manifest`. |
+| `rest_routes()` | `-> list` | FastAPI routers the plugin owns. |
+| `rest_stores()` | `-> dict[str, Any]` | Named stores that REST routes can reach. |
+| `seed_domains()` | `-> list` | Dev seed fixtures for `ze-seed`. |
 | `bundled_skill_paths()` | `-> list[str]` | Filesystem paths to bundled `SKILL.md` files. Registered at startup as `source=bundled`, `status=active`. See [skills.md](skills.md#bundled-skills). |
 
 ### Graph-level hooks
@@ -342,10 +353,10 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 
 ```python
 def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=True) -> None:
-    scheduler.add_cron_job(my_job, cron="0 8 * * *")
+    scheduler.register(my_job, cron="0 8 * * *")
 ```
 
-Called by `ZeContainer` after startup. Use it to add cron jobs to the `ProactiveScheduler`.
+`ze-api` calls this hook while it registers proactive jobs (`compose.py`). `ProactiveScheduler.register(job, cron)` takes a job with a `job_id` and a `run()` method.
 
 ---
 
