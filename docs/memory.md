@@ -287,6 +287,31 @@ the goal or workflow that produced it via `USES_PROCEDURE` graph edges.
 `GoalExecutor` and workflow nodes upsert task state to track in-flight progress, and
 link it to its goal via `BELONGS_TO_GOAL` graph edges.
 
+### Feedback records (evidence, not facts)
+
+When the person rates an assistant reply with a thumbs up or thumbs down, Ze appends a
+`FeedbackRecord` to the `feedback_records` table (`ze_memory/feedback_records/`). A
+Retry request appends a `retry_requested` record. Each record cites the message id and
+the thread id, and carries provenance and confidence from the shared claim vocabulary.
+It holds no free text and no message content.
+
+A rating is a reaction to Ze's output. It is not a fact about the user. Feedback never
+enters `memory_facts`, fact embeddings, retrieval, profile synthesis, contradiction
+detection, the memory feed, or fact review. Ze never says "you liked that" because of
+a thumb.
+
+The records reach the table through the contribution seam: the claim kind
+`FEEDBACK_RECORD` is licensed to the Perception function only. The table is
+append-only. The current rating is the latest rating record for the message, and
+earlier records stay as history. A record links to the message's `MessageTrace` by
+message id, so the routing envelope, System One judgments, memory chunks, and tool calls
+are reachable from it. Ze does not copy the trace into the record.
+
+In v1 nothing reads feedback during a turn. Routing, admission, prompts, and ranking
+ignore it. The trace panel is the only reader. See
+[native-interface.md](native-interface.md#reply-feedback-and-retry) for the user-facing
+flow.
+
 ---
 
 ## How memory is retrieved
@@ -541,6 +566,7 @@ memory:
 | `procedure_versions` | Admitted reusable playbooks with pgvector embeddings |
 | `memory_task_state` | Goal/workflow in-flight progress checkpoints |
 | `memory_profile_facets` | Structured user portrait — key/value facets with confidence |
+| `feedback_records` | Append-only ratings and retry requests on assistant replies (`zm024`). Evidence about replies, never read back into a turn |
 | `memory_retrieval_cache` | Session-scoped NLI rerank order for facts/summaries (`zm010`; 1-day TTL) |
 
 Migrations: `core/cognition/ze-memory/ze_memory/migrations/versions/` (raw SQL, Alembic meta-runner in `ze_api/migrate.py`).

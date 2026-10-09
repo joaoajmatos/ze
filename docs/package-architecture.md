@@ -69,7 +69,8 @@ Hard rules:
 |--------|-----------------|
 | `base_agent.py` | `BaseAgent` ABC with `agentic_loop`, `call_tool`, `emit`, `_build_system_prompt` |
 | `registry.py` | `@agent` decorator + `AgentRegistry` |
-| `tool.py` | `@tool` decorator, `ToolAccess` enum |
+| `tool.py` | `@tool` decorator, `ToolAccess` enum, `validate_tool_declarations()` |
+| `reversibility.py` | `ToolReversibility` enum — required on every `WRITE` tool |
 | `plugin.py` | `ZePlugin` ABC — container and graph extension seam |
 | `onboarding/` | Compatibility re-export of `ze_onboarding` onboarding symbols |
 | `types.py` | `AgentContext`, `AgentResult`, `ToolCall`, `GateDecision`, `Mode`, `AbortToken` |
@@ -154,7 +155,7 @@ packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instea
 | `orchestration/` | LangGraph graph builder, node implementations, `AgentState` (graph-private), edges |
 | `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `RoutingFallback` |
 | `capability/` | `CapabilityGate`, `PostgresCapabilityOverrideStore` |
-| `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`) |
+| `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`), `retry.py` (Retry eligibility), `rewind.py` (thread history rewind for Retry) |
 | `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
 | `embeddings.py` | Shared `intfloat/multilingual-e5-base` singleton |
@@ -178,6 +179,7 @@ only and stays free of application wiring.
 |--------|-----------------|
 | `plugin.py` | `ZePlugin`, `DataDomain` re-export for backwards compatibility |
 | `channels/` | `Channel` ABC, handle/message types, `ChannelRegistry` |
+| `contribution.py` | `Contribution`, `validate_and_submit`, and the claim-kind license table per source function |
 | `signals.py` | `SignalSource` protocol for cross-plugin signal collection |
 | `integration.py` | `ZeIntegration` protocol for third-party credential classes |
 | `registry.py` | Plugin registry helpers |
@@ -247,6 +249,7 @@ depends on `ze-agents` for logging and settings abstractions.
 | `projection.py` | Budget-aware result projection — `budget_facts`, `budget_episodes`, `facets_from_rows` |
 | `types.py` | `Fact`, `Episode`, `Event`, `Procedure`, `TaskState`, `ProfileFacet`, `MemoryContext`, `RetrievalRequest` |
 | `defaults.py` | Consolidation thresholds and retrieval defaults |
+| `feedback_records/` | `FeedbackRecord`, `FeedbackStore`, `submit_feedback_record` — ratings and retry requests on assistant replies |
 | `graph/store.py` | `PostgresGraphStore` — relationship storage and expansion |
 | `graph/traversal.py` | `BoundedExpansionPolicy` — one-hop graph context enrichment |
 | `graph/predicates.py` | Typed relationship predicates: `DESCRIBES`, `SOURCED_FROM`, `MENTIONS`, `BELONGS_TO_GOAL`, … |

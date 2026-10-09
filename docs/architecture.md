@@ -186,8 +186,8 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `draft_response` | `nodes/execution.py` | Generate response, do not execute |
 | `await_confirmation` | `nodes/execution.py` | Pause graph, emit confirm_request frame |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
-| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message |
-| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction (fire-and-forget); skips eval threads |
+| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call |
+| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction (fire-and-forget); skips eval threads. In a retry run it only extends session history |
 
 </details>
 
@@ -207,6 +207,43 @@ reply causes `graph.ainvoke(None, config)` with the same `thread_id` to resume f
 the checkpoint.
 
 See [docs/native-interface.md](native-interface.md) for the full WebSocket protocol.
+
+### Message trace effect metadata
+
+`record_trace` resolves every tool call against the tool registry when it writes the
+trace. Each `ToolCallTrace` stores `access` (`read`, `write`, or `unknown`),
+`reversibility`, `undo_tool`, `gate` (`none`, `approved`, `denied`, or `expired`), and
+`effect_phrase`. Nested calls that a specialist made under `delegate_to_agent` appear in
+the same flat list. `MessageTrace.effects_known` is true only for traces built with this
+metadata. Older traces parse to `false`.
+
+The trace stores these values so that Retry never depends on registry state at retry time.
+
+### Reply feedback and Retry
+
+A rating is an append-only `FeedbackRecord` that points at a message id. The trace stays
+in `messages.trace` and is not copied. No code in a turn reads feedback.
+
+Retry regenerates the latest assistant reply:
+
+1. `retry_eligibility` (`ze_core/conversation/retry.py`) reads the stored trace. It is
+   a pure function of the message, the trace, whether the reply is the latest, whether
+   the thread is busy, and whether a confirmation is pending. The REST batch endpoint
+   and the WebSocket handler both call it, so both give the same answer.
+2. `invoke_retry_turn` (`ze_core/conversation/turn.py`) rewinds the checkpointed
+   `messages` of the thread to before the old reply (`conversation/rewind.py`). It
+   runs the graph with the original user text and `config["configurable"]["retry_mode"]`.
+3. In `retry_mode`, `BaseAgent.call_tool` and `delegate_to_agent` refuse every `WRITE`
+   tool and hand the model a message that says so. `capability_check` never pauses for
+   confirmation. `write_memory` skips fact admission, the episode write, and procedure
+   completion. It still extends session history.
+4. On success the new reply is saved with `replaces` set, and the old reply gets
+   `replaced_by` (migration `zc031`). The old reply stays in `messages` with its trace
+   and feedback. `MessageStore` listings hide it unless asked.
+5. On failure `restore_messages` puts the old history back and the original reply stays.
+
+See [native-interface.md](native-interface.md#reply-feedback-and-retry) for the frames
+and reason codes.
 
 ---
 
@@ -694,6 +731,8 @@ import time, so codegen needs no running server.
 | Method | Path | operationId |
 |---|---|---|
 | `GET` | `/api/v0/messages` | `listMessages` |
+| `PUT` | `/api/v0/messages/{message_id}/feedback` | `setMessageFeedback` |
+| `GET` | `/api/v0/messages/feedback` | `getMessageFeedback` |
 | `GET` | `/api/v0/sessions` | `listSessions` |
 | `POST` | `/api/v0/sessions` | `createSession` |
 | `GET` | `/api/v0/ws-schema` | `getWsSchema` |
@@ -837,7 +876,8 @@ it owns no tables and no revision files.
 | `goal_execution_traces` | Tool call trace per milestone (name, args, result, duration) |
 | `goal_suggestions` | Proactive goal proposals with accept/dismiss lifecycle |
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
-| `messages` | Conversation messages for unread-replay on WebSocket connect |
+| `messages` | Conversation messages for unread-replay on WebSocket connect; `replaces` / `replaced_by` link a retried reply to its replacement |
+| `feedback_records` | Append-only ratings and retry requests on assistant replies |
 
 ---
 

@@ -48,21 +48,47 @@ plugins/<pkg>/<module>/agents/<name>/
 ### 3. Define tools (`tools.py`)
 
 ```python
-from ze_sdk import tool, ToolAccess
+from ze_sdk import tool, ToolAccess, ToolReversibility
 
 @tool(access=ToolAccess.READ, description="Fetch records from the store.")
 async def get_record(id: str, store: MyStore) -> str:
     result = await store.get(id)
     return str(result)
 
-@tool(access=ToolAccess.WRITE, description="Create a new record.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Create a new record.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="delete_record",
+    undo_note="Does not restore links other records made to it",
+    effect_phrase="created a record",
+)
 async def create_record(name: str, store: MyStore) -> str:
     record = await store.create(name)
     return f"Created: {record.id}"
+
+@tool(
+    access=ToolAccess.WRITE,
+    description="Delete a record.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="deleted a record",
+)
+async def delete_record(id: str, store: MyStore) -> str:
+    await store.delete(id)
+    return f"Deleted: {id}"
 ```
 
 Use `ToolAccess.READ` when there are no external side effects. Use `ToolAccess.WRITE`
 for anything that creates, modifies, deletes, or sends. When in doubt, use `WRITE`.
+
+Every `WRITE` tool must also declare `reversibility`. Use `REVERSIBLE` only when another
+registered `WRITE` tool undoes the action. A `REVERSIBLE` tool names that tool in
+`undo_tool` and says what the undo cannot restore in `undo_note`. Use `IRREVERSIBLE`
+otherwise, and when in doubt. `effect_phrase` is a short past-tense description such as
+`"created a record"`. Ze uses it to tell the user why Retry is unavailable. A `WRITE`
+tool without `reversibility` fails at import with `AgentConfigError`. A `READ` tool must
+declare none of these arguments. At startup Ze checks that each `undo_tool` names a
+registered `WRITE` tool.
 
 ### 4. Write the agent (`agent.py`)
 
@@ -427,7 +453,7 @@ The error hierarchy:
 
 - [ ] Spec written in `specs/phases/`
 - [ ] `agent.py` with `@agent` class — `name`, `description`, `model`, `intents`, `tools` set
-- [ ] `tools.py` with `@tool` functions — `access` and `description` set on each
+- [ ] `tools.py` with `@tool` functions — `access` and `description` set on each; `reversibility` and `effect_phrase` set on each `WRITE` tool
 - [ ] Module paths added to `plugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters type-annotated
 - [ ] New shared dependencies added to `plugin_deps` in `ze_api/container.py` (only when no plugin already provides the type)

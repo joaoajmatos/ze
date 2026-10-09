@@ -59,6 +59,16 @@ Example: confirm recurring expense.
 
 Features import from `entities` and `shared` only — never from `widgets` or `pages`.
 
+## Reply feedback and Retry
+
+Three slices serve the thumbs up, thumbs down, and Retry controls on assistant replies:
+
+- **`entities/message-feedback/`** — `useMessageFeedbackQuery` (one batch call for the visible assistant ids) and `useSetMessageFeedbackMutation` (optimistic, reverts on error, sends a client UUID idempotency key).
+- **`features/reply-feedback/`** — `ReplyActions`: the thumb buttons with `aria-pressed` and accessible names.
+- **`features/retry-reply/`** — `RetryButton` and `useRetryReply`: send the `retry` WebSocket frame and handle `message_superseded` and the `error` codes. A disabled Retry shows its reason as visible text.
+
+`entities/message` cannot import a feature. `MessageBubble` therefore takes an `actions` slot, and `widgets/chat-workspace` mounts `ReplyActions` and `RetryButton` into it for stored assistant messages only. `widgets/trace-panel/ui/FeedbackSection.tsx` shows the rating history and the retry links. See [native-interface.md](native-interface.md#reply-feedback-and-retry).
+
 ## Shared abstractions
 
 - **`shared/ui/layout/ListPage`** — standard list screen shell (header, skeleton, error, empty, children)

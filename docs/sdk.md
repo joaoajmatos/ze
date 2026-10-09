@@ -30,6 +30,7 @@ from ze_sdk.errors import ZeError, AgentError, ToolBlockedError, AgentAbortedErr
 | `agent` | Class decorator that registers a `BaseAgent` subclass in the global `AgentRegistry`. |
 | `tool` | Function decorator that registers an async function as a callable tool. |
 | `ToolAccess` | Enum — `READ` or `WRITE`. Controls draft-mode suppression. |
+| `ToolReversibility` | Enum — `REVERSIBLE` or `IRREVERSIBLE`. Required on every `WRITE` tool; see [Tool reversibility](#tool-reversibility). |
 | `BaseAgent` | Abstract base class all agents inherit. Provides `agentic_loop`, `call_tool`, `emit`, and `_build_system_prompt`. |
 | `get_logger` | Structured logger factory. Always call as `get_logger(__name__)`. |
 | `Settings` | Settings dataclass bridge. Agents receive this via DI — never construct it yourself. |
@@ -278,7 +279,40 @@ async def get_record(id: str, db: DBPool) -> str:
 - Tools must be `async def`.
 - All parameters the LLM cannot infer must be typed — they are injected via `deps` in `agentic_loop` or passed explicitly via `call_tool(**kwargs)`.
 - `ToolAccess.READ` — no external side effects. Runs in any gate state.
-- `ToolAccess.WRITE` — creates, modifies, deletes, or sends. Suppressed in DRAFT mode.
+- `ToolAccess.WRITE` — creates, modifies, deletes, or sends. Suppressed in DRAFT mode. Must declare `reversibility`.
+
+### Tool reversibility
+
+`@tool` takes four more arguments for `WRITE` tools:
+
+| Argument | Meaning |
+|---|---|
+| `reversibility` | `ToolReversibility.REVERSIBLE` or `ToolReversibility.IRREVERSIBLE`. Required for `WRITE`. There is no default. |
+| `undo_tool` | Name of the registered `WRITE` tool that undoes this one. Required for `REVERSIBLE`, not allowed for `IRREVERSIBLE`. |
+| `undo_note` | One line that says what the undo cannot restore. Required for `REVERSIBLE`. |
+| `effect_phrase` | Past-tense phrase such as `"set a reminder"`. Ze shows it in the Retry reason. |
+
+```python
+from ze_sdk import tool, ToolAccess, ToolReversibility
+
+@tool(
+    access=ToolAccess.WRITE,
+    description="Set a reminder.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="cancel_reminder",
+    undo_note="Does not recall a notification that already showed",
+    effect_phrase="set a reminder",
+)
+async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> dict: ...
+```
+
+A `WRITE` tool without `reversibility`, a `REVERSIBLE` tool without `undo_tool` or
+`undo_note`, an `IRREVERSIBLE` tool with either, or a `READ` tool with any of the four
+raises `AgentConfigError` when the module imports. At startup Ze checks that every
+`undo_tool` names a registered `WRITE` tool other than the tool itself.
+
+The declaration decides whether Retry is available. Retry is unavailable after any
+`WRITE` tool ran, so the declaration also shapes the reason text.
 
 ### Tool parameters
 

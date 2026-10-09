@@ -19,11 +19,16 @@ Click **Export your data**. Ze downloads a ZIP archive named
 `ze-export-<timestamp>.zip` to your browser.
 
 The archive contains one JSON file per data domain — memories, goals, contacts,
-messages, reminders, costs, and more. A `manifest.json` at the root records the
+messages, reply feedback, reminders, costs, and more. A `manifest.json` at the root records the
 export timestamp and the schema revision set, which is used to validate the archive
 at import time.
 
 Nothing is omitted or summarized. Every stored row is included verbatim.
+
+Reply feedback travels with the messages it rates. The `feedback.records` domain holds
+your thumbs up, thumbs down, and Retry requests. Messages keep their `replaces` and
+`replaced_by` columns, so a reply that Retry replaced stays linked to its replacement.
+Delete all data removes feedback records too.
 
 ---
 
@@ -112,6 +117,7 @@ ze-export-<ISO8601>.zip
 ├── memory.episodes.json
 ├── contacts.persons.json
 ├── goals.goals.json
+├── feedback.records.json  # ratings and retry requests on assistant replies
 ├── ...
 └── graph.checkpoints.json # exported but not imported
 ```
