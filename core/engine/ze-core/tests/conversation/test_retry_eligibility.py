@@ -330,3 +330,16 @@ def test_available_result_has_no_reason() -> None:
     result = _check(_trace())
     assert result.reason_text is None
     assert result.actions == []
+
+
+@pytest.mark.parametrize("gate", ["denied", "expired"])
+def test_denied_workspace_run_does_not_block(gate) -> None:
+    result = _check(
+        _trace(
+            _call(
+                "workspace_run", reversibility="irreversible", gate=gate, success=False
+            ),
+            workspace=WorkspaceUsageTrace(runs=[{"command": "ls", "success": False}]),
+        )
+    )
+    assert result.available is True

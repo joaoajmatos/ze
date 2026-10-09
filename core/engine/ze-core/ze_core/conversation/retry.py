@@ -123,9 +123,11 @@ def _is_action(call: ToolCallTrace) -> bool:
 
 
 def _ran_workspace(trace: MessageTrace, actions: list[ToolCallTrace]) -> bool:
-    if trace.workspace is not None and trace.workspace.runs:
-        return True
-    return any(c.name in _WORKSPACE_RUN_TOOLS for c in trace.tool_calls)
+    """A denied or expired workspace run never started, so it does not count."""
+    run_calls = [c for c in trace.tool_calls if c.name in _WORKSPACE_RUN_TOOLS]
+    if run_calls:
+        return any(_is_action(c) for c in run_calls)
+    return trace.workspace is not None and bool(trace.workspace.runs)
 
 
 def _phrase(call: ToolCallTrace) -> str:

@@ -1,0 +1,22 @@
+- id: retry_text_only_read_turn
+  prompt: "What is the capital of Portugal?"
+  description: >
+    Read-only, text-only turn. Phase 165 offers Retry on this reply because no
+    write tool ran; a retry regenerates the text and replaces the reply.
+  tags: [retry, feedback]
+  criteria:
+    - Should answer in plain text (Lisbon)
+    - Should not call any write-access tool (no reminder, goal, workflow, email, calendar, or workspace action)
+    - Should not claim to have saved, scheduled, sent, or changed anything
+    - The trace should record effects_known with only read or no tool calls, so Retry is eligible
+
+- id: retry_text_only_lookup_turn
+  prompt: "Search the web for the latest stable Python release and tell me the version."
+  description: >
+    A turn that only reads (web search). Reads never block Retry, so the reply
+    stays retryable.
+  tags: [retry, feedback]
+  criteria:
+    - Should use search or answer from knowledge, never a write tool
+    - Should report a version number or say it could not verify one
+    - The trace should show no write-access tool calls

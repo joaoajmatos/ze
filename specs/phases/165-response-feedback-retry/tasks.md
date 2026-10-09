@@ -105,7 +105,7 @@
 ## Phase 8: Polish, eval, docs
 
 - [ ] **T042** [PLATFORM] Run the two eval scenarios (T001) against `make dev-eval`; fix drift. Record in `docs/eval.md` only if the scenario schema changed.
-- [ ] **T043** [BE] Full gates: `make lint`, `make test-py`, `make test-web`, `make typecheck-web`. Fix everything.
+- [x] **T043** [BE] Full gates: `make lint`, `make test-py`, `make test-web`, `make typecheck-web`. Fix everything.
 - [ ] **T044** [PLATFORM] Execute `quickstart.md` end to end against `make dev-full`; note deviations.
 - [ ] **T045** [P] [DOCS] `AGENTS.md`: add phase 165 row to the phase table, `ze-memory` `zm024` and `ze-core` `zc031` in the migration table, `feedback_records/` and `retry.py` in the layout, Perception's second licence in the seam notes, and a Learned Facts line "every WRITE tool declares reversibility". `AGENTS.md` is exempt from doc-style.
 - [ ] **T046** [P] [DOCS] Specs: update `specs/README.md` row 165 (title, link to this spec, status), set spec.md `Status: Implemented` when done; update `specs/arch/contribution-seam.md` (Perception licence, new producer) and `specs/arch/ze-doctrine.md` licence table; add a short note in `specs/arch/claim-topology.md` for the new kind.
