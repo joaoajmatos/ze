@@ -31,6 +31,7 @@ class LLMClient(Protocol):
         model: str,
         tools: list[dict],
         system: str | None = None,
+        temperature: float = 0.3,
         max_tokens: int = 2000,
     ) -> tuple[str | None, list[dict[str, Any]] | None]: ...
 
