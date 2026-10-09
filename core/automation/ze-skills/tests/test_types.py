@@ -81,3 +81,28 @@ def test_skill_auto_computes_content_hash_when_not_provided():
     )
     expected = compute_content_hash("name", "desc", "instructions", None)
     assert skill.content_hash == expected
+
+
+def test_skill_match_below_floor_defaults_false():
+    from ze_skills.types import SkillMatch, SkillTrigger
+
+    skill = Skill(
+        name="A", description="d", instructions="i", source=SkillSource.IMPORTED
+    )
+    m = SkillMatch(skill=skill, trigger=SkillTrigger.AUTOMATIC, similarity=0.4)
+    assert m.below_floor is False
+
+
+def test_skill_match_outcome_and_judgment_exist():
+    from ze_agents.system_one import SystemOneResult
+
+    from ze_skills.types import SkillMatchOutcome, SkillsJudgment
+
+    j = SkillsJudgment(
+        result=SystemOneResult(outcome="skip", skip_reason="error"),
+        question_kinds={"skill": "choice"},
+    )
+    assert j.consumed == frozenset() and j.skip_reason is None
+    out = SkillMatchOutcome(matches=[], judgment=j)
+    assert out.judgment is j
+    assert SkillMatchOutcome(matches=[]).judgment is None

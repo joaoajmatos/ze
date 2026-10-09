@@ -121,3 +121,34 @@ async def test_record_trace_marks_promote_offered_on_unfinished_close() -> None:
     )
     statuses = [e["status"] for e in result["message_trace"].conductor_ledger]
     assert "promote_offered" in statuses
+
+
+def test_skill_usage_trace_below_floor_defaults_false():
+    from ze_core.conversation.messages.types import SkillUsageTrace
+
+    t = SkillUsageTrace(skill_id="1", name="a", source="imported", trigger="automatic")
+    assert t.below_floor is False
+
+
+def test_old_stored_trace_without_below_floor_parses_with_default():
+    from ze_core.conversation.messages.store import _parse_trace
+
+    trace = _parse_trace(
+        {
+            "agent": "a",
+            "routing_method": "embedding",
+            "confidence": 1.0,
+            "score_gap": 0.0,
+            "is_compound": False,
+            "skills_used": [
+                {
+                    "skill_id": "1",
+                    "name": "a",
+                    "source": "imported",
+                    "trigger": "automatic",
+                    "similarity": 0.6,
+                }
+            ],
+        }
+    )
+    assert trace.skills_used[0].below_floor is False

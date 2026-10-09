@@ -1,43 +1,14 @@
 from __future__ import annotations
 
-import time
-
 from langchain_core.runnables import RunnableConfig
 from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.orchestration.state import AgentState
-from ze_core.routing.judge import build_state
+from ze_core.orchestration.judgment_state import build_judgment_state, history_hint
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze_core.telemetry.context import get_cost_context, set_agent_context
 
 log = get_logger(__name__)
-
-_HISTORY_HINT_TURNS = 4  # last N messages included as routing context
-_HISTORY_HINT_CHARS = 240  # per-message truncation
-_HISTORY_INACTIVITY_MINUTES = 30  # mirror fetch_context's session expiry default
-
-
-def _history_hint(state: AgentState) -> str | None:
-    """Compact tail of the conversation so anaphoric follow-ups
-    ("are these recent?", "how did you get those?") route to the agent
-    that produced the content being referenced."""
-    messages = state.get("messages") or []
-    if not messages:
-        return None
-
-    last_active = state.get("last_active_at")
-    if last_active and (time.time() - last_active) > _HISTORY_INACTIVITY_MINUTES * 60:
-        return None
-
-    lines = []
-    for msg in messages[-_HISTORY_HINT_TURNS:]:
-        content = (msg.get("content") or "").strip()
-        if not content:
-            continue
-        lines.append(f"{msg.get('role', '?')}: {content[:_HISTORY_HINT_CHARS]}")
-    if not lines:
-        return None
-    return "[Recent conversation]\n" + "\n".join(lines)
 
 
 async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
@@ -49,19 +20,15 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     routing_text = state.get("image_caption") or state["prompt"]
 
     # Append after the message so the actual message content dominates the embedding
-    history_hint = _history_hint(state)
-    if history_hint:
-        routing_text = f"{routing_text}\n\n{history_hint}"
+    hint = history_hint(state)
+    if hint:
+        routing_text = f"{routing_text}\n\n{hint}"
 
     hints = state.get("routing_hints")
     if hints:
         routing_text = f"{routing_text}\n\n{hints}"
 
-    judgment_state = build_state(
-        user=state.get("image_caption") or state["prompt"],
-        history=history_hint,
-        context=hints,
-    )
+    judgment_state = build_judgment_state(state)
     previous_agent = get_cost_context().agent
     set_agent_context("router")
     try:
@@ -112,9 +79,9 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
     # Give the LLM fallback the same history-enriched text that the embedding
     # router saw, so anaphoric follow-ups route correctly even at low confidence.
     prompt_for_fallback = state["prompt"]
-    history_hint = _history_hint(state)
-    if history_hint:
-        prompt_for_fallback = f"{prompt_for_fallback}\n\n{history_hint}"
+    hint = history_hint(state)
+    if hint:
+        prompt_for_fallback = f"{prompt_for_fallback}\n\n{hint}"
     routing_hints = state.get("routing_hints")
     if routing_hints:
         prompt_for_fallback = f"{prompt_for_fallback}\n\n{routing_hints}"

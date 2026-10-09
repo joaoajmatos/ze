@@ -129,6 +129,7 @@ async def test_get_message_trace_includes_skills_used():
             "trigger": "automatic",
             "similarity": 0.82,
             "script_ran": False,
+            "below_floor": False,
         }
     ]
 
@@ -181,3 +182,28 @@ async def test_get_message_trace_includes_conductor_ledger():
     data = resp.json()
     assert data["conductor_hint"][0]["agent"] == "calendar"
     assert data["conductor_ledger"][1]["request_id"] == "req-1"
+
+
+@pytest.mark.asyncio
+async def test_get_message_trace_exposes_below_floor():
+    skill_usage = SkillUsageTrace(
+        skill_id="skill-1",
+        name="Pirate Speak",
+        source="imported",
+        trigger="automatic",
+        similarity=0.43,
+        below_floor=True,
+    )
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=_trace(skills_used=[skill_usage]))
+
+    app = _make_app(store)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/messages/{uuid4()}/trace",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+        )
+
+    assert resp.json()["skills_used"][0]["below_floor"] is True

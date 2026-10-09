@@ -103,6 +103,7 @@ def _extract_skills_used(
                 trigger=trigger.value if hasattr(trigger, "value") else str(trigger),
                 similarity=getattr(m, "similarity", None),
                 script_ran=skill_id in script_ids,
+                below_floor=bool(getattr(m, "below_floor", False)),
             )
         )
     return result

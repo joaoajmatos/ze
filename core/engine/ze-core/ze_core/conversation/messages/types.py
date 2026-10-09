@@ -49,6 +49,7 @@ class SkillUsageTrace:
     trigger: str  # "automatic" | "explicit"
     similarity: float | None = None  # set only when trigger == "automatic"
     script_ran: bool = False
+    below_floor: bool = False  # applied under match_threshold through a judgment
 
 
 @dataclass

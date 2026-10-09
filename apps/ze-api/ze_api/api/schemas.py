@@ -89,6 +89,7 @@ class SkillUsageTraceResponse(BaseModel):
     trigger: str
     similarity: float | None = None
     script_ran: bool = False
+    below_floor: bool = False
 
 
 class ProcedureUsageTraceResponse(BaseModel):

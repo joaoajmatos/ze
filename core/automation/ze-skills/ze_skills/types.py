@@ -6,7 +6,11 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from ze_agents.system_one import SystemOneResult
 
 
 class SkillStatus(StrEnum):
@@ -125,3 +129,22 @@ class SkillMatch:
     skill: Skill
     trigger: SkillTrigger
     similarity: float | None = None
+    below_floor: bool = (
+        False  # automatic match applied under match_threshold via a judgment
+    )
+
+
+@dataclass
+class SkillsJudgment:
+    """One attempted System One request, carried so `match_skills` can build trace rows."""
+
+    result: SystemOneResult
+    question_kinds: dict[str, str]
+    consumed: frozenset[str] = frozenset()
+    skip_reason: str | None = None
+
+
+@dataclass
+class SkillMatchOutcome:
+    matches: list[SkillMatch]
+    judgment: SkillsJudgment | None = None

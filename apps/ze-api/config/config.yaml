@@ -29,6 +29,12 @@ system_one:
       multi_specialist_hold: null   # uncalibrated — set from make calibrate-routing
       complexity_lookup_max: null   # uncalibrated — set from make calibrate-routing
       shortlist_k: 4
+    skills:
+      enabled: false
+      choice_trust: null        # uncalibrated — set from make calibrate-skills
+      needs_skill_hold: null    # uncalibrated — set from make calibrate-skills
+      shortlist_k: 5            # provisional — pick from make calibrate-skills (T034)
+      shortlist_floor: 0.35     # provisional — pick from make calibrate-skills (T034)
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.

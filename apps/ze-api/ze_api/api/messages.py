@@ -77,6 +77,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
                 "trigger": s.trigger,
                 "similarity": s.similarity,
                 "script_ran": getattr(s, "script_ran", False),
+                "below_floor": getattr(s, "below_floor", False),
             }
             for s in getattr(trace, "skills_used", [])
         ],
