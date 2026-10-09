@@ -10,7 +10,7 @@ from ze_agents.errors import UnlicensedClaimKindError
 from ze_plugin.contribution import SourceFunction, TargetFace
 
 from ze_correlation.engine import CorrelationEngine
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 
 def _make_engine() -> tuple[CorrelationEngine, AsyncMock]:
@@ -40,7 +40,7 @@ def _make_hypothesis(**overrides) -> Hypothesis:
         confidence=0.6,
         relevance=0.7,
         evidence=[
-            EvidenceRef(
+            HypothesisEvidence(
                 kind="fact",
                 id=uuid4(),
                 label="some fact",
@@ -48,7 +48,7 @@ def _make_hypothesis(**overrides) -> Hypothesis:
                 origin=Provenance.GRAPH_RECALL,
                 retrieved_at=datetime.now(timezone.utc),
             ),
-            EvidenceRef(
+            HypothesisEvidence(
                 kind="episode",
                 id=uuid4(),
                 label="some episode",

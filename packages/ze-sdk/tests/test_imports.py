@@ -29,7 +29,7 @@ def test_correlation_reexports_are_the_real_classes() -> None:
     import ze_correlation.store
     import ze_correlation.types
     from ze_sdk.correlation import (
-        EvidenceRef,
+        HypothesisEvidence,
         Hypothesis,
         HypothesisNotFoundError,
         HypothesisStore,
@@ -37,7 +37,7 @@ def test_correlation_reexports_are_the_real_classes() -> None:
     )
 
     assert Hypothesis is ze_correlation.types.Hypothesis
-    assert EvidenceRef is ze_correlation.types.EvidenceRef
+    assert HypothesisEvidence is ze_correlation.types.HypothesisEvidence
     assert PostgresHypothesisStore is ze_correlation.store.PostgresHypothesisStore
     assert HypothesisNotFoundError is ze_correlation.store.HypothesisNotFoundError
     assert HypothesisStore is not None

@@ -71,7 +71,7 @@ that the doctrine itself keeps separate: **epistemic origin** (doctrine-mandated
    runtime registry at startup (mirroring `SignalSource` collection). Technically possible but
    `StrEnum` doesn't support runtime member registration cleanly in Python; would require
    replacing the enum with a registry-backed value type everywhere it's used for pattern-
-   matching (`EvidenceRef.origin`, `extraction.py`'s `if prov == ...` branches) — more machinery
+   matching (`HypothesisEvidence.origin`, `extraction.py`'s `if prov == ...` branches) — more machinery
    than the problem justifies at this scale.
 3. **Split the two axes: closed doctrine `Provenance`, open plugin-owned inflow string** — core
    keeps exactly the doctrine's four epistemic categories as a closed enum (nothing about those

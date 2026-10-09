@@ -19,7 +19,7 @@ from ze_correlation.push import (
     passes_novelty,
     passes_relevance,
 )
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 UTC = timezone.utc
 
@@ -253,7 +253,7 @@ async def test_eligible_candidates_excludes_below_grounding_threshold():
     )
     nli.grounding_score = MagicMock(return_value=0.1)
     evidence = [
-        EvidenceRef(
+        HypothesisEvidence(
             kind="signal",
             id=uuid4(),
             label="Stock market moved sharply",

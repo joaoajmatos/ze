@@ -39,7 +39,7 @@ times, four different ways**, instead of once:
 |---|---|---|---|---|
 | `ze-plugin` (`SignalSource`) | `Signal` | **none** — only `magnitude: float` (relevance, not confidence) | none | `source: str` (plugin key) |
 | `ze-worldstate` (loops) | `OpenLoop` | `confidence: float`, evidence-weighted decay, floor 0.05 | `LoopClaimKind` — **verbatim doctrine enum**: identity/fact/inference/suspicion/priority | `LoopProvenance`: conversation/email/calendar/ingestion/user_declared |
-| `ze-correlation` (hypotheses) | `Hypothesis` / `EvidenceRef` | `confidence: float`, **no decay job — frozen at generation time** | none on `Hypothesis` (implicit by type) | `EvidenceRef.origin: Literal["graph_recall","live_search","prompt_supplied"]` — missing `"synthesized"` |
+| `ze-correlation` (hypotheses) | `Hypothesis` / `HypothesisEvidence` | `confidence: float`, **no decay job — frozen at generation time** | none on `Hypothesis` (implicit by type) | `HypothesisEvidence.origin: Literal["graph_recall","live_search","prompt_supplied"]` — missing `"synthesized"` |
 | `ze-memory` (facts) | `memory_facts` row | `confidence: float`, linear decay (-0.03/30 days, only if `synthesized` + uncorroborated), hard cliffs at 0.50/0.25 | none (implicit — facts are always "fact" by table identity) | `provenance: str` (`raw`/`synthesized`) + separate `source: str` (`user_asserted`/`ze_observed`) |
 
 </details>
@@ -87,9 +87,9 @@ No new store, no new table, no orchestration change. This is a types-and-one-fun
 
 - `OpenLoop`: swap `LoopClaimKind`/`LoopProvenance` for the shared `ClaimKind`/`Provenance` —
   it's the reference implementation, so this is a rename/re-export, not a redesign.
-- `Hypothesis`/`EvidenceRef`: add `claim_kind` (always `INFERENCE` or `SUSPICION` depending on
+- `Hypothesis`/`HypothesisEvidence`: add `claim_kind` (always `INFERENCE` or `SUSPICION` depending on
   corroboration state — never `FACT`, enforcing the doctrine's "reflection never emits a fact"
-  rule at the type level for the first time in this producer), fix `EvidenceRef.origin` to use
+  rule at the type level for the first time in this producer), fix `HypothesisEvidence.origin` to use
   the shared `Provenance`, and — the concrete bug fix this brief exists to justify — wire the
   shared decay function into a scheduled job so hypothesis confidence actually ages instead of
   being frozen forever.

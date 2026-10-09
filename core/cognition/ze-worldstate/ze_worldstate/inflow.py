@@ -5,7 +5,7 @@ from typing import Any
 from ze_logging import get_logger
 
 from ze_worldstate.extraction import propose_loop_candidates
-from ze_worldstate.types import EvidenceRef
+from ze_plugin.contribution import EvidenceRef
 
 log = get_logger(__name__)
 

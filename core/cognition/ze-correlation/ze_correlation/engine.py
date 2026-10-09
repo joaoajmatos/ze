@@ -16,11 +16,11 @@ from ze_plugin.contribution import (
     SourceFunction,
     TargetFace,
 )
-from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
+from ze_plugin.contribution import EvidenceRef
 
 from ze_correlation.prompts import CORRELATION_SYSTEM, build_correlation_user_message
 from ze_correlation.store import PostgresHypothesisStore
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 log = get_logger(__name__)
 
@@ -163,7 +163,7 @@ class CorrelationEngine:
         now = datetime.now(UTC)
         id_to_item = {item.id: item for item in neighbourhood}
         evidence = [
-            EvidenceRef(
+            HypothesisEvidence(
                 kind=id_to_item[eid].kind,  # type: ignore[arg-type]
                 id=UUID(eid),
                 label=id_to_item[eid].label,
@@ -240,7 +240,7 @@ class CorrelationEngine:
         pipeline (FR-006).
         """
         contribution_evidence = [
-            ContributionEvidenceRef(kind=ref.kind, id=ref.id)
+            EvidenceRef(kind=ref.kind, id=ref.id)
             for ref in hypothesis.evidence
         ]
         contribution = Contribution(

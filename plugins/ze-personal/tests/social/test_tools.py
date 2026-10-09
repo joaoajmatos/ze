@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 from ze_agents.claims import ClaimKind, Provenance
 from ze_memory.types import Entity
 
@@ -39,7 +39,7 @@ class TestWhoIsOnProjectHedged:
             confidence=0.5,
             relevance=0.5,
             evidence=[
-                EvidenceRef(
+                HypothesisEvidence(
                     kind="signal",
                     id=uuid4(),
                     label="email reply on Jan 3",

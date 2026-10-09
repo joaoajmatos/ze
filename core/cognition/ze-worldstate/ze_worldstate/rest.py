@@ -42,21 +42,21 @@ async def _fetch_evidence_summaries(
     summaries: list[dict] = []
     async with pool.acquire() as conn:
         for ref in refs:
-            if ref.evidence_type == "fact":
+            if ref.kind == "fact":
                 row = await conn.fetchrow(
-                    "SELECT value FROM memory_facts WHERE id = $1", ref.evidence_id
+                    "SELECT value FROM memory_facts WHERE id = $1", ref.id
                 )
                 summary = row["value"] if row else ""
-            elif ref.evidence_type == "episode":
+            elif ref.kind == "episode":
                 row = await conn.fetchrow(
                     "SELECT COALESCE(summary, prompt) AS s FROM memory_episodes WHERE id = $1",
-                    ref.evidence_id,
+                    ref.id,
                 )
                 summary = row["s"] if row else ""
             else:
                 summary = ""
             summaries.append(
-                {"type": ref.evidence_type, "id": ref.evidence_id, "summary": summary}
+                {"type": ref.kind, "id": ref.id, "summary": summary}
             )
     return summaries
 

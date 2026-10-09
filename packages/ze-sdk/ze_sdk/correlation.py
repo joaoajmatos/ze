@@ -4,7 +4,7 @@ from typing import Protocol
 from uuid import UUID
 
 from ze_correlation.store import HypothesisNotFoundError, PostgresHypothesisStore
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 
 class HypothesisStore(Protocol):
@@ -22,7 +22,7 @@ class HypothesisStore(Protocol):
     async def list_by_entities(self, entity_ids: list[UUID]) -> list[Hypothesis]: ...
 
     async def update_evidence(
-        self, hypothesis_id: UUID, evidence: list[EvidenceRef], confidence: float
+        self, hypothesis_id: UUID, evidence: list[HypothesisEvidence], confidence: float
     ) -> None: ...
 
     async def confirm(self, hypothesis_id: UUID) -> Hypothesis: ...
@@ -32,7 +32,7 @@ class HypothesisStore(Protocol):
 
 __all__ = [
     "Hypothesis",
-    "EvidenceRef",
+    "HypothesisEvidence",
     "HypothesisStore",
     "PostgresHypothesisStore",
     "HypothesisNotFoundError",
