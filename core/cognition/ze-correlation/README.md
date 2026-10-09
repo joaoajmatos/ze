@@ -27,7 +27,7 @@ A graph node in `ze-core` runs inline correlation during `fetch_context`. `Corre
 | `job.py` | `CorrelationJob` — scheduled correlation runs |
 | `push.py` | `CorrelationPushConsumer` — delivers correlation insights via push |
 | `prompts.py` | LLM prompt templates for hypothesis generation |
-| `types.py` | `Hypothesis`, `EvidenceRef` |
+| `types.py` | `Hypothesis`, `HypothesisEvidence` |
 
 ## Dependencies
 
