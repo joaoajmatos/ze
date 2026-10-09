@@ -2969,6 +2969,10 @@ export type SkillUsageTraceResponse = {
      * Script Ran
      */
     script_ran?: boolean;
+    /**
+     * Below Floor
+     */
+    below_floor?: boolean;
 };
 
 /**

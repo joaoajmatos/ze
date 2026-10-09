@@ -86,6 +86,7 @@ export type Source1 = string;
 export type Trigger = string;
 export type Similarity = number | null;
 export type ScriptRan = boolean;
+export type BelowFloor = boolean;
 export type SkillsUsed = SkillUsageTraceResponse[];
 export type Runs = {
   [k: string]: unknown;
@@ -347,6 +348,7 @@ export interface SkillUsageTraceResponse {
   trigger: Trigger;
   similarity?: Similarity;
   script_ran?: ScriptRan;
+  below_floor?: BelowFloor;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

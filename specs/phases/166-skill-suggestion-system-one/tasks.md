@@ -67,13 +67,13 @@
 
 - [ ] **T019** [P] [US2] [BE] Fail-first, matcher: skill between `shortlist_floor` and `match_threshold` applies on Apply and carries `below_floor=True`; unsure or `none` → not applied; skill below `shortlist_floor` never appears in the shortlist or the matches. · `core/automation/ze-skills/tests/test_matching.py`
 - [ ] **T020** [P] [US2] [BE] Fail-first, trace: `_extract_skills_used` copies `below_floor`; the REST/WS schema exposes `below_floor` with default false and the OpenAPI response model includes it. · `core/engine/ze-core/tests/orchestration/nodes/test_trace_skills.py`, `apps/ze-api/tests/api/test_messages_route.py`
-- [ ] **T021** [P] [US2] [WEB] Fail-first (vitest): `SkillsSection` renders a "below floor" mark only when `below_floor` is true and keeps the existing badges otherwise. · `apps/ze-web/src/widgets/trace-panel/ui/SkillsSection.test.tsx`
+- [x] **T021** [P] [US2] [WEB] Fail-first (vitest): `SkillsSection` renders a "below floor" mark only when `below_floor` is true and keeps the existing badges otherwise. · `apps/ze-web/src/widgets/trace-panel/ui/SkillsSection.test.tsx`
 
 **⟶ Wait for T019–T021, then:**
 
 - [ ] **T022** [US2] [BE] Set `below_floor` in the matcher when an applied automatic skill has similarity under `match_threshold`. · `core/automation/ze-skills/ze_skills/matching.py`
 - [ ] **T023** [P] [US2] [BE] `SkillUsageTraceResponse.below_floor` and the messages route mapping. · `apps/ze-api/ze_api/api/schemas.py`, `apps/ze-api/ze_api/api/messages.py`
-- [ ] **T024** [US2] [WEB] Regenerate `@ze/client` types and add the mark to `SkillsSection.tsx`; run `make typecheck-web` and `make test-web`. · `packages/ze-client`, `apps/ze-web/src/widgets/trace-panel/ui/SkillsSection.tsx`
+- [x] **T024** [US2] [WEB] Regenerate `@ze/client` types and add the mark to `SkillsSection.tsx`; run `make typecheck-web` and `make test-web`. · `packages/ze-client`, `apps/ze-web/src/widgets/trace-panel/ui/SkillsSection.tsx`
 
 ---
 
