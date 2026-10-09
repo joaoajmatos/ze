@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "System One Skill Gating",
+  "branch": "166-skill-suggestion-system-one",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-09T11:12:23.424Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-09T11:13:55.024Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-09T11:14:48.187Z"
+    }
+  ]
+}
