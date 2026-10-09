@@ -1,20 +1,8 @@
-import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
+import type { WorkspaceUsageTraceResponse } from "@myguyze/ze-client";
 import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
 
-type WorkspaceTrace = NonNullable<
-  (Omit<WsTraceUpdateFrame, "workspace"> & {
-    workspace?: {
-      runs?: { command?: string; status?: string }[];
-      files?: { path: string; op?: string }[];
-      script_ran?: boolean;
-      unavailable?: boolean;
-      planned?: string[] | null;
-    } | null;
-  })["workspace"]
->;
-
 interface WorkspaceSectionProps {
-  workspace: WorkspaceTrace | null | undefined;
+  workspace: WorkspaceUsageTraceResponse | null | undefined;
   live?: boolean;
 }
 
@@ -40,7 +28,7 @@ export function WorkspaceSection({ workspace, live }: WorkspaceSectionProps) {
           ))}
           {runs.map((run, i) => (
             <p
-              key={`${run.command ?? "run"}-${i}`}
+              key={`${run.command}-${i}`}
               className="font-mono text-foreground/80"
               data-testid={run.status === "in_progress" ? "workspace-run-in-progress" : undefined}
             >
@@ -54,7 +42,7 @@ export function WorkspaceSection({ workspace, live }: WorkspaceSectionProps) {
           ))}
           {files.map((file) => (
             <p key={`${file.op}-${file.path}`} className="text-smoke">
-              {file.op ?? "file"} {file.path}
+              {file.op} {file.path}
             </p>
           ))}
         </div>

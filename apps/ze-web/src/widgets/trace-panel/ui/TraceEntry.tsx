@@ -22,7 +22,7 @@ interface TraceEntryProps {
 export function TraceEntry({ trace, index, defaultOpen = false, live, feedback }: TraceEntryProps) {
   const [open, setOpen] = useState(defaultOpen);
   const confidencePct = Math.round(trace.confidence * 100);
-  const workspace = (trace as WsTraceUpdateFrame & { workspace?: unknown }).workspace;
+  const workspace = trace.workspace;
 
   return (
     <div className={`border-b border-foreground/[0.06] last:border-b-0${live ? " ring-1 ring-inset ring-plum-voltage/20" : ""}`}>
@@ -60,7 +60,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live, feedback }
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
           <SkillsSection skillsUsed={trace.skills_used} live={live} />
-          <WorkspaceSection workspace={workspace as never} live={live} />
+          <WorkspaceSection workspace={workspace} live={live} />
         </div>
       )}
     </div>

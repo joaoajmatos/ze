@@ -19,7 +19,7 @@ export function toTraceFrame(
     tool_calls: trace.tool_calls,
     total_duration_ms: trace.total_duration_ms,
     skills_used: trace.skills_used,
-    workspace: (trace as MessageTraceResponse & { workspace?: unknown }).workspace,
+    workspace: trace.workspace,
     conductor_hint: trace.conductor_hint,
     conductor_ledger: trace.conductor_ledger,
     judgments: trace.judgments ?? [],
