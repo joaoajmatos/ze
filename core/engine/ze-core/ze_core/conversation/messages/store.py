@@ -33,6 +33,7 @@ class MessageStore(Protocol):
         self, thread_id: str | None = None, *, include_superseded: bool = False
     ) -> list[Message]: ...
     async def get_message(self, message_id: UUID) -> Message | None: ...
+    async def get_messages(self, message_ids: list[UUID]) -> dict[UUID, Message]: ...
     async def latest_assistant_id(self, thread_id: str) -> UUID | None: ...
     async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool: ...
     async def save_trace(self, message_id: UUID, trace: MessageTrace) -> None: ...
@@ -157,6 +158,21 @@ class PostgresMessageStore:
                 message_id,
             )
         return _row_to_message(row) if row is not None else None
+
+    async def get_messages(self, message_ids: list[UUID]) -> dict[UUID, Message]:
+        if not message_ids:
+            return {}
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT id, role, text, components, read, thread_id, created_at,
+                       replaces, replaced_by
+                FROM messages
+                WHERE id = ANY($1::uuid[])
+                """,
+                message_ids,
+            )
+        return {r["id"]: _row_to_message(r) for r in rows}
 
     async def latest_assistant_id(self, thread_id: str) -> UUID | None:
         async with self._pool.acquire() as conn:

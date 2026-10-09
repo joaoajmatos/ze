@@ -149,6 +149,9 @@ class ConnectionManager:
                 log.warning("ws_send_frame_failed", error=str(exc))
                 self._ws = None
 
+    def is_busy(self, thread_id: str) -> bool:
+        return self._slot(thread_id).busy
+
     def try_set_busy(self, thread_id: str) -> bool:
         """Attempt to claim the invocation slot for thread_id. Returns True on success.
 

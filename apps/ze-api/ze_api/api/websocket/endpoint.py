@@ -132,7 +132,7 @@ async def websocket_endpoint(
                     continue
                 if not conn_mgr.try_set_busy(thread_id):
                     await conn_mgr.send_frame(
-                        {"type": "error", "detail": "busy"}, thread_id
+                        {"type": "error", "detail": "busy", "code": "busy"}, thread_id
                     )
                     continue
                 try:
@@ -203,7 +203,7 @@ async def websocket_endpoint(
                     continue
                 if not conn_mgr.try_set_busy(thread_id):
                     await conn_mgr.send_frame(
-                        {"type": "error", "detail": "busy"}, thread_id
+                        {"type": "error", "detail": "busy", "code": "busy"}, thread_id
                     )
                     continue
 

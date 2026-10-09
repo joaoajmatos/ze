@@ -10,6 +10,7 @@ export type WsInboundFrame =
   | WsTypingFrame
   | WsTokenFrame
   | WsErrorFrame
+  | WsMessageSupersededFrame
   | WsRefreshFrame
   | WsPongFrame
   | WsTraceUpdateFrame
@@ -24,6 +25,8 @@ export type Components = {
 export type Read = boolean;
 export type ThreadId = string | null;
 export type CreatedAt = string;
+export type Replaces = string | null;
+export type ReplacedBy = string | null;
 export type SessionId = string;
 export type Completed = boolean;
 export type Type1 = "edit";
@@ -55,13 +58,21 @@ export type Text3 = string;
 export type Type6 = "error";
 export type ThreadId6 = string | null;
 export type Detail = string;
-export type Type7 = "refresh";
+export type Code = ("busy" | "retry_unavailable" | "retry_failed") | null;
+export type MessageId = string | null;
+export type ReasonCode = string | null;
+export type ReasonText = string | null;
+export type Type7 = "message_superseded";
 export type ThreadId7 = string | null;
+export type MessageId1 = string;
+export type ReplacedBy1 = string;
+export type Type8 = "refresh";
+export type ThreadId8 = string | null;
 export type Screen = string;
-export type Type8 = "pong";
-export type Type9 = "trace_update";
-export type ThreadId8 = string;
-export type MessageId = string;
+export type Type9 = "pong";
+export type Type10 = "trace_update";
+export type ThreadId9 = string;
+export type MessageId2 = string;
 export type Partial = boolean;
 export type Agent = string;
 export type RoutingMethod = string;
@@ -78,6 +89,11 @@ export type Name = string;
 export type ResultSnippet = string;
 export type DurationMs = number;
 export type Success = boolean;
+export type Access = "read" | "write" | "delegate" | "unknown";
+export type Reversibility = ("reversible" | "irreversible") | null;
+export type UndoTool = string | null;
+export type Gate = "none" | "approved" | "denied" | "expired";
+export type EffectPhrase = string | null;
 export type ToolCalls = ToolCallTraceResponse[];
 export type TotalDurationMs = number;
 export type SkillId = string;
@@ -121,7 +137,8 @@ export type InputTokens = number | null;
 export type Consumed = boolean;
 export type SkipReason = string | null;
 export type Judgments = JudgmentTraceResponse[];
-export type Type10 = "notification";
+export type EffectsKnown = boolean;
+export type Type11 = "notification";
 export type Id4 = string;
 export type EventType = string;
 export type Source2 = string;
@@ -142,10 +159,11 @@ export type WsOutboundFrame =
   | WsActionFrame
   | WsCommandFrame
   | WsComponentSubmitFrame
+  | WsRetryFrame
   | WsPingFrame;
-export type Type11 = "message";
+export type Type12 = "message";
 export type Text5 = string;
-export type ThreadId9 = string | null;
+export type ThreadId10 = string | null;
 export type Screen1 = string;
 export type GoalId = string | null;
 export type WorkflowId = string | null;
@@ -153,24 +171,27 @@ export type ExecutionId = string | null;
 export type WorkspacePlaced = WsWorkspacePlaced[] | null;
 export type Path = string;
 export type Size = number;
-export type Type12 = "ack";
+export type Type13 = "ack";
 export type Ids = string[];
-export type Type13 = "confirm";
+export type Type14 = "confirm";
 export type Id5 = string;
-export type ThreadId10 = string;
+export type ThreadId11 = string;
 export type Choice = "approve" | "deny";
 export type EditedContent = string | null;
-export type Type14 = "action";
+export type Type15 = "action";
 export type Payload = string;
-export type ThreadId11 = string | null;
-export type Type15 = "command";
 export type ThreadId12 = string | null;
+export type Type16 = "command";
+export type ThreadId13 = string | null;
 export type Name2 = "cancel" | "costs" | "capabilities" | "status" | "onboarding" | "reset" | "reset_preview";
-export type Type16 = "component_submit";
+export type Type17 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
-export type ThreadId13 = string | null;
-export type Type17 = "ping";
+export type ThreadId14 = string | null;
+export type Type18 = "retry";
+export type MessageId3 = string;
+export type ThreadId15 = string;
+export type Type19 = "ping";
 
 export interface WsProtocol {
   inbound?: WsInboundFrame;
@@ -197,6 +218,8 @@ export interface MessageSchema {
   read: Read;
   thread_id: ThreadId;
   created_at: CreatedAt;
+  replaces?: Replaces;
+  replaced_by?: ReplacedBy;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -274,14 +297,28 @@ export interface WsErrorFrame {
   type: Type6;
   thread_id?: ThreadId6;
   detail: Detail;
+  code?: Code;
+  message_id?: MessageId;
+  reason_code?: ReasonCode;
+  reason_text?: ReasonText;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsMessageSupersededFrame".
+ */
+export interface WsMessageSupersededFrame {
+  type: Type7;
+  thread_id?: ThreadId7;
+  message_id: MessageId1;
+  replaced_by: ReplacedBy1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsRefreshFrame".
  */
 export interface WsRefreshFrame {
-  type: Type7;
-  thread_id?: ThreadId7;
+  type: Type8;
+  thread_id?: ThreadId8;
   screen: Screen;
 }
 /**
@@ -289,16 +326,16 @@ export interface WsRefreshFrame {
  * via the `definition` "WsPongFrame".
  */
 export interface WsPongFrame {
-  type: Type8;
+  type: Type9;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsTraceUpdateFrame".
  */
 export interface WsTraceUpdateFrame {
-  type: Type9;
-  thread_id: ThreadId8;
-  message_id: MessageId;
+  type: Type10;
+  thread_id: ThreadId9;
+  message_id: MessageId2;
   partial?: Partial;
   agent: Agent;
   routing_method: RoutingMethod;
@@ -315,6 +352,7 @@ export interface WsTraceUpdateFrame {
   conductor_hint?: ConductorHint;
   conductor_ledger?: ConductorLedger;
   judgments?: Judgments;
+  effects_known?: EffectsKnown;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -335,6 +373,11 @@ export interface ToolCallTraceResponse {
   result_snippet: ResultSnippet;
   duration_ms: DurationMs;
   success: Success;
+  access?: Access;
+  reversibility?: Reversibility;
+  undo_tool?: UndoTool;
+  gate?: Gate;
+  effect_phrase?: EffectPhrase;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -398,7 +441,7 @@ export interface JudgmentTraceResponse {
  * via the `definition` "WsNotificationFrame".
  */
 export interface WsNotificationFrame {
-  type: Type10;
+  type: Type11;
   id: Id4;
   event_type: EventType;
   source: Source2;
@@ -414,9 +457,9 @@ export interface WsNotificationFrame {
  * via the `definition` "WsSendMessageFrame".
  */
 export interface WsSendMessageFrame {
-  type: Type11;
+  type: Type12;
   text: Text5;
-  thread_id?: ThreadId9;
+  thread_id?: ThreadId10;
   context?: WsScreenContext | null;
 }
 /**
@@ -443,7 +486,7 @@ export interface WsWorkspacePlaced {
  * via the `definition` "WsAckFrame".
  */
 export interface WsAckFrame {
-  type: Type12;
+  type: Type13;
   ids: Ids;
 }
 /**
@@ -451,9 +494,9 @@ export interface WsAckFrame {
  * via the `definition` "WsConfirmFrame".
  */
 export interface WsConfirmFrame {
-  type: Type13;
+  type: Type14;
   id: Id5;
-  thread_id: ThreadId10;
+  thread_id: ThreadId11;
   choice: Choice;
   edited_content?: EditedContent;
 }
@@ -462,17 +505,17 @@ export interface WsConfirmFrame {
  * via the `definition` "WsActionFrame".
  */
 export interface WsActionFrame {
-  type: Type14;
+  type: Type15;
   payload: Payload;
-  thread_id?: ThreadId11;
+  thread_id?: ThreadId12;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsCommandFrame".
  */
 export interface WsCommandFrame {
-  type: Type15;
-  thread_id?: ThreadId12;
+  type: Type16;
+  thread_id?: ThreadId13;
   name: Name2;
 }
 /**
@@ -480,19 +523,28 @@ export interface WsCommandFrame {
  * via the `definition` "WsComponentSubmitFrame".
  */
 export interface WsComponentSubmitFrame {
-  type: Type16;
+  type: Type17;
   step_id: StepId;
   values: Values;
   session_id?: SessionId1;
-  thread_id?: ThreadId13;
+  thread_id?: ThreadId14;
 }
 export interface Values {
   [k: string]: unknown;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsRetryFrame".
+ */
+export interface WsRetryFrame {
+  type: Type18;
+  message_id: MessageId3;
+  thread_id: ThreadId15;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsPingFrame".
  */
 export interface WsPingFrame {
-  type: Type17;
+  type: Type19;
 }

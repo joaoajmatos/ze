@@ -237,3 +237,15 @@ async def test_mark_superseded_false_when_nothing_updated():
     assert (
         await PostgresMessageStore(pool=pool).mark_superseded(uuid4(), uuid4()) is False
     )
+
+
+async def test_get_messages_returns_map_and_skips_empty_query():
+    msg = _make_message()
+    pool, conn = _make_pool_mock(rows=[_make_row(msg)])
+    store = PostgresMessageStore(pool=pool)
+    got = await store.get_messages([msg.id])
+    assert got[msg.id].text == "Hello"
+    assert "ANY($1::uuid[])" in conn.fetch.call_args[0][0]
+    conn.fetch.reset_mock()
+    assert await store.get_messages([]) == {}
+    conn.fetch.assert_not_called()

@@ -247,9 +247,7 @@ async def watch_workspace_run_events(
 ) -> StreamingResponse:
     status = await client.get_run(run_id)
     if status is None:
-        raise HTTPException(
-            status_code=404, detail=f"workspace run {run_id} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"workspace run {run_id} not found")
 
     async def _proxy():
         async for event in client.watch_run(run_id):

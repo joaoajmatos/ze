@@ -13,6 +13,7 @@ from ze_api.api.routes import (
     data,
     dream,
     eval,
+    feedback,
     goals,
     health,
     ingest,
@@ -134,6 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(goals.router, prefix="/api/v0")
     app.include_router(sessions.router, prefix="/api/v0")
     app.include_router(messages_router, prefix="/api/v0")
+    app.include_router(feedback.router, prefix="/api/v0")
     app.include_router(data.router, prefix="/api/v0")
     app.include_router(ingest.router, prefix="/api/v0")
     app.include_router(ws_schema.router, prefix="/api/v0")

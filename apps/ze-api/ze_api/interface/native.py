@@ -6,7 +6,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from numbers import Integral, Real
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from ze_agents.interface.types import (
     Action,
@@ -112,9 +112,8 @@ class NativeAppInterface:
         ntfy_priority: int = 3,
         trace: Any | None = None,
         message_id: str | None = None,
+        replaces: UUID | None = None,
     ) -> None:
-        from uuid import UUID
-
         msg = Message(
             id=UUID(message_id) if message_id else uuid4(),
             role="assistant",
@@ -123,6 +122,7 @@ class NativeAppInterface:
             read=False,
             created_at=datetime.now(timezone.utc),
             thread_id=thread_id,
+            replaces=replaces,
         )
         try:
             await self._store.save(msg)
@@ -175,6 +175,7 @@ class NativeAppInterface:
         components: list[dict] | None = None,
         trace: Any | None = None,
         message_id: str | None = None,
+        replaces: UUID | None = None,
     ) -> None:
         """Called by the WS handler after graph invocation to attach the thread_id."""
         await self._send_message(
@@ -183,6 +184,7 @@ class NativeAppInterface:
             components=components,
             trace=trace,
             message_id=message_id,
+            replaces=replaces,
         )
 
     async def send_confirmation(self, request: ConfirmationRequest) -> None:
