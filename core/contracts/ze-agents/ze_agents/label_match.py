@@ -70,9 +70,7 @@ def precise_label_match(
 
     if len(remainder.split()) < 2:
         word_hits = [
-            item_id
-            for item_id, label in normalized_items
-            if remainder in label.split()
+            item_id for item_id, label in normalized_items if remainder in label.split()
         ]
         if len(word_hits) == 1:
             return Unique(word_hits[0])

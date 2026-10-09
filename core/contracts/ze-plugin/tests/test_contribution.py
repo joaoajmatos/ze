@@ -5,6 +5,7 @@ from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_agents.errors import (
     ActionRecordPayloadError,
     DanglingEvidenceError,
+    FeedbackRecordPayloadError,
     MissingEvidenceError,
     UnlicensedClaimKindError,
 )
@@ -34,6 +35,7 @@ async def _write() -> str:
         (SourceFunction.EXECUTIVE, ClaimKind.PRIORITY),
         (SourceFunction.SOCIAL_COGNITION, ClaimKind.IDENTITY),
         (SourceFunction.ACTION, ClaimKind.ACTION_RECORD),
+        (SourceFunction.PERCEPTION, ClaimKind.FEEDBACK_RECORD),
     ],
 )
 async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> None:
@@ -50,6 +52,7 @@ async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> N
         source_function=source_function,
         evidence=evidence,
         action_record=object() if claim_kind is ClaimKind.ACTION_RECORD else None,
+        feedback_record=(object() if claim_kind is ClaimKind.FEEDBACK_RECORD else None),
     )
 
     async def check_fact_exists(_id):
@@ -80,6 +83,12 @@ async def test_licensed_claim_kind_is_accepted(source_function, claim_kind) -> N
         (SourceFunction.SOCIAL_COGNITION, ClaimKind.ACTION_RECORD),
         (SourceFunction.REFLECTION, ClaimKind.ACTION_RECORD),
         (SourceFunction.GOVERNANCE, ClaimKind.ACTION_RECORD),
+        (SourceFunction.ACTION, ClaimKind.FEEDBACK_RECORD),
+        (SourceFunction.EXECUTIVE, ClaimKind.FEEDBACK_RECORD),
+        (SourceFunction.REFLECTION, ClaimKind.FEEDBACK_RECORD),
+        (SourceFunction.GOVERNANCE, ClaimKind.FEEDBACK_RECORD),
+        (SourceFunction.MEMORY, ClaimKind.FEEDBACK_RECORD),
+        (SourceFunction.SOCIAL_COGNITION, ClaimKind.FEEDBACK_RECORD),
     ],
 )
 async def test_unlicensed_claim_kind_is_rejected(source_function, claim_kind) -> None:
@@ -274,3 +283,28 @@ async def test_action_record_evidence_with_checker_is_accepted() -> None:
         contribution, _write, check_action_record_exists=check_action_record_exists
     )
     assert result == "written"
+
+
+async def test_feedback_record_without_payload_is_rejected() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FEEDBACK_RECORD,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        confidence=_confidence(1.0),
+        target_face=TargetFace.WORLD,
+        source_function=SourceFunction.PERCEPTION,
+    )
+    with pytest.raises(FeedbackRecordPayloadError):
+        await validate_and_submit(contribution, _write)
+
+
+async def test_feedback_payload_with_wrong_kind_is_rejected() -> None:
+    contribution = Contribution(
+        claim_kind=ClaimKind.FACT,
+        provenance=Provenance.PROMPT_SUPPLIED,
+        confidence=_confidence(1.0),
+        target_face=TargetFace.USER,
+        source_function=SourceFunction.PERCEPTION,
+        feedback_record=object(),
+    )
+    with pytest.raises(FeedbackRecordPayloadError):
+        await validate_and_submit(contribution, _write)

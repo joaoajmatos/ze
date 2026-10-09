@@ -21,7 +21,9 @@ def test_parse_fact_response_strips_markdown_fence():
 def test_parse_fact_response_invalid_returns_empty():
     assert parse_fact_response("not json") == []
     assert parse_fact_response('{"key": "x"}') == []
-    assert parse_fact_response('{"family": "city", "facts": [{"value": "Lisbon"}]}') == []
+    assert (
+        parse_fact_response('{"family": "city", "facts": [{"value": "Lisbon"}]}') == []
+    )
 
 
 def test_merge_explicit_overrides_extracted():

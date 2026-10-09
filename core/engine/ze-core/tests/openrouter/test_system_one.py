@@ -66,7 +66,11 @@ def _mock_http(response: MagicMock | AsyncMock):
     inst = AsyncMock()
     inst.__aenter__.return_value = inst
     inst.__aexit__.return_value = None
-    inst.post = AsyncMock(return_value=response) if not isinstance(response, list) else AsyncMock(side_effect=response)
+    inst.post = (
+        AsyncMock(return_value=response)
+        if not isinstance(response, list)
+        else AsyncMock(side_effect=response)
+    )
     return inst
 
 
@@ -143,11 +147,13 @@ async def test_timeout_skips(mock_cls):
 @patch("ze_core.openrouter.system_one.asyncio.sleep", new_callable=AsyncMock)
 @patch("ze_core.openrouter.system_one.httpx.AsyncClient")
 async def test_429_skips_overload(mock_cls, _sleep):
-    inst = _mock_http([
-        _json_response(429),
-        _json_response(429),
-        _json_response(429),
-    ])
+    inst = _mock_http(
+        [
+            _json_response(429),
+            _json_response(429),
+            _json_response(429),
+        ]
+    )
     mock_cls.return_value = inst
     result = await _client().evaluate("x", _QUESTIONS)
     assert result.skip_reason == "overload"
@@ -156,11 +162,13 @@ async def test_429_skips_overload(mock_cls, _sleep):
 @patch("ze_core.openrouter.system_one.asyncio.sleep", new_callable=AsyncMock)
 @patch("ze_core.openrouter.system_one.httpx.AsyncClient")
 async def test_529_skips_overload(mock_cls, _sleep):
-    inst = _mock_http([
-        _json_response(529),
-        _json_response(529),
-        _json_response(529),
-    ])
+    inst = _mock_http(
+        [
+            _json_response(529),
+            _json_response(529),
+            _json_response(529),
+        ]
+    )
     mock_cls.return_value = inst
     result = await _client().evaluate("x", _QUESTIONS)
     assert result.skip_reason == "overload"

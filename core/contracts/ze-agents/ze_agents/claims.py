@@ -25,6 +25,7 @@ class ClaimKind(StrEnum):
     SUSPICION = "suspicion"
     PRIORITY = "priority"
     ACTION_RECORD = "action_record"
+    FEEDBACK_RECORD = "feedback_record"
 
 
 class Provenance(StrEnum):

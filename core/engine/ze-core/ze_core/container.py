@@ -478,8 +478,9 @@ def _validate_registry(settings: Any) -> None:
     """Validate tool names against the tool registry (name/description/capabilities
     are already validated by @agent at decoration time)."""
     from ze_agents.registry import get_registered_agents
-    from ze_agents.tool import registered_tools
+    from ze_agents.tool import registered_tools, validate_tool_declarations
 
+    validate_tool_declarations()
     tool_reg = registered_tools()
     registered = get_registered_agents()
 

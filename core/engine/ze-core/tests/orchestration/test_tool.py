@@ -1,6 +1,7 @@
 import pytest
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import (
     ToolAccess,
     ToolSpec,
@@ -30,7 +31,11 @@ class TestToolDecorator:
         assert spec.access == ToolAccess.READ
 
     def test_accepts_string_access(self):
-        @tool(access="write", description="write tool")
+        @tool(
+            access="write",
+            description="write tool",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def my_write(text: str) -> str:
             return text
 
@@ -67,7 +72,11 @@ class TestGetTool:
             get_tool("nonexistent")
 
     def test_returns_correct_spec(self):
-        @tool(access=ToolAccess.WRITE, description="desc")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="desc",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def special_tool(x: int) -> str: ...
 
         spec = get_tool("special_tool")
@@ -131,7 +140,11 @@ class TestToolSpecLlmSchema:
         assert "limit" not in schema["function"]["parameters"]["required"]
 
     def test_schema_name_and_description(self):
-        @tool(access=ToolAccess.WRITE, description="send an email")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="send an email",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def send_email(to: str, body: str) -> str: ...
 
         schema = get_tool("send_email").llm_schema()
@@ -167,7 +180,11 @@ class TestToolSpecLlmSchema:
         assert "items" in schema["function"]["parameters"]["properties"]
 
     def test_constraint_gate_defaults_false(self):
-        @tool(access=ToolAccess.WRITE, description="ungated")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="ungated",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def remember_nothing(x: str) -> str: ...
 
         spec = get_tool("remember_nothing")
@@ -179,6 +196,7 @@ class TestToolSpecLlmSchema:
             access=ToolAccess.WRITE,
             description="gated",
             constraint_gate=True,
+            reversibility=ToolReversibility.IRREVERSIBLE,
         )
         async def ping_contact(to: str) -> str: ...
 

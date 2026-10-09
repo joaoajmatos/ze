@@ -29,12 +29,18 @@ def test_admit_family_keep_drop():
 
 
 def test_parse_drops_commitment_and_ephemeral():
-    assert parse_fact_response(
-        '{"family": "commitment", "facts": [{"value": "call Mom Tuesday"}]}'
-    ) == []
-    assert parse_fact_response(
-        '{"family": "ephemeral", "facts": [{"value": "tired today"}]}'
-    ) == []
+    assert (
+        parse_fact_response(
+            '{"family": "commitment", "facts": [{"value": "call Mom Tuesday"}]}'
+        )
+        == []
+    )
+    assert (
+        parse_fact_response(
+            '{"family": "ephemeral", "facts": [{"value": "tired today"}]}'
+        )
+        == []
+    )
 
 
 def test_parse_keeps_preference_and_constraint():

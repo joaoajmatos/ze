@@ -9,6 +9,7 @@ import numpy as np
 
 from ze_agents.nli import NLIClient
 from ze_agents.tool import ToolAccess, tool
+from ze_agents.reversibility import ToolReversibility
 from ze_collision.store import CollisionLogStore
 from ze_logging import get_logger
 
@@ -76,6 +77,8 @@ def _resolve_anchor(
         "'more_urgent' or 'less_urgent'; pin is true only when the user "
         "unambiguously requests permanence."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="changed what Ze treats as most urgent",
 )
 async def reprioritize_item(
     priority_view: PriorityView,

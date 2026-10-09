@@ -18,6 +18,7 @@ from ze_agents.claims import ClaimKind, Confidence, Provenance
 from ze_agents.errors import (
     ActionRecordPayloadError,
     DanglingEvidenceError,
+    FeedbackRecordPayloadError,
     MissingEvidenceError,
     UnlicensedClaimKindError,
 )
@@ -48,7 +49,7 @@ class TargetFace(StrEnum):
 
 
 _LICENSE: dict[SourceFunction, frozenset[ClaimKind]] = {
-    SourceFunction.PERCEPTION: frozenset({ClaimKind.FACT}),
+    SourceFunction.PERCEPTION: frozenset({ClaimKind.FACT, ClaimKind.FEEDBACK_RECORD}),
     SourceFunction.MEMORY: frozenset(),
     SourceFunction.EXECUTIVE: frozenset(
         {
@@ -86,6 +87,7 @@ class Contribution:
     content: str | None = None
     entity_ids: list[UUID] = field(default_factory=list)
     action_record: Any | None = None
+    feedback_record: Any | None = None
 
 
 async def validate_and_submit(
@@ -136,6 +138,28 @@ async def validate_and_submit(
         )
         raise ActionRecordPayloadError(
             "action_record payload is only valid with claim_kind ACTION_RECORD"
+        )
+
+    if contribution.claim_kind is ClaimKind.FEEDBACK_RECORD:
+        if contribution.feedback_record is None:
+            log.warning(
+                "contribution_rejected",
+                source_function=contribution.source_function,
+                claim_kind=contribution.claim_kind,
+                reason="missing_feedback_record_payload",
+            )
+            raise FeedbackRecordPayloadError(
+                "FEEDBACK_RECORD contributions require a non-null feedback_record payload"
+            )
+    elif contribution.feedback_record is not None:
+        log.warning(
+            "contribution_rejected",
+            source_function=contribution.source_function,
+            claim_kind=contribution.claim_kind,
+            reason="feedback_record_kind_mismatch",
+        )
+        raise FeedbackRecordPayloadError(
+            "feedback_record payload is only valid with claim_kind FEEDBACK_RECORD"
         )
 
     if (

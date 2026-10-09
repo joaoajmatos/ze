@@ -18,7 +18,10 @@ def _call(tool_name: str, result: str, success: bool = True, args: dict | None =
 @pytest.mark.parametrize(
     "result,expected_status",
     [
-        ("[still running] run abc123: `sleep 60` is taking longer than 25s...", "in_progress"),
+        (
+            "[still running] run abc123: `sleep 60` is taking longer than 25s...",
+            "in_progress",
+        ),
         ("ok\n(exit 0)", None),
     ],
 )

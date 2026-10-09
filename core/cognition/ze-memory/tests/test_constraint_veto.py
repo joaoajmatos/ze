@@ -9,6 +9,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.hooks import clear_hooks, register_hook
 from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.registry import clear_registry
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, get_tool, tool
 from ze_agents.types import AgentContext, AgentResult
 from ze_memory.constraint_veto import (
@@ -76,6 +77,7 @@ async def test_marked_dummy_tool_is_blocked_without_running_body():
             when=datetime(2026, 9, 16, 23, 0, tzinfo=ZoneInfo("UTC")),
             summary="ping",
         ),
+        reversibility=ToolReversibility.IRREVERSIBLE,
     )
     async def ping_pager(to: str) -> str:
         ran.append(to)
@@ -99,7 +101,11 @@ async def test_marked_dummy_tool_is_blocked_without_running_body():
 async def test_unmarked_dummy_tool_completes():
     ran = []
 
-    @tool(access=ToolAccess.WRITE, description="ungated twin")
+    @tool(
+        access=ToolAccess.WRITE,
+        description="ungated twin",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+    )
     async def ping_pager_free(to: str) -> str:
         ran.append(to)
         return "sent"
@@ -121,7 +127,11 @@ async def test_unmarked_dummy_tool_completes():
 async def test_unmarked_remember_fact_is_not_intercepted():
     ran = []
 
-    @tool(access=ToolAccess.WRITE, description="remember")
+    @tool(
+        access=ToolAccess.WRITE,
+        description="remember",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+    )
     async def remember_fact(value: str) -> dict:
         ran.append(value)
         return {"ok": True, "id": "x"}
@@ -219,6 +229,7 @@ async def test_ambiguous_confirm_executes_after_approve():
             parties=["Ada"],
             summary="note",
         ),
+        reversibility=ToolReversibility.IRREVERSIBLE,
     )
     async def note_contact(to: str) -> str:
         ran.append(to)
@@ -253,6 +264,7 @@ async def test_ambiguous_confirm_without_interrupt_refuses():
             parties=["Ada"],
             summary="note",
         ),
+        reversibility=ToolReversibility.IRREVERSIBLE,
     )
     async def note_contact(to: str) -> str:
         ran.append(to)

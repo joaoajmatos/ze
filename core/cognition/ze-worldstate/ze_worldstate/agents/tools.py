@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
+from ze_agents.reversibility import ToolReversibility
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.review import close_loop as review_close
 from ze_worldstate.review import drop_loop as review_drop
@@ -38,6 +39,8 @@ async def list_open_loops(loop_store: LoopStore) -> list:
 @tool(
     access=ToolAccess.WRITE,
     description="Close an open loop by id after listing to find a unique title match.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="closed an open loop",
 )
 async def close_loop(loop_store: LoopStore, loop_id: str) -> dict:
     try:
@@ -60,6 +63,8 @@ async def close_loop(loop_store: LoopStore, loop_id: str) -> dict:
 @tool(
     access=ToolAccess.WRITE,
     description="Drop an open loop by id after listing to find a unique title match.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="dropped an open loop",
 )
 async def drop_loop(loop_store: LoopStore, loop_id: str) -> dict:
     try:

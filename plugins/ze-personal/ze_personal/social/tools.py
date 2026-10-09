@@ -12,6 +12,7 @@ import time
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_agents.types import ToolCall
 from ze_logging import get_logger
 from ze_memory.graph.predicates import WORKS_ON
@@ -39,7 +40,9 @@ async def who_is_on_project(
     args = {"project_name": project_name}
     start = time.monotonic()
     try:
-        project = await memory_store.find_entity_by_name(project_name, entity_type="project")  # type: ignore[attr-defined]
+        project = await memory_store.find_entity_by_name(
+            project_name, entity_type="project"
+        )  # type: ignore[attr-defined]
         confirmed_members: list[str] = []
         hedged_candidates: list[dict] = []
 
@@ -104,6 +107,8 @@ async def who_is_on_project(
         "is on Launch') — marks it confirmed and promotes it to a real graph "
         "edge immediately, regardless of corroboration."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="confirmed a project membership",
 )
 async def confirm_project_membership(
     hypothesis_id: str,

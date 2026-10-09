@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, Callable, get_type_hints
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
+from ze_agents.reversibility import ToolReversibility
 
 _tools: dict[str, ToolSpec] = {}
 
@@ -36,6 +37,10 @@ class ToolSpec:
     _schema_override: dict | None = None
     constraint_gate: bool = False
     constraint_describe: Callable[[dict[str, Any]], Any] | None = None
+    reversibility: ToolReversibility | None = None
+    undo_tool: str | None = None
+    undo_note: str | None = None
+    effect_phrase: str | None = None
 
     def llm_schema(self) -> dict:
         if self._schema_override is not None:
@@ -72,15 +77,73 @@ class ToolSpec:
         }
 
 
+def _check_declaration(
+    name: str,
+    access: ToolAccess,
+    reversibility: ToolReversibility | None,
+    undo_tool: str | None,
+    undo_note: str | None,
+    effect_phrase: str | None,
+) -> None:
+    if access is ToolAccess.READ:
+        if any(
+            v is not None for v in (reversibility, undo_tool, undo_note, effect_phrase)
+        ):
+            raise AgentConfigError(f"READ tool {name!r} must not declare reversibility")
+        return
+    if reversibility is None:
+        raise AgentConfigError(f"WRITE tool {name!r} must declare reversibility")
+    if reversibility is ToolReversibility.REVERSIBLE:
+        if not undo_tool or not undo_note:
+            raise AgentConfigError(
+                f"REVERSIBLE tool {name!r} must declare undo_tool and undo_note"
+            )
+    elif undo_tool is not None or undo_note is not None:
+        raise AgentConfigError(
+            f"IRREVERSIBLE tool {name!r} must not declare undo_tool or undo_note"
+        )
+
+
+def validate_tool_declarations() -> None:
+    """Every `undo_tool` resolves to a registered WRITE tool and is not the tool itself."""
+    for spec in _tools.values():
+        if spec.undo_tool is None:
+            continue
+        if spec.undo_tool == spec.name:
+            raise AgentConfigError(f"Tool {spec.name!r} cannot be its own undo_tool")
+        target = _tools.get(spec.undo_tool)
+        if target is None:
+            raise AgentConfigError(
+                f"Tool {spec.name!r} names unregistered undo_tool {spec.undo_tool!r}"
+            )
+        if target.access is not ToolAccess.WRITE:
+            raise AgentConfigError(
+                f"Tool {spec.name!r} undo_tool {spec.undo_tool!r} is not a WRITE tool"
+            )
+
+
 def tool(
     *,
     access: ToolAccess | str,
     description: str,
     constraint_gate: bool = False,
     constraint_describe: Callable[[dict[str, Any]], Any] | None = None,
+    reversibility: ToolReversibility | str | None = None,
+    undo_tool: str | None = None,
+    undo_note: str | None = None,
+    effect_phrase: str | None = None,
 ) -> Callable:
-    """Decorator that registers an async function as a Ze tool."""
+    """Decorator that registers an async function as a Ze tool.
+
+    WRITE tools must declare `reversibility`; READ tools must declare none of the
+    reversibility arguments. A REVERSIBLE tool names its compensating `undo_tool`.
+    """
     access_val = ToolAccess(access) if isinstance(access, str) else access
+    reversibility_val = (
+        ToolReversibility(reversibility)
+        if isinstance(reversibility, str)
+        else reversibility
+    )
 
     def _decorator(func: Callable) -> Callable:
         if not asyncio.iscoroutinefunction(func):
@@ -88,6 +151,9 @@ def tool(
         name = func.__name__
         if name in _tools:
             raise AgentConfigError(f"Duplicate tool name {name!r}")
+        _check_declaration(
+            name, access_val, reversibility_val, undo_tool, undo_note, effect_phrase
+        )
         _tools[name] = ToolSpec(
             name=name,
             access=access_val,
@@ -95,6 +161,10 @@ def tool(
             func=func,
             constraint_gate=constraint_gate,
             constraint_describe=constraint_describe,
+            reversibility=reversibility_val,
+            undo_tool=undo_tool,
+            undo_note=undo_note,
+            effect_phrase=effect_phrase,
         )
         return func
 

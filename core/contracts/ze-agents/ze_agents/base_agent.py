@@ -268,7 +268,9 @@ class BaseAgent(ABC):
         skill_tool_names = getattr(ctx, "skill_tool_names", None)
         if skill_tool_names is not None:
             allowed = set(skill_tool_names)
-            visible = [n for n in visible if n in allowed or n == _PROCEDURE_INVOKE_TOOL]
+            visible = [
+                n for n in visible if n in allowed or n == _PROCEDURE_INVOKE_TOOL
+            ]
         procedure_tool_names = getattr(ctx, "procedure_tool_names", None)
         if procedure_tool_names is not None:
             allowed = set(procedure_tool_names)
@@ -598,7 +600,9 @@ class BaseAgent(ABC):
                         }
                     )
                 else:
-                    merged = _merge_deps(tc["name"], tc["arguments"], {**_deps, "ctx": ctx})
+                    merged = _merge_deps(
+                        tc["name"], tc["arguments"], {**_deps, "ctx": ctx}
+                    )
                     tool_call = await self.call_tool(
                         tc["name"],
                         ctx,
@@ -662,7 +666,9 @@ async def _dispatch_tool_end(
             log.warning("hook_error_on_tool_end", tool=name, error=str(exc))
 
 
-def _apply_edited_content(tool_name: str, args: dict[str, Any], edited: str) -> dict[str, Any]:
+def _apply_edited_content(
+    tool_name: str, args: dict[str, Any], edited: str
+) -> dict[str, Any]:
     updated = dict(args)
     if tool_name == "workspace_run":
         updated["command"] = edited

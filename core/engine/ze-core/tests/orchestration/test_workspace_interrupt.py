@@ -13,6 +13,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.errors import ToolConfirmationRequired
 from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.registry import clear_registry
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
 from ze_agents.types import AgentContext, AgentResult, GateDecision
 from ze_core.conversation.turn import _interrupt_payload, resume_turn
@@ -31,7 +32,9 @@ def test_this_module_does_not_import_ze_workspace():
     tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
-            assert all(not alias.name.startswith("ze_workspace") for alias in node.names)
+            assert all(
+                not alias.name.startswith("ze_workspace") for alias in node.names
+            )
         if isinstance(node, ast.ImportFrom):
             assert not (node.module or "").startswith("ze_workspace")
 
@@ -61,7 +64,11 @@ async def test_approve_executes_edited_payload():
     sidecar = AsyncMock()
     calls: list[str] = []
 
-    @tool(access=ToolAccess.WRITE, description="write")
+    @tool(
+        access=ToolAccess.WRITE,
+        description="write",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+    )
     async def workspace_write(path: str, content: str) -> str:
         calls.append(content)
         if len(calls) == 1:
@@ -89,7 +96,11 @@ async def test_approve_executes_edited_payload():
 async def test_deny_does_not_call_sidecar():
     sidecar = AsyncMock()
 
-    @tool(access=ToolAccess.WRITE, description="write")
+    @tool(
+        access=ToolAccess.WRITE,
+        description="write",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+    )
     async def workspace_write(path: str, content: str) -> str:
         raise ToolConfirmationRequired("Write file?", editable=True, proposed=content)
 
@@ -138,9 +149,7 @@ async def test_resume_turn_uses_command_resume_when_in_node_interrupt():
     graph.aget_state = AsyncMock(
         side_effect=[
             SimpleNamespace(
-                interrupts=[
-                    SimpleNamespace(value={"prompt": "ok", "editable": True})
-                ],
+                interrupts=[SimpleNamespace(value={"prompt": "ok", "editable": True})],
                 next=(),
                 values={"final_response": "done"},
                 tasks=[],

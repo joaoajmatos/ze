@@ -246,6 +246,10 @@ class ActionRecordPayloadError(ContributionError):
     """ACTION_RECORD payload missing or paired with the wrong claim kind."""
 
 
+class FeedbackRecordPayloadError(ContributionError):
+    """FEEDBACK_RECORD payload missing or paired with the wrong claim kind."""
+
+
 class ActionRecordValidationError(ContributionError):
     """Action record fields failed validation before persist."""
 

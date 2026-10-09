@@ -50,7 +50,9 @@ def _config(discovery=None) -> dict:
 
 async def test_fetch_context_attaches_ready_and_blocked_guidance() -> None:
     ready = _match()
-    blocked = _match(state=MatchState.BLOCKED, unmet_preconditions=["inbox is connected"])
+    blocked = _match(
+        state=MatchState.BLOCKED, unmet_preconditions=["inbox is connected"]
+    )
     discovery = SimpleNamespace(match=AsyncMock(return_value=[ready, blocked]))
     result = await fetch_context(
         {

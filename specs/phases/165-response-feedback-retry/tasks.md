@@ -25,19 +25,19 @@
 
 ### Shared types
 
-- [ ] **T003** [P] [BE] `ze-agents`: add `ClaimKind.FEEDBACK_RECORD` in `ze_agents/claims.py`; new `ze_agents/reversibility.py` with `ToolReversibility`; extend `ToolSpec` and `@tool` in `tool.py` with `reversibility`, `undo_tool`, `undo_note`, `effect_phrase`. WRITE without `reversibility` raises `AgentConfigError`; READ with any of them raises; `REVERSIBLE` requires `undo_tool`. Tests in `ze-agents/tests`.
-- [ ] **T004** [BE] `ze-agents`: add `validate_tool_declarations()` (every `undo_tool` resolves to a registered WRITE tool; no self-undo). Call it from `ze_core` container bootstrap after plugin tool modules load. Depends on T003.
-- [ ] **T005** [P] [BE] `ze-plugin`: license `FEEDBACK_RECORD` to `SourceFunction.PERCEPTION` only in `contribution.py` `_LICENSE`; add `Contribution.feedback_record` payload field. Tests: Perception accepted; Action, Executive, Reflection, Governance, Memory rejected; Perception still accepts `FACT`.
+- [x] **T003** [P] [BE] `ze-agents`: add `ClaimKind.FEEDBACK_RECORD` in `ze_agents/claims.py`; new `ze_agents/reversibility.py` with `ToolReversibility`; extend `ToolSpec` and `@tool` in `tool.py` with `reversibility`, `undo_tool`, `undo_note`, `effect_phrase`. WRITE without `reversibility` raises `AgentConfigError`; READ with any of them raises; `REVERSIBLE` requires `undo_tool`. Tests in `ze-agents/tests`.
+- [x] **T004** [BE] `ze-agents`: add `validate_tool_declarations()` (every `undo_tool` resolves to a registered WRITE tool; no self-undo). Call it from `ze_core` container bootstrap after plugin tool modules load. Depends on T003.
+- [x] **T005** [P] [BE] `ze-plugin`: license `FEEDBACK_RECORD` to `SourceFunction.PERCEPTION` only in `contribution.py` `_LICENSE`; add `Contribution.feedback_record` payload field. Tests: Perception accepted; Action, Executive, Reflection, Governance, Memory rejected; Perception still accepts `FACT`.
 - [ ] **T006** [P] [BE] `ze-sdk`: re-export `ToolReversibility`, `FeedbackKind`, `FeedbackRecord`, `submit_feedback_record`, `FeedbackStore` from the right `ze_sdk.*` modules. Update `ze-sdk` tests.
 
 ### Reversibility declarations on every WRITE tool (hard cut; classification per spec "Deferred" inventory, borderline = IRREVERSIBLE)
 
-- [ ] **T007** [P] [BE] `ze-automation` goals and workflow tools: declare reversibility, `undo_tool`, `effect_phrase` (`create_goal`→`abandon_goal`; `create_workflow`→`delete_workflow`; `enable_workflow`↔`disable_workflow`; `update_workflow`, `edit_workflow_steps` reversible via revision log; the rest irreversible). Files: `ze_automation/agents/goals/tools.py`, `ze_automation/agents/workflow/tools.py`.
-- [ ] **T008** [P] [BE] `ze-calendar`: `set_reminder`→`cancel_reminder`, `cancel_reminder` irreversible; `create_event`, `update_event`, `delete_event` irreversible. Files: `ze_calendar/agents/reminders/tools.py`, `ze_calendar/agents/calendar/tools.py`.
-- [ ] **T009** [P] [BE] `ze-messenger`: `send_email`, `archive_email`, `draft_email` all irreversible in v1. File: `ze_messenger/agents/messenger/tools.py`.
-- [ ] **T010** [P] [BE] `ze-workspace` and `ze-ingestion`: all workspace WRITE tools and `ingest_workspace_file` / ingestion agent writes irreversible. Files: `ze_workspace/tools.py`, `ze_ingestion/agent.py`.
-- [ ] **T011** [P] [BE] `ze-personal` (companion `remember_fact`→`forget_fact`; contacts `set_contact_channel`, social `confirm_project_membership`, remaining personal agent tools), `ze-priority` (`reprioritize_item` reversible), `ze-finance`, `ze-prospecting`, `ze-news` WRITE tools. Classify and declare; list each tool in the PR description.
-- [ ] **T012** [BE] Add a repo-level test (in `ze-api/tests`, loads all plugins) asserting every registered WRITE tool declares reversibility and `validate_tool_declarations()` passes. Depends on T007–T011.
+- [x] **T007** [P] [BE] `ze-automation` goals and workflow tools: declare reversibility, `undo_tool`, `effect_phrase` (`create_goal`→`abandon_goal`; `create_workflow`→`delete_workflow`; `enable_workflow`↔`disable_workflow`; `update_workflow`, `edit_workflow_steps` reversible via revision log; the rest irreversible). Files: `ze_automation/agents/goals/tools.py`, `ze_automation/agents/workflow/tools.py`.
+- [x] **T008** [P] [BE] `ze-calendar`: `set_reminder`→`cancel_reminder`, `cancel_reminder` irreversible; `create_event`, `update_event`, `delete_event` irreversible. Files: `ze_calendar/agents/reminders/tools.py`, `ze_calendar/agents/calendar/tools.py`.
+- [x] **T009** [P] [BE] `ze-messenger`: `send_email`, `archive_email`, `draft_email` all irreversible in v1. File: `ze_messenger/agents/messenger/tools.py`.
+- [x] **T010** [P] [BE] `ze-workspace` and `ze-ingestion`: all workspace WRITE tools and `ingest_workspace_file` / ingestion agent writes irreversible. Files: `ze_workspace/tools.py`, `ze_ingestion/agent.py`.
+- [x] **T011** [P] [BE] `ze-personal` (companion `remember_fact`→`forget_fact`; contacts `set_contact_channel`, social `confirm_project_membership`, remaining personal agent tools), `ze-priority` (`reprioritize_item` reversible), `ze-finance`, `ze-prospecting`, `ze-news` WRITE tools. Classify and declare; list each tool in the PR description.
+- [x] **T012** [BE] Add a repo-level test (in `ze-api/tests`, loads all plugins) asserting every registered WRITE tool declares reversibility and `validate_tool_declarations()` passes. Depends on T007–T011.
 
 ### Trace metadata and storage
 

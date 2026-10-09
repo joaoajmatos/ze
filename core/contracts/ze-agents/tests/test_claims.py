@@ -10,6 +10,7 @@ def test_claim_kind_is_closed_and_includes_action_record() -> None:
         ClaimKind.SUSPICION,
         ClaimKind.PRIORITY,
         ClaimKind.ACTION_RECORD,
+        ClaimKind.FEEDBACK_RECORD,
     }
     assert ClaimKind.ACTION_RECORD.value == "action_record"
 

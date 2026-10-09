@@ -1,6 +1,7 @@
 import asyncio
 
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_google.auth import GoogleCredentials
 from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
 from ze_calendar.action_records import emit_calendar_mutation
@@ -54,6 +55,8 @@ async def list_events(
     description="Create a new Google Calendar event.",
     constraint_gate=True,
     constraint_describe=_calendar_write_view,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="created a calendar event",
 )
 async def create_event(
     credentials: GoogleCredentials,
@@ -104,6 +107,8 @@ async def create_event(
     description="Update an existing Google Calendar event.",
     constraint_gate=True,
     constraint_describe=_calendar_write_view,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="changed a calendar event",
 )
 async def update_event(
     credentials: GoogleCredentials,
@@ -158,6 +163,8 @@ async def update_event(
     description="Delete a Google Calendar event.",
     constraint_gate=True,
     constraint_describe=_calendar_write_view,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="deleted a calendar event",
 )
 async def delete_event(
     credentials: GoogleCredentials,
@@ -168,7 +175,9 @@ async def delete_event(
     try:
         await asyncio.to_thread(
             lambda: (
-                service.events().delete(calendarId=calendar_id, eventId=event_id).execute()
+                service.events()
+                .delete(calendarId=calendar_id, eventId=event_id)
+                .execute()
             )
         )
     except Exception as exc:

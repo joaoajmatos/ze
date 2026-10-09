@@ -5,6 +5,7 @@ from ze_agents.nli import NLIClient
 from ze_agents.system_one import SystemOneClient
 from ze_agents.registry import agent
 from ze_agents.tool import tool, ToolAccess
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.base_agent import BaseAgent
 from ze_logging import get_logger
 from ze_agents.settings import Settings
@@ -17,6 +18,7 @@ __all__ = [
     "agent",
     "tool",
     "ToolAccess",
+    "ToolReversibility",
     "BaseAgent",
     "get_logger",
     "Settings",

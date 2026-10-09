@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import WorkflowPlanError
 from ze_automation.workflow.planner import WorkflowPlanner, validate_step_targets
 from ze_automation.workflow.validation import validate_workflow_steps
@@ -135,6 +136,10 @@ async def list_workflow_executions(
 @tool(
     access=ToolAccess.WRITE,
     description="Create a new workflow from a description with an optional recurring schedule.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="delete_workflow",
+    undo_note="Deleting the workflow does not undo runs already started",
+    effect_phrase="created a workflow",
 )
 async def create_workflow(
     store: WorkflowStore,
@@ -187,6 +192,8 @@ async def create_workflow(
 @tool(
     access=ToolAccess.WRITE,
     description="Update a workflow's recurring schedule from a natural-language description.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="changed a workflow schedule",
 )
 async def update_workflow(
     store: WorkflowStore,
@@ -228,6 +235,10 @@ async def update_workflow(
 @tool(
     access=ToolAccess.WRITE,
     description="Enable a workflow by name so it runs on its schedule.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="disable_workflow",
+    undo_note="Disabling does not cancel a run already started",
+    effect_phrase="enabled a workflow",
 )
 async def enable_workflow(
     store: WorkflowStore, scheduler: WorkflowScheduler, workflow_name: str
@@ -243,6 +254,10 @@ async def enable_workflow(
 @tool(
     access=ToolAccess.WRITE,
     description="Disable a workflow by name so it stops running on its schedule.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="enable_workflow",
+    undo_note="Enabling does not replay runs missed while disabled",
+    effect_phrase="disabled a workflow",
 )
 async def disable_workflow(
     store: WorkflowStore, scheduler: WorkflowScheduler, workflow_name: str
@@ -255,7 +270,12 @@ async def disable_workflow(
     return {"name": workflow_name, "enabled": False}
 
 
-@tool(access=ToolAccess.WRITE, description="Permanently delete a workflow by name.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Permanently delete a workflow by name.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="deleted a workflow",
+)
 async def delete_workflow(
     store: WorkflowStore, scheduler: WorkflowScheduler, workflow_name: str
 ) -> dict:
@@ -270,6 +290,8 @@ async def delete_workflow(
 @tool(
     access=ToolAccess.WRITE,
     description="Trigger a workflow to run immediately, outside its schedule.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="started a workflow run",
 )
 async def trigger_workflow(
     store: WorkflowStore, scheduler: WorkflowScheduler, workflow_name: str
@@ -284,6 +306,8 @@ async def trigger_workflow(
 @tool(
     access=ToolAccess.WRITE,
     description="Replace the step list on an existing workflow without changing its schedule.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="edited workflow steps",
 )
 async def edit_workflow_steps(
     store: WorkflowStore,
@@ -332,6 +356,8 @@ async def edit_workflow_steps(
 @tool(
     access=ToolAccess.WRITE,
     description="Cancel an in-progress workflow run by name (latest running execution).",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="cancelled a workflow run",
 )
 async def cancel_workflow_run(
     store: WorkflowStore,

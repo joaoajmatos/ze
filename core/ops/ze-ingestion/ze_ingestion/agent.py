@@ -5,6 +5,7 @@ from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_agents.registry import agent
 from ze_agents.tool import ToolAccess, tool
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.types import AgentContext, AgentResult, Intent, Mode
 
 log = get_logger(__name__)
@@ -31,6 +32,8 @@ def _set_pipeline(pipeline: object) -> None:
 @tool(
     access=ToolAccess.WRITE,
     description="Fetch, process, and ingest content at the given URL (extraction, not remember_fact).",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="ingested a web page",
 )
 async def ingest_url(url: str) -> dict:
     if _pipeline is None:
@@ -51,6 +54,8 @@ async def ingest_url(url: str) -> dict:
 @tool(
     access=ToolAccess.WRITE,
     description="Ingest raw text or pre-extracted document content (extraction, not remember_fact).",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="ingested text",
 )
 async def ingest_text(text: str, label: str = "") -> dict:
     if _pipeline is None:
@@ -78,9 +83,7 @@ async def ingest_text(text: str, label: str = "") -> dict:
 class IngestionAgent(BaseAgent):
     name = "ingestion"
     display_name = "Content ingestion"
-    description = (
-        "Ingest external content — URLs, PDFs, videos, audio — via the ingestion pipeline"
-    )
+    description = "Ingest external content — URLs, PDFs, videos, audio — via the ingestion pipeline"
     model = "anthropic/claude-sonnet-4-5"
     timeout = 120
     intents = {

@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_finance.recurring.store import RecurringStore
 from ze_finance.recurring.types import RecurringStatus, cadence_label
 from ze_finance.store import PortfolioStore, TransactionStore
@@ -248,6 +249,8 @@ async def get_recurring_expenses(
         "Call after the user taps 'Yes, track it' on a render_confirm card or confirms in conversation. "
         "normalised_key comes from get_recurring_expenses."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="confirmed a recurring expense",
 )
 async def confirm_recurring(
     recurring_store: RecurringStore,
@@ -264,6 +267,8 @@ async def confirm_recurring(
         "Dismiss a detected recurring charge — Ze will not surface it again unless the amount changes. "
         "Call after the user taps 'Ignore' or says they don't want to track it."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="dismissed a recurring expense",
 )
 async def dismiss_recurring(
     recurring_store: RecurringStore,
