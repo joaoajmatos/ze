@@ -60,7 +60,7 @@ describe("message feedback entity", () => {
 
     act(() => result.current.mutation.mutate({ messageId: "m1", rating: "up", idempotencyKey: "k1" }));
     await waitFor(() => expect(result.current.feedback.byId.get("m1")?.current).toBe("up"));
-    expect(result.current.feedback.byId.get("m1")?.history.at(-1)?.kind).toBe("thumbs_up");
+    expect(result.current.feedback.byId.get("m1")?.history?.at(-1)?.kind).toBe("thumbs_up");
 
     fetchMessageFeedback.mockResolvedValue([view({ current: "up" })]);
     await act(async () => resolve(view({ current: "up" })));

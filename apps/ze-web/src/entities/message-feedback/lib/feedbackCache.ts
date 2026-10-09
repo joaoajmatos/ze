@@ -16,7 +16,7 @@ export function applyRating(
   return {
     ...view,
     current: rating === "none" ? null : rating,
-    history: [...view.history, { kind: KIND[rating], occurred_at: now }],
+    history: [...(view.history ?? []), { kind: KIND[rating], occurred_at: now }],
   };
 }
 

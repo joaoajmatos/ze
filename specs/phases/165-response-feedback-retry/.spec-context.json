@@ -201,9 +201,33 @@
       "kind": "complete",
       "by": "Keel",
       "at": "2026-10-09T02:29:15.874Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T02:32:00.887Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:32:08.205Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:32:08.560Z"
     }
   ],
-  "currentTask": "T023",
+  "currentTask": "T026",
   "task_summaries": {
     "T003": {
       "status": "DONE"
@@ -270,6 +294,27 @@
     },
     "T023": {
       "status": "DONE"
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "entities/message-feedback query + optimistic mutation on real client types",
+      "files": [
+        "apps/ze-web/src/entities/message-feedback"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "ReplyActions thumbs (aria-pressed, 44px, reveal, error notice)",
+      "files": [
+        "apps/ze-web/src/features/reply-feedback"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "MessageBubble actions slot; chat-workspace mounts ReplyActions",
+      "files": [
+        "apps/ze-web/src/widgets/chat-workspace"
+      ]
     }
   }
 }

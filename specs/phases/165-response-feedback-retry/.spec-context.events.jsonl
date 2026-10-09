@@ -22,3 +22,6 @@
 {"step": "implement", "substep": null, "task": "T021", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:29:15.157Z"}
 {"step": "implement", "substep": null, "task": "T022", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:29:15.516Z"}
 {"step": "implement", "substep": null, "task": "T023", "kind": "complete", "by": "Keel", "at": "2026-10-09T02:29:15.874Z"}
+{"step": "implement", "substep": null, "task": "T024", "kind": "complete", "by": "extension", "at": "2026-10-09T02:32:00.887Z", "did": "entities/message-feedback query + optimistic mutation on real client types", "files": ["apps/ze-web/src/entities/message-feedback"]}
+{"step": "implement", "substep": null, "task": "T025", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:32:08.205Z", "did": "ReplyActions thumbs (aria-pressed, 44px, reveal, error notice)", "files": ["apps/ze-web/src/features/reply-feedback"]}
+{"step": "implement", "substep": null, "task": "T026", "kind": "complete", "by": "Prism", "at": "2026-10-09T02:32:08.560Z", "did": "MessageBubble actions slot; chat-workspace mounts ReplyActions", "files": ["apps/ze-web/src/widgets/chat-workspace"]}

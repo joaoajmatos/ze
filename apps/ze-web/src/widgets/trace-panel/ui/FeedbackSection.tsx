@@ -12,7 +12,8 @@ export function FeedbackSection({ feedback, live }: FeedbackSectionProps) {
   const setHighlightMessage = useSession((s) => s.setHighlightMessage);
   if (live || !feedback) return null;
 
-  const { current, history, replaced_by, replaces, trace_present } = feedback;
+  const { current, replaced_by, replaces, trace_present } = feedback;
+  const history = feedback.history ?? [];
   const empty = !current && history.length === 0 && !replaced_by && !replaces;
 
   return (

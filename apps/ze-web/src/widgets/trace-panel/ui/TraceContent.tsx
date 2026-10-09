@@ -48,7 +48,7 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
   const tracedIds = new Set(traces.map((t) => t.message_id));
   const untraced = assistantMessageIds.filter((id) => {
     const f = feedbackById.get(id);
-    return f && !tracedIds.has(id) && (f.current || f.history.length > 0);
+    return f && !tracedIds.has(id) && (f.current || (f.history ?? []).length > 0);
   });
   const bottomRef = useRef<HTMLDivElement>(null);
 

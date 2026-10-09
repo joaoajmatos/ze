@@ -59,9 +59,9 @@
 - [x] **T021** [BE] `GET /api/v0/messages/feedback?ids=` (`getMessageFeedback`): `FeedbackView` per message with `current`, `history`, `trace_present`, `replaces`, `replaced_by`; omit user messages; include every stored assistant message (no trace → `trace_present=false`). Retry block filled in T033. Tests.
 - [x] **T022** [P] [BE] Pydantic schemas in `ze_api/api/schemas.py` for `FeedbackView`, request, retry block; `MessageSchema` gains `replaces`, `replaced_by`; `GET /messages` gets the `include_superseded` query param (default false) wired to T018.
 - [x] **T023** [PLATFORM] Regenerate `@ze/client` (`make codegen`) and commit generated artifacts; add `message_superseded` and `error.code` to WS schema (`ws_schema.py`) and regenerate WS types.
-- [ ] **T024** [P] [WEB] `entities/message-feedback`: `useMessageFeedbackQuery` (batch ids) and `useSetMessageFeedbackMutation` (optimistic, revert on error, client UUID idempotency key). Export from entity index. Tests.
-- [ ] **T025** [WEB] `features/reply-feedback/ui/ReplyActions.tsx`: thumbs up/down toggle buttons with `aria-pressed`, accessible names, hover/focus-within reveal, visible without hover on touch, 44 px targets; short non-blocking error on failure. Tests: click, toggle off, switch, error revert, keyboard.
-- [ ] **T026** [WEB] Add an `actions` slot to `MessageBubble` (entities/message/ui) and mount `ReplyActions` from `widgets/chat-workspace` for stored assistant messages only (user messages and non-stored frames get no controls). Fetch feedback for visible assistant ids in one batch. FSD: entity must not import the feature.
+- [x] **T024** [P] [WEB] `entities/message-feedback`: `useMessageFeedbackQuery` (batch ids) and `useSetMessageFeedbackMutation` (optimistic, revert on error, client UUID idempotency key). Export from entity index. Tests.
+- [x] **T025** [WEB] `features/reply-feedback/ui/ReplyActions.tsx`: thumbs up/down toggle buttons with `aria-pressed`, accessible names, hover/focus-within reveal, visible without hover on touch, 44 px targets; short non-blocking error on failure. Tests: click, toggle off, switch, error revert, keyboard.
+- [x] **T026** [WEB] Add an `actions` slot to `MessageBubble` (entities/message/ui) and mount `ReplyActions` from `widgets/chat-workspace` for stored assistant messages only (user messages and non-stored frames get no controls). Fetch feedback for visible assistant ids in one batch. FSD: entity must not import the feature.
 
 **Checkpoint**: a person can rate, change, clear; rating survives reload.
 
