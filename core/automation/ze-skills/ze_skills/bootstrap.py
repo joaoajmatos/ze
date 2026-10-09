@@ -33,9 +33,15 @@ def build_skills_stack(shared: Any, settings: Any) -> SkillsStack:
     return SkillsStack(skill_store=skill_store, pool=pool, deps=deps)
 
 
-def build_skill_matcher(store: SkillStore, embedder: Any, settings: Any) -> Any:
+def build_skill_matcher(
+    store: SkillStore,
+    embedder: Any,
+    settings: Any,
+    system_one_client: Any = None,
+) -> Any:
     """Construct the `SkillMatcher` injected into the orchestration graph's
     `config["configurable"]["skill_matcher"]` (consumed by the `match_skills` node)."""
+    from ze_skills.judge import skills_surface_config
     from ze_skills.matching import SkillMatcher
 
     skills_cfg = getattr(settings, "config", {}) or {}
@@ -45,7 +51,13 @@ def build_skill_matcher(store: SkillStore, embedder: Any, settings: Any) -> Any:
         if hasattr(threshold_cfg, "get")
         else 0.5
     )
-    return SkillMatcher(store=store, embedder=embedder, match_threshold=match_threshold)
+    return SkillMatcher(
+        store=store,
+        embedder=embedder,
+        match_threshold=match_threshold,
+        system_one_client=system_one_client,
+        surface=skills_surface_config(settings),
+    )
 
 
 async def register_bundled_skills(store: SkillStore, plugins: list[Any]) -> None:

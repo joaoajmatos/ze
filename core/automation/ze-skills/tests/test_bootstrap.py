@@ -77,3 +77,37 @@ async def test_register_bundled_skills_noop_when_no_paths():
     await register_bundled_skills(store, [_FakePlugin([])])
 
     store.create.assert_not_called()
+
+
+def test_build_skill_matcher_takes_client_and_parses_surface():
+    from ze_skills.bootstrap import build_skill_matcher
+
+    class _Settings:
+        config = {
+            "skills": {"match_threshold": 0.55},
+            "system_one": {
+                "surfaces": {
+                    "skills": {
+                        "enabled": True,
+                        "choice_trust": 0.7,
+                        "needs_skill_hold": 0.5,
+                        "shortlist_k": 6,
+                    }
+                }
+            },
+        }
+
+    client = object()
+    matcher = build_skill_matcher(AsyncMock(), object(), _Settings(), client)
+
+    assert matcher._system_one is client
+    assert matcher._surface.calibrated and matcher._surface.shortlist_k == 6
+    assert matcher._threshold == 0.55
+
+
+def test_build_skill_matcher_defaults_surface_off():
+    from ze_skills.bootstrap import build_skill_matcher
+
+    matcher = build_skill_matcher(AsyncMock(), object(), object())
+
+    assert matcher._system_one is None and not matcher._surface.enabled

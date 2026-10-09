@@ -396,7 +396,10 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     skills_stack = build_skills_stack(shared, settings)
     skill_matcher = build_skill_matcher(
-        skills_stack.skill_store, shared.embedder, settings
+        skills_stack.skill_store,
+        shared.embedder,
+        settings,
+        system_one_client=shared.system_one_client,
     )
     turn_lock = ThreadTurnLock()
     turn_starter = _ContainerTurnStarter()

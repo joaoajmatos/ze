@@ -5,6 +5,8 @@ from typing import Any
 from langchain_core.runnables import RunnableConfig
 
 from ze_logging import get_logger
+from ze_core.conversation.messages.judgments import judgments_from_result
+from ze_core.orchestration.judgment_state import build_judgment_state
 from ze_core.orchestration.state import AgentState
 
 log = get_logger(__name__)
@@ -34,19 +36,33 @@ async def match_skills(state: AgentState, config: RunnableConfig) -> dict:
 
     prompt = state.get("image_caption") or state.get("prompt") or ""
     try:
-        matches = await matcher.match(prompt)
+        outcome = await matcher.match(
+            prompt, judgment_state=build_judgment_state(state)
+        )
     except Exception as exc:
         log.warning("skill_matching_error", error=str(exc))
         return {}
 
+    update: dict = {}
+    judgment = outcome.judgment
+    if judgment is not None:
+        rows = judgments_from_result(
+            judgment.result,
+            question_kinds=judgment.question_kinds,
+            consumed=judgment.consumed,
+            skip_reason=judgment.skip_reason,
+        )
+        update["judgments"] = [*(state.get("judgments") or []), *rows]
+
+    matches = outcome.matches
     if not matches:
-        return {}
+        return update
 
     agent_context.active_skills = [m.skill for m in matches]
     agent_context.skill_tool_names = _combined_tool_names(matches)
 
     log.info("skills_matched", count=len(matches))
-    return {"agent_context": agent_context, "skill_matches": matches}
+    return {**update, "agent_context": agent_context, "skill_matches": matches}
 
 
 def _combined_tool_names(matches: list) -> list[str] | None:
