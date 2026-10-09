@@ -374,7 +374,7 @@ The three bars are separate numbers:
 
 - `choice_trust` is the minimum peakedness of the agent choice for Ze to trust one agent.
 - `multi_specialist_hold` is the minimum probability that the message needs more than one specialist.
-- `complexity_lookup_max` is the highest complexity score that still counts as a simple turn. When it is `null`, the word-count classifier picks the model tier.
+- `complexity_lookup_max` is the highest complexity score that still counts as a simple turn, on a 0 to 1 scale. The model returns the expected level (0 for lookup, 2 for multi-hop), and Ze divides it by 2 before it compares. When it is `null`, the word-count classifier picks the model tier.
 
 `shortlist_k` sets how many E5-ranked agents the choice sees. The default is 4. Values below 2 fall back to 4. With fewer than two enabled agents, Ze makes no call.
 

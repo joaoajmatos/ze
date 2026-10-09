@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -38,7 +39,7 @@ class _OracleClient:
         self.orders.append(list(agent_q.criteria))
         row = self.gold[state["user"]]
         choice = row.gold_agent if row.gold_agent in agent_q.criteria else "none"
-        level = {"lookup": 0.1, "single_tool": 0.5, "multi_hop": 0.9}[
+        level = {"lookup": 0.2, "single_tool": 1.0, "multi_hop": 1.8}[
             row.gold_complexity
         ]
         return SystemOneResult(
@@ -104,6 +105,23 @@ async def test_option_order_is_shuffled_per_row(calib):
     shortlist_orders = {tuple(o[:-1]) for o in client.orders}
     assert len(shortlist_orders) > 1
     assert all(o[-1] == "none" for o in client.orders)
+
+
+def test_score_values_normalise_the_wire_scale(calib):
+    gold = SimpleNamespace(gold_complexity="multi_hop")
+    ok = SystemOneResult(
+        outcome="ok",
+        answers={"complexity": SystemOneAnswer(type="score", score=1.8)},
+    )
+    bad = SystemOneResult(
+        outcome="ok",
+        answers={"complexity": SystemOneAnswer(type="score", score=3.0)},
+    )
+    outcomes = [
+        calib.Outcome(gold, [], 0.0, 0.0, ok),
+        calib.Outcome(gold, [], 0.0, 0.0, bad),
+    ]
+    assert calib.score_values(outcomes)["multi_hop"] == [0.9]
 
 
 def test_suggest_lookup_max_separates_levels(calib):

@@ -16,9 +16,9 @@ option order shuffled (eval only), then reports:
 - suggested values for `choice_trust`, `multi_specialist_hold` and
   `complexity_lookup_max`.
 
-The Score wire direction is assumed to rise with complexity (lookup low, multi_hop
-high). The Score table below prints the per-level means so a maintainer can check
-that on the first live run before setting `complexity_lookup_max`.
+The wire Score is the expected level index (0 = lookup, 2 = multi_hop). The Score
+table and the suggested `complexity_lookup_max` use it normalised to [0, 1], the
+scale the bar is configured in.
 """
 
 from __future__ import annotations
@@ -48,6 +48,7 @@ from ze_core.routing.judge import (
     build_questions,
     build_state,
     decide,
+    normalise_complexity_score,
     shortlist,
 )
 
@@ -271,7 +272,9 @@ def score_values(outcomes: list[Outcome]) -> dict[str, list[float]]:
     for o in outcomes:
         answer = o.result.answers.get("complexity") if o.ok else None
         if answer is not None and answer.score is not None:
-            by_level[o.row.gold_complexity].append(answer.score)
+            score = normalise_complexity_score(answer.score)
+            if score is not None:
+                by_level[o.row.gold_complexity].append(score)
     return by_level
 
 
