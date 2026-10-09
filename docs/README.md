@@ -45,7 +45,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [frontend.md](frontend.md) | ze-web — FSD layout, `@ze/client`, plugin UI |
 | [native-interface.md](native-interface.md) | WebSocket frames, confirmations, ntfy, unread replay |
 | [browser.md](browser.md) | Browser sidecar — Compose, health checks, Fly deploy |
-| [workspace.md](workspace.md) | Workspace sidecar — files, shell, skill scripts, modes, Fly deploy |
+| [workspace.md](workspace.md) | Workspace sidecar — files, shell, skill scripts, Fly deploy |
 | [configuration.md](configuration.md) | `.env`, `config.yaml`, `persona.yaml` |
 | [deployment.md](deployment.md) | Fly.io, GitHub Actions CI, environment setup |
 | [testing.md](testing.md) | `make test-<name>` across Python packages and ze-web |

@@ -22,7 +22,7 @@ implementations. It owns:
 
 - The WebSocket endpoint (`/ws`) and REST management routes
 - `NativeAppInterface` — WebSocket + ntfy push delivery
-- Alembic migrations (`migrations/versions/`)
+- The Alembic meta-runner (`migrate.py`) that runs every package's migration chain. `ze-api` owns no tables.
 - `config/config.yaml` and `config/persona.yaml`
 
 ```bash
@@ -46,8 +46,12 @@ make web-test   # vitest — alias for test-web
 ## Dependency graph
 
 ```
-ze-api  ←  ze-core, ze-sdk, ze-memory, ze-correlation, ze-personal, ze-email,
-            ze-calendar, ze-prospecting, ze-browser, ze-news, ze-notifications,
-            ze-components, ze-onboarding, ze-google
+ze-api  ←  ze-core, ze-automation, ze-worldstate, ze-priority, ze-skills, ze-workspace,
+            ze-collision, ze-data, ze-ingestion, ze-yt, ze-logging, ze-memory,
+            ze-correlation, ze-personal, ze-messenger, ze-prospecting, ze-browser,
+            ze-news, ze-finance, ze-notifications, ze-components, ze-onboarding,
+            ze-calendar, ze-seed, ze-google
 ze-web  ←  (React — connects to ze-api over WebSocket, no Python deps)
 ```
+
+The authoritative list is the `dependencies` table in `ze-api/pyproject.toml`.

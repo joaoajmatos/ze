@@ -22,6 +22,8 @@ At a high level, the system is split into:
   jobs, and the main general-purpose agents.
 - `ze-messenger`, `ze-calendar`, `ze-news`, `ze-prospecting`, and `ze-finance` for
   domain-specific extensions.
+- `ze-worldstate`, `ze-priority`, and `ze-collision` for open loops, attention ranking,
+  and contribution collision logging.
 - `ze-onboarding`, `ze-ingestion`, `ze-correlation`, `ze-skills`, `ze-browser`,
   `ze-workspace`, and `ze-notifications` for shared support systems.
 - `ze-components` and `@ze/client` for server-driven UI and typed API consumption.
@@ -65,14 +67,30 @@ transcription or image captioning.
 2. Ze embeds the incoming prompt at request time with a `query:` prefix.
 3. Ze computes cosine similarity scores against all agent embeddings.
 4. **Routing outcomes:**
-   - Score above `confidence_threshold` and gap above `gap_threshold` → route directly.
-   - Gap below `gap_threshold` (two agents nearly tied) → compound task, Haiku decomposes.
-   - All scores below `confidence_threshold` → Haiku fallback for classification.
+   - Score above `routing.threshold` (default 0.73) and gap above `routing.gap_threshold` (default 0.02) → route directly.
+   - Gap below `routing.gap_threshold` (two agents nearly tied) → compound task, Haiku decomposes.
+   - All scores below `routing.threshold` → Haiku fallback for classification.
 5. Ze writes every decision to the `routing_log` Postgres table.
 
+**System One choice (optional).** E5 stays the shortlist. When `system_one.surfaces.routing`
+is enabled and calibrated, one System One request judges the top `shortlist_k` agents. It
+picks one agent (or `none`), says whether the request needs more than one specialist, and
+grades complexity. Code then decides: a confident choice routes directly, `none` or a
+multi-specialist answer goes to `decompose`, and an unsure choice or a skip falls back to
+the E5 rules above. The surface ships off. See
+[configuration.md](configuration.md#system_one).
+
+**Conductor rewrite.** After `decompose`, a sequential multi-specialist turn, or a turn that
+mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_rewrite`).
+The decomposed subtasks stay as a hint. Companion then calls specialists through
+`delegate_to_agent`, one at a time, each with its own capability and confirmation check.
+Only independent compound requests keep the parallel fan-out and `synthesize`.
+
 **Cost-aware routing** (`ze_core.routing.complexity`): agents with a `model_simple`
-class attribute receive a cheaper model when the in-process complexity classifier scores
-the request as simple (word count, question marks, conjunctions — no extra LLM call).
+class attribute receive a cheaper model when the request scores as simple. By default the
+in-process classifier decides (word count, question marks, conjunctions — no extra LLM
+call). With the System One routing surface calibrated, its complexity score decides
+instead (`complexity_lookup_max`).
 
 ---
 
@@ -160,12 +178,15 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
 | `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes |
 | `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
-| `capability_check` | `nodes/capability.py` | Evaluate permission mode for agent.intent |
-| `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout |
+| `capability_check` | `nodes/execution.py` | Evaluate permission mode for agent.intent, strictest-wins with the optional spend budget |
+| `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout; fans independent subtasks out in parallel |
+| `await_subtask_confirmation` | `nodes/execution.py` | Pause for a per-subtask confirmation gate, then resume `execute_tool` |
 | `correlate` | `nodes/correlation.py` | Surface inline relationship hypotheses when relevant |
-| `draft_response` | `nodes/draft.py` | Generate response, do not execute |
-| `await_confirmation` | `nodes/confirmation.py` | Pause graph, emit confirm_request frame |
-| `synthesize` | `nodes/synthesis.py` | Merge independent parallel subtask results into one response |
+| `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline |
+| `draft_response` | `nodes/execution.py` | Generate response, do not execute |
+| `await_confirmation` | `nodes/execution.py` | Pause graph, emit confirm_request frame |
+| `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
+| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message |
 | `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction (fire-and-forget); skips eval threads |
 
 </details>
@@ -191,7 +212,7 @@ See [docs/native-interface.md](native-interface.md) for the full WebSocket proto
 
 ## Agents
 
-**Modules:** `ze_personal/agents/` (research, companion) · `ze_automation/agents/` (goals, workflow) · `ze_messenger/agents/` (messenger) · `ze_prospecting/agents/` (prospecting) · `ze_calendar/agents/` (calendar, reminders) · `ze_news/agents/` (news)
+**Modules:** `ze_personal/agents/` (research, companion) · `ze_automation/agents/` (goals, workflow) · `ze_worldstate/agents/` (loops) · `ze_priority/agent.py` (priority) · `ze_ingestion/agent.py` (ingestion) · `ze_messenger/agents/` (messenger) · `ze_prospecting/agents/` (prospecting) · `ze_calendar/agents/` (calendar, reminders) · `ze_news/agents/` (news) · `ze_finance/agents/` (finance)
 
 All agents subclass `BaseAgent` (`ze_agents.base_agent`) and register via `@agent` (`ze_agents.registry`). Plugin code imports these via `ze_sdk`. Each agent owns:
 
@@ -199,8 +220,10 @@ All agents subclass `BaseAgent` (`ze_agents.base_agent`) and register via `@agen
 - Class attributes: `description`, `model`, `intents`, `tools`, `timeout`.
 - Optionally a `tools.py` with Python `@tool` functions for local tool execution.
 
-Agents cannot call each other directly. The orchestration graph handles compound
-coordination (or the `delegate_to_agent` harness tool, for explicit hand-offs).
+Specialists cannot call each other. The orchestration graph handles independent
+compound requests. For sequential work, companion is the only agent that lists
+`delegate_to_agent`: it hands a specialist a full brief, the specialist runs in an
+isolated worker, and the result comes back to companion. Delegation goes one level deep.
 
 See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 
@@ -211,13 +234,16 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `research` | OpenRouter web search, synthesis | `ze-personal` | Full |
 | `companion` | Pure reasoning + memory | `ze-personal` | Full |
 | `calendar` | Google Calendar API (CRUD) | `ze-calendar` | Haiku |
-| `email` | Gmail API (read, draft, send) | `ze-messenger` | Haiku |
+| `messenger` | Gmail API (read, draft, send) | `ze-messenger` | Haiku |
 | `reminders` | NL time parsing, APScheduler firing | `ze-calendar` | Haiku |
 | `prospecting` | Browser extraction, outreach drafting | `ze-prospecting` | Full |
 | `news` | `get_headlines` (personalized), `search_news` (semantic) | `ze-news` | Mini |
 | `finance` | CSV/Trading212 ingestion, categorization, recurring detection | `ze-finance` | Haiku |
 | `workflow` | APScheduler, multi-step plan execution | `ze-automation` | Full |
 | `goals` | Goal lifecycle (create, status, steer, pause, resume, abandon) | `ze-automation` | Full |
+| `loops` | `list_open_loops`, `close_loop`, `drop_loop` | `ze-worldstate` | Haiku |
+| `priority` | `reprioritize_item` | `ze-priority` | Haiku |
+| `ingestion` | URL, text, and file ingestion into memory | `ze-ingestion` | Full |
 
 See [docs/goals.md](goals.md) for conversational usage and gate behavior.
 
