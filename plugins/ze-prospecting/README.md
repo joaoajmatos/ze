@@ -31,6 +31,8 @@ from ze_prospecting.plugin import ProspectingPlugin
 | `types.py` | Campaign and prospecting settings types |
 | `plugin.py` | `ProspectingPlugin(ZePlugin)` — registers agent, store, and job |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-prospecting plugin dependencies](../../docs/diagrams/plugins/ze-prospecting/dependencies.svg)

@@ -48,6 +48,8 @@ is discovered automatically by `ze_api/migrate.py`.
 | `locales/en.yaml` | Progress message translations (per-stage keys) |
 | `migrations/versions/zi001_ingested_content.py` | `ingested_content` table + indexes |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-ingestion package dependencies](../../docs/diagrams/core/ops/ze-ingestion/dependencies.svg)

@@ -32,6 +32,8 @@ from ze_calendar.plugin import CalendarPlugin
 | `timezone/` | `TimezoneService`, `world_time` `@tool` |
 | `plugin.py` | `CalendarPlugin(ZePlugin)` — registers agents and jobs |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-calendar plugin dependencies](../../docs/diagrams/plugins/ze-calendar/dependencies.svg)

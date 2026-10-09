@@ -41,6 +41,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `rest.py` | `GET/POST /api/v0/loops` handlers |
 | `migrations/` | `zw001` (open_loops table), `zw002` (drift columns) |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-worldstate package dependencies](../../docs/diagrams/core/cognition/ze-worldstate/dependencies.svg)

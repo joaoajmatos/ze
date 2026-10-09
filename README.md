@@ -24,7 +24,7 @@ An honest attempt at building a personal AI that does more than answer questions
 
 The objective: an assistant that holds context across weeks, works in the background, and connects things that happen in separate parts of your life — calendar, email, news, long-running projects. Not a chat window that resets. Something closer to Jarvis. That's the whole brief.
 
-It isn't there yet. But 164 shipped phases in, the infrastructure is real and it's getting closer.
+It isn't there yet. But 165 shipped phases in, the infrastructure is real and it's getting closer.
 
 ---
 
@@ -169,7 +169,7 @@ Every turn runs through a LangGraph graph checkpointed in Postgres.
 
 <sub>[Interactive version](docs/diagrams/root/graph-flow.html)</sub>
 
-The diagram shows the main path. The full graph also runs `decompose` for independent compound requests and `match_skills` after `fetch_context`. Partial `trace_update` frames stream to the trace panel as each node finishes, and tokens stream as the agent writes them.
+The diagram shows the main path. The full graph also runs `decompose` for independent compound requests and `match_skills` after `fetch_context`. Partial `trace_update` frames stream to the trace panel as each node finishes, and tokens stream as the agent writes them. You can rate each reply with a thumbs up or thumbs down. Ze stores the rating as evidence next to the reply's trace and does not use it yet. Retry regenerates the latest reply, but only when the turn ran no write tool.
 
 See [docs/architecture.md](docs/architecture.md) for the full flow and node-by-node detail.
 

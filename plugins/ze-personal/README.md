@@ -34,6 +34,8 @@ from ze_personal.plugin import PersonalPlugin
 | `graph/` | `workflow.py` execution nodes, `memory_hooks.py` contact extraction |
 | `plugin.py` | `PersonalPlugin(ZePlugin)` — wires all domain services into the Ze graph |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-personal plugin dependencies](../../docs/diagrams/plugins/ze-personal/dependencies.svg)

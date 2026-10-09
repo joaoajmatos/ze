@@ -26,6 +26,7 @@ src/
 | `widgets/chat-workspace/` | Main chat UI |
 | `widgets/*-overview/` | Management list screens |
 | `entities/message/` | Message bubbles, chat input |
+| `entities/message-feedback/`, `features/reply-feedback/`, `features/retry-reply/` | Thumbs up/down, Retry, and their reasons on assistant replies |
 | `entities/primitive-tree/` | Server-driven UI renderer |
 | `shared/api/ws-client.ts` | WebSocket singleton |
 | `shared/config/` | Server URL + API key (`localStorage`) |
