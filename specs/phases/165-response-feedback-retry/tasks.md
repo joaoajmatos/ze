@@ -15,7 +15,7 @@
 ## Phase 1: Setup
 
 - [x] **T001** [P] [PLATFORM] Add eval scenarios `eval/scenarios/retry_text_only.yaml` (read-only turn: retry offered and replaces reply) and `eval/scenarios/retry_refused_after_write.yaml` (reminder turn: retry refused with a reason). Follow existing scenario schema in `docs/eval.md`.
-- [ ] **T002** [P] [DOCS] Mark spec 165 `Status: In progress` when implementation starts and flip the checklist file `checklists/requirements.md` to all-checked (open questions are resolved).
+- [x] **T002** [P] [DOCS] Mark spec 165 `Status: In progress` when implementation starts and flip the checklist file `checklists/requirements.md` to all-checked (open questions are resolved).
 
 ---
 
@@ -107,17 +107,17 @@
 - [ ] **T042** [PLATFORM] Run the two eval scenarios (T001) against `make dev-eval`; fix drift. Record in `docs/eval.md` only if the scenario schema changed.
 - [x] **T043** [BE] Full gates: `make lint`, `make test-py`, `make test-web`, `make typecheck-web`. Fix everything.
 - [ ] **T044** [PLATFORM] Execute `quickstart.md` end to end against `make dev-full`; note deviations.
-- [ ] **T045** [P] [DOCS] `AGENTS.md`: add phase 165 row to the phase table, `ze-memory` `zm024` and `ze-core` `zc031` in the migration table, `feedback_records/` and `retry.py` in the layout, Perception's second licence in the seam notes, and a Learned Facts line "every WRITE tool declares reversibility". `AGENTS.md` is exempt from doc-style.
-- [ ] **T046** [P] [DOCS] Specs: update `specs/README.md` row 165 (title, link to this spec, status), set spec.md `Status: Implemented` when done; update `specs/arch/contribution-seam.md` (Perception licence, new producer) and `specs/arch/ze-doctrine.md` licence table; add a short note in `specs/arch/claim-topology.md` for the new kind.
-- [ ] **T047** [P] [DOCS] Root `README.md`: mention reply feedback and Retry in the features overview if it lists chat/trace capabilities; otherwise record "no change" in the PR description. Apply doc-style.
-- [ ] **T048** [P] [DOCS] `docs/native-interface.md`: reply controls, Retry rules and unavailable reasons, `retry` / `message_superseded` frames, `error.code`, superseded messages hidden from history.
-- [ ] **T049** [P] [DOCS] `docs/memory.md` and `docs/cognitive-architecture.md`: feedback records are evidence not facts, Perception's second licence, `feedback_records` table, no consumer in v1; `docs/data-portability.md`: feedback in export/delete.
-- [ ] **T050** [P] [DOCS] `docs/architecture.md`: trace carries effect metadata, retry flow and `retry_mode`, supersession on `messages`; `docs/package-architecture.md` if package contents are listed there.
-- [ ] **T051** [P] [DOCS] `docs/adding-an-agent.md`, `docs/extending-ze.md`, `docs/sdk.md`: `@tool` now requires `reversibility` for WRITE tools, with `undo_tool`, `undo_note`, `effect_phrase`, startup validation, how to classify, and the retry consequence. Update every `@tool(access=WRITE...)` code sample in these files.
-- [ ] **T052** [P] [DOCS] `docs/frontend.md` (new `message-feedback`, `reply-feedback`, `retry-reply` slices and the `actions` slot), `docs/eval.md` (new scenarios), `docs/testing.md` (new targets if any), `docs/configuration.md` (state "no new config" or document any added).
-- [ ] **T053** [P] [DOCS] Package READMEs: `ze-agents` (tool declaration), `ze-memory` (feedback_records), `ze-plugin` (licence table), `ze-core` (retry, supersession, trace metadata), `ze-sdk` (new exports), `apps/ze-api` (routes, WS frames), `apps/ze-web`, `packages/ze-client` if it has a README, and each package whose tools gained declarations: `ze-automation`, `ze-calendar`, `ze-messenger`, `ze-workspace`, `ze-ingestion`, `ze-personal`, `ze-finance`, `ze-prospecting`, `ze-news`. Use `docs/package-readme-template.md`.
-- [ ] **T054** [P] [DOCS] Run the doc-style skill over every changed public doc (T047–T053); where a diagram helps (retry flow, feedback-to-trace link), use `diagram-design` for `docs/architecture.md` or `docs/native-interface.md`.
-- [ ] **T055** [DOCS] Docs coverage check: `git diff --name-only main` must show each doc touched in T047–T053 or an explicit "no change" line in the PR description. Companion write-context `--append` then `--materialize` for these tasks.
+- [x] **T045** [P] [DOCS] `AGENTS.md`: add phase 165 row to the phase table, `ze-memory` `zm024` and `ze-core` `zc031` in the migration table, `feedback_records/` and `retry.py` in the layout, Perception's second licence in the seam notes, and a Learned Facts line "every WRITE tool declares reversibility". `AGENTS.md` is exempt from doc-style.
+- [x] **T046** [P] [DOCS] Specs: update `specs/README.md` row 165 (title, link to this spec, status), set spec.md `Status: Implemented` when done; update `specs/arch/contribution-seam.md` (Perception licence, new producer) and `specs/arch/ze-doctrine.md` licence table; add a short note in `specs/arch/claim-topology.md` for the new kind.
+- [x] **T047** [P] [DOCS] Root `README.md`: mention reply feedback and Retry in the features overview if it lists chat/trace capabilities; otherwise record "no change" in the PR description. Apply doc-style.
+- [x] **T048** [P] [DOCS] `docs/native-interface.md`: reply controls, Retry rules and unavailable reasons, `retry` / `message_superseded` frames, `error.code`, superseded messages hidden from history.
+- [x] **T049** [P] [DOCS] `docs/memory.md` and `docs/cognitive-architecture.md`: feedback records are evidence not facts, Perception's second licence, `feedback_records` table, no consumer in v1; `docs/data-portability.md`: feedback in export/delete.
+- [x] **T050** [P] [DOCS] `docs/architecture.md`: trace carries effect metadata, retry flow and `retry_mode`, supersession on `messages`; `docs/package-architecture.md` if package contents are listed there.
+- [x] **T051** [P] [DOCS] `docs/adding-an-agent.md`, `docs/extending-ze.md`, `docs/sdk.md`: `@tool` now requires `reversibility` for WRITE tools, with `undo_tool`, `undo_note`, `effect_phrase`, startup validation, how to classify, and the retry consequence. Update every `@tool(access=WRITE...)` code sample in these files.
+- [x] **T052** [P] [DOCS] `docs/frontend.md` (new `message-feedback`, `reply-feedback`, `retry-reply` slices and the `actions` slot), `docs/eval.md` (new scenarios), `docs/testing.md` (new targets if any), `docs/configuration.md` (state "no new config" or document any added).
+- [x] **T053** [P] [DOCS] Package READMEs: `ze-agents` (tool declaration), `ze-memory` (feedback_records), `ze-plugin` (licence table), `ze-core` (retry, supersession, trace metadata), `ze-sdk` (new exports), `apps/ze-api` (routes, WS frames), `apps/ze-web`, `packages/ze-client` if it has a README, and each package whose tools gained declarations: `ze-automation`, `ze-calendar`, `ze-messenger`, `ze-workspace`, `ze-ingestion`, `ze-personal`, `ze-finance`, `ze-prospecting`, `ze-news`. Use `docs/package-readme-template.md`.
+- [x] **T054** [P] [DOCS] Run the doc-style skill over every changed public doc (T047–T053); where a diagram helps (retry flow, feedback-to-trace link), use `diagram-design` for `docs/architecture.md` or `docs/native-interface.md`.
+- [x] **T055** [DOCS] Docs coverage check: `git diff --name-only main` must show each doc touched in T047–T053 or an explicit "no change" line in the PR description. Companion write-context `--append` then `--materialize` for these tasks.
 
 ---
 
