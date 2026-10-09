@@ -108,14 +108,14 @@
 ## Phase 7: Polish and Docs
 
 - [x] **T036** [P] [BE] `make lint` and `make format`; `make typecheck-web`; `graphify update .`. · repo
-- [ ] **T037** [P] [DOCS] `docs/skills.md`: Matching section covers the shortlist, the Choice/Noul gate, the one-automatic-skill rule (a deliberate narrowing of 114, with explicit still stacking), the below-floor mark, fail-open, and the config block; correct the "existing routing embedding" wording. · `docs/skills.md`
-- [ ] **T038** [P] [DOCS] `docs/configuration.md`: `system_one.surfaces.skills` keys (including `shortlist_k`, `shortlist_floor`), calibration command, and a cross-link from the `skills:` block. · `docs/configuration.md`
-- [ ] **T039** [P] [DOCS] `core/automation/ze-skills/README.md`: matcher, judge module and surface. · `core/automation/ze-skills/README.md`
-- [ ] **T040** [P] [DOCS] `specs/arch/system-one-models.md`: O3 row to a specified and implemented note with implementation notes (pre-floor, one winner, k from data), Sequencing and Appendix A rows, fix the status line (162–164 Implemented, 163/164 uncalibrated unless T035 changes it). · `specs/arch/system-one-models.md`
-- [ ] **T041** [P] [DOCS] `specs/core/ze-core.md` (graph-side glue and shared state helper) and `specs/phases/114-agent-skills/spec.md` (add a pointer under FR-019 to 166's narrowing; do not rewrite 114 history). · `specs/core/ze-core.md`, `specs/phases/114-agent-skills/spec.md`
-- [ ] **T042** [P] [DOCS] `AGENTS.md` phase table row 166; `specs/README.md` index row 166 (number 166, never 165); set spec Status to Implemented when done. · `AGENTS.md`, `specs/README.md`
-- [ ] **T043** [P] [DOCS] Root `README.md` has no skills mention: confirm nothing there describes automatic skill matching and record "no change needed" in the PR notes; add a line only if a features list names skills. · `README.md`
-- [ ] **T044** [DOCS] Coverage check: run `git diff main...HEAD --name-only` and confirm every public doc touched or implied (`docs/skills.md`, `docs/configuration.md`, ze-skills README, the ADR, `specs/core/ze-core.md`, AGENTS.md, `specs/README.md`, and README or an explicit no-change note) is in the diff; list any code change (config keys, trace field, Makefile target) with no doc. · repo
+- [x] **T037** [P] [DOCS] `docs/skills.md`: Matching section covers the shortlist, the Choice/Noul gate, the one-automatic-skill rule (a deliberate narrowing of 114, with explicit still stacking), the below-floor mark, fail-open, and the config block; correct the "existing routing embedding" wording. · `docs/skills.md`
+- [x] **T038** [P] [DOCS] `docs/configuration.md`: `system_one.surfaces.skills` keys (including `shortlist_k`, `shortlist_floor`), calibration command, and a cross-link from the `skills:` block. · `docs/configuration.md`
+- [x] **T039** [P] [DOCS] `core/automation/ze-skills/README.md`: matcher, judge module and surface. · `core/automation/ze-skills/README.md`
+- [x] **T040** [P] [DOCS] `specs/arch/system-one-models.md`: O3 row to a specified and implemented note with implementation notes (pre-floor, one winner, k from data), Sequencing and Appendix A rows, fix the status line (162–164 Implemented, 163/164 uncalibrated unless T035 changes it). · `specs/arch/system-one-models.md`
+- [x] **T041** [P] [DOCS] `specs/core/ze-core.md` (graph-side glue and shared state helper) and `specs/phases/114-agent-skills/spec.md` (add a pointer under FR-019 to 166's narrowing; do not rewrite 114 history). · `specs/core/ze-core.md`, `specs/phases/114-agent-skills/spec.md`
+- [x] **T042** [P] [DOCS] `AGENTS.md` phase table row 166; `specs/README.md` index row 166 (number 166, never 165); set spec Status to Implemented when done. · `AGENTS.md`, `specs/README.md`
+- [x] **T043** [P] [DOCS] Root `README.md` has no skills mention: confirm nothing there describes automatic skill matching and record "no change needed" in the PR notes; add a line only if a features list names skills. · `README.md`
+- [x] **T044** [DOCS] Coverage check: run `git diff main...HEAD --name-only` and confirm every public doc touched or implied (`docs/skills.md`, `docs/configuration.md`, ze-skills README, the ADR, `specs/core/ze-core.md`, AGENTS.md, `specs/README.md`, and README or an explicit no-change note) is in the diff; list any code change (config keys, trace field, Makefile target) with no doc. · repo
 
 ---
 

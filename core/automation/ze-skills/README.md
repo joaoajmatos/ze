@@ -96,8 +96,8 @@ system_one:
       enabled: false
       choice_trust: null
       needs_skill_hold: null
-      shortlist_k: 5
-      shortlist_floor: 0.35
+      shortlist_k: 5         # from the offline recall table
+      shortlist_floor: 0.35  # non-binding on the calibration set
 ```
 
 The gate also needs `system_one.enabled: true`. See

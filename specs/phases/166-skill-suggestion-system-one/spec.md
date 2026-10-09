@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-09
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "O3 from the System One roadmap: after the E5 shortlist, a typed System One Choice picks at most one skill for automatic application and a Noul gates it. Keep `/skill-name` in code. Off by default with null bars, EN+PT calibration set, shortlist size chosen from data. No suggestion UX."
 

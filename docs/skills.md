@@ -149,6 +149,12 @@ A skill can apply below `match_threshold`, as long as it scores at or above
 `shortlist_floor` and both answers clear their bars. The trace panel marks it
 **below floor**. No skill under `shortlist_floor` applies, except by `/skill-name`.
 
+Measured on the calibration set, the floor does not bind today. E5 scores 0.71 to 0.89
+for every message, including messages that need no skill, so every active skill
+already clears `match_threshold` (0.5). The gate therefore works as a judge over the
+shortlist, not as a way to recover near-misses. The below-floor path stays in place
+for rosters or models where cosines fall lower.
+
 The gate fails open. If System One errors, times out, or returns a key outside the
 shortlist, the turn runs the default path. The failure never breaks the turn. Each
 judgment appears on the turn's trace with the reason for any skip.

@@ -411,7 +411,7 @@ The keys:
 
 The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.skills.enabled` to `true`.
 
-`shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values are starting points until the table sets them.
+`shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values, `shortlist_k: 5` and `shortlist_floor: 0.35`, come from that table. On the 84-row English and Portuguese set, the gold skill appears in the shortlist at a rate of 0.955, 0.970, 0.985, 0.985, 0.985 and 0.985 for k = 3 to 8. English holds at 0.974 for every k. Portuguese rises from 0.926 to 1.0 at k = 5. The floor does not bind: E5 cosines run from 0.71 to 0.89, even for messages that need no skill, so every skill already clears `skills.match_threshold`. The floor matters only if your skills or model score lower. No bars ship, and the live calibration run has not been done.
 
 ## `config/persona.yaml`
 
