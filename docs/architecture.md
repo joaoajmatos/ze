@@ -211,10 +211,12 @@ See [docs/native-interface.md](native-interface.md) for the full WebSocket proto
 ### Message trace effect metadata
 
 `record_trace` resolves every tool call against the tool registry when it writes the
-trace. Each `ToolCallTrace` stores `access` (`read`, `write`, or `unknown`),
+trace. Each `ToolCallTrace` stores `access` (`read`, `write`, `delegate`, or `unknown`),
 `reversibility`, `undo_tool`, `gate` (`none`, `approved`, `denied`, or `expired`), and
 `effect_phrase`. Nested calls that a specialist made under `delegate_to_agent` appear in
-the same flat list. `MessageTrace.effects_known` is true only for traces built with this
+the same flat list. `delegate` marks the `delegate_to_agent` call itself. `unknown`
+marks a tool the registry did not know, and Retry treats it as unavailable.
+`MessageTrace.effects_known` is true only for traces built with this
 metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
