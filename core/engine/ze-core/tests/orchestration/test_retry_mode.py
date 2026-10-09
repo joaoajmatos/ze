@@ -199,3 +199,52 @@ async def test_write_memory_without_retry_still_writes_episode():
     )
     await asyncio.sleep(0)
     store.write_episode.assert_called_once()
+
+
+async def test_compound_capability_check_downgrades_confirmations_in_retry():
+    from ze_core.routing.types import SubTask
+
+    gate = AsyncMock(spec=CapabilityGate)
+    gate.evaluate = lambda **kw: GateDecision.AWAIT_CONFIRMATION
+    env = make_envelope(
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="a", intent="write", prompt="x"),
+            SubTask(agent="b", intent="write", prompt="y"),
+        ],
+    )
+    cfg = make_config(capability_gate=gate)
+    cfg["configurable"]["retry_mode"] = True
+    result = await execution.capability_check(base_state(envelope=env), cfg)
+    assert [d["decision"] for d in result["subtask_gate_decisions"]] == [
+        GateDecision.EXECUTE,
+        GateDecision.EXECUTE,
+    ]
+
+
+async def test_delegate_confirmation_is_downgraded_in_retry():
+    from ze_agents.delegate import run_delegate
+    from ze_agents.registry import register_instance
+
+    seen = []
+
+    class _Spec(BaseAgent):
+        name = "messenger"
+        description = "d"
+        tools = []
+
+        async def run(self, ctx):
+            seen.append(ctx.gate_decision)
+            return AgentResult(agent=self.name, response="done")
+
+    register_instance("messenger", _Spec())
+    ctx = _ctx(True)
+    ctx.evaluate_delegate = lambda agent, intent: GateDecision.AWAIT_CONFIRMATION
+    call = await run_delegate(
+        {"agent_name": "messenger", "objective": "mail ana"},
+        ctx,
+        0,
+        caller_name="companion",
+    )
+    assert call.success is True
+    assert seen == [GateDecision.EXECUTE]

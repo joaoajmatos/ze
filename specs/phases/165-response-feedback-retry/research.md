@@ -20,6 +20,9 @@ Superseded messages stay in the `messages` table but the checkpointed `messages`
 ## R5. WRITE tool inventory
 About 50 `@tool(access=WRITE)` declarations across ze-priority, ze-automation (goals, workflow), ze-workspace, ze-calendar, ze-messenger, ze-ingestion, ze-finance, ze-personal (companion, contacts, social, others), ze-prospecting. Each package's task lists its tools; classification follows spec "Deferred" inventory; borderline tools default to `IRREVERSIBLE`. A test asserts every registered WRITE tool declares reversibility and every `undo_tool` resolves.
 
+### R5 implementation result (2026-10-09)
+41 WRITE tools declared. Five tools the "Deferred" inventory calls reversible have no distinct registered undo tool, and `validate_tool_declarations` forbids a tool undoing itself, so they are `IRREVERSIBLE` (the borderline default): `reprioritize_item`, `update_workflow`, `edit_workflow_steps`, `set_contact_channel`, `confirm_project_membership`. `enable_workflow` and `disable_workflow` undo each other. A later undo phase may add restore tools and flip these.
+
 ## R6. Trace retention
 No trace pruning job exists today (grep `trace` in jobs: none). FR-009 is satisfied by documenting that traces must not be pruned while feedback exists; add a guard in the message store's trace-clearing paths if any appear (verify during implementation).
 

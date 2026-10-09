@@ -235,7 +235,7 @@ async def test_record_trace_includes_compound_subtask_calls(effect_tools) -> Non
     sub = AgentResult(
         agent="messenger", response="ok", tool_calls=[_call("send_email")]
     )
-    state = _state(None, subtask_results=[sub], confirmation_approved=True)
+    state = _state(None, subtask_results=[sub], approved_agents=["messenger"])
     trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
     assert [t.name for t in trace.tool_calls] == ["send_email"]
     assert trace.tool_calls[0].gate == "approved"
@@ -243,7 +243,7 @@ async def test_record_trace_includes_compound_subtask_calls(effect_tools) -> Non
 
 async def test_turn_confirmation_does_not_mark_reads_approved(effect_tools) -> None:
     result = AgentResult(agent="companion", response="ok", tool_calls=[_call("lookup")])
-    state = _state(result, confirmation_approved=True)
+    state = _state(result, approved_agents=["companion"])
     trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
     assert trace.tool_calls[0].gate == "none"
 
@@ -293,3 +293,46 @@ def test_new_trace_round_trips_effect_fields() -> None:
         effects_known=True,
     )
     assert _parse_trace(asdict(trace)) == trace
+
+
+async def test_only_the_approved_subtask_agent_is_labelled_approved(
+    effect_tools,
+) -> None:
+    approved = AgentResult(
+        agent="messenger", response="ok", tool_calls=[_call("send_email")]
+    )
+    autonomous = AgentResult(
+        agent="calendar", response="ok", tool_calls=[_call("set_reminder")]
+    )
+    state = _state(
+        None, subtask_results=[approved, autonomous], approved_agents=["messenger"]
+    )
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+    gates = {t.name: t.gate for t in trace.tool_calls}
+    assert gates == {"send_email": "approved", "set_reminder": "none"}
+
+
+async def test_openrouter_server_tools_are_known_reads(effect_tools) -> None:
+    result = AgentResult(
+        agent="research", response="ok", tool_calls=[_call("openrouter:web_search")]
+    )
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    assert trace.tool_calls[0].access == "read"
+
+
+async def test_retry_refused_write_is_not_recorded_as_an_action(effect_tools) -> None:
+    from ze_agents.base_agent import BaseAgent
+
+    class _A(BaseAgent):
+        name = "companion"
+        description = "d"
+        tools = []
+
+        async def run(self, ctx):
+            return AgentResult(agent=self.name, response="ok")
+
+    ctx = AgentContext(session_id="s", prompt="p", intent="read", retry_mode=True)
+    refused = await _A().call_tool("send_email", ctx)
+    result = AgentResult(agent="companion", response="ok", tool_calls=[refused])
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    assert trace.tool_calls[0].gate == "denied"

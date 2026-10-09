@@ -69,7 +69,13 @@ class _Env:
         self.container = MagicMock()
         self.container.is_thread_locked = MagicMock(return_value=False)
         self.container.translations = None
-        self.container.interface.send_with_thread = AsyncMock()
+
+        async def _send(*args, after_save=None, **kw):
+            if after_save is not None and not await after_save():
+                return False
+            return True
+
+        self.container.interface.send_with_thread = AsyncMock(side_effect=_send)
         self.container.invoke_retry_turn = AsyncMock(
             return_value=SimpleNamespace(
                 response="fresh",
@@ -157,6 +163,8 @@ async def test_supersede_failure_is_reported_not_swallowed():
     await env.run()
     assert env.errors()[0]["code"] == "retry_failed"
     assert not [f for f in env.frames() if f["type"] == "message_superseded"]
+    # the interface suppressed delivery, so no message frame reached the client
+    assert env.container.interface.send_with_thread.await_args.kwargs["after_save"]
 
 
 # ── ineligible classes: refused before any graph run (T038) ──────────────────

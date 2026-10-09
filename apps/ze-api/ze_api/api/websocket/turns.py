@@ -378,15 +378,22 @@ async def handle_retry(
         return
 
     new_id = UUID(outcome.message_id)
-    await container.interface.send_with_thread(
+
+    async def _supersede() -> bool:
+        return await msg_store.mark_superseded(old_id, new_id)
+
+    # Store, link, then deliver: the client never sees a reply that failed to
+    # replace the original.
+    delivered = await container.interface.send_with_thread(
         outcome.response,
         thread_id=extract_thread_id(outcome.config) or thread_id,
         components=outcome.final_state.get("components") or None,
         trace=outcome.final_state.get("message_trace"),
         message_id=outcome.message_id,
         replaces=old_id,
+        after_save=_supersede,
     )
-    if not await msg_store.mark_superseded(old_id, new_id):
+    if not delivered:
         log.warning("ws_retry_supersede_failed", old=str(old_id), new=str(new_id))
         await _retry_error(
             conn_mgr,

@@ -130,6 +130,14 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
             decisions = [_compose_budget(d, False) for d in decisions]
             state_updates["budget_status"] = status
 
+    if config["configurable"].get("retry_mode"):
+        decisions = [
+            GateDecision.EXECUTE
+            if d in (GateDecision.AWAIT_CONFIRMATION, GateDecision.DRAFT)
+            else d
+            for d in decisions
+        ]
+
     is_parallel_compound = bool(envelope and envelope.is_compound and len(subtasks) > 1)
     if is_parallel_compound:
         state_updates["subtask_gate_decisions"] = [
@@ -256,7 +264,9 @@ async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
     return {
         "pending_confirmation": False,
         "gate_decision": GateDecision.EXECUTE,
-        "confirmation_approved": True,
+        "approved_agents": _with_agent(
+            state, state["envelope"].primary_agent if state.get("envelope") else None
+        ),
     }
 
 
@@ -291,7 +301,7 @@ async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) 
         approved = list(state.get("approved_subtask_indexes") or [])
         approved.append(int(item["index"]))
         updates["approved_subtask_indexes"] = approved
-        updates["confirmation_approved"] = True
+        updates["approved_agents"] = _with_agent(state, item["agent"])
     else:
         denied = list(state.get("denied_subtask_indexes") or [])
         denied.append(int(item["index"]))
@@ -300,6 +310,13 @@ async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) 
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def _with_agent(state: dict, agent: str | None) -> list[str]:
+    approved = list(state.get("approved_agents") or [])
+    if agent and agent not in approved:
+        approved.append(agent)
+    return approved
 
 
 def _embed_fn(config: RunnableConfig) -> Any:

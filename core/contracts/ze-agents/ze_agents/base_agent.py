@@ -336,6 +336,7 @@ class BaseAgent(ABC):
                 duration_ms=0,
                 success=False,
                 error="blocked: retry runs cannot change anything",
+                gate="denied",
             )
 
         if spec.access.value == "write" and ctx.gate_decision == GateDecision.DRAFT:

@@ -43,11 +43,11 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         return {}
 
     memory_chunks = _extract_memory_chunks(state.get("memory_context"))
-    turn_confirmed = bool(state.get("confirmation_approved"))
+    approved_agents = set(state.get("approved_agents") or [])
     tool_calls = _extract_tool_calls(
         agent_result,
         list(state.get("subtask_results") or []),
-        turn_confirmed=turn_confirmed,
+        approved_agents=approved_agents,
     )
     total_duration_ms = sum(t.duration_ms for t in tool_calls)
 
@@ -249,7 +249,7 @@ def _extract_tool_calls(
     agent_result: Any,
     subtask_results: list[Any] | None = None,
     *,
-    turn_confirmed: bool = False,
+    approved_agents: set[str] | frozenset[str] = frozenset(),
 ) -> list[ToolCallTrace]:
     """Resolve every call (nested delegate calls flattened) against the registry now,
     so retry eligibility never depends on registry state at retry time."""
@@ -262,20 +262,27 @@ def _extract_tool_calls(
 
     registry = registered_tools()
     result = []
-    raw_calls = [c for r in results for c in (getattr(r, "tool_calls", None) or [])]
-    for tc in flatten_tool_calls(raw_calls):
+    tagged = [
+        (c, getattr(r, "agent", None) in approved_agents)
+        for r in results
+        for c in (getattr(r, "tool_calls", None) or [])
+    ]
+    confirmed_by_call = {id(c): ok for c, ok in tagged}
+    for tc in flatten_tool_calls([c for c, _ in tagged]):
         name = getattr(tc, "tool_name", "unknown")
         raw_result = getattr(tc, "result", "") or ""
         snippet = str(raw_result)[:200] if raw_result else ""
         spec = registry.get(name)
         if name == DELEGATE_TOOL_NAME:
             access = "delegate"
+        elif name.startswith("openrouter:"):
+            access = "read"  # OpenRouter server tools (web search) only read
         elif spec is None:
             access = "unknown"
         else:
             access = "write" if spec.access is ToolAccess.WRITE else "read"
         gate = getattr(tc, "gate", "none")
-        if gate == "none" and turn_confirmed and access == "write":
+        if gate == "none" and access == "write" and _confirmed(tc, confirmed_by_call):
             gate = "approved"
         result.append(
             ToolCallTrace(
@@ -295,6 +302,12 @@ def _extract_tool_calls(
             )
         )
     return result
+
+
+def _confirmed(call: Any, confirmed_by_call: dict[int, bool]) -> bool:
+    """Top-level calls are approved with their agent's gate; nested delegate calls
+    carry their own gate from the delegate, so only top-level ids are in the map."""
+    return confirmed_by_call.get(id(call), False)
 
 
 def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:
