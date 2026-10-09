@@ -266,6 +266,8 @@ make format          # ruff format + fix across all Python packages
 make dev-eval        # backend for evals — no dev seed data, PUBLIC_URL cleared (background jobs still start)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
 make calibrate-speech-act  # LIVE System One run over eval/calibration/speech_act.jsonl; costs credits
+make calibrate-routing     # LIVE System One run over eval/calibration/routing.jsonl; costs credits
+make calibrate-skills      # LIVE System One run over eval/calibration/skills.jsonl; costs credits (--recall: offline shortlist recall)
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)
