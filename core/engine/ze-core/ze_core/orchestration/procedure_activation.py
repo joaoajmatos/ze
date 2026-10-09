@@ -156,9 +156,7 @@ async def complete_procedure_invocation(
         outcome = ProcedureOutcome.ABANDONED
         summary = "procedure invoked without completed guided actions"
     try:
-        await activator.complete(
-            invocation_id, outcome=outcome, summary=summary
-        )
+        await activator.complete(invocation_id, outcome=outcome, summary=summary)
     except Exception as exc:
         log.warning("procedure_invocation_complete_failed", error=str(exc))
 

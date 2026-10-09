@@ -25,4 +25,6 @@ DEFAULT_PRICING: tuple[float, float] = (5.00, 15.00)
 
 def estimate_cost_usd(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     prompt_rate, completion_rate = MODEL_PRICING.get(model, DEFAULT_PRICING)
-    return (prompt_tokens * prompt_rate + completion_tokens * completion_rate) / 1_000_000
+    return (
+        prompt_tokens * prompt_rate + completion_tokens * completion_rate
+    ) / 1_000_000

@@ -17,7 +17,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TABLE pending_confirmations DROP CONSTRAINT pending_confirmations_pkey")
+    op.execute(
+        "ALTER TABLE pending_confirmations DROP CONSTRAINT pending_confirmations_pkey"
+    )
     op.execute("ALTER TABLE pending_confirmations ADD PRIMARY KEY (request_id)")
     op.execute("""
         CREATE INDEX IF NOT EXISTS ix_pending_confirmations_thread_id
@@ -27,5 +29,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS ix_pending_confirmations_thread_id")
-    op.execute("ALTER TABLE pending_confirmations DROP CONSTRAINT pending_confirmations_pkey")
+    op.execute(
+        "ALTER TABLE pending_confirmations DROP CONSTRAINT pending_confirmations_pkey"
+    )
     op.execute("ALTER TABLE pending_confirmations ADD PRIMARY KEY (thread_id)")

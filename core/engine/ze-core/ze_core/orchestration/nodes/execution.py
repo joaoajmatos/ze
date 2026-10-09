@@ -246,7 +246,11 @@ async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
             "pending_confirmation": False,
             "final_response": draft.response if draft else "",
         }
-    return {"pending_confirmation": False, "gate_decision": GateDecision.EXECUTE}
+    return {
+        "pending_confirmation": False,
+        "gate_decision": GateDecision.EXECUTE,
+        "confirmation_approved": True,
+    }
 
 
 async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) -> dict:
@@ -280,6 +284,7 @@ async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) 
         approved = list(state.get("approved_subtask_indexes") or [])
         approved.append(int(item["index"]))
         updates["approved_subtask_indexes"] = approved
+        updates["confirmation_approved"] = True
     else:
         denied = list(state.get("denied_subtask_indexes") or [])
         denied.append(int(item["index"]))

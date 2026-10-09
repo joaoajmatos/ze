@@ -34,6 +34,7 @@ from ze_skills.bootstrap import (
 from ze_skills.store import SkillStore
 from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
 from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
+from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
 from ze_priority import import_agent_modules as import_priority_agents
 from ze_browser import BrowserClient
@@ -231,6 +232,7 @@ class ZeContainer(CoreContainer):
     turn_lock: ThreadTurnLock
     push_notifier: NtfyNotifier | None
     message_store: PostgresMessageStore
+    feedback_store: PostgresFeedbackStore
     session_store: PostgresSessionStore
     connection_manager: ConnectionManager
     component_hook: ComponentCollectionHook
@@ -739,6 +741,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         turn_lock=turn_lock,
         push_notifier=push_notifier,
         message_store=message_store,
+        feedback_store=PostgresFeedbackStore(pool),
         session_store=session_store,
         connection_manager=connection_manager,
         component_hook=component_hook,

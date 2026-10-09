@@ -121,3 +121,175 @@ async def test_record_trace_marks_promote_offered_on_unfinished_close() -> None:
     )
     statuses = [e["status"] for e in result["message_trace"].conductor_ledger]
     assert "promote_offered" in statuses
+
+
+# ── Phase 165: effect metadata on tool calls ─────────────────────────────────
+
+import pytest  # noqa: E402
+from ze_agents.reversibility import ToolReversibility  # noqa: E402
+from ze_agents.tool import ToolAccess, clear_tool_registry, tool  # noqa: E402
+from ze_agents.types import ToolCall  # noqa: E402
+from ze_core.conversation.messages.store import _parse_trace  # noqa: E402
+
+
+@pytest.fixture
+def effect_tools():
+    clear_tool_registry()
+
+    @tool(access=ToolAccess.READ, description="r")
+    async def lookup() -> str: ...
+
+    @tool(
+        access=ToolAccess.WRITE,
+        description="w",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+        effect_phrase="sent an email",
+    )
+    async def send_email() -> str: ...
+
+    @tool(
+        access=ToolAccess.WRITE,
+        description="w",
+        reversibility=ToolReversibility.REVERSIBLE,
+        undo_tool="send_email",
+        undo_note="n",
+        effect_phrase="set a reminder",
+    )
+    async def set_reminder() -> str: ...
+
+    yield
+    clear_tool_registry()
+
+
+def _state(result, **extra) -> dict:
+    return {
+        "envelope": SimpleNamespace(
+            primary_agent="companion",
+            routing_method="embedding",
+            confidence=0.8,
+            score_gap=0.2,
+            is_compound=False,
+            subtasks=[],
+        ),
+        "agent_result": result,
+        "agent_context": AgentContext(session_id="s1", prompt="x", intent="read"),
+        **extra,
+    }
+
+
+def _call(name: str, **kw) -> ToolCall:
+    return ToolCall(
+        tool_name=name, args={}, result="ok", duration_ms=1, success=True, **kw
+    )
+
+
+async def test_record_trace_resolves_effect_metadata(effect_tools) -> None:
+    result = AgentResult(
+        agent="companion",
+        response="ok",
+        tool_calls=[_call("lookup"), _call("set_reminder"), _call("mystery")],
+    )
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    by_name = {t.name: t for t in trace.tool_calls}
+    assert trace.effects_known is True
+    assert by_name["lookup"].access == "read"
+    assert by_name["lookup"].reversibility is None
+    assert by_name["set_reminder"].access == "write"
+    assert by_name["set_reminder"].reversibility == "reversible"
+    assert by_name["set_reminder"].undo_tool == "send_email"
+    assert by_name["set_reminder"].effect_phrase == "set a reminder"
+    assert by_name["mystery"].access == "unknown"
+
+
+async def test_record_trace_flattens_nested_delegate_send(effect_tools) -> None:
+    delegate = ToolCall(
+        tool_name="delegate_to_agent",
+        args={},
+        result={
+            "response": "sent",
+            "tool_calls": [
+                {
+                    "tool_name": "send_email",
+                    "args": {},
+                    "result": "ok",
+                    "duration_ms": 1,
+                    "success": True,
+                    "gate": "approved",
+                }
+            ],
+        },
+        duration_ms=1,
+        success=True,
+        gate="approved",
+    )
+    result = AgentResult(agent="companion", response="ok", tool_calls=[delegate])
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    by_name = {t.name: t for t in trace.tool_calls}
+    assert by_name["delegate_to_agent"].access == "delegate"
+    assert by_name["send_email"].access == "write"
+    assert by_name["send_email"].reversibility == "irreversible"
+    assert by_name["send_email"].gate == "approved"
+
+
+async def test_record_trace_includes_compound_subtask_calls(effect_tools) -> None:
+    sub = AgentResult(
+        agent="messenger", response="ok", tool_calls=[_call("send_email")]
+    )
+    state = _state(None, subtask_results=[sub], confirmation_approved=True)
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+    assert [t.name for t in trace.tool_calls] == ["send_email"]
+    assert trace.tool_calls[0].gate == "approved"
+
+
+async def test_turn_confirmation_does_not_mark_reads_approved(effect_tools) -> None:
+    result = AgentResult(agent="companion", response="ok", tool_calls=[_call("lookup")])
+    state = _state(result, confirmation_approved=True)
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+    assert trace.tool_calls[0].gate == "none"
+
+
+def test_old_trace_parses_as_effects_unknown() -> None:
+    old = {
+        "agent": "research",
+        "routing_method": "embedding",
+        "confidence": 0.9,
+        "score_gap": 0.1,
+        "is_compound": False,
+        "subtasks": [],
+        "tool_calls": [
+            {"name": "web", "result_snippet": "", "duration_ms": 3, "success": True}
+        ],
+    }
+    trace = _parse_trace(old)
+    assert trace.effects_known is False
+    assert trace.tool_calls[0].access == "unknown"
+    assert trace.tool_calls[0].gate == "none"
+
+
+def test_new_trace_round_trips_effect_fields() -> None:
+    from dataclasses import asdict
+
+    from ze_core.conversation.messages.types import MessageTrace, ToolCallTrace
+
+    trace = MessageTrace(
+        agent="a",
+        routing_method="embedding",
+        confidence=1.0,
+        score_gap=0.0,
+        is_compound=False,
+        subtasks=[],
+        tool_calls=[
+            ToolCallTrace(
+                name="send_email",
+                result_snippet="",
+                duration_ms=1,
+                success=True,
+                access="write",
+                reversibility="irreversible",
+                gate="approved",
+                effect_phrase="sent an email",
+            )
+        ],
+        effects_known=True,
+    )
+    assert _parse_trace(asdict(trace)) == trace

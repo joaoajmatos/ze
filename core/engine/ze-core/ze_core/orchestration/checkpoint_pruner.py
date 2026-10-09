@@ -20,7 +20,9 @@ class CheckpointPruner:
     plain tables in the same database as everything else.
     """
 
-    def __init__(self, pool: asyncpg.Pool, keep_per_thread: int = _DEFAULT_KEEP_PER_THREAD) -> None:
+    def __init__(
+        self, pool: asyncpg.Pool, keep_per_thread: int = _DEFAULT_KEEP_PER_THREAD
+    ) -> None:
         self._pool = pool
         self._keep = keep_per_thread
 
@@ -58,7 +60,9 @@ class CheckpointPruner:
             referenced: set[tuple[str, str]] = set()
             for r in keep_rows:
                 versions = (r["checkpoint"] or {}).get("channel_versions") or {}
-                referenced.update((channel, str(version)) for channel, version in versions.items())
+                referenced.update(
+                    (channel, str(version)) for channel, version in versions.items()
+                )
 
             async with conn.transaction():
                 writes_result = await conn.execute(
@@ -91,7 +95,10 @@ class CheckpointPruner:
                     await conn.executemany(
                         "DELETE FROM checkpoint_blobs "
                         "WHERE thread_id = $1 AND checkpoint_ns = $2 AND channel = $3 AND version = $4",
-                        [(thread_id, checkpoint_ns, channel, version) for channel, version in orphaned],
+                        [
+                            (thread_id, checkpoint_ns, channel, version)
+                            for channel, version in orphaned
+                        ],
                     )
 
             return {

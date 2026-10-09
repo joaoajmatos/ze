@@ -22,12 +22,19 @@ from ze_core.conversation.messages.types import (
 
 class MessageStore(Protocol):
     async def save(self, message: Message) -> None: ...
-    async def list_since(self, since: datetime, limit: int = 100) -> list[Message]: ...
+    async def list_since(
+        self, since: datetime, limit: int = 100, *, include_superseded: bool = False
+    ) -> list[Message]: ...
     async def list_by_thread(
-        self, thread_id: str, limit: int = 200
+        self, thread_id: str, limit: int = 200, *, include_superseded: bool = False
     ) -> list[Message]: ...
     async def mark_read(self, ids: list[UUID]) -> None: ...
-    async def list_unread(self, thread_id: str | None = None) -> list[Message]: ...
+    async def list_unread(
+        self, thread_id: str | None = None, *, include_superseded: bool = False
+    ) -> list[Message]: ...
+    async def get_message(self, message_id: UUID) -> Message | None: ...
+    async def latest_assistant_id(self, thread_id: str) -> UUID | None: ...
+    async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool: ...
     async def save_trace(self, message_id: UUID, trace: MessageTrace) -> None: ...
     async def get_trace(self, message_id: UUID) -> MessageTrace | None: ...
     async def get_traces(self, message_ids: list[UUID]) -> dict[UUID, MessageTrace]: ...
@@ -46,8 +53,10 @@ class PostgresMessageStore:
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO messages (id, role, text, components, read, thread_id, created_at)
-                VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
+                INSERT INTO messages (
+                    id, role, text, components, read, thread_id, created_at, replaces
+                )
+                VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
                 ON CONFLICT DO NOTHING
                 """,
                 message.id,
@@ -57,35 +66,44 @@ class PostgresMessageStore:
                 message.read,
                 message.thread_id,
                 message.created_at,
+                message.replaces,
             )
 
-    async def list_since(self, since: datetime, limit: int = 100) -> list[Message]:
+    async def list_since(
+        self, since: datetime, limit: int = 100, *, include_superseded: bool = False
+    ) -> list[Message]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, role, text, components, read, thread_id, created_at
+                SELECT id, role, text, components, read, thread_id, created_at,
+                       replaces, replaced_by
                 FROM messages
-                WHERE created_at > $1
+                WHERE created_at > $1 AND ($3 OR replaced_by IS NULL)
                 ORDER BY created_at ASC
                 LIMIT $2
                 """,
                 since,
                 limit,
+                include_superseded,
             )
         return [_row_to_message(r) for r in rows]
 
-    async def list_by_thread(self, thread_id: str, limit: int = 200) -> list[Message]:
+    async def list_by_thread(
+        self, thread_id: str, limit: int = 200, *, include_superseded: bool = False
+    ) -> list[Message]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, role, text, components, read, thread_id, created_at
+                SELECT id, role, text, components, read, thread_id, created_at,
+                       replaces, replaced_by
                 FROM messages
-                WHERE thread_id = $1
+                WHERE thread_id = $1 AND ($3 OR replaced_by IS NULL)
                 ORDER BY created_at ASC
                 LIMIT $2
                 """,
                 thread_id,
                 limit,
+                include_superseded,
             )
         return [_row_to_message(r) for r in rows]
 
@@ -98,28 +116,74 @@ class PostgresMessageStore:
                 ids,
             )
 
-    async def list_unread(self, thread_id: str | None = None) -> list[Message]:
+    async def list_unread(
+        self, thread_id: str | None = None, *, include_superseded: bool = False
+    ) -> list[Message]:
         async with self._pool.acquire() as conn:
             if thread_id:
                 rows = await conn.fetch(
                     """
-                    SELECT id, role, text, components, read, thread_id, created_at
+                    SELECT id, role, text, components, read, thread_id, created_at,
+                       replaces, replaced_by
                     FROM messages
-                    WHERE NOT read AND thread_id = $1
+                    WHERE NOT read AND thread_id = $1 AND ($2 OR replaced_by IS NULL)
                     ORDER BY created_at ASC
                     """,
                     thread_id,
+                    include_superseded,
                 )
             else:
                 rows = await conn.fetch(
                     """
-                    SELECT id, role, text, components, read, thread_id, created_at
+                    SELECT id, role, text, components, read, thread_id, created_at,
+                       replaces, replaced_by
                     FROM messages
-                    WHERE NOT read
+                    WHERE NOT read AND ($1 OR replaced_by IS NULL)
                     ORDER BY created_at ASC
                     """,
+                    include_superseded,
                 )
         return [_row_to_message(r) for r in rows]
+
+    async def get_message(self, message_id: UUID) -> Message | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT id, role, text, components, read, thread_id, created_at,
+                       replaces, replaced_by
+                FROM messages
+                WHERE id = $1
+                """,
+                message_id,
+            )
+        return _row_to_message(row) if row is not None else None
+
+    async def latest_assistant_id(self, thread_id: str) -> UUID | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT id FROM messages
+                WHERE thread_id = $1 AND role = 'assistant' AND replaced_by IS NULL
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                thread_id,
+            )
+        return row["id"] if row is not None else None
+
+    async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool:
+        """Link old to its replacement; only once the replacement is stored."""
+        async with self._pool.acquire() as conn:
+            status = await conn.execute(
+                """
+                UPDATE messages SET replaced_by = $2
+                WHERE id = $1 AND replaced_by IS NULL
+                  AND EXISTS (SELECT 1 FROM messages WHERE id = $2)
+                """,
+                old_id,
+                new_id,
+            )
+        return status == "UPDATE 1"
 
     async def save_trace(self, message_id: UUID, trace: MessageTrace) -> None:
         async with self._pool.acquire() as conn:
@@ -193,6 +257,7 @@ def _parse_trace(data: dict) -> MessageTrace:
     procedure_raw = data.get("procedure")
     procedure = ProcedureUsageTrace(**procedure_raw) if procedure_raw else None
     judgment_fields = {f.name for f in fields(JudgmentTrace)}
+    tool_call_fields = {f.name for f in fields(ToolCallTrace)}
     return MessageTrace(
         agent=data["agent"],
         routing_method=data["routing_method"],
@@ -201,7 +266,10 @@ def _parse_trace(data: dict) -> MessageTrace:
         is_compound=data["is_compound"],
         subtasks=data.get("subtasks", []),
         memory_chunks=[MemoryChunkTrace(**c) for c in data.get("memory_chunks", [])],
-        tool_calls=[ToolCallTrace(**t) for t in data.get("tool_calls", [])],
+        tool_calls=[
+            ToolCallTrace(**{k: v for k, v in t.items() if k in tool_call_fields})
+            for t in data.get("tool_calls", [])
+        ],
         total_duration_ms=data.get("total_duration_ms", 0),
         skills_used=[SkillUsageTrace(**s) for s in data.get("skills_used", [])],
         workspace=workspace,
@@ -213,6 +281,7 @@ def _parse_trace(data: dict) -> MessageTrace:
             for raw in data.get("judgments") or []
             if isinstance(raw, dict)
         ],
+        effects_known=bool(data.get("effects_known", False)),
     )
 
 
@@ -230,4 +299,6 @@ def _row_to_message(row: asyncpg.Record) -> Message:
         read=row["read"],
         thread_id=row["thread_id"],
         created_at=row["created_at"],
+        replaces=row["replaces"],
+        replaced_by=row["replaced_by"],
     )

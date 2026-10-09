@@ -40,7 +40,11 @@ def _invalid_request(
     if state is None or state == "" or state == {}:
         return True
     for question in questions.values():
-        kind = question.type if isinstance(question, SystemOneQuestion) else question.get("type")
+        kind = (
+            question.type
+            if isinstance(question, SystemOneQuestion)
+            else question.get("type")
+        )
         instructions = (
             question.instructions
             if isinstance(question, SystemOneQuestion)
@@ -149,10 +153,16 @@ class OpenRouterSystemOneClient:
             "X-OpenRouter-Title": self._title,
         }
 
-        attempts = len(_BACKOFFS) if max_attempts is None else min(max_attempts, len(_BACKOFFS))
+        attempts = (
+            len(_BACKOFFS)
+            if max_attempts is None
+            else min(max_attempts, len(_BACKOFFS))
+        )
         last_status: int | None = None
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(self._timeout_s)) as http:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(self._timeout_s)
+            ) as http:
                 for attempt, backoff in enumerate(_BACKOFFS[:attempts], start=1):
                     try:
                         response = await http.post(url, json=payload, headers=headers)
@@ -160,7 +170,9 @@ class OpenRouterSystemOneClient:
                         self._log.warning("system_one_skip", reason="timeout")
                         return _skip("timeout", _elapsed_ms(start))
                     except httpx.HTTPError as exc:
-                        self._log.warning("system_one_skip", reason="error", error=str(exc))
+                        self._log.warning(
+                            "system_one_skip", reason="error", error=str(exc)
+                        )
                         return _skip("error", _elapsed_ms(start))
 
                     last_status = response.status_code
@@ -184,7 +196,9 @@ class OpenRouterSystemOneClient:
                     try:
                         data = response.json()
                     except ValueError:
-                        self._log.warning("system_one_skip", reason="error", error="bad_json")
+                        self._log.warning(
+                            "system_one_skip", reason="error", error="bad_json"
+                        )
                         return _skip("error", _elapsed_ms(start))
                     result = _result_from_payload(data, _elapsed_ms(start))
                     self._record_cost(result)
@@ -226,7 +240,9 @@ def build_system_one_client(settings: Any, *, cost_tracker=None):
         base_url=getattr(settings, "openrouter_base_url", DEFAULT_BASE_URL),
         model=config.get("model", DEFAULT_MODEL),
         timeout_ms=int(config.get("timeout_ms", DEFAULT_TIMEOUT_MS)),
-        http_referer=getattr(settings, "openrouter_http_referer", "https://github.com/ze"),
+        http_referer=getattr(
+            settings, "openrouter_http_referer", "https://github.com/ze"
+        ),
         title=getattr(settings, "openrouter_title", "Ze Personal Assistant"),
         cost_tracker=cost_tracker,
     )

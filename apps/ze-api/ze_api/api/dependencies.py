@@ -73,6 +73,10 @@ def get_message_store(request: Request) -> MessageStore:
     return request.app.state.container.message_store
 
 
+def get_feedback_store(request: Request):
+    return request.app.state.container.feedback_store
+
+
 def get_connection_manager(request: Request):
     return request.app.state.container.connection_manager
 

@@ -64,8 +64,6 @@ class SpendBudgetChecker:
 
 def _sum_usage(rows: list[dict]) -> float:
     return sum(
-        estimate_cost_usd(
-            row["model"], row["prompt_tokens"], row["completion_tokens"]
-        )
+        estimate_cost_usd(row["model"], row["prompt_tokens"], row["completion_tokens"])
         for row in rows
     )

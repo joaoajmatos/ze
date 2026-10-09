@@ -60,7 +60,10 @@ class ActionRecorder:
         provenance: Provenance = Provenance.PROMPT_SUPPLIED,
         confidence_value: float = 1.0,
     ) -> ActionRecord:
-        ref = AuthoritativeRef(domain=f"{producer_kind}.{source_record_type}", record_id=str(source_record_id))
+        ref = AuthoritativeRef(
+            domain=f"{producer_kind}.{source_record_type}",
+            record_id=str(source_record_id),
+        )
         causal: list[CausalRef] = []
         if lifecycle.value not in NON_TERMINAL_LIFECYCLES:
             try:
@@ -69,7 +72,9 @@ class ActionRecorder:
                 listed = []
             if isinstance(listed, list):
                 for rec in listed:
-                    lifecycle_value = getattr(getattr(rec, "lifecycle", None), "value", None)
+                    lifecycle_value = getattr(
+                        getattr(rec, "lifecycle", None), "value", None
+                    )
                     if lifecycle_value in NON_TERMINAL_LIFECYCLES:
                         causal.append(CausalRef(kind="action_record", id=rec.id))
                         break

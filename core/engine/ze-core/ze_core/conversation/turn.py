@@ -50,6 +50,7 @@ def make_graph_input(
         "approved_subtask_indexes": [],
         "denied_subtask_indexes": [],
         "pending_confirmation": False,
+        "confirmation_approved": False,
         "final_response": None,
         "error": None,
         "components": [],

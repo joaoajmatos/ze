@@ -17,14 +17,20 @@ class Message:
     read: bool
     created_at: datetime
     thread_id: str | None
+    replaces: UUID | None = None
+    replaced_by: UUID | None = None
 
 
 @dataclass
 class MemoryChunkTrace:
     text: str
-    score: float  # retrieval relevance (real cosine similarity), not extraction confidence
+    score: (
+        float  # retrieval relevance (real cosine similarity), not extraction confidence
+    )
     source: str  # "fact" | "episode" | "profile"
-    extraction_confidence: float | None = None  # facts only — kept distinct from `score`
+    extraction_confidence: float | None = (
+        None  # facts only — kept distinct from `score`
+    )
 
 
 @dataclass
@@ -33,6 +39,11 @@ class ToolCallTrace:
     result_snippet: str  # first 200 chars of result
     duration_ms: int
     success: bool
+    access: str = "unknown"  # "read" | "write" | "delegate" | "unknown"
+    reversibility: str | None = None  # "reversible" | "irreversible" | None
+    undo_tool: str | None = None
+    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
+    effect_phrase: str | None = None
 
 
 @dataclass
@@ -100,3 +111,4 @@ class MessageTrace:
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
     judgments: list[JudgmentTrace] = field(default_factory=list)
+    effects_known: bool = False  # True only when tool calls carry registry metadata

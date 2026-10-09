@@ -282,7 +282,11 @@ async def write_fact_values(
         return []
     return raw_to_facts(
         [
-            {"predicate": family, "value": str(item["value"]), "confidence": _VALUE_CONFIDENCE}
+            {
+                "predicate": family,
+                "value": str(item["value"]),
+                "confidence": _VALUE_CONFIDENCE,
+            }
             for item in items
             if isinstance(item, dict) and item.get("value")
         ]

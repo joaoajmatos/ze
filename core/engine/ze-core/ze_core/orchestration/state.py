@@ -47,6 +47,7 @@ class AgentState(TypedDict):
     approved_subtask_indexes: list[int]
     denied_subtask_indexes: list[int]
     pending_confirmation: bool
+    confirmation_approved: bool  # set by await_confirmation; resumed only on approve
 
     # ── Conversation history ───────────────────────────────────────────────
     messages: list[dict]

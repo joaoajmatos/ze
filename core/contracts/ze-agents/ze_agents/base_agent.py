@@ -366,6 +366,7 @@ class BaseAgent(ABC):
         # ── Execute ───────────────────────────────────────────────────────────
         log.debug("tool_start", tool=name, agent=self.name, access=spec.access.value)
         start = time.monotonic()
+        confirmed = False
         try:
             result = await spec.func(**args)
         except ToolConfirmationRequired as exc:
@@ -398,11 +399,13 @@ class BaseAgent(ABC):
                     duration_ms=duration_ms,
                     success=False,
                     error="denied by user",
+                    gate="denied",
                 )
                 await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
                 return tool_call
             if edited is not None:
                 args = _apply_edited_content(name, args, str(edited))
+            confirmed = True
             confirmed_token = workspace_confirmed.set(True)
             try:
                 result = await spec.func(**args)
@@ -430,6 +433,7 @@ class BaseAgent(ABC):
             result=result,
             duration_ms=duration_ms,
             success=True,
+            gate="approved" if confirmed else "none",
         )
 
         # ── Hook: after ───────────────────────────────────────────────────────

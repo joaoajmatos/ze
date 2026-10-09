@@ -87,6 +87,7 @@ class ToolCall:
     success: bool
     error: str | None = None
     is_draft: bool = False
+    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
 
 
 @dataclass

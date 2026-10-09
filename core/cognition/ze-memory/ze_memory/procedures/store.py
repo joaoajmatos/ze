@@ -267,9 +267,7 @@ class InMemoryProcedureStore:
         self.invocations[invocation.id] = invocation
         return invocation
 
-    async def get_invocation(
-        self, invocation_id: UUID
-    ) -> ProcedureInvocation | None:
+    async def get_invocation(self, invocation_id: UUID) -> ProcedureInvocation | None:
         return self.invocations.get(invocation_id)
 
     async def save_action_link(self, link: ProcedureActionLink) -> ProcedureActionLink:
@@ -281,7 +279,9 @@ class InMemoryProcedureStore:
         return link
 
     async def list_action_links(self, invocation_id: UUID) -> list[ProcedureActionLink]:
-        return [link for link in self.action_links if link.invocation_id == invocation_id]
+        return [
+            link for link in self.action_links if link.invocation_id == invocation_id
+        ]
 
     async def save_activation_feedback(
         self, feedback: ProcedureOutcomeFeedback
@@ -909,9 +909,7 @@ class PostgresProcedureStore:
             )
         return invocation
 
-    async def get_invocation(
-        self, invocation_id: UUID
-    ) -> ProcedureInvocation | None:
+    async def get_invocation(self, invocation_id: UUID) -> ProcedureInvocation | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT * FROM procedure_invocations WHERE id = $1", invocation_id
@@ -1027,7 +1025,9 @@ class PostgresProcedureStore:
             version_id=row["version_id"],
             outcome=ProcedureOutcome(row["outcome"]),
             summary=row["summary"],
-            action_link_ids=[UUID(str(item)) for item in (_load(row["action_link_ids"]) or [])],
+            action_link_ids=[
+                UUID(str(item)) for item in (_load(row["action_link_ids"]) or [])
+            ],
             id=row["id"],
             submitted_at=row["submitted_at"],
         )

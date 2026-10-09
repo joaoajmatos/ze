@@ -79,9 +79,7 @@ def _persist_provenance(fact: Fact) -> Provenance:
     try:
         return Provenance(value)
     except ValueError as exc:
-        raise InvalidFactProvenanceError(
-            f"unknown fact provenance {value!r}"
-        ) from exc
+        raise InvalidFactProvenanceError(f"unknown fact provenance {value!r}") from exc
 
 
 def _persist_claim_kind(fact: Fact, provenance: Provenance) -> ClaimKind:
@@ -98,6 +96,7 @@ def _persist_claim_kind(fact: Fact, provenance: Provenance) -> ClaimKind:
         return ClaimKind(kind)
     except ValueError as exc:
         raise StoreError(f"unknown fact claim_kind {kind!r}") from exc
+
 
 _EVENT_OUTCOME_SYSTEM = (
     "You extract generalizable declarative facts from an event outcome. "
@@ -119,9 +118,7 @@ def _normalize_forget_text(text: str) -> str:
     return " ".join(text.strip().casefold().split())
 
 
-def _select_forget_match_ids(
-    rows: list[Any], query: str, embedder: Any
-) -> list[UUID]:
+def _select_forget_match_ids(rows: list[Any], query: str, embedder: Any) -> list[UUID]:
     needle = _normalize_forget_text(query)
     if not needle:
         return []
@@ -1017,7 +1014,8 @@ class PostgresMemoryStore:
                         provenance_id=fact.source_episode_id,
                         creation_method="extracted",
                         confidence=Confidence(
-                            value=fact.confidence, decay_profile=DecayProfile.TIME_LINEAR
+                            value=fact.confidence,
+                            decay_profile=DecayProfile.TIME_LINEAR,
                         ),
                     )
                 )
@@ -1416,7 +1414,8 @@ class PostgresMemoryStore:
                                     target_type="entity",
                                     creation_method="extracted",
                                     confidence=Confidence(
-                                        value=0.9, decay_profile=DecayProfile.TIME_LINEAR
+                                        value=0.9,
+                                        decay_profile=DecayProfile.TIME_LINEAR,
                                     ),
                                 )
                             )

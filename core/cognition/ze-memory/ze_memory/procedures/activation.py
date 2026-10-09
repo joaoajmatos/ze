@@ -119,5 +119,7 @@ class ProcedureActivator:
         else:
             invocation.state = InvocationState.FAILED
         await self._store.save_invocation(invocation)
-        await ProcedureAdmissionService(self._store).ingest_activation_feedback(feedback)
+        await ProcedureAdmissionService(self._store).ingest_activation_feedback(
+            feedback
+        )
         return feedback

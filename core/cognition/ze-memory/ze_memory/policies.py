@@ -113,7 +113,9 @@ def _prepare_candidates(
     )
 
 
-def _merge_reviewed_facts(reviewed_rows: list[Any], retrieved_rows: list[Any]) -> list[Any]:
+def _merge_reviewed_facts(
+    reviewed_rows: list[Any], retrieved_rows: list[Any]
+) -> list[Any]:
     seen = {row["id"] for row in reviewed_rows}
     rest = [row for row in retrieved_rows if row["id"] not in seen]
     return list(reviewed_rows) + rest

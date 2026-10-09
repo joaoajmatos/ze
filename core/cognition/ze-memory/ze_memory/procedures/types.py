@@ -284,4 +284,3 @@ class ProcedureOutcomeFeedback:
     action_link_ids: list[UUID] = field(default_factory=list)
     id: UUID | None = None
     submitted_at: datetime | None = None
-

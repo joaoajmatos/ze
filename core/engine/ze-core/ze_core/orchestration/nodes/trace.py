@@ -43,7 +43,12 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         return {}
 
     memory_chunks = _extract_memory_chunks(state.get("memory_context"))
-    tool_calls = _extract_tool_calls(agent_result)
+    turn_confirmed = bool(state.get("confirmation_approved"))
+    tool_calls = _extract_tool_calls(
+        agent_result,
+        list(state.get("subtask_results") or []),
+        turn_confirmed=turn_confirmed,
+    )
     total_duration_ms = sum(t.duration_ms for t in tool_calls)
 
     subtask_agents = (
@@ -77,6 +82,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         conductor_hint=state.get("conductor_hint"),
         conductor_ledger=ledger_with_promote_offer(_conductor_ledger(state)),
         judgments=list(state.get("judgments") or []),
+        effects_known=True,
     )
     return {"message_trace": trace}
 
@@ -239,20 +245,53 @@ def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:
     return list(state.get("conductor_ledger") or [])
 
 
-def _extract_tool_calls(agent_result: Any) -> list[ToolCallTrace]:
-    if agent_result is None:
+def _extract_tool_calls(
+    agent_result: Any,
+    subtask_results: list[Any] | None = None,
+    *,
+    turn_confirmed: bool = False,
+) -> list[ToolCallTrace]:
+    """Resolve every call (nested delegate calls flattened) against the registry now,
+    so retry eligibility never depends on registry state at retry time."""
+    results = [r for r in [agent_result, *(subtask_results or [])] if r is not None]
+    if not results:
         return []
-    raw_calls = getattr(agent_result, "tool_calls", []) or []
+    from ze_agents.delegate import DELEGATE_TOOL_NAME
+    from ze_agents.nested_tools import flatten_tool_calls
+    from ze_agents.tool import ToolAccess, registered_tools
+
+    registry = registered_tools()
     result = []
-    for tc in raw_calls:
+    raw_calls = [c for r in results for c in (getattr(r, "tool_calls", None) or [])]
+    for tc in flatten_tool_calls(raw_calls):
+        name = getattr(tc, "tool_name", "unknown")
         raw_result = getattr(tc, "result", "") or ""
         snippet = str(raw_result)[:200] if raw_result else ""
+        spec = registry.get(name)
+        if name == DELEGATE_TOOL_NAME:
+            access = "delegate"
+        elif spec is None:
+            access = "unknown"
+        else:
+            access = "write" if spec.access is ToolAccess.WRITE else "read"
+        gate = getattr(tc, "gate", "none")
+        if gate == "none" and turn_confirmed and access == "write":
+            gate = "approved"
         result.append(
             ToolCallTrace(
-                name=getattr(tc, "tool_name", "unknown"),
+                name=name,
                 result_snippet=snippet,
                 duration_ms=getattr(tc, "duration_ms", 0),
                 success=getattr(tc, "success", True),
+                access=access,
+                reversibility=(
+                    spec.reversibility.value
+                    if spec is not None and spec.reversibility is not None
+                    else None
+                ),
+                undo_tool=spec.undo_tool if spec is not None else None,
+                gate=gate,
+                effect_phrase=spec.effect_phrase if spec is not None else None,
             )
         )
     return result

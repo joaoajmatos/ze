@@ -281,6 +281,7 @@ async def run_delegate(
         _update_conductor_ledger(ctx, agent_name, "skipped")
         return _failed(arguments, "blocked by capability gate")
 
+    approved_gate = False
     if decision == GateDecision.AWAIT_CONFIRMATION:
         interrupt_fn = tool_interrupt_fn.get()
         request_id = str(uuid4())
@@ -307,8 +308,11 @@ async def run_delegate(
             choice = resume
         if choice != "approve":
             _update_conductor_ledger(ctx, agent_name, "denied", request_id=request_id)
-            return _failed(arguments, "denied by user")
+            denied = _failed(arguments, "denied by user")
+            denied.gate = "denied"
+            return denied
         decision = GateDecision.EXECUTE
+        approved_gate = True
 
     prompt = assemble_delegate_prompt(arguments)
     sub_ctx = AgentContext(
@@ -350,6 +354,7 @@ async def run_delegate(
             "duration_ms": call.duration_ms,
             "success": call.success,
             "error": call.error,
+            "gate": "approved" if approved_gate else call.gate,
         }
         for call in result.tool_calls
     ]
@@ -364,6 +369,7 @@ async def run_delegate(
             duration_ms=duration_ms,
             success=False,
             error="stalled: empty response",
+            gate="approved" if approved_gate else "none",
         )
 
     log.info("delegate_done", to_agent=agent_name, duration_ms=duration_ms)
@@ -374,4 +380,5 @@ async def run_delegate(
         result={"response": result.response, "tool_calls": nested},
         duration_ms=duration_ms,
         success=True,
+        gate="approved" if approved_gate else "none",
     )
