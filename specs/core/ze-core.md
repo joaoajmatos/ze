@@ -29,6 +29,15 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
   E5 bars and the regex `ComplexityEstimator`. `embed_route` records the judgments on
   the trace. Both call sites (`Container` and `bootstrap.build_router`) build the
   router through `build_embedding_router` in `ze_core/routing/factory.py`.
+- **Skill matching glue** — `match_skills` (`orchestration/nodes/skills.py`) calls the
+  injected `skill_matcher` (`ze-core` never imports `ze_skills`) with the shared
+  `build_judgment_state(state)` from `orchestration/judgment_state.py` (the 164
+  user-text / history-hint / routing-hint shape, now used by routing and skills). With
+  `system_one.surfaces.skills` calibrated (Phase 166) the matcher returns a
+  `SkillMatchOutcome`: the matches, plus a judgment whose rows `match_skills` converts
+  with `judgments_from_result` and **appends** to `state["judgments"]`. It never
+  replaces the rows `embed_route` wrote. `SkillUsageTrace.below_floor` marks an
+  automatic skill applied under `match_threshold`.
 - **Capability gate** — `CapabilityGate` checks the current `Mode` against the matched
   agent; `PostgresCapabilityOverrideStore` persists per-agent overrides
 - **Orchestration graph** — `graph_builder` compiles the LangGraph graph; nodes are

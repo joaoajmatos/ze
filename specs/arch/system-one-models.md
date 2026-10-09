@@ -1,6 +1,6 @@
 # System One models — living roadmap
 
-> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) specified (Draft). Later opportunities in this document wait for those three; do not start them in the 162 tree.
+> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; 163 and 164 ship off with null bars until calibrated. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented, also off with null bars. Later opportunities in this document wait for their own phase.
 > **Date:** 2026-09-30
 > **Related:** [Ze Doctrine](ze-doctrine.md), [Contribution Seam](contribution-seam.md), [Memory Honesty Roadmap](memory-honesty-roadmap.md), [Claim Topology](claim-topology.md), [OpenRouter Gateway](openrouter-gateway.md), [Local Embeddings](local-embeddings.md), [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), NLI [080](../phases/080-nli-client/spec.md), speech-act [142](../phases/142-speech-act-routing/spec.md)–[148](../phases/148-extractor-dual-write/spec.md), E5 routing [160](../phases/160-e5-routing-confidence/spec.md)
 
@@ -72,6 +72,8 @@ Calibrated **act / hold / escalate** is missing on routing, admission, confirms,
 
 > **O2 implementation notes (164):** E5 stays the shortlist (`shortlist_k`, default 4). One batched request asks the agent Choice (shortlist ∪ `none`), a multi-specialist Noul and a complexity Score, with a single attempt (`evaluate(..., max_attempts=1)`). Three separate bars (`choice_trust`, `multi_specialist_hold`, `complexity_lookup_max`) ship `null`; the surface stays off until `make calibrate-routing`. `routing_log.confidence` is the Choice peakedness when a Choice was consumed, not the cosine score (drift fix). Score maps to a model tier: at or below `complexity_lookup_max` is simple, above is complex; the Score tier is kept through Haiku `decompose`. A `none` Choice or a high Noul sends the turn to decompose; an unsure Choice or a skip falls back to the E5 bars and the regex estimator. Both router call sites use one factory, `build_embedding_router`.
 
+> **O3 implementation notes (166):** The roadmap name is "skill suggestion", but nothing is suggested to the user. The phase gates **automatic application**. E5 stays the shortlist, with a lower shortlist-only pre-floor (`shortlist_floor`, near 0.35) under `match_threshold`, and `shortlist_k` set from the offline recall table, not assumed. One batched request (`evaluate(..., max_attempts=1)`) asks a Choice over the shortlist ∪ `none` and a Noul `needs_skill`. Pure code decides apply, drop, abstain or skip. At most one automatic skill applies (a deliberate narrowing of 114's "all matched skills"); explicit `/skill-name` bypasses the judgment and still stacks. A below-`match_threshold` apply is marked on the trace (`below_floor`). `match_skills` appends its judgment rows to `state["judgments"]` and never replaces `embed_route`'s rows. Two bars (`choice_trust`, `needs_skill_hold`) ship `null`; the surface stays off until `make calibrate-skills`. Off, uncalibrated, skipped or unsure: the 114 result is unchanged.
+
 Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selects **(3)** System One verifies **(4)** System One routes **(5)** scores become ranking features.
 
 ### Specified now
@@ -81,12 +83,12 @@ Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selec
 | O0 | Client, DI, trace, fail-open | Nothing | Protocol sibling of `NLIClient` | — | New layer | S–M | **162** |
 | O1 | Speech-act + keep/drop | Haiku JSON every turn | Choice `{fact,forget,reminder,loop,goal,ingest,drop,clarify}` + family Choice + Noul biography | 4 + 1 (wording) | **Replace LLM judge**; keep `admit_*` | M | **163** |
 | O2 | Agent after E5 shortlist + complexity | Cosine-as-confidence; regex complexity; Haiku on low gap | Choice shortlist ∪ `none`; Score complexity | 4 + 1 (decompose) | **Complement E5**; keep decompose | M | **164 (Implemented)** |
+| O3 | Skill gating after E5 shortlist | Every skill with cosine ≥ 0.5 applies, plus `/slug` | Choice shortlist ∪ `none`; Noul `needs_skill`; `/slug` stays code | 1 | **Complement E5**; keep `/slug` | M | **166 (Implemented)** |
 
-### Queued (do not start in 162–164)
+### Queued (do not start before their own phase)
 
 | # | Opportunity | Notes |
 |---|---|---|
-| O3 | Skill suggestion | E5 ≥ 0.5 or `/slug`. Cookbook: Choice + Noul `needs_skill` after shortlist. Keep `/slug` in code. |
 | O4 | Loop extraction gate | Haiku JSON `is_loop`. Noul `is_open_concern`; title still generated; windows in **code**. |
 | O5 | Passage classify | After ANN + floor; Nouls relevant/usable/conflicts. Cap candidates so latency stays in the live-rerank class or use the async cache path. Keep DeBERTa write-time NLI. |
 | O6 | Push interrupt Score | Features into `AttentionArbitrationJob`; budget and claim-then-notify stay code. Inline mentions stay ungated (FR-006). |
@@ -109,7 +111,9 @@ Implement **in order**. 163 and 164 both need 162; they do not need each other. 
 2. **163 — Speech-act System One (Implemented)** — Replace the Haiku admission **judge**. Keep typed `admit_speech_act` / `admit_family`, trivial-turn regex, dual-write skip, contribution seam. In-turn companion tools unchanged except they consume the same closed set.
 3. **164 — Routing Choice after E5 (Implemented)** — Shortlist in code; Choice ∪ `none`; complexity Score; Haiku decompose only when Choice says `none` or confidence is too low or a multiple-specialist Noul is high. 153/155 conductor rewrite unchanged.
 
-Later: O3 skills → O4 loops → O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
+4. **166 — Skill gating (Implemented)** — Shortlist in code; Choice ∪ `none` plus Noul `needs_skill`; one automatic skill; `/skill-name` unchanged; trace marks below-floor applies. Depends on 162; reuses the 163/164 patterns, not their bars.
+
+Later: O4 loops → O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
 
 ---
 
@@ -162,12 +166,12 @@ preprocess → embed_route → [decompose] → fetch_context → match_skills �
   → execute_tool → correlate → surface_loops → [synthesize] → record_trace → write_memory
 ```
 
-| Surface | Today | 162–164 |
+| Surface | Today | 162–164, 166 |
 |---|---|---|
 | `EmbeddingRouter` | E5 cosine τ/gap | **164 Implemented** — Choice after shortlist (System One, E5 fallback) |
 | `ComplexityEstimator` | regex + word count | **164 Implemented** — Score tier; regex fallback |
 | Haiku `decompose` | JSON subtasks | **164 Implemented** — gated on `none` / multi-specialist; not deleted |
-| `SkillMatcher` | E5 0.5 or `/slug` | queued O3 |
+| `SkillMatcher` | E5 shortlist, System One Choice + Noul (166), `/slug` in code | **166 Implemented** — 114 path on skip, abstain or off |
 | `CapabilityGate` / budget | lookup + USD | never |
 | `live_rerank` | DeBERTa as relevance | queued O5 |
 | Extractor `speech_act` | System One (163), Haiku fallback | **163 Implemented** |
