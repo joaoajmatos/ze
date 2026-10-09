@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from ze_memory.procedures.activation import ProcedureActivator
 from ze_memory.procedures.admission import ProcedureAdmissionService
-from ze_memory.procedures.discovery import ProcedureDiscovery, format_procedure_guidance, intersect_tools
+from ze_memory.procedures.discovery import (
+    ProcedureDiscovery,
+    format_procedure_guidance,
+    intersect_tools,
+)
 from ze_memory.procedures.errors import (
     BlockedProcedureError,
     IncompleteProcedureCandidateError,

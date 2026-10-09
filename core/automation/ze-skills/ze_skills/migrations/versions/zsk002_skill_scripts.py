@@ -45,9 +45,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS skill_scripts")
-    op.execute(
-        "ALTER TABLE skills DROP COLUMN IF EXISTS executable_approved_at"
-    )
+    op.execute("ALTER TABLE skills DROP COLUMN IF EXISTS executable_approved_at")
     op.execute("ALTER TABLE skills DROP COLUMN IF EXISTS executable_approved")
     op.execute(
         "ALTER TABLE skills RENAME COLUMN has_scripts TO has_unsupported_scripts"

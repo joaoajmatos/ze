@@ -268,7 +268,9 @@ class ProcedureAdmissionService:
         events = await self._store.list_events(identity_id=procedure_id)
         return {"identity": identity, "versions": versions, "events": events}
 
-    async def list_procedure_summaries(self) -> list[tuple[ProcedureIdentity, ProcedureVersion]]:
+    async def list_procedure_summaries(
+        self,
+    ) -> list[tuple[ProcedureIdentity, ProcedureVersion]]:
         latest: dict[UUID, ProcedureVersion] = {}
         for version in await self._store.list_all_versions():
             current = latest.get(version.procedure_id)
@@ -424,7 +426,9 @@ class ProcedureAdmissionService:
             identity=identity,
         )
 
-    async def disable_procedure(self, procedure_id: UUID, *, reason: str) -> ProcedureIdentity:
+    async def disable_procedure(
+        self, procedure_id: UUID, *, reason: str
+    ) -> ProcedureIdentity:
         identity = await self._store.get_identity(procedure_id)
         if identity is None:
             raise InvalidProcedureTransitionError("procedure identity not found")

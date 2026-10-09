@@ -27,7 +27,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 | Module | What it provides |
 |---|---|
-| `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `EvidenceRef`, `DriftingLoopMention` |
+| `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `DriftingLoopMention` |
 | `store.py` | `LoopStore` protocol, `PostgresLoopStore` |
 | `extraction.py` | Relevance-gated loop extraction from inflow text |
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
@@ -40,6 +40,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `bootstrap.py` | `build_worldstate_stack()` — DI wiring for `ze-api` |
 | `rest.py` | `GET/POST /api/v0/loops` handlers |
 | `migrations/` | `zw001` (open_loops table), `zw002` (drift columns) |
+
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
 
 ## Dependencies
 

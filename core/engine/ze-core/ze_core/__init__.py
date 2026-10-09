@@ -22,7 +22,6 @@ from ze_agents.errors import (
 )
 from ze_agents.interface.base import InputPreprocessor
 from ze_agents.interface.types import Action, Notification, ProcessedInput, RawInput
-from ze_core.proactive import ProactiveNotifier, ProactiveScheduler
 from ze_core.telemetry import (
     CostContext,
     CostRecord,
@@ -63,9 +62,6 @@ __all__ = [
     "RateLimitError",
     "Container",
     "DBPool",
-    # Proactive
-    "ProactiveNotifier",
-    "ProactiveScheduler",
     "Message",
     "SentMessage",
     "Thread",

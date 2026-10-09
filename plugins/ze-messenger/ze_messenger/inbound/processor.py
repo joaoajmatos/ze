@@ -9,9 +9,12 @@ from typing import TYPE_CHECKING, Any
 from ze_communication.types import ChannelType, InboundMessage
 from ze_agents.claims import Provenance
 from ze_logging import get_logger
-from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
-from ze_memory.store import MemoryStore
-from ze_plugin.contribution import TargetFace
+from ze_sdk.memory import (
+    MemoryStore,
+    PerceptionFactSubmit,
+    submit_perception_facts,
+)
+from ze_sdk.contribution import TargetFace
 
 if TYPE_CHECKING:
     from ze_agents.client import LLMClient

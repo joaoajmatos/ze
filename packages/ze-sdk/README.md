@@ -25,6 +25,7 @@ Every plugin's `pyproject.toml` lists `ze-sdk` as its sole Ze dependency. The SD
 | `types.py` | Shared SDK types |
 | `errors.py` | Plugin-facing error re-exports |
 | `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `PushLogStore` |
+| `contribution.py` | Contribution seam types, including `FeedbackKind`, `FeedbackRecord`, `FeedbackStore`, and `submit_feedback_record` |
 | `memory.py` | Memory types, `PostgresMemoryStore`, `SignalSource` re-export |
 | `channels.py` | Channel ABC and registry re-exports |
 | `onboarding.py` | Onboarding provider types |

@@ -155,9 +155,7 @@ async def test_submit_perception_facts_rejects_unlicensed_before_persist():
         source_function=SourceFunction.PERCEPTION,
         evidence=[],
     )
-    with patch(
-        "ze_memory.contribution.fact_to_contribution", return_value=mistagged
-    ):
+    with patch("ze_memory.contribution.fact_to_contribution", return_value=mistagged):
         with pytest.raises(UnlicensedClaimKindError):
             await submit_perception_facts(
                 store,
@@ -182,9 +180,7 @@ async def test_submit_perception_facts_mixed_license_rejects_before_second_persi
     bad = _make_fact(predicate="job", value="eng")
 
     def _to_contrib(fact, **kwargs):
-        kind = (
-            ClaimKind.INFERENCE if fact.predicate == "job" else ClaimKind.FACT
-        )
+        kind = ClaimKind.INFERENCE if fact.predicate == "job" else ClaimKind.FACT
         return Contribution(
             claim_kind=kind,
             provenance=kwargs["provenance"],

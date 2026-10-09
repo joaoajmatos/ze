@@ -81,9 +81,7 @@ def parse_skill_md(text: str) -> ParsedSkill:
     instructions = body.strip()
 
     raw_scripts = frontmatter.get("scripts")
-    has_scripts = bool(raw_scripts) or bool(
-        _SCRIPT_REF_RE.search(instructions)
-    )
+    has_scripts = bool(raw_scripts) or bool(_SCRIPT_REF_RE.search(instructions))
 
     return ParsedSkill(
         name=name.strip(),

@@ -9,7 +9,7 @@ from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
 from ze_collision.detect import submit_and_detect_collisions
-from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
+from ze_plugin.contribution import EvidenceRef
 
 from ze_worldstate import drift
 from ze_worldstate.contribution import loop_to_contribution
@@ -17,7 +17,6 @@ from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
-    EvidenceRef,
     LoopClaimKind,
     LoopProvenance,
     LoopState,
@@ -135,7 +134,7 @@ async def _link_evidence_and_entities(
     loop_store: LoopStore,
 ) -> None:
     for ref in evidence_refs:
-        await loop_store.link_evidence(loop_id, ref.evidence_type, ref.evidence_id)
+        await loop_store.link_evidence(loop_id, ref.kind, ref.id)
     for entity_id in entity_ids:
         await loop_store.link_entity(loop_id, entity_id)
 
@@ -293,10 +292,6 @@ async def propose_loop_candidates(
         confidence=_SUSPECTED_CONFIDENCE,
         state=LoopState.SUSPECTED,
     )
-    contribution_evidence = [
-        ContributionEvidenceRef(kind=ref.evidence_type, id=ref.evidence_id)
-        for ref in evidence_refs
-    ]
 
     async def _check_fact_exists(fact_id: UUID) -> bool:
         if memory_store is None:
@@ -312,7 +307,7 @@ async def propose_loop_candidates(
 
     created = await submit_and_detect_collisions(
         loop_to_contribution(
-            loop, evidence=contribution_evidence, entity_ids=entity_ids
+            loop, evidence=evidence_refs, entity_ids=entity_ids
         ),
         lambda: loop_store.create(loop),
         result_id=lambda c: c.id,

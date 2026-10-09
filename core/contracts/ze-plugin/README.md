@@ -27,6 +27,7 @@ Plugins self-register via `[project.entry-points."ze.plugins"]`. `bootstrap.py` 
 | `plugin.py` | `ZePlugin` ABC, `DataDomain` — container and graph extension seam |
 | `registry.py` | Plugin class registry (`get_plugin_registry`) |
 | `channels/` | `Channel` ABC, `ChannelRegistry`, handle and message types |
+| `contribution.py` | `Contribution` and `validate_and_submit`. Perception holds two claim-kind licenses: `FACT` and `FEEDBACK_RECORD` |
 | `signals.py` | `SignalSource` protocol for cross-plugin signal collection |
 | `integration.py` | `ZeIntegration` protocol for third-party credential classes |
 

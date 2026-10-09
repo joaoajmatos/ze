@@ -13,22 +13,25 @@ routing:
   threshold: 0.73
   gap_threshold: 0.02
 
-# Typed judgments (Jev via OpenRouter System One). Default off — 163/164 consume the client.
+# Typed judgments (Jev via OpenRouter System One). 163 speech-act is on; 164 routing stays off.
 system_one:
-  enabled: false
+  enabled: true
   model: typesafe/jev-1.13
   timeout_ms: 2000
   surfaces:
     speech_act:
-      enabled: false
-      choice_hold: null      # uncalibrated — set from make calibrate-speech-act
-      biography_hold: null   # uncalibrated — set from make calibrate-speech-act
+      enabled: true
+      # Calibrated 2026-10-09 (make calibrate-speech-act, 60 EN+PT rows): exact-act 0.967,
+      # fact precision 1.00 / recall 0.93, ECE 0.036. Flat region 0.5-0.9 x 0.5-0.75; mid-region chosen for margin.
+      choice_hold: 0.9
+      biography_hold: 0.7
     routing:
       enabled: false
+      # 2026-10-09 calibration found no safe choice_trust (research turns miss the k=4 shortlist); stays off.
       choice_trust: null            # uncalibrated — set from make calibrate-routing
       multi_specialist_hold: null   # uncalibrated — set from make calibrate-routing
       complexity_lookup_max: null   # uncalibrated — set from make calibrate-routing
-      shortlist_k: 4
+      shortlist_k: 5
     skills:
       enabled: false
       choice_trust: null        # uncalibrated — set from make calibrate-skills

@@ -8,7 +8,9 @@ from ze_core.telemetry.pricing import (
 def test_estimate_cost_for_listed_model():
     model = "anthropic/claude-sonnet-4-5"
     prompt_rate, completion_rate = MODEL_PRICING[model]
-    cost = estimate_cost_usd(model, prompt_tokens=1_000_000, completion_tokens=1_000_000)
+    cost = estimate_cost_usd(
+        model, prompt_tokens=1_000_000, completion_tokens=1_000_000
+    )
     assert cost == prompt_rate + completion_rate
 
 

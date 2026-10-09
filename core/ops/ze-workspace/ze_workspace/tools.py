@@ -15,6 +15,7 @@ from ze_agents.interrupt import (
     workspace_thread_id,
 )
 from ze_agents.tool import ToolAccess, tool
+from ze_agents.reversibility import ToolReversibility
 from ze_logging import get_logger
 
 from ze_workspace.errors import WorkspaceUnavailableError
@@ -305,6 +306,8 @@ async def workspace_read(path: str) -> str:
 @tool(
     access=ToolAccess.WRITE,
     description="Write a text file in the workspace. Path is relative to the workspace root.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="wrote a workspace file",
 )
 async def workspace_write(path: str, content: str) -> str:
     decision = await _decide(WorkspaceAction.WRITE)
@@ -325,6 +328,8 @@ async def workspace_write(path: str, content: str) -> str:
 @tool(
     access=ToolAccess.WRITE,
     description="Delete a file or directory in the workspace.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="deleted a workspace file",
 )
 async def workspace_delete(path: str) -> str:
     decision = await _decide(WorkspaceAction.DELETE)
@@ -344,6 +349,8 @@ async def workspace_delete(path: str) -> str:
 @tool(
     access=ToolAccess.WRITE,
     description="Run a shell command in the workspace. Command is a single string executed via bash -lc.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="ran a workspace command",
 )
 async def workspace_run(command: str) -> str:
     decision = await _decide(WorkspaceAction.RUN)
@@ -382,6 +389,8 @@ async def workspace_run(command: str) -> str:
         "Run an approved bundled skill script in the workspace. "
         "Requires the skill to be active with executable approval."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="ran a skill script",
 )
 async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     if _skill_store is None:
@@ -427,7 +436,11 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     if refusal is not None:
         return refusal
     client = await _ensure_client()
-    rel = filename if filename.startswith("scripts/") else f"scripts/{filename.split('/')[-1]}"
+    rel = (
+        filename
+        if filename.startswith("scripts/")
+        else f"scripts/{filename.split('/')[-1]}"
+    )
     await client.put(rel, script.content, overwrite=True)
     timeout = 120
     if _settings is not None:
@@ -448,6 +461,8 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
         "Opt-in: ingest a workspace file into Ze's memory. "
         "Does not delete the workspace file. Placing a file is not ingestion."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="ingested a workspace file",
 )
 async def ingest_workspace_file(path: str) -> str:
     decision = await _decide(WorkspaceAction.INGEST)
@@ -477,6 +492,8 @@ async def ingest_workspace_file(path: str) -> str:
         "Empty the workspace after confirmation. Stops an in-progress run, "
         "then removes all files."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="reset the workspace",
 )
 async def workspace_reset() -> str:
     decision = await _decide(WorkspaceAction.RESET)

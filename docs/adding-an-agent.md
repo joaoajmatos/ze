@@ -35,7 +35,7 @@ Tools are async functions decorated with `@tool`. The decorator registers them i
 global tool registry when the module is imported.
 
 ```python
-from ze_sdk import tool, ToolAccess
+from ze_sdk import tool, ToolAccess, ToolReversibility
 from ze_sdk.types import ToolCall
 
 @tool(access=ToolAccess.READ, description="Search the web for current information.")
@@ -51,8 +51,24 @@ async def web_search(query: str, client: SomeClient, max_results: int = 5) -> To
         is_draft=False,
     )
 
-@tool(access=ToolAccess.WRITE, description="Send an email via Gmail.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Send an email via Gmail.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="sent an email",
+)
 async def send_email(to: str, subject: str, body: str, client: GmailClient) -> ToolCall:
+    ...
+
+@tool(
+    access=ToolAccess.WRITE,
+    description="Set a reminder.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="cancel_reminder",
+    undo_note="Does not recall a notification that already showed",
+    effect_phrase="set a reminder",
+)
+async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> ToolCall:
     ...
 ```
 
@@ -62,6 +78,28 @@ async def send_email(to: str, subject: str, body: str, client: GmailClient) -> T
 |---|---|
 | `READ` | No external side effects. Safe in any mode including `draft_only`. |
 | `WRITE` | Creates, modifies, deletes, or sends anything external. When in doubt, use `WRITE`. |
+
+### `reversibility` — required on every `WRITE` tool
+
+Every `WRITE` tool declares whether Ze can undo it. A `WRITE` tool with no declaration
+fails at import with `AgentConfigError`. A `READ` tool must not declare any of these
+arguments.
+
+| Argument | Use |
+|---|---|
+| `reversibility` | `ToolReversibility.REVERSIBLE` when another registered `WRITE` tool undoes the action. `ToolReversibility.IRREVERSIBLE` otherwise. When in doubt, choose `IRREVERSIBLE`. |
+| `undo_tool` | The name of the tool that undoes this one. Required for `REVERSIBLE`. Not allowed for `IRREVERSIBLE`. |
+| `undo_note` | One line that says what the undo cannot restore. Required for `REVERSIBLE`. |
+| `effect_phrase` | What the tool did, in the past tense, for example `"set a reminder"`. Ze shows it when it explains why Retry is unavailable. Ze falls back to the tool name if you omit it, so always set it. |
+
+At startup Ze checks that every `undo_tool` names a registered `WRITE` tool and is not
+the tool itself.
+
+**Why it matters:** the user can press Retry on any reply. Retry regenerates a reply
+only when the turn ran no write tool. A turn that ran any `WRITE` tool, reversible or
+not, gets Retry unavailable, and the reason uses your `effect_phrase`. Ze does not undo
+actions on Retry in this version. The `REVERSIBLE` declaration records the undo for a
+later phase.
 
 **Draft mode suppression** — when the capability gate returns `DRAFT`, calling
 `self.call_tool("send_email", ctx, ...)` will **not** execute the tool. Instead,
@@ -323,7 +361,7 @@ Conventions:
 - [ ] Module path added to the package's `ZePlugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters are type-annotated
 - [ ] All tool calls go through `self.call_tool()` or `self.agentic_loop()`, never direct function calls
-- [ ] `tools.py` — all tools decorated with `@tool` (if applicable)
+- [ ] `tools.py` — all tools decorated with `@tool` (if applicable); every `WRITE` tool declares `reversibility` and `effect_phrase`
 - [ ] Progress keys added to `locales/en.yaml` (and `locales/pt.yaml`) in the plugin package
 - [ ] Tests written (including draft + blocked mode)
 - [ ] Optional: `bundled_skill_paths()` if the plugin ships a `SKILL.md`

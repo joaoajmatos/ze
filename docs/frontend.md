@@ -31,7 +31,8 @@ Example: finance overview at `/finance`.
 1. **`entities/transaction/`** — `TransactionRow`, `useTransactionsQuery` wrapping `@ze/client`
 2. **`widgets/finance-overview/`** — composes entity list + `FloatingButton` from `features/open-context-overlay`
 3. **`pages/finance/`** — `FinancePage` that renders `<FinanceOverview />`
-4. **`app/router/routes.ts`** — add route with `label`, `icon`, `showInMobileNav`, and lazy import
+4. **`shared/config/nav-routes.ts`** — add the route's `path`, `label`, `icon`, and `showInMobileNav`
+5. **`app/router/routes.ts`** — add the lazy import for that path to `lazyByPath`
 
 Each slice exposes a public API through `index.ts`. Internal `ui/`, `api/`, `model/` folders are private to the slice.
 
@@ -44,7 +45,7 @@ Example: goal detail view at `/goals/:goalId`.
 1. Add `entities/goal/ui/GoalDetail.tsx` and optionally `useGoalQuery(id)`
 2. Add `widgets/goal-detail/` composing the entity + any action features
 3. Add `pages/goal-detail/` thin page
-4. Register nested route in `app/router/routes.ts` (no nav meta needed if reached from list)
+4. Register the nested route in `app/router/index.tsx` (no nav entry needed if reached from a list)
 
 Do not put route-specific logic in entities — entities are reusable across screens.
 
@@ -58,11 +59,22 @@ Example: confirm recurring expense.
 
 Features import from `entities` and `shared` only — never from `widgets` or `pages`.
 
+## Reply feedback and Retry
+
+Three slices serve the thumbs up, thumbs down, and Retry controls on assistant replies:
+
+- **`entities/message-feedback/`** — `useMessageFeedbackQuery` (one batch call for the visible assistant ids) and `useSetMessageFeedbackMutation` (optimistic, reverts on error, sends a client UUID idempotency key).
+- **`features/reply-feedback/`** — `ReplyActions`: the thumb buttons with `aria-pressed` and accessible names.
+- **`features/retry-reply/`** — `RetryButton` and `useRetryReply`: send the `retry` WebSocket frame and handle `message_superseded` and the `error` codes. A disabled Retry shows its reason as visible text.
+
+`entities/message` cannot import a feature. `MessageBubble` therefore takes an `actions` slot, and `widgets/chat-workspace` mounts `ReplyActions` and `RetryButton` into it for stored assistant messages only. `widgets/trace-panel/ui/FeedbackSection.tsx` shows the rating history and the retry links. See [native-interface.md](native-interface.md#reply-feedback-and-retry).
+
 ## Shared abstractions
 
 - **`shared/ui/layout/ListPage`** — standard list screen shell (header, skeleton, error, empty, children)
 - **`shared/lib/query-keys.ts`** — TanStack Query key factory; extend when adding REST resources
-- **`app/router/routes.ts`** — single source for desktop + mobile nav metadata
+- **`shared/config/nav-routes.ts`** — single source for desktop + mobile nav metadata; `app/router/routes.ts` pairs each entry with its lazy page
+- **Plugin routes** — plugins add nav items, settings sections, and pages at runtime through `GET /api/v0/ui/manifest` (`entities/ui-manifest`, rendered by `pages/plugin-page`)
 
 ## API and types
 

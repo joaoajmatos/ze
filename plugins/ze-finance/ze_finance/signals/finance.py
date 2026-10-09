@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_logging import get_logger
-from ze_memory.types import Signal
+from ze_sdk.memory import Signal
 
 log = get_logger(__name__)
 

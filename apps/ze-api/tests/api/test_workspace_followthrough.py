@@ -124,9 +124,7 @@ def _settings(short_wait: float) -> SimpleNamespace:
     )
 
 
-def _wire(
-    monkeypatch, *, short_wait: float, run_seconds: float
-):
+def _wire(monkeypatch, *, short_wait: float, run_seconds: float):
     import time as _time
 
     store = FakeInMemoryStore()

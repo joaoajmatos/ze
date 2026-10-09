@@ -4,6 +4,7 @@ from email.mime.text import MIMEText
 
 from ze_agents.errors import ChannelNotFoundError, ChannelSendError
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_communication.channel import InboundChannel
 from ze_communication.registry import ChannelRegistry
 from ze_communication.types import ChannelType, Message
@@ -84,6 +85,8 @@ async def get_email(
     description="Create a Gmail draft without sending.",
     constraint_gate=True,
     constraint_describe=_outbound_draft_view,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="drafted an email",
 )
 async def draft_email(
     credentials: GoogleCredentials,
@@ -109,6 +112,8 @@ async def draft_email(
     description="Send an email or reply to a thread.",
     constraint_gate=True,
     constraint_describe=_outbound_message_view,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="sent an email",
 )
 async def send_email(
     channel_registry: ChannelRegistry,
@@ -163,7 +168,10 @@ async def send_email(
 
 
 @tool(
-    access=ToolAccess.WRITE, description="Archive a Gmail message (remove from inbox)."
+    access=ToolAccess.WRITE,
+    description="Archive a Gmail message (remove from inbox).",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="archived an email",
 )
 async def archive_email(
     credentials: GoogleCredentials,

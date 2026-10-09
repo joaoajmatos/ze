@@ -24,7 +24,8 @@ Imported by `ze-plugin`, `ze-core`, and `ze-onboarding`. Re-exported to plugin a
 |---|---|
 | `base_agent.py` | `BaseAgent` ABC with the agentic ReAct loop |
 | `registry.py` | `@agent` decorator and `AgentRegistry` |
-| `tool.py` | `@tool` decorator and `ToolAccess` |
+| `tool.py` | `@tool` decorator, `ToolAccess`, and `validate_tool_declarations()`. Every `WRITE` tool declares `reversibility`, with `undo_tool`, `undo_note`, and `effect_phrase` |
+| `reversibility.py` | `ToolReversibility` enum (`REVERSIBLE`, `IRREVERSIBLE`) |
 | `client.py` | `LLMClient` Protocol |
 | `db.py` | `DBPool` Protocol |
 | `settings.py` | `Settings` dataclass |

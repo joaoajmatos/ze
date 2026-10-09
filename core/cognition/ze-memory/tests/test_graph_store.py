@@ -107,7 +107,9 @@ class TestUpsertRelationship:
 
         sql = conn.fetchrow.call_args[0][0]
         assert "last_contact" in sql
-        assert "GREATEST(EXCLUDED.last_contact, memory_relationships.last_contact)" in sql
+        assert (
+            "GREATEST(EXCLUDED.last_contact, memory_relationships.last_contact)" in sql
+        )
 
     async def test_collaborates_with_reinforcement_also_advances_last_contact(self):
         pool, conn = _make_pool()
@@ -118,7 +120,9 @@ class TestUpsertRelationship:
         await store.upsert_relationship(rel)
 
         sql = conn.fetchrow.call_args[0][0]
-        assert "GREATEST(EXCLUDED.last_contact, memory_relationships.last_contact)" in sql
+        assert (
+            "GREATEST(EXCLUDED.last_contact, memory_relationships.last_contact)" in sql
+        )
 
 
 # ── list_relationships ────────────────────────────────────────────────────────

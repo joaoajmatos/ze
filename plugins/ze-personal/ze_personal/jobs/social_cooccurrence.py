@@ -11,10 +11,14 @@ from ze_logging import get_logger
 from ze_sdk.proactive import proactive_job
 
 from ze_agents.claims import ClaimKind, Provenance, Confidence, DecayProfile
-from ze_correlation.types import EvidenceRef, Hypothesis
-from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
-from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
-from ze_sdk.contribution import submit_and_detect_collisions
+from ze_correlation.types import HypothesisEvidence, Hypothesis
+from ze_sdk.contribution import (
+    Contribution,
+    EvidenceRef,
+    SourceFunction,
+    submit_and_detect_collisions,
+    TargetFace,
+)
 
 from ze_personal.social.candidates import CoOccurrenceCandidateSource
 from ze_personal.social.promotion import promote_hypothesis
@@ -35,13 +39,13 @@ def _evidence_id(event_id: str) -> UUID:
         return uuid5(NAMESPACE_URL, event_id)
 
 
-def _evidence_ref(event: CoOccurrenceEvidenceEvent) -> EvidenceRef:
+def _evidence_ref(event: CoOccurrenceEvidenceEvent) -> HypothesisEvidence:
     # `GraphCoOccurrenceCandidateSource` only ever emits "conversation" for
     # episode-sourced MENTIONS and "email"/"calendar" for signal-sourced ones
     # (candidates.py) — the mapping back to fact/episode/signal kind relies
     # on that invariant.
     kind = "episode" if event.source_type == "conversation" else "signal"
-    return EvidenceRef(
+    return HypothesisEvidence(
         kind=kind,
         id=_evidence_id(event.event_id),
         label=f"{event.source_type} on {event.occurred_at.date().isoformat()}",
@@ -163,7 +167,7 @@ class SocialCooccurrenceJob:
     async def _create_hypothesis(
         self,
         candidate: CoOccurrenceCandidate,
-        evidence_refs: list[EvidenceRef],
+        evidence_refs: list[HypothesisEvidence],
         confidence: float,
     ) -> Hypothesis:
         verb = "works on" if candidate.predicate == "WORKS_ON" else "collaborates with"
@@ -190,7 +194,7 @@ class SocialCooccurrenceJob:
             target_face=TargetFace.SELF,
             source_function=SourceFunction.REFLECTION,
             evidence=[
-                ContributionEvidenceRef(kind=e.kind, id=e.id) for e in evidence_refs
+                EvidenceRef(kind=e.kind, id=e.id) for e in evidence_refs
             ],
             entity_ids=hypothesis.entities,
         )

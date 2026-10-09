@@ -95,6 +95,18 @@ class ToolConfirmationRequired(AgentError):
 # ── Workflow ──────────────────────────────────────────────────────────────────
 
 
+class RetryError(ZeCoreError):
+    """Base class for reply-retry failures (Phase 165)."""
+
+
+class RetryFailedError(RetryError):
+    """A retry run did not produce a usable reply; the original reply is untouched."""
+
+
+class RetryRewindError(RetryError):
+    """The thread's checkpointed history cannot be rewound to before the reply."""
+
+
 class WorkflowError(ZeCoreError):
     """Base class for workflow errors."""
 
@@ -244,6 +256,18 @@ class DanglingEvidenceError(ContributionError):
 
 class ActionRecordPayloadError(ContributionError):
     """ACTION_RECORD payload missing or paired with the wrong claim kind."""
+
+
+class FeedbackRecordPayloadError(ContributionError):
+    """FEEDBACK_RECORD payload missing or paired with the wrong claim kind."""
+
+
+class FeedbackRecordValidationError(ContributionError):
+    """Feedback record fields failed validation before persist."""
+
+
+class FeedbackRecordIdempotencyConflictError(ContributionError):
+    """Reuse of a feedback idempotency key with a materially different draft."""
 
 
 class ActionRecordValidationError(ContributionError):

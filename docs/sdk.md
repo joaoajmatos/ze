@@ -16,6 +16,8 @@ from ze_sdk.types import AgentContext, AgentResult, ToolCall, GateDecision, Mode
 from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushLogStore, PushLogEntry
 from ze_sdk.channels import Channel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus
+from ze_sdk.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace, validate_and_submit, submit_and_detect_collisions
+from ze_sdk.api import require_api_key
 from ze_sdk.onboarding import OnboardingProvider, OnboardingStep, OnboardingField, OnboardingSeed, OnboardingResult
 from ze_sdk.errors import ZeError, AgentError, ToolBlockedError, AgentAbortedError, AgentConfigError, ChannelSendError
 ```
@@ -30,6 +32,7 @@ from ze_sdk.errors import ZeError, AgentError, ToolBlockedError, AgentAbortedErr
 | `agent` | Class decorator that registers a `BaseAgent` subclass in the global `AgentRegistry`. |
 | `tool` | Function decorator that registers an async function as a callable tool. |
 | `ToolAccess` | Enum — `READ` or `WRITE`. Controls draft-mode suppression. |
+| `ToolReversibility` | Enum — `REVERSIBLE` or `IRREVERSIBLE`. Required on every `WRITE` tool; see [Tool reversibility](#tool-reversibility). |
 | `BaseAgent` | Abstract base class all agents inherit. Provides `agentic_loop`, `call_tool`, `emit`, and `_build_system_prompt`. |
 | `get_logger` | Structured logger factory. Always call as `get_logger(__name__)`. |
 | `Settings` | Settings dataclass bridge. Agents receive this via DI — never construct it yourself. |
@@ -278,7 +281,40 @@ async def get_record(id: str, db: DBPool) -> str:
 - Tools must be `async def`.
 - All parameters the LLM cannot infer must be typed — they are injected via `deps` in `agentic_loop` or passed explicitly via `call_tool(**kwargs)`.
 - `ToolAccess.READ` — no external side effects. Runs in any gate state.
-- `ToolAccess.WRITE` — creates, modifies, deletes, or sends. Suppressed in DRAFT mode.
+- `ToolAccess.WRITE` — creates, modifies, deletes, or sends. Suppressed in DRAFT mode. Must declare `reversibility`.
+
+### Tool reversibility
+
+`@tool` takes four more arguments for `WRITE` tools:
+
+| Argument | Meaning |
+|---|---|
+| `reversibility` | `ToolReversibility.REVERSIBLE` or `ToolReversibility.IRREVERSIBLE`. Required for `WRITE`. There is no default. |
+| `undo_tool` | Name of the registered `WRITE` tool that undoes this one. Required for `REVERSIBLE`, not allowed for `IRREVERSIBLE`. |
+| `undo_note` | One line that says what the undo cannot restore. Required for `REVERSIBLE`. |
+| `effect_phrase` | Past-tense phrase such as `"set a reminder"`. Ze shows it in the Retry reason. |
+
+```python
+from ze_sdk import tool, ToolAccess, ToolReversibility
+
+@tool(
+    access=ToolAccess.WRITE,
+    description="Set a reminder.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="cancel_reminder",
+    undo_note="Does not recall a notification that already showed",
+    effect_phrase="set a reminder",
+)
+async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> dict: ...
+```
+
+A `WRITE` tool without `reversibility`, a `REVERSIBLE` tool without `undo_tool` or
+`undo_note`, an `IRREVERSIBLE` tool with either, or a `READ` tool with any of the four
+raises `AgentConfigError` when the module imports. At startup Ze checks that every
+`undo_tool` names a registered `WRITE` tool other than the tool itself.
+
+The declaration decides whether Retry is available. Retry is unavailable after any
+`WRITE` tool ran, so the declaration also shapes the reason text.
 
 ### Tool parameters
 
@@ -315,8 +351,19 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 | `agents()` | `-> list[type[BaseAgent]]` | Agents to register (rarely used — prefer `agent_module_paths`). |
 | `jobs()` | `-> list[Any]` | Proactive job instances to register. |
 | `onboarding()` | `-> OnboardingProvider \| None` | Onboarding provider for first-run setup. |
-| `migrations_path()` | `-> Path \| None` | `classmethod`. Path to the Alembic `versions/` directory. |
+| `migrations_path()` | `-> Path \| None` | `classmethod`. Path to the package's `migrations/` directory (with `env.py` and `versions/`). |
 | `agent_module_paths()` | `-> list[str]` | Module paths imported at bootstrap to trigger `@agent`/`@tool` registration. List tools module before agent module. |
+| `agent_deps(accumulated)` | `-> dict` | Extra types the plugin's agents need injected, merged into the bootstrap dependency map. |
+| `integration_types()` | `classmethod -> list[type]` | Integration credential types the plugin needs (for example `Trading212Client`). |
+| `signal_sources()` | `-> list[SignalSource]` | Signal sources fed into the admission and correlation pipeline. Duplicate `source_key` values raise `AgentConfigError`. |
+| `webhook_handlers()` | `-> list` | `WebhookHandler` instances for inbound webhooks. |
+| `channels()` | `-> list[Any]` | Communication channel instances, collected into the `ChannelRegistry`. |
+| `data_domains()` | `-> list[DataDomain]` | Export, import, and delete contract for the plugin's tables. |
+| `ingestion_fetchers()` / `ingestion_extractors()` | `-> list` | Custom content fetchers and extractors for `ze-ingestion`. |
+| `ui_contributions()` | `-> list` | Nav items, settings sections, and pages for ze-web, served at `GET /api/v0/ui/manifest`. |
+| `rest_routes()` | `-> list` | FastAPI routers the plugin owns. |
+| `rest_stores()` | `-> dict[str, Any]` | Named stores that REST routes can reach. |
+| `seed_domains()` | `-> list` | Dev seed fixtures for `ze-seed`. |
 | `bundled_skill_paths()` | `-> list[str]` | Filesystem paths to bundled `SKILL.md` files. Registered at startup as `source=bundled`, `status=active`. See [skills.md](skills.md#bundled-skills). |
 
 ### Graph-level hooks
@@ -342,10 +389,10 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 
 ```python
 def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=True) -> None:
-    scheduler.add_cron_job(my_job, cron="0 8 * * *")
+    scheduler.register(my_job, cron="0 8 * * *")
 ```
 
-Called by `ZeContainer` after startup. Use it to add cron jobs to the `ProactiveScheduler`.
+`ze-api` calls this hook while it registers proactive jobs (`compose.py`). `ProactiveScheduler.register(job, cron)` takes a job with a `job_id` and a `run()` method.
 
 ---
 
@@ -407,6 +454,9 @@ Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use
 | `Episode` | A summarised conversation episode. |
 | `Procedure` | A user-taught step-by-step procedure. |
 | `Entity` | A named entity extracted from conversations. |
+| `EntityRef` | A reference to an entity, used on `Signal`. |
+| `Signal` | A cross-plugin observation emitted by a `SignalSource`. |
+| `SignalSource` | Protocol a plugin implements to emit signals. |
 | `TaskState` | Current execution state for a running task/goal. |
 | `RetrievalRequest` | Parameters for a `MemoryStore.retrieve()` call. |
 | `MemoryStore` | Protocol for memory stores. |
@@ -417,6 +467,29 @@ Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use
 | `DreamRun` | Metadata for one nightly dream job execution. |
 | `ArtifactType` | Enum: `synthesized_insight`, `synthesized_procedure`, `hindsight_fact`, `plan_stress_test`, `schema_candidate`, `policy_candidate`. |
 | `ArtifactStatus` | Enum: `pending`, `promoted`, `rejected`, `needs_review`, `revised`, `rolled_back`. |
+
+---
+
+## `ze_sdk.contribution` — contribution seam
+
+Plugins that write facts, action records, or other claims go through the contribution seam. See `specs/arch/contribution-seam.md`.
+
+| Symbol | Description |
+|--------|-------------|
+| `Contribution` | A typed proposal for a write. |
+| `EvidenceRef` | A pointer to the evidence behind a contribution. |
+| `SourceFunction`, `TargetFace` | The producing function and the target store of a contribution. |
+| `validate_and_submit` | Validates a contribution and submits it. |
+| `submit_and_detect_collisions` | `validate_and_submit` plus collision logging. |
+| `ActionRecorder`, `ActionRecordStore`, `safe_record_action` | Record actions in the action ledger. |
+
+---
+
+## `ze_sdk.api` — REST helpers
+
+| Symbol | Description |
+|--------|-------------|
+| `require_api_key` | FastAPI dependency that checks the bearer token. Use it on plugin REST routes. |
 
 ---
 

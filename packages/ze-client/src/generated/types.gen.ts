@@ -322,6 +322,20 @@ export type CollisionLogEntrySchema = {
 };
 
 /**
+ * CompactionTraceResponse
+ */
+export type CompactionTraceResponse = {
+    /**
+     * Span Start
+     */
+    span_start: number;
+    /**
+     * Span End
+     */
+    span_end: number;
+};
+
+/**
  * ConductorLedgerEntryResponse
  */
 export type ConductorLedgerEntryResponse = {
@@ -1047,6 +1061,51 @@ export type FactReviewRequest = {
      * Actions
      */
     actions: Array<FactReviewAction>;
+};
+
+/**
+ * FeedbackHistoryItem
+ */
+export type FeedbackHistoryItem = {
+    /**
+     * Kind
+     */
+    kind: 'thumbs_up' | 'thumbs_down' | 'cleared' | 'retry_requested';
+    /**
+     * Occurred At
+     */
+    occurred_at: string;
+};
+
+/**
+ * FeedbackView
+ */
+export type FeedbackView = {
+    /**
+     * Message Id
+     */
+    message_id: string;
+    /**
+     * Current
+     */
+    current?: 'up' | 'down' | null;
+    /**
+     * History
+     */
+    history?: Array<FeedbackHistoryItem>;
+    retry: RetryEligibilityResponse;
+    /**
+     * Replaces
+     */
+    replaces?: string | null;
+    /**
+     * Replaced By
+     */
+    replaced_by?: string | null;
+    /**
+     * Trace Present
+     */
+    trace_present: boolean;
 };
 
 /**
@@ -1924,6 +1983,16 @@ export type MemoryGraphResponse = {
 };
 
 /**
+ * MessageFeedbackResponse
+ */
+export type MessageFeedbackResponse = {
+    /**
+     * Items
+     */
+    items: Array<FeedbackView>;
+};
+
+/**
  * MessageSchema
  */
 export type MessageSchema = {
@@ -1957,6 +2026,14 @@ export type MessageSchema = {
      * Created At
      */
     created_at: string;
+    /**
+     * Replaces
+     */
+    replaces?: string | null;
+    /**
+     * Replaced By
+     */
+    replaced_by?: string | null;
 };
 
 /**
@@ -2030,6 +2107,15 @@ export type MessageTraceResponse = {
      * Judgments
      */
     judgments?: Array<JudgmentTraceResponse>;
+    /**
+     * Effects Known
+     */
+    effects_known?: boolean;
+    compaction?: CompactionTraceResponse | null;
+    /**
+     * Resume Recap Applied
+     */
+    resume_recap_applied?: boolean;
 };
 
 /**
@@ -2596,6 +2682,24 @@ export type ReminderListItem = {
 };
 
 /**
+ * RetryEligibilityResponse
+ */
+export type RetryEligibilityResponse = {
+    /**
+     * Available
+     */
+    available: boolean;
+    /**
+     * Reason Code
+     */
+    reason_code?: string | null;
+    /**
+     * Reason Text
+     */
+    reason_text?: string | null;
+};
+
+/**
  * RoutingLogEntry
  */
 export type RoutingLogEntry = {
@@ -2727,6 +2831,20 @@ export type SessionSearchResult = {
      * Rank
      */
     rank: number;
+};
+
+/**
+ * SetMessageFeedbackRequest
+ */
+export type SetMessageFeedbackRequest = {
+    /**
+     * Rating
+     */
+    rating: 'up' | 'down' | 'none';
+    /**
+     * Idempotency Key
+     */
+    idempotency_key: string;
 };
 
 /**
@@ -3055,6 +3173,26 @@ export type ToolCallTraceResponse = {
      * Success
      */
     success: boolean;
+    /**
+     * Access
+     */
+    access?: 'read' | 'write' | 'delegate' | 'unknown';
+    /**
+     * Reversibility
+     */
+    reversibility?: 'reversible' | 'irreversible' | null;
+    /**
+     * Undo Tool
+     */
+    undo_tool?: string | null;
+    /**
+     * Gate
+     */
+    gate?: 'none' | 'approved' | 'denied' | 'expired';
+    /**
+     * Effect Phrase
+     */
+    effect_phrase?: string | null;
 };
 
 /**
@@ -3611,6 +3749,20 @@ export type WorkspaceFileTouchResponse = {
 };
 
 /**
+ * WorkspaceFileTraceResponse
+ */
+export type WorkspaceFileTraceResponse = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Op
+     */
+    op: 'read' | 'write' | 'delete' | 'ingest';
+};
+
+/**
  * WorkspaceIngestResponse
  */
 export type WorkspaceIngestResponse = {
@@ -3731,6 +3883,28 @@ export type WorkspaceRunResponse = {
 };
 
 /**
+ * WorkspaceRunTraceResponse
+ */
+export type WorkspaceRunTraceResponse = {
+    /**
+     * Command
+     */
+    command: string;
+    /**
+     * Success
+     */
+    success: boolean;
+    /**
+     * Status
+     */
+    status?: 'in_progress' | null;
+    /**
+     * Id
+     */
+    id?: string | null;
+};
+
+/**
  * WorkspaceStatusResponse
  */
 export type WorkspaceStatusResponse = {
@@ -3789,15 +3963,11 @@ export type WorkspaceUsageTraceResponse = {
     /**
      * Runs
      */
-    runs?: Array<{
-        [key: string]: unknown;
-    }>;
+    runs?: Array<WorkspaceRunTraceResponse>;
     /**
      * Files
      */
-    files?: Array<{
-        [key: string]: unknown;
-    }>;
+    files?: Array<WorkspaceFileTraceResponse>;
     /**
      * Script Ran
      */
@@ -5050,6 +5220,12 @@ export type ListMessagesData = {
          * Limit
          */
         limit?: number;
+        /**
+         * Include Superseded
+         *
+         * Include replies that a retry replaced (hidden by default)
+         */
+        include_superseded?: boolean;
     };
     url: '/api/v0/messages';
 };
@@ -5135,6 +5311,68 @@ export type GetMessageTraceResponses = {
 };
 
 export type GetMessageTraceResponse = GetMessageTraceResponses[keyof GetMessageTraceResponses];
+
+export type SetMessageFeedbackData = {
+    body: SetMessageFeedbackRequest;
+    path: {
+        /**
+         * Message Id
+         */
+        message_id: string;
+    };
+    query?: never;
+    url: '/api/v0/messages/{message_id}/feedback';
+};
+
+export type SetMessageFeedbackErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetMessageFeedbackError = SetMessageFeedbackErrors[keyof SetMessageFeedbackErrors];
+
+export type SetMessageFeedbackResponses = {
+    /**
+     * Successful Response
+     */
+    200: FeedbackView;
+};
+
+export type SetMessageFeedbackResponse = SetMessageFeedbackResponses[keyof SetMessageFeedbackResponses];
+
+export type GetMessageFeedbackData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Ids
+         *
+         * Assistant message IDs
+         */
+        ids?: Array<string>;
+    };
+    url: '/api/v0/messages/feedback';
+};
+
+export type GetMessageFeedbackErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GetMessageFeedbackError = GetMessageFeedbackErrors[keyof GetMessageFeedbackErrors];
+
+export type GetMessageFeedbackResponses = {
+    /**
+     * Successful Response
+     */
+    200: MessageFeedbackResponse;
+};
+
+export type GetMessageFeedbackResponse = GetMessageFeedbackResponses[keyof GetMessageFeedbackResponses];
 
 export type ListDataDomainsData = {
     body?: never;

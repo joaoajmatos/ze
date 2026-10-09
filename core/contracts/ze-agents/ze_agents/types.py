@@ -87,6 +87,7 @@ class ToolCall:
     success: bool
     error: str | None = None
     is_draft: bool = False
+    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
 
 
 @dataclass
@@ -151,6 +152,8 @@ class AgentContext:
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
     conductor_delegate_counts: dict[str, int] = field(default_factory=dict)
     conductor_delegate_total: int = 0
+    # Phase 165: a retry run regenerates text only; WRITE tools are refused.
+    retry_mode: bool = False
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

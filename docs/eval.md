@@ -231,6 +231,10 @@ other. Requires `DATABASE_URL` in your environment (same as Ze). Tables you can
 verify against: `user_reminders`, `workflows`, `goals`, `memory_facts`, `contacts`.
 Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify` blocks.
 
+### Retry scenarios
+
+`eval/scenarios/retry_text_only.yaml` and `eval/scenarios/retry_refused_after_write.yaml` (tag `retry`) cover Retry. The text-only turns must record no write call, so Retry stays available. The reminder and goal turns must record a write call, so Retry is unavailable. The scenario schema did not change.
+
 ### Multi-turn scenario
 
 Use `turns` instead of `prompt` to send a sequence of messages in the same session:

@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
+from ze_plugin.contribution import EvidenceRef
 from ze_worldstate import review
 from ze_worldstate.types import (
-    EvidenceRef,
     LoopClaimKind,
     LoopProvenance,
     LoopState,
@@ -52,7 +52,7 @@ async def test_close_loop_transitions_to_closed():
 async def test_drop_loop_computes_and_persists_fingerprint():
     loop_id = uuid4()
     loop_store = AsyncMock()
-    refs = [EvidenceRef(evidence_type="episode", evidence_id=uuid4())]
+    refs = [EvidenceRef(kind="episode", id=uuid4())]
     loop_store.list_evidence = AsyncMock(return_value=refs)
     dropped_loop = _loop(state=LoopState.DROPPED)
     loop_store.transition = AsyncMock(return_value=dropped_loop)

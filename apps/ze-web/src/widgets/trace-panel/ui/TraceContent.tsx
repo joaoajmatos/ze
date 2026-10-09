@@ -7,8 +7,10 @@ import {
   useTraceSocket,
   useTraceStore,
 } from "@/features/trace-state";
+import { useMessageFeedbackQuery } from "@/entities/message-feedback";
 import { useWsStore } from "@/shared/api";
 import { TraceEmptyState } from "./TraceEmptyState";
+import { FeedbackSection } from "./FeedbackSection";
 import { TraceEntry } from "./TraceEntry";
 
 const EMPTY_TRACE: Omit<WsTraceUpdateFrame, "type" | "message_id"> = {
@@ -42,6 +44,12 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
   const traces = bucket.traces;
   const pending = bucket.pending || thinking;
   const pendingTrace = bucket.pendingTrace;
+  const { byId: feedbackById } = useMessageFeedbackQuery(assistantMessageIds);
+  const tracedIds = new Set(traces.map((t) => t.message_id));
+  const untraced = assistantMessageIds.filter((id) => {
+    const f = feedbackById.get(id);
+    return f && !tracedIds.has(id) && (f.current || (f.history ?? []).length > 0);
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,7 +62,7 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
     ? { type: "trace_update", message_id: "", ...EMPTY_TRACE, thread_id: threadId, ...pendingTrace }
     : null;
 
-  const showEmpty = traces.length === 0 && !pending && !liveTrace && !hydrating;
+  const showEmpty = traces.length === 0 && untraced.length === 0 && !pending && !liveTrace && !hydrating;
 
   return (
     <div className="text-xs h-full">
@@ -68,7 +76,20 @@ export function TraceContent({ threadId, assistantMessageIds }: TraceContentProp
               trace={trace}
               index={i}
               defaultOpen={i === traces.length - 1 && !liveTrace}
+              feedback={feedbackById.get(trace.message_id)}
             />
+          ))}
+          {untraced.map((id) => (
+            <div
+              key={id}
+              data-testid="untraced-feedback"
+              className="border-b border-foreground/[0.06] last:border-b-0"
+            >
+              <p className="px-3 pt-2 text-[10px] text-smoke">
+                Reply <span className="font-mono">{id.slice(0, 8)}</span> · no trace recorded
+              </p>
+              <FeedbackSection feedback={feedbackById.get(id)} />
+            </div>
           ))}
           {liveTrace && (
             <TraceEntry

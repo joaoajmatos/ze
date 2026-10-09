@@ -238,7 +238,9 @@ class PostgresGraphStore:
         return expansion
 
 
-def _hydrate_confidence(stored_value: float, last_contact: datetime | None) -> Confidence:
+def _hydrate_confidence(
+    stored_value: float, last_contact: datetime | None
+) -> Confidence:
     """Read-time TIME_LINEAR decay from the persisted, undecayed base float."""
     if last_contact is None:
         return Confidence(value=stored_value, decay_profile=DecayProfile.TIME_LINEAR)

@@ -1,0 +1,649 @@
+{
+  "workflow": "speckit",
+  "specName": "Assistant Response Feedback and Retry",
+  "branch": "165-response-feedback-retry",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-09T01:48:13.501Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-09T01:54:35.261Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-09T01:55:33.180Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:07.286Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:07.425Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:07.561Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:07.699Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:07.843Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:08.005Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:08.152Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:08.291Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:09:08.431Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:15:04.490Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:15:04.623Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:51.753Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:52.428Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:52.577Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:52.817Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:53.029Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:53.202Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:21:53.386Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:29:14.689Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:29:15.157Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:29:15.516Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:29:15.874Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-09T02:32:00.887Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:32:08.205Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:32:08.560Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:32:46.048Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:32:46.370Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:32:46.754Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:24.201Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:24.342Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:24.482Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:24.625Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:24.764Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:24.930Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:39:59.228Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:41:10.544Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:41:10.929Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:41:11.243Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:41:11.607Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "Prism",
+      "at": "2026-10-09T02:41:12.046Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "Keel",
+      "at": "2026-10-09T02:50:27.883Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:28.605Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:28.738Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:28.880Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.018Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.156Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.326Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.483Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.651Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.788Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:29.923Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:30.066Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "Quill",
+      "at": "2026-10-09T07:38:30.197Z"
+    }
+  ],
+  "currentTask": "T055",
+  "task_summaries": {
+    "T003": {
+      "status": "DONE"
+    },
+    "T004": {
+      "status": "DONE"
+    },
+    "T005": {
+      "status": "DONE"
+    },
+    "T007": {
+      "status": "DONE"
+    },
+    "T008": {
+      "status": "DONE"
+    },
+    "T009": {
+      "status": "DONE"
+    },
+    "T010": {
+      "status": "DONE"
+    },
+    "T011": {
+      "status": "DONE"
+    },
+    "T012": {
+      "status": "DONE"
+    },
+    "T013": {
+      "status": "DONE"
+    },
+    "T014": {
+      "status": "DONE"
+    },
+    "T006": {
+      "status": "DONE"
+    },
+    "T015": {
+      "status": "DONE"
+    },
+    "T016": {
+      "status": "DONE"
+    },
+    "T017": {
+      "status": "DONE"
+    },
+    "T018": {
+      "status": "DONE"
+    },
+    "T019": {
+      "status": "DONE"
+    },
+    "T030": {
+      "status": "DONE"
+    },
+    "T020": {
+      "status": "DONE"
+    },
+    "T021": {
+      "status": "DONE"
+    },
+    "T022": {
+      "status": "DONE"
+    },
+    "T023": {
+      "status": "DONE"
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "entities/message-feedback query + optimistic mutation on real client types",
+      "files": [
+        "apps/ze-web/src/entities/message-feedback"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "ReplyActions thumbs (aria-pressed, 44px, reveal, error notice)",
+      "files": [
+        "apps/ze-web/src/features/reply-feedback"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "MessageBubble actions slot; chat-workspace mounts ReplyActions",
+      "files": [
+        "apps/ze-web/src/widgets/chat-workspace"
+      ]
+    },
+    "T027": {
+      "status": "DONE"
+    },
+    "T028": {
+      "status": "DONE"
+    },
+    "T029": {
+      "status": "DONE"
+    },
+    "T031": {
+      "status": "DONE"
+    },
+    "T032": {
+      "status": "DONE"
+    },
+    "T033": {
+      "status": "DONE"
+    },
+    "T034": {
+      "status": "DONE"
+    },
+    "T038": {
+      "status": "DONE"
+    },
+    "T039": {
+      "status": "DONE"
+    },
+    "T001": {
+      "status": "DONE"
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "useRetryReply: retry frame, message_superseded swap, error codes",
+      "files": [
+        "apps/ze-web/src/features/retry-reply"
+      ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "RetryButton in ReplyActions via widget slot; disabled when busy/disconnected/not latest",
+      "files": [
+        "apps/ze-web/src/features/retry-reply",
+        "apps/ze-web/src/widgets/chat-workspace"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "Disabled Retry reason via aria-describedby, focus/tap reveal; hidden for turn_pending",
+      "files": [
+        "apps/ze-web/src/features/retry-reply/ui"
+      ]
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "FeedbackSection in TraceEntry",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel"
+      ]
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "Untraced rated replies listed with no-trace marker",
+      "files": [
+        "apps/ze-web/src/widgets/trace-panel/ui/TraceContent.tsx"
+      ]
+    },
+    "T043": {
+      "status": "DONE"
+    },
+    "T002": {
+      "status": "DONE"
+    },
+    "T045": {
+      "status": "DONE"
+    },
+    "T046": {
+      "status": "DONE"
+    },
+    "T047": {
+      "status": "DONE"
+    },
+    "T048": {
+      "status": "DONE"
+    },
+    "T049": {
+      "status": "DONE"
+    },
+    "T050": {
+      "status": "DONE"
+    },
+    "T051": {
+      "status": "DONE"
+    },
+    "T052": {
+      "status": "DONE"
+    },
+    "T053": {
+      "status": "DONE"
+    },
+    "T054": {
+      "status": "DONE"
+    },
+    "T055": {
+      "status": "DONE"
+    }
+  }
+}

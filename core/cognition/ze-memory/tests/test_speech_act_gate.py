@@ -70,17 +70,29 @@ from ze_memory.types import SpeechAct
             ],
         ),
         (
-            {"speech_act": "drop", "family": "drop", "facts": [{"value": "tired today"}]},
+            {
+                "speech_act": "drop",
+                "family": "drop",
+                "facts": [{"value": "tired today"}],
+            },
             SpeechAct.DROP,
             [],
         ),
         (
-            {"speech_act": "clarify", "family": "drop", "facts": [{"value": "keep this in mind"}]},
+            {
+                "speech_act": "clarify",
+                "family": "drop",
+                "facts": [{"value": "keep this in mind"}],
+            },
             SpeechAct.CLARIFY,
             [],
         ),
         (
-            {"speech_act": "ingest", "family": "drop", "facts": [{"value": "this PDF"}]},
+            {
+                "speech_act": "ingest",
+                "family": "drop",
+                "facts": [{"value": "this PDF"}],
+            },
             SpeechAct.INGEST,
             [],
         ),

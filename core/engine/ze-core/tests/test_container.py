@@ -161,6 +161,24 @@ class TestValidateRegistry:
         agent(cls)
         _validate_registry(None)  # should not raise
 
+    def test_raises_on_undo_tool_that_is_not_registered(self):
+        from ze_agents.reversibility import ToolReversibility
+        from ze_agents.tool import tool as reg_tool
+        from ze_core.container import _validate_registry
+
+        @reg_tool(
+            access="write",
+            description="w",
+            reversibility=ToolReversibility.REVERSIBLE,
+            undo_tool="ghost",
+            undo_note="n",
+        )
+        async def do_thing() -> str: ...
+
+        agent(_agent_cls("x", "desc", tools=["do_thing"]))
+        with pytest.raises(AgentConfigError, match="undo_tool"):
+            _validate_registry(None)
+
     def test_raises_when_no_enabled_agents(self):
         from ze_core.container import _validate_registry
 

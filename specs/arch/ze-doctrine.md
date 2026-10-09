@@ -151,7 +151,7 @@ rule, not a convention — **may only produce the claim-kinds its function licen
 
 | Function | Writes to (spine face) | May produce | May **not** produce |
 |---|---|---|---|
-| Perception | world-model, active concerns | facts (with provenance) | inferences dressed as facts |
+| Perception | world-model, active concerns | facts (with provenance); feedback records (evidence about Ze's replies, Phase 165) | inferences dressed as facts |
 | Memory | custodian of all faces | retains & retrieves — asserts nothing new | novel claims (it stores, it does not conclude) |
 | Executive | active concerns | priorities, open-loop state | facts about the world |
 | Social cognition | user-model, world-model | identity/relationship claims, boundaries | — |
@@ -310,7 +310,7 @@ will resolve which projection to build first. This document does not pre-empt it
 - [x] **Confidence calibration** — resolved: `specs/arch/claim-topology.md` (ratified) shipped
   as Phase 111, giving `ClaimKind`/`Provenance`/`Confidence`/`decay()` one shared home
   (`core/contracts/ze-agents/ze_agents/claims.py`) and retrofitting all four producers — `OpenLoop`,
-  `Hypothesis`/`EvidenceRef` (fixing its previously-frozen confidence), `memory_facts`, and
+  `Hypothesis`/`HypothesisEvidence` (fixing its previously-frozen confidence), `memory_facts`, and
   `Signal`. What remains is not calibration but **ranking** — see the next item.
 - [x] **Cross-concern prioritization** — ranking shipped: `PriorityView` (Phases 123, 127)
   plus turn surfacing (Phase 132) consume a merged ranked view (including user-directed

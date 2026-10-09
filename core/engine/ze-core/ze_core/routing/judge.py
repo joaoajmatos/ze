@@ -20,7 +20,7 @@ log = get_logger(__name__)
 USER_CAP = 2000
 HISTORY_CAP = 1500
 CONTEXT_CAP = 600
-DEFAULT_SHORTLIST_K = 4
+DEFAULT_SHORTLIST_K = 5
 MIN_SHORTLIST = 2
 
 NONE_KEY = "none"
@@ -49,6 +49,20 @@ _COMPLEXITY_LEVELS = [
     "single_tool: one tool call or one clear action",
     "multi_hop: several dependent steps, tools or sources",
 ]
+# The wire Score is the expected level index (0 = first level), not a [0, 1] probability.
+COMPLEXITY_SCORE_MAX = float(len(_COMPLEXITY_LEVELS) - 1)
+
+
+def normalise_complexity_score(score: Any) -> float | None:
+    """Wire Score (0..COMPLEXITY_SCORE_MAX) → [0, 1]; ``None`` when malformed."""
+    if (
+        isinstance(score, bool)
+        or not isinstance(score, (int, float))
+        or math.isnan(score)
+        or not 0.0 <= score <= COMPLEXITY_SCORE_MAX
+    ):
+        return None
+    return score / COMPLEXITY_SCORE_MAX
 
 
 @dataclass(frozen=True)
@@ -182,13 +196,8 @@ def _complexity(
     answer = result.answers.get(Q_COMPLEXITY)
     if bar is None or answer is None or answer.type != "score":
         return None
-    score = answer.score
-    if (
-        isinstance(score, bool)
-        or not isinstance(score, (int, float))
-        or math.isnan(score)
-        or not 0.0 <= score <= 1.0
-    ):
+    score = normalise_complexity_score(answer.score)
+    if score is None:
         return None
     return "simple" if score <= bar else "complex"
 

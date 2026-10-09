@@ -146,7 +146,9 @@ async def test_compound_turn_does_not_set_final_response():
 async def test_existing_components_are_preserved():
     surfacer = _surfacer()
     existing = [{"type": "card", "body": "existing"}]
-    result = await surface_loops(_state(components=existing), _config(surfacer=surfacer))
+    result = await surface_loops(
+        _state(components=existing), _config(surfacer=surfacer)
+    )
     assert result["components"][0]["type"] == "card"
     assert result["components"][1]["type"] == "open_items"
 

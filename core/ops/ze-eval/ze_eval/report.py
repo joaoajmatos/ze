@@ -14,7 +14,9 @@ import json
 import sys
 from pathlib import Path
 
-_DEFAULT_RESULTS_DIR = Path(__file__).parent.parent.parent.parent.parent / "eval" / "results"
+_DEFAULT_RESULTS_DIR = (
+    Path(__file__).parent.parent.parent.parent.parent / "eval" / "results"
+)
 
 
 def _load_run(path: Path) -> dict:

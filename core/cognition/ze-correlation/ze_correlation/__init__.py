@@ -3,7 +3,7 @@ from ze_correlation.job import CorrelationJob
 from ze_correlation.jobs.hypothesis_decay import HypothesisDecayJob
 from ze_correlation.push import CorrelationPushConsumer
 from ze_correlation.store import PostgresHypothesisStore
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 __all__ = [
     "CorrelationEngine",
@@ -11,6 +11,6 @@ __all__ = [
     "CorrelationPushConsumer",
     "HypothesisDecayJob",
     "PostgresHypothesisStore",
-    "EvidenceRef",
+    "HypothesisEvidence",
     "Hypothesis",
 ]

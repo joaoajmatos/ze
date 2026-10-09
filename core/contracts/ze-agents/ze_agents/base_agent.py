@@ -62,6 +62,12 @@ _PROCEDURE_INVOKE_TOOL = "invoke_procedure"
 
 log = get_logger(__name__)
 
+RETRY_WRITE_REFUSAL = (
+    "This is a retry of an earlier reply, so tools that change things are "
+    "switched off. Do not claim the action happened. Say in words what you "
+    "would do and offer to do it as a normal request."
+)
+
 MEMORY_CONSTITUTION = (
     "## Memory constitution\n"
     "Use retrieved facts silently when they change the answer. "
@@ -268,7 +274,9 @@ class BaseAgent(ABC):
         skill_tool_names = getattr(ctx, "skill_tool_names", None)
         if skill_tool_names is not None:
             allowed = set(skill_tool_names)
-            visible = [n for n in visible if n in allowed or n == _PROCEDURE_INVOKE_TOOL]
+            visible = [
+                n for n in visible if n in allowed or n == _PROCEDURE_INVOKE_TOOL
+            ]
         procedure_tool_names = getattr(ctx, "procedure_tool_names", None)
         if procedure_tool_names is not None:
             allowed = set(procedure_tool_names)
@@ -319,6 +327,18 @@ class BaseAgent(ABC):
         stored_args = _lm_args if _lm_args is not None else kwargs
         workspace_thread_id.set(ctx.session_id)
 
+        if spec.access.value == "write" and ctx.retry_mode:
+            log.info("tool_blocked_retry", tool=name, agent=self.name)
+            return ToolCall(
+                tool_name=name,
+                args=stored_args,
+                result=RETRY_WRITE_REFUSAL,
+                duration_ms=0,
+                success=False,
+                error="blocked: retry runs cannot change anything",
+                gate="denied",
+            )
+
         if spec.access.value == "write" and ctx.gate_decision == GateDecision.DRAFT:
             log.info("tool_suppressed_draft", tool=name, agent=self.name)
             return ToolCall(
@@ -364,6 +384,7 @@ class BaseAgent(ABC):
         # ── Execute ───────────────────────────────────────────────────────────
         log.debug("tool_start", tool=name, agent=self.name, access=spec.access.value)
         start = time.monotonic()
+        confirmed = False
         try:
             result = await spec.func(**args)
         except ToolConfirmationRequired as exc:
@@ -396,11 +417,13 @@ class BaseAgent(ABC):
                     duration_ms=duration_ms,
                     success=False,
                     error="denied by user",
+                    gate="denied",
                 )
                 await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
                 return tool_call
             if edited is not None:
                 args = _apply_edited_content(name, args, str(edited))
+            confirmed = True
             confirmed_token = workspace_confirmed.set(True)
             try:
                 result = await spec.func(**args)
@@ -428,6 +451,7 @@ class BaseAgent(ABC):
             result=result,
             duration_ms=duration_ms,
             success=True,
+            gate="approved" if confirmed else "none",
         )
 
         # ── Hook: after ───────────────────────────────────────────────────────
@@ -598,7 +622,9 @@ class BaseAgent(ABC):
                         }
                     )
                 else:
-                    merged = _merge_deps(tc["name"], tc["arguments"], {**_deps, "ctx": ctx})
+                    merged = _merge_deps(
+                        tc["name"], tc["arguments"], {**_deps, "ctx": ctx}
+                    )
                     tool_call = await self.call_tool(
                         tc["name"],
                         ctx,
@@ -662,7 +688,9 @@ async def _dispatch_tool_end(
             log.warning("hook_error_on_tool_end", tool=name, error=str(exc))
 
 
-def _apply_edited_content(tool_name: str, args: dict[str, Any], edited: str) -> dict[str, Any]:
+def _apply_edited_content(
+    tool_name: str, args: dict[str, Any], edited: str
+) -> dict[str, Any]:
     updated = dict(args)
     if tool_name == "workspace_run":
         updated["command"] = edited

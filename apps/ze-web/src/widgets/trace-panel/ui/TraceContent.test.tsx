@@ -13,6 +13,11 @@ vi.mock("@/features/trace-state", async (importOriginal) => {
   };
 });
 
+const { feedbackById } = vi.hoisted(() => ({ feedbackById: new Map<string, unknown>() }));
+vi.mock("@/entities/message-feedback", () => ({
+  useMessageFeedbackQuery: () => ({ byId: feedbackById, isLoading: false }),
+}));
+
 function frame(
   threadId: string,
   messageId: string,
@@ -37,6 +42,30 @@ function frame(
     conductor_ledger: [{ agent: ledgerAgent, status: "running" }],
   };
 }
+
+describe("TraceContent untraced feedback", () => {
+  beforeEach(() => feedbackById.clear());
+
+  it("lists a rated reply with no trace, marked as such (US5-5)", () => {
+    useTraceStore.setState({
+      byThread: {
+        "thread-a": { traces: [], pending: false, pendingTrace: null, hydrating: false },
+      },
+    });
+    feedbackById.set("msg-old", {
+      message_id: "msg-old",
+      current: "down",
+      history: [{ kind: "thumbs_down", occurred_at: "2026-10-09T10:00:00Z" }],
+      retry: { available: false, reason_code: "trace_unavailable", reason_text: "x" },
+      replaces: null,
+      replaced_by: null,
+      trace_present: false,
+    });
+    render(<TraceContent threadId="thread-a" assistantMessageIds={["msg-old"]} />);
+    expect(screen.getByTestId("untraced-feedback")).toHaveTextContent(/no trace recorded/i);
+    expect(screen.getByTestId("feedback-current")).toHaveTextContent("Thumbs down");
+  });
+});
 
 describe("TraceContent active session", () => {
   beforeEach(() => {

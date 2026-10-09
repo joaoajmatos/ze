@@ -36,9 +36,7 @@ async def test_try_claim_first_call_returns_true_and_inserts():
 
 
 async def test_try_claim_second_call_same_key_returns_false_no_raise():
-    conn = _make_conn(
-        execute_side_effect=asyncpg.UniqueViolationError("duplicate key")
-    )
+    conn = _make_conn(execute_side_effect=asyncpg.UniqueViolationError("duplicate key"))
     store = PushLogStore(pool=_make_pool(conn))
 
     result = await store.try_claim("worldstate_loop_push", "loop-1", payload="drifting")

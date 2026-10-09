@@ -51,6 +51,8 @@ from ze_finance.plugin import FinancePlugin
 | `store.py` | `PortfolioStore`, `TransactionStore`, `CsvMappingStore` — Postgres-backed storage |
 | `types.py` | Domain types: `Asset`, `Account`, `Position`, `Transaction`, `SpendingSummary`, `CsvMapping` |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-finance plugin dependencies](../../docs/diagrams/plugins/ze-finance/dependencies.svg)

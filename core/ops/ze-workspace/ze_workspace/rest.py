@@ -76,7 +76,9 @@ async def get_status(store: WorkspaceStore, client: WorkspaceClient) -> dict:
         "bytes_used": bytes_used,
         "bytes_ceiling": bytes_ceiling,
         "busy": busy,
-        "last_reset_at": state.last_reset_at.isoformat() if state.last_reset_at else None,
+        "last_reset_at": state.last_reset_at.isoformat()
+        if state.last_reset_at
+        else None,
         "last_used_at": state.last_used_at.isoformat() if state.last_used_at else None,
     }
 
@@ -168,7 +170,9 @@ async def ingest_file(client: WorkspaceClient, pipeline: object, path: str) -> d
     )
     return {
         "ingestion_id": str(getattr(result, "ingestion_id", "")),
-        "content_type": getattr(getattr(result, "content_type", None), "value", "unknown"),
+        "content_type": getattr(
+            getattr(result, "content_type", None), "value", "unknown"
+        ),
         "summary": getattr(result, "summary", ""),
         "facts_count": getattr(result, "facts_count", 0),
         "tags": getattr(result, "tags", []) or [],

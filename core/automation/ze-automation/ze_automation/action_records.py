@@ -16,7 +16,9 @@ def configure_action_recorder(store: ActionRecordStore | None) -> None:
     _recorder = ActionRecorder(store) if store is not None else None
 
 
-def _lifecycle_from_success(success: bool) -> tuple[ActionLifecycle, ActionOutcome, str | None]:
+def _lifecycle_from_success(
+    success: bool,
+) -> tuple[ActionLifecycle, ActionOutcome, str | None]:
     if success:
         return ActionLifecycle.SUCCEEDED, ActionOutcome.SUCCESS, None
     return ActionLifecycle.FAILED, ActionOutcome.FAILURE, "trace_failed"
@@ -24,7 +26,10 @@ def _lifecycle_from_success(success: bool) -> tuple[ActionLifecycle, ActionOutco
 
 async def emit_goal_traces(traces: list[ExecutionTrace]) -> None:
     for trace in traces:
-        source_id = str(getattr(trace, "id", None) or f"{trace.goal_id}:{trace.milestone_id}:{trace.seq}")
+        source_id = str(
+            getattr(trace, "id", None)
+            or f"{trace.goal_id}:{trace.milestone_id}:{trace.seq}"
+        )
         lifecycle, outcome, failure_code = _lifecycle_from_success(bool(trace.success))
         await safe_record_action(
             _recorder,

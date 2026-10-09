@@ -16,7 +16,7 @@ from uuid import UUID
 from langchain_core.runnables import RunnableConfig
 
 from ze_agents.claims import Provenance
-from ze_plugin.contribution import EvidenceRef
+from ze_sdk.contribution import EvidenceRef
 from ze_sdk.memory import candidate_from_procedure, ProcedureSourceKind
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.model_resolution import resolve_model

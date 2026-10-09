@@ -85,7 +85,9 @@ def test_events_two_watchers_both_get_full_replay(app_and_client):
     """Edge Case: both MAY read the same handle — a thin proxy naturally
     supports this since each connection re-invokes client.watch_run()."""
     run_id = uuid4()
-    events = [JournalEventDTO(seq=0, type="exit", data="", exit_code=0, timed_out=False)]
+    events = [
+        JournalEventDTO(seq=0, type="exit", data="", exit_code=0, timed_out=False)
+    ]
     client = FakeClient(status=_status(), events=events)
     test_client = app_and_client(client)
 
@@ -121,7 +123,9 @@ def test_events_stream_redacts_denylisted_key_in_stdout_and_stderr(app_and_clien
 def test_events_stream_does_not_redact_exit_line(app_and_client):
     """exit events carry no free text — redact() must not be applied there."""
     run_id = uuid4()
-    events = [JournalEventDTO(seq=0, type="exit", data="", exit_code=1, timed_out=False)]
+    events = [
+        JournalEventDTO(seq=0, type="exit", data="", exit_code=1, timed_out=False)
+    ]
     client = FakeClient(status=_status(), events=events)
     test_client = app_and_client(client)
 

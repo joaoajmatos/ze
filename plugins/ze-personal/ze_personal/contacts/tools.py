@@ -5,6 +5,7 @@ from ze_sdk.channels import ChannelHandle, ChannelType
 from ze_personal.contacts.channel_store import ContactChannelStore
 from ze_logging import get_logger
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_agents.types import ToolCall
 
 log = get_logger(__name__)
@@ -53,6 +54,8 @@ async def get_contact_channels(
 @tool(
     access=ToolAccess.WRITE,
     description="Add or update a communication channel handle for a contact.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="changed a contact channel",
 )
 async def set_contact_channel(
     contact_id: str,

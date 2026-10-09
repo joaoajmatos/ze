@@ -26,9 +26,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        "ALTER TABLE correlation_hypothesis DROP COLUMN IF EXISTS promoted_at"
-    )
-    op.execute(
-        "ALTER TABLE correlation_hypothesis DROP COLUMN IF EXISTS confirmed"
-    )
+    op.execute("ALTER TABLE correlation_hypothesis DROP COLUMN IF EXISTS promoted_at")
+    op.execute("ALTER TABLE correlation_hypothesis DROP COLUMN IF EXISTS confirmed")

@@ -68,7 +68,13 @@ async def test_complete_is_forwarded_once() -> None:
         agent="companion",
         response="done",
         tool_calls=[
-            ToolCall(tool_name="search_email", args={}, result="ok", duration_ms=1, success=True)
+            ToolCall(
+                tool_name="search_email",
+                args={},
+                result="ok",
+                duration_ms=1,
+                success=True,
+            )
         ],
     )
     await complete_procedure_invocation(

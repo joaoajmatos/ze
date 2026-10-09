@@ -548,9 +548,7 @@ class GoalExecutor:
                 error=str(exc),
             )
 
-    async def _promote_learnings(
-        self, goal: Goal, learnings: list
-    ) -> None:
+    async def _promote_learnings(self, goal: Goal, learnings: list) -> None:
         if not learnings:
             return
         log.info(
@@ -568,9 +566,7 @@ class GoalExecutor:
         lines = []
         for item in items:
             label = (
-                "FACT"
-                if item.claim_kind is ClaimKind.FACT
-                else "INFERENCE (tentative)"
+                "FACT" if item.claim_kind is ClaimKind.FACT else "INFERENCE (tentative)"
             )
             lines.append(f"- [{label}] {item.content}")
         return "\n".join(lines)

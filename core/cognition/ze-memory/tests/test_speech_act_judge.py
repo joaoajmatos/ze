@@ -195,11 +195,20 @@ def test_rule_9_boundary_at_bar_persists():
 
 def test_bars_are_independent():
     cfg = SpeechActSurfaceConfig(enabled=True, choice_hold=0.9, biography_hold=0.2)
-    assert decide(make_result("fact", "preference", act_confidence=0.8), cfg).reason == "act_unsure"
+    assert (
+        decide(make_result("fact", "preference", act_confidence=0.8), cfg).reason
+        == "act_unsure"
+    )
     assert decide(make_result("fact", "preference", noul=0.3), cfg).kind == "persist"
     cfg = SpeechActSurfaceConfig(enabled=True, choice_hold=0.2, biography_hold=0.9)
-    assert decide(make_result("fact", "preference", act_confidence=0.3), cfg).kind == "persist"
-    assert decide(make_result("fact", "preference", noul=0.8), cfg).reason == "not_biography"
+    assert (
+        decide(make_result("fact", "preference", act_confidence=0.3), cfg).kind
+        == "persist"
+    )
+    assert (
+        decide(make_result("fact", "preference", noul=0.8), cfg).reason
+        == "not_biography"
+    )
 
 
 def _invalid(mutate):
@@ -217,7 +226,9 @@ def _invalid(mutate):
         lambda a: setattr(a["speech_act"], "confidence", None),
         lambda a: setattr(a["family"], "choice", None),
         lambda a: setattr(a["biography"], "noul", None),
-        lambda a: a.update(biography=SystemOneAnswer(type="choice", choice="x", confidence=0.9)),
+        lambda a: a.update(
+            biography=SystemOneAnswer(type="choice", choice="x", confidence=0.9)
+        ),
     ],
 )
 def test_rule_4_malformed_answer_is_skip_invalid_answer(mutate):

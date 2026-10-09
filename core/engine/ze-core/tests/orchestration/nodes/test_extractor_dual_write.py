@@ -43,7 +43,9 @@ async def test_extractor_duplicate_same_identity_is_skipped():
     store.write_episode = AsyncMock()
 
     async def extractor(_cfg, **_kwargs):
-        return FactAdmission(facts=[Fact(predicate="preference", value="dark mode")], path="haiku")
+        return FactAdmission(
+            facts=[Fact(predicate="preference", value="dark mode")], path="haiku"
+        )
 
     state = {
         "session_id": "s1",
@@ -72,10 +74,13 @@ async def test_extractor_may_write_a_different_identity():
     store.write_episode = AsyncMock()
 
     async def extractor(_cfg, **_kwargs):
-        return FactAdmission(facts=[
-            Fact(predicate="preference", value="dark mode"),
-            Fact(predicate="preference", value="aisle seats"),
-        ], path="haiku")
+        return FactAdmission(
+            facts=[
+                Fact(predicate="preference", value="dark mode"),
+                Fact(predicate="preference", value="aisle seats"),
+            ],
+            path="haiku",
+        )
 
     state = {
         "session_id": "s1",
@@ -105,7 +110,9 @@ async def test_failed_remember_is_not_a_second_remember_door():
     store.write_episode = AsyncMock()
 
     async def extractor(_cfg, **_kwargs):
-        return FactAdmission(facts=[Fact(predicate="preference", value="dark mode")], path="haiku")
+        return FactAdmission(
+            facts=[Fact(predicate="preference", value="dark mode")], path="haiku"
+        )
 
     state = {
         "session_id": "s1",

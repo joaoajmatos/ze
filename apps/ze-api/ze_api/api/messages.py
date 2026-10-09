@@ -24,7 +24,8 @@ router = APIRouter(tags=["messages"], dependencies=[Depends(require_api_key)])
     summary="Load message history",
     description=(
         "Returns messages after `since` (ISO 8601), oldest-first. Max 200. "
-        "Pass `thread_id` to load messages for a specific session."
+        "Pass `thread_id` to load messages for a specific session. Replies "
+        "replaced by a retry are hidden unless `include_superseded` is true."
     ),
 )
 async def list_messages(
@@ -35,15 +36,25 @@ async def list_messages(
         default=None, description="Filter by session thread ID"
     ),
     limit: int = Query(default=100, le=200),
+    include_superseded: bool = Query(
+        default=False,
+        description="Include replies that a retry replaced (hidden by default)",
+    ),
     store: MessageStore = Depends(get_message_store),
 ) -> list[MessageSchema]:
     if thread_id is not None:
-        messages = await store.list_by_thread(thread_id, limit)
+        messages = await store.list_by_thread(
+            thread_id, limit, include_superseded=include_superseded
+        )
     elif since is not None:
-        messages = await store.list_since(since, limit)
+        messages = await store.list_since(
+            since, limit, include_superseded=include_superseded
+        )
     else:
         since_default = datetime.fromisoformat("2000-01-01T00:00:00+00:00")
-        messages = await store.list_since(since_default, limit)
+        messages = await store.list_since(
+            since_default, limit, include_superseded=include_superseded
+        )
     return [MessageSchema.model_validate(m.__dict__) for m in messages]
 
 
@@ -65,6 +76,11 @@ def _trace_to_response(trace) -> MessageTraceResponse:
                 "result_snippet": t.result_snippet,
                 "duration_ms": t.duration_ms,
                 "success": t.success,
+                "access": t.access,
+                "reversibility": t.reversibility,
+                "undo_tool": t.undo_tool,
+                "gate": t.gate,
+                "effect_phrase": t.effect_phrase,
             }
             for t in trace.tool_calls
         ],
@@ -86,6 +102,16 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         conductor_hint=getattr(trace, "conductor_hint", None),
         conductor_ledger=list(getattr(trace, "conductor_ledger", None) or []),
         judgments=_judgments_to_response(getattr(trace, "judgments", None)),
+        effects_known=bool(getattr(trace, "effects_known", False)),
+        compaction=(
+            {
+                "span_start": trace.compaction.span_start,
+                "span_end": trace.compaction.span_end,
+            }
+            if getattr(trace, "compaction", None)
+            else None
+        ),
+        resume_recap_applied=bool(getattr(trace, "resume_recap_applied", False)),
     )
 
 

@@ -16,7 +16,7 @@ from ze_proactive.push_log_store import PushLogStore
 from ze_calendar.action_records import configure_action_recorder
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
-from ze_memory.action_records.store import ActionRecordStore
+from ze_sdk.contribution import ActionRecordStore
 
 if TYPE_CHECKING:
     from ze_google.auth import GoogleCredentials

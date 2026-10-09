@@ -20,6 +20,10 @@ class ThreadTurnLock:
             self._locks[thread_id] = lock
         return lock
 
+    def is_locked(self, thread_id: str) -> bool:
+        lock = self._locks.get(thread_id)
+        return lock is not None and lock.locked()
+
     @asynccontextmanager
     async def acquire(self, thread_id: str) -> AsyncIterator[None]:
         lock = self._lock_for(thread_id)

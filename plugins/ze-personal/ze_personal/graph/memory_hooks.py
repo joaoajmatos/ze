@@ -12,7 +12,7 @@ from uuid import UUID
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_memory.graph.predicates import WORKS_ON
 from ze_memory.graph.types import Relationship
-from ze_memory.types import Entity
+from ze_sdk.memory import Entity
 from ze_sdk.channels import ChannelHandle, ChannelType
 from ze_sdk.contribution import submit_and_detect_collisions
 
@@ -152,8 +152,12 @@ async def write_relationship_edge_via_seam(
     though it does not yet apply to Phase 128's (research.md Decision 5 —
     retrofitting that path is out of this phase's scope).
     """
-    from ze_plugin.contribution import SourceFunction, TargetFace
-    from ze_sdk.contribution import Contribution, submit_and_detect_collisions
+    from ze_sdk.contribution import (
+        Contribution,
+        SourceFunction,
+        submit_and_detect_collisions,
+        TargetFace,
+    )
 
     graph_store = getattr(memory_store, "graph_store", None)
     if graph_store is None:

@@ -13,8 +13,12 @@ class _FakeConn:
 
     async def fetch(self, query: str, *args):
         query = " ".join(query.split())
-        if query.startswith("SELECT DISTINCT thread_id, checkpoint_ns FROM checkpoints"):
-            seen = {(r["thread_id"], r["checkpoint_ns"]) for r in self._db["checkpoints"]}
+        if query.startswith(
+            "SELECT DISTINCT thread_id, checkpoint_ns FROM checkpoints"
+        ):
+            seen = {
+                (r["thread_id"], r["checkpoint_ns"]) for r in self._db["checkpoints"]
+            }
             return [{"thread_id": t, "checkpoint_ns": ns} for t, ns in seen]
         if query.startswith("SELECT checkpoint_id, checkpoint FROM checkpoints"):
             thread_id, checkpoint_ns = args
@@ -70,7 +74,8 @@ class _FakeConn:
         self._db["checkpoint_blobs"] = [
             r
             for r in self._db["checkpoint_blobs"]
-            if (r["thread_id"], r["checkpoint_ns"], r["channel"], r["version"]) not in to_delete
+            if (r["thread_id"], r["checkpoint_ns"], r["channel"], r["version"])
+            not in to_delete
         ]
 
     @asynccontextmanager
@@ -110,8 +115,18 @@ async def test_prune_keeps_most_recent_n_and_drops_rest():
             {"thread_id": "t1", "checkpoint_ns": "", "checkpoint_id": "0004"},
         ],
         "checkpoint_blobs": [
-            {"thread_id": "t1", "checkpoint_ns": "", "channel": "messages", "version": "1"},
-            {"thread_id": "t1", "checkpoint_ns": "", "channel": "messages", "version": "4"},
+            {
+                "thread_id": "t1",
+                "checkpoint_ns": "",
+                "channel": "messages",
+                "version": "1",
+            },
+            {
+                "thread_id": "t1",
+                "checkpoint_ns": "",
+                "channel": "messages",
+                "version": "4",
+            },
         ],
     }
     pool = _FakePool(db)

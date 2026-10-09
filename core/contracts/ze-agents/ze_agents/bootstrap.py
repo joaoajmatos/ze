@@ -44,8 +44,9 @@ def bootstrap_agents(
 
 
 def validate_registry() -> None:
-    from ze_agents.tool import registered_tools
+    from ze_agents.tool import registered_tools, validate_tool_declarations
 
+    validate_tool_declarations()
     tool_reg = registered_tools()
 
     for name, cls in get_registered_agents().items():

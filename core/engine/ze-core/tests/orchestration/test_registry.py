@@ -10,6 +10,7 @@ from ze_agents.registry import (
     get_enabled_agents,
     get_registered_agents,
 )
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
 from ze_agents.types import AgentContext, AgentResult
 
@@ -110,7 +111,11 @@ class TestToolNormalisation:
         async def first_tool() -> str:
             return "a"
 
-        @tool(access=ToolAccess.WRITE, description="Second tool")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="Second tool",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def second_tool() -> str:
             return "b"
 

@@ -4,11 +4,12 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_sdk.proactive import ProactiveNotifier
 from ze_calendar.action_records import emit_reminder_mutation
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
 from ze_automation.workflow.scheduler import WorkflowScheduler
-from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
+from ze_sdk.contribution import ActionLifecycle, ActionOutcome
 
 
 def _reminder_write_view(args: dict) -> dict:
@@ -27,6 +28,10 @@ def _reminder_write_view(args: dict) -> dict:
     description="Set a new reminder. fire_at must be an ISO-8601 UTC datetime string.",
     constraint_gate=True,
     constraint_describe=_reminder_write_view,
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="cancel_reminder",
+    undo_note="Does not recall a notification already shown",
+    effect_phrase="set a reminder",
 )
 async def set_reminder(
     store: ReminderStore,
@@ -87,6 +92,8 @@ async def list_reminders(store: ReminderStore) -> list:
     description="Cancel a pending reminder by its ID. Call list_reminders first to find the ID.",
     constraint_gate=True,
     constraint_describe=_reminder_write_view,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="cancelled a reminder",
 )
 async def cancel_reminder(
     store: ReminderStore, scheduler: WorkflowScheduler, reminder_id: str

@@ -4,9 +4,14 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_logging import get_logger
-from ze_memory.action_records.recorder import ActionRecorder, safe_record_action
-from ze_memory.action_records.store import ActionRecordStore
-from ze_memory.action_records.types import ActionContext, ActionLifecycle, ActionOutcome
+from ze_sdk.contribution import (
+    ActionContext,
+    ActionLifecycle,
+    ActionOutcome,
+    ActionRecorder,
+    ActionRecordStore,
+    safe_record_action,
+)
 
 log = get_logger(__name__)
 

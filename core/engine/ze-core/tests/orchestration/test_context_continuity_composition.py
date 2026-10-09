@@ -48,7 +48,10 @@ async def test_compaction_and_resume_recap_compose_on_same_turn():
     # write_memory appends this turn's exchange.
     big_content = "x" * 100_000
     prior_messages = [
-        {"role": "user" if i % 2 == 0 else "assistant", "content": big_content if i == 0 else f"m{i}"}
+        {
+            "role": "user" if i % 2 == 0 else "assistant",
+            "content": big_content if i == 0 else f"m{i}",
+        }
         for i in range(9)
     ]
 
@@ -85,7 +88,9 @@ async def test_compaction_and_resume_recap_compose_on_same_turn():
     write_state = {
         "session_id": "s1",
         "agent_context": agent_context,
-        "agent_result": AgentResult(agent="companion", response="Still open, I'll follow up."),
+        "agent_result": AgentResult(
+            agent="companion", response="Still open, I'll follow up."
+        ),
         "subtask_results": [],
         "messages": prior_messages,
         "input_modality": "text",
@@ -116,7 +121,10 @@ async def test_compaction_llm_failure_end_to_end_turn_still_completes():
     memory_store = _memory_store()
     big_content = "x" * 100_000
     prior_messages = [
-        {"role": "user" if i % 2 == 0 else "assistant", "content": big_content if i == 0 else f"m{i}"}
+        {
+            "role": "user" if i % 2 == 0 else "assistant",
+            "content": big_content if i == 0 else f"m{i}",
+        }
         for i in range(9)
     ]
     ctx = AgentContext(

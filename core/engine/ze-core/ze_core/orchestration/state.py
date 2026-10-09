@@ -47,6 +47,7 @@ class AgentState(TypedDict):
     approved_subtask_indexes: list[int]
     denied_subtask_indexes: list[int]
     pending_confirmation: bool
+    approved_agents: list[str]  # agents whose confirmation gate the user approved
 
     # ── Conversation history ───────────────────────────────────────────────
     messages: list[dict]

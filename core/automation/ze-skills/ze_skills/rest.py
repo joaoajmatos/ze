@@ -141,7 +141,9 @@ async def approve(
 ) -> dict:
     skill = await review.approve_skill(store, skill_id)
     if procedure_admission is not None:
-        await procedure_admission.submit_procedure_candidate(candidate_from_skill(skill))
+        await procedure_admission.submit_procedure_candidate(
+            candidate_from_skill(skill)
+        )
     return await _detail(store, skill)
 
 

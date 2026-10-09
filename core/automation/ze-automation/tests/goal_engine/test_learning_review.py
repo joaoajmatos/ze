@@ -68,9 +68,7 @@ async def test_reject_retracts():
     pool, conn = _pool()
     learning_id = uuid4()
     pending = _claim_row(id=learning_id)
-    retracted = _claim_row(
-        id=learning_id, status="retracted", retracted_at="now"
-    )
+    retracted = _claim_row(id=learning_id, status="retracted", retracted_at="now")
     conn.fetchrow = AsyncMock(side_effect=[pending, {"id": uuid4()}, retracted])
     conn.fetch = AsyncMock(side_effect=[[], []])
     store = PostgresGoalStore(pool)
@@ -84,9 +82,7 @@ async def test_correct_supersedes_and_creates_new_claim():
     new_id = uuid4()
     original = _claim_row(id=original_id)
     new_row = _claim_row(id=new_id, status="active", provenance="prompt_supplied")
-    conn.fetchrow = AsyncMock(
-        side_effect=[original, {"id": uuid4()}, new_row, new_row]
-    )
+    conn.fetchrow = AsyncMock(side_effect=[original, {"id": uuid4()}, new_row, new_row])
     conn.fetch = AsyncMock(side_effect=[[], []])
     store = PostgresGoalStore(pool)
     result = await store.review_learning(

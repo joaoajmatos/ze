@@ -130,6 +130,14 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
             decisions = [_compose_budget(d, False) for d in decisions]
             state_updates["budget_status"] = status
 
+    if config["configurable"].get("retry_mode"):
+        decisions = [
+            GateDecision.EXECUTE
+            if d in (GateDecision.AWAIT_CONFIRMATION, GateDecision.DRAFT)
+            else d
+            for d in decisions
+        ]
+
     is_parallel_compound = bool(envelope and envelope.is_compound and len(subtasks) > 1)
     if is_parallel_compound:
         state_updates["subtask_gate_decisions"] = [
@@ -144,6 +152,12 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
         return {"gate_decision": overall, **state_updates}
 
     decision = min(decisions, key=lambda d: _GATE_RANK.get(d, 0))
+    if config["configurable"].get("retry_mode") and decision in (
+        GateDecision.AWAIT_CONFIRMATION,
+        GateDecision.DRAFT,
+    ):
+        # A retry never opens a confirmation: WRITE tools are refused at dispatch.
+        decision = GateDecision.EXECUTE
     return {"gate_decision": decision, **state_updates}
 
 
@@ -208,6 +222,7 @@ async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
         memory=base_ctx.memory,
         contacts=base_ctx.contacts,
         persona=base_ctx.persona,
+        retry_mode=base_ctx.retry_mode,
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         identity_builder=config["configurable"].get("identity_builder"),
@@ -246,7 +261,13 @@ async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
             "pending_confirmation": False,
             "final_response": draft.response if draft else "",
         }
-    return {"pending_confirmation": False, "gate_decision": GateDecision.EXECUTE}
+    return {
+        "pending_confirmation": False,
+        "gate_decision": GateDecision.EXECUTE,
+        "approved_agents": _with_agent(
+            state, state["envelope"].primary_agent if state.get("envelope") else None
+        ),
+    }
 
 
 async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) -> dict:
@@ -280,6 +301,7 @@ async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) 
         approved = list(state.get("approved_subtask_indexes") or [])
         approved.append(int(item["index"]))
         updates["approved_subtask_indexes"] = approved
+        updates["approved_agents"] = _with_agent(state, item["agent"])
     else:
         denied = list(state.get("denied_subtask_indexes") or [])
         denied.append(int(item["index"]))
@@ -288,6 +310,13 @@ async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) 
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def _with_agent(state: dict, agent: str | None) -> list[str]:
+    approved = list(state.get("approved_agents") or [])
+    if agent and agent not in approved:
+        approved.append(agent)
+    return approved
 
 
 def _embed_fn(config: RunnableConfig) -> Any:
@@ -351,6 +380,7 @@ async def _execute_single(
         memory=base_ctx.memory,
         contacts=base_ctx.contacts,
         persona=base_ctx.persona,
+        retry_mode=base_ctx.retry_mode,
         model=subtask.model or None,
         messages=_build_messages(state, subtask.agent, base_ctx),
         reporter=reporter,
@@ -445,6 +475,7 @@ async def _execute_compound(
             memory=base_ctx.memory,
             contacts=base_ctx.contacts,
             persona=base_ctx.persona,
+            retry_mode=base_ctx.retry_mode,
             model=subtask.model or None,
             messages=_build_messages(state, subtask.agent, base_ctx),
             reporter=reporter,

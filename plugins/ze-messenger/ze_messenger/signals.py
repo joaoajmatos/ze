@@ -3,8 +3,7 @@ from uuid import uuid4
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_communication.types import InboundMessage
-from ze_memory.types import EntityRef, Signal
-from ze_plugin.signals import SignalSource
+from ze_sdk.memory import EntityRef, Signal, SignalSource
 
 
 class MessagingSignalSource(SignalSource):

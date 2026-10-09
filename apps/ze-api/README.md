@@ -78,13 +78,22 @@ Connect at `ws://<host>:8000/ws` with `Authorization: Bearer <ZE_API_KEY>` heade
 {"type": "message", "text": "yes", "thread_id": "<original-thread-id>"}
 ```
 
+**Send** (retry the latest reply; the server refuses it if a write ran):
+```json
+{"type": "retry", "message_id": "<uuid>", "thread_id": "<uuid>"}
+```
+
+A successful retry sends a `message` frame, then `message_superseded`. Errors carry a `code`.
+
 Full protocol reference: [docs/native-interface.md](../../docs/native-interface.md).
 
 ## REST endpoints
 
 | Route | Description |
 |---|---|
-| `GET /api/v0/messages` | Unread message list (WebSocket replay fallback) |
+| `GET /api/v0/messages` | Unread message list (WebSocket replay fallback). Hides retried replies unless `include_superseded=true` |
+| `PUT /api/v0/messages/{message_id}/feedback` | Rate an assistant reply (`up`, `down`, `none`) |
+| `GET /api/v0/messages/feedback` | Batch read of ratings and Retry eligibility |
 | `GET /api/v0/capabilities` | List capability overrides |
 | `PUT /api/v0/capabilities/{agent}/{intent}` | Update a capability mode |
 | `GET /api/v0/memory/facts` | Inspect stored facts |

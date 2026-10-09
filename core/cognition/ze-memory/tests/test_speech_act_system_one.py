@@ -25,7 +25,9 @@ _SETTINGS = {
 }
 
 
-def _configurable(result, complete_return='{"facts": [{"value": "prefers aisle seats"}]}'):
+def _configurable(
+    result, complete_return='{"facts": [{"value": "prefers aisle seats"}]}'
+):
     llm = AsyncMock()
     llm.complete = AsyncMock(return_value=complete_return)
     fake = FakeSystemOneClient(result)
@@ -52,7 +54,9 @@ async def test_non_fact_turns_write_nothing_and_make_no_generative_call(turn):
     llm.complete.assert_not_awaited()
 
 
-@pytest.mark.parametrize("turn", [t for t in PERSIST if t.family == "preference"], ids=lambda t: t.id)
+@pytest.mark.parametrize(
+    "turn", [t for t in PERSIST if t.family == "preference"], ids=lambda t: t.id
+)
 async def test_persist_uses_value_writer_with_system_one_family(turn):
     configurable, llm, _ = _configurable(turn.result())
     admission = await _gather(turn, configurable)
@@ -79,7 +83,9 @@ async def test_value_writer_family_and_act_keys_are_ignored():
 @pytest.mark.parametrize(
     "returned", ["not json", '{"facts": []}', '{"facts": [{"value": ""}]}']
 )
-async def test_value_writer_unusable_output_persists_nothing_without_second_call(returned):
+async def test_value_writer_unusable_output_persists_nothing_without_second_call(
+    returned,
+):
     turn = PERSIST[0]
     configurable, llm, _ = _configurable(turn.result(), returned)
     admission = await _gather(turn, configurable)
@@ -230,7 +236,11 @@ async def test_uncalibrated_surface_skips_client_and_warns(caplog):
     settings = {
         "system_one": {
             "surfaces": {
-                "speech_act": {"enabled": True, "choice_hold": None, "biography_hold": 0.7}
+                "speech_act": {
+                    "enabled": True,
+                    "choice_hold": None,
+                    "biography_hold": 0.7,
+                }
             }
         }
     }

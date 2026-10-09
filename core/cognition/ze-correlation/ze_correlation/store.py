@@ -7,7 +7,7 @@ from uuid import UUID
 from ze_logging import get_logger
 
 from ze_agents.claims import ClaimKind, Provenance
-from ze_correlation.types import EvidenceRef, Hypothesis
+from ze_correlation.types import HypothesisEvidence, Hypothesis
 
 log = get_logger(__name__)
 
@@ -141,7 +141,7 @@ class PostgresHypothesisStore:
     async def update_evidence(
         self,
         hypothesis_id: UUID,
-        evidence: list[EvidenceRef],
+        evidence: list[HypothesisEvidence],
         confidence: float,
     ) -> None:
         """Refresh an existing hypothesis's evidence/confidence in place.
@@ -204,8 +204,7 @@ class PostgresHypothesisStore:
         entity_strs = [str(e) for e in entity_ids]
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             rows = await conn.fetch(
-                "SELECT * FROM correlation_hypothesis"
-                " WHERE entities ?| $1::text[]",
+                "SELECT * FROM correlation_hypothesis WHERE entities ?| $1::text[]",
                 entity_strs,
             )
         return [_row_to_hypothesis(r) for r in rows]
@@ -218,7 +217,7 @@ class HypothesisNotFoundError(Exception):
 def _row_to_hypothesis(row: object) -> Hypothesis:
     evidence_raw = json.loads(row["evidence"])  # type: ignore[index]
     evidence = [
-        EvidenceRef(
+        HypothesisEvidence(
             kind=e["kind"],
             id=UUID(e["id"]),
             label=e["label"],

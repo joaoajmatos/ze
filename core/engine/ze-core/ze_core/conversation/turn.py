@@ -50,6 +50,7 @@ def make_graph_input(
         "approved_subtask_indexes": [],
         "denied_subtask_indexes": [],
         "pending_confirmation": False,
+        "approved_agents": [],
         "final_response": None,
         "error": None,
         "components": [],
@@ -282,3 +283,40 @@ async def resume_turn(
         error=final_state.get("error") if isinstance(final_state, dict) else None,
         response=extract_response(final_state) if isinstance(final_state, dict) else "",
     )
+
+
+async def invoke_retry_turn(
+    container: Container,
+    thread_id: str,
+    user_text: str,
+    *,
+    config_extra: dict | None = None,
+) -> TurnResult:
+    """Regenerate the latest reply for `user_text` with WRITE tools blocked.
+
+    Rewinds the thread's checkpointed history past the original exchange, runs the
+    graph in ``retry_mode``, and puts the history back if the run does not produce
+    a plain reply. The caller must hold the thread's turn lock.
+    """
+    from ze_agents.errors import RetryFailedError
+    from ze_core.conversation.rewind import restore_messages, rewind_last_exchange
+
+    extra = {**(config_extra or {}), "retry_mode": True}
+    config = container._build_config(thread_id, **extra)
+    original = await rewind_last_exchange(container.graph, config)
+    try:
+        result = await invoke_raw_turn(
+            container, thread_id, RawInput(text=user_text), config_extra=extra
+        )
+    except Exception as exc:
+        await restore_messages(container.graph, config, original)
+        raise RetryFailedError(str(exc)) from exc
+    if result.interrupted or result.error or not result.response:
+        await restore_messages(container.graph, config, original)
+        raise RetryFailedError(
+            result.error
+            or (
+                "retry paused for confirmation" if result.interrupted else "empty reply"
+            )
+        )
+    return result

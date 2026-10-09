@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChatMessageList, ChatInput, ConfirmBar } from "@/entities/message";
 import type { ChatAttachment } from "@/entities/message";
 import { placeWorkspaceFile } from "@/entities/workspace";
 import { reconnect, send } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";
 import { useSendNotice } from "@/features/send-context-notice";
+import { ReplyActions } from "@/features/reply-feedback";
+import { RetryButton, useRetryReply } from "@/features/retry-reply";
+import { useMessageFeedbackQuery } from "@/entities/message-feedback";
 import { BackgroundBeamsCanvas } from "@/shared/effects/background-beams";
 import { GlowingStars } from "@/shared/effects/glowing-stars";
 import { useChatWorkspace } from "../model/useChatWorkspace";
@@ -27,6 +30,7 @@ export function ChatWorkspace() {
     pendingConfirm,
     sendMessage,
     retry,
+    removeMessage,
     respondToConfirm,
   } = useChatWorkspace();
 
@@ -46,6 +50,39 @@ export function ChatWorkspace() {
         .filter((m) => m.role === "assistant" && m.id && m.id !== "__streaming__")
         .map((m) => String(m.id)),
     [messages],
+  );
+
+  const { byId: feedbackById } = useMessageFeedbackQuery(assistantMessageIds);
+  const latestAssistantId = assistantMessageIds.at(-1) ?? null;
+  const { retry: retryReply, retrying } = useRetryReply({
+    threadId,
+    onSuperseded: (messageId) => removeMessage(messageId),
+    onNotice: (text) => useSendNotice.getState().showNotice(text),
+  });
+
+  const renderActions = useCallback(
+    (message: { id: string; role: string }) => {
+      if (message.role !== "assistant" || message.id === "__streaming__") return null;
+      const id = String(message.id);
+      const feedback = feedbackById.get(id);
+      return (
+        <ReplyActions
+          messageId={id}
+          feedback={feedback}
+          retry={
+            <RetryButton
+              eligibility={feedback?.retry}
+              isLatest={id === latestAssistantId}
+              connected={isConnected}
+              busy={isThinking}
+              retrying={retrying}
+              onRetry={() => retryReply(id)}
+            />
+          }
+        />
+      );
+    },
+    [feedbackById, latestAssistantId, isConnected, isThinking, retrying, retryReply],
   );
 
   useEffect(() => {
@@ -131,6 +168,7 @@ export function ChatWorkspace() {
             streamingText={streamingText}
             deliveryFailed={deliveryFailed}
             onRetry={retry}
+            renderActions={renderActions}
           />
         </div>
       )}

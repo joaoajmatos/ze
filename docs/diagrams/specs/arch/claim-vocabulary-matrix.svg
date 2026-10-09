@@ -63,7 +63,7 @@
   <text x="470" y="242" fill="#8a8a8a" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">none (implicit)</text>
 
   <rect x="560" y="220" width="148" height="36" rx="4" fill="rgba(107,107,107,0.08)" stroke="rgba(10,10,10,0.12)" stroke-width="0.6"/>
-  <text x="634" y="242" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">EvidenceRef.origin</text>
+  <text x="634" y="242" fill="#6b6b6b" font-size="10" font-family="'Inter', sans-serif" text-anchor="middle">HypothesisEvidence.origin</text>
 
   <!-- Row 3: ze-memory / memory_facts -->
   <rect x="12" y="260" width="208" height="36" rx="4" fill="#ffffff" stroke="rgba(10,10,10,0.12)" stroke-width="0.8"/>

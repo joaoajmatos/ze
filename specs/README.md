@@ -211,8 +211,8 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 162 | [System One Client](phases/162-system-one-client/spec.md) | ✅ Implemented |
 | 163 | [Speech-Act System One](phases/163-speech-act-system-one/spec.md) | ✅ Implemented |
 | 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | ✅ Implemented |
+| 165 | [Assistant Response Feedback and Retry](phases/165-response-feedback-retry/spec.md) (split from [117](phases/117-web-hig-fixes/spec.md) US9) | ✅ Implemented |
 | 166 | [System One Skill Gating](phases/166-skill-suggestion-system-one/spec.md) | ✅ Implemented |
-| — | Assistant Response Feedback and Retry (split from [117](phases/117-web-hig-fixes/spec.md) US9: per-reply feedback, retry, store + endpoint) | 🔲 Stub — no spec yet |
 
 ## Ze Core specs (`core/`)
 

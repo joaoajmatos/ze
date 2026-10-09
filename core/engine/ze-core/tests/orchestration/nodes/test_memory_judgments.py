@@ -70,7 +70,10 @@ def _ok_result() -> SystemOneResult:
         latency_ms=5,
         answers={
             "speech_act": SystemOneAnswer(
-                type="choice", choice="fact", confidence=0.9, probabilities={"fact": 0.9}
+                type="choice",
+                choice="fact",
+                confidence=0.9,
+                probabilities={"fact": 0.9},
             ),
             "family": SystemOneAnswer(
                 type="choice",
@@ -88,7 +91,9 @@ _IDS = ("speech_act", "family", "biography")
 
 def _persist_admission(facts=None) -> FactAdmission:
     return FactAdmission(
-        facts=facts if facts is not None else [Fact(predicate="preference", value="aisle seats")],
+        facts=facts
+        if facts is not None
+        else [Fact(predicate="preference", value="aisle seats")],
         path="system_one",
         judgment=_ok_result(),
         question_ids=_IDS,

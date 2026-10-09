@@ -140,4 +140,4 @@ async def test_list_evidence():
     store = PostgresLoopStore(pool=pool)
     refs = await store.list_evidence(uuid4())
     assert len(refs) == 1
-    assert refs[0].evidence_type == "fact"
+    assert refs[0].kind == "fact"

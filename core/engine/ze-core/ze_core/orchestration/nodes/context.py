@@ -196,6 +196,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         persona=active_persona,
         timezone=tz,
     )
+    agent_context.retry_mode = bool(config["configurable"].get("retry_mode"))
     if recap is not None:
         agent_context.resume_recap = recap.render()
     note = await _open_priorities_note(prompt_for_ctx, config)

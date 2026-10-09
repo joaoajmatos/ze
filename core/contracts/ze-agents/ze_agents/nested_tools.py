@@ -48,6 +48,7 @@ def flatten_tool_calls(tool_calls: list[ToolCall]) -> list[ToolCall]:
                         duration_ms=int(item.get("duration_ms") or 0),
                         success=bool(item.get("success")),
                         error=item.get("error"),
+                        gate=str(item.get("gate") or "none"),
                     )
                 )
     return out

@@ -199,7 +199,11 @@ inference or suspicion until perception or the user corroborates it). Every cont
 hypotheses, and **perception facts** all route their writes through it, and its claim-kind license check is what makes
 "reflection may never emit a fact" a type-level guarantee rather than a convention. Conversation
 extraction and ingest `MemorySink` call `submit_perception_facts` (Phases 133–134). Companion
-`remember_fact` uses the same seam with `PROMPT_SUPPLIED` (Phase 140). What the
+`remember_fact` uses the same seam with `PROMPT_SUPPLIED` (Phase 140). Perception holds a second
+license, `FEEDBACK_RECORD` (Phase 165): the thumbs up, thumbs down, and Retry the person gives an
+assistant reply. These records are evidence about Ze's output, stored in `feedback_records` and
+linked to the reply's trace. They are not facts about the user, and nothing reads them back in v1.
+What the
 seam does *not* yet do is arbitrate *between* colliding contributions from different
 functions — Phase 126 logs when that happens but doesn't resolve it.
 
@@ -261,4 +265,5 @@ have since shipped:
    and is unresolved system-wide, per the doctrine's own open question.
 6. Perception, Action need **consumers, not more capability** — largely satisfied now that item
    1 has shipped. Perception's "sensors" (location/device/ambient) gap remains explicitly not
-   urgent. Action result-records on the seam shipped in Phases 135–136.
+   urgent. Action result-records on the seam shipped in Phases 135–136. Reply feedback now
+   labels Perception's judgments (Phase 165), but still has no consumer.

@@ -19,6 +19,8 @@ def message_to_dict(msg: Message) -> dict:
         "read": msg.read,
         "thread_id": msg.thread_id,
         "created_at": msg.created_at.isoformat() if msg.created_at else None,
+        "replaces": str(msg.replaces) if msg.replaces else None,
+        "replaced_by": str(msg.replaced_by) if msg.replaced_by else None,
     }
 
 

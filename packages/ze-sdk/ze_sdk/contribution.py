@@ -10,7 +10,16 @@ from ze_memory.action_records import (
     ActionRecordStore,
     AuthoritativeRef,
     CausalRef,
+    safe_record_action,
     submit_action_record,
+)
+from ze_memory.feedback_records import (
+    FeedbackKind,
+    FeedbackRecord,
+    FeedbackRecordDraft,
+    FeedbackStore,
+    feedback_contribution,
+    submit_feedback_record,
 )
 from ze_plugin.contribution import (
     Contribution,
@@ -32,9 +41,16 @@ __all__ = [
     "CausalRef",
     "Contribution",
     "EvidenceRef",
+    "FeedbackKind",
+    "FeedbackRecord",
+    "FeedbackRecordDraft",
+    "FeedbackStore",
     "SourceFunction",
     "TargetFace",
+    "feedback_contribution",
+    "safe_record_action",
     "submit_action_record",
+    "submit_feedback_record",
     "validate_and_submit",
     "submit_and_detect_collisions",
     "CollisionLogStore",

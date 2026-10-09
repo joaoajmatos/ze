@@ -24,6 +24,7 @@ from ze_agents.hooks import (
     clear_hooks,
     register_hook,
 )
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
 from ze_agents.types import AbortToken, AgentContext, AgentResult, ToolCall
 
@@ -83,7 +84,11 @@ class TestCallTool:
         assert tc.is_draft is False
 
     async def test_executes_write_tool_in_execute_mode(self):
-        @tool(access=ToolAccess.WRITE, description="Write something")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="Write something",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def my_write(x: str) -> str:
             return f"wrote:{x}"
 
@@ -94,7 +99,11 @@ class TestCallTool:
         assert tc.result == "wrote:data"
 
     async def test_write_tool_suppressed_in_draft_mode(self):
-        @tool(access=ToolAccess.WRITE, description="Write")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="Write",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def draft_write(x: str) -> str:
             return "should not run"
 
@@ -220,7 +229,11 @@ class TestCallToolHooks:
 
         register_hook(_H())
 
-        @tool(access=ToolAccess.WRITE, description="t")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="t",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def gated_write(x: str) -> str:
             return x
 
@@ -302,7 +315,11 @@ class TestCallToolHooks:
 
         register_hook(_H())
 
-        @tool(access=ToolAccess.WRITE, description="t")
+        @tool(
+            access=ToolAccess.WRITE,
+            description="t",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
         async def draft_write_tool(x: str) -> str:
             return x
 

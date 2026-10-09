@@ -38,6 +38,8 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 | `errors.py` | `WorkspaceError` and subtypes |
 | `bootstrap.py` | Container wiring helpers |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 `ze-agents`, `ze-logging`, `ze-data`, `httpx`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.

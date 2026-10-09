@@ -8,7 +8,7 @@ from typing import Any
 
 from ze_logging import get_logger
 from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
-from ze_plugin.contribution import EvidenceRef as ContributionEvidenceRef
+from ze_sdk.contribution import EvidenceRef
 
 from ze_correlation.types import Hypothesis
 from ze_personal.graph.memory_hooks import write_relationship_edge_via_seam
@@ -44,7 +44,7 @@ async def promote_hypothesis(
     target_type = "project" if is_project else "person"
 
     evidence = [
-        ContributionEvidenceRef(kind=e.kind, id=e.id) for e in hypothesis.evidence
+        EvidenceRef(kind=e.kind, id=e.id) for e in hypothesis.evidence
     ]
 
     await write_relationship_edge_via_seam(

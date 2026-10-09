@@ -17,6 +17,8 @@ def _make_message(**kwargs) -> Message:
         read=kwargs.get("read", False),
         created_at=kwargs.get("created_at", datetime.now(timezone.utc)),
         thread_id=kwargs.get("thread_id", None),
+        replaces=kwargs.get("replaces", None),
+        replaced_by=kwargs.get("replaced_by", None),
     )
 
 
@@ -52,6 +54,8 @@ def _make_row(msg: Message):
         "read": msg.read,
         "thread_id": msg.thread_id,
         "created_at": msg.created_at,
+        "replaces": msg.replaces,
+        "replaced_by": msg.replaced_by,
     }[key]
     return row
 
@@ -151,3 +155,108 @@ async def test_list_unread_excludes_read_messages():
     assert len(results) == 1
     sql = conn.fetch.call_args[0][0]
     assert "NOT read" in sql
+
+
+async def test_save_persists_replaces_link():
+    pool, conn = _make_pool_mock()
+    old_id = uuid4()
+    await PostgresMessageStore(pool=pool).save(_make_message(replaces=old_id))
+    args = conn.execute.call_args[0]
+    assert old_id in args
+    assert "replaces" in args[0]
+
+
+async def test_list_by_thread_hides_superseded_by_default():
+    pool, conn = _make_pool_mock(rows=[])
+    store = PostgresMessageStore(pool=pool)
+    await store.list_by_thread("t1")
+    sql, *params = conn.fetch.call_args[0]
+    assert "replaced_by IS NULL" in sql
+    assert params[-1] is False
+    await store.list_by_thread("t1", include_superseded=True)
+    assert conn.fetch.call_args[0][-1] is True
+
+
+async def test_list_since_and_unread_hide_superseded_by_default():
+    pool, conn = _make_pool_mock(rows=[])
+    store = PostgresMessageStore(pool=pool)
+    await store.list_since(datetime(2020, 1, 1, tzinfo=timezone.utc))
+    assert "replaced_by IS NULL" in conn.fetch.call_args[0][0]
+    assert conn.fetch.call_args[0][-1] is False
+    await store.list_unread("t1")
+    assert "replaced_by IS NULL" in conn.fetch.call_args[0][0]
+    await store.list_unread()
+    assert "replaced_by IS NULL" in conn.fetch.call_args[0][0]
+
+
+async def test_get_message_roundtrips_supersession_fields():
+    new_id = uuid4()
+    msg = _make_message(replaced_by=new_id)
+    pool, _ = _make_pool_mock(rows=[_make_row(msg)])
+    got = await PostgresMessageStore(pool=pool).get_message(msg.id)
+    assert got is not None
+    assert got.replaced_by == new_id
+
+
+async def test_get_message_missing_returns_none():
+    pool, _ = _make_pool_mock()
+    assert await PostgresMessageStore(pool=pool).get_message(uuid4()) is None
+
+
+async def test_latest_assistant_id_skips_superseded():
+    mid = uuid4()
+    row = MagicMock()
+    row.__getitem__ = lambda self, key: {"id": mid}[key]
+    pool, conn = _make_pool_mock(rows=[row])
+    assert await PostgresMessageStore(pool=pool).latest_assistant_id("t1") == mid
+    sql = conn.fetchrow.call_args[0][0]
+    assert "role = 'assistant'" in sql
+    assert "replaced_by IS NULL" in sql
+    assert "ORDER BY created_at DESC" in sql
+
+
+async def test_latest_assistant_id_none_for_empty_thread():
+    pool, _ = _make_pool_mock()
+    assert await PostgresMessageStore(pool=pool).latest_assistant_id("t1") is None
+
+
+async def test_mark_superseded_requires_replacement_to_exist():
+    pool, conn = _make_pool_mock()
+    conn.execute = AsyncMock(return_value="UPDATE 1")
+    old, new = uuid4(), uuid4()
+    assert await PostgresMessageStore(pool=pool).mark_superseded(old, new) is True
+    sql = conn.execute.call_args[0][0]
+    assert "replaced_by IS NULL" in sql
+    assert "EXISTS (SELECT 1 FROM messages WHERE id = $2)" in sql
+    assert conn.execute.call_args[0][1:] == (old, new)
+
+
+async def test_mark_superseded_false_when_nothing_updated():
+    pool, conn = _make_pool_mock()
+    conn.execute = AsyncMock(return_value="UPDATE 0")
+    assert (
+        await PostgresMessageStore(pool=pool).mark_superseded(uuid4(), uuid4()) is False
+    )
+
+
+async def test_get_messages_returns_map_and_skips_empty_query():
+    msg = _make_message()
+    pool, conn = _make_pool_mock(rows=[_make_row(msg)])
+    store = PostgresMessageStore(pool=pool)
+    got = await store.get_messages([msg.id])
+    assert got[msg.id].text == "Hello"
+    assert "ANY($1::uuid[])" in conn.fetch.call_args[0][0]
+    conn.fetch.reset_mock()
+    assert await store.get_messages([]) == {}
+    conn.fetch.assert_not_called()
+
+
+async def test_previous_user_message_joins_same_thread_before_reply():
+    user = _make_message(role="user", text="question")
+    pool, conn = _make_pool_mock(rows=[_make_row(user)])
+    got = await PostgresMessageStore(pool=pool).previous_user_message(uuid4())
+    assert got.text == "question"
+    sql = conn.fetchrow.call_args[0][0]
+    assert "u.role = 'user'" in sql
+    assert "u.created_at < a.created_at" in sql
+    assert "ORDER BY u.created_at DESC" in sql

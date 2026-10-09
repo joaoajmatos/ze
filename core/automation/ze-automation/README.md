@@ -36,6 +36,8 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 | `rest.py` | Workflow list/detail/execution/revision REST handlers |
 | `migrations/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025`/`zc026` (workflow execution + revisions) — continues the `ze-core` `zc` migration chain |
 
+Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
+
 ## Dependencies
 
 ![ze-automation package dependencies](../../docs/diagrams/core/automation/ze-automation/dependencies.svg)

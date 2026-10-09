@@ -42,6 +42,7 @@ hits AS (
     INNER JOIN sessions s ON s.id = m.thread_id
     CROSS JOIN q
     WHERE m.text IS NOT NULL
+      AND m.replaced_by IS NULL
       AND q.tsq IS NOT NULL
       AND q.tsq <> ''::tsquery
       AND to_tsvector('simple', m.text) @@ q.tsq
@@ -139,7 +140,7 @@ WITH hits AS (
         substring(m.text FROM 1 FOR 120) AS snippet
     FROM messages m
     INNER JOIN sessions s ON s.id = m.thread_id
-    WHERE m.text IS NOT NULL AND m.text ILIKE $1
+    WHERE m.text IS NOT NULL AND m.replaced_by IS NULL AND m.text ILIKE $1
 
     UNION ALL
 

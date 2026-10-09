@@ -5,6 +5,7 @@ import html as _html
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
+from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import GoalPlanError
 from ze_automation.goals.executor import GoalExecutor
 from ze_automation.goals.planner import GoalPlanner
@@ -20,6 +21,8 @@ log = get_logger(__name__)
 @tool(
     access=ToolAccess.WRITE,
     description="Redirect a running goal with new instructions. Ze will finish its current step and then replan the remaining milestones incorporating your direction.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="steered a goal",
 )
 async def steer_goal(executor: GoalExecutor, goal_id: str, instruction: str) -> str:
     try:
@@ -140,6 +143,10 @@ async def _check_convergence(
 @tool(
     access=ToolAccess.WRITE,
     description="Create a new goal and propose a milestone plan for user approval.",
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="abandon_goal",
+    undo_note="Abandoning the goal does not undo work already started",
+    effect_phrase="created a goal",
 )
 async def create_goal(
     store: GoalStore,
@@ -225,7 +232,12 @@ async def create_goal(
     }
 
 
-@tool(access=ToolAccess.WRITE, description="Pause an active goal by its ID.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Pause an active goal by its ID.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="paused a goal",
+)
 async def pause_goal(store: GoalStore, goal_id: str) -> dict:
     try:
         uid = UUID(goal_id)
@@ -241,6 +253,8 @@ async def pause_goal(store: GoalStore, goal_id: str) -> dict:
 @tool(
     access=ToolAccess.WRITE,
     description="Resume a paused goal by its ID and continue execution.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="resumed a goal",
 )
 async def resume_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> dict:
     try:
@@ -294,7 +308,12 @@ async def get_milestone_trace(
     return "\n".join(lines)
 
 
-@tool(access=ToolAccess.WRITE, description="Abandon a goal permanently by its ID.")
+@tool(
+    access=ToolAccess.WRITE,
+    description="Abandon a goal permanently by its ID.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="abandoned a goal",
+)
 async def abandon_goal(store: GoalStore, goal_id: str) -> dict:
     try:
         uid = UUID(goal_id)

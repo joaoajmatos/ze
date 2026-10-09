@@ -89,3 +89,18 @@ def test_assert_schema_ready_raises_when_heads_differ(monkeypatch):
         ze_migrate.assert_schema_ready("postgresql+psycopg2://test/test")
 
     assert engine.disposed is True
+
+
+def test_phase_165_revisions_join_the_discovered_chains():
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    cfg = ze_migrate._build_config("postgresql+psycopg2://test/test")
+    script = ScriptDirectory.from_config(cfg)
+    zc031 = script.get_revision("zc031")
+    zm024 = script.get_revision("zm024")
+    assert zc031.down_revision == "zc030"
+    assert zm024.down_revision == "zm023"
+    assert isinstance(cfg, Config)
+    heads = set(script.get_heads())
+    assert {"zc031", "zm024"} <= heads

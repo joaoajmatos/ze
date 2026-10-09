@@ -11,7 +11,7 @@ from ze_api.api.websocket.confirmation import handle_confirm
 from ze_api.api.websocket.goal_actions import handle_action
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.turns import handle_message
+from ze_api.api.websocket.turns import handle_message, handle_retry
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -132,7 +132,7 @@ async def websocket_endpoint(
                     continue
                 if not conn_mgr.try_set_busy(thread_id):
                     await conn_mgr.send_frame(
-                        {"type": "error", "detail": "busy"}, thread_id
+                        {"type": "error", "detail": "busy", "code": "busy"}, thread_id
                     )
                     continue
                 try:
@@ -194,6 +194,30 @@ async def websocket_endpoint(
             elif frame_type == "action":
                 await handle_action(ws, data, container, conn_mgr)
 
+            elif frame_type == "retry":
+                thread_id = data.get("thread_id") or ""
+                if not thread_id:
+                    await ws.send_json(
+                        {"type": "error", "detail": "thread_id required"}
+                    )
+                    continue
+                if not conn_mgr.try_set_busy(thread_id):
+                    await conn_mgr.send_frame(
+                        {"type": "error", "detail": "busy", "code": "busy"}, thread_id
+                    )
+                    continue
+                asyncio.create_task(
+                    _run_retry_task(
+                        data,
+                        container,
+                        msg_store,
+                        conn_mgr,
+                        thread_id,
+                        container.feedback_store,
+                        confirmation_store,
+                    )
+                )
+
             elif frame_type == "message":
                 thread_id = data.get("thread_id") or ""
                 if not thread_id:
@@ -203,7 +227,7 @@ async def websocket_endpoint(
                     continue
                 if not conn_mgr.try_set_busy(thread_id):
                     await conn_mgr.send_frame(
-                        {"type": "error", "detail": "busy"}, thread_id
+                        {"type": "error", "detail": "busy", "code": "busy"}, thread_id
                     )
                     continue
 
@@ -269,6 +293,39 @@ async def _run_message_task(
         log.exception("ws_message_task_error", thread_id=thread_id, error=str(exc))
         await conn_mgr.send_frame(
             {"type": "error", "detail": "Something went wrong."}, thread_id
+        )
+    finally:
+        conn_mgr.clear_busy(thread_id)
+
+
+async def _run_retry_task(
+    data: dict,
+    container: object,
+    msg_store: object,
+    conn_mgr: ConnectionManager,
+    thread_id: str,
+    feedback_store: object,
+    confirmation_store: object,
+) -> None:
+    try:
+        await handle_retry(
+            data,
+            container,
+            msg_store,
+            conn_mgr,
+            feedback_store=feedback_store,
+            confirmation_store=confirmation_store,
+        )
+    except Exception as exc:
+        log.exception("ws_retry_task_error", thread_id=thread_id, error=str(exc))
+        await conn_mgr.send_frame(
+            {
+                "type": "error",
+                "detail": "Retry failed. The original reply is unchanged.",
+                "code": "retry_failed",
+                "message_id": str(data.get("message_id") or ""),
+            },
+            thread_id,
         )
     finally:
         conn_mgr.clear_busy(thread_id)

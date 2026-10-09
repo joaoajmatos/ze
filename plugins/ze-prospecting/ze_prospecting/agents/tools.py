@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import Person, PersonSource
 from ze_agents.client import LLMClient
@@ -23,6 +24,8 @@ _DRAFT_SYSTEM = (
         "Call once per person found — deduplication is automatic. "
         "Set channel to 'email' or 'linkedin' based on what contact info was found."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="added a prospect",
 )
 async def add_prospect(
     name: str,
@@ -92,6 +95,8 @@ async def add_prospect(
 @tool(
     access=ToolAccess.WRITE,
     description="Draft a personalised outreach message for a prospect and save it.",
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="drafted outreach",
 )
 async def draft_outreach(
     name: str,
@@ -135,6 +140,8 @@ async def draft_outreach(
         "Record that the user sent a message to a prospect or received a reply. "
         "Call when the user explicitly mentions contacting someone or getting a response."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="logged an outreach event",
 )
 async def log_outreach_event(
     contact_name: str,

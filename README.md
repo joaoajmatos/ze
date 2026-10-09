@@ -24,21 +24,36 @@ An honest attempt at building a personal AI that does more than answer questions
 
 The objective: an assistant that holds context across weeks, works in the background, and connects things that happen in separate parts of your life — calendar, email, news, long-running projects. Not a chat window that resets. Something closer to Jarvis. That's the whole brief.
 
-It isn't there yet. But 110+ shipped phases in, the infrastructure is real and it's getting closer.
+It isn't there yet. But 165 shipped phases in, the infrastructure is real and it's getting closer.
 
 ---
 
 ## Where it is now
 
-Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-domain architecture. Routing uses local embeddings — zero LLM calls until an agent needs to act. All LLM traffic goes through OpenRouter. Graph state is checkpointed in Postgres and survives restarts.
+Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-domain architecture. By default, routing uses local embeddings (`intfloat/multilingual-e5-base`), so no LLM call happens until an agent needs to act. Two optional System One surfaces can refine routing and fact admission. All LLM traffic goes through OpenRouter. Graph state is checkpointed in Postgres and survives restarts.
 
-- **ze-web** — React SPA (Feature-Sliced Design); REST types and client generated from OpenAPI via `@ze/client`.
+- **ze-web** — React SPA (Feature-Sliced Design). `@ze/client` is generated from the OpenAPI spec. `@ze/ui` renders server-driven components, including charts.
+
+### One voice, many specialists
+
+Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own capability and confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
+
+### System One
+
+System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Two surfaces use it:
+
+- **Speech-act admission** decides whether a finished turn states a durable fact worth keeping.
+- **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
+
+Both are off by default and stay off until you calibrate them against labeled sets (`make calibrate-speech-act`, `make calibrate-routing`). When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 
 Hand Ze an objective and it decomposes into milestones, dispatches them to specialist agents on a schedule, pauses at verification gates with a progress narrative, replans on failure, and writes a retrospective when it finishes. Steer mid-flight by talking — no slash commands. Background sweep runs every 15 minutes regardless of whether you're online.
 
 Goals are the heavyweight, declared end of Ze's executive function. Most real commitments never get declared as a goal.
+
+The Priority page ranks drifting loops, stuck goals, and correlation hypotheses on one scale. You can reorder items by dragging them or by telling Ze ("that can wait"). Your overrides decay or stay pinned, and they feed the same ranking that decides what Ze mentions in conversation and what it pushes.
 
 ### Open loops
 
@@ -48,11 +63,17 @@ Most of what someone means to follow up on is smaller than a goal: a promise mad
 
 <sub>[Interactive version](docs/diagrams/root/open-loops.html)</sub>
 
-Goals and open loops are Ze's two hands of executive function today: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](specs/arch/ze-doctrine.md) and [cognitive architecture](docs/cognitive-architecture.md).
+Goals and open loops are Ze's two hands of executive function: one heavyweight and declared, one lightweight and ambient. Together they're the shipped first slice of what the doctrine calls **active concerns** — the fourth face of Ze's world-state, the model of you the rest of the system attaches to. See [the doctrine](specs/arch/ze-doctrine.md) and [cognitive architecture](docs/cognitive-architecture.md).
 
 ### Memory
 
-Facts and episodes extracted after each turn, consolidated nightly, profile synthesized weekly. Goal learnings promoted to long-term memory on completion. `pgvector` for retrieval.
+Ze extracts facts and episodes after each turn, consolidates them nightly, and synthesizes a profile weekly. `pgvector` handles retrieval. Several rules keep the store honest:
+
+- **Admission.** A keep/drop extractor decides what becomes a fact. Facts enter through typed contributions with provenance and confidence, and a constraint check can veto a write.
+- **Say it, and Ze remembers it.** You can tell companion to remember or forget something. Ze says it remembered or forgot something only after the write succeeds.
+- **Read contract.** Facts you reviewed are always in context. Ze shows the origin, confidence, and age of each fact to the model, and it uses facts silently instead of reciting them.
+- **Evidence-backed learning.** Ze logs what its agents did in an append-only action ledger. Goal learnings cite that evidence, and Ze promotes them to long-term memory on completion.
+- **Procedures.** Ze proposes a procedure when it detects a reusable multi-step pattern. The proposal goes through admission and validation before it becomes available. Companion can then invoke it as advisory guidance. A procedure never grants new tool access.
 
 ### Dreaming
 
@@ -82,7 +103,7 @@ Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insig
 
 ### Agents
 
-Research, companion, calendar, messenger, reminders, workflow, goals, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`; tool access is gated per-agent.
+Thirteen agents: research, companion, calendar, messenger, reminders, workflow, goals, loops, priority, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`; tool access is gated per agent. Agents can also use imported Agent Skills (`SKILL.md`), which you review before they take effect, and a chat-first workspace: an isolated computer with files and a shell, reached through chat.
 
 <details>
 <summary>Agent reference</summary>
@@ -96,6 +117,8 @@ Research, companion, calendar, messenger, reminders, workflow, goals, prospectin
 | `reminders` | NL reminders + proactive push | Autonomous |
 | `workflow` | Recurring multi-step tasks | Read auto · manage confirm |
 | `goals` | Multi-week autonomous objectives | Read auto · writes confirm |
+| `loops` | List, close, or drop open loops | Autonomous |
+| `priority` | Reorder what Ze treats as most important | Writes confirm |
 | `prospecting` | Browser-sidecar research + outreach | Autonomous |
 | `news` | Personalized RSS headlines + search | Autonomous |
 | `ingestion` | URL / PDF / video / audio / text → memory | Autonomous |
@@ -115,7 +138,9 @@ Research, companion, calendar, messenger, reminders, workflow, goals, prospectin
 | `signal_sources()` | Domain events fed into the correlation pipeline |
 | `data_domains()` | Export / import / delete contract for every table the plugin owns |
 | `memory_policies()` | Per-agent retrieval strategy from the memory graph |
-| `channels()` | Outbound communication channels (email, etc.) |
+| `channels()` | Communication channels (email, etc.) |
+| `jobs()` | Proactive background jobs |
+| `bundled_skill_paths()` | Agent Skills that ship with the plugin |
 | `ui_contributions()` | Nav items, settings sections, plugin pages in ze-web |
 | `rest_routes()` | Plugin-owned REST routers under `/api/v0/` |
 
@@ -125,11 +150,14 @@ The hooks compose. The finance plugin registers a `TransactionExtractor` so that
 
 ## Where it's going
 
-Executive function now has two hands — goals and open loops — but nothing yet ranks what deserves attention across both, plus the correlation engine's hypotheses, against one shared attention budget. That cross-concern prioritization is the near-term target (`specs/arch/attention-arbitration.md`).
+The attention work is in place: goals, open loops, and hypotheses share one ranking and one push budget. The next step is to make the mind earn more trust and need less supervision.
 
-Concretely, the goal engine still needs to carry a full personal project across weeks with minimal intervention — research, plan, execute, verify, iterate, report.
+- **Calibrated System One.** Both surfaces ship off. The labeled sets and calibration runs exist, but nobody has set the bars yet, so Ze still routes and admits facts with E5 and Haiku by default.
+- **Longer unattended work.** The goal engine still needs to carry a full personal project across weeks with minimal intervention: research, plan, execute, verify, iterate, report.
+- **A richer social model.** Projects and people are now graph entities with decaying last-contact, and co-occurrence inference proposes who works on what. Contacts are still closer to a directory than a relationship model.
+- **More signal coverage** as more domain plugins land.
 
-Beyond that: a first-class model of people and projects as evolving states (contacts today are a directory, not a relationship model), one calibrated confidence scale across the system's several independent decay schemes, and deeper signal coverage as more domain plugins land.
+Design specs for upcoming phases live in [`specs/`](specs/). The doctrine in [`specs/arch/ze-doctrine.md`](specs/arch/ze-doctrine.md) sets the direction.
 
 ---
 
@@ -141,6 +169,8 @@ Every turn runs through a LangGraph graph checkpointed in Postgres.
 
 <sub>[Interactive version](docs/diagrams/root/graph-flow.html)</sub>
 
+The diagram shows the main path. The full graph also runs `decompose` for independent compound requests and `match_skills` after `fetch_context`. Partial `trace_update` frames stream to the trace panel as each node finishes, and tokens stream as the agent writes them. You can rate each reply with a thumbs up or thumbs down. Ze stores the rating as evidence next to the reply's trace and does not use it yet. Retry regenerates the latest reply, but only when the turn ran no write tool.
+
 See [docs/architecture.md](docs/architecture.md) for the full flow and node-by-node detail.
 
 ---
@@ -150,22 +180,28 @@ See [docs/architecture.md](docs/architecture.md) for the full flow and node-by-n
 ```
 apps/           ze-api · ze-web
 plugins/        personal · messenger · calendar · news · prospecting · finance
-core/           ze-core · ze-agents · ze-automation · ze-communication · ze-plugin
-                ze-worldstate · ze-memory · ze-proactive · ze-correlation · ze-data
-                ze-ingestion · ze-onboarding · ze-seed · ze-browser · ze-notifications
-                ze-components · ze-logging · …
+core/           kernel/       ze-logging · ze-data · ze-components
+                contracts/    ze-agents · ze-communication · ze-plugin · ze-proactive
+                engine/       ze-core
+                seam/         ze-collision
+                cognition/    ze-memory · ze-correlation · ze-worldstate
+                automation/   ze-automation · ze-skills
+                arbitration/  ze-priority
+                ops/          ze-workspace · ze-onboarding · ze-ingestion · ze-seed · ze-eval
 packages/       ze-sdk · ze-client · ze-ui
-integrations/   ze-google (GmailChannel) · ze-trading212 · ze-yt
+integrations/   ze-google · ze-browser · ze-notifications · ze-trading212 · ze-yt
+sidecar/        browser (Playwright) · workspace (isolated computer)
 specs/          one spec per phase, written before the code
 ```
 
 | Layer | Tech |
 |---|---|
 | Runtime | Python 3.12 · FastAPI · LangGraph · AsyncPostgresSaver |
-| Client | React · Vite · TypeScript · Tailwind |
-| LLM | OpenRouter · local embeddings (multilingual MiniLM) |
-| Data | PostgreSQL 16 + pgvector |
+| Client | React · Vite · TypeScript · Tailwind · shadcn/ui |
+| LLM | OpenRouter · local embeddings (`intfloat/multilingual-e5-base`) · optional System One judgments |
+| Data | PostgreSQL 16 + pgvector · Alembic raw-SQL migrations |
 | Push | ntfy (offline) · in-app notification center · WebSocket `/ws` |
+| Sidecars | Playwright browser · isolated workspace (Docker) |
 
 ---
 
@@ -191,11 +227,14 @@ Google Calendar + Gmail: `make google-auth` · Config: [docs/configuration.md](d
 ```bash
 make test              # ze-api (fast)
 make test-<name>       # any package — docs/testing.md
-make test-all          # full suite
+make test-py           # every Python package; lists all failures (CI gate)
+make test-all          # test-py with slow tests, then test-web
+make lint              # ruff
+make typecheck-web     # tsc for ze-web and @ze/ui
 make eval              # agent evals (make dev-eval first)
 ```
 
-Every package has a README. Conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
+CI runs on every pull request to `main`: web typecheck, build, and tests, plus backend lint and `make test-py`. Every package has a README. Conventions: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
@@ -213,8 +252,9 @@ Full index (grouped by audience): [docs/README.md](docs/README.md)
 | [memory.md](docs/memory.md) / [dreaming.md](docs/dreaming.md) | Memory store and offline sleep/dream loop |
 | [goals.md](docs/goals.md) / [workflows.md](docs/workflows.md) | Goal engine and multi-step workflows |
 | [frontend.md](docs/frontend.md) / [native-interface.md](docs/native-interface.md) | ze-web and WebSocket / ntfy protocol |
-| [configuration.md](docs/configuration.md) / [deployment.md](docs/deployment.md) | Config keys and Fly.io deploy |
+| [configuration.md](docs/configuration.md) / [deployment.md](docs/deployment.md) | Config keys (including `system_one`) and Fly.io deploy |
 | [testing.md](docs/testing.md) / [eval.md](docs/eval.md) | Package tests and MCP evals |
+| [workspace.md](docs/workspace.md) / [skills.md](docs/skills.md) | Workspace sidecar and Agent Skills |
 | [specs/](specs/) | Design specs — where Ze is going next |
 
 ---

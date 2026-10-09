@@ -5,11 +5,11 @@ from typing import Protocol
 from uuid import UUID
 
 from ze_logging import get_logger
+from ze_plugin.contribution import EvidenceRef
 from ze_sdk import DBPool
 
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
-    EvidenceRef,
     LoopClaimKind,
     LoopState,
     OpenLoop,
@@ -276,7 +276,7 @@ class PostgresLoopStore:
                 loop_id,
             )
         return [
-            EvidenceRef(evidence_type=r["target_type"], evidence_id=r["target_id"])
+            EvidenceRef(kind=r["target_type"], id=r["target_id"])
             for r in rows
         ]
 

@@ -91,9 +91,7 @@ class ProcedureDiscovery:
                 for item in version.preconditions
                 if _precondition_satisfied(item, context.available_facts)
             ]
-            unmet = [
-                item for item in version.preconditions if item not in satisfied
-            ]
+            unmet = [item for item in version.preconditions if item not in satisfied]
             state = MatchState.BLOCKED if unmet else MatchState.READY
             matches.append(
                 ProcedureMatch(

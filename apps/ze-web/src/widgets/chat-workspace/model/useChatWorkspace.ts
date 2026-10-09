@@ -32,7 +32,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   const sessionThreadId = useSession((s) => s.threadId);
   const threadId = threadIdOverride ?? sessionThreadId;
   const queryClient = useQueryClient();
-  const { messages: persistedMessages, upsert, edit, loadHistory, reload } = useMessages(threadId);
+  const { messages: persistedMessages, upsert, remove, edit, loadHistory, reload } = useMessages(threadId);
 
   const [ephemeralMessages, setEphemeralMessages] = useState<Message[]>([]);
   const [streamingText, setStreamingText] = useState<string | null>(null);
@@ -340,6 +340,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     pendingConfirm,
     sendMessage,
     retry,
+    removeMessage: remove,
     respondToConfirm,
     resetInteraction,
   };

@@ -63,6 +63,8 @@ class MessageSchema(BaseModel):
     read: bool
     thread_id: str | None
     created_at: datetime
+    replaces: UUIDType | None = None
+    replaced_by: UUIDType | None = None
 
 
 # ── REST: message trace ───────────────────────────────────────────────────────
@@ -80,6 +82,11 @@ class ToolCallTraceResponse(BaseModel):
     result_snippet: str
     duration_ms: int
     success: bool
+    access: Literal["read", "write", "delegate", "unknown"] = "unknown"
+    reversibility: Literal["reversible", "irreversible"] | None = None
+    undo_tool: str | None = None
+    gate: Literal["none", "approved", "denied", "expired"] = "none"
+    effect_phrase: str | None = None
 
 
 class SkillUsageTraceResponse(BaseModel):
@@ -104,9 +111,21 @@ class ConductorLedgerEntryResponse(BaseModel):
     request_id: str | None = None
 
 
+class WorkspaceRunTraceResponse(BaseModel):
+    command: str
+    success: bool
+    status: Literal["in_progress"] | None = None
+    id: str | None = None
+
+
+class WorkspaceFileTraceResponse(BaseModel):
+    path: str
+    op: Literal["read", "write", "delete", "ingest"]
+
+
 class WorkspaceUsageTraceResponse(BaseModel):
-    runs: list[dict] = []
-    files: list[dict] = []
+    runs: list[WorkspaceRunTraceResponse] = []
+    files: list[WorkspaceFileTraceResponse] = []
     script_ran: bool = False
     unavailable: bool = False
     planned: list[str] | None = None
@@ -125,6 +144,11 @@ class JudgmentTraceResponse(BaseModel):
     skip_reason: str | None = None
 
 
+class CompactionTraceResponse(BaseModel):
+    span_start: int
+    span_end: int
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -141,6 +165,9 @@ class MessageTraceResponse(BaseModel):
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
     judgments: list[JudgmentTraceResponse] = []
+    effects_known: bool = False
+    compaction: CompactionTraceResponse | None = None
+    resume_recap_applied: bool = False
 
 
 class MessageTraceEntry(BaseModel):
@@ -150,6 +177,42 @@ class MessageTraceEntry(BaseModel):
 
 class MessageTracesResponse(BaseModel):
     traces: list[MessageTraceEntry]
+
+
+# ── REST: message feedback (Phase 165) ────────────────────────────────────────
+
+FeedbackRating = Literal["up", "down", "none"]
+FeedbackHistoryKind = Literal["thumbs_up", "thumbs_down", "cleared", "retry_requested"]
+
+
+class SetMessageFeedbackRequest(BaseModel):
+    rating: FeedbackRating
+    idempotency_key: str = Field(min_length=1, max_length=128)
+
+
+class FeedbackHistoryItem(BaseModel):
+    kind: FeedbackHistoryKind
+    occurred_at: datetime
+
+
+class RetryEligibilityResponse(BaseModel):
+    available: bool
+    reason_code: str | None = None
+    reason_text: str | None = None
+
+
+class FeedbackView(BaseModel):
+    message_id: UUIDType
+    current: Literal["up", "down"] | None = None
+    history: list[FeedbackHistoryItem] = []
+    retry: RetryEligibilityResponse
+    replaces: UUIDType | None = None
+    replaced_by: UUIDType | None = None
+    trace_present: bool
+
+
+class MessageFeedbackResponse(BaseModel):
+    items: list[FeedbackView]
 
 
 # ── REST: capabilities ────────────────────────────────────────────────────────
@@ -688,6 +751,17 @@ class WsErrorFrame(BaseModel):
     type: Literal["error"]
     thread_id: str | None = None
     detail: str
+    code: Literal["busy", "retry_unavailable", "retry_failed"] | None = None
+    message_id: str | None = None
+    reason_code: str | None = None
+    reason_text: str | None = None
+
+
+class WsMessageSupersededFrame(BaseModel):
+    type: Literal["message_superseded"]
+    thread_id: str | None = None
+    message_id: str
+    replaced_by: str
 
 
 class WsRefreshFrame(BaseModel):
@@ -720,6 +794,7 @@ class WsTraceUpdateFrame(BaseModel):
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
     judgments: list[JudgmentTraceResponse] = []
+    effects_known: bool = False
 
 
 class WsNotificationFrame(BaseModel):
@@ -744,6 +819,7 @@ WsInboundFrame = Annotated[
         WsTypingFrame,
         WsTokenFrame,
         WsErrorFrame,
+        WsMessageSupersededFrame,
         WsRefreshFrame,
         WsPongFrame,
         WsTraceUpdateFrame,
@@ -817,6 +893,12 @@ class WsComponentSubmitFrame(BaseModel):
     thread_id: str | None = None
 
 
+class WsRetryFrame(BaseModel):
+    type: Literal["retry"]
+    message_id: str
+    thread_id: str
+
+
 class WsPingFrame(BaseModel):
     type: Literal["ping"]
 
@@ -829,6 +911,7 @@ WsOutboundFrame = Annotated[
         WsActionFrame,
         WsCommandFrame,
         WsComponentSubmitFrame,
+        WsRetryFrame,
         WsPingFrame,
     ],
     Field(discriminator="type"),

@@ -46,9 +46,7 @@ async def test_health_false_on_connect_error():
 async def test_health_true_on_ok():
     client = make_client()
     client._client = AsyncMock()
-    client._client.get = AsyncMock(
-        return_value=make_httpx_response(200, {"ok": True})
-    )
+    client._client.get = AsyncMock(return_value=make_httpx_response(200, {"ok": True}))
     assert await client.health() is True
 
 
@@ -177,7 +175,9 @@ async def test_watch_run_yields_events_then_stops_at_exit():
     client = make_client()
     lines = [
         json.dumps({"seq": 0, "type": "stdout", "data": "hi\n"}),
-        json.dumps({"seq": 1, "type": "exit", "data": "", "exit_code": 0, "timed_out": False}),
+        json.dumps(
+            {"seq": 1, "type": "exit", "data": "", "exit_code": 0, "timed_out": False}
+        ),
     ]
 
     class FakeStreamResponse:

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.tool import ToolAccess, tool
+from ze_sdk import ToolReversibility
 from ze_logging import get_logger
 from ze_sdk.contribution import TargetFace
 from ze_sdk.memory import (
@@ -24,6 +25,10 @@ log = get_logger(__name__)
         "relationship, contact_detail, or a specific label). "
         "Only confirm to the user after ok is true."
     ),
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="forget_fact",
+    undo_note="Does not remove copies already used in earlier replies",
+    effect_phrase="saved something to memory",
 )
 async def remember_fact(
     predicate: str,
@@ -70,6 +75,8 @@ async def remember_fact(
         "Pass a natural-language query or a predicate. "
         "Only confirm forgotten after ok is true."
     ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="forgot a memory",
 )
 async def forget_fact(query: str, memory_store: PostgresMemoryStore) -> dict:
     text = query.strip()

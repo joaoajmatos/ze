@@ -5,8 +5,9 @@ import re
 from dataclasses import asdict
 from datetime import datetime, timezone
 from numbers import Integral, Real
+from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from ze_agents.interface.types import (
     Action,
@@ -112,9 +113,9 @@ class NativeAppInterface:
         ntfy_priority: int = 3,
         trace: Any | None = None,
         message_id: str | None = None,
-    ) -> None:
-        from uuid import UUID
-
+        replaces: UUID | None = None,
+        after_save: Callable[[], Awaitable[bool]] | None = None,
+    ) -> bool:
         msg = Message(
             id=UUID(message_id) if message_id else uuid4(),
             role="assistant",
@@ -123,6 +124,7 @@ class NativeAppInterface:
             read=False,
             created_at=datetime.now(timezone.utc),
             thread_id=thread_id,
+            replaces=replaces,
         )
         try:
             await self._store.save(msg)
@@ -134,6 +136,13 @@ class NativeAppInterface:
                 await self._store.save_trace(msg.id, trace)
             except Exception as exc:
                 log.warning("native_interface_save_trace_failed", error=str(exc))
+
+        if after_save is not None and not await after_save():
+            # The reply is stored but must not be shown (a retry that could not
+            # supersede its original).
+            return False
+
+        if trace is not None:
             try:
                 await self._conn.send_frame(
                     {
@@ -167,6 +176,7 @@ class NativeAppInterface:
                 )
             except Exception as exc:
                 log.warning("native_interface_ntfy_failed", error=str(exc))
+        return True
 
     async def send_with_thread(
         self,
@@ -175,14 +185,22 @@ class NativeAppInterface:
         components: list[dict] | None = None,
         trace: Any | None = None,
         message_id: str | None = None,
-    ) -> None:
-        """Called by the WS handler after graph invocation to attach the thread_id."""
-        await self._send_message(
+        replaces: UUID | None = None,
+        after_save: Callable[[], Awaitable[bool]] | None = None,
+    ) -> bool:
+        """Called by the WS handler after graph invocation to attach the thread_id.
+
+        `after_save` runs once the reply is stored and before any frame goes out;
+        returning False suppresses delivery and makes this return False.
+        """
+        return await self._send_message(
             text,
             thread_id=thread_id,
             components=components,
             trace=trace,
             message_id=message_id,
+            replaces=replaces,
+            after_save=after_save,
         )
 
     async def send_confirmation(self, request: ConfirmationRequest) -> None:
