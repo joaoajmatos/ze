@@ -151,7 +151,7 @@ rule, not a convention — **may only produce the claim-kinds its function licen
 
 | Function | Writes to (spine face) | May produce | May **not** produce |
 |---|---|---|---|
-| Perception | world-model, active concerns | facts (with provenance) | inferences dressed as facts |
+| Perception | world-model, active concerns | facts (with provenance); feedback records (evidence about Ze's replies, Phase 165) | inferences dressed as facts |
 | Memory | custodian of all faces | retains & retrieves — asserts nothing new | novel claims (it stores, it does not conclude) |
 | Executive | active concerns | priorities, open-loop state | facts about the world |
 | Social cognition | user-model, world-model | identity/relationship claims, boundaries | — |

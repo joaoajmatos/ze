@@ -50,7 +50,7 @@ ze/                           # monorepo root
 │   │   └── ze-core/             # Engine — routing, orchestration, telemetry, DI container
 │   │       └── ze_core/
 │   │           ├── capability/  # CapabilityGate, PostgresCapabilityOverrideStore, modes
-│   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point
+│   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
 │   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges
 │   │           ├── routing/     # EmbeddingRouter, ComplexityEstimator, fallback, store
@@ -67,7 +67,7 @@ ze/                           # monorepo root
 │   │           ├── rest.py      # list_collisions() query surface
 │   │           └── migrations/  # zcol001 (contribution_collisions)
 │   ├── cognition/               # Memory, correlation, world-state — the "mind" substrate
-│   │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval
+│   │   ├── ze-memory/            # Memory — facts, episodes, graph, retrieval, feedback_records/ (reply feedback evidence)
 │   │   ├── ze-correlation/       # Cross-domain hypothesis formation
 │   │   └── ze-worldstate/        # Open-loop substrate — active concerns, honest provenance, evidence-linked confidence
 │   │       └── ze_worldstate/
@@ -90,7 +90,7 @@ ze/                           # monorepo root
 │   │   │       ├── jobs/        # goal/workflow/accountability proactive jobs
 │   │   │       ├── runtime/     # AutomationPlanner, AutomationStore contracts
 │   │   │       └── migrations/  # zc006–zc009 (goal traces/suggestions/stuck/reuse), zc011 (workflows), zc014 (accountability),
-│   │   │                        # zc021/zc025 (workflow execution summary/snapshot), zc026 (workflow revisions), zc030 (goal learning claims)
+│   │   │                        # zc021/zc025 (workflow execution summary/snapshot), zc026 (workflow revisions), zc030 (goal learning claims), zc031 (message supersession)
 │   │   └── ze-skills/            # Agent Skills — import, review, matching, tool-narrowing
 │   │       └── ze_skills/
 │   │           ├── types.py     # Skill, SkillReview, ReferenceFile, SkillStatus/Source/Trigger
@@ -430,7 +430,7 @@ and runs them against a single `alembic_version` table.
 | ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, capability_overrides, LangGraph checkpoints, messages, sessions, pending_confirmations |
 | ze-automation | `zc` (continues ze-core chain) | goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
 | ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
-| ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures) |
+| ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
 | ze-onboarding | `zo` | onboarding_sessions, onboarding_steps, onboarding_seeds |
 | ze-correlation | `zcor` | correlation_hypothesis |
 | ze-worldstate | `zw` | open_loops |
@@ -611,6 +611,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 162 | System One client — `SystemOneClient` Protocol (`ze_agents/system_one.py`) for typed judgments (noul / choice / score); `OpenRouterSystemOneClient` + `DisabledSystemOneClient` in `ze_core/openrouter/system_one.py`; `system_one:` config block, off by default; no routing or admission change yet | Implemented |
 | 163 | Speech-act System One — post-turn fact admission judged by System One (`speech_act`/family Choice + biography Noul), pure-code persist/hold/skip, Haiku value writer on persist, Haiku judge on skip, single attempt (`evaluate(max_attempts=1)`), judgments on the trace; surface off with null bars until `make calibrate-speech-act` | Implemented |
 | 164 | Routing Choice After E5 — E5 stays the shortlist; a typed System One Choice decides single-specialist trust and a graded complexity question replaces the word-count classifier (depends on 162) | Implemented |
+| 165 | Response Feedback and Retry — thumbs up/down on assistant replies as append-only `FeedbackRecord` evidence (`ClaimKind.FEEDBACK_RECORD`, licensed to Perception only; `feedback_records`, `zm024`), linked to the reply's `MessageTrace`, no consumer in v1; safe Retry regenerates the latest reply with write tools blocked (`retry_mode`), decided server-side by `retry_eligibility` from trace effect metadata; `messages.replaces`/`replaced_by` (`zc031`); every `WRITE` tool declares `reversibility` | Implemented |
 
 ## graphify
 
@@ -702,4 +703,5 @@ before adding one.
 - Perception/memory fact writes go through the contribution seam (`specs/arch/contribution-seam.md`): Phase 133 wraps writers; Phase 134 hard-cuts `memory_facts` onto shared claim vocabulary and removes public `propose_facts`.
 - Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
 - Memory honesty is phases 140–150 in `specs/arch/memory-honesty-roadmap.md`. Companion-conductor is `specs/arch/companion-conductor-roadmap.md` (151–161): companion sole speaker/conductor, fat `delegate_to_agent`, no `plan_sequential`/swarm; phase dir 151 is conductor ACI, not memory-honesty.
+- Every `WRITE` `@tool` declares `reversibility` (plus `undo_tool`/`undo_note` when reversible, and `effect_phrase`); an undeclared WRITE tool fails registration. Retry eligibility reads it. Perception holds two licences: `FACT` and `FEEDBACK_RECORD`.
 - `.cursor/rules/` is gitignored; do not commit Cursor rules.

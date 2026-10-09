@@ -149,6 +149,10 @@ check is shared.
 
 ---
 
+## Phase 165 note
+
+`ClaimKind.FEEDBACK_RECORD` is a closed kind licensed to `SourceFunction.PERCEPTION` only. It records a user reaction (thumbs, retry request) to an assistant reply as `prompt_supplied` provenance, confidence 1.0, target face `WORLD`. It is evidence about Ze's output, not a claim about the user, and it never enters `memory_facts`.
+
 ## Open Questions
 
 - [ ] **Decay profile taxonomy** — is `EVIDENCE_WEIGHTED` / `TIME_LINEAR` / `FROZEN` (marked
