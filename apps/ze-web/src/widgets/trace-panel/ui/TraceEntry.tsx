@@ -1,7 +1,9 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import type { MessageFeedback } from "@/entities/message-feedback";
 import { ConductorSection } from "./ConductorSection";
+import { FeedbackSection } from "./FeedbackSection";
 import { JudgmentsSection } from "./JudgmentsSection";
 import { MemorySection } from "./MemorySection";
 import { RoutingSection } from "./RoutingSection";
@@ -14,9 +16,10 @@ interface TraceEntryProps {
   index: number;
   defaultOpen?: boolean;
   live?: boolean;
+  feedback?: MessageFeedback;
 }
 
-export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEntryProps) {
+export function TraceEntry({ trace, index, defaultOpen = false, live, feedback }: TraceEntryProps) {
   const [open, setOpen] = useState(defaultOpen);
   const confidencePct = Math.round(trace.confidence * 100);
   const workspace = (trace as WsTraceUpdateFrame & { workspace?: unknown }).workspace;
@@ -53,6 +56,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live }: TraceEnt
           <RoutingSection trace={trace} live={live} />
           <ConductorSection trace={trace} live={live} />
           <JudgmentsSection trace={trace} live={live} />
+          <FeedbackSection feedback={feedback} live={live} />
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
           <SkillsSection skillsUsed={trace.skills_used} live={live} />

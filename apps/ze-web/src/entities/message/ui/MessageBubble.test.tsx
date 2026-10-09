@@ -146,4 +146,18 @@ describe("MessageBubble", () => {
     expect(screen.queryByTestId("workspace-live-output")).not.toBeInTheDocument();
     expect(screen.getByText(/not printable/i)).toBeInTheDocument();
   });
+
+  it("renders the actions slot for assistant replies only", () => {
+    const { rerender } = render(
+      <MessageBubble message={baseMessage} actions={<div data-testid="slot" />} />,
+    );
+    expect(screen.getByTestId("slot")).toBeInTheDocument();
+    rerender(
+      <MessageBubble
+        message={{ ...baseMessage, role: "user" }}
+        actions={<div data-testid="slot" />}
+      />,
+    );
+    expect(screen.queryByTestId("slot")).not.toBeInTheDocument();
+  });
 });

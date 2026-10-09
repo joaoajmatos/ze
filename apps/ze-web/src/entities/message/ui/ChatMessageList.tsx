@@ -1,5 +1,5 @@
 import type { MessageSchema as Message } from "@myguyze/ze-client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChatErrorBoundary } from "@/shared/ui";
 import { useSession } from "@/entities/session";
 import { MessageBubble } from "./MessageBubble";
@@ -13,6 +13,7 @@ interface ChatMessageListProps {
   className?: string;
   deliveryFailed?: boolean;
   onRetry?: () => void;
+  renderActions?: (message: Message) => ReactNode;
 }
 
 export function ChatMessageList({
@@ -23,6 +24,7 @@ export function ChatMessageList({
   className,
   deliveryFailed = false,
   onRetry,
+  renderActions,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const highlightMessageId = useSession((s) => s.highlightMessageId);
@@ -71,7 +73,11 @@ export function ChatMessageList({
       {messages.map((msg) => (
         <ChatErrorBoundary key={msg.id}>
           <div id={`message-${msg.id}`}>
-            <MessageBubble message={msg} highlighted={msg.id === highlightMessageId} />
+            <MessageBubble
+              message={msg}
+              highlighted={msg.id === highlightMessageId}
+              actions={renderActions?.(msg)}
+            />
           </div>
         </ChatErrorBoundary>
       ))}

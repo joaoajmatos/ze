@@ -1,6 +1,6 @@
 import type { MessageSchema as Message, WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { Info } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { MessageTracePanel } from "@/widgets/message-trace";
 import { useTraceStore } from "@/features/trace-state";
@@ -42,9 +42,12 @@ function formatTime(iso: string) {
 export function MessageBubble({
   message,
   highlighted = false,
+  actions,
 }: {
   message: Message;
   highlighted?: boolean;
+  /** Slot under the reply for hover/focus controls; filled by the widget layer. */
+  actions?: ReactNode;
 }) {
   const isUser = message.role === "user";
   const [traceOpen, setTraceOpen] = useState(false);
@@ -64,7 +67,7 @@ export function MessageBubble({
         </div>
       )}
 
-      <div className={`max-w-[80%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
+      <div className={`group/reply max-w-[80%] ${isUser ? "items-end" : "items-start"} flex flex-col`}>
         {message.text && (
           <div className="group relative">
             <div
@@ -163,6 +166,8 @@ export function MessageBubble({
             <ConnectedPrimitiveTree components={message.components} />
           </div>
         )}
+
+        {!isUser && actions}
 
         {traceOpen && !isUser && message.id !== "__streaming__" && (
           <MessageTracePanel messageId={message.id} />

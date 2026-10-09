@@ -16,6 +16,8 @@ export const queryKeys = {
   uiManifest: ["ui-manifest"] as const,
   memoryFeed: (type: string, agent?: string, asOf?: string) => ["memory-feed", type, agent ?? "", asOf ?? ""] as const,
   messageTrace: (messageId: string) => ["message-trace", messageId] as const,
+  messageFeedbackAll: ["message-feedback"] as const,
+  messageFeedback: (idsKey: string) => ["message-feedback", idsKey] as const,
   messageTraces: (threadId: string, idsKey: string) =>
     ["message-traces", threadId, idsKey] as const,
   activityHeatmap: (start?: string, end?: string) => ["activity-heatmap", start ?? "", end ?? ""] as const,

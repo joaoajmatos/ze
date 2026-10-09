@@ -26,6 +26,15 @@ export function useMessages(threadId: string) {
     [threadId],
   );
 
+  const remove = useCallback((id: string) => {
+    setMessages((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   const edit = useCallback((id: string, text?: string, components?: Message["components"]) => {
     setMessages((prev) => {
       const existing = prev.get(id);
@@ -75,5 +84,5 @@ export function useMessages(threadId: string) {
     [messages],
   );
 
-  return { messages: sorted, upsert, edit, loadHistory, reload };
+  return { messages: sorted, upsert, remove, edit, loadHistory, reload };
 }
