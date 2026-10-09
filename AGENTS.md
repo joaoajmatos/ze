@@ -227,8 +227,10 @@ ze-web            (React — connects to ze-api over WebSocket, no Python deps) 
 
 Known drift from the import rules below (code, not yet fixed): `ze-personal` and
 `ze-news` import `ze_core` (orchestration state/graph, `OpenRouterClient`);
-`ze-messenger` and `ze-seed` import `ze_api`; most plugins import `ze_agents`,
-`ze_plugin`, `ze_memory`, or `ze_logging` directly instead of through `ze_sdk`.
+`ze-messenger` and `ze-seed` import `ze_api`; plugins import `ze_memory` internals
+(`policies`, `admission`, `relevance`, `extractor`, `bootstrap`, `graph.*`) that `ze_sdk`
+does not yet re-export. No plugin imports `ze_plugin` directly any more
+(`ze_sdk.contribution`, `ze_sdk.memory`, `ze_sdk.api`).
 
 ## Essential commands
 

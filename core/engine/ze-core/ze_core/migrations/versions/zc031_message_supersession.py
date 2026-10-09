@@ -30,7 +30,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS messages_replaced_by_idx")
-    op.execute("DROP INDEX IF EXISTS messages_replaces_idx")
     op.execute("ALTER TABLE messages DROP COLUMN IF EXISTS replaced_by")
     op.execute("ALTER TABLE messages DROP COLUMN IF EXISTS replaces")

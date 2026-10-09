@@ -3,9 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
 
-from ze_memory.action_records.recorder import ActionRecorder, safe_record_action
-from ze_memory.action_records.store import ActionRecordStore
-from ze_memory.action_records.types import ActionContext, ActionLifecycle, ActionOutcome
+from ze_sdk.contribution import ActionRecorder, safe_record_action
+from ze_sdk.contribution import (
+    ActionContext,
+    ActionLifecycle,
+    ActionOutcome,
+    ActionRecordStore,
+)
 
 _recorder: ActionRecorder | None = None
 

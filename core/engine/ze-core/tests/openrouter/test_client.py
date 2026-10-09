@@ -418,3 +418,22 @@ async def test_complete_with_tools_raises_on_403(client, mock_sdk):
             [{"role": "user", "content": "hi"}], model="m", tools=_TOOLS
         )
     assert exc_info.value.status_code == 403
+
+
+# ── LLMClient contract conformance ────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "method", ["complete", "complete_with_tools", "stream_complete_with_tools"]
+)
+def test_openrouter_client_signature_matches_llm_client_protocol(method):
+    import inspect
+
+    from ze_agents.client import LLMClient
+
+    proto = inspect.signature(getattr(LLMClient, method)).parameters
+    impl = inspect.signature(getattr(OpenRouterClient, method)).parameters
+    assert list(proto) == list(impl)
+    for name, param in proto.items():
+        assert impl[name].kind == param.kind
+        assert impl[name].default == param.default

@@ -322,6 +322,20 @@ export type CollisionLogEntrySchema = {
 };
 
 /**
+ * CompactionTraceResponse
+ */
+export type CompactionTraceResponse = {
+    /**
+     * Span Start
+     */
+    span_start: number;
+    /**
+     * Span End
+     */
+    span_end: number;
+};
+
+/**
  * ConductorLedgerEntryResponse
  */
 export type ConductorLedgerEntryResponse = {
@@ -2097,6 +2111,11 @@ export type MessageTraceResponse = {
      * Effects Known
      */
     effects_known?: boolean;
+    compaction?: CompactionTraceResponse | null;
+    /**
+     * Resume Recap Applied
+     */
+    resume_recap_applied?: boolean;
 };
 
 /**
@@ -3726,6 +3745,20 @@ export type WorkspaceFileTouchResponse = {
 };
 
 /**
+ * WorkspaceFileTraceResponse
+ */
+export type WorkspaceFileTraceResponse = {
+    /**
+     * Path
+     */
+    path: string;
+    /**
+     * Op
+     */
+    op: 'read' | 'write' | 'delete' | 'ingest';
+};
+
+/**
  * WorkspaceIngestResponse
  */
 export type WorkspaceIngestResponse = {
@@ -3846,6 +3879,28 @@ export type WorkspaceRunResponse = {
 };
 
 /**
+ * WorkspaceRunTraceResponse
+ */
+export type WorkspaceRunTraceResponse = {
+    /**
+     * Command
+     */
+    command: string;
+    /**
+     * Success
+     */
+    success: boolean;
+    /**
+     * Status
+     */
+    status?: 'in_progress' | null;
+    /**
+     * Id
+     */
+    id?: string | null;
+};
+
+/**
  * WorkspaceStatusResponse
  */
 export type WorkspaceStatusResponse = {
@@ -3904,15 +3959,11 @@ export type WorkspaceUsageTraceResponse = {
     /**
      * Runs
      */
-    runs?: Array<{
-        [key: string]: unknown;
-    }>;
+    runs?: Array<WorkspaceRunTraceResponse>;
     /**
      * Files
      */
-    files?: Array<{
-        [key: string]: unknown;
-    }>;
+    files?: Array<WorkspaceFileTraceResponse>;
     /**
      * Script Ran
      */

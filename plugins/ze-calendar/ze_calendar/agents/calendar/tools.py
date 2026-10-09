@@ -3,7 +3,7 @@ import asyncio
 from ze_agents.tool import ToolAccess, tool
 from ze_sdk import ToolReversibility
 from ze_google.auth import GoogleCredentials
-from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
+from ze_sdk.contribution import ActionLifecycle, ActionOutcome
 from ze_calendar.action_records import emit_calendar_mutation
 
 

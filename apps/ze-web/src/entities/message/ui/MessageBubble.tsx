@@ -1,4 +1,4 @@
-import type { MessageSchema as Message, WsTraceUpdateFrame } from "@myguyze/ze-client";
+import type { MessageSchema as Message } from "@myguyze/ze-client";
 import { Info } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
@@ -6,14 +6,6 @@ import { MessageTracePanel } from "@/widgets/message-trace";
 import { useTraceStore } from "@/features/trace-state";
 import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
 import { useWorkspaceRunEventsQuery } from "@/entities/workspace";
-
-type WorkspaceChipTrace = Omit<WsTraceUpdateFrame, "workspace"> & {
-  workspace?: {
-    unavailable?: boolean;
-    script_ran?: boolean;
-    runs?: { id?: string; command?: string; status?: string }[];
-  } | null;
-};
 
 function LiveRunOutput({ runId }: { runId: string }) {
   const { lines, looksBinary } = useWorkspaceRunEventsQuery(runId);
@@ -53,10 +45,7 @@ export function MessageBubble({
   const [traceOpen, setTraceOpen] = useState(false);
   const workspace = useTraceStore((s) => {
     const traces = s.byThread[message.thread_id ?? ""]?.traces ?? [];
-    const match = traces.find((t) => t.message_id === message.id) as
-      | WorkspaceChipTrace
-      | undefined;
-    return match?.workspace ?? null;
+    return traces.find((t) => t.message_id === message.id)?.workspace ?? null;
   });
 
   return (

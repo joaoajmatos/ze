@@ -12,9 +12,13 @@ from ze_sdk.proactive import proactive_job
 
 from ze_agents.claims import ClaimKind, Provenance, Confidence, DecayProfile
 from ze_correlation.types import HypothesisEvidence, Hypothesis
-from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
-from ze_plugin.contribution import EvidenceRef
-from ze_sdk.contribution import submit_and_detect_collisions
+from ze_sdk.contribution import (
+    Contribution,
+    EvidenceRef,
+    SourceFunction,
+    submit_and_detect_collisions,
+    TargetFace,
+)
 
 from ze_personal.social.candidates import CoOccurrenceCandidateSource
 from ze_personal.social.promotion import promote_hypothesis

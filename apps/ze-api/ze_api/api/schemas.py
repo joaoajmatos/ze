@@ -110,9 +110,21 @@ class ConductorLedgerEntryResponse(BaseModel):
     request_id: str | None = None
 
 
+class WorkspaceRunTraceResponse(BaseModel):
+    command: str
+    success: bool
+    status: Literal["in_progress"] | None = None
+    id: str | None = None
+
+
+class WorkspaceFileTraceResponse(BaseModel):
+    path: str
+    op: Literal["read", "write", "delete", "ingest"]
+
+
 class WorkspaceUsageTraceResponse(BaseModel):
-    runs: list[dict] = []
-    files: list[dict] = []
+    runs: list[WorkspaceRunTraceResponse] = []
+    files: list[WorkspaceFileTraceResponse] = []
     script_ran: bool = False
     unavailable: bool = False
     planned: list[str] | None = None
