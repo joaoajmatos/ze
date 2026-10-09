@@ -336,3 +336,26 @@ async def test_retry_refused_write_is_not_recorded_as_an_action(effect_tools) ->
     result = AgentResult(agent="companion", response="ok", tool_calls=[refused])
     trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
     assert trace.tool_calls[0].gate == "denied"
+
+
+async def test_web_search_turn_stays_retryable(effect_tools) -> None:
+    from datetime import datetime, timezone
+
+    from ze_core.conversation.messages.types import Message
+    from ze_core.conversation.retry import retry_eligibility
+
+    result = AgentResult(
+        agent="research", response="ok", tool_calls=[_call("openrouter:web_search")]
+    )
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    msg = Message(
+        id=uuid4(),
+        role="assistant",
+        text="ok",
+        components=[],
+        read=True,
+        created_at=datetime.now(timezone.utc),
+        thread_id="t1",
+    )
+    eligibility = retry_eligibility(msg, trace, latest_assistant_id=msg.id)
+    assert eligibility.available is True
