@@ -345,9 +345,9 @@ system_one:
   timeout_ms: 2000                # Per attempt
   surfaces:
     speech_act:                   # Post-turn fact admission (Phase 163)
-      enabled: false
-      choice_hold: null           # uncalibrated — set from make calibrate-speech-act
-      biography_hold: null        # uncalibrated — set from make calibrate-speech-act
+      enabled: false              # the shipped config.yaml sets true
+      choice_hold: null           # shipped: 0.9 — set from make calibrate-speech-act
+      biography_hold: null        # shipped: 0.7 — set from make calibrate-speech-act
     routing:                      # Agent choice after E5 (Phases 164, 167)
       enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
       choice_trust: null          # shipped: 0.5 — set from make calibrate-routing
@@ -355,9 +355,9 @@ system_one:
       complexity_lookup_max: null # shipped: null — the regex classifier picks the tier
       shortlist_k: 5              # shipped: 9
     skills:                       # Skill gating after E5 (Phase 166)
-      enabled: false
-      choice_trust: null          # uncalibrated — set from make calibrate-skills
-      needs_skill_hold: null      # uncalibrated — set from make calibrate-skills
+      enabled: false              # the shipped config.yaml sets true
+      choice_trust: null          # shipped: 0.75 — set from make calibrate-skills
+      needs_skill_hold: null      # shipped: 0.6 — set from make calibrate-skills
       shortlist_k: 5
       shortlist_floor: 0.35
 ```
@@ -389,7 +389,7 @@ The three bars are separate numbers:
 
 Each agent can declare an optional `routing_criteria` attribute: "use for" and "not for" text that the choice reads in place of the agent's `description`. When an agent omits it, the choice reads the `description`. E5 always embeds the `description`. The choice instructions tell the model to prefer an agent that can search the web or use tools over one that would answer from its own knowledge. They also define `none` as the answer when no listed agent can do the job alone, when Ze has no capability for it, or when the request needs more than one agent. See [Adding an agent](adding-an-agent.md).
 
-Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. `complexity_lookup_max` stays `null`: the suggested bar was 0.16 and 0.17 on the two held-out sets but 0.02 combined, so the regex classifier keeps picking the model tier. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90: one loops question went to companion at confidence 0.29. Ze never trusts that confidence at 0.5, so the turn falls back to the Haiku decompose step. To re-measure, run `make calibrate-routing`; it reports both held-out sets and a verdict.
+Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. `complexity_lookup_max` stays `null`: the suggested bar was 0.16 and 0.17 on the two held-out sets but 0.02 combined, so the regex classifier keeps picking the model tier. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90: one loops question went to companion at confidence 0.29. Ze never trusts that confidence at 0.5, so the turn falls back to the Haiku decompose step. `make calibrate-routing` measures only the tuning set. To re-measure the held-out sets, run `OPENROUTER_API_KEY=... uv run python eval/calibration/routing.py --dataset eval/calibration/routing_holdout.jsonl --dataset eval/calibration/routing_holdout2.jsonl --k 9`. This run is live and costs credits. Its per-language accuracy line prints FAIL for `routing_holdout` English (0.90 is under 0.95). That is expected: Ze enables the surface on zero harmful trusts, ECE of at most 0.10 and zero research-to-companion misses, and reports raw accuracy without gating on it.
 
 The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.routing.enabled` to `true`.
 
