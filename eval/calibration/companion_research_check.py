@@ -55,7 +55,7 @@ def research_prompts(path: Path = HOLDOUT) -> list[dict[str, Any]]:
 def delegated_to_research(tool_calls: list[dict[str, Any]]) -> bool:
     return any(
         tc.get("tool_name") == DELEGATE_TOOL
-        and "research" in json.dumps(tc.get("args") or {}).lower()
+        and (tc.get("args") or {}).get("agent_name") == "research"
         for tc in tool_calls
     )
 

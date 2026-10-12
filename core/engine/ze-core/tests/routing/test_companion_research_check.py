@@ -47,7 +47,7 @@ def test_summarise_reads_delegation_citations_and_usage(check):
         "agent_used": "companion",
         "response": "See https://example.com/a for details.",
         "tool_calls": [
-            {"tool_name": "delegate_to_agent", "args": {"agent": "research"}}
+            {"tool_name": "delegate_to_agent", "args": {"agent_name": "research"}}
         ],
     }
     row = check.summarise("x", reply, 4.2, (3, 0.012))

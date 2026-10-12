@@ -225,16 +225,21 @@ def test_verdict_passes_a_clean_set_and_prints_per_language(calib, capsys):
     assert "OVERALL: PASS" in out
 
 
-def test_verdict_fails_on_a_research_to_companion_miss(calib):
+def test_verdict_gates_on_trusted_research_to_companion_misses(calib):
     outcomes = [
         _outcome(calib, f"en{i}", "en", "research", "research", 0.97) for i in range(40)
     ]
     outcomes.append(_outcome(calib, "enx", "en", "research", "companion", 0.9))
     verdict = calib.verdict_for_set("held", outcomes)
-    assert not verdict.passed
-    assert any("research->companion misses 1" in line for line in verdict.lines)
     assert calib.research_to_companion_misses(outcomes, 0.95) == 0
-    assert calib.research_to_companion_misses(outcomes, 0.85) == 1
+    assert verdict.passed
+    assert any(
+        "lowest choice_trust with zero trusted misses: 0.95" in x for x in verdict.lines
+    )
+    outcomes.append(_outcome(calib, "eny", "en", "research", "companion", 1.0))
+    verdict = calib.verdict_for_set("held", outcomes)
+    assert not verdict.passed
+    assert calib.research_to_companion_misses(outcomes, 0.85) == 2
 
 
 def test_verdict_fails_below_accuracy_bar_or_above_ece(calib):

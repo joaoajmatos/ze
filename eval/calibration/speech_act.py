@@ -78,7 +78,9 @@ def shuffled_questions(rng: random.Random) -> dict[str, SystemOneQuestion]:
 
 
 def system_one_config() -> dict:
-    return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get("system_one") or {}
+    return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
+        "system_one"
+    ) or {}
 
 
 async def run_rows(
@@ -89,7 +91,9 @@ async def run_rows(
     async def one(index: int, row: Row) -> tuple[str, SystemOneResult]:
         questions = shuffled_questions(random.Random(seed * 100003 + index))
         async with sem:
-            result = await client.evaluate(build_state(row.user, row.assistant), questions)
+            result = await client.evaluate(
+                build_state(row.user, row.assistant), questions
+            )
         return row.id, result
 
     return dict(await asyncio.gather(*(one(i, r) for i, r in enumerate(rows))))
@@ -104,8 +108,12 @@ def report_accuracy(rows: list[Row], results: dict[str, SystemOneResult]) -> Non
     for lang in ("en", "pt"):
         scoped = [r for r in rows if r.lang == lang and results[r.id].outcome == "ok"]
         hits = sum(predicted_act(results[r.id]) == r.gold_act for r in scoped)
-        print(f"\n== [{lang}] exact-act accuracy: {hits}/{len(scoped)}"
-              f" = {hits / len(scoped):.3f}" if scoped else f"\n== [{lang}] no ok rows")
+        print(
+            f"\n== [{lang}] exact-act accuracy: {hits}/{len(scoped)}"
+            f" = {hits / len(scoped):.3f}"
+            if scoped
+            else f"\n== [{lang}] no ok rows"
+        )
         matrix: dict[str, Counter] = defaultdict(Counter)
         for r in scoped:
             matrix[r.gold_act][predicted_act(results[r.id]) or "none"] += 1
@@ -113,7 +121,10 @@ def report_accuracy(rows: list[Row], results: dict[str, SystemOneResult]) -> Non
         print(header)
         for gold in ACTS:
             if gold in matrix:
-                print(gold.ljust(12) + "".join(str(matrix[gold][a]).rjust(9) for a in ACTS))
+                print(
+                    gold.ljust(12)
+                    + "".join(str(matrix[gold][a]).rjust(9) for a in ACTS)
+                )
 
 
 def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
@@ -135,7 +146,10 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
         acc = sum(ok for _, ok in bucket) / len(bucket)
         ece += len(bucket) * abs(conf - acc)
         total += len(bucket)
-        print(f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11) + f"{len(bucket):4d}   {conf:8.3f}   {acc:8.3f}")
+        print(
+            f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
+            + f"{len(bucket):4d}   {conf:8.3f}   {acc:8.3f}"
+        )
     if total:
         print(f"ECE = {ece / total:.3f}")
 
@@ -146,7 +160,9 @@ def grid_metrics(rows: list[Row], results: dict[str, SystemOneResult]):
     out = []
     for choice in GRID:
         for bio in GRID:
-            cfg = SpeechActSurfaceConfig(enabled=True, choice_hold=choice, biography_hold=bio)
+            cfg = SpeechActSurfaceConfig(
+                enabled=True, choice_hold=choice, biography_hold=bio
+            )
             predicted = [decide(results[r.id], cfg).kind == "persist" for r in scored]
             tp = sum(p and r.gold_persist for p, r in zip(predicted, scored))
             fp = sum(p and not r.gold_persist for p, r in zip(predicted, scored))
@@ -161,23 +177,31 @@ def report_grid(metrics) -> tuple[float, float] | None:
     print("choice\\bio ".ljust(11) + "".join(f"{b:>12.2f}" for b in GRID))
     by_pair = {(c, b): (p, r) for c, b, p, r, _, _ in metrics}
     for c in GRID:
-        cells = "".join(f"{by_pair[(c, b)][0]:>7.2f}/{by_pair[(c, b)][1]:<4.2f}" for b in GRID)
+        cells = "".join(
+            f"{by_pair[(c, b)][0]:>7.2f}/{by_pair[(c, b)][1]:<4.2f}" for b in GRID
+        )
         print(f"{c:>9.2f}  " + cells)
     safe = [m for m in metrics if m[2] == 1.0 and m[4] > 0]
     if not safe:
-        print("\nNo bar pair reaches fact precision 1.0 with any true positive on this set.")
+        print(
+            "\nNo bar pair reaches fact precision 1.0 with any true positive on this set."
+        )
         return None
     best = min(safe, key=lambda m: (m[0] + m[1], -m[3]))
-    print(f"\nSuggested: choice_hold: {best[0]}  biography_hold: {best[1]}"
-          f"  (precision 1.0, recall {best[3]:.2f}; lowest pair at precision 1.0)")
+    print(
+        f"\nSuggested: choice_hold: {best[0]}  biography_hold: {best[1]}"
+        f"  (precision 1.0, recall {best[3]:.2f}; lowest pair at precision 1.0)"
+    )
     return best[0], best[1]
 
 
 async def main_async(args: argparse.Namespace) -> int:
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
-        print("OPENROUTER_API_KEY is required (this run is live and costs credits).",
-              file=sys.stderr)
+        print(
+            "OPENROUTER_API_KEY is required (this run is live and costs credits).",
+            file=sys.stderr,
+        )
         return 2
     config = system_one_config()
     client = OpenRouterSystemOneClient(
@@ -199,7 +223,9 @@ async def main_async(args: argparse.Namespace) -> int:
     report_grid_result = report_grid(grid_metrics(rows, results))
     if report_grid_result is None:
         return 0
-    print("\nCopy into apps/ze-api/config/config.yaml, then enable system_one and the surface.")
+    print(
+        "\nCopy into apps/ze-api/config/config.yaml, then enable system_one and the surface."
+    )
     return 0
 
 

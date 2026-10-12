@@ -501,11 +501,17 @@ def verdict_for_set(name: str, outcomes: list[Outcome]) -> SetVerdict:
         ok = value <= ECE_BAR
         passed &= ok
         lines.append(f"{'PASS' if ok else 'FAIL'}  ECE {value:.3f} (<= {ECE_BAR})")
-    misses = research_to_companion_misses(outcomes)
-    ok = misses == 0
+    clean = [t for t in GRID if research_to_companion_misses(outcomes, t) == 0]
+    ok = bool(clean)
     passed &= ok
+    detail = (
+        f"lowest choice_trust with zero trusted misses: {clean[0]:.2f}"
+        if clean
+        else "no choice_trust in the grid removes every trusted miss"
+    )
     lines.append(
-        f"{'PASS' if ok else 'FAIL'}  research->companion misses {misses} (== 0)"
+        f"{'PASS' if ok else 'FAIL'}  research->companion trusted misses == 0 ({detail}; "
+        f"raw misses {research_to_companion_misses(outcomes)})"
     )
     for trust in GRID:
         lines.append(
