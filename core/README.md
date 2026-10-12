@@ -36,7 +36,7 @@ Tests run from the repo root via `make test-<short-name>`. See [docs/testing.md]
 | [ze-communication](contracts/ze-communication/) | Channel contract — `Channel`/`InboundChannel` ABCs, message types, `ChannelRegistry` |
 | [ze-plugin](contracts/ze-plugin/) | Plugin framework — `ZePlugin`, channels, signals, `ZeIntegration` protocol |
 | [ze-proactive](contracts/ze-proactive/) | Job scheduling — `ProactiveScheduler`, `ProactiveJob`, push log |
-| [ze-core](engine/ze-core/) | LangGraph orchestration, routing, capability gate, OpenRouter, telemetry |
+| [ze-core](engine/ze-core/) | LangGraph orchestration, routing, capability gate, OpenRouter and System One clients, telemetry |
 | [ze-collision](seam/ze-collision/) | Contribution collision detection — cross-function conflict logging |
 | [ze-memory](cognition/ze-memory/) | Memory persistence and retrieval — facts, episodes, graph, consolidation |
 | [ze-correlation](cognition/ze-correlation/) | Cross-domain hypothesis formation from the memory graph |
@@ -59,21 +59,22 @@ they're thin external-service wrappers (browser sidecar, ntfy), the same shape a
 ```
 ze-logging        ←  no ze deps                                              kernel/
 ze-data           ←  no ze deps                                              kernel/
-ze-components     ←  no ze deps                                              kernel/
-ze-agents         ←  ze-logging                                              contracts/
+ze-components     ←  ze-agents                                               kernel/
+ze-agents         ←  ze-logging, ze-onboarding                               contracts/  (cycle with ze-onboarding)
 ze-communication  ←  ze-agents                                               contracts/
-ze-plugin         ←  ze-agents, ze-data                                      contracts/
-ze-proactive      ←  ze-agents                                               contracts/
-ze-core           ←  ze-agents, ze-plugin                                    engine/
+ze-plugin         ←  ze-agents, ze-data, ze-logging                          contracts/
+ze-proactive      ←  ze-agents, ze-logging                                   contracts/
+ze-core           ←  ze-agents, ze-communication, ze-components, ze-data,
+                      ze-logging, ze-memory, ze-plugin                        engine/
 ze-collision      ←  ze-agents, ze-plugin, ze-logging                        seam/
-ze-memory         ←  ze-agents, ze-plugin, ze-collision                      cognition/
+ze-memory         ←  ze-agents, ze-plugin, ze-collision, ze-logging          cognition/
 ze-correlation    ←  ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision cognition/
 ze-worldstate     ←  ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision  cognition/
 ze-automation     ←  ze-agents, ze-logging, ze-proactive, ze-memory, ze-data, ze-components  automation/
-ze-skills         ←  ze-agents, ze-proactive, ze-logging, ze-data            automation/
+ze-skills         ←  ze-agents, ze-proactive, ze-logging, ze-data, ze-memory  automation/
 ze-priority       ←  ze-agents, ze-proactive, ze-worldstate, ze-automation, ze-correlation, ze-plugin, ze-collision  arbitration/
-ze-workspace      ←  ze-agents, ze-logging, ze-data                          ops/
-ze-onboarding     ←  ze-agents                                               ops/
+ze-workspace      ←  ze-agents, ze-logging, ze-data, ze-memory, ze-plugin    ops/
+ze-onboarding     ←  ze-agents, ze-memory                                    ops/  (cycle with ze-agents)
 ze-ingestion      ←  ze-agents, ze-memory, ze-browser                        ops/
 ze-seed           ←  ze-memory, ze-automation, ze-core, ze-logging, ze-onboarding  ops/
 ze-eval           ←  no ze deps                                              ops/
