@@ -79,7 +79,7 @@ async def test_offline_run_reports_and_suggests(calib, capsys):
     )
 
     outcomes = await calib.run_rows(
-        client, embedder, roster, rows, seed=164, concurrency=4, k=3
+        client, embedder, roster, roster, rows, seed=164, concurrency=4, k=3
     )
     suggestion = calib.report(outcomes)
     out = capsys.readouterr().out
@@ -101,7 +101,9 @@ async def test_option_order_is_shuffled_per_row(calib):
     embedder = cosine_embedder(
         {n: 0.8 - 0.01 * i for i, n in enumerate(sorted(roster))}
     )
-    await calib.run_rows(client, embedder, roster, rows, seed=1, concurrency=4, k=4)
+    await calib.run_rows(
+        client, embedder, roster, roster, rows, seed=1, concurrency=4, k=4
+    )
     shortlist_orders = {tuple(o[:-1]) for o in client.orders}
     assert len(shortlist_orders) > 1
     assert all(o[-1] == "none" for o in client.orders)
@@ -166,3 +168,95 @@ def test_grid_counts_harm_when_trusting_the_wrong_agent(calib):
     assert all(m["harmful"] == 1 for m in metrics if m["trust"] <= 0.9)
     assert all(m["removed"] == 0 for m in metrics)
     assert roster
+
+
+def test_recall_sweep_runs_to_roster_size_and_finds_smallest_passing_k(calib, capsys):
+    roster = _roster()
+    rows = [
+        calib.Row("a", "en", "x", "calendar", False, "lookup", None),
+        calib.Row("b", "en", "y", "research", False, "lookup", None),
+    ]
+    embedder = cosine_embedder(
+        {
+            "calendar": 0.9,
+            "research": 0.1,
+            "messenger": 0.5,
+            "reminders": 0.4,
+            "companion": 0.3,
+        }
+    )
+    best = calib.report_recall(embedder, roster, {"one": rows, "two": rows[:1]})
+    out = capsys.readouterr().out
+
+    assert calib.recall_ks(roster) == (2, 3, 4, 5)
+    assert "== one" in out and "== two" in out
+    assert best is not None and best <= len(roster)
+    assert f"Smallest k with recall >= 0.95 on every set: {best}" in out
+
+
+def test_smallest_passing_k_is_none_when_a_set_never_passes(calib):
+    assert calib.smallest_passing_k([{2: 1.0, 3: 1.0}, {2: 0.5, 3: 0.9}]) is None
+    assert calib.smallest_passing_k([{2: 0.9, 3: 1.0}, {2: 1.0, 3: 1.0}]) == 3
+
+
+def _outcome(calib, rid, lang, gold, pred, conf):
+    row = calib.Row(rid, lang, "p", gold, False, "lookup")
+    result = SystemOneResult(
+        outcome="ok",
+        answers={
+            "agent": SystemOneAnswer(
+                type="choice", choice=pred, confidence=conf, probabilities={}
+            )
+        },
+    )
+    return calib.Outcome(row, [gold, pred], 0.8, 0.0, result)
+
+
+def test_verdict_passes_a_clean_set_and_prints_per_language(calib, capsys):
+    outcomes = [
+        _outcome(calib, f"{lang}{i}", lang, "research", "research", 0.97)
+        for lang in ("en", "pt")
+        for i in range(20)
+    ]
+    verdicts = calib.report_verdicts({"clean": outcomes})
+    out = capsys.readouterr().out
+    assert verdicts[0].passed
+    assert "[en] accuracy 20/20" in out and "[pt] accuracy 20/20" in out
+    assert "OVERALL: PASS" in out
+
+
+def test_verdict_gates_on_trusted_research_to_companion_misses(calib):
+    outcomes = [
+        _outcome(calib, f"en{i}", "en", "research", "research", 0.97) for i in range(40)
+    ]
+    outcomes.append(_outcome(calib, "enx", "en", "research", "companion", 0.9))
+    verdict = calib.verdict_for_set("held", outcomes)
+    assert calib.research_to_companion_misses(outcomes, 0.95) == 0
+    assert verdict.passed
+    assert any(
+        "lowest choice_trust with zero trusted misses: 0.95" in x for x in verdict.lines
+    )
+    outcomes.append(_outcome(calib, "eny", "en", "research", "companion", 1.0))
+    verdict = calib.verdict_for_set("held", outcomes)
+    assert not verdict.passed
+    assert calib.research_to_companion_misses(outcomes, 0.85) == 2
+
+
+def test_verdict_fails_below_accuracy_bar_or_above_ece(calib):
+    outcomes = [
+        _outcome(calib, f"en{i}", "en", "calendar", "calendar", 0.97) for i in range(5)
+    ] + [
+        _outcome(calib, f"enm{i}", "en", "calendar", "messenger", 0.97)
+        for i in range(5)
+    ]
+    verdict = calib.verdict_for_set("held", outcomes)
+    assert not verdict.passed
+    assert any(line.startswith("FAIL") and "accuracy" in line for line in verdict.lines)
+    assert any(line.startswith("FAIL") and "ECE" in line for line in verdict.lines)
+
+
+def test_load_roster_returns_descriptions_and_criteria(calib):
+    descriptions, criteria = calib.load_roster()
+    assert set(descriptions) == set(criteria)
+    assert "explain X" not in descriptions["companion"]
+    assert criteria["research"] != descriptions["research"]

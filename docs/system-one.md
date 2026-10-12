@@ -77,7 +77,7 @@ The extractor decides whether a finished turn states a durable fact worth keepin
 
 ### Routing
 
-E5 ranks the agents, and the top `shortlist_k` go to System One. A confident choice of one agent routes the turn straight to it. A `none` answer, or a high multi-specialist probability, sends the turn to the Haiku decompose step. An unsure choice falls back to the E5 threshold rules. The complexity score picks the model tier for the turn. When System One routes a turn, the routing log stores the choice confidence instead of the cosine score.
+E5 ranks the agents, and the top `shortlist_k` go to System One. A confident choice of one agent routes the turn straight to it. A `none` answer, or a high multi-specialist probability, sends the turn to the Haiku decompose step. An unsure choice falls back to the E5 threshold rules. Each agent can declare `routing_criteria`, a use-for and not-for text the choice reads in place of its `description`. At the shipped `shortlist_k` of 9 on a 10-agent roster, E5 filters little for the choice; it still drives the cosine skip path. The complexity score picks the model tier only when `complexity_lookup_max` is set; it ships unset. When System One routes a turn, the routing log stores the choice confidence instead of the cosine score.
 
 ### Skills
 
@@ -90,8 +90,8 @@ E5 keeps the skills at or above `shortlist_floor`, up to `shortlist_k`. System O
 | Surface | Shipped config | Why |
 |---|---|---|
 | Speech act | On, with `choice_hold: 0.9` and `biography_hold: 0.7` | Calibrated on 60 English and Portuguese rows on 2026-10-09 |
-| Routing | Off, bars `null` | The calibration found no safe `choice_trust`, because research turns miss the shortlist |
-| Skills | Off, bars `null` | The offline shortlist recall is measured, but nobody has done the live run yet |
+| Routing | On, with `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9` and `complexity_lookup_max: null` | Phase 167 calibrated on 52 held-out English and Portuguese rows on 2026-10-12: zero research-to-companion misses, zero harmful trusts, ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90, and its one miss falls back to decompose. The complexity bar stays unset, so the word-count classifier picks the model tier |
+| Skills | On, with `choice_trust: 0.75`, `needs_skill_hold: 0.6` and `shortlist_k: 5` | Calibrated on 84 English and Portuguese rows on 2026-10-12: zero wrong applies |
 
 Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits:
 

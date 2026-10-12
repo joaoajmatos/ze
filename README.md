@@ -46,7 +46,7 @@ System One is a small model that returns typed judgments (a choice among labels,
 - **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
 - **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
 
-Only speech-act admission is on in the shipped config. It runs with bars measured on a labeled set (`make calibrate-speech-act`). Routing and skill gating ship off. Their calibration runs (`make calibrate-routing`, `make calibrate-skills`) have not produced safe bars yet. When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
+All three surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`). The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 
@@ -153,7 +153,7 @@ The hooks compose. The finance plugin registers a `TransactionExtractor` so that
 
 The attention work is in place: goals, open loops, and hypotheses share one ranking and one push budget. The next step is to make the mind earn more trust and need less supervision.
 
-- **Calibrated System One.** Speech-act admission is on. Routing found no safe bars on its calibration set, and skill gating still needs its live run. Both stay off, so Ze routes and matches skills with E5 by default.
+- **Calibrated System One.** Speech-act admission, routing choice and skill gating are all on in the shipped config, each with bars measured on labeled sets on 2026-10-09 and 2026-10-12. When a surface skips, Ze routes and matches skills with E5.
 - **Longer unattended work.** The goal engine still needs to carry a full personal project across weeks with minimal intervention: research, plan, execute, verify, iterate, report.
 - **A richer social model.** Projects and people are now graph entities with decaying last-contact, and co-occurrence inference proposes who works on what. Contacts are still closer to a directory than a relationship model.
 - **More signal coverage** as more domain plugins land.

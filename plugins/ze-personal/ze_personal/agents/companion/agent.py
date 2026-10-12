@@ -102,7 +102,7 @@ class CompanionAgent(BaseAgent):
     description = """
       Chat, conversation, reasoning, and coordinating specialists in one reply.
       Use for: greetings, emotional check-ins, brainstorming, writing help,
-      "explain X", "help me think through X", "what can you do", biography
+      "help me think through X", "what can you do", biography
       questions, and work that needs more than one specialist in sequence
       (calendar then email, research then a message). You speak; specialists do not.
       Scale effort: one specialist for a single-domain ask — not a four-step plan
@@ -110,6 +110,14 @@ class CompanionAgent(BaseAgent):
       news as your own tools — delegate those. Timed "remember to / remind me" is
       a reminder. Multi-week outcomes go to goals. Lingering concerns without a
       fire time are open loops.
+    """
+    routing_criteria = """
+      Use for: chat and greetings, emotional check-ins, reasoning about the user's own
+      situation or decisions, writing help, questions about what you know of the user,
+      and requests that need several specialists in turn.
+      Not for: anything that needs facts from the web, a comparison, a how-to, or
+      recent events. Those go to the agent that searches the web, even when you could
+      answer from memory. Not for calendar, email, reminders or news either.
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"

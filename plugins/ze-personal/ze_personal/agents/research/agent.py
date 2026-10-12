@@ -30,6 +30,12 @@ class ResearchAgent(BaseAgent):
       coding questions, "look up X", "search for X", "what is X", recent events, and any query
       needing verified facts from the web. Not for calendar, email, reminders, or news digests.
     """
+    routing_criteria = """
+      Use for: explain a concept, compare options, how-to and step-by-step help,
+      recent events and releases, "what is X", technical and factual questions,
+      anything that needs a live web search.
+      Not for: calendar, email, reminders, or the user's own feelings and decisions.
+    """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True

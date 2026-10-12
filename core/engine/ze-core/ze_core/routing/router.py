@@ -14,6 +14,7 @@ from ze_core.routing.judge import (
     RoutingDecision,
     RoutingSurfaceConfig,
     build_questions,
+    criterion_for,
     decide,
     shortlist,
 )
@@ -143,7 +144,7 @@ class EmbeddingRouter:
         names = shortlist([n for n in ranked if n in enabled], surface.shortlist_k)
         if len(names) < 2:
             return None, None
-        questions = build_questions({n: enabled[n].description for n in names})
+        questions = build_questions({n: criterion_for(enabled[n]) for n in names})
         try:
             result = await self._system_one.evaluate(state, questions, max_attempts=1)
         except Exception as exc:
