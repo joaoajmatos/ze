@@ -1,0 +1,22 @@
+{"id": "ho-research-explain-en", "lang": "en", "prompt": "can you explain how vector clocks work in distributed systems", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "ho-research-explain-pt", "lang": "pt", "prompt": "consegues explicar como funcionam os relógios vetoriais em sistemas distribuídos", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "ho-research-compare-en", "lang": "en", "prompt": "compare the pros and cons of heat pumps versus gas boilers for a small apartment", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "ho-research-compare-pt", "lang": "pt", "prompt": "compara as vantagens e desvantagens de bombas de calor e caldeiras a gás para um T1", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "ho-research-howto-en", "lang": "en", "prompt": "what's the best way to learn Rust coming from Python", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-research-howto-pt", "lang": "pt", "prompt": "qual é a melhor forma de aprender Rust vindo de Python", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-companion-feelings-en", "lang": "en", "prompt": "I'm feeling overwhelmed with everything going on this week, can we talk", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "ho-companion-feelings-pt", "lang": "pt", "prompt": "estou a sentir-me sobrecarregado com tudo esta semana, podemos falar", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "ho-messenger-reply-en", "lang": "en", "prompt": "draft a polite reply to Marta saying I can't make Thursday's meeting", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-messenger-reply-pt", "lang": "pt", "prompt": "escreve uma resposta educada à Marta a dizer que não posso ir à reunião de quinta", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-reminders-en", "lang": "en", "prompt": "remind me to renew my passport in three weeks", "gold_agent": "reminders", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-reminders-pt", "lang": "pt", "prompt": "lembra-me de renovar o passaporte daqui a três semanas", "gold_agent": "reminders", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-loops-en", "lang": "en", "prompt": "I still haven't decided whether to move to Porto, keep that on my radar", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-loops-pt", "lang": "pt", "prompt": "ainda não decidi se mudo para o Porto, mantém isso debaixo de olho", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-goals-en", "lang": "en", "prompt": "I want to run a half marathon by March, help me get there", "gold_agent": "goals", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "ho-goals-pt", "lang": "pt", "prompt": "quero correr uma meia maratona até março, ajuda-me a lá chegar", "gold_agent": "goals", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "ho-calendar-en", "lang": "en", "prompt": "move my dentist appointment on Friday to next Monday morning", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-calendar-pt", "lang": "pt", "prompt": "passa a consulta do dentista de sexta para segunda de manhã", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-none-en", "lang": "en", "prompt": "set the thermostat to 21 degrees", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-none-pt", "lang": "pt", "prompt": "põe o termóstato nos 21 graus", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "ho-mixed-en", "lang": "en", "prompt": "research good pediatricians near Alvalade and put a call to the top one in my calendar for Wednesday", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "ho-mixed-pt", "lang": "pt", "prompt": "pesquisa bons pediatras perto de Alvalade e marca na agenda uma chamada para o melhor na quarta", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
