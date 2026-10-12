@@ -16,6 +16,7 @@ class Settings:
     auto_migrate: bool = False
     log_level: str = "INFO"
     timezone: str = "UTC"
+    gmail_pubsub_topic: str = ""
     config: dict = field(default_factory=dict)
 
     @classmethod
@@ -51,5 +52,6 @@ class Settings:
             auto_migrate=(os.environ.get("ZC_AUTO_MIGRATE", "false").lower() == "true"),
             log_level=os.environ.get("LOG_LEVEL", "INFO"),
             timezone=os.environ.get("TIMEZONE", "UTC"),
+            gmail_pubsub_topic=os.environ.get("GMAIL_PUBSUB_TOPIC", ""),
             config=loaded_config,
         )

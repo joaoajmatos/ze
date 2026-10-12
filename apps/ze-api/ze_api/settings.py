@@ -175,6 +175,7 @@ class ZeApiSettings(BaseSettings):
             auto_migrate=False,
             log_level=self.log_level,
             timezone=tz,
+            gmail_pubsub_topic=self.gmail_pubsub_topic,
             config=self.config,
         )
 

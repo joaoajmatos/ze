@@ -87,7 +87,7 @@ class MessengerPlugin(ZePlugin):
         return [self._gmail_channel]
 
     def memory_policies(self) -> dict:
-        from ze_memory.policies import EmailPolicy
+        from ze_sdk.memory import EmailPolicy
 
         return {"email": EmailPolicy()}
 
@@ -164,8 +164,6 @@ class MessengerPlugin(ZePlugin):
         *,
         consolidation_enabled: bool = True,
     ) -> None:
-        import os
-
         if self._polling_job is not None:
             proactive_cfg = settings.config.get("proactive", {})
             poll_seconds = proactive_cfg.get("inbound_poll_interval_seconds", 300)
@@ -175,12 +173,9 @@ class MessengerPlugin(ZePlugin):
             log.info("inbound_poll_scheduled", cron=cron)
 
         if self._gmail_channel is not None and self._gmail_channel.supports_push:
-            from ze_api.settings import get_settings as get_api_settings
             from ze_messenger.jobs.gmail_watch_renewal import GmailWatchRenewalJob
 
-            topic = get_api_settings().gmail_pubsub_topic or os.environ.get(
-                "GMAIL_PUBSUB_TOPIC", ""
-            )
+            topic = settings.gmail_pubsub_topic
             if topic:
                 renewal_job = GmailWatchRenewalJob(
                     channel=self._gmail_channel, topic_name=topic
