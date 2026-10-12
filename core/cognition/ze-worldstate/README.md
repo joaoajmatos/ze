@@ -11,7 +11,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 ### Key features
 
 - `OpenLoop` / `LoopState` — the lifecycle type and its five states
-- Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion
+- Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion. The 109 Haiku gate stays as the fallback
+- Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` ships off with null bars until `make calibrate-loop-gate` returns `ENABLE`
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition
@@ -21,7 +22,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 ### Integration
 
-`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation, messenger, calendar, and ingestion inflows each call a loop extractor (`ze_worldstate.inflow`) after writing their own facts. `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
+`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate and logs only. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs. `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
 
 ## Responsibilities
 
@@ -29,7 +30,9 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 |---|---|
 | `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `DriftingLoopMention` |
 | `store.py` | `LoopStore` protocol, `PostgresLoopStore` |
-| `extraction.py` | Relevance-gated loop extraction from inflow text |
+| `extraction.py` | Relevance-gated loop extraction from inflow text; the 109 Haiku gate is the fallback |
+| `loop_judge.py` | System One loop gate: three Noul questions, bars, pure `decide()` |
+| `admission.py` | `LoopInflow`: gate, Haiku title writer, commit |
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
 | `decay.py` | Confidence decay cascade, called at the evidence-writing code path |
 | `drift.py` | Drift deadline computation and rationale composition |

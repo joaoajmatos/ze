@@ -187,7 +187,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `await_confirmation` | `nodes/execution.py` | Pause graph, emit confirm_request frame |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
 | `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call |
-| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction (fire-and-forget); skips eval threads. In a retry run it only extends session history |
+| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. In a retry run it only extends session history |
 
 </details>
 
