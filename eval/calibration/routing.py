@@ -633,9 +633,17 @@ def main() -> None:
         action="store_true",
         help="offline E5 shortlist recall only; no OpenRouter call, no credits",
     )
-    parser.add_argument("--k", type=int, default=DEFAULT_SHORTLIST_K)
+    parser.add_argument(
+        "--k",
+        type=int,
+        default=None,
+        help="shortlist size; defaults to system_one.surfaces.routing.shortlist_k",
+    )
     args = parser.parse_args()
     args.dataset = args.dataset or [DATASET]
+    if args.k is None:
+        block = (system_one_config().get("surfaces") or {}).get("routing") or {}
+        args.k = block.get("shortlist_k", DEFAULT_SHORTLIST_K)
     raise SystemExit(asyncio.run(main_async(args)))
 
 
