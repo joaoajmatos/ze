@@ -2,8 +2,8 @@
   "workflow": "speckit",
   "specName": "Routing Choice Criteria",
   "branch": "164-research-routing",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -25,6 +25,229 @@
       "kind": "start",
       "by": "extension",
       "at": "2026-10-12T12:58:27.816Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:25.808Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:25.933Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.058Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.182Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.311Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.434Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.570Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.711Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.836Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:26.960Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.083Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.214Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.339Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.464Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.604Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.738Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:27.881Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:28.005Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:28.129Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T15:32:28.254Z"
     }
-  ]
+  ],
+  "currentTask": "T030",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE"
+    },
+    "T002": {
+      "status": "DONE"
+    },
+    "T003": {
+      "status": "DONE"
+    },
+    "T010": {
+      "status": "DONE"
+    },
+    "T011": {
+      "status": "DONE"
+    },
+    "T012": {
+      "status": "DONE"
+    },
+    "T013": {
+      "status": "DONE"
+    },
+    "T014": {
+      "status": "DONE"
+    },
+    "T015": {
+      "status": "DONE"
+    },
+    "T016": {
+      "status": "DONE"
+    },
+    "T017": {
+      "status": "DONE"
+    },
+    "T018": {
+      "status": "DONE"
+    },
+    "T020": {
+      "status": "DONE"
+    },
+    "T021": {
+      "status": "DONE"
+    },
+    "T022": {
+      "status": "DONE"
+    },
+    "T023": {
+      "status": "DONE"
+    },
+    "T024": {
+      "status": "DONE"
+    },
+    "T025": {
+      "status": "DONE"
+    },
+    "T031": {
+      "status": "DONE"
+    },
+    "T041": {
+      "status": "DONE"
+    }
+  }
 }

@@ -32,7 +32,7 @@ system_one:
       choice_trust: null            # uncalibrated — set from make calibrate-routing
       multi_specialist_hold: null   # uncalibrated — set from make calibrate-routing
       complexity_lookup_max: null   # uncalibrated — set from make calibrate-routing
-      shortlist_k: 5
+      shortlist_k: 9                # 167 offline recall gate (2026-10-12): smallest k >= 0.95 on all three sets; E5 recall 0.571 at k=6 on routing_holdout2
     skills:
       enabled: true
       # Calibrated 2026-10-12 (make calibrate-skills, 84 EN+PT rows): Choice 0.978 EN / 0.970 PT, ECE 0.015,

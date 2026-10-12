@@ -17,6 +17,9 @@ Gold-agent recall by k (`routing.py --recall`, `eval/calibration/*.jsonl`, 2026-
 
 | k | routing | routing_holdout | routing_holdout2 |
 |---|---|---|---|
+| 2 | 0.652 | 0.450 | 0.214 |
+| 3 | 0.717 | 0.650 | 0.464 |
+| 4 | 0.870 | 0.700 | 0.464 |
 | 5 | 0.957 | 0.850 | 0.571 |
 | 6 | 1.000 | 0.900 | 0.571 |
 | 7 | 1.000 | 1.000 | 0.714 |
@@ -24,7 +27,7 @@ Gold-agent recall by k (`routing.py --recall`, `eval/calibration/*.jsonl`, 2026-
 | 9 | 1.000 | 1.000 | 1.000 |
 | 10 | 1.000 | 1.000 | 1.000 |
 
-E5 cosines are flat (0.76–0.82; gaps 0.00–0.03), so the ranking carries little signal for research prompts. **Decision**: sweep and take the smallest k ≥ 0.95 on all three sets (today that is 9 of 10). **Alternatives**: fixed k=6 (user's number) — cannot pass; a code guard that always includes named agents — breaks the dependency rule.
+E5 cosines are flat (0.76–0.82; gaps 0.00–0.03), so the ranking carries little signal for research prompts. **Decision**: sweep and take the smallest k ≥ 0.95 on all three sets (measured by T002 on 2026-10-12 with the extended `--recall` sweep: **k=9** of a 10-agent roster; gate T003 passes). Scored rows per set: 46 / 20 / 28. **Alternatives**: fixed k=6 (user's number) — cannot pass; a code guard that always includes named agents — breaks the dependency rule.
 **Risk**: with k=9/10 the Choice sees almost the whole roster, so E5 no longer shortlists. Cost is prompt tokens only. The `shortlist_k` clamp (`judge.py` `shortlist`) already handles k ≥ roster.
 
 ## R4 — Choice wording
