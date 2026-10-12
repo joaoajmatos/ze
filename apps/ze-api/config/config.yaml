@@ -46,7 +46,7 @@ system_one:
       enabled: true
       # Calibrated 2026-10-12 (make calibrate-loop-gate; 88 tuned + 48 held-out rows, EN+PT). Held-out verdict ENABLE for
       # EN and PT: recall 10/10 each, precision 1.00, zero false creates. Haiku baseline (same prompt, fence-tolerant)
-      # EN 9/10 recall, 1 false create; PT 10/10, 1 false create. The 109 gate as shipped fails on every reply (fenced JSON).
+      # EN 9/10 recall, 1 false create; PT 10/10, 1 false create. The 109 gate failed on every reply (fenced JSON) until its parse was fixed after the verdict.
       loop_hold: 0.75
       explicit_hold: 0.85
       resolves_hold: 0.8

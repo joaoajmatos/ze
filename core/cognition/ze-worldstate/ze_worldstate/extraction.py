@@ -101,7 +101,7 @@ async def _run_extraction_gate(
             max_tokens=200,
             response_format={"type": "json_object"},
         )
-        parsed = json.loads(raw)
+        parsed = _loads_json(raw)
     except Exception as exc:
         log.warning("loop_extraction_gate_failed", error=str(exc))
         return None
@@ -133,11 +133,11 @@ _WRITER_RESOLVE = ("reports that a commitment the user had is now done", False)
 def _loads_json(raw: str) -> Any:
     """Haiku wraps JSON replies in a ```json fence even with response_format set."""
     text = raw.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    return json.loads(text.strip())
+    start = text.find("{")
+    if start < 0:
+        raise ValueError("no JSON object in reply")
+    obj, _ = json.JSONDecoder().raw_decode(text[start:])
+    return obj
 
 
 def _whole_days(raw: Any) -> int | None:

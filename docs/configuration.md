@@ -431,7 +431,7 @@ Ze extracts open loops from conversation, email, calendar events, and ingested c
 - A low `is_open_concern` holds. Ze creates nothing and calls no Haiku.
 - A high `explicit_declaration` (conversation only) creates an active, user-declared loop.
 - Anything else creates a suspected loop.
-- A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate currently fails to parse Haiku's fenced JSON, so a fallback creates no loop.
+- A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate now strips the code fence Haiku wraps around its JSON.
 
 After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
 

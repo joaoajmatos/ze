@@ -63,7 +63,7 @@ failed to parse (88/88 tuned, 48/48 held-out); the gate returned `None` each tim
 created no loops through the gate. It also explains R2 (zero `loop_extraction` lines, empty `open_loops`).
 The gate was left byte-for-byte per FR-013; the title writer added in this phase strips the fence. The
 calibration compares against a fence-tolerant copy of the same prompt ("Haiku tol"), the stronger baseline.
-A follow-up should fix the fallback's parse (one line) or hard-cut the fallback.
+Fixed after the verdict: the fallback now parses through the same fence-tolerant `_loads_json` helper as the title writer (fenced-reply test added); the verdict run itself used the unfixed gate and the fence-tolerant baseline.
 
 **Tuned set (88 rows; wording tuned here only).** Final wording, bars `loop_hold 0.75`, `explicit_hold 0.85`,
 `resolves_hold 0.8`: 32/32 positives created, 0 false creates, 0 false declared, explicit accuracy 1.00, resolves
