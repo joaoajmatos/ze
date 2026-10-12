@@ -12,7 +12,7 @@ from ze_news.store import NewsStore
 from ze_news.types import Article
 
 if TYPE_CHECKING:
-    from ze_core.openrouter.client import OpenRouterClient
+    from ze_agents.client import LLMClient
     from ze_news.signals import NewsSignalSource
 
 log = get_logger(__name__)
@@ -29,7 +29,7 @@ class NewsFetchJob:
         registry: SourceRegistry,
         store: NewsStore,
         retention_days: int = 7,
-        client: "OpenRouterClient | None" = None,
+        client: "LLMClient | None" = None,
         credibility_enabled: bool = False,
         credibility_llm_enabled: bool = True,
         credibility_model: str = "openai/gpt-4o-mini",
