@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Routing Choice Criteria",
+  "branch": "164-research-routing",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T12:56:49.752Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T12:57:45.742Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T12:58:27.816Z"
+    }
+  ]
+}

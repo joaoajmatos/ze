@@ -1,0 +1,30 @@
+{"id": "h2-research-explain-dns-en", "lang": "en", "prompt": "explain how DNS resolution works", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-research-explain-dns-pt", "lang": "pt", "prompt": "explica como funciona a resolução de DNS", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-research-explain-mutex-en", "lang": "en", "prompt": "what is the difference between a mutex and a semaphore", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-research-explain-mutex-pt", "lang": "pt", "prompt": "qual é a diferença entre um mutex e um semáforo", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-research-compare-notes-en", "lang": "en", "prompt": "compare Notion and Obsidian for taking notes", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-research-compare-notes-pt", "lang": "pt", "prompt": "compara o Notion e o Obsidian para tomar notas", "gold_agent": "research", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-research-howto-cron-en", "lang": "en", "prompt": "how do I set up a cron job on Linux", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-research-howto-cron-pt", "lang": "pt", "prompt": "como é que configuro um cron job no Linux", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-research-current-python-en", "lang": "en", "prompt": "what changed in the latest Python release", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-research-current-python-pt", "lang": "pt", "prompt": "o que mudou na última versão do Python", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-research-current-final-en", "lang": "en", "prompt": "who won the most recent Champions League final", "gold_agent": "research", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "h2-research-current-final-pt", "lang": "pt", "prompt": "quem ganhou a última final da Liga dos Campeões", "gold_agent": "research", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "h2-companion-vent-en", "lang": "en", "prompt": "I had a rough day and just want to vent for a bit", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "h2-companion-vent-pt", "lang": "pt", "prompt": "tive um dia difícil e só quero desabafar um bocado", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "h2-companion-decision-en", "lang": "en", "prompt": "I'm torn between staying at my job and joining a startup, help me think it through", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-companion-decision-pt", "lang": "pt", "prompt": "estou dividido entre ficar no meu emprego e entrar numa startup, ajuda-me a pensar nisto", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-close-research-fasting-en", "lang": "en", "prompt": "is it healthy to fast for 16 hours a day", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-close-research-fasting-pt", "lang": "pt", "prompt": "é saudável fazer jejum durante 16 horas por dia", "gold_agent": "research", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-close-companion-procrastinate-en", "lang": "en", "prompt": "why do I always put off the things that matter most to me", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-close-companion-procrastinate-pt", "lang": "pt", "prompt": "porque é que adio sempre as coisas que mais importam para mim", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "multi_hop"}
+{"id": "h2-none-lights-en", "lang": "en", "prompt": "turn off the living room lights", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-none-lights-pt", "lang": "pt", "prompt": "apaga as luzes da sala", "gold_agent": "none", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-mixed-passport-office-en", "lang": "en", "prompt": "look up the opening hours of the Lisbon passport office and remind me to go there on Tuesday morning", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "h2-mixed-passport-office-pt", "lang": "pt", "prompt": "vê o horário do espaço cidadão de Alvalade e lembra-me de lá ir na terça de manhã", "gold_agent": "research", "gold_multi": true, "gold_complexity": "multi_hop"}
+{"id": "h2-calendar-free-en", "lang": "en", "prompt": "am I free on Thursday afternoon", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "h2-calendar-free-pt", "lang": "pt", "prompt": "estou livre na quinta à tarde", "gold_agent": "calendar", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "h2-messenger-summary-en", "lang": "en", "prompt": "summarize the unread emails from my accountant", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-messenger-summary-pt", "lang": "pt", "prompt": "resume-me os emails por ler do meu contabilista", "gold_agent": "messenger", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-ingestion-article-en", "lang": "en", "prompt": "save this article to my knowledge base: https://example.com/post/event-sourcing", "gold_agent": "ingestion", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "h2-ingestion-article-pt", "lang": "pt", "prompt": "guarda este artigo na minha base de conhecimento: https://example.com/post/event-sourcing", "gold_agent": "ingestion", "gold_multi": false, "gold_complexity": "single_tool"}
