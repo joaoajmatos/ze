@@ -8,7 +8,7 @@ Chromium needs ~512 MB RAM and a full browser stack. Running it inside the main 
 
 | Concern | Main Ze app | ze-browser |
 |---|---|---|
-| Role | Orchestration, agents, Telegram | Page fetch + text extraction |
+| Role | Orchestration, agents, web client API | Page fetch + text extraction |
 | Stack | LangGraph, Postgres, embeddings | Playwright + Chromium |
 | Network | Public webhook + internal calls | Internal only |
 | Deploy | `fly deploy` (repo root) | `fly deploy` (this directory) |
