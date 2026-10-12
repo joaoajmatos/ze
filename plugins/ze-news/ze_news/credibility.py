@@ -15,8 +15,8 @@ from ze_news.types import (
 )
 
 if TYPE_CHECKING:
+    from ze_agents.client import LLMClient
     from ze_agents.nli import NLIClient
-    from ze_core.openrouter.client import OpenRouterClient
 
     from ze_news.types import Article
 
@@ -402,7 +402,7 @@ async def run_llm_scoring(
     title: str,
     summary: str,
     heuristic_flags: list[CredibilityFlag],
-    client: "OpenRouterClient",
+    client: "LLMClient",
     model: str,
 ) -> list[CredibilityFlag]:
     """LLM scoring pass. Returns merged flag list. Never raises."""
@@ -467,7 +467,7 @@ async def run_llm_scoring(
 
 async def score_article(
     article: "Article",
-    client: "OpenRouterClient",
+    client: "LLMClient",
     model: str,
     llm_enabled: bool = True,
     *,
