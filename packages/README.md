@@ -37,6 +37,8 @@ Generated TypeScript surface for the entire `ze-api` REST and WebSocket protocol
 | `src/client.ts` | `configure()` / `createZeClient()` — default client wiring |
 | `src/blob.ts` | `downloadExport`, `importArchive`, `healthCheck` |
 | `src/error.ts` | `ApiError` |
+| `src/plugin-ui.ts` | `loadPluginPage`, `loadPluginSettings` — plugin-contributed pages and settings |
+| `src/sdk-dispatch.ts` | `invokeSdkOperation`, `loadPluginOperation` — call an operation by name |
 
 ```typescript
 import { configure } from "@ze/client";
@@ -55,6 +57,7 @@ Canonical frontend contract for server-driven UI primitive trees emitted by
 |--------|-----------------|
 | `@ze/ui` | `Primitive`, `parsePrimitiveTree`, `validatePrimitiveTree`, `PrimitiveValidationError` |
 | `@ze/ui/react` | `PrimitiveRenderer`, `PrimitiveTreeRenderer`, action callbacks |
+| `@ze/ui/charts` | Chart primitives (area, bar, and others) that the renderer uses for chart components |
 
 The contract layer is framework-neutral; the React renderer accepts already-parsed
 trees and delegates transport (WebSocket sends, onboarding session state) to the
