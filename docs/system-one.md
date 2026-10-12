@@ -102,8 +102,8 @@ Conversation runs the gate in the `write_memory` node, beside the fact extractor
 
 | Surface | Shipped config | Why |
 |---|---|---|
-| Speech act | On, with `choice_hold: 0.9` and `biography_hold: 0.7` | Calibrated on 60 English and Portuguese rows on 2026-10-09 |
-| Routing | On, with `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9` and `complexity_lookup_max: null` | Phase 167 calibrated on 52 held-out English and Portuguese rows on 2026-10-12: zero research-to-companion misses, zero harmful trusts, ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90, and its one miss falls back to decompose. The complexity bar stays unset, so the word-count classifier picks the model tier |
+| Speech act | On, with `choice_hold: 0.9` and `biography_hold: 0.7` | Calibrated on 60 English and Portuguese rows on 2026-10-09. Twelve question rows were added on 2026-10-12 after the judge labelled questions as facts; the criteria now say a question is never a fact, and the same bars give fact precision 1.00 and recall 0.93 |
+| Routing | On, with `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9` and `complexity_lookup_max: null` | Phase 167 calibrated on 52 held-out English and Portuguese rows on 2026-10-12. After the loops criteria refinement, both held-out sets score 1.000 in each language, ECE 0.041 and 0.014, zero research-to-companion misses and zero harmful trusts. The complexity score overlaps across levels, so the bar stays unset and the word-count classifier picks the model tier |
 | Skills | On, with `choice_trust: 0.75`, `needs_skill_hold: 0.6` and `shortlist_k: 5` | Calibrated on 84 English and Portuguese rows on 2026-10-12: zero wrong applies |
 | Loop gate | On, with `loop_hold: 0.75`, `explicit_hold: 0.85` and `resolves_hold: 0.8` | Calibrated 2026-10-12 on 88 tuned and 48 held-out English and Portuguese rows. On the held-out set, 10 of 10 loops found in each language, precision 1.00, zero false creates. A fence-tolerant Haiku baseline found 9 of 10 (English) and 10 of 10 (Portuguese) with one false create each. The counts are small, so the comparison is coarse |
 

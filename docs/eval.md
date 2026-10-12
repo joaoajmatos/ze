@@ -263,6 +263,8 @@ markdown fences and prose around the object. An unusable reply is recorded as
 `{"error": "unusable judge reply from <model> (...); starts with: '...'"}` on that
 scenario instead of a bare parse error.
 
+The judge sees more than the reply text. It also gets the tool calls from the trace, with a write that waits for confirmation marked as a draft, whether the turn waits for the user, and today's date. Server-side web search never appears in the tool list, and the prompt says so. Without this context the judge scored a pending goal as "no tool call" and a correct new Python release as a hallucination (2 of 5 each).
+
 ### Multi-turn scenario
 
 Use `turns` instead of `prompt` to send a sequence of messages in the same session:
