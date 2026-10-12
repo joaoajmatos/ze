@@ -390,3 +390,44 @@ async def test_web_search_turn_stays_retryable(effect_tools) -> None:
     )
     eligibility = retry_eligibility(msg, trace, latest_assistant_id=msg.id)
     assert eligibility.available is True
+
+
+async def test_record_trace_collects_deduped_sources_from_all_results():
+    from ze_agents.types import Source
+
+    main = AgentResult(
+        agent="companion", response="ok", sources=[Source("https://a.test", "A")]
+    )
+    sub = AgentResult(
+        agent="research",
+        response="ok",
+        sources=[Source("https://a.test", "A"), Source("https://b.test", "B")],
+    )
+    state = _state(main, subtask_results=[sub])
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+    assert [(s.url, s.title) for s in trace.sources] == [
+        ("https://a.test", "A"),
+        ("https://b.test", "B"),
+    ]
+
+
+def test_sources_round_trip_through_stored_trace_and_old_traces_default_empty():
+    from dataclasses import asdict
+
+    from ze_core.conversation.messages.store import _parse_trace
+    from ze_core.conversation.messages.types import MessageTrace, SourceTrace
+
+    trace = MessageTrace(
+        agent="research",
+        routing_method="embedding",
+        confidence=1.0,
+        score_gap=0.0,
+        is_compound=False,
+        subtasks=[],
+        sources=[SourceTrace(url="https://a.test", title="A")],
+    )
+    parsed = _parse_trace(asdict(trace))
+    assert parsed.sources == trace.sources
+    legacy = asdict(trace)
+    del legacy["sources"]
+    assert _parse_trace(legacy).sources == []

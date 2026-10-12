@@ -5,12 +5,14 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
+from ze_agents.types import Source, add_sources
 from ze_core.conversation.messages.types import (
     CompactionTrace,
     MemoryChunkTrace,
     MessageTrace,
     ProcedureUsageTrace,
     SkillUsageTrace,
+    SourceTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
@@ -82,9 +84,19 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         conductor_hint=state.get("conductor_hint"),
         conductor_ledger=ledger_with_promote_offer(_conductor_ledger(state)),
         judgments=list(state.get("judgments") or []),
+        sources=_extract_sources(
+            agent_result, list(state.get("subtask_results") or [])
+        ),
         effects_known=True,
     )
     return {"message_trace": trace}
+
+
+def _extract_sources(agent_result: Any, subtask_results: list[Any]) -> list[SourceTrace]:
+    found: list[Source] = []
+    for result in [agent_result, *subtask_results]:
+        add_sources(found, list(getattr(result, "sources", None) or []))
+    return [SourceTrace(url=s.url, title=s.title) for s in found]
 
 
 def _extract_skills_used(

@@ -16,6 +16,7 @@ from ze_core.conversation.messages.types import (
     MemoryChunkTrace,
     ProcedureUsageTrace,
     SkillUsageTrace,
+    SourceTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
@@ -318,6 +319,11 @@ def _parse_trace(data: dict) -> MessageTrace:
             JudgmentTrace(**{k: v for k, v in raw.items() if k in judgment_fields})
             for raw in data.get("judgments") or []
             if isinstance(raw, dict)
+        ],
+        sources=[
+            SourceTrace(url=raw["url"], title=raw.get("title", ""))
+            for raw in data.get("sources") or []
+            if isinstance(raw, dict) and raw.get("url")
         ],
         effects_known=bool(data.get("effects_known", False)),
         compaction=CompactionTrace(**data["compaction"])

@@ -36,7 +36,9 @@ from ze_agents.types import (
     Intent,
     Mode,
     RetrievalRequest,
+    Source,
     ToolCall,
+    add_sources,
 )
 
 # Schemas for OpenRouter server-side tools (executed by OpenRouter, not the client).
@@ -505,6 +507,9 @@ class BaseAgent(ABC):
         if tool_ctx_block:
             system = f"{system}\n\n{tool_ctx_block}"
 
+        def _collect_sources(found: list[Source]) -> None:
+            add_sources(ctx.sources, found)
+
         for iteration in range(max_iterations):
             if ctx.abort_token is not None and ctx.abort_token.is_set:
                 raise AgentAbortedError(ctx.abort_token.reason)
@@ -533,6 +538,7 @@ class BaseAgent(ABC):
                     system=system,
                     max_tokens=max_tokens,
                     token_sink=_token_sink,
+                    source_sink=_collect_sources,
                 )
             else:
                 text, tool_calls = await client.complete_with_tools(
@@ -541,6 +547,7 @@ class BaseAgent(ABC):
                     tools=tool_schemas,
                     system=system,
                     max_tokens=max_tokens,
+                    source_sink=_collect_sources,
                 )
 
             if text:

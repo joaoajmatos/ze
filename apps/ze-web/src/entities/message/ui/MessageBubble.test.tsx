@@ -19,7 +19,7 @@ const baseMessage = {
   thread_id: "ze-thread",
 };
 
-function seedWorkspaceTrace(workspace: Record<string, unknown>) {
+function seedWorkspaceTrace(workspace: Record<string, unknown> | null, sources?: unknown[]) {
   useTraceStore.setState({
     byThread: {
       "ze-thread": {
@@ -39,6 +39,7 @@ function seedWorkspaceTrace(workspace: Record<string, unknown>) {
             total_duration_ms: 10,
             skills_used: [],
             workspace,
+            sources,
           } as never,
         ],
         pending: false,
@@ -159,5 +160,35 @@ describe("MessageBubble", () => {
       />,
     );
     expect(screen.queryByTestId("slot")).not.toBeInTheDocument();
+  });
+
+  it("lists sources under the reply as safe external links", () => {
+    seedWorkspaceTrace(null, [
+      { url: "https://www.example.com/a", title: "Article A" },
+      { url: "https://news.org/b", title: "" },
+    ]);
+    render(<MessageBubble message={baseMessage} />);
+    const link = screen.getByRole("link", { name: "Article A" });
+    expect(link).toHaveAttribute("href", "https://www.example.com/a");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.getByText("example.com")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "news.org" })).toHaveAttribute("href", "https://news.org/b");
+  });
+
+  it("renders no sources section when sources are empty or absent", () => {
+    seedWorkspaceTrace(null, []);
+    const { unmount } = render(<MessageBubble message={baseMessage} />);
+    expect(screen.queryByTestId("message-sources")).not.toBeInTheDocument();
+    unmount();
+    seedWorkspaceTrace(null);
+    render(<MessageBubble message={baseMessage} />);
+    expect(screen.queryByTestId("message-sources")).not.toBeInTheDocument();
+  });
+
+  it("does not show sources on user messages", () => {
+    seedWorkspaceTrace(null, [{ url: "https://a.com", title: "A" }]);
+    render(<MessageBubble message={{ ...baseMessage, role: "user" }} />);
+    expect(screen.queryByTestId("message-sources")).not.toBeInTheDocument();
   });
 });

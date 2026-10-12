@@ -149,6 +149,11 @@ class CompactionTraceResponse(BaseModel):
     span_end: int
 
 
+class SourceTraceResponse(BaseModel):
+    url: str
+    title: str = ""
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -165,6 +170,7 @@ class MessageTraceResponse(BaseModel):
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
     judgments: list[JudgmentTraceResponse] = []
+    sources: list[SourceTraceResponse] = []
     effects_known: bool = False
     compaction: CompactionTraceResponse | None = None
     resume_recap_applied: bool = False
@@ -794,6 +800,7 @@ class WsTraceUpdateFrame(BaseModel):
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[ConductorLedgerEntryResponse] = []
     judgments: list[JudgmentTraceResponse] = []
+    sources: list[SourceTraceResponse] = []
     effects_known: bool = False
 
 

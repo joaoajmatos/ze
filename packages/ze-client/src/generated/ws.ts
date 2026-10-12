@@ -140,12 +140,15 @@ export type InputTokens = number | null;
 export type Consumed = boolean;
 export type SkipReason = string | null;
 export type Judgments = JudgmentTraceResponse[];
+export type Url = string;
+export type Title = string;
+export type Sources = SourceTraceResponse[];
 export type EffectsKnown = boolean;
 export type Type11 = "notification";
 export type Id5 = string;
 export type EventType = string;
 export type Source2 = string;
-export type Title = string;
+export type Title1 = string;
 export type Body = string;
 export type TargetType = string | null;
 export type TargetId = string | null;
@@ -355,6 +358,7 @@ export interface WsTraceUpdateFrame {
   conductor_hint?: ConductorHint;
   conductor_ledger?: ConductorLedger;
   judgments?: Judgments;
+  sources?: Sources;
   effects_known?: EffectsKnown;
 }
 /**
@@ -460,6 +464,14 @@ export interface JudgmentTraceResponse {
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "SourceTraceResponse".
+ */
+export interface SourceTraceResponse {
+  url: Url;
+  title?: Title;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsNotificationFrame".
  */
 export interface WsNotificationFrame {
@@ -467,7 +479,7 @@ export interface WsNotificationFrame {
   id: Id5;
   event_type: EventType;
   source: Source2;
-  title: Title;
+  title: Title1;
   body: Body;
   target_type: TargetType;
   target_id: TargetId;

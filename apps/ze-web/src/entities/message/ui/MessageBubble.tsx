@@ -1,4 +1,4 @@
-import type { MessageSchema as Message } from "@myguyze/ze-client";
+import type { MessageSchema as Message, SourceTraceResponse } from "@myguyze/ze-client";
 import { Info } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
@@ -6,6 +6,7 @@ import { MessageTracePanel } from "@/widgets/message-trace";
 import { useTraceStore } from "@/features/trace-state";
 import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
 import { useWorkspaceRunEventsQuery } from "@/entities/workspace";
+import { MessageSources } from "./MessageSources";
 
 function LiveRunOutput({ runId }: { runId: string }) {
   const { lines, looksBinary } = useWorkspaceRunEventsQuery(runId);
@@ -27,6 +28,8 @@ function LiveRunOutput({ runId }: { runId: string }) {
   );
 }
 
+const NO_SOURCES: SourceTraceResponse[] = [];
+
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
@@ -46,6 +49,10 @@ export function MessageBubble({
   const workspace = useTraceStore((s) => {
     const traces = s.byThread[message.thread_id ?? ""]?.traces ?? [];
     return traces.find((t) => t.message_id === message.id)?.workspace ?? null;
+  });
+  const sources = useTraceStore((s) => {
+    const traces = s.byThread[message.thread_id ?? ""]?.traces ?? [];
+    return traces.find((t) => t.message_id === message.id)?.sources ?? NO_SOURCES;
   });
 
   return (
@@ -155,6 +162,8 @@ export function MessageBubble({
             <ConnectedPrimitiveTree components={message.components} />
           </div>
         )}
+
+        {!isUser && <MessageSources sources={sources} />}
 
         {!isUser && actions}
 

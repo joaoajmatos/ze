@@ -129,6 +129,32 @@ class TestRunDelegate:
         }
         assert tc.tool_name == DELEGATE_TOOL_NAME
 
+    async def test_delegate_sources_bubble_up_to_the_caller_context(self):
+        from ze_agents.types import Source
+
+        async def _run_impl(self, ctx: AgentContext) -> AgentResult:
+            ctx.sources.append(Source("https://a.test", "A"))
+            ctx.sources.append(Source("https://b.test", "B"))
+            return AgentResult(agent="research", response="found it")
+
+        cls = type(
+            "_Agent_research",
+            (BaseAgent,),
+            {
+                "name": "research",
+                "description": "research agent",
+                "tools": [],
+                "run": _run_impl,
+            },
+        )
+        agent(cls)
+        register_instance("research", cls())
+        ctx = _ctx()
+
+        await _run({"agent_name": "research", "objective": "look it up"}, ctx)
+
+        assert [s.url for s in ctx.sources] == ["https://a.test", "https://b.test"]
+
     async def test_emits_conductor_progress_calendar_then_mail(self):
         _make_agent("calendar", response="tue")
         _make_agent("messenger", response="drafted")
@@ -521,7 +547,7 @@ class TestDelegateInAgenticLoop:
         a = self._loop_agent()
         captured_schemas = []
 
-        async def _capture(messages, model, tools, system, max_tokens):
+        async def _capture(messages, model, tools, system, max_tokens, **_):
             captured_schemas.extend(tools)
             return ("done", None)
 

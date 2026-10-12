@@ -23,5 +23,6 @@ export function toTraceFrame(
     conductor_hint: trace.conductor_hint,
     conductor_ledger: trace.conductor_ledger,
     judgments: trace.judgments ?? [],
+    sources: trace.sources ?? [],
   } as WsTraceUpdateFrame;
 }

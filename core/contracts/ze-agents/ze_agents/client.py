@@ -9,6 +9,8 @@ from __future__ import annotations
 from collections.abc import Callable, Awaitable
 from typing import Any, Protocol, runtime_checkable
 
+from ze_agents.types import Source
+
 
 @runtime_checkable
 class LLMClient(Protocol):
@@ -33,6 +35,7 @@ class LLMClient(Protocol):
         system: str | None = None,
         temperature: float = 0.3,
         max_tokens: int = 2000,
+        source_sink: Callable[[list[Source]], None] | None = None,
     ) -> tuple[str | None, list[dict[str, Any]] | None]: ...
 
     async def stream_complete_with_tools(
@@ -43,4 +46,5 @@ class LLMClient(Protocol):
         system: str | None = None,
         max_tokens: int = 2000,
         token_sink: Callable[[str], Awaitable[None]] | None = None,
+        source_sink: Callable[[list[Source]], None] | None = None,
     ) -> tuple[str | None, list[dict[str, Any]] | None]: ...

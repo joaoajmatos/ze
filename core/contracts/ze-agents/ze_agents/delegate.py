@@ -16,7 +16,7 @@ from ze_agents.errors import AgentAbortedError
 from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
-from ze_agents.types import AgentContext, GateDecision, ToolCall
+from ze_agents.types import AgentContext, GateDecision, ToolCall, add_sources
 
 log = get_logger(__name__)
 
@@ -353,6 +353,7 @@ async def run_delegate(
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc), duration_ms=duration_ms)
 
+    add_sources(ctx.sources, sub_ctx.sources)
     duration_ms = int((time.monotonic() - start) * 1000)
     nested = [
         {

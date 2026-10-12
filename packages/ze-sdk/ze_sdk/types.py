@@ -5,6 +5,7 @@ from ze_agents.types import (
     GateDecision,
     Mode,
     AbortToken,
+    Source,
 )
 from ze_agents.interface.types import Action, Notification
 
@@ -15,6 +16,7 @@ __all__ = [
     "GateDecision",
     "Mode",
     "AbortToken",
+    "Source",
     "Action",
     "Notification",
 ]

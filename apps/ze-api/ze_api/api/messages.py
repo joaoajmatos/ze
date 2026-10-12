@@ -102,6 +102,9 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         conductor_hint=getattr(trace, "conductor_hint", None),
         conductor_ledger=list(getattr(trace, "conductor_ledger", None) or []),
         judgments=_judgments_to_response(getattr(trace, "judgments", None)),
+        sources=[
+            {"url": s.url, "title": s.title} for s in getattr(trace, "sources", [])
+        ],
         effects_known=bool(getattr(trace, "effects_known", False)),
         compaction=(
             {

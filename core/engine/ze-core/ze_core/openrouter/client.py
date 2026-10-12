@@ -4,6 +4,7 @@ import json
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 
+import httpx
 import structlog
 from openrouter import OpenRouter
 from openrouter import errors as sdk_errors
@@ -12,6 +13,8 @@ from openrouter.components.chatresult import ChatResult
 from openrouter.components.chatstreamchunk import ChatStreamChunk
 from openrouter.types import UNSET, UNSET_SENTINEL
 from ze_agents.errors import OpenRouterError, RateLimitError
+from ze_agents.types import Source
+from ze_core.openrouter.citations import CitationTransport, capture_citations
 from ze_core.openrouter.types import TokenUsage
 from ze_logging import get_logger
 
@@ -42,6 +45,9 @@ class OpenRouterClient:
             http_referer=http_referer,
             x_open_router_title=title,
             retry_config=None,
+            async_client=httpx.AsyncClient(
+                transport=CitationTransport(), follow_redirects=True
+            ),
         )
 
     async def aclose(self) -> None:
@@ -149,6 +155,42 @@ class OpenRouterClient:
         system: str | None = None,
         temperature: float = 0.3,
         max_tokens: int = 2000,
+        source_sink: Callable[[list[Source]], None] | None = None,
+    ) -> tuple[str | None, list[dict] | None]:
+        with capture_citations() as citations:
+            result = await self._complete_with_tools(
+                messages, model, tools, system, temperature, max_tokens
+            )
+        if citations and source_sink is not None:
+            source_sink(citations)
+        return result
+
+    async def stream_complete_with_tools(
+        self,
+        messages: list[dict],
+        model: str,
+        tools: list[dict],
+        system: str | None = None,
+        max_tokens: int = 2000,
+        token_sink: Callable[[str], Awaitable[None]] | None = None,
+        source_sink: Callable[[list[Source]], None] | None = None,
+    ) -> tuple[str | None, list[dict] | None]:
+        with capture_citations() as citations:
+            result = await self._stream_complete_with_tools(
+                messages, model, tools, system, max_tokens, token_sink
+            )
+        if citations and source_sink is not None:
+            source_sink(citations)
+        return result
+
+    async def _complete_with_tools(
+        self,
+        messages: list[dict],
+        model: str,
+        tools: list[dict],
+        system: str | None = None,
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
     ) -> tuple[str | None, list[dict] | None]:
         full_messages = _build_messages(messages, system)
         start = time.monotonic()
@@ -233,7 +275,7 @@ class OpenRouterClient:
 
         raise last_exc or OpenRouterError("All retry attempts exhausted")
 
-    async def stream_complete_with_tools(
+    async def _stream_complete_with_tools(
         self,
         messages: list[dict],
         model: str,
