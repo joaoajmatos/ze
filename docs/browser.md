@@ -9,7 +9,7 @@ image small and cold starts fast.
 | Sidecar service | `sidecar/browser/` | Playwright + FastAPI — `GET /health`, `POST /extract` |
 | Python client | `integrations/ze-browser/` | `BrowserClient` — injected into `ze-api`'s container |
 | Prospecting agent | `plugins/ze-prospecting/` | Primary consumer — `browser_extract` tool |
-| Ingestion | `core/ops/ze-ingestion/` | `BrowserFetcher` for JS-heavy pages |
+| Ingestion | `core/ops/ze-ingestion/` | `BrowserFetcher` is registered, but it declares no URL patterns. The pipeline picks `WebFetcher` for URLs, so ingestion does not use the sidecar today. |
 
 If the sidecar is unreachable, Ze logs a warning at startup and prospecting falls back
 to web-search-only research. Individual `browser_extract` calls return an error string

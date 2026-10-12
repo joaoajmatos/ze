@@ -77,7 +77,7 @@ If an extractor raises, the pipeline skips its result and logs the error. At lea
 ### 6. Sink
 
 `MemorySink` calls `submit_perception_facts` with each extracted fact
-(`Provenance.SYNTHESIZED`). Facts then enter long-term memory. Companion does not
+(`Provenance.SYNTHESIZED`). When `ze-api` wires an open-loop extractor into the sink, the same text also feeds open-loop extraction. Facts then enter long-term memory. Companion does not
 call `remember_fact` on a raw ingest file. The sink attaches archive ids as evidence
 where the ingest pipeline supplies them.
 
@@ -141,7 +141,7 @@ class MyPlugin(ZePlugin):
         return [NotionFetcher()]
 ```
 
-The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but before `BrowserFetcher` and `WebFetcher`.
+The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but before `BrowserFetcher` and `WebFetcher`. `WebFetcher` matches every URL (`.*`). `BrowserFetcher` has an empty `url_patterns` list, so the pipeline never selects it by URL.
 
 ---
 
@@ -157,6 +157,15 @@ The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but befo
 Both tools drive the full `IngestionPipeline` and return a summary of what was ingested (content type, fact count, tags).
 
 The pipeline emits progress messages at each stage, so the user sees live feedback during long steps like video transcription.
+
+---
+
+## Workspace files
+
+Ze can also ingest a file from the [workspace](workspace.md). The `ingest_workspace_file`
+tool and `POST /api/v0/workspace/files/{file_path}/ingest` download the file from the
+sidecar and run it through the same pipeline. The workspace file stays in place. Ze asks
+you to confirm the tool call in chat.
 
 ---
 
