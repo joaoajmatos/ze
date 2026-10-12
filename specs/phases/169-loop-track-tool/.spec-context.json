@@ -2,8 +2,8 @@
   "workflow": "speckit",
   "specName": "Loop Track Tool",
   "branch": "169-loop-track-tool",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -25,6 +25,189 @@
       "kind": "start",
       "by": "extension",
       "at": "2026-10-12T22:27:37.374Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:06.744Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:06.901Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.036Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.171Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.306Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.441Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.580Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.728Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:07.873Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:08.022Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:08.159Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:08.302Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:08.434Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:08.615Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:44:08.833Z"
     }
-  ]
+  ],
+  "currentTask": "T016",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "implemented T001"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "implemented T002"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "implemented T003"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "implemented T004"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "implemented T005"
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "implemented T006"
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "implemented T007"
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "implemented T008"
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "implemented T009"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "implemented T010"
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "implemented T011"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "implemented T012"
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "implemented T013"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "implemented T014"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "implemented T015"
+    }
+  }
 }
