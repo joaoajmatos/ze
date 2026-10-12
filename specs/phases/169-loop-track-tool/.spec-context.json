@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Loop Track Tool",
+  "branch": "169-loop-track-tool",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:25:12.828Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:27:37.065Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:27:37.374Z"
+    }
+  ]
+}
