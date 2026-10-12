@@ -34,7 +34,12 @@ This phase fixes the three causes and then re-measures against two held-out sets
 - Q: Which lever first? → A: Lever C: Choice-specific use-for / not-for criteria and instructions, plus a stronger `none` criterion. The shortlist size is the second lever, used only if C alone misses the bar. Where the criteria live is decided in this spec (see FR-003).
 - Q: Fresh data and a live companion check? → A: Yes to both. The spec author wrote `eval/calibration/routing_holdout2.jsonl` (30 EN+PT rows) independently of the implementer; it is never tuned against. The implementer prepares a small live companion check script; the user runs it (it costs credits).
 - Q: Acceptance rule? → A: At least 0.95 routing accuracy for EN and PT on both held-out sets, ECE at most 0.10, zero research→companion misses. If no `choice_trust` meets it after lever C and the shortlist sweep, close as option F: the surface stays off and the docs say why.
-- Q: Deviation from "k=6" — **needs user confirmation.** The user named `shortlist_k: 6` as the second lever. Offline recall on the fresh set is 0.571 at k=6, so k=6 cannot reach the bar. This spec makes an offline recall gate the first task and sweeps k from 6 up to the roster size, adopting the smallest k with recall ≥ 0.95 on all three sets. If that k is the whole roster, E5 no longer filters for the Choice (it keeps the 160 cosine skip path). The user may veto this and ask for option F instead.
+- Q: Deviation from "k=6" (**confirmed by the user, see Session 2026-10-12 (2)**). The user named `shortlist_k: 6` as the second lever. Offline recall on the fresh set is 0.571 at k=6, so k=6 cannot reach the bar. This spec makes an offline recall gate the first task and sweeps k from 6 up to the roster size, adopting the smallest k with recall ≥ 0.95 on all three sets. If that k is the whole roster, E5 no longer filters for the Choice (it keeps the 160 cosine skip path). The user may veto this and ask for option F instead.
+
+### Session 2026-10-12 (2)
+
+- Q: Sweep `shortlist_k` up to the roster size instead of k=6? → A: Confirmed. Take the smallest k with recall ≥ 0.95 on all three sets. If that is the whole roster, E5 keeps only the 160 cosine skip path. Pinned rule 3 in `specs/arch/system-one-models.md` ("Local E5 stays the shortlist") is updated to say this explicitly (task T056).
+- Q: Strict per-language bar? → A: Confirmed. Zero misses per held-out per-language slice (the 11- and 15-row slices need a perfect score), ECE ≤ 0.10, zero research→companion misses. No slack.
 
 ---
 

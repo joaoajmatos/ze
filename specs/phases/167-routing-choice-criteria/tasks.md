@@ -62,6 +62,7 @@
 - [ ] T052 [P] [DOCS] Add a dated status note to `specs/phases/164-routing-choice-after-e5/spec.md` (Implemented, surface state per 167).
 - [ ] T053 [P] [DOCS] `AGENTS.md`: phase row 167 in the Phase status table; add `routing_criteria` to the ze-agents `base_agent.py` layout comment; mention `routing_holdout2.jsonl` and the companion check only if the layout lists calibration files. `specs/README.md`: index row 167 and Status.
 - [ ] T054 [P] [DOCS] Check `README.md:48` (routing/System One paragraph), `docs/adding-an-agent.md` (document the optional `routing_criteria` attribute), and any doc quoting the companion description (`grep -rn "explain X" docs README.md plugins/*/README.md`) and update each.
+- [ ] T056 [P] [DOCS] Update pinned rule 3 in `specs/arch/system-one-models.md` (line ~43, "Local E5 stays the shortlist"): state that when the recall gate needs the whole roster, E5 no longer filters for the Choice and remains only the 160 cosine skip path; cite the 167 recall table. Do this before T055.
 - [ ] T055 [DOCS] Coverage check: list `git diff main...HEAD --name-only`, and for each changed behavior or file confirm a doc or spec line covers it; report gaps and fix. Set `spec.md` Status to Implemented (or "Implemented — surface off (option F)").
 
 ## Dependencies
