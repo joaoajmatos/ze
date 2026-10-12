@@ -20,6 +20,7 @@ def register_agent(
     intents: dict[str, str] | None = None,
     model: str = "m",
     model_simple: str | None = None,
+    routing_criteria: str = "",
 ) -> None:
     class _A:
         async def run(self, ctx: AgentContext) -> AgentResult:
@@ -28,6 +29,7 @@ def register_agent(
     _A.__name__ = f"Agent_{name}"
     _A.name = name
     _A.description = description or f"The {name} agent"
+    _A.routing_criteria = routing_criteria
     _A.enabled = True
     _A.model = model
     _A.model_simple = model_simple

@@ -31,14 +31,20 @@ QUESTION_IDS = (Q_AGENT, Q_MULTI, Q_COMPLEXITY)
 
 _JUDGE_SUFFIX = "Judge the user's words; history and context are background only."
 
-_NONE_CRITERION = "No listed agent can handle this request on its own."
+_NONE_CRITERION = (
+    "No listed agent can do this alone: the capability does not exist (for example "
+    "controlling a device), or it needs more than one agent, or it is none of the "
+    "listed agents' work."
+)
 _MULTI_INSTRUCTIONS = (
     "Does this request need more than one of these specialists, for example look "
     "something up and then act on the result? " + _JUDGE_SUFFIX
 )
 _AGENT_INSTRUCTIONS = (
-    "Which one agent should handle this request? Answer none if no listed agent "
-    "can handle it on its own. " + _JUDGE_SUFFIX
+    "Which one agent should handle this request? When the request needs facts, "
+    "comparisons, recent information or step-by-step help, prefer the agent that "
+    "searches the web or uses tools over one that would answer from its own "
+    "knowledge. Answer none if no listed agent can do it alone. " + _JUDGE_SUFFIX
 )
 _COMPLEXITY_INSTRUCTIONS = (
     "How much work does this request need? Rate it from a simple lookup up to a "
@@ -130,9 +136,17 @@ def shortlist(ranked_agents: Sequence[str], k: int) -> list[str]:
     return list(ranked_agents[:size])
 
 
-def build_questions(descriptions: Mapping[str, str]) -> dict[str, SystemOneQuestion]:
-    """``descriptions`` maps shortlist agent name → description, in option order."""
-    criteria = {name: desc.strip() for name, desc in descriptions.items()}
+def criterion_for(agent_cls: Any) -> str:
+    """The Choice text for an agent: ``routing_criteria`` when set, else ``description``."""
+    criteria = (getattr(agent_cls, "routing_criteria", "") or "").strip()
+    return criteria or agent_cls.description.strip()
+
+
+def build_questions(
+    criteria_by_agent: Mapping[str, str],
+) -> dict[str, SystemOneQuestion]:
+    """``criteria_by_agent`` maps shortlist agent name → Choice text, in option order."""
+    criteria = {name: text.strip() for name, text in criteria_by_agent.items()}
     criteria[NONE_KEY] = _NONE_CRITERION
     return {
         Q_AGENT: SystemOneQuestion(

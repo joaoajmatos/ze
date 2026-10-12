@@ -4,7 +4,7 @@ from ze_personal.agents.companion.agent import CompanionAgent, _AGENT_INSTRUCTIO
 _COMPANION_DESCRIPTION_SNAPSHOT = """
       Chat, conversation, reasoning, and coordinating specialists in one reply.
       Use for: greetings, emotional check-ins, brainstorming, writing help,
-      "explain X", "help me think through X", "what can you do", biography
+      "help me think through X", "what can you do", biography
       questions, and work that needs more than one specialist in sequence
       (calendar then email, research then a message). You speak; specialists do not.
       Scale effort: one specialist for a single-domain ask — not a four-step plan

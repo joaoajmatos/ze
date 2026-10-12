@@ -93,6 +93,27 @@ class TestTrustClearSingle:
         assert call["state"]["history"] == STATE["history"]
         assert set(call["questions"]) == {"agent", "multi_specialist", "complexity"}
 
+    async def test_question_carries_routing_criteria_and_falls_back(self):
+        clear_registry()
+        register_agent("calendar", routing_criteria="Use for: schedules.")
+        register_agent("messenger")
+        register_agent("research", routing_criteria="Use for: explain.")
+        client = FakeSystemOneClient(ok_result(choice="calendar"))
+        router = EmbeddingRouter(
+            cosine_embedder({"calendar": 0.84, "messenger": 0.5, "research": 0.45}),
+            AsyncMock(),
+            routing_store=None,
+            config=RouterConfig(),
+            system_one_client=client,
+            surface=CAL,
+        )
+        env = await router.route("x", "s1", judgment_state=STATE)
+        criteria = client.calls[0]["questions"]["agent"].criteria
+        assert criteria["calendar"] == "Use for: schedules."
+        assert criteria["messenger"] == "The messenger agent"
+        assert criteria["research"] == "Use for: explain."
+        assert env.judgment.question_kinds["agent"] == "choice"
+
     async def test_judgment_is_on_the_envelope(self):
         client = FakeSystemOneClient(ok_result(choice="calendar"))
         router = _router(CLEAR, client)

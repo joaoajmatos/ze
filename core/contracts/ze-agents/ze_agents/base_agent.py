@@ -137,6 +137,7 @@ class BaseAgent(ABC):
     name: str
     display_name: str = ""
     description: str
+    routing_criteria: str = ""
     model: str = MODEL_AGENT_DEFAULT
     model_simple: str | None = None
     vision_capable: bool = False

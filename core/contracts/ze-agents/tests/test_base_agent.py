@@ -140,3 +140,19 @@ class TestSkillToolNarrowing:
 
         schemas = client.complete_with_tools.call_args[1]["tools"]
         assert {s["function"]["name"] for s in schemas} == {"tool_a"}
+
+
+def test_routing_criteria_defaults_to_empty_and_agents_register_without_it():
+    from ze_agents.registry import agent, get_enabled_agents
+
+    @agent
+    class _Plain(BaseAgent):
+        name = "plain"
+        description = "Plain agent"
+        intents = {}
+
+        async def run(self, ctx):  # pragma: no cover
+            return AgentResult(agent="plain", response="")
+
+    assert BaseAgent.routing_criteria == ""
+    assert get_enabled_agents()["plain"].routing_criteria == ""

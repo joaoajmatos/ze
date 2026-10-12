@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+from types import SimpleNamespace
+
 import pytest
 
 from ze_core.routing.judge import (
@@ -10,6 +14,7 @@ from ze_core.routing.judge import (
     USER_CAP,
     RoutingSurfaceConfig,
     build_questions,
+    criterion_for,
     build_state,
     routing_surface_config,
     shortlist,
@@ -116,6 +121,51 @@ class TestQuestions:
             assert q.instructions.rstrip().endswith(
                 "Judge the user's words; history and context are background only."
             )
+
+
+class TestCriteria:
+    def test_each_text_reaches_the_choice_in_order(self):
+        qs = build_questions({"b": "Use for: x", "a": "Use for: y"})
+        assert list(qs["agent"].criteria) == ["b", "a", "none"]
+        assert qs["agent"].criteria["b"] == "Use for: x"
+
+    def test_criterion_prefers_routing_criteria(self):
+        cls = SimpleNamespace(description=" D ", routing_criteria=" Use for: z ")
+        assert criterion_for(cls) == "Use for: z"
+
+    def test_criterion_falls_back_to_description(self):
+        assert (
+            criterion_for(SimpleNamespace(description=" D ", routing_criteria=""))
+            == "D"
+        )
+        assert criterion_for(SimpleNamespace(description=" D ")) == "D"
+
+    def test_judge_module_names_no_plugin_agent(self):
+        import ze_core.routing.judge as judge
+
+        tree = ast.parse(Path(judge.__file__).read_text(encoding="utf-8"))
+        docstrings = {
+            id(node.body[0].value)
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Module, ast.FunctionDef, ast.ClassDef))
+            and node.body
+            and isinstance(node.body[0], ast.Expr)
+            and isinstance(node.body[0].value, ast.Constant)
+        }
+        literals = " ".join(
+            node.value.lower()
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and id(node) not in docstrings
+        )
+        for name in ("companion", "research", "calendar", "messenger"):
+            assert name not in literals
+
+    def test_instructions_prefer_tool_agents_for_factual_requests(self):
+        qs = build_questions({"a": "x", "b": "y"})
+        assert "searches the web" in qs["agent"].instructions
+        assert "more than one agent" in qs["agent"].criteria["none"]
 
 
 class TestShortlist:
@@ -316,3 +366,17 @@ class TestDecideMultiSpecialistAndScore:
         a = decide(ok_result(choice="calendar", score=0.1), cfg, _SHORT)
         b = decide(ok_result(choice="calendar", score=0.9), cfg, _SHORT)
         assert a.agent == b.agent == "calendar"
+
+
+class TestShippedConfig:
+    def test_routing_surface_is_never_half_enabled(self):
+        import yaml
+
+        path = Path(__file__).resolve().parents[5] / "apps/ze-api/config/config.yaml"
+        block = yaml.safe_load(path.read_text())["system_one"]["surfaces"]["routing"]
+        cfg = routing_surface_config(yaml.safe_load(path.read_text()))
+        if block["enabled"] is True:
+            assert cfg.choice_trust is not None
+            assert cfg.multi_specialist_hold is not None
+        else:
+            assert block["enabled"] is False
