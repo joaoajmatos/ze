@@ -78,13 +78,14 @@ See [browser.md](browser.md) for Docker Compose, health checks, and deployment.
 
 ### Workspace sidecar
 
-See [workspace.md](workspace.md) for modes, isolation, Docker Compose, and deployment.
+See [workspace.md](workspace.md) for access, runs, isolation, Docker Compose, and deployment.
 
 | Variable | Default | Description |
 |---|---|---|
 | `WORKSPACE_SERVICE_URL` | `http://ze-workspace.internal:8080` | URL of the workspace sidecar service |
 | `WORKSPACE_API_TOKEN` | *(empty)* | Bearer token for the sidecar control API |
 | `WORKSPACE_TIMEOUT_SECONDS` | `120` | HTTP timeout for workspace requests |
+| `WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS` | `25` | Seconds a turn waits for a command before it detaches |
 
 ### Prospecting
 
