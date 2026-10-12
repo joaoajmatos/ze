@@ -817,7 +817,7 @@ export const listCollisions = <ThrowOnError extends boolean = false>(options?: O
 /**
  * Get the current priority snapshot
  *
- * Return PriorityView's ranked loops, stuck/near-gate goals, and non-stale hypotheses, merged with any active user reprioritizations (FR-001, FR-008, FR-009, FR-010).
+ * Return PriorityView's ranked loops, stuck/near-gate goals, relationships, and non-stale hypotheses, merged with any active user reprioritizations (FR-001, FR-008, FR-009, FR-010). Source kinds that could not be read are listed in sources_failed so the caller can show an incomplete-ranking notice (FR-016).
  */
 export const getPrioritySnapshot = <ThrowOnError extends boolean = false>(options?: Options<GetPrioritySnapshotData, ThrowOnError>): RequestResult<GetPrioritySnapshotResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetPrioritySnapshotResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
