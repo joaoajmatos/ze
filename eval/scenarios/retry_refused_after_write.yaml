@@ -16,7 +16,11 @@
   prompt: "Create a goal to learn basic Portuguese in the next three months."
   description: >
     A turn that creates a goal. Retry must stay unavailable because a write ran.
-  expected_tools: [create_goal]
+  expected_tools:
+    # Goal creation waits for the user's Start confirmation, so the eval turn
+    # records a draft (is_draft, success false) rather than an executed call.
+    - name: create_goal
+      allow_draft: true
   tags: [retry, feedback]
   criteria:
     - Should create the goal through the goal tool, not just describe one

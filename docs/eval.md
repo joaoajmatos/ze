@@ -211,7 +211,22 @@ Create or edit YAML files in `eval/scenarios/`. No code changes required.
 `create_event`, `set_reminder`, `draft_email`). All listed tools must appear in
 the response's `tool_calls` with `success: true`. This check is objective and
 free — no LLM judge needed. Omit it for scenarios where not calling tools is
-correct behaviour (graceful errors, companion responses, ambiguous routing).
+correct behavior (graceful errors, companion responses, ambiguous routing).
+
+An entry can also be a mapping with `name`, optional `args`, and optional
+`allow_draft`:
+
+```yaml
+  expected_tools:
+    - name: create_goal
+      allow_draft: true
+```
+
+Some tools only draft in an eval turn. `create_goal` waits for the user's Start
+confirmation, so the trace records the call with `is_draft: true` and
+`success: false` ("suppressed: draft mode"). The scorer does not count drafts by
+default. Set `allow_draft: true` on an entry to accept a draft call as well as a
+successful one. A plain failure never passes, and `args` conditions still apply.
 
 You can also add a `verify` block to check Ze's database directly after the
 scenario runs:
@@ -234,6 +249,13 @@ Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify`
 ### Retry scenarios
 
 `eval/scenarios/retry_text_only.yaml` and `eval/scenarios/retry_refused_after_write.yaml` (tag `retry`) cover Retry. The text-only turns must record no write call, so Retry stays available. The reminder and goal turns must record a write call, so Retry is unavailable. The scenario schema did not change.
+
+### Judge output
+
+`--judge` asks the judge model for JSON and parses it tolerantly: it accepts
+markdown fences and prose around the object. An unusable reply is recorded as
+`{"error": "unusable judge reply from <model> (...); starts with: '...'"}` on that
+scenario instead of a bare parse error.
 
 ### Multi-turn scenario
 

@@ -22,8 +22,11 @@ def tools_correct(scenario: dict, ze_result: dict) -> bool | None:
     Check that every tool listed in expected_tools was called and succeeded.
 
     Each entry may be a bare string (name only) or a dict with 'name' and
-    optional 'args' conditions. Returns None when the scenario declares no
-    expected_tools.
+    optional 'args' conditions and 'allow_draft'. Returns None when the
+    scenario declares no expected_tools.
+
+    A call suppressed by draft mode (is_draft, success False) counts only for
+    entries that set ``allow_draft: true``; drafts are never counted otherwise.
     """
     expected = scenario.get("expected_tools")
     if not expected:
@@ -34,12 +37,17 @@ def tools_correct(scenario: dict, ze_result: dict) -> bool | None:
         if isinstance(entry, str):
             tool_name = entry
             expected_args = None
+            allow_draft = False
         else:
             tool_name = entry["name"]
             expected_args = entry.get("args")
+            allow_draft = bool(entry.get("allow_draft"))
 
         successful_calls = [
-            tc for tc in calls if tc.get("tool_name") == tool_name and tc.get("success")
+            tc
+            for tc in calls
+            if tc.get("tool_name") == tool_name
+            and (tc.get("success") or (allow_draft and tc.get("is_draft")))
         ]
         if not successful_calls:
             return False

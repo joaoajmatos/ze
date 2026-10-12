@@ -85,7 +85,7 @@ async def judge(
                     {"role": "user", "content": user_msg},
                 ],
                 "temperature": 0.0,
-                "max_tokens": 300,
+                "max_tokens": 600,
                 "response_format": {"type": "json_object"},
             },
             headers={
@@ -96,15 +96,53 @@ async def judge(
         )
         resp.raise_for_status()
 
-    content = resp.json()["choices"][0]["message"]["content"]
-    parsed = json.loads(content)
+    content = resp.json()["choices"][0]["message"].get("content")
+    return parse_judge_reply(content, model=model)
 
-    return JudgeScore(
-        quality=int(parsed["quality"]),
-        tone=int(parsed["tone"]),
-        tool_use=int(parsed["tool_use"])
-        if parsed.get("tool_use") is not None
-        else None,
-        pass_=bool(parsed["pass"]),
-        reasoning=parsed["reasoning"],
-    )
+
+class JudgeParseError(ValueError):
+    """The judge model's reply could not be turned into a JudgeScore."""
+
+
+def _extract_json_object(text: str) -> dict:
+    """Parse a JSON object from a model reply, tolerating fences and prose.
+
+    Models routinely wrap JSON in ```json fences even when told not to and
+    when response_format=json_object is requested (OpenRouter does not enforce
+    it for every provider).
+    """
+    stripped = text.strip()
+    try:
+        value = json.loads(stripped)
+    except json.JSONDecodeError:
+        start, end = stripped.find("{"), stripped.rfind("}")
+        if start == -1 or end <= start:
+            raise
+        value = json.loads(stripped[start : end + 1])
+    if not isinstance(value, dict):
+        raise JudgeParseError(f"expected a JSON object, got {type(value).__name__}")
+    return value
+
+
+def parse_judge_reply(content: str | None, *, model: str = "") -> JudgeScore:
+    snippet = (content or "").strip()[:120]
+    if not snippet:
+        raise JudgeParseError(f"judge model {model!r} returned an empty reply")
+    try:
+        parsed = _extract_json_object(content or "")
+        return JudgeScore(
+            quality=int(parsed["quality"]),
+            tone=int(parsed["tone"]),
+            tool_use=int(parsed["tool_use"])
+            if parsed.get("tool_use") is not None
+            else None,
+            pass_=bool(parsed["pass"]),
+            reasoning=str(parsed["reasoning"]),
+        )
+    except JudgeParseError:
+        raise
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        raise JudgeParseError(
+            f"unusable judge reply from {model!r} ({type(exc).__name__}: {exc}); "
+            f"starts with: {snippet!r}"
+        ) from exc
