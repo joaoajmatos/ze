@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime, timezone
 from enum import StrEnum
@@ -11,6 +10,8 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 from ze_logging import get_logger
+from ze_agents.errors import LLMJsonParseError
+from ze_agents.llm_json import parse_llm_json
 
 from ze_memory.defaults import MODEL_SYNTHESIS
 from ze_memory.types import Event, Fact, FactAdmission, SpeechAct
@@ -108,15 +109,6 @@ def fact_extraction_model(settings: Any = None) -> str:
     return MODEL_SYNTHESIS
 
 
-def _strip_json_fence(raw: str) -> str:
-    text = raw.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    return text.strip()
-
-
 def is_trivial_turn(prompt: str) -> bool:
     stripped = prompt.strip()
     if not stripped:
@@ -144,10 +136,9 @@ def admit_family(family: str | None) -> str | None:
 
 
 def parse_fact_response(raw: str) -> list[dict]:
-    text = _strip_json_fence(raw)
     try:
-        parsed = json.loads(text)
-    except json.JSONDecodeError:
+        parsed = parse_llm_json(raw, expect=(dict, list))
+    except LLMJsonParseError:
         return []
     return _admit_parsed(parsed)
 
@@ -273,7 +264,7 @@ async def write_fact_values(
             system=_VALUE_SYSTEM,
             max_tokens=200,
         )
-        parsed = json.loads(_strip_json_fence(raw))
+        parsed = parse_llm_json(raw, expect=dict)
     except Exception as exc:
         log.warning("memory_fact_value_writer_failed", error=str(exc))
         return []
@@ -310,23 +301,15 @@ _EVENT_SYSTEM = (
 
 
 def parse_event_response(raw: str) -> list[dict]:
-    text = raw.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    text = text.strip()
     try:
-        parsed = json.loads(text)
-        if not isinstance(parsed, list):
-            return []
-        return [
-            e
-            for e in parsed
-            if isinstance(e, dict) and e.get("title") and e.get("event_type")
-        ]
-    except (json.JSONDecodeError, ValueError):
+        parsed = parse_llm_json(raw, expect=list)
+    except LLMJsonParseError:
         return []
+    return [
+        e
+        for e in parsed
+        if isinstance(e, dict) and e.get("title") and e.get("event_type")
+    ]
 
 
 def _parse_dt(value: Any) -> datetime | None:
@@ -453,27 +436,17 @@ async def extract_entities(
             system=_ENTITY_SYSTEM,
             max_tokens=300,
         )
-        text = raw_text.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        text = text.strip()
         try:
-            import json as _json
-
-            parsed = _json.loads(text)
-            if not isinstance(parsed, list):
-                return []
-            return raw_to_entities(
-                [
-                    e
-                    for e in parsed
-                    if isinstance(e, dict) and e.get("name") and e.get("entity_type")
-                ]
-            )
-        except (_json.JSONDecodeError, ValueError):
+            parsed = parse_llm_json(raw_text, expect=list)
+        except LLMJsonParseError:
             return []
+        return raw_to_entities(
+            [
+                e
+                for e in parsed
+                if isinstance(e, dict) and e.get("name") and e.get("entity_type")
+            ]
+        )
     except Exception as exc:
         log.warning("memory_entity_extraction_failed", error=str(exc))
         return []

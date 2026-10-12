@@ -1,10 +1,10 @@
 import asyncio
-import json
 from datetime import date, timedelta
 
 import asyncpg
 
 from ze_logging import get_logger
+from ze_sdk import parse_llm_json
 from ze_agents.client import LLMClient
 from ze_agents.model_resolution import resolve_model
 from ze_sdk.proactive import ProactiveNotifier
@@ -128,9 +128,7 @@ class InsightEngine:
             return
 
         try:
-            items = json.loads(raw)
-            if not isinstance(items, list):
-                raise ValueError("not a list")
+            items = parse_llm_json(raw, expect=list)
         except Exception:
             self._log.warning("insights_bad_json", raw=raw[:200])
             return

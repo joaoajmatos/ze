@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
@@ -10,6 +9,8 @@ from uuid import UUID, uuid4
 from ze_logging import get_logger
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_agents.errors import LLMJsonParseError
+from ze_agents.llm_json import parse_llm_json
 from ze_collision.detect import submit_and_detect_collisions
 from ze_plugin.contribution import (
     Contribution,
@@ -240,8 +241,7 @@ class CorrelationEngine:
         pipeline (FR-006).
         """
         contribution_evidence = [
-            EvidenceRef(kind=ref.kind, id=ref.id)
-            for ref in hypothesis.evidence
+            EvidenceRef(kind=ref.kind, id=ref.id) for ref in hypothesis.evidence
         ]
         contribution = Contribution(
             claim_kind=hypothesis.claim_kind,
@@ -417,8 +417,8 @@ class CorrelationEngine:
             return None
 
         try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as exc:
+            parsed = parse_llm_json(raw, expect=dict)
+        except LLMJsonParseError as exc:
             log.warning("correlation_llm_json_parse_failed", error=str(exc))
             return None
 

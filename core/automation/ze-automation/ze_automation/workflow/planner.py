@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from ze_agents import defaults
-from ze_agents.errors import WorkflowPlanError
+from ze_agents.errors import LLMJsonParseError, WorkflowPlanError
+from ze_agents.llm_json import parse_llm_json
 from ze_logging import get_logger
 from ze_agents.client import LLMClient
 from ze_sdk.memory import Procedure
@@ -88,27 +88,6 @@ Output ONLY a JSON object — no explanation, no markdown:
 """
 
 
-def _extract_json(raw: str) -> str:
-    text = raw.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-
-    if text.startswith("["):
-        start = text.find("[")
-        end = text.rfind("]") + 1
-        if end > start:
-            return text[start:end]
-
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start != -1 and end > start:
-        return text[start:end]
-    return text
-
-
 def _parse_branches(raw: object) -> list[Branch]:
     if not isinstance(raw, list):
         return []
@@ -165,11 +144,11 @@ class WorkflowPlanner:
             system=_PLAN_SYSTEM,
         )
         try:
-            data = json.loads(_extract_json(raw))
-            if not isinstance(data, list) or len(data) == 0:
+            data = parse_llm_json(raw, expect=list)
+            if len(data) == 0:
                 raise ValueError("Expected a non-empty JSON array")
             steps = [_parse_step(item, index) for index, item in enumerate(data)]
-        except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        except (LLMJsonParseError, KeyError, ValueError) as exc:
             log.warning("workflow_plan_parse_error", error=str(exc), raw=raw[:200])
             raise WorkflowPlanError(f"Planner returned invalid plan: {exc}") from exc
 
@@ -214,7 +193,7 @@ class WorkflowPlanner:
                 model=defaults.MODEL_WORKFLOW_PLAN,
                 system=_PROCEDURE_SYSTEM,
             )
-            data = json.loads(_extract_json(raw))
+            data = parse_llm_json(raw, expect=dict)
             if not data.get("name"):
                 return None
             return Procedure(
@@ -238,8 +217,8 @@ class WorkflowPlanner:
             system=_SCHEDULE_SYSTEM,
         )
         try:
-            data = json.loads(_extract_json(raw))
+            data = parse_llm_json(raw, expect=dict)
             return data.get("cron")
-        except (json.JSONDecodeError, KeyError) as exc:
+        except (LLMJsonParseError, KeyError) as exc:
             log.warning("workflow_schedule_parse_error", error=str(exc), raw=raw[:200])
             raise WorkflowPlanError(f"Could not parse schedule: {exc}") from exc

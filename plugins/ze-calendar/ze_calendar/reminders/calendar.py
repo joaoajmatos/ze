@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
 from ze_logging import get_logger
+from ze_sdk import parse_llm_json
 from ze_sdk.proactive import PushLogStore
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
 from ze_agents.client import LLMClient
@@ -265,7 +265,7 @@ class CalendarReminderService:
                 system=_ASSESS_SYSTEM,
                 max_tokens=150,
             )
-            parsed = json.loads(raw)
+            parsed = parse_llm_json(raw, expect=dict)
             if isinstance(parsed.get("intervals"), list):
                 raw_intervals = [str(x) for x in parsed["intervals"]]
         except Exception as exc:

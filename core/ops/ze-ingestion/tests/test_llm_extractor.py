@@ -99,3 +99,23 @@ async def test_truncates_long_content(client: AsyncMock) -> None:
     call_args = client.complete.call_args
     sent_text = call_args.kwargs["messages"][0]["content"]
     assert len(sent_text) < 13_000
+
+
+@pytest.mark.parametrize(
+    "wrap",
+    [
+        lambda s: s,
+        lambda s: f"```json\n{s}\n```",
+        lambda s: f"Here is the extraction:\n```json\n{s}\n```\nDone.",
+    ],
+    ids=["bare", "fenced", "prose"],
+)
+async def test_extraction_tolerates_fenced_and_prose_replies(
+    client: AsyncMock, content: ProcessedContent, wrap
+) -> None:
+    client.complete.return_value = wrap(
+        json.dumps({"summary": "S", "facts": ["f"], "entities": [], "tags": ["t"]})
+    )
+    result = await _extractor(client).extract(content)
+    assert result.summary == "S"
+    assert result.tags == ["t"]

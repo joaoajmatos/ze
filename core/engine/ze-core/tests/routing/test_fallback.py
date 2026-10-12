@@ -167,3 +167,28 @@ class TestMarkdownFenceStripping:
         client = _mock_client(payload)
         env = await decompose("q", {}, client, _registry_from_names(), "haiku")
         assert env.primary_agent == "research"
+
+
+class TestDecomposeLLMReplyShapes:
+    @pytest.mark.parametrize(
+        "wrap",
+        [
+            lambda s: s,
+            lambda s: f"```json\n{s}\n```",
+            lambda s: f"Here is the plan:\n```json\n{s}\n```\nLet me know.",
+            lambda s: f"Sure — {s} — that routes it.",
+        ],
+        ids=["bare", "fenced", "prose-fenced", "prose-inline"],
+    )
+    async def test_parses_fenced_and_prose_wrapped_replies(self, wrap):
+        _register("research")
+        payload = json.dumps(
+            {
+                "subtasks": [{"agent": "research", "intent": "read", "prompt": "q"}],
+                "sequential": False,
+            }
+        )
+        env = await decompose(
+            "q", {}, _mock_client(wrap(payload)), _registry_from_names(), "haiku"
+        )
+        assert env.primary_agent == "research"

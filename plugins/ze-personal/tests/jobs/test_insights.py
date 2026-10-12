@@ -1,3 +1,4 @@
+import pytest
 import json
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -366,3 +367,33 @@ async def test_insights_no_profile_uses_placeholder():
     call_kwargs = client.complete.call_args[1]
     user_prompt = call_kwargs.get("prompt", "")
     assert "(no profile yet)" in user_prompt
+
+
+@pytest.mark.parametrize(
+    "wrap",
+    [
+        lambda s: f"```json\n{s}\n```",
+        lambda s: f"Here are the insights:\n```json\n{s}\n```\nEnjoy.",
+        lambda s: f"Insights: {s} (end)",
+    ],
+    ids=["fenced", "prose-fenced", "inline-prose"],
+)
+async def test_insights_tolerates_fenced_and_prose_replies(wrap):
+    conn = make_conn()
+    conn.fetch = AsyncMock(
+        side_effect=[
+            [_fact_row(), _fact_row(), _fact_row()],
+            [_episode_row()],
+            [],
+            [],
+        ]
+    )
+    conn.fetchrow = AsyncMock(side_effect=[_profile_row(), {"id": uuid4()}])
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=wrap(_insight_json()))
+    notifier = make_notifier()
+
+    engine, _ = make_engine(conn=conn, notifier=notifier, client=client)
+    await engine.run()
+
+    notifier.notify.assert_awaited_once()

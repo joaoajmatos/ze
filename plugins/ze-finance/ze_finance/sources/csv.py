@@ -3,12 +3,13 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
-import json
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from ze_agents.client import LLMClient
+from ze_sdk import parse_llm_json
+from ze_sdk.errors import LLMJsonParseError
 from ze_logging import get_logger
 from ze_finance.errors import FinanceParseError
 from ze_finance.store import CsvMappingStore
@@ -74,14 +75,9 @@ class CsvSchemaInferrer:
             messages=[{"role": "user", "content": prompt}],
             model=_ANTHROPIC_MODEL,
         )
-        text = response.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
         try:
-            data: dict[str, Any] = json.loads(text)
-        except json.JSONDecodeError as exc:
+            data: dict[str, Any] = parse_llm_json(response, expect=dict)
+        except LLMJsonParseError as exc:
             raise FinanceParseError(f"Could not infer column mapping: {exc}") from exc
 
         amount_col = data.get("amount_column")
