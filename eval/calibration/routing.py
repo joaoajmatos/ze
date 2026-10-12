@@ -371,16 +371,17 @@ def score_values(outcomes: list[Outcome]) -> dict[str, list[float]]:
 
 
 def suggest_lookup_max(by_level: dict[str, list[float]]) -> float | None:
+    """Highest lookup score below every harder row; None when the levels overlap.
+
+    A bar above any single_tool or multi_hop score would send that request to the
+    cheap tier, the same harm the grid counts for choice_trust, so it must be zero.
+    """
     lookup = by_level["lookup"]
     rest = by_level["single_tool"] + by_level["multi_hop"]
     if not lookup or not rest:
         return None
-    candidates = sorted({round(v, 2) for v in lookup + rest})
-    best = max(
-        candidates,
-        key=lambda bar: sum(s <= bar for s in lookup) + sum(s > bar for s in rest),
-    )
-    return best
+    safe = [round(v, 2) for v in lookup if v < min(rest)]
+    return max(safe) if safe else None
 
 
 def report_score(outcomes: list[Outcome]) -> float | None:

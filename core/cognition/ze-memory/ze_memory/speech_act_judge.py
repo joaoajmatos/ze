@@ -24,7 +24,9 @@ _SPEECH_ACT_CRITERIA: dict[str, str] = {
         "The user states a durable fact about themselves that stays true: who they are, "
         "a standing preference, a relationship, a hard constraint, or a contact detail. "
         "No time attached. Examples: 'I prefer aisle seats', 'sou alérgico a amendoins', "
-        "'my sister is called Ana'."
+        "'my sister is called Ana'. "
+        "Only a statement. A question is never a fact, even when it mentions one: "
+        "'what is my sister called?', 'prefiro corredor ou janela?'."
     ),
     "forget": (
         "Only when the user retracts a standing fact they told you about themselves. "
@@ -57,7 +59,8 @@ _SPEECH_ACT_CRITERIA: dict[str, str] = {
     ),
     "drop": (
         "Filler, thanks, mood, weather, right-now location or anything not worth keeping. "
-        "Examples: 'thanks, that helps', 'estou cansado hoje'."
+        "Also any question to the assistant, including one about what it knows of the user. "
+        "Examples: 'thanks, that helps', 'estou cansado hoje', 'what is my sister called?'."
     ),
     "clarify": (
         "The message is too ambiguous to place. The user must be asked what they mean. "

@@ -338,7 +338,9 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                 if turns:
                     prompt_for_judge = " → ".join(t["prompt"] for t in turns)
                     response_for_judge = turns[-1]["result"].get("response", "")
+                    judged_result = turns[-1]["result"]
                 else:
+                    judged_result = ze_result
                     prompt_for_judge = scenario.get("prompt", "")
                     response_for_judge = ze_result.get("response", "")
 
@@ -350,6 +352,10 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                         expected_agent=scenario.get("expected_agent"),
                         agent_used=agent_used,
                         criteria=scenario["criteria"],
+                        tool_calls=judged_result.get("tool_calls"),
+                        pending_confirmation=bool(
+                            judged_result.get("pending_confirmation")
+                        ),
                         model=args.judge_model,
                         api_key=or_key,
                     )

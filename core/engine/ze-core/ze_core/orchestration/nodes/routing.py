@@ -31,12 +31,18 @@ async def embed_route(state: AgentState, config: RunnableConfig) -> dict:
     judgment_state = build_judgment_state(state)
     previous_agent = get_cost_context().agent
     set_agent_context("router")
+    forced_agent = config["configurable"].get("forced_agent")
     try:
-        envelope = await router.route(
-            prompt=routing_text,
-            session_id=state["session_id"],
-            judgment_state=judgment_state,
-        )
+        if forced_agent:
+            envelope = await router.route_forced(
+                routing_text, state["session_id"], forced_agent
+            )
+        else:
+            envelope = await router.route(
+                prompt=routing_text,
+                session_id=state["session_id"],
+                judgment_state=judgment_state,
+            )
     finally:
         set_agent_context(previous_agent)
     log.info(

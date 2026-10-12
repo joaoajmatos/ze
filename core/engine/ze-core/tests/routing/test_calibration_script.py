@@ -151,6 +151,24 @@ def test_suggest_lookup_max_separates_levels(calib):
     )
 
 
+def test_suggest_lookup_max_refuses_a_bar_that_downgrades_a_harder_request(calib):
+    by_level = {
+        "lookup": [0.07, 0.15, 0.32],
+        "single_tool": [0.04, 0.5],
+        "multi_hop": [0.02, 0.9],
+    }
+    assert calib.suggest_lookup_max(by_level) is None
+
+
+def test_suggest_lookup_max_stays_below_every_harder_row(calib):
+    by_level = {
+        "lookup": [0.05, 0.1, 0.3],
+        "single_tool": [0.2, 0.5],
+        "multi_hop": [0.8],
+    }
+    assert calib.suggest_lookup_max(by_level) == 0.1
+
+
 def test_grid_counts_harm_when_trusting_the_wrong_agent(calib):
     roster = _roster()
     row = calib.Row("r", "en", "p", "calendar", False, "lookup")

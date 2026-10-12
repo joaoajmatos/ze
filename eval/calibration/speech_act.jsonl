@@ -58,3 +58,15 @@
 {"id": "clarify-pt-4", "lang": "pt", "user": "Lembra-te disso.", "assistant": "De que queres que me lembre?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
 {"id": "clarify-pt-5", "lang": "pt", "user": "Faz aquilo que falámos.", "assistant": "A que te referes?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
 {"id": "clarify-pt-6", "lang": "pt", "user": "Guarda isso.", "assistant": "Guardar o quê?", "gold_act": "clarify", "gold_family": "drop", "gold_persist": false}
+{"id": "question-en-1", "lang": "en", "user": "What's my sister's name again?", "assistant": "Her name is Ana.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-en-2", "lang": "en", "user": "Do I prefer aisle or window seats?", "assistant": "You prefer aisle seats.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-en-3", "lang": "en", "user": "Am I allergic to anything I should tell the restaurant about?", "assistant": "You told me you're allergic to peanuts.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-en-4", "lang": "en", "user": "Should I tell my boss I live in Lisbon now?", "assistant": "That depends on your contract.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-en-5", "lang": "en", "user": "Is a phone number like 912 345 678 a Portuguese mobile?", "assistant": "Yes, numbers starting with 9 are mobile.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-en-6", "lang": "en", "user": "Why do I always take my coffee black?", "assistant": "I can't know your reasons, but you might find it tastes cleaner.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-pt-7", "lang": "pt", "user": "Como é que se chama a minha irmã?", "assistant": "Chama-se Ana.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-pt-8", "lang": "pt", "user": "Prefiro lugar no corredor ou à janela?", "assistant": "Disseste que preferes corredor.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-pt-9", "lang": "pt", "user": "Sou alérgico a alguma coisa que deva dizer ao restaurante?", "assistant": "Disseste-me que és alérgico a amendoins.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-pt-10", "lang": "pt", "user": "Devo dizer ao meu chefe que agora vivo em Lisboa?", "assistant": "Depende do teu contrato.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-pt-11", "lang": "pt", "user": "Um número como 912 345 678 é de telemóvel português?", "assistant": "Sim, os que começam por 9 são móveis.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}
+{"id": "question-pt-12", "lang": "pt", "user": "Porque é que bebo sempre o café sem açúcar?", "assistant": "Não sei os teus motivos, mas muita gente acha que sabe melhor.", "gold_act": "drop", "gold_family": "drop", "gold_persist": false}

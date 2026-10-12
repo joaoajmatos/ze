@@ -115,8 +115,9 @@ class CompanionAgent(BaseAgent):
       Use for: chat and greetings, emotional check-ins, reasoning about the user's own
       situation or decisions, writing help, questions about what you know of the user,
       and requests that need several specialists in turn.
-      Not for: anything that needs facts from the web, a comparison, a how-to, or
-      recent events. Those go to the agent that searches the web, even when you could
+      Not for: a matter the user is undecided about and asks you to keep on their radar
+      or keep an eye on (open loops), anything that needs facts from the web, a
+      comparison, a how-to, or recent events. Those go to the agent that searches the web, even when you could
       answer from memory. Not for calendar, email, reminders or news either.
     """
     model = "anthropic/claude-sonnet-4-5"

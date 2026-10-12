@@ -211,7 +211,7 @@ dev-full: workspace-up
 
 dev-eval:
 	uv sync -q --package ze-api
-	AUTO_MIGRATE=true PUBLIC_URL= LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
+	AUTO_MIGRATE=true EVAL_MODE=true PUBLIC_URL= LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
 
 logs:
 	tail -f $(LOG_FILE)

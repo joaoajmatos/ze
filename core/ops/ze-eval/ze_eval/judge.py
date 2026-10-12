@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date
 
 import httpx
 
@@ -41,6 +42,13 @@ _PROMPT = """\
 Expected agent: {expected_agent}
 Actual agent used: {agent_used}
 
+## What Ze did (from the trace)
+Today's date: {today}. Your own knowledge may be older; do not mark a date or version wrong only because you do not know it.
+Tool calls:
+{tool_calls}
+Waiting for the user's confirmation: {pending_confirmation}
+Notes: a call marked "draft" is how a write that waits for the user's confirmation appears; it counts as invoking the tool. Web search runs on the server and never appears in the tool call list.
+
 ## Criteria
 {criteria}
 
@@ -54,6 +62,44 @@ Return JSON with exactly these fields:
 """
 
 
+def format_tool_calls(tool_calls: list[dict] | None) -> str:
+    if not tool_calls:
+        return "- none recorded"
+    lines = []
+    for call in tool_calls:
+        if call.get("is_draft"):
+            state = "draft"
+        else:
+            state = "ok" if call.get("success", True) else "failed"
+        lines.append(f"- {call.get('tool_name', '?')} ({state})")
+    return "\n".join(lines)
+
+
+def build_prompt(
+    *,
+    description: str,
+    prompt: str,
+    response: str,
+    expected_agent: str | None,
+    agent_used: str | None,
+    criteria: list[str],
+    tool_calls: list[dict] | None = None,
+    pending_confirmation: bool = False,
+    today: date | None = None,
+) -> str:
+    return _PROMPT.format(
+        description=description,
+        prompt=prompt,
+        response=response,
+        expected_agent=expected_agent or "any",
+        agent_used=agent_used or "unknown",
+        criteria="\n".join(f"- {c}" for c in criteria),
+        tool_calls=format_tool_calls(tool_calls),
+        pending_confirmation="yes" if pending_confirmation else "no",
+        today=(today or date.today()).isoformat(),
+    )
+
+
 async def judge(
     *,
     description: str,
@@ -62,17 +108,21 @@ async def judge(
     expected_agent: str | None,
     agent_used: str | None,
     criteria: list[str],
+    tool_calls: list[dict] | None = None,
+    pending_confirmation: bool = False,
     model: str = DEFAULT_JUDGE_MODEL,
     api_key: str | None = None,
 ) -> JudgeScore:
     key = api_key or os.environ["OPENROUTER_API_KEY"]
-    user_msg = _PROMPT.format(
+    user_msg = build_prompt(
         description=description,
         prompt=prompt,
         response=response,
-        expected_agent=expected_agent or "any",
-        agent_used=agent_used or "unknown",
-        criteria="\n".join(f"- {c}" for c in criteria),
+        expected_agent=expected_agent,
+        agent_used=agent_used,
+        criteria=criteria,
+        tool_calls=tool_calls,
+        pending_confirmation=pending_confirmation,
     )
 
     async with httpx.AsyncClient(timeout=30.0) as client:

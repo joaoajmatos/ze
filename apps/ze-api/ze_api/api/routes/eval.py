@@ -1,3 +1,4 @@
+from ze_agents.registry import get_enabled_agents
 from fastapi import APIRouter, Header, HTTPException, Request, status
 from ze_agents.interface.types import RawInput
 from ze_core.telemetry.context import set_flow_context
@@ -28,7 +29,8 @@ def _check_api_key(x_ze_api_key: str | None, settings) -> None:
     summary="Eval chat",
     description=(
         "Send a prompt directly to the Ze graph and receive a structured response "
-        "with routing metadata. Intended for automated evaluation and LLM-as-tester workflows."
+        "with routing metadata. Intended for automated evaluation and LLM-as-tester workflows. "
+        "force_agent routes the turn to a named agent and is accepted only in eval mode."
     ),
 )
 async def eval_chat(
@@ -42,12 +44,27 @@ async def eval_chat(
     # session_id is prefixed with "eval-" so eval threads don't collide with real ones.
     set_flow_context("eval", session_id=body.session_id)
 
+    config_extra = None
+    if body.force_agent:
+        if not request.app.state.settings.eval_mode:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="force_agent needs eval mode (make dev-eval)",
+            )
+        if body.force_agent not in get_enabled_agents():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown agent {body.force_agent!r}",
+            )
+        config_extra = {"forced_agent": body.force_agent}
+
     container = request.app.state.container
     session_id = f"eval-{body.session_id}"
     try:
         outcome = await container.invoke_raw_turn(
             session_id,
             RawInput(text=body.prompt),
+            config_extra=config_extra,
         )
     except Exception as exc:
         log.exception("eval_graph_error", session_id=session_id, error=str(exc))

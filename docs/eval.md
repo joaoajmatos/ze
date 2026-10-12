@@ -187,6 +187,12 @@ curl -X POST http://localhost:8000/eval/chat \
   -d '{"prompt": "What is recursion?", "session_id": "test-1"}'
 ```
 
+### Forcing an agent
+
+Add `"force_agent": "research"` to the request body to skip routing and run a named agent. The trace shows `routing_method: "forced"`. Use it to measure what one agent does with a prompt the router would send elsewhere.
+
+The server accepts `force_agent` only when it runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `403` and runs nothing. An unknown agent name answers `400`. The WebSocket path has no way to set it.
+
 ---
 
 ## Adding scenarios
@@ -256,6 +262,8 @@ Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify`
 markdown fences and prose around the object. An unusable reply is recorded as
 `{"error": "unusable judge reply from <model> (...); starts with: '...'"}` on that
 scenario instead of a bare parse error.
+
+The judge sees more than the reply text. It also gets the tool calls from the trace, with a write that waits for confirmation marked as a draft, whether the turn waits for the user, and today's date. Server-side web search never appears in the tool list, and the prompt says so. Without this context the judge scored a pending goal as "no tool call" and a correct new Python release as a hallucination (2 of 5 each).
 
 ### Multi-turn scenario
 
