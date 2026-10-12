@@ -31,4 +31,4 @@
 
 ## Notes
 
-- One default is awaiting the user's confirmation: whether a new message about a dropped topic may re-suspect it (FR-014). The default follows 109 FR-011.
+- The user accepted all three flagged decisions on 2026-10-12: deadline-based drift (no column), honoring `correlation.push` flags, re-suspecting dropped topics on new evidence.
