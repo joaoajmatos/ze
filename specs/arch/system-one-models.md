@@ -1,6 +1,6 @@
 # System One models — living roadmap
 
-> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; 163 and 164 ship off with null bars until calibrated. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented, also off with null bars. Later opportunities in this document wait for their own phase.
+> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; 163 ships on with calibrated bars (2026-10-09), 164 ships off because its calibration found no safe `choice_trust`. See [docs/system-one.md](../../docs/system-one.md) for the reader-facing summary. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented, also off with null bars. Later opportunities in this document wait for their own phase.
 > **Date:** 2026-09-30
 > **Related:** [Ze Doctrine](ze-doctrine.md), [Contribution Seam](contribution-seam.md), [Memory Honesty Roadmap](memory-honesty-roadmap.md), [Claim Topology](claim-topology.md), [OpenRouter Gateway](openrouter-gateway.md), [Local Embeddings](local-embeddings.md), [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), NLI [080](../phases/080-nli-client/spec.md), speech-act [142](../phases/142-speech-act-routing/spec.md)–[148](../phases/148-extractor-dual-write/spec.md), E5 routing [160](../phases/160-e5-routing-confidence/spec.md)
 

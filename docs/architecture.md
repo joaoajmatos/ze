@@ -26,7 +26,7 @@ At a high level, the system is split into:
   and contribution collision logging.
 - `ze-onboarding`, `ze-ingestion`, `ze-correlation`, `ze-skills`, `ze-browser`,
   `ze-workspace`, and `ze-notifications` for shared support systems.
-- `ze-components` and `@ze/client` for server-driven UI and typed API consumption.
+- `ze-components` and `@myguyze/ze-client` for server-driven UI and typed API consumption.
 
 ---
 
@@ -78,7 +78,7 @@ picks one agent (or `none`), says whether the request needs more than one specia
 grades complexity. Code then decides: a confident choice routes directly, `none` or a
 multi-specialist answer goes to `decompose`, and an unsure choice or a skip falls back to
 the E5 rules above. The surface ships off. See
-[configuration.md](configuration.md#system_one).
+[system-one.md](system-one.md) and [configuration.md](configuration.md#system_one).
 
 **Conductor rewrite.** After `decompose`, a sequential multi-specialist turn, or a turn that
 mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_rewrite`).
@@ -398,7 +398,7 @@ Five memory layers, all backed by Postgres + pgvector:
   seam. Post-turn extraction may add synthesized facts only after a keep/drop gate
   (closed families; `speech_act` must be `fact`). Timed reminders, loops, and goals
   are not stored as facts. There is no `AgentResult.memory_proposals` persist path.
-  The REST `POST /memory/facts/review` endpoint exposes review for the native app.
+  The REST `POST /api/v0/memory/facts/review` endpoint exposes review for the native app.
 - **Episodes** (`memory_episodes`) — summaries of conversation turns. Written automatically
   after each run.
 - **Events** (`memory_events`) — discrete real-world events (meetings, calls) extracted
@@ -718,7 +718,7 @@ configurable lookback window, grouped by any single dimension:
 except `/api/v0/health` and `/api/v0/version` (public).
 
 All routes declare an explicit camelCase `operation_id` which drives named method
-generation in `@ze/client`. The OpenAPI spec is self-contained: `scripts/codegen.ts` extracts it at Python
+generation in `@myguyze/ze-client`. The OpenAPI spec is self-contained: `scripts/codegen.ts` extracts it at Python
 import time, so codegen needs no running server.
 
 ### Public routes
@@ -782,13 +782,13 @@ import time, so codegen needs no running server.
 
 ---
 
-## `@ze/client` — Typed Frontend SDK
+## `@myguyze/ze-client` — Typed Frontend SDK
 
 `packages/ze-client` is a local npm workspace package generated from the FastAPI
 OpenAPI spec. `ze-web` imports from it — never raw route strings.
 
 ```typescript
-import { configure, listContacts, listGoals } from "@ze/client";
+import { configure, listContacts, listGoals } from "@myguyze/ze-client";
 
 // Once at startup (main.tsx)
 configure({ serverUrl: "http://localhost:8000", apiKey: "..." });
@@ -803,7 +803,7 @@ const { data: contacts } = await listContacts();
 bun run scripts/codegen.ts   # extracts spec from Python, writes packages/ze-client/src/generated/
 ```
 
-Generated files are committed. `@ze/client` also exports WS frame types (from
+Generated files are committed. `@myguyze/ze-client` also exports WS frame types (from
 `json-schema-to-typescript`), blob helpers (`downloadExport`, `importArchive`,
 `healthCheck`), and `ApiError`.
 

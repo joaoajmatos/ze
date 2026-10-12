@@ -78,13 +78,14 @@ See [browser.md](browser.md) for Docker Compose, health checks, and deployment.
 
 ### Workspace sidecar
 
-See [workspace.md](workspace.md) for modes, isolation, Docker Compose, and deployment.
+See [workspace.md](workspace.md) for access, runs, isolation, Docker Compose, and deployment.
 
 | Variable | Default | Description |
 |---|---|---|
 | `WORKSPACE_SERVICE_URL` | `http://ze-workspace.internal:8080` | URL of the workspace sidecar service |
 | `WORKSPACE_API_TOKEN` | *(empty)* | Bearer token for the sidecar control API |
 | `WORKSPACE_TIMEOUT_SECONDS` | `120` | HTTP timeout for workspace requests |
+| `WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS` | `25` | Seconds a turn waits for a command before it detaches |
 
 ### Prospecting
 
@@ -336,18 +337,18 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. Everything is off by default.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act` surface are on with calibrated bars. The `routing` and `skills` surfaces are off. Without a `system_one:` block, everything is off.
 
 ```yaml
 system_one:
-  enabled: false                  # Master switch. Off → every call skips with reason "disabled"
+  enabled: true                   # Master switch. Off → every call skips with reason "disabled"
   model: typesafe/jev-1.13
   timeout_ms: 2000                # Per attempt
   surfaces:
     speech_act:                   # Post-turn fact admission (Phase 163)
-      enabled: false
-      choice_hold: null           # uncalibrated — set from make calibrate-speech-act
-      biography_hold: null        # uncalibrated — set from make calibrate-speech-act
+      enabled: true
+      choice_hold: 0.9            # calibrated 2026-10-09 on 60 EN+PT rows
+      biography_hold: 0.7
     routing:                      # Agent choice after E5 (Phase 164)
       enabled: false
       choice_trust: null          # uncalibrated — set from make calibrate-routing
@@ -369,7 +370,7 @@ The two bars are not the same number:
 - `choice_hold` is the minimum peakedness for the act and family answers.
 - `biography_hold` is the minimum yes-probability that the message states a durable fact about the user.
 
-If you enable the surface and leave a bar `null`, Ze logs `speech_act_system_one_uncalibrated` and uses the Haiku judge. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-speech-act`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.speech_act.enabled` to `true`. Run it again when you change the model.
+If you enable the surface and leave a bar `null`, Ze logs `speech_act_system_one_uncalibrated` and uses the Haiku judge. The shipped bars (0.9 and 0.7) came from the 2026-10-09 run: exact-act accuracy 0.967, fact precision 1.00, fact recall 0.93. To measure your own, run `OPENROUTER_API_KEY=... make calibrate-speech-act`. This run is live and costs credits. Copy the suggested values into the file. Run it again when you change the model.
 
 #### `surfaces.routing`
 
@@ -387,7 +388,7 @@ The three bars are separate numbers:
 
 `shortlist_k` sets how many E5-ranked agents the choice sees. The default is 5. Values below 2 fall back to 5. At 4, the research agent fell out of the shortlist on some factual questions in the calibration set; 5 keeps it in. With fewer than two enabled agents, Ze makes no call.
 
-The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.routing.enabled` to `true`.
+The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no bars. The 2026-10-09 calibration found no safe `choice_trust`, because research turns miss the shortlist at `shortlist_k: 4`, so the surface stays off. To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.routing.enabled` to `true`.
 
 When System One routes a turn, `routing_log.confidence` holds the peakedness of the agent choice instead of the E5 cosine score. Turns that fall back to E5 keep the cosine score.
 
@@ -409,7 +410,7 @@ The keys:
 - `shortlist_k` sets how many skills the choice sees. Values below 1 fall back to 5.
 - `shortlist_floor` is the lowest cosine score that can enter the shortlist. It can sit below `skills.match_threshold`, so a paraphrase can apply when both answers clear their bars. The trace panel marks such a skill **below floor**. A value above `match_threshold` is clamped to it, with a warning.
 
-The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.skills.enabled` to `true`.
+The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.skills.enabled` to `true`.
 
 `shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values, `shortlist_k: 5` and `shortlist_floor: 0.35`, come from that table. On the 84-row English and Portuguese set, the gold skill appears in the shortlist at a rate of 0.955, 0.970, 0.985, 0.985, 0.985 and 0.985 for k = 3 to 8. English holds at 0.974 for every k. Portuguese rises from 0.926 to 1.0 at k = 5. The floor does not bind: E5 cosines run from 0.71 to 0.89, even for messages that need no skill, so every skill already clears `skills.match_threshold`. The floor matters only if your skills or model score lower. No bars ship, and the live calibration run has not been done.
 

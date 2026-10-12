@@ -12,7 +12,7 @@ export type { Client };
  * use this config automatically without needing `{ client }` passed per-call.
  *
  * ```ts
- * import { configure } from "@ze/client";
+ * import { configure } from "@myguyze/ze-client";
  * configure({ serverUrl: "http://localhost:8000", apiKey: "..." });
  *
  * // then just call functions directly

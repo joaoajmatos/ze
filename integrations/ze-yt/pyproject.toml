@@ -8,6 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "ze-ingestion",
+    "ze-logging",
 ]
 
 [dependency-groups]
@@ -23,6 +24,7 @@ testpaths = ["tests"]
 
 [tool.uv.sources]
 ze-ingestion = { workspace = true }
+ze-logging   = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ze_yt"]

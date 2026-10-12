@@ -12,13 +12,13 @@ This is **not** a browsing session. Web pages stay in the [browser sidecar](brow
 
 | Piece | Location | Role |
 |---|---|---|
-| Sidecar service | `sidecar/workspace/` | FastAPI — files, run, cancel, reset |
+| Sidecar service | `sidecar/workspace/` | FastAPI — files, runs (start, status, event stream, cancel), reset |
 | Python package | `core/ops/ze-workspace/` | Client, gate, tools, store, REST |
-| Web UI | `apps/ze-web` System `/workspace` | Tree and occupancy (map only) |
+| Web UI | `apps/ze-web` System `/workspace` | Tree, occupancy, and the live run banner |
 
 If the sidecar is unreachable, workspace tools return an error the agent can skip.
 Chat attachments still place files through the API. The System page lists the tree;
-it does not run commands, reset, or switch a mode.
+it does not start commands or reset. It can show and cancel a running command.
 
 See [configuration.md](configuration.md#workspace-sidecar) for env vars.
 
@@ -31,8 +31,25 @@ it is available: reads proceed, writes and commands confirm in the thread, reset
 confirms. Unattended work (goals, workflows) uses the same computer without that
 pause. Skill scripts still need executable approval.
 
-Detached runs, automatic follow-up turns, and push when a run finishes are spec 116,
-not this sidecar.
+## Runs
+
+The sidecar owns each run. `POST /run` returns at once with a run handle that Ze
+chooses. Ze records the run in `workspace_runs` before it starts the command.
+
+- **Wait, then detach.** A command that finishes within the short wait (25 seconds
+  by default) returns its output in the same turn. A longer command keeps running.
+  The turn ends with a "still running" reply.
+- **Follow-up turn.** When a detached command ends, Ze starts a new turn on the same
+  thread and reports the result. If no client is connected, Ze sends a push
+  notification instead.
+- **One run at a time.** Ze refuses a second command while one runs. The refusal
+  names the running command.
+- **Restart.** After `ze-api` restarts, Ze reattaches to runs that are still
+  running. If the computer lost a run, Ze marks it failed. It never invents a result.
+- **Live output.** While a command runs, chat and the workspace page show the output
+  so far. The `GET /api/v0/workspace/runs/{run_id}/events` route streams it. A page
+  opened mid-run replays the lines already printed.
+- **Cancel.** `POST /api/v0/workspace/runs/{run_id}/cancel` stops a running command.
 
 ## Skill scripts
 

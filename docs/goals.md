@@ -129,12 +129,37 @@ Gate checkpoints use a richer format (title, done list, planned list, options).
 
 ## On completion
 
-When all milestones finish, `GoalExecutor` runs three things automatically:
+When all milestones finish, `GoalExecutor` runs these steps automatically:
 
-1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Sent via `ProactiveNotifier` as the completion message.
-2. **Procedure promotion** — Ze submits reusable procedures extracted during the goal to `MemoryStore.propose_procedure()` so later goals can retrieve them. If a procedure is still provisional while the goal is active, Ze can reuse it inside the same goal before completion.
-3. **Learning promotion** — Ze submits generalizable facts extracted from the goal's `GoalLearning` records through `submit_perception_facts` as synthesized, `reviewed=False`. They enter the normal memory pipeline (dedup via nightly consolidation) and appear at `GET /memory/facts`. Ze promotes only facts that describe the user's preferences or patterns; it excludes goal-specific research findings.
-4. **Retrospective stored** — Ze saves the narrative to `goals.retrospective_text`, making it available to the weekly goal narrative job and future goal suggestion synthesis.
+1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Ze sends it through `ProactiveNotifier` as the completion message.
+2. **Retrospective stored** — Ze saves the narrative to `goals.retrospective_text`. The weekly goal narrative job and future goal suggestions read it.
+3. **Procedure candidate** — Ze extracts a reusable procedure from the goal and submits it as a procedure candidate (`submit_procedure_candidate`). The governed procedure lifecycle in `ze-memory` decides whether to admit it. See [memory.md](memory.md). If a procedure was provisional while the goal ran, Ze resolves it at completion.
+
+Completion does not promote learnings to memory. Ze keeps them as evidence-backed claims, as the next section describes.
+
+### Goal learnings
+
+After each milestone, Ze extracts a learning and stores it as a `GoalLearning` claim in `goal_learning_claims`. A claim has a kind (`FACT` or `INFERENCE`), a provenance, a confidence, and a status (`pending_review`, `active`, `review_needed`, `retracted`, or `superseded`). Evidence rows in `goal_learning_evidence` link a claim to the action records that support or contradict it, or to your confirmation or correction. Ze checks new claims against existing ones with the NLI model and flags contradictions for review.
+
+A redirect at a gate creates a learning too. Ze approves it at once, because you wrote it.
+
+Ze promotes a learning to user memory only when it is eligible:
+
+- You confirmed it, or
+- At least two distinct supporting action records exist, and they come from at least two independent execution contexts.
+
+A learning with an unresolved contradiction is never eligible. Promotion goes through `submit_perception_facts` as a synthesized fact with `reviewed = false`. It then follows the normal memory pipeline, including nightly dedup, and appears at `GET /api/v0/memory/facts`. A confirmed learning can become a `FACT`. Any other learning stays an `INFERENCE`.
+
+You review and promote learnings through the REST API:
+
+| Route | Action |
+|---|---|
+| `GET /api/v0/goals/{goal_id}/learnings` | List a goal's learnings |
+| `GET /api/v0/goals/{goal_id}/learnings/{learning_id}` | Learning detail with evidence |
+| `POST /api/v0/goals/{goal_id}/learnings/{learning_id}/review` | Approve, reject, correct, defer, or retain |
+| `POST /api/v0/goals/{goal_id}/learnings/{learning_id}/promote` | Promote an eligible learning |
+
+Later milestones and replans see the eligible learnings of their goal. Ze labels each one `FACT` or `INFERENCE (tentative)`.
 
 ---
 
@@ -150,7 +175,7 @@ Ze analyzes recent memory facts, episodes, and retrospectives to propose one new
 
 ### Stuck goal detection (Tuesday 9 AM UTC)
 
-Ze checks for goals that have had no milestone progress or gate resolution in a configurable window (default: 48 h for milestones, 72 h for gates). Stuck goals get a push notification with **Resume** / **Abandon** / **Redirect** options. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
+Ze checks for active goals with no milestone progress, and for goals waiting at a gate, for 7 days or more. The window is fixed in code. After an alert, Ze waits 14 days before it alerts about the same goal again. One push notification lists the stuck goals. An idle active goal offers **Redirect**, **Pause**, and **Abandon**. A goal at a gate offers **Approve**, **Redirect**, and **Stop**. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
 
 ---
 
@@ -162,7 +187,7 @@ When planning a new goal (or replanning after a redirect), `GoalPlanner.plan()` 
 
 ### Learning promotion
 
-See [On completion](#on-completion) above. Generalizable learnings from completed goals flow into user memory, where they are available to all future agents — not just the goal engine.
+See [Goal learnings](#goal-learnings) above. A learning that you confirm, or that independent action records support, can enter user memory. Then every future agent can use it, not just the goal engine.
 
 ### Procedure reuse within an active goal
 
@@ -172,7 +197,7 @@ The contract is:
 
 1. Ze may extract a provisional procedure once a milestone cluster looks stable enough to generalize.
 2. That procedure is available to later milestones in the same goal and to `GoalPlanner.replan_remaining()`.
-3. On goal completion, Ze promotes any still-relevant procedure into `MemoryStore.propose_procedure()` so future goals can reuse it too.
+3. On goal completion, Ze submits the procedure as a candidate to the governed procedure lifecycle, so future goals can reuse it too. If the goal ends abandoned, Ze discards the provisional procedure.
 
 This closes the gap between "Ze learned a procedure" and "Ze can use it again before the goal ends".
 
@@ -183,7 +208,7 @@ This closes the gap between "Ze learned a procedure" and "Ze can use it again be
 ```
 goals
   id, title, objective, success_condition, status, type, time_horizon,
-  learnings, retrospective_text, last_stuck_alert_at, ...
+  retrospective_text, last_stuck_alert_at, ...
 
 goal_milestones
   id, goal_id, sequence, title, description, intent, agent_hint,
@@ -193,8 +218,13 @@ goal_gates
   id, goal_id, after_sequence, status, context_summary, plan_summary,
   user_feedback, fired_at, resolved_at, ...
 
-goal_learnings
-  id, goal_id, content, source, created_at
+goal_learning_claims
+  id, goal_id, content, claim_kind, provenance, confidence, status,
+  activated_at, retracted_at, superseded_by_id, ...
+
+goal_learning_evidence, goal_learning_reviews,
+goal_learning_relationships, goal_learning_promotions
+  evidence links, review decisions, claim relations, promotion records
 
 goal_execution_traces
   id, goal_id, milestone_id, seq, tool_name, args, result,
@@ -216,7 +246,7 @@ The planner sets `reuse_hint` on milestones when a prior goal's output may be re
 The `@agent` class in `ze_automation/agents/goals/agent.py` declares goal capabilities.
 Intent capabilities default to `confirm` for create, update, and delete; read is autonomous.
 
-`ze_api/container.py` fixes the advance sweep cron (`*/15 * * * *`, job id
+`ze_automation/bootstrap.py` fixes the advance sweep cron (`*/15 * * * *`, job id
 `goal_advance_sweep`). Proactive job crons are configurable via `proactive.*` in
 `config/config.yaml`. See [docs/scheduled-jobs.md](scheduled-jobs.md).
 
@@ -229,4 +259,4 @@ Intent capabilities default to `confirm` for create, update, and delete; read is
 - Success is not auto-detected; Ze marks complete when all milestones finish; you confirm at gates along the way.
 - Steering only applies to remaining pending milestones; Ze never re-runs completed milestones.
 - Promoted facts from learning promotion enter memory as `reviewed=False` and go through the normal consolidation cycle before being treated as canonical.
-- Procedures can be reused within the same goal once extracted; if you only see them at the end, the spec is incomplete.
+- Procedures can be reused within the same goal once extracted.

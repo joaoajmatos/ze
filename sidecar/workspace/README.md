@@ -32,8 +32,10 @@ Internal control API. Auth: `Authorization: Bearer $WORKSPACE_API_TOKEN` on ever
 | `PUT /fs` | Write JSON (base64) |
 | `POST /fs/upload` | Multipart place |
 | `DELETE /fs` | Delete path |
-| `POST /run` | Exec command (mutex, timeout) |
-| `POST /cancel` | Kill in-flight run |
+| `POST /run` | Start a command; returns at once (one run at a time, timeout) |
+| `GET /runs/{run_id}` | Run status and output preview |
+| `GET /runs/{run_id}/events` | Stream stdout, stderr, and exit |
+| `POST /runs/{run_id}/cancel` | Kill a running command |
 | `POST /reset` | Wipe `/workspace` |
 
 ---

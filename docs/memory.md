@@ -239,7 +239,7 @@ identity after normalize) are dropped. Kept rows are
   (`nli_write_time_check`, default `true`) on same-subject candidates with cosine ≥
   `nli_lower_cosine_bound` (0.60). Hits are marked `contradicted = true`. Controlled
   by `memory.nli_*` keys in `config.yaml`.
-- `POST /memory/facts/review` exposes review/edit/reject for the native app.
+- `POST /api/v0/memory/facts/review` exposes review/edit/reject for the native app.
 
 **Reviewed facts are never auto-merged or auto-expired.**
 
@@ -489,16 +489,16 @@ Synthesis is skipped if fewer than `profile.min_facts` (3 default) reviewed fact
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /memory/facts` | All facts — query params: `reviewed`, `contradicted`, `expires_before` |
-| `GET /memory/digest` | Unreviewed facts + facts near expiry |
-| `GET /memory/profile` | Current profile facets (latest synthesis) |
-| `POST /memory/facts/review` | Confirm, reject, or edit a proposed fact |
-| `POST /memory/consolidate` | Trigger a consolidation run manually |
+| `GET /api/v0/memory/facts` | All facts — query params: `reviewed`, `contradicted`, `expires_before` |
+| `GET /api/v0/memory/digest` | Unreviewed facts + facts near expiry |
+| `GET /api/v0/memory/profile` | Current profile facets (latest synthesis) |
+| `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a proposed fact |
+| `POST /api/v0/memory/consolidate` | Trigger a consolidation run manually |
 
 ### Manual consolidation
 
 ```bash
-curl -X POST https://ze-backend.fly.dev/memory/consolidate \
+curl -X POST https://ze-backend.fly.dev/api/v0/memory/consolidate \
   -H "Authorization: Bearer $ZE_API_KEY"
 ```
 

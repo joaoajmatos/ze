@@ -24,7 +24,7 @@ An honest attempt at building a personal AI that does more than answer questions
 
 The objective: an assistant that holds context across weeks, works in the background, and connects things that happen in separate parts of your life — calendar, email, news, long-running projects. Not a chat window that resets. Something closer to Jarvis. That's the whole brief.
 
-It isn't there yet. But 165 shipped phases in, the infrastructure is real and it's getting closer.
+It isn't there yet. But 166 shipped phases in, the infrastructure is real and it's getting closer.
 
 ---
 
@@ -32,7 +32,7 @@ It isn't there yet. But 165 shipped phases in, the infrastructure is real and it
 
 Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-domain architecture. By default, routing uses local embeddings (`intfloat/multilingual-e5-base`), so no LLM call happens until an agent needs to act. Two optional System One surfaces can refine routing and fact admission. All LLM traffic goes through OpenRouter. Graph state is checkpointed in Postgres and survives restarts.
 
-- **ze-web** — React SPA (Feature-Sliced Design). `@ze/client` is generated from the OpenAPI spec. `@ze/ui` renders server-driven components, including charts.
+- **ze-web** — React SPA (Feature-Sliced Design). `@myguyze/ze-client` is generated from the OpenAPI spec. `@myguyze/ze-ui` renders server-driven components, including charts.
 
 ### One voice, many specialists
 
@@ -40,12 +40,13 @@ Companion is the only agent that speaks to you. It acts as the conductor: when a
 
 ### System One
 
-System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Two surfaces use it:
+System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Three surfaces use it:
 
 - **Speech-act admission** decides whether a finished turn states a durable fact worth keeping.
 - **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
+- **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
 
-Both are off by default and stay off until you calibrate them against labeled sets (`make calibrate-speech-act`, `make calibrate-routing`). When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
+Only speech-act admission is on in the shipped config. It runs with bars measured on a labeled set (`make calibrate-speech-act`). Routing and skill gating ship off. Their calibration runs (`make calibrate-routing`, `make calibrate-skills`) have not produced safe bars yet. When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 
@@ -152,7 +153,7 @@ The hooks compose. The finance plugin registers a `TransactionExtractor` so that
 
 The attention work is in place: goals, open loops, and hypotheses share one ranking and one push budget. The next step is to make the mind earn more trust and need less supervision.
 
-- **Calibrated System One.** Both surfaces ship off. The labeled sets and calibration runs exist, but nobody has set the bars yet, so Ze still routes and admits facts with E5 and Haiku by default.
+- **Calibrated System One.** Speech-act admission is on. Routing found no safe bars on its calibration set, and skill gating still needs its live run. Both stay off, so Ze routes and matches skills with E5 by default.
 - **Longer unattended work.** The goal engine still needs to carry a full personal project across weeks with minimal intervention: research, plan, execute, verify, iterate, report.
 - **A richer social model.** Projects and people are now graph entities with decaying last-contact, and co-occurrence inference proposes who works on what. Contacts are still closer to a directory than a relationship model.
 - **More signal coverage** as more domain plugins land.
@@ -230,7 +231,7 @@ make test-<name>       # any package — docs/testing.md
 make test-py           # every Python package; lists all failures (CI gate)
 make test-all          # test-py with slow tests, then test-web
 make lint              # ruff
-make typecheck-web     # tsc for ze-web and @ze/ui
+make typecheck-web     # tsc for ze-web and @myguyze/ze-ui
 make eval              # agent evals (make dev-eval first)
 ```
 

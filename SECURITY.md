@@ -7,6 +7,7 @@ Ze is a self-hosted, single-user assistant with access to Gmail, Google Calendar
 - Authentication bypass (WebSocket or REST)
 - Privilege escalation or unauthenticated access to the API
 - Prompt injection enabling unintended tool execution
+- Escape from the workspace sidecar, or a bypass of the workspace gate or the skill-script approval
 - Credential or secret exposure (API keys, OAuth tokens)
 - Dependency vulnerabilities with a credible exploit path
 
@@ -35,5 +36,7 @@ Ze is **single-user by design**. There is no multi-tenant isolation. Before expo
 2. Keep `.env` out of version control; use `fly secrets` in production.
 3. Review each agent's `capabilities` setting — prefer `confirm` or `draft_only` for write actions.
 4. Use a non-guessable ntfy topic and set an access token.
+5. Import only skills you trust. A new skill waits for your review before it affects a conversation. A skill script runs in the workspace only after a second, separate approval.
+6. Keep the workspace sidecar off the public network. It runs shell commands. In chat, Ze asks you to confirm a command, and unattended runs (goals, workflows) can use the workspace without a prompt. Reset needs confirmation and never runs unattended.
 
 Do not deploy Ze as a shared service without substantial hardening.

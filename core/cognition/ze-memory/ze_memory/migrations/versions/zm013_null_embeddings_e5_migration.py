@@ -31,7 +31,7 @@ _INDEXED_TABLES = [
     ("memory_session_summaries", "memory_session_summaries_embedding_idx"),
 ]
 
-_UNINDEXED_TABLES = ["memory_events", "news_articles"]
+_UNINDEXED_TABLES = ["memory_events"]
 
 
 def upgrade() -> None:
@@ -50,6 +50,14 @@ def upgrade() -> None:
         op.execute(f"ALTER TABLE {table} ALTER COLUMN embedding TYPE VECTOR(768)")
     for table in _UNINDEXED_TABLES:
         op.execute(f"ALTER TABLE {table} ALTER COLUMN embedding TYPE VECTOR(768)")
+
+    # news_articles belongs to the ze-news chain, which may run after this one.
+    # zn001 creates the column at 768 dims; this covers databases that already
+    # had the 384-dim table. IF EXISTS keeps a fresh database from failing here.
+    op.execute(
+        "ALTER TABLE IF EXISTS news_articles "
+        "ALTER COLUMN embedding TYPE VECTOR(768) USING NULL"
+    )
 
     # Recreate HNSW indexes for new dimension
     for table, idx in _INDEXED_TABLES:

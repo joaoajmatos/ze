@@ -17,7 +17,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition
 - `LoopSurfacer` (`surfacing.py`) — hedged inline mentions plus a push-bar-gated path (`ze_correlation`'s shared push budget) for `drifting` loops
 - Review (`review.py`) — confirm / close / drop lifecycle transitions
-- Jobs (`jobs/`) — `DriftSweepJob`, `PushSweepJob`, `StaleSuspicionJob`, all scheduled via `ze-proactive`
+- Jobs (`jobs/`) — `DriftSweepJob` and `StaleSuspicionJob`, scheduled via `ze-proactive`. `ze-priority`'s `AttentionArbitrationJob` replaced the old `PushSweepJob`
 
 ### Integration
 
@@ -36,7 +36,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `surfacing.py` | `LoopSurfacer` — hedged inline mentions, push-bar-gated ntfy path |
 | `review.py` | Confirm / close / drop lifecycle transitions |
 | `inflow.py` | Wiring helpers for the four inflows (conversation, email, calendar, ingestion) |
-| `jobs/` | `DriftSweepJob`, `PushSweepJob`, `StaleSuspicionJob` |
+| `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |
 | `bootstrap.py` | `build_worldstate_stack()` — DI wiring for `ze-api` |
 | `rest.py` | `GET/POST /api/v0/loops` handlers |
 | `migrations/` | `zw001` (open_loops table), `zw002` (drift columns) |
