@@ -7,7 +7,7 @@ from typing import Any
 
 from ze_logging import get_logger
 from ze_ingestion.classifier import ContentClassifier
-from ze_ingestion.errors import UnsupportedContentError
+from ze_ingestion.errors import FetchError, UnsupportedContentError
 from ze_ingestion.extractors import Extractor
 from ze_ingestion.fetchers import Fetcher
 from ze_ingestion.processors import Processor
@@ -64,6 +64,27 @@ class IngestionPipeline:
                     return fetcher
         raise UnsupportedContentError(f"No fetcher matched URL: {url}")
 
+    async def _fetch(self, url: str) -> RawContent:
+        fetcher = self._pick_fetcher(url)
+        try:
+            return await fetcher.fetch(url)
+        except FetchError as exc:
+            fallbacks = [
+                f
+                for f in self._fetchers
+                if getattr(f, "is_fallback", False) and f is not fetcher
+            ]
+            if not fallbacks:
+                raise
+            log.warning("ingestion_fetch_fallback", url=url, error=str(exc))
+            last = exc
+            for fallback in fallbacks:
+                try:
+                    return await fallback.fetch(url)
+                except FetchError as fb_exc:
+                    last = fb_exc
+            raise last
+
     def _pick_processor(self, content_type: ContentType) -> Processor:
         for proc in self._processors:
             if content_type in proc.content_types:
@@ -102,8 +123,7 @@ class IngestionPipeline:
         raw: RawContent
         if request.url:
             await emit("ingestion.fetching")
-            fetcher = self._pick_fetcher(request.url)
-            raw = await fetcher.fetch(request.url)
+            raw = await self._fetch(request.url)
             if (
                 raw.content_type == ContentType.UNKNOWN
                 or content_type == ContentType.UNKNOWN

@@ -141,7 +141,7 @@ class MyPlugin(ZePlugin):
         return [NotionFetcher()]
 ```
 
-The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but before `BrowserFetcher` and `WebFetcher`. `WebFetcher` matches every URL (`.*`). `BrowserFetcher` has an empty `url_patterns` list, so the pipeline never selects it by URL.
+The pipeline places plugin fetchers after `YtDlpFetcher` (if installed) but before `BrowserFetcher` and `WebFetcher`. `WebFetcher` matches every URL (`.*`). `BrowserFetcher` has an empty `url_patterns` list and `is_fallback = True`. The pipeline never selects it by URL. It tries every fallback fetcher when the selected fetcher raises `FetchError`, so a page that blocks plain HTTP gets one more try through the browser sidecar.
 
 ---
 

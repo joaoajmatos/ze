@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze_ingestion.classifier import ContentClassifier
-from ze_ingestion.errors import UnsupportedContentError
+from ze_ingestion.errors import FetchError, UnsupportedContentError
 from ze_ingestion.pipeline import IngestionPipeline, _merge_results
 from ze_ingestion.types import (
     ContentType,
@@ -265,6 +265,33 @@ async def test_no_matching_fetcher_raises() -> None:
     pipeline = _pipeline(fetcher=fetcher)
     with pytest.raises(UnsupportedContentError):
         await pipeline.ingest(IngestionRequest(url="https://other.com/page"))
+
+
+# ---------------------------------------------------------------------------
+# Fallback fetcher
+# ---------------------------------------------------------------------------
+
+
+async def test_fetch_error_falls_back_to_fallback_fetcher() -> None:
+    primary = _make_fetcher()
+    primary.is_fallback = False
+    primary.fetch = AsyncMock(side_effect=FetchError("blocked"))
+    fallback = _make_fetcher()
+    fallback.is_fallback = True
+    fallback.url_patterns = []
+    pipeline = _pipeline(fetcher=primary)
+    pipeline._fetchers = [fallback, primary]
+    await pipeline.ingest(IngestionRequest(url="https://example.com"))
+    fallback.fetch.assert_awaited_once()
+
+
+async def test_fetch_error_without_fallback_raises() -> None:
+    primary = _make_fetcher()
+    primary.is_fallback = False
+    primary.fetch = AsyncMock(side_effect=FetchError("blocked"))
+    pipeline = _pipeline(fetcher=primary)
+    with pytest.raises(FetchError):
+        await pipeline.ingest(IngestionRequest(url="https://example.com"))
 
 
 # ---------------------------------------------------------------------------
