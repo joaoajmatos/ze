@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Give the loops agent an explicit tool to track a loop. Since phase 167 'keep that on my radar' routes to the loops agent, but the agent can only list, close and drop. Creation depends on the post-turn System One loop gate, which can hold. The agent may then tell the user it is tracking something that was never saved."
 

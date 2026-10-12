@@ -420,7 +420,7 @@ Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt
 
 `StaleSuspicionJob` (default `0 4 * * *`) expires `suspected` loops that no new
 evidence has confirmed within the window. `DriftSweepJob` (default `0 5 * * *`) moves
-`active` loops to `drifting` when their drift deadline passes. See
+`active` loops to `drifting` when their drift deadline passes. A loop that the user revives with `track_loop` gets a fresh window. See
 [cognitive-architecture.md](cognitive-architecture.md).
 
 ---
