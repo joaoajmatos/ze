@@ -160,9 +160,6 @@ class ContactsConsolidator:
                 max_tokens=1000,
             )
             parsed = parse_llm_json(raw, expect=dict)
-            if not isinstance(parsed, dict):
-                self._log.warning("contacts_extract_bad_shape", raw=raw[:200])
-                return [], [], []
             people = [
                 ContactProposal(
                     name=str(c.get("name", "")).strip(),

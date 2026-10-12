@@ -44,3 +44,8 @@ def test_failure_is_typed(raw):
     with pytest.raises(LLMJsonParseError) as exc:
         parse_llm_json(raw)
     assert isinstance(exc.value, ZeError)
+
+
+def test_wrong_type_value_is_not_unwrapped():
+    with pytest.raises(LLMJsonParseError):
+        parse_llm_json('{"steps": [1, 2]}', expect=list)

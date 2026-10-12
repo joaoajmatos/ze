@@ -51,13 +51,17 @@ def _decode(text: str, expect: type | tuple[type, ...] | None) -> Any:
     else:
         if expect is None or isinstance(value, expect):
             return value
-    for index, char in enumerate(text):
-        if char not in "{[":
+    index = 0
+    while index < len(text):
+        if text[index] not in "{[":
+            index += 1
             continue
         try:
-            value, _ = _DECODER.raw_decode(text, index)
+            value, end = _DECODER.raw_decode(text, index)
         except json.JSONDecodeError:
+            index += 1
             continue
         if expect is None or isinstance(value, expect):
             return value
+        index = end
     return _MISSING
