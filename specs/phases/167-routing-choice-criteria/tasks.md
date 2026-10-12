@@ -47,7 +47,7 @@
 
 ## Phase 4: Hand-off gate (the user runs live)
 
-- [ ] T030 [PLATFORM] Write the implementer hand-off into the floor note: exact commands from `quickstart.md`, expected output blocks, cost estimate, and what to paste back. Set floor status `blocked` until the user pastes results.
+- [x] T030 [PLATFORM] Write the implementer hand-off into the floor note: exact commands from `quickstart.md`, expected output blocks, cost estimate, and what to paste back. Set floor status `blocked` until the user pastes results.
 - [x] T031 [PLATFORM] [US2] Set `system_one.surfaces.routing.shortlist_k` in `apps/ze-api/config/config.yaml` to the k from T002/T003 (comment with the recall table and date).
 
 ## Phase 5: Enable or close (after the user's results)
@@ -57,13 +57,13 @@
 
 ## Phase 6: Docs (part of done)
 
-- [ ] T050 [P] [DOCS] Update `docs/configuration.md` routing section (lines ~351–395): `shortlist_k` meaning and chosen value, `routing_criteria` (what it is, fallback to description), the enabled or "calibrated, not enabled" state with figures.
-- [ ] T051 [P] [DOCS] Update `specs/arch/system-one-models.md` O2 implementation notes (line ~73) and the O2 table row (~85): criteria field, k outcome, acceptance rule, final state.
-- [ ] T052 [P] [DOCS] Add a dated status note to `specs/phases/164-routing-choice-after-e5/spec.md` (Implemented, surface state per 167).
-- [ ] T053 [P] [DOCS] `AGENTS.md`: phase row 167 in the Phase status table; add `routing_criteria` to the ze-agents `base_agent.py` layout comment; mention `routing_holdout2.jsonl` and the companion check only if the layout lists calibration files. `specs/README.md`: index row 167 and Status.
-- [ ] T054 [P] [DOCS] Check `README.md:48` (routing/System One paragraph), `docs/adding-an-agent.md` (document the optional `routing_criteria` attribute), and any doc quoting the companion description (`grep -rn "explain X" docs README.md plugins/*/README.md`) and update each.
-- [ ] T056 [P] [DOCS] Update pinned rule 3 in `specs/arch/system-one-models.md` (line ~43, "Local E5 stays the shortlist"): state that when the recall gate needs the whole roster, E5 no longer filters for the Choice and remains only the 160 cosine skip path; cite the 167 recall table. Do this before T055.
-- [ ] T055 [DOCS] Coverage check: list `git diff main...HEAD --name-only`, and for each changed behavior or file confirm a doc or spec line covers it; report gaps and fix. Set `spec.md` Status to Implemented (or "Implemented — surface off (option F)").
+- [x] T050 [P] [DOCS] Update `docs/configuration.md` routing section (lines ~351–395): `shortlist_k` meaning and chosen value, `routing_criteria` (what it is, fallback to description), the enabled or "calibrated, not enabled" state with figures.
+- [x] T051 [P] [DOCS] Update `specs/arch/system-one-models.md` O2 implementation notes (line ~73) and the O2 table row (~85): criteria field, k outcome, acceptance rule, final state.
+- [x] T052 [P] [DOCS] Add a dated status note to `specs/phases/164-routing-choice-after-e5/spec.md` (Implemented, surface state per 167).
+- [x] T053 [P] [DOCS] `AGENTS.md`: phase row 167 in the Phase status table; add `routing_criteria` to the ze-agents `base_agent.py` layout comment; mention `routing_holdout2.jsonl` and the companion check only if the layout lists calibration files. `specs/README.md`: index row 167 and Status.
+- [x] T054 [P] [DOCS] Check `README.md:48` (routing/System One paragraph), `docs/adding-an-agent.md` (document the optional `routing_criteria` attribute), and any doc quoting the companion description (`grep -rn "explain X" docs README.md plugins/*/README.md`) and update each.
+- [x] T056 [P] [DOCS] Update pinned rule 3 in `specs/arch/system-one-models.md` (line ~43, "Local E5 stays the shortlist"): state that when the recall gate needs the whole roster, E5 no longer filters for the Choice and remains only the 160 cosine skip path; cite the 167 recall table. Do this before T055.
+- [x] T055 [DOCS] Coverage check: list `git diff main...HEAD --name-only`, and for each changed behavior or file confirm a doc or spec line covers it; report gaps and fix. Set `spec.md` Status to Implemented (or "Implemented — surface off (option F)").
 
 ## Dependencies
 
