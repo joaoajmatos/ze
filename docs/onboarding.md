@@ -106,17 +106,13 @@ Providers do not write directly to global memory or plugin tables. They return t
 `OnboardingSeed` values. The coordinator stores those seeds and shows review-required
 items before applying them.
 
-Supported seed kinds in the first implementation:
+Ze supports three seed kinds:
 
 - `profile_facet`: persisted to `memory_profile_facets`.
-- `memory_fact`: persisted through the memory store as a reviewed fact.
+- `memory_fact`: submitted through the contribution seam (`submit_perception_facts`) as a reviewed fact with `prompt_supplied` provenance.
 - `plugin_setting`: persisted through a registered plugin setting setter.
 
-Other planned seed kinds are modeled but not fully implemented yet:
-
-- `capability_request`
-- `contact`
-- `channel_connection`
+Step kinds are `intro`, `form`, `choice`, `consent`, `connect_account`, and `review`.
 
 ## WebSocket Flow
 
@@ -170,9 +166,10 @@ submission for compatibility.
 `ResetService` supports previewing and executing scoped resets. Execution requires
 `confirm: "RESET"`. Expose execution only through high-friction UI.
 
-- `memory`: learned memory tables and legacy memory tables.
-- `personal_state`: memory plus messages, pending confirmations, contacts, goals,
-  workflows, reminders, news cache, checkpoints, and onboarding tables.
+- `memory`: memory entities, facts, episodes, events, relationships, task state, profile facets, and the procedure tables.
+- `personal_state`: memory plus messages, pending confirmations, prospecting campaigns,
+  contacts, goals (with their learnings and traces), workflows, reminders, insights,
+  news cache, checkpoints, and onboarding tables.
 - `full_dev`: reserved for external database recreate tooling; not executed through
   `ResetService`.
 
