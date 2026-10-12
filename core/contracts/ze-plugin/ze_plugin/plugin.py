@@ -58,7 +58,7 @@ class ZePlugin(ABC):
     # ── Graph level ───────────────────────────────────────────────────────────
 
     def state_extensions(self) -> type | None:
-        """Return a TypedDict subclass whose fields are merged into AgentState."""
+        """Return a plain TypedDict (total=False) whose fields are merged into AgentState."""
         return None
 
     def checkpoint_serde_modules(self) -> tuple[str, ...]:

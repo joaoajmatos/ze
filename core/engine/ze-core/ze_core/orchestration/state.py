@@ -88,9 +88,9 @@ class AgentState(TypedDict):
 def build_state_type(plugins: list[ZePlugin]) -> type:
     """Return a TypedDict class that merges AgentState with all plugin state extensions.
 
-    Each plugin's state_extensions() should return a TypedDict subclass of AgentState
-    (or of a previous extension). The merged class inherits from all extensions so its
-    fields are accessible via the standard state["field"] syntax in graph nodes.
+    Each plugin's state_extensions() returns a plain TypedDict of its own fields; plugins
+    never import AgentState. The merged class inherits AgentState and every extension, so
+    all fields are accessible via the standard state["field"] syntax in graph nodes.
 
     Returns AgentState unchanged when no plugins contribute state extensions.
     """
@@ -100,6 +100,7 @@ def build_state_type(plugins: list[ZePlugin]) -> type:
     if not extensions:
         return AgentState
     # TypedDict supports multiple inheritance; Python resolves the metaclass from bases.
-    # Each extension is expected to subclass AgentState (forming a diamond with AgentState
-    # at the root), so the MRO is unambiguous.
-    return type("ExtendedAgentState", tuple(extensions), {"__annotations__": {}})
+    # An extension that still subclasses AgentState forms a diamond with it, which is fine.
+    return type(
+        "ExtendedAgentState", (AgentState, *extensions), {"__annotations__": {}}
+    )
