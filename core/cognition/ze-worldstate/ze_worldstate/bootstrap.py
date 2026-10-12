@@ -92,6 +92,31 @@ def build_loop_surfacer(
     )
 
 
+@dataclass(frozen=True)
+class LoopPushSettings:
+    """Loop push switch read from `worldstate.push` (Phase 170 FR-018)."""
+
+    enabled: bool = True
+    thresholds: dict = field(default_factory=dict)
+    inline_cooldown_hours: float = 12.0
+
+
+def loop_push_settings(settings: Any) -> LoopPushSettings:
+    cfg = getattr(settings, "config", None) or {}
+    worldstate_cfg = cfg.get("worldstate", {}) if isinstance(cfg, dict) else {}
+    push_cfg = (
+        worldstate_cfg.get("push", {}) if isinstance(worldstate_cfg, dict) else {}
+    )
+    if not isinstance(push_cfg, dict):
+        push_cfg = {}
+    thresholds = push_cfg.get("thresholds", {})
+    return LoopPushSettings(
+        enabled=bool(push_cfg.get("enabled", True)),
+        thresholds=dict(thresholds) if isinstance(thresholds, dict) else {},
+        inline_cooldown_hours=float(push_cfg.get("inline_cooldown_hours", 12.0)),
+    )
+
+
 def register_proactive_jobs(
     scheduler: Any,
     settings: Any,
