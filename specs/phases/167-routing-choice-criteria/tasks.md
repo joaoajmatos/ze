@@ -52,7 +52,7 @@
 
 ## Phase 5: Enable or close (after the user's results)
 
-- [ ] T040 [PLATFORM] [US3] If the verdict is PASS on both held-out sets: set `enabled: true`, `choice_trust`, `multi_specialist_hold`, `complexity_lookup_max` from the printed suggestion, with a dated comment (figures, set sizes). If FAIL (or T003 stopped): option F. Keep `enabled: false` and null bars, replace the comment with the dated measured figures and "calibrated, not enabled".
+- [x] T040 [PLATFORM] [US3] If the verdict is PASS on both held-out sets: set `enabled: true`, `choice_trust`, `multi_specialist_hold`, `complexity_lookup_max` from the printed suggestion, with a dated comment (figures, set sizes). If FAIL (or T003 stopped): option F. Keep `enabled: false` and null bars, replace the comment with the dated measured figures and "calibrated, not enabled".
 - [x] T041 [BE] [US3] Add a config test (`tests/routing/test_routing_judge.py`): shipped `config.yaml` either has `enabled: false`, or `enabled: true` with non-null bars (no half-enabled state).
 
 ## Phase 6: Docs (part of done)

@@ -13,7 +13,7 @@ routing:
   threshold: 0.73
   gap_threshold: 0.02
 
-# Typed judgments (Jev via OpenRouter System One). 163 speech-act and 166 skills are on; 164 routing stays off.
+# Typed judgments (Jev via OpenRouter System One). 163 speech-act, 164 routing (167-calibrated) and 166 skills are on.
 system_one:
   enabled: true
   model: typesafe/jev-1.13
@@ -26,13 +26,14 @@ system_one:
       choice_hold: 0.9
       biography_hold: 0.7
     routing:
-      enabled: false
-      # 2026-10-12 recalibration (k=5): tuned set 0.957 but held-out set 0.70 EN / 0.80 PT, ECE 0.27;
-      # explanatory research turns go to companion. No safe choice_trust; stays off pending a scope decision.
-      choice_trust: null            # uncalibrated — set from make calibrate-routing
-      multi_specialist_hold: null   # uncalibrated — set from make calibrate-routing
-      complexity_lookup_max: null   # uncalibrated — set from make calibrate-routing
-      shortlist_k: 9                # 167 offline recall gate (2026-10-12): smallest k >= 0.95 on all three sets; E5 recall 0.571 at k=6 on routing_holdout2
+      enabled: true
+      # Calibrated 2026-10-12 (167, k=9, 52 held-out EN+PT rows): zero harmful trusts and zero research->companion
+      # misses on routing_holdout and routing_holdout2, ECE 0.080 / 0.013. Raw EN accuracy 0.90 on routing_holdout
+      # (ho-loops-en: loops->companion at confidence 0.29, never trusted at 0.5, falls back to decompose).
+      choice_trust: 0.5
+      multi_specialist_hold: 0.5
+      complexity_lookup_max: null   # suggestion 0.16/0.17 per set but 0.02 combined (outlier); regex tiering stays
+      shortlist_k: 9                # 167 recall gate: smallest k with recall >= 0.95 on all three sets (0.571 at k=6 on holdout2)
     skills:
       enabled: true
       # Calibrated 2026-10-12 (make calibrate-skills, 84 EN+PT rows): Choice 0.978 EN / 0.970 PT, ECE 0.015,

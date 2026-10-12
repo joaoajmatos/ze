@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Draft
+**Status**: Implemented (surface enabled)
 
 **Input**: User description: "Make the 164 routing Choice safe to enable. Live recalibration 2026-10-12 (k=5): 0.957 on the tuned set, 0.70 EN / 0.80 PT on the held-out set, ECE 0.27. Every held-out miss is an explain / compare / how-to research question sent to companion."
 
@@ -40,6 +40,13 @@ This phase fixes the three causes and then re-measures against two held-out sets
 
 - Q: Sweep `shortlist_k` up to the roster size instead of k=6? → A: Confirmed. Take the smallest k with recall ≥ 0.95 on all three sets. If that is the whole roster, E5 keeps only the 160 cosine skip path. Pinned rule 3 in `specs/arch/system-one-models.md` ("Local E5 stays the shortlist") is updated to say this explicitly (task T056).
 - Q: Strict per-language bar? → A: Confirmed. Zero misses per held-out per-language slice (the 11- and 15-row slices need a perfect score), ECE ≤ 0.10, zero research→companion misses. No slack.
+
+### Session 2026-10-12 (3) — live results and decision to enable
+
+- Live results at k=9. Tuned `routing.jsonl`: EN 23/23, PT 22/23 (single-loops-pt: loops→companion), ECE 0.053. `routing_holdout`: EN 9/10 (ho-loops-en: loops→companion at confidence 0.29), PT 10/10, ECE 0.080. `routing_holdout2`: EN 14/14, PT 14/14, ECE 0.013. Research→companion misses: 0 on both held-out sets. Harmful trusts: 0 at every `choice_trust` on both held-out sets (52 rows). The script printed OVERALL FAIL only because raw EN accuracy on `routing_holdout` is 0.90 (< 0.95).
+- Q: Enable despite the raw 0.90? → A: **Yes (user decision).** The one miss is low-confidence and is never trusted at `choice_trust` 0.5, so it falls back to the Haiku decompose path (today's behavior). The acceptance rule (FR-009) is amended: enable when, at the chosen `choice_trust`, **both held-out sets have zero harmful trusts, ECE ≤ 0.10 and zero research→companion misses**. Raw per-language accuracy is reported, not gating. The calibration script's per-language accuracy line still prints FAIL for `routing_holdout` EN; that is expected and documented here.
+- Shipped bars: `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9`, `complexity_lookup_max: null`. The suggested lookup bar was 0.16 / 0.17 per set but 0.02 combined (an outlier), so tiering keeps the regex classifier.
+- Follow-up (out of scope here): a loops-vs-companion `routing_criteria` refinement.
 
 ---
 
@@ -127,7 +134,7 @@ A small live script runs the 6 research prompts of `routing_holdout.jsonl` throu
 - **FR-006**: `shortlist_k` MUST be chosen by an offline recall sweep from 6 up to the roster size: the smallest k with recall ≥ 0.95 on `routing.jsonl`, `routing_holdout.jsonl` and `routing_holdout2.jsonl`. The recall command MUST accept k up to the roster size and all three sets MUST be reported in one run.
 - **FR-007**: If no k up to the roster size reaches recall ≥ 0.95 on all three sets, the phase MUST close as option F before any live run.
 - **FR-008**: The live calibration MUST be run by the user, not the implementer, on `routing_holdout.jsonl` and `routing_holdout2.jsonl`. The implementer prepares the command and the report. The report MUST print per-set, per-language accuracy, ECE, and a research→companion miss count for each candidate `choice_trust`.
-- **FR-009**: The surface MAY be enabled only when, at the chosen `choice_trust`, both held-out sets have EN and PT accuracy ≥ 0.95, ECE ≤ 0.10 and zero research→companion misses. Otherwise `enabled: false`, bars stay `null` and the docs say "calibrated, not enabled" (option F).
+- **FR-009** (amended 2026-10-12, Clarifications session 3): The surface MAY be enabled only when, at the chosen `choice_trust`, both held-out sets have zero harmful trusts, ECE ≤ 0.10 and zero research→companion misses. (Originally: EN and PT accuracy ≥ 0.95 per set.) Otherwise `enabled: false`, bars stay `null` and the docs say "calibrated, not enabled" (option F).
 - **FR-010**: `routing_holdout2.jsonl` MUST NOT be used to tune criteria text or the shortlist. It is a check set. Criteria are tuned against `routing.jsonl` only; `routing_holdout.jsonl` is already used for diagnosis and counts as a check set for acceptance, not for tuning beyond the failure described here.
 - **FR-011**: An opt-in script MUST run the 6 research prompts of `routing_holdout.jsonl` through the real companion and report: delegated to research (yes/no), LLM call count, cost, wall time, cited sources. It MUST NOT run in the default test suite.
 - **FR-012**: Default tests MUST mock the judgment client and never call a vendor.
@@ -161,6 +168,8 @@ A small live script runs the 6 research prompts of `routing_holdout.jsonl` throu
 
 ## Out of Scope
 
+- Follow-up: refine `routing_criteria` for loops versus companion (the only live miss, ho-loops-en and single-loops-pt, both low confidence).
+- Follow-up: a per-set `complexity_lookup_max` (combined suggestion 0.02 was an outlier; tiering stays on the regex classifier).
 - Making companion the front door for factual questions (option E). The live check informs it; it is not decided here.
 - Changing E5 descriptions for recall, or a new embedding model.
 - Deleting Haiku decompose; changing conductor caps or rewrite.
