@@ -229,12 +229,9 @@ ze-api          → ze-automation, ze-browser, ze-calendar, ze-collision, ze-com
 ze-web            (React — connects to ze-api over WebSocket, no Python deps)         apps/
 ```
 
-Known drift from the import rules below (code, not yet fixed): `ze-personal` and
-`ze-news` import `ze_core` (orchestration state/graph, `OpenRouterClient`);
-`ze-messenger` and `ze-seed` import `ze_api`; plugins import `ze_memory` internals
-(`policies`, `admission`, `relevance`, `extractor`, `bootstrap`, `graph.*`) that `ze_sdk`
-does not yet re-export. No plugin imports `ze_plugin` directly any more
-(`ze_sdk.contribution`, `ze_sdk.memory`, `ze_sdk.api`).
+No known drift from the import rules below. `packages/ze-sdk/tests/test_plugin_boundaries.py`
+fails when plugin code imports `ze_core`, `ze_api`, `ze_plugin` or `ze_memory` directly, or
+when `ze-seed` imports `ze_api`.
 
 ## Essential commands
 
