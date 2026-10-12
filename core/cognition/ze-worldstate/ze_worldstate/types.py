@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind
+from ze_agents.system_one import SystemOneResult
 from ze_plugin.contribution import EvidenceRef
+
+from ze_worldstate.loop_judge import LoopGateDecision
 
 LoopClaimKind = ClaimKind
 
@@ -55,3 +59,22 @@ class DriftingLoopMention:
     title: str
     mention_text: str
     evidence: list[EvidenceRef]
+
+
+@dataclass
+class TitleWriterResult:
+    title: str
+    implied_window_days: int | None = None
+
+
+@dataclass
+class LoopAdmission:
+    """One loop-gate judgment. The node reads it by attribute; it never imports this type."""
+
+    decision: LoopGateDecision
+    judgment: SystemOneResult | None = None
+    question_ids: tuple[str, ...] = ()
+    question_kinds: dict[str, str] = field(default_factory=dict)
+    consumed: frozenset[str] = frozenset()
+    skip_reason: str | None = None
+    commit: Callable[[], Awaitable[list[OpenLoop]]] | None = None
