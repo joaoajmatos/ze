@@ -45,7 +45,7 @@ System One is a small model that returns typed judgments (a choice among labels,
 - **Speech-act admission** decides whether a finished turn states a durable fact worth keeping.
 - **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
 
-Both are off by default and stay off until you calibrate them against labeled sets (`make calibrate-speech-act`, `make calibrate-routing`). When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
+Both are off in the code defaults and need bars calibrated against labeled sets (`make calibrate-speech-act`, `make calibrate-routing`). The shipped `config.yaml` enables both with calibrated bars. When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 

@@ -213,6 +213,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 164 | [Routing Choice After E5](phases/164-routing-choice-after-e5/spec.md) | ✅ Implemented |
 | 165 | [Assistant Response Feedback and Retry](phases/165-response-feedback-retry/spec.md) (split from [117](phases/117-web-hig-fixes/spec.md) US9) | ✅ Implemented |
 | 166 | [System One Skill Gating](phases/166-skill-suggestion-system-one/spec.md) | ✅ Implemented |
+| 167 | [Routing Choice Criteria](phases/167-routing-choice-criteria/spec.md) | ✅ Implemented (surface enabled) |
 
 ## Ze Core specs (`core/`)
 

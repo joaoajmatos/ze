@@ -336,7 +336,7 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. Everything is off by default.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. The code defaults are off. The shipped `config.yaml` turns on the surfaces that have calibrated bars.
 
 ```yaml
 system_one:
@@ -348,12 +348,12 @@ system_one:
       enabled: false
       choice_hold: null           # uncalibrated — set from make calibrate-speech-act
       biography_hold: null        # uncalibrated — set from make calibrate-speech-act
-    routing:                      # Agent choice after E5 (Phase 164)
-      enabled: false
-      choice_trust: null          # uncalibrated — set from make calibrate-routing
-      multi_specialist_hold: null # uncalibrated — set from make calibrate-routing
-      complexity_lookup_max: null # uncalibrated — set from make calibrate-routing
-      shortlist_k: 5
+    routing:                      # Agent choice after E5 (Phases 164, 167)
+      enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
+      choice_trust: null          # shipped: 0.5 — set from make calibrate-routing
+      multi_specialist_hold: null # shipped: 0.5 — set from make calibrate-routing
+      complexity_lookup_max: null # shipped: null — the regex classifier picks the tier
+      shortlist_k: 5              # shipped: 9
     skills:                       # Skill gating after E5 (Phase 166)
       enabled: false
       choice_trust: null          # uncalibrated — set from make calibrate-skills
@@ -385,7 +385,11 @@ The three bars are separate numbers:
 - `multi_specialist_hold` is the minimum probability that the message needs more than one specialist.
 - `complexity_lookup_max` is the highest complexity score that still counts as a simple turn, on a 0 to 1 scale. The model returns the expected level (0 for lookup, 2 for multi-hop), and Ze divides it by 2 before it compares. When it is `null`, the word-count classifier picks the model tier.
 
-`shortlist_k` sets how many E5-ranked agents the choice sees. The default is 5. Values below 2 fall back to 5. At 4, the research agent fell out of the shortlist on some factual questions in the calibration set; 5 keeps it in. With fewer than two enabled agents, Ze makes no call.
+`shortlist_k` sets how many E5-ranked agents the choice sees. The code default is 5. Values below 2 fall back to 5. The shipped `config.yaml` sets 9. E5 cosines on the agent roster are flat, so on a fresh held-out set the right agent fell outside the top 6 for 43% of rows (recall 0.571 at k=5 and k=6, 1.0 at k=9). Phase 167 picked the smallest k with recall of at least 0.95 on all three calibration sets. With 10 enabled agents, the choice sees nearly the whole roster. E5 then filters little for the choice; it still drives the cosine skip path. With fewer than two enabled agents, Ze makes no call.
+
+Each agent can declare an optional `routing_criteria` attribute: "use for" and "not for" text that the choice reads in place of the agent's `description`. When an agent omits it, the choice reads the `description`. E5 always embeds the `description`. The choice instructions tell the model to prefer an agent that can search the web or use tools over one that would answer from its own knowledge. They also define `none` as the answer when no listed agent can do the job alone, when Ze has no capability for it, or when the request needs more than one agent. See [Adding an agent](adding-an-agent.md).
+
+Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. `complexity_lookup_max` stays `null`: the suggested bar was 0.16 and 0.17 on the two held-out sets but 0.02 combined, so the regex classifier keeps picking the model tier. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90: one loops question went to companion at confidence 0.29. Ze never trusts that confidence at 0.5, so the turn falls back to the Haiku decompose step. To re-measure, run `make calibrate-routing`; it reports both held-out sets and a verdict.
 
 The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `system_one.enabled` and `surfaces.routing.enabled` to `true`.
 

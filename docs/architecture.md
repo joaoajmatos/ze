@@ -73,7 +73,7 @@ transcription or image captioning.
 5. Ze writes every decision to the `routing_log` Postgres table.
 
 **System One choice (optional).** E5 stays the shortlist. When `system_one.surfaces.routing`
-is enabled and calibrated, one System One request judges the top `shortlist_k` agents. It
+is enabled and calibrated (as in the shipped config), one System One request judges the top `shortlist_k` agents. It
 picks one agent (or `none`), says whether the request needs more than one specialist, and
 grades complexity. Code then decides: a confident choice routes directly, `none` or a
 multi-specialist answer goes to `decompose`, and an unsure choice or a skip falls back to

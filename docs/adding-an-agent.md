@@ -138,6 +138,13 @@ class MyAgent(BaseAgent):
       One or two sentences describing what this agent handles.
       This text is embedded for cosine-similarity routing — be specific.
     """
+    # Optional. When System One routing is on, the agent choice reads this text
+    # instead of `description`. Write "use for" and "not for" lines. Omit it to
+    # reuse `description`. E5 always embeds `description`, never this field.
+    routing_criteria = """
+      Use for: <requests this agent answers alone>.
+      Not for: <requests that belong to another agent>.
+    """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"  # optional — omit if agent already uses Haiku
     vision_capable = False                         # set True if agent should receive image data
