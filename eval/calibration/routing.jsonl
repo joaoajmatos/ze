@@ -60,3 +60,5 @@
 {"id": "train-loops-hold-pt", "lang": "pt", "prompt": "não sei o que fazer quanto à prenda do casamento da minha irmã, deixa isso de lado mas não me deixes esquecer", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
 {"id": "train-companion-talk-en", "lang": "en", "prompt": "I can't decide whether to switch banks and it's stressing me out, can we talk it through", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
 {"id": "train-companion-talk-pt", "lang": "pt", "prompt": "não consigo decidir se troco de banco e isso stressa-me, podemos pensar nisto em conjunto", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "train-loops-track-en", "lang": "en", "prompt": "put the lease renewal on my radar, I haven't decided yet", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-track-pt", "lang": "pt", "prompt": "põe a renovação do contrato no meu radar, ainda não decidi", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}

@@ -145,9 +145,25 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-12T22:44:08.833Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:46:13.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-12T22:46:13.322Z"
     }
   ],
-  "currentTask": "T016",
+  "currentTask": "T018",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -208,6 +224,14 @@
     "T015": {
       "status": "DONE",
       "did": "implemented T015"
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "done T016"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "done T017"
     }
   }
 }
