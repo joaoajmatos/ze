@@ -6,6 +6,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
+import pytest
+
 from ze_agents.registry import get_enabled_agents
 
 _ROOT = Path(__file__).resolve().parents[5]
@@ -58,3 +60,36 @@ def test_every_roster_agent_has_a_clear_single_in_each_language():
     for name in get_enabled_agents():
         for lang in ("en", "pt"):
             assert counts[(name, lang)] >= 1, (name, lang)
+
+
+_HELD_OUT = ("routing_holdout", "routing_holdout2")
+
+
+def _load(name: str) -> list[dict]:
+    path = _ROOT / f"eval/calibration/{name}.jsonl"
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+@pytest.mark.parametrize("name", _HELD_OUT)
+def test_held_out_set_is_valid(name):
+    rows = _load(name)
+    roster = set(get_enabled_agents())
+    assert len({r["id"] for r in rows}) == len(rows)
+    for r in rows:
+        assert r["lang"] in {"en", "pt"}
+        assert isinstance(r["prompt"], str) and r["prompt"].strip()
+        assert isinstance(r["gold_multi"], bool)
+        assert r["gold_complexity"] in _LEVELS
+        assert r["gold_agent"] == "none" or r["gold_agent"] in roster, r["id"]
+        if r["gold_agent"] == "none":
+            assert not r["gold_multi"], r["id"]
+
+
+@pytest.mark.parametrize("name", _HELD_OUT)
+def test_held_out_set_has_en_pt_pairs(name):
+    ids = {r["id"] for r in _load(name)}
+    for rid in ids:
+        if rid.endswith("-en"):
+            assert rid[:-3] + "-pt" in ids, rid
+        elif rid.endswith("-pt"):
+            assert rid[:-3] + "-en" in ids, rid

@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
+import io
 import importlib.util
 import json
 import os
@@ -47,6 +49,7 @@ from ze_core.routing.judge import (
     RoutingSurfaceConfig,
     build_questions,
     build_state,
+    criterion_for,
     decide,
     normalise_complexity_score,
     shortlist,
@@ -118,8 +121,8 @@ def load_rows(path: Path) -> list[Row]:
     return rows
 
 
-def load_roster() -> dict[str, str]:
-    """Enabled agents and their descriptions from the checked-in agent modules."""
+def load_roster() -> tuple[dict[str, str], dict[str, str]]:
+    """Enabled agents: (descriptions for E5, Choice criteria as production builds them)."""
     from ze_agents.bootstrap import reload_agent_modules
 
     spec = importlib.util.spec_from_file_location(
@@ -128,10 +131,11 @@ def load_roster() -> dict[str, str]:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     reload_agent_modules(module.ALL_AGENT_MODULE_PATHS)
-    return {
-        name: cls.description.strip()
-        for name, cls in sorted(get_enabled_agents().items())
-    }
+    enabled = sorted(get_enabled_agents().items())
+    return (
+        {name: cls.description.strip() for name, cls in enabled},
+        {name: criterion_for(cls) for name, cls in enabled},
+    )
 
 
 def rank(embedder: Any, roster: dict[str, str], text: str) -> list[tuple[str, float]]:
@@ -144,16 +148,21 @@ def rank(embedder: Any, roster: dict[str, str], text: str) -> list[tuple[str, fl
     return sorted(zip(names, scores), key=lambda p: p[1], reverse=True)
 
 
-RECALL_KS = (2, 3, 4, 5, 6)
+RECALL_BAR = 0.95
+
+
+def recall_ks(roster: dict[str, str]) -> tuple[int, ...]:
+    return tuple(range(2, len(roster) + 1))
 
 
 def shortlist_recall(
     embedder: Any,
     roster: dict[str, str],
     rows: list[Row],
-    ks: tuple[int, ...] = RECALL_KS,
+    ks: tuple[int, ...] | None = None,
 ) -> dict[int, list[Row]]:
     """Rows whose gold agent is outside the E5 top-k, per k. Offline: no System One call."""
+    ks = ks or recall_ks(roster)
     misses: dict[int, list[Row]] = {k: [] for k in ks}
     for row in rows:
         if row.gold_agent not in roster:
@@ -166,38 +175,60 @@ def shortlist_recall(
     return misses
 
 
+def recall_by_k(scored: int, misses: dict[int, list[Row]]) -> dict[int, float]:
+    return {k: (scored - len(m)) / scored if scored else 1.0 for k, m in misses.items()}
+
+
+def smallest_passing_k(per_set: list[dict[int, float]]) -> int | None:
+    """Smallest k whose recall is at least RECALL_BAR on every set, or None."""
+    if not per_set:
+        return None
+    for k in sorted(per_set[0]):
+        if all(recall[k] >= RECALL_BAR for recall in per_set):
+            return k
+    return None
+
+
 def report_recall(
     embedder: Any,
     roster: dict[str, str],
-    rows: list[Row],
-    ks: tuple[int, ...] = RECALL_KS,
-) -> None:
-    scored = [r for r in rows if r.gold_agent in roster]
-    misses = shortlist_recall(embedder, roster, rows, ks)
+    datasets: dict[str, list[Row]],
+    ks: tuple[int, ...] | None = None,
+) -> int | None:
+    ks = ks or recall_ks(roster)
+    per_set: list[dict[int, float]] = []
+    for name, rows in datasets.items():
+        scored = [r for r in rows if r.gold_agent in roster]
+        misses = shortlist_recall(embedder, roster, rows, ks)
+        recall = recall_by_k(len(scored), misses)
+        per_set.append(recall)
+        print(
+            f"\n== {name}: E5 shortlist recall of the gold agent ({len(scored)} rows with a gold agent)"
+        )
+        print("k     recall   missed")
+        for k in ks:
+            print(f"{k:<5d} {recall[k]:.3f}    {len(misses[k])}")
+        by_agent: Counter[str] = Counter(r.gold_agent for r in misses[ks[0]])
+        print(f"missed at k={ks[0]} by gold agent: {dict(by_agent)}")
+    best = smallest_passing_k(per_set)
     print(
-        f"\n== E5 shortlist recall of the gold agent ({len(scored)} rows with a gold agent)"
+        f"\nSmallest k with recall >= {RECALL_BAR} on every set: "
+        f"{best if best is not None else 'none'}"
     )
-    print("k     recall   missed")
-    for k in ks:
-        hit = len(scored) - len(misses[k])
-        print(f"{k:<5d} {hit / len(scored):.3f}    {len(misses[k])}")
-    worst = ks[0]
-    by_agent: Counter[str] = Counter(r.gold_agent for r in misses[worst])
-    print(f"missed at k={worst} by gold agent: {dict(by_agent)}")
-    for row in misses[DEFAULT_SHORTLIST_K]:
-        print(f"   k={DEFAULT_SHORTLIST_K} miss {row.id}: gold={row.gold_agent}")
+    return best
 
 
-def shuffled_questions(roster: dict[str, str], names: list[str], rng: random.Random):
+def shuffled_questions(criteria: dict[str, str], names: list[str], rng: random.Random):
     order = list(names)
     rng.shuffle(order)
-    return build_questions({n: roster[n] for n in order})
+    return build_questions({n: criteria[n] for n in order})
 
 
 async def run_rows(
     client: Any,
     embedder: Any,
     roster: dict[str, str],
+    criteria: dict[str, str],
     rows: list[Row],
     *,
     seed: int,
@@ -211,7 +242,7 @@ async def run_rows(
         ranked = rank(embedder, roster, text)
         names = shortlist([n for n, _ in ranked], k)
         questions = shuffled_questions(
-            roster, names, random.Random(seed * 100003 + index)
+            criteria, names, random.Random(seed * 100003 + index)
         )
         state = build_state(row.prompt, row.history, None)
         async with sem:
@@ -255,28 +286,45 @@ def report_accuracy(outcomes: list[Outcome]) -> None:
     )
 
 
-def report_reliability(outcomes: list[Outcome]) -> None:
-    print("\n== Choice peakedness reliability")
-    print("bin          n   mean_conf   accuracy")
-    points = [
+def reliability_points(outcomes: list[Outcome]) -> list[tuple[float, bool]]:
+    return [
         (conf, choice == o.row.gold_agent)
         for o in single_rows(outcomes)
         for choice, conf in [predicted(o)]
         if conf is not None
     ]
-    ece = 0.0
+
+
+def ece(outcomes: list[Outcome]) -> float | None:
+    points = reliability_points(outcomes)
+    if not points:
+        return None
+    total = 0.0
     for lo, hi in zip(BINS, BINS[1:]):
         bucket = [(c, ok) for c, ok in points if lo <= c < hi]
         if bucket:
             conf = sum(c for c, _ in bucket) / len(bucket)
             acc = sum(ok for _, ok in bucket) / len(bucket)
-            ece += len(bucket) * abs(conf - acc)
+            total += len(bucket) * abs(conf - acc)
+    return total / len(points)
+
+
+def report_reliability(outcomes: list[Outcome]) -> None:
+    print("\n== Choice peakedness reliability")
+    print("bin          n   mean_conf   accuracy")
+    points = reliability_points(outcomes)
+    for lo, hi in zip(BINS, BINS[1:]):
+        bucket = [(c, ok) for c, ok in points if lo <= c < hi]
+        if bucket:
+            conf = sum(c for c, _ in bucket) / len(bucket)
+            acc = sum(ok for _, ok in bucket) / len(bucket)
             print(
                 f"[{lo:.1f},{min(hi, 1.0):.1f})".ljust(11)
                 + f"{len(bucket):4d}   {conf:8.3f}   {acc:8.3f}"
             )
-    if points:
-        print(f"ECE = {ece / len(points):.3f}")
+    value = ece(outcomes)
+    if value is not None:
+        print(f"ECE = {value:.3f}")
 
 
 def report_none(outcomes: list[Outcome]) -> None:
@@ -405,7 +453,85 @@ def report_grid(metrics: list[dict[str, float]]) -> tuple[float, float] | None:
     return best["trust"], best["hold"]
 
 
-def report(outcomes: list[Outcome]) -> dict[str, float | None]:
+ACCURACY_BAR = 0.95
+ECE_BAR = 0.10
+RESEARCH_GOLD = "research"
+COMPANION = "companion"
+
+
+def lang_accuracy(outcomes: list[Outcome], lang: str) -> tuple[int, int]:
+    scoped = [o for o in single_rows(outcomes) if o.row.lang == lang]
+    return sum(predicted(o)[0] == o.row.gold_agent for o in scoped), len(scoped)
+
+
+def research_to_companion_misses(
+    outcomes: list[Outcome], trust: float | None = None
+) -> int:
+    """Gold-research rows answered companion; with ``trust`` only those that bar would trust."""
+    count = 0
+    for o in single_rows(outcomes):
+        choice, conf = predicted(o)
+        if o.row.gold_agent == RESEARCH_GOLD and choice == COMPANION:
+            if trust is None or (conf or 0.0) >= trust:
+                count += 1
+    return count
+
+
+@dataclass
+class SetVerdict:
+    name: str
+    lines: list[str]
+    passed: bool
+
+
+def verdict_for_set(name: str, outcomes: list[Outcome]) -> SetVerdict:
+    lines: list[str] = []
+    passed = True
+    for lang in ("en", "pt"):
+        hits, total = lang_accuracy(outcomes, lang)
+        if not total:
+            continue
+        ok = hits / total >= ACCURACY_BAR
+        passed &= ok
+        lines.append(
+            f"{'PASS' if ok else 'FAIL'}  [{lang}] accuracy {hits}/{total} = {hits / total:.3f} (>= {ACCURACY_BAR})"
+        )
+    value = ece(outcomes)
+    if value is not None:
+        ok = value <= ECE_BAR
+        passed &= ok
+        lines.append(f"{'PASS' if ok else 'FAIL'}  ECE {value:.3f} (<= {ECE_BAR})")
+    misses = research_to_companion_misses(outcomes)
+    ok = misses == 0
+    passed &= ok
+    lines.append(
+        f"{'PASS' if ok else 'FAIL'}  research->companion misses {misses} (== 0)"
+    )
+    for trust in GRID:
+        lines.append(
+            f"      research->companion misses trusted at choice_trust {trust:.2f}: "
+            f"{research_to_companion_misses(outcomes, trust)}"
+        )
+    return SetVerdict(name, lines, passed)
+
+
+def report_verdicts(by_set: dict[str, list[Outcome]]) -> list[SetVerdict]:
+    verdicts = [verdict_for_set(n, o) for n, o in by_set.items()]
+    print("\n== Acceptance verdict (per set)")
+    for v in verdicts:
+        print(f"\n[{v.name}] {'PASS' if v.passed else 'FAIL'}")
+        for line in v.lines:
+            print(f"  {line}")
+    overall = all(v.passed for v in verdicts)
+    print(f"\nOVERALL: {'PASS' if overall else 'FAIL'}")
+    return verdicts
+
+
+def report(outcomes: list[Outcome], quiet: bool = False) -> dict[str, float | None]:
+    if quiet:
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            return report(outcomes)
     report_accuracy(outcomes)
     report_reliability(outcomes)
     report_none(outcomes)
@@ -430,7 +556,11 @@ async def main_async(args: argparse.Namespace) -> int:
     if args.recall:
         from ze_core.embeddings import get_embedder
 
-        report_recall(get_embedder(), load_roster(), load_rows(args.dataset))
+        report_recall(
+            get_embedder(),
+            load_roster()[0],
+            {path.stem: load_rows(path) for path in args.dataset},
+        )
         return 0
     api_key = os.environ.get("OPENROUTER_API_KEY", "")
     if not api_key:
@@ -447,30 +577,40 @@ async def main_async(args: argparse.Namespace) -> int:
         model=args.model or config.get("model", DEFAULT_MODEL),
         timeout_ms=args.timeout_ms,
     )
-    roster = load_roster()
-    rows = load_rows(args.dataset)
+    roster, criteria = load_roster()
+    embedder = get_embedder()
+    print(f"model={client._model} agents={len(roster)} k={args.k} seed={args.seed}")
+    by_set: dict[str, list[Outcome]] = {}
+    for path in args.dataset:
+        rows = load_rows(path)
+        print(f"\n######## {path.stem} ({len(rows)} rows)")
+        outcomes = await run_rows(
+            client,
+            embedder,
+            roster,
+            criteria,
+            rows,
+            seed=args.seed,
+            concurrency=args.concurrency,
+            k=args.k,
+        )
+        skipped = Counter(o.result.skip_reason for o in outcomes if not o.ok)
+        if skipped:
+            print(f"skipped rows (excluded from metrics): {dict(skipped)}")
+        if not any(o.ok for o in outcomes):
+            print("Every call was skipped; nothing to calibrate.", file=sys.stderr)
+            return 1
+        report(outcomes)
+        by_set[path.stem] = outcomes
+    verdicts = report_verdicts(by_set)
+    passing = [o for v in verdicts if v.passed for o in by_set[v.name]]
+    if not passing:
+        print("\nNo set passes; no bars are suggested.")
+        return 0
+    suggestion = report(passing, quiet=True)
     print(
-        f"model={client._model} rows={len(rows)} agents={len(roster)} k={args.k} seed={args.seed}"
-    )
-    outcomes = await run_rows(
-        client,
-        get_embedder(),
-        roster,
-        rows,
-        seed=args.seed,
-        concurrency=args.concurrency,
-        k=args.k,
-    )
-    skipped = Counter(o.result.skip_reason for o in outcomes if not o.ok)
-    if skipped:
-        print(f"skipped rows (excluded from metrics): {dict(skipped)}")
-    if not any(o.ok for o in outcomes):
-        print("Every call was skipped; nothing to calibrate.", file=sys.stderr)
-        return 1
-    suggestion = report(outcomes)
-    print(
-        "\nCopy into apps/ze-api/config/config.yaml under system_one.surfaces.routing,"
-        " then enable system_one and the surface:"
+        "\nSuggested bars from the passing sets. Copy into apps/ze-api/config/config.yaml"
+        " under system_one.surfaces.routing, then enable system_one and the surface:"
     )
     for key, value in suggestion.items():
         print(
@@ -481,7 +621,9 @@ async def main_async(args: argparse.Namespace) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--dataset", type=Path, default=DATASET)
+    parser.add_argument(
+        "--dataset", type=Path, action="append", help="repeat for several sets"
+    )
     parser.add_argument("--model", default=None)
     parser.add_argument("--timeout-ms", type=int, default=10_000)
     parser.add_argument("--concurrency", type=int, default=4)
@@ -492,7 +634,9 @@ def main() -> None:
         help="offline E5 shortlist recall only; no OpenRouter call, no credits",
     )
     parser.add_argument("--k", type=int, default=DEFAULT_SHORTLIST_K)
-    raise SystemExit(asyncio.run(main_async(parser.parse_args())))
+    args = parser.parse_args()
+    args.dataset = args.dataset or [DATASET]
+    raise SystemExit(asyncio.run(main_async(args)))
 
 
 if __name__ == "__main__":
