@@ -1,7 +1,8 @@
 # Ze — Deployment Guide
 
 Ze runs on [Fly.io](https://fly.io) as a single-machine app with an attached
-Postgres database. GitHub Actions handles CI and automated deploys on push to `main`.
+Postgres database. GitHub Actions runs CI on every push and pull request to `main`.
+You start a deploy by hand.
 
 The deployment unit is `apps/ze-api/`. The `fly.toml` and `Dockerfile` both live
 there.
@@ -112,7 +113,8 @@ Look for `ze_startup_complete` to confirm the app is healthy.
 fly deploy
 ```
 
-Or push to `main` — GitHub Actions will deploy automatically.
+Or run the **Deploy backend** workflow by hand: Actions → Deploy backend → Run workflow.
+A push to `main` does not deploy.
 
 ### View logs
 
@@ -171,17 +173,20 @@ Fly restarts the machine automatically after a secret update.
 
 ## CI/CD (GitHub Actions)
 
-Two workflows live in `.github/workflows/`:
+Three workflows live in `.github/workflows/`:
 
-**`ci.yml`** — runs on every push and pull request to `main`:
-- `ruff check` (linting)
-- `pytest` with fast tests only (embedding model tests excluded)
+**`ci.yml`** — runs on every push and pull request to `main`. Each job runs all its
+gates, even when an earlier gate fails, so one red run shows every broken gate:
+- **Web:** `make typecheck-web`, `make web-build`, `make test-web`
+- **Backend:** `make lint` (ruff), then `make test-py` (every Python package suite,
+  fast tests only)
 
-**`deploy-backend.yml`** — runs on merge to `main` when application code changes
-(path filter: `apps/ze-api/**`, `core/engine/ze-core/**`, `core/cognition/ze-memory/**`,
-`plugins/ze-personal/**`, etc.):
-- Runs CI first
-- Calls `fly deploy --remote-only` from `apps/ze-api/` using a scoped deploy token
+**`deploy-backend.yml`** — runs only when you start it (`workflow_dispatch`). It calls
+`flyctl deploy . --remote-only` with `apps/ze-api/fly.toml` and
+`apps/ze-api/Dockerfile`, using the `FLY_API_TOKEN` secret. It does not run CI first.
+
+**`publish-packages.yml`** — runs when you push a tag that matches `pkg-v*`. It
+publishes the shared npm packages.
 
 ### One-time GitHub setup
 
@@ -211,6 +216,11 @@ GitHub needs no other secrets — all runtime secrets live in Fly.
   auto_stop_machines = true    # machine sleeps when idle
   auto_start_machines = true   # wakes on incoming request
   min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
 
 [[vm]]
   memory = "1gb"
