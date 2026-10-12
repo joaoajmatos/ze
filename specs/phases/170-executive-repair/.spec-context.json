@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Executive Repair",
+  "branch": "executive-function-research",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:44:23.981Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:44:24.429Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:44:24.865Z"
+    }
+  ]
+}
