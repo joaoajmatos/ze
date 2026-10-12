@@ -370,7 +370,7 @@ Override only the hooks your plugin needs. All methods have no-op defaults.
 
 | Method | Signature | Purpose |
 |--------|-----------|---------|
-| `state_extensions()` | `-> type \| None` | A `TypedDict` subclass whose fields are merged into `AgentState`. |
+| `state_extensions()` | `-> type \| None` | A plain `TypedDict` (`total=False`) whose fields are merged into `AgentState`. Do not subclass `AgentState`; the engine adds it. |
 | `checkpoint_serde_modules()` | `-> tuple[str, ...]` | `types.py` module paths scanned for checkpoint-serializable dataclasses/enums. |
 | `memory_policies()` | `-> dict[str, Any]` | Agent name → retrieval policy for this plugin's agents. |
 | `pre_route_node()` | `-> Callable \| None` | An async graph node inserted between preprocess and embed_route. |
@@ -467,6 +467,11 @@ Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use
 | `DreamRun` | Metadata for one nightly dream job execution. |
 | `ArtifactType` | Enum: `synthesized_insight`, `synthesized_procedure`, `hindsight_fact`, `plan_stress_test`, `schema_candidate`, `policy_candidate`. |
 | `ArtifactStatus` | Enum: `pending`, `promoted`, `rejected`, `needs_review`, `revised`, `rolled_back`. |
+| `CompanionPolicy`, `ResearchPolicy`, `GoalsPolicy`, `WorkflowPolicy`, `PlannerPolicy`, `CalendarPolicy`, `RemindersPolicy`, `EmailPolicy`, `ProspectingPolicy` | Memory read policies. Return them from `ZePlugin.memory_policies()`. |
+| `build_admission_gate` | Builds the signal admission gate from the `correlation.salience` config block. Pass the result to a job that submits signals. |
+| `extract_facts`, `fact_extraction_model` | Run the fact extractor on text. Submit the result through `submit_perception_facts`. |
+| `WORKS_ON`, `COLLABORATES_WITH` | Graph predicates for social-cognition edges. |
+| `Relationship`, `GraphStore` | Graph edge type and the store protocol for reading and writing edges. |
 
 ---
 
