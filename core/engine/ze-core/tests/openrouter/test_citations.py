@@ -96,7 +96,9 @@ async def test_nothing_captured_outside_a_capture_scope():
 
 async def test_other_endpoints_are_not_inspected():
     def handler(request: httpx.Request) -> httpx.Response:
-        payload = {"choices": [{"message": {"annotations": [_annotation("https://a.test")]}}]}
+        payload = {
+            "choices": [{"message": {"annotations": [_annotation("https://a.test")]}}]
+        }
         return _response(json.dumps(payload).encode())
 
     async with _client(handler) as client:
