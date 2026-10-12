@@ -118,9 +118,9 @@ class InsightEngine:
 
         try:
             raw = await self._client.complete(
+                messages=[{"role": "user", "content": user_prompt}],
                 model=model,
                 system=_SYSTEM,
-                prompt=user_prompt,
                 max_tokens=400,
             )
         except Exception as exc:

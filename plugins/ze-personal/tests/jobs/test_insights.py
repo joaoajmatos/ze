@@ -117,6 +117,43 @@ async def test_insights_generates_and_pushes():
     conn.execute.assert_awaited_once()
 
 
+async def test_insights_calls_complete_with_messages_not_prompt():
+    conn = make_conn()
+    conn.fetch = AsyncMock(
+        side_effect=[
+            [_fact_row(), _fact_row(), _fact_row()],  # facts
+            [_episode_row()],  # episodes
+            [],  # recent insights
+            [],  # pushed categories
+        ]
+    )
+    conn.fetchrow = AsyncMock(return_value=_profile_row())
+
+    captured: dict = {}
+
+    async def strict_complete(**kwargs):
+        captured.update(kwargs)
+        assert "prompt" not in kwargs, "LLMClient.complete takes messages, not prompt"
+        return "[]"
+
+    client = AsyncMock()
+    client.complete = AsyncMock(side_effect=strict_complete)
+    notifier = make_notifier()
+
+    engine, _ = make_engine(conn=conn, notifier=notifier, client=client)
+    await engine.run()
+
+    assert "prompt" not in captured
+    messages = captured["messages"]
+    assert len(messages) == 1
+    assert messages[0]["role"] == "user"
+    content = messages[0]["content"]
+    assert "Generate insights." in content
+    assert "sleep" in content
+    assert captured["system"]
+    assert captured["max_tokens"] == 400
+
+
 async def test_insights_uses_models_override_when_set():
     conn = make_conn()
     conn.fetch = AsyncMock(
@@ -340,7 +377,7 @@ async def test_insights_passes_recent_to_llm():
     await engine.run()
 
     call_kwargs = client.complete.call_args[1]
-    user_prompt = call_kwargs.get("prompt", "")
+    user_prompt = call_kwargs["messages"][0]["content"]
     assert "You mentioned sleep a lot last week." in user_prompt
 
 
@@ -365,7 +402,7 @@ async def test_insights_no_profile_uses_placeholder():
     await engine.run()
 
     call_kwargs = client.complete.call_args[1]
-    user_prompt = call_kwargs.get("prompt", "")
+    user_prompt = call_kwargs["messages"][0]["content"]
     assert "(no profile yet)" in user_prompt
 
 
