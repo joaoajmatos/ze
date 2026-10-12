@@ -652,9 +652,12 @@ shapes). Use Grep / Read / specs instead, then optionally confirm with `explain`
   dependency graph) to catch boundary violations an import grep misses.
 - *Docs Steward* — use `god-nodes` and `GRAPH_REPORT.md` to check architecture docs
   name the real hubs and package edges.
-- After a query that helped or misled, record it:
-  `graphify save-result --question "…" --answer "…" --type query --outcome useful|dead_end|corrected`.
-  The weekly docs sweep runs `graphify reflect` to turn these into lessons.
+- After a query that helped or misled, record it, always with `--memory-dir` pointing
+  at the ground checkout (a floor's own `graphify-out/memory/` is deleted when the floor
+  lands, so outcomes saved there are lost):
+  `graphify save-result --question "…" --answer "…" --type query --outcome useful|dead_end|corrected --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`.
+  The weekly docs sweep runs `graphify reflect --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`
+  to turn these into lessons.
 
 **Keep it fresh:** `graphify update .` is AST-only, free, and takes about a minute.
 The Maestro runs it on the ground checkout after every landed floor, so new floors
