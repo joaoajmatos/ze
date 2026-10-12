@@ -11,6 +11,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [cognitive-architecture.md](cognitive-architecture.md) | Seven cognitive functions mapped onto packages |
 | [architecture.md](architecture.md) | System overview, LangGraph flow, modules at a glance |
 | [package-architecture.md](package-architecture.md) | Monorepo split, `ZePlugin`, where new code belongs |
+| [system-one.md](system-one.md) | Typed judgments beside E5 and the LLM — client, surfaces, fail-open rule |
 
 ## Extending
 
@@ -19,7 +20,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 | [sdk.md](sdk.md) | `ze_sdk` reference — exports, `BaseAgent`, `@agent` / `@tool`, plugin hooks |
 | [extending-ze.md](extending-ze.md) | End-to-end: agents, plugins, proactive jobs, channels |
 | [adding-an-agent.md](adding-an-agent.md) | Step-by-step agent authoring |
-| [channels.md](channels.md) | Adding an outbound channel (LinkedIn, WhatsApp, …) |
+| [channels.md](channels.md) | Channel contract, inbound polling and webhooks, adding a channel |
 | [package-readme-template.md](package-readme-template.md) | Template for new package READMEs |
 
 ## Domains

@@ -78,7 +78,7 @@ picks one agent (or `none`), says whether the request needs more than one specia
 grades complexity. Code then decides: a confident choice routes directly, `none` or a
 multi-specialist answer goes to `decompose`, and an unsure choice or a skip falls back to
 the E5 rules above. The surface ships off. See
-[configuration.md](configuration.md#system_one).
+[system-one.md](system-one.md) and [configuration.md](configuration.md#system_one).
 
 **Conductor rewrite.** After `decompose`, a sequential multi-specialist turn, or a turn that
 mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_rewrite`).
