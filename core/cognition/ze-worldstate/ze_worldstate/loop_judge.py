@@ -136,6 +136,7 @@ def _valid_noul(answer: SystemOneAnswer | None) -> bool:
         and isinstance(answer.noul, (int, float))
         and not isinstance(answer.noul, bool)
         and not math.isnan(answer.noul)
+        and 0.0 <= answer.noul <= 1.0
     )
 
 

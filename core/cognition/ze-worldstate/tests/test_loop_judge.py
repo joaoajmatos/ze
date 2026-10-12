@@ -196,3 +196,12 @@ def test_at_the_bar_is_positive():
         decide(_result(is_open_concern=0.1, resolves_existing=0.7), CFG, "email").kind
         == "resolve"
     )
+
+
+def test_decide_out_of_range_noul_is_invalid():
+    d = decide(
+        _result(is_open_concern=1.5, resolves_existing=0.1, explicit_declaration=0.1),
+        CFG,
+        "conversation",
+    )
+    assert (d.kind, d.reason) == ("fallback", "invalid_answer")
