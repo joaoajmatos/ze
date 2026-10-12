@@ -8,6 +8,7 @@ class BrowserFetcher:
     """Fetches JS-heavy pages via the ze-browser sidecar."""
 
     url_patterns: list[str] = []
+    is_fallback: bool = True
 
     def __init__(self, browser_client: object) -> None:
         self._client = browser_client

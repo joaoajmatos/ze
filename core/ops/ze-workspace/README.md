@@ -13,7 +13,8 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 - `WorkspaceClient` — async HTTP client for the sidecar
 - `WorkspaceGate` — action × origin → allow, confirm, or deny
 - `workspace_*` tools — list, read, write, delete, run, run skill script, ingest, reset
-- Durable `workspace_state` and `workspace_runs` in Postgres
+- Durable `workspace_state` and `workspace_runs` in Postgres, with a run journal that survives `ze-api` restarts
+- Follow-through — a `RunWatcher` that watches detached runs, starts a follow-up turn, and pushes when the client is offline
 - REST routes under `/api/v0/workspace`
 
 ### Integration
@@ -32,6 +33,9 @@ The sidecar is not a browsing session. Web pages stay in `ze-browser`. This pack
 | `gate.py` | `WorkspaceGate` — action × origin decisions |
 | `tools.py` | `workspace_*` `@tool`s; `WORKSPACE_TOOLS` name list |
 | `store.py` | `workspace_state` and `workspace_runs` |
+| `followthrough.py` | `RunWatcher` — watch detached runs, follow-up turn, push |
+| `turn_lock.py` | Per-thread lock for follow-up turns |
+| `action_records.py`, `action_handoff.py` | Action-record submissions for runs |
 | `rest.py` | FastAPI helpers: status, files, reset |
 | `sanitize.py` | Path confinement and secret redaction |
 | `types.py` | Action, origin, run, and file types |
@@ -42,7 +46,7 @@ Every `WRITE` tool in this package declares `reversibility` and an `effect_phras
 
 ## Dependencies
 
-`ze-agents`, `ze-logging`, `ze-data`, `httpx`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.
+`ze-agents`, `ze-logging`, `ze-data`, `ze-memory`, `ze-plugin`, `httpx`, `asyncpg`. `ze-core` and `ze-agents` must not depend on this package.
 
 ## Usage
 
@@ -66,6 +70,7 @@ stat = await client.stat()
 | `WORKSPACE_SERVICE_URL` | URL of the workspace sidecar |
 | `WORKSPACE_API_TOKEN` | Bearer token for the sidecar control API |
 | `WORKSPACE_TIMEOUT_SECONDS` | Per-request HTTP timeout |
+| `WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS` | Seconds a turn waits for a command before it detaches |
 
 See [docs/workspace.md](../../docs/workspace.md) for access, isolation, and local/Fly setup.
 See [docs/skills.md](../../docs/skills.md) for how skill scripts reach this sidecar.

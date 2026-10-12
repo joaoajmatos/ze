@@ -6,7 +6,7 @@ Architecture: [Feature-Sliced Design](https://feature-sliced.design/). See [docs
 
 ## Role in Ze
 
-`ze-web` is the user's window into Ze. All conversational interaction happens here over WebSocket; management pages use the REST API via `@ze/client`. Server-driven UI components from agents render inline in the chat without requiring frontend deploys.
+`ze-web` is the user's window into Ze. All conversational interaction happens here over WebSocket; management pages use the REST API via `@myguyze/ze-client`. Server-driven UI components from agents render inline in the chat without requiring frontend deploys.
 
 ## Source layout
 
@@ -33,7 +33,7 @@ src/
 
 ## Dependencies
 
-Stack: React 19, Vite, TypeScript, Tailwind CSS, TanStack Query, Zustand, `@ze/client`, `@ze/ui`.
+Stack: React 19, Vite, TypeScript, Tailwind CSS, TanStack Query, Zustand, `@myguyze/ze-client`, `@myguyze/ze-ui`.
 
 ## Running
 

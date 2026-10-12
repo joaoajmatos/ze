@@ -58,7 +58,7 @@ See [docs/testing.md](../docs/testing.md) for all targets and conventions.
 | Title + one-liner | Yes | Match `description` in `pyproject.toml` where present |
 | Role in Ze | Yes | Architecture context + `### Key features` + `### Integration` |
 | Responsibilities | Yes | Module table — the primary map of what lives here |
-| Dependencies | Yes | Mermaid diagram for plugins and apps; prose or list for core/integration |
+| Dependencies | Yes | SVG dependency diagram (made with the `diagram-design` skill, stored under `docs/diagrams/`) for plugins and apps; prose or list for core/integration |
 | Usage / Running | Yes | Code examples or Makefile targets |
 | Configuration | No | Only when the package reads env vars or YAML |
 | Testing | Yes | Always document `make test-<short-name>`. See [docs/testing.md](./testing.md). |
@@ -95,5 +95,5 @@ See [docs/testing.md](../docs/testing.md) for all targets and conventions.
 
 ## Parent directory READMEs
 
-`core/README.md`, `plugins/README.md`, `integrations/README.md`, and `apps/README.md`
-index their child packages. Keep the package table in sync when adding or removing packages.
+`core/README.md`, `plugins/README.md`, `integrations/README.md`, `apps/README.md`, and
+`packages/README.md` index their child packages. Keep the package table in sync when adding or removing packages.

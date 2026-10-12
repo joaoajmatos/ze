@@ -27,7 +27,7 @@ After each `execute_tool` or `draft_response` node, `write_memory` fires
 (fire-and-forget). Explicit companion writes already landed via `remember_fact`.
 The extractor then runs a keep/drop + `speech_act` gate. It writes remaining facts
 through `submit_perception_facts` as synthesized, `reviewed = false`. Eval threads
-skip extraction. `POST /memory/facts/review` exposes review/edit/reject.
+skip extraction. `POST /api/v0/memory/facts/review` exposes review/edit/reject.
 
 **Episodes** (`ze_memory/retriever.py`)
 
@@ -96,7 +96,7 @@ Three rules applied per run:
 | Contradicted cleanup | `contradicted = true` and older than `contradicted_ttl_days` (default: 30d) | Hard-delete |
 | Stale unreviewed | `reviewed = false` and no activity for `unreviewed_ttl_days` (default: 90d) | Soft-expire: set `expires_at = NOW() + expiry_grace_days` |
 
-Soft-expired facts appear in the morning briefing and in `GET /memory/digest` so the
+Soft-expired facts appear in the morning briefing and in `GET /api/v0/memory/digest` so the
 user can save them before the grace period ends. Reviewed facts are **never** expired
 automatically.
 
@@ -115,7 +115,7 @@ default: 50) and produces a structured list of `ProfileFacet` objects upserted i
 `memory_profile_facets` by key.
 
 Profile facets are key-value pairs with stability (`stable` | `dynamic`) and confidence
-scores. The current facets are available at `GET /memory/profile`, and Ze injects them
+scores. The current facets are available at `GET /api/v0/memory/profile`, and Ze injects them
 into every agent's system prompt. Agents see the full synthesized portrait, not individual facts.
 
 Profile synthesis is skipped if fewer than `profile.min_facts` (default: 3) reviewed
@@ -413,6 +413,39 @@ Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt
 
 ---
 
+## Open-loop upkeep (4 AM and 5 AM UTC)
+
+**Modules:** `ze_worldstate/jobs/stale_suspicion.py`, `ze_worldstate/jobs/drift_sweep.py`
+**Config:** `worldstate.stale_suspicion.*` and `worldstate.drift.*` in `config/config.yaml`
+
+`StaleSuspicionJob` (default `0 4 * * *`) expires `suspected` loops that no new
+evidence has confirmed within the window. `DriftSweepJob` (default `0 5 * * *`) moves
+`active` loops to `drifting` when their drift deadline passes. See
+[cognitive-architecture.md](cognitive-architecture.md).
+
+---
+
+## Hypothesis decay (3 AM UTC)
+
+**Module:** `ze_correlation/jobs/hypothesis_decay.py` (`HypothesisDecayJob`)
+
+The job lowers the confidence of correlation hypotheses that have gone without new
+evidence. Set `correlation.hypothesis_decay.schedule` to change the default
+`0 3 * * *`.
+
+---
+
+## Attention arbitration (every 4 hours)
+
+**Module:** `ze_priority/arbitration.py` (`AttentionArbitrationJob`)
+**Config:** `proactive.attention_arbitration.*` and `proactive.budget.max_pushes_per_day`
+
+One job replaces the old per-source push sweeps. It collects the push-eligible open
+loops and hypotheses, ranks them with `PriorityView`, and pushes only the top item.
+All sources share the daily push budget (default 3). See [cognitive-architecture.md](cognitive-architecture.md).
+
+---
+
 ## Skill source recheck (6 AM UTC)
 
 **Module:** `ze_skills/jobs/recheck.py`  
@@ -444,6 +477,9 @@ tier instead of literal clock position.
 |---|---|---|
 | 2:00 AM daily | Memory consolidation + profile synthesis | `ze_memory/consolidator.py` |
 | 3:00 AM daily | Dream sleep pass + retrieval-cache expiry | `ze_memory/dream/job.py` |
+| 3:00 AM daily | Hypothesis confidence decay | `ze_correlation/jobs/hypothesis_decay.py` |
+| 4:00 AM daily | Stale open-loop suspicion expiry | `ze_worldstate/jobs/stale_suspicion.py` |
+| 5:00 AM daily | Open-loop drift sweep | `ze_worldstate/jobs/drift_sweep.py` |
 | 3:00 AM daily | Contacts consolidation (dedup + merge) | `ze_personal/contacts/consolidator.py` |
 | 6:00 AM daily | Imported skill source-content recheck | `ze_skills/jobs/recheck.py` |
 | Every 10 min | Session summary generation | `ze_memory/session_summary.py` |
@@ -455,6 +491,7 @@ tier instead of literal clock position.
 | 7:00 PM Sun | Weekly goal suggestions | `ze_automation/jobs/goal_suggestion.py` |
 | 9:00 AM Mon | **Weekly accountability narrative** | `ze_automation/jobs/accountability.py` |
 | 9:00 AM Tue | Stuck goal detection | `ze_automation/jobs/stuck_goals.py` |
+| Every 4 hours | Attention arbitration — one shared push across loops and hypotheses | `ze_priority/arbitration.py` |
 | Every 6 hours | **Cost anomaly detection** | `ze_automation/jobs/cost_anomaly.py` |
 | Every 15 min | Goal advance sweep | `ze_automation/goals/executor.py` |
 | Hourly | Checkpoint pruning | `ze_core/orchestration/checkpoint_pruner.py` |
@@ -477,11 +514,11 @@ are configurable in `config/config.yaml`.
 
 | Endpoint | Description |
 |---|---|
-| `GET /memory/facts` | All stored facts (with review status, expiry) |
-| `GET /memory/digest` | Unreviewed facts + upcoming expiries |
-| `GET /memory/profile` | Current user profile (latest synthesis) |
-| `POST /memory/consolidate` | Trigger a consolidation run manually |
-| `POST /memory/facts/review` | Confirm, reject, or edit a proposed fact |
+| `GET /api/v0/memory/facts` | All stored facts (with review status, expiry) |
+| `GET /api/v0/memory/digest` | Unreviewed facts + upcoming expiries |
+| `GET /api/v0/memory/profile` | Current user profile (latest synthesis) |
+| `POST /api/v0/memory/consolidate` | Trigger a consolidation run manually |
+| `POST /api/v0/memory/facts/review` | Confirm, reject, or edit a proposed fact |
 
 ---
 
@@ -494,6 +531,6 @@ All cron expressions and thresholds live in `config/config.yaml` under `memory.c
 To trigger a consolidation manually (e.g. after bulk-approving many facts):
 
 ```bash
-curl -X POST https://ze-backend.fly.dev/memory/consolidate \
+curl -X POST https://ze-backend.fly.dev/api/v0/memory/consolidate \
   -H "Authorization: Bearer $ZE_API_KEY"
 ```

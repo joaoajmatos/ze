@@ -21,7 +21,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * API and client version
  *
- * Returns the API version and the matching @ze/client package version. Public — no authentication required. Use to detect version skew between client and server.
+ * Returns the API version and the matching @myguyze/ze-client package version. Public — no authentication required. Use to detect version skew between client and server.
  */
 export const getVersion = <ThrowOnError extends boolean = false>(options?: Options<GetVersionData, ThrowOnError>): RequestResult<GetVersionResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetVersionResponses, unknown, ThrowOnError>({ url: '/api/v0/version', ...options });
 

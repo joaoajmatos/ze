@@ -40,7 +40,7 @@ proton:joao@protonmail.com
 whatsapp:+351912345678
 ```
 
-`ChannelType` identifies the *protocol* (`email`, `whatsapp`).  
+`ChannelType` identifies the *protocol* (`email`, `linkedin`, `whatsapp`).  
 `channel_id` identifies the *instance*. Routing, watermarks, and thread
 ownership all key off `channel_id`, never `ChannelType` alone.
 
@@ -80,7 +80,10 @@ class InboundChannel(Channel):
 
     @property
     def supports_push(self) -> bool:
-        return False  # Phase 86: set True + implement register_push()
+        return False  # True when the channel receives webhooks
+
+    def webhook_verifier(self) -> "WebhookVerifier | None":
+        return None  # return a verifier when supports_push is True
 
     @abstractmethod
     async def poll_new_messages(self, since: datetime) -> list[InboundMessage]: ...
@@ -120,12 +123,26 @@ Runs on a cron schedule (default every 5 minutes; configurable via
 
 For each registered inbound channel:
 1. Skip if `poll_enabled = False` in `user_channels`
-2. Skip if `channel.supports_push = True` (Phase 86 handles those via webhook)
+2. Skip if `channel.supports_push = True` (the webhook path delivers those messages)
 3. Read watermark from `user_channel_watermarks` (default: 24 h ago on first run)
 4. Call `channel.poll_new_messages(since=watermark)`
 5. Pass each message to `InboundMessageProcessor`
 6. Update watermark to `now()`
 7. Upsert a row in `user_channels` (auto-registers the channel on first poll)
+
+### Push delivery (webhooks)
+
+A channel with `supports_push = True` receives messages through
+`POST /api/v0/webhooks/{source}` instead of polling. `WebhookDispatcher`
+(`ze_api/webhook.py`) finds the channel by `ChannelType`, asks
+`channel.webhook_verifier()` to check the payload, and parses it into
+`InboundMessage` objects. It drops duplicates by `(source, message_id)` for 24 hours,
+then hands each message to `InboundMessageProcessor`. A plugin can also register a
+`WebhookHandler` for its own source keys.
+
+`GmailChannel` supports push when `PUBLIC_URL` is set. It uses a Gmail watch on a
+Pub/Sub topic (`GMAIL_PUBSUB_TOPIC`). A Gmail watch expires after 7 days, so
+`GmailWatchRenewalJob` renews it every Sunday at midnight UTC.
 
 ### `InboundMessageProcessor`
 
@@ -259,7 +276,7 @@ class ProtonMailChannel(InboundChannel):
 
     @property
     def supports_push(self) -> bool:
-        return False   # set True when Phase 86 webhook support is ready
+        return False   # set True and implement webhook_verifier() for push delivery
 
     async def send(self, message: Message) -> SentMessage: ...
     async def get_thread(self, thread_id: str) -> Thread: ...

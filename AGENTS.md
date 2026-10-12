@@ -121,8 +121,8 @@ ze/                           # monorepo root
 │   │   └── ze_sdk/           # ze_sdk, ze_sdk.types, ze_sdk.proactive, ze_sdk.channels,
 │   │                         # ze_sdk.memory, ze_sdk.errors, ze_sdk.automation, ze_sdk.contribution,
 │   │                         # ze_sdk.correlation, ze_sdk.onboarding, ze_sdk.ui
-│   ├── ze-client/            # @ze/client — typed REST SDK + WS types for ze-web
-│   └── ze-ui/                # @ze/ui — server-driven UI contract + React renderer
+│   ├── ze-client/            # @myguyze/ze-client — typed REST SDK + WS types for ze-web
+│   └── ze-ui/                # @myguyze/ze-ui — server-driven UI contract + React renderer
 ├── plugins/                  # ZePlugin domain extensions
 │   ├── ze-personal/          # Personal-assistant domain layer (ZePlugin) — persona, contacts, onboarding
 │   │   └── ze_personal/
@@ -240,7 +240,7 @@ make help            # full target list
 
 # Setup
 make install         # Python workspace deps (uv sync)
-make web-install     # JS workspace deps — ze-web, @ze/ui, @ze/client (bun install at repo root)
+make web-install     # JS workspace deps — ze-web, @myguyze/ze-ui, @myguyze/ze-client (bun install at repo root)
 
 # Database
 make db-up           # start Postgres via Docker
@@ -258,8 +258,8 @@ make test            # ze-api tests (skips slow embedding tests)
 make test-<name>     # any package — see docs/testing.md
 make test-py         # every Python package suite; reports all failures (CI gate)
 make test-all        # test-py with slow tests, then test-web
-make test-web        # @ze/ui + React web app (vitest)
-make typecheck-web   # tsc --noEmit for ze-web and @ze/ui
+make test-web        # @myguyze/ze-ui + React web app (vitest)
+make typecheck-web   # tsc --noEmit for ze-web and @myguyze/ze-ui
 
 # Code quality
 make lint            # ruff lint across the repo (ruff.toml excludes .claude/)
@@ -347,7 +347,7 @@ pages → widgets → features → entities → shared
 
 **Format / util helpers** — in `<slice>/lib/format.ts` within the slice that owns them. Do not add to `shared/lib/` unless used by ≥ 2 unrelated slices.
 
-**SDK types** — import `type { Foo }` directly from `@ze/client` in any layer; no re-export wrapper needed.
+**SDK types** — import `type { Foo }` directly from `@myguyze/ze-client` in any layer; no re-export wrapper needed.
 
 **Tailwind opacity** — non-standard steps must use arbitrary-value syntax: `bg-white/[0.03]` not `bg-white/3`. Standard steps (5, 10, 15, 20 …) use the shorthand form.
 
@@ -534,7 +534,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/kernel/ze-data`; no Ze deps | Implemented |
 | 70 | Finance recurring detection — algorithmic recurring expense/subscription detection, staleness-aware proactive job, CSV nudge flow, price-change resurface | Implemented |
 | 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Implemented |
-| 72 | API client codegen — `@ze/client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Implemented |
+| 72 | API client codegen — `@myguyze/ze-client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Implemented |
 | 73 | API surface cleanup — all routes under `/api/v0/`; `HTTPBearer` security scheme; explicit `operation_id` on every route; auth extracted into `require_api_key` Depends; duplicate cost route removed; `GET /api/v0/version` | Implemented |
 | 74 | Automation substrate — `ze-automation` core package owns full automation stack (types, stores, planners, executors, agents, migrations); `ze-personal` reduced to persona + contacts + onboarding | Implemented |
 | 76 | ze-api shell cleanup — domain bootstrap into package modules; `ZeApiSettings` shell; test relocation; delete `ze_api/bootstrap.py`; `compose.py` for proactive jobs | Implemented |
@@ -569,7 +569,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Implemented |
 | 116 | Workspace Follow-Through — wait-then-detach workspace runs, automatic follow-up turn on the same thread, push when offline, cancel; one-run-at-a-time busy rule delivered by Phase 129 (`_refusal_if_busy`) | Implemented |
 | 117 | Web HIG fixes — chat always resolves (delivery watchdog + retry state in ze-web; backend keeps the socket on unserializable frames, JSON-safe `trace_update`, terminal `error` frame for empty turns, `thread_id` on error frames), md-width nav flyout + accessible names, route-derived contextual panel label, mobile launcher/nav polish, static AI disclosure; feedback/retry split to a later phase | Implemented |
-| 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Implemented |
+| 118 | Chart Visualization — `@myguyze/ze-ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Implemented |
 | 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Implemented |
 | 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Implemented |
 | 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Implemented |
@@ -614,8 +614,8 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 160 | E5 routing confidence (97 remainder: retune MiniLM-era threshold/gap; docs name E5) | Implemented |
 | 161 | Workspace chat-first (drop execution modes; `/workspace` is a map; unattended always has the computer) | Implemented |
 | 162 | System One client — `SystemOneClient` Protocol (`ze_agents/system_one.py`) for typed judgments (noul / choice / score); `OpenRouterSystemOneClient` + `DisabledSystemOneClient` in `ze_core/openrouter/system_one.py`; `system_one:` config block, off by default; no routing or admission change yet | Implemented |
-| 163 | Speech-act System One — post-turn fact admission judged by System One (`speech_act`/family Choice + biography Noul), pure-code persist/hold/skip, Haiku value writer on persist, Haiku judge on skip, single attempt (`evaluate(max_attempts=1)`), judgments on the trace; surface off with null bars until `make calibrate-speech-act` | Implemented |
-| 164 | Routing Choice After E5 — E5 stays the shortlist; a typed System One Choice decides single-specialist trust and a graded complexity question replaces the word-count classifier (depends on 162) | Implemented |
+| 163 | Speech-act System One — post-turn fact admission judged by System One (`speech_act`/family Choice + biography Noul), pure-code persist/hold/skip, Haiku value writer on persist, Haiku judge on skip, single attempt (`evaluate(max_attempts=1)`), judgments on the trace; on in the shipped config with bars calibrated 2026-10-09 (`make calibrate-speech-act`) | Implemented |
+| 164 | Routing Choice After E5 — E5 stays the shortlist; a typed System One Choice decides single-specialist trust and a graded complexity question replaces the word-count classifier (depends on 162); stays off in the shipped config — the 2026-10-09 calibration found no safe `choice_trust` | Implemented |
 | 165 | Response Feedback and Retry — thumbs up/down on assistant replies as append-only `FeedbackRecord` evidence (`ClaimKind.FEEDBACK_RECORD`, licensed to Perception only; `feedback_records`, `zm024`), linked to the reply's `MessageTrace`, no consumer in v1; safe Retry regenerates the latest reply with write tools blocked (`retry_mode`), decided server-side by `retry_eligibility` from trace effect metadata; `messages.replaces`/`replaced_by` (`zc031`); every `WRITE` tool declares `reversibility` | Implemented |
 | 166 | System One Skill Gating (O3) — E5 shortlists skills down to `shortlist_floor`; one batched System One Choice (shortlist ∪ `none`) plus a Noul `needs_skill` picks at most one automatic skill (a deliberate narrowing of 114; explicit `/skill-name` still stacks); a below-`match_threshold` apply is marked `below_floor` on the trace; `match_skills` appends its judgments; surface `system_one.surfaces.skills` off with null bars until `make calibrate-skills`; no suggestion UX | Implemented |
 | 167 | Routing Choice Criteria — fixes the 164 held-out failures: companion no longer claims "explain X"; optional `routing_criteria` on `BaseAgent` (Choice text, falls back to `description`; E5 still embeds `description`); name-free Choice instructions and a stronger `none` criterion; `shortlist_k` 9 chosen by offline recall on three calibration sets (9 of 10 agents, so E5 filters little for the Choice; it still drives the 160 skip path); `eval/calibration/routing_holdout2.jsonl` and the opt-in `companion_research_check.py`. Surface enabled (`choice_trust` 0.5, `multi_specialist_hold` 0.5, `complexity_lookup_max` null) under an amended acceptance rule | Implemented |
@@ -653,9 +653,12 @@ shapes). Use Grep / Read / specs instead, then optionally confirm with `explain`
   dependency graph) to catch boundary violations an import grep misses.
 - *Docs Steward* — use `god-nodes` and `GRAPH_REPORT.md` to check architecture docs
   name the real hubs and package edges.
-- After a query that helped or misled, record it:
-  `graphify save-result --question "…" --answer "…" --type query --outcome useful|dead_end|corrected`.
-  The weekly docs sweep runs `graphify reflect` to turn these into lessons.
+- After a query that helped or misled, record it, always with `--memory-dir` pointing
+  at the ground checkout (a floor's own `graphify-out/memory/` is deleted when the floor
+  lands, so outcomes saved there are lost):
+  `graphify save-result --question "…" --answer "…" --type query --outcome useful|dead_end|corrected --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`.
+  The weekly docs sweep runs `graphify reflect --memory-dir /Users/joaoamatos/coding/ze/graphify-out/memory`
+  to turn these into lessons.
 
 **Keep it fresh:** `graphify update .` is AST-only, free, and takes about a minute.
 The Maestro runs it on the ground checkout after every landed floor, so new floors
