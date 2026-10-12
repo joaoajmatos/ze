@@ -134,11 +134,8 @@ class TestRunDelegate:
 
         async def _run_impl(self, ctx: AgentContext) -> AgentResult:
             ctx.sources.append(Source("https://a.test", "A"))
-            return AgentResult(
-                agent="research",
-                response="found it",
-                sources=[Source("https://a.test", "A"), Source("https://b.test", "B")],
-            )
+            ctx.sources.append(Source("https://b.test", "B"))
+            return AgentResult(agent="research", response="found it")
 
         cls = type(
             "_Agent_research",

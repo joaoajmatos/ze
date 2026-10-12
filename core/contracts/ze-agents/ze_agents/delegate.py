@@ -353,7 +353,7 @@ async def run_delegate(
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc), duration_ms=duration_ms)
 
-    add_sources(ctx.sources, [*sub_ctx.sources, *result.sources])
+    add_sources(ctx.sources, sub_ctx.sources)
     duration_ms = int((time.monotonic() - start) * 1000)
     nested = [
         {
