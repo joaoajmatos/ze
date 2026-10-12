@@ -269,6 +269,7 @@ class ZeContainer(CoreContainer):
     collision_store: Any = None
     nli_client: Any = None
     system_one_client: Any = None
+    loop_inflow: Any = None
     budget_checker: SpendBudgetChecker | None = None
     procedure_admission: Any = None
     procedure_discovery: Any = None
@@ -280,7 +281,6 @@ class ZeContainer(CoreContainer):
             plugin_services.update(plugin.configurable_services())
 
         from ze_memory.extractor import gather_fact_proposals
-        from ze_worldstate.inflow import conversation_memory_hook
 
         configurable: dict = {
             "thread_id": str(thread_id),
@@ -314,10 +314,9 @@ class ZeContainer(CoreContainer):
             "procedure_activator": self.procedure_activator,
             **plugin_services,
         }
-        configurable["memory_hooks"] = [
-            conversation_memory_hook,
-            *plugin_services.get("memory_hooks", []),
-        ]
+        configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
+        if self.loop_inflow is not None:
+            configurable["loop_admission"] = self.loop_inflow.admit
         configurable.update(configurable_extra)
         return {"configurable": configurable}
 
@@ -591,7 +590,10 @@ async def build_container(settings: Settings) -> ZeContainer:
     import ze_skills.tools as skills_tools
 
     skills_tools.configure(skill_store=skills_stack.skill_store)
-    from ze_worldstate.inflow import make_loop_extractor_from_parts
+    from ze_worldstate.inflow import (
+        make_loop_extractor_from_parts,
+        make_loop_inflow_from_parts,
+    )
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
         loop_store=worldstate.loop_store,
@@ -600,6 +602,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         openrouter_client=shared.openrouter_client,
         embedder=shared.embedder,
         loop_memory_store=shared.memory_store,
+        system_one_client=shared.system_one_client,
+        settings=settings,
     )
 
     from ze_agents.progress.translations import ProgressTranslations
@@ -796,6 +800,18 @@ async def build_container(settings: Settings) -> ZeContainer:
         collision_store=collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
+        loop_inflow=make_loop_inflow_from_parts(
+            loop_store=worldstate.loop_store,
+            loop_graph_store=worldstate.graph_store,
+            loop_entity_resolver=worldstate.entity_resolver,
+            openrouter_client=shared.openrouter_client,
+            embedder=shared.embedder,
+            loop_memory_store=shared.memory_store,
+            collision_store=collision_store,
+            nli_client=shared.nli_client,
+            system_one_client=shared.system_one_client,
+            settings=settings,
+        ),
         procedure_admission=procedure_admission,
         procedure_discovery=procedure_discovery,
         procedure_activator=procedure_activator,

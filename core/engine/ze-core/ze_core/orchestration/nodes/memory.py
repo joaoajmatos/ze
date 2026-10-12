@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 from typing import Any
 
@@ -44,6 +45,32 @@ def _format_transcript(messages: list[dict]) -> str:
     return "\n".join(
         f"{m.get('role', 'user')}: {m.get('content', '')}" for m in messages
     )
+
+
+async def _run_fact_extractor(
+    fact_extractor: Any, config: RunnableConfig, result: AgentResult, ctx: Any
+) -> Any:
+    if fact_extractor is None:
+        return None
+    return await fact_extractor(
+        config["configurable"],
+        agent=result.agent,
+        prompt=ctx.prompt,
+        response=result.response,
+    )
+
+
+async def _run_loop_admission(
+    loop_admission: Any, config: RunnableConfig, ctx: Any
+) -> Any:
+    """Duck-typed loop gate (phase 168); a failure here never fails the turn."""
+    if loop_admission is None:
+        return None
+    try:
+        return await loop_admission(config["configurable"], prompt=ctx.prompt)
+    except Exception as exc:
+        log.warning("write_memory_loop_admission_failed", error=str(exc))
+        return None
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
@@ -96,29 +123,40 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             label="write_episode",
         )
         fact_extractor = config["configurable"].get("fact_extractor")
-        if fact_extractor is not None:
-            admission = await fact_extractor(
-                config["configurable"],
-                agent=result.agent,
-                prompt=ctx.prompt,
-                response=result.response,
-            )
-            proposals = admission.facts
-            admission_path = admission.path
-            trace = state.get("message_trace")
-            if admission.judgment is not None and trace is not None:
-                rows = judgments_from_result(
-                    admission.judgment,
+        loop_admission = config["configurable"].get("loop_admission")
+        trace = state.get("message_trace")
+        fact_result, loop_result = await asyncio.gather(
+            _run_fact_extractor(fact_extractor, config, result, ctx),
+            _run_loop_admission(loop_admission, config, ctx),
+        )
+        rows: list = []
+        if fact_result is not None:
+            proposals = fact_result.facts
+            admission_path = fact_result.path
+            if fact_result.judgment is not None:
+                rows += judgments_from_result(
+                    fact_result.judgment,
                     question_kinds={
                         qid: SPEECH_ACT_QUESTIONS[qid].type
-                        for qid in admission.question_ids
+                        for qid in fact_result.question_ids
                     },
-                    consumed=admission.consumed,
-                    skip_reason=admission.skip_reason,
+                    consumed=fact_result.consumed,
+                    skip_reason=fact_result.skip_reason,
                 )
-                judged_trace = dataclasses.replace(
-                    trace, judgments=[*trace.judgments, *rows]
+        if loop_result is not None:
+            if loop_result.judgment is not None:
+                rows += judgments_from_result(
+                    loop_result.judgment,
+                    question_kinds=loop_result.question_kinds,
+                    consumed=loop_result.consumed,
+                    skip_reason=loop_result.skip_reason,
                 )
+            if loop_result.commit is not None:
+                fire_and_forget(loop_result.commit(), label="loop_commit")
+        if rows and trace is not None:
+            judged_trace = dataclasses.replace(
+                trace, judgments=[*trace.judgments, *rows]
+            )
         remembered = identities_from_remember_calls(result.tool_calls or [])
         if remembered:
             proposals = [
