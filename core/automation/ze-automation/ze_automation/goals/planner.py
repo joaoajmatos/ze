@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from ze_agents import defaults
 from ze_agents.client import LLMClient
-from ze_agents.errors import GoalPlanError
+from ze_agents.errors import GoalPlanError, LLMJsonParseError
+from ze_agents.llm_json import parse_llm_json
 from typing import Any
 from ze_sdk.memory import Episode, Fact, Procedure
 from ze_memory.procedures.types import ProcedureTaskContext
@@ -236,27 +236,11 @@ _PROPER_NOUN_RE = re.compile(r"[A-Z][a-z]+|\d{4}|\bQ[1-4]\b")
 _PLAN_MAX_TOKENS = 4000
 
 
-def _extract_json_object(raw: str) -> str:
-    text = raw.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start != -1 and end > start:
-        return text[start:end]
-    return text
-
-
 def _parse_plan(
     raw: str, goal_id: UUID
 ) -> tuple[list[Milestone], list[VerificationGate]]:
     try:
-        data = json.loads(_extract_json_object(raw))
-        if not isinstance(data, dict):
-            raise ValueError("Expected a JSON object")
+        data = parse_llm_json(raw, expect=dict)
 
         raw_milestones = data.get("milestones", [])
         if not raw_milestones:
@@ -284,7 +268,7 @@ def _parse_plan(
             )
             for g in data.get("gates", [])
         ]
-    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+    except (LLMJsonParseError, KeyError, ValueError) as exc:
         log.warning("goal_plan_parse_error", error=str(exc), raw=raw[:200])
         raise GoalPlanError(f"Planner returned invalid plan: {exc}") from exc
 
@@ -528,7 +512,7 @@ class GoalPlanner:
             system=_PROMOTION_SYSTEM,
         )
         try:
-            data = json.loads(raw)
+            data = parse_llm_json(raw, expect=dict)
             return [
                 Fact(
                     id=None,
@@ -566,7 +550,7 @@ class GoalPlanner:
                 model=self._model,
                 system=_PROCEDURE_SYSTEM,
             )
-            data = json.loads(raw)
+            data = parse_llm_json(raw, expect=dict)
             if not data.get("name"):
                 return None
             return Procedure(
@@ -655,7 +639,7 @@ class GoalPlanner:
                 model=self._model,
                 system=_CONVERGENCE_SYSTEM,
             )
-            data = json.loads(raw)
+            data = parse_llm_json(raw, expect=dict)
             if not data.get("overlapping_goal_id"):
                 return None
             return GoalConvergence(
@@ -714,7 +698,7 @@ class GoalPlanner:
                 model=self._model,
                 system=_SUGGESTION_SYSTEM,
             )
-            data = json.loads(raw)
+            data = parse_llm_json(raw, expect=dict)
             s = data.get("suggestion")
             if not s:
                 return None

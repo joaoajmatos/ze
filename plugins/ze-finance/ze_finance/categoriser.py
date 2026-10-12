@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
 
 from ze_agents.client import LLMClient
+from ze_sdk import parse_llm_json
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -148,12 +148,7 @@ class CategoryInferrer:
             messages=[{"role": "user", "content": prompt}],
             model=_ANTHROPIC_MODEL,
         )
-        text = response.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        categories: list[str] = json.loads(text)
+        categories: list[str] = parse_llm_json(response, expect=list)
         if len(categories) != len(descriptions):
             log.warning(
                 "category_llm_length_mismatch",

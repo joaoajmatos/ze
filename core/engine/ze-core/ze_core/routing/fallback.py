@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING
 
-from ze_agents.errors import RoutingError
+from ze_agents.errors import LLMJsonParseError, RoutingError
+from ze_agents.llm_json import parse_llm_json
 from ze_logging import get_logger
 from ze_agents.client import LLMClient
 from ze_core.routing.types import RoutingEnvelope, SubTask
@@ -37,20 +37,6 @@ Rules:
 - Each subtask prompt must be self-contained for its agent.
 - Set "sequential" to true when step N's output is needed as input for step N+1.
 """
-
-
-def _extract_json_object(raw: str) -> str:
-    text = raw.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    if start != -1 and end > start:
-        return text[start:end]
-    return text
 
 
 def _hard_fallback_agent(
@@ -118,9 +104,9 @@ async def decompose(
             log.warning("fallback_llm_error", attempt=attempt + 1, error=str(exc))
             continue
         try:
-            data = json.loads(_extract_json_object(raw))
+            data = parse_llm_json(raw, expect=dict)
             raw_subtasks = data.get("subtasks", [])
-        except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as exc:
+        except (LLMJsonParseError, KeyError, TypeError, AttributeError) as exc:
             last_exc = RoutingError(
                 f"Haiku returned invalid JSON (attempt {attempt + 1}): {exc}"
             )

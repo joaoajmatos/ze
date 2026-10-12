@@ -10,6 +10,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_logging import get_logger
 from ze_agents.settings import Settings
 from ze_agents.db import DBPool
+from ze_agents.llm_json import parse_llm_json
 
 __all__ = [
     "ZePlugin",
@@ -23,6 +24,7 @@ __all__ = [
     "get_logger",
     "Settings",
     "DBPool",
+    "parse_llm_json",
     "NLIClient",
     "SystemOneClient",
 ]

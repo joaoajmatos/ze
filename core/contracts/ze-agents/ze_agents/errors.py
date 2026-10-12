@@ -176,6 +176,17 @@ class RateLimitError(OpenRouterError):
     """OpenRouter returned HTTP 429."""
 
 
+# ── LLM output ────────────────────────────────────────────────────────────────
+
+
+class LLMJsonParseError(ZeCoreError):
+    """An LLM reply did not contain the JSON value the caller asked for."""
+
+    def __init__(self, message: str, raw: str | None = None) -> None:
+        super().__init__(message)
+        self.raw = raw
+
+
 # ── Harness ───────────────────────────────────────────────────────────────────
 
 

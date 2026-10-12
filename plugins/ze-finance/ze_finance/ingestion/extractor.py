@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from ze_agents.client import LLMClient
+from ze_sdk import parse_llm_json
+from ze_sdk.errors import LLMJsonParseError
 from ze_logging import get_logger
 from ze_ingestion.types import ContentType, ExtractionResult, ProcessedContent
 from ze_finance.errors import FinanceParseError
@@ -153,12 +154,9 @@ class FinanceIngestionExtractor:
             model=self._model,
             messages=[{"role": "user", "content": _EXTRACT_PROMPT + text}],
         )
-        raw = response.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1].lstrip("json").strip()
         try:
-            items: list[dict[str, Any]] = json.loads(raw)
-        except json.JSONDecodeError:
+            items: list[dict[str, Any]] = parse_llm_json(response, expect=list)
+        except LLMJsonParseError:
             log.warning("finance_ingestion_llm_parse_failed", source=content.source_url)
             return []
 

@@ -29,6 +29,7 @@ from ze_agents.errors import (
     ChannelError,
     ChannelNotFoundError,
     ChannelSendError,
+    LLMJsonParseError,
 )
 
 __all__ = [
@@ -62,4 +63,5 @@ __all__ = [
     "ChannelError",
     "ChannelNotFoundError",
     "ChannelSendError",
+    "LLMJsonParseError",
 ]

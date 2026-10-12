@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
@@ -329,3 +330,31 @@ def test_prompt_version_is_stable():
     v2 = _prompt_version()
     assert v1 == v2
     assert len(v1) == 12
+
+
+@pytest.mark.parametrize(
+    "wrap",
+    [
+        lambda s: f"```json\n{s}\n```",
+        lambda s: f"Here is my assessment:\n```json\n{s}\n```\nHope that helps.",
+        lambda s: f"Assessment: {s} (end)",
+    ],
+    ids=["fenced", "prose-fenced", "inline-prose"],
+)
+async def test_run_llm_scoring_tolerates_fenced_and_prose_replies(wrap):
+    client = MagicMock()
+    response = MagicMock()
+    response.content = wrap(
+        json.dumps(
+            {
+                "verdicts": {
+                    "headline_mismatch": {"verdict": "present", "detail": "Mismatch."}
+                },
+                "cleared_heuristic_flags": [],
+            }
+        )
+    )
+    client.complete = AsyncMock(return_value=response)
+
+    flags = await run_llm_scoring("Headline", "Summary", [], client, "test-model")
+    assert any(f.type == "headline_mismatch" and f.source == "llm" for f in flags)

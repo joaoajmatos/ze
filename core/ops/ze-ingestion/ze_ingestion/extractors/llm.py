@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
 
 from ze_logging import get_logger
+from ze_agents.llm_json import parse_llm_json
 from ze_ingestion.types import ContentType, ExtractionResult, ProcessedContent
 
 log = get_logger(__name__)
@@ -43,7 +43,7 @@ class LLMExtractor:
                 model=self._model,
                 messages=messages,
             )
-            data = json.loads(raw)
+            data = parse_llm_json(raw, expect=dict)
         except Exception as exc:
             log.warning("llm_extractor_failed", error=str(exc))
             return ExtractionResult(summary="", facts=[], entities=[], tags=[])

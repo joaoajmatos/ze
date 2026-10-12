@@ -1089,3 +1089,55 @@ def test_after_capability_check_allows_execution():
         after_capability_check_workflow({"gate_decision": GateDecision.EXECUTE})
         == "execute_tool"
     )
+
+
+_JSON_WRAPS = [
+    pytest.param(lambda s: s, id="bare"),
+    pytest.param(lambda s: f"```json\n{s}\n```", id="fenced"),
+    pytest.param(lambda s: f"Here you go:\n```json\n{s}\n```\nDone.", id="prose"),
+    pytest.param(lambda s: f"Verdict: {s} (end)", id="inline-prose"),
+]
+
+
+@pytest.mark.parametrize("wrap", _JSON_WRAPS)
+async def test_classify_branch_tolerates_fenced_and_prose_replies(wrap):
+    from ze_personal.graph.workflow import _classify_branch
+
+    client = MagicMock()
+    client.complete = AsyncMock(return_value=wrap('{"index": 1}'))
+    step = WorkflowStep(
+        task="t",
+        id="s0",
+        branches=[Branch(condition="a", to="x"), Branch(condition="b", to="y")],
+    )
+
+    target, condition = await _classify_branch(client, "m", step, "output")
+
+    assert (target, condition) == ("y", "b")
+
+
+@pytest.mark.parametrize("wrap", _JSON_WRAPS)
+async def test_verify_step_tolerates_fenced_and_prose_replies(wrap):
+    client = MagicMock()
+    client.complete = AsyncMock(
+        return_value=wrap(
+            '{"pass": true, "no_results": true, "reason": "nothing found"}'
+        )
+    )
+    config = {
+        "configurable": {"workflow_store": _make_store(), "openrouter_client": client}
+    }
+    step = WorkflowStep(task="search", intent="read", id="s0", verify="has results")
+    state = {
+        "workflow_steps": [step],
+        "steps_by_id": {"s0": step},
+        "current_step_id": "s0",
+        "workflow_execution_id": uuid4(),
+        "workflow_step_results": [],
+        "agent_result": None,
+        "subtask_results": [AgentResult(agent="news", response="article summary")],
+    }
+
+    result = await verify_step(state, config)
+
+    assert result["workflow_step_results"][0].no_results is True
