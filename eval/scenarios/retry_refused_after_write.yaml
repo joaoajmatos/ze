@@ -15,7 +15,7 @@
 - id: retry_refused_after_goal
   prompt: "Create a goal to learn basic Portuguese in the next three months."
   description: >
-    A turn that creates a goal. Retry must stay unavailable because a write ran.
+    A turn that proposes a goal. Goal creation waits for the Start confirmation, but the trace records create_goal as a write call, so Retry must stay unavailable.
   expected_tools:
     # Goal creation waits for the user's Start confirmation, so the eval turn
     # records a draft (is_draft, success false) rather than an executed call.
