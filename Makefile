@@ -50,7 +50,7 @@ help:
 	@echo "    web-install      Install React web app dependencies (bun install)"
 	@echo "    web              Start React web dev server (:5173)"
 	@echo "    web-build        Build React web app for production"
-	@echo "    web-test         Run @ze/ui + ze-web tests (vitest) — alias for test-web"
+	@echo "    web-test         Run @myguyze/ze-ui + ze-web tests (vitest) — alias for test-web"
 	@echo ""
 	@echo "  Eval (requires 'make dev-eval' running)"
 	@echo "    eval             Run full eval suite — routing accuracy only (cheap)"
@@ -87,6 +87,7 @@ help:
 	@echo "    test-workspace       Run ze-workspace tests"
 	@echo "    test-collision       Run ze-collision tests"
 	@echo "    test-trading212      Run ze-trading212 tests"
+	@echo "    test-yt              Run ze-yt tests"
 	@echo "    test-finance         Run ze-finance tests"
 	@echo "    test-workspace-sidecar  Run workspace sidecar tests"
 	@echo "    test-personal        Run ze-personal tests"
@@ -95,13 +96,13 @@ help:
 	@echo "    test-calendar        Run ze-calendar tests"
 	@echo "    test-prospecting     Run ze-prospecting tests"
 	@echo "    test-news            Run ze-news tests"
-	@echo "    test-web / web-test  Run @ze/ui + ze-web tests (vitest)"
+	@echo "    test-web / web-test  Run @myguyze/ze-ui + ze-web tests (vitest)"
 	@echo "    test-py              Run every Python package suite, report all failures (CI gate)"
 	@echo "    test-all             Run all package tests (includes slow)"
 	@echo ""
 	@echo "  Code quality"
 	@echo "    check            Lint Python + ze-web build (CI lint gates)"
-	@echo "    typecheck-web    Type-check ze-web and @ze/ui (tsc --noEmit)"
+	@echo "    typecheck-web    Type-check ze-web and @myguyze/ze-ui (tsc --noEmit)"
 	@echo "    hooks            Install git pre-commit / pre-push hooks"
 	@echo "    lint             Lint all packages with ruff"
 	@echo "    lint-web         Lint ze-web with ESLint (FSD boundaries)"
@@ -109,7 +110,7 @@ help:
 	@echo "    clean            Remove __pycache__, .pytest_cache, .ruff_cache, *.pyc"
 	@echo ""
 	@echo "  Code generation"
-	@echo "    codegen              Regenerate @ze/client and @ze/ui artifacts"
+	@echo "    codegen              Regenerate @myguyze/ze-client and @myguyze/ze-ui artifacts"
 	@echo ""
 	@echo "  Docker"
 	@echo "    docker-up        Start all services via docker-compose"
@@ -296,6 +297,7 @@ TEST_PY_PACKAGES := \
 	test-eval \
 	test-google \
 	test-trading212 \
+	test-yt \
 	test-ingestion \
 	test-automation \
 	test-worldstate \
@@ -315,7 +317,7 @@ TEST_PY_PACKAGES := \
 
 .PHONY: test test-api test-core test-logging test-agents test-communication test-plugin test-sdk test-proactive \
 	test-memory test-onboarding test-seed test-correlation test-browser test-notifications \
-	test-components test-eval test-google test-trading212 test-ingestion test-automation test-worldstate test-priority test-skills test-workspace test-collision test-personal test-prospecting test-messenger \
+	test-components test-eval test-google test-trading212 test-yt test-ingestion test-automation test-worldstate test-priority test-skills test-workspace test-collision test-personal test-prospecting test-messenger \
 	test-calendar test-news test-finance test-workspace-sidecar test-py test-all test-web web-test
 
 test test-api:
@@ -389,6 +391,9 @@ test-google:
 
 test-trading212:
 	$(call pytest_pkg,integrations/ze-trading212/tests)
+
+test-yt:
+	$(call pytest_pkg,integrations/ze-yt/tests)
 
 test-personal:
 	$(call pytest_pkg,plugins/ze-personal/tests)

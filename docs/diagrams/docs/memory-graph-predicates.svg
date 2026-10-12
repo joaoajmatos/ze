@@ -80,7 +80,7 @@
       <rect x="780" y="316" width="160" height="48" rx="6" fill="#f7f6f4"/>
       <rect x="780" y="316" width="160" height="48" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
       <text x="860" y="338" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">Procedure</text>
-      <text x="860" y="354" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">memory_procedures</text>
+      <text x="860" y="354" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">procedure_versions</text>
 
       <!-- Node: Goal / Workflow (fan-in target) -->
       <rect x="1000" y="208" width="160" height="56" rx="6" fill="#f7f6f4"/>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Generates TypeScript types for @ze/client and @ze/ui from the Python backend.
+ * Generates TypeScript types for @myguyze/ze-client and @myguyze/ze-ui from the Python backend.
  *
  * Usage:
  *   bun run scripts/codegen.ts
@@ -83,7 +83,7 @@ const wsTs = await compile(wsSchema, "WsProtocol", {
 writeFileSync(join(clientGeneratedDir, "ws.ts"), wsTs);
 console.log("  → packages/ze-client/src/generated/ws.ts");
 
-// ── 3. Server-driven UI contract for @ze/ui ────────────────────────────────
+// ── 3. Server-driven UI contract for @myguyze/ze-ui ────────────────────────────────
 
 console.log("Extracting UI primitive schema from Python...");
 

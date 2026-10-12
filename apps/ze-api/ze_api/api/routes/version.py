@@ -20,7 +20,7 @@ class VersionResponse(BaseModel):
     operation_id="getVersion",
     summary="API and client version",
     description=(
-        "Returns the API version and the matching @ze/client package version. "
+        "Returns the API version and the matching @myguyze/ze-client package version. "
         "Public — no authentication required. Use to detect version skew between "
         "client and server."
     ),

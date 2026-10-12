@@ -36,7 +36,7 @@
       <rect x="120" y="276" width="620" height="88" fill="rgba(128,82,255,0.08)"/>
       <text x="140" y="296" fill="#8052ff" font-size="9" font-family="'Geist Mono', monospace" letter-spacing="0.06em">T1</text>
       <text x="140" y="316" fill="#0a0a0a" font-size="16" font-weight="600" font-family="'Inter', sans-serif">Server-driven UI (SDUI)</text>
-      <text x="140" y="334" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">primitive trees (@ze/ui)</text>
+      <text x="140" y="334" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">primitive trees (@myguyze/ze-ui)</text>
       <text x="140" y="348" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace">writes: Python builders / render tools</text>
       <rect x="620" y="288" width="100" height="16" rx="2" fill="transparent" stroke="#8052ff" stroke-width="0.8"/>
       <text x="670" y="299" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DEPLOY: NO</text>
