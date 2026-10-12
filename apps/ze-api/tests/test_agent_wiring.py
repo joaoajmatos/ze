@@ -39,7 +39,7 @@ def test_container_hands_shared_system_one_client_to_skill_matcher():
     assert kwargs["system_one_client"] == "shared.system_one_client"
 
 
-def test_shipped_config_builds_a_disabled_skills_surface():
+def test_shipped_config_builds_the_calibrated_skills_surface():
     from pathlib import Path
 
     import yaml
@@ -55,5 +55,5 @@ def test_shipped_config_builds_a_disabled_skills_surface():
 
     assert matcher._system_one is client
     surface = matcher._surface
-    assert not surface.enabled and not surface.calibrated
-    assert surface.choice_trust is None and surface.needs_skill_hold is None
+    assert surface.enabled and surface.calibrated
+    assert surface.choice_trust == 0.75 and surface.needs_skill_hold == 0.6

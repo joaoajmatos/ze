@@ -13,7 +13,7 @@ routing:
   threshold: 0.73
   gap_threshold: 0.02
 
-# Typed judgments (Jev via OpenRouter System One). 163 speech-act is on; 164 routing stays off.
+# Typed judgments (Jev via OpenRouter System One). 163 speech-act and 166 skills are on; 164 routing stays off.
 system_one:
   enabled: true
   model: typesafe/jev-1.13
@@ -27,16 +27,19 @@ system_one:
       biography_hold: 0.7
     routing:
       enabled: false
-      # 2026-10-09 calibration found no safe choice_trust (research turns miss the k=4 shortlist); stays off.
+      # 2026-10-12 recalibration (k=5): tuned set 0.957 but held-out set 0.70 EN / 0.80 PT, ECE 0.27;
+      # explanatory research turns go to companion. No safe choice_trust; stays off pending a scope decision.
       choice_trust: null            # uncalibrated — set from make calibrate-routing
       multi_specialist_hold: null   # uncalibrated — set from make calibrate-routing
       complexity_lookup_max: null   # uncalibrated — set from make calibrate-routing
       shortlist_k: 5
     skills:
-      enabled: false
-      choice_trust: null        # uncalibrated — set from make calibrate-skills
-      needs_skill_hold: null    # uncalibrated — set from make calibrate-skills
-      shortlist_k: 5            # offline recall 0.985 (research R1); re-check after a live run
+      enabled: true
+      # Calibrated 2026-10-12 (make calibrate-skills, 84 EN+PT rows): Choice 0.978 EN / 0.970 PT, ECE 0.015,
+      # zero wrong applies across the grid. Mid safe region chosen for margin (63 correct, 0 wrong, 0 missed).
+      choice_trust: 0.75
+      needs_skill_hold: 0.6
+      shortlist_k: 5            # live recall 0.985 at k=5 (k=4 already meets 0.95)
       shortlist_floor: 0.35     # non-binding on the calibration roster (E5 cosines 0.71-0.89)
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
