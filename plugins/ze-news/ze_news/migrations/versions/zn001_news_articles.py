@@ -28,7 +28,7 @@ def upgrade() -> None:
             summary         TEXT        NOT NULL DEFAULT '',
             published_at    TIMESTAMPTZ NOT NULL,
             tags            TEXT[]      NOT NULL DEFAULT '{}',
-            embedding       VECTOR(384),
+            embedding       VECTOR(768),
             fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)

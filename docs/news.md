@@ -72,7 +72,7 @@ class Article:
 | `summary` | `TEXT` | RSS summary / lede |
 | `published_at` | `TIMESTAMPTZ` | Publication timestamp from RSS |
 | `tags` | `TEXT[]` | Tags from source config |
-| `embedding` | `VECTOR(768)` | Shared local embedder on `title + summary` (`zn001` creates it as 384; `zm013` resizes it) |
+| `embedding` | `VECTOR(768)` | Shared local embedder on `title + summary` (`zn001` creates it; `zm013` resizes older 384-dim tables) |
 | `credibility_analysis` | `JSONB` | `CredibilityReport` serialised; `NULL` until scored |
 | `fetched_at` | `TIMESTAMPTZ` | When Ze first ingested the article |
 
