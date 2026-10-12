@@ -47,7 +47,7 @@ System One is a small model that returns typed judgments (a choice among labels,
 - **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
 - **Loop gate** decides whether text opens, declares, or resolves an open loop.
 
-The first three surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`). The loop gate ships off until `make calibrate-loop-gate` passes its held-out check. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the E5 thresholds and the Haiku judge. See [configuration.md](docs/configuration.md#system_one).
+The first three surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`). The loop gate ships off until `make calibrate-loop-gate` passes its held-out check. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing, skills, and speech act, and the Haiku judge for the loop gate. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 

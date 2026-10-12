@@ -77,7 +77,7 @@ If an extractor raises, the pipeline skips its result and logs the error. At lea
 ### 6. Sink
 
 `MemorySink` calls `submit_perception_facts` with each extracted fact
-(`Provenance.SYNTHESIZED`). When `ze-api` wires an open-loop extractor into the sink, the same text also feeds open-loop extraction. That extraction runs the loop gate (see [System One](system-one.md#loop-gate)) and logs its judgment only; it does not create or close loops on its own authority. Facts then enter long-term memory. Companion does not
+(`Provenance.SYNTHESIZED`). When `ze-api` wires an open-loop extractor into the sink, the same text also feeds open-loop extraction. That extraction runs the loop gate (see [System One](system-one.md#loop-gate)). It can create suspected loops and resolve existing ones. It logs its judgments and writes no message-trace rows. Facts then enter long-term memory. Companion does not
 call `remember_fact` on a raw ingest file. The sink attaches archive ids as evidence
 where the ingest pipeline supplies them.
 
