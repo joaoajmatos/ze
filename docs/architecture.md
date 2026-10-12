@@ -398,7 +398,7 @@ Five memory layers, all backed by Postgres + pgvector:
   seam. Post-turn extraction may add synthesized facts only after a keep/drop gate
   (closed families; `speech_act` must be `fact`). Timed reminders, loops, and goals
   are not stored as facts. There is no `AgentResult.memory_proposals` persist path.
-  The REST `POST /memory/facts/review` endpoint exposes review for the native app.
+  The REST `POST /api/v0/memory/facts/review` endpoint exposes review for the native app.
 - **Episodes** (`memory_episodes`) — summaries of conversation turns. Written automatically
   after each run.
 - **Events** (`memory_events`) — discrete real-world events (meetings, calls) extracted
