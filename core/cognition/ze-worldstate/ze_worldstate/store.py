@@ -176,13 +176,18 @@ class PostgresLoopStore:
                 """
                 UPDATE open_loops
                 SET state = $2, confirmed_at = $3, closed_at = $4, updated_at = now()
-                WHERE id = $1
+                WHERE id = $1 AND state = $5
                 RETURNING *
                 """,
                 loop_id,
                 target.value,
                 confirmed_at,
                 closed_at,
+                loop.state.value,
+            )
+        if row is None:
+            raise InvalidLoopTransitionError(
+                f"Loop {loop_id} changed state before it could move to {target.value}"
             )
         result = _loop_from_row(row)
         log.info(

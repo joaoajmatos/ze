@@ -127,7 +127,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         loop_admission = config["configurable"].get("loop_admission")
         if loop_admission is not None and track_loop_succeeded(result.tool_calls or []):
             loop_admission = None
-            log.debug("write_memory_loop_gate_skipped_track")
+            log.debug("write_memory_loop_gate_skipped_track", session_id=ctx.session_id)
         trace = state.get("message_trace")
         fact_result, loop_result = await asyncio.gather(
             _run_fact_extractor(fact_extractor, config, result, ctx),

@@ -433,7 +433,7 @@ Ze extracts open loops from conversation, email, calendar events, and ingested c
 - Anything else creates a suspected loop.
 - A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate now strips the code fence Haiku wraps around its JSON.
 
-After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request, and trivial turns send no request. The gate also steps aside on a turn where the `track_loop` tool succeeded. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
+After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. The gate also steps aside on a turn where the `track_loop` tool succeeded. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
 
 The keys:
 

@@ -224,7 +224,7 @@ def enforce_domain_cancel_confirmations(
             drop_cancel = True
             drop_close = True
             drop_abandon = True
-            drop_track = strip_track_claims
+            drop_track = bool(strip_track_claims and _TRACK_CLAIM.search(sentence))
         if drop_cancel or drop_close or drop_abandon or drop_forget or drop_track:
             if drop_track:
                 stripped_track = True
