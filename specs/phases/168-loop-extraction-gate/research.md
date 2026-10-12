@@ -52,3 +52,38 @@ Eval threads skip write-side effects (nodes/memory.py `is_eval`), so a chat eval
 
 ## R13 — graphify blast radius
 `propose_loop_candidates`: `_propose`, `conversation_memory_hook`, `test_extraction.py` (9 tests), `test_contribution.py:109`. `_run_extraction_gate`: only `propose_loop_candidates`. `make_loop_extractor_from_parts`: `build_container` (container.py:596), `make_loop_extractor` (:833), `app.py` lifespan, `from_config` (:380), ze-seed `_apply`. `OpenLoop` is not touched. The implementer re-runs `graphify affected` before each signature change.
+
+## R14 — Calibration result (2026-10-12)
+
+Live runs: `make calibrate-loop-gate` (System One `typesafe/jev-1.13`, Haiku `anthropic/claude-haiku-4-5`).
+
+**Finding: the 109 gate is inert against Haiku 4.5.** `_run_extraction_gate` calls `json.loads(raw)` and
+Haiku wraps every reply in a ```json fence even with `response_format` set, so all 136 calibration replies
+failed to parse (88/88 tuned, 48/48 held-out); the gate returned `None` each time. Production has therefore
+created no loops through the gate. It also explains R2 (zero `loop_extraction` lines, empty `open_loops`).
+The gate was left byte-for-byte per FR-013; the title writer added in this phase strips the fence. The
+calibration compares against a fence-tolerant copy of the same prompt ("Haiku tol"), the stronger baseline.
+A follow-up should fix the fallback's parse (one line) or hard-cut the fallback.
+
+**Tuned set (88 rows; wording tuned here only).** Final wording, bars `loop_hold 0.75`, `explicit_hold 0.85`,
+`resolves_hold 0.8`: 32/32 positives created, 0 false creates, 0 false declared, explicit accuracy 1.00, resolves
+accuracy 1.00. Haiku (fence-tolerant): recall 32/32, 2 false creates, 7 false declared, precision 0.941.
+Safe plateaus: `loop_hold` 0.70 to 0.80 (0 false creates, recall 1.00), `resolves_hold` any 0.65 to 0.95. Noul
+separation: concern negatives top out at 0.70, positives start at 0.80; explicit negatives at 0.70, positives at
+0.89. Two ambiguous tuned rows (`t-en-005`, `t-pt-005`) were made unambiguous after the first runs; wording of
+`is_open_concern` and `explicit_declaration` was revised once (explicit accuracy 0.875 to 1.00, recall 0.906 to 1.00).
+163 speech-act `loop` agreed with the gate on 26/32 conversation rows (logged only).
+
+**Held-out run (one run, wording and bars frozen in c750dd01, file `loop_gate_holdout.jsonl` untouched):**
+
+```
+HELD-OUT VERDICT   bars: loop_hold=0.75 explicit_hold=0.85 resolves_hold=0.8
+[en] ENABLE  system one: P=1.000 R=1.000 (10/10) creates=10 falseCreates=0 fallback=0 | haiku(tol): P=0.900 R=0.900 (9/10) creates=10 falseCreates=1
+[pt] ENABLE  system one: P=1.000 R=1.000 (10/10) creates=10 falseCreates=0 fallback=0 | haiku(tol): P=0.909 R=1.000 (10/10) creates=11 falseCreates=1
+OVERALL: ENABLE
+production 109 gate as-is: 48/48 replies unparseable (R=0/20, no creates)
+```
+
+Not gating: PT had 1 false resolve (a resolve on a row not gold-resolving); false declared 0 for System One vs 3
+for Haiku; explicit accuracy 1.00 vs 0.92. Counts are small (10 positives per language): the comparison is coarse.
+Outcome: `system_one.surfaces.loop_gate` ships enabled with the bars above (`apps/ze-api/config/config.yaml`).

@@ -43,10 +43,13 @@ system_one:
       shortlist_k: 5            # live recall 0.985 at k=5 (k=4 already meets 0.95)
       shortlist_floor: 0.35     # non-binding on the calibration roster (E5 cosines 0.71-0.89)
     loop_gate:
-      enabled: false            # 168: off with null bars until `make calibrate-loop-gate` returns ENABLE for EN and PT
-      loop_hold: null
-      explicit_hold: null
-      resolves_hold: null
+      enabled: true
+      # Calibrated 2026-10-12 (make calibrate-loop-gate; 88 tuned + 48 held-out rows, EN+PT). Held-out verdict ENABLE for
+      # EN and PT: recall 10/10 each, precision 1.00, zero false creates. Haiku baseline (same prompt, fence-tolerant)
+      # EN 9/10 recall, 1 false create; PT 10/10, 1 false create. The 109 gate as shipped fails on every reply (fenced JSON).
+      loop_hold: 0.75
+      explicit_hold: 0.85
+      resolves_hold: 0.8
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.
