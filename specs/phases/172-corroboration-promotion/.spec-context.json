@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Corroboration Promotion",
+  "branch": "172-corroboration-promotion",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:51:48.188Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:55:48.167Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:58:11.209Z"
+    }
+  ]
+}
