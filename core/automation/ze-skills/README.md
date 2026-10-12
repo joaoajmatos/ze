@@ -92,10 +92,10 @@ skills:
 
 system_one:
   surfaces:
-    skills:              # phase 166 — off until calibrated
-      enabled: false
-      choice_trust: null
-      needs_skill_hold: null
+    skills:              # phase 166 — on in the shipped config
+      enabled: true
+      choice_trust: 0.75     # calibrated 2026-10-12
+      needs_skill_hold: 0.6
       shortlist_k: 5         # from the offline recall table
       shortlist_floor: 0.35  # non-binding on the calibration set
 ```

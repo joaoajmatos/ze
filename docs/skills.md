@@ -123,7 +123,7 @@ calibrated System One gate (below) narrows that to one automatic skill.
 Cosine similarity says how close two texts are. It does not say which skill fits. Two
 skills with close descriptions can both clear the threshold. A paraphrase can score
 just under it. The `system_one.surfaces.skills` surface adds a judgment after the
-similarity step. It ships off.
+similarity step. It is on in the shipped config.
 
 1. **Shortlist.** The matcher embeds the message once, with the same E5 query
    encoder as before. Skills that were not named with `/skill-name` and score at or
@@ -321,8 +321,8 @@ skills:
     cron: "0 6 * * *"
 ```
 
-The System One gate has its own block, `system_one.surfaces.skills`. It is off until
-you calibrate it. See [configuration.md](configuration.md#skills) for the full
+The System One gate has its own block, `system_one.surfaces.skills`. It is on in the shipped
+config (`choice_trust` 0.75, `needs_skill_hold` 0.6, calibrated 2026-10-12). The code default is off. See [configuration.md](configuration.md#skills) for the full
 blocks and [`surfaces.skills`](configuration.md#surfacesskills) for the gate.
 
 ---

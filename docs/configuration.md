@@ -328,7 +328,7 @@ of the message against each active skill's name and description). Explicit `/ski
 invocation ignores this floor.
 
 An optional System One gate can narrow automatic matches to one skill. It lives under
-[`system_one.surfaces.skills`](#surfacesskills) and ships off.
+[`system_one.surfaces.skills`](#surfacesskills). It is on in the shipped config.
 
 Set `recheck.enabled: false` to stop the daily job. Manual
 `POST /api/v0/skills/{id}/refresh` still works.
@@ -392,7 +392,7 @@ Each agent can declare an optional `routing_criteria` attribute: "use for" and "
 
 Shipped state: the routing surface is on with `choice_trust: 0.5`, `multi_specialist_hold: 0.5` and `shortlist_k: 9`. `complexity_lookup_max` stays `null`: the suggested bar was 0.16 and 0.17 on the two held-out sets but 0.02 combined, so the regex classifier keeps picking the model tier. Calibration on 2026-10-12 used 52 held-out EN and PT rows. It found zero research-to-companion misses, zero harmful trusts at this bar and an ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90: one loops question went to companion at confidence 0.29. Ze never trusts that confidence at 0.5, so the turn falls back to the Haiku decompose step. `make calibrate-routing` measures only the tuning set. To re-measure the held-out sets, run `OPENROUTER_API_KEY=... uv run python eval/calibration/routing.py --dataset eval/calibration/routing_holdout.jsonl --dataset eval/calibration/routing_holdout2.jsonl --k 9`. This run is live and costs credits. Its per-language accuracy line prints FAIL for `routing_holdout` English (0.90 is under 0.95). That is expected: Ze enables the surface on zero harmful trusts, ECE of at most 0.10 and zero research-to-companion misses, and reports raw accuracy without gating on it.
 
-The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. Ze ships no bars. The 2026-10-09 calibration found no safe `choice_trust`, because research turns miss the shortlist at `shortlist_k: 4`, so the surface stays off. To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.routing.enabled` to `true`.
+The surface needs `choice_trust` and `multi_specialist_hold` both set. If you enable it and leave either `null`, Ze logs `routing_surface_uncalibrated` and routes by E5 alone. The code ships no default bars; the shipped `config.yaml` sets the bars above. To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-routing`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.routing.enabled` to `true`.
 
 When System One routes a turn, `routing_log.confidence` holds the peakedness of the agent choice instead of the E5 cosine score. Turns that fall back to E5 keep the cosine score.
 
@@ -414,7 +414,7 @@ The keys:
 - `shortlist_k` sets how many skills the choice sees. Values below 1 fall back to 5.
 - `shortlist_floor` is the lowest cosine score that can enter the shortlist. It can sit below `skills.match_threshold`, so a paraphrase can apply when both answers clear their bars. The trace panel marks such a skill **below floor**. A value above `match_threshold` is clamped to it, with a warning.
 
-The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. Ze ships no default bars. To measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.skills.enabled` to `true`.
+The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.6 (calibrated 2026-10-12). To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.skills.enabled` to `true`.
 
 `shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values, `shortlist_k: 5` and `shortlist_floor: 0.35`, come from that table. On the 84-row English and Portuguese set, the gold skill appears in the shortlist at a rate of 0.955, 0.970, 0.985, 0.985, 0.985 and 0.985 for k = 3 to 8. English holds at 0.974 for every k. Portuguese rises from 0.926 to 1.0 at k = 5. The floor does not bind: E5 cosines run from 0.71 to 0.89, even for messages that need no skill, so every skill already clears `skills.match_threshold`. The floor matters only if your skills or model score lower. No bars ship, and the live calibration run has not been done.
 
