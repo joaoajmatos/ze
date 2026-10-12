@@ -29,6 +29,7 @@ ze/                           # monorepo root
 │   │   │       ├── delegate.py  # delegate_to_agent — conductor fan-out to specialists
 │   │   │       ├── errors.py    # Full ZeError hierarchy
 │   │   │       ├── hooks.py     # HarnessHook ABC (agentic loop — not a plugin concern)
+│   │   │       ├── llm_json.py  # parse_llm_json — tolerant JSON parse of LLM replies (fences, prose), raises LLMJsonParseError
 │   │   │       ├── registry.py  # @agent decorator + module-level agent registry
 │   │   │       ├── settings.py  # Settings dataclass
 │   │   │       ├── system_one.py # SystemOneClient Protocol — typed judgments (noul / choice / score)
@@ -306,6 +307,11 @@ make calibrate-loop-gate  # LIVE System One + Haiku baseline over eval/calibrati
   `specs/phases/007-api/spec.md`.
 - **Logging**: Always use `get_logger(__name__)`. Never use `print()` or stdlib
   `logging` directly.
+- **LLM JSON**: Parse every JSON reply from a model with `parse_llm_json(raw, expect=dict|list)`
+  (`ze_agents.llm_json`, re-exported as `ze_sdk.parse_llm_json`). Models wrap JSON in markdown
+  fences or prose even when `response_format` asks for bare JSON, so never call `json.loads` on
+  a model reply. It raises `LLMJsonParseError` (a `ZeError`); catch that at the call site.
+  `ze-eval` has no Ze deps by design and keeps its own `parse_judge_reply`.
 - **Errors**: Raise from `ze_api/errors.py` or `ze_sdk/errors.py`. Never raise bare
   `Exception` or `ValueError` in domain code — always use a typed subclass of `ZeError`.
 - **Async**: All I/O is async. Fire-and-forget tasks use `asyncio.create_task()`.

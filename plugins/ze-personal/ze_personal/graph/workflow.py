@@ -7,7 +7,6 @@ ze-personal package once that package is created (arch-package-reorg step 4).
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 from dataclasses import replace
 from typing import Any
@@ -17,6 +16,7 @@ from langchain_core.runnables import RunnableConfig
 
 from ze_agents.claims import Provenance
 from ze_sdk.contribution import EvidenceRef
+from ze_sdk import parse_llm_json
 from ze_sdk.memory import candidate_from_procedure, ProcedureSourceKind
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.model_resolution import resolve_model
@@ -182,7 +182,7 @@ async def verify_step(state: dict[str, Any], config: RunnableConfig) -> dict:
                 ],
                 model=model,
             )
-            verdict = json.loads(raw)
+            verdict = parse_llm_json(raw, expect=dict)
             if verdict.get("pass", True):
                 no_results = bool(verdict.get("no_results", False))
                 reason = verdict.get("reason", output)
@@ -825,7 +825,7 @@ async def _classify_branch(
             ],
             model=model,
         )
-        verdict = json.loads(raw)
+        verdict = parse_llm_json(raw, expect=dict)
         index = verdict.get("index")
         if isinstance(index, int) and 0 <= index < len(step.branches):
             branch = step.branches[index]

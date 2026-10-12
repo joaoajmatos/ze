@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,6 +22,7 @@ from ze_personal.contacts.types import (
     SOURCE_WEIGHTS,
 )
 from ze_logging import get_logger
+from ze_sdk import parse_llm_json
 
 _MODEL_DEFAULT = "anthropic/claude-haiku-4-5"
 _BATCH_SIZE_DEFAULT = 10
@@ -159,10 +159,7 @@ class ContactsConsolidator:
                 system=_EXTRACT_SYSTEM,
                 max_tokens=1000,
             )
-            parsed = json.loads(raw)
-            if not isinstance(parsed, dict):
-                self._log.warning("contacts_extract_bad_shape", raw=raw[:200])
-                return [], [], []
+            parsed = parse_llm_json(raw, expect=dict)
             people = [
                 ContactProposal(
                     name=str(c.get("name", "")).strip(),

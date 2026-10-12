@@ -527,3 +527,36 @@ async def test_proactive_prefilter_drops_low_relevance():
 
     assert results == []
     hyp_store.save.assert_not_called()
+
+
+class TestCorrelationReplyShapes:
+    _PAYLOAD = {
+        "summary": "s",
+        "narrative": "n",
+        "relation": "pattern",
+        "confidence": 0.7,
+        "evidence_ids": ["a"],
+    }
+
+    @staticmethod
+    def _wraps():
+        return [
+            lambda s: s,
+            lambda s: f"```json\n{s}\n```",
+            lambda s: f"Here is my analysis:\n```json\n{s}\n```\nThanks.",
+        ]
+
+    async def test_fenced_and_prose_replies_parse(self):
+        for wrap in self._wraps():
+            engine, _, _ = _make_engine()
+            engine._llm.complete = AsyncMock(
+                return_value=wrap(json.dumps(self._PAYLOAD))
+            )
+            parsed = await engine._correlation_call(["x"], [])
+            assert parsed is not None
+            assert parsed["relation"] == "pattern"
+
+    async def test_unparseable_reply_returns_none(self):
+        engine, _, _ = _make_engine()
+        engine._llm.complete = AsyncMock(return_value="no json at all")
+        assert await engine._correlation_call(["x"], []) is None

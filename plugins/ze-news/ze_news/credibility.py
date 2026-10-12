@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from ze_logging import get_logger
+from ze_sdk import parse_llm_json
 from ze_news.types import (
     CredibilityFlag,
     CredibilityReport,
@@ -423,7 +424,7 @@ async def run_llm_scoring(
             response_format={"type": "json_object"},
         )
         raw = response.content if hasattr(response, "content") else str(response)
-        data = json.loads(raw)
+        data = parse_llm_json(raw, expect=dict)
     except Exception as exc:
         log.warning("credibility_llm_failed", error=str(exc))
         return heuristic_flags

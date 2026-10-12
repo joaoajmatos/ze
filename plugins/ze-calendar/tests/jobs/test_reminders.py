@@ -1,3 +1,4 @@
+import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -495,3 +496,24 @@ def test_schedule_at_uses_date_trigger():
         or ws._scheduler.add_job.call_args[0][1]
     )
     assert isinstance(trigger, DateTrigger)
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        '```json\n{"intervals": ["2 hours", "30 minutes"]}\n```',
+        'Sure:\n```json\n{"intervals": ["2 hours", "30 minutes"]}\n```\nDone.',
+        'Intervals: {"intervals": ["2 hours", "30 minutes"]} — enjoy',
+    ],
+    ids=["fenced", "prose-fenced", "inline-prose"],
+)
+async def test_assess_intervals_tolerates_fenced_and_prose_replies(reply):
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=reply)
+    svc, _ = make_reminder_service(client=client)
+
+    now = datetime.now(timezone.utc)
+    event = _make_event(start_offset_hours=5)
+    result = await svc._assess_intervals(event, now + timedelta(hours=5), now)
+
+    assert {td for td, _ in result} == {timedelta(hours=2), timedelta(minutes=30)}

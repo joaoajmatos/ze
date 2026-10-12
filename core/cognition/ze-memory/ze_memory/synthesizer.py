@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from ze_logging import get_logger
+from ze_agents.llm_json import parse_llm_json
 
 from ze_memory.defaults import MODEL_SYNTHESIS
 
@@ -49,14 +49,7 @@ class ProfileSynthesizer:
                 messages=[{"role": "user", "content": prompt}],
                 model=self._synthesis_model(),
             )
-            text = response.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            facets_data = json.loads(text.strip())
-            if not isinstance(facets_data, list):
-                raise ValueError("expected a JSON array")
+            facets_data = parse_llm_json(response, expect=list)
         except Exception as exc:
             log.warning("memory_update_profile_failed", error=str(exc))
             return False
