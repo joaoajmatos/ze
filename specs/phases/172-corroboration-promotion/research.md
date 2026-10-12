@@ -114,6 +114,8 @@ Acceptance (user): per language on the held-out set: zero false promotions; corr
 
 **Decision**: The held-out file is written first and committed before any live run, by the ENG lead (not a junior: hard negatives and cross-language pairs need judgment). Row kinds: `same` (direct restatement), `paraphrase`, `cross_lingual` (title EN, text PT or the reverse), `same_entity_other`, `same_topic_other`, `unrelated`. At least a third hard negatives per language. Each inflow at least 4 rows per language in the tuned set and 2 in the held-out set.
 
+**Written 2026-10-13 by the Spec Architect** (T029 held-out `57a10e41`, committed before the tuned file; T030 tuned). Held-out: 24 EN, 23 PT. Tuned: 42 EN, 42 PT; 15 hard negatives per language; 0 texts shared. `same` rows are direct restatements (expected to promote); `paraphrase` rows are indirect or weaker mentions (expected to corroborate at least). `same_entity_other` rows are the wrong-merge case: same person, product or institution as the loop, different matter. `lang` is the language of `text`; `cross_lingual` rows have a loop title in the other language. No live run has been made.
+
 ## Follow-ups (not in 172)
 
 - Gate 170's `record_corroboration` on active loops with the same Noul.
