@@ -24,6 +24,12 @@ plugins/ze-news/
     registry.py       ← SourceRegistry, build_registry()
     credibility.py    ← run_heuristics(), run_llm_scoring(), score_article()
     plugin.py         ← NewsPlugin(ZePlugin): agents, jobs, migrations, configurable_services
+    preferences.py    ← builds PersonalizationContext from memory facts and goals
+    signals.py        ← ArticleSignalAdapter + news SignalSource for the correlation engine
+    onboarding.py     ← news onboarding provider
+    api/              ← REST routes (/api/v0/news …) and schemas
+    ui/               ← plugin UI contributions (news page, settings)
+    locales/          ← progress-message strings (en, pt)
     sources/
       base.py         ← NewsSource ABC
       rss.py          ← RssSource (feedparser + aiohttp)
@@ -66,7 +72,7 @@ class Article:
 | `summary` | `TEXT` | RSS summary / lede |
 | `published_at` | `TIMESTAMPTZ` | Publication timestamp from RSS |
 | `tags` | `TEXT[]` | Tags from source config |
-| `embedding` | `VECTOR(384)` | Shared local embedder on `title + summary` |
+| `embedding` | `VECTOR(768)` | Shared local embedder on `title + summary` (`zn001` creates it as 384; `zm013` resizes it) |
 | `credibility_analysis` | `JSONB` | `CredibilityReport` serialised; `NULL` until scored |
 | `fetched_at` | `TIMESTAMPTZ` | When Ze first ingested the article |
 
