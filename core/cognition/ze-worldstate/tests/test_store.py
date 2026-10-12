@@ -141,3 +141,62 @@ async def test_list_evidence():
     refs = await store.list_evidence(uuid4())
     assert len(refs) == 1
     assert refs[0].kind == "fact"
+
+
+async def test_transition_user_asked_revives_drifting():
+    loop_id = uuid4()
+    get_row = _row(id=loop_id, state="drifting")
+    updated_row = _row(id=loop_id, state="active")
+    pool, conn = make_pool(fetchrow=get_row)
+    store = PostgresLoopStore(pool=pool)
+    conn.fetchrow = _sequenced_fetchrow([get_row, updated_row])
+
+    result = await store.transition(loop_id, "active", user_asked=True)
+    assert result.state == LoopState.ACTIVE
+
+
+@pytest.mark.parametrize(
+    "from_state,to_state",
+    [
+        ("closed", "active"),
+        ("dropped", "active"),
+        ("suspected", "drifting"),
+    ],
+)
+async def test_user_asked_does_not_widen_other_edges(from_state, to_state):
+    loop_id = uuid4()
+    pool, conn = make_pool(fetchrow=_row(id=loop_id, state=from_state))
+    store = PostgresLoopStore(pool=pool)
+
+    with pytest.raises(InvalidLoopTransitionError):
+        await store.transition(loop_id, to_state, user_asked=True)
+
+
+async def test_stamp_declared_writes_exact_field_set():
+    loop_id = uuid4()
+    pool, conn = make_pool(fetchrow={"id": loop_id})
+    store = PostgresLoopStore(pool=pool)
+    deadline = datetime.now(timezone.utc)
+
+    await store.stamp_declared(loop_id, confidence=0.9, deadline=deadline)
+
+    conn.fetchrow.assert_awaited_once()
+    sql = " ".join(conn.fetchrow.await_args.args[0].split()).lower()
+    assert "confidence" in sql
+    assert "drift_deadline" in sql
+    assert "drift_rationale = null" in sql
+    assert "confirmed_at = now()" in sql
+    assert "updated_at = now()" in sql
+    assert "state =" not in sql
+    assert "provenance" not in sql
+    assert "claim_kind" not in sql
+
+
+async def test_stamp_declared_raises_not_found():
+    pool, conn = make_pool(fetchrow=None)
+    store = PostgresLoopStore(pool=pool)
+
+    with pytest.raises(LoopNotFoundError):
+        await store.stamp_declared(
+            uuid4(), confidence=0.9, deadline=datetime.now(timezone.utc)
+        )
