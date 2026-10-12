@@ -95,7 +95,7 @@ class ProspectingPlugin(ZePlugin):
         }
 
     def memory_policies(self) -> dict:
-        from ze_memory.policies import ProspectingPolicy
+        from ze_sdk.memory import ProspectingPolicy
 
         return {"prospecting": ProspectingPolicy()}
 

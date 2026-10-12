@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from ze_logging import get_logger
-from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
+from ze_sdk.memory import COLLABORATES_WITH, WORKS_ON
 from ze_sdk.contribution import EvidenceRef
 
 from ze_correlation.types import Hypothesis

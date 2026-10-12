@@ -15,7 +15,7 @@ from ze_agents.tool import ToolAccess, tool
 from ze_sdk import ToolReversibility
 from ze_agents.types import ToolCall
 from ze_logging import get_logger
-from ze_memory.graph.predicates import WORKS_ON
+from ze_sdk.memory import WORKS_ON
 from ze_proactive.staleness import is_stale
 
 from ze_personal.social.promotion import promote_hypothesis

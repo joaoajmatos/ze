@@ -9,7 +9,7 @@ from uuid import UUID
 
 import asyncpg
 
-from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
+from ze_sdk.memory import COLLABORATES_WITH, WORKS_ON
 from ze_sdk.contribution import submit_and_detect_collisions
 
 from ze_personal.contacts.contribution import person_source_to_contribution

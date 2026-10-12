@@ -27,8 +27,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 from uuid import UUID
 
-from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
-from ze_memory.graph.store import GraphStore
+from ze_sdk.memory import COLLABORATES_WITH, WORKS_ON, GraphStore
 
 from ze_personal.social.types import CoOccurrenceCandidate, CoOccurrenceEvidenceEvent
 

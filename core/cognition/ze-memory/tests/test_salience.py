@@ -795,3 +795,18 @@ def test_surfacing_config_defaults():
     assert sc.tau_push == pytest.approx(0.6)
     assert sc.tau_inline == pytest.approx(0.45)
     assert sc.min_evidence == 2
+
+
+def test_build_admission_gate_reads_salience_config():
+    from ze_memory.admission import build_admission_gate
+
+    cfg = {
+        "dry_run": True,
+        "relevance": {"episode_lookback_days": 7},
+        "admission": {"tau_admit": 0.8, "tau_watch": 0.2},
+    }
+    gate = build_admission_gate(cfg, MagicMock(), goal_provider=None)
+    assert gate._tau_admit == 0.8
+    assert gate._tau_watch == 0.2
+    assert gate._dry_run is True
+    assert gate._relevance_model._episode_lookback_days == 7

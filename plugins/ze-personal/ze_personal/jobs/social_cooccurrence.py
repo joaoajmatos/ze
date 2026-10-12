@@ -90,7 +90,7 @@ class SocialCooccurrenceJob:
         graph_store = getattr(self._memory_store, "graph_store", None)
         if graph_store is None or not candidate.evidence_events:
             return
-        from ze_memory.graph.types import Relationship
+        from ze_sdk.memory import Relationship
 
         latest = max(e.occurred_at for e in candidate.evidence_events)
         await graph_store.upsert_relationship(

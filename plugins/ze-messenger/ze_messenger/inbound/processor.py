@@ -174,7 +174,7 @@ class InboundMessageProcessor:
     async def _extract_facts(self, msg: InboundMessage) -> None:
         if self._llm_client is None:
             return
-        from ze_memory.extractor import extract_facts, fact_extraction_model
+        from ze_sdk.memory import extract_facts, fact_extraction_model
 
         prompt = f"[Inbound {msg.channel_type} from {msg.sender}]" + (
             f" Subject: {msg.subject}" if msg.subject else ""

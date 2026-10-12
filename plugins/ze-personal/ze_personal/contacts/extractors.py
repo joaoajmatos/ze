@@ -4,7 +4,7 @@ import email.utils
 import re
 
 from ze_agents.claims import ClaimKind
-from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
+from ze_sdk.memory import COLLABORATES_WITH, WORKS_ON
 from ze_personal.contacts.types import (
     ContactProposal,
     ProjectProposal,

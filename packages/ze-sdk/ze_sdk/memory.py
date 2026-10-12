@@ -36,6 +36,22 @@ from ze_memory.dream.types import (
     DreamJournalEntry,
     DreamRun,
 )
+from ze_memory.admission import build_admission_gate
+from ze_memory.extractor import extract_facts, fact_extraction_model
+from ze_memory.graph.predicates import COLLABORATES_WITH, WORKS_ON
+from ze_memory.graph.store import GraphStore
+from ze_memory.graph.types import Relationship
+from ze_memory.policies import (
+    CalendarPolicy,
+    CompanionPolicy,
+    EmailPolicy,
+    GoalsPolicy,
+    PlannerPolicy,
+    ProspectingPolicy,
+    RemindersPolicy,
+    ResearchPolicy,
+    WorkflowPolicy,
+)
 from ze_plugin.signals import SignalSource
 
 __all__ = [
@@ -69,4 +85,20 @@ __all__ = [
     "DreamArtifact",
     "DreamJournalEntry",
     "DreamRun",
+    "build_admission_gate",
+    "extract_facts",
+    "fact_extraction_model",
+    "COLLABORATES_WITH",
+    "WORKS_ON",
+    "GraphStore",
+    "Relationship",
+    "CalendarPolicy",
+    "CompanionPolicy",
+    "EmailPolicy",
+    "GoalsPolicy",
+    "PlannerPolicy",
+    "ProspectingPolicy",
+    "RemindersPolicy",
+    "ResearchPolicy",
+    "WorkflowPolicy",
 ]

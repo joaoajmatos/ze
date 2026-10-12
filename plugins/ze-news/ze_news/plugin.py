@@ -124,7 +124,7 @@ class NewsPlugin(ZePlugin):
         return {"news_store": self._store}
 
     def memory_policies(self) -> dict:
-        from ze_memory.policies import ResearchPolicy
+        from ze_sdk.memory import ResearchPolicy
 
         return {"news": ResearchPolicy()}
 
@@ -195,8 +195,7 @@ class NewsPlugin(ZePlugin):
         )
 
     def _build_admission_gate(self, memory_store: Any, container: Any) -> Any:
-        from ze_memory.admission import AdmissionGate
-        from ze_memory.relevance import RelevanceModel
+        from ze_sdk.memory import build_admission_gate
 
         goal_provider = None
         for plugin in getattr(container, "plugins", []):
@@ -205,22 +204,6 @@ class NewsPlugin(ZePlugin):
                 goal_provider = gs
                 break
 
-        rel_cfg = self._salience_cfg.get("relevance", {})
-        relevance_model = RelevanceModel(
-            memory_store=memory_store,
-            goal_provider=goal_provider,
-            episode_lookback_days=int(rel_cfg.get("episode_lookback_days", 30)),
-            cache_ttl_minutes=int(rel_cfg.get("cache_ttl_minutes", 30)),
-        )
-
-        adm_cfg = self._salience_cfg.get("admission", {})
-        return AdmissionGate(
-            relevance_model=relevance_model,
-            memory_store=memory_store,
-            tau_admit=float(adm_cfg.get("tau_admit", 0.55)),
-            tau_watch=float(adm_cfg.get("tau_watch", 0.35)),
-            w_relevance=float(adm_cfg.get("w_relevance", 0.7)),
-            w_magnitude=float(adm_cfg.get("w_magnitude", 0.3)),
-            watch_buffer_ttl_hours=float(adm_cfg.get("watch_buffer_ttl_hours", 48)),
-            dry_run=bool(self._salience_cfg.get("dry_run", False)),
+        return build_admission_gate(
+            self._salience_cfg, memory_store, goal_provider=goal_provider
         )

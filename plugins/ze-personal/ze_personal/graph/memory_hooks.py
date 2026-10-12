@@ -10,9 +10,7 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
-from ze_memory.graph.predicates import WORKS_ON
-from ze_memory.graph.types import Relationship
-from ze_sdk.memory import Entity
+from ze_sdk.memory import WORKS_ON, Entity, Relationship
 from ze_sdk.channels import ChannelHandle, ChannelType
 from ze_sdk.contribution import submit_and_detect_collisions
 
