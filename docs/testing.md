@@ -34,6 +34,7 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-eval` | ze-eval | pytest |
 | `make test-google` | ze-google | pytest |
 | `make test-trading212` | ze-trading212 | pytest |
+| `make test-yt` | ze-yt | pytest |
 | `make test-communication` | ze-communication | pytest |
 | `make test-personal` | ze-personal | pytest |
 | `make test-messenger` | ze-messenger | pytest |

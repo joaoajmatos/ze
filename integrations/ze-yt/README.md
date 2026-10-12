@@ -25,8 +25,14 @@
 
 ## Dependencies
 
-`ze-ingestion`. The code also imports `ze_logging`, which `pyproject.toml` does not declare.
+`ze-ingestion`, `ze-logging`.
 
 ## Testing
 
-This package has no tests and no `make` target yet.
+From the repo root:
+
+```bash
+make test-yt
+```
+
+See [docs/testing.md](../../docs/testing.md).
