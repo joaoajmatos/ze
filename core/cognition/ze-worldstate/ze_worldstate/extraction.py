@@ -130,6 +130,16 @@ _WRITER_CREATE = ("implies an unfinished commitment the user still has to act on
 _WRITER_RESOLVE = ("reports that a commitment the user had is now done", False)
 
 
+def _loads_json(raw: str) -> Any:
+    """Haiku wraps JSON replies in a ```json fence even with response_format set."""
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return json.loads(text.strip())
+
+
 def _whole_days(raw: Any) -> int | None:
     if isinstance(raw, bool):
         return None
@@ -166,7 +176,7 @@ async def write_loop_title(
             max_tokens=120,
             response_format={"type": "json_object"},
         )
-        parsed = json.loads(raw)
+        parsed = _loads_json(raw)
         title = str(parsed.get("title") or "").strip()
     except Exception as exc:
         log.warning("loop_title_writer_failed", error=str(exc))

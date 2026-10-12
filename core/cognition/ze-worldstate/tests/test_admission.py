@@ -341,3 +341,17 @@ async def test_other_inflow_missing_client_falls_back_to_haiku():
     await inflow.extract("Please send the contract", "email")
     assert any("relevance gate" in s for s in llm.calls)
     loop_store.create.assert_awaited_once()
+
+
+async def test_writer_accepts_fenced_json():
+    class Fenced:
+        async def complete(self, messages, **kw):
+            return '```json\n{"title": "Renew passport", "implied_window_days": 4}\n```'
+
+    from ze_worldstate.extraction import write_loop_title
+
+    written = await write_loop_title(
+        "I need to renew my passport", "create", Fenced(), "m"
+    )
+    assert written is not None
+    assert (written.title, written.implied_window_days) == ("Renew passport", 4)

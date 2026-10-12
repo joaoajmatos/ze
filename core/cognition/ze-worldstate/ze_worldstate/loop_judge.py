@@ -30,13 +30,14 @@ _STATE_KEY_AND_CAP: dict[str, tuple[str, int]] = {
 }
 
 _CONCERN_INSTRUCTIONS = (
-    "Does this text imply something the user, or someone in their life, still has to do, "
-    "decide or follow up on, that is not yet done? Questions, small talk, notifications, "
-    "marketing deadlines, routine events and reference facts do not."
+    "Does this text show something the user still has to do, decide, answer or follow up on, "
+    "or something that someone is waiting on the user for, that is not yet done? "
+    "Questions, small talk, notifications, marketing deadlines, routine events and "
+    "reference facts do not."
 )
 _EXPLICIT_INSTRUCTIONS = (
-    "Is the user themselves stating that they have to, need to, or want to be reminded "
-    "to do this?"
+    "Does the user say, in the first person, that they need to, have to or must do "
+    "something, or ask to be reminded of it?"
 )
 _RESOLVES_INSTRUCTIONS = (
     "Does the text report that something the user needed to do is now done?"

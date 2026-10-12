@@ -35,7 +35,9 @@ import yaml
 from ze_agents.system_one import SystemOneResult
 from ze_worldstate.extraction import (
     DEFAULT_EXTRACTION_MODEL,
+    _SYSTEM_PROMPT,
     _ExtractionGateResult,
+    _loads_json,
     _run_extraction_gate,
 )
 from ze_worldstate.loop_judge import (
@@ -291,6 +293,44 @@ async def run_haiku(
     return dict(await asyncio.gather(*(one(r) for r in rows)))
 
 
+async def run_haiku_tolerant(
+    llm: Any, rows: list[Row], model: str, concurrency: int
+) -> dict[str, _ExtractionGateResult | None]:
+    """The 109 prompt and fields, but tolerant of the ```json fence Haiku wraps replies in.
+
+    The production gate calls json.loads on the raw reply and so fails on every fenced answer.
+    This is the working-gate baseline the verdict compares against.
+    """
+    sem = asyncio.Semaphore(concurrency)
+
+    async def one(row: Row) -> tuple[str, _ExtractionGateResult | None]:
+        async with sem:
+            try:
+                raw = await llm.complete(
+                    [{"role": "user", "content": row.text}],
+                    model=model,
+                    system=_SYSTEM_PROMPT,
+                    temperature=0.0,
+                    max_tokens=200,
+                    response_format={"type": "json_object"},
+                )
+                parsed = _loads_json(raw)
+            except Exception:
+                return row.id, None
+        window = parsed.get("implied_window_days")
+        return row.id, _ExtractionGateResult(
+            is_loop=bool(parsed.get("is_loop")),
+            title=str(parsed.get("title") or "").strip(),
+            explicit_declaration=bool(parsed.get("explicit_declaration")),
+            resolves_existing=bool(parsed.get("resolves_existing")),
+            implied_window_days=int(window)
+            if isinstance(window, (int, float))
+            else None,
+        )
+
+    return dict(await asyncio.gather(*(one(r) for r in rows)))
+
+
 async def run_speech_act(
     client: Any, rows: list[Row], concurrency: int
 ) -> dict[str, str | None]:
@@ -335,7 +375,7 @@ def report_scores(
         out[lang] = (score(scoped, system_kinds), score(scoped, haiku_kinds))
         print(f"\n== [{lang}]")
         print("  system one: " + _fmt(out[lang][0]))
-        print("  haiku     : " + _fmt(out[lang][1]))
+        print("  haiku(tol): " + _fmt(out[lang][1]))
         if by_provenance:
             for prov in PROVENANCES:
                 sub = [r for r in scoped if r.provenance == prov]
@@ -389,6 +429,32 @@ def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
             c = score(rows, _kinds_for(rows, results, cfg))
             cells += f"{c.false_creates:>5d}/{c.recall:<4.2f}"
         print(f"{loop_hold:>8.2f}  " + cells)
+
+
+def report_errors(
+    rows: list[Row], results: dict[str, SystemOneResult], kinds: dict[str, str]
+) -> None:
+    """Tuned set only: every row the gate gets wrong, with its Noul values."""
+    print(
+        "\n== tuned-set errors at the bars used (id, kind, gold -> decision, noul values)"
+    )
+    for r in rows:
+        kind = kinds[r.id]
+        gold = "resolve" if r.gold_resolves else ("loop" if r.gold_loop else "none")
+        got = (
+            "resolve" if kind == "resolve" else ("loop" if kind in CREATES else "none")
+        )
+        if gold == got and (kind == "create_declared") == r.gold_explicit:
+            continue
+        answers = results[r.id].answers
+        vals = " ".join(
+            f"{qid[:7]}={answers[qid].noul:.2f}"
+            for qid in answers
+            if answers[qid].noul is not None
+        )
+        print(
+            f"  {r.id} {r.kind}: gold {gold}/{'expl' if r.gold_explicit else '-'} -> {kind}  {vals}"
+        )
 
 
 def report_agreement(
@@ -482,7 +548,10 @@ async def main_async(args: argparse.Namespace) -> int:
         f"model={system._model} haiku={args.haiku_model} set={args.set} rows={len(rows)}"
     )
     results = await run_system_one(system, rows, args.concurrency)
-    haiku_gates = await run_haiku(llm, rows, args.haiku_model, args.concurrency)
+    prod_gates = await run_haiku(llm, rows, args.haiku_model, args.concurrency)
+    haiku_gates = await run_haiku_tolerant(
+        llm, rows, args.haiku_model, args.concurrency
+    )
     speech = {} if holdout else await run_speech_act(system, rows, args.concurrency)
     await llm.aclose()
     skipped = Counter(r.skip_reason for r in results.values() if r.outcome == "skip")
@@ -491,6 +560,15 @@ async def main_async(args: argparse.Namespace) -> int:
             f"system one skipped rows (count as misses, never false creates): {dict(skipped)}"
         )
     haiku_kinds = {rid: haiku_kind(g) for rid, g in haiku_gates.items()}
+    prod_kinds = {rid: haiku_kind(g) for rid, g in prod_gates.items()}
+    prod = score(rows, prod_kinds)
+    print(
+        "\nproduction 109 gate as-is (json.loads, no fence handling): "
+        f"{prod.fallback}/{prod.n} replies unparseable; " + _fmt(prod)
+    )
+    print(
+        "baseline below = the same prompt, fence-tolerant (what the 109 gate does when it parses)"
+    )
 
     if not holdout:
         report_reliability(rows, results)
@@ -519,6 +597,7 @@ async def main_async(args: argparse.Namespace) -> int:
         )
         report_scores(rows, kinds, haiku_kinds, by_provenance=True)
         report_agreement(rows, speech, kinds)
+        report_errors(rows, results, kinds)
         if suggestion:
             print(
                 "\nSuggested bars (tuned set only): "
