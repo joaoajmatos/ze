@@ -1,6 +1,6 @@
 # Executive Function — Audit, Aperture Check, and Next Directions
 
-> **Status:** Draft for discussion
+> **Status:** Draft for discussion; open questions answered 2026-10-12 (see §8 Decisions)
 > **Date:** 2026-10-12
 > **Author:** Cairn (Spec Architect, floor "Executive Function Research")
 > **Scope:** `core/cognition/ze-worldstate`, `core/arbitration/ze-priority`, `core/contracts/ze-proactive`,
@@ -34,10 +34,12 @@
    (flat open loops, goals kept separate, intervention discipline borrowed from the correlation engine).
    What is still open is not "loops or life-graph". It is what a *commitment* is, how Ze decides to
    interrupt, and what surface the user actually sees (§5).
-6. **Recommendation.** Repair first (Option 1), then one commitment intake (Option 2), then a Today
-   surface (Option 4), then an interruption governor calibrated on real use (Option 3). Waiting-for
-   tracking (Option 5) is worth doing and slots in beside Option 2 or after Option 4 (§7). Do not add new
-   executive features before Option 1: each would sit on top of the inert paths below.
+6. **Recommendation (updated with the user's decisions).** Repair first (Option 1), add corroboration
+   promotion for suspected loops, then one commitment intake (Option 2) with link rows, then waiting-for
+   tracking (Option 5, Gmail first). Start dogfooding as soon as loops are reachable. Then a Today surface
+   with deadline and inferred-stakes scoring (Option 4), and last an interruption governor calibrated on
+   real use (Option 3). Phase numbers start at 170 (§7). Do not add new executive features before
+   Option 1: each would sit on top of the inert paths below.
 7. **Evidence limit, stated up front.** The dev database holds no loops and no hypotheses, and
    Phase 168 turned the loop gate on today. There is no production usage to read. Behavior claims below come from
    code, a scratch Postgres run, and live System One calls. Nothing here measures whether the executive
@@ -60,7 +62,7 @@ Reproduction notes are in Appendix A.
 2026-10-12, 313 facts, 4 goals, 13 action records, 12 reminders, 11 push-log rows, 4 notifications,
 **0 open loops, 0 hypotheses, 0 priority overrides, 0 collisions**. Some rows are seed data. It is
 not evidence about a deployed instance. If a deployed instance exists, its counts would settle
-several questions below (Question Q1).
+several questions below (D1).
 
 ---
 
@@ -179,7 +181,7 @@ first-person obligation) is created, never shown, and dropped. Only `create_decl
 ranking. The Phase 168 gate calibration measured intake quality; nothing measures whether intake
 reaches the user.
 
-*Fix size:* S–M. The design choice is real (Question Q2): a mounted widget is the cheap fix; a
+*Fix size:* S–M. The design choice is real (decided, D2): a mounted widget is the cheap fix; a
 chat-native "keep track of this?" at session resume respects agency better.
 
 ### F3 — `list_stuck` crashes on multi-gate goals — *High* — [dev-db], [code]
@@ -241,7 +243,7 @@ misfire handling, so a cron job whose minute passes while the server is down is 
 `SourceKind` for the budget includes `"goal"`, but the job only ranks loops and hypotheses.
 
 *Not necessarily wrong:* a reminder the user asked for should not compete with a discretionary nudge.
-The gap is that there is no *policy* saying which is which (Question Q4).
+The gap is that there is no *policy* saying which is which (decided, D4).
 
 ### F6 — Priority conflates certainty with importance — *Medium* — [code]
 
@@ -308,7 +310,7 @@ What the code chose, versus the July brief:
 So Option A was built, with B's interruption *discipline* partially present. What remains genuinely open:
 
 1. **What is a commitment?** Loop, goal, reminder, workflow and task-state each hold part of it
-   (Q3). F4 is the first symptom of not having an answer.
+   (D3). F4 is the first symptom of not having an answer.
 2. **What does Ze do with time?** Priority has no deadline term and interruption has no availability term. That
    is the part of Option B the brief called "genuinely unsolved", and it is untouched.
 3. **What does the user see?** There is a Priority page, inline chips, a recap and a push. There is no
@@ -338,7 +340,9 @@ correct and refuse).
   integration test harness (scratch container, as in Appendix A) so SQL predicates are tested against rows. Make
   `PriorityView` report a failed source in the API response, not only a log line. Delete the dead
   components rather than wire them (pre-v1 hard cuts).
-- **Size:** S + M (two phases): *1a repair* (F1, F3, F9, tests), *1b confirmation path* (F2, F10; depends on Q2).
+- **Size:** S + M (two phases): *1a repair* (F1, F3, F9, tests), *1b confirmation path* (F2, F10; D2: mount the review list and add a chat-native prompt, §8).
+- **Plus (D2):** a separate *corroboration* phase follows 1b: an independent second source raises a
+  suspected loop's confidence and can promote it (§8, D2).
 - **Risks:** low. The main risk is scope creep into redesign; keep priority scoring (F6) out.
 - **Doctrine fit:** licensing unchanged. Honesty improves (no phantom "no evidence" rationale). Agency:
   confirmation becomes reachable.
@@ -351,7 +355,7 @@ correct and refuse).
 - **Builds on:** Phases 142, 163, 168; the System One client; `OpenLoop.goal_id`.
 - **Scope:** one batched System One judgment per user message whose Choice covers
   `{reminder, loop, goal, waiting_on, fact, none}`; pure code routes and links. The loop gate stops asking
-  what speech-act already answered. Link rows (`loop ↔ reminder ↔ goal`) instead of a store merge. Delete or
+  what speech-act already answered. Link rows (`loop ↔ reminder ↔ goal`) instead of a store merge (decided, D3): one request creates one thing, and related items point at each other. Delete or
   consume the unused speech-act labels. New held-out sets (EN + PT), reusing the 168 calibration rules.
 - **Size:** M–L (two phases: intake + linking; then `waiting_on` direction if Option 5 is not taken).
 - **Risks:** re-calibration cost and drift between two surfaces during the change; System One cost per
@@ -365,6 +369,7 @@ correct and refuse).
   always arrive; a "this was useful / not now" signal that changes what comes next.
 - **Builds on:** `AttentionArbitrationJob`, `ze-proactive` budget, System One O6 (queued interrupt Score),
   notification `read_at`, `feedback_records`.
+- **Decided (D4):** user-requested timed alerts are exempt from the discretionary budget; add quiet hours and urgency tiers. The user's actual hours are asked when this phase is specced.
 - **Scope:** (a) classify every outbound push into a tier (user-requested and timed; accountability;
   discretionary) and apply the budget only to discretionary; (b) quiet hours and availability from
   calendar and recent activity; (c) outcome capture on pushes; (d) calibrated O6 Score and threshold
@@ -382,7 +387,9 @@ correct and refuse).
   done / snooze / drop / pin.
 - **Builds on:** `PriorityView`, Phase 127 overrides, `TurnSurfacing`, reminders and calendar stores.
 - **Scope:** split "importance", "urgency" and "confidence" in scoring; add time-to-due from explicit
-  dates; add reminders, calendar events and workflow runs as `PriorityView` sources; rewrite the briefing
+  dates; add an **inferred stakes** term (decided, D5): a System One Score calibrated on a held-out set,
+  shown in the ranking explanation and trace, always outranked by pins and Phase 127 overrides, and
+  labeled as an inference, never a fact; add reminders, calendar events and workflow runs as `PriorityView` sources; rewrite the briefing
   to read the ranking; add a Today page. Cap the recap.
 - **Size:** L (scoring model; sources; surface).
 - **Risks:** it can turn into "a smarter to-do app", the con the aperture brief named. The ranking has
@@ -397,6 +404,7 @@ correct and refuse).
 - **Builds on:** action records (135–136), `MessagingSignalSource`, thread map (85), loop drift.
 - **Scope:** a `waiting_on` loop kind, opened from a send or a spoken request; closed by an inbound
   reply on the thread; drift measured from the last outbound. First cross-domain consumer of the ledger.
+- **Decided (D6):** yes, Gmail first, after Option 2.
 - **Size:** M–L.
 - **Risks:** thread matching quality; Gmail only; depends on F1 being fixed, since drift is the whole point.
 - **Doctrine fit:** action records are evidence, never facts. Honest wording ("no reply seen since...").
@@ -413,44 +421,51 @@ correct and refuse).
 
 ---
 
-## 7. Recommended order
+## 7. Recommended order (updated 2026-10-12)
 
-1. **Option 1a, now.** F1 and F3 are cheap and block everything that watches for failure. Add the real-Postgres
-   test harness in the same phase so this class of defect (mock store, untested SQL) stops recurring. It
-   is the second time (168 found the same for the 109 gate).
-2. **Option 1b.** Pick the confirmation path (Q2) and finish F2, F9, F10.
-3. **Option 2.** Stop double-booking before more loops accumulate. Use the intake phase to decide link
-   rows versus store merge with evidence from real use (Q3).
-4. **A dogfood interval of two weeks or more**, with a short checklist (Q7). Real loops, real pushes, real
-   dismissals. This produces the labeled data that Options 3 and 4 need and that the dev database does not
-   have.
-5. **Option 4.** The Today surface is where the user will *feel* the executive layer, and it gives the
-   outcome signals for Option 3 a place to be captured (done, snooze, drop).
-6. **Option 3.** Build the governor last, on measured outcomes. A cheap piece can go earlier if wanted:
-   tier classification and quiet hours need no calibration.
-7. **Option 5** alongside 2 or after 4, depending on how much the user's pain is "I forgot to chase it".
+Phase numbers start at 170 and are provisional until each is specced. 169 is the loop-track tool, specced on
+its own floor; it changes `store.py` transitions (including `drifting → active` on an explicit ask), so it
+overlaps 170 (see the handoff message and §9).
 
-Why this order: each step makes the next one measurable. Building the interruption governor or a Today view
-first would calibrate against a pipeline that, today, produces almost nothing.
+| Phase | Content | Option | Size | Depends on |
+|---|---|---|---|---|
+| **170** | **Executive repair:** F1 drift predicate, F3 `list_stuck`, F9 evidence on gate-created loops, report failed `PriorityView` sources, delete dead code and unread config, honor `correlation.push.enabled/dry_run`, Postgres-backed test harness | 1a | S–M | 169 merge order |
+| **171** | **Confirmation path:** mount `LoopReviewList`; chat-native "keep track of these?" at session resume, max 3; language-neutral "what's open" trigger (F10); cap the recap | 1b | M | 170 |
+| **172** | **Corroboration promotion:** independent source raises a suspected loop's confidence and can auto-promote above a calibrated bar; System One same-concern judgment where entity/embedding match is not enough; provenance records corroborating sources; held-out calibration | new (D2) | M | 170 (evidence), 171 |
+| **173** | **One commitment intake:** one judgment per message across reminder, loop, goal, waiting-on, fact; link rows; loop gate stops double-booking | 2 | M–L | 170 |
+| **174** | **Waiting-for (Gmail):** `waiting_on` loops from sends and spoken requests, closed by a thread reply | 5 | M–L | 170, 173 |
+| *dogfood* | Starts when 171 lands. At least two weeks, overlapping 172–174. Weekly check in §8 D7. Produces labeled data | – | – | 171 |
+| **175** | **Scoring model:** split importance, urgency, confidence; time-to-due from dates; inferred-stakes System One Score with held-out calibration; reminders, calendar and workflows as sources | 4 | M–L | dogfood data |
+| **176** | **Today surface:** web page plus briefing rewrite; done / snooze / drop / pin actions that also capture outcomes | 4 | M | 175 |
+| **177** | **Interruption governor, part 1:** tiers, quiet hours, urgency, budget on discretionary only, cron catch-up (needs no calibration; may move earlier) | 3 | M | none hard |
+| **178–179** | **Governor, part 2:** push outcome capture; calibrated interrupt Score (O6) and threshold adaptation | 3 | L | dogfood data, 176 |
 
-Not recommended: a loop/goal store merge now (FR-014's reasoning stands and nothing yet shows linking is
-insufficient), a new life-graph projection, or more intake sources.
+Why this order: each step makes the next one measurable. Repair makes the pipeline produce something;
+the confirmation path and corroboration let implied loops reach the user; intake stops duplicates before
+more loops accumulate; dogfood supplies the labeled data that the stakes Score and the governor cannot be
+calibrated without (the dev database has none, and Ze has never been deployed, D1).
+
+Not recommended: a loop/goal store merge now (D3), a new life-graph projection, or more intake sources.
 
 ---
 
-## 8. Open questions for the user
+## 8. Decisions (user, 2026-10-12)
 
-Each has a recommendation. They are batched into one message to the Maestro, per the process rule.
+The seven questions from the first draft were answered. Recommendations were accepted except where noted.
 
-| # | Question | Options | Recommendation |
-|---|---|---|---|
-| Q1 | Is there a deployed instance with real usage? If so, can I get counts (loops by state, push_log by type, notifications read/unread, goals by status) with no content? | Yes, share counts / No, dev only | Share counts if it exists. It would settle F2, F5 and F11 in a day. |
-| Q2 | How should a suspected loop reach the user for confirmation? | (a) Mount the review list on a page; (b) chat-native "keep track of these?" at session resume, max 3; (c) both; (d) drop the confirm step and auto-promote on corroboration | (c): chat-native first, widget as the full list. Keeps agency, and loops never rank or push before the user says yes. |
-| Q3 | Unit of commitment: keep separate stores for loops, goals and reminders with link rows, or move toward one typed commitment store? | Link rows now / merge now / decide after dogfood | Link rows now, revisit the merge after the dogfood interval. |
-| Q4 | Should user-requested, hard-timed alerts (reminders, calendar prep) count against the discretionary budget, and do you want quiet hours? | Exempt timed alerts, add quiet hours / count everything / leave as is | Exempt timed alerts; add quiet hours and urgency tiers. Tell me your hours. |
-| Q5 | Where should "importance" come from? | Explicit dates and pins only / plus an inferred stakes signal / user-set per item | Dates and pins only for now. No model self-rating of importance until outcomes exist. |
-| Q6 | Do you want waiting-for tracking (Option 5), and for Gmail only at first? | Yes after Option 2 / yes after Option 4 / not now | Yes, after Option 2, Gmail only. |
-| Q7 | What should "the executive layer works" mean to you? | A weekly check I propose / your own | Propose: duplicates created = 0; loops confirmed or closed per week; pushes acted on versus dismissed; any alert you would have wanted but did not get. |
+| # | Decision |
+|---|---|
+| **D1** | No deployed instance exists; Ze has never been deployed. Evidence comes from dogfooding only. The roughly two-week dogfood step stays in the plan. |
+| **D2** | **Both** confirmation paths: mount the review list, and add a chat-native "keep track of these?" at session resume, at most 3 items. **Addition from the user:** when an independent source mentions a suspected loop, that should influence something, and can promote it if it passes a confidence bar. Design: independent corroboration raises the suspected loop's confidence and can auto-promote it to `active` above a calibrated bar. A System One same-concern judgment (Noul or Choice) is used where entity or embedding matching is not enough. Calibrate on a held-out set as in Phases 163–168. Provenance must record the corroborating sources. Doctrine fit: the loop stays an inference (suspicion) until corroborated or confirmed; promotion is a priority/open-loop-state claim by the executive function, never a fact; independence must be defined in code (different source type or different thread/document), not by the model. |
+| **D3** | Link rows now: one request creates one thing, and related items point at each other. Revisit a store merge after dogfood. |
+| **D4** | Exempt user-requested timed alerts from the discretionary budget; add quiet hours and urgency tiers. The user's actual hours are asked when that phase is specced. |
+| **D5** | **Overrides the recommendation:** importance comes from dates and pins **plus inferred stakes**. The stakes inference is a System One Score, calibrated on a held-out set, shown in the trace and the ranking explanation so the user can see why, and always outranked by the user's pins and Phase 127 overrides. Doctrine fit: an inference (never a fact), hedged in its wording, derived from cited text, with the Score never licensing a stronger claim kind (system-one-models anti-patterns). |
+| **D6** | Yes to waiting-for tracking, Gmail first, after Option 2. |
+| **D7** | Accepted weekly success check: duplicates created = 0; loops confirmed or closed per week; pushes acted on versus dismissed; any alert the user would have wanted but did not get. |
+
+Open for later phases (not blocking 170–174): the user's quiet hours (asked when 177 is specced); the
+definition of "independent source" for D2 (settled in the 172 spec); the stakes Score's levels and
+what text it reads (settled in the 175 spec).
 
 ---
 
@@ -461,7 +476,7 @@ Each has a recommendation. They are batched into one message to the Maestro, per
 - Whether the Today surface replaces or sits beside the Priority page.
 - Contribution *arbitration* (seam step 8). Phase 126 has logged no collisions in the dev database (0 rows), so the evidence gate for step 8 is not met.
 
-If the user picks Option 1, the first spec (`1a`) can be written without waiting for Q2–Q7.
+Phase 170 (repair) can be specced now. Because Phase 169 changes `store.py` transitions, spec 170 must state the merge order with 169 and re-read the 169 diff before touching `PostgresLoopStore`.
 
 ---
 
