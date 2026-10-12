@@ -11,11 +11,16 @@ class ZeEvalClient:
         self._headers = {"x-ze-api-key": api_key}
         self._timeout = timeout
 
-    async def chat(self, prompt: str, session_id: str = "eval") -> dict:
+    async def chat(
+        self, prompt: str, session_id: str = "eval", force_agent: str | None = None
+    ) -> dict:
+        body = {"prompt": prompt, "session_id": session_id}
+        if force_agent:
+            body["force_agent"] = force_agent
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             resp = await client.post(
                 f"{self._base_url}/eval/chat",
-                json={"prompt": prompt, "session_id": session_id},
+                json=body,
                 headers=self._headers,
             )
             resp.raise_for_status()

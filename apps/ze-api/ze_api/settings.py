@@ -34,6 +34,7 @@ class ZeApiSettings(BaseSettings):
 
     # ── API ───────────────────────────────────────────────────────────────────
     ze_api_key: str = "change-me"
+    eval_mode: bool = False  # set by `make dev-eval`; unlocks /eval/chat force_agent
     cors_origins: str = "*"
     confirm_timeout_seconds: int = 900
     session_inactivity_minutes: int = 30

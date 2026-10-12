@@ -347,3 +347,21 @@ async def test_agent_missing_from_the_registry_is_skipped_not_raised():
     criteria = client.calls[0]["questions"]["agent"].criteria
     assert "research" not in criteria
     assert env.primary_agent == "calendar"
+
+
+class TestRouteForced:
+    async def test_forced_envelope_names_the_agent_and_skips_scoring(self):
+        router = _router(CLEAR, client=AsyncMock())
+        envelope = await router.route_forced("anything", "s1", "research")
+        assert envelope.primary_agent == "research"
+        assert envelope.routing_method == "forced"
+        assert not envelope.is_compound
+        assert [s.agent for s in envelope.subtasks] == ["research"]
+        router._system_one.evaluate.assert_not_awaited()
+
+    async def test_unknown_agent_raises(self):
+        from ze_agents.errors import RoutingError
+
+        router = _router(CLEAR)
+        with pytest.raises(RoutingError):
+            await router.route_forced("anything", "s1", "nope")

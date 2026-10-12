@@ -566,3 +566,25 @@ class TestDecomposeKeepsScoreComplexity:
         assert result["envelope"].primary_agent == "companion"
         assert result["envelope"].complexity == "simple"
         assert [h["agent"] for h in result["conductor_hint"]] == ["alpha", "beta"]
+
+
+class TestEmbedRouteForcedAgent:
+    async def test_forced_agent_bypasses_route(self):
+        router = MagicMock()
+        router.route = AsyncMock()
+        router.route_forced = AsyncMock(return_value=_envelope(is_compound=False))
+        config = _config(AsyncMock(), router)
+        config["configurable"]["forced_agent"] = "alpha"
+        out = await embed_route({**_state(), "session_id": "s1"}, config)
+        router.route_forced.assert_awaited_once()
+        assert router.route_forced.await_args.args[-1] == "alpha"
+        router.route.assert_not_awaited()
+        assert out["envelope"].primary_agent == "alpha"
+
+    async def test_without_forced_agent_route_is_used(self):
+        router = MagicMock()
+        router.route = AsyncMock(return_value=_envelope(is_compound=False))
+        router.route_forced = AsyncMock()
+        await embed_route(_state(), _config(AsyncMock(), router))
+        router.route.assert_awaited_once()
+        router.route_forced.assert_not_awaited()

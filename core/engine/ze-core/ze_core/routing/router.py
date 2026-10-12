@@ -80,6 +80,40 @@ class EmbeddingRouter:
             )
         return envelope
 
+    async def route_forced(
+        self, prompt: str, session_id: str, agent_name: str
+    ) -> RoutingEnvelope:
+        """Skip scoring and route to ``agent_name``. Eval only: the caller gates it."""
+        if agent_name not in get_enabled_agents():
+            raise RoutingError(f"Forced agent {agent_name!r} is not an enabled agent")
+        prompt = prompt.strip()
+        intent = self._primary_intent(agent_name)
+        complexity = self._estimator.classify(prompt, intent, 1.0)
+        envelope = RoutingEnvelope(
+            primary_agent=agent_name,
+            confidence=1.0,
+            score_gap=0.0,
+            routing_method="forced",
+            is_compound=False,
+            subtasks=[
+                SubTask(
+                    agent=agent_name,
+                    intent=intent,
+                    prompt=prompt,
+                    model=self._resolve_model(agent_name, complexity),
+                )
+            ],
+            requires_synthesis=False,
+            raw_scores={agent_name: 1.0},
+            complexity=complexity,
+        )
+        if self._store is not None:
+            fire_and_forget(
+                self._store.write_log(session_id, prompt, envelope),
+                label="routing_write_log",
+            )
+        return envelope
+
     # ── Private ───────────────────────────────────────────────────────────────
 
     def _load_agent_embeddings(self) -> None:

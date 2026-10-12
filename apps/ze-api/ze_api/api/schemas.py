@@ -666,6 +666,7 @@ class WorkflowRevisionResponse(BaseModel):
 class EvalChatRequest(BaseModel):
     prompt: str
     session_id: str = "eval"
+    force_agent: str | None = None
 
 
 class EvalRoutingInfo(BaseModel):

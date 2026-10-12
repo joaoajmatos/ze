@@ -187,6 +187,12 @@ curl -X POST http://localhost:8000/eval/chat \
   -d '{"prompt": "What is recursion?", "session_id": "test-1"}'
 ```
 
+### Forcing an agent
+
+Add `"force_agent": "research"` to the request body to skip routing and run a named agent. The trace shows `routing_method: "forced"`. Use it to measure what one agent does with a prompt the router would send elsewhere.
+
+The server accepts `force_agent` only when it runs with `EVAL_MODE=true`, which `make dev-eval` sets. Any other server answers `403` and runs nothing. An unknown agent name answers `400`. The WebSocket path has no way to set it.
+
 ---
 
 ## Adding scenarios
