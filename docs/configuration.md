@@ -337,7 +337,7 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The code defaults are off, and without a `system_one:` block everything is off.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The `loop_gate` surface is on too. The code defaults are off, and without a `system_one:` block everything is off.
 
 ```yaml
 system_one:
@@ -361,6 +361,11 @@ system_one:
       needs_skill_hold: null      # shipped: 0.6 — set from make calibrate-skills
       shortlist_k: 5
       shortlist_floor: 0.35
+    loop_gate:                    # Open-loop extraction gate (Phase 168)
+      enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
+      loop_hold: null             # shipped: 0.75 — set from make calibrate-loop-gate
+      explicit_hold: null         # shipped: 0.85
+      resolves_hold: null         # shipped: 0.8
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -416,7 +421,29 @@ The keys:
 
 The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable it and leave either `null`, Ze logs `skills_surface_uncalibrated` and matches by similarity alone. An out-of-range or non-numeric value becomes `null` (bars) or the default (`shortlist_k`, `shortlist_floor`), with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.6 (calibrated 2026-10-12). To re-measure them, run `OPENROUTER_API_KEY=... make calibrate-skills`. This run is live and costs credits. Copy the suggested values into the file, then set `surfaces.skills.enabled` to `true`.
 
-`shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values, `shortlist_k: 5` and `shortlist_floor: 0.35`, come from that table. On the 84-row English and Portuguese set, the gold skill appears in the shortlist at a rate of 0.955, 0.970, 0.985, 0.985, 0.985 and 0.985 for k = 3 to 8. English holds at 0.974 for every k. Portuguese rises from 0.926 to 1.0 at k = 5. The floor does not bind: E5 cosines run from 0.71 to 0.89, even for messages that need no skill, so every skill already clears `skills.match_threshold`. The floor matters only if your skills or model score lower. No bars ship, and the live calibration run has not been done.
+`shortlist_k` and `shortlist_floor` come from the shortlist recall table in the calibration report. That table needs no credits: pass `--recall` to the script (`uv run python eval/calibration/skills.py --recall`). The shipped values, `shortlist_k: 5` and `shortlist_floor: 0.35`, come from that table. On the 84-row English and Portuguese set, the gold skill appears in the shortlist at a rate of 0.955, 0.970, 0.985, 0.985, 0.985 and 0.985 for k = 3 to 8. English holds at 0.974 for every k. Portuguese rises from 0.926 to 1.0 at k = 5. The floor does not bind: E5 cosines run from 0.71 to 0.89, even for messages that need no skill, so every skill already clears `skills.match_threshold`. The floor matters only if your skills or model score lower.
+
+#### `surfaces.loop_gate`
+
+Ze extracts open loops from conversation, email, calendar events, and ingested content. When `loop_gate` is on, one System One request asks three yes/no questions before any Haiku call. Ze makes one attempt, with no retries. Code then decides:
+
+- A high `resolves_existing` closes the matching open loop.
+- A low `is_open_concern` holds. Ze creates nothing and calls no Haiku.
+- A high `explicit_declaration` (conversation only) creates an active, user-declared loop.
+- Anything else creates a suspected loop.
+- A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate now strips the code fence Haiku wraps around its JSON.
+
+After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
+
+The keys:
+
+- `loop_hold` is the minimum probability for `is_open_concern`.
+- `explicit_hold` is the minimum probability for `explicit_declaration`.
+- `resolves_hold` is the minimum probability for `resolves_existing`.
+
+Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all three bars set. If you enable it and leave any bar `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75, 0.85 and 0.8 (calibrated 2026-10-12).
+
+To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-loop-gate`. This run is live and costs credits. It tunes on `eval/calibration/loop_gate.jsonl` by default and measures the Haiku gate on the same rows. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout`). Set `surfaces.loop_gate.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false creates on negatives, recall no more than 0.05 below Haiku's, and precision at least Haiku's. `--check-sets` validates both files offline.
 
 ## `config/persona.yaml`
 

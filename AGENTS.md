@@ -75,7 +75,9 @@ ze/                           # monorepo root
 │   │           ├── store.py     # LoopStore Protocol + PostgresLoopStore
 │   │           ├── matching.py  # entity-overlap + embedding-similarity dedup
 │   │           ├── decay.py     # confidence decay cascade, called at the evidence-writing code path
-│   │           ├── extraction.py # conservative relevance-gated loop extraction
+│   │           ├── extraction.py # conservative relevance-gated loop extraction (109 Haiku gate = fallback)
+│   │           ├── loop_judge.py # System One loop gate — three Nouls, bars, pure decide()
+│   │           ├── admission.py  # LoopInflow — gate + Haiku title writer + commit
 │   │           ├── review.py    # confirm/close/drop lifecycle transitions
 │   │           ├── inflow.py    # inflow wiring helpers (conversation hook, messenger/calendar/ingestion extractors)
 │   │           ├── jobs/        # stale-suspicion expiry job
@@ -271,6 +273,7 @@ make eval-server     # start MCP eval server (requires dev-eval running; see doc
 make calibrate-speech-act  # LIVE System One run over eval/calibration/speech_act.jsonl; costs credits
 make calibrate-routing     # LIVE System One run over eval/calibration/routing.jsonl; costs credits
 make calibrate-skills      # LIVE System One run over eval/calibration/skills.jsonl; costs credits (--recall: offline shortlist recall)
+make calibrate-loop-gate  # LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (--set holdout = the one verdict run; --check-sets offline)
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)
@@ -619,6 +622,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 165 | Response Feedback and Retry — thumbs up/down on assistant replies as append-only `FeedbackRecord` evidence (`ClaimKind.FEEDBACK_RECORD`, licensed to Perception only; `feedback_records`, `zm024`), linked to the reply's `MessageTrace`, no consumer in v1; safe Retry regenerates the latest reply with write tools blocked (`retry_mode`), decided server-side by `retry_eligibility` from trace effect metadata; `messages.replaces`/`replaced_by` (`zc031`); every `WRITE` tool declares `reversibility` | Implemented |
 | 166 | System One Skill Gating (O3) — E5 shortlists skills down to `shortlist_floor`; one batched System One Choice (shortlist ∪ `none`) plus a Noul `needs_skill` picks at most one automatic skill (a deliberate narrowing of 114; explicit `/skill-name` still stacks); a below-`match_threshold` apply is marked `below_floor` on the trace; `match_skills` appends its judgments; surface `system_one.surfaces.skills` shipped off with null bars until `make calibrate-skills`, then enabled 2026-10-12 with `choice_trust` 0.75, `needs_skill_hold` 0.6, `shortlist_k` 5; no suggestion UX | Implemented |
 | 167 | Routing Choice Criteria — fixes the 164 held-out failures: companion no longer claims "explain X"; optional `routing_criteria` on `BaseAgent` (Choice text, falls back to `description`; E5 still embeds `description`); name-free Choice instructions and a stronger `none` criterion; `shortlist_k` 9 chosen by offline recall on three calibration sets (9 of 10 agents, so E5 filters little for the Choice; it still drives the 160 skip path); `eval/calibration/routing_holdout2.jsonl` and the opt-in `companion_research_check.py`. Surface enabled (`choice_trust` 0.5, `multi_specialist_hold` 0.5, `complexity_lookup_max` null) under an amended acceptance rule | Implemented |
+| 168 | Loop Extraction Gate (O4) — one batched System One request asks three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration` on conversation only); pure `decide()` in `ze_worldstate/loop_judge.py` maps them to resolve / create-declared / create-suspected / hold; Haiku only writes the title (and optional `implied_window_days`) after a positive gate; `LoopInflow` (`admission.py`) owns gate and commit; conversation gate runs in `write_memory` beside the fact extractor (rows on `MessageTrace.judgments`, fire-and-forget commit), worldstate `conversation_memory_hook` deleted; email/calendar/ingestion run the gate, log judgments, and write no trace rows; off, uncalibrated, skip or invalid → the 109 Haiku gate; surface `system_one.surfaces.loop_gate` enabled 2026-10-12 (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8) after an `ENABLE` verdict for EN and PT on the held-out set; the 109 Haiku fallback now parses Haiku's fenced JSON (before 168 it did not, so production created no loops); no migration | Implemented |
 
 ## graphify
 

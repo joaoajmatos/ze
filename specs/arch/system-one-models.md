@@ -1,6 +1,6 @@
 # System One models — living roadmap
 
-> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; all three surfaces are on in the shipped config with calibrated bars: 163 (2026-10-09), 164 as fixed by phase [167](../phases/167-routing-choice-criteria/spec.md) (2026-10-12), and 166 (2026-10-12). See [docs/system-one.md](../../docs/system-one.md) for the reader-facing summary. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented; enabled 2026-10-12. Later opportunities in this document wait for their own phase.
+> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; the first four surfaces are on in the shipped config with calibrated bars: 163 (2026-10-09), 164 as fixed by phase [167](../phases/167-routing-choice-criteria/spec.md) (2026-10-12), and 166 (2026-10-12). See [docs/system-one.md](../../docs/system-one.md) for the reader-facing summary. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented; enabled 2026-10-12. Phase [168](../phases/168-loop-extraction-gate/spec.md) (O4, loop extraction gate) is specified and in progress; it is enabled in the shipped config (2026-10-12) after an `ENABLE` verdict on the held-out set for English and Portuguese. Later opportunities in this document wait for their own phase.
 > **Date:** 2026-09-30
 > **Related:** [Ze Doctrine](ze-doctrine.md), [Contribution Seam](contribution-seam.md), [Memory Honesty Roadmap](memory-honesty-roadmap.md), [Claim Topology](claim-topology.md), [OpenRouter Gateway](openrouter-gateway.md), [Local Embeddings](local-embeddings.md), [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), NLI [080](../phases/080-nli-client/spec.md), speech-act [142](../phases/142-speech-act-routing/spec.md)–[148](../phases/148-extractor-dual-write/spec.md), E5 routing [160](../phases/160-e5-routing-confidence/spec.md)
 
@@ -59,7 +59,7 @@ Ze already makes semantic forks with four mechanisms. Almost none are calibrated
 |---|---|---|
 | E5 cosine | Routing (`ROUTING_THRESHOLD` 0.73 / gap 0.02), skills (0.5), retrieval floor 0.35, loop match 0.75, novelty 0.85 | Similarity. `RoutingEnvelope.confidence` is this cosine — a naming lie vs doctrine confidence. |
 | DeBERTa NLI | Write-time contradiction ≥ 0.60, `live_rerank` (`entailment + 0.5 * neutral`), push grounding, news/finance opt-in | Entailment/contradiction. Misused as **relevance** on the retrieve path. Latin/ASCII ≥ 80% or `None`. |
-| Haiku JSON | Extractor `speech_act`, loop `is_loop`, router decompose | Closed labels in the prompt; no calibrated P(label). Phase 148 left a “hard classifier” as later L. |
+| Haiku JSON | Extractor `speech_act` (fallback since 163), loop `is_loop` (fallback since 168), router decompose | Closed labels in the prompt; no calibrated P(label). Phase 148 left a “hard classifier” as later L. |
 | Heuristic | Complexity regex, conductor gather/act sets, constraint veto tokens, honesty regex | Cheap and often correct; not semantic. |
 
 Calibrated **act / hold / escalate** is missing on routing, admission, confirms, push, and dream promotion. Human confirm (`AWAIT_CONFIRMATION`) is the right escalate path when a judgment is unsure — do not invent a parallel review product.
@@ -76,6 +76,8 @@ Calibrated **act / hold / escalate** is missing on routing, admission, confirms,
 
 > **O3 implementation notes (166):** The roadmap name is "skill suggestion", but nothing is suggested to the user. The phase gates **automatic application**. E5 stays the shortlist, with a lower shortlist-only pre-floor (`shortlist_floor`, near 0.35) under `match_threshold`, and `shortlist_k` set from the offline recall table, not assumed. One batched request (`evaluate(..., max_attempts=1)`) asks a Choice over the shortlist ∪ `none` and a Noul `needs_skill`. Pure code decides apply, drop, abstain or skip. At most one automatic skill applies (a deliberate narrowing of 114's "all matched skills"); explicit `/skill-name` bypasses the judgment and still stacks. A below-`match_threshold` apply is marked on the trace (`below_floor`). `match_skills` appends its judgment rows to `state["judgments"]` and never replaces `embed_route`'s rows. Two bars (`choice_trust`, `needs_skill_hold`) ship `null`; the surface stayed off until `make calibrate-skills`; enabled 2026-10-12 with `choice_trust` 0.75, `needs_skill_hold` 0.6, `shortlist_k` 5. Off, uncalibrated, skipped or unsure: the 114 result is unchanged.
 
+> **O4 implementation notes (168):** The Haiku `is_loop` call is split into a gate and a writer. One batched System One request (`evaluate(..., max_attempts=1)`) asks three Nouls: `is_open_concern`, `resolves_existing`, and, on conversation only, `explicit_declaration`. Three bars (`loop_hold`, `resolves_hold`, `explicit_hold`) shipped `null` until `make calibrate-loop-gate`; they are now 0.75, 0.8 and 0.85. Pure code in `ze_worldstate/loop_judge.py` (`decide()`) maps the answers to resolve, create-declared, create-suspected, hold or fallback. Haiku only writes the title after a positive gate, and also returns an optional `implied_window_days` on creates. Matching, dismissal fingerprints, confidence, provenance, drift arithmetic and the contribution seam stay in code. Parsing the window from the text in code is a later phase; until then the window comes from the Haiku writer. The conversation gate runs in `write_memory` beside the fact extractor, appends its rows to `MessageTrace.judgments`, and commits fire-and-forget; the worldstate `conversation_memory_hook` is deleted. Email, calendar and ingestion run the same gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows. Off, uncalibrated, skipped, invalid or missing answers run the 109 Haiku gate unchanged. **Finding:** that gate was inert. It parses the reply with `json.loads`, Haiku wraps its JSON in a ```json fence, and all 136 calibration replies (88 tuned, 48 held-out) failed to parse, so loop extraction created no loops in production before 168. The calibration ran against the gate unchanged, with a fence-tolerant copy of the same prompt as the baseline; afterwards the fallback's parse was fixed with the shared fence-tolerant helper. **Result (held-out, one run, 10 positives per language):** English System One precision 1.00, recall 10/10, zero false creates; Haiku (fence-tolerant) precision 0.90, recall 9/10, one false create. Portuguese System One precision 1.00, recall 10/10, zero false creates; Haiku 0.909, 10/10, one false create. Not gating: one Portuguese false resolve; false declared 0 for System One against 3 for Haiku. The counts are small, so the comparison is coarse. One recorded asymmetry: the Haiku fallback still honors an explicit declaration on non-conversation text, as in 109; a later phase should cut it.
+
 Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selects **(3)** System One verifies **(4)** System One routes **(5)** scores become ranking features.
 
 ### Specified now
@@ -86,12 +88,12 @@ Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selec
 | O1 | Speech-act + keep/drop | Haiku JSON every turn | Choice `{fact,forget,reminder,loop,goal,ingest,drop,clarify}` + family Choice + Noul biography | 4 + 1 (wording) | **Replace LLM judge**; keep `admit_*` | M | **163** |
 | O2 | Agent after E5 shortlist + complexity | Cosine-as-confidence; regex complexity; Haiku on low gap | Choice shortlist ∪ `none`; Score complexity | 4 + 1 (decompose) | **Complement E5**; keep decompose | M | **164 (Implemented); 167 (Implemented, enabled)** |
 | O3 | Skill gating after E5 shortlist | Every skill with cosine ≥ 0.5 applies, plus `/slug` | Choice shortlist ∪ `none`; Noul `needs_skill`; `/slug` stays code | 1 | **Complement E5**; keep `/slug` | M | **166 (Implemented)** |
+| O4 | Loop extraction gate | Haiku JSON `is_loop` | Three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration`); Haiku writes the title and window only after a positive gate | 1 + 2 (title) | **Replace LLM judge**; keep matching, dismissal, drift | M | **168 (Implemented; enabled)** |
 
 ### Queued (do not start before their own phase)
 
 | # | Opportunity | Notes |
 |---|---|---|
-| O4 | Loop extraction gate | Haiku JSON `is_loop`. Noul `is_open_concern`; title still generated; windows in **code**. |
 | O5 | Passage classify | After ANN + floor; Nouls relevant/usable/conflicts. Cap candidates so latency stays in the live-rerank class or use the async cache path. Keep DeBERTa write-time NLI. |
 | O6 | Push interrupt Score | Features into `AttentionArbitrationJob`; budget and claim-then-notify stay code. Inline mentions stay ungated (FR-006). |
 | O7 | Dream citation + critic Nouls | Gate1 complement; support counts **code** (Jev does not count). Do not inherit critic “ambiguous → PASS”. |
@@ -115,7 +117,9 @@ Implement **in order**. 163 and 164 both need 162; they do not need each other. 
 
 4. **166 — Skill gating (Implemented)** — Shortlist in code; Choice ∪ `none` plus Noul `needs_skill`; one automatic skill; `/skill-name` unchanged; trace marks below-floor applies. Depends on 162; reuses the 163/164 patterns, not their bars.
 
-Later: O4 loops → O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
+5. **168 — Loop extraction gate (Implemented)** — Three Nouls gate extraction; Haiku writes the title and window only after a positive gate; the conversation gate runs in `write_memory`, other inflows run the gate, log judgments, and write no trace rows; enabled 2026-10-12 with `loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8 after an `ENABLE` verdict for EN and PT. Depends on 162; reuses the 163/166 patterns, not their bars.
+
+Later: O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
 
 ---
 
@@ -168,7 +172,7 @@ preprocess → embed_route → [decompose] → fetch_context → match_skills �
   → execute_tool → correlate → surface_loops → [synthesize] → record_trace → write_memory
 ```
 
-| Surface | Today | 162–164, 166 |
+| Surface | Today | 162–164, 166, 168 |
 |---|---|---|
 | `EmbeddingRouter` | E5 cosine τ/gap | **164 Implemented** — Choice after shortlist (System One, E5 fallback) |
 | `ComplexityEstimator` | regex + word count | **164 Implemented** — Score tier; regex fallback |
@@ -180,7 +184,7 @@ preprocess → embed_route → [decompose] → fetch_context → match_skills �
 | Write-time NLI | DeBERTa contradiction | keep |
 | Inline loops | entity overlap, no τ | keep (policy) |
 | `passes_push_bar` | numeric τ + NLI | queued O6 |
-| Loop extraction | Haiku `is_loop` | queued O4 |
+| Loop extraction | Haiku `is_loop` | **168 Implemented** — three Nouls gate, Haiku title writer; Haiku `is_loop` on fallback |
 | Correlate / dream | LLM + NLI/Sonnet | queued O7/O8 |
 
 Proactive: `CorrelationJob` (LLM), `AttentionArbitrationJob` (rank; `PushSweepJob` is **removed**). Drift/stale/decay jobs are time/math only.
@@ -200,6 +204,9 @@ Proactive: `CorrelationJob` (LLM), `AttentionArbitrationJob` (rank; `PushSweepJo
 | `live_rerank` | `ze_memory/retrieval_rerank.py` |
 | `SkillMatcher` | `ze_skills/matching.py` |
 | `passes_push_bar` | `ze_worldstate/surfacing.py` |
+| Loop gate (`decide()`, questions, bars) | `ze_worldstate/loop_judge.py` |
+| `LoopInflow` (gate + commit, title writer) | `ze_worldstate/admission.py` |
+| Loop extraction (109 Haiku gate, fallback) | `ze_worldstate/extraction.py` |
 | `MessageTrace` | `ze_core/conversation/messages/types.py` |
 | `CapabilityGate` | `ze_core/capability/gate.py` |
 | SDK re-export | `packages/ze-sdk/ze_sdk/__init__.py` |

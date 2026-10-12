@@ -267,3 +267,25 @@ async def test_duplicate_candidate_attaches_to_existing_loop_not_duplicated():
     assert len(result) == 1
     assert result[0].id == existing.id
     loop_store.create.assert_not_called()
+
+
+async def test_fenced_haiku_reply_still_creates_loop():
+    llm = AsyncMock()
+    llm.complete = AsyncMock(
+        return_value='```json\n{"is_loop": true, "title": "Renew passport"}\n```'
+    )
+    loop_store, graph_store, embedder, entity_resolver, memory_store = _empty_deps()
+
+    result = await propose_loop_candidates(
+        "I really need to renew my passport before the trip",
+        "conversation",
+        [EvidenceRef(kind="episode", id=uuid4())],
+        llm,
+        embedder,
+        loop_store,
+        entity_resolver,
+        graph_store=graph_store,
+        memory_store=memory_store,
+    )
+    assert len(result) == 1
+    assert result[0].title == "Renew passport"

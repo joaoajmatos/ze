@@ -15,12 +15,15 @@ from ze_worldstate import drift
 from ze_worldstate.contribution import loop_to_contribution
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.matching import find_matching_loop
+from ze_worldstate.loop_judge import capped_text, supported_provenance
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
+    LoopAdmission,
     LoopClaimKind,
     LoopProvenance,
     LoopState,
     OpenLoop,
+    TitleWriterResult,
 )
 
 log = get_logger(__name__)
@@ -98,7 +101,7 @@ async def _run_extraction_gate(
             max_tokens=200,
             response_format={"type": "json_object"},
         )
-        parsed = json.loads(raw)
+        parsed = _loads_json(raw)
     except Exception as exc:
         log.warning("loop_extraction_gate_failed", error=str(exc))
         return None
@@ -115,6 +118,74 @@ async def _run_extraction_gate(
         resolves_existing=bool(parsed.get("resolves_existing")),
         implied_window_days=implied_window_days,
     )
+
+
+_WRITER_PROMPT = """You write the short title of one open loop for Ze. The text has already
+been judged: it {what}. Reply with a JSON object only:
+{{"title": "short human-readable title"{window_field}}}
+The title names the commitment itself, in the language of the text, in under ten words.{window_rule}
+"""
+
+_WRITER_CREATE = ("implies an unfinished commitment the user still has to act on", True)
+_WRITER_RESOLVE = ("reports that a commitment the user had is now done", False)
+
+
+def _loads_json(raw: str) -> Any:
+    """Haiku wraps JSON replies in a ```json fence even with response_format set."""
+    text = raw.strip()
+    start = text.find("{")
+    if start < 0:
+        raise ValueError("no JSON object in reply")
+    obj, _ = json.JSONDecoder().raw_decode(text[start:])
+    return obj
+
+
+def _whole_days(raw: Any) -> int | None:
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, int):
+        return raw if raw > 0 else None
+    if isinstance(raw, float) and raw.is_integer() and raw > 0:
+        return int(raw)
+    return None
+
+
+async def write_loop_title(
+    text: str, kind: str, llm_client: LLMClient, model: str
+) -> TitleWriterResult | None:
+    """Haiku writes the title (and, for creates, an implied window). It never decides existence."""
+    what, with_window = _WRITER_CREATE if kind == "create" else _WRITER_RESOLVE
+    system = _WRITER_PROMPT.format(
+        what=what,
+        window_field=', "implied_window_days": <integer, optional>'
+        if with_window
+        else "",
+        window_rule=(
+            " Include `implied_window_days` only if the text names a timeframe, as a whole"
+            " number of days from now; otherwise omit it."
+            if with_window
+            else ""
+        ),
+    )
+    try:
+        raw = await llm_client.complete(
+            [{"role": "user", "content": text}],
+            model=model,
+            system=system,
+            temperature=0.0,
+            max_tokens=120,
+            response_format={"type": "json_object"},
+        )
+        parsed = _loads_json(raw)
+        title = str(parsed.get("title") or "").strip()
+    except Exception as exc:
+        log.warning("loop_title_writer_failed", error=str(exc))
+        return None
+    if not title:
+        log.warning("loop_title_writer_empty")
+        return None
+    window = _whole_days(parsed.get("implied_window_days")) if with_window else None
+    return TitleWriterResult(title=title, implied_window_days=window)
 
 
 async def _resolve_entities(entity_resolver: Any, text: str) -> list[UUID]:
@@ -175,90 +246,47 @@ async def _create_declared_loop(
     return created
 
 
-async def propose_loop_candidates(
-    text: str,
-    provenance: str,
-    evidence_refs: list[EvidenceRef],
-    llm_client: LLMClient,
-    embedder: Any,
+async def _close_matching_loop(
+    title: str,
+    entity_ids: list[UUID],
     loop_store: LoopStore,
-    entity_resolver: Any,
-    *,
-    graph_store: GraphStore | None = None,
-    memory_store: Any = None,
-    model: str = DEFAULT_EXTRACTION_MODEL,
-    collision_store: Any = None,
-    nli_client: Any = None,
+    graph_store: GraphStore | None,
+    embedder: Any,
 ) -> list[OpenLoop]:
-    """Conservative, relevance-gated (FR-009). Returns [] for ordinary content.
-
-    `provenance` is honoured as-is (never model narration, FR-003). Non-
-    `user_declared` inflows are conservative/relevance-gated and always land
-    in `suspected` at low confidence (FR-005), UNLESS the single relevance-gate
-    call also classifies the text as an explicit self-declaration (FR-006) — in
-    which case the loop is created directly in `active` at high confidence with
-    provenance `user_declared`, bypassing matching entirely, without requiring a
-    separate call-site classification step. Passing `provenance="user_declared"`
-    directly (e.g. from a future non-conversational declared-loop caller) always
-    takes this path too.
-    """
-    prov = provenance
-    entity_ids = await _resolve_entities(entity_resolver, text)
-
-    if prov == LoopProvenance.USER_DECLARED:
-        created = await _create_declared_loop(
-            text.strip(),
-            prov,
-            evidence_refs,
-            entity_ids,
-            loop_store,
-            collision_store=collision_store,
-            nli_client=nli_client,
-        )
-        return [created]
-
-    gate = await _run_extraction_gate(text, llm_client, model)
-    if gate is None:
+    if graph_store is None:
         return []
-
-    if gate.resolves_existing and gate.title and graph_store is not None:
-        # T030: "it's done" recognition — resolve the matching loop instead of
-        # creating a new one.
-        existing = await find_matching_loop(
-            entity_ids,
-            gate.title,
-            loop_store=loop_store,
-            graph_store=graph_store,
-            embedder=embedder,
-            states=["suspected", "active", "drifting"],
-        )
-        if existing is not None:
-            closed = await loop_store.transition(existing.id, LoopState.CLOSED.value)
-            return [closed]
+    existing = await find_matching_loop(
+        entity_ids,
+        title,
+        loop_store=loop_store,
+        graph_store=graph_store,
+        embedder=embedder,
+        states=["suspected", "active", "drifting"],
+    )
+    if existing is None:
         return []
+    closed = await loop_store.transition(existing.id, LoopState.CLOSED.value)
+    return [closed]
 
-    if not gate.is_loop or not gate.title:
-        return []
 
-    if gate.explicit_declaration:
-        created = await _create_declared_loop(
-            gate.title,
-            prov,
-            evidence_refs,
-            entity_ids,
-            loop_store,
-            implied_window_days=gate.implied_window_days,
-            collision_store=collision_store,
-            nli_client=nli_client,
-        )
-        return [created]
-
+async def _create_suspected_loop(
+    title: str,
+    prov: str,
+    evidence_refs: list[EvidenceRef],
+    entity_ids: list[UUID],
+    loop_store: LoopStore,
+    graph_store: GraphStore | None,
+    embedder: Any,
+    memory_store: Any,
+    collision_store: Any,
+    nli_client: Any,
+) -> list[OpenLoop]:
     fingerprint = compute_evidence_fingerprint(evidence_refs)
 
     if graph_store is not None:
         dismissed = await find_matching_loop(
             entity_ids,
-            gate.title,
+            title,
             loop_store=loop_store,
             graph_store=graph_store,
             embedder=embedder,
@@ -273,7 +301,7 @@ async def propose_loop_candidates(
 
         existing = await find_matching_loop(
             entity_ids,
-            gate.title,
+            title,
             loop_store=loop_store,
             graph_store=graph_store,
             embedder=embedder,
@@ -286,7 +314,7 @@ async def propose_loop_candidates(
             return [existing]
 
     loop = OpenLoop(
-        title=gate.title,
+        title=title,
         claim_kind=LoopClaimKind.SUSPICION,
         provenance=prov,
         confidence=_SUSPECTED_CONFIDENCE,
@@ -306,9 +334,7 @@ async def propose_loop_candidates(
         return len(episodes) > 0
 
     created = await submit_and_detect_collisions(
-        loop_to_contribution(
-            loop, evidence=evidence_refs, entity_ids=entity_ids
-        ),
+        loop_to_contribution(loop, evidence=evidence_refs, entity_ids=entity_ids),
         lambda: loop_store.create(loop),
         result_id=lambda c: c.id,
         producer_kind="open_loop",
@@ -319,3 +345,165 @@ async def propose_loop_candidates(
     )
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
     return [created]
+
+
+async def _commit_admitted(
+    text: str,
+    prov: str,
+    admission: LoopAdmission,
+    evidence_refs: list[EvidenceRef],
+    entity_ids: list[UUID],
+    llm_client: LLMClient,
+    embedder: Any,
+    loop_store: LoopStore,
+    graph_store: GraphStore | None,
+    memory_store: Any,
+    model: str,
+    collision_store: Any,
+    nli_client: Any,
+) -> list[OpenLoop]:
+    """System One already decided; Haiku only writes the title (and a create window)."""
+    kind = admission.decision.kind
+    writer_text = capped_text(text, prov) if supported_provenance(prov) else text
+    written = await write_loop_title(
+        writer_text, "resolve" if kind == "resolve" else "create", llm_client, model
+    )
+    if written is None:
+        return []
+    if kind == "resolve":
+        return await _close_matching_loop(
+            written.title, entity_ids, loop_store, graph_store, embedder
+        )
+    if kind == "create_declared":
+        created = await _create_declared_loop(
+            written.title,
+            prov,
+            evidence_refs,
+            entity_ids,
+            loop_store,
+            implied_window_days=written.implied_window_days,
+            collision_store=collision_store,
+            nli_client=nli_client,
+        )
+        return [created]
+    return await _create_suspected_loop(
+        written.title,
+        prov,
+        evidence_refs,
+        entity_ids,
+        loop_store,
+        graph_store,
+        embedder,
+        memory_store,
+        collision_store,
+        nli_client,
+    )
+
+
+async def propose_loop_candidates(
+    text: str,
+    provenance: str,
+    evidence_refs: list[EvidenceRef],
+    llm_client: LLMClient,
+    embedder: Any,
+    loop_store: LoopStore,
+    entity_resolver: Any,
+    *,
+    graph_store: GraphStore | None = None,
+    memory_store: Any = None,
+    model: str = DEFAULT_EXTRACTION_MODEL,
+    collision_store: Any = None,
+    nli_client: Any = None,
+    admission: LoopAdmission | None = None,
+) -> list[OpenLoop]:
+    """Conservative, relevance-gated (FR-009). Returns [] for ordinary content.
+
+    `provenance` is honoured as-is (never model narration, FR-003). Non-
+    `user_declared` inflows are conservative/relevance-gated and always land
+    in `suspected` at low confidence (FR-005), UNLESS the single relevance-gate
+    call also classifies the text as an explicit self-declaration (FR-006) — in
+    which case the loop is created directly in `active` at high confidence with
+    provenance `user_declared`, bypassing matching entirely, without requiring a
+    separate call-site classification step. Passing `provenance="user_declared"`
+    directly (e.g. from a future non-conversational declared-loop caller) always
+    takes this path too.
+
+    `admission` (phase 168): a System One decision made by `LoopInflow`. When it
+    resolves, declares or suspects, Haiku only writes the title and the 109 gate does
+    not run. `None`, a `fallback` or a `hold` admission leaves the 109 Haiku gate as is.
+    """
+    prov = provenance
+    entity_ids = await _resolve_entities(entity_resolver, text)
+
+    if prov == LoopProvenance.USER_DECLARED:
+        created = await _create_declared_loop(
+            text.strip(),
+            prov,
+            evidence_refs,
+            entity_ids,
+            loop_store,
+            collision_store=collision_store,
+            nli_client=nli_client,
+        )
+        return [created]
+
+    if admission is not None and admission.decision.kind in (
+        "resolve",
+        "create_declared",
+        "create_suspected",
+    ):
+        return await _commit_admitted(
+            text,
+            prov,
+            admission,
+            evidence_refs,
+            entity_ids,
+            llm_client,
+            embedder,
+            loop_store,
+            graph_store,
+            memory_store,
+            model,
+            collision_store,
+            nli_client,
+        )
+
+    gate = await _run_extraction_gate(text, llm_client, model)
+    if gate is None:
+        return []
+
+    if gate.resolves_existing and gate.title and graph_store is not None:
+        # T030: "it's done" recognition — resolve the matching loop instead of
+        # creating a new one.
+        return await _close_matching_loop(
+            gate.title, entity_ids, loop_store, graph_store, embedder
+        )
+
+    if not gate.is_loop or not gate.title:
+        return []
+
+    if gate.explicit_declaration:
+        created = await _create_declared_loop(
+            gate.title,
+            prov,
+            evidence_refs,
+            entity_ids,
+            loop_store,
+            implied_window_days=gate.implied_window_days,
+            collision_store=collision_store,
+            nli_client=nli_client,
+        )
+        return [created]
+
+    return await _create_suspected_loop(
+        gate.title,
+        prov,
+        evidence_refs,
+        entity_ids,
+        loop_store,
+        graph_store,
+        embedder,
+        memory_store,
+        collision_store,
+        nli_client,
+    )

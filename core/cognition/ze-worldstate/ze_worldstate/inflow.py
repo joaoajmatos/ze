@@ -2,46 +2,34 @@ from __future__ import annotations
 
 from typing import Any
 
-from ze_logging import get_logger
-
-from ze_worldstate.extraction import propose_loop_candidates
-from ze_plugin.contribution import EvidenceRef
-
-log = get_logger(__name__)
+from ze_worldstate.admission import LoopInflow
 
 
-async def _propose(
-    text: str,
-    provenance: str,
-    configurable: dict,
-    evidence_refs: list[EvidenceRef] | None = None,
-) -> None:
-    loop_store = configurable.get("loop_store")
-    if loop_store is None or not text or not text.strip():
-        return
-    try:
-        await propose_loop_candidates(
-            text=text,
-            provenance=provenance,
-            evidence_refs=evidence_refs or [],
-            llm_client=configurable["openrouter_client"],
-            embedder=configurable["embedder"],
-            loop_store=loop_store,
-            entity_resolver=configurable.get("loop_entity_resolver"),
-            graph_store=configurable.get("loop_graph_store"),
-            memory_store=configurable.get("loop_memory_store"),
-            collision_store=configurable.get("collision_store"),
-            nli_client=configurable.get("nli_client"),
-        )
-    except Exception as exc:
-        log.warning("loop_extraction_failed", provenance=provenance, error=str(exc))
-
-
-async def conversation_memory_hook(result: Any, ctx: Any, config: dict) -> None:
-    """FR-008's conversation inflow — invoked via the `write_memory` node's
-    generic `memory_hooks` extension point (FR-017's direct-write proto-contribution).
-    """
-    await _propose(ctx.prompt, "conversation", config["configurable"])
+def make_loop_inflow_from_parts(
+    *,
+    loop_store: Any,
+    loop_graph_store: Any,
+    loop_entity_resolver: Any,
+    openrouter_client: Any,
+    embedder: Any,
+    loop_memory_store: Any = None,
+    collision_store: Any = None,
+    nli_client: Any = None,
+    system_one_client: Any = None,
+    settings: Any = None,
+) -> LoopInflow:
+    return LoopInflow(
+        loop_store=loop_store,
+        graph_store=loop_graph_store,
+        entity_resolver=loop_entity_resolver,
+        llm_client=openrouter_client,
+        embedder=embedder,
+        memory_store=loop_memory_store,
+        collision_store=collision_store,
+        nli_client=nli_client,
+        system_one_client=system_one_client,
+        settings=settings,
+    )
 
 
 def make_loop_extractor_from_parts(
@@ -54,27 +42,26 @@ def make_loop_extractor_from_parts(
     loop_memory_store: Any = None,
     collision_store: Any = None,
     nli_client: Any = None,
+    system_one_client: Any = None,
+    settings: Any = None,
 ):
     """Builds a plain `(text, provenance) -> None` async callable, for wiring into
     inflow modules (ze-messenger, ze-calendar, ze-ingestion) that must not import
     `ze_worldstate` directly (plan.md: ze-api is the only wiring point for FR-017's
-    direct-write proto-contribution).
+    direct-write proto-contribution). Judges with the loop gate, logs, then commits.
     """
-    configurable = {
-        "loop_store": loop_store,
-        "loop_graph_store": loop_graph_store,
-        "loop_entity_resolver": loop_entity_resolver,
-        "openrouter_client": openrouter_client,
-        "embedder": embedder,
-        "loop_memory_store": loop_memory_store,
-        "collision_store": collision_store,
-        "nli_client": nli_client,
-    }
-
-    async def _extractor(text: str, provenance: str) -> None:
-        await _propose(text, provenance, configurable)
-
-    return _extractor
+    return make_loop_inflow_from_parts(
+        loop_store=loop_store,
+        loop_graph_store=loop_graph_store,
+        loop_entity_resolver=loop_entity_resolver,
+        openrouter_client=openrouter_client,
+        embedder=embedder,
+        loop_memory_store=loop_memory_store,
+        collision_store=collision_store,
+        nli_client=nli_client,
+        system_one_client=system_one_client,
+        settings=settings,
+    ).extract
 
 
 def make_loop_extractor(container: Any):
@@ -88,4 +75,6 @@ def make_loop_extractor(container: Any):
         loop_memory_store=getattr(container, "memory_store", None),
         collision_store=getattr(container, "collision_store", None),
         nli_client=getattr(container, "nli_client", None),
+        system_one_client=getattr(container, "system_one_client", None),
+        settings=getattr(container, "settings", None),
     )
