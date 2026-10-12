@@ -95,6 +95,7 @@ testpaths = ["tests"]
 markers = [
     "slow: marks tests that load the embedding model (deselect with -m 'not slow')",
     "integration: marks tests that require a running database",
+    "pg: needs a real Postgres (run with make test-pg; skipped unless ZE_TEST_PG=1)",
 ]
 
 [build-system]

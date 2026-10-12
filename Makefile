@@ -100,6 +100,7 @@ help:
 	@echo "    test-web / web-test  Run @myguyze/ze-ui + ze-web tests (vitest)"
 	@echo "    test-py              Run every Python package suite, report all failures (CI gate)"
 	@echo "    test-all             Run all package tests (includes slow)"
+	@echo "    test-pg              Real-Postgres tests (needs Docker or ZE_TEST_PG_URL); not part of test-py"
 	@echo ""
 	@echo "  Code quality"
 	@echo "    check            Lint Python + ze-web build (CI lint gates)"
@@ -322,7 +323,7 @@ TEST_PY_PACKAGES := \
 .PHONY: test test-api test-core test-logging test-agents test-communication test-plugin test-sdk test-proactive \
 	test-memory test-onboarding test-seed test-correlation test-browser test-notifications \
 	test-components test-eval test-google test-trading212 test-yt test-ingestion test-automation test-worldstate test-priority test-skills test-workspace test-collision test-personal test-prospecting test-messenger \
-	test-calendar test-news test-finance test-workspace-sidecar test-py test-all test-web web-test
+	test-calendar test-news test-finance test-workspace-sidecar test-py test-all test-pg test-web web-test
 
 test test-api:
 	$(call pytest_pkg,apps/ze-api/tests)
@@ -436,6 +437,9 @@ test-py:
 
 test-all:
 	@rc=0; $(MAKE) SLOW=1 test-py || rc=1; $(MAKE) test-web || rc=1; exit $$rc
+
+test-pg:
+	ZE_TEST_PG=1 uv run pytest -q -m pg apps/ze-api/tests/pg
 
 test-web web-test:
 	cd packages/ze-ui && bun run test
