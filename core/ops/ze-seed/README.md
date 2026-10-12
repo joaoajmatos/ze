@@ -20,7 +20,7 @@ It is a dev-only tool. It is never imported by `ze-api` at runtime and ships no 
 Run from the `ze-api` workspace, where the full container (and its plugins) is importable:
 
 ```bash
-cd apps/ze-api && uv run python -m ze_seed apply
+cd apps/ze-api && uv run python -m ze_api.seed apply
 ```
 
 `collect_seed_domains()` gathers every registered `SeedDomain` across the memory, automation, and engine slices; `DevDataSeeder.apply()` clears each domain (highest `seed_order` first) then applies them in ascending order so dependent domains see their prerequisites already seeded.
@@ -36,7 +36,6 @@ cd apps/ze-api && uv run python -m ze_seed apply
 | `domains/automation.py` | Seeds goals, milestones, and workflow state |
 | `domains/engine.py` | Seeds messages, sessions, and persona state |
 | `narrative/loader.py` | `load_persona()` — the shared fixture narrative every domain seeds from |
-| `__main__.py` | `python -m ze_seed apply` entry point |
 
 ## Dependencies
 
@@ -50,7 +49,7 @@ Third-party: `pyyaml`.
 
 ```bash
 cd apps/ze-api
-uv run python -m ze_seed apply
+uv run python -m ze_api.seed apply
 ```
 
 Requires a running Postgres (`make db-up`) with migrations applied (`make migrate`). Re-running `apply` clears and re-seeds every domain by default.

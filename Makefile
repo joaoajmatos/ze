@@ -217,10 +217,10 @@ logs:
 	tail -f $(LOG_FILE)
 
 seed:
-	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_seed apply
+	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.seed apply
 
 db-reset-seed: db-reset
-	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_seed apply
+	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.seed apply
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
 .PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act calibrate-routing calibrate-skills calibrate-loop-gate
