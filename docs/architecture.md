@@ -221,6 +221,18 @@ metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
 
+### Web sources
+
+When a reply used web search, `MessageTrace.sources` lists the pages the provider
+reported, each as a `url` and `title`. OpenRouter returns these as `url_citation`
+annotations, and its SDK drops them, so `OpenRouterClient` reads them off the raw
+response (`ze_core/openrouter/citations.py`). The client reports them through the
+optional `source_sink` argument of `complete_with_tools` and
+`stream_complete_with_tools`. `agentic_loop` collects them on `AgentContext.sources`,
+and `delegate_to_agent` passes a specialist's sources up to the caller. `AgentResult.sources`
+carries them to `record_trace`. The provider gives no text positions, so the web app shows
+them as a list under the reply, not as inline markers.
+
 ### Reply feedback and Retry
 
 A rating is an append-only `FeedbackRecord` that points at a message id. The trace stays

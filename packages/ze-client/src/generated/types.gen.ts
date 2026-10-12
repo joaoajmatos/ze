@@ -2108,6 +2108,10 @@ export type MessageTraceResponse = {
      */
     judgments?: Array<JudgmentTraceResponse>;
     /**
+     * Sources
+     */
+    sources?: Array<SourceTraceResponse>;
+    /**
      * Effects Known
      */
     effects_known?: boolean;
@@ -3091,6 +3095,20 @@ export type SkillUsageTraceResponse = {
      * Below Floor
      */
     below_floor?: boolean;
+};
+
+/**
+ * SourceTraceResponse
+ */
+export type SourceTraceResponse = {
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Title
+     */
+    title?: string;
 };
 
 /**

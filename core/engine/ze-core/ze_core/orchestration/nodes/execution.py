@@ -14,7 +14,7 @@ from ze_agents.interrupt import tool_interrupt_fn
 from ze_logging import get_logger
 from ze_agents.registry import get_agent
 from ze_core.orchestration.state import AgentState
-from ze_agents.types import AgentContext, AgentResult
+from ze_agents.types import AgentContext, AgentResult, add_sources
 
 log = get_logger(__name__)
 
@@ -567,7 +567,10 @@ async def _run_with_timeout(
                 raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
 
         try:
-            return await asyncio.wait_for(instance.run(ctx), timeout=timeout)
+            result = await asyncio.wait_for(instance.run(ctx), timeout=timeout)
+            if ctx.sources:
+                add_sources(result.sources, ctx.sources)
+            return result
         except asyncio.TimeoutError:
             raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
     finally:

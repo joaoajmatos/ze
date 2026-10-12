@@ -79,6 +79,23 @@ class IdentityBuilder(Protocol):
 
 
 @dataclass
+class Source:
+    """A web source a reply drew on, as reported by the search provider."""
+
+    url: str
+    title: str = ""
+
+
+def add_sources(target: list[Source], found: list[Source]) -> None:
+    """Append sources to target, skipping URLs it already holds."""
+    seen = {s.url for s in target}
+    for source in found:
+        if source.url and source.url not in seen:
+            seen.add(source.url)
+            target.append(source)
+
+
+@dataclass
 class ToolCall:
     tool_name: str
     args: dict[str, Any]
@@ -117,6 +134,10 @@ class AgentContext:
     # token_sink is runtime-only; when set, agentic_loop streams tokens to it.
     # Signature: async (chunk: str) -> None. Never checkpoint.
     token_sink: Any | None = field(default=None, repr=False)
+    # sources collects web citations reported while this context's agent runs
+    # (appended by agentic_loop, merged upward by delegate_to_agent). Empty in
+    # any stored context.
+    sources: list[Source] = field(default_factory=list)
     # screen_context_note is runtime-only; injected by fetch_context when the client
     # sends a WsScreenContext (e.g. viewing a specific workflow execution). Never checkpoint.
     screen_context_note: str | None = field(default=None, repr=False)
@@ -181,3 +202,4 @@ class AgentResult:
     tokens_used: int = 0
     contact_proposals: list[ClaimBearingProposal] = field(default_factory=list)
     extensions: dict[str, Any] = field(default_factory=dict)
+    sources: list[Source] = field(default_factory=list)

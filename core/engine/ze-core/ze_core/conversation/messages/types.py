@@ -94,6 +94,12 @@ class JudgmentTrace:
 
 
 @dataclass
+class SourceTrace:
+    url: str
+    title: str = ""
+
+
+@dataclass
 class MessageTrace:
     agent: str
     routing_method: str  # "embedding" | "haiku" | "fallback"
@@ -112,4 +118,5 @@ class MessageTrace:
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
     judgments: list[JudgmentTrace] = field(default_factory=list)
+    sources: list[SourceTrace] = field(default_factory=list)
     effects_known: bool = False  # True only when tool calls carry registry metadata

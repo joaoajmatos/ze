@@ -1039,3 +1039,22 @@ class TestBuildSystemPrompt:
         assert prompt.index("## Memory constitution") < prompt.index("JOB INSTRUCTIONS")
         assert prompt.index("JOB INSTRUCTIONS") < prompt.index("## Retrieved biography")
         assert "dark mode" in prompt
+
+
+class TestAgenticLoopSources:
+    async def test_sources_reported_by_the_client_land_on_the_context(self):
+        from ze_agents.types import Source
+
+        async def _complete(**kwargs):
+            kwargs["source_sink"](
+                [Source("https://a.test", "A"), Source("https://a.test", "A")]
+            )
+            return "answer", None
+
+        client = MagicMock()
+        client.complete_with_tools = AsyncMock(side_effect=_complete)
+        ctx = _ctx()
+        await _agent().agentic_loop(
+            ctx, client, [{"role": "user", "content": "hi"}], system="sys"
+        )
+        assert ctx.sources == [Source("https://a.test", "A")]
