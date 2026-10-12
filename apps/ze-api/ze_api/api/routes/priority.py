@@ -12,6 +12,7 @@ from ze_api.api.dependencies import (
 from ze_api.api.schemas import (
     PriorityOverrideRequestSchema,
     PrioritySnapshotItem,
+    PrioritySnapshotResponse,
 )
 from ze_collision.store import CollisionLogStore
 from ze_priority import rest as priority_rest
@@ -30,19 +31,24 @@ router = APIRouter(
 
 @router.get(
     "/snapshot",
-    response_model=list[PrioritySnapshotItem],
+    response_model=PrioritySnapshotResponse,
     operation_id="getPrioritySnapshot",
     summary="Get the current priority snapshot",
-    description="Return PriorityView's ranked loops, stuck/near-gate goals, and "
-    "non-stale hypotheses, merged with any active user reprioritizations "
-    "(FR-001, FR-008, FR-009, FR-010).",
+    description="Return PriorityView's ranked loops, stuck/near-gate goals, "
+    "relationships, and non-stale hypotheses, merged with any active user "
+    "reprioritizations (FR-001, FR-008, FR-009, FR-010). Source kinds that "
+    "could not be read are listed in sources_failed so the caller can show an "
+    "incomplete-ranking notice (FR-016).",
 )
 async def get_priority_snapshot(
     priority_view: PriorityView = Depends(get_priority_view),
     override_store: PriorityOverrideStore = Depends(get_priority_override_store),
-) -> list[PrioritySnapshotItem]:
+) -> PrioritySnapshotResponse:
     snapshot = await priority_rest.get_snapshot(priority_view, override_store)
-    return [PrioritySnapshotItem.from_merged_item(item) for item in snapshot]
+    return PrioritySnapshotResponse(
+        items=[PrioritySnapshotItem.from_merged_item(item) for item in snapshot.items],
+        sources_failed=list(snapshot.sources_failed),
+    )
 
 
 @router.post(

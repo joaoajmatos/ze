@@ -15,19 +15,21 @@ from ze_agents.claims import ClaimKind, Confidence, DecayProfile
 from ze_api.api.dependencies import require_api_key
 from ze_api.api.routes.priority import router
 from ze_priority.errors import PriorityOverrideNotFoundError
-from ze_priority.types import PriorityItem, PriorityRanking
+from ze_priority.types import PriorityItem, PriorityRanking, RelationshipSignal
 
 API_KEY = "test-key"
 UTC = timezone.utc
 
 
-def _item(title: str, rank: int) -> PriorityItem:
+def _item(title: str, rank: int, source_kind: str = "loop") -> PriorityItem:
     return PriorityItem(
-        source_kind="loop",
+        source_kind=source_kind,
         claim_kind=ClaimKind.PRIORITY,
         source_id=uuid4(),
         title=title,
-        signal=None,
+        signal=RelationshipSignal(name=title, days_ago=30)
+        if source_kind == "relationship"
+        else None,
         priority=Confidence(
             value=1.0 - rank * 0.1, decay_profile=DecayProfile.TIME_LINEAR
         ),
@@ -72,7 +74,7 @@ async def test_snapshot_returns_empty_list_when_nothing_open():
         )
 
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.json() == {"items": [], "sources_failed": []}
 
 
 @pytest.mark.asyncio
@@ -97,7 +99,10 @@ async def test_snapshot_matches_response_shape():
         )
 
     assert resp.status_code == 200
-    row = resp.json()[0]
+    body = resp.json()
+    assert set(body) == {"items", "sources_failed"}
+    assert body["sources_failed"] == []
+    row = body["items"][0]
     assert set(row) == {
         "source_kind",
         "source_id",
@@ -108,6 +113,56 @@ async def test_snapshot_matches_response_shape():
         "override",
     }
     assert row["override"] is None
+
+
+@pytest.mark.asyncio
+async def test_snapshot_relationship_item_returns_200():
+    item = _item("Ana", 1, source_kind="relationship")
+    view = AsyncMock()
+    view.rank.return_value = PriorityRanking(
+        items=[item],
+        sources_succeeded={"loop", "goal", "hypothesis", "relationship"},
+        sources_failed=set(),
+        generated_at=datetime.now(UTC),
+    )
+    override_store = AsyncMock()
+    override_store.get_active.return_value = []
+    app = _make_app(priority_view=view, override_store=override_store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/priority/snapshot", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["source_kind"] == "relationship"
+
+
+@pytest.mark.asyncio
+async def test_snapshot_reports_failed_sources():
+    item = _item("Follow up with Maria", 1)
+    view = AsyncMock()
+    view.rank.return_value = PriorityRanking(
+        items=[item],
+        sources_succeeded={"loop", "hypothesis"},
+        sources_failed={"goal"},
+        generated_at=datetime.now(UTC),
+    )
+    override_store = AsyncMock()
+    override_store.get_active.return_value = []
+    app = _make_app(priority_view=view, override_store=override_store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/priority/snapshot", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["sources_failed"] == ["goal"]
 
 
 @pytest.mark.asyncio
