@@ -31,7 +31,7 @@ URL_RE = re.compile(r"https?://\S+")
 DELEGATE_TOOL = "delegate_to_agent"
 COST_QUERY = """
 SELECT COUNT(*)::int AS calls, COALESCE(SUM(cost_usd), 0)::float AS cost
-FROM llm_cost_log WHERE session_id = $1
+FROM llm_cost_log WHERE session_id = ANY($1::text[])
 """
 
 
@@ -105,7 +105,7 @@ async def usage_for(session_id: str) -> tuple[int, float] | None:
     except Exception:
         return None
     try:
-        row = await conn.fetchrow(COST_QUERY, f"eval-{session_id}")
+        row = await conn.fetchrow(COST_QUERY, [session_id, f"eval-{session_id}"])
         return (row["calls"], row["cost"]) if row else None
     except Exception:
         return None

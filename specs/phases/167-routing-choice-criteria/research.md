@@ -42,3 +42,12 @@ Opt-in script (`--live` required) runs the 6 research prompts of `routing_holdou
 
 ## R7 — Acceptance and fallback
 Rule (spec FR-009): per set and language ≥ 0.95 accuracy, ECE ≤ 0.10, zero research→companion misses. Otherwise option F: `enabled: false`, null bars, dated comment, 164 spec status note, docs.
+
+## R8 — Companion live check result (2026-10-12, `companion_research_check.py --live`, dev-eval on this floor)
+Six research prompts from `routing_holdout.jsonl` through `/eval/chat` with the 167 criteria and surface enabled: **all 6 routed to research, none to companion; delegated: no** (nothing to delegate, research answered directly); wall time 10.7–17.5 s; **cited sources: no on all 6**; LLM calls and cost read 0 (see below).
+
+Evidence for option E (companion as front door): the Choice now keeps research prompts out of companion, so the check could not measure what companion does with them. `/eval/chat` has no agent override. To measure companion, option E needs a forced-agent hook.
+
+Follow-up findings (not fixed in 167):
+- **Citation "no" is unexplained.** The detector counts any `http(s)://` URL in the reply text. Research is told to cite, but nothing in `ze_core/openrouter` reads OpenRouter's `url_citation` annotations, so sources reach the user only if the model writes URLs into the text. Offline I cannot tell whether research did not search or searched and cited by name. Next step: read the six replies and the `openrouter:web_search` tool-call count from a dev-eval run.
+- **Calls/cost 0.** The script queried `llm_cost_log` by `eval-<id>` only; `/eval/chat` sets the cost context with the raw id. The script now matches both ids. Cost is also backfilled later by the reconciler.
