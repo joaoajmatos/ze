@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1080 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dream-routing-title dream-routing-desc">
   <title id="dream-routing-title">Dream artifact auto-promotion routing</title>
-  <desc id="dream-routing-desc">Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or memory_procedures, borderline cases fall back to review, and hindsight facts always require a user decision.</desc>
+  <desc id="dream-routing-desc">Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or procedure_candidates, borderline cases fall back to review, and hindsight facts always require a user decision.</desc>
   <defs>
     <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
     <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
@@ -31,7 +31,7 @@
   <rect x="736" y="170" width="64" height="12" rx="2" fill="#f7f6f4"/>
   <text x="768" y="179" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">INSIGHT</text>
 
-  <!-- gate diamond -> memory_procedures (accent, lower-right edge) -->
+  <!-- gate diamond -> procedure_candidates (accent, lower-right edge) -->
   <path d="M628,254 H700 Q708,254 708,262 V276 Q708,284 716,284 H820" fill="none" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
   <rect x="712" y="292" width="104" height="12" rx="2" fill="#f7f6f4"/>
   <text x="764" y="301" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">PROCEDURE · STRESS-TEST</text>
@@ -76,7 +76,7 @@
   <text x="930" y="206" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">provenance=synthesized</text>
 
   <rect x="820" y="252" width="220" height="64" rx="6" fill="#ffffff" stroke="#0a0a0a" stroke-width="1"/>
-  <text x="930" y="288" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">memory_procedures</text>
+  <text x="930" y="288" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">procedure_candidates</text>
   <text x="930" y="302" fill="#6b6b6b" font-size="7.5" font-family="'Geist Mono', monospace" text-anchor="middle">creation_method=synthesized</text>
 
   <rect x="820" y="348" width="220" height="64" rx="6" fill="rgba(10,10,10,0.05)" stroke="#6b6b6b" stroke-width="1"/>

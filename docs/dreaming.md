@@ -38,7 +38,7 @@ learning loop that improves retention, abstraction, and robustness.
    must pass.
 
 5. **Morning integration** — Well-supported artifacts auto-promote to `memory_facts` or
-   `memory_procedures` with full lineage. Borderline cases go to a review queue. Rejected
+   the procedure lifecycle (`procedure_candidates`) with full lineage. Borderline cases go to a review queue. Rejected
    artifacts trigger forgetting on their source episodes. A dream journal entry surfaces
    what changed.
 
@@ -66,7 +66,7 @@ Nothing synthetic writes directly to live memory. Every promoted fact carries
 
 **NLI model (Phase 79, done):** `cross-encoder/nli-deberta-v3-small` loads as a shared
 singleton in `ze_core/nli.py` via `NLIClient` — used for write-time contradiction, nightly dedup,
-session-cached retrieval re-rank, and correlation grounding. `Gate1_NLI` in `gates.py`
+session-cached retrieval re-rank, and correlation grounding. `ScoringGates.gate1_nli` in `gates.py`
 imports from the same module (no second download).
 
 ### What ships across both sub-phases
@@ -75,11 +75,11 @@ imports from the same module (no second download).
 - LLM synthesis (haiku): insights, procedures, hindsight facts, plan stress-tests.
 - Full scoring pipeline: NLI groundedness gate + embedding novelty gate + retrievability gate + two adversarial LLM critic calls (sonnet). Both critics must pass.
 - Auto-promotion with `valid_until`, `dream_run_id`, `derived_from` lineage.
-- Per-run rollback: `POST /runs/{run_id}/rollback` bulk-contradicts promoted facts.
+- Per-run rollback: `POST /api/v0/memory/dream/runs/{run_id}/rollback` bulk-contradicts promoted facts.
 - Synthetic fact confidence decay: non-corroborated synthesized facts lose 0.03 confidence per run after 30 days; contradicted at < 0.25.
 - `valid_until` hard expiry: synthesized facts past their 90-day window that have not been corroborated by a raw episode are contradicted on each morning integration.
 - Morning briefing: "Ze dreamed — M insights promoted, K items for review."
-- `needs_review` push notifications gated behind `review_notifications_enabled` config flag (disabled until React review page ships).
+- `needs_review` push notifications gated behind `review_notifications_enabled` config flag (disabled until a web review page ships).
 
 ---
 
@@ -100,7 +100,7 @@ fields live on the metadata side table.
 
 ## Artifact types
 
-![Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or memory_procedures, borderline cases fall back to review, and hindsight facts always require a user decision](diagrams/docs/dream-artifact-routing.svg)
+![Routing diagram showing how each dream artifact type reaches its destination: schema and policy candidates stay in staging, synthesized insights and procedures pass through the gates-and-critic check before promoting to memory_facts or the procedure lifecycle, borderline cases fall back to review, and hindsight facts always require a user decision](diagrams/docs/dream-artifact-routing.svg)
 
 <sub>[Interactive version](diagrams/docs/dream-artifact-routing.html)</sub>
 
@@ -112,9 +112,9 @@ fields live on the metadata side table.
 | `schema_candidate` | No (input to synthesis) | Staging only |
 | `policy_candidate` | No (input to synthesis) | Staging only |
 | `synthesized_insight` | Yes, if gates + support pass | `memory_facts` |
-| `synthesized_procedure` | Yes, if gates + support pass | `memory_procedures` |
+| `synthesized_procedure` | Yes, if gates + support pass | `procedure_candidates` (lifecycle admission decides) |
 | `hindsight_fact` | Never — always `needs_review` | User decision |
-| `plan_stress_test` | Yes, if gates + support pass | `memory_procedures` (risk heuristic) |
+| `plan_stress_test` | Yes, if gates + support pass | `procedure_candidates` (risk heuristic) |
 
 </details>
 
@@ -148,7 +148,7 @@ dream:
   critic_model: "anthropic/claude-sonnet-4-6"
   synthetic_fact_valid_days: 90      # synthesized facts contradicted after this many days without corroboration
   job_timeout_seconds: 1800
-  review_notifications_enabled: false  # enable when React review page ships
+  review_notifications_enabled: false  # enable when a review page ships
   inactivity_trigger_enabled: false    # fire dream job when user goes idle
   inactivity_threshold_hours: 6        # hours of silence before triggering
   inactivity_check_interval_minutes: 30
@@ -172,8 +172,7 @@ POST /api/v0/memory/dream/artifacts/{id}/revise
 POST /api/v0/memory/dream/runs/{run_id}/rollback
 ```
 
-The React review page at `/memory/dream` (78b) lists `needs_review` artifacts with
-source episode excerpts and approve/reject/revise actions.
+`ze-web` has no dream review page yet. Use these routes, or the generated `@ze/client` methods, to review artifacts.
 
 ---
 
@@ -193,7 +192,7 @@ source episode excerpts and approve/reject/revise actions.
   or rolled back.
 - **Synthetic expiry** — the next morning integration run contradicts synthesized facts
   past `valid_until` (default 90 days) that no raw episode has corroborated.
-- **Rollback** — `POST /runs/{run_id}/rollback` bulk-contradicts all facts from a run
+- **Rollback** — `POST /api/v0/memory/dream/runs/{run_id}/rollback` bulk-contradicts all facts from a run
   and flags contaminated session summaries for re-summarization.
 - **Quality audit** — `GET /api/v0/memory/facts/quality` returns a diagnostic snapshot
   (provenance distribution, avg confidence, contradicted/unreviewed/expired counts) for
