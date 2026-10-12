@@ -18,6 +18,7 @@ describe("toTraceFrame", () => {
       conductor_hint: null,
       conductor_ledger: [],
       judgments: [],
+      sources: [{ url: "https://example.com/a", title: "A" }],
     };
 
     expect(toTraceFrame("msg-1", trace, "thread-a")).toEqual({
