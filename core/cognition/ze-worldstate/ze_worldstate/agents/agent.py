@@ -36,6 +36,14 @@ class LoopsAgent(BaseAgent):
       "drop the concern about Y", "what am I still sitting with".
       Not for timed reminders, biography facts, or multi-week goals.
     """
+    routing_criteria = """
+      Use for: an undecided or worrying matter the user wants held in mind with no date
+      ("I haven't decided about X yet, keep it on my radar", "keep an eye on X for me",
+      "hold that thought"), and for listing, closing or dropping such a concern
+      ("close the worry about X", "fecha a preocupação sobre X").
+      Not for: a timed reminder, a multi-week outcome to work towards, or a chat about
+      feelings where the user wants to talk it through now.
+    """
     model = "anthropic/claude-haiku-4-5"
     vision_capable = False
     timeout = 15
