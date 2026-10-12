@@ -90,7 +90,7 @@ A `choice_trust` and `multi_specialist_hold` are chosen from live calibration an
 
 **Why this priority**: The 164 failure was shipping a bar the held-out data did not support.
 
-**Independent Test**: The calibration script run on both held-out sets reports accuracy ≥ 0.95 EN and PT per set, ECE ≤ 0.10, zero research→companion misses at the chosen bar. If any fails for every bar, `config.yaml` keeps `enabled: false` with a dated note.
+**Independent Test**: The calibration script run on both held-out sets reports accuracy ≥ 0.95 EN and PT per set, ECE ≤ 0.10, zero research→companion misses at the chosen bar. If any fails for every bar, `config.yaml` keeps `enabled: false` with a dated note. *(Amended 2026-10-12, Clarifications session 3: the gate is zero harmful trusts, ECE ≤ 0.10 and zero research→companion misses; raw per-language accuracy is reported, not gating. Read the accuracy figure above as the original bar.)*
 
 **Acceptance Scenarios**:
 
@@ -152,9 +152,9 @@ A small live script runs the 6 research prompts of `routing_holdout.jsonl` throu
 ### Measurable Outcomes
 
 - **SC-001**: Offline gold-agent recall at the chosen k is ≥ 0.95 on all three calibration sets.
-- **SC-002**: At the chosen `choice_trust`, routing accuracy is ≥ 0.95 for EN and for PT on `routing_holdout.jsonl` and on `routing_holdout2.jsonl`, with ECE ≤ 0.10.
+- **SC-002**: At the chosen `choice_trust`, routing accuracy is ≥ 0.95 for EN and for PT on `routing_holdout.jsonl` and on `routing_holdout2.jsonl`, with ECE ≤ 0.10. *(Amended 2026-10-12, Clarifications session 3: the gate is zero harmful trusts, ECE ≤ 0.10 and zero research→companion misses; raw per-language accuracy is reported, not gating. Read the accuracy figure above as the original bar.)*
 - **SC-003**: Zero research-gold rows are routed to companion on either held-out set.
-- **SC-004**: If SC-001 or SC-002 cannot be met, the phase closes with the surface off and the docs state the measured figures (option F). No threshold is lowered to fit.
+- **SC-004**: If SC-001 or SC-002 cannot be met, the phase closes with the surface off and the docs state the measured figures (option F). No threshold is lowered to fit. *(Amended 2026-10-12, Clarifications session 3: the gate is zero harmful trusts, ECE ≤ 0.10 and zero research→companion misses; raw per-language accuracy is reported, not gating. Read the accuracy figure above as the original bar.)*
 - **SC-005**: With the surface off or skipped, routing unit fixtures show 0 differences against 164.
 - **SC-006**: 0 live vendor calls in default tests.
 - **SC-007**: The companion live check produces a table for all 6 prompts when the user runs it.
