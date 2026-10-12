@@ -175,7 +175,7 @@ Ze analyzes recent memory facts, episodes, and retrospectives to propose one new
 
 ### Stuck goal detection (Tuesday 9 AM UTC)
 
-Ze checks for active goals with no milestone progress, and for goals waiting at a gate, for 7 days or more. The window is fixed in code. After an alert, Ze waits 14 days before it alerts about the same goal again. One push notification lists the stuck goals. An idle active goal offers **Redirect**, **Pause**, and **Abandon**. A goal at a gate offers **Approve**, **Redirect**, and **Stop**. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
+Ze checks for active goals with no milestone progress, and for goals waiting at a gate, for 7 days or more. The window is fixed in code. For a goal at a gate, Ze counts the first open gate that has fired and ignores gates it has not reached, so each goal appears once. After an alert, Ze waits 14 days before it alerts about the same goal again. One push notification lists the stuck goals. An idle active goal offers **Redirect**, **Pause**, and **Abandon**. A goal at a gate offers **Approve**, **Redirect**, and **Stop**. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
 
 ---
 
