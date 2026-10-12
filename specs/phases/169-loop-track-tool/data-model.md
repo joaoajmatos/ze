@@ -36,7 +36,7 @@ closed, dropped: terminal
 ```python
 async def stamp_declared(self, loop_id: UUID, *, confidence: float, deadline: datetime) -> None
 ```
-One statement: `UPDATE open_loops SET confidence=$2, drift_deadline=$3, drift_rationale=NULL, confirmed_at=now(), updated_at=now() WHERE id=$1`. Same `now()` for both columns satisfies `updated_at <= confirmed_at`. Raises `LoopNotFoundError` when no row is updated (check `UPDATE ... RETURNING id`).
+One statement: `UPDATE open_loops SET confidence=$2, drift_deadline=$3, drift_rationale=NULL, confirmed_at=now(), updated_at=now() WHERE id=$1`. Same `now()` for both columns. This is the exact field set of a revive (state via `transition(..., user_asked=True)` first); it is not an F1 fix, and 170 may replace it. Raises `LoopNotFoundError` when no row is updated (check `UPDATE ... RETURNING id`).
 
 ## Field values by outcome
 
