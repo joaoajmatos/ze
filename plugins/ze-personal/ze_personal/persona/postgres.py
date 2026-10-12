@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ze_core import defaults
+from ze_agents import defaults
 from ze_sdk import DBPool
 from ze_agents.errors import UnknownDialError, UnknownProfileError
 from ze_logging import get_logger

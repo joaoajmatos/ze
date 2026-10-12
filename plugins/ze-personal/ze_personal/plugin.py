@@ -7,7 +7,6 @@ import asyncpg
 
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
-from ze_memory.bootstrap import consolidation_enabled
 from ze_sdk import NLIClient, ZePlugin
 from ze_sdk.contribution import CollisionLogStore
 from ze_sdk.correlation import PostgresHypothesisStore
@@ -291,7 +290,7 @@ class PersonalPlugin(ZePlugin):
         )
 
     def memory_policies(self) -> dict[str, Any]:
-        from ze_memory.policies import (
+        from ze_sdk.memory import (
             CompanionPolicy,
             GoalsPolicy,
             PlannerPolicy,
@@ -347,19 +346,6 @@ class PersonalPlugin(ZePlugin):
             self.morning_briefing._dream_store = dream_store
             log.info("dream_store_wired_to_briefing")
 
-        # Register contacts consolidation cron job.
-        if consolidation_enabled(container.settings):
-            contacts_cfg = self._settings.config.get("contacts", {})
-            contacts_cron = contacts_cfg.get("consolidation", {}).get(
-                "nightly_cron", "0 3 * * *"
-            )
-            container.proactive_scheduler.add_cron_job(
-                fn=self.contacts_consolidator.run,
-                cron=contacts_cron,
-                job_id="contacts_consolidation",
-            )
-            log.info("contacts_consolidation_scheduled", cron=contacts_cron)
-
     @property
     def goal_suggestion_store(self) -> GoalSuggestionStore:
         return self.suggestion_store
@@ -396,3 +382,13 @@ class PersonalPlugin(ZePlugin):
             )
             scheduler.register(self.contact_review, cron=review_cron)
             log.info("contact_review_scheduled", cron=review_cron)
+
+            contacts_cron = contacts_cfg.get("consolidation", {}).get(
+                "nightly_cron", "0 3 * * *"
+            )
+            scheduler.add_cron_job(
+                fn=self.contacts_consolidator.run,
+                cron=contacts_cron,
+                job_id="contacts_consolidation",
+            )
+            log.info("contacts_consolidation_scheduled", cron=contacts_cron)
