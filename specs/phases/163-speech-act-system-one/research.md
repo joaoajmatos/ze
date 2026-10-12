@@ -79,3 +79,8 @@ Evaluated in order. The first match wins.
 ## R8 — Callers of `gather_fact_proposals`
 
 - `ze_api/container.py:280` and `ze_core/container.py:446` register it as `fact_extractor` in `configurable`. Its only consumer is `write_memory`. Tests: `ze-core/tests/orchestration/nodes/test_memory.py`, `test_extractor_dual_write.py`, `test_context_continuity_composition.py`, and ze-memory `test_extractor.py`. All move to `FactAdmission` in the same change (hard cut).
+
+## R-follow-up — Questions labelled as facts (System One Tuning floor, 2026-10-12)
+The original case (a user question labelled a `fact` speech act) is not recorded in the repo, so the calibration set had no question rows. Added 12 (6 EN, 6 PT, gold `drop`): questions that ask for, or mention, a fact about the user ("what's my sister's name again?", "prefiro lugar no corredor ou à janela?").
+Before any change, 8 of the 12 came back as `fact` (4 per language), at Choice confidence 0.28–0.88; exact-act accuracy fell from 0.967 to 0.806 and ECE rose from 0.036 to 0.104. The shipped bars still held: at `choice_hold` 0.9 and `biography_hold` 0.7 fact precision stayed 1.00 (recall 0.93), because every mislabel was below 0.9. The act label was wrong but nothing persisted.
+Fix: the `fact` criterion now says a question is never a fact, and the `drop` criterion names questions to the assistant. Rerun: all 12 questions answer `drop`; accuracy 35/36 per language (0.972), ECE 0.042; shipped bars unchanged (precision 1.00, recall 0.93). The one miss is the earlier `drop` row labelled `reminder` ("I'll call Mom Tuesday").
