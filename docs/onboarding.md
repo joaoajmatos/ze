@@ -167,7 +167,7 @@ submission for compatibility.
 `confirm: "RESET"`. Expose execution only through high-friction UI.
 
 - `memory`: memory entities, facts, episodes, events, relationships, task state, profile facets, and the procedure tables.
-- `personal_state`: memory plus messages, pending confirmations, prospecting campaigns,
+- `personal_state`: memory plus messages, pending confirmations, prospecting campaigns and outreach,
   contacts, goals (with their learnings and traces), workflows, reminders, insights,
   news cache, checkpoints, and onboarding tables.
 - `full_dev`: reserved for external database recreate tooling; not executed through
