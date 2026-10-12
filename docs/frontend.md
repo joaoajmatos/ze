@@ -28,7 +28,7 @@ The React web client (`apps/ze-web`) uses [Feature-Sliced Design](https://featur
 
 Example: finance overview at `/finance`.
 
-1. **`entities/transaction/`** — `TransactionRow`, `useTransactionsQuery` wrapping `@ze/client`
+1. **`entities/transaction/`** — `TransactionRow`, `useTransactionsQuery` wrapping `@myguyze/ze-client`
 2. **`widgets/finance-overview/`** — composes entity list + `FloatingButton` from `features/open-context-overlay`
 3. **`pages/finance/`** — `FinancePage` that renders `<FinanceOverview />`
 4. **`shared/config/nav-routes.ts`** — add the route's `path`, `label`, `icon`, and `showInMobileNav`
@@ -78,9 +78,9 @@ Three slices serve the thumbs up, thumbs down, and Retry controls on assistant r
 
 ## API and types
 
-- REST and WebSocket types: `@ze/client` (generated — never raw URL strings)
-- Server-driven UI: `@ze/ui`, `@ze/ui/react`
-- Entity query hooks wrap `@ze/client` + `shared/lib/queryKeys`
+- REST and WebSocket types: `@myguyze/ze-client` (generated — never raw URL strings)
+- Server-driven UI: `@myguyze/ze-ui`, `@myguyze/ze-ui/react`
+- Entity query hooks wrap `@myguyze/ze-client` + `shared/lib/queryKeys`
 
 ## Shared UI
 

@@ -3,7 +3,7 @@
 Shared packages consumed across the monorepo. This directory holds:
 
 - **Python** — `ze-sdk`, the plugin authoring surface (uv workspace member)
-- **TypeScript** — `@ze/client` and `@ze/ui` (Bun workspace; consumed by `apps/ze-web`)
+- **TypeScript** — `@myguyze/ze-client` and `@myguyze/ze-ui` (Bun workspace; consumed by `apps/ze-web`)
 
 ---
 
@@ -12,8 +12,8 @@ Shared packages consumed across the monorepo. This directory holds:
 | Package | Description |
 |---------|-------------|
 | [ze-sdk](ze-sdk/) | Public Python SDK — flat re-export layer for plugin authors |
-| [ze-client](ze-client/) | `@ze/client` — typed REST SDK and WebSocket frame types for `ze-api` |
-| [ze-ui](ze-ui/) | `@ze/ui` — server-driven UI contract, runtime validation, and React renderer |
+| [ze-client](ze-client/) | `@myguyze/ze-client` — typed REST SDK and WebSocket frame types for `ze-api` |
+| [ze-ui](ze-ui/) | `@myguyze/ze-ui` — server-driven UI contract, runtime validation, and React renderer |
 
 ## ze-sdk
 
@@ -24,7 +24,7 @@ internals. See [ze-sdk/README.md](ze-sdk/README.md) and [docs/sdk.md](../docs/sd
 
 Tests: `make test-sdk`.
 
-## @ze/client
+## @myguyze/ze-client
 
 Generated TypeScript surface for the entire `ze-api` REST and WebSocket protocol.
 `ze-web` is the only consumer.
@@ -41,31 +41,31 @@ Generated TypeScript surface for the entire `ze-api` REST and WebSocket protocol
 | `src/sdk-dispatch.ts` | `invokeSdkOperation`, `loadPluginOperation` — call an operation by name |
 
 ```typescript
-import { configure } from "@ze/client";
-import { listContacts } from "@ze/client";
+import { configure } from "@myguyze/ze-client";
+import { listContacts } from "@myguyze/ze-client";
 
 configure({ serverUrl, apiKey });
 const { data } = await listContacts();
 ```
 
-## @ze/ui
+## @myguyze/ze-ui
 
 Canonical frontend contract for server-driven UI primitive trees emitted by
 `ze-components` into WebSocket `components` frames.
 
 | Export | What it provides |
 |--------|-----------------|
-| `@ze/ui` | `Primitive`, `parsePrimitiveTree`, `validatePrimitiveTree`, `PrimitiveValidationError` |
-| `@ze/ui/react` | `PrimitiveRenderer`, `PrimitiveTreeRenderer`, action callbacks |
-| `@ze/ui/charts` | Chart primitives (area, bar, and others) that the renderer uses for chart components |
+| `@myguyze/ze-ui` | `Primitive`, `parsePrimitiveTree`, `validatePrimitiveTree`, `PrimitiveValidationError` |
+| `@myguyze/ze-ui/react` | `PrimitiveRenderer`, `PrimitiveTreeRenderer`, action callbacks |
+| `@myguyze/ze-ui/charts` | Chart primitives (area, bar, and others) that the renderer uses for chart components |
 
 The contract layer is framework-neutral; the React renderer accepts already-parsed
 trees and delegates transport (WebSocket sends, onboarding session state) to the
 host app.
 
 ```typescript
-import { parsePrimitiveTree } from "@ze/ui";
-import { PrimitiveTreeRenderer } from "@ze/ui/react";
+import { parsePrimitiveTree } from "@myguyze/ze-ui";
+import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 
 const nodes = parsePrimitiveTree(rawComponents);
 <PrimitiveTreeRenderer nodes={nodes} actions={actions} />
@@ -83,8 +83,8 @@ make codegen
 
 Sources of truth:
 
-- `@ze/client` — OpenAPI spec (REST) and Pydantic WS frame models
-- `@ze/ui` — `ze_components.schema.export_json_schema()`
+- `@myguyze/ze-client` — OpenAPI spec (REST) and Pydantic WS frame models
+- `@myguyze/ze-ui` — `ze_components.schema.export_json_schema()`
 
 ## Testing
 
@@ -100,15 +100,15 @@ make test-web                   # vitest for TS packages + ze-web
 | New code | Package |
 |----------|---------|
 | New plugin-facing re-export | `packages/ze-sdk` |
-| New REST route types or SDK method | regenerate `@ze/client` via `make codegen` |
-| New UI primitive type | `core/kernel/ze-components` + regenerate `@ze/ui` via `make codegen` |
-| Primitive render styling | `@ze/ui/react` |
+| New REST route types or SDK method | regenerate `@myguyze/ze-client` via `make codegen` |
+| New UI primitive type | `core/kernel/ze-components` + regenerate `@myguyze/ze-ui` via `make codegen` |
+| Primitive render styling | `@myguyze/ze-ui/react` |
 | WebSocket / onboarding wiring for UI actions | `apps/ze-web` |
-| Page-level REST usage | `apps/ze-web` via `@ze/client` |
+| Page-level REST usage | `apps/ze-web` via `@myguyze/ze-client` |
 
 ## Dependency graph
 
 ```
 plugins / ze-api  →  ze-sdk  →  core packages
-ze-web            →  @ze/client, @ze/ui
+ze-web            →  @myguyze/ze-client, @myguyze/ze-ui
 ```

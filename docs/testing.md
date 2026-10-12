@@ -41,8 +41,8 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-prospecting` | ze-prospecting | pytest |
 | `make test-news` | ze-news | pytest |
 | `make test-finance` | ze-finance | pytest |
-| `make test-web` / `make web-test` | @ze/ui + ze-web | vitest |
-| `make typecheck-web` | @ze/ui + ze-web | tsc |
+| `make test-web` / `make web-test` | @myguyze/ze-ui + ze-web | vitest |
+| `make typecheck-web` | @myguyze/ze-ui + ze-web | tsc |
 | `make test-py` | all Python packages | pytest |
 | `make test-all` | all packages | pytest + vitest |
 
@@ -100,7 +100,7 @@ uv run pytest apps/ze-api/tests -k test_health -q
 |---|---|
 | Any Python package | `make test-<name>` for that package |
 | Multiple packages / unsure | `make test-py` (what CI runs) or `make test-all` |
-| Before opening a PR | `make lint` and `make test-py`; `make typecheck-web` and `make test-web` if ze-web or @ze/ui changed |
+| Before opening a PR | `make lint` and `make test-py`; `make typecheck-web` and `make test-web` if ze-web or @myguyze/ze-ui changed |
 | Embedding / routing internals | `make test-core SLOW=1` or `make test-all` |
 
 ---

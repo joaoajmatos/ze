@@ -27,8 +27,8 @@ ze/
 │   └── ze-components/    # Server-driven UI component descriptors
 ├── packages/         # Shared packages — Python SDK + frontend npm
 │   ├── ze-sdk/       # Public SDK surface — flat re-export layer for plugin authors
-│   ├── ze-client/    # @ze/client — generated typed SDK for ze-web
-│   └── ze-ui/        # @ze/ui — server-driven UI contract + React renderer
+│   ├── ze-client/    # @myguyze/ze-client — generated typed SDK for ze-web
+│   └── ze-ui/        # @myguyze/ze-ui — server-driven UI contract + React renderer
 ├── integrations/     # External service wrappers — no Ze domain knowledge
 │   └── ze-google/    # Google OAuth2 credentials and service client factories
 │   └── ze-trading212/ # Trading212 REST client for finance ingestion
@@ -542,7 +542,7 @@ Phase 76 moved domain bootstrap into package modules (`ze_automation/bootstrap`,
 
 ## ze-client — Typed Frontend SDK
 
-`@ze/client` (`packages/ze-client/`) is a local npm workspace package that exposes
+`@myguyze/ze-client` (`packages/ze-client/`) is a local npm workspace package that exposes
 the entire ze-api REST + WebSocket surface as typed TypeScript. `ze-web` is the only
 consumer; no other package depends on it.
 
@@ -567,7 +567,7 @@ import { applyConfig } from "@/lib/client";
 applyConfig();
 
 // any page — no route strings, no auth boilerplate
-import { listContacts } from "@ze/client";
+import { listContacts } from "@myguyze/ze-client";
 const { data } = await listContacts();
 ```
 
@@ -576,7 +576,7 @@ const { data } = await listContacts();
 ## ze-web — React Client
 
 `ze-web` is the React web application (Vite + TypeScript + Tailwind + shadcn/ui). It
-communicates with `ze-api` via WebSocket at `/ws` and REST via `@ze/client`.
+communicates with `ze-api` via WebSocket at `/ws` and REST via `@myguyze/ze-client`.
 It has no Python dependencies — built and run with Bun.
 
 ```bash

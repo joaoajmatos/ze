@@ -121,8 +121,8 @@ ze/                           # monorepo root
 │   │   └── ze_sdk/           # ze_sdk, ze_sdk.types, ze_sdk.proactive, ze_sdk.channels,
 │   │                         # ze_sdk.memory, ze_sdk.errors, ze_sdk.automation, ze_sdk.contribution,
 │   │                         # ze_sdk.correlation, ze_sdk.onboarding, ze_sdk.ui
-│   ├── ze-client/            # @ze/client — typed REST SDK + WS types for ze-web
-│   └── ze-ui/                # @ze/ui — server-driven UI contract + React renderer
+│   ├── ze-client/            # @myguyze/ze-client — typed REST SDK + WS types for ze-web
+│   └── ze-ui/                # @myguyze/ze-ui — server-driven UI contract + React renderer
 ├── plugins/                  # ZePlugin domain extensions
 │   ├── ze-personal/          # Personal-assistant domain layer (ZePlugin) — persona, contacts, onboarding
 │   │   └── ze_personal/
@@ -240,7 +240,7 @@ make help            # full target list
 
 # Setup
 make install         # Python workspace deps (uv sync)
-make web-install     # JS workspace deps — ze-web, @ze/ui, @ze/client (bun install at repo root)
+make web-install     # JS workspace deps — ze-web, @myguyze/ze-ui, @myguyze/ze-client (bun install at repo root)
 
 # Database
 make db-up           # start Postgres via Docker
@@ -258,8 +258,8 @@ make test            # ze-api tests (skips slow embedding tests)
 make test-<name>     # any package — see docs/testing.md
 make test-py         # every Python package suite; reports all failures (CI gate)
 make test-all        # test-py with slow tests, then test-web
-make test-web        # @ze/ui + React web app (vitest)
-make typecheck-web   # tsc --noEmit for ze-web and @ze/ui
+make test-web        # @myguyze/ze-ui + React web app (vitest)
+make typecheck-web   # tsc --noEmit for ze-web and @myguyze/ze-ui
 
 # Code quality
 make lint            # ruff lint across the repo (ruff.toml excludes .claude/)
@@ -347,7 +347,7 @@ pages → widgets → features → entities → shared
 
 **Format / util helpers** — in `<slice>/lib/format.ts` within the slice that owns them. Do not add to `shared/lib/` unless used by ≥ 2 unrelated slices.
 
-**SDK types** — import `type { Foo }` directly from `@ze/client` in any layer; no re-export wrapper needed.
+**SDK types** — import `type { Foo }` directly from `@myguyze/ze-client` in any layer; no re-export wrapper needed.
 
 **Tailwind opacity** — non-standard steps must use arbitrary-value syntax: `bg-white/[0.03]` not `bg-white/3`. Standard steps (5, 10, 15, 20 …) use the shorthand form.
 
@@ -534,7 +534,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 68 | ze-data — `DataDomain` and `DataPortabilityService` extracted from `ze-plugin`/`ze-api` into `core/kernel/ze-data`; no Ze deps | Implemented |
 | 70 | Finance recurring detection — algorithmic recurring expense/subscription detection, staleness-aware proactive job, CSV nudge flow, price-change resurface | Implemented |
 | 71 | Cross-goal awareness — convergence detection at goal creation, proactive reuse surfacing at milestone completion | Implemented |
-| 72 | API client codegen — `@ze/client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Implemented |
+| 72 | API client codegen — `@myguyze/ze-client` npm package generated from OpenAPI spec via `@hey-api/openapi-ts`; named SDK methods (`listContacts()`, etc.); WS types from `json-schema-to-typescript` | Implemented |
 | 73 | API surface cleanup — all routes under `/api/v0/`; `HTTPBearer` security scheme; explicit `operation_id` on every route; auth extracted into `require_api_key` Depends; duplicate cost route removed; `GET /api/v0/version` | Implemented |
 | 74 | Automation substrate — `ze-automation` core package owns full automation stack (types, stores, planners, executors, agents, migrations); `ze-personal` reduced to persona + contacts + onboarding | Implemented |
 | 76 | ze-api shell cleanup — domain bootstrap into package modules; `ZeApiSettings` shell; test relocation; delete `ze_api/bootstrap.py`; `compose.py` for proactive jobs | Implemented |
@@ -569,7 +569,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 115 | Workspace Environment — durable isolated computer beside Ze (`core/ops/ze-workspace` + `sidecar/workspace`); chat-first (no execution modes; `/workspace` is a map); in-turn files and commands; skill scripts after a second executable approval (`zsk002`). `ze-core`/`ze-agents` must not import `ze_workspace`. Detach/follow-up/push is spec 116. | Implemented |
 | 116 | Workspace Follow-Through — wait-then-detach workspace runs, automatic follow-up turn on the same thread, push when offline, cancel; one-run-at-a-time busy rule delivered by Phase 129 (`_refusal_if_busy`) | Implemented |
 | 117 | Web HIG fixes — chat always resolves (delivery watchdog + retry state in ze-web; backend keeps the socket on unserializable frames, JSON-safe `trace_update`, terminal `error` frame for empty turns, `thread_id` on error frames), md-width nav flyout + accessible names, route-derived contextual panel label, mobile launcher/nav polish, static AI disclosure; feedback/retry split to a later phase | Implemented |
-| 118 | Chart Visualization — `@ze/ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Implemented |
+| 118 | Chart Visualization — `@myguyze/ze-ui` chart primitives + server-driven UI descriptors so agents can render a real chart (not a text table) directly in chat responses | Implemented |
 | 119 | Memory Graph Charts — per-entity activity charts on the `/brain/graph` entity detail panel | Implemented |
 | 120 | Usage Dashboard Charts — real spend-trend chart on the Costs/Usage page, replacing static summary numbers | Implemented |
 | 121 | Memory Feed Charts — memory-growth-over-time chart on `/brain/memory` | Implemented |

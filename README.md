@@ -32,7 +32,7 @@ It isn't there yet. But 166 shipped phases in, the infrastructure is real and it
 
 Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-domain architecture. By default, routing uses local embeddings (`intfloat/multilingual-e5-base`), so no LLM call happens until an agent needs to act. Two optional System One surfaces can refine routing and fact admission. All LLM traffic goes through OpenRouter. Graph state is checkpointed in Postgres and survives restarts.
 
-- **ze-web** — React SPA (Feature-Sliced Design). `@ze/client` is generated from the OpenAPI spec. `@ze/ui` renders server-driven components, including charts.
+- **ze-web** — React SPA (Feature-Sliced Design). `@myguyze/ze-client` is generated from the OpenAPI spec. `@myguyze/ze-ui` renders server-driven components, including charts.
 
 ### One voice, many specialists
 
@@ -231,7 +231,7 @@ make test-<name>       # any package — docs/testing.md
 make test-py           # every Python package; lists all failures (CI gate)
 make test-all          # test-py with slow tests, then test-web
 make lint              # ruff
-make typecheck-web     # tsc for ze-web and @ze/ui
+make typecheck-web     # tsc for ze-web and @myguyze/ze-ui
 make eval              # agent evals (make dev-eval first)
 ```
 

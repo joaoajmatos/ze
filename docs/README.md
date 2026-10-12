@@ -42,7 +42,7 @@ Design specs (what comes next) live in [`specs/`](../specs/), not here. The cons
 
 | Doc | What it covers |
 |-----|----------------|
-| [frontend.md](frontend.md) | ze-web — FSD layout, `@ze/client`, plugin UI |
+| [frontend.md](frontend.md) | ze-web — FSD layout, `@myguyze/ze-client`, plugin UI |
 | [native-interface.md](native-interface.md) | WebSocket frames, confirmations, ntfy, unread replay |
 | [browser.md](browser.md) | Browser sidecar — Compose, health checks, Fly deploy |
 | [workspace.md](workspace.md) | Workspace sidecar — files, shell, skill scripts, Fly deploy |

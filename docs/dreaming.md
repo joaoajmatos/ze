@@ -172,7 +172,7 @@ POST /api/v0/memory/dream/artifacts/{id}/revise
 POST /api/v0/memory/dream/runs/{run_id}/rollback
 ```
 
-`ze-web` has no dream review page yet. Use these routes, or the generated `@ze/client` methods, to review artifacts.
+`ze-web` has no dream review page yet. Use these routes, or the generated `@myguyze/ze-client` methods, to review artifacts.
 
 ---
 
