@@ -214,7 +214,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 165 | [Assistant Response Feedback and Retry](phases/165-response-feedback-retry/spec.md) (split from [117](phases/117-web-hig-fixes/spec.md) US9) | ✅ Implemented |
 | 166 | [System One Skill Gating](phases/166-skill-suggestion-system-one/spec.md) | ✅ Implemented |
 | 167 | [Routing Choice Criteria](phases/167-routing-choice-criteria/spec.md) | ✅ Implemented (surface enabled) |
-| 168 | [Loop Extraction Gate](phases/168-loop-extraction-gate/spec.md) | 🚧 In progress (surface off until calibrated) |
+| 168 | [Loop Extraction Gate](phases/168-loop-extraction-gate/spec.md) | 🔄 In Progress (surface off until calibrated) |
 
 ## Ze Core specs (`core/`)
 
