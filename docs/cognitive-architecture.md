@@ -69,7 +69,7 @@ relationship with Y" that the executive layer can read.
 Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, multi-week), workflows
 (multi-step plans), scheduler. `core/cognition/ze-worldstate` (Phases 109–110): open loops — the
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
-closed|dropped`), extracted from all four inflows through a System One gate (Phase 168) with a Haiku title writer behind it, with drift detection and hedged,
+closed|dropped`), extracted from all four inflows through a System One gate (Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate never parsed its replies, so before 168 no loops were extracted in production), with drift detection and hedged,
 push-bar-gated surfacing. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
 goals, and correlation hypotheses together against one shared attention budget, plus
 user-directed priority override.

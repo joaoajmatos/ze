@@ -11,8 +11,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 ### Key features
 
 - `OpenLoop` / `LoopState` — the lifecycle type and its five states
-- Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion. The 109 Haiku gate stays as the fallback
-- Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` ships off with null bars until `make calibrate-loop-gate` returns `ENABLE`
+- Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion. The 109 Haiku gate stays as the fallback. It parses Haiku's reply with plain `json.loads` and Haiku fences its JSON, so every calibration reply failed to parse: before phase 168 this extraction created no loops in production, and the fallback still creates none
+- Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` is on in the shipped config (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8), after an `ENABLE` verdict on the held-out set for English and Portuguese
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition
@@ -22,7 +22,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 ### Integration
 
-`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs. `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
+`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
 
 ## Responsibilities
 

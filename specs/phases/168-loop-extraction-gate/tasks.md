@@ -91,16 +91,16 @@
 
 **Rule**: docs are part of done. Public docs follow the `doc-style` skill.
 
-- [ ] **T024** [P] [DOCS] ADR `specs/arch/system-one-models.md`: O4 row and an "O4 implementation notes (168)" paragraph (three Nouls, Haiku title writer returning the window, window moved to a later date-parser phase, conversation gate in `write_memory`, other inflows log only, off with null bars until calibrated); fix "windows in code"; add 168 to Sequencing and Appendix A (Loop extraction row) and Appendix B (`loop_judge.py`, `admission.py`); if any `specs/core/*.md` lists ze-worldstate files, add the two modules; fix the header line and the Fit analysis text that say 166 is off (config has skills enabled, calibrated 2026-10-12).
-- [ ] **T025** [P] [DOCS] `AGENTS.md`: add the 168 phase row (leave 167, which lives on another floor); correct the 166 row ("ships on, calibrated 2026-10-12"); update the ze-worldstate layout comment (`extraction.py`, new `loop_judge.py`, `admission.py`).
-- [ ] **T026** [P] [DOCS] `specs/README.md`: add the 168 row to the phase index.
-- [ ] **T027** [P] [DOCS] `docs/system-one.md`: add the loop gate to the surfaces list, the three questions, the fallback, and the calibration command.
-- [ ] **T028** [P] [DOCS] `docs/configuration.md`: document `system_one.surfaces.loop_gate` (keys, null bars, how to calibrate).
-- [ ] **T029** [P] [DOCS] `docs/cognitive-architecture.md` and `docs/architecture.md`: update the open-loop extraction description (gate, title writer, conversation gate placement, other inflows).
-- [ ] **T030** [P] [DOCS] `docs/ingestion.md`: the ingestion loop extraction now uses the gate and logs only.
-- [ ] **T031** [P] [DOCS] `core/cognition/ze-worldstate/README.md` and root `README.md`: where they describe loop extraction, name the gate and the fallback.
-- [ ] **T032** [P] [DOCS] `docs/diagrams/root/open-loops.html` and `.svg` (use the `diagram-design` skill): show gate then title writer then commit if the diagram draws extraction; re-export.
-- [ ] **T033** [DOCS] Coverage check: run `git diff main...HEAD --stat`; every public doc whose subject changed (root `README.md`, each affected `docs/*.md`, package READMEs, the ADR, AGENTS, specs index) appears in the diff or has a recorded reason. List any gap and close it.
+- [x] **T024** [P] [DOCS] ADR `specs/arch/system-one-models.md`: O4 row and an "O4 implementation notes (168)" paragraph (three Nouls, Haiku title writer returning the window, window moved to a later date-parser phase, conversation gate in `write_memory`, other inflows log only, off with null bars until calibrated); fix "windows in code"; add 168 to Sequencing and Appendix A (Loop extraction row) and Appendix B (`loop_judge.py`, `admission.py`); if any `specs/core/*.md` lists ze-worldstate files, add the two modules; fix the header line and the Fit analysis text that say 166 is off (config has skills enabled, calibrated 2026-10-12).
+- [x] **T025** [P] [DOCS] `AGENTS.md`: add the 168 phase row (leave 167, which lives on another floor); correct the 166 row ("ships on, calibrated 2026-10-12"); update the ze-worldstate layout comment (`extraction.py`, new `loop_judge.py`, `admission.py`).
+- [x] **T026** [P] [DOCS] `specs/README.md`: add the 168 row to the phase index.
+- [x] **T027** [P] [DOCS] `docs/system-one.md`: add the loop gate to the surfaces list, the three questions, the fallback, and the calibration command.
+- [x] **T028** [P] [DOCS] `docs/configuration.md`: document `system_one.surfaces.loop_gate` (keys, null bars, how to calibrate).
+- [x] **T029** [P] [DOCS] `docs/cognitive-architecture.md` and `docs/architecture.md`: update the open-loop extraction description (gate, title writer, conversation gate placement, other inflows).
+- [x] **T030** [P] [DOCS] `docs/ingestion.md`: the ingestion loop extraction now uses the gate and logs only.
+- [x] **T031** [P] [DOCS] `core/cognition/ze-worldstate/README.md` and root `README.md`: where they describe loop extraction, name the gate and the fallback.
+- [x] **T032** [P] [DOCS] `docs/diagrams/root/open-loops.html` and `.svg` (use the `diagram-design` skill): show gate then title writer then commit if the diagram draws extraction; re-export.
+- [x] **T033** [DOCS] Coverage check: run `git diff main...HEAD --stat`; every public doc whose subject changed (root `README.md`, each affected `docs/*.md`, package READMEs, the ADR, AGENTS, specs index) appears in the diff or has a recorded reason. List any gap and close it.
 
 ---
 

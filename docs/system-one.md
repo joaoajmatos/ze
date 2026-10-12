@@ -94,7 +94,7 @@ Open-loop extraction decides whether a piece of text leaves something unfinished
 
 Each question has its own bar (`loop_hold`, `resolves_hold`, `explicit_hold`). Code decides in this order: a high `resolves_existing` closes a matching loop; a low `is_open_concern` holds; a high `explicit_declaration` creates an active, user-declared loop; anything else creates a suspected loop. A positive answer then calls Haiku to write the title, and to suggest a window in days for a new loop. Haiku never decides whether a loop exists. Matching, dismissed-loop checks, confidence, and drift stay in code.
 
-Conversation runs the gate in the `write_memory` node, beside the fact extractor, and records its rows in the message trace. Trivial turns skip the request. Email, calendar, and ingestion run the same gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate.
+Conversation runs the gate in the `write_memory` node, beside the fact extractor, and records its rows in the message trace. Trivial turns skip the request. Email, calendar, and ingestion run the same gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate. That gate does not work today: it parses Haiku's reply as plain JSON, Haiku wraps the JSON in a code fence, and all 136 replies in the calibration runs failed to parse. Before phase 168, loop extraction created no loops in production. A skipped loop gate still creates none.
 
 ---
 
@@ -105,7 +105,7 @@ Conversation runs the gate in the `write_memory` node, beside the fact extractor
 | Speech act | On, with `choice_hold: 0.9` and `biography_hold: 0.7` | Calibrated on 60 English and Portuguese rows on 2026-10-09 |
 | Routing | On, with `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9` and `complexity_lookup_max: null` | Phase 167 calibrated on 52 held-out English and Portuguese rows on 2026-10-12: zero research-to-companion misses, zero harmful trusts, ECE of 0.080 and 0.013. Raw English accuracy on `routing_holdout` is 0.90, and its one miss falls back to decompose. The complexity bar stays unset, so the word-count classifier picks the model tier |
 | Skills | On, with `choice_trust: 0.75`, `needs_skill_hold: 0.6` and `shortlist_k: 5` | Calibrated on 84 English and Portuguese rows on 2026-10-12: zero wrong applies |
-| Loop gate | Off, with `loop_hold`, `resolves_hold`, and `explicit_hold` all `null` | Ze enables it only after `make calibrate-loop-gate` returns an `ENABLE` verdict on a held-out set for English and Portuguese |
+| Loop gate | On, with `loop_hold: 0.75`, `explicit_hold: 0.85` and `resolves_hold: 0.8` | Calibrated 2026-10-12 on 88 tuned and 48 held-out English and Portuguese rows. On the held-out set, 10 of 10 loops found in each language, precision 1.00, zero false creates. A fence-tolerant Haiku baseline found 9 of 10 (English) and 10 of 10 (Portuguese) with one false create each. The counts are small, so the comparison is coarse |
 
 Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits:
 

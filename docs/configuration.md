@@ -337,7 +337,7 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The `loop_gate` surface is off with null bars. The code defaults are off, and without a `system_one:` block everything is off.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The `loop_gate` surface is on too. The code defaults are off, and without a `system_one:` block everything is off.
 
 ```yaml
 system_one:
@@ -362,10 +362,10 @@ system_one:
       shortlist_k: 5
       shortlist_floor: 0.35
     loop_gate:                    # Open-loop extraction gate (Phase 168)
-      enabled: false
-      loop_hold: null             # set from make calibrate-loop-gate
-      explicit_hold: null
-      resolves_hold: null
+      enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
+      loop_hold: null             # shipped: 0.75 — set from make calibrate-loop-gate
+      explicit_hold: null         # shipped: 0.85
+      resolves_hold: null         # shipped: 0.8
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -431,7 +431,7 @@ Ze extracts open loops from conversation, email, calendar events, and ingested c
 - A low `is_open_concern` holds. Ze creates nothing and calls no Haiku.
 - A high `explicit_declaration` (conversation only) creates an active, user-declared loop.
 - Anything else creates a suspected loop.
-- A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged.
+- A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate currently fails to parse Haiku's fenced JSON, so a fallback creates no loop.
 
 After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
 
@@ -441,7 +441,7 @@ The keys:
 - `explicit_hold` is the minimum probability for `explicit_declaration`.
 - `resolves_hold` is the minimum probability for `resolves_existing`.
 
-Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all three bars set. If you enable it and leave any bar `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars, and the shipped `config.yaml` leaves the surface off with null bars.
+Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all three bars set. If you enable it and leave any bar `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75, 0.85 and 0.8 (calibrated 2026-10-12).
 
 To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-loop-gate`. This run is live and costs credits. It tunes on `eval/calibration/loop_gate.jsonl` by default and measures the Haiku gate on the same rows. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout`). Set `surfaces.loop_gate.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false creates on negatives, recall no more than 0.05 below Haiku's, and precision at least Haiku's. `--check-sets` validates both files offline.
 

@@ -47,7 +47,7 @@ System One is a small model that returns typed judgments (a choice among labels,
 - **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
 - **Loop gate** decides whether text opens, declares, or resolves an open loop.
 
-The first three surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`). The loop gate ships off until `make calibrate-loop-gate` passes its held-out check. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing, skills, and speech act, and the Haiku judge for the loop gate. See [configuration.md](docs/configuration.md#system_one).
+All four surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`). The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing, skills, and speech act, and the Haiku judge for the loop gate. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 
@@ -59,7 +59,7 @@ The Priority page ranks drifting loops, stuck goals, and correlation hypotheses 
 
 ### Open loops
 
-Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: when the System One loop gate is calibrated, three yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. Until then, and whenever System One skips, a Haiku judge decides. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear a salience bar shared with the correlation engine's daily budget.
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs, but it currently fails to parse Haiku's reply, so a skipped gate creates no loop. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear a salience bar shared with the correlation engine's daily budget.
 
 ![State machine showing an open loop moving from suspected to active to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped](docs/diagrams/root/open-loops.svg)
 
