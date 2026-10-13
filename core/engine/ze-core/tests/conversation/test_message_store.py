@@ -327,3 +327,10 @@ async def test_set_rollback_overwrites_with_jsonb():
     assert "UPDATE messages SET rollback = $1::jsonb WHERE id = $2" in sql
     assert payload == asdict(record)
     assert target == mid
+
+
+async def test_unreadable_rollback_record_loads_as_none():
+    msg = _make_message()
+    pool, _ = _make_pool_mock(rows=[_make_row(msg, rollback={"entries": "bad"})])
+    loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
+    assert loaded is not None and loaded.rollback is None

@@ -8,6 +8,8 @@ from uuid import UUID
 
 import asyncpg
 
+from ze_logging import get_logger
+
 from ze_core.conversation.messages.types import (
     CompactionTrace,
     JudgmentTrace,
@@ -22,6 +24,9 @@ from ze_core.conversation.messages.types import (
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
+
+
+log = get_logger(__name__)
 
 
 class MessageStore(Protocol):
@@ -371,6 +376,11 @@ def _row_to_message(row: asyncpg.Record) -> Message:
 def _parse_rollback(raw: object) -> RollbackRecord | None:
     if raw is None:
         return None
-    if isinstance(raw, str):
-        raw = json.loads(raw)
-    return RollbackRecord.from_dict(raw) if raw else None
+    try:
+        if isinstance(raw, str):
+            raw = json.loads(raw)
+        return RollbackRecord.from_dict(raw) if raw else None
+    except (TypeError, ValueError, KeyError, AttributeError):
+        # One bad row must not break loading a whole thread.
+        log.warning("rollback_record_unreadable")
+        return None
