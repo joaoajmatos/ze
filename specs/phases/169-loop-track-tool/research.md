@@ -32,3 +32,11 @@ The 168 gate sees the same user text, answers `explicit_declaration`, and `_crea
 
 ## R11 — Companion/conductor replies
 When the conductor delegates to `loops` and then writes its own final reply, the conductor text could repeat the claim. The loops agent's own reply is enforced; the conductor's synthesis is governed by phases 151-156 rules and is out of scope. A conductor eval row is not added because 167's routing sends single-specialist loop asks directly.
+
+## R12 — Live eval result
+
+Run by Tally on 2026-10-13 against branch `169-loop-track-tool` @ `c440cf9f` with `make dev-eval`.
+
+- **`track_loop`: pass in all three scenarios** (`loops_track_then_list_en`, `loops_track_then_list_pt`, `loops_track_twice_no_duplicate`) and in a manual check. After asking twice, `open_loops` held one row: `active`, confidence 0.9, `user_declared`, no duplicate. The held-out routing files are untouched.
+- **Flaky routing, not a 169 defect.** The EN turn-2 prompt "what am I still sitting with?" routed to `companion` once (E5 gap 0.029, narrow). A rerun routed to `loops`. Phase 171's E5 open-query detector targets this.
+- **Runner limitation, pre-existing.** For multi-turn scenarios the judge sees only the last turn's tool calls (`ze_eval/runner.py` lines 336-355), so the `track_loop` call in turn 1 is proven by the `verify` row, as the plan said.
