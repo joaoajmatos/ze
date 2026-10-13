@@ -10,7 +10,7 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 
 ### Key features
 
-- Goals (`goals/`) — `GoalStore`, `GoalPlanner`, `GoalExecutor`, execution traces, adaptive replanning, stuck-goal detection, cross-goal reuse hints
+- Goals (`goals/`) — `GoalStore`, `GoalPlanner`, `GoalExecutor`, execution traces, adaptive replanning, stuck-goal detection (one row per goal, from the first open gate that has fired), cross-goal reuse hints
 - Workflows (`workflow/`) — `WorkflowStore`, `WorkflowPlanner`, `WorkflowScheduler`, step validation, retry, revision history (`workflow_revisions`)
 - Accountability (`accountability/`) — `AccountabilityStore`, weekly activity narrative, cost anomaly detection
 - Agents (`agents/`) — `GoalAgent`, `WorkflowAgent`, the conversational surface for both engines
