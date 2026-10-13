@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import aiohttp
 from sentence_transformers import SentenceTransformer
@@ -340,11 +341,12 @@ class ZeContainer(CoreContainer):
         thread_id: str,
         user_text: str,
         *,
+        replaces: UUID,
         config_extra: dict | None = None,
     ) -> TurnResult:
         async with self.turn_lock.acquire(thread_id):
             return await invoke_retry_turn(
-                self, thread_id, user_text, config_extra=config_extra
+                self, thread_id, user_text, replaces=replaces, config_extra=config_extra
             )
 
     async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:

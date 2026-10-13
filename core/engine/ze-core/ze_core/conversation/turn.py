@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 from ze_agents.interface.types import RawInput
 
@@ -290,18 +291,26 @@ async def invoke_retry_turn(
     thread_id: str,
     user_text: str,
     *,
+    replaces: UUID,
     config_extra: dict | None = None,
 ) -> TurnResult:
-    """Regenerate the latest reply for `user_text` with WRITE tools blocked.
+    """Regenerate the latest reply for `user_text` under the one retry policy.
 
-    Rewinds the thread's checkpointed history past the original exchange, runs the
-    graph in ``retry_mode``, and puts the history back if the run does not produce
-    a plain reply. The caller must hold the thread's turn lock.
+    Rewinds the thread's checkpointed history past the original exchange and runs the
+    graph in ``retry_mode``: irreversible writes are refused, reversible writes run
+    under normal gates. A run that pauses for confirmation is returned as is; the
+    pending turn carries ``retry_mode`` and ``retry_replaces`` so its resolution can
+    supersede the retried reply. History is restored only when the run fails or
+    produces no reply. The caller must hold the thread's turn lock.
     """
     from ze_agents.errors import RetryFailedError
     from ze_core.conversation.rewind import restore_messages, rewind_last_exchange
 
-    extra = {**(config_extra or {}), "retry_mode": True}
+    extra = {
+        **(config_extra or {}),
+        "retry_mode": True,
+        "retry_replaces": str(replaces),
+    }
     config = container._build_config(thread_id, **extra)
     original = await rewind_last_exchange(container.graph, config)
     try:
@@ -311,12 +320,9 @@ async def invoke_retry_turn(
     except Exception as exc:
         await restore_messages(container.graph, config, original)
         raise RetryFailedError(str(exc)) from exc
-    if result.interrupted or result.error or not result.response:
+    if result.interrupted and not result.error:
+        return result
+    if result.error or not result.response:
         await restore_messages(container.graph, config, original)
-        raise RetryFailedError(
-            result.error
-            or (
-                "retry paused for confirmation" if result.interrupted else "empty reply"
-            )
-        )
+        raise RetryFailedError(result.error or "empty reply")
     return result
