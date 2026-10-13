@@ -116,12 +116,22 @@ async def _assemble_resume_recap(
     return recap if recap.has_content() else None
 
 
-async def _open_priorities_note(prompt: str, config: RunnableConfig) -> str | None:
+def _is_open_query(embedding: Any, config: RunnableConfig) -> bool:
     surfacer = config["configurable"].get("turn_surfacer")
     if surfacer is None:
-        return None
-    checker = getattr(surfacer, "is_global_open_query", None)
-    if checker is None or not checker(prompt):
+        return False
+    try:
+        return bool(surfacer.is_global_open_query(embedding))
+    except Exception as exc:
+        log.warning("open_query_detection_failed", error=str(exc))
+        return False
+
+
+async def _open_priorities_note(
+    open_items_query: bool, config: RunnableConfig
+) -> str | None:
+    surfacer = config["configurable"].get("turn_surfacer")
+    if surfacer is None or not open_items_query:
         return None
     try:
         mentions = await surfacer.recap_mentions(limit=_OPEN_QUERY_LIMIT)
@@ -160,6 +170,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
 
     embed_text = state.get("image_caption") or state["prompt"]
     prompt_embedding = embedder.encode(embed_text)
+    open_items_query = _is_open_query(prompt_embedding, config)
 
     _request = RetrievalRequest(
         module=agent_name,
@@ -225,7 +236,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     agent_context.retry_mode = bool(config["configurable"].get("retry_mode"))
     if recap is not None:
         agent_context.resume_recap = recap.render()
-    note = await _open_priorities_note(prompt_for_ctx, config)
+    note = await _open_priorities_note(open_items_query, config)
     if note is not None:
         agent_context.open_priorities_note = note
 
@@ -298,6 +309,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         "last_active_at": now,
         "resume_recap_applied": resume_recap_applied,
         "loop_offer_ids": loop_offer_ids,
+        "open_items_query": open_items_query,
         "procedure_matches": getattr(agent_context, "procedure_matches", None),
     }
 

@@ -74,7 +74,7 @@ def _surfacer(
         s.recap_mentions = AsyncMock(return_value=mentions or [])
     s.inline_mentions = AsyncMock(return_value=mentions or [])
     s.resume_loop_offers = AsyncMock(return_value=[])
-    s.is_global_open_query = lambda _prompt: global_query
+    s.is_global_open_query = MagicMock(return_value=global_query)
     return s
 
 
@@ -254,6 +254,7 @@ class TestFetchContextWhatsOpen:
         loop_result = await surface_loops(
             {
                 "prompt": "what's open right now",
+                "open_items_query": fetch_result["open_items_query"],
                 "envelope": None,
                 "memory_context": MemoryContext(
                     entities=[
@@ -360,3 +361,39 @@ class TestFetchContextCaps:
         )
 
         surfacer.recap_mentions.assert_awaited_once_with(limit=10)
+
+
+class TestFetchContextOpenQueryFlag:
+    async def test_detector_receives_the_prompt_embedding(self):
+        surfacer = _surfacer([], global_query=True)
+        embedder = _make_embedder()
+        embedder.encode = MagicMock(return_value=[0.3, 0.4])
+
+        result = await fetch_context(
+            _state(prompt="o que tenho em aberto?"),
+            _config(turn_surfacer=surfacer, embedder=embedder),
+        )
+
+        surfacer.is_global_open_query.assert_called_once_with([0.3, 0.4])
+        assert result["open_items_query"] is True
+
+    async def test_false_when_not_an_open_query(self):
+        surfacer = _surfacer(_ranked_mentions(), global_query=False)
+
+        result = await fetch_context(_state(), _config(turn_surfacer=surfacer))
+
+        assert result["open_items_query"] is False
+        assert result["agent_context"].open_priorities_note is None
+
+    async def test_false_without_a_surfacer(self):
+        result = await fetch_context(_state(), _config())
+        assert result["open_items_query"] is False
+
+    async def test_detector_failure_is_false_and_turn_completes(self):
+        surfacer = _surfacer(_ranked_mentions())
+        surfacer.is_global_open_query = MagicMock(side_effect=RuntimeError("boom"))
+
+        result = await fetch_context(_state(), _config(turn_surfacer=surfacer))
+
+        assert result["open_items_query"] is False
+        assert result["agent_context"].open_priorities_note is None

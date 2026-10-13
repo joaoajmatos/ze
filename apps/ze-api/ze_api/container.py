@@ -526,6 +526,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         override_store=priority_override_store,
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
+        embedder=shared.embedder,
         push_log=push_log_store,
     )
 

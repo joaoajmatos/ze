@@ -7,7 +7,6 @@ module to dump preference/identity facts as inline mentions.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 from typing import Any, Sequence
 from uuid import UUID
@@ -15,6 +14,7 @@ from uuid import UUID
 from ze_logging import get_logger
 from ze_priority.errors import ZePriorityError
 from ze_priority.merge import merge
+from ze_priority.open_query import OpenQueryDetector
 from ze_priority.store import PriorityOverrideStore
 from ze_priority.types import (
     LoopOffer,
@@ -40,15 +40,6 @@ RECAP_LIMIT = 5
 OPEN_QUERY_LIMIT = 10
 OFFER_EVENT_PREFIX = "worldstate_loop_offer:"
 
-_GLOBAL_OPEN_RE = re.compile(
-    r"\b("
-    r"what(?:'s|s| is) open"
-    r"|what(?:'s|s| is) outstanding"
-    r"|what(?:'s|s| is) on my plate"
-    r")\b",
-    re.IGNORECASE,
-)
-
 _MIN_NAME_LEN = 3
 
 
@@ -61,17 +52,19 @@ class TurnSurfacing:
         override_store: PriorityOverrideStore | None,
         graph_store: Any,
         loop_store: Any,
+        embedder: Any,
         push_log: Any | None = None,
+        open_query_detector: OpenQueryDetector | None = None,
     ) -> None:
         self._priority_view = priority_view
         self._override_store = override_store
         self._graph_store = graph_store
         self._loop_store = loop_store
         self._push_log = push_log
+        self._open_query = open_query_detector or OpenQueryDetector(embedder)
 
-    @staticmethod
-    def is_global_open_query(prompt: str) -> bool:
-        return bool(_GLOBAL_OPEN_RE.search(prompt or ""))
+    def is_global_open_query(self, embedding: Any) -> bool:
+        return self._open_query.is_open_query(embedding)
 
     async def recap_mentions(self, limit: int | None = None) -> list[OpenItemMention]:
         snapshot = await self._snapshot()

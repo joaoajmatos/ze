@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-import pytest
 
 from ze_priority.errors import ZePriorityError
 from ze_priority.scoring import score_goal, score_hypothesis, score_loop, sort_and_rank
@@ -29,6 +28,7 @@ def _surfacer(
     view, override_store=None, graph_store=None, loop_store=None, push_log=None
 ):
     return TurnSurfacing(
+        embedder=MagicMock(),
         priority_view=view,
         override_store=override_store,
         graph_store=graph_store or AsyncMock(),
@@ -239,25 +239,22 @@ async def test_loop_inline_writes_push_log_key():
     push_log.log.assert_awaited_once_with(f"worldstate_loop_inline:{loop.source_id}")
 
 
-@pytest.mark.parametrize(
-    "prompt",
-    [
-        "what's open right now",
-        "What is open?",
-        "whats outstanding",
-        "What's on my plate",
-    ],
-)
-def test_is_global_open_query_positive(prompt):
-    assert TurnSurfacing.is_global_open_query(prompt) is True
+def test_is_global_open_query_delegates_to_the_detector():
+    detector = MagicMock()
+    detector.is_open_query = MagicMock(side_effect=[True, False])
+    surfacer = TurnSurfacing(
+        priority_view=_view(),
+        override_store=None,
+        graph_store=AsyncMock(),
+        loop_store=AsyncMock(),
+        embedder=MagicMock(),
+        open_query_detector=detector,
+    )
+    embedding = object()
 
-
-@pytest.mark.parametrize(
-    "prompt",
-    ["how's the weather", "open the door", "tell me a joke", ""],
-)
-def test_is_global_open_query_negative(prompt):
-    assert TurnSurfacing.is_global_open_query(prompt) is False
+    assert surfacer.is_global_open_query(embedding) is True
+    assert surfacer.is_global_open_query(embedding) is False
+    detector.is_open_query.assert_called_with(embedding)
 
 
 # ── Phase 171: recap cap ─────────────────────────────────────────────────────
