@@ -16,7 +16,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition
-- `LoopSurfacer` (`surfacing.py`) — hedged inline mentions plus a push-bar-gated path (`ze_correlation`'s shared push budget) for `drifting` loops
+- `LoopSurfacer` (`surfacing.py`) — hedged inline mentions plus a push-bar-gated `notify` path (discretionary, shared budget) for `drifting` loops
 - Review (`review.py`) — confirm / close / drop lifecycle transitions
 - Jobs (`jobs/`) — `DriftSweepJob` and `StaleSuspicionJob`, scheduled via `ze-proactive`. `ze-priority`'s `AttentionArbitrationJob` replaced the old `PushSweepJob`
 
@@ -36,7 +36,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
 | `decay.py` | Confidence decay cascade, called at the evidence-writing code path |
 | `drift.py` | Drift deadline computation and rationale composition |
-| `surfacing.py` | `LoopSurfacer` — hedged inline mentions, push-bar-gated ntfy path |
+| `surfacing.py` | `LoopSurfacer` — hedged inline mentions, push-bar-gated `notify` path |
 | `review.py` | Confirm / close / drop lifecycle transitions |
 | `inflow.py` | Wiring helpers for the four inflows (conversation, email, calendar, ingestion) |
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |

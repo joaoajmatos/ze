@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "Phase 177, governor part 1 (findings F5 and F11; decision D4 of `specs/arch/executive-function.md`). Today only loop and hypothesis pushes share the daily push budget (Phase 123); about fifteen other push sites are ungoverned; there are no quiet hours and no urgency tiers; cron jobs have no catch-up. Decided by the user: (a) user-requested timed alerts (reminders, calendar prep) are exempt from the discretionary budget and always fire; (b) every discretionary push goes through one governor with an urgency tier and the shared budget; (c) quiet hours are a user setting editable in the ze-web Settings UI (persisted, REST under `/api/v0`, typed client via codegen, a settings form), with discretionary pushes held during quiet hours; (d) cron catch-up for missed runs. Inventory every push site and classify each as exempt or discretionary. No calibrated interrupt Score yet (Phases 178–179); tiers are rule-based."
 

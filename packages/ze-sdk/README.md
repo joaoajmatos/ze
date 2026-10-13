@@ -10,7 +10,7 @@ Public SDK surface for Ze plugin development. Flat re-export layer — plugin pa
 
 - Single import for agent authoring: `@agent`, `@tool`, `BaseAgent`, `get_logger`
 - Plugin framework re-exports: `ZePlugin`, `DataDomain`, channel types
-- Proactive job types: `ProactiveScheduler`, `ProactiveJob`, `@proactive_job`
+- Proactive job types and push kinds: `ProactiveScheduler`, `ProactiveJob`, `@proactive_job`, `PushKind`, `PushOutcome`
 - Memory, signal, and onboarding types for plugin hook implementations (`Signal`, `SignalSource`)
 
 ### Integration
@@ -24,7 +24,7 @@ Every plugin's `pyproject.toml` lists `ze-sdk` as its sole Ze dependency. The SD
 | `__init__.py` | `ZePlugin`, `DataDomain`, `@agent`, `@tool`, `BaseAgent`, `Settings`, `DBPool`, `get_logger` |
 | `types.py` | Shared SDK types |
 | `errors.py` | Plugin-facing error re-exports |
-| `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `PushLogStore` |
+| `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore` |
 | `contribution.py` | Contribution seam types, including `FeedbackKind`, `FeedbackRecord`, `FeedbackStore`, and `submit_feedback_record` |
 | `memory.py` | Memory types, `PostgresMemoryStore`, `SignalSource` re-export |
 | `channels.py` | Channel ABC and registry re-exports |
@@ -42,7 +42,7 @@ All plugin code should import from `ze_sdk`:
 
 ```python
 from ze_sdk import ZePlugin, agent, tool, BaseAgent, get_logger
-from ze_sdk.proactive import ProactiveScheduler, proactive_job
+from ze_sdk.proactive import ProactiveScheduler, proactive_job, PushKind
 from ze_sdk.memory import PostgresMemoryStore, Signal, SignalSource
 from ze_sdk.channels import Channel
 ```

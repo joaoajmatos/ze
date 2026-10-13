@@ -83,6 +83,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "confirm_request", "id": "...", "prompt": "...", "actions": [...]}` | Capability gate confirmation request |
 | `{"type": "confirm_cancel", "id": "..."}` | Confirmation cancelled (timeout or cancel command) |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
+| `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
 | `{"type": "error", "detail": "...", "code": "..."}` | Error from the server (e.g. "busy"). `code` is optional; see [Error codes](#error-codes). |
 
 ### Progress messages
@@ -182,7 +183,8 @@ Ze clears the row when:
 
 When the app is not connected and a confirmation is required, Ze also pushes an ntfy
 notification with the prompt text (urgency `high`) so the user is alerted even with
-the app closed.
+the app closed. Ze skips this buzz during quiet hours; the frame is still sent, and
+the request stays in chat.
 
 ### Timeout
 
@@ -322,11 +324,24 @@ NTFY_TOPIC=ze-your-unique-topic
 NTFY_TOKEN=                          # optional auth token for private topics
 ```
 
-ntfy priority:
-- Normal messages → priority 3 (default)
-- High-urgency proactive notifications (e.g. workflow failures) → priority 5
+ntfy priority maps from the notification's urgency: `low` → 2, `normal` → 3, `high` → 5.
+
+A notification carries a `buzz` flag. Ze sends the ntfy hop only when `buzz` is true and the client is offline. The interruption governor sets `buzz` false for pushes it releases after quiet hours.
+
+During quiet hours Ze also skips the ntfy hop for chat replies and confirmation frames. The reply or frame is still saved and sent; only the buzz waits.
 
 If `NTFY_TOPIC` is empty, ntfy delivery is disabled and Ze is WebSocket-only.
+
+### Quiet hours
+
+The user sets quiet hours in Settings › Notifications. Two REST routes back the form:
+
+| Route | Purpose |
+|---|---|
+| `GET /api/v0/notifications/quiet-hours` | Returns `{enabled, start, end, timezone, active_now, held_count, max_discretionary_per_day}`. `start` and `end` are `HH:MM` or null. |
+| `PUT /api/v0/notifications/quiet-hours` | Body `{enabled, start, end, timezone}`. Returns 422 when `enabled` is true and a field is missing, when `start` equals `end`, when a time is not `HH:MM`, or when the timezone is not a valid IANA key. |
+
+While quiet hours are active, Ze holds accountability and discretionary pushes and releases them in one batch when quiet hours end. Only reminders and calendar alerts the user set still buzz. Quiet hours ship off.
 
 ---
 

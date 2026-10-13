@@ -11,7 +11,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 - `PriorityView.rank()` ranks drifting loops, stuck or near-gate goals, hypotheses, and stale relationships
 - User overrides (`PriorityOverride`) merge into the ranking at read time. They decay over 48 hours unless pinned
 - `reprioritize_item` — a conversational tool that makes a named item more or less urgent
-- `AttentionArbitrationJob` — one scheduled job that pushes only the top candidate, within a shared daily budget
+- `AttentionArbitrationJob` — one scheduled job that sends ranked candidates through the interruption governor until one is delivered or held
 - `TurnSurfacing` — inline mentions and the resume recap use the same merged ranking
 
 ### Integration
@@ -45,7 +45,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 |---|---|
 | `proactive.attention_arbitration.enabled` | Turn the arbitration job on or off (default on) |
 | `proactive.attention_arbitration.cron` | Job schedule (default `0 */4 * * *`) |
-| `proactive.budget.max_pushes_per_day` | Shared push budget (default 3) |
+| `proactive.budget.max_pushes_per_day` | Shared budget for every discretionary push (default 5) |
 
 REST routes: `GET /api/v0/priority/snapshot`, `POST /api/v0/priority/override`, `POST /api/v0/priority/override/{override_id}/unpin`.
 

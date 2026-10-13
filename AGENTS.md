@@ -45,8 +45,8 @@ ze/                           # monorepo root
 │   │   │       ├── plugin.py    # ZePlugin ABC + DataDomain
 │   │   │       ├── registry.py  # plugin registry (_registry, get_plugin_registry)
 │   │   │       └── signals.py   # SignalSource protocol
-│   │   └── ze-proactive/        # Job scheduling framework
-│   │       └── ze_proactive/    # ProactiveJob, ProactiveScheduler, ProactiveNotifier, PushLogStore
+│   │   └── ze-proactive/        # Job scheduling + interruption governor (classes, quiet hours, catch-up)
+│   │       └── ze_proactive/    # ProactiveJob, ProactiveScheduler, ProactiveNotifier (notify/governor), PushKind, PushLogStore
 │   ├── engine/                 # The orchestration engine itself
 │   │   └── ze-core/             # Engine — routing, orchestration, telemetry, DI container
 │   │       └── ze_core/
@@ -445,7 +445,7 @@ and runs them against a single `alembic_version` table.
 | ze-onboarding | `zo` | onboarding_sessions, onboarding_steps, onboarding_seeds |
 | ze-correlation | `zcor` | correlation_hypothesis |
 | ze-worldstate | `zw` | open_loops |
-| ze-proactive | `zpro` | push_log, notifications |
+| ze-proactive | `zpro` | push_log, notifications, interruption_settings, proactive_job_runs |
 | ze-ingestion | `zi` | ingested_content |
 | ze-calendar | `zcal` | calendar_reminders, user_reminders |
 | ze-prospecting | `zpros` | prospect_campaigns, prospect_outreach |
@@ -626,6 +626,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 166 | System One Skill Gating (O3) — E5 shortlists skills down to `shortlist_floor`; one batched System One Choice (shortlist ∪ `none`) plus a Noul `needs_skill` picks at most one automatic skill (a deliberate narrowing of 114; explicit `/skill-name` still stacks); a below-`match_threshold` apply is marked `below_floor` on the trace; `match_skills` appends its judgments; surface `system_one.surfaces.skills` shipped off with null bars until `make calibrate-skills`, then enabled 2026-10-12 with `choice_trust` 0.75, `needs_skill_hold` 0.6, `shortlist_k` 5; no suggestion UX | Implemented |
 | 167 | Routing Choice Criteria — fixes the 164 held-out failures: companion no longer claims "explain X"; optional `routing_criteria` on `BaseAgent` (Choice text, falls back to `description`; E5 still embeds `description`); name-free Choice instructions and a stronger `none` criterion; `shortlist_k` 9 chosen by offline recall on three calibration sets (9 of 10 agents, so E5 filters little for the Choice; it still drives the 160 skip path); `eval/calibration/routing_holdout2.jsonl` and the opt-in `companion_research_check.py`. Surface enabled (`choice_trust` 0.5, `multi_specialist_hold` 0.5, `complexity_lookup_max` null) under an amended acceptance rule | Implemented |
 | 168 | Loop Extraction Gate (O4) — one batched System One request asks three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration` on conversation only); pure `decide()` in `ze_worldstate/loop_judge.py` maps them to resolve / create-declared / create-suspected / hold; Haiku only writes the title (and optional `implied_window_days`) after a positive gate; `LoopInflow` (`admission.py`) owns gate and commit; conversation gate runs in `write_memory` beside the fact extractor (rows on `MessageTrace.judgments`, fire-and-forget commit), worldstate `conversation_memory_hook` deleted; email/calendar/ingestion run the gate, log judgments, and write no trace rows; off, uncalibrated, skip or invalid → the 109 Haiku gate; surface `system_one.surfaces.loop_gate` enabled 2026-10-12 (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8) after an `ENABLE` verdict for EN and PT on the held-out set; the 109 Haiku fallback now parses Haiku's fenced JSON (before 168 it did not, so production created no loops); no migration | Implemented |
+| 177 | Interruption Governor (part 1) — one governor for every proactive push: `PushKind` (class requested/accountability/discretionary + urgency) registered process-wide, pure `decide()` in `ze_proactive/governor.py`; the shared daily budget (`proactive.budget.max_pushes_per_day` default 5) covers every discretionary push; quiet hours (`interruption_settings`, ship off) hold accountability and discretionary pushes, `QuietHoursReleaseJob` releases them with one summary buzz; `notify()` is the only send path (`push()`/`push_notification()` deleted); ntfy priority low 2/normal 3/high 5 and a `buzz` flag; REST `GET/PUT /api/v0/notifications/quiet-hours` + a Settings form; cron catch-up (`proactive_job_runs`, `catch_up_max_age_hours`), workflow catch-up, late calendar reminders; migration `zpro004` | Implemented |
 
 ## graphify
 

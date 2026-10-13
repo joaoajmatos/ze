@@ -12,7 +12,7 @@ ze/
 ├── core/             # Shared infrastructure — no domain knowledge
 │   ├── ze-agents/    # Developer API — BaseAgent, @agent, @tool, ZePlugin, shared types
 │   ├── ze-plugin/    # Plugin extension framework — ZePlugin, channels, signal sources, data domains
-│   ├── ze-proactive/ # Job scheduling framework — ProactiveScheduler, ProactiveNotifier
+│   ├── ze-proactive/ # Job scheduling + interruption governor — ProactiveScheduler, ProactiveNotifier, PushKind
 │   ├── ze-automation/# Core automation engine — goals, workflows, accountability, agents, jobs
 │   ├── ze-core/      # Engine — routing, orchestration, telemetry, DI container
 │   ├── ze-data/      # Data portability layer — DataDomain, export/import/delete orchestration
@@ -96,8 +96,13 @@ Depends on `ze-agents` only.
 | Module | What it provides |
 |--------|-----------------|
 | `job.py` | `ProactiveJob` Protocol, `@proactive_job` decorator |
-| `scheduler.py` | `ProactiveScheduler` — APScheduler wrapper |
-| `notifier.py` | `ProactiveNotifier` — push delivery via ntfy/WebSocket |
+| `scheduler.py` | `ProactiveScheduler` — APScheduler wrapper with catch-up |
+| `notifier.py` | `ProactiveNotifier` — the one proactive send path; the governor decides deliver/hold/suppress |
+| `governor.py` | `decide` — the pure deliver / hold / suppress rule |
+| `push_kinds.py` | process-wide `PushKind` registry; `QUIET_HOURS_SUMMARY` |
+| `quiet_hours.py` | `is_active` window check, `InterruptionSettingsStore` |
+| `catchup.py` | `missed_fire_time` — the most recent missed cron fire time |
+| `job_run_store.py` | `JobRunStore` — the last start and finish of each job |
 | `push_log_store.py` | `PushLogStore`, `PushLogEntry` — delivery audit log |
 
 ---
@@ -113,7 +118,7 @@ Plugin authors list `ze-sdk` as their only Ze dependency and import everything f
 |--------|-----------------|
 | `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `get_logger`, `Settings`, `DBPool` |
 | `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `GateDecision`, `Mode`, `AbortToken`, `Action`, `Notification` |
-| `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushLogStore`, `PushLogEntry` |
+| `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore`, `PushLogEntry` |
 | `ze_sdk.channels` | `Channel`, `ChannelType`, `ChannelHandle`, `Message`, `SentMessage`, `Thread`, `ThreadMessage`, `ChannelSendError` |
 | `ze_sdk.memory` | `MemoryContext`, `Fact`, `Episode`, `Procedure`, `Entity`, `TaskState`, `RetrievalRequest`, `MemoryStore`, `PostgresMemoryStore` |
 | `ze_sdk.onboarding` | `OnboardingProvider`, `OnboardingStep`, `OnboardingField`, `OnboardingSeed`, `OnboardingResult`, setup seed and submission types |

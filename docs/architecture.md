@@ -511,9 +511,9 @@ Override modes at runtime via `PUT /capabilities` (persisted in DB via
 
 ## Proactive Ze
 
-**Modules:** `ze_proactive` (scheduler, notifier) · `ze_personal/jobs/` · `ze_automation/jobs/` · `ze_prospecting/jobs/` · `ze_calendar/jobs/` · `ze_news/jobs/`
+**Modules:** `ze_proactive` (scheduler, notifier, governor) · `ze_personal/jobs/` · `ze_automation/jobs/` · `ze_prospecting/jobs/` · `ze_calendar/jobs/` · `ze_news/jobs/`
 
-Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompting:
+Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompting. Every push declares a class (`requested`, `accountability`, `discretionary`). One interruption governor holds accountability and discretionary pushes during quiet hours and lets only discretionary nudges claim the shared daily budget:
 
 | Job | When | Description |
 |---|---|---|
@@ -533,7 +533,7 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Stale campaign recovery | Every 15 min | Fail-fast stuck prospecting campaigns |
 | Workflow failure alerts | Immediate | Push when a scheduled step fails |
 | Calendar reminders | When they fire | Event-specific reminders, interval assessed by Haiku |
-| Goal milestone progress | After each milestone | Short completion line pushed via `ProactiveNotifier` |
+| Goal milestone progress | After each milestone | Short completion line, accountability push via `ProactiveNotifier` |
 | News fetch | Every 30 min | Ingest and embed new RSS articles |
 
 See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and config.
