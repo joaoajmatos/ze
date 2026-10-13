@@ -136,3 +136,105 @@ def test_forget_that_is_miss_not_a_write():
         [(uuid4(), "Job switch worry")],
     )
     assert isinstance(result, Miss)
+
+
+class _ConfirmStore:
+    def __init__(self, fail_confirm: bool = False) -> None:
+        from ze_agents.claims import ClaimKind
+
+        self.fail_confirm = fail_confirm
+        self.bank = OpenLoop(
+            id=uuid4(),
+            title="Switch bank",
+            claim_kind=ClaimKind.SUSPICION,
+            provenance="email",
+            confidence=0.35,
+            state=LoopState.SUSPECTED,
+        )
+        self.dentist = OpenLoop(
+            id=uuid4(),
+            title="Dentist appointment",
+            claim_kind=ClaimKind.SUSPICION,
+            provenance="email",
+            confidence=0.3,
+            state=LoopState.SUSPECTED,
+        )
+        self.transitions: list[tuple] = []
+        self.stamped: list = []
+
+    async def list(self, states=None):
+        return [self.bank, self.dentist]
+
+    async def transition(self, loop_id, state, **kwargs):
+        if self.fail_confirm and state == "active":
+            raise RuntimeError("db down")
+        self.transitions.append((loop_id, state))
+        loop = self.bank if loop_id == self.bank.id else self.dentist
+        return loop
+
+    async def stamp_declared(self, loop_id, *, confidence, deadline):
+        self.stamped.append(loop_id)
+
+    async def list_evidence(self, loop_id):
+        return []
+
+    async def set_dismissed_evidence_fingerprint(self, loop_id, fingerprint):
+        return None
+
+
+def _confirm_agent(store: _ConfirmStore, reply: str) -> LoopsAgent:
+    client = AsyncMock()
+    client.complete_with_tools = AsyncMock(
+        side_effect=[
+            (None, [{"id": "c1", "name": "list_open_loops", "arguments": {}}]),
+            (
+                None,
+                [
+                    {
+                        "id": "c2",
+                        "name": "confirm_loop",
+                        "arguments": {"loop_id": str(store.bank.id)},
+                    },
+                    {
+                        "id": "c3",
+                        "name": "drop_loop",
+                        "arguments": {"loop_id": str(store.dentist.id)},
+                    },
+                ],
+            ),
+            (reply, None),
+        ]
+    )
+    client.complete = AsyncMock(return_value=reply)
+    return LoopsAgent(
+        openrouter_client=client,
+        loop_store=store,
+        loop_tracker=_FakeTracker(TrackResult(ok=False, error="unused")),
+    )
+
+
+def test_loops_agent_declares_confirm_loop():
+    assert "confirm_loop" in LoopsAgent.tools
+    assert "confirm_loop" in _AGENT_INSTRUCTIONS
+
+
+async def test_confirm_and_drop_by_id_keep_the_reply():
+    store = _ConfirmStore()
+    reply = "I'll keep track of the bank switch and dropped the dentist one."
+    agent = _confirm_agent(store, reply)
+
+    result = await agent.run(_ctx())
+
+    assert (store.bank.id, "active") in store.transitions
+    assert (store.dentist.id, "dropped") in store.transitions
+    assert store.stamped == [store.bank.id]
+    assert result.response == reply
+
+
+async def test_failed_confirm_strips_the_tracking_claim():
+    store = _ConfirmStore(fail_confirm=True)
+    agent = _confirm_agent(store, "I'll keep track of the bank switch.")
+
+    result = await agent.run(_ctx())
+
+    assert result.response == COULD_NOT_TRACK

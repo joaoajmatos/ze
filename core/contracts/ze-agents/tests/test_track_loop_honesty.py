@@ -10,7 +10,7 @@ from ze_agents.nested_tools import (
     COULD_NOT_CLOSE,
     COULD_NOT_TRACK,
     enforce_domain_cancel_confirmations,
-    track_loop_succeeded,
+    tracking_earned,
 )
 from ze_agents.types import ToolCall
 
@@ -38,27 +38,54 @@ def _nested_item(result) -> dict:
     }
 
 
-def test_track_loop_succeeded_top_level():
-    assert track_loop_succeeded([_call("track_loop", _OK)]) is True
+def test_tracking_earned_top_level():
+    assert tracking_earned([_call("track_loop", _OK)]) is True
 
 
-def test_track_loop_succeeded_nested_dict():
+def test_tracking_earned_nested_dict():
     delegate = _nested([_nested_item(_OK)])
-    assert track_loop_succeeded([delegate]) is True
+    assert tracking_earned([delegate]) is True
 
 
-def test_track_loop_succeeded_nested_json_string():
+def test_tracking_earned_nested_json_string():
     delegate = _call(
         "delegate_to_agent",
         json.dumps({"tool_calls": [_nested_item(json.dumps(_OK))]}),
     )
-    assert track_loop_succeeded([delegate]) is True
+    assert tracking_earned([delegate]) is True
 
 
-def test_track_loop_succeeded_false_for_failure_missing_and_other_tools():
-    assert track_loop_succeeded([_call("track_loop", _FAIL)]) is False
-    assert track_loop_succeeded([]) is False
-    assert track_loop_succeeded([_call("close_loop", _OK)]) is False
+def test_tracking_earned_counts_confirm_loop():
+    ok = {"ok": True, "id": "loop-1", "title": "Bank", "state": "active"}
+    assert tracking_earned([_call("confirm_loop", ok)]) is True
+    delegate = _nested([{**_nested_item(ok), "tool_name": "confirm_loop"}])
+    assert tracking_earned([delegate]) is True
+    assert tracking_earned([_call("confirm_loop", _FAIL)]) is False
+
+
+@pytest.mark.parametrize(
+    "sentence", ["I'll keep track of the bank switch.", "Vou acompanhar isso."]
+)
+def test_confirm_loop_earns_tracking_claims(sentence):
+    ok = {"ok": True, "id": "loop-1", "title": "Bank", "state": "active"}
+    assert (
+        enforce_domain_cancel_confirmations(
+            sentence, [_call("confirm_loop", ok)], strip_track_claims=True
+        )
+        == sentence
+    )
+    assert (
+        enforce_domain_cancel_confirmations(
+            sentence, [_call("confirm_loop", _FAIL)], strip_track_claims=True
+        )
+        == COULD_NOT_TRACK
+    )
+
+
+def test_tracking_earned_false_for_failure_missing_and_other_tools():
+    assert tracking_earned([_call("track_loop", _FAIL)]) is False
+    assert tracking_earned([]) is False
+    assert tracking_earned([_call("close_loop", _OK)]) is False
 
 
 _STRIP = [

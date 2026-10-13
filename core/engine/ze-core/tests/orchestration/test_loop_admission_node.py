@@ -200,6 +200,32 @@ async def test_successful_track_loop_skips_the_loop_gate():
         assert [r.question_id for r in trace.judgments] == ["embed_route"]
 
 
+async def test_successful_confirm_loop_skips_the_loop_gate():
+    admission = AsyncMock(return_value=_loop_result())
+    state, cfg = _setup(
+        loop_admission=admission,
+        tool_calls=[
+            _track_call({"ok": True, "id": "loop-1", "state": "active"}, "confirm_loop")
+        ],
+    )
+
+    await memory.write_memory(state, cfg)
+
+    admission.assert_not_awaited()
+
+
+async def test_failed_confirm_loop_still_runs_the_gate():
+    admission = AsyncMock(return_value=_loop_result())
+    state, cfg = _setup(
+        loop_admission=admission,
+        tool_calls=[_track_call({"ok": False, "error": "nope"}, "confirm_loop")],
+    )
+
+    await memory.write_memory(state, cfg)
+
+    admission.assert_awaited_once()
+
+
 async def test_failed_track_loop_still_runs_the_gate():
     admission = AsyncMock(return_value=_loop_result())
     state, cfg = _setup(

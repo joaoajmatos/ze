@@ -9,7 +9,7 @@ from langchain_core.runnables import RunnableConfig
 from ze_agents.claims import Provenance
 from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
-from ze_agents.nested_tools import track_loop_succeeded
+from ze_agents.nested_tools import tracking_earned
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
 from ze_core.conversation.messages.judgments import judgments_from_result
@@ -125,7 +125,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         )
         fact_extractor = config["configurable"].get("fact_extractor")
         loop_admission = config["configurable"].get("loop_admission")
-        if loop_admission is not None and track_loop_succeeded(result.tool_calls or []):
+        if loop_admission is not None and tracking_earned(result.tool_calls or []):
             loop_admission = None
             log.debug("write_memory_loop_gate_skipped_track", session_id=ctx.session_id)
         trace = state.get("message_trace")
