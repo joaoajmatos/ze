@@ -38,6 +38,7 @@ from ze_skills.store import SkillStore
 from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
 from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
 from ze_api.feedback_domain import feedback_data_domains
+from ze_api.interruption_domain import interruption_data_domains
 from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
 from ze_priority import import_agent_modules as import_priority_agents
@@ -741,6 +742,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         + automation_data_domains(pool)
         + worldstate_data_domains(pool)
         + feedback_data_domains(pool)
+        + interruption_data_domains(pool)
         + [d for plugin in plugins for d in plugin.data_domains()]
     )
     data_portability_service = DataPortabilityService(pool=pool, domains=all_domains)
