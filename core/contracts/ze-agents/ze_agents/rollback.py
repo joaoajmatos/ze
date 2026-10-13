@@ -38,7 +38,7 @@ def is_error_result(result: Any) -> bool:
     if not isinstance(result, dict):
         return False
     return (
-        "error" in result
+        bool(result.get("error"))
         or result.get("ok") is False
         or result.get("status") == "error"
     )
