@@ -133,7 +133,7 @@
 
 ## Phase 9: Real-Postgres check (US2 + US4)  [ENG]
 
-- [ ] T032 [ENG] [BE] `apps/ze-api/tests/pg/test_loop_confirmation_pg.py` (new, `@pytest.mark.pg`, 170 harness fixtures): (a) create a suspected loop with the real `PostgresLoopStore`, call `review.confirm_loop`; row has state `active`, confidence 0.9, `confirmed_at = updated_at`, deadline ≈ now+7d; move the deadline 1 day into the past; `DriftSweepJob` moves it to `drifting` (proves confirm feeds 170's predicate). (b) with the real `PushLogStore` and `TurnSurfacing` (fake priority view and embedder), two suspected loops: first `resume_loop_offers()` returns both and writes two `push_log` rows; a second call returns `[]`; after `UPDATE push_log SET sent_at = now() - interval '8 days'` it returns both again. Run `make test-pg`. · new file
+- [x] T032 [ENG] [BE] `apps/ze-api/tests/pg/test_loop_confirmation_pg.py` (new, `@pytest.mark.pg`, 170 harness fixtures): (a) create a suspected loop with the real `PostgresLoopStore`, call `review.confirm_loop`; row has state `active`, confidence 0.9, `confirmed_at = updated_at`, deadline ≈ now+7d; move the deadline 1 day into the past; `DriftSweepJob` moves it to `drifting` (proves confirm feeds 170's predicate). (b) with the real `PushLogStore` and `TurnSurfacing` (fake priority view and embedder), two suspected loops: first `resume_loop_offers()` returns both and writes two `push_log` rows; a second call returns `[]`; after `UPDATE push_log SET sent_at = now() - interval '8 days'` it returns both again. Run `make test-pg`. · new file
 
 ---
 
