@@ -458,7 +458,7 @@ overlaps 170 (see the handoff message and §9).
 | *dogfood* | Starts when 171 lands. At least two weeks, overlapping 172–174. Weekly check in §8 D7. Produces labeled data | – | – | 171 |
 | **175** | **Scoring model:** split importance, urgency, confidence; time-to-due from dates; inferred-stakes System One Score with held-out calibration; reminders, calendar and workflows as sources | 4 | M–L | dogfood data |
 | **176** | **Today surface:** web page plus briefing rewrite; done / snooze / drop / pin actions that also capture outcomes | 4 | M | 175 |
-| **177** | **Interruption governor, part 1:** tiers, quiet hours, urgency, budget on discretionary only, cron catch-up (needs no calibration; may move earlier) | 3 | M | none hard |
+| **177** | **Interruption governor, part 1:** tiers, quiet hours, urgency, budget on discretionary only, cron catch-up (needs no calibration; may move earlier) | 3 | M | none hard. Implemented (spec `phases/177-interruption-governor`) |
 | **178–179** | **Governor, part 2:** push outcome capture; calibrated interrupt Score (O6) and threshold adaptation | 3 | L | dogfood data, 176 |
 
 Why this order: each step makes the next one measurable. Repair makes the pipeline produce something;
@@ -479,12 +479,12 @@ The seven questions from the first draft were answered. Recommendations were acc
 | **D1** | No deployed instance exists; Ze has never been deployed. Evidence comes from dogfooding only. The roughly two-week dogfood step stays in the plan. |
 | **D2** | **Both** confirmation paths: mount the review list, and add a chat-native "keep track of these?" at session resume, at most 3 items. **Addition from the user:** when an independent source mentions a suspected loop, that should influence something, and can promote it if it passes a confidence bar. Design: independent corroboration raises the suspected loop's confidence and can auto-promote it to `active` above a calibrated bar. A System One same-concern judgment (Noul or Choice) is used where entity or embedding matching is not enough. Calibrate on a held-out set as in Phases 163–168. Provenance must record the corroborating sources. Doctrine fit: the loop stays an inference (suspicion) until corroborated or confirmed; promotion is a priority/open-loop-state claim by the executive function, never a fact; independence must be defined in code (different source type or different thread/document), not by the model. |
 | **D3** | Link rows now: one request creates one thing, and related items point at each other. Revisit a store merge after dogfood. |
-| **D4** | Exempt user-requested timed alerts from the discretionary budget; add quiet hours and urgency tiers. The user's actual hours are asked when that phase is specced. |
+| **D4** | Exempt user-requested timed alerts from the discretionary budget; add quiet hours and urgency tiers. The user's hours: set in Settings (Settings › Notifications; ships off). |
 | **D5** | **Overrides the recommendation:** importance comes from dates and pins **plus inferred stakes**. The stakes inference is a System One Score, calibrated on a held-out set, shown in the trace and the ranking explanation so the user can see why, and always outranked by the user's pins and Phase 127 overrides. Doctrine fit: an inference (never a fact), hedged in its wording, derived from cited text, with the Score never licensing a stronger claim kind (system-one-models anti-patterns). |
 | **D6** | Yes to waiting-for tracking, Gmail first, after Option 2. |
 | **D7** | Accepted weekly success check: duplicates created = 0; loops confirmed or closed per week; pushes acted on versus dismissed; any alert the user would have wanted but did not get. |
 
-Open for later phases (not blocking 170–174): the user's quiet hours (asked when 177 is specced); the
+Open for later phases (not blocking 170–174): the user's quiet hours (settled in 177: set in Settings); the
 definition of "independent source" for D2 (settled in the 172 spec); the stakes Score's levels and
 what text it reads (settled in the 175 spec).
 
