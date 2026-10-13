@@ -20,6 +20,7 @@ from ze_agents.nli import NLIClient
 from ze_memory.dream.scorer import refresh_episode_sensitive_flag, tag_episode_metadata
 from ze_memory.dream.sensitive import is_sensitive_entity
 from ze_memory.errors import (
+    FactRestoreConflictError,
     InvalidFactProvenanceError,
     InvalidRetrievalRequestError,
     StoreError,
@@ -375,6 +376,45 @@ class PostgresMemoryStore:
                 matched,
             )
         return matched
+
+    async def retract_fact_and_restore(
+        self, fact_id: UUID, restore_ids: list[UUID]
+    ) -> None:
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                fact_rows = await conn.fetch(
+                    "SELECT id, contradicted FROM memory_facts"
+                    " WHERE id = $1 FOR UPDATE",
+                    fact_id,
+                )
+                restore_rows = (
+                    await conn.fetch(
+                        "SELECT id, contradicted FROM memory_facts"
+                        " WHERE id = ANY($1::uuid[]) FOR UPDATE",
+                        restore_ids,
+                    )
+                    if restore_ids
+                    else []
+                )
+                if not fact_rows or fact_rows[0]["contradicted"]:
+                    raise FactRestoreConflictError(
+                        f"fact {fact_id} is missing or already retracted"
+                    )
+                by_id = {r["id"]: r["contradicted"] for r in restore_rows}
+                if any(not by_id.get(rid) for rid in restore_ids):
+                    raise FactRestoreConflictError(
+                        "a fact to restore was changed since the write"
+                    )
+                await conn.execute(
+                    "UPDATE memory_facts SET contradicted = true WHERE id = $1",
+                    fact_id,
+                )
+                if restore_ids:
+                    await conn.execute(
+                        "UPDATE memory_facts SET contradicted = false"
+                        " WHERE id = ANY($1::uuid[])",
+                        restore_ids,
+                    )
 
     async def upsert_task_state(self, state: TaskState) -> None:
         async with self._pool.acquire() as conn:
@@ -833,19 +873,21 @@ class PostgresMemoryStore:
         nli_cfg = nli_config(self._settings)
 
         async with self._pool.acquire() as conn:
-            await conn.execute(
+            displaced_rows = await conn.fetch(
                 """
                 UPDATE memory_facts
                    SET contradicted = true
                  WHERE predicate = $1
                    AND subject_id IS NOT DISTINCT FROM $2
                    AND contradicted = false
+                RETURNING id
                 """,
                 fact.predicate,
                 fact.subject_id,
             )
+            displaced = [r["id"] for r in displaced_rows]
 
-            await self._apply_semantic_contradiction_check(
+            displaced += await self._apply_semantic_contradiction_check(
                 conn, fact, value_emb, emb_list, nli_cfg
             )
 
@@ -874,6 +916,8 @@ class PostgresMemoryStore:
                 provenance.value,
             )
             fact_id: UUID = row["id"]
+
+        fact.displaced_ids = displaced
 
         if self._graph_store is not None:
             fire_and_forget(
@@ -952,10 +996,10 @@ class PostgresMemoryStore:
         value_emb: Any,
         emb_list: str,
         nli_cfg: dict,
-    ) -> None:
+    ) -> list[UUID]:
         nli = getattr(self, "_nli", None)
         if not nli_cfg.get("nli_write_time_check", True) or nli is None:
-            return
+            return []
 
         nli_lower = float(nli_cfg.get("nli_lower_cosine_bound", 0.60))
         nli_contra = float(nli_cfg.get("nli_contradiction_threshold", 0.60))
@@ -983,8 +1027,9 @@ class PostgresMemoryStore:
                 candidate_ids.append(row["id"])
 
         if not pairs:
-            return
+            return []
 
+        marked: list[UUID] = []
         scores = await nli.scores(pairs)
         for candidate_id, score in zip(candidate_ids, scores):
             if score is None:
@@ -994,11 +1039,13 @@ class PostgresMemoryStore:
                     "UPDATE memory_facts SET contradicted = true WHERE id = $1",
                     candidate_id,
                 )
+                marked.append(candidate_id)
                 log.debug(
                     "memory_semantic_contradiction",
                     contradicted_id=str(candidate_id),
                     predicate=fact.predicate,
                 )
+        return marked
 
     # ── graph relationship helpers ─────────────────────────────────────────────
 

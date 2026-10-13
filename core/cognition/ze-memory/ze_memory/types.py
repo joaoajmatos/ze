@@ -108,6 +108,7 @@ class Fact:
     relevance_score: float | None = field(default=None, compare=False)
     retrieval_provenance: str | None = field(default=None, compare=False)
     created_at: datetime | None = None
+    displaced_ids: list[UUID] = field(default_factory=list, compare=False)
 
 
 @dataclass
