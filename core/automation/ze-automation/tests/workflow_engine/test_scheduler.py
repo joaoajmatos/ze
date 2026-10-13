@@ -162,3 +162,69 @@ async def test_start_recovers_stale_executions_before_scheduling():
 
     store.recover_stale.assert_called_once_with(45)
     await scheduler.stop()
+
+
+# ── catch-up (phase 177) ──────────────────────────────────────────────────────
+
+
+def _catchup_scheduler(workflow, executions):
+    from datetime import datetime, timedelta, timezone  # noqa: F401
+
+    store = _make_store(None)
+    store.list_enabled_scheduled = AsyncMock(return_value=[workflow])
+    store.list_executions = AsyncMock(return_value=executions)
+    scheduler = WorkflowScheduler(workflow_store=store, executor=AsyncMock())
+    scheduler.trigger_now = AsyncMock()
+    return scheduler, store
+
+
+async def _start_and_stop(scheduler):
+    await scheduler.start()
+    await scheduler.stop()
+
+
+async def test_missed_scheduled_workflow_triggers_once():
+    from datetime import datetime, timedelta, timezone
+
+    wf = _make_workflow(schedule="* * * * *")
+    ex = WorkflowExecution(
+        id=uuid4(),
+        workflow_id=wf.id,
+        status="completed",
+        started_at=datetime.now(timezone.utc) - timedelta(minutes=30),
+    )
+    scheduler, store = _catchup_scheduler(wf, [ex])
+    await _start_and_stop(scheduler)
+    scheduler.trigger_now.assert_awaited_once_with(wf.id)
+    store.list_executions.assert_awaited_once_with(wf.id, limit=1)
+
+
+async def test_workflow_without_executions_is_not_caught_up():
+    wf = _make_workflow(schedule="* * * * *")
+    scheduler, _ = _catchup_scheduler(wf, [])
+    await _start_and_stop(scheduler)
+    scheduler.trigger_now.assert_not_awaited()
+
+
+async def test_workflow_not_missed_is_not_caught_up():
+    from datetime import datetime, timezone
+
+    wf = _make_workflow(schedule="0 9 * * *")
+    ex = WorkflowExecution(
+        id=uuid4(),
+        workflow_id=wf.id,
+        status="completed",
+        started_at=datetime.now(timezone.utc),
+    )
+    scheduler, _ = _catchup_scheduler(wf, [ex])
+    await _start_and_stop(scheduler)
+    scheduler.trigger_now.assert_not_awaited()
+
+
+async def test_jobs_have_no_misfire_limit():
+    wf = _make_workflow()
+    scheduler, _ = _catchup_scheduler(wf, [])
+    scheduler._add_job(wf)
+    assert scheduler._scheduler.get_job(str(wf.id)).misfire_grace_time is None
+    scheduler.schedule_job(AsyncMock(), "0 8 * * *", "x")
+    assert scheduler._scheduler.get_job("x").misfire_grace_time is None

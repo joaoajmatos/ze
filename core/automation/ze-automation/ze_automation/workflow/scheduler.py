@@ -12,6 +12,7 @@ from apscheduler.triggers.date import DateTrigger
 
 from ze_logging import get_logger
 from ze_automation.workflow.store import WorkflowStore
+from ze_proactive.catchup import missed_fire_time
 from ze_automation.workflow.types import Workflow
 
 log = get_logger(__name__)
@@ -89,6 +90,33 @@ class WorkflowScheduler:
 
         self._scheduler.start()
         log.info("workflow_scheduler_started", jobs=len(workflows))
+        await self._catch_up(workflows)
+
+    async def _catch_up(self, workflows: list[Workflow]) -> None:
+        """Run once each scheduled workflow whose fire time passed since its
+        latest execution started (laptop asleep, process down)."""
+        now = datetime.now(timezone.utc)
+        for wf in workflows:
+            try:
+                executions = await self._store.list_executions(wf.id, limit=1)
+                if not executions or executions[0].started_at is None:
+                    continue
+                last = executions[0].started_at
+                if last.tzinfo is None:
+                    last = last.replace(tzinfo=timezone.utc)
+                missed = missed_fire_time(
+                    wf.schedule, last, now, self._scheduler.timezone
+                )
+                if missed is None:
+                    continue
+                log.info(
+                    "workflow_catch_up", workflow=wf.name, missed_at=missed.isoformat()
+                )
+                await self.trigger_now(wf.id)
+            except Exception as exc:
+                log.warning(
+                    "workflow_catch_up_failed", workflow=wf.name, error=str(exc)
+                )
 
     async def stop(self) -> None:
         if self._scheduler.running:
@@ -148,6 +176,7 @@ class WorkflowScheduler:
             replace_existing=True,
             max_instances=1,
             coalesce=True,
+            misfire_grace_time=None,
         )
 
     def schedule_at(self, fn, dt: datetime, job_id: str, args: tuple = ()) -> None:
@@ -158,6 +187,7 @@ class WorkflowScheduler:
             args=list(args),
             replace_existing=True,
             max_instances=1,
+            misfire_grace_time=None,
         )
 
     def remove_job_if_exists(self, job_id: str) -> None:
@@ -175,6 +205,7 @@ class WorkflowScheduler:
             replace_existing=True,
             max_instances=1,
             coalesce=True,
+            misfire_grace_time=None,
         )
 
     async def _run_workflow(self, workflow_id: UUID) -> None:
