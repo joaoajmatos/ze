@@ -760,12 +760,14 @@ def _split_undo(spec: Any, result: Any) -> tuple[Any, dict[str, Any] | None]:
     """
     if not isinstance(result, dict) or "undo" not in result:
         return result, None
+    from ze_agents.tool import is_valid_undo_payload
+
     payload = result["undo"]
     stripped = {k: v for k, v in result.items() if k != "undo"}
     if (
         spec.reversibility is ToolReversibility.REVERSIBLE
         and not is_error_result(result)
-        and isinstance(payload, dict)
+        and is_valid_undo_payload(payload)
     ):
         return stripped, payload
     log.warning("undo_payload_dropped", tool=spec.name)

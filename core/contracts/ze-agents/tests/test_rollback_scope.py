@@ -60,6 +60,8 @@ async def test_scope_visible_in_child_task() -> None:
         ({"ok": True}, False),
         ({"status": "done"}, False),
         ({}, False),
+        ({"error": None, "ok": True}, False),
+        ({"error": ""}, False),
         ("some text", False),
         (None, False),
     ],

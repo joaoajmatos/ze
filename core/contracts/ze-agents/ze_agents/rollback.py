@@ -37,4 +37,8 @@ def is_error_result(result: Any) -> bool:
     """True when a tool returned an error in its result instead of raising."""
     if not isinstance(result, dict):
         return False
-    return "error" in result or result.get("ok") is False or result.get("status") == "error"
+    return (
+        "error" in result
+        or result.get("ok") is False
+        or result.get("status") == "error"
+    )

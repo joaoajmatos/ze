@@ -192,3 +192,21 @@ async def test_retry_mode_refuses_irreversible_write():
     tc = await _agent().call_tool("send", _ctx(True))
     assert ran == []
     assert tc.success is False
+
+
+@pytest.mark.parametrize(
+    "bad", [{"a": {"nested": 1}}, {"a": [{"x": 1}]}, {"a": object()}]
+)
+async def test_hand_built_non_scalar_payload_is_dropped(bad):
+    _undoer()
+    _reversible("make", {"ok": True, "undo": bad})
+    tc = await _agent().call_tool("make", _ctx())
+    assert tc.undo is None
+    assert tc.result == {"ok": True}
+
+
+async def test_clean_result_with_empty_error_key_keeps_payload():
+    _undoer()
+    _reversible("make", {"ok": True, "error": None, "undo": {"id": "1"}})
+    tc = await _agent().call_tool("make", _ctx())
+    assert tc.undo == {"id": "1"}

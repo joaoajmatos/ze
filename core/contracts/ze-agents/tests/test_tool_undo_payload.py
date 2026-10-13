@@ -28,7 +28,13 @@ def test_empty_payload_is_allowed() -> None:
 
 @pytest.mark.parametrize(
     "bad",
-    [{"x": object()}, {"x": {"nested": 1}}, {"x": [{"a": 1}]}, {"x": [[1]]}, {"x": (1,)}],
+    [
+        {"x": object()},
+        {"x": {"nested": 1}},
+        {"x": [{"a": 1}]},
+        {"x": [[1]]},
+        {"x": (1,)},
+    ],
 )
 def test_rejects_non_scalar_values(bad: dict) -> None:
     with pytest.raises(AgentConfigError):

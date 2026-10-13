@@ -107,17 +107,26 @@ def _check_declaration(
 _UNDO_SCALARS = (str, int, float, bool, type(None))
 
 
+def is_valid_undo_payload(payload: Any) -> bool:
+    """True for a dict whose values are scalars or lists of scalars."""
+    if not isinstance(payload, dict):
+        return False
+    for value in payload.values():
+        if isinstance(value, list):
+            if not all(isinstance(v, _UNDO_SCALARS) for v in value):
+                return False
+        elif not isinstance(value, _UNDO_SCALARS):
+            return False
+    return True
+
+
 def undo_payload(**kwargs: Any) -> dict[str, Any]:
     """Build the per-call undo payload a REVERSIBLE tool returns under `"undo"`.
 
     Values must be JSON scalars or lists of scalars: ids and names, never content.
     """
     for key, value in kwargs.items():
-        if isinstance(value, list):
-            ok = all(isinstance(v, _UNDO_SCALARS) for v in value)
-        else:
-            ok = isinstance(value, _UNDO_SCALARS)
-        if not ok:
+        if not is_valid_undo_payload({key: value}):
             raise AgentConfigError(
                 f"undo_payload value for {key!r} must be a scalar or a list of scalars"
             )
