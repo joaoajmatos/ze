@@ -14,3 +14,8 @@ class PriorityOverrideNotFoundError(ZePriorityError):
 class StaleReprioritizationTargetError(ZePriorityError):
     """The reprioritization target or anchor no longer exists in any `PriorityView`
     source list (FR-011)."""
+
+
+class StalePriorityRestoreError(ZePriorityError):
+    """The override to roll back is no longer active: something changed the
+    priority order after the reprioritization."""
