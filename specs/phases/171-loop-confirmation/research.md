@@ -65,9 +65,17 @@ Each entry: decision, rationale, alternatives. R1–R6 are the user's answers (Q
 - **Decision**: two eval scenarios ("What's still on my plate?", "O que tenho em aberto?") in `eval/scenarios/loops.yaml` with judge criteria requiring a list of open items or an honest "nothing open"; four routing training rows (EN/PT confirm and drop by title → `loops`). No held-out edits.
 - **Rationale**: the eval runner has no setup step and no way to fake a session gap, so the resume offer and chat confirm are covered by graph-level unit tests and the pg test instead.
 
-## Verdict (filled by the ENG lead after `make calibrate-open-query --set holdout`)
+## Verdict
 
-| Language | Recall | FPR | Threshold | Result |
-|---|---|---|---|---|
-| EN | – | – | – | – |
-| PT | – | – | – | – |
+Detector: 14 EN + 26 PT examples, Portuguese similarity lowered by `PT_SIMILARITY_OFFSET = 0.05` (E5 scores Portuguese pairs about 0.05 higher, including job-vacancy negatives), one threshold 0.88 picked on the tuned set (tuned: EN 0.955/0.000, PT 0.864/0.000 recall/FPR).
+
+| Run | Language | Recall | FPR | Threshold | Result |
+|---|---|---|---|---|---|
+| held-out 1 (`open_query_holdout.jsonl`) | EN | 0.900 | 0.000 | 0.88 | PASS |
+| held-out 1 | PT | 0.800 | 0.000 | 0.88 | FAIL |
+| held-out 2 (`open_query_holdout2.jsonl`, R5 rerun) | EN | 0.917 | 0.000 | 0.88 | PASS |
+| held-out 2 | PT | 0.667 | 0.000 | 0.88 | FAIL |
+
+Held-out 2 Portuguese misses sit at similarity 0.858-0.876 (imperative and idiomatic phrasings: "Diz-me o que ainda tenho em cima da mesa", "Lembra-me do que ainda está em suspenso"). False positives were zero in both languages and both runs. Failed twice: escalated per R5; the slow regression test is not added until the bar decision is made.
+
+Note: five detector examples equal tuned-set texts verbatim; they must be reworded before the final constants are set.
