@@ -11,7 +11,6 @@ from ze_correlation.push import (
 )
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
-from ze_proactive.attention_budget import within_budget
 from ze_proactive.types import PushOutcome
 
 from ze_worldstate.push_kinds import LOOP_DRIFT
@@ -68,17 +67,14 @@ class LoopSurfacer:
         tau_relevance: float = 0.5,
         novelty_similarity_max: float = 0.85,
         grounding_threshold: float = 0.3,
-        max_pushes_per_day: int = 3,
         inline_cooldown_hours: float = 12.0,
         nli_client: Any = None,
-        check_budget: bool = True,
     ) -> bool:
         """Reuses `ze_correlation.push`'s bar functions (FR-007) plus one
         loop-specific gate — the inline-then-push cooldown (FR-012).
 
-        `check_budget=False` skips the shared-budget gate — used by
-        `eligible_candidates()`, which reports candidates before the budget is
-        charged by the governor when the push is sent (FR-005)."""
+        The shared budget is charged by the governor when the push is sent
+        (FR-005), not here."""
         if not passes_confidence(loop.confidence, tau_confidence):
             return False
 
@@ -100,9 +96,6 @@ class LoopSurfacer:
         if not await passes_grounding(
             loop.title, evidence_labels, nli_client, grounding_threshold
         ):
-            return False
-
-        if check_budget and not await within_budget(self._push_log, max_pushes_per_day):
             return False
 
         already_mentioned = await self._push_log.was_sent_within_hours(
@@ -139,7 +132,6 @@ class LoopSurfacer:
                 grounding_threshold=cfg["grounding_threshold"],
                 inline_cooldown_hours=inline_cooldown_hours,
                 nli_client=nli_client,
-                check_budget=False,
             )
             if passes:
                 eligible.append(loop)

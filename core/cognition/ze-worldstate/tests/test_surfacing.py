@@ -86,24 +86,6 @@ async def test_passes_push_bar_rejects_low_relevance():
     assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
 
 
-async def test_passes_push_bar_rejects_budget_exhausted():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.8, budget_count=3)
-    assert (
-        await surfacer.passes_push_bar(loop, loop.drift_rationale, max_pushes_per_day=3)
-        is False
-    )
-
-
-async def test_passes_push_bar_ignores_budget_when_check_budget_false():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.8, budget_count=3)
-    assert (
-        await surfacer.passes_push_bar(loop, loop.drift_rationale, check_budget=False)
-        is True
-    )
-
-
 # ── eligible_candidates / send (phase 123 User Story 2) ────────────────────────
 
 
