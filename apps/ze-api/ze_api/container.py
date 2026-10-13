@@ -254,6 +254,7 @@ class ZeContainer(CoreContainer):
     _checkpointer: Any
     _push_log_store: PushLogStore
     interruption_settings_store: InterruptionSettingsStore
+    notifier: ProactiveNotifier
     notification_store: NotificationStore
     data_portability_service: DataPortabilityService
     dev_data_seeder: DevDataSeeder
@@ -799,6 +800,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         _checkpointer=checkpointer,
         _push_log_store=push_log_store,
         interruption_settings_store=interruption_settings_store,
+        notifier=notifier,
         notification_store=notification_store,
         data_portability_service=data_portability_service,
         dev_data_seeder=dev_data_seeder,

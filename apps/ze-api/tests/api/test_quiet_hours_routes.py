@@ -252,3 +252,18 @@ async def test_list_notifications_includes_push_class_and_delivery():
     item = resp.json()["items"][0]
     assert item["push_class"] == "discretionary"
     assert item["delivery"] == "suppressed"
+
+
+def test_ze_container_exposes_notifier_and_interruption_settings_store():
+    """get_notifier/get_interruption_settings_store read these off the container.
+
+    The route tests above pass only because they override the dependencies; guard
+    the real container so the wired app cannot AttributeError in production.
+    """
+    import inspect
+
+    from ze_api.container import ZeContainer
+
+    params = inspect.signature(ZeContainer).parameters
+    assert "notifier" in params
+    assert "interruption_settings_store" in params
