@@ -73,11 +73,11 @@ Each entry: decision, rationale, alternatives. R1–R6 are the user's answers (Q
 
 | Run | Detector at that time | EN recall / FPR | PT recall / FPR |
 |---|---|---|---|
-| held-out 1, threshold 0.88 | 14 EN + 22 PT examples + offset | 0.900 / 0.000 | 0.800 / 0.000 (original bar missed) |
+| held-out 1, threshold 0.88 | 14 EN + 22 PT examples + offset (the working-tree state at that run; the first committed revision, 627ce759, already contains the six added later) | 0.900 / 0.000 | 0.800 / 0.000 (original bar missed) |
 | held-out 2 (R5 rerun), threshold 0.88 | the same plus six list-style examples added **after seeing held-out 1's misses** | 0.917 / 0.000 | 0.667 / 0.000 (original bar missed) |
 | **shipped detector**, both sets, one run, threshold 0.88 | the six post-hoc examples removed; five examples reworded because they equalled tuned-set texts verbatim; nothing else changed | held-out 1: 0.900 / 0.000; held-out 2: 0.917 / 0.000 | held-out 1: 0.800 / 0.000; held-out 2: 0.667 / 0.000 |
 
-Tuned set at the shipped detector: EN 0.955 / 0.000, PT 0.818 / 0.000. The shipped detector's numbers equal the first two rows, so the post-hoc examples changed nothing measurable on either set.
+Tuned set at the shipped detector: EN 0.955 / 0.000, PT 0.818 / 0.000. The shipped numbers land back on the first two rows. The six were removed because they were added after seeing held-out 1's misses, not because they were neutral: a re-run with the five rewordings and the six still present gave held-out 2 PT 0.833.
 
 **Decision (user, 2026-10-13): ship at threshold 0.88 under an amended bar.** The original bar (recall >= 0.90 per language) was missed in Portuguese on both held-out sets. The amended bar (EN recall >= 0.90, PT recall >= 0.65, FPR <= 0.05 per language) was set after seeing those results, so this is not a clean pre-registered verdict, and both held-out sets are seen and cannot serve as one again. A missed detection is benign (the open-priorities note is not injected and the user can rephrase); a false positive is the costly error.
 
