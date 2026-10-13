@@ -525,7 +525,7 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Contact review suggestions | 8:30 AM UTC daily | Push pending contact review nudges |
 | Goal narrative | 6 PM UTC Sunday | One-paragraph weekly progress update per active goal |
 | Goal suggestions | 7 PM UTC Sunday | Proactive new goal proposal based on memory + retrospectives |
-| Stuck goal detection | 9 AM UTC Tuesday | Alert on idle milestones (48 h) or unresolved gates (72 h) |
+| Stuck goal detection | 9 AM UTC Tuesday | Alert on goals idle 7 days or gates waiting 7 days |
 | Weekly accountability narrative | 9 AM UTC Monday | Templated summary of goals, workflows, costs, and anomalies |
 | Cost anomaly detection | Every 6 hours | Flag agent runs whose cost exceeds the rolling baseline |
 | Goal advance sweep | Every 15 min | Advance all `ACTIVE` goals via `GoalExecutor` |

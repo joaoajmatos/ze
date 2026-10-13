@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Ready to implement (starts after Phase 169 lands)
+**Status**: Implemented
 
 **Input**: User description: "Phase 1a of the executive-function direction (`specs/arch/executive-function.md`, decisions D1 to D7). Repair the executive layer so it acts: loops drift after their window (F1), stuck goals are found and ranked (F3), loops carry evidence and the push grounding gate means something (F9), the priority snapshot reports failed sources and no longer 500s on relationship items (F13), dead code and unread config go (§3.2), and a real-Postgres test harness stops the mock-store defect class from recurring."
 
