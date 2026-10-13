@@ -11,10 +11,10 @@ function joinPhrases(phrases: string[]): string {
 
 export function rollbackNoticeText(rollback: RollbackRecordResponse): string | null {
   const undone = joinPhrases(
-    rollback.entries.filter((e) => e.outcome === "undone").map((e) => e.effect_phrase),
+    (rollback.entries ?? []).filter((e) => e.outcome === "undone").map((e) => e.effect_phrase),
   );
   const failed = joinPhrases(
-    rollback.entries.filter((e) => e.outcome !== "undone").map((e) => e.effect_phrase),
+    (rollback.entries ?? []).filter((e) => e.outcome !== "undone").map((e) => e.effect_phrase),
   );
   switch (rollback.state) {
     case "partial":
