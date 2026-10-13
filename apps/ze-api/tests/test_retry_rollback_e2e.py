@@ -349,15 +349,32 @@ async def test_us1_rollback_then_regeneration_sets_a_new_reminder(env):
     [old_id] = list(env.world.reminders)
     ids = await env.plan_ids(reply)
     assert len(ids) == 1
+    seen_at_regen = {}
+
+    async def _regen(thread_id, text, *, replaces, config_extra=None):
+        # the undo must already have happened when the regeneration starts
+        seen_at_regen["old_still_there"] = old_id in env.world.reminders
+        return await inner(
+            thread_id, text, replaces=replaces, config_extra=config_extra
+        )
+
     env.regenerates(env.set_reminder("call Ana at 5"))
+    inner = env.regen.side_effect
+    env.regen = AsyncMock(side_effect=_regen)
+    env.container.invoke_retry_turn = env.regen
 
-    await env.retry(reply, ids)
+    # the rollback executor never runs a model loop (SC-007)
+    with (
+        patch.object(BaseAgent, "run", side_effect=AssertionError("model run")),
+        patch.object(BaseAgent, "agentic_loop", side_effect=AssertionError("loop")),
+    ):
+        await env.retry(reply, ids)
 
+    assert seen_at_regen == {"old_still_there": False}
     assert env.errors() == []
     assert old_id not in env.world.reminders
     assert list(env.world.reminders.values()) == ["call Ana at 5"]
-    # the model was never called by the rollback executor (SC-007)
-    assert env.llm.mock_calls == []
+    env.feedback.append.assert_awaited_once()  # retry_requested recorded (FR-025)
     old = await env.store.get_message(reply.id)
     assert old.replaced_by is not None
     assert old.rollback.state == "superseded"
@@ -532,3 +549,52 @@ async def test_pause_at_confirmation_then_deny_still_supersedes(env):
     assert old.rollback.state == "superseded"
     assert env.of("message_superseded")[-1]["replaced_by"] == str(new_id)
     assert (await env.store.get_message(new_id)).replaces == reply.id
+
+
+async def test_the_thread_lock_is_held_through_regeneration_and_not_reentered(env):
+    import asyncio
+
+    from ze_workspace.turn_lock import ThreadTurnLock
+
+    lock = ThreadTurnLock()
+
+    @asynccontextmanager
+    async def _hold(thread_id):
+        async with lock.acquire(thread_id):
+            yield
+
+    env.container.hold_thread = _hold
+    env.container.is_thread_locked = lock.is_locked
+    reply = await env.original_turn(env.set_reminder())
+    ids = await env.plan_ids(reply)
+    held_during_regen = []
+    follow_up_ran_after = []
+    release = asyncio.Event()
+
+    async def _regen(thread_id, text, *, replaces, config_extra=None):
+        held_during_regen.append(lock.is_locked(THREAD))
+
+        async def _follow_up():
+            async with lock.acquire(THREAD):
+                follow_up_ran_after.append(release.is_set())
+
+        task = asyncio.create_task(_follow_up())
+        await asyncio.sleep(0)
+        assert follow_up_ran_after == []  # blocked while the retry holds the thread
+        release.set()
+        env.follow_up = task
+        return await inner(
+            thread_id, text, replaces=replaces, config_extra=config_extra
+        )
+
+    env.regenerates(env.set_reminder("again"))
+    inner = env.regen.side_effect
+    env.container.invoke_retry_turn = AsyncMock(side_effect=_regen)
+
+    await asyncio.wait_for(env.retry(reply, ids), timeout=5)
+    await asyncio.wait_for(env.follow_up, timeout=5)
+
+    assert held_during_regen == [True]
+    assert follow_up_ran_after == [True]
+    assert not lock.is_locked(THREAD)
+    assert env.errors() == []

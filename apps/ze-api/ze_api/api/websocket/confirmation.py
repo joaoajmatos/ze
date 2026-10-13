@@ -30,15 +30,14 @@ log = get_logger(__name__)
 
 def _without_retry_identity(outcome: Any) -> None:
     """The reply was delivered and superseded the original: a later gate in the same
-    turn must not supersede again."""
+    turn must not supersede again. `retry_mode` stays, so the rest of the turn still
+    refuses irreversible writes."""
     configurable = (getattr(outcome, "config", None) or {}).get("configurable")
     if isinstance(configurable, dict):
         outcome.config = {
             **outcome.config,
             "configurable": {
-                k: v
-                for k, v in configurable.items()
-                if k not in ("retry_mode", "retry_replaces")
+                k: v for k, v in configurable.items() if k != "retry_replaces"
             },
         }
 

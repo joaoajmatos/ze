@@ -260,4 +260,4 @@ async def test_reply_then_second_gate_does_not_supersede_twice():
         await env.confirm("approve")
     env.msgs.mark_superseded.assert_awaited_once()
     assert "retry_replaces" not in seen["config"]["configurable"]
-    assert "retry_mode" not in seen["config"]["configurable"]
+    assert seen["config"]["configurable"]["retry_mode"] is True
