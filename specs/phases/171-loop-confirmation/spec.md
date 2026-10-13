@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Ready to implement (starts after Phases 169 and 170 land on `main`)
+**Status**: Implemented
 
 **Input**: User description: "Phase 1b of the executive-function direction (`specs/arch/executive-function.md`, findings F2 and F10, decision D2). Suspected loops reach the user both ways: mount the existing `LoopReviewList` widget on a page, and at session resume Ze asks 'keep track of these?' for at most 3 suspected loops, which the user confirms or drops in chat. Also a language-neutral 'what's open' trigger (today an English-only regex; Ze is EN + PT) and a cap on the resume recap. Out of scope: corroboration promotion (172), commitment intake (173), scoring (175)."
 
