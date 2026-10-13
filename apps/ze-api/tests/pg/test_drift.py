@@ -14,7 +14,9 @@ pytestmark = pytest.mark.pg
 async def _rewind(pool, loop_id, delta=timedelta(days=-1)):
     async with pool.acquire() as conn:
         await conn.execute(
-            "UPDATE open_loops SET drift_deadline = now() + $2 WHERE id = $1", loop_id, delta
+            "UPDATE open_loops SET drift_deadline = now() + $2 WHERE id = $1",
+            loop_id,
+            delta,
         )
 
 
@@ -57,7 +59,9 @@ async def test_future_deadline_is_not_a_candidate(pg_pool):
 async def test_only_the_loop_past_its_deadline_drifts(pg_pool):
     store = PostgresLoopStore(pg_pool)
     late = await make_loop(pg_pool, title="late", deadline=utcnow() + timedelta(days=3))
-    on_time = await make_loop(pg_pool, title="on time", deadline=utcnow() + timedelta(days=3))
+    on_time = await make_loop(
+        pg_pool, title="on time", deadline=utcnow() + timedelta(days=3)
+    )
     await _rewind(pg_pool, late.id)
     await DriftSweepJob(store).run()
     assert await _state(store, late.id) is LoopState.DRIFTING
@@ -71,7 +75,9 @@ async def test_corroboration_moves_a_past_deadline_forward(pg_pool):
 
     await store.record_corroboration(loop.id)
 
-    assert (await store.get(loop.id)).drift_deadline >= utcnow() + timedelta(days=7) - timedelta(minutes=1)
+    assert (await store.get(loop.id)).drift_deadline >= utcnow() + timedelta(
+        days=7
+    ) - timedelta(minutes=1)
     assert await store.list_drift_candidates() == []
 
 
@@ -83,12 +89,17 @@ async def test_corroboration_never_lowers_a_later_deadline(pg_pool):
     assert (await store.get(loop.id)).drift_deadline == far
 
 
-@pytest.mark.parametrize("state", [LoopState.DRIFTING, LoopState.CLOSED, LoopState.SUSPECTED])
+@pytest.mark.parametrize(
+    "state", [LoopState.DRIFTING, LoopState.CLOSED, LoopState.SUSPECTED]
+)
 async def test_corroboration_ignores_loops_that_are_not_active(pg_pool, state):
     store = PostgresLoopStore(pg_pool)
     past = utcnow() - timedelta(days=2)
     loop = await make_loop(
-        pg_pool, state=state, deadline=past, confirmed_at=None if state is LoopState.SUSPECTED else utcnow()
+        pg_pool,
+        state=state,
+        deadline=past,
+        confirmed_at=None if state is LoopState.SUSPECTED else utcnow(),
     )
     before = await store.get(loop.id)
     await store.record_corroboration(loop.id)
@@ -106,6 +117,8 @@ async def test_revived_loop_can_drift_again(pg_pool):
     assert await _state(store, loop.id) is LoopState.DRIFTING
 
     await store.transition(loop.id, "active", user_asked=True)
-    await store.stamp_declared(loop.id, confidence=0.9, deadline=utcnow() - timedelta(days=1))
+    await store.stamp_declared(
+        loop.id, confidence=0.9, deadline=utcnow() - timedelta(days=1)
+    )
 
     assert [c.id for c in await store.list_drift_candidates()] == [loop.id]

@@ -25,8 +25,12 @@ def _dev_shape_gates():
 
 
 async def test_dev_shape_yields_one_entry(pg_pool):
-    goal_id = await make_goal_with_gates(pg_pool, status="awaiting_gate", gates=_dev_shape_gates())
-    stuck = await PostgresGoalStore(pg_pool).list_stuck(idle_days=7, alert_cooldown_days=14)
+    goal_id = await make_goal_with_gates(
+        pg_pool, status="awaiting_gate", gates=_dev_shape_gates()
+    )
+    stuck = await PostgresGoalStore(pg_pool).list_stuck(
+        idle_days=7, alert_cooldown_days=14
+    )
     assert len(stuck) == 1
     entry = stuck[0]
     assert entry.goal.id == goal_id and entry.kind == "awaiting_gate"
@@ -39,17 +43,27 @@ async def test_two_fired_open_gates_use_the_earliest(pg_pool):
     await make_goal_with_gates(
         pg_pool,
         status="awaiting_gate",
-        gates=[("pending", now - timedelta(days=12), False), ("pending", now - timedelta(days=5), False)],
+        gates=[
+            ("pending", now - timedelta(days=12), False),
+            ("pending", now - timedelta(days=5), False),
+        ],
     )
-    stuck = await PostgresGoalStore(pg_pool).list_stuck(idle_days=1, alert_cooldown_days=14)
+    stuck = await PostgresGoalStore(pg_pool).list_stuck(
+        idle_days=1, alert_cooldown_days=14
+    )
     assert len(stuck) == 1 and stuck[0].idle_days == 12
 
 
 async def test_only_unfired_gates_yield_nothing(pg_pool):
     await make_goal_with_gates(
-        pg_pool, status="awaiting_gate", gates=[("pending", None, False), ("pending", None, False)]
+        pg_pool,
+        status="awaiting_gate",
+        gates=[("pending", None, False), ("pending", None, False)],
     )
-    assert await PostgresGoalStore(pg_pool).list_stuck(idle_days=0, alert_cooldown_days=0) == []
+    assert (
+        await PostgresGoalStore(pg_pool).list_stuck(idle_days=0, alert_cooldown_days=0)
+        == []
+    )
 
 
 async def test_active_goal_with_old_milestone_is_stuck(pg_pool):
@@ -62,31 +76,47 @@ async def test_active_goal_with_old_milestone_is_stuck(pg_pool):
             """,
             goal_id,
         )
-    stuck = await PostgresGoalStore(pg_pool).list_stuck(idle_days=7, alert_cooldown_days=14)
+    stuck = await PostgresGoalStore(pg_pool).list_stuck(
+        idle_days=7, alert_cooldown_days=14
+    )
     assert [(s.goal.id, s.kind) for s in stuck] == [(goal_id, "active")]
 
 
 async def test_recent_alert_is_in_cooldown(pg_pool):
     goal_id = await make_goal_with_gates(
-        pg_pool, status="awaiting_gate", gates=[("pending", utcnow() - timedelta(days=10), False)]
+        pg_pool,
+        status="awaiting_gate",
+        gates=[("pending", utcnow() - timedelta(days=10), False)],
     )
     async with pg_pool.acquire() as conn:
         await conn.execute(
-            "UPDATE goals SET last_stuck_alert_at = now() - interval '3 days' WHERE id = $1", goal_id
+            "UPDATE goals SET last_stuck_alert_at = now() - interval '3 days' WHERE id = $1",
+            goal_id,
         )
-    assert await PostgresGoalStore(pg_pool).list_stuck(idle_days=7, alert_cooldown_days=14) == []
+    assert (
+        await PostgresGoalStore(pg_pool).list_stuck(idle_days=7, alert_cooldown_days=14)
+        == []
+    )
 
 
 async def test_priority_view_call_shape_does_not_raise(pg_pool):
-    await make_goal_with_gates(pg_pool, status="awaiting_gate", gates=_dev_shape_gates())
-    stuck = await PostgresGoalStore(pg_pool).list_stuck(idle_days=0, alert_cooldown_days=0)
+    await make_goal_with_gates(
+        pg_pool, status="awaiting_gate", gates=_dev_shape_gates()
+    )
+    stuck = await PostgresGoalStore(pg_pool).list_stuck(
+        idle_days=0, alert_cooldown_days=0
+    )
     assert len(stuck) == 1
 
 
 async def test_priority_view_ranks_the_goal_with_no_failed_sources(pg_pool):
-    goal_id = await make_goal_with_gates(pg_pool, status="awaiting_gate", gates=_dev_shape_gates())
+    goal_id = await make_goal_with_gates(
+        pg_pool, status="awaiting_gate", gates=_dev_shape_gates()
+    )
     view = PriorityView(
-        PostgresLoopStore(pg_pool), PostgresGoalStore(pg_pool), PostgresHypothesisStore(pg_pool)
+        PostgresLoopStore(pg_pool),
+        PostgresGoalStore(pg_pool),
+        PostgresHypothesisStore(pg_pool),
     )
     ranking = await view.rank()
     assert ranking.sources_failed == set()
@@ -95,9 +125,13 @@ async def test_priority_view_ranks_the_goal_with_no_failed_sources(pg_pool):
 
 
 async def test_stuck_goal_job_alerts_once_and_marks(pg_pool):
-    goal_id = await make_goal_with_gates(pg_pool, status="awaiting_gate", gates=_dev_shape_gates())
+    goal_id = await make_goal_with_gates(
+        pg_pool, status="awaiting_gate", gates=_dev_shape_gates()
+    )
     notifier = AsyncMock()
     await StuckGoalJob(notifier, PostgresGoalStore(pg_pool)).run()
     assert notifier.push_notification.await_count == 1
     async with pg_pool.acquire() as conn:
-        assert await conn.fetchval("SELECT last_stuck_alert_at FROM goals WHERE id = $1", goal_id)
+        assert await conn.fetchval(
+            "SELECT last_stuck_alert_at FROM goals WHERE id = $1", goal_id
+        )

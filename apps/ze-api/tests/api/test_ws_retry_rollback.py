@@ -352,3 +352,13 @@ async def test_run_retry_task_tracks_a_paused_gate():
     assert pending == {"req-9": gate[1]}
     assert by_thread == {"t1": {"req-9"}}
     assert UUID(gate[1]["configurable"]["retry_replaces"])
+
+
+async def test_unrewindable_history_refuses_before_any_undo():
+    env = _RbEnv(_reminder())
+    env.container.retry_rewindable = AsyncMock(return_value=False)
+    with _patch_rollback(_record("rolled_back_retry_failed")) as rb:
+        await env.run_with(confirmed=_plan_ids(env))
+    assert env.errors()[0]["reason_code"] == "history_unavailable"
+    rb.assert_not_awaited()
+    env.msgs.set_rollback.assert_not_awaited()

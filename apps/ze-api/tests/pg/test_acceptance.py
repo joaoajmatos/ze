@@ -35,7 +35,14 @@ async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
     """SC-001."""
     store = PostgresLoopStore(pg_pool)
     created = await _create_declared_loop(
-        "Renew the passport", "user_declared", [], [], store, None, None, None,
+        "Renew the passport",
+        "user_declared",
+        [],
+        [],
+        store,
+        None,
+        None,
+        None,
         implied_window_days=1,
     )
     async with pg_pool.acquire() as conn:
@@ -55,15 +62,21 @@ async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
 
     relevance = MagicMock()
     relevance.build = AsyncMock(return_value=object())
-    relevance.score = MagicMock(return_value=SimpleNamespace(value=1.0, contributions=[]))
+    relevance.score = MagicMock(
+        return_value=SimpleNamespace(value=1.0, contributions=[])
+    )
     embedder = MagicMock()
     embedder.encode = MagicMock(return_value=[1.0, 0.0])
     nli = MagicMock()
     nli.scores = AsyncMock(return_value=[0.95])
     nli.grounding_score = MagicMock(return_value=0.95)
     surfacer = LoopSurfacer(
-        store, MagicMock(), PushLogStore(pg_pool), pool=pg_pool,
-        relevance_model=relevance, embedder=embedder,
+        store,
+        MagicMock(),
+        PushLogStore(pg_pool),
+        pool=pg_pool,
+        relevance_model=relevance,
+        embedder=embedder,
     )
 
     candidates = await surfacer.eligible_candidates(nli_client=nli)
@@ -101,7 +114,9 @@ async def test_multi_gate_goal_is_ranked_and_served_by_the_route(pg_pool):
     )
     app.dependency_overrides[require_api_key] = lambda: None
     app.include_router(router, prefix="/api/v0")
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t"
+    ) as client:
         response = await client.get("/api/v0/priority/snapshot")
 
     assert response.status_code == 200

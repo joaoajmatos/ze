@@ -28,6 +28,21 @@ from ze_core.orchestration.promote import confirmation_timeout_message
 log = get_logger(__name__)
 
 
+def _without_retry_identity(outcome: Any) -> None:
+    """The reply was delivered and superseded the original: a later gate in the same
+    turn must not supersede again."""
+    configurable = (getattr(outcome, "config", None) or {}).get("configurable")
+    if isinstance(configurable, dict):
+        outcome.config = {
+            **outcome.config,
+            "configurable": {
+                k: v
+                for k, v in configurable.items()
+                if k not in ("retry_mode", "retry_replaces")
+            },
+        }
+
+
 async def _retry_without_reply(
     container: Any,
     msg_store: Any | None,
@@ -188,6 +203,8 @@ async def handle_confirm(
                 old_id,
                 with_trace=True,
             )
+            if old_id is not None:
+                _without_retry_identity(outcome)
         if outcome.interrupted:
             return await send_confirmation_request(
                 conn_mgr,
@@ -237,6 +254,8 @@ async def handle_confirm(
                 old_id,
                 with_trace=False,
             )
+            if old_id is not None:
+                _without_retry_identity(outcome)
         if outcome.interrupted:
             return await send_confirmation_request(
                 conn_mgr,

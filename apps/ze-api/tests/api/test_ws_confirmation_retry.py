@@ -245,3 +245,19 @@ async def test_pending_confirmation_config_keeps_the_retry_keys():
     assert request_id == "req-7"
     assert config["configurable"]["retry_mode"] is True
     assert config["configurable"]["retry_replaces"] == str(env.old.id)
+
+
+async def test_reply_then_second_gate_does_not_supersede_twice():
+    env = _Env()
+    env.outcome.interrupted = True
+    seen = {}
+
+    async def _fake_send(conn_mgr, container, outcome, thread_id, **kw):
+        seen["config"] = outcome.config
+        return "req-2", outcome.config
+
+    with patch.object(confirmation, "send_confirmation_request", _fake_send):
+        await env.confirm("approve")
+    env.msgs.mark_superseded.assert_awaited_once()
+    assert "retry_replaces" not in seen["config"]["configurable"]
+    assert "retry_mode" not in seen["config"]["configurable"]

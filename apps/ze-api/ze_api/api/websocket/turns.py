@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID, uuid4
@@ -259,29 +260,30 @@ async def _retry_error(
     await conn_mgr.send_frame(frame, thread_id)
 
 
-async def handle_retry(
+@dataclass
+class _RetryPlan:
+    message: Message
+    trace: Any
+    eligibility: Any
+    old_id: UUID
+    raw_id: str
+
+
+async def _prepare_retry(
     data: dict,
     container: Any,
     msg_store: Any,
     conn_mgr: ConnectionManager,
-    *,
-    feedback_store: Any,
     confirmation_store: Any,
-) -> tuple[str, dict] | None:
-    """Undo the latest reply's reversible actions, then regenerate it in place.
+    *,
+    thread_held: bool,
+) -> _RetryPlan | None:
+    """Load the reply and decide eligibility and the plan guard; refuse before any change.
 
-    The caller holds the per-thread busy flag. Eligibility and the undo plan are
-    decided here, on the server, from the recorded turn; a refusal happens before
-    anything changes. Returns the gate to track when the retry pauses for a
-    confirmation.
+    Run once to refuse fast, and again with the thread lock held (`thread_held`), when
+    nothing else can touch the thread.
     """
     from ze_api.feedback_views import evaluate_retry, public_plan, thread_state
-    from ze_memory.feedback_records import (
-        FeedbackKind,
-        FeedbackRecordDraft,
-        feedback_contribution,
-        submit_feedback_record,
-    )
 
     thread_id: str = data.get("thread_id") or ""
     raw_id = str(data.get("message_id") or "")
@@ -309,8 +311,9 @@ async def handle_retry(
         thread_id,
         message_store=msg_store,
         # The endpoint set this thread's busy flag for the retry itself; only a turn
-        # holding the thread lock (for example a follow-up) makes it busy.
-        is_busy=container.is_thread_locked,
+        # holding the thread lock (for example a follow-up) makes it busy. With the
+        # lock held by this retry, nothing else is running.
+        is_busy=(lambda _tid: False) if thread_held else container.is_thread_locked,
         confirmation_store=confirmation_store,
     )
     eligibility = evaluate_retry(message, trace, state)
@@ -351,6 +354,73 @@ async def handle_retry(
             plan=[e.model_dump(mode="json") for e in public_plan(eligibility)],
         )
         return None
+    return _RetryPlan(message, trace, eligibility, old_id, raw_id)
+
+
+async def handle_retry(
+    data: dict,
+    container: Any,
+    msg_store: Any,
+    conn_mgr: ConnectionManager,
+    *,
+    feedback_store: Any,
+    confirmation_store: Any,
+) -> tuple[str, dict] | None:
+    """Undo the latest reply's reversible actions, then regenerate it in place.
+
+    The caller holds the per-thread busy flag. Eligibility and the undo plan are
+    decided here, on the server, from the recorded turn; a refusal happens before
+    anything changes. The thread's turn lock is held from the final check through
+    regeneration, so no follow-up turn lands between the undos and the rewind.
+    Returns the gate to track when the retry pauses for a confirmation.
+    """
+    thread_id: str = data.get("thread_id") or ""
+    first = await _prepare_retry(
+        data, container, msg_store, conn_mgr, confirmation_store, thread_held=False
+    )
+    if first is None:
+        return None
+    async with container.hold_thread(thread_id):
+        prepared = await _prepare_retry(
+            data, container, msg_store, conn_mgr, confirmation_store, thread_held=True
+        )
+        if prepared is None:
+            return None
+        return await _retry_locked(
+            prepared,
+            thread_id,
+            container,
+            msg_store,
+            conn_mgr,
+            feedback_store=feedback_store,
+            confirmation_store=confirmation_store,
+        )
+
+
+async def _retry_locked(
+    prepared: _RetryPlan,
+    thread_id: str,
+    container: Any,
+    msg_store: Any,
+    conn_mgr: ConnectionManager,
+    *,
+    feedback_store: Any,
+    confirmation_store: Any,
+) -> tuple[str, dict] | None:
+    from ze_memory.feedback_records import (
+        FeedbackKind,
+        FeedbackRecordDraft,
+        feedback_contribution,
+        submit_feedback_record,
+    )
+
+    message, trace, eligibility = (
+        prepared.message,
+        prepared.trace,
+        prepared.eligibility,
+    )
+    old_id, raw_id = prepared.old_id, prepared.raw_id
+    plan = eligibility.plan
 
     user_msg = await msg_store.previous_user_message(old_id)
     if user_msg is None or not user_msg.text:
@@ -360,6 +430,18 @@ async def handle_retry(
             raw_id,
             "retry_failed",
             "Ze could not find the message to answer again.",
+        )
+        return None
+
+    if not await container.retry_rewindable(thread_id):
+        await _retry_error(
+            conn_mgr,
+            thread_id,
+            raw_id,
+            "retry_unavailable",
+            "Ze can no longer rewind this conversation, so Retry cannot answer again. "
+            "Nothing was changed.",
+            reason_code="history_unavailable",
         )
         return None
 
