@@ -145,7 +145,10 @@ async def _check_convergence(
     description="Create a new goal and propose a milestone plan for user approval.",
     reversibility=ToolReversibility.REVERSIBLE,
     undo_tool="abandon_goal",
-    undo_note="Abandoning the goal does not undo work already started",
+    undo_note=(
+        "Abandoning the goal does not undo work already started. "
+        "A notification already sent stays"
+    ),
     effect_phrase="created a goal",
 )
 async def create_goal(
