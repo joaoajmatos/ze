@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 
 @dataclass
@@ -60,7 +60,7 @@ class Action:
 class Notification:
     content: str
     format: str = "text"  # "text" | "markdown"
-    urgency: str = "normal"  # "normal" | "high"
+    urgency: Literal["low", "normal", "high"] = "normal"
     actions: list[Action] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     # Structured fields (notification center) — optional so plain push(str) calls
@@ -72,6 +72,11 @@ class Notification:
     target_type: str | None = None
     target_id: str | None = None
     created_at: datetime | None = None
+    # Governor fields (phase 177). `buzz=False` keeps the ntfy hop silent;
+    # `delivery` "held"/"suppressed" means frame-only, no chat message.
+    buzz: bool = True
+    push_class: str | None = None
+    delivery: str | None = None
 
 
 @dataclass

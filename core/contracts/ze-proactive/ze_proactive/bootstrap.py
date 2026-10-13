@@ -9,13 +9,12 @@ from ze_proactive.scheduler import ProactiveScheduler
 
 log = get_logger(__name__)
 
-_DEFAULT_MAX_PUSHES_PER_DAY = 3
+_DEFAULT_MAX_PUSHES_PER_DAY = 5
 
 
 def shared_push_budget(settings: Any) -> int:
     """`proactive.budget.max_pushes_per_day` — the one shared attention budget
-    every push mechanism now claims against (FR-005), for constructor injection
-    into `ze-correlation`/`ze-worldstate`/`ze-priority` consumers."""
+    every discretionary push claims against, injected into `ProactiveNotifier`."""
     cfg = (getattr(settings, "config", None) or {}).get("proactive", {})
     return int(
         cfg.get("budget", {}).get("max_pushes_per_day", _DEFAULT_MAX_PUSHES_PER_DAY)

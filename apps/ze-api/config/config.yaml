@@ -123,6 +123,7 @@ proactive:
     enabled: true
     cron: "0 8 * * *"
     unreviewed_nudge_threshold: 5
+    catch_up_max_age_hours: 6      # a missed briefing is skipped once it is this old
   alerts:
     workflow_failure_enabled: true
     workflow_failure_cooldown_hours: 1
@@ -155,7 +156,7 @@ proactive:
     anomaly_retention_days: 30      # how long to keep anomaly records
     stall_days: 3                   # milestone idle days before counted as stalled
   budget:
-    max_pushes_per_day: 3          # shared across correlation + worldstate pushes (phase 123)
+    max_pushes_per_day: 5          # shared by every discretionary push (phase 177)
   attention_arbitration:
     enabled: true
     cron: "0 */4 * * *"

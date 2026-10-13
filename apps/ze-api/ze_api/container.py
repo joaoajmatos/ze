@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -99,6 +100,8 @@ from ze_communication.registry import ChannelRegistry
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
+from ze_proactive.bootstrap import shared_push_budget
+from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.compose import (
@@ -249,6 +252,7 @@ class ZeContainer(CoreContainer):
     reset_service: ResetService
     _checkpointer: Any
     _push_log_store: PushLogStore
+    interruption_settings_store: InterruptionSettingsStore
     notification_store: NotificationStore
     data_portability_service: DataPortabilityService
     dev_data_seeder: DevDataSeeder
@@ -489,19 +493,31 @@ async def build_container(settings: Settings) -> ZeContainer:
     session_store = PostgresSessionStore(pool=pool)
     connection_manager = ConnectionManager()
     confirmation_store = PendingConfirmationStore(pool=pool)
+    interruption_settings_store = InterruptionSettingsStore(pool)
+
+    async def quiet_now() -> bool:
+        return is_active(
+            await interruption_settings_store.get(), datetime.now(timezone.utc)
+        )
+
     interface = NativeAppInterface(
         message_store=message_store,
         connection_manager=connection_manager,
         notifier=push_notifier,
+        quiet_now=quiet_now,
     )
     validate_interface(interface)
 
     notification_store = NotificationStore(pool=pool)
+    push_log_store = PushLogStore(pool=pool)
     notifier = ProactiveNotifier(
-        interface=interface, notification_store=notification_store
+        interface=interface,
+        notification_store=notification_store,
+        push_log=push_log_store,
+        settings_store=interruption_settings_store,
+        max_discretionary_per_day=shared_push_budget(settings),
     )
     push_sender.bind(notifier)
-    push_log_store = PushLogStore(pool=pool)
 
     from ze_worldstate.bootstrap import build_loop_surfacer
 
@@ -780,6 +796,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         plugins=plugins,
         _checkpointer=checkpointer,
         _push_log_store=push_log_store,
+        interruption_settings_store=interruption_settings_store,
         notification_store=notification_store,
         data_portability_service=data_portability_service,
         dev_data_seeder=dev_data_seeder,
