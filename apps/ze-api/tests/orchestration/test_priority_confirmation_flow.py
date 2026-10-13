@@ -117,7 +117,7 @@ def _view_and_store():
         generated_at=datetime.now(UTC),
     )
     override_store = AsyncMock()
-    override_store.create.side_effect = lambda o: o
+    override_store.create.side_effect = lambda o: (o, None)
     return view, override_store
 
 
@@ -189,3 +189,7 @@ async def test_execute_pass_submits_the_contribution_only_after_resume():
 
     assert result["agent_result"].response == "Done — deprioritized."
     override_store.create.assert_awaited_once()
+    [call] = result["agent_result"].tool_calls
+    assert call.success is True
+    assert call.undo is not None
+    assert call.undo["prior_override_id"] is None
