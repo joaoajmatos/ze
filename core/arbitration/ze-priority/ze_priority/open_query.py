@@ -3,6 +3,9 @@
 Compares the turn's prompt embedding (the one fetch_context already computed)
 with embedded EN and PT example questions. No model call per turn. The threshold
 comes from `make calibrate-open-query`.
+
+The Portuguese similarity offset is a language-specific correction; a third
+language would run uncorrected (see specs/phases/171-loop-confirmation/research.md).
 """
 
 from __future__ import annotations

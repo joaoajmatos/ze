@@ -67,25 +67,18 @@ Each entry: decision, rationale, alternatives. R1–R6 are the user's answers (Q
 
 ## Verdict
 
-Detector: 14 EN + 26 PT examples, Portuguese similarity lowered by `PT_SIMILARITY_OFFSET = 0.05` (E5 scores Portuguese pairs about 0.05 higher, including job-vacancy negatives), one threshold 0.88 picked on the tuned set (tuned: EN 0.955/0.000, PT 0.864/0.000 recall/FPR).
+**Not a clean verdict.** Read the runs in order; each used a different detector.
 
-| Run | Language | Recall | FPR | Threshold | Result |
-|---|---|---|---|---|---|
-| held-out 1 (`open_query_holdout.jsonl`) | EN | 0.900 | 0.000 | 0.88 | PASS |
-| held-out 1 | PT | 0.800 | 0.000 | 0.88 | FAIL |
-| held-out 2 (`open_query_holdout2.jsonl`, R5 rerun) | EN | 0.917 | 0.000 | 0.88 | PASS |
-| held-out 2 | PT | 0.667 | 0.000 | 0.88 | FAIL |
+| Run | Detector at that time | EN recall / FPR | PT recall / FPR | Result |
+|---|---|---|---|---|
+| held-out 1 (`open_query_holdout.jsonl`), threshold 0.88 | 14 EN + 22 PT examples, `PT_SIMILARITY_OFFSET = 0.05` (offset and threshold picked on the tuned set, before this run) | 0.900 / 0.000 | 0.800 / 0.000 | PT FAIL |
+| held-out 2 (`open_query_holdout2.jsonl`, R5 rerun), threshold 0.88 | the same plus six list-style examples added **after seeing held-out 1's misses** (2 EN: "list what is still open for me", "show me my open items"; 4 PT: "lista as minhas pendências", "quais são as minhas pendências", "diz-me o que está por fazer", "o que é que ainda não está feito"). Tuned numbers did not change | 0.917 / 0.000 | 0.667 / 0.000 | PT FAIL |
+| re-run of held-out 1 and 2 after the user decision | the previous detector with five examples reworded because they equalled tuned-set texts verbatim; no other change | held-out 1: 0.900 / 0.000; held-out 2: 0.917 / 0.000 | held-out 1: 0.900 / 0.000; held-out 2: 0.833 / 0.000 | informational |
 
-Held-out 2 Portuguese misses sat at similarity 0.858-0.876 (imperative and idiomatic phrasings). Failed twice; escalated per R5.
+The PT jump from 0.800 / 0.667 to 0.900 / 0.833 after rewording is not explained by the change in text; with only five examples changed it is most likely threshold-edge noise (the misses sit within 0.01-0.02 of 0.88). Do not read the third row as an improvement of the detector. FPR was 0.000 in every run.
 
-**Decision (user, 2026-10-13): ship at threshold 0.88 under an amended bar.** The original bar (recall >= 0.90 per language) was missed in Portuguese on both held-out sets. The amended bar (EN recall >= 0.90, PT recall >= 0.65, FPR <= 0.05 per language) was set after seeing those results, so it is not a clean pre-registered verdict, and both held-out sets are seen and cannot serve as a clean verdict again. A missed detection is benign (the open-priorities note is not injected and the user can rephrase); a false positive is the costly error, and FPR was 0.000 throughout.
+Tuned set at the shipped detector (threshold 0.88): EN 0.955 / 0.000, PT 0.818 / 0.000.
 
-After the decision, five detector examples that equalled tuned-set texts verbatim were reworded. No other change and no tuning against either held-out set. Numbers of the shipped detector (threshold 0.88):
+**Decision (user, 2026-10-13): ship at threshold 0.88 under an amended bar.** The original bar (recall >= 0.90 per language) was missed in Portuguese on both held-out runs. The amended bar (EN recall >= 0.90, PT recall >= 0.65, FPR <= 0.05 per language) was set after seeing those results. Both held-out sets are seen, and the second set's detector had already been adjusted after the first set's misses, so neither set can serve as a clean verdict again. A missed detection is benign (the open-priorities note is not injected and the user can rephrase); a false positive is the costly error.
 
-| Set | EN recall / FPR | PT recall / FPR |
-|---|---|---|
-| tuned | 0.955 / 0.000 | 0.818 / 0.000 |
-| held-out 1 | 0.900 / 0.000 | 0.900 / 0.000 |
-| held-out 2 | 0.917 / 0.000 | 0.833 / 0.000 |
-
-`tests/test_open_query_holdout.py` (slow) pins these against the amended bar. Follow-up, not built here: a System One Noul `asks_what_is_open` (option C) to replace similarity.
+`tests/test_open_query_holdout.py` (slow) pins the shipped numbers against the amended bar. The Portuguese-only `PT_SIMILARITY_OFFSET` is a language-specific correction: a third language would run uncorrected. Follow-up, not built here: a System One Noul `asks_what_is_open` to replace similarity.
