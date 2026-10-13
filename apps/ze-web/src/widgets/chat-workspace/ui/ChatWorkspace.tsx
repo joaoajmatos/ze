@@ -5,7 +5,7 @@ import { placeWorkspaceFile } from "@/entities/workspace";
 import { reconnect, send } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";
 import { useSendNotice } from "@/features/send-context-notice";
-import { ReplyActions } from "@/features/reply-feedback";
+import { ReplyActions, RollbackNotice } from "@/features/reply-feedback";
 import { RetryButton, useRetryReply } from "@/features/retry-reply";
 import { useMessageFeedbackQuery } from "@/entities/message-feedback";
 import { BackgroundBeamsCanvas } from "@/shared/effects/background-beams";
@@ -66,20 +66,23 @@ export function ChatWorkspace() {
       const id = String(message.id);
       const feedback = feedbackById.get(id);
       return (
-        <ReplyActions
-          messageId={id}
-          feedback={feedback}
-          retry={
-            <RetryButton
-              eligibility={feedback?.retry}
-              isLatest={id === latestAssistantId}
-              connected={isConnected}
-              busy={isThinking}
-              retrying={retrying}
-              onRetry={() => retryReply(id)}
-            />
-          }
-        />
+        <>
+          <RollbackNotice rollback={feedback?.rollback} />
+          <ReplyActions
+            messageId={id}
+            feedback={feedback}
+            retry={
+              <RetryButton
+                eligibility={feedback?.retry}
+                isLatest={id === latestAssistantId}
+                connected={isConnected}
+                busy={isThinking}
+                retrying={retrying}
+                onRetry={(plan) => retryReply(id, plan)}
+              />
+            }
+          />
+        </>
       );
     },
     [feedbackById, latestAssistantId, isConnected, isThinking, retrying, retryReply],
