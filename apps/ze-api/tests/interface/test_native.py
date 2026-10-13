@@ -292,9 +292,7 @@ async def test_silent_delivery_sends_only_the_notification_frame(delivery):
     iface, store, conn, notifier = _make_interface(connected=False)
     from ze_agents.interface.types import Action
 
-    await iface.push(
-        _notif(delivery=delivery, buzz=False, actions=[Action("Go", "p")])
-    )
+    await iface.push(_notif(delivery=delivery, buzz=False, actions=[Action("Go", "p")]))
 
     store.save.assert_not_called()
     conn.push.assert_not_called()

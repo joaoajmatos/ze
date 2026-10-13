@@ -175,9 +175,7 @@ async def test_settings_store_error_means_not_quiet():
 
 async def test_actions_and_format_kept():
     n, iface, store = _make()
-    await n.notify(
-        ACC, "t", "b", format="html", actions=(Action("Go", "p", 1),)
-    )
+    await n.notify(ACC, "t", "b", format="html", actions=(Action("Go", "p", 1),))
     kw = store.create.call_args.kwargs
     assert kw["format"] == "html"
     assert kw["actions"] == [{"label": "Go", "payload": "p", "row": 1}]

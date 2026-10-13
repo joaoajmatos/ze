@@ -209,7 +209,10 @@ class ProactiveNotifier:
                     row,
                     row.body,
                     row.format,
-                    [Action(a["label"], a["payload"], a.get("row", 0)) for a in row.actions or []],
+                    [
+                        Action(a["label"], a["payload"], a.get("row", 0))
+                        for a in row.actions or []
+                    ],
                     buzz=False,
                     delivery="released",
                 )
@@ -251,9 +254,7 @@ class ProactiveNotifier:
     ) -> None:
         try:
             await self._interface.push(
-                self._frame(
-                    row, body, row.format, [], buzz=False, delivery=delivery
-                )
+                self._frame(row, body, row.format, [], buzz=False, delivery=delivery)
             )
         except Exception as exc:
             log.warning("proactive_push_failed", error=str(exc))
@@ -273,7 +274,11 @@ class ProactiveNotifier:
             last = i == len(chunks) - 1
             if i == 0:
                 n = self._frame(
-                    row, chunk, format, actions if last else [], buzz=buzz,
+                    row,
+                    chunk,
+                    format,
+                    actions if last else [],
+                    buzz=buzz,
                     delivery=delivery,
                 )
             else:

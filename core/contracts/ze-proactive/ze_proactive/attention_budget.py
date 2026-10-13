@@ -54,6 +54,4 @@ async def release_shared(
 ) -> None:
     """Roll back a claim whose notification was never delivered, so a failed
     send doesn't permanently burn that day's budget slot."""
-    await push_log.release_claim(
-        ATTENTION_PUSH_EVENT_KEY, idempotency_key=budget_key
-    )
+    await push_log.release_claim(ATTENTION_PUSH_EVENT_KEY, idempotency_key=budget_key)

@@ -11,7 +11,8 @@ from ze_automation.goals.executor import GoalExecutor
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.postgres import PostgresGoalStore as GoalStore
 from ze_automation.goals.types import Goal, GoalStatus, MilestoneStatus
-from ze_agents.interface.types import Action, Notification
+from ze_agents.interface.types import Action
+from ze_automation.push_kinds import GOAL_OVERLAP, GOAL_PLAN_PROPOSED
 from ze_logging import get_logger
 from ze_sdk.proactive import ProactiveNotifier
 
@@ -123,20 +124,20 @@ async def _check_convergence(
         new_goal_id=str(new_goal.id),
         overlapping_goal_id=str(conv.overlapping_goal_id),
     )
-    await notifier.push_notification(
-        Notification(
-            content=(
-                f"<b>Goal overlap detected</b>\n\n"
-                f"<b>{_html.escape(new_goal.title)}</b> and "
-                f"<b>{_html.escape(conv.overlapping_goal_title)}</b> share scope: "
-                f"{_html.escape(conv.overlap_description)}\n\n"
-                f"Suggested approach: <i>{_html.escape(conv.suggestion)}</i>. "
-                f"Let me know if you'd like to share outputs between them, sequence one "
-                f"after the other, or keep them running independently."
-            ),
-            format="html",
-            urgency="normal",
-        )
+    await notifier.notify(
+        GOAL_OVERLAP,
+        "Goal overlap detected",
+        f"<b>Goal overlap detected</b>\n\n"
+        f"<b>{_html.escape(new_goal.title)}</b> and "
+        f"<b>{_html.escape(conv.overlapping_goal_title)}</b> share scope: "
+        f"{_html.escape(conv.overlap_description)}\n\n"
+        f"Suggested approach: <i>{_html.escape(conv.suggestion)}</i>. "
+        f"Let me know if you'd like to share outputs between them, sequence one "
+        f"after the other, or keep them running independently.",
+        format="html",
+        target_type="goal",
+        target_id=str(new_goal.id),
+        budget_key=f"goal_overlap:{new_goal.id}",
     )
 
 
@@ -208,16 +209,17 @@ async def create_goal(
         f"<b>Checkpoints:</b>\n{_html.escape(gate_summary)}\n\n"
         "Start this goal?"
     )
-    await notifier.push_notification(
-        Notification(
-            content=plan_text,
-            format="html",
-            urgency="high",
-            actions=[
-                Action(label="Start goal", payload=f"goal_plan:yes:{goal.id}"),
-                Action(label="Cancel", payload=f"goal_plan:no:{goal.id}"),
-            ],
-        )
+    await notifier.notify(
+        GOAL_PLAN_PROPOSED,
+        "Goal plan ready",
+        plan_text,
+        format="html",
+        actions=(
+            Action(label="Start goal", payload=f"goal_plan:yes:{goal.id}"),
+            Action(label="Cancel", payload=f"goal_plan:no:{goal.id}"),
+        ),
+        target_type="goal",
+        target_id=str(goal.id),
     )
 
     asyncio.create_task(

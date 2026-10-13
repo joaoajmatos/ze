@@ -298,9 +298,17 @@ async def test_create_delivered_stamps_delivered_at():
     conn.fetchrow = AsyncMock(return_value=_make_row())
     store, conn = make_store(conn)
     await store.create(
-        event_type="e", source="s", title="t", body="b", target_type=None,
-        target_id=None, push_class="accountability", urgency="normal",
-        format="text", actions=[], delivery="delivered",
+        event_type="e",
+        source="s",
+        title="t",
+        body="b",
+        target_type=None,
+        target_id=None,
+        push_class="accountability",
+        urgency="normal",
+        format="text",
+        actions=[],
+        delivery="delivered",
     )
     sql = conn.fetchrow.call_args.args[0]
     assert "CASE WHEN" in sql and "NOW()" in sql

@@ -46,7 +46,7 @@ async def test_goal_executor_consults_gate_with_unattended_origin():
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=MagicMock(),
-        push=lambda _: None,
+        notify=AsyncMock(),
         agent_getter=lambda _name: agent,
         workspace_gate=gate,
     )

@@ -124,7 +124,10 @@ class NotificationStore:
                 delivery,
             )
         log.debug(
-            "notification_created", event_type=event_type, source=source, delivery=delivery
+            "notification_created",
+            event_type=event_type,
+            source=source,
+            delivery=delivery,
         )
         return _row_to_dataclass(row)
 

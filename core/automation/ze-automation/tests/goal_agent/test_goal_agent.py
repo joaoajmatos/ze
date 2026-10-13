@@ -221,7 +221,7 @@ async def test_run_creates_goal_via_tool():
     store.create_goal = AsyncMock(return_value=created_goal)
 
     notifier = AsyncMock()
-    notifier.push_notification = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
 
     client = AsyncMock()
     client.complete_with_tools = AsyncMock(
@@ -263,7 +263,7 @@ async def test_run_creates_goal_via_tool():
 
     store.create_goal.assert_called_once()
     store.create_milestone.assert_called_once()
-    notifier.push_notification.assert_called_once()
+    notifier.notify.assert_called_once()
     assert "Find leads" in result.response
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
@@ -16,7 +18,19 @@ from ze_automation.goals.types import (
     MilestoneStatus,
     VerificationGate,
 )
-from ze_agents.interface.types import Notification
+
+
+def _n(call):
+    """View a `notify(kind, title, body, **kw)` call as the old Notification."""
+    kind, _title, body = call.args[:3]
+    kw = call.kwargs
+    return SimpleNamespace(
+        kind=kind,
+        content=body,
+        urgency=kind.urgency,
+        format=kw.get("format", "text"),
+        actions=list(kw.get("actions", ())),
+    )
 
 
 def _goal(status=GoalStatus.ACTIVE, **kwargs) -> Goal:
@@ -117,7 +131,7 @@ def executor(store, planner, push, agent_getter):
     return GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=agent_getter,
     )
 
@@ -140,8 +154,7 @@ async def test_advance_marks_goal_completed_when_no_pending(executor, store, pus
     await executor.advance(goal.id)
     store.update_status.assert_called_with(goal.id, GoalStatus.COMPLETED)
     push.assert_called_once()
-    notif = push.call_args.args[0]
-    assert isinstance(notif, Notification)
+    notif = _n(push.call_args)
     assert "complete" in notif.content.lower()
 
 
@@ -199,7 +212,7 @@ async def test_gate_fires_before_next_milestone(executor, store, push):
 
     store.fire_gate.assert_called_once()
     store.update_status.assert_called_with(goal.id, GoalStatus.AWAITING_GATE)
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert len(notif.actions) == 3  # Proceed, Stop, Redirect
 
 
@@ -380,7 +393,7 @@ async def test_adaptive_replan_triggers_at_two_consecutive_failures(
     planner.replan_remaining.assert_called_once()
     store.replace_pending_milestones.assert_called_once()
     # First push is the "Two steps failed" message
-    first_notif = push.call_args_list[0].args[0]
+    first_notif = _n(push.call_args_list[0])
     assert (
         "two steps failed" in first_notif.content.lower()
         or "adapting" in first_notif.content.lower()
@@ -419,7 +432,7 @@ async def test_adaptive_replan_cap_pauses_goal_after_second_replan(
     await executor.advance(goal.id)
 
     store.update_status.assert_called_with(goal.id, GoalStatus.PAUSED)
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert "paused" in notif.content.lower()
 
 
@@ -455,7 +468,7 @@ async def test_gate_uses_synthesized_narrative(executor, store, push, planner):
     await executor.advance(goal.id)
 
     planner.synthesize_gate_narrative.assert_called_once()
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert "The first phase is complete." in notif.content
 
 
@@ -475,7 +488,7 @@ async def test_gate_falls_back_to_bullet_list_on_narrative_timeout(
 
     await executor.advance(goal.id)
 
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     # Fallback uses bullet list
     assert "Step 1" in notif.content
 
@@ -496,7 +509,7 @@ async def test_gate_falls_back_to_bullet_list_on_narrative_error(
 
     await executor.advance(goal.id)
 
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert "Step 1" in notif.content
 
 
@@ -561,7 +574,7 @@ async def test_apply_steer_pauses_on_replan_failure(executor, store, push, plann
     await executor._apply_steer(goal.id, goal, "new direction")
 
     store.update_status.assert_called_with(goal.id, GoalStatus.PAUSED)
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert "paused" in notif.content.lower()
 
 
@@ -591,7 +604,7 @@ async def test_completion_pushes_retrospective(executor, store, push, planner):
     await executor.advance(goal.id)
 
     planner.synthesize_retrospective.assert_called_once()
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert "completed" in notif.content.lower()
     assert "You accomplished the objective." in notif.content
 
@@ -612,7 +625,7 @@ async def test_retrospective_failure_falls_back_to_success_condition(
 
     await executor.advance(goal.id)
 
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert goal.success_condition in notif.content
 
 
@@ -660,7 +673,7 @@ async def test_push_retrospective_still_pushes_when_save_retrospective_fails(
     await executor.advance(goal.id)
 
     push.assert_called_once()
-    notif = push.call_args.args[0]
+    notif = _n(push.call_args)
     assert "Accomplished the goal successfully." in notif.content
 
 
@@ -679,7 +692,7 @@ def executor_with_memory(store, planner, push, agent_getter, memory_store):
     return GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=agent_getter,
         memory_store=memory_store,
     )
@@ -1045,7 +1058,7 @@ async def test_milestone_completion_creates_action_backed_learning(
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=agent_getter,
         action_record_store=action_store,
     )
@@ -1082,7 +1095,7 @@ async def test_eligible_learnings_block_labels_inference(
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=agent_getter,
     )
     block = await executor._eligible_learnings_block(uuid4())
