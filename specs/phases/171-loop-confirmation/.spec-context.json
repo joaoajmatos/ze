@@ -3,7 +3,7 @@
   "specName": "Loop Confirmation Path",
   "branch": "171-loop-confirmation",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -353,9 +353,24 @@
       "kind": "complete",
       "by": "Plover",
       "at": "2026-10-13T22:41:52.861Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "Plover",
+      "at": "2026-10-13T23:49:57.710Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-13T23:49:58.256Z"
     }
   ],
-  "currentTask": "T036",
+  "currentTask": "T042",
   "task_summaries": {
     "T007": {
       "status": "DONE"
@@ -478,6 +493,9 @@
       "status": "DONE"
     },
     "T042": {
+      "status": "DONE"
+    },
+    "T036": {
       "status": "DONE"
     }
   }

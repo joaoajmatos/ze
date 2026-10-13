@@ -147,7 +147,7 @@
 ## Phase 11: Polish and gates  [ENG]
 
 - [x] T035 [ENG] Full gates: `make test-py`, `make test-pg`, `make test-web`, `make typecheck-web`, `make lint`, `make test-priority SLOW=1`. Boundary checks from plan.md (`graphify path "ze_priority.open_query" "ze_core"`; the ze_core import grep). Fix or report. · none
-- [ ] T036 [ENG] Ask QA (Tally) for the end-to-end check in quickstart.md (manual steps 2–4) and a live run of the two new eval scenarios (`make dev-eval`, then the eval runner with `--tag phase-171`). Record results in the Handoffs note. · none
+- [x] T036 [ENG] Ask QA (Tally) for the end-to-end check in quickstart.md (manual steps 2–4) and a live run of the two new eval scenarios (`make dev-eval`, then the eval runner with `--tag phase-171`). Record results in the Handoffs note. · none
 
 ---
 
