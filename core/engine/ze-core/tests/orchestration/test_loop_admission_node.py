@@ -56,6 +56,7 @@ def _fact_result(judgment=None):
 
 
 def _setup(thread_id="t1", **extra):
+    tool_calls = extra.pop("tool_calls", None)
     cfg = make_config()
     cfg["configurable"]["thread_id"] = thread_id
     cfg["configurable"].update(extra)
@@ -67,12 +68,22 @@ def _setup(thread_id="t1", **extra):
     )
     state = base_state(
         agent_context=ctx,
-        agent_result=AgentResult(agent="companion", response="ok"),
+        agent_result=AgentResult(
+            agent="companion", response="ok", tool_calls=tool_calls or []
+        ),
         message_trace=_trace(
             [JudgmentTrace(question_id="embed_route", kind="noul", latency_ms=1)]
         ),
     )
     return state, cfg
+
+
+def _track_call(result, name="track_loop"):
+    from ze_agents.types import ToolCall
+
+    return ToolCall(
+        tool_name=name, args={}, result=result, duration_ms=1, success=True
+    )
 
 
 async def test_loop_rows_append_after_existing_rows_and_commit_fires():
@@ -167,3 +178,81 @@ async def test_no_loop_admission_key_is_no_loop_gate():
     state, cfg = _setup()
     out = await memory.write_memory(state, cfg)
     assert "messages" in out
+
+
+async def test_successful_track_loop_skips_the_loop_gate():
+    admission = AsyncMock(return_value=_loop_result())
+    fact_extractor = AsyncMock(return_value=_fact_result())
+    state, cfg = _setup(
+        loop_admission=admission,
+        fact_extractor=fact_extractor,
+        tool_calls=[_track_call({"ok": True, "id": "loop-1", "outcome": "created"})],
+    )
+
+    out = await memory.write_memory(state, cfg)
+
+    admission.assert_not_awaited()
+    fact_extractor.assert_awaited_once()
+    trace = out.get("message_trace")
+    if trace is not None:
+        assert [r.question_id for r in trace.judgments] == ["embed_route"]
+
+
+async def test_failed_track_loop_still_runs_the_gate():
+    admission = AsyncMock(return_value=_loop_result())
+    state, cfg = _setup(
+        loop_admission=admission,
+        tool_calls=[_track_call({"ok": False, "error": "db down"})],
+    )
+
+    await memory.write_memory(state, cfg)
+
+    admission.assert_awaited_once()
+
+
+async def test_nested_successful_track_loop_skips_the_loop_gate():
+    admission = AsyncMock(return_value=_loop_result())
+    delegate = _track_call(
+        {
+            "tool_calls": [
+                {
+                    "tool_name": "track_loop",
+                    "args": {},
+                    "result": {"ok": True, "id": "loop-1"},
+                    "duration_ms": 1,
+                    "success": True,
+                }
+            ]
+        },
+        name="delegate_to_agent",
+    )
+    state, cfg = _setup(loop_admission=admission, tool_calls=[delegate])
+
+    await memory.write_memory(state, cfg)
+
+    admission.assert_not_awaited()
+
+
+async def test_no_tool_calls_still_runs_the_gate():
+    admission = AsyncMock(return_value=_loop_result())
+    state, cfg = _setup(loop_admission=admission)
+
+    await memory.write_memory(state, cfg)
+
+    admission.assert_awaited_once()
+
+
+@pytest.mark.parametrize("thread_id,retry", [("eval-1", False), ("t1", True)])
+async def test_track_loop_does_not_reopen_eval_or_retry_gate(thread_id, retry):
+    admission = AsyncMock(return_value=_loop_result())
+    state, cfg = _setup(
+        thread_id=thread_id,
+        loop_admission=admission,
+        tool_calls=[_track_call({"ok": True, "id": "loop-1"})],
+    )
+    if retry:
+        cfg["configurable"]["retry_mode"] = True
+
+    await memory.write_memory(state, cfg)
+
+    admission.assert_not_awaited()

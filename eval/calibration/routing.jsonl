@@ -66,3 +66,5 @@
 {"id": "train-loops-confirm-pt-2", "lang": "pt", "prompt": "Podes manter a renovação do passaporte que perguntaste?", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
 {"id": "train-loops-list-en-1", "lang": "en", "prompt": "What am I still sitting with these days?", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
 {"id": "train-loops-list-pt-1", "lang": "pt", "prompt": "Com o que é que ainda ando às voltas?", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-track-en", "lang": "en", "prompt": "put the lease renewal on my radar, I haven't decided yet", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-track-pt", "lang": "pt", "prompt": "põe a renovação do contrato no meu radar, ainda não decidi", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}

@@ -66,6 +66,7 @@ def test_bootstrap_registers_companion_and_research(settings):
     from ze_agents.nli import NLIClient
     from ze_memory.retriever import PostgresMemoryStore
     from ze_worldstate.store import LoopStore
+    from ze_worldstate.tracking import LoopTracker
 
     class _AllPathsPlugin:
         def agent_module_paths(self) -> list[str]:
@@ -74,6 +75,7 @@ def test_bootstrap_registers_companion_and_research(settings):
             return list(ALL_AGENT_MODULE_PATHS)
 
     client = AsyncMock()
+    loop_tracker = MM(spec=LoopTracker)
     core_settings = settings.to_core_settings()
     deps = {
         LLMClient: client,
@@ -103,6 +105,7 @@ def test_bootstrap_registers_companion_and_research(settings):
         NLIClient: MM(spec=NLIClient),
         PostgresMemoryStore: MM(spec=PostgresMemoryStore),
         LoopStore: MM(spec=LoopStore),
+        LoopTracker: loop_tracker,
         SentenceTransformer: MM(spec=SentenceTransformer),
         object: client,
     }
@@ -110,6 +113,7 @@ def test_bootstrap_registers_companion_and_research(settings):
 
     assert isinstance(get_agent("companion"), CompanionAgent)
     assert isinstance(get_agent("research"), ResearchAgent)
+    assert get_agent("loops")._tracker is loop_tracker
 
     from ze_priority.agent import PriorityAgent
 

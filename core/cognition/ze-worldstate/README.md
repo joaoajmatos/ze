@@ -6,13 +6,14 @@ Open-loop substrate for Ze — active concerns, honest provenance, evidence-link
 
 Goals are the heavyweight, explicitly-declared end of Ze's executive function. Most real commitments never get declared as a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as **open loops** — the lightweight, ambient half of executive function, and the shipped first slice of what `specs/arch/ze-doctrine.md` calls **active concerns**, the fourth face of Ze's world-state.
 
-An open loop moves through `suspected → active → drifting → closed | dropped`. Confidence decays on its own; a contradiction or a missed deadline pushes a loop into `drifting`. Loops reuse `ze-memory`'s graph tables (`memory_relationships`, a dedicated `open_loop` bucket) for dedup and neighbourhood expansion rather than a parallel model — this package owns loop lifecycle and surfacing, not a second memory store.
+An open loop moves through `suspected → active → drifting → closed | dropped`. Confidence decays on its own; a contradiction or a missed deadline pushes a loop into `drifting`. Only an explicit user ask (`track_loop`) can move a `drifting` loop back to `active`. Loops reuse `ze-memory`'s graph tables (`memory_relationships`, a dedicated `open_loop` bucket) for dedup and neighbourhood expansion rather than a parallel model — this package owns loop lifecycle and surfacing, not a second memory store.
 
 ### Key features
 
 - `OpenLoop` / `LoopState` — the lifecycle type and its five states
 - Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion. The 109 Haiku gate stays as the fallback. Its parse tolerates the code fence Haiku puts around JSON; before phase 168 it did not, so this extraction created no loops in production
 - Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` is on in the shipped config (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8), after an `ENABLE` verdict on the held-out set for English and Portuguese
+- Track tool (`tracking.py`, `agents/tools.py`) — phase 169. The `track_loop` tool, on the `loops` agent, starts tracking a concern the user asked Ze to keep in mind. `LoopTracker` matches existing loops and returns one outcome: `created`, `confirmed`, `reinforced`, or `revived`. The reply may claim tracking only after a successful call
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition
@@ -22,17 +23,18 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 ### Integration
 
-`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
+`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. A turn where `track_loop` succeeded skips the gate. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
 
 ## Responsibilities
 
 | Module | What it provides |
 |---|---|
-| `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `DriftingLoopMention` |
+| `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `DriftingLoopMention`, `TrackOutcome`, `TrackResult` |
 | `store.py` | `LoopStore` protocol, `PostgresLoopStore` |
 | `extraction.py` | Relevance-gated loop extraction from inflow text; the 109 Haiku gate is the fallback |
 | `loop_judge.py` | System One loop gate: three Noul questions, bars, pure `decide()` |
 | `admission.py` | `LoopInflow`: gate, Haiku title writer, commit |
+| `tracking.py` | `LoopTracker`: normalize, match, and write a user-asked loop |
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
 | `decay.py` | Confidence decay cascade, called at the evidence-writing code path |
 | `drift.py` | Drift deadline computation and rationale composition |

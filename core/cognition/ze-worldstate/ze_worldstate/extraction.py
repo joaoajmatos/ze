@@ -18,6 +18,7 @@ from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.loop_judge import capped_text, supported_provenance
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
+    DECLARED_CONFIDENCE,
     LoopAdmission,
     LoopClaimKind,
     LoopProvenance,
@@ -31,7 +32,6 @@ log = get_logger(__name__)
 DEFAULT_EXTRACTION_MODEL = "anthropic/claude-haiku-4-5"
 
 _SUSPECTED_CONFIDENCE = 0.3
-_DECLARED_CONFIDENCE = 0.9
 
 _SYSTEM_PROMPT = """You are the relevance gate for Ze's open-loop substrate. Given a
 short piece of text, decide whether it implies a genuine unfinished commitment,
@@ -227,7 +227,7 @@ async def _create_declared_loop(
         provenance=LoopProvenance.USER_DECLARED
         if prov == LoopProvenance.CONVERSATION
         else prov,
-        confidence=_DECLARED_CONFIDENCE,
+        confidence=DECLARED_CONFIDENCE,
         state=LoopState.ACTIVE,
         confirmed_at=confirmed_at,
         drift_deadline=drift.compute_drift_deadline(confirmed_at, implied_window_days),
