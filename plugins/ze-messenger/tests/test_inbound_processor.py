@@ -1,10 +1,13 @@
+import asyncio
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 
 from ze_communication.types import ChannelType, InboundMessage
 from ze_messenger.inbound.processor import InboundMessageProcessor, _is_automated
 from ze_messenger.signals import MessagingSignalSource
+from ze_sdk.contribution import EvidenceRef
 
 
 def _msg(
@@ -198,3 +201,42 @@ async def test_extract_facts_llm_error_is_swallowed():
 
     await processor._extract_facts(_msg())  # must not raise
     memory.propose_facts.assert_not_called()
+
+
+# ── loop_extractor evidence (Phase 170) ────────────────────────────────────────
+
+
+async def _drain_tasks() -> None:
+    for _ in range(5):
+        await asyncio.sleep(0)
+
+
+async def test_loop_extractor_receives_episode_evidence():
+    known = MagicMock()
+    known.name = "Alice"
+    processor, memory, _, _ = _make_processor(contact=known)
+    episode_id = uuid4()
+    memory.write_episode = AsyncMock(return_value=episode_id)
+    extractor = AsyncMock()
+    processor.loop_extractor = extractor
+
+    await processor.process(_msg(), channel_id="gmail:ze@example.com")
+    await _drain_tasks()
+
+    extractor.assert_awaited_once_with(
+        "Hi there", "email", evidence=[EvidenceRef(kind="episode", id=episode_id)]
+    )
+
+
+async def test_loop_extractor_empty_evidence_when_episode_missing():
+    known = MagicMock()
+    known.name = "Alice"
+    processor, memory, _, _ = _make_processor(contact=known)
+    memory.write_episode = AsyncMock(return_value=None)
+    extractor = AsyncMock()
+    processor.loop_extractor = extractor
+
+    await processor.process(_msg(), channel_id="gmail:ze@example.com")
+    await _drain_tasks()
+
+    extractor.assert_awaited_once_with("Hi there", "email", evidence=[])

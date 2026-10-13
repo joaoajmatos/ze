@@ -181,6 +181,8 @@ correlation:
     max_seeds_per_run: 20
     seed_lookback_hours: 8      # look back slightly more than the cron interval
     dry_run: true               # log would-be pushes during calibration; set false to go live
+    # `enabled` and `dry_run` are honored by the attention-arbitration push path
+    # (phase 170): disabled yields no candidates; dry-run logs them and sends none.
   salience:
     dry_run: false             # true → log admission decisions without writing to graph
     admission:
@@ -193,12 +195,7 @@ correlation:
       tau_push: 0.6            # interrupt bar (proactive push, Phase 59 — deferred)
       tau_inline: 0.45         # low bar (inline section, Phase 58 — v1); must be < tau_push
       tau_relevance: 0.5
-      min_evidence: 2
       novelty_similarity_max: 0.85
-    feedback:
-      step: 0.05
-      tau_min: 0.4
-      tau_max: 0.85
     relevance:
       episode_lookback_days: 30
       cache_ttl_minutes: 30
@@ -206,7 +203,6 @@ correlation:
 worldstate:
   drift:
     enabled: true
-    window_days: 7             # default implied window when extraction gate omits one
     cron: "0 5 * * *"
   push:
     enabled: true
@@ -215,7 +211,7 @@ worldstate:
       tau_confidence: 0.5
       tau_relevance: 0.5
       novelty_similarity_max: 0.85
-      grounding_threshold: 0.5
+      grounding_threshold: 0.3   # matches the code default; was 0.5 and unread
 
 news:
   enabled: true

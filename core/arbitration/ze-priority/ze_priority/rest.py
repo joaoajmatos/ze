@@ -10,7 +10,11 @@ from ze_priority.errors import StaleReprioritizationTargetError
 from ze_priority.merge import merge
 from ze_priority.service import submit_reprioritization
 from ze_priority.store import PriorityOverrideStore
-from ze_priority.types import MergedPriorityItem, PriorityOverrideRequest
+from ze_priority.types import (
+    MergedPriorityItem,
+    PriorityOverrideRequest,
+    PrioritySnapshotResult,
+)
 from ze_priority.view import PriorityView
 
 UTC = timezone.utc
@@ -18,10 +22,13 @@ UTC = timezone.utc
 
 async def get_snapshot(
     priority_view: PriorityView, override_store: PriorityOverrideStore
-) -> list[MergedPriorityItem]:
+) -> PrioritySnapshotResult:
     ranking = await priority_view.rank()
     overrides = await override_store.get_active()
-    return merge(ranking, overrides, datetime.now(UTC))
+    return PrioritySnapshotResult(
+        items=merge(ranking, overrides, datetime.now(UTC)),
+        sources_failed=tuple(sorted(ranking.sources_failed)),
+    )
 
 
 async def submit_override(
@@ -58,7 +65,7 @@ async def _snapshot_row_for(
     override_store: PriorityOverrideStore,
 ) -> MergedPriorityItem:
     snapshot = await get_snapshot(priority_view, override_store)
-    for row in snapshot:
+    for row in snapshot.items:
         if row.source_id == source_id:
             return row
     raise StaleReprioritizationTargetError(

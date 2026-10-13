@@ -55,7 +55,7 @@ Hand Ze an objective and it decomposes into milestones, dispatches them to speci
 
 Goals are the heavyweight, declared end of Ze's executive function. Most real commitments never get declared as a goal.
 
-The Priority page ranks drifting loops, stuck goals, and correlation hypotheses on one scale. You can reorder items by dragging them or by telling Ze ("that can wait"). Your overrides decay or stay pinned, and they feed the same ranking that decides what Ze mentions in conversation and what it pushes.
+The Priority page ranks drifting loops, stuck goals, and correlation hypotheses on one scale. You can reorder items by dragging them or by telling Ze ("that can wait"). Your overrides decay or stay pinned, and they feed the same ranking that decides what Ze mentions in conversation and what it pushes. When Ze cannot read a source, the page names it.
 
 ### Open loops
 

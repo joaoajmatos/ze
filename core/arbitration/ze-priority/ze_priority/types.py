@@ -127,6 +127,15 @@ class MergedPriorityItem:
 
 
 @dataclass
+class PrioritySnapshotResult:
+    """`GET /priority/snapshot` payload — merged rows plus the source kinds that
+    could not be read this call (FR-016)."""
+
+    items: list[MergedPriorityItem]
+    sources_failed: tuple[SourceKind, ...]
+
+
+@dataclass
 class PriorityCandidateRef:
     """An already-fetched source entity, scoped for `PriorityView.rank_subset()`.
 

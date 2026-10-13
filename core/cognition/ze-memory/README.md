@@ -35,7 +35,6 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 | `policies.py` | `MemoryRetrievalPolicy` implementations per agent domain |
 | `feedback_records/` | Append-only `FeedbackRecord` evidence for thumbs and Retry requests on assistant replies, `FeedbackStore`, `submit_feedback_record`. Never read during a turn |
 | `graph/` | Memory graph store, traversal, predicates, projection |
-| `surfacing.py` | Context surfacing for agent prompts |
 | `synthesizer.py` | User profile synthesis from facts and episodes |
 | `types.py` | Memory domain types (`Fact`, `Episode`, `Signal`, …) |
 

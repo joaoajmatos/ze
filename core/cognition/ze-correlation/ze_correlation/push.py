@@ -159,6 +159,8 @@ class CorrelationPushCandidateSource:
         self._cfg = _load_config(settings)
 
     async def eligible_candidates(self) -> list[Hypothesis]:
+        if not self._cfg.enabled:
+            return []
         try:
             hypotheses = await self._hypothesis_store.list_unsurfaced()
         except Exception as exc:
@@ -169,6 +171,15 @@ class CorrelationPushCandidateSource:
         for hypothesis in hypotheses:
             if await self._passes_push_bar(hypothesis):
                 eligible.append(hypothesis)
+
+        if self._cfg.dry_run:
+            for hypothesis in eligible:
+                log.info(
+                    "correlation_push_dry_run",
+                    hypothesis_id=str(hypothesis.id),
+                    summary=hypothesis.summary,
+                )
+            return []
         return eligible
 
     async def send(self, hypothesis: Hypothesis) -> bool:

@@ -8,6 +8,7 @@ from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 from ze_sdk import DBPool
 
+from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
     LoopClaimKind,
@@ -90,6 +91,10 @@ class LoopStore(Protocol):
     async def set_drift_rationale(self, loop_id: UUID, rationale: str) -> None: ...
 
     async def list_drift_candidates(self) -> list[OpenLoop]: ...
+
+    async def record_corroboration(
+        self, loop_id: UUID, *, window_days: int = DEFAULT_DRIFT_WINDOW_DAYS
+    ) -> None: ...
 
     async def stamp_declared(
         self, loop_id: UUID, *, confidence: float, deadline: datetime
@@ -340,10 +345,27 @@ class PostgresLoopStore:
             rows = await conn.fetch(
                 """
                 SELECT * FROM open_loops
-                WHERE state = $1
+                WHERE state = 'active'
                   AND drift_deadline IS NOT NULL
-                  AND updated_at <= confirmed_at
-                """,
-                LoopState.ACTIVE.value,
+                  AND drift_deadline <= now()
+                ORDER BY drift_deadline ASC
+                """
             )
         return [_loop_from_row(r) for r in rows]
+
+    async def record_corroboration(
+        self, loop_id: UUID, *, window_days: int = DEFAULT_DRIFT_WINDOW_DAYS
+    ) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE open_loops
+                SET drift_deadline = GREATEST(
+                        COALESCE(drift_deadline, now()),
+                        now() + make_interval(days => $2)),
+                    updated_at = now()
+                WHERE id = $1 AND state = 'active'
+                """,
+                loop_id,
+                window_days,
+            )

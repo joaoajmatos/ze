@@ -141,7 +141,6 @@ _ENGINE_DIRS = [
     "core/cognition/ze-memory/ze_memory/extractor.py",
     "core/cognition/ze-memory/ze_memory/admission.py",
     "core/cognition/ze-memory/ze_memory/speech_act_judge.py",
-    "core/cognition/ze-memory/ze_memory/surfacing.py",
     "core/cognition/ze-memory/ze_memory/composite.py",
     "core/arbitration/ze-priority/ze_priority",
     "core/contracts/ze-agents/ze_agents",

@@ -11,7 +11,8 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 - `PriorityView.rank()` ranks drifting loops, stuck or near-gate goals, hypotheses, and stale relationships
 - User overrides (`PriorityOverride`) merge into the ranking at read time. They decay over 48 hours unless pinned
 - `reprioritize_item` — a conversational tool that makes a named item more or less urgent
-- `AttentionArbitrationJob` — one scheduled job that pushes only the top candidate, within a shared daily budget
+- `AttentionArbitrationJob` — one scheduled job that pushes only the top candidate, within a shared daily budget. It reads `worldstate.push.enabled` for loops and `correlation.push.enabled`/`dry_run` for hypotheses
+- The snapshot response carries `{items, sources_failed}`, so the page can name the sources it could not read. `source_kind` accepts `loop`, `goal`, `hypothesis`, and `relationship`
 - `TurnSurfacing` — inline mentions and the resume recap use the same merged ranking
 
 ### Integration
@@ -31,7 +32,6 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 | `tools.py`, `agent.py` | The `reprioritize_item` tool |
 | `turn.py` | `TurnSurfacing` — open-item mentions and recap for a turn |
 | `arbitration.py` | `AttentionArbitrationJob` |
-| `learning_context.py` | Read adapter for eligible goal learnings |
 | `rest.py` | Snapshot helper for the REST routes |
 | `migrations/` | `zpri001` — creates `priority_overrides` |
 
