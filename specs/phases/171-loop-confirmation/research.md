@@ -76,6 +76,16 @@ Detector: 14 EN + 26 PT examples, Portuguese similarity lowered by `PT_SIMILARIT
 | held-out 2 (`open_query_holdout2.jsonl`, R5 rerun) | EN | 0.917 | 0.000 | 0.88 | PASS |
 | held-out 2 | PT | 0.667 | 0.000 | 0.88 | FAIL |
 
-Held-out 2 Portuguese misses sit at similarity 0.858-0.876 (imperative and idiomatic phrasings: "Diz-me o que ainda tenho em cima da mesa", "Lembra-me do que ainda está em suspenso"). False positives were zero in both languages and both runs. Failed twice: escalated per R5; the slow regression test is not added until the bar decision is made.
+Held-out 2 Portuguese misses sat at similarity 0.858-0.876 (imperative and idiomatic phrasings). Failed twice; escalated per R5.
 
-Note: five detector examples equal tuned-set texts verbatim; they must be reworded before the final constants are set.
+**Decision (user, 2026-10-13): ship at threshold 0.88 under an amended bar.** The original bar (recall >= 0.90 per language) was missed in Portuguese on both held-out sets. The amended bar (EN recall >= 0.90, PT recall >= 0.65, FPR <= 0.05 per language) was set after seeing those results, so it is not a clean pre-registered verdict, and both held-out sets are seen and cannot serve as a clean verdict again. A missed detection is benign (the open-priorities note is not injected and the user can rephrase); a false positive is the costly error, and FPR was 0.000 throughout.
+
+After the decision, five detector examples that equalled tuned-set texts verbatim were reworded. No other change and no tuning against either held-out set. Numbers of the shipped detector (threshold 0.88):
+
+| Set | EN recall / FPR | PT recall / FPR |
+|---|---|---|
+| tuned | 0.955 / 0.000 | 0.818 / 0.000 |
+| held-out 1 | 0.900 / 0.000 | 0.900 / 0.000 |
+| held-out 2 | 0.917 / 0.000 | 0.833 / 0.000 |
+
+`tests/test_open_query_holdout.py` (slow) pins these against the amended bar. Follow-up, not built here: a System One Noul `asks_what_is_open` (option C) to replace similarity.
