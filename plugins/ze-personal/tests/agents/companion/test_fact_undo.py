@@ -56,7 +56,7 @@ async def test_forget_fact_by_id_restores_displaced():
 
 
 async def test_forget_fact_by_id_conflict_is_ok_false():
-    from ze_memory.errors import FactRestoreConflictError
+    from ze_sdk.memory import FactRestoreConflictError
 
     store = AsyncMock()
     store.retract_fact_and_restore = AsyncMock(

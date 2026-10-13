@@ -8,6 +8,7 @@ from ze_sdk import ToolReversibility, undo_payload
 from ze_logging import get_logger
 from ze_sdk.contribution import TargetFace
 from ze_sdk.memory import (
+    FactRestoreConflictError,
     Fact,
     PerceptionFactSubmit,
     PostgresMemoryStore,
@@ -102,7 +103,7 @@ async def forget_fact(
             fid = UUID(target)
             restore = [UUID(r) for r in restore_fact_ids or []]
             await memory_store.retract_fact_and_restore(fid, restore)
-        except Exception as exc:
+        except (FactRestoreConflictError, ValueError) as exc:
             log.warning("forget_fact_restore_failed", fact_id=target, error=str(exc))
             return {"ok": False, "error": str(exc)}
         return {
