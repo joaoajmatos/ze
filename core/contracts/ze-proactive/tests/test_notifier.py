@@ -236,3 +236,25 @@ async def test_deliver_held_while_quiet_does_nothing():
     assert await n.deliver_held() == 0
     store.list_held.assert_not_awaited()
     iface.push.assert_not_awaited()
+
+
+async def test_claim_error_fails_open_and_delivers():
+    pl = _push_log()
+    pl.try_claim = AsyncMock(side_effect=RuntimeError("lock timeout"))
+    n, iface, _ = _make(push_log=pl)
+    assert await n.notify(DIS, "t", "b", budget_key="k1") == "delivered"
+
+
+async def test_discretionary_budget_full_in_quiet_is_suppressed_not_held():
+    pl = _push_log(count=5)
+    n, _, store = _make(push_log=pl, setting=QUIET, now=NIGHT)
+    assert await n.notify(DIS, "t", "b", budget_key="k1") == "suppressed_budget"
+    assert store.create.call_args.kwargs["delivery"] == "suppressed"
+
+
+async def test_summary_not_held_by_quiet_race():
+    held = [_row(id="a", urgency="normal", delivery="held")]
+    n, iface, store = _make(store=_store(held=held), setting=QUIET, now=NOON)
+    n._clock = iter([NOON, NIGHT, NIGHT, NIGHT]).__next__
+    assert await n.deliver_held() == 1
+    assert store.create.call_args.kwargs["delivery"] == "delivered"

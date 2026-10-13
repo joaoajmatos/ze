@@ -111,6 +111,7 @@ class ProactiveNotifier:
         actions: Sequence[Action],
         format: str,
         dedup_hours: float | None,
+        ignore_quiet: bool = False,
     ) -> PushOutcome:
         discretionary = kind.push_class == "discretionary"
         if discretionary and not budget_key:
@@ -131,30 +132,34 @@ class ProactiveNotifier:
                 log.debug("proactive_notify_deduped", event_type=kind.event_type)
                 return "deduped"
 
-        quiet = False if kind.push_class == "requested" else await self.quiet_now()
+        quiet = (
+            False
+            if kind.push_class == "requested" or ignore_quiet
+            else await self.quiet_now()
+        )
 
         budget_won: bool | None = None
         claimed = False
         if discretionary and self._push_log is not None:
             assert budget_key is not None
-            claimed = await try_claim_shared(
-                self._push_log, budget_key, self._max, payload=title
-            )
-            if not claimed:
-                if await within_budget(self._push_log, self._max):
+            try:
+                claimed = await try_claim_shared(
+                    self._push_log, budget_key, self._max, payload=title
+                )
+                if claimed:
+                    budget_won = True
+                elif await within_budget(self._push_log, self._max):
                     log.debug("proactive_notify_duplicate", key=budget_key)
                     return "duplicate"
-                budget_won = False
-            else:
+                else:
+                    budget_won = False
+            except Exception as exc:
+                log.warning("attention_claim_failed", key=budget_key, error=str(exc))
                 budget_won = True
         elif discretionary:
             budget_won = True
 
-        decision = (
-            "suppress"
-            if budget_won is False
-            else decide(kind, quiet_now=quiet, budget_won=budget_won)
-        )
+        decision = decide(kind, quiet_now=quiet, budget_won=budget_won)
         delivery = {"deliver": "delivered", "hold": "held", "suppress": "suppressed"}[
             decision
         ]
@@ -239,6 +244,7 @@ class ProactiveNotifier:
             actions=(),
             format="text",
             dedup_hours=None,
+            ignore_quiet=True,
         )
         return n
 

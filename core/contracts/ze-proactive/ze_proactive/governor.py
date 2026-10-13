@@ -10,8 +10,8 @@ Decision = Literal["deliver", "hold", "suppress"]
 def decide(kind: PushKind, *, quiet_now: bool, budget_won: bool | None) -> Decision:
     if kind.push_class == "requested":
         return "deliver"
+    if kind.push_class == "discretionary" and budget_won is False:
+        return "suppress"
     if quiet_now:
         return "hold"
-    if kind.push_class == "accountability":
-        return "deliver"
-    return "deliver" if budget_won else "suppress"
+    return "deliver"

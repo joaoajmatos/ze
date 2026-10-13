@@ -20,7 +20,7 @@ DIS = PushKind("g_dis", "discretionary", "normal", "tests")
         (DIS, False, True, "deliver"),
         (DIS, False, False, "suppress"),
         (DIS, True, True, "hold"),
-        (DIS, True, False, "hold"),
+        (DIS, True, False, "suppress"),
     ],
 )
 def test_decide(kind, quiet, budget, expected):
