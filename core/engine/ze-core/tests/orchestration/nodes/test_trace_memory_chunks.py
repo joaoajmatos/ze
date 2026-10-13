@@ -226,3 +226,20 @@ async def test_record_trace_workspace_from_tool_calls():
     workspace = result["message_trace"].workspace
     assert workspace is not None
     assert workspace.files == [{"path": "notes.txt", "op": "write"}]
+
+
+async def test_record_trace_copies_loop_offer_ids():
+    state = {
+        "envelope": _envelope(),
+        "agent_result": None,
+        "memory_context": None,
+        "loop_offer_ids": ["a"],
+    }
+    result = await record_trace(state, config={})
+    assert result["message_trace"].loop_offer_ids == ["a"]
+
+
+async def test_record_trace_loop_offer_ids_default_empty():
+    state = {"envelope": _envelope(), "agent_result": None, "memory_context": None}
+    result = await record_trace(state, config={})
+    assert result["message_trace"].loop_offer_ids == []

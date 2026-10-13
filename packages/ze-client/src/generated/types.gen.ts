@@ -830,6 +830,10 @@ export type EvalChatRequest = {
      * Session Id
      */
     session_id?: string;
+    /**
+     * Force Agent
+     */
+    force_agent?: string | null;
 };
 
 /**
@@ -2120,6 +2124,10 @@ export type MessageTraceResponse = {
      * Resume Recap Applied
      */
     resume_recap_applied?: boolean;
+    /**
+     * Loop Offer Ids
+     */
+    loop_offer_ids?: Array<string>;
 };
 
 /**

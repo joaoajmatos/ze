@@ -330,6 +330,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         if data.get("compaction")
         else None,
         resume_recap_applied=bool(data.get("resume_recap_applied", False)),
+        loop_offer_ids=list(data.get("loop_offer_ids") or []),
     )
 
 

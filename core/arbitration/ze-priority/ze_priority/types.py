@@ -21,6 +21,13 @@ class LoopSignal:
     drift_rationale: str | None = None
 
 
+@dataclass(frozen=True)
+class LoopOffer:
+    loop_id: UUID
+    title: str
+    provenance: str
+
+
 @dataclass
 class GoalSignal:
     kind: Literal["active", "awaiting_gate"]

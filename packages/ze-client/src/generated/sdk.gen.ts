@@ -35,7 +35,7 @@ export const healthCheck = <ThrowOnError extends boolean = false>(options?: Opti
 /**
  * Eval chat
  *
- * Send a prompt directly to the Ze graph and receive a structured response with routing metadata. Intended for automated evaluation and LLM-as-tester workflows.
+ * Send a prompt directly to the Ze graph and receive a structured response with routing metadata. Intended for automated evaluation and LLM-as-tester workflows. force_agent routes the turn to a named agent and is accepted only in eval mode.
  */
 export const evalChatEvalChatPost = <ThrowOnError extends boolean = false>(options: Options<EvalChatEvalChatPostData, ThrowOnError>): RequestResult<EvalChatEvalChatPostResponses, EvalChatEvalChatPostErrors, ThrowOnError> => (options.client ?? client).post<EvalChatEvalChatPostResponses, EvalChatEvalChatPostErrors, ThrowOnError>({
     url: '/eval/chat',

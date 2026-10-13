@@ -174,6 +174,7 @@ class MessageTraceResponse(BaseModel):
     effects_known: bool = False
     compaction: CompactionTraceResponse | None = None
     resume_recap_applied: bool = False
+    loop_offer_ids: list[str] = []
 
 
 class MessageTraceEntry(BaseModel):

@@ -6,6 +6,7 @@ from ze_priority.errors import (
 from ze_priority.types import (
     GoalSignal,
     HypothesisSignal,
+    LoopOffer,
     LoopSignal,
     MergedPriorityItem,
     OpenItemMention,
@@ -37,6 +38,7 @@ def import_agent_modules() -> None:
 __all__ = [
     "GoalSignal",
     "HypothesisSignal",
+    "LoopOffer",
     "LoopSignal",
     "MergedPriorityItem",
     "OpenItemMention",

@@ -32,6 +32,11 @@ log = get_logger(__name__)
 UTC = timezone.utc
 
 INLINE_MENTION_LIMIT = 3
+OFFER_LIMIT = 3
+OFFER_COOLDOWN_HOURS = 168
+RECAP_LIMIT = 5
+OPEN_QUERY_LIMIT = 10
+OFFER_EVENT_PREFIX = "worldstate_loop_offer:"
 
 _GLOBAL_OPEN_RE = re.compile(
     r"\b("
