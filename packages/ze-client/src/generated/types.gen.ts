@@ -2265,7 +2265,7 @@ export type PriorityOverrideRequestSchema = {
     /**
      * Source Kind
      */
-    source_kind: 'loop' | 'goal' | 'hypothesis';
+    source_kind: 'loop' | 'goal' | 'hypothesis' | 'relationship';
     /**
      * Source Id
      */
@@ -2273,7 +2273,7 @@ export type PriorityOverrideRequestSchema = {
     /**
      * Anchor Source Kind
      */
-    anchor_source_kind: 'loop' | 'goal' | 'hypothesis';
+    anchor_source_kind: 'loop' | 'goal' | 'hypothesis' | 'relationship';
     /**
      * Anchor Source Id
      */
@@ -2303,7 +2303,7 @@ export type PriorityOverrideSchema = {
     /**
      * Anchor Source Kind
      */
-    anchor_source_kind: 'loop' | 'goal' | 'hypothesis';
+    anchor_source_kind: 'loop' | 'goal' | 'hypothesis' | 'relationship';
     /**
      * Anchor Source Id
      */
@@ -2325,7 +2325,7 @@ export type PrioritySnapshotItem = {
     /**
      * Source Kind
      */
-    source_kind: 'loop' | 'goal' | 'hypothesis';
+    source_kind: 'loop' | 'goal' | 'hypothesis' | 'relationship';
     /**
      * Source Id
      */
@@ -2347,6 +2347,20 @@ export type PrioritySnapshotItem = {
      */
     overridden_from_computed: boolean;
     override: PriorityOverrideSchema | null;
+};
+
+/**
+ * PrioritySnapshotResponse
+ */
+export type PrioritySnapshotResponse = {
+    /**
+     * Items
+     */
+    items: Array<PrioritySnapshotItem>;
+    /**
+     * Sources Failed
+     */
+    sources_failed: Array<'loop' | 'goal' | 'hypothesis' | 'relationship'>;
 };
 
 /**
@@ -6151,11 +6165,9 @@ export type GetPrioritySnapshotData = {
 
 export type GetPrioritySnapshotResponses = {
     /**
-     * Response Getprioritysnapshot
-     *
      * Successful Response
      */
-    200: Array<PrioritySnapshotItem>;
+    200: PrioritySnapshotResponse;
 };
 
 export type GetPrioritySnapshotResponse = GetPrioritySnapshotResponses[keyof GetPrioritySnapshotResponses];

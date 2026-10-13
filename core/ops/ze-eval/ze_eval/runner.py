@@ -243,6 +243,20 @@ def _print_summary(run: dict) -> None:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 
+def collect_tool_calls(turns: list[dict]) -> list[dict]:
+    """Flat list of tool calls from every turn, in turn order.
+
+    Each call is copied and annotated with the 1-based ``turn`` it came from, so
+    the judge can tell a tool used in an early turn from one used later.
+    """
+    calls: list[dict] = []
+    for idx, turn in enumerate(turns, start=1):
+        result = turn.get("result") or {}
+        for call in result.get("tool_calls") or []:
+            calls.append({**call, "turn": turn.get("turn", idx)})
+    return calls
+
+
 async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict:
     ze_url = args.ze_url or os.environ.get("ZE_EVAL_URL", "http://localhost:8000")
     ze_key = args.ze_key or os.environ.get("ZE_API_KEY", "")
@@ -338,11 +352,17 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                 if turns:
                     prompt_for_judge = " → ".join(t["prompt"] for t in turns)
                     response_for_judge = turns[-1]["result"].get("response", "")
-                    judged_result = turns[-1]["result"]
+                    tool_calls_for_judge = collect_tool_calls(turns)
+                    pending_confirmation_for_judge = bool(
+                        turns[-1]["result"].get("pending_confirmation")
+                    )
                 else:
-                    judged_result = ze_result
                     prompt_for_judge = scenario.get("prompt", "")
                     response_for_judge = ze_result.get("response", "")
+                    tool_calls_for_judge = ze_result.get("tool_calls")
+                    pending_confirmation_for_judge = bool(
+                        ze_result.get("pending_confirmation")
+                    )
 
                 try:
                     score = await judge(
@@ -352,10 +372,8 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
                         expected_agent=scenario.get("expected_agent"),
                         agent_used=agent_used,
                         criteria=scenario["criteria"],
-                        tool_calls=judged_result.get("tool_calls"),
-                        pending_confirmation=bool(
-                            judged_result.get("pending_confirmation")
-                        ),
+                        tool_calls=tool_calls_for_judge,
+                        pending_confirmation=pending_confirmation_for_judge,
                         model=args.judge_model,
                         api_key=or_key,
                     )

@@ -207,6 +207,52 @@ memory:
   nli_rerank_min_candidates: 5       # skip rerank when pool smaller than this
 ```
 
+### `worldstate:`
+
+Controls the open-loop substrate: the drift sweep and the push switch for drifting
+loops.
+
+```yaml
+worldstate:
+  drift:
+    enabled: true
+    cron: "0 5 * * *"          # When the drift sweep runs (cron, UTC)
+
+  push:
+    enabled: true              # false → no open-loop push candidates
+    inline_cooldown_hours: 12  # Min hours after an inline mention before a push
+    thresholds:
+      tau_confidence: 0.5
+      tau_relevance: 0.5
+      novelty_similarity_max: 0.85
+      grounding_threshold: 0.3
+
+  stale_suspicion:             # Optional; defaults shown
+    enabled: true
+    window_days: 14            # Days a suspected loop waits for evidence before expiry
+    cron: "0 4 * * *"
+```
+
+The drift window — how long an `active` loop waits before it drifts — is a code
+constant (7 days), not config. New evidence on an active loop moves the deadline to at
+least 7 days from now. See [scheduled-jobs.md](scheduled-jobs.md#open-loop-upkeep).
+
+### `correlation:`
+
+`correlation.push` controls proactive hypothesis pushes:
+
+```yaml
+correlation:
+  push:
+    enabled: false   # false → no hypothesis push candidates
+    dry_run: true    # true → log would-be pushes and send none
+```
+
+The attention-arbitration job reads both keys. With `enabled: false` Ze prepares no
+hypothesis push candidates. With `enabled: true` and `dry_run: true` Ze logs each
+would-be push under `correlation_push_dry_run` and sends nothing. Only `enabled: true`
+with `dry_run: false` sends a push. The shipped config is `enabled: false`.
+
 ### `contacts:`
 
 ```yaml
@@ -450,7 +496,7 @@ Ze extracts open loops from conversation, email, calendar events, and ingested c
 - Anything else creates a suspected loop.
 - A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate now strips the code fence Haiku wraps around its JSON.
 
-After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
+After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. The gate also steps aside on a turn where the `track_loop` tool succeeded. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
 
 The keys:
 

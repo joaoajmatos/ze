@@ -572,3 +572,36 @@ async def test_assess_intervals_tolerates_fenced_and_prose_replies(reply):
     result = await svc._assess_intervals(event, now + timedelta(hours=5), now)
 
     assert {td for td, _ in result} == {timedelta(hours=2), timedelta(minutes=30)}
+
+
+# ── CalendarReminderJob loop extraction (Phase 170) ─────────────────────────────
+
+
+async def test_calendar_loop_extractor_two_positional_args_no_evidence():
+    from types import SimpleNamespace
+
+    from ze_calendar.jobs.calendar_reminder import CalendarReminderJob
+
+    signal = SimpleNamespace(
+        title="Dentist appointment",
+        summary="Checkup at 10:00",
+        external_ref="evt_1",
+    )
+    source = MagicMock()
+    source.poll = AsyncMock(return_value=[signal])
+    gate = MagicMock()
+    gate.check_and_ingest = AsyncMock()
+    extractor = AsyncMock()
+
+    job = CalendarReminderJob(
+        service=MagicMock(),
+        credentials=MagicMock(),
+        signal_source=source,
+        admission_gate=gate,
+        loop_extractor=extractor,
+    )
+    await job._emit_via_source()
+
+    extractor.assert_awaited_once_with(
+        "Dentist appointment. Checkup at 10:00", "calendar"
+    )

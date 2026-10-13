@@ -8,6 +8,7 @@ from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
 from ze_sdk import DBPool
 
+from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
     LoopClaimKind,
@@ -25,6 +26,13 @@ _ALLOWED_TRANSITIONS: dict[LoopState, set[LoopState]] = {
     LoopState.DRIFTING: {LoopState.CLOSED, LoopState.DROPPED},
     LoopState.CLOSED: set(),
     LoopState.DROPPED: set(),
+}
+
+# drifting -> active is a revive: only a user who explicitly asks to keep a loop
+# in mind may bring one back (169). The REST confirm route, review.confirm_loop,
+# decay and the drift sweep all keep rejecting it (they never pass user_asked).
+_USER_ASKED_TRANSITIONS: dict[LoopState, set[LoopState]] = {
+    LoopState.DRIFTING: {LoopState.ACTIVE},
 }
 
 
@@ -54,7 +62,9 @@ class LoopStore(Protocol):
 
     async def list(self, states: list[str] | None = None) -> list[OpenLoop]: ...
 
-    async def transition(self, loop_id: UUID, new_state: str) -> OpenLoop: ...
+    async def transition(
+        self, loop_id: UUID, new_state: str, *, user_asked: bool = False
+    ) -> OpenLoop: ...
 
     async def link_entity(self, loop_id: UUID, entity_id: UUID) -> None: ...
 
@@ -81,6 +91,14 @@ class LoopStore(Protocol):
     async def set_drift_rationale(self, loop_id: UUID, rationale: str) -> None: ...
 
     async def list_drift_candidates(self) -> list[OpenLoop]: ...
+
+    async def record_corroboration(
+        self, loop_id: UUID, *, window_days: int = DEFAULT_DRIFT_WINDOW_DAYS
+    ) -> None: ...
+
+    async def stamp_declared(
+        self, loop_id: UUID, *, confidence: float, deadline: datetime
+    ) -> None: ...
 
 
 class PostgresLoopStore:
@@ -134,13 +152,17 @@ class PostgresLoopStore:
                 )
         return [_loop_from_row(r) for r in rows]
 
-    async def transition(self, loop_id: UUID, new_state: str) -> OpenLoop:
+    async def transition(
+        self, loop_id: UUID, new_state: str, *, user_asked: bool = False
+    ) -> OpenLoop:
         target = LoopState(new_state)
         loop = await self.get(loop_id)
         if loop is None:
             raise LoopNotFoundError(f"Loop {loop_id} not found")
 
-        allowed = _ALLOWED_TRANSITIONS.get(loop.state, set())
+        allowed = set(_ALLOWED_TRANSITIONS.get(loop.state, set()))
+        if user_asked:
+            allowed |= _USER_ASKED_TRANSITIONS.get(loop.state, set())
         if target not in allowed:
             raise InvalidLoopTransitionError(
                 f"Cannot transition loop {loop_id} from {loop.state.value} to {target.value}"
@@ -159,13 +181,18 @@ class PostgresLoopStore:
                 """
                 UPDATE open_loops
                 SET state = $2, confirmed_at = $3, closed_at = $4, updated_at = now()
-                WHERE id = $1
+                WHERE id = $1 AND state = $5
                 RETURNING *
                 """,
                 loop_id,
                 target.value,
                 confirmed_at,
                 closed_at,
+                loop.state.value,
+            )
+        if row is None:
+            raise InvalidLoopTransitionError(
+                f"Loop {loop_id} changed state before it could move to {target.value}"
             )
         result = _loop_from_row(row)
         log.info(
@@ -289,6 +316,21 @@ class PostgresLoopStore:
                 deadline,
             )
 
+    async def stamp_declared(
+        self, loop_id: UUID, *, confidence: float, deadline: datetime
+    ) -> None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "UPDATE open_loops SET confidence = $2, drift_deadline = $3,"
+                " drift_rationale = NULL, confirmed_at = now(), updated_at = now()"
+                " WHERE id = $1 RETURNING id",
+                loop_id,
+                confidence,
+                deadline,
+            )
+        if row is None:
+            raise LoopNotFoundError(f"Loop {loop_id} not found")
+
     async def set_drift_rationale(self, loop_id: UUID, rationale: str) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
@@ -303,10 +345,27 @@ class PostgresLoopStore:
             rows = await conn.fetch(
                 """
                 SELECT * FROM open_loops
-                WHERE state = $1
+                WHERE state = 'active'
                   AND drift_deadline IS NOT NULL
-                  AND updated_at <= confirmed_at
-                """,
-                LoopState.ACTIVE.value,
+                  AND drift_deadline <= now()
+                ORDER BY drift_deadline ASC
+                """
             )
         return [_loop_from_row(r) for r in rows]
+
+    async def record_corroboration(
+        self, loop_id: UUID, *, window_days: int = DEFAULT_DRIFT_WINDOW_DAYS
+    ) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                """
+                UPDATE open_loops
+                SET drift_deadline = GREATEST(
+                        COALESCE(drift_deadline, now()),
+                        now() + make_interval(days => $2)),
+                    updated_at = now()
+                WHERE id = $1 AND state = 'active'
+                """,
+                loop_id,
+                window_days,
+            )

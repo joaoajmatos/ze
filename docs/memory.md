@@ -226,6 +226,13 @@ claims can see the inner payload. Domain agents list pending items, run
 success may confirm cancelled/closed/abandoned; it does not earn “I forgot”
 a fact.
 
+**Loop tracking.** The `loops` agent confirms tracking (“it's on your radar”)
+only after `track_loop` returns `ok: true` on this turn. The same turn-path
+guard strips an unearned tracking claim, in English and Portuguese, and the
+reply becomes “I could not track that.” when nothing else remains. Offers and
+questions (“Want me to keep this on your radar?”) are never stripped. Only the
+`loops` agent turns this guard on.
+
 **Post-turn extraction.** After each agent run, `write_memory` calls
 `gather_fact_proposals` (`ze_memory/extractor.py`). The extractor classifies
 `speech_act` and keeps facts only when the act is `fact` and the family is one of

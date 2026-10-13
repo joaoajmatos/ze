@@ -47,7 +47,7 @@ Today's date: {today}. Your own knowledge may be older; do not mark a date or ve
 Tool calls:
 {tool_calls}
 Waiting for the user's confirmation: {pending_confirmation}
-Notes: a call marked "draft" is how a write that waits for the user's confirmation appears; it counts as invoking the tool. Web search runs on the server and never appears in the tool call list.
+Notes: a call marked "draft" is how a write that waits for the user's confirmation appears; it counts as invoking the tool. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. Web search runs on the server and never appears in the tool call list.
 
 ## Criteria
 {criteria}
@@ -71,7 +71,9 @@ def format_tool_calls(tool_calls: list[dict] | None) -> str:
             state = "draft"
         else:
             state = "ok" if call.get("success", True) else "failed"
-        lines.append(f"- {call.get('tool_name', '?')} ({state})")
+        turn = call.get("turn")
+        turn_prefix = f"[turn {turn}] " if turn else ""
+        lines.append(f"- {turn_prefix}{call.get('tool_name', '?')} ({state})")
     return "\n".join(lines)
 
 

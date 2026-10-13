@@ -55,11 +55,11 @@ Hand Ze an objective and it decomposes into milestones, dispatches them to speci
 
 Goals are the heavyweight, declared end of Ze's executive function. Most real commitments never get declared as a goal.
 
-The Priority page ranks drifting loops, stuck goals, and correlation hypotheses on one scale. You can reorder items by dragging them or by telling Ze ("that can wait"). Your overrides decay or stay pinned, and they feed the same ranking that decides what Ze mentions in conversation and what it pushes.
+The Priority page ranks drifting loops, stuck goals, and correlation hypotheses on one scale. You can reorder items by dragging them or by telling Ze ("that can wait"). Your overrides decay or stay pinned, and they feed the same ranking that decides what Ze mentions in conversation and what it pushes. When Ze cannot read a source, the page names it.
 
 ### Open loops
 
-Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
 
 ![State machine showing an open loop moving from suspected to active to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped](docs/diagrams/root/open-loops.svg)
 
@@ -119,7 +119,7 @@ Thirteen agents: research, companion, calendar, messenger, reminders, workflow, 
 | `reminders` | NL reminders + proactive push | Autonomous |
 | `workflow` | Recurring multi-step tasks | Read auto · manage confirm |
 | `goals` | Multi-week autonomous objectives | Read auto · writes confirm |
-| `loops` | List, close, or drop open loops | Autonomous |
+| `loops` | List, track, close, or drop open loops | Autonomous |
 | `priority` | Reorder what Ze treats as most important | Writes confirm |
 | `prospecting` | Browser-sidecar research + outreach | Autonomous |
 | `news` | Personalized RSS headlines + search | Autonomous |

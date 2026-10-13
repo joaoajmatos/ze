@@ -26,7 +26,7 @@ class CalendarReminderJob:
         credentials: Any,
         signal_source: "CalendarSignalSource | None" = None,
         admission_gate: Any = None,
-        loop_extractor: Callable[[str, str], Awaitable[None]] | None = None,
+        loop_extractor: Callable[..., Awaitable[None]] | None = None,
     ) -> None:
         self._service = service
         self._credentials = credentials
@@ -57,6 +57,7 @@ class CalendarReminderJob:
                     error=str(exc),
                 )
             if self.loop_extractor is not None:
+                log.debug("calendar_loop_no_evidence", event_id=signal.external_ref)
                 try:
                     await self.loop_extractor(
                         f"{signal.title}. {signal.summary}", "calendar"

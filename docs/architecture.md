@@ -187,7 +187,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `await_confirmation` | `nodes/execution.py` | Pause graph, emit confirm_request frame |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
 | `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call |
-| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. In a retry run it only extends session history |
+| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. A turn where the `loops` agent's `track_loop` tool succeeded skips the loop gate, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
 
 </details>
 
@@ -292,7 +292,7 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `finance` | CSV/Trading212 ingestion, categorization, recurring detection | `ze-finance` | Haiku |
 | `workflow` | APScheduler, multi-step plan execution | `ze-automation` | Full |
 | `goals` | Goal lifecycle (create, status, steer, pause, resume, abandon) | `ze-automation` | Full |
-| `loops` | `list_open_loops`, `close_loop`, `drop_loop` | `ze-worldstate` | Haiku |
+| `loops` | `list_open_loops`, `track_loop`, `close_loop`, `drop_loop` | `ze-worldstate` | Haiku |
 | `priority` | `reprioritize_item` | `ze-priority` | Haiku |
 | `ingestion` | URL, text, and file ingestion into memory | `ze-ingestion` | Full |
 
@@ -525,7 +525,7 @@ Ze pushes messages via WebSocket or ntfy on a schedule, without the user prompti
 | Contact review suggestions | 8:30 AM UTC daily | Push pending contact review nudges |
 | Goal narrative | 6 PM UTC Sunday | One-paragraph weekly progress update per active goal |
 | Goal suggestions | 7 PM UTC Sunday | Proactive new goal proposal based on memory + retrospectives |
-| Stuck goal detection | 9 AM UTC Tuesday | Alert on idle milestones (48 h) or unresolved gates (72 h) |
+| Stuck goal detection | 9 AM UTC Tuesday | Alert on goals idle 7 days or gates waiting 7 days |
 | Weekly accountability narrative | 9 AM UTC Monday | Templated summary of goals, workflows, costs, and anomalies |
 | Cost anomaly detection | Every 6 hours | Flag agent runs whose cost exceeds the rolling baseline |
 | Goal advance sweep | Every 15 min | Advance all `ACTIVE` goals via `GoalExecutor` |

@@ -20,6 +20,7 @@ from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_skills.bootstrap import register_proactive_jobs as register_skills_jobs
+from ze_worldstate.bootstrap import loop_push_settings
 from ze_worldstate.bootstrap import register_proactive_jobs as register_worldstate_jobs
 from ze_logging import get_logger
 
@@ -81,6 +82,7 @@ def register_all_proactive_jobs(
                 loop_surfacer=loop_surfacer,
                 correlation_push_source=correlation_push_source,
                 notifier=notifier,
+                loop_push=loop_push_settings(settings),
             )
             scheduler.add_cron_job(
                 fn=arbitration_job.run,

@@ -79,6 +79,7 @@ ze/                           # monorepo root
 │   │           ├── extraction.py # conservative relevance-gated loop extraction (109 Haiku gate = fallback)
 │   │           ├── loop_judge.py # System One loop gate — three Nouls, bars, pure decide()
 │   │           ├── admission.py  # LoopInflow — gate + Haiku title writer + commit
+│   │           ├── tracking.py   # LoopTracker — user-asked loop (track_loop tool): normalize, match, create/confirm/reinforce/revive
 │   │           ├── review.py    # confirm/close/drop lifecycle transitions
 │   │           ├── inflow.py    # inflow wiring helpers (conversation hook, messenger/calendar/ingestion extractors)
 │   │           ├── jobs/        # stale-suspicion expiry job
@@ -257,6 +258,7 @@ make logs            # tail the server log file
 make test            # ze-api tests (skips slow embedding tests)
 make test-<name>     # any package — see docs/testing.md
 make test-py         # every Python package suite; reports all failures (CI gate)
+make test-pg         # real-Postgres tests (needs Docker or ZE_TEST_PG_URL); not part of test-py
 make test-all        # test-py with slow tests, then test-web
 make test-web        # @myguyze/ze-ui + React web app (vitest)
 make typecheck-web   # tsc --noEmit for ze-web and @myguyze/ze-ui
@@ -338,6 +340,8 @@ make calibrate-loop-gate  # LIVE System One + Haiku baseline over eval/calibrati
   sorted alphabetically) to match production load order.
 - Slow tests (embedding model): mark with `@pytest.mark.slow`, skipped by default.
   Pass `SLOW=1` (e.g. `make test-core SLOW=1`) or run `make test-all`.
+- Real-Postgres tests: mark with `@pytest.mark.pg`, skipped unless `ZE_TEST_PG=1`. Run
+  `make test-pg` (needs Docker or `ZE_TEST_PG_URL`); `test-py` never starts Docker.
 
 ### ze-web (React / FSD)
 
@@ -626,6 +630,8 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 166 | System One Skill Gating (O3) — E5 shortlists skills down to `shortlist_floor`; one batched System One Choice (shortlist ∪ `none`) plus a Noul `needs_skill` picks at most one automatic skill (a deliberate narrowing of 114; explicit `/skill-name` still stacks); a below-`match_threshold` apply is marked `below_floor` on the trace; `match_skills` appends its judgments; surface `system_one.surfaces.skills` shipped off with null bars until `make calibrate-skills`, then enabled 2026-10-12 with `choice_trust` 0.75, `needs_skill_hold` 0.6, `shortlist_k` 5; no suggestion UX | Implemented |
 | 167 | Routing Choice Criteria — fixes the 164 held-out failures: companion no longer claims "explain X"; optional `routing_criteria` on `BaseAgent` (Choice text, falls back to `description`; E5 still embeds `description`); name-free Choice instructions and a stronger `none` criterion; `shortlist_k` 9 chosen by offline recall on three calibration sets (9 of 10 agents, so E5 filters little for the Choice; it still drives the 160 skip path); `eval/calibration/routing_holdout2.jsonl` and the opt-in `companion_research_check.py`. Surface enabled (`choice_trust` 0.5, `multi_specialist_hold` 0.5, `complexity_lookup_max` null) under an amended acceptance rule | Implemented |
 | 168 | Loop Extraction Gate (O4) — one batched System One request asks three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration` on conversation only); pure `decide()` in `ze_worldstate/loop_judge.py` maps them to resolve / create-declared / create-suspected / hold; Haiku only writes the title (and optional `implied_window_days`) after a positive gate; `LoopInflow` (`admission.py`) owns gate and commit; conversation gate runs in `write_memory` beside the fact extractor (rows on `MessageTrace.judgments`, fire-and-forget commit), worldstate `conversation_memory_hook` deleted; email/calendar/ingestion run the gate, log judgments, and write no trace rows; off, uncalibrated, skip or invalid → the 109 Haiku gate; surface `system_one.surfaces.loop_gate` enabled 2026-10-12 (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8) after an `ENABLE` verdict for EN and PT on the held-out set; the 109 Haiku fallback now parses Haiku's fenced JSON (before 168 it did not, so production created no loops); no migration | Implemented |
+| 169 | Loop Track Tool — `track_loop(title, window_days)` on the `loops` agent starts tracking a concern the user explicitly asked Ze to keep in mind; injected `LoopTracker` (`ze_worldstate/tracking.py`) returns one of four outcomes (`created` active/`user_declared`/PRIORITY/0.9 via the contribution seam, `confirmed` a suspected match, `reinforced` an active match, `revived` a drifting match), optional `window_days` (default 7, clamp 1-365); `LoopStore.transition(..., user_asked=True)` adds the only `drifting → active` edge and `stamp_declared()` writes the confirmed/revive field set in one statement; `write_memory` skips the loop gate on a turn where `track_loop` succeeded (`track_loop_succeeded` in `ze_agents/nested_tools.py`); opt-in `strip_track_claims` honesty guard (EN + PT) on `enforce_domain_cancel_confirmations`, on for `LoopsAgent` only; `eval/scenarios/loops.yaml` and two routing training rows; drift sweep stays inert for declared loops until phase 170; no migration | Implemented |
+| 170 | Executive Repair — drift fires on the deadline (`active AND drift_deadline <= now()`) and `record_corroboration` moves the deadline on new evidence; `list_stuck` returns one row per goal from the earliest fired open gate; loops carry evidence (conversation and email turn episodes, ingestion refs; calendar none) and the push grounding gate checks the loop title; the priority snapshot returns `{items, sources_failed}` and accepts `source_kind: relationship`; dead code and unread config removed; real-Postgres test harness (`make test-pg`); no migration | Implemented |
 | 177 | Interruption Governor (part 1) — one governor for every proactive push: `PushKind` (class requested/accountability/discretionary + urgency) registered process-wide, pure `decide()` in `ze_proactive/governor.py`; the shared daily budget (`proactive.budget.max_pushes_per_day` default 5) covers every discretionary push; quiet hours (`interruption_settings`, ship off) hold accountability and discretionary pushes, `QuietHoursReleaseJob` releases them with one summary buzz; `notify()` is the only send path (`push()`/`push_notification()` deleted); ntfy priority low 2/normal 3/high 5 and a `buzz` flag; REST `GET/PUT /api/v0/notifications/quiet-hours` + a Settings form; cron catch-up (`proactive_job_runs`, `catch_up_max_age_hours`), workflow catch-up, late calendar reminders; migration `zpro004` | Implemented |
 
 ## graphify

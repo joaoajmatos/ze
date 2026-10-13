@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ze_logging import get_logger
+from ze_worldstate.bootstrap import LoopPushSettings
 
 from ze_priority.types import PriorityCandidateRef
 from ze_priority.view import PriorityView
@@ -26,17 +27,25 @@ class AttentionArbitrationJob:
         loop_surfacer: Any,
         correlation_push_source: Any,
         notifier: Any,
+        loop_push: LoopPushSettings | None = None,
     ) -> None:
         self._priority_view = priority_view
         self._loop_surfacer = loop_surfacer
         self._correlation_push_source = correlation_push_source
         self._notifier = notifier
+        self._loop_push = loop_push if loop_push is not None else LoopPushSettings()
 
     async def run(self) -> None:
         if await self._notifier.remaining_budget() == 0:
             return
 
-        loop_candidates = await self._loop_surfacer.eligible_candidates()
+        if self._loop_push.enabled:
+            loop_candidates = await self._loop_surfacer.eligible_candidates(
+                thresholds=self._loop_push.thresholds,
+                inline_cooldown_hours=self._loop_push.inline_cooldown_hours,
+            )
+        else:
+            loop_candidates = []
         hypothesis_candidates = (
             await self._correlation_push_source.eligible_candidates()
         )

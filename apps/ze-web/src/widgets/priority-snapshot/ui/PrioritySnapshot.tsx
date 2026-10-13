@@ -26,6 +26,7 @@ const SOURCE_LABEL: Record<string, string> = {
   loop: "Loop",
   goal: "Goal",
   hypothesis: "Hypothesis",
+  relationship: "Relationship",
 };
 
 function SourceBadge({ sourceKind }: { sourceKind: string }) {
@@ -109,13 +110,18 @@ function PriorityRow({
 }
 
 export function PrioritySnapshot() {
-  const { data: items, isLoading, isError, refetch } = usePrioritySnapshotQuery();
+  const { data, isLoading, isError, refetch } = usePrioritySnapshotQuery();
   const reprioritize = useReprioritizeMutation();
   const unpin = useUnpinPriorityOverrideMutation();
   const [error, setError] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
-  const ordered = [...(items ?? [])].sort((a, b) => a.displayed_rank - b.displayed_rank);
+  const ordered = [...(data?.items ?? [])].sort(
+    (a, b) => a.displayed_rank - b.displayed_rank,
+  );
+  const failedLabels = (data?.sourcesFailed ?? []).map(
+    (kind) => SOURCE_LABEL[kind] ?? kind,
+  );
 
   function handlePin(item: PrioritySnapshotItem) {
     if (!item.override) return;
@@ -168,6 +174,13 @@ export function PrioritySnapshot() {
       emptyMessage="Nothing is currently open to prioritize."
       errorMessage="Could not load the priority snapshot."
       onRetry={() => void refetch()}
+      toolbar={
+        failedLabels.length > 0 ? (
+          <p className="text-sm text-amber-600">
+            Couldn't load: {failedLabels.join(", ")}. The ranking may be incomplete.
+          </p>
+        ) : undefined
+      }
     >
       {error && <p className="mb-2 text-sm text-red-500">{error}</p>}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

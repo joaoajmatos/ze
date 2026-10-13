@@ -29,6 +29,7 @@ from ze_worldstate.bootstrap import (
     worldstate_data_domains,
 )
 from ze_worldstate.store import LoopStore
+from ze_worldstate.tracking import LoopTracker
 from ze_skills.bootstrap import (
     build_skill_matcher,
     build_skills_stack,
@@ -443,6 +444,14 @@ async def build_container(settings: Settings) -> ZeContainer:
 
     procedure_store = PostgresProcedureStore(pool, embedder=shared.embedder)
     procedure_admission = ProcedureAdmissionService(procedure_store)
+    loop_tracker = LoopTracker(
+        loop_store=worldstate.loop_store,
+        graph_store=worldstate.graph_store,
+        entity_resolver=worldstate.entity_resolver,
+        embedder=shared.embedder,
+        collision_store=collision_store,
+        nli_client=shared.nli_client,
+    )
     procedure_discovery = ProcedureDiscovery(procedure_store)
     procedure_activator = ProcedureActivator(procedure_store)
     import ze_memory.procedures.tools as procedure_tools
@@ -585,6 +594,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             ActionRecordStore: action_record_store,
             PostgresActionRecordStore: action_record_store,
             ProcedureAdmissionService: procedure_admission,
+            LoopTracker: loop_tracker,
         }
     )
 

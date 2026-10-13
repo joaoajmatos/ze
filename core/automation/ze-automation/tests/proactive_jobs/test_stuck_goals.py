@@ -193,3 +193,26 @@ def test_build_message_payloads_under_64_bytes():
         _, actions = _build_message([sg])
         for a in actions:
             assert len(a.payload.encode()) <= 64, f"Payload too long: {a.payload!r}"
+
+
+async def test_list_stuck_skips_open_gate_without_fired_at():
+    from unittest.mock import MagicMock
+
+    from structlog.testing import capture_logs
+
+    from ze_automation.goals.postgres import PostgresGoalStore
+
+    row = {"id": uuid4(), "fired_at": None}
+    conn = MagicMock()
+    conn.fetch = AsyncMock(side_effect=[[], [row]])
+    acquire = MagicMock()
+    acquire.__aenter__ = AsyncMock(return_value=conn)
+    acquire.__aexit__ = AsyncMock(return_value=False)
+    pool = MagicMock()
+    pool.acquire = MagicMock(return_value=acquire)
+
+    with capture_logs() as logs:
+        result = await PostgresGoalStore(pool).list_stuck(idle_days=0, alert_cooldown_days=0)
+
+    assert result == []
+    assert any(e["event"] == "list_stuck_open_gate_without_fired_at" for e in logs)
