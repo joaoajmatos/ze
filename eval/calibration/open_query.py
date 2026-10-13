@@ -40,6 +40,7 @@ HOLDOUT_FPR_BAR = 0.05
 
 TUNED = Path(__file__).with_name("open_query.jsonl")
 HOLDOUT = Path(__file__).with_name("open_query_holdout.jsonl")
+HOLDOUT2 = Path(__file__).with_name("open_query_holdout2.jsonl")
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,9 @@ def load_rows(path: Path) -> list[Row]:
     return rows
 
 
-def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
+def shape_problems(
+    tuned: list[Row], holdout: list[Row], holdout2: list[Row] | None = None
+) -> list[str]:
     problems: list[str] = []
     for name, rows, minimum in (
         ("tuned", tuned, MIN_TUNED_PER_LANG),
@@ -80,6 +83,18 @@ def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
             problems.append(f"{name}: duplicate ids")
         if len({_norm(r.text) for r in rows}) != len(rows):
             problems.append(f"{name}: duplicate text")
+    if holdout2:
+        for lang in LANGS:
+            if len([r for r in holdout2 if r.lang == lang]) < MIN_HOLDOUT_PER_LANG:
+                problems.append(f"holdout2/{lang}: too few rows")
+        if len({r.id for r in holdout2}) != len(holdout2):
+            problems.append("holdout2: duplicate ids")
+        seen = {_norm(r.text) for r in tuned + holdout}
+        for r in holdout2:
+            if _norm(r.text) in seen:
+                problems.append(f"holdout2/{r.id}: text shared with another set")
+        if {r.id for r in holdout2} & {r.id for r in tuned + holdout}:
+            problems.append("ids repeat across holdout2 and other sets")
     ids = [r.id for r in tuned + holdout]
     if len(ids) != len(set(ids)):
         problems.append("ids repeat across tuned and holdout")
@@ -95,14 +110,18 @@ def shape_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
 
 def check_sets() -> int:
     tuned, holdout = load_rows(TUNED), load_rows(HOLDOUT)
-    for name, rows in (("tuned", tuned), ("holdout", holdout)):
+    holdout2 = load_rows(HOLDOUT2) if HOLDOUT2.exists() else None
+    named = [("tuned", tuned), ("holdout", holdout)]
+    if holdout2:
+        named.append(("holdout2", holdout2))
+    for name, rows in named:
         counts = Counter((r.lang, r.label) for r in rows)
         print(f"{name}: {len(rows)} rows")
         for lang in LANGS:
             pos = counts[(lang, True)]
             neg = counts[(lang, False)]
             print(f"  {lang}: {pos + neg} rows, {pos} positive, {neg} negative")
-    problems = shape_problems(tuned, holdout)
+    problems = shape_problems(tuned, holdout, holdout2)
     for problem in problems:
         print("PROBLEM:", problem, file=sys.stderr)
     return 1 if problems else 0
@@ -188,7 +207,7 @@ def report_holdout(rows: list[Row], sims: dict[str, float], threshold: float) ->
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check-sets", action="store_true", help="offline dataset shape check")
-    parser.add_argument("--set", choices=("tuned", "holdout"), default="tuned")
+    parser.add_argument("--set", choices=("tuned", "holdout", "holdout2"), default="tuned")
     parser.add_argument(
         "--threshold",
         type=float,
@@ -200,16 +219,20 @@ def main() -> int:
     if args.check_sets:
         return check_sets()
 
-    problems = shape_problems(load_rows(TUNED), load_rows(HOLDOUT))
+    problems = shape_problems(
+        load_rows(TUNED),
+        load_rows(HOLDOUT),
+        load_rows(HOLDOUT2) if HOLDOUT2.exists() else None,
+    )
     if problems:
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
 
-    if args.set == "holdout" and args.threshold is None:
-        print("--set holdout needs --threshold T.", file=sys.stderr)
+    if args.set != "tuned" and args.threshold is None:
+        print("--set holdout/holdout2 needs --threshold T.", file=sys.stderr)
         return 2
 
-    rows = load_rows(HOLDOUT if args.set == "holdout" else TUNED)
+    rows = load_rows({"tuned": TUNED, "holdout": HOLDOUT, "holdout2": HOLDOUT2}[args.set])
     try:
         sims = similarities(rows)
     except ImportError as exc:
@@ -219,7 +242,7 @@ def main() -> int:
         )
         return 2
 
-    if args.set == "holdout":
+    if args.set != "tuned":
         return report_holdout(rows, sims, args.threshold)
     return report_tuned(rows, sims)
 
