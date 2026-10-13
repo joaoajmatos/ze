@@ -1,0 +1,48 @@
+{"id": "oq-hold2-en-pos-01", "lang": "en", "text": "List what's still unresolved for me.", "label": true}
+{"id": "oq-hold2-en-pos-02", "lang": "en", "text": "Give me a rundown of the things I haven't closed out.", "label": true}
+{"id": "oq-hold2-en-pos-03", "lang": "en", "text": "What's sitting on my to-do pile at the moment?", "label": true}
+{"id": "oq-hold2-en-pos-04", "lang": "en", "text": "Remind me what's still undone.", "label": true}
+{"id": "oq-hold2-en-pos-05", "lang": "en", "text": "Which of my commitments are still open?", "label": true}
+{"id": "oq-hold2-en-pos-06", "lang": "en", "text": "Walk me through whatever is hanging over me right now.", "label": true}
+{"id": "oq-hold2-en-pos-07", "lang": "en", "text": "Tell me what's left to sort out.", "label": true}
+{"id": "oq-hold2-en-pos-08", "lang": "en", "text": "Is anything of mine still unfinished?", "label": true}
+{"id": "oq-hold2-en-pos-09", "lang": "en", "text": "Show me what I'm still carrying.", "label": true}
+{"id": "oq-hold2-en-pos-10", "lang": "en", "text": "What am I still answerable for?", "label": true}
+{"id": "oq-hold2-en-pos-11", "lang": "en", "text": "Which threads of mine haven't been wrapped up?", "label": true}
+{"id": "oq-hold2-en-pos-12", "lang": "en", "text": "Anything I've been putting off that's still pending?", "label": true}
+{"id": "oq-hold2-en-neg-01", "lang": "en", "text": "What are the opening hours of the library on Saturdays?", "label": false}
+{"id": "oq-hold2-en-neg-02", "lang": "en", "text": "Is the bank open on bank holidays?", "label": false}
+{"id": "oq-hold2-en-neg-03", "lang": "en", "text": "Please open the door to the balcony.", "label": false}
+{"id": "oq-hold2-en-neg-04", "lang": "en", "text": "Open my last spreadsheet and sum column C.", "label": false}
+{"id": "oq-hold2-en-neg-05", "lang": "en", "text": "Are there any job vacancies at the council right now?", "label": false}
+{"id": "oq-hold2-en-neg-06", "lang": "en", "text": "What's on TV tonight at nine?", "label": false}
+{"id": "oq-hold2-en-neg-07", "lang": "en", "text": "What should I cook for dinner with chicken and rice?", "label": false}
+{"id": "oq-hold2-en-neg-08", "lang": "en", "text": "I'm worried about my exam on Friday.", "label": false}
+{"id": "oq-hold2-en-neg-09", "lang": "en", "text": "Recommend a good series to watch this weekend.", "label": false}
+{"id": "oq-hold2-en-neg-10", "lang": "en", "text": "Close the garage door, please.", "label": false}
+{"id": "oq-hold2-en-neg-11", "lang": "en", "text": "How do I open a bank account online?", "label": false}
+{"id": "oq-hold2-en-neg-12", "lang": "en", "text": "Translate 'good morning' into French.", "label": false}
+{"id": "oq-hold2-pt-pos-01", "lang": "pt", "text": "Lista-me o que ainda está por resolver.", "label": true}
+{"id": "oq-hold2-pt-pos-02", "lang": "pt", "text": "Diz-me o que me falta tratar.", "label": true}
+{"id": "oq-hold2-pt-pos-03", "lang": "pt", "text": "Mostra-me o que tenho em aberto neste momento.", "label": true}
+{"id": "oq-hold2-pt-pos-04", "lang": "pt", "text": "O que é que ainda não fechei?", "label": true}
+{"id": "oq-hold2-pt-pos-05", "lang": "pt", "text": "Quais são as coisas que continuam pendentes da minha parte?", "label": true}
+{"id": "oq-hold2-pt-pos-06", "lang": "pt", "text": "Faz-me um resumo do que ficou por fazer.", "label": true}
+{"id": "oq-hold2-pt-pos-07", "lang": "pt", "text": "Há alguma coisa que eu tenha deixado a meio?", "label": true}
+{"id": "oq-hold2-pt-pos-08", "lang": "pt", "text": "O que anda a pairar sobre mim ultimamente?", "label": true}
+{"id": "oq-hold2-pt-pos-09", "lang": "pt", "text": "Diz-me o que ainda tenho em cima da mesa.", "label": true}
+{"id": "oq-hold2-pt-pos-10", "lang": "pt", "text": "Que assuntos meus estão por concluir?", "label": true}
+{"id": "oq-hold2-pt-pos-11", "lang": "pt", "text": "Lembra-me do que ainda está em suspenso.", "label": true}
+{"id": "oq-hold2-pt-pos-12", "lang": "pt", "text": "Há algo por resolver que eu devesse saber?", "label": true}
+{"id": "oq-hold2-pt-neg-01", "lang": "pt", "text": "A que horas abre o centro comercial ao domingo?", "label": false}
+{"id": "oq-hold2-pt-neg-02", "lang": "pt", "text": "A farmácia abre ao sábado de manhã?", "label": false}
+{"id": "oq-hold2-pt-neg-03", "lang": "pt", "text": "Abre o ficheiro das despesas, por favor.", "label": false}
+{"id": "oq-hold2-pt-neg-04", "lang": "pt", "text": "Podes abrir a porta da varanda?", "label": false}
+{"id": "oq-hold2-pt-neg-05", "lang": "pt", "text": "Há vagas de emprego para engenheiros em Lisboa?", "label": false}
+{"id": "oq-hold2-pt-neg-06", "lang": "pt", "text": "O que dá na televisão esta noite?", "label": false}
+{"id": "oq-hold2-pt-neg-07", "lang": "pt", "text": "Que sugestão tens para o jantar de hoje?", "label": false}
+{"id": "oq-hold2-pt-neg-08", "lang": "pt", "text": "Estou preocupado com a consulta de amanhã.", "label": false}
+{"id": "oq-hold2-pt-neg-09", "lang": "pt", "text": "Sugere-me um filme para ver hoje à noite.", "label": false}
+{"id": "oq-hold2-pt-neg-10", "lang": "pt", "text": "Fecha a janela da sala, se faz favor.", "label": false}
+{"id": "oq-hold2-pt-neg-11", "lang": "pt", "text": "Como abro uma conta num banco português?", "label": false}
+{"id": "oq-hold2-pt-neg-12", "lang": "pt", "text": "Traduz 'bom dia' para inglês.", "label": false}
