@@ -14,6 +14,7 @@ from ze_api.api.schemas import (
     WsInboundFrame,
     WsMessageRollbackFrame,
     WsRetryFrame,
+    WsTraceUpdateFrame,
 )
 from pydantic import TypeAdapter
 from ze_core.conversation.messages.types import (
@@ -35,7 +36,9 @@ _RECORD = {"state": "partial", "entries": [_ENTRY], "replaced_by": None}
 
 
 def test_retry_frame_confirmed_plan_optional():
-    assert WsRetryFrame(type="retry", message_id="m", thread_id="t").confirmed_plan is None
+    assert (
+        WsRetryFrame(type="retry", message_id="m", thread_id="t").confirmed_plan is None
+    )
     frame = WsRetryFrame(
         type="retry", message_id="m", thread_id="t", confirmed_plan=["a"]
     )
@@ -174,3 +177,7 @@ def test_trace_response_maps_rollback():
     assert resp.rollback.replaces == "m1"
     assert resp.rollback.entries[0].effect_phrase == "set a reminder"
     assert MessageTraceResponse.model_fields["rollback"].default is None
+
+
+def test_trace_update_frame_carries_rollback():
+    assert "rollback" in WsTraceUpdateFrame.model_json_schema()["properties"]

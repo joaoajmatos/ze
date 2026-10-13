@@ -163,6 +163,8 @@ export type Url = string;
 export type Title = string;
 export type Sources = SourceTraceResponse[];
 export type EffectsKnown = boolean;
+export type Replaces1 = string;
+export type Entries1 = RollbackEntryResponse[];
 export type Type12 = "notification";
 export type Id5 = string;
 export type EventType = string;
@@ -425,6 +427,7 @@ export interface WsTraceUpdateFrame {
   judgments?: Judgments;
   sources?: Sources;
   effects_known?: EffectsKnown;
+  rollback?: RollbackTraceResponse | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -534,6 +537,14 @@ export interface JudgmentTraceResponse {
 export interface SourceTraceResponse {
   url: Url;
   title?: Title;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "RollbackTraceResponse".
+ */
+export interface RollbackTraceResponse {
+  replaces: Replaces1;
+  entries?: Entries1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

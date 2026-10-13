@@ -863,6 +863,7 @@ class WsTraceUpdateFrame(BaseModel):
     judgments: list[JudgmentTraceResponse] = []
     sources: list[SourceTraceResponse] = []
     effects_known: bool = False
+    rollback: RollbackTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):
