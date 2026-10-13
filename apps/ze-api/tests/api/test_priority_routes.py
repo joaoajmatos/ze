@@ -205,7 +205,7 @@ async def test_submit_override_success_returns_snapshot_row():
         generated_at=datetime.now(UTC),
     )
     override_store = AsyncMock()
-    override_store.create.side_effect = lambda o: o
+    override_store.create.side_effect = lambda o: (o, None)
     override_store.get_active.return_value = []
     app = _make_app(priority_view=view, override_store=override_store)
 
