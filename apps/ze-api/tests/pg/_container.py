@@ -34,17 +34,8 @@ class PgContainer:
 def start_container() -> PgContainer:
     _docker("info")
     run = _docker(
-        "run",
-        "-d",
-        "--rm",
-        "-p",
-        "127.0.0.1::5432",
-        "-e",
-        "POSTGRES_USER=ze",
-        "-e",
-        "POSTGRES_PASSWORD=ze",
-        "-e",
-        "POSTGRES_DB=ze",
+        "run", "-d", "--rm", "-p", "127.0.0.1::5432",
+        "-e", "POSTGRES_USER=ze", "-e", "POSTGRES_PASSWORD=ze", "-e", "POSTGRES_DB=ze",
         IMAGE,
     )
     container_id = run.stdout.strip()
@@ -66,15 +57,7 @@ def start_container() -> PgContainer:
         # pg_isready can pass during the init-time restart; confirm with a query.
         while True:
             probe = _docker(
-                "exec",
-                container_id,
-                "psql",
-                "-U",
-                "ze",
-                "-d",
-                "ze",
-                "-tAc",
-                "select 1",
+                "exec", container_id, "psql", "-U", "ze", "-d", "ze", "-tAc", "select 1",
                 check=False,
             )
             if probe.returncode == 0:

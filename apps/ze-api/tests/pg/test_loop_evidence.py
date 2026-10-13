@@ -31,9 +31,7 @@ class _TitleEmbedder:
 
 class _Llm:
     def __init__(self, title="Renew passport", explicit=False):
-        self._payload = json.dumps(
-            {"is_loop": True, "title": title, "explicit_declaration": explicit}
-        )
+        self._payload = json.dumps({"is_loop": True, "title": title, "explicit_declaration": explicit})
 
     async def complete(self, *args, **kwargs):
         return self._payload
@@ -45,9 +43,7 @@ def _graph():
     return graph
 
 
-async def _propose(
-    pool, text, provenance, refs, *, explicit=False, title="Renew passport"
-):
+async def _propose(pool, text, provenance, refs, *, explicit=False, title="Renew passport"):
     return await propose_loop_candidates(
         text,
         provenance,
@@ -75,9 +71,7 @@ async def test_declared_loop_stores_evidence(pg_pool):
     episode_id = await make_episode(pg_pool)
     ref = EvidenceRef(kind="episode", id=episode_id)
 
-    [loop] = await _propose(
-        pg_pool, "I need to renew my passport", "user_declared", [ref]
-    )
+    [loop] = await _propose(pg_pool, "I need to renew my passport", "user_declared", [ref])
 
     assert loop.state is LoopState.ACTIVE
     assert await PostgresLoopStore(pg_pool).list_evidence(loop.id) == [ref]
@@ -86,28 +80,17 @@ async def test_declared_loop_stores_evidence(pg_pool):
 async def test_second_declaration_corroborates_instead_of_duplicating(pg_pool):
     store = PostgresLoopStore(pg_pool)
     first = EvidenceRef(kind="episode", id=await make_episode(pg_pool))
-    second = EvidenceRef(
-        kind="episode", id=await make_episode(pg_pool, prompt="again, the passport")
-    )
+    second = EvidenceRef(kind="episode", id=await make_episode(pg_pool, prompt="again, the passport"))
 
-    [loop] = await _propose(
-        pg_pool, "I need to renew my passport", "user_declared", [first]
-    )
+    [loop] = await _propose(pg_pool, "I need to renew my passport", "user_declared", [first])
     async with pg_pool.acquire() as conn:
-        await conn.execute(
-            "UPDATE open_loops SET drift_deadline = now() + interval '1 day' WHERE id = $1",
-            loop.id,
-        )
-    [again] = await _propose(
-        pg_pool, "I need to renew my passport", "user_declared", [second]
-    )
+        await conn.execute("UPDATE open_loops SET drift_deadline = now() + interval '1 day' WHERE id = $1", loop.id)
+    [again] = await _propose(pg_pool, "I need to renew my passport", "user_declared", [second])
 
     assert again.id == loop.id
     assert len(await store.list()) == 1
     assert await store.count_evidence_links(loop.id) == 2
-    assert (await store.get(loop.id)).drift_deadline >= utcnow() + timedelta(
-        days=7
-    ) - timedelta(minutes=1)
+    assert (await store.get(loop.id)).drift_deadline >= utcnow() + timedelta(days=7) - timedelta(minutes=1)
     assert (await store.get(loop.id)).state is LoopState.ACTIVE
 
 
@@ -120,19 +103,14 @@ async def test_dropped_loop_replays_same_evidence_but_new_evidence_resuspects(pg
     assert await _propose(pg_pool, "maybe renew my passport", "email", [old]) == []
     assert len(await store.list()) == 1
 
-    new = EvidenceRef(
-        kind="episode", id=await make_episode(pg_pool, prompt="renew passport soon")
-    )
+    new = EvidenceRef(kind="episode", id=await make_episode(pg_pool, prompt="renew passport soon"))
     [fresh] = await _propose(pg_pool, "maybe renew my passport", "email", [new])
     assert fresh.id != loop.id and fresh.state is LoopState.SUSPECTED
 
 
 async def test_messenger_episode_summary_includes_the_email_body(pg_pool):
     episode_id = await make_episode(
-        pg_pool,
-        agent="messenger",
-        prompt="Passport renewal",
-        response="Please send the signed form by Friday",
+        pg_pool, agent="messenger", prompt="Passport renewal", response="Please send the signed form by Friday"
     )
     loop = await make_loop(pg_pool)
     store = PostgresLoopStore(pg_pool)
@@ -163,17 +141,8 @@ def _surfacer(pool, store):
     push_log.was_sent_within_hours = AsyncMock(return_value=False)
     relevance = MagicMock()
     relevance.build = AsyncMock(return_value=object())
-    relevance.score = MagicMock(
-        return_value=SimpleNamespace(value=1.0, contributions=[])
-    )
-    return LoopSurfacer(
-        store,
-        MagicMock(),
-        push_log,
-        pool=pool,
-        relevance_model=relevance,
-        embedder=None,
-    )
+    relevance.score = MagicMock(return_value=SimpleNamespace(value=1.0, contributions=[]))
+    return LoopSurfacer(store, MagicMock(), push_log, pool=pool, relevance_model=relevance, embedder=None)
 
 
 async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
@@ -184,18 +153,9 @@ async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
     rationale = "No corroborating evidence before the implied window elapsed."
     surfacer = _surfacer(pg_pool, store)
 
-    assert (
-        await surfacer.passes_push_bar(
-            loop, rationale, nli_client=_Nli(loop.title), check_budget=False
-        )
-        is True
-    )
-    assert (
-        await surfacer.passes_push_bar(
-            loop,
-            rationale,
-            nli_client=_Nli("something else entirely"),
-            check_budget=False,
-        )
-        is False
-    )
+    assert await surfacer.passes_push_bar(
+        loop, rationale, nli_client=_Nli(loop.title), check_budget=False
+    ) is True
+    assert await surfacer.passes_push_bar(
+        loop, rationale, nli_client=_Nli("something else entirely"), check_budget=False
+    ) is False

@@ -25,9 +25,7 @@ RESET_TABLES = (
 def pytest_collection_modifyitems(config, items):
     if os.environ.get("ZE_TEST_PG") == "1":
         return
-    skip = pytest.mark.skip(
-        reason="set ZE_TEST_PG=1 (make test-pg) to run real-Postgres tests"
-    )
+    skip = pytest.mark.skip(reason="set ZE_TEST_PG=1 (make test-pg) to run real-Postgres tests")
     for item in items:
         if "pg" in item.keywords:
             item.add_marker(skip)

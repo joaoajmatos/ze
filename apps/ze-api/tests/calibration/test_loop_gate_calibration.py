@@ -46,21 +46,10 @@ def test_no_holdout_text_in_tuned(calib):
 
 def test_shape_problems_catch_violations(calib):
     tuned, holdout = calib.load_rows(calib.TUNED), calib.load_rows(calib.HOLDOUT)
-    bad = [
-        calib.Row(
-            **{
-                **tuned[0].__dict__,
-                "id": "x",
-                "gold_loop": False,
-                "gold_explicit": True,
-            }
-        )
-    ]
+    bad = [calib.Row(**{**tuned[0].__dict__, "id": "x", "gold_loop": False, "gold_explicit": True})]
     assert any("gold_explicit" in p for p in calib.shape_problems(bad, holdout))
     leaked = [calib.Row(**{**tuned[0].__dict__, "text": holdout[0].text})]
-    assert any(
-        "held-out" in p for p in calib.shape_problems(leaked + tuned[1:], holdout)
-    )
+    assert any("held-out" in p for p in calib.shape_problems(leaked + tuned[1:], holdout))
 
 
 def _row(calib, i, prov, loop, explicit=False, resolves=False, lang="en"):
@@ -74,12 +63,7 @@ def test_score_and_verdict(calib):
         _row(calib, 3, "email", False),
         _row(calib, 4, "email", False, resolves=True),
     ]
-    good = {
-        "r1": "create_declared",
-        "r2": "create_suspected",
-        "r3": "hold",
-        "r4": "resolve",
-    }
+    good = {"r1": "create_declared", "r2": "create_suspected", "r3": "hold", "r4": "resolve"}
     c = calib.score(rows, good)
     assert (c.precision, c.recall, c.false_creates, c.false_resolve) == (1.0, 1.0, 0, 0)
     assert c.explicit_acc == 1.0 and c.resolves_acc == 1.0
@@ -101,19 +85,13 @@ def test_fallback_counts_as_miss_not_false_create(calib):
 
 def test_verdict_recall_and_precision_clauses(calib):
     haiku = calib.Counts(positives=10, hit_positives=9, creates=10, correct_creates=9)
-    lower_recall = calib.Counts(
-        positives=10, hit_positives=8, creates=8, correct_creates=8
-    )
+    lower_recall = calib.Counts(positives=10, hit_positives=8, creates=8, correct_creates=8)
     ok, failing = calib.verdict(lower_recall, haiku)
     assert not ok and any("recall" in f for f in failing)
-    imprecise = calib.Counts(
-        positives=10, hit_positives=9, creates=10, correct_creates=8
-    )
+    imprecise = calib.Counts(positives=10, hit_positives=9, creates=10, correct_creates=8)
     ok, failing = calib.verdict(imprecise, haiku)
     assert not ok and any("precision" in f for f in failing)
-    within_slack = calib.Counts(
-        positives=10, hit_positives=9, creates=9, correct_creates=9
-    )
+    within_slack = calib.Counts(positives=10, hit_positives=9, creates=9, correct_creates=9)
     assert calib.verdict(within_slack, haiku)[0]
 
 
