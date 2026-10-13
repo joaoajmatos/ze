@@ -45,6 +45,7 @@ All tests run from the **repository root**. Every package has a `make test-<name
 | `make test-web` / `make web-test` | @myguyze/ze-ui + ze-web | vitest |
 | `make typecheck-web` | @myguyze/ze-ui + ze-web | tsc |
 | `make test-py` | all Python packages | pytest |
+| `make test-pg` | real-Postgres tests (Docker) | pytest |
 | `make test-all` | all packages | pytest + vitest |
 
 ---
@@ -83,6 +84,24 @@ make test-core SLOW=1
 exits non-zero and names each failed target. CI runs `make test-py`, so a local run matches CI.
 
 `make test-all` runs `make test-py` with `SLOW=1`, then `test-web`.
+
+### Real-Postgres tests
+
+Some regressions need a real Postgres. They live in `apps/ze-api/tests/pg/` and carry the
+`pg` marker: the drift sweep, stuck-goal detection, loop evidence, and the two acceptance
+runs.
+
+`make test-pg` starts a throwaway `pgvector/pgvector:pg16` container, applies the
+migrations, runs the `pg` tests, and removes the container. The container maps a random
+host port, so it never touches the dev database on port 5432. Docker must be running;
+without it the run exits with `PgHarnessError`.
+
+The tests skip unless `ZE_TEST_PG=1`, which `make test-pg` sets. `make test`, `make
+test-py`, and `make test-all` do not set it, so they collect and skip the `pg` tests and
+never call Docker.
+
+To run against an existing Postgres instead of a container, set `ZE_TEST_PG_URL` to its
+`postgresql://` URL.
 
 ### Direct pytest (fallback)
 

@@ -1263,17 +1263,20 @@ class CollisionLogEntrySchema(BaseModel):
 # ── REST: priority snapshot & override ──────────────────────────────────────────
 
 
+SourceKindLiteral = Literal["loop", "goal", "hypothesis", "relationship"]
+
+
 class PriorityOverrideSchema(BaseModel):
     id: UUIDType
     pinned: bool
-    anchor_source_kind: Literal["loop", "goal", "hypothesis"]
+    anchor_source_kind: SourceKindLiteral
     anchor_source_id: UUIDType
     relation: Literal["above", "below"]
     submitted_at: datetime
 
 
 class PrioritySnapshotItem(BaseModel):
-    source_kind: Literal["loop", "goal", "hypothesis"]
+    source_kind: SourceKindLiteral
     source_id: UUIDType
     title: str
     displayed_rank: int
@@ -1303,10 +1306,15 @@ class PrioritySnapshotItem(BaseModel):
         )
 
 
+class PrioritySnapshotResponse(BaseModel):
+    items: list[PrioritySnapshotItem]
+    sources_failed: list[SourceKindLiteral]
+
+
 class PriorityOverrideRequestSchema(BaseModel):
-    source_kind: Literal["loop", "goal", "hypothesis"]
+    source_kind: SourceKindLiteral
     source_id: UUIDType
-    anchor_source_kind: Literal["loop", "goal", "hypothesis"]
+    anchor_source_kind: SourceKindLiteral
     anchor_source_id: UUIDType
     relation: Literal["above", "below"]
     pinned: bool = False

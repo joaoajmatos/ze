@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from types import SimpleNamespace
+from uuid import uuid4
 from unittest.mock import AsyncMock
 
 import pytest
@@ -12,6 +13,7 @@ from ze_agents.types import AgentContext, AgentResult
 from ze_core.conversation.messages.types import JudgmentTrace, MessageTrace
 from ze_core.orchestration.nodes import memory
 from ze_memory.types import MemoryContext
+from ze_plugin.contribution import EvidenceRef
 
 from tests.orchestration.test_nodes import base_state, make_config
 
@@ -89,7 +91,7 @@ def _track_call(result, name="track_loop"):
 async def test_loop_rows_append_after_existing_rows_and_commit_fires():
     committed = asyncio.Event()
 
-    async def commit():
+    async def commit(evidence):
         committed.set()
         return []
 
@@ -256,3 +258,67 @@ async def test_track_loop_does_not_reopen_eval_or_retry_gate(thread_id, retry):
     await memory.write_memory(state, cfg)
 
     admission.assert_not_awaited()
+
+
+async def _drain():
+    current = asyncio.current_task()
+    pending = [t for t in asyncio.all_tasks() if t is not current]
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
+
+
+def _recording_commit():
+    received: list = []
+
+    async def commit(evidence):
+        received.append(list(evidence))
+        return []
+
+    return commit, received
+
+
+async def test_commit_receives_the_turn_episode_ref():
+    commit, received = _recording_commit()
+    episode_id = uuid4()
+    state, cfg = _setup(loop_admission=AsyncMock(return_value=_loop_result(commit=commit)))
+    cfg["configurable"]["memory_store"].write_episode = AsyncMock(return_value=episode_id)
+
+    await memory.write_memory(state, cfg)
+    await _drain()
+
+    assert received == [[EvidenceRef(kind="episode", id=episode_id)]]
+
+
+@pytest.mark.parametrize("outcome", ["none", "raises"])
+async def test_commit_receives_no_refs_when_the_episode_write_fails(outcome):
+    commit, received = _recording_commit()
+    state, cfg = _setup(loop_admission=AsyncMock(return_value=_loop_result(commit=commit)))
+    cfg["configurable"]["memory_store"].write_episode = AsyncMock(
+        return_value=None if outcome == "none" else None,
+        side_effect=RuntimeError("db") if outcome == "raises" else None,
+    )
+
+    await memory.write_memory(state, cfg)
+    await _drain()
+
+    assert received == [[]]
+
+
+async def test_node_returns_before_a_slow_episode_write_finishes():
+    commit, received = _recording_commit()
+    release = asyncio.Event()
+
+    async def slow_write_episode(**kw):
+        await release.wait()
+        return uuid4()
+
+    state, cfg = _setup(loop_admission=AsyncMock(return_value=_loop_result(commit=commit)))
+    cfg["configurable"]["memory_store"].write_episode = slow_write_episode
+
+    out = await asyncio.wait_for(memory.write_memory(state, cfg), 2)
+
+    assert "messages" in out
+    assert received == []
+    release.set()
+    await _drain()
+    assert len(received) == 1 and len(received[0]) == 1

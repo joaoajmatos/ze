@@ -38,56 +38,59 @@ def test_compute_drift_deadline_uses_implied_window():
     assert deadline == confirmed_at + timedelta(days=2)
 
 
-def test_is_drift_eligible_when_elapsed_and_no_fresh_evidence():
-    confirmed_at = datetime.now(timezone.utc) - timedelta(days=10)
+def test_eligible_when_active_and_deadline_passed():
+    now = datetime.now(timezone.utc)
+    loop = _loop(drift_deadline=now - timedelta(seconds=1))
+    assert is_drift_eligible(loop, now) is True
+
+
+def test_eligible_at_the_deadline_instant():
+    now = datetime.now(timezone.utc)
+    assert is_drift_eligible(_loop(drift_deadline=now), now) is True
+
+
+def test_not_eligible_before_the_deadline():
+    now = datetime.now(timezone.utc)
+    assert is_drift_eligible(_loop(drift_deadline=now + timedelta(days=1)), now) is False
+
+
+def test_naive_deadline_is_treated_as_utc():
+    now = datetime.now(timezone.utc)
+    naive_past = (now - timedelta(days=1)).replace(tzinfo=None)
+    assert is_drift_eligible(_loop(drift_deadline=naive_past), now) is True
+
+
+def test_updated_at_and_confirmed_at_are_ignored():
+    now = datetime.now(timezone.utc)
     loop = _loop(
-        confirmed_at=confirmed_at,
-        updated_at=confirmed_at,
-        drift_deadline=confirmed_at + timedelta(days=7),
+        drift_deadline=now - timedelta(days=1),
+        confirmed_at=now - timedelta(days=10),
+        updated_at=now,
     )
-    assert is_drift_eligible(loop) is True
-
-
-def test_not_eligible_when_evidence_is_fresh():
-    confirmed_at = datetime.now(timezone.utc) - timedelta(days=10)
-    loop = _loop(
-        confirmed_at=confirmed_at,
-        updated_at=datetime.now(timezone.utc),
-        drift_deadline=confirmed_at + timedelta(days=7),
-    )
-    assert is_drift_eligible(loop) is False
-
-
-def test_not_eligible_when_window_not_elapsed():
-    confirmed_at = datetime.now(timezone.utc)
-    loop = _loop(
-        confirmed_at=confirmed_at,
-        updated_at=confirmed_at,
-        drift_deadline=confirmed_at + timedelta(days=7),
-    )
-    assert is_drift_eligible(loop) is False
+    assert is_drift_eligible(loop, now) is True
 
 
 def test_not_eligible_when_not_active():
-    confirmed_at = datetime.now(timezone.utc) - timedelta(days=10)
-    loop = _loop(
-        state=LoopState.SUSPECTED,
-        confirmed_at=confirmed_at,
-        updated_at=confirmed_at,
-        drift_deadline=confirmed_at + timedelta(days=7),
-    )
-    assert is_drift_eligible(loop) is False
+    now = datetime.now(timezone.utc)
+    for state in (LoopState.SUSPECTED, LoopState.DRIFTING, LoopState.CLOSED, LoopState.DROPPED):
+        assert is_drift_eligible(_loop(state=state, drift_deadline=now - timedelta(days=1)), now) is False
 
 
-def test_compose_absence_rationale_cites_dates():
-    confirmed_at = datetime(2026, 7, 10, tzinfo=timezone.utc)
-    loop = _loop(
-        confirmed_at=confirmed_at, drift_deadline=confirmed_at + timedelta(days=7)
-    )
+def test_not_eligible_without_a_deadline():
+    assert is_drift_eligible(_loop(drift_deadline=None)) is False
+
+
+def test_compose_absence_rationale_cites_the_deadline():
+    loop = _loop(drift_deadline=datetime(2026, 7, 17, tzinfo=timezone.utc))
     rationale = compose_absence_rationale(loop)
-    assert "2026-07-10" in rationale
     assert "2026-07-17" in rationale
     assert "No corroborating evidence" in rationale
+    assert "before the implied window elapsed" in rationale
+    assert "confirmation" not in rationale
+
+
+def test_compose_absence_rationale_without_a_deadline():
+    assert "unknown" in compose_absence_rationale(_loop(drift_deadline=None))
 
 
 def test_compose_contradiction_rationale_cites_evidence():

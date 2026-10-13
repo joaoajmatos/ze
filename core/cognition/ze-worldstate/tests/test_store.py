@@ -200,3 +200,24 @@ async def test_stamp_declared_raises_not_found():
         await store.stamp_declared(
             uuid4(), confidence=0.9, deadline=datetime.now(timezone.utc)
         )
+
+
+async def test_list_drift_candidates_filters_on_the_deadline_alone():
+    pool, conn = make_pool(fetch=[])
+    await PostgresLoopStore(pool=pool).list_drift_candidates()
+
+    sql = conn.fetch.await_args.args[0]
+    assert "drift_deadline <= now()" in sql
+    assert "updated_at" not in sql
+    assert "confirmed_at" not in sql
+
+
+async def test_record_corroboration_only_moves_active_deadlines_forward():
+    pool, conn = make_pool()
+    await PostgresLoopStore(pool=pool).record_corroboration(uuid4(), window_days=7)
+
+    conn.execute.assert_awaited_once()
+    sql, _loop_id, window = conn.execute.await_args.args
+    assert "GREATEST" in sql
+    assert "state = 'active'" in sql
+    assert window == 7

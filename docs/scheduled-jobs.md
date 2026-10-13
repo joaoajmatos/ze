@@ -278,12 +278,17 @@ Analyzes recent memory facts, episodes, and past goal retrospectives to propose 
 **Module:** `ze_automation/jobs/stuck_goals.py`  
 **Cron:** `0 9 * * 2` (configurable via `proactive.stuck_goals.cron`)
 
-Checks all active goals for inactivity:
+Checks all active goals for inactivity. The window is fixed in code at 7 days:
 
-- **Milestone stuck**: no milestone progress for 48 h on an `ACTIVE` goal.
-- **Gate stuck**: a gate in `AWAITING_APPROVAL` for 72 h with no user response.
+- **Milestone stuck**: an `ACTIVE` goal with no milestone progress for 7 days.
+- **Gate stuck**: a goal in `AWAITING_GATE` that has waited 7 days at a gate. Ze
+  counts the first open gate that has fired and ignores gates it has not reached, so
+  each goal appears once.
 
-For each stuck goal, Ze pushes a notification describing the blockage with **Resume** / **Abandon** / **Redirect** options. `last_stuck_alert_at` on the goal prevents duplicate alerts within the same window.
+For each stuck goal, Ze pushes a notification describing the blockage. An idle active
+goal offers **Redirect**, **Pause**, and **Abandon**; a goal at a gate offers
+**Approve**, **Redirect**, and **Stop**. `last_stuck_alert_at` on the goal prevents
+another alert about the same goal for 14 days.
 
 ---
 
@@ -420,7 +425,9 @@ Each source is tagged at configuration time (e.g. `global`, `local`, `tech`, `pt
 
 `StaleSuspicionJob` (default `0 4 * * *`) expires `suspected` loops that no new
 evidence has confirmed within the window. `DriftSweepJob` (default `0 5 * * *`) moves
-`active` loops to `drifting` when their drift deadline passes. A loop that the user revives with `track_loop` gets a fresh window. See
+`active` loops to `drifting` when their drift deadline passes. New evidence on an
+`active` loop pushes the deadline to at least 7 days from now; the drift window is a
+code constant, not config. A loop that the user revives with `track_loop` gets a fresh window. See
 [cognitive-architecture.md](cognitive-architecture.md).
 
 ---
@@ -438,11 +445,13 @@ evidence. Set `correlation.hypothesis_decay.schedule` to change the default
 ## Attention arbitration (every 4 hours)
 
 **Module:** `ze_priority/arbitration.py` (`AttentionArbitrationJob`)
-**Config:** `proactive.attention_arbitration.*` and `proactive.budget.max_pushes_per_day`
+**Config:** `proactive.attention_arbitration.*`, `proactive.budget.max_pushes_per_day`, `worldstate.push.*`, `correlation.push.*`
 
 One job replaces the old per-source push sweeps. It collects the push-eligible open
 loops and hypotheses, ranks them with `PriorityView`, and pushes only the top item.
-All sources share the daily push budget (default 3). See [cognitive-architecture.md](cognitive-architecture.md).
+All sources share the daily push budget (default 3). Loop pushes honor
+`worldstate.push.enabled`. Hypothesis pushes require `correlation.push.enabled: true`
+and `correlation.push.dry_run: false`. See [cognitive-architecture.md](cognitive-architecture.md).
 
 ---
 

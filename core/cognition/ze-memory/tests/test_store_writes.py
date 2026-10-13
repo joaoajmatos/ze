@@ -742,3 +742,26 @@ def test_fact_from_row_loads_claim_kind_and_provenance():
     )
     assert fact.provenance is Provenance.SYNTHESIZED
     assert fact.claim_kind is ClaimKind.INFERENCE
+
+
+# ── write_episode returns the episode id ──────────────────────────────────────
+
+
+async def test_write_episode_returns_the_inserted_id():
+    episode_id = uuid4()
+    pool, conn = _make_pool()
+    conn.fetchrow = AsyncMock(return_value={"id": episode_id})
+    store, _ = _make_store(pool)
+
+    with patch("ze_memory.retriever.fire_and_forget", new=lambda coro, **_: coro.close()):
+        result = await store.write_episode("s", "companion", "prompt", "reply", [0.1, 0.2])
+
+    assert result == episode_id
+
+
+async def test_write_episode_returns_none_when_the_pool_raises():
+    pool, conn = _make_pool()
+    conn.fetchrow = AsyncMock(side_effect=RuntimeError("db down"))
+    store, _ = _make_store(pool)
+
+    assert await store.write_episode("s", "companion", "prompt", "reply", [0.1, 0.2]) is None

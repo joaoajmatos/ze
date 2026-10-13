@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_priority.arbitration import AttentionArbitrationJob
+from ze_worldstate.bootstrap import LoopPushSettings
 
 from tests.factories import make_hypothesis, make_loop
 
@@ -40,6 +41,7 @@ def _job(
     max_pushes_per_day: int = 3,
     loop_send_result: bool = True,
     hypothesis_send_result: bool = True,
+    loop_push: LoopPushSettings | None = None,
 ) -> tuple[AttentionArbitrationJob, dict]:
     from ze_priority.view import PriorityView
 
@@ -58,6 +60,7 @@ def _job(
         correlation_push_source=correlation_source,
         push_log=push_log,
         max_pushes_per_day=max_pushes_per_day,
+        loop_push=loop_push,
     )
     return job, {
         "loop_surfacer": loop_surfacer,
@@ -130,3 +133,51 @@ async def test_send_failure_releases_claim_and_stops():
 async def test_job_id_is_attention_arbitration_sweep():
     job, _ = _job()
     assert job.job_id == "attention_arbitration_sweep"
+
+
+# ── loop push switch (phase 170 US5) ─────────────────────────────────────────
+
+
+async def test_disabled_loop_push_never_queries_the_surfacer():
+    loop = make_loop(confidence=0.9)
+    hyp = make_hypothesis(confidence=0.9, relevance=0.9)
+    job, mocks = _job(
+        loop_candidates=[loop],
+        hypothesis_candidates=[hyp],
+        loop_push=LoopPushSettings(enabled=False),
+    )
+
+    await job.run()
+
+    mocks["loop_surfacer"].eligible_candidates.assert_not_awaited()
+    mocks["correlation_push_source"].send.assert_awaited_once_with(hyp)
+
+
+async def test_loop_push_settings_are_forwarded_to_eligible_candidates():
+    loop = make_loop(confidence=0.9)
+    settings = LoopPushSettings(
+        enabled=True,
+        thresholds={"tau_confidence": 0.7},
+        inline_cooldown_hours=6.0,
+    )
+    job, mocks = _job(loop_candidates=[loop], loop_push=settings)
+
+    await job.run()
+
+    mocks["loop_surfacer"].eligible_candidates.assert_awaited_once_with(
+        thresholds={"tau_confidence": 0.7},
+        inline_cooldown_hours=6.0,
+    )
+    mocks["loop_surfacer"].send.assert_awaited_once_with(loop)
+
+
+async def test_default_loop_push_uses_enabled_defaults():
+    loop = make_loop(confidence=0.9)
+    job, mocks = _job(loop_candidates=[loop])
+
+    await job.run()
+
+    mocks["loop_surfacer"].eligible_candidates.assert_awaited_once_with(
+        thresholds={},
+        inline_cooldown_hours=12.0,
+    )
