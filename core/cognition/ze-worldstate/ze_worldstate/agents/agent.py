@@ -74,6 +74,9 @@ class LoopsAgent(BaseAgent):
         self._store = loop_store
         self._tracker = loop_tracker
 
+    def tool_deps(self) -> dict:
+        return {"loop_store": self._store, "loop_tracker": self._tracker}
+
     async def run(self, ctx: AgentContext) -> AgentResult:
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
         original_sink = ctx.token_sink
@@ -89,7 +92,7 @@ class LoopsAgent(BaseAgent):
                 client=self._client,
                 messages=list(ctx.messages),
                 system=system,
-                deps={"loop_store": self._store, "loop_tracker": self._tracker},
+                deps=self.tool_deps(),
             )
         finally:
             ctx.token_sink = original_sink
