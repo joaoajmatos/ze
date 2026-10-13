@@ -14,6 +14,8 @@ from ze_core.conversation.messages.types import (
     Message,
     MessageTrace,
     MemoryChunkTrace,
+    RollbackRecord,
+    RollbackTrace,
     ProcedureUsageTrace,
     SkillUsageTrace,
     SourceTrace,
@@ -39,6 +41,7 @@ class MessageStore(Protocol):
     async def latest_assistant_id(self, thread_id: str) -> UUID | None: ...
     async def previous_user_message(self, message_id: UUID) -> Message | None: ...
     async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool: ...
+    async def set_rollback(self, message_id: UUID, record: RollbackRecord) -> None: ...
     async def save_trace(self, message_id: UUID, trace: MessageTrace) -> None: ...
     async def get_trace(self, message_id: UUID) -> MessageTrace | None: ...
     async def get_traces(self, message_ids: list[UUID]) -> dict[UUID, MessageTrace]: ...
@@ -80,7 +83,7 @@ class PostgresMessageStore:
             rows = await conn.fetch(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by
+                       replaces, replaced_by, rollback
                 FROM messages
                 WHERE created_at > $1 AND ($3 OR replaced_by IS NULL)
                 ORDER BY created_at ASC
@@ -99,7 +102,7 @@ class PostgresMessageStore:
             rows = await conn.fetch(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by
+                       replaces, replaced_by, rollback
                 FROM messages
                 WHERE thread_id = $1 AND ($3 OR replaced_by IS NULL)
                 ORDER BY created_at ASC
@@ -128,7 +131,7 @@ class PostgresMessageStore:
                 rows = await conn.fetch(
                     """
                     SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by
+                       replaces, replaced_by, rollback
                     FROM messages
                     WHERE NOT read AND thread_id = $1 AND ($2 OR replaced_by IS NULL)
                     ORDER BY created_at ASC
@@ -140,7 +143,7 @@ class PostgresMessageStore:
                 rows = await conn.fetch(
                     """
                     SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by
+                       replaces, replaced_by, rollback
                     FROM messages
                     WHERE NOT read AND ($1 OR replaced_by IS NULL)
                     ORDER BY created_at ASC
@@ -154,7 +157,7 @@ class PostgresMessageStore:
             row = await conn.fetchrow(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by
+                       replaces, replaced_by, rollback
                 FROM messages
                 WHERE id = $1
                 """,
@@ -169,7 +172,7 @@ class PostgresMessageStore:
             rows = await conn.fetch(
                 """
                 SELECT id, role, text, components, read, thread_id, created_at,
-                       replaces, replaced_by
+                       replaces, replaced_by, rollback
                 FROM messages
                 WHERE id = ANY($1::uuid[])
                 """,
@@ -196,7 +199,7 @@ class PostgresMessageStore:
             row = await conn.fetchrow(
                 """
                 SELECT u.id, u.role, u.text, u.components, u.read, u.thread_id,
-                       u.created_at, u.replaces, u.replaced_by
+                       u.created_at, u.replaces, u.replaced_by, u.rollback
                 FROM messages a
                 JOIN messages u
                   ON u.thread_id = a.thread_id
@@ -209,6 +212,15 @@ class PostgresMessageStore:
                 message_id,
             )
         return _row_to_message(row) if row is not None else None
+
+    async def set_rollback(self, message_id: UUID, record: RollbackRecord) -> None:
+        """Overwrite the rollback record; written after each undo so a crash stays honest."""
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE messages SET rollback = $1::jsonb WHERE id = $2",
+                asdict(record),
+                message_id,
+            )
 
     async def mark_superseded(self, old_id: UUID, new_id: UUID) -> bool:
         """Link old to its replacement; only once the replacement is stored."""
@@ -330,6 +342,9 @@ def _parse_trace(data: dict) -> MessageTrace:
         if data.get("compaction")
         else None,
         resume_recap_applied=bool(data.get("resume_recap_applied", False)),
+        rollback=RollbackTrace.from_dict(data["rollback"])
+        if data.get("rollback")
+        else None,
     )
 
 
@@ -349,4 +364,13 @@ def _row_to_message(row: asyncpg.Record) -> Message:
         created_at=row["created_at"],
         replaces=row["replaces"],
         replaced_by=row["replaced_by"],
+        rollback=_parse_rollback(row["rollback"]),
     )
+
+
+def _parse_rollback(raw: object) -> RollbackRecord | None:
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        raw = json.loads(raw)
+    return RollbackRecord.from_dict(raw) if raw else None

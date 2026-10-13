@@ -1,11 +1,75 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
 MessageRole = Literal["user", "assistant"]
+RollbackState = Literal[
+    "partial",
+    "rolled_back_awaiting_confirmation",
+    "rolled_back_retry_failed",
+    "superseded",
+]
+RollbackOutcome = Literal["undone", "failed", "not_attempted"]
+
+
+def _pick(data: dict[str, Any], cls: type) -> dict[str, Any]:
+    allowed = {f.name for f in fields(cls)}
+    return {k: v for k, v in data.items() if k in allowed}
+
+
+@dataclass
+class RollbackEntry:
+    """One undo in a rollback. Timestamps and ids are strings: this is stored as JSONB."""
+
+    entry_id: str
+    call_index: int
+    tool: str
+    undo_tool: str
+    effect_phrase: str
+    outcome: RollbackOutcome
+    at: str | None = None
+    failure_code: str | None = None  # sanitized: error class or short tool error
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RollbackEntry:
+        return cls(**_pick(data, cls))
+
+
+@dataclass
+class RollbackRecord:
+    """What a Retry undid on a message; stored on `messages.rollback`."""
+
+    state: RollbackState
+    entries: list[RollbackEntry]
+    started_at: str
+    updated_at: str
+    replaced_by: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RollbackRecord:
+        values = _pick(data, cls)
+        values["entries"] = [
+            RollbackEntry.from_dict(e) for e in data.get("entries") or []
+        ]
+        return cls(**values)
+
+
+@dataclass
+class RollbackTrace:
+    """Copy of the undone entries on the regenerated reply's trace."""
+
+    replaces: str
+    entries: list[RollbackEntry] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RollbackTrace:
+        return cls(
+            replaces=data["replaces"],
+            entries=[RollbackEntry.from_dict(e) for e in data.get("entries") or []],
+        )
 
 
 @dataclass
@@ -19,6 +83,7 @@ class Message:
     thread_id: str | None
     replaces: UUID | None = None
     replaced_by: UUID | None = None
+    rollback: RollbackRecord | None = None
 
 
 @dataclass
@@ -44,6 +109,10 @@ class ToolCallTrace:
     undo_tool: str | None = None
     gate: str = "none"  # "none" | "approved" | "denied" | "expired"
     effect_phrase: str | None = None
+    agent: str | None = None  # owning agent; nested delegate calls keep the delegate
+    undo_args: dict[str, Any] | None = None  # ids and names only; never sent to clients
+    undo_note: str | None = None
+    call_index: int = 0  # position in the flattened call list
 
 
 @dataclass
@@ -120,3 +189,4 @@ class MessageTrace:
     judgments: list[JudgmentTrace] = field(default_factory=list)
     sources: list[SourceTrace] = field(default_factory=list)
     effects_known: bool = False  # True only when tool calls carry registry metadata
+    rollback: RollbackTrace | None = None

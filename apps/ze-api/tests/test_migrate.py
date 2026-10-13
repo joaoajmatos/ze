@@ -103,4 +103,14 @@ def test_phase_165_revisions_join_the_discovered_chains():
     assert zm024.down_revision == "zm023"
     assert isinstance(cfg, Config)
     heads = set(script.get_heads())
-    assert {"zc031", "zm024"} <= heads
+    assert "zm024" in heads
+    assert "zc031" not in heads  # zc032 revises it (Phase 180)
+
+
+def test_phase_180_revision_extends_the_core_chain():
+    from alembic.script import ScriptDirectory
+
+    cfg = ze_migrate._build_config("postgresql+psycopg2://test/test")
+    script = ScriptDirectory.from_config(cfg)
+    assert script.get_revision("zc032").down_revision == "zc031"
+    assert "zc032" in set(script.get_heads())

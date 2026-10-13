@@ -44,7 +44,7 @@ class _AsyncContextManagerMock:
         pass
 
 
-def _make_row(msg: Message):
+def _make_row(msg: Message, rollback=None):
     row = MagicMock()
     row.__getitem__ = lambda self, key: {
         "id": msg.id,
@@ -56,6 +56,7 @@ def _make_row(msg: Message):
         "created_at": msg.created_at,
         "replaces": msg.replaces,
         "replaced_by": msg.replaced_by,
+        "rollback": rollback,
     }[key]
     return row
 
@@ -260,3 +261,69 @@ async def test_previous_user_message_joins_same_thread_before_reply():
     assert "u.role = 'user'" in sql
     assert "u.created_at < a.created_at" in sql
     assert "ORDER BY u.created_at DESC" in sql
+
+
+async def test_get_message_loads_rollback_record():
+    from ze_core.conversation.messages.types import RollbackEntry, RollbackRecord
+
+    msg = _make_message()
+    record = RollbackRecord(
+        state="rolled_back_retry_failed",
+        entries=[
+            RollbackEntry(
+                entry_id="e1",
+                call_index=0,
+                tool="set_reminder",
+                undo_tool="cancel_reminder",
+                effect_phrase="set a reminder",
+                outcome="undone",
+                at="t",
+            )
+        ],
+        started_at="t",
+        updated_at="t",
+    )
+    from dataclasses import asdict
+
+    row = _make_row(msg, rollback=asdict(record))
+    pool, _ = _make_pool_mock(rows=[row])
+    loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
+    assert loaded is not None and loaded.rollback == record
+
+
+async def test_message_without_rollback_loads_none():
+    msg = _make_message()
+    pool, _ = _make_pool_mock(rows=[_make_row(msg)])
+    loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
+    assert loaded is not None and loaded.rollback is None
+
+
+async def test_rollback_column_is_selected_on_every_read():
+    msg = _make_message()
+    pool, conn = _make_pool_mock(rows=[_make_row(msg)])
+    store = PostgresMessageStore(pool=pool)
+    await store.list_since(datetime.now(timezone.utc))
+    await store.list_by_thread("t")
+    await store.list_unread("t")
+    await store.list_unread()
+    await store.get_message(msg.id)
+    await store.get_messages([msg.id])
+    await store.previous_user_message(msg.id)
+    sqls = [c.args[0] for c in conn.fetch.call_args_list + conn.fetchrow.call_args_list]
+    assert len(sqls) == 7
+    assert all("rollback" in sql for sql in sqls)
+
+
+async def test_set_rollback_overwrites_with_jsonb():
+    from dataclasses import asdict
+
+    from ze_core.conversation.messages.types import RollbackRecord
+
+    pool, conn = _make_pool_mock()
+    record = RollbackRecord(state="partial", entries=[], started_at="t", updated_at="u")
+    mid = uuid4()
+    await PostgresMessageStore(pool=pool).set_rollback(mid, record)
+    sql, payload, target = conn.execute.call_args.args
+    assert "UPDATE messages SET rollback = $1::jsonb WHERE id = $2" in sql
+    assert payload == asdict(record)
+    assert target == mid
