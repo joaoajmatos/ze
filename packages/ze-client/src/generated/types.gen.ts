@@ -830,6 +830,10 @@ export type EvalChatRequest = {
      * Session Id
      */
     session_id?: string;
+    /**
+     * Force Agent
+     */
+    force_agent?: string | null;
 };
 
 /**
@@ -2214,6 +2218,14 @@ export type NotificationItem = {
      * Read
      */
     read: boolean;
+    /**
+     * Push Class
+     */
+    push_class: string;
+    /**
+     * Delivery
+     */
+    delivery: string;
 };
 
 /**
@@ -2661,6 +2673,62 @@ export type ProcedureVersionResponse = {
      * Learning Refs
      */
     learning_refs: Array<string>;
+};
+
+/**
+ * QuietHoursResponse
+ */
+export type QuietHoursResponse = {
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Start
+     */
+    start: string | null;
+    /**
+     * End
+     */
+    end: string | null;
+    /**
+     * Timezone
+     */
+    timezone: string | null;
+    /**
+     * Active Now
+     */
+    active_now: boolean;
+    /**
+     * Held Count
+     */
+    held_count: number;
+    /**
+     * Max Discretionary Per Day
+     */
+    max_discretionary_per_day: number;
+};
+
+/**
+ * QuietHoursUpdate
+ */
+export type QuietHoursUpdate = {
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Start
+     */
+    start?: string | null;
+    /**
+     * End
+     */
+    end?: string | null;
+    /**
+     * Timezone
+     */
+    timezone?: string | null;
 };
 
 /**
@@ -5786,6 +5854,47 @@ export type GetUnreadNotificationCountResponses = {
 };
 
 export type GetUnreadNotificationCountResponse = GetUnreadNotificationCountResponses[keyof GetUnreadNotificationCountResponses];
+
+export type GetQuietHoursData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v0/notifications/quiet-hours';
+};
+
+export type GetQuietHoursResponses = {
+    /**
+     * Successful Response
+     */
+    200: QuietHoursResponse;
+};
+
+export type GetQuietHoursResponse = GetQuietHoursResponses[keyof GetQuietHoursResponses];
+
+export type UpdateQuietHoursData = {
+    body: QuietHoursUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v0/notifications/quiet-hours';
+};
+
+export type UpdateQuietHoursErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateQuietHoursError = UpdateQuietHoursErrors[keyof UpdateQuietHoursErrors];
+
+export type UpdateQuietHoursResponses = {
+    /**
+     * Successful Response
+     */
+    200: QuietHoursResponse;
+};
+
+export type UpdateQuietHoursResponse = UpdateQuietHoursResponses[keyof UpdateQuietHoursResponses];
 
 export type MarkNotificationReadData = {
     body?: never;
