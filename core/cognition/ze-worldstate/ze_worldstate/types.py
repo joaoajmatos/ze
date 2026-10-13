@@ -14,6 +14,10 @@ from ze_worldstate.loop_judge import LoopGateDecision
 
 LoopClaimKind = ClaimKind
 
+# Confidence for a user-stated ("declared") loop, shared by the 168 explicit
+# declaration path and the 169 user-asked track path.
+DECLARED_CONFIDENCE = 0.9
+
 
 class LoopProvenance:
     """Plain string-constant namespace, NOT an Enum — see FR-003 / research.md §3.
@@ -59,6 +63,23 @@ class DriftingLoopMention:
     title: str
     mention_text: str
     evidence: list[EvidenceRef]
+
+
+class TrackOutcome:
+    """Plain string constants for a `track_loop` ask (data-model.md)."""
+
+    CREATED = "created"
+    CONFIRMED = "confirmed"
+    REINFORCED = "reinforced"
+    REVIVED = "revived"
+
+
+@dataclass
+class TrackResult:
+    ok: bool
+    outcome: str | None = None
+    loop: OpenLoop | None = None
+    error: str | None = None
 
 
 @dataclass

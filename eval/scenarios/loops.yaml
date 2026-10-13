@@ -1,0 +1,57 @@
+- id: loops_track_then_list_en
+  description: "Multi-turn: ask Ze to keep a concern on the radar, then list open loops. The row is proven by verify; the tool call by the judge."
+  turns:
+    - prompt: "I haven't decided about the Porto move yet, keep it on my radar"
+      description: "Turn 1: explicit ask to track a concern"
+    - prompt: "what am I still sitting with?"
+      description: "Turn 2: list open loops"
+  expected_agent: loops
+  verify:
+    - table: open_loops
+      where: {title__icontains: porto}
+      expect: exists
+      cleanup: true
+  tags: [routing, loops, memory_honesty]
+  criteria:
+    - Turn 1 should confirm the Porto move is now tracked only because a track_loop call succeeded
+    - Turn 1 should not claim tracking in a vague way without having called the tool
+    - Turn 2 should list the Porto move among the open loops
+    - Turn 2 should not list the Porto move twice
+
+- id: loops_track_then_list_pt
+  description: "Multi-turn (PT): ask Ze to keep a concern on the radar, then list open loops"
+  turns:
+    - prompt: "ainda não decidi a mudança para o Porto, mantém isso no radar"
+      description: "Turn 1: explicit ask to track a concern"
+    - prompt: "o que é que ainda tenho em aberto?"
+      description: "Turn 2: list open loops"
+  expected_agent: loops
+  verify:
+    - table: open_loops
+      where: {title__icontains: porto}
+      expect: exists
+      cleanup: true
+  tags: [routing, loops, memory_honesty]
+  criteria:
+    - Turn 1 should confirm in Portuguese that the matter is tracked only because a track_loop call succeeded
+    - Turn 2 should list the Porto move among the open loops
+    - Turn 2 should not list the Porto move twice
+
+- id: loops_track_twice_no_duplicate
+  description: "Multi-turn: the same ask twice must reinforce the existing loop, not create a second one"
+  turns:
+    - prompt: "I haven't decided about the Porto move yet, keep it on my radar"
+      description: "Turn 1: first ask"
+    - prompt: "keep the Porto move on my radar please"
+      description: "Turn 2: same ask again"
+  expected_agent: loops
+  verify:
+    - table: open_loops
+      where: {title__icontains: porto}
+      expect: exists
+      cleanup: true
+  tags: [routing, loops, memory_honesty]
+  criteria:
+    - Turn 1 should say the Porto move is now tracked
+    - Turn 2 should say it is already on the radar, not that it was newly created
+    - Turn 2 should not claim a second loop was created
