@@ -674,6 +674,14 @@ class PostgresMemoryStore:
                 signal_ids,
             )
 
+    async def count_unreviewed_facts(self) -> int:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT COUNT(*) AS n FROM memory_facts"
+                " WHERE reviewed = false AND contradicted = false"
+            )
+        return int(row["n"])
+
     async def list_recent_facts(self, days: int, limit: int) -> list[Fact]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
