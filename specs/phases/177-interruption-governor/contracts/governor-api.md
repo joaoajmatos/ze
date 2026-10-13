@@ -55,7 +55,7 @@ ProactiveNotifier(
 
 ## Pure rule
 
-`ze_proactive.governor.decide(kind, *, quiet_now: bool, budget_won: bool | None) -> Literal["deliver","hold","suppress"]` — table in `data-model.md`. `budget_won` is `None` for non-discretionary kinds.
+`ze_proactive.governor.decide(kind, *, quiet_now: bool, budget_won: bool | None) -> Literal["deliver","hold","suppress"]` — table in `data-model.md`. `budget_won` is `None` for non-discretionary kinds. A discretionary push that lost the budget claim is `suppress` even during quiet hours; the budget check runs before the quiet hold.
 
 ## AppInterface change (`ze_agents.interface.types.Notification`)
 

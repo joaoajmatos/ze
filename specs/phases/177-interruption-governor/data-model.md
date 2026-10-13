@@ -43,10 +43,10 @@ Decision = Literal["deliver", "hold", "suppress"]
 
 decide(kind, *, quiet_now, budget_won) -> Decision
   requested                         → deliver
+  discretionary and not budget_won  → suppress   (even in quiet hours: the budget check runs first, so the daily cap holds)
   quiet_now                         → hold
   accountability                    → deliver
   discretionary and budget_won      → deliver
-  discretionary and not budget_won  → suppress
 ```
 
 Outcome mapping in `notify()`:
