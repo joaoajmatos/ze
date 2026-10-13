@@ -67,7 +67,10 @@ export function ChatWorkspace() {
       const feedback = feedbackById.get(id);
       return (
         <>
-          <RollbackNotice rollback={feedback?.rollback} />
+          <RollbackNotice
+              rollback={feedback?.rollback}
+              busy={feedback?.retry?.reason_code === "busy"}
+            />
           <ReplyActions
             messageId={id}
             feedback={feedback}

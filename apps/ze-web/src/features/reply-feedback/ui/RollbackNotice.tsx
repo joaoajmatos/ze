@@ -2,6 +2,8 @@ import type { RollbackRecordResponse } from "@myguyze/ze-client";
 
 interface RollbackNoticeProps {
   rollback: RollbackRecordResponse | null | undefined;
+  /** The server still reports the thread busy: a regeneration may be in flight. */
+  busy?: boolean;
 }
 
 function joinPhrases(phrases: string[]): string {
@@ -34,8 +36,11 @@ export function rollbackNoticeText(rollback: RollbackRecordResponse): string | n
   }
 }
 
-export function RollbackNotice({ rollback }: RollbackNoticeProps) {
-  const text = rollback ? rollbackNoticeText(rollback) : null;
+const IN_FLIGHT_STATES = new Set(["rolled_back_retry_failed", "rolled_back_awaiting_confirmation"]);
+
+export function RollbackNotice({ rollback, busy }: RollbackNoticeProps) {
+  const inFlight = busy && rollback && IN_FLIGHT_STATES.has(rollback.state);
+  const text = rollback && !inFlight ? rollbackNoticeText(rollback) : null;
   if (!text) return null;
   return (
     <p role="status" data-testid="rollback-notice" className="px-1 text-[11px] text-smoke">

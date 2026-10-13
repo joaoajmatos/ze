@@ -72,6 +72,31 @@ describe("RollbackNotice", () => {
     );
   });
 
+  it("hides in-flight notices while the server reports busy, but keeps partial", () => {
+    const { rerender } = render(
+      <RollbackNotice busy rollback={record("rolled_back_retry_failed", [["undone", "x"]])} />,
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    rerender(
+      <RollbackNotice busy rollback={record("rolled_back_awaiting_confirmation", [["undone", "x"]])} />,
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    rerender(
+      <RollbackNotice
+        busy
+        rollback={record("partial", [
+          ["undone", "x"],
+          ["failed", "y"],
+        ])}
+      />,
+    );
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    rerender(
+      <RollbackNotice rollback={record("rolled_back_retry_failed", [["undone", "x"]])} />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("could not write a new reply");
+  });
+
   it("renders nothing without a record or once superseded", () => {
     const { rerender } = render(<RollbackNotice rollback={null} />);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
