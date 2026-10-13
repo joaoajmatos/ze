@@ -314,6 +314,14 @@ Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 
 ---
 
+## Detector calibration
+
+`make calibrate-open-query` runs the open-query detector over the sets in
+`eval/calibration/open_query*.jsonl`. It runs locally and costs nothing. Use
+`--check-sets` to validate the files offline. The default run sweeps the
+tuned set. One held-out run gives the verdict. `test_open_query_holdout.py` is
+a slow test, so it runs only with `SLOW=1`.
+
 ## Latency and token tracking
 
 Every scenario run captures two latency signals automatically — no extra config needed:

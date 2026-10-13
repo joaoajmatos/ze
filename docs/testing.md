@@ -122,6 +122,7 @@ uv run pytest apps/ze-api/tests -k test_health -q
 | Multiple packages / unsure | `make test-py` (what CI runs) or `make test-all` |
 | Before opening a PR | `make lint` and `make test-py`; `make typecheck-web` and `make test-web` if ze-web or @myguyze/ze-ui changed |
 | Embedding / routing internals | `make test-core SLOW=1` or `make test-all` |
+| Open-query detector | `make test-priority SLOW=1` runs `test_open_query_holdout.py`; `make calibrate-open-query` sweeps the sets (local, free) |
 
 ---
 

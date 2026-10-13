@@ -176,18 +176,18 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
-| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes |
+| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
 | `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
 | `capability_check` | `nodes/execution.py` | Evaluate permission mode for agent.intent, strictest-wins with the optional spend budget |
 | `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout; fans independent subtasks out in parallel |
 | `await_subtask_confirmation` | `nodes/execution.py` | Pause for a per-subtask confirmation gate, then resume `execute_tool` |
 | `correlate` | `nodes/correlation.py` | Surface inline relationship hypotheses when relevant |
-| `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline |
+| `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline. Skips when the turn asked what's open, because the answer already lists them (up to 10 items) |
 | `draft_response` | `nodes/execution.py` | Generate response, do not execute |
 | `await_confirmation` | `nodes/execution.py` | Pause graph, emit confirm_request frame |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
 | `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call |
-| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. A turn where the `loops` agent's `track_loop` tool succeeded skips the loop gate, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
+| `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. A turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded skips the loop gate, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
 
 </details>
 
@@ -292,7 +292,7 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 | `finance` | CSV/Trading212 ingestion, categorization, recurring detection | `ze-finance` | Haiku |
 | `workflow` | APScheduler, multi-step plan execution | `ze-automation` | Full |
 | `goals` | Goal lifecycle (create, status, steer, pause, resume, abandon) | `ze-automation` | Full |
-| `loops` | `list_open_loops`, `track_loop`, `close_loop`, `drop_loop` | `ze-worldstate` | Haiku |
+| `loops` | `list_open_loops`, `track_loop`, `confirm_loop`, `close_loop`, `drop_loop` | `ze-worldstate` | Haiku |
 | `priority` | `reprioritize_item` | `ze-priority` | Haiku |
 | `ingestion` | URL, text, and file ingestion into memory | `ze-ingestion` | Full |
 

@@ -227,11 +227,21 @@ success may confirm cancelled/closed/abandoned; it does not earn “I forgot”
 a fact.
 
 **Loop tracking.** The `loops` agent confirms tracking (“it's on your radar”)
-only after `track_loop` returns `ok: true` on this turn. The same turn-path
+only after `track_loop` or `confirm_loop` returns `ok: true` on this turn. The same turn-path
 guard strips an unearned tracking claim, in English and Portuguese, and the
 reply becomes “I could not track that.” when nothing else remains. Offers and
 questions (“Want me to keep this on your radar?”) are never stripped. Only the
 `loops` agent turns this guard on.
+
+**Open-loop questions.** `OpenQueryDetector` (`ze_priority/open_query.py`) decides
+whether the user asks what is open. It compares the message to English and
+Portuguese example questions by E5 similarity, with a threshold of 0.88. It
+replaced a regex. Inline mentions and the recap list at most 5 loops. An
+explicit "what's open" answer lists at most 10. After a session gap, Ze also
+asks about up to 3 suspected loops. A loop it offered stays quiet for 7 days,
+tracked in `push_log`. The detector ships under an amended bar: Portuguese
+recall is lower than English, and no false positives were measured. See
+`specs/phases/171-loop-confirmation/research.md`.
 
 **Post-turn extraction.** After each agent run, `write_memory` calls
 `gather_fact_proposals` (`ze_memory/extractor.py`). The extractor classifies
