@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Retry Rollback",
+  "branch": "180-retry-rollback",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-13T19:37:17.331Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-13T19:45:06.757Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-13T19:48:19.762Z"
+    }
+  ]
+}
