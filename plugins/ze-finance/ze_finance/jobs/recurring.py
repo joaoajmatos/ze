@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from ze_logging import get_logger
 from ze_proactive.job import proactive_job
 from ze_proactive.notifier import ProactiveNotifier
+from ze_finance.push_kinds import (
+    FINANCE_PRICE_CHANGE,
+    FINANCE_RECURRING_NEW,
+    FINANCE_STALE_NUDGE,
+)
 from ze_finance.recurring.detector import RecurringDetector
 from ze_finance.recurring.store import RecurringStore
 from ze_finance.recurring.types import RecurringExpense, StalenessReport, cadence_label
@@ -98,11 +103,15 @@ class RecurringDetectionJob:
             if report.days_since_last > 0
             else "a while"
         )
-        await self._notifier.push(
+        outcome = await self._notifier.notify(
+            FINANCE_STALE_NUDGE,
+            "Bank statement needed",
             f"I haven't seen new transactions for '{account.name}' in {days_label}. "
-            "Upload a fresh bank statement so I can keep your recurring expense list up to date."
+            "Upload a fresh bank statement so I can keep your recurring expense list up to date.",
+            budget_key=f"finance_stale:{account.id}:{date.today().isoformat()}",
         )
-        await self._recurring.record_nudge(account.id)
+        if outcome in ("delivered", "held"):
+            await self._recurring.record_nudge(account.id)
         log.info("finance_stale_nudge_sent", account_id=account.id)
 
     async def _detect_and_surface(self, account_id: str) -> None:
@@ -117,7 +126,12 @@ class RecurringDetectionJob:
 
         if result.new_candidates:
             body = _format_new_summary(result.new_candidates)
-            await self._notifier.push(body)
+            await self._notifier.notify(
+                FINANCE_RECURRING_NEW,
+                "New recurring expenses",
+                body,
+                budget_key=f"finance_new:{account_id}:{date.today().isoformat()}",
+            )
             log.info(
                 "finance_recurring_new_candidates",
                 account_id=account_id,
@@ -127,9 +141,12 @@ class RecurringDetectionJob:
         for item in result.price_changed:
             prev = f"{item.currency} {item.previous_amount}"
             curr = f"{item.currency} {item.amount}"
-            await self._notifier.push(
+            await self._notifier.notify(
+                FINANCE_PRICE_CHANGE,
+                "Price change",
                 f"Your {item.merchant_display} charge changed from {prev} to {curr} — "
-                "still happy with it?"
+                "still happy with it?",
+                budget_key=f"finance_price:{item.normalised_key}:{item.amount}",
             )
             log.info(
                 "finance_recurring_price_changed",

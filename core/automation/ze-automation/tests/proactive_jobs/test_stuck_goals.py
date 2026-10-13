@@ -3,8 +3,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import pytest
-
 from ze_automation.jobs.stuck_goals import StuckGoalJob, _build_message
 from ze_automation.goals.types import (
     Goal,
@@ -13,6 +11,7 @@ from ze_automation.goals.types import (
     VerificationGate,
     GateStatus,
 )
+from ze_automation.push_kinds import STUCK_GOAL
 
 
 def _goal(title: str = "Learn Rust") -> Goal:
@@ -63,12 +62,9 @@ def _gate_stuck(title: str = "Launch website", idle_days: int = 12) -> StuckGoal
     )
 
 
-def _make_job(*, stuck: list[StuckGoal], push_raises: bool = False):
+def _make_job(*, stuck: list[StuckGoal], outcome: str = "delivered"):
     notifier = AsyncMock()
-    if push_raises:
-        notifier.push_notification = AsyncMock(side_effect=RuntimeError("push failed"))
-    else:
-        notifier.push_notification = AsyncMock()
+    notifier.notify = AsyncMock(return_value=outcome)
 
     goal_store = AsyncMock()
     goal_store.list_stuck = AsyncMock(return_value=stuck)
@@ -86,7 +82,7 @@ def _make_job(*, stuck: list[StuckGoal], push_raises: bool = False):
 async def test_run_no_op_when_no_stuck_goals():
     job, notifier, goal_store = _make_job(stuck=[])
     await job.run()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
     goal_store.mark_stuck_alerted.assert_not_called()
 
 
@@ -94,7 +90,10 @@ async def test_run_sends_notification_when_stuck_goals_found():
     sg = _active_stuck()
     job, notifier, _ = _make_job(stuck=[sg])
     await job.run()
-    notifier.push_notification.assert_called_once()
+    notifier.notify.assert_called_once()
+    call = notifier.notify.call_args
+    assert call.args[0] is STUCK_GOAL
+    assert call.args[1] == "Goals need attention"
 
 
 async def test_run_marks_all_goals_alerted_after_push():
@@ -107,11 +106,10 @@ async def test_run_marks_all_goals_alerted_after_push():
     assert goal_store.mark_stuck_alerted.call_count == 2
 
 
-async def test_run_does_not_mark_alerted_if_push_fails():
+async def test_run_does_not_mark_alerted_if_not_delivered():
     sg = _active_stuck()
-    job, _, goal_store = _make_job(stuck=[sg], push_raises=True)
-    with pytest.raises(RuntimeError):
-        await job.run()
+    job, _, goal_store = _make_job(stuck=[sg], outcome="failed")
+    await job.run()
     goal_store.mark_stuck_alerted.assert_not_called()
 
 

@@ -6,6 +6,7 @@ from uuid import UUID
 
 import asyncpg
 
+from ze_calendar.push_kinds import USER_REMINDER
 from ze_logging import get_logger
 from ze_sdk.proactive import ProactiveNotifier
 
@@ -98,7 +99,13 @@ async def fire_reminder(
     claimed = await store.claim_for_firing(reminder_id)
     if not claimed:
         return
-    await notifier.push(f"⏰ {reminder.label}")
+    await notifier.notify(
+        USER_REMINDER,
+        "Reminder",
+        f"⏰ {reminder.label}",
+        target_type="reminder",
+        target_id=str(reminder_id),
+    )
     log.info("reminder_fired", id=str(reminder_id), label=reminder.label)
 
 

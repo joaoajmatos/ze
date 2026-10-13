@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from ze_communication.types import ChannelType, InboundMessage
 from ze_agents.claims import Provenance
 from ze_logging import get_logger
+from ze_messenger.push_kinds import INBOUND_MESSAGE
 from ze_sdk.memory import (
     MemoryStore,
     PerceptionFactSubmit,
@@ -145,10 +146,11 @@ class InboundMessageProcessor:
             )
             if known:
                 subject_part = f": {msg.subject}" if msg.subject else ""
-                await self._notifier.push(
-                    title=f"Message from {known.name or msg.sender}{subject_part}",
-                    body=msg.body[:200],
-                    tags=["message", str(msg.channel_type)],
+                await self._notifier.notify(
+                    INBOUND_MESSAGE,
+                    f"Message from {known.name or msg.sender}{subject_part}",
+                    msg.body[:200],
+                    budget_key=f"inbound:{msg.channel_type}:{msg.message_id}",
                 )
 
         if significant:
