@@ -210,16 +210,60 @@ async def _link_evidence_and_entities(
         await loop_store.link_entity(loop_id, entity_id)
 
 
+def _existence_checkers(memory_store: Any):
+    async def _check_fact_exists(fact_id: UUID) -> bool:
+        if memory_store is None:
+            return False
+        facts = await memory_store.get_facts_by_ids([fact_id])
+        return len(facts) > 0
+
+    async def _check_episode_exists(episode_id: UUID) -> bool:
+        if memory_store is None:
+            return False
+        episodes = await memory_store.get_episodes_by_ids([episode_id])
+        return len(episodes) > 0
+
+    return _check_fact_exists, _check_episode_exists
+
+
+async def _corroborate_match(
+    existing: OpenLoop,
+    evidence_refs: list[EvidenceRef],
+    entity_ids: list[UUID],
+    loop_store: LoopStore,
+) -> None:
+    await _link_evidence_and_entities(existing.id, evidence_refs, entity_ids, loop_store)
+    if evidence_refs and existing.state is LoopState.ACTIVE:
+        await loop_store.record_corroboration(existing.id)
+
+
 async def _create_declared_loop(
     title: str,
     prov: str,
     evidence_refs: list[EvidenceRef],
     entity_ids: list[UUID],
     loop_store: LoopStore,
+    graph_store: GraphStore | None,
+    embedder: Any,
+    memory_store: Any,
     implied_window_days: int | None = None,
     collision_store: Any = None,
     nli_client: Any = None,
 ) -> OpenLoop:
+    if graph_store is not None:
+        existing = await find_matching_loop(
+            entity_ids,
+            title,
+            loop_store=loop_store,
+            graph_store=graph_store,
+            embedder=embedder,
+            states=["suspected", "active", "drifting"],
+        )
+        if existing is not None:
+            await _corroborate_match(existing, evidence_refs, entity_ids, loop_store)
+            return existing
+
+    check_fact_exists, check_episode_exists = _existence_checkers(memory_store)
     confirmed_at = datetime.now(timezone.utc)
     loop = OpenLoop(
         title=title,
@@ -237,6 +281,8 @@ async def _create_declared_loop(
         lambda: loop_store.create(loop),
         result_id=lambda c: c.id,
         producer_kind="open_loop",
+        check_fact_exists=check_fact_exists,
+        check_episode_exists=check_episode_exists,
         collision_store=collision_store,
         nli_client=nli_client,
     )
@@ -308,9 +354,7 @@ async def _create_suspected_loop(
             states=["suspected", "active", "drifting"],
         )
         if existing is not None:
-            await _link_evidence_and_entities(
-                existing.id, evidence_refs, entity_ids, loop_store
-            )
+            await _corroborate_match(existing, evidence_refs, entity_ids, loop_store)
             return [existing]
 
     loop = OpenLoop(
@@ -321,25 +365,15 @@ async def _create_suspected_loop(
         state=LoopState.SUSPECTED,
     )
 
-    async def _check_fact_exists(fact_id: UUID) -> bool:
-        if memory_store is None:
-            return False
-        facts = await memory_store.get_facts_by_ids([fact_id])
-        return len(facts) > 0
-
-    async def _check_episode_exists(episode_id: UUID) -> bool:
-        if memory_store is None:
-            return False
-        episodes = await memory_store.get_episodes_by_ids([episode_id])
-        return len(episodes) > 0
+    check_fact_exists, check_episode_exists = _existence_checkers(memory_store)
 
     created = await submit_and_detect_collisions(
         loop_to_contribution(loop, evidence=evidence_refs, entity_ids=entity_ids),
         lambda: loop_store.create(loop),
         result_id=lambda c: c.id,
         producer_kind="open_loop",
-        check_fact_exists=_check_fact_exists,
-        check_episode_exists=_check_episode_exists,
+        check_fact_exists=check_fact_exists,
+        check_episode_exists=check_episode_exists,
         collision_store=collision_store,
         nli_client=nli_client,
     )
@@ -381,6 +415,9 @@ async def _commit_admitted(
             evidence_refs,
             entity_ids,
             loop_store,
+            graph_store,
+            embedder,
+            memory_store,
             implied_window_days=written.implied_window_days,
             collision_store=collision_store,
             nli_client=nli_client,
@@ -442,6 +479,9 @@ async def propose_loop_candidates(
             evidence_refs,
             entity_ids,
             loop_store,
+            graph_store,
+            embedder,
+            memory_store,
             collision_store=collision_store,
             nli_client=nli_client,
         )
@@ -489,6 +529,9 @@ async def propose_loop_candidates(
             evidence_refs,
             entity_ids,
             loop_store,
+            graph_store,
+            embedder,
+            memory_store,
             implied_window_days=gate.implied_window_days,
             collision_store=collision_store,
             nli_client=nli_client,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -98,4 +98,4 @@ class LoopAdmission:
     question_kinds: dict[str, str] = field(default_factory=dict)
     consumed: frozenset[str] = frozenset()
     skip_reason: str | None = None
-    commit: Callable[[], Awaitable[list[OpenLoop]]] | None = None
+    commit: Callable[[Sequence[EvidenceRef]], Awaitable[list[OpenLoop]]] | None = None

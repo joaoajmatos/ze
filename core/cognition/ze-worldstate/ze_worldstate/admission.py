@@ -7,11 +7,13 @@ falls back to the 109 Haiku gate (FR-012, FR-013).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
 from ze_memory.extractor import is_trivial_turn
+from ze_plugin.contribution import EvidenceRef
 
 from ze_worldstate import loop_judge
 from ze_worldstate.extraction import DEFAULT_EXTRACTION_MODEL, propose_loop_candidates
@@ -60,14 +62,16 @@ class LoopInflow:
         del configurable
         return await self._judge(prompt, CONVERSATION)
 
-    async def extract(self, text: str, provenance: str) -> None:
+    async def extract(
+        self, text: str, provenance: str, evidence: Sequence[EvidenceRef] = ()
+    ) -> None:
         """Email, calendar and ingestion inflows: judge, log, commit inline."""
         if not text or not text.strip():
             return
         admission = await self._judge(text, provenance)
         self._log(admission, provenance)
         if admission.commit is not None:
-            await admission.commit()
+            await admission.commit(evidence)
 
     def _log(self, admission: LoopAdmission, provenance: str) -> None:
         judgment = admission.judgment
@@ -88,12 +92,12 @@ class LoopInflow:
         )
 
     def _commit_for(self, text: str, provenance: str, admission: LoopAdmission):
-        async def _commit() -> list:
+        async def _commit(evidence: Sequence[EvidenceRef] = ()) -> list:
             try:
                 return await propose_loop_candidates(
                     text=text,
                     provenance=provenance,
-                    evidence_refs=[],
+                    evidence_refs=list(evidence),
                     llm_client=self._llm,
                     embedder=self._embedder,
                     loop_store=self._loop_store,
