@@ -166,6 +166,10 @@ it needs an evidence link that gate-created loops do not have (F9). So `LoopSurf
 behavior of Phase 110 never run. This is the same class of defect Phase 168 found in the 109 gate: unit
 tests mock the store, and the SQL predicate was never run against a real row.
 
+*Status:* **Fixed in Phase 170.** Drift is now deadline-based (`state = 'active' AND drift_deadline <=
+now()`), and `PostgresLoopStore.record_corroboration` moves the deadline forward on new evidence, so one
+early touch no longer exempts a loop forever. No `last_activity_at` column (Phase 170 research R1).
+
 *Fix size:* S. Replace the predicate with an explicit `last_activity_at` or compare against a
 dedicated "touched by evidence" timestamp, and add a Postgres-backed test.
 
@@ -200,6 +204,9 @@ six pending gates. Calling `list_stuck(0, 0)` and `list_stuck(7, 14)` both raise
   hides this behind a warning log line.
 - Even without a NULL, the query returns one row per open gate, so a goal could appear twice.
 - `ze-automation` has no test named for `list_stuck` against SQL.
+
+*Status:* **Fixed in Phase 170.** `list_stuck` selects one row per goal from the earliest open gate that
+has fired, skips gates with `fired_at IS NULL`, and carries a Postgres-backed regression test.
 
 *Fix size:* S. One row per goal (the earliest fired gate), skip unfired gates, add a Postgres-backed test.
 
@@ -276,6 +283,8 @@ is the same hash for every loop, so once the user drops a loop, any later loop t
 entity or title is suppressed forever, even on new evidence; (d) nothing can mark a loop as "corroborated",
 because linking evidence is also what refreshes `updated_at`.
 
+*Status:* **Fixed in Phase 170.** Gate-created loops link evidence (conversation and email turn episodes, ingestion references; calendar has none), the declared path dedups and calls `record_corroboration`, and the push grounding gate checks the loop title.
+
 ### F10 — "What's open?" is an English-only regex — *Low* — [code]
 
 `TurnSurfacing.is_global_open_query` matches "what's open / outstanding / on my plate". The user and the
@@ -291,6 +300,18 @@ laptop, a missed run is lost. Whether the real host is always on is a deployment
 Sends, reminders, calendar writes and workspace runs are recorded as `ActionRecord`s. The only reader is
 goal learning. Nothing opens an "awaiting reply" concern after Ze sends an email or makes a request, and
 nothing in `MessagingSignalSource` closes one.
+
+### F13 — The priority snapshot 500s on a relationship item — *High* — [code]
+
+`PrioritySnapshotItem.source_kind` and the override schemas declare `Literal["loop", "goal",
+"hypothesis"]`, but `PriorityView` also ranks `relationship` nudges once the person store is wired (it is,
+in `container.py`). `GET /api/v0/priority/snapshot` fails response validation whenever a stale-relationship
+nudge exists. The same response also hid which sources `PriorityView` could not read.
+
+*Status:* **Fixed in Phase 170.** The snapshot returns `{items, sources_failed}`, the source-kind Literal
+adds `relationship`, and the web page names any source it could not read.
+
+*Fix size:* S.
 
 ---
 
