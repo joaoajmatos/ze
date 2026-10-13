@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 log = get_logger(__name__)
 
-_NTFY_PRIORITY_MAP = {"normal": 3, "high": 5}
+_NTFY_PRIORITY_MAP = {"low": 2, "normal": 3, "high": 5}
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _DANGER_LABELS = frozenset({"stop", "cancel", "abandon", "dismiss"})
 
@@ -62,18 +62,37 @@ class NativeAppInterface:
         message_store: MessageStore,
         connection_manager: ConnectionManager,
         notifier: PushNotifier | None,
+        quiet_now: Callable[[], Awaitable[bool]] | None = None,
     ) -> None:
         self._store = message_store
         self._conn = connection_manager
         self._notifier = notifier
+        self._quiet_now = quiet_now
+
+    async def _is_quiet(self) -> bool:
+        if self._quiet_now is None:
+            return False
+        try:
+            return await self._quiet_now()
+        except Exception as exc:
+            log.warning("native_interface_quiet_check_failed", error=str(exc))
+            return False
 
     async def send(self, message: OutboundMessage) -> None:
         await self._send_message(message.content)
 
     async def push(self, notification: Notification) -> None:
+        # The governor already decided whether this push may interrupt, so the
+        # quiet-hours check is not repeated here.
+        if notification.delivery in {"held", "suppressed"}:
+            if notification.event_type is not None:
+                await self._send_notification_frame(notification)
+            return
         await self._send_message(
             notification.content,
             ntfy_priority=_NTFY_PRIORITY_MAP.get(notification.urgency, 3),
+            buzz=notification.buzz,
+            respect_quiet=False,
         )
         if notification.actions:
             await self._send_action_request(notification)
@@ -115,6 +134,8 @@ class NativeAppInterface:
         message_id: str | None = None,
         replaces: UUID | None = None,
         after_save: Callable[[], Awaitable[bool]] | None = None,
+        buzz: bool = True,
+        respect_quiet: bool = True,
     ) -> bool:
         msg = Message(
             id=UUID(message_id) if message_id else uuid4(),
@@ -163,7 +184,12 @@ class NativeAppInterface:
         # Only push via ntfy when the WebSocket is not connected — the client is
         # receiving frames in real-time when connected, so a push notification
         # would be redundant noise.
-        if self._notifier is not None and not self._conn.connected:
+        if (
+            buzz
+            and self._notifier is not None
+            and not self._conn.connected
+            and not (respect_quiet and await self._is_quiet())
+        ):
             from ze_notifications.types import Notification as PushNotification
 
             try:
@@ -215,7 +241,11 @@ class NativeAppInterface:
             }
         )
 
-        if self._notifier is not None and not self._conn.connected:
+        if (
+            self._notifier is not None
+            and not self._conn.connected
+            and not await self._is_quiet()
+        ):
             from ze_notifications.types import Notification as PushNotification
 
             body = (
@@ -246,6 +276,8 @@ class NativeAppInterface:
                     if notification.created_at
                     else None,
                     "read": False,
+                    "push_class": notification.push_class,
+                    "delivery": notification.delivery,
                 }
             )
         except Exception as exc:

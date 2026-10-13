@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import html as _html
+from datetime import date
 
-from ze_agents.interface.types import Action, Notification
+from ze_agents.interface.types import Action
 from ze_logging import get_logger
 from ze_sdk.proactive import proactive_job
 from ze_sdk.proactive import ProactiveNotifier
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import StuckGoal
+from ze_automation.push_kinds import STUCK_GOAL
 
 log = get_logger(__name__)
 
@@ -36,30 +38,18 @@ class StuckGoalJob:
         log.info("stuck_goals_found", count=len(stuck))
 
         content, actions = _build_message(stuck)
-        await self._notifier.push_notification(
-            Notification(
-                content=content,
-                format="html",
-                urgency="normal",
-                actions=actions,
-            )
+        outcome = await self._notifier.notify(
+            STUCK_GOAL,
+            "Goals need attention",
+            content,
+            format="html",
+            actions=actions,
+            budget_key=f"stuck_goals:{date.today().isoformat()}",
         )
 
-        for sg in stuck:
-            await self._goal_store.mark_stuck_alerted(sg.goal.id)
-            await self._notifier.notify(
-                "stuck_goal",
-                f'Goal stuck: "{sg.goal.title}"',
-                (
-                    f"Awaiting your approval for {sg.idle_days} days"
-                    if sg.kind == "awaiting_gate"
-                    else f"No progress for {sg.idle_days} days"
-                ),
-                source="goals",
-                target_type="goal",
-                target_id=str(sg.goal.id),
-                hours=14 * 24,
-            )
+        if outcome in ("delivered", "held"):
+            for sg in stuck:
+                await self._goal_store.mark_stuck_alerted(sg.goal.id)
 
 
 def _build_message(stuck: list[StuckGoal]) -> tuple[str, list[Action]]:

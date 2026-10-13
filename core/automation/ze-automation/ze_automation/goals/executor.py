@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import html as _html
 from collections import defaultdict
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
@@ -33,7 +33,16 @@ from ze_memory.action_records.types import AuthoritativeRef
 from ze_memory.procedures.sources import candidate_from_procedure
 from ze_memory.procedures.types import ProcedureSourceKind, ProvisionalProcedure
 from ze_plugin.contribution import EvidenceRef
-from ze_agents.interface.types import Action, Notification
+from ze_agents.interface.types import Action
+from ze_automation.push_kinds import (
+    GOAL_ATTENTION_NEEDED,
+    GOAL_COMPLETED,
+    GOAL_GATE,
+    GOAL_MILESTONE_DONE,
+    GOAL_PLAN_ADAPTED,
+    GOAL_REUSE,
+)
+from ze_proactive.types import PushKind, PushOutcome
 from ze_automation.workspace_unattended import unattended_workspace
 from ze_logging import get_logger
 
@@ -130,10 +139,9 @@ class GoalExecutor:
         self,
         goal_store: GoalStore,
         goal_planner: GoalPlanner,
-        push: Callable[[Notification], None],
+        notify: Callable[..., Awaitable[PushOutcome]],
         agent_getter: Callable[[str], object],
         memory_store: MemoryStore | None = None,
-        notify: Callable[..., Awaitable[None]] | None = None,
         workspace_gate: object | None = None,
         action_record_store: ActionRecordStore | None = None,
         nli_client: object | None = None,
@@ -141,13 +149,9 @@ class GoalExecutor:
     ) -> None:
         self._store = goal_store
         self._planner = goal_planner
-        self._push = push
+        self._notify = notify
         self._get_agent = agent_getter
         self._memory = memory_store
-        # Structured notification-center path (ProactiveNotifier.notify), wired
-        # alongside `push` by wire_goal_executor_push — kept optional so tests
-        # that construct GoalExecutor directly don't need to supply it.
-        self._notify = notify
         self._workspace_gate = workspace_gate
         self._action_records = action_record_store
         self._nli = nli_client
@@ -155,6 +159,24 @@ class GoalExecutor:
         self._advance_locks: dict[UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._steer_queues: dict[UUID, asyncio.Queue] = defaultdict(asyncio.Queue)
         self._provisional_procedures: dict[UUID, list[Procedure]] = {}
+
+    async def _send(
+        self,
+        kind: PushKind,
+        title: str,
+        body: str,
+        *,
+        goal_id: UUID,
+        **kwargs: Any,
+    ) -> PushOutcome:
+        return await self._notify(
+            kind,
+            title,
+            body,
+            target_type="goal",
+            target_id=str(goal_id),
+            **kwargs,
+        )
 
     async def advance(self, goal_id: UUID) -> None:
         """Advance execution of a goal by one step. Serialized per goal_id."""
@@ -278,26 +300,24 @@ class GoalExecutor:
                     await self._sync_task_state(
                         goal_id, "blocked", milestones, blocked_by=[error_msg]
                     )
-                    await self._push(
-                        Notification(
-                            content="Multiple steps have failed after replanning. The goal is paused — send new instructions or abandon it.",
-                            urgency="high",
-                        )
+                    await self._send(
+                        GOAL_ATTENTION_NEEDED,
+                        "Goal paused",
+                        "Multiple steps have failed after replanning. The goal is paused — send new instructions or abandon it.",
+                        goal_id=goal_id,
                     )
                     return
                 await self._trigger_adaptive_replan(goal, milestones)
                 return
 
-            await self._push(
-                Notification(
-                    content=(
-                        f"Milestone <b>{_html.escape(next_milestone.title)}</b> failed.\n"
-                        f"<code>{_html.escape(error_msg[:200])}</code>\n\n"
-                        "Continuing to next step."
-                    ),
-                    format="html",
-                    urgency="high",
-                )
+            await self._send(
+                GOAL_ATTENTION_NEEDED,
+                "Milestone failed",
+                f"Milestone <b>{_html.escape(next_milestone.title)}</b> failed.\n"
+                f"<code>{_html.escape(error_msg[:200])}</code>\n\n"
+                "Continuing to next step.",
+                goal_id=goal_id,
+                format="html",
             )
             asyncio.create_task(self.advance(goal_id))
             return
@@ -319,11 +339,12 @@ class GoalExecutor:
         completed_count = (
             sum(1 for m in milestones if m.status == MilestoneStatus.COMPLETED) + 1
         )
-        await self._push(
-            Notification(
-                content=f"<b>{_html.escape(next_milestone.title)}</b> done ({completed_count}/{total}).",
-                format="html",
-            )
+        await self._send(
+            GOAL_MILESTONE_DONE,
+            "Milestone done",
+            f"<b>{_html.escape(next_milestone.title)}</b> done ({completed_count}/{total}).",
+            goal_id=goal_id,
+            format="html",
         )
 
         asyncio.create_task(self.advance(goal_id))
@@ -374,12 +395,12 @@ class GoalExecutor:
         self._provisional_procedures.pop(gate.goal_id, None)
         goal = await self._store.get_goal(gate.goal_id)
         title = goal.title if goal else str(gate.goal_id)
-        await self._push(
-            Notification(
-                content=f"Goal <b>{_html.escape(title)}</b> stopped.",
-                format="html",
-                urgency="high",
-            )
+        await self._send(
+            GOAL_ATTENTION_NEEDED,
+            "Goal stopped",
+            f"Goal <b>{_html.escape(title)}</b> stopped.",
+            goal_id=gate.goal_id,
+            format="html",
         )
         log.info("gate_stopped", gate_id=str(gate_id), goal_id=str(gate.goal_id))
 
@@ -425,12 +446,12 @@ class GoalExecutor:
             )
         except Exception as exc:
             log.warning("replan_failed", error=str(exc))
-            await self._push(
-                Notification(
-                    content=f"Could not replan goal: {_html.escape(str(exc))}",
-                    format="html",
-                    urgency="high",
-                )
+            await self._send(
+                GOAL_ATTENTION_NEEDED,
+                "Replan failed",
+                f"Could not replan goal: {_html.escape(str(exc))}",
+                goal_id=gate.goal_id,
+                format="html",
             )
             return
 
@@ -470,15 +491,13 @@ class GoalExecutor:
             await self._store.save_retrospective(goal_id, narrative)
         except Exception as exc:
             log.warning("retrospective_save_failed", error=str(exc))
-        await self._push(
-            Notification(
-                content=(
-                    f"<b>{_html.escape(goal.title)}</b> — completed\n\n"
-                    f"{_html.escape(narrative)}"
-                ),
-                format="html",
-                urgency="high",
-            )
+        await self._send(
+            GOAL_COMPLETED,
+            "Goal completed",
+            f"<b>{_html.escape(goal.title)}</b> — completed\n\n"
+            f"{_html.escape(narrative)}",
+            goal_id=goal_id,
+            format="html",
         )
         self._provisional_procedures.pop(goal_id, None)
         if self._procedures is not None:
@@ -628,18 +647,17 @@ class GoalExecutor:
             goal_id=str(goal.id),
             milestone_title=milestone.title,
         )
-        self._push(
-            Notification(
-                content=(
-                    f"<b>Prior work reused</b>\n\n"
-                    f"While completing <i>{_html.escape(milestone.title)}</i> "
-                    f"(goal: <b>{_html.escape(goal.title)}</b>), I drew on earlier work "
-                    f"from another goal:\n\n"
-                    f"{_html.escape(milestone.reuse_hint)}"
-                ),
-                format="html",
-                urgency="low",
-            )
+        await self._send(
+            GOAL_REUSE,
+            "Prior work reused",
+            f"<b>Prior work reused</b>\n\n"
+            f"While completing <i>{_html.escape(milestone.title)}</i> "
+            f"(goal: <b>{_html.escape(goal.title)}</b>), I drew on earlier work "
+            f"from another goal:\n\n"
+            f"{_html.escape(milestone.reuse_hint)}",
+            goal_id=goal.id,
+            format="html",
+            budget_key=f"goal_reuse:{milestone.id}",
         )
 
     async def _fetch_prior_work(
@@ -656,11 +674,11 @@ class GoalExecutor:
             return []
 
     async def _apply_steer(self, goal_id: UUID, goal: Goal, instruction: str) -> None:
-        await self._push(
-            Notification(
-                content="Applying your direction — replanning remaining steps...",
-                urgency="high",
-            )
+        await self._send(
+            GOAL_PLAN_ADAPTED,
+            "Applying your direction",
+            "Applying your direction — replanning remaining steps...",
+            goal_id=goal_id,
         )
 
         milestones = await self._store.list_milestones(goal_id)
@@ -679,12 +697,12 @@ class GoalExecutor:
             )
         except Exception as exc:
             log.warning("steer_replan_failed", goal_id=str(goal_id), error=str(exc))
-            await self._push(
-                Notification(
-                    content=f"Could not apply direction: {_html.escape(str(exc))}. The goal is paused.",
-                    format="html",
-                    urgency="high",
-                )
+            await self._send(
+                GOAL_ATTENTION_NEEDED,
+                "Direction not applied",
+                f"Could not apply direction: {_html.escape(str(exc))}. The goal is paused.",
+                goal_id=goal_id,
+                format="html",
             )
             await self._store.update_status(goal_id, GoalStatus.PAUSED)
             return
@@ -770,11 +788,11 @@ class GoalExecutor:
         milestones: list[Milestone],
     ) -> None:
         goal_id = goal.id
-        await self._push(
-            Notification(
-                content="Two steps failed in a row — I'm adapting the plan based on what I've learned so far.",
-                urgency="high",
-            )
+        await self._send(
+            GOAL_PLAN_ADAPTED,
+            "Adapting the plan",
+            "Two steps failed in a row — I'm adapting the plan based on what I've learned so far.",
+            goal_id=goal_id,
         )
 
         completed = [m for m in milestones if m.status == MilestoneStatus.COMPLETED]
@@ -792,12 +810,12 @@ class GoalExecutor:
             )
         except Exception as exc:
             log.warning("adaptive_replan_failed", goal_id=str(goal_id), error=str(exc))
-            await self._push(
-                Notification(
-                    content=f"Could not adapt the plan: {_html.escape(str(exc))}. The goal is paused.",
-                    format="html",
-                    urgency="high",
-                )
+            await self._send(
+                GOAL_ATTENTION_NEEDED,
+                "Replan failed",
+                f"Could not adapt the plan: {_html.escape(str(exc))}. The goal is paused.",
+                goal_id=goal_id,
+                format="html",
             )
             await self._store.update_status(goal_id, GoalStatus.PAUSED)
             return
@@ -813,11 +831,11 @@ class GoalExecutor:
         plan_lines = "\n".join(
             f"{i + 1}. {m.title}" for i, m in enumerate(new_milestones[:5])
         )
-        await self._push(
-            Notification(
-                content=f"Adapted plan:\n{plan_lines}",
-                urgency="high",
-            )
+        await self._send(
+            GOAL_PLAN_ADAPTED,
+            "Plan adapted",
+            f"Adapted plan:\n{plan_lines}",
+            goal_id=goal_id,
         )
 
         await self._store.reset_consecutive_failures(goal_id)
@@ -862,35 +880,25 @@ class GoalExecutor:
             "Approve to continue, or send new instructions."
         )
 
-        await self._push(
-            Notification(
-                content=content,
-                format="html",
-                urgency="high",
-                actions=[
-                    Action(
-                        label="Proceed",
-                        payload=_PAYLOAD_APPROVE.format(gate_id=gate_id_str),
-                    ),
-                    Action(
-                        label="Stop", payload=_PAYLOAD_STOP.format(gate_id=gate_id_str)
-                    ),
-                    Action(
-                        label="Redirect",
-                        payload=_PAYLOAD_REDIRECT.format(gate_id=gate_id_str),
-                    ),
-                ],
-            )
+        await self._notify(
+            GOAL_GATE,
+            f'Checkpoint reached: "{gate.title}"',
+            content,
+            target_type="goal_gate",
+            target_id=gate_id_str,
+            format="html",
+            actions=(
+                Action(
+                    label="Proceed",
+                    payload=_PAYLOAD_APPROVE.format(gate_id=gate_id_str),
+                ),
+                Action(label="Stop", payload=_PAYLOAD_STOP.format(gate_id=gate_id_str)),
+                Action(
+                    label="Redirect",
+                    payload=_PAYLOAD_REDIRECT.format(gate_id=gate_id_str),
+                ),
+            ),
         )
-        if self._notify is not None:
-            await self._notify(
-                "goal_gate",
-                f'Checkpoint reached: "{gate.title}"',
-                narrative,
-                source="goals",
-                target_type="goal",
-                target_id=str(goal.id),
-            )
         log.info("gate_fired", gate_id=str(gate.id), goal_id=str(goal.id))
 
     async def _sync_task_state(

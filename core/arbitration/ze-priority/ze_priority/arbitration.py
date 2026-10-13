@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 from ze_logging import get_logger
-from ze_proactive.attention_budget import release_shared, try_claim_shared
 from ze_worldstate.bootstrap import LoopPushSettings
 
 from ze_priority.types import PriorityCandidateRef
@@ -16,7 +15,9 @@ class AttentionArbitrationJob:
     """Replaces `ze_worldstate.jobs.push_sweep.PushSweepJob` and
     `ze-correlation`'s autonomous scheduled push trigger with one job that sees
     every mechanism's push-eligible candidates at once and pushes only the
-    highest-ranked one (FR-007, FR-008)."""
+    highest-ranked one (FR-007, FR-008). The governor (`ProactiveNotifier`) owns
+    the shared budget claim; this job only orders candidates and stops at the
+    first one that is sent or held."""
 
     job_id = "attention_arbitration_sweep"
 
@@ -25,18 +26,19 @@ class AttentionArbitrationJob:
         priority_view: PriorityView,
         loop_surfacer: Any,
         correlation_push_source: Any,
-        push_log: Any,
-        max_pushes_per_day: int,
+        notifier: Any,
         loop_push: LoopPushSettings | None = None,
     ) -> None:
         self._priority_view = priority_view
         self._loop_surfacer = loop_surfacer
         self._correlation_push_source = correlation_push_source
-        self._push_log = push_log
-        self._max_pushes_per_day = max_pushes_per_day
+        self._notifier = notifier
         self._loop_push = loop_push if loop_push is not None else LoopPushSettings()
 
     async def run(self) -> None:
+        if await self._notifier.remaining_budget() == 0:
+            return
+
         if self._loop_push.enabled:
             loop_candidates = await self._loop_surfacer.eligible_candidates(
                 thresholds=self._loop_push.thresholds,
@@ -71,38 +73,30 @@ class AttentionArbitrationJob:
             if entity is None:
                 continue
 
-            claimed = await try_claim_shared(
-                self._push_log,
-                item.source_kind,
-                item.source_id,
-                self._max_pushes_per_day,
-            )
-            if not claimed:
+            outcome = await self._send(item.source_kind, entity)
+            if outcome in ("delivered", "held"):
+                log.info(
+                    "attention_arbitration_pushed",
+                    source_kind=item.source_kind,
+                    source_id=str(item.source_id),
+                    outcome=outcome,
+                )
+                return
+            if outcome == "suppressed_budget":
                 log.info(
                     "attention_arbitration_budget_arbitrated",
                     source_kind=item.source_kind,
                     source_id=str(item.source_id),
                 )
-                continue
-
-            sent = await self._send(item.source_kind, entity)
-            if not sent:
-                await release_shared(self._push_log, item.source_kind, item.source_id)
-                log.warning(
-                    "attention_arbitration_send_failed",
-                    source_kind=item.source_kind,
-                    source_id=str(item.source_id),
-                )
-                continue
-
+                return
             log.info(
-                "attention_arbitration_pushed",
+                "attention_arbitration_candidate_skipped",
                 source_kind=item.source_kind,
                 source_id=str(item.source_id),
+                outcome=outcome,
             )
-            return
 
-    async def _send(self, source_kind: str, entity: Any) -> bool:
+    async def _send(self, source_kind: str, entity: Any) -> str | None:
         if source_kind == "loop":
             return await self._loop_surfacer.send(entity)
         return await self._correlation_push_source.send(entity)

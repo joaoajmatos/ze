@@ -140,3 +140,88 @@ async def test_run_records_timeout_error():
     assert "timed out" in finish_kwargs["error"]
     dream_store.write_journal_entry.assert_not_awaited()
     mock_expire.assert_awaited_once_with(job._pool)
+
+
+async def test_run_notifies_review_when_enabled_and_artifacts_pending():
+    job, dream_store, _ = _make_job(with_client=False)
+    notifier = AsyncMock()
+    job._notifier = notifier
+    job._dream_config = lambda: {"review_notifications_enabled": True}
+
+    with (
+        patch.object(
+            job._sleep_pass,
+            "run",
+            new=AsyncMock(
+                return_value={
+                    "episodes_scored": 3,
+                    "episodes_replayed": 1,
+                    "duration_ms": 10,
+                }
+            ),
+        ),
+        patch.object(
+            job._promoter,
+            "run_morning_integration",
+            new=AsyncMock(
+                return_value={
+                    "promoted": 0,
+                    "needs_review": 2,
+                    "rejected": 0,
+                    "duration_ms": 5,
+                }
+            ),
+        ),
+        patch(
+            "ze_memory.dream.job.expire_retrieval_cache",
+            new=AsyncMock(return_value=0),
+        ),
+    ):
+        await job.run()
+
+    run_id = dream_store.create_run.return_value
+    notifier.notify.assert_awaited_once()
+    call = notifier.notify.call_args
+    assert call.args[0].event_type == "dream_review"
+    assert "2" in call.args[2]
+    assert call.kwargs["budget_key"] == f"dream:{run_id}"
+
+
+async def test_run_does_not_notify_review_when_disabled():
+    job, dream_store, _ = _make_job(with_client=False)
+    notifier = AsyncMock()
+    job._notifier = notifier
+    job._dream_config = lambda: {"review_notifications_enabled": False}
+
+    with (
+        patch.object(
+            job._sleep_pass,
+            "run",
+            new=AsyncMock(
+                return_value={
+                    "episodes_scored": 3,
+                    "episodes_replayed": 1,
+                    "duration_ms": 10,
+                }
+            ),
+        ),
+        patch.object(
+            job._promoter,
+            "run_morning_integration",
+            new=AsyncMock(
+                return_value={
+                    "promoted": 0,
+                    "needs_review": 2,
+                    "rejected": 0,
+                    "duration_ms": 5,
+                }
+            ),
+        ),
+        patch(
+            "ze_memory.dream.job.expire_retrieval_cache",
+            new=AsyncMock(return_value=0),
+        ),
+    ):
+        await job.run()
+
+    notifier.notify.assert_not_awaited()

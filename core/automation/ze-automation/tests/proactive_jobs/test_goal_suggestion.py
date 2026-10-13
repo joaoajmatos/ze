@@ -7,6 +7,7 @@ from uuid import uuid4
 
 from ze_automation.jobs.goal_suggestion import GoalSuggestionJob
 from ze_automation.goals.types import GoalSuggestion, SuggestionStatus
+from ze_automation.push_kinds import GOAL_SUGGESTION
 
 
 def _suggestion() -> GoalSuggestion:
@@ -36,7 +37,7 @@ def _make_job(
     first_suggestion=True,
 ):
     notifier = AsyncMock()
-    notifier.push_notification = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
 
     suggestion_store = AsyncMock()
     suggestion_store.expire_stale_pending = AsyncMock(return_value=expired)
@@ -64,9 +65,7 @@ def _make_job(
     planner.generate_suggestion = AsyncMock(return_value=suggestion)
 
     if push_raises:
-        notifier.push_notification = AsyncMock(
-            side_effect=RuntimeError("Telegram down")
-        )
+        notifier.notify = AsyncMock(side_effect=RuntimeError("Telegram down"))
 
     job = GoalSuggestionJob(
         notifier=notifier,
@@ -94,7 +93,7 @@ async def test_run_skips_when_suggested_recently():
     job, notifier, suggestion_store, planner = _make_job(suggested_recently=True)
     await job.run()
     planner.generate_suggestion.assert_not_called()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── step 2: signal read failure ───────────────────────────────────────────────
@@ -104,7 +103,7 @@ async def test_run_exits_cleanly_when_signal_read_raises():
     job, notifier, _, planner = _make_job(signal_raises=True)
     await job.run()
     planner.generate_suggestion.assert_not_called()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── step 3: no suggestion from planner ───────────────────────────────────────
@@ -114,7 +113,7 @@ async def test_run_skips_when_generate_suggestion_returns_none():
     job, notifier, suggestion_store, _ = _make_job(suggestion=None)
     await job.run()
     suggestion_store.save.assert_not_called()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── step 4: week conflict ─────────────────────────────────────────────────────
@@ -127,7 +126,7 @@ async def test_run_exits_when_save_returns_false_week_conflict():
     )
     await job.run()
     suggestion_store.save.assert_called_once()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── step 5: push failure ──────────────────────────────────────────────────────
@@ -155,10 +154,11 @@ async def test_run_saves_suggestion_and_pushes_notification():
     week_key = suggestion_store.save.call_args.args[1]
     assert week_key.startswith("20")  # ISO week format
 
-    notifier.push_notification.assert_called_once()
-    notif = notifier.push_notification.call_args.args[0]
-    assert "Learn Spanish" in notif.content
-    assert len(notif.actions) == 3
+    notifier.notify.assert_called_once()
+    call = notifier.notify.call_args
+    assert call.args[0] is GOAL_SUGGESTION
+    assert "Learn Spanish" in call.args[2]
+    assert len(call.kwargs["actions"]) == 3
 
 
 async def test_first_suggestion_includes_intro_sentence():
@@ -166,8 +166,8 @@ async def test_first_suggestion_includes_intro_sentence():
     job, notifier, _, _ = _make_job(suggestion=s, first_suggestion=True)
     await job.run()
 
-    notif = notifier.push_notification.call_args.args[0]
-    assert "Here's a goal idea" in notif.content
+    call = notifier.notify.call_args
+    assert "Here's a goal idea" in call.args[2]
 
 
 async def test_subsequent_suggestion_omits_intro_sentence():
@@ -176,8 +176,8 @@ async def test_subsequent_suggestion_omits_intro_sentence():
     job, notifier, _, _ = _make_job(suggestion=s, first_suggestion=False)
     await job.run()
 
-    notif = notifier.push_notification.call_args.args[0]
-    assert "Here's a goal idea" not in notif.content
+    call = notifier.notify.call_args
+    assert "Here's a goal idea" not in call.args[2]
 
 
 async def test_run_uses_correct_callback_payloads():
@@ -185,9 +185,9 @@ async def test_run_uses_correct_callback_payloads():
     job, notifier, _, _ = _make_job(suggestion=s)
     await job.run()
 
-    notif = notifier.push_notification.call_args.args[0]
+    call = notifier.notify.call_args
     short_id = s.id.hex[:8]
-    payloads = [a.payload for a in notif.actions]
+    payloads = [a.payload for a in call.kwargs["actions"]]
     assert f"goal_suggest:accept:{short_id}" in payloads
     assert f"goal_suggest:dismiss:{short_id}" in payloads
     assert f"goal_suggest:more:{short_id}" in payloads
@@ -198,6 +198,6 @@ async def test_run_keyboard_layout_has_two_rows():
     job, notifier, _, _ = _make_job(suggestion=s)
     await job.run()
 
-    notif = notifier.push_notification.call_args.args[0]
-    rows = {a.row for a in notif.actions}
+    call = notifier.notify.call_args
+    rows = {a.row for a in call.kwargs["actions"]}
     assert rows == {0, 1}  # accept+dismiss in row 0, tell-me-more in row 1

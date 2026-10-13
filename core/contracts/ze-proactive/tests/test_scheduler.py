@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from ze_proactive.scheduler import ProactiveScheduler
+from ze_proactive.types import JobRun
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _run(job_id, started_ago: timedelta) -> JobRun:
+    return JobRun(job_id, _now() - started_ago, _now() - started_ago, "ok")
+
+
+def _store(runs: dict[str, JobRun] | None = None):
+    store = MagicMock()
+    store.get_all = AsyncMock(return_value=runs or {})
+    store.record_start = AsyncMock()
+    store.record_finish = AsyncMock()
+    return store
+
+
+def _job_ids(sched: ProactiveScheduler) -> list[str]:
+    return [j.id for j in sched._scheduler.get_jobs()]
+
+
+async def _started(sched: ProactiveScheduler):
+    await sched.start()
+    try:
+        return {j.id: j for j in sched._scheduler.get_jobs()}
+    finally:
+        await sched.stop()
+
+
+async def test_missed_job_gets_one_catchup():
+    sched = ProactiveScheduler(
+        run_store=_store({"a": _run("a", timedelta(minutes=10))})
+    )
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a")
+    jobs = await _started(sched)
+    assert "a:catchup" in jobs and jobs["a:catchup"].misfire_grace_time is None
+
+
+async def test_no_run_row_means_no_catchup():
+    sched = ProactiveScheduler(run_store=_store({}))
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a")
+    assert "a:catchup" not in await _started(sched)
+
+
+async def test_no_run_store_means_no_catchup():
+    sched = ProactiveScheduler()
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a")
+    assert "a:catchup" not in await _started(sched)
+
+
+async def test_not_missed_means_no_catchup():
+    sched = ProactiveScheduler(run_store=_store({"a": _run("a", timedelta(seconds=0))}))
+    sched.add_cron_job(AsyncMock(), "0 8 * * *", "a")
+    assert "a:catchup" not in await _started(sched)
+
+
+async def test_catch_up_false_is_skipped():
+    sched = ProactiveScheduler(
+        run_store=_store({"a": _run("a", timedelta(minutes=10))})
+    )
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a", catch_up=False)
+    assert "a:catchup" not in await _started(sched)
+
+
+async def test_max_age_limit_is_honoured():
+    # last fire was ~10 min ago; limit of 1 minute rejects it, 1 hour accepts it.
+    runs = {"a": _run("a", timedelta(hours=3))}
+    sched = ProactiveScheduler(run_store=_store(runs))
+    sched.add_cron_job(AsyncMock(), "0 * * * *", "a", catch_up_max_age_hours=0.0001)
+    jobs = await _started(sched)
+    assert "a:catchup" not in jobs
+
+    sched = ProactiveScheduler(run_store=_store(runs))
+    sched.add_cron_job(AsyncMock(), "0 * * * *", "a", catch_up_max_age_hours=2)
+    assert "a:catchup" in await _started(sched)
+
+
+async def test_catchups_are_staggered_five_seconds():
+    runs = {i: _run(i, timedelta(minutes=10)) for i in ("a", "b")}
+    sched = ProactiveScheduler(run_store=_store(runs))
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a")
+    sched.add_cron_job(AsyncMock(), "* * * * *", "b")
+    jobs = await _started(sched)
+    gap = jobs["b:catchup"].next_run_time - jobs["a:catchup"].next_run_time
+    assert gap == timedelta(seconds=5)
+
+
+async def test_wrapper_records_ok():
+    store = _store()
+    fn = AsyncMock()
+    sched = ProactiveScheduler(run_store=store)
+    sched.add_cron_job(fn, "0 8 * * *", "a")
+    await sched._scheduler.get_job("a").func()
+    fn.assert_awaited_once()
+    store.record_start.assert_awaited_once_with("a")
+    store.record_finish.assert_awaited_once_with("a", "ok")
+
+
+async def test_wrapper_records_error_and_reraises():
+    store = _store()
+    fn = AsyncMock(side_effect=RuntimeError("boom"))
+    sched = ProactiveScheduler(run_store=store)
+    sched.add_cron_job(fn, "0 8 * * *", "a")
+    with pytest.raises(RuntimeError):
+        await sched._scheduler.get_job("a").func()
+    store.record_finish.assert_awaited_once_with("a", "error")
+
+
+async def test_cron_jobs_have_no_misfire_limit():
+    sched = ProactiveScheduler()
+    sched.add_cron_job(AsyncMock(), "0 8 * * *", "a")
+    job = sched._scheduler.get_job("a")
+    assert job.misfire_grace_time is None and job.coalesce and job.max_instances == 1

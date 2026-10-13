@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from ze_automation.agents.goals.tools import _check_convergence
 from ze_automation.goals.types import Goal, GoalConvergence, GoalStatus
-from ze_agents.interface.types import Notification
 
 
 def _goal(title="Find leads", objective="Build a list of contacts") -> Goal:
@@ -27,7 +26,7 @@ def _make_planner(convergence: GoalConvergence | None = None) -> AsyncMock:
 
 def _make_notifier() -> AsyncMock:
     notifier = AsyncMock()
-    notifier.push_notification = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
     return notifier
 
 
@@ -48,15 +47,17 @@ async def test_check_convergence_pushes_notification_when_overlap_found():
 
     await _check_convergence(AsyncMock(), planner, notifier, new_goal, [active])
 
-    notifier.push_notification.assert_called_once()
-    notification: Notification = notifier.push_notification.call_args[0][0]
-    assert "Goal overlap detected" in notification.content
-    assert new_goal.title in notification.content
-    assert active.title in notification.content
-    assert "SaaS competitive landscape" in notification.content
-    assert "share outputs" in notification.content
-    assert notification.urgency == "normal"
-    assert notification.format == "html"
+    notifier.notify.assert_called_once()
+    args = notifier.notify.call_args
+    kind, _title, content = args.args
+    assert kind.event_type == "goal_overlap"
+    assert "Goal overlap detected" in content
+    assert new_goal.title in content
+    assert active.title in content
+    assert "SaaS competitive landscape" in content
+    assert "share outputs" in content
+    assert args.kwargs["format"] == "html"
+    assert args.kwargs["budget_key"] == f"goal_overlap:{new_goal.id}"
 
 
 async def test_check_convergence_does_not_push_when_no_overlap():
@@ -67,7 +68,7 @@ async def test_check_convergence_does_not_push_when_no_overlap():
         AsyncMock(), planner, notifier, _goal(), [_goal(title="Unrelated goal")]
     )
 
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 async def test_check_convergence_does_not_push_when_active_list_empty():
@@ -77,7 +78,7 @@ async def test_check_convergence_does_not_push_when_active_list_empty():
     await _check_convergence(AsyncMock(), planner, notifier, _goal(), [])
 
     planner.detect_convergence.assert_not_called()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 async def test_check_convergence_filters_out_new_goal_from_candidates():
@@ -106,4 +107,4 @@ async def test_check_convergence_swallows_detect_exception():
         AsyncMock(), planner, notifier, _goal(), [_goal(title="Other")]
     )
 
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()

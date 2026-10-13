@@ -338,33 +338,46 @@ Background jobs run on a cron schedule and push notifications to the user.
 
 ```python
 # ze_myplugin/jobs/myjob.py
-from ze_sdk.proactive import proactive_job, ProactiveNotifier
+from ze_sdk.proactive import proactive_job, ProactiveNotifier, PushKind
 from ze_agents.settings import Settings
+
+# Declare the kind once, at module level. The first argument is the event type.
+MY_PLUGIN_INSIGHT = PushKind(
+    "my_plugin_insight", "discretionary", "normal", "my_plugin"
+)
 
 @proactive_job
 class MyJob:
     job_id   = "my_plugin.my_job"
     schedule = "0 9 * * 1"   # every Monday 09:00
 
-    def __init__(self, store: MyStore, settings: Settings) -> None:
+    def __init__(self, store: MyStore, settings: Settings, notifier: ProactiveNotifier) -> None:
         self._store = store
         self._settings = settings
+        self._notifier = notifier
 
-    async def run(self, notifier: ProactiveNotifier) -> None:
+    async def run(self) -> None:
         data = await self._store.fetch_summary()
         if not data:
             return
-        await notifier.notify(
-            "weekly_summary", "Weekly summary", data, source="my_plugin"
+        await self._notifier.notify(
+            MY_PLUGIN_INSIGHT,
+            title="Weekly summary",
+            body=data,
+            budget_key=f"insight:{data.id}",
         )
 ```
+
+Pick the class by who asked for the push: `requested` for a reminder the user set, `accountability` for a report the user switched on, and `discretionary` for a nudge Ze chose to send. Only a `discretionary` push needs a `budget_key`.
 
 ### 2. Register in the plugin
 
 ```python
 def register_proactive_jobs(self, scheduler, settings, *, consolidation_enabled=True) -> None:
     from ze_myplugin.jobs.myjob import MyJob
-    scheduler.register(MyJob(self._store, settings), cron="0 9 * * 1")
+    scheduler.register(
+        MyJob(self._store, settings, self._notifier), cron="0 9 * * 1"
+    )
 ```
 
 ---

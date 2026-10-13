@@ -159,8 +159,9 @@ noticed:
 Insight categories: `pattern` | `trend` | `goal` | `tension`.
 
 The same category won't fire again within `category_cooldown_days` (default: 7d) to
-avoid repetition. Ze pushes insights via `ProactiveNotifier` (WebSocket or ntfy) before
-the 8 AM morning briefing, so they feel like a natural start to the week.
+avoid repetition. Ze sends each insight as a `discretionary` push (kind `insight`) via
+`ProactiveNotifier` (WebSocket or ntfy) before the 8 AM morning briefing, so they feel
+like a natural start to the week.
 
 Insight generation is skipped if fewer than `min_evidence` (default: 3) facts +
 episodes exist in the lookback window.
@@ -172,7 +173,7 @@ episodes exist in the lookback window.
 **Module:** `ze_personal/jobs/briefing.py`  
 **Config:** `proactive.briefing.*` and `news.personalization.*` in `config/config.yaml`
 
-A daily digest pushed via `ProactiveNotifier`. No LLM call — it's a templated summary of stats and headlines:
+A daily digest, sent as the `accountability` push kind `morning_brief` via `ProactiveNotifier`. No LLM call — it's a templated summary of stats and headlines:
 
 - **Unreviewed facts** — facts Ze proposed that you haven't confirmed or rejected yet.
   If the count is at or above `unreviewed_nudge_threshold` (default: 5), the briefing
@@ -213,9 +214,10 @@ Each morning `CalendarReminderService` syncs Google Calendar events up to
 appropriate reminder interval (e.g. 15 minutes before a video call vs. 1 hour before
 a flight). `WorkflowScheduler` creates one-shot `DateTrigger` jobs accordingly.
 
-When a reminder fires, Ze pushes the event title and time via `ProactiveNotifier`.
-A startup replay pass re-registers any reminders that were scheduled before the last
-restart and haven't fired yet.
+When a reminder fires, Ze sends the event title and time as a `requested` push (kind
+`calendar_reminder`) via `ProactiveNotifier`. A reminder that came due while the server
+was down fires on startup, marked late ("(late, was due HH:MM)"); future reminders are
+re-registered as usual.
 
 Calendar sync runs at 7:45 AM — before the 8 AM briefing — so Ze captures upcoming
 events with same-day reminders.
@@ -226,9 +228,10 @@ events with same-day reminders.
 
 **Module:** `ze_automation/workflow/scheduler.py` + `ze_proactive/notifier.py`
 
-When a scheduled workflow step fails, Ze pushes an alert immediately — no waiting
-for the morning briefing. A `workflow_failure_cooldown_hours` (default: 1h) prevents
-alert spam for repeatedly-failing workflows.
+When a scheduled workflow step fails, Ze sends an `accountability` push (kind
+`workflow_failure`) immediately — no waiting for the morning briefing. A
+`workflow_failure_cooldown_hours` (default: 1h) prevents alert spam for
+repeatedly-failing workflows.
 
 ---
 
@@ -240,10 +243,11 @@ alert spam for repeatedly-failing workflows.
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
 The advance loop either:
 
-- Fires a **verification gate** (push notification with Proceed / Stop / Redirect options),
-  setting status to `AWAITING_GATE` until you respond, or
+- Fires a **verification gate** (kind `goal_gate`, `accountability`, with Proceed / Stop /
+  Redirect options), setting status to `AWAITING_GATE` until you respond, or
 - Runs the next pending **milestone** via the normal agent registry, stores output and
-  a learning, and pushes a short progress line (e.g. *"✅ Draft target list done (2/8)"*).
+  a learning, and sends a short progress line (kind `goal_milestone_done`,
+  `accountability`, e.g. *"✅ Draft target list done (2/8)"*).
 
 The sweep skips goals in `AWAITING_GATE`, `PAUSED`, `PLANNING`, `COMPLETED`, or
 `ABANDONED`. It is lightweight — it returns early when there is no actionable next step.
@@ -260,7 +264,7 @@ See [docs/goals.md](goals.md) for the full goal engine documentation.
 **Module:** `ze_automation/jobs/goal_narrative.py`  
 **Cron:** `0 18 * * 0` (configurable via `proactive.goal_narrative.cron`)
 
-For each active goal, Ze synthesizes a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Pushed via `ProactiveNotifier`. Skips goals that had no activity in the past 7 days.
+For each active goal, Ze synthesizes a one-paragraph weekly update: what was completed this week, any pending gate, and what comes next. Ze sends it as an `accountability` push (kind `goal_narrative`). Skips goals that had no activity in the past 7 days.
 
 ---
 
@@ -269,7 +273,7 @@ For each active goal, Ze synthesizes a one-paragraph weekly update: what was com
 **Module:** `ze_automation/jobs/goal_suggestion.py`  
 **Cron:** `0 19 * * 0` (configurable via `proactive.goal_suggestion.cron`)
 
-Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. Sent via `ProactiveNotifier` with **Accept** / **Dismiss** options. Accepted suggestions open a goal creation flow. Suppressed if there are already 3+ active goals or if the last suggestion was dismissed within 7 days.
+Analyzes recent memory facts, episodes, and past goal retrospectives to propose one new multi-week goal. Ze sends it as a `discretionary` push (kind `goal_suggestion`) with **Accept** / **Dismiss** options. Accepted suggestions open a goal creation flow. Suppressed if there are already 3+ active goals or if the last suggestion was dismissed within 7 days.
 
 ---
 
@@ -285,10 +289,7 @@ Checks all active goals for inactivity. The window is fixed in code at 7 days:
   counts the first open gate that has fired and ignores gates it has not reached, so
   each goal appears once.
 
-For each stuck goal, Ze pushes a notification describing the blockage. An idle active
-goal offers **Redirect**, **Pause**, and **Abandon**; a goal at a gate offers
-**Approve**, **Redirect**, and **Stop**. `last_stuck_alert_at` on the goal prevents
-another alert about the same goal for 14 days.
+Ze sends one `discretionary` push per run (kind `stuck_goal`) that lists every blocked goal (one row per goal, from its first fired open gate), with **Resume** / **Abandon** / **Redirect** options. `last_stuck_alert_at` on each goal prevents duplicate alerts within the same window, and Ze marks a goal alerted only when the push was delivered or held.
 
 ---
 
@@ -326,7 +327,7 @@ Data sourced from:
 | `push_log` | Workflow failures in the period |
 | `accountability_anomalies` | Cost outliers flagged by `CostAnomalyJob` |
 
-The job is deduplicated with a 6-day window under key `weekly_accountability` — safe to retry without double-sending. No LLM call; the narrative is purely templated.
+Ze sends the narrative as an `accountability` push (kind `accountability_narrative`). The job is deduplicated with a 6-day window under key `weekly_accountability` — safe to retry without double-sending. No LLM call; the narrative is purely templated.
 
 The same data is available on-demand via the `/status` WebSocket command (see [native-interface.md](native-interface.md)).
 
@@ -343,6 +344,8 @@ Silently scans recent LLM runs and alerts if any single run cost significantly m
 - **Minimum samples**: the job requires at least `anomaly_min_samples` (default: 5) historical runs before an agent can have a baseline. It silently skips new agents.
 - **Threshold**: `anomaly_threshold` × baseline (default: 4.0×). A run at 4.01× fires an alert; one at 3.99× does not.
 - **Deduplication**: the job skips session IDs already logged in `accountability_anomalies` within the past 24 hours, so a single run never fires twice.
+
+Ze sends the alert as an `accountability` push (kind `cost_anomaly`, urgency `high`), so it is never budgeted, but the governor holds it during quiet hours.
 
 Alert format (ntfy, urgency `high`):
 
@@ -445,13 +448,46 @@ evidence. Set `correlation.hypothesis_decay.schedule` to change the default
 ## Attention arbitration (every 4 hours)
 
 **Module:** `ze_priority/arbitration.py` (`AttentionArbitrationJob`)
-**Config:** `proactive.attention_arbitration.*`, `proactive.budget.max_pushes_per_day`, `worldstate.push.*`, `correlation.push.*`
+**Config:** `proactive.attention_arbitration.*`, `worldstate.push.*`, `correlation.push.*`
 
 One job replaces the old per-source push sweeps. It collects the push-eligible open
-loops and hypotheses, ranks them with `PriorityView`, and pushes only the top item.
-All sources share the daily push budget (default 3). Loop pushes honor
-`worldstate.push.enabled`. Hypothesis pushes require `correlation.push.enabled: true`
-and `correlation.push.dry_run: false`. See [cognitive-architecture.md](cognitive-architecture.md).
+loops and hypotheses, ranks them with `PriorityView`, and sends them through the
+interruption governor in rank order. It sends as many as the shared budget allows and
+stops at the first push the governor suppresses. Loop pushes honor `worldstate.push.enabled`; hypothesis pushes require `correlation.push.enabled: true` and `correlation.push.dry_run: false`. Loops (kind `loop_drift`) and
+hypotheses (kind `hypothesis`) are both `discretionary`. The job no longer claims or
+releases the budget itself; the governor does. See [cognitive-architecture.md](cognitive-architecture.md).
+
+---
+
+## Interruption governor
+
+Every proactive push declares a `PushKind`: an event type plus a class, an urgency, and a source. One rule set in `ze_proactive/governor.py` decides what happens to each push.
+
+| Class | Budgeted? | Quiet hours? |
+|---|---|---|
+| `requested` | No | Always delivered |
+| `accountability` | No | Held |
+| `discretionary` | Yes | Held |
+
+Kinds by class:
+
+| Class | Kinds |
+|---|---|
+| `requested` | `user_reminder`, `calendar_reminder` |
+| `accountability` | `confirmation_request`, `confirmation_timeout`, `workspace_run_completed`, `workflow_failure`, `goal_plan_proposed`, `goal_attention_needed`, `goal_plan_adapted`, `goal_milestone_done`, `goal_completed`, `goal_gate`, `cost_anomaly`, `accountability_narrative`, `goal_narrative`, `morning_brief`, `calendar_reminders_scheduled`, `quiet_hours_summary` |
+| `discretionary` | `loop_drift`, `hypothesis`, `stuck_goal`, `goal_suggestion`, `goal_overlap`, `goal_reuse`, `dream_review`, `insight`, `contact_review`, `finance_stale_nudge`, `finance_recurring_new`, `finance_price_change`, `inbound_message` |
+
+`proactive.budget.max_pushes_per_day` (default 5) is one shared budget for every discretionary push. Accountability and requested pushes never claim it. A discretionary push must carry a budget key; a repeat of the same key is a `duplicate` and goes no further.
+
+### Quiet hours and release
+
+Quiet hours hold accountability and discretionary pushes. Ze records a held push in the bell with delivery `held`, sends no chat message and no ntfy, and releases it when quiet hours end. A requested push always buzzes, even during quiet hours. The budget check runs before the quiet hold. A discretionary push with no budget left is suppressed even during quiet hours, so the daily cap holds.
+
+The user sets quiet hours in Settings › Notifications. The window is stored in the `interruption_settings` table and evaluated in its own IANA zone. Quiet hours ship off. When the window ends, `QuietHoursReleaseJob` (`job_id = "quiet_hours_release"`, cron `proactive.notifications.release_cron`, default `*/5 * * * *`) delivers each held push in urgency order without a buzz, then sends one `quiet_hours_summary` push that buzzes once. A run with no held pushes does nothing.
+
+### Catch-up for missed runs
+
+Ze runs on a laptop, so a scheduled time can pass while the host is asleep. `ProactiveScheduler` records each run in `proactive_job_runs`. On startup, it runs a catch-up job once when the scheduled time passed since the last recorded run, within the job's `catch_up_max_age_hours`. The morning briefing sets this from `proactive.briefing.catch_up_max_age_hours` (default 6). A job with no recorded run does not run at startup. APScheduler `misfire_grace_time=None` with `coalesce=True` covers a process that was suspended over a fire time. The `quiet_hours_release` job does not catch up.
 
 ---
 
@@ -500,7 +536,8 @@ tier instead of literal clock position.
 | 7:00 PM Sun | Weekly goal suggestions | `ze_automation/jobs/goal_suggestion.py` |
 | 9:00 AM Mon | **Weekly accountability narrative** | `ze_automation/jobs/accountability.py` |
 | 9:00 AM Tue | Stuck goal detection | `ze_automation/jobs/stuck_goals.py` |
-| Every 4 hours | Attention arbitration — one shared push across loops and hypotheses | `ze_priority/arbitration.py` |
+| Every 4 hours | Attention arbitration — ranked discretionary pushes through the governor | `ze_priority/arbitration.py` |
+| Every 5 min | Quiet-hours release sweep | `ze_proactive/jobs/release_held.py` |
 | Every 6 hours | **Cost anomaly detection** | `ze_automation/jobs/cost_anomaly.py` |
 | Every 15 min | Goal advance sweep | `ze_automation/goals/executor.py` |
 | Hourly | Checkpoint pruning | `ze_core/orchestration/checkpoint_pruner.py` |
@@ -513,9 +550,10 @@ tier instead of literal clock position.
 
 </details>
 
-All scheduled jobs use APScheduler (via `WorkflowScheduler` or `ProactiveScheduler`)
-with Postgres as the job store, so jobs survive process restarts. Cron expressions
-are configurable in `config/config.yaml`.
+All scheduled jobs use APScheduler (via `WorkflowScheduler` or `ProactiveScheduler`).
+Cron expressions are configurable in `config/config.yaml`. Jobs registered with
+`ProactiveScheduler` catch up once after downtime (see
+[Interruption governor](#interruption-governor)).
 
 ---
 

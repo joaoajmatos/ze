@@ -73,8 +73,9 @@ Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, mu
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
 closed|dropped`), extracted from all four inflows through a System One gate (Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate could not parse Haiku's fenced JSON, so before 168 no loops were extracted in production; its parse now tolerates the fence), with drift detection and hedged,
 push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the Open loops page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
-goals, and correlation hypotheses together against one shared attention budget, plus
-user-directed priority override.
+goals, and correlation hypotheses together, plus user-directed priority override.
+One shared attention budget (Phase 177) now covers every discretionary push, and a single interruption
+governor holds accountability and discretionary pushes during quiet hours.
 
 **State: the drift and ranking machinery runs; the confirmation path and duplicate intake remain open (see below).** Phase 170 repaired the
 executive layer: a loop drifts when its deadline passes, gate-created loops carry evidence, stuck goals
@@ -181,7 +182,8 @@ spine, not a pipeline with a start and end:
 - **Executive function now has a cross-concern view.** `core/cognition/ze-worldstate` gives the "active
   concerns" face a real representation (open loops), and `core/arbitration/ze-priority`'s `PriorityView`
   (Phase 123) ranks loops, goals, and correlation hypotheses together against one shared
-  attention budget — closing the "several attention mechanisms" gap this section used to flag.
+  attention budget that now (Phase 177) covers every discretionary push — closing the "several
+  attention mechanisms" gap this section used to flag.
   What remains open is unifying the *stores* themselves (loops and goals stay deliberately
   separate, per FR-014 above), not the ranking.
 - **Governance arbitrates every write** to the hub, in the doctrine's precedence order
@@ -249,7 +251,9 @@ have since shipped:
    (`specs/arch/attention-arbitration.md`) shipped `PriorityView` (ranks loops, goals, and
    correlation hypotheses together via the doctrine's `Priority` claim-kind) and consolidated
    correlation's and worldstate's independent daily push budgets into one shared, atomically
-   claimed attention budget. Phase 127 added user-directed override on top. **Loop/goal
+   claimed attention budget. Phase 127 added user-directed override on top. Phase 177
+   (`specs/phases/177-interruption-governor/spec.md`) extended that shared budget to every
+   discretionary push and added push classes and quiet hours. **Loop/goal
    reconciliation itself did not ship** — `PriorityView` ranks both stores without merging them;
    they remain deliberately un-unified per `specs/phases/110-open-loop-drift-surfacing/spec.md`
    FR-014. That reconciliation is still an open follow-up, not yet specced.

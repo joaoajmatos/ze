@@ -102,6 +102,16 @@ export function NotificationBell() {
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm text-foreground truncate">{item.title}</p>
+                          {item.delivery === "held" && (
+                            <p className="text-[11px] text-smoke/70 mt-0.5">
+                              Held for quiet hours
+                            </p>
+                          )}
+                          {item.delivery === "suppressed" && (
+                            <p className="text-[11px] text-smoke/70 mt-0.5">
+                              Not pushed: daily limit
+                            </p>
+                          )}
                           <p className="text-xs text-smoke line-clamp-2 mt-0.5">{item.body}</p>
                           <p className="text-[11px] text-smoke/60 mt-1">
                             {relativeTime(item.created_at)} · {item.source}

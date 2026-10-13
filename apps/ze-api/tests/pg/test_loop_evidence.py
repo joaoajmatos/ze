@@ -154,8 +154,8 @@ async def test_push_bar_grounds_the_title_against_real_evidence(pg_pool):
     surfacer = _surfacer(pg_pool, store)
 
     assert await surfacer.passes_push_bar(
-        loop, rationale, nli_client=_Nli(loop.title), check_budget=False
+        loop, rationale, nli_client=_Nli(loop.title)
     ) is True
     assert await surfacer.passes_push_bar(
-        loop, rationale, nli_client=_Nli("something else entirely"), check_budget=False
+        loop, rationale, nli_client=_Nli("something else entirely")
     ) is False

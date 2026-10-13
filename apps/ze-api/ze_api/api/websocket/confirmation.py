@@ -7,10 +7,10 @@ from uuid import uuid4
 
 from fastapi import WebSocket
 
-from ze_agents.interface.types import Notification
 from ze_agents.tasks import fire_and_forget
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.context import bound_turn_context
+from ze_api.push_kinds import CONFIRMATION_REQUEST, CONFIRMATION_TIMEOUT
 from ze_api.api.websocket.serializers import (
     ephemeral_assistant_message,
     extract_thread_id,
@@ -171,16 +171,15 @@ async def handle_confirm(
     return None
 
 
-async def push_confirmation_ntfy(notifier: Any, prompt: str) -> None:
+async def notify_confirmation_request(notifier: Any, prompt: str) -> None:
     try:
-        text = (
-            f"Ze needs your approval:\n{prompt}"
-            if prompt
-            else "Ze needs your approval."
+        await notifier.notify(
+            CONFIRMATION_REQUEST,
+            "Ze needs your approval",
+            prompt or "Ze needs your approval.",
         )
-        await notifier.push(text, urgency="high")
     except Exception as exc:
-        log.warning("ws_confirmation_ntfy_failed", error=str(exc))
+        log.warning("ws_confirmation_notify_failed", error=str(exc))
 
 
 async def confirmation_timeout(
@@ -218,14 +217,12 @@ async def confirmation_timeout(
     )
     if notifier is not None:
         try:
-            await notifier.push_notification(
-                Notification(
-                    content=timeout_msg,
-                    urgency="low",
-                    metadata={"thread_id": thread_id},
-                    target_type="thread",
-                    target_id=thread_id,
-                )
+            await notifier.notify(
+                CONFIRMATION_TIMEOUT,
+                "Approval request expired",
+                timeout_msg,
+                target_type="thread",
+                target_id=thread_id,
             )
         except Exception as exc:
             log.warning("ws_timeout_ntfy_failed", error=str(exc))
@@ -271,8 +268,8 @@ async def send_confirmation_request(
     notifier = getattr(container, "notifier", None)
     if notifier is not None:
         fire_and_forget(
-            push_confirmation_ntfy(notifier, outcome.draft or ""),
-            label="push_confirmation_ntfy",
+            notify_confirmation_request(notifier, outcome.draft or ""),
+            label="notify_confirmation_request",
         )
 
     if confirmation_store is not None and effective_thread_id:

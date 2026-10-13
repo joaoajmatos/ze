@@ -18,7 +18,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition. The sweep selects `active` loops whose `drift_deadline` has passed. New evidence on an active loop calls `record_corroboration`, which moves the deadline to at least 7 days from now (the default window is a code constant)
-- `LoopSurfacer` (`surfacing.py`) — a push-bar-gated path (`ze_correlation`'s shared push budget) for `drifting` loops that sends a hedged mention. The grounding gate checks the loop title against its evidence
+- `LoopSurfacer` (`surfacing.py`) — a push-bar-gated `notify` path (discretionary, shared budget) for `drifting` loops that sends a hedged mention. The grounding gate checks the loop title against its evidence
 - Review (`review.py`) — confirm / close / drop lifecycle transitions
 - Jobs (`jobs/`) — `DriftSweepJob` and `StaleSuspicionJob`, scheduled via `ze-proactive`. `ze-priority`'s `AttentionArbitrationJob` replaced the old `PushSweepJob`
 
@@ -39,7 +39,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
 | `decay.py` | Confidence decay cascade, called at the evidence-writing code path |
 | `drift.py` | Drift deadline computation and rationale composition |
-| `surfacing.py` | `LoopSurfacer` — push-bar-gated ntfy path with a hedged mention |
+| `surfacing.py` | `LoopSurfacer` — push-bar-gated `notify` path with a hedged mention |
 | `review.py` | Confirm / close / drop lifecycle transitions |
 | `inflow.py` | Wiring helpers for the four inflows (conversation, email, calendar, ingestion) |
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |

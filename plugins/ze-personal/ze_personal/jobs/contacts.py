@@ -2,7 +2,8 @@ from ze_personal.contacts.store import PersonStore
 from ze_logging import get_logger
 from ze_sdk.proactive import proactive_job
 from ze_sdk.proactive import ProactiveNotifier
-from ze_agents.interface.types import Action, Notification
+from ze_agents.interface.types import Action
+from ze_personal.push_kinds import CONTACT_REVIEW
 
 
 @proactive_job
@@ -40,15 +41,18 @@ class ContactReviewNotifier:
             lines.append("\nAdd to your contacts?")
 
             pid = str(person.id)
-            await self._notifier.push_notification(
-                Notification(
-                    content="\n".join(lines),
-                    format="html",
-                    actions=[
-                        Action(label="Add", payload=f"contact:confirm:{pid}"),
-                        Action(label="Skip", payload=f"contact:dismiss:{pid}"),
-                    ],
-                )
+            await self._notifier.notify(
+                CONTACT_REVIEW,
+                "Add to contacts?",
+                "\n".join(lines),
+                format="html",
+                actions=[
+                    Action(label="Add", payload=f"contact:confirm:{pid}"),
+                    Action(label="Skip", payload=f"contact:dismiss:{pid}"),
+                ],
+                target_type="person",
+                target_id=pid,
+                budget_key=f"contact:{pid}",
             )
 
         self._log.info("contact_review_pushed", count=len(pending))

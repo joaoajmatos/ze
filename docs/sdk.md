@@ -13,7 +13,7 @@ Plugin packages never import `ze-core` directly.
 from ze_sdk import ZePlugin, agent, tool, ToolAccess, BaseAgent, get_logger, Settings, DBPool, NLIClient
 from ze_sdk import DataDomain
 from ze_sdk.types import AgentContext, AgentResult, ToolCall, GateDecision, Mode, AbortToken, Action, Notification
-from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushLogStore, PushLogEntry
+from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, PushLogStore, PushLogEntry
 from ze_sdk.channels import Channel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus
 from ze_sdk.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace, validate_and_submit, submit_and_detect_collisions
@@ -422,7 +422,9 @@ durable seeds before applying them through deployment adapters. See
 | `ProactiveJob` | Protocol. Implement `run(settings, notifier) -> None` and set `job_id: str`, `schedule: str`. |
 | `proactive_job` | Class decorator that marks a class as a proactive job and registers it. |
 | `ProactiveScheduler` | APScheduler wrapper. Call `add_cron_job(job, cron=...)` inside `register_proactive_jobs`. |
-| `ProactiveNotifier` | Push delivery. Sends messages via WebSocket or ntfy. |
+| `ProactiveNotifier` | The one proactive send path. Call `notify(kind, title, body, ...)`; the interruption governor decides delivery. |
+| `PushKind` | A declared kind of push: event type, class (`requested`/`accountability`/`discretionary`), urgency (`low`/`normal`/`high`), source. |
+| `PushOutcome` | What the governor did with a push: `delivered`, `held`, `suppressed_budget`, `duplicate`, `deduped`, `failed`. |
 | `PushLogStore` | Delivery audit log. Persists which notifications have been sent. |
 | `PushLogEntry` | Dataclass for a single log entry. |
 

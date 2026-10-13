@@ -1,0 +1,23 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateQuietHours } from "@myguyze/ze-client";
+import type { QuietHoursUpdate } from "@myguyze/ze-client";
+import { queryKeys } from "@/shared/lib";
+
+export function useUpdateQuietHoursMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: QuietHoursUpdate) => {
+      const { data, error } = await updateQuietHours({ body });
+      if (error) throw error;
+      return data!;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.quietHours });
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.unreadNotificationCount,
+      });
+    },
+  });
+}

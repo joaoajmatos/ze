@@ -5,7 +5,10 @@
 > the greedy cross-mechanism push check are all live. Phase 127 (`specs/phases/127-priority-override/spec.md`)
 > layered user-directed override on top. Phase 132
 > (`specs/phases/132-priority-turn-surfacing/spec.md`) made conversation turns and resume recap
-> consume the same ranking. Loop/goal store reconciliation was explicitly kept out
+> consume the same ranking. Phase 177
+> (`specs/phases/177-interruption-governor/spec.md`) extended the shared budget to every
+> discretionary push, added push classes and quiet hours, and moved the budget claim out of
+> the arbitration job into the governor. Loop/goal store reconciliation was explicitly kept out
 > of scope (FR-010) and remains open — see "Open Questions" below.
 > **Scope:** `core/cognition/ze-worldstate`, `ze-automation` (goals), `core/cognition/ze-correlation`,
 > `core/contracts/ze-proactive` (shared push infrastructure).

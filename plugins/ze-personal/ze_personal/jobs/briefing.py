@@ -11,6 +11,7 @@ from ze_sdk.proactive import proactive_job
 from ze_sdk.proactive import ProactiveNotifier
 from ze_news.preferences import NewsPreferenceBuilder
 from ze_news.types import GoalTitleProvider, PersonalizationSettings
+from ze_personal.push_kinds import MORNING_BRIEF
 
 _BRIEFING_QUERY = "what's in the news?"
 _DREAM_SECTION_ENABLED_DEFAULT = True
@@ -119,10 +120,9 @@ class MorningBriefing:
             await self._append_news_section(lines)
 
         await self._notifier.notify(
-            "morning_brief",
+            MORNING_BRIEF,
             "Morning Briefing",
             "\n".join(lines),
-            source="personal",
         )
         self._log.info("briefing_sent", unreviewed=unreviewed)
         await self._push_log.log("morning_brief")

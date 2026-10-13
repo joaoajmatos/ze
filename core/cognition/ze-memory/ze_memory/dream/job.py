@@ -9,6 +9,7 @@ from ze_memory.dream.dream_pass import DreamPass
 from ze_memory.dream.journal import DreamJournal
 from ze_memory.dream.promoter import DreamPromoter
 from ze_memory.dream.sleep_pass import SleepPass
+from ze_memory.push_kinds import DREAM_REVIEW
 from ze_memory.retrieval_cache import expire_retrieval_cache
 from ze_proactive.job import proactive_job
 
@@ -169,9 +170,11 @@ class DreamJob:
         if error is None and artifacts_pending > 0 and self._notifier is not None:
             cfg = self._dream_config()
             if cfg.get("review_notifications_enabled", False):
-                await self._notifier.push(
+                await self._notifier.notify(
+                    DREAM_REVIEW,
+                    "Dream insights to review",
                     f"Ze dreamed overnight — {artifacts_pending} insight(s) await your review.",
-                    urgency="normal",
+                    budget_key=f"dream:{run_id}",
                 )
 
         log.info(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from ze_agents.interface.types import Action, Notification
+from ze_agents.interface.types import Action
 from ze_logging import get_logger
 from ze_sdk.memory import MemoryStore
 from ze_sdk.proactive import proactive_job
@@ -11,6 +11,7 @@ from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.suggestion_store import GoalSuggestionStore
 from ze_automation.goals.types import GoalSuggestion
+from ze_automation.push_kinds import GOAL_SUGGESTION
 
 log = get_logger(__name__)
 
@@ -98,35 +99,29 @@ class GoalSuggestionJob:
             f"{suggestion.objective}\n\n"
             f"<i>{suggestion.rationale}</i>"
         )
-        await self._notifier.push_notification(
-            Notification(
-                content=content,
-                format="html",
-                urgency="normal",
-                actions=[
-                    Action(
-                        label="Yes, create it",
-                        payload=f"goal_suggest:accept:{short_id}",
-                        row=0,
-                    ),
-                    Action(
-                        label="Dismiss",
-                        payload=f"goal_suggest:dismiss:{short_id}",
-                        row=0,
-                    ),
-                    Action(
-                        label="Tell me more",
-                        payload=f"goal_suggest:more:{short_id}",
-                        row=1,
-                    ),
-                ],
-            )
-        )
         await self._notifier.notify(
-            "goal_suggestion",
+            GOAL_SUGGESTION,
             f'New goal idea: "{suggestion.title}"',
-            suggestion.objective,
-            source="goals",
+            content,
+            format="html",
+            actions=[
+                Action(
+                    label="Yes, create it",
+                    payload=f"goal_suggest:accept:{short_id}",
+                    row=0,
+                ),
+                Action(
+                    label="Dismiss",
+                    payload=f"goal_suggest:dismiss:{short_id}",
+                    row=0,
+                ),
+                Action(
+                    label="Tell me more",
+                    payload=f"goal_suggest:more:{short_id}",
+                    row=1,
+                ),
+            ],
             target_type="goal_suggestion",
             target_id=str(suggestion.id),
+            budget_key=f"goal_suggestion:{suggestion.id}",
         )

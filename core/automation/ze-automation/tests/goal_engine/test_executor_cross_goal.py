@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -14,6 +16,19 @@ from ze_automation.goals.types import (
     PriorMilestoneOutput,
     VerificationGate,
 )
+
+
+def _n(call):
+    """View a `notify(kind, title, body, **kw)` call as the old Notification."""
+    kind, _title, body = call.args[:3]
+    kw = call.kwargs
+    return SimpleNamespace(
+        kind=kind,
+        content=body,
+        urgency=kind.urgency,
+        format=kw.get("format", "text"),
+        actions=list(kw.get("actions", ())),
+    )
 
 
 def _goal(status=GoalStatus.ACTIVE) -> Goal:
@@ -57,7 +72,7 @@ def _make_executor(*, store=None, planner=None, push=None):
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=agent_getter,
     )
     return executor, store, planner, push
@@ -299,7 +314,7 @@ def _make_executor_with_memory(*, memory=_USE_DEFAULT_MEMORY, planner=None, stor
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=agent_getter,
         memory_store=memory_store,
     )

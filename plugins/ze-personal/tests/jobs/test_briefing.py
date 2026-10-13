@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from ze_personal.contacts.types import StaleFollowUpNudge
 from ze_personal.jobs.briefing import MorningBriefing
+from ze_personal.push_kinds import MORNING_BRIEF
 from ze_sdk.proactive import PushLogEntry
 from ze_agents.settings import Settings
 from ze_sdk.proactive import ProactiveNotifier
@@ -87,6 +88,7 @@ async def test_briefing_sends_stats():
     await b.run()
 
     notifier.notify.assert_awaited_once()
+    assert notifier.notify.call_args[0][0] is MORNING_BRIEF
     text = notifier.notify.call_args[0][2]
     assert "Good morning" in text
     assert "Unreviewed facts: 2" in text
