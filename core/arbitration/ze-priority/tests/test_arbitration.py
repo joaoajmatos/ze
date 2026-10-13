@@ -74,9 +74,7 @@ async def test_top_ranked_candidate_delivered_stops_the_sweep():
 async def test_zero_remaining_budget_sends_nothing():
     loop = make_loop(confidence=0.9)
     hyp = make_hypothesis(confidence=0.9, relevance=0.9)
-    job, mocks = _job(
-        loop_candidates=[loop], hypothesis_candidates=[hyp], remaining=0
-    )
+    job, mocks = _job(loop_candidates=[loop], hypothesis_candidates=[hyp], remaining=0)
 
     await job.run()
 
