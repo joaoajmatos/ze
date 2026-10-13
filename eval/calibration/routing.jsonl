@@ -60,3 +60,9 @@
 {"id": "train-loops-hold-pt", "lang": "pt", "prompt": "não sei o que fazer quanto à prenda do casamento da minha irmã, deixa isso de lado mas não me deixes esquecer", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
 {"id": "train-companion-talk-en", "lang": "en", "prompt": "I can't decide whether to switch banks and it's stressing me out, can we talk it through", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
 {"id": "train-companion-talk-pt", "lang": "pt", "prompt": "não consigo decidir se troco de banco e isso stressa-me, podemos pensar nisto em conjunto", "gold_agent": "companion", "gold_multi": false, "gold_complexity": "lookup"}
+{"id": "train-loops-confirm-en-1", "lang": "en", "prompt": "Yes, keep the bank switch one and drop the dentist thing.", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-confirm-en-2", "lang": "en", "prompt": "Keep tracking the visa renewal you asked me about.", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-confirm-pt-1", "lang": "pt", "prompt": "Sim, fica com a do banco e esquece a do dentista.", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-confirm-pt-2", "lang": "pt", "prompt": "Podes manter a renovação do passaporte que perguntaste?", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-list-en-1", "lang": "en", "prompt": "What am I still sitting with these days?", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
+{"id": "train-loops-list-pt-1", "lang": "pt", "prompt": "Com o que é que ainda ando às voltas?", "gold_agent": "loops", "gold_multi": false, "gold_complexity": "single_tool"}
