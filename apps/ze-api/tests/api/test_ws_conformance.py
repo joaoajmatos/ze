@@ -700,7 +700,7 @@ class TestConfirmationTimeoutFlow:
         await mgr.connect(ws, store)
 
         notifier = AsyncMock()
-        notifier.push_notification = AsyncMock()
+        notifier.notify = AsyncMock(return_value="delivered")
 
         await confirmation_timeout(
             confirmation_store,
@@ -711,11 +711,11 @@ class TestConfirmationTimeoutFlow:
             "req-a",
         )
 
-        notifier.push_notification.assert_awaited_once()
-        notice = notifier.push_notification.await_args.args[0]
-        assert notice.metadata["thread_id"] == "thread-a"
-        assert notice.target_id == "thread-a"
-        assert notice.target_type == "thread"
+        notifier.notify.assert_awaited_once()
+        kind = notifier.notify.await_args.args[0]
+        assert kind.event_type == "confirmation_timeout"
+        assert notifier.notify.await_args.kwargs["target_id"] == "thread-a"
+        assert notifier.notify.await_args.kwargs["target_type"] == "thread"
 
 
 # ── Unread replay — multi-conversation ───────────────────────────────────────

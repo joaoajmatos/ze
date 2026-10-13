@@ -4,6 +4,8 @@ User Story 2)."""
 
 from __future__ import annotations
 
+import pytest
+
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
@@ -121,7 +123,7 @@ def _make_candidate_source(
     )
 
     notifier = MagicMock()
-    notifier.push = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
 
     if nli_client is None:
         nli_client = AsyncMock()
@@ -294,18 +296,29 @@ async def test_eligible_candidates_permissive_on_store_failure():
 async def test_send_pushes_and_marks_surfaced():
     h = _make_hypothesis()
     source, mocks = _make_candidate_source()
-    sent = await source.send(h)
-    assert sent is True
-    mocks["notifier"].push.assert_awaited_once()
+    outcome = await source.send(h)
+    assert outcome == "delivered"
+    mocks["notifier"].notify.assert_awaited_once()
+    kw = mocks["notifier"].notify.await_args.kwargs
+    assert kw["budget_key"] == f"hypothesis:{h.id}"
+    assert kw["target_type"] == "hypothesis"
     mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
 
 
-async def test_send_returns_false_on_notify_failure():
+async def test_send_marks_surfaced_when_held():
     h = _make_hypothesis()
     source, mocks = _make_candidate_source()
-    mocks["notifier"].push = AsyncMock(side_effect=RuntimeError("ntfy down"))
-    sent = await source.send(h)
-    assert sent is False
+    mocks["notifier"].notify = AsyncMock(return_value="held")
+    assert await source.send(h) == "held"
+    mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
+
+
+@pytest.mark.parametrize("outcome", ["failed", "duplicate", "suppressed_budget"])
+async def test_send_does_not_mark_surfaced_when_not_sent(outcome):
+    h = _make_hypothesis()
+    source, mocks = _make_candidate_source()
+    mocks["notifier"].notify = AsyncMock(return_value=outcome)
+    assert await source.send(h) == outcome
     mocks["hypothesis_store"].mark_surfaced.assert_not_awaited()
 
 

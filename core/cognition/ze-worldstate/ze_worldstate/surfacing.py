@@ -11,13 +11,11 @@ from ze_correlation.push import (
 )
 from ze_logging import get_logger
 from ze_memory.graph.store import GraphStore
-from ze_proactive.attention_budget import (
-    release_shared,
-    try_claim_shared,
-    within_budget,
-)
+from ze_proactive.attention_budget import within_budget
+from ze_proactive.types import PushOutcome
 
 from ze_worldstate.matching import _loops_linked_to_entities
+from ze_worldstate.push_kinds import LOOP_DRIFT
 from ze_worldstate.rest import _fetch_entities, _fetch_evidence_summaries
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import DriftingLoopMention, LoopState, OpenLoop
@@ -107,7 +105,7 @@ class LoopSurfacer:
 
         `check_budget=False` skips the shared-budget gate — used by
         `eligible_candidates()`, which reports candidates before the budget is
-        claimed centrally by `AttentionArbitrationJob` (FR-005)."""
+        charged by the governor when the push is sent (FR-005)."""
         if not passes_confidence(loop.confidence, tau_confidence):
             return False
 
@@ -142,23 +140,6 @@ class LoopSurfacer:
 
         return True
 
-    async def claim_push(
-        self, loop_id: UUID, rationale: str, max_pushes_per_day: int = 3
-    ) -> bool:
-        """Claim the shared push slot for this loop. Returns True if this call
-        may notify.
-
-        The DB write is the arbiter of exclusivity — two concurrent callers can
-        never both win the claim for the same loop_id.
-        """
-        return await try_claim_shared(
-            self._push_log, "loop", loop_id, max_pushes_per_day, payload=rationale
-        )
-
-    async def release_push_claim(self, loop_id: UUID) -> None:
-        """Roll back a claim whose notification was never delivered."""
-        await release_shared(self._push_log, "loop", loop_id)
-
     async def eligible_candidates(
         self,
         *,
@@ -169,7 +150,7 @@ class LoopSurfacer:
         """Drifting loops that pass every push-bar gate except the shared budget
         claim (novelty/relevance/grounding/idempotency unchanged, SC-004) — for
         `AttentionArbitrationJob` to rank alongside other mechanisms' candidates
-        before any of them claims the shared budget (FR-007)."""
+        before the first of them is sent (FR-007)."""
         cfg = {**_DEFAULT_THRESHOLDS, **(thresholds or {})}
         loops = await self._loop_store.list([LoopState.DRIFTING.value])
         eligible: list[OpenLoop] = []
@@ -191,17 +172,22 @@ class LoopSurfacer:
                 eligible.append(loop)
         return eligible
 
-    async def send(self, loop: OpenLoop) -> bool:
-        """Send-only path for a loop that has already won the shared-budget
-        claim. Re-checks current lifecycle state immediately before sending
-        (FR-011) — the loop may have closed/dropped between selection and send."""
+    async def send(self, loop: OpenLoop) -> PushOutcome | None:
+        """Send a loop through the governor. Re-checks current lifecycle state
+        immediately before sending (FR-011) — the loop may have closed/dropped
+        between selection and send. Returns None when it is no longer drifting."""
         current = await self._loop_store.get(loop.id)
         if current is None or current.state != LoopState.DRIFTING:
-            return False
+            return None
 
-        body = format_hedged_mention(loop.title, loop.drift_rationale)
-        await self._notifier.push(body, urgency="normal")
-        return True
+        return await self._notifier.notify(
+            LOOP_DRIFT,
+            "Open loop",
+            format_hedged_mention(loop.title, loop.drift_rationale),
+            target_type="open_loop",
+            target_id=str(loop.id),
+            budget_key=f"loop:{loop.id}",
+        )
 
     async def _entity_names(self, loop_id: UUID) -> list[str]:
         if self._pool is None:

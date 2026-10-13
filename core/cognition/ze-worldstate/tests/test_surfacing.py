@@ -244,6 +244,7 @@ async def test_send_pushes_when_loop_still_drifting():
     loop_store = AsyncMock()
     loop_store.get = AsyncMock(return_value=loop)
     notifier = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
     surfacer = LoopSurfacer(
         loop_store=loop_store,
         graph_store=AsyncMock(),
@@ -251,10 +252,14 @@ async def test_send_pushes_when_loop_still_drifting():
         notifier=notifier,
     )
 
-    sent = await surfacer.send(loop)
+    outcome = await surfacer.send(loop)
 
-    assert sent is True
-    notifier.push.assert_awaited_once()
+    assert outcome == "delivered"
+    notifier.notify.assert_awaited_once()
+    args = notifier.notify.await_args
+    assert args.args[0].event_type == "loop_drift"
+    assert args.kwargs["budget_key"] == f"loop:{loop.id}"
+    assert args.kwargs["target_type"] == "open_loop"
 
 
 async def test_send_returns_false_when_loop_no_longer_drifting():
@@ -270,42 +275,13 @@ async def test_send_returns_false_when_loop_no_longer_drifting():
         notifier=notifier,
     )
 
-    sent = await surfacer.send(loop)
+    outcome = await surfacer.send(loop)
 
-    assert sent is False
-    notifier.push.assert_not_awaited()
+    assert outcome is None
+    notifier.notify.assert_not_awaited()
 
 
 async def test_passes_push_bar_rejects_within_inline_cooldown():
     loop = _loop(confidence=0.8)
     surfacer = _push_bar_surfacer(relevance_value=0.8, inline_sent=True)
     assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
-
-
-async def test_claim_push_calls_try_claim_with_loop_id_as_idempotency_key():
-    push_log = AsyncMock()
-    push_log.count_sent_within_hours = AsyncMock(return_value=0)
-    push_log.try_claim = AsyncMock(return_value=True)
-    surfacer = LoopSurfacer(
-        loop_store=AsyncMock(), graph_store=AsyncMock(), push_log=push_log
-    )
-    loop_id = uuid4()
-    result = await surfacer.claim_push(loop_id, "rationale text")
-    assert result is True
-    push_log.try_claim.assert_awaited_once_with(
-        "attention_push",
-        idempotency_key=f"loop:{loop_id}",
-        payload="rationale text",
-    )
-
-
-async def test_release_push_claim_calls_release_claim():
-    push_log = AsyncMock()
-    surfacer = LoopSurfacer(
-        loop_store=AsyncMock(), graph_store=AsyncMock(), push_log=push_log
-    )
-    loop_id = uuid4()
-    await surfacer.release_push_claim(loop_id)
-    push_log.release_claim.assert_awaited_once_with(
-        "attention_push", idempotency_key=f"loop:{loop_id}"
-    )

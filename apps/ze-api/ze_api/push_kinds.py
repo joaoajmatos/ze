@@ -1,0 +1,13 @@
+from __future__ import annotations
+
+from ze_proactive.types import PushKind
+
+CONFIRMATION_REQUEST = PushKind(
+    "confirmation_request", "accountability", "high", "conversation"
+)
+CONFIRMATION_TIMEOUT = PushKind(
+    "confirmation_timeout", "accountability", "low", "conversation"
+)
+WORKSPACE_RUN_COMPLETED = PushKind(
+    "workspace_run_completed", "accountability", "normal", "workspace"
+)

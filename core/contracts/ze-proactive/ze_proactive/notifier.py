@@ -47,6 +47,10 @@ class ProactiveNotifier:
         self._max = max_discretionary_per_day
         self._clock = clock
 
+    @property
+    def max_discretionary_per_day(self) -> int:
+        return self._max
+
     async def quiet_now(self) -> bool:
         if self._settings is None:
             return False

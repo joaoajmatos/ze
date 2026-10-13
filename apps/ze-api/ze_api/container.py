@@ -110,6 +110,7 @@ from ze_api.compose import (
 )
 from ze_api.db import create_checkpointer_pool, create_pool
 from ze_api.interface.native import NativeAppInterface
+from ze_api.push_kinds import WORKSPACE_RUN_COMPLETED
 from ze_api.webhook import (
     EventDeduplicator,
     WebhookDispatcher,
@@ -176,13 +177,11 @@ class _NotifierPushSender:
         title = "Workspace run finished"
         body = _push_body(run)
         await self._notifier.notify(
-            "workspace_run_completed",
+            WORKSPACE_RUN_COMPLETED,
             title,
             body,
-            source="workspace",
             target_type="workspace_run",
             target_id=str(run.id) if run.id else None,
-            urgency="normal",
         )
 
 
