@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime
+from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_agents.rollback import current_rollback_scope
 from ze_logging import get_logger
 from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 
@@ -65,11 +68,19 @@ class ActionRecorder:
             record_id=str(source_record_id),
         )
         causal: list[CausalRef] = []
+        supersedes: UUID | None = None
+        scope = current_rollback_scope()
+        if scope is not None:
+            context = replace(
+                context or ActionContext(), message_id=scope.retried_message_id
+            )
         if lifecycle.value not in NON_TERMINAL_LIFECYCLES:
             try:
-                listed = await self._store.list(authoritative_ref=ref, limit=20)
+                listed = await self._store.list(authoritative_ref=ref, limit=50)
             except Exception:
                 listed = []
+            if scope is not None and isinstance(listed, list):
+                supersedes = _superseded_record(listed, f"{producer_kind}.{action_kind}")
             if isinstance(listed, list):
                 for rec in listed:
                     lifecycle_value = getattr(
@@ -96,6 +107,7 @@ class ActionRecorder:
             authoritative_ref=ref,
             context=context or ActionContext(),
             causal_refs=causal,
+            supersedes=supersedes,
             failure_code=failure_code,
         )
         contribution = Contribution(
@@ -109,6 +121,17 @@ class ActionRecorder:
             action_record=draft,
         )
         return await submit_action_record(self._store, contribution)
+
+
+def _superseded_record(listed: list[ActionRecord], action_type: str) -> UUID | None:
+    """Latest succeeded record on the same target with a different action type."""
+    for rec in listed:
+        if (
+            getattr(getattr(rec, "lifecycle", None), "value", None) == "succeeded"
+            and getattr(rec, "action_type", action_type) != action_type
+        ):
+            return rec.id
+    return None
 
 
 async def safe_record_action(
