@@ -201,7 +201,7 @@ ze-proactive    → ze-agents, ze-logging    core/contracts/
 ze-core         → ze-agents, ze-communication, ze-components, ze-data, ze-logging, ze-memory, ze-plugin  core/engine/  ← engine; never a plugin dep
 ze-collision    → ze-agents, ze-plugin, ze-logging  core/seam/  ← contribution collision detection; wired by ze-api directly
 ze-memory       → ze-agents, ze-plugin, ze-collision, ze-logging  core/cognition/  ← ze-plugin: Contribution seam (Signal write path)
-ze-correlation  → ze-agents, ze-logging, ze-memory, ze-plugin, ze-collision  core/cognition/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
+ze-correlation  → ze-agents, ze-logging, ze-memory, ze-proactive, ze-plugin, ze-collision  core/cognition/  ← cross-domain hypothesis formation; ze-plugin: Contribution seam
 ze-worldstate   → ze-agents, ze-proactive, ze-memory, ze-data, ze-components, ze-correlation, ze-plugin, ze-collision, ze-logging  core/cognition/  ← open loops; wired by ze-api directly; ze-plugin: Contribution seam (loop write path)
 ze-automation   → ze-agents, ze-proactive, ze-memory, ze-components, ze-data, ze-logging  core/automation/  ← goals + workflows; wired by ze-api directly
 ze-skills       → ze-agents, ze-proactive, ze-logging, ze-data, ze-memory  core/automation/  ← agent skills; wired by ze-api directly

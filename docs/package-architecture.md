@@ -227,7 +227,8 @@ It has no Ze package dependencies and is reused by `ze-plugin` and `ze-sdk`.
 ## ze-correlation — Signal Correlation
 
 `ze_correlation` owns cross-domain hypothesis generation from memory and signal
-inputs. It depends on `ze-agents` and `ze-memory`.
+inputs. It depends on `ze-agents`, `ze-memory`, and `ze-proactive` (the shared
+attention budget and the `notify` path).
 
 | Module | What it provides |
 |--------|-----------------|
