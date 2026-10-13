@@ -54,7 +54,7 @@ def register_all_proactive_jobs(
         push_log_store=push_log_store,
     )
     if notification_store is not None:
-        register_notification_jobs(scheduler, settings, notification_store)
+        register_notification_jobs(scheduler, settings, notification_store, notifier)
     register_engine_jobs(automation.workflow_scheduler, settings, shared)
     register_memory_jobs(scheduler, settings, shared)
     register_correlation_jobs(

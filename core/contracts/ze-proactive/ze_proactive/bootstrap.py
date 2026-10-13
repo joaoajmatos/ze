@@ -4,7 +4,9 @@ from typing import Any
 
 from ze_logging import get_logger
 from ze_proactive.jobs.prune_notifications import PruneNotificationsJob
+from ze_proactive.jobs.release_held import QuietHoursReleaseJob
 from ze_proactive.notification_store import NotificationStore
+from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.scheduler import ProactiveScheduler
 
 log = get_logger(__name__)
@@ -25,6 +27,7 @@ def register_notification_jobs(
     scheduler: ProactiveScheduler,
     settings: Any,
     notification_store: NotificationStore,
+    notifier: ProactiveNotifier,
 ) -> None:
     cfg = (
         (getattr(settings, "config", None) or {})
@@ -41,3 +44,13 @@ def register_notification_jobs(
     log.info(
         "notifications_prune_job_scheduled", cron=cron, retention_days=retention_days
     )
+
+    release_cron = cfg.get("release_cron", "*/5 * * * *")
+    release_job = QuietHoursReleaseJob(notifier)
+    scheduler.add_cron_job(
+        fn=release_job.run,
+        cron=release_cron,
+        job_id=release_job.job_id,
+        catch_up=False,
+    )
+    log.info("quiet_hours_release_job_scheduled", cron=release_cron)

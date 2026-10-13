@@ -99,6 +99,7 @@ from ze_plugin.ui import collect_ui_contributions, filter_ui_manifest_by_openapi
 from ze_communication.registry import ChannelRegistry
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.bootstrap import shared_push_budget
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
@@ -776,7 +777,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         workflow_store=automation.workflow_store,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
-        proactive_scheduler=ProactiveScheduler(),
+        proactive_scheduler=ProactiveScheduler(run_store=JobRunStore(pool)),
         browser_client=browser_client,
         workspace_client=workspace.client,
         workspace_gate=workspace.gate,
