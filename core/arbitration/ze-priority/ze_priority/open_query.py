@@ -35,8 +35,6 @@ OPEN_QUERY_EXAMPLES_EN: tuple[str, ...] = (
     "what is waiting on me",
     "which of my things are still unfinished",
     "what commitments do I still have open",
-    "list what is still open for me",
-    "show me my open items",
 )
 
 OPEN_QUERY_EXAMPLES_PT: tuple[str, ...] = (
@@ -62,10 +60,6 @@ OPEN_QUERY_EXAMPLES_PT: tuple[str, ...] = (
     "o que é que ainda trago em cima",
     "que coisas ainda estão nas minhas mãos",
     "há alguma coisa à espera de mim",
-    "lista as minhas pendências",
-    "quais são as minhas pendências",
-    "diz-me o que está por fazer",
-    "o que é que ainda não está feito",
 )
 
 OPEN_QUERY_EXAMPLES: tuple[str, ...] = OPEN_QUERY_EXAMPLES_EN + OPEN_QUERY_EXAMPLES_PT

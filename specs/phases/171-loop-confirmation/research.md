@@ -67,18 +67,18 @@ Each entry: decision, rationale, alternatives. R1–R6 are the user's answers (Q
 
 ## Verdict
 
-**Not a clean verdict.** Read the runs in order; each used a different detector.
+**Not a clean verdict.** Read the runs in order; the detector changed between them.
 
-| Run | Detector at that time | EN recall / FPR | PT recall / FPR | Result |
-|---|---|---|---|---|
-| held-out 1 (`open_query_holdout.jsonl`), threshold 0.88 | 14 EN + 22 PT examples, `PT_SIMILARITY_OFFSET = 0.05` (offset and threshold picked on the tuned set, before this run) | 0.900 / 0.000 | 0.800 / 0.000 | PT FAIL |
-| held-out 2 (`open_query_holdout2.jsonl`, R5 rerun), threshold 0.88 | the same plus six list-style examples added **after seeing held-out 1's misses** (2 EN: "list what is still open for me", "show me my open items"; 4 PT: "lista as minhas pendências", "quais são as minhas pendências", "diz-me o que está por fazer", "o que é que ainda não está feito"). Tuned numbers did not change | 0.917 / 0.000 | 0.667 / 0.000 | PT FAIL |
-| re-run of held-out 1 and 2 after the user decision | the previous detector with five examples reworded because they equalled tuned-set texts verbatim; no other change | held-out 1: 0.900 / 0.000; held-out 2: 0.917 / 0.000 | held-out 1: 0.900 / 0.000; held-out 2: 0.833 / 0.000 | informational |
+`PT_SIMILARITY_OFFSET = 0.05` (E5 scores Portuguese pairs about 0.05 higher, including job-vacancy negatives, so Portuguese example similarities are lowered by it) and threshold 0.88 were chosen on the **tuned** set before any held-out run. An attempt to ship without the offset was rejected: at 0.88 it gave Portuguese false positives of 0.600 (held-out 1) and 0.333 (held-out 2) and 0.682 on the tuned set, so it was tried and not kept.
 
-The PT jump from 0.800 / 0.667 to 0.900 / 0.833 after rewording is not explained by the change in text; with only five examples changed it is most likely threshold-edge noise (the misses sit within 0.01-0.02 of 0.88). Do not read the third row as an improvement of the detector. FPR was 0.000 in every run.
+| Run | Detector at that time | EN recall / FPR | PT recall / FPR |
+|---|---|---|---|
+| held-out 1, threshold 0.88 | 14 EN + 22 PT examples + offset | 0.900 / 0.000 | 0.800 / 0.000 (original bar missed) |
+| held-out 2 (R5 rerun), threshold 0.88 | the same plus six list-style examples added **after seeing held-out 1's misses** | 0.917 / 0.000 | 0.667 / 0.000 (original bar missed) |
+| **shipped detector**, both sets, one run, threshold 0.88 | the six post-hoc examples removed; five examples reworded because they equalled tuned-set texts verbatim; nothing else changed | held-out 1: 0.900 / 0.000; held-out 2: 0.917 / 0.000 | held-out 1: 0.800 / 0.000; held-out 2: 0.667 / 0.000 |
 
-Tuned set at the shipped detector (threshold 0.88): EN 0.955 / 0.000, PT 0.818 / 0.000.
+Tuned set at the shipped detector: EN 0.955 / 0.000, PT 0.818 / 0.000. The shipped detector's numbers equal the first two rows, so the post-hoc examples changed nothing measurable on either set.
 
-**Decision (user, 2026-10-13): ship at threshold 0.88 under an amended bar.** The original bar (recall >= 0.90 per language) was missed in Portuguese on both held-out runs. The amended bar (EN recall >= 0.90, PT recall >= 0.65, FPR <= 0.05 per language) was set after seeing those results. Both held-out sets are seen, and the second set's detector had already been adjusted after the first set's misses, so neither set can serve as a clean verdict again. A missed detection is benign (the open-priorities note is not injected and the user can rephrase); a false positive is the costly error.
+**Decision (user, 2026-10-13): ship at threshold 0.88 under an amended bar.** The original bar (recall >= 0.90 per language) was missed in Portuguese on both held-out sets. The amended bar (EN recall >= 0.90, PT recall >= 0.65, FPR <= 0.05 per language) was set after seeing those results, so this is not a clean pre-registered verdict, and both held-out sets are seen and cannot serve as one again. A missed detection is benign (the open-priorities note is not injected and the user can rephrase); a false positive is the costly error.
 
-`tests/test_open_query_holdout.py` (slow) pins the shipped numbers against the amended bar. The Portuguese-only `PT_SIMILARITY_OFFSET` is a language-specific correction: a third language would run uncorrected. Follow-up, not built here: a System One Noul `asks_what_is_open` to replace similarity.
+`tests/test_open_query_holdout.py` (slow) pins the shipped numbers against the amended bar. The offset is a Portuguese-only correction, so a third language would run uncorrected. Follow-up, not built here: a System One Noul `asks_what_is_open` to replace similarity; Portuguese needs it most.
