@@ -171,11 +171,15 @@ async def restore_priority_override(
     prior_override_id: str | None = None,
 ) -> dict:
     try:
-        await override_store.restore(
+        reinstated = await override_store.restore(
             UUID(override_id),
             UUID(prior_override_id) if prior_override_id else None,
         )
     except (StalePriorityRestoreError, ValueError) as exc:
         log.warning("restore_priority_override_failed", error=str(exc))
         return {"error": str(exc)}
-    return {"ok": True, "override_id": override_id}
+    return {
+        "ok": True,
+        "override_id": override_id,
+        "restored_prior": reinstated is not None,
+    }

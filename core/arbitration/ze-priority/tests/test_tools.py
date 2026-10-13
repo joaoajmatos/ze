@@ -176,6 +176,21 @@ async def test_restore_priority_override_calls_store():
 
     override_store.restore.assert_awaited_once_with(oid, prior)
     assert result["ok"] is True
+    assert result["restored_prior"] is True
+
+
+async def test_restore_priority_override_reports_prior_not_reinstated():
+    override_store = AsyncMock()
+    override_store.restore.return_value = None
+
+    result = await restore_priority_override(
+        override_store=override_store,
+        override_id=str(uuid4()),
+        prior_override_id=str(uuid4()),
+    )
+
+    assert result["ok"] is True
+    assert result["restored_prior"] is False
 
 
 async def test_restore_priority_override_without_prior():
