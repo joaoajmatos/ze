@@ -79,6 +79,7 @@ class _Env:
         self.container.invoke_retry_turn = AsyncMock(
             return_value=SimpleNamespace(
                 response="fresh",
+                interrupted=False,
                 message_id=str(self.new_id),
                 config={"configurable": {"thread_id": "t1"}},
                 final_state={"components": [], "message_trace": _trace()},
@@ -112,6 +113,7 @@ async def test_text_only_retry_replaces_reply():
 
     env.container.invoke_retry_turn.assert_awaited_once()
     assert env.container.invoke_retry_turn.await_args.args[:2] == ("t1", "question")
+    assert env.container.invoke_retry_turn.await_args.kwargs["replaces"] == env.message.id
     send = env.container.interface.send_with_thread
     assert send.await_args.kwargs["replaces"] == env.message.id
     assert send.await_args.kwargs["message_id"] == str(env.new_id)
@@ -171,7 +173,7 @@ async def test_supersede_failure_is_reported_not_swallowed():
 
 _REFUSALS = [
     (
-        "has_reversible_action",
+        "not_undoable",
         _trace(
             _call(
                 "set_reminder",
@@ -192,7 +194,7 @@ _REFUSALS = [
             )
         ),
     ),
-    ("has_write_action", _trace(_call("legacy", access="write"))),
+    ("has_irreversible_action", _trace(_call("legacy", access="write"))),
     (
         "confirmed_action",
         _trace(
@@ -303,9 +305,9 @@ async def test_two_concurrent_gates_one_approved_blocks():
                 success=False,
             ),
             _call(
-                "set_reminder",
+                "send_email",
                 access="write",
-                reversibility="reversible",
+                reversibility="irreversible",
                 gate="approved",
             ),
         )
