@@ -3,7 +3,7 @@
   "specName": "Interruption Governor (part 1)",
   "branch": "177-interruption-governor",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -393,9 +393,40 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-13T18:44:51.730Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-13T18:49:27.767Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-13T18:49:27.949Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-13T19:24:27.239Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-13T19:24:27.721Z"
     }
   ],
-  "currentTask": "T047",
+  "currentTask": "T049",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -533,6 +564,15 @@
       "status": "DONE"
     },
     "T038": {
+      "status": "DONE"
+    },
+    "T047": {
+      "status": "DONE"
+    },
+    "T048": {
+      "status": "DONE"
+    },
+    "T049": {
       "status": "DONE"
     }
   }
