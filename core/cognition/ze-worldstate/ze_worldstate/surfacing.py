@@ -17,10 +17,9 @@ from ze_proactive.attention_budget import (
     within_budget,
 )
 
-from ze_worldstate.matching import _loops_linked_to_entities
 from ze_worldstate.rest import _fetch_entities, _fetch_evidence_summaries
 from ze_worldstate.store import LoopStore
-from ze_worldstate.types import DriftingLoopMention, LoopState, OpenLoop
+from ze_worldstate.types import LoopState, OpenLoop
 
 log = get_logger(__name__)
 
@@ -62,32 +61,6 @@ class LoopSurfacer:
         self._relevance_model = relevance_model
         self._embedder = embedder
 
-    async def inline_candidates(
-        self, entity_ids: list[UUID]
-    ) -> list[DriftingLoopMention]:
-        """Entity-link-overlap matches only — no confidence/relevance/novelty/budget
-        gating (FR-006: inline has no such gate)."""
-        loops = await _loops_linked_to_entities(
-            entity_ids, self._graph_store, self._loop_store
-        )
-        drifting = [loop for loop in loops if loop.state == LoopState.DRIFTING]
-
-        mentions: list[DriftingLoopMention] = []
-        for loop in drifting:
-            evidence = await self._loop_store.list_evidence(loop.id)
-            mention_text = format_hedged_mention(loop.title, loop.drift_rationale)
-            mentions.append(
-                DriftingLoopMention(
-                    loop_id=loop.id,
-                    title=loop.title,
-                    mention_text=mention_text,
-                    evidence=evidence,
-                )
-            )
-            await self._push_log.log(f"worldstate_loop_inline:{loop.id}")
-
-        return mentions
-
     async def passes_push_bar(
         self,
         loop: OpenLoop,
@@ -127,7 +100,7 @@ class LoopSurfacer:
 
         evidence_labels = await self._evidence_labels(loop.id)
         if not await passes_grounding(
-            rationale, evidence_labels, nli_client, grounding_threshold
+            loop.title, evidence_labels, nli_client, grounding_threshold
         ):
             return False
 

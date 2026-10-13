@@ -57,14 +57,6 @@ class OpenLoop:
     closed_at: datetime | None = None
 
 
-@dataclass
-class DriftingLoopMention:
-    loop_id: UUID
-    title: str
-    mention_text: str
-    evidence: list[EvidenceRef]
-
-
 class TrackOutcome:
     """Plain string constants for a `track_loop` ask (data-model.md)."""
 

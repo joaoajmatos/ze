@@ -49,7 +49,11 @@ async def _fetch_evidence_summaries(
                 summary = row["value"] if row else ""
             elif ref.kind == "episode":
                 row = await conn.fetchrow(
-                    "SELECT COALESCE(summary, prompt) AS s FROM memory_episodes WHERE id = $1",
+                    "SELECT COALESCE(summary,"
+                    " CASE WHEN agent = 'messenger'"
+                    " THEN prompt || ' ' || left(response, 500)"
+                    " ELSE prompt END) AS s"
+                    " FROM memory_episodes WHERE id = $1",
                     ref.id,
                 )
                 summary = row["s"] if row else ""
