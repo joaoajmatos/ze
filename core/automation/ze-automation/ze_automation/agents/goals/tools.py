@@ -4,7 +4,7 @@ import asyncio
 import html as _html
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import GoalPlanError
 from ze_automation.goals.executor import GoalExecutor
@@ -229,6 +229,7 @@ async def create_goal(
         "title": goal_title,
         "milestones": len(milestones),
         "gates": len(gates),
+        "undo": undo_payload(goal_id=str(goal.id)),
     }
 
 
