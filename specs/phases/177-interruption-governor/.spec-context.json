@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Interruption Governor (part 1)",
+  "branch": "177-interruption-governor",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:54:50.411Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-12T22:59:58.562Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-13T18:07:06.960Z"
+    }
+  ]
+}
