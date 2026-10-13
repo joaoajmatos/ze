@@ -105,6 +105,8 @@ class ToolCall:
     error: str | None = None
     is_draft: bool = False
     gate: str = "none"  # "none" | "approved" | "denied" | "expired"
+    agent: str | None = None
+    undo: dict[str, Any] | None = None
 
 
 @dataclass

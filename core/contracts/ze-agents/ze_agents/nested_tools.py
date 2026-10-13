@@ -50,6 +50,8 @@ def flatten_tool_calls(tool_calls: list[ToolCall]) -> list[ToolCall]:
                         success=bool(item.get("success")),
                         error=item.get("error"),
                         gate=str(item.get("gate") or "none"),
+                        agent=item.get("agent"),
+                        undo=item.get("undo"),
                     )
                 )
     return out

@@ -1,4 +1,5 @@
-"""Retry runs regenerate text only: writes refused, admission skipped (Phase 165 US3/SC-004)."""
+"""Retry runs: irreversible writes refused, reversible writes run under normal gates,
+admission skipped (Phase 165 US3/SC-004, Phase 180 one retry policy)."""
 
 from __future__ import annotations
 
@@ -118,7 +119,7 @@ async def test_delegate_subcontext_inherits_retry_mode():
     assert seen == [True]
 
 
-async def test_capability_check_never_opens_confirmation_in_retry():
+async def test_capability_check_keeps_confirmation_gate_in_retry():
     gate = AsyncMock(spec=CapabilityGate)
     gate.evaluate = lambda **kw: GateDecision.AWAIT_CONFIRMATION
     cfg = make_config(capability_gate=gate)
@@ -126,7 +127,18 @@ async def test_capability_check_never_opens_confirmation_in_retry():
     result = await execution.capability_check(
         base_state(envelope=make_envelope(intent="write")), cfg
     )
-    assert result["gate_decision"] is GateDecision.EXECUTE
+    assert result["gate_decision"] is GateDecision.AWAIT_CONFIRMATION
+
+
+async def test_capability_check_keeps_draft_gate_in_retry():
+    gate = AsyncMock(spec=CapabilityGate)
+    gate.evaluate = lambda **kw: GateDecision.DRAFT
+    cfg = make_config(capability_gate=gate)
+    cfg["configurable"]["retry_mode"] = True
+    result = await execution.capability_check(
+        base_state(envelope=make_envelope(intent="write")), cfg
+    )
+    assert result["gate_decision"] is GateDecision.DRAFT
 
 
 async def test_capability_check_blocked_stays_blocked_in_retry():
@@ -201,7 +213,7 @@ async def test_write_memory_without_retry_still_writes_episode():
     store.write_episode.assert_called_once()
 
 
-async def test_compound_capability_check_downgrades_confirmations_in_retry():
+async def test_compound_capability_check_keeps_confirmations_in_retry():
     from ze_core.routing.types import SubTask
 
     gate = AsyncMock(spec=CapabilityGate)
@@ -217,16 +229,18 @@ async def test_compound_capability_check_downgrades_confirmations_in_retry():
     cfg["configurable"]["retry_mode"] = True
     result = await execution.capability_check(base_state(envelope=env), cfg)
     assert [d["decision"] for d in result["subtask_gate_decisions"]] == [
-        GateDecision.EXECUTE,
-        GateDecision.EXECUTE,
+        GateDecision.AWAIT_CONFIRMATION,
+        GateDecision.AWAIT_CONFIRMATION,
     ]
 
 
-async def test_delegate_confirmation_is_downgraded_in_retry():
+async def test_delegate_confirmation_is_kept_in_retry():
     from ze_agents.delegate import run_delegate
+    from ze_agents.interrupt import tool_interrupt_fn
     from ze_agents.registry import register_instance
 
     seen = []
+    prompts = []
 
     class _Spec(BaseAgent):
         name = "messenger"
@@ -240,11 +254,21 @@ async def test_delegate_confirmation_is_downgraded_in_retry():
     register_instance("messenger", _Spec())
     ctx = _ctx(True)
     ctx.evaluate_delegate = lambda agent, intent: GateDecision.AWAIT_CONFIRMATION
-    call = await run_delegate(
-        {"agent_name": "messenger", "objective": "mail ana"},
-        ctx,
-        0,
-        caller_name="companion",
-    )
+
+    def _approve(payload):
+        prompts.append(payload["kind"])
+        return {"choice": "approve"}
+
+    token = tool_interrupt_fn.set(_approve)
+    try:
+        call = await run_delegate(
+            {"agent_name": "messenger", "objective": "mail ana"},
+            ctx,
+            0,
+            caller_name="companion",
+        )
+    finally:
+        tool_interrupt_fn.reset(token)
+    assert prompts == ["delegate"]
     assert call.success is True
     assert seen == [GateDecision.EXECUTE]

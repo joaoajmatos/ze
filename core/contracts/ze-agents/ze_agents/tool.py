@@ -104,6 +104,26 @@ def _check_declaration(
         )
 
 
+_UNDO_SCALARS = (str, int, float, bool, type(None))
+
+
+def undo_payload(**kwargs: Any) -> dict[str, Any]:
+    """Build the per-call undo payload a REVERSIBLE tool returns under `"undo"`.
+
+    Values must be JSON scalars or lists of scalars: ids and names, never content.
+    """
+    for key, value in kwargs.items():
+        if isinstance(value, list):
+            ok = all(isinstance(v, _UNDO_SCALARS) for v in value)
+        else:
+            ok = isinstance(value, _UNDO_SCALARS)
+        if not ok:
+            raise AgentConfigError(
+                f"undo_payload value for {key!r} must be a scalar or a list of scalars"
+            )
+    return dict(kwargs)
+
+
 def validate_tool_declarations() -> None:
     """Every `undo_tool` resolves to a registered WRITE tool and is not the tool itself."""
     for spec in _tools.values():
