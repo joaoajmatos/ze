@@ -141,6 +141,8 @@ class RecurringDetectionJob:
         for item in result.price_changed:
             prev = f"{item.currency} {item.previous_amount}"
             curr = f"{item.currency} {item.amount}"
+            # RecurringExpense has no surrogate id; normalised_key + amount is
+            # the recurring charge's stable identity (see recurring/store.py).
             await self._notifier.notify(
                 FINANCE_PRICE_CHANGE,
                 "Price change",
