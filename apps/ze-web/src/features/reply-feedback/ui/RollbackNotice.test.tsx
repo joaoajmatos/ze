@@ -34,6 +34,21 @@ describe("RollbackNotice", () => {
     );
   });
 
+  it("lists only failed entries after 'could not undo' and names skipped ones separately", () => {
+    render(
+      <RollbackNotice
+        rollback={record("partial", [
+          ["undone", "set a reminder"],
+          ["failed", "created a goal"],
+          ["not_attempted", "saved a workflow"],
+        ])}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Ze undid set a reminder, but could not undo created a goal. It did not try saved a workflow.",
+    );
+  });
+
   it("explains a failed regeneration after a full undo", () => {
     render(
       <RollbackNotice rollback={record("rolled_back_retry_failed", [["undone", "set a reminder"]])} />,

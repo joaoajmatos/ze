@@ -56,6 +56,11 @@ export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryRepl
 
   useFrame("message_rollback", (frame) => {
     if (frame.thread_id && frame.thread_id !== threadId) return;
+    // A denied or expired paused retry ends here with no error frame.
+    if (pendingId === frame.message_id && frame.rollback.state === "rolled_back_retry_failed") {
+      setPendingId(null);
+      setThreadThinking(threadId, false);
+    }
     refresh();
   });
 

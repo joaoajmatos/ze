@@ -228,4 +228,39 @@ describe("useRetryReply", () => {
     );
     expect(spy).toHaveBeenCalled();
   });
+
+  it("stops retrying when a paused retry ends as rolled_back_retry_failed with no error frame", () => {
+    send.mockReturnValue(true);
+    const { result } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    act(() =>
+      handlers.get("message_rollback")!({
+        type: "message_rollback",
+        message_id: "m1",
+        thread_id: "t1",
+        rollback: { state: "rolled_back_retry_failed", entries: [] },
+      }),
+    );
+    expect(result.current.retrying).toBe(false);
+    expect(result.current.retryingId).toBeNull();
+    expect(
+      (useWsStore as unknown as { getState: () => { thinkingThreads: Record<string, boolean> } })
+        .getState().thinkingThreads.t1,
+    ).toBe(false);
+  });
+
+  it("keeps retrying while the retry waits on a confirmation", () => {
+    send.mockReturnValue(true);
+    const { result } = setup();
+    act(() => void result.current.retry("m1", ["e1"]));
+    act(() =>
+      handlers.get("message_rollback")!({
+        type: "message_rollback",
+        message_id: "m1",
+        thread_id: "t1",
+        rollback: { state: "rolled_back_awaiting_confirmation", entries: [] },
+      }),
+    );
+    expect(result.current.retrying).toBe(true);
+  });
 });

@@ -14,11 +14,17 @@ export function rollbackNoticeText(rollback: RollbackRecordResponse): string | n
     (rollback.entries ?? []).filter((e) => e.outcome === "undone").map((e) => e.effect_phrase),
   );
   const failed = joinPhrases(
-    (rollback.entries ?? []).filter((e) => e.outcome !== "undone").map((e) => e.effect_phrase),
+    (rollback.entries ?? []).filter((e) => e.outcome === "failed").map((e) => e.effect_phrase),
+  );
+  const skipped = joinPhrases(
+    (rollback.entries ?? []).filter((e) => e.outcome === "not_attempted").map((e) => e.effect_phrase),
   );
   switch (rollback.state) {
     case "partial":
-      return `Ze undid ${undone || "nothing"}, but could not undo ${failed}.`;
+      return (
+        `Ze undid ${undone || "nothing"}, but could not undo ${failed || "everything"}.` +
+        (skipped ? ` It did not try ${skipped}.` : "")
+      );
     case "rolled_back_retry_failed":
       return `Ze undid ${undone} but could not write a new reply.`;
     case "rolled_back_awaiting_confirmation":
