@@ -76,7 +76,7 @@ push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a r
 goals, and correlation hypotheses together against one shared attention budget, plus
 user-directed priority override.
 
-**State: the drift and ranking machinery runs; two gaps remain (see below).** Phase 170 repaired the
+**State: the drift and ranking machinery runs; the confirmation path and duplicate intake remain open (see below).** Phase 170 repaired the
 executive layer: a loop drifts when its deadline passes, gate-created loops carry evidence, stuck goals
 are found and ranked, and the priority snapshot reports the sources it could not read. The findings and
 the repair record are in [executive-function.md](../specs/arch/executive-function.md). What exists now handles both ends: goals for
