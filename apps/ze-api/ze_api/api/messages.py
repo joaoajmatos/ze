@@ -115,6 +115,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
             else None
         ),
         resume_recap_applied=bool(getattr(trace, "resume_recap_applied", False)),
+        rollback=getattr(trace, "rollback", None),
     )
 
 
