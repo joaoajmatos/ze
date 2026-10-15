@@ -30,6 +30,7 @@ PAYLOAD_KEYS = {
     "disable_workflow": ("enable_workflow", {"workflow_name"}),
     "remember_fact": ("forget_fact", {"fact_id", "restore_fact_ids"}),
     "track_loop": ("drop_loop", {"loop_id"}),
+    "confirm_loop": ("drop_loop", {"loop_id"}),
     "reprioritize_item": (
         "restore_priority_override",
         {"override_id", "prior_override_id"},
@@ -164,7 +165,7 @@ async def test_goal_round_trip_abandons_it_and_it_cannot_be_approved() -> None:
     planner = MagicMock()
     planner.plan = AsyncMock(return_value=([], []))
     notifier = MagicMock()
-    notifier.push_notification = AsyncMock()
+    notifier.notify = AsyncMock()
     executor = object.__new__(GoalExecutor)
     executor._store = store
     agent = GoalAgent(MagicMock(), store, planner, executor, notifier)

@@ -110,6 +110,7 @@ async def confirm_loop(loop_store: LoopStore, loop_id: str) -> dict:
         "id": str(loop.id),
         "title": loop.title,
         "state": loop.state.value,
+        "undo": undo_payload(loop_id=str(loop.id)),
     }
 
 

@@ -205,7 +205,7 @@ def test_unknown_tool_in_known_trace_blocks() -> None:
             "confirm_loop",
             "reversible",
             "confirmed an open loop",
-            RetryReason.HAS_REVERSIBLE_ACTION,
+            RetryReason.NOT_UNDOABLE,
             "confirmed an open loop",
         ),
         (
