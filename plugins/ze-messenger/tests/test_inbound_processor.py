@@ -224,7 +224,10 @@ async def test_loop_extractor_receives_episode_evidence():
     await _drain_tasks()
 
     extractor.assert_awaited_once_with(
-        "Hi there", "email", evidence=[EvidenceRef(kind="episode", id=episode_id)]
+        "Hi there",
+        "email",
+        evidence=[EvidenceRef(kind="episode", id=episode_id)],
+        source_ref="t1",
     )
 
 
@@ -239,4 +242,23 @@ async def test_loop_extractor_empty_evidence_when_episode_missing():
     await processor.process(_msg(), channel_id="gmail:ze@example.com")
     await _drain_tasks()
 
-    extractor.assert_awaited_once_with("Hi there", "email", evidence=[])
+    extractor.assert_awaited_once_with("Hi there", "email", evidence=[], source_ref="t1")
+
+
+async def test_loop_extractor_source_ref_is_thread_then_message_id():
+    known = MagicMock()
+    known.name = "Alice"
+
+    processor, _, _, _ = _make_processor(contact=known)
+    extractor = AsyncMock()
+    processor.loop_extractor = extractor
+    await processor.process(_msg(thread_id="t1"), channel_id="gmail:ze@example.com")
+    await _drain_tasks()
+    assert extractor.await_args.kwargs["source_ref"] == "t1"
+
+    reply_processor, _, _, _ = _make_processor(contact=known)
+    reply_extractor = AsyncMock()
+    reply_processor.loop_extractor = reply_extractor
+    await reply_processor.process(_msg(thread_id=None), channel_id="gmail:ze@example.com")
+    await _drain_tasks()
+    assert reply_extractor.await_args.kwargs["source_ref"] == "msg1"

@@ -22,7 +22,7 @@ from ze_worldstate.loop_judge import (
     LoopGateDecision,
     loop_gate_surface_config,
 )
-from ze_worldstate.types import LoopAdmission, TitleWriterResult
+from ze_worldstate.types import LoopAdmission, SourceKey, TitleWriterResult
 
 __all__ = ["LoopAdmission", "LoopInflow", "TitleWriterResult"]
 
@@ -59,16 +59,25 @@ class LoopInflow:
 
     async def admit(self, configurable: dict, *, prompt: str) -> LoopAdmission:
         """Conversation gate. Never raises; any failure is a fallback admission."""
-        del configurable
-        return await self._judge(prompt, CONVERSATION)
+        thread_id = configurable.get("thread_id")
+        source = SourceKey(CONVERSATION, str(thread_id)) if thread_id else None
+        admission = await self._judge(prompt, CONVERSATION)
+        admission.source = source
+        return admission
 
     async def extract(
-        self, text: str, provenance: str, evidence: Sequence[EvidenceRef] = ()
+        self,
+        text: str,
+        provenance: str,
+        evidence: Sequence[EvidenceRef] = (),
+        source_ref: str | None = None,
     ) -> None:
         """Email, calendar and ingestion inflows: judge, log, commit inline."""
         if not text or not text.strip():
             return
+        source = SourceKey(provenance, source_ref) if source_ref else None
         admission = await self._judge(text, provenance)
+        admission.source = source
         self._log(admission, provenance)
         if admission.commit is not None:
             await admission.commit(evidence)
@@ -108,6 +117,9 @@ class LoopInflow:
                     collision_store=self._collision_store,
                     nli_client=self._nli_client,
                     admission=admission,
+                    source=admission.source,
+                    system_one_client=self._system_one,
+                    settings=self._settings,
                 )
             except Exception as exc:
                 log.warning(

@@ -1658,6 +1658,14 @@ export type LoopDetail = {
      */
     updated_at: string | null;
     /**
+     * Promoted
+     */
+    promoted: boolean;
+    /**
+     * Source Inflows
+     */
+    source_inflows: Array<string>;
+    /**
      * Goal Id
      */
     goal_id: string | null;
@@ -1669,6 +1677,10 @@ export type LoopDetail = {
      * Entities
      */
     entities: Array<LoopEntityItem>;
+    /**
+     * Sources
+     */
+    sources: Array<LoopSourceItem>;
 };
 
 /**
@@ -1747,6 +1759,44 @@ export type LoopListItem = {
      * Updated At
      */
     updated_at: string | null;
+    /**
+     * Promoted
+     */
+    promoted: boolean;
+    /**
+     * Source Inflows
+     */
+    source_inflows: Array<string>;
+};
+
+/**
+ * LoopSourceItem
+ */
+export type LoopSourceItem = {
+    /**
+     * Role
+     */
+    role: string;
+    /**
+     * Inflow
+     */
+    inflow: string;
+    /**
+     * Evidence Kind
+     */
+    evidence_kind: string | null;
+    /**
+     * Same Concern
+     */
+    same_concern: number | null;
+    /**
+     * Promoted
+     */
+    promoted: boolean;
+    /**
+     * Created At
+     */
+    created_at: string | null;
 };
 
 /**

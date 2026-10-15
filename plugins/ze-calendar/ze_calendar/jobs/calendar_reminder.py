@@ -60,7 +60,9 @@ class CalendarReminderJob:
                 log.debug("calendar_loop_no_evidence", event_id=signal.external_ref)
                 try:
                     await self.loop_extractor(
-                        f"{signal.title}. {signal.summary}", "calendar"
+                        f"{signal.title}. {signal.summary}",
+                        "calendar",
+                        source_ref=signal.external_ref,
                     )
                 except Exception as exc:
                     log.warning(

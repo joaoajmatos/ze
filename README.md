@@ -40,14 +40,15 @@ Companion is the only agent that speaks to you. It acts as the conductor: when a
 
 ### System One
 
-System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Four surfaces use it:
+System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Five surfaces use it:
 
 - **Speech-act admission** decides whether a finished turn states a durable fact worth keeping.
 - **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
 - **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
 - **Loop gate** decides whether text opens, declares, or resolves an open loop.
+- **Corroboration** decides whether an independent source is about the same open matter as a suspected loop, and can promote it.
 
-All four surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`). The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing, skills, and speech act, and the Haiku judge for the loop gate. See [configuration.md](docs/configuration.md#system_one).
+Four of the five surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`); the corroboration surface ships off until `make calibrate-corroboration` gives a held-out `ENABLE`. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing, skills, and speech act, the Haiku judge for the loop gate, and the plain evidence link for corroboration. See [configuration.md](docs/configuration.md#system_one).
 
 ### Goal engine
 
@@ -59,9 +60,9 @@ The Priority page ranks drifting loops, stuck goals, and correlation hypotheses 
 
 ### Open loops
 
-Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. At the start of a new session, Ze asks whether to keep track of up to three loops it noticed. The Open loops page (Automation) lists them for review. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. When a later independent source matches a suspected loop, Ze asks one System One same-concern question, raises the loop's confidence, and can promote it to `active`; the loop records each source, and the Open loops page labels it "Promoted · seen in: chat, email". At the start of a new session, Ze asks whether to keep track of up to three loops it noticed. The Open loops page (Automation) lists them for review. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
 
-![State machine showing an open loop moving from suspected to active to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped](docs/diagrams/root/open-loops.svg)
+![State machine showing an open loop moving from suspected to active, by an independent corroboration or a confirmation, then to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped](docs/diagrams/root/open-loops.svg)
 
 <sub>[Interactive version](docs/diagrams/root/open-loops.html)</sub>
 

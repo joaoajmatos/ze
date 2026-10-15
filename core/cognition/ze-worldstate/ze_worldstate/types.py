@@ -57,6 +57,31 @@ class OpenLoop:
     closed_at: datetime | None = None
 
 
+@dataclass(frozen=True)
+class SourceKey:
+    inflow: str
+    ref: str
+
+
+class LoopSourceRole(StrEnum):
+    ORIGIN = "origin"
+    CORROBORATION = "corroboration"
+
+
+@dataclass
+class LoopSource:
+    loop_id: UUID
+    role: LoopSourceRole
+    key: SourceKey
+    evidence: EvidenceRef | None = None
+    same_concern: float | None = None
+    promoted: bool = False
+    model: str | None = None
+    latency_ms: int | None = None
+    id: UUID | None = None
+    created_at: datetime | None = None
+
+
 class TrackOutcome:
     """Plain string constants for a `track_loop` ask (data-model.md)."""
 
@@ -90,4 +115,5 @@ class LoopAdmission:
     question_kinds: dict[str, str] = field(default_factory=dict)
     consumed: frozenset[str] = frozenset()
     skip_reason: str | None = None
+    source: SourceKey | None = None
     commit: Callable[[Sequence[EvidenceRef]], Awaitable[list[OpenLoop]]] | None = None
