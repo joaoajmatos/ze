@@ -23,10 +23,11 @@ Every plugin's `pyproject.toml` lists `ze-sdk` as its sole Ze dependency. The SD
 |---|---|
 | `__init__.py` | `ZePlugin`, `DataDomain`, `@agent`, `@tool`, `BaseAgent`, `Settings`, `DBPool`, `get_logger` |
 | `types.py` | Shared SDK types |
+| `undo_payload` | In `__init__.py`. Builds the undo data that a `REVERSIBLE` tool returns under the `undo` key |
 | `errors.py` | Plugin-facing error re-exports |
 | `proactive.py` | `ProactiveJob`, `ProactiveScheduler`, `ProactiveNotifier`, `PushLogStore` |
 | `contribution.py` | Contribution seam types, including `FeedbackKind`, `FeedbackRecord`, `FeedbackStore`, and `submit_feedback_record` |
-| `memory.py` | Memory types, `PostgresMemoryStore`, `SignalSource` re-export |
+| `memory.py` | Memory types, `PostgresMemoryStore`, `SignalSource` re-export, `FactRestoreConflictError` |
 | `channels.py` | Channel ABC and registry re-exports |
 | `onboarding.py` | Onboarding provider types |
 

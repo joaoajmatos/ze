@@ -22,9 +22,10 @@ Imported by `ze-plugin`, `ze-core`, and `ze-onboarding`. Re-exported to plugin a
 
 | Module | What it provides |
 |---|---|
-| `base_agent.py` | `BaseAgent` ABC with the agentic ReAct loop |
+| `base_agent.py` | `BaseAgent` ABC with the agentic ReAct loop. `tool_deps()` returns the internal tool dependencies, and `run_undo()` runs one undo tool outside the model loop |
 | `registry.py` | `@agent` decorator and `AgentRegistry` |
 | `tool.py` | `@tool` decorator, `ToolAccess`, and `validate_tool_declarations()`. Every `WRITE` tool declares `reversibility`, with `undo_tool`, `undo_note`, and `effect_phrase` |
+| `rollback.py` | `RollbackScope` (a ContextVar that links action records written during an undo to the record they undo) and `is_error_result()` |
 | `reversibility.py` | `ToolReversibility` enum (`REVERSIBLE`, `IRREVERSIBLE`) |
 | `client.py` | `LLMClient` Protocol |
 | `db.py` | `DBPool` Protocol |

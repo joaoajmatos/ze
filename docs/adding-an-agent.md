@@ -95,11 +95,53 @@ arguments.
 At startup Ze checks that every `undo_tool` names a registered `WRITE` tool and is not
 the tool itself.
 
-**Why it matters:** the user can press Retry on any reply. Retry regenerates a reply
-only when the turn ran no write tool. A turn that ran any `WRITE` tool, reversible or
-not, gets Retry unavailable, and the reason uses your `effect_phrase`. Ze does not undo
-actions on Retry in this version. The `REVERSIBLE` declaration records the undo for a
-later phase.
+**Why it matters:** the user can press Retry on any reply. Retry first undoes what the
+reply did, then regenerates it. A reply is retryable only when Ze can undo every write
+the turn made. Irreversible writes block Retry, and the reason uses your `effect_phrase`.
+
+#### The undo payload
+
+A `REVERSIBLE` tool tells Ze how to undo one specific call by returning an `undo` key in
+its result. Build the value with `undo_payload` from `ze_sdk`:
+
+```python
+from ze_sdk import undo_payload
+
+return {"ok": True, "reminder_id": rid, "undo": undo_payload(reminder_id=str(rid))}
+```
+
+Follow these rules:
+
+- The keys of `undo_payload` must match the parameters of the `undo_tool` that the model
+  does not set. Ze calls the undo tool with these values.
+- Values must be a string, number, boolean, `None`, or a list of those. Put identifiers
+  in the payload, never content. Any other value raises `AgentConfigError`.
+- Return the payload only when the call changed something and Ze can reverse it. Do not
+  return it for a no-op (for example, enabling a workflow that was already enabled), for
+  a call that failed, or for a record that existed before the call.
+- Ze removes the payload from the result before the model sees it. It stores the payload
+  on the trace. Ze also drops it for a tool that is not `REVERSIBLE` and for an error
+  result (`{"error": ...}`, `{"ok": False}`, or `{"status": "error"}`).
+- If the payload is missing, Ze treats the call as not undoable and Retry is unavailable
+  with the reason `not_undoable`.
+
+#### `tool_deps()` — dependencies shared with undo
+
+An undo tool runs outside the model loop, so Ze cannot take its non-model parameters
+from the loop. Override `tool_deps()` on your agent and return the stores and clients
+that your tools take as internal parameters. Pass the same dictionary to the loop:
+
+```python
+def tool_deps(self) -> dict:
+    return {"store": self._store}
+
+# in run():
+await self.agentic_loop(ctx, deps=self.tool_deps())
+```
+
+`BaseAgent.run_undo` merges `tool_deps()` with the undo payload by parameter name. Every
+parameter of an undo tool that the model does not set must be a key of `tool_deps()` or
+of the payload. Do not add a `ctx` parameter to an undo tool.
 
 **Draft mode suppression** — when the capability gate returns `DRAFT`, calling
 `self.call_tool("send_email", ctx, ...)` will **not** execute the tool. Instead,
