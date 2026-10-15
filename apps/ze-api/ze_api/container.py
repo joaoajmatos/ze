@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import aiohttp
 from sentence_transformers import SentenceTransformer
@@ -69,6 +72,7 @@ from ze_core.conversation import (
 )
 from ze_core.conversation.confirmations import PendingConfirmationStore
 from ze_core.conversation.messages import PostgresMessageStore
+from ze_core.conversation.rewind import history_rewindable
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
 from ze_correlation.bootstrap import build_correlation_stack
@@ -346,12 +350,22 @@ class ZeContainer(CoreContainer):
         thread_id: str,
         user_text: str,
         *,
+        replaces: UUID,
         config_extra: dict | None = None,
     ) -> TurnResult:
+        """Run the retry turn. The caller holds `hold_thread` for the whole retry."""
+        return await invoke_retry_turn(
+            self, thread_id, user_text, replaces=replaces, config_extra=config_extra
+        )
+
+    @asynccontextmanager
+    async def hold_thread(self, thread_id: str) -> AsyncIterator[None]:
+        """Hold the thread's turn lock across a retry: eligibility, undos, regeneration."""
         async with self.turn_lock.acquire(thread_id):
-            return await invoke_retry_turn(
-                self, thread_id, user_text, config_extra=config_extra
-            )
+            yield
+
+    async def retry_rewindable(self, thread_id: str) -> bool:
+        return await history_rewindable(self.graph, self._build_config(thread_id))
 
     async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:
         return await _locked_resume_turn(self, self.turn_lock, config, resume=resume)

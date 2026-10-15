@@ -130,14 +130,6 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
             decisions = [_compose_budget(d, False) for d in decisions]
             state_updates["budget_status"] = status
 
-    if config["configurable"].get("retry_mode"):
-        decisions = [
-            GateDecision.EXECUTE
-            if d in (GateDecision.AWAIT_CONFIRMATION, GateDecision.DRAFT)
-            else d
-            for d in decisions
-        ]
-
     is_parallel_compound = bool(envelope and envelope.is_compound and len(subtasks) > 1)
     if is_parallel_compound:
         state_updates["subtask_gate_decisions"] = [
@@ -152,12 +144,6 @@ async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
         return {"gate_decision": overall, **state_updates}
 
     decision = min(decisions, key=lambda d: _GATE_RANK.get(d, 0))
-    if config["configurable"].get("retry_mode") and decision in (
-        GateDecision.AWAIT_CONFIRMATION,
-        GateDecision.DRAFT,
-    ):
-        # A retry never opens a confirmation: WRITE tools are refused at dispatch.
-        decision = GateDecision.EXECUTE
     return {"gate_decision": decision, **state_updates}
 
 

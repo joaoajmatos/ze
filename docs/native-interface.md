@@ -64,7 +64,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "ping"}` | Heartbeat | Server replies with `{"type": "pong"}` |
 | `{"type": "ack", "ids": ["<uuid>", ...]}` | After displaying messages | Marks messages as read in `MessageStore` |
 | `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context |
-| `{"type": "retry", "message_id": "<uuid>", "thread_id": "..."}` | User presses Retry on the latest reply | Regenerates that reply with write tools blocked (see [Reply feedback and Retry](#reply-feedback-and-retry)) |
+| `{"type": "retry", "message_id": "<uuid>", "thread_id": "...", "confirmed_plan": ["<entry id>", ...]}` | User presses Retry on the latest reply | Undoes what the reply did, then regenerates it. `confirmed_plan` lists the undo entry ids the person confirmed. Omit it or send `null` when the plan is empty. See [Reply feedback and Retry](#reply-feedback-and-retry). |
 | `{"type": "command", "name": "cancel"}` | Cancel pending confirmation | Aborts the awaited graph turn |
 | `{"type": "command", "name": "costs"}` | Introspection | Returns a 7-day cost summary message |
 | `{"type": "command", "name": "status", "period_days": 1}` | Accountability | Returns an activity narrative (default: past 24 h; set `period_days: 7` for the weekly view) |
@@ -83,6 +83,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "confirm_request", "id": "...", "prompt": "...", "actions": [...]}` | Capability gate confirmation request |
 | `{"type": "confirm_cancel", "id": "..."}` | Confirmation cancelled (timeout or cancel command) |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
+| `{"type": "message_rollback", "message_id": "...", "thread_id": "...", "rollback": {...}}` | The stored rollback record of `message_id` changed. Sent on each state change of a retry. |
 | `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
 | `{"type": "error", "detail": "...", "code": "..."}` | Error from the server (e.g. "busy"). `code` is optional; see [Error codes](#error-codes). |
 
@@ -121,7 +122,8 @@ Clients should render `text` when present and fall back to a generic spinner whe
 ```
 
 `replaces` is set on a reply that a retry produced. `replaced_by` is set on a reply that a
-retry replaced.
+retry replaced. `rollback` is the stored rollback record of a reply whose retry undid
+actions, or `null`. See [Rollback record](#rollback-record).
 
 `components` is a list of server-driven UI component descriptors (from `ze-components`).
 The web app renders them below the message text.
@@ -224,9 +226,12 @@ The `error` frame has an optional `code` field.
 |---|---|
 | `busy` | A turn or retry already runs on this thread. |
 | `retry_unavailable` | Ze refused the retry before any graph run. The frame also carries `reason_code` and `reason_text`. |
-| `retry_failed` | The retry started but did not produce a reply. The original reply is unchanged. |
+| `retry_partial` | Ze could not undo every action, so it did not regenerate. The frame carries `rolled_back: true` and the `rollback` record. The original reply stays. |
+| `retry_failed` | The retry started but did not produce a reply. The frame carries `rolled_back` (`true` when Ze already undid actions) and, when `true`, the `rollback` record. The original reply stays. |
 
 Retry error frames also carry the `message_id` of the reply the person tried to retry.
+A `retry_unavailable` frame with `reason_code: "plan_changed"` also carries `plan`, the
+recomputed plan, so the client can ask the person again.
 
 ---
 
@@ -255,10 +260,19 @@ is evidence about the reply. It is never a fact about the user, and no turn read
 Retry regenerates the reply to the same user message. It never repeats a side effect.
 The server decides whether Retry is allowed. The client cannot override the decision.
 
-Retry is available for the latest assistant reply of a thread when every tool call in
-the turn was a read, and no approved confirmation or workspace run happened. A retry run
-blocks every write tool and skips memory admission. If the model wants to write, the
-reply says so in words and offers to do it as a normal request.
+Retry is available for the latest assistant reply of a thread when every write the turn
+made can be undone, and no approved confirmation or workspace run happened. A reply that
+only read data has an empty plan, and one press retries it. A reply that wrote
+something has a plan: the list of undos Retry will run first. Retry then regenerates
+the reply and skips memory admission. One policy applies to the new run: irreversible
+write tools are refused, and reversible write tools run under the normal gates. If the
+model wants an irreversible write, the reply says so in words and offers to do it as a
+normal request.
+
+Each plan entry has an `entry_id`, the `tool`, an `effect_phrase`, and an `undo_note`
+that says what the undo cannot restore. The `retry` field of the feedback view carries
+the plan. The web app shows the plan and asks the person to confirm before it sends
+`confirmed_plan`.
 
 When Retry is unavailable, the response carries a `reason_code` and a plain-words
 `reason_text` that names what the turn did, for example "This reply set a reminder."
@@ -267,8 +281,8 @@ The web app shows the text as visible description text, not only as a tooltip.
 | `reason_code` | Why Retry is unavailable |
 |---|---|
 | `not_latest` | Only the latest reply in a thread can be retried. |
-| `has_write_action` | The turn ran a write tool, and Ze has no more detail. |
-| `has_reversible_action` | The turn ran only actions that can be undone. Retry does not undo them. |
+| `not_undoable` | The turn ran a write tool that Ze cannot undo cleanly this time, for example the call failed or it left no undo data. |
+| `undo_failed` | An earlier Retry could not undo an action of this reply. Retry stays off so nothing is repeated. |
 | `has_irreversible_action` | The turn ran an action that cannot be undone. |
 | `confirmed_action` | The person approved a confirmation and the action ran. |
 | `workspace_run` | The turn started a workspace run. |
@@ -276,6 +290,9 @@ The web app shows the text as visible description text, not only as a tooltip.
 | `unknown_tool` | The trace predates effect metadata, or a tool was not in the registry. Unknown never means safe. |
 | `turn_pending` | The turn waits for a confirmation and has no final reply. |
 | `busy` | Ze is already working on the thread. |
+| `history_unavailable` | Ze cannot rewind the thread history, so it refuses before it undoes anything. Sent as a request-time refusal. |
+| `plan_changed` | The plan the client confirmed no longer matches. The frame carries the new `plan`. Nothing changed. Sent as a request-time refusal. |
+| `undo_not_confirmed` | The reply has a plan and the frame did not confirm it. Nothing changed. Sent as a request-time refusal. |
 | `disconnected` | Set by the web app when the socket is down. The server never returns it. |
 
 A denied or expired confirmation counts as no action. A failed write call still counts,
@@ -283,17 +300,46 @@ because it may have run in part.
 
 ### Retry flow
 
-1. The client sends the `retry` frame.
-2. The server loads the message and trace and evaluates eligibility again. An ineligible
-   request gets an `error` frame with `code: "retry_unavailable"` and no graph run.
+1. The client sends the `retry` frame. When the plan is not empty, the client first asks
+   the person to confirm it and puts the entry ids in `confirmed_plan`.
+2. The server loads the message and trace and evaluates eligibility again, under the
+   thread lock. It recomputes the plan and compares it with `confirmed_plan`. An
+   ineligible or mismatched request gets an `error` frame with
+   `code: "retry_unavailable"`, and nothing changes.
 3. The server appends a `retry_requested` feedback record to the old reply. The record
    stays even if the retry fails.
-4. The server sends `typing` frames and rewinds the thread's checkpointed history to
+4. The server undoes the plan entries and sends a `message_rollback` frame each time the
+   record changes. If an undo fails, the server stops, sends `error` with
+   `code: "retry_partial"`, and the original reply stays.
+5. The server sends `typing` frames and rewinds the thread's checkpointed history to
    before the old reply. It runs the graph with the original user text and `retry_mode`.
-5. On success the server stores the new reply with `replaces` set, marks the old reply
+6. On success the server stores the new reply with `replaces` set, marks the old reply
    superseded, and sends a `message` frame, then a `message_superseded` frame.
-6. On failure the server restores the history and sends `error` with
-   `code: "retry_failed"`. The original reply stays visible and unchanged.
+7. If a reversible write needs a confirmation, the server sends a `confirmation` frame
+   after the `retry` frame, and the retry waits. The `confirm` reply resolves it. An
+   approved or denied confirmation that produces a reply supersedes the old reply as in
+   step 6. If no reply results, the record state becomes `rolled_back_retry_failed`.
+8. On failure the server restores the history and sends `error` with
+   `code: "retry_failed"` and `rolled_back`. The original reply stays visible. The
+   notice names what Ze undid when `rolled_back` is `true`.
+
+### Rollback record
+
+A retry that undid actions writes a record to the `rollback` field of the old reply. The
+record has `state`, `entries`, and `replaced_by`. Each entry has `entry_id`, `tool`,
+`effect_phrase`, `outcome` (`undone`, `failed`, or `not_attempted`), `at`, and
+`failure_code`. The REST responses and WebSocket frames never expose the undo arguments.
+
+| `state` | Meaning |
+|---|---|
+| `partial` | An undo failed. Ze did not regenerate. The original reply stays. |
+| `rolled_back_awaiting_confirmation` | Ze undid the actions and waits for the person to confirm a new action. |
+| `rolled_back_retry_failed` | Ze undid the actions but could not write a new reply. |
+| `superseded` | A new reply replaced the old one. |
+
+The server stores the record state `rolled_back_retry_failed` as soon as the undos finish,
+before regeneration completes. A client should hide that notice while the feedback view
+reports `reason_code: "busy"`. The web app does this.
 
 A superseded reply stays in the database with its trace and feedback. `GET /api/v0/messages`
 hides it unless you pass `include_superseded=true`, and later turns never see it.

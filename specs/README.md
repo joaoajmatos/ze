@@ -220,6 +220,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 171 | [Loop Confirmation](phases/171-loop-confirmation/spec.md) | ✅ Implemented |
 | 172 | [Corroboration Promotion](phases/172-corroboration-promotion/spec.md) | ✅ Implemented |
 | 177 | [Interruption Governor](phases/177-interruption-governor/spec.md) | ✅ Implemented |
+| 180 | [Retry Rollback](phases/180-retry-rollback/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 

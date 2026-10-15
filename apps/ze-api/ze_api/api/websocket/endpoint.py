@@ -11,6 +11,11 @@ from ze_api.api.websocket.confirmation import handle_confirm
 from ze_api.api.websocket.goal_actions import handle_action
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.onboarding import send_onboarding_view
+from ze_api.api.websocket.rollback_state import (
+    public_rollback_record,
+    rollback_notice,
+    undone_phrases,
+)
 from ze_api.api.websocket.turns import handle_message, handle_retry
 from ze_logging import get_logger
 
@@ -212,6 +217,8 @@ async def websocket_endpoint(
                         container,
                         msg_store,
                         conn_mgr,
+                        pending_configs,
+                        thread_pending_requests,
                         thread_id,
                         container.feedback_store,
                         confirmation_store,
@@ -303,12 +310,14 @@ async def _run_retry_task(
     container: object,
     msg_store: object,
     conn_mgr: ConnectionManager,
+    pending_configs: dict[str, dict],
+    thread_pending_requests: dict[str, set[str]],
     thread_id: str,
     feedback_store: object,
     confirmation_store: object,
 ) -> None:
     try:
-        await handle_retry(
+        result = await handle_retry(
             data,
             container,
             msg_store,
@@ -316,16 +325,43 @@ async def _run_retry_task(
             feedback_store=feedback_store,
             confirmation_store=confirmation_store,
         )
+        if result is not None:
+            new_request_id, new_config = result
+            _track_gate(
+                pending_configs,
+                thread_pending_requests,
+                new_request_id,
+                thread_id,
+                new_config,
+            )
     except Exception as exc:
         log.exception("ws_retry_task_error", thread_id=thread_id, error=str(exc))
-        await conn_mgr.send_frame(
-            {
-                "type": "error",
-                "detail": "Retry failed. The original reply is unchanged.",
-                "code": "retry_failed",
-                "message_id": str(data.get("message_id") or ""),
-            },
-            thread_id,
-        )
+        await conn_mgr.send_frame(await _retry_crash_frame(data, msg_store), thread_id)
     finally:
         conn_mgr.clear_busy(thread_id)
+
+
+async def _retry_crash_frame(data: dict, msg_store: object) -> dict:
+    """Error frame for a retry that crashed. Says what was undone if a rollback ran."""
+    message_id = str(data.get("message_id") or "")
+    frame: dict = {
+        "type": "error",
+        "code": "retry_failed",
+        "message_id": message_id,
+        "detail": "Retry failed. The original reply is unchanged.",
+    }
+    try:
+        message = await msg_store.get_message(UUID(message_id))  # type: ignore[attr-defined]
+    except Exception as exc:
+        log.warning("ws_retry_crash_lookup_failed", error=str(exc))
+        frame["detail"] = (
+            "Retry failed. Ze could not confirm whether anything was undone."
+        )
+        return frame
+    record = message.rollback if message is not None else None
+    if record is None:
+        return frame
+    frame["detail"] = rollback_notice(record)
+    frame["rolled_back"] = bool(undone_phrases(record))
+    frame["rollback"] = public_rollback_record(record)
+    return frame

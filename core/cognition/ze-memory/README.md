@@ -26,7 +26,7 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 | Module | What it provides |
 |---|---|
 | `store.py` | `PostgresMemoryStore` — fact and episode CRUD |
-| `retriever.py` | Semantic retrieval with embedding similarity; signal ingest and pinning |
+| `retriever.py` | Semantic retrieval with embedding similarity; signal ingest and pinning; `retract_fact_and_restore` retracts a fact and restores the facts it displaced, and raises `FactRestoreConflictError` when a restore is not safe |
 | `extractor.py` | LLM-driven fact extraction from conversations |
 | `consolidator.py` | Dedup, expiry, and episode summarisation |
 | `consolidation_store.py` | Consolidation run persistence |

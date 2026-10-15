@@ -93,3 +93,23 @@ async def test_rewind_does_not_touch_other_threads() -> None:
     await _turn(graph, b, "two")
     await rewind_last_exchange(graph, a)
     assert len((await graph.aget_state(b)).values["messages"]) == 2
+
+
+async def test_history_rewindable_checks_the_trailing_pair():
+    from unittest.mock import AsyncMock, MagicMock
+
+    from ze_core.conversation.rewind import history_rewindable
+
+    graph = MagicMock()
+    graph.aget_state = AsyncMock(
+        return_value=MagicMock(
+            values={"messages": [{"role": "user"}, {"role": "assistant"}]}
+        )
+    )
+    assert await history_rewindable(graph, {}) is True
+    graph.aget_state = AsyncMock(
+        return_value=MagicMock(values={"messages": [{"role": "assistant"}]})
+    )
+    assert await history_rewindable(graph, {}) is False
+    graph.aget_state = AsyncMock(return_value=MagicMock(values={}))
+    assert await history_rewindable(graph, {}) is False

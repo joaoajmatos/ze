@@ -28,6 +28,8 @@ Nothing is omitted or summarized. Every stored row is included verbatim.
 Reply feedback travels with the messages it rates. The `feedback.records` domain holds
 your thumbs up, thumbs down, and Retry requests. Messages keep their `replaces` and
 `replaced_by` columns, so a reply that Retry replaced stays linked to its replacement.
+Messages also carry `rollback`, the record of what a Retry undid. It holds the tool names,
+the effect phrases, and the outcomes. It holds no undo arguments.
 Delete all data removes feedback records too.
 
 ---

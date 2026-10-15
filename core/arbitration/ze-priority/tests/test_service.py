@@ -60,14 +60,15 @@ async def test_submit_reprioritization_persists_and_submits_both_contributions()
     target, anchor = _item(rank=2), _item(rank=1)
     view = _view([anchor, target])
     override_store = AsyncMock()
-    override_store.create.side_effect = lambda o: o
+    override_store.create.side_effect = lambda o: (o, None)
 
-    result = await submit_reprioritization(
+    result, superseded_id = await submit_reprioritization(
         _request(target, anchor),
         priority_view=view,
         override_store=override_store,
     )
 
+    assert superseded_id is None
     assert result.source_id == target.source_id
     assert result.anchor_source_id == anchor.source_id
     override_store.create.assert_awaited_once()
@@ -77,7 +78,7 @@ async def test_submit_reprioritization_submits_via_collision_seam():
     target, anchor = _item(rank=2), _item(rank=1)
     view = _view([anchor, target])
     override_store = AsyncMock()
-    override_store.create.side_effect = lambda o: o
+    override_store.create.side_effect = lambda o: (o, None)
     collision_store = AsyncMock()
     nli_client = AsyncMock()
     nli_client.scores.return_value = [{"contradiction": 0.9}]
@@ -108,7 +109,7 @@ async def test_supersession_sets_superseded_at_on_prior_row():
     target, anchor = _item(rank=2), _item(rank=1)
     view = _view([anchor, target])
     override_store = AsyncMock()
-    override_store.create.side_effect = lambda o: o
+    override_store.create.side_effect = lambda o: (o, None)
 
     await submit_reprioritization(
         _request(target, anchor), priority_view=view, override_store=override_store
@@ -132,3 +133,17 @@ async def test_stale_target_raises() -> None:
             _request(target, anchor), priority_view=view, override_store=override_store
         )
     override_store.create.assert_not_called()
+
+
+async def test_submit_reprioritization_returns_superseded_id():
+    target, anchor = _item(rank=2), _item(rank=1)
+    view = _view([anchor, target])
+    prior = uuid4()
+    override_store = AsyncMock()
+    override_store.create.side_effect = lambda o: (o, prior)
+
+    _override, superseded_id = await submit_reprioritization(
+        _request(target, anchor), priority_view=view, override_store=override_store
+    )
+
+    assert superseded_id == prior

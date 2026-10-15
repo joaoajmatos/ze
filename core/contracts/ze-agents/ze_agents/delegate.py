@@ -276,13 +276,6 @@ async def run_delegate(
     if inspect.isawaitable(decision):
         decision = await decision
 
-    if ctx.retry_mode and decision in (
-        GateDecision.AWAIT_CONFIRMATION,
-        GateDecision.DRAFT,
-    ):
-        # A retry never opens a confirmation; WRITE tools are refused at dispatch.
-        decision = GateDecision.EXECUTE
-
     if decision == GateDecision.BLOCKED:
         log.warning("delegate_blocked", to_agent=agent_name, intent=intent)
         _update_conductor_ledger(ctx, agent_name, "skipped")
@@ -364,6 +357,8 @@ async def run_delegate(
             "success": call.success,
             "error": call.error,
             "gate": "approved" if approved_gate else call.gate,
+            "agent": call.agent,
+            "undo": call.undo,
         }
         for call in result.tool_calls
     ]

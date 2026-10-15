@@ -39,7 +39,7 @@ async def submit_override(
     collision_store: CollisionLogStore | None = None,
     nli_client: NLIClient | None = None,
 ) -> MergedPriorityItem:
-    override = await submit_reprioritization(
+    override, _superseded_id = await submit_reprioritization(
         request,
         priority_view=priority_view,
         override_store=override_store,

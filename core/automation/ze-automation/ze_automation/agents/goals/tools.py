@@ -4,7 +4,7 @@ import asyncio
 import html as _html
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import GoalPlanError
 from ze_automation.goals.executor import GoalExecutor
@@ -146,7 +146,10 @@ async def _check_convergence(
     description="Create a new goal and propose a milestone plan for user approval.",
     reversibility=ToolReversibility.REVERSIBLE,
     undo_tool="abandon_goal",
-    undo_note="Abandoning the goal does not undo work already started",
+    undo_note=(
+        "Abandoning the goal does not undo work already started. "
+        "A notification already sent stays"
+    ),
     effect_phrase="created a goal",
 )
 async def create_goal(
@@ -231,6 +234,7 @@ async def create_goal(
         "title": goal_title,
         "milestones": len(milestones),
         "gates": len(gates),
+        "undo": undo_payload(goal_id=str(goal.id)),
     }
 
 

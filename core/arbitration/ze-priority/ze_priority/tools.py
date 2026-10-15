@@ -4,16 +4,20 @@ contracts/tool-contract.md. Core tool (research.md R8), not a plugin tool."""
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 import numpy as np
 
 from ze_agents.nli import NLIClient
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_collision.store import CollisionLogStore
 from ze_logging import get_logger
 
-from ze_priority.errors import StaleReprioritizationTargetError
+from ze_priority.errors import (
+    StalePriorityRestoreError,
+    StaleReprioritizationTargetError,
+)
 from ze_priority.store import PriorityOverrideStore
 from ze_priority.types import PriorityItem, PriorityOverrideRequest
 from ze_priority.service import submit_reprioritization
@@ -77,7 +81,9 @@ def _resolve_anchor(
         "'more_urgent' or 'less_urgent'; pin is true only when the user "
         "unambiguously requests permanence."
     ),
-    reversibility=ToolReversibility.IRREVERSIBLE,
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="restore_priority_override",
+    undo_note="Restores the priority order from before this change",
     effect_phrase="changed what Ze treats as most urgent",
 )
 async def reprioritize_item(
@@ -116,7 +122,7 @@ async def reprioritize_item(
     anchor, relation = anchor_choice
 
     try:
-        override = await submit_reprioritization(
+        override, superseded_id = await submit_reprioritization(
             PriorityOverrideRequest(
                 source_kind=target.source_kind,
                 source_id=target.source_id,
@@ -143,4 +149,37 @@ async def reprioritize_item(
         "relation": relation,
         "anchor": anchor.title,
         "pinned": override.pinned,
+        "undo": undo_payload(
+            override_id=str(override.id),
+            prior_override_id=str(superseded_id) if superseded_id else None,
+        ),
+    }
+
+
+@tool(
+    access=ToolAccess.WRITE,
+    description=(
+        "Undo for reprioritize_item: restores the priority order from before "
+        "that change. Only used when rolling back a reprioritization."
+    ),
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="restored an earlier priority order",
+)
+async def restore_priority_override(
+    override_store: PriorityOverrideStore,
+    override_id: str,
+    prior_override_id: str | None = None,
+) -> dict:
+    try:
+        reinstated = await override_store.restore(
+            UUID(override_id),
+            UUID(prior_override_id) if prior_override_id else None,
+        )
+    except (StalePriorityRestoreError, ValueError) as exc:
+        log.warning("restore_priority_override_failed", error=str(exc))
+        return {"error": str(exc)}
+    return {
+        "ok": True,
+        "override_id": override_id,
+        "restored_prior": reinstated is not None,
     }

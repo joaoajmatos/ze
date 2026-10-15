@@ -1110,6 +1110,7 @@ export type FeedbackView = {
      * Trace Present
      */
     trace_present: boolean;
+    rollback?: RollbackRecordResponse | null;
 };
 
 /**
@@ -2088,6 +2089,7 @@ export type MessageSchema = {
      * Replaced By
      */
     replaced_by?: string | null;
+    rollback?: RollbackRecordResponse | null;
 };
 
 /**
@@ -2174,6 +2176,7 @@ export type MessageTraceResponse = {
      * Resume Recap Applied
      */
     resume_recap_applied?: boolean;
+    rollback?: RollbackTraceResponse | null;
     /**
      * Loop Offer Ids
      */
@@ -2837,6 +2840,72 @@ export type RetryEligibilityResponse = {
      * Reason Text
      */
     reason_text?: string | null;
+    /**
+     * Plan
+     */
+    plan?: Array<UndoPlanEntryResponse>;
+};
+
+/**
+ * RollbackEntryResponse
+ */
+export type RollbackEntryResponse = {
+    /**
+     * Entry Id
+     */
+    entry_id: string;
+    /**
+     * Tool
+     */
+    tool: string;
+    /**
+     * Effect Phrase
+     */
+    effect_phrase: string;
+    /**
+     * Outcome
+     */
+    outcome: 'undone' | 'failed' | 'not_attempted';
+    /**
+     * At
+     */
+    at?: string | null;
+    /**
+     * Failure Code
+     */
+    failure_code?: string | null;
+};
+
+/**
+ * RollbackRecordResponse
+ */
+export type RollbackRecordResponse = {
+    /**
+     * State
+     */
+    state: 'partial' | 'rolled_back_awaiting_confirmation' | 'rolled_back_retry_failed' | 'superseded';
+    /**
+     * Entries
+     */
+    entries?: Array<RollbackEntryResponse>;
+    /**
+     * Replaced By
+     */
+    replaced_by?: string | null;
+};
+
+/**
+ * RollbackTraceResponse
+ */
+export type RollbackTraceResponse = {
+    /**
+     * Replaces
+     */
+    replaces: string;
+    /**
+     * Entries
+     */
+    entries?: Array<RollbackEntryResponse>;
 };
 
 /**
@@ -3425,6 +3494,28 @@ export type UiManifestResponse = {
      * Settings Sections
      */
     settings_sections: Array<UiContributionSchema>;
+};
+
+/**
+ * UndoPlanEntryResponse
+ */
+export type UndoPlanEntryResponse = {
+    /**
+     * Entry Id
+     */
+    entry_id: string;
+    /**
+     * Tool
+     */
+    tool: string;
+    /**
+     * Effect Phrase
+     */
+    effect_phrase: string;
+    /**
+     * Undo Note
+     */
+    undo_note?: string | null;
 };
 
 /**

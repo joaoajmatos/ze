@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ze_agents.tool import undo_payload
 from uuid import uuid4
 
 from ze_agents.claims import ClaimKind
@@ -54,6 +55,7 @@ async def test_success_confirms_and_stamps():
         "id": str(store.loop.id),
         "title": "Switch bank",
         "state": "active",
+        "undo": undo_payload(loop_id=str(store.loop.id)),
     }
     assert store.stamped[0][1] == DECLARED_CONFIDENCE
 

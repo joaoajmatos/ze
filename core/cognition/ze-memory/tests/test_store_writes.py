@@ -537,6 +537,7 @@ def _make_contradiction_store():
     pool = MagicMock()
     conn = AsyncMock()
     conn.execute = AsyncMock()
+    conn.fetch = AsyncMock(return_value=[])
     conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
     pool.acquire = MagicMock(return_value=_async_ctx(conn))
 
@@ -568,8 +569,8 @@ async def test_contradiction_update_scoped_to_predicate_and_subject():
     )
     await store._write_fact_with_contradiction_check(fact)
 
-    conn.execute.assert_awaited_once()
-    _sql, pred_arg, subj_arg = conn.execute.call_args[0]
+    conn.fetch.assert_awaited_once()
+    _sql, pred_arg, subj_arg = conn.fetch.call_args[0]
     assert pred_arg == "preferred_name"
     assert subj_arg == subject_id
 
@@ -602,9 +603,9 @@ async def test_contradiction_different_subjects_use_different_scope():
     await store._write_fact_with_contradiction_check(fact_a)
     await store._write_fact_with_contradiction_check(fact_b)
 
-    assert conn.execute.await_count == 2
-    first_subj = conn.execute.call_args_list[0][0][2]
-    second_subj = conn.execute.call_args_list[1][0][2]
+    assert conn.fetch.await_count == 2
+    first_subj = conn.fetch.call_args_list[0][0][2]
+    second_subj = conn.fetch.call_args_list[1][0][2]
     assert first_subj == subject_a
     assert second_subj == subject_b
     assert first_subj != second_subj
@@ -627,8 +628,8 @@ async def test_contradiction_null_subject_scoped_independently():
     )
     await store._write_fact_with_contradiction_check(fact)
 
-    conn.execute.assert_awaited_once()
-    _sql, pred_arg, subj_arg = conn.execute.call_args[0]
+    conn.fetch.assert_awaited_once()
+    _sql, pred_arg, subj_arg = conn.fetch.call_args[0]
     assert pred_arg == "user_timezone"
     assert subj_arg is None
 
@@ -662,8 +663,8 @@ async def test_persist_facts_contradicts_per_subject():
     await store._persist_facts(facts)
 
     # Two UPDATE calls, one per subject
-    assert conn.execute.await_count == 2
-    subjects_seen = {conn.execute.call_args_list[i][0][2] for i in range(2)}
+    assert conn.fetch.await_count == 2
+    subjects_seen = {conn.fetch.call_args_list[i][0][2] for i in range(2)}
     assert subjects_seen == {subject_a, subject_b}
 
 
@@ -753,8 +754,12 @@ async def test_write_episode_returns_the_inserted_id():
     conn.fetchrow = AsyncMock(return_value={"id": episode_id})
     store, _ = _make_store(pool)
 
-    with patch("ze_memory.retriever.fire_and_forget", new=lambda coro, **_: coro.close()):
-        result = await store.write_episode("s", "companion", "prompt", "reply", [0.1, 0.2])
+    with patch(
+        "ze_memory.retriever.fire_and_forget", new=lambda coro, **_: coro.close()
+    ):
+        result = await store.write_episode(
+            "s", "companion", "prompt", "reply", [0.1, 0.2]
+        )
 
     assert result == episode_id
 
@@ -764,4 +769,7 @@ async def test_write_episode_returns_none_when_the_pool_raises():
     conn.fetchrow = AsyncMock(side_effect=RuntimeError("db down"))
     store, _ = _make_store(pool)
 
-    assert await store.write_episode("s", "companion", "prompt", "reply", [0.1, 0.2]) is None
+    assert (
+        await store.write_episode("s", "companion", "prompt", "reply", [0.1, 0.2])
+        is None
+    )

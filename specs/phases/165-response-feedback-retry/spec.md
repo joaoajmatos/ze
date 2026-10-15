@@ -224,6 +224,8 @@ A person opens the trace panel for a message. Next to routing, memory, tools and
 
 ## Deferred: Undo-then-Regenerate (future phase)
 
+Phase 180 ([Retry Rollback](../180-retry-rollback/spec.md)) delivers this deferred work.
+
 The user wants automatic rollback of a turn's reversible actions followed by regeneration. It is out of scope here and becomes its own phase. This phase only makes the declaration shape ready for it (FR-014). Inventory of WRITE tools as found in code on 2026-10-09 (file:line of the `def`):
 
 Reversible, with a domain undo:

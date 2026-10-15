@@ -282,7 +282,7 @@ def _extract_tool_calls(
         for c in (getattr(r, "tool_calls", None) or [])
     ]
     confirmed_by_call = {id(c): ok for c, ok in tagged}
-    for tc in flatten_tool_calls([c for c, _ in tagged]):
+    for call_index, tc in enumerate(flatten_tool_calls([c for c, _ in tagged])):
         name = getattr(tc, "tool_name", "unknown")
         raw_result = getattr(tc, "result", "") or ""
         snippet = str(raw_result)[:200] if raw_result else ""
@@ -313,6 +313,10 @@ def _extract_tool_calls(
                 undo_tool=spec.undo_tool if spec is not None else None,
                 gate=gate,
                 effect_phrase=spec.effect_phrase if spec is not None else None,
+                agent=getattr(tc, "agent", None),
+                undo_args=getattr(tc, "undo", None),
+                undo_note=spec.undo_note if spec is not None else None,
+                call_index=call_index,
             )
         )
     return result

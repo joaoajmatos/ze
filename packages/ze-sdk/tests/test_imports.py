@@ -41,3 +41,13 @@ def test_correlation_reexports_are_the_real_classes() -> None:
     assert PostgresHypothesisStore is ze_correlation.store.PostgresHypothesisStore
     assert HypothesisNotFoundError is ze_correlation.store.HypothesisNotFoundError
     assert HypothesisStore is not None
+
+
+def test_undo_payload_reexport():
+    import ze_agents.tool
+    import ze_sdk
+    from ze_sdk import undo_payload
+
+    assert undo_payload is ze_agents.tool.undo_payload
+    assert "undo_payload" in ze_sdk.__all__
+    assert undo_payload(reminder_id="r1") == {"reminder_id": "r1"}
