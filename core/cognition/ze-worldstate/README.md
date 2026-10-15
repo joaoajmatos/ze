@@ -29,7 +29,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 ## Corroboration
 
-A `suspected` loop becomes real when a second, independent source mentions the same matter. Phase 172 turns that second mention into a promotion. The path runs when the 168 gate admits a text as a concern and `find_matching_loop` returns a `suspected` loop, on both the `_create_suspected_loop` matched branch and the declared-path match.
+A `suspected` loop gains support when a second, independent source mentions the same matter. Phase 172 turns that second mention into a promotion. The path runs when the 168 gate admits a text as a concern and `find_matching_loop` returns a `suspected` loop, on both the `_create_suspected_loop` matched branch and the declared-path match.
 
 ### Independence (`corroboration.py`)
 
