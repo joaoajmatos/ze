@@ -373,6 +373,8 @@ def parse_bars(text: str) -> CorroborationSurfaceConfig:
         corroborate_hold, promote_hold = (float(x) for x in text.split(","))
     except ValueError:
         raise SystemExit("--bars needs CORROBORATE,PROMOTE, e.g. 0.6,0.85")
+    if not all(0.0 <= v <= 1.0 for v in (corroborate_hold, promote_hold)):
+        raise SystemExit("--bars values must be within [0, 1]")
     if corroborate_hold > promote_hold:
         raise SystemExit("--bars needs CORROBORATE <= PROMOTE")
     return CorroborationSurfaceConfig(True, corroborate_hold, promote_hold)

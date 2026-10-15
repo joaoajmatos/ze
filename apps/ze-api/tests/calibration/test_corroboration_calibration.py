@@ -6,6 +6,7 @@ the script under pytest constructs nothing and never reaches OpenRouter or Syste
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import sys
 from pathlib import Path
@@ -121,14 +122,39 @@ def test_shape_problems_catch_violations(calib):
     assert any("held-out" in p for p in calib.shape_problems(leaked + tuned[1:], holdout))
 
 
+def _module_scope_import_roots(tree: ast.Module) -> set[str]:
+    roots: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            roots.add((node.module or "").split(".")[0])
+    return roots
+
+
+def _function_imports(tree: ast.Module, func_name: str) -> set[str]:
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and (
+            node.name == func_name
+        ):
+            return {
+                child.module or ""
+                for child in ast.walk(node)
+                if isinstance(child, ast.ImportFrom)
+            }
+    return set()
+
+
 def test_question_and_live_path_are_offline(calib):
     assert calib.Q_SAME == "same_concern"
     assert calib.QUESTION.type == "noul"
-    # The live client is imported lazily inside main_async; a module-scope import would be a bug
-    # that could construct a client at collection time.
-    module_level = [ln for ln in _SCRIPT.read_text(encoding="utf-8").splitlines() if ln and not ln[0].isspace()]
-    assert not any("OpenRouterSystemOneClient" in ln for ln in module_level)
+    tree = ast.parse(_SCRIPT.read_text(encoding="utf-8"))
+    # No ze_core import at module scope: a future one could touch the client or the embedder at
+    # collection time, and the live path must stay function-local.
+    assert "ze_core" not in _module_scope_import_roots(tree)
     assert not hasattr(calib, "OpenRouterSystemOneClient")
+    # The guard is not vacuous: the live client really is imported inside main_async.
+    assert "ze_core.openrouter.system_one" in _function_imports(tree, "main_async")
 
 
 # --- pure scoring and the decision helpers ---------------------------------------------
@@ -200,3 +226,14 @@ def test_suggest_bars_keeps_corroborate_hold_at_or_below_promote_hold(calib):
     assert cfg.corroborate_hold <= cfg.promote_hold
     counts = calib.score(rows, calib.kinds_for(rows, results, cfg))
     assert counts.false_promotions == 0 and counts.precision >= calib.PRECISION_FLOOR
+
+
+@pytest.mark.parametrize("bars", ["0.6,1.5", "-0.5,0.5", "nan,0.5", "0.9,0.6", "0.6"])
+def test_parse_bars_rejects_invalid_bars(calib, bars):
+    with pytest.raises(SystemExit):
+        calib.parse_bars(bars)
+
+
+def test_parse_bars_accepts_a_valid_pair(calib):
+    cfg = calib.parse_bars("0.6,0.85")
+    assert (cfg.corroborate_hold, cfg.promote_hold) == (0.6, 0.85)
