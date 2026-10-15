@@ -96,14 +96,14 @@ class GoalAgent(BaseAgent):
             "Inspect goal status, list active goals, or review progress and traces.",
         ),
         "create": Intent(
-            Mode.AUTONOMOUS,
+            Mode.CONFIRM,
             "Create a new multi-week goal and decompose it into milestones.",
         ),
         "update": Intent(
-            Mode.AUTONOMOUS,
+            Mode.CONFIRM,
             "Pause, resume, or redirect (steer) an active goal mid-execution.",
         ),
-        "delete": Intent(Mode.AUTONOMOUS, "Abandon a goal."),
+        "delete": Intent(Mode.CONFIRM, "Abandon a goal."),
     }
 
     def __init__(

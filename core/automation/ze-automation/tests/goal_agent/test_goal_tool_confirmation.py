@@ -45,6 +45,11 @@ def test_goals_declares_read_first_and_read_is_autonomous():
     assert GoalAgent.intents["read"].mode == Mode.AUTONOMOUS
 
 
+def test_goal_write_intents_keep_the_graph_gate_for_compound_turns():
+    for name in ("create", "update", "delete"):
+        assert GoalAgent.intents[name].mode == Mode.CONFIRM
+
+
 async def test_abandon_asks_before_acting():
     store = _store(_goal())
     with pytest.raises(ToolConfirmationRequired) as exc:

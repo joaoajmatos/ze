@@ -10,7 +10,7 @@ from langgraph.types import interrupt
 
 from ze_agents.types import GateDecision
 from ze_agents.errors import AgentTimeoutError
-from ze_agents.interrupt import tool_interrupt_fn
+from ze_agents.interrupt import tool_interrupt_fn, workspace_confirmed
 from ze_logging import get_logger
 from ze_agents.registry import get_agent
 from ze_core.orchestration.state import AgentState
@@ -394,7 +394,12 @@ async def _execute_single(
         **_conductor_kwargs(base_ctx),
     )
     bind_delegate_evaluator(ctx, config, state)
-    result = await _run_with_timeout(subtask.agent, ctx, token_queue=token_queue)
+    result = await _run_with_timeout(
+        subtask.agent,
+        ctx,
+        token_queue=token_queue,
+        confirmed=subtask.agent in (state.get("approved_agents") or []),
+    )
     from ze_core.orchestration.procedure_activation import record_guided_actions
 
     await record_guided_actions(ctx, result, config)
@@ -491,6 +496,7 @@ async def _execute_compound(
         return ctx
 
     to_run: list[tuple[int, Any, GateDecision]] = []
+    graph_approved: set[int] = set()
     new_awaits: list[dict[str, Any]] = []
     for i, st in enumerate(subtasks):
         if i in completed_set or i in denied or i in pending_indexes:
@@ -500,6 +506,7 @@ async def _execute_compound(
             continue
         if i in approved:
             to_run.append((i, st, GateDecision.EXECUTE))
+            graph_approved.add(i)
             continue
         if decision == GateDecision.AWAIT_CONFIRMATION:
             new_awaits.append(
@@ -517,8 +524,13 @@ async def _execute_compound(
     if to_run:
         ran = await asyncio.gather(
             *[
-                _run_with_timeout(st.agent, _make_ctx(st, decision))
-                for _, st, decision in to_run
+                _run_with_timeout(
+                    st.agent,
+                    _make_ctx(st, decision),
+                    tool_interrupts=False,
+                    confirmed=i in graph_approved,
+                )
+                for i, st, decision in to_run
             ]
         )
         for (i, _, _), result in zip(to_run, ran):
@@ -539,7 +551,17 @@ async def _run_with_timeout(
     agent_name: str,
     ctx: AgentContext,
     token_queue: asyncio.Queue | None = None,
+    *,
+    tool_interrupts: bool = True,
+    confirmed: bool = False,
 ) -> AgentResult:
+    """Run one agent.
+
+    `tool_interrupts=False` is for subtasks that run inside `asyncio.gather`: a
+    tool-level confirmation must not interrupt from a child task, because the node
+    would replay its non-completed siblings on resume. The graph-level per-subtask
+    gate asks first; `confirmed=True` says that gate already got the user's yes.
+    """
     from ze_core.telemetry.context import set_agent_context
 
     set_agent_context(agent_name)
@@ -547,7 +569,8 @@ async def _run_with_timeout(
     instance = get_agent(agent_name)
     timeout = float(getattr(type(instance), "timeout", 30))
 
-    interrupt_token = tool_interrupt_fn.set(interrupt)
+    interrupt_token = tool_interrupt_fn.set(interrupt if tool_interrupts else None)
+    confirmed_token = workspace_confirmed.set(confirmed)
     try:
         if token_queue is not None:
 
@@ -574,4 +597,5 @@ async def _run_with_timeout(
         except asyncio.TimeoutError:
             raise AgentTimeoutError(f"{agent_name} timed out after {timeout}s")
     finally:
+        workspace_confirmed.reset(confirmed_token)
         tool_interrupt_fn.reset(interrupt_token)
