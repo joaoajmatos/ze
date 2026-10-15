@@ -777,7 +777,7 @@ export const markAllNotificationsRead = <ThrowOnError extends boolean = false>(o
 /**
  * List open loops
  *
- * Return open loops, optionally filtered to one lifecycle state. Defaults to non-terminal states (suspected, active, drifting).
+ * Return open loops, optionally filtered to one lifecycle state. Defaults to non-terminal states (suspected, active, drifting). Each item reports whether the loop was promoted by corroboration and the distinct inflows it was seen in.
  */
 export const listLoops = <ThrowOnError extends boolean = false>(options?: Options<ListLoopsData, ThrowOnError>): RequestResult<ListLoopsResponses, ListLoopsErrors, ThrowOnError> => (options?.client ?? client).get<ListLoopsResponses, ListLoopsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -788,7 +788,7 @@ export const listLoops = <ThrowOnError extends boolean = false>(options?: Option
 /**
  * Get open loop detail
  *
- * Return full detail for one loop, including its evidence and entity links.
+ * Return full detail for one loop, including its evidence, entity links and recorded sources (origin and counted corroborations, with the same-concern score) in time order.
  */
 export const getLoop = <ThrowOnError extends boolean = false>(options: Options<GetLoopData, ThrowOnError>): RequestResult<GetLoopResponses, GetLoopErrors, ThrowOnError> => (options.client ?? client).get<GetLoopResponses, GetLoopErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

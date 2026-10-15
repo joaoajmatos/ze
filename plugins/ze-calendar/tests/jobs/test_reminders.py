@@ -577,7 +577,7 @@ async def test_assess_intervals_tolerates_fenced_and_prose_replies(reply):
 # ── CalendarReminderJob loop extraction (Phase 170) ─────────────────────────────
 
 
-async def test_calendar_loop_extractor_two_positional_args_no_evidence():
+async def test_calendar_loop_extractor_receives_external_ref():
     from types import SimpleNamespace
 
     from ze_calendar.jobs.calendar_reminder import CalendarReminderJob
@@ -603,5 +603,5 @@ async def test_calendar_loop_extractor_two_positional_args_no_evidence():
     await job._emit_via_source()
 
     extractor.assert_awaited_once_with(
-        "Dentist appointment. Checkup at 10:00", "calendar"
+        "Dentist appointment. Checkup at 10:00", "calendar", source_ref="evt_1"
     )

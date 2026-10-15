@@ -1327,6 +1327,8 @@ class LoopListItem(BaseModel):
     drift_rationale: str | None
     created_at: str | None
     updated_at: str | None
+    promoted: bool
+    source_inflows: list[str]
 
 
 class LoopEvidenceItem(BaseModel):
@@ -1341,10 +1343,20 @@ class LoopEntityItem(BaseModel):
     entity_type: str
 
 
+class LoopSourceItem(BaseModel):
+    role: str
+    inflow: str
+    evidence_kind: str | None
+    same_concern: float | None
+    promoted: bool
+    created_at: str | None
+
+
 class LoopDetail(LoopListItem):
     goal_id: UUIDType | None
     evidence: list[LoopEvidenceItem]
     entities: list[LoopEntityItem]
+    sources: list[LoopSourceItem]
 
 
 class LoopTransitionResponse(BaseModel):

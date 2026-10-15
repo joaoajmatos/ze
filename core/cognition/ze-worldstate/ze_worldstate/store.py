@@ -12,8 +12,11 @@ from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.types import (
     LoopClaimKind,
+    LoopSource,
+    LoopSourceRole,
     LoopState,
     OpenLoop,
+    SourceKey,
 )
 
 log = get_logger(__name__)
@@ -52,6 +55,24 @@ def _loop_from_row(row) -> OpenLoop:
         updated_at=row["updated_at"],
         confirmed_at=row["confirmed_at"],
         closed_at=row["closed_at"],
+    )
+
+
+def _source_from_row(row) -> LoopSource:
+    kind, evidence_id = row["evidence_kind"], row["evidence_id"]
+    return LoopSource(
+        id=row["id"],
+        loop_id=row["loop_id"],
+        role=LoopSourceRole(row["role"]),
+        key=SourceKey(row["inflow"], row["source_ref"]),
+        evidence=EvidenceRef(kind=kind, id=evidence_id)
+        if kind and evidence_id
+        else None,
+        same_concern=row["same_concern"],
+        promoted=row["promoted"],
+        model=row["model"],
+        latency_ms=row["latency_ms"],
+        created_at=row["created_at"],
     )
 
 
@@ -99,6 +120,20 @@ class LoopStore(Protocol):
     async def stamp_declared(
         self, loop_id: UUID, *, confidence: float, deadline: datetime
     ) -> None: ...
+
+    async def add_source(self, source: LoopSource) -> LoopSource | None: ...
+
+    async def list_sources(self, loop_id: UUID) -> list[LoopSource]: ...
+
+    async def list_sources_for(
+        self, loop_ids: list[UUID]
+    ) -> dict[UUID, list[LoopSource]]: ...
+
+    async def promote(
+        self, loop_id: UUID, *, confidence: float, window_days: int
+    ) -> OpenLoop | None: ...
+
+    async def mark_source_promoted(self, source_id: UUID) -> None: ...
 
 
 class PostgresLoopStore:
@@ -368,4 +403,84 @@ class PostgresLoopStore:
                 """,
                 loop_id,
                 window_days,
+            )
+
+    async def add_source(self, source: LoopSource) -> LoopSource | None:
+        evidence = source.evidence
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                INSERT INTO open_loop_sources
+                  (loop_id, role, inflow, source_ref, evidence_kind, evidence_id,
+                   same_concern, promoted, model, latency_ms)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                ON CONFLICT (loop_id, inflow, source_ref) DO NOTHING
+                RETURNING *
+                """,
+                source.loop_id,
+                source.role.value,
+                source.key.inflow,
+                source.key.ref,
+                evidence.kind if evidence else None,
+                evidence.id if evidence else None,
+                source.same_concern,
+                source.promoted,
+                source.model,
+                source.latency_ms,
+            )
+        return _source_from_row(row) if row else None
+
+    async def list_sources(self, loop_id: UUID) -> list[LoopSource]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM open_loop_sources WHERE loop_id = $1"
+                " ORDER BY created_at",
+                loop_id,
+            )
+        return [_source_from_row(r) for r in rows]
+
+    async def list_sources_for(
+        self, loop_ids: list[UUID]
+    ) -> dict[UUID, list[LoopSource]]:
+        if not loop_ids:
+            return {}
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM open_loop_sources WHERE loop_id = ANY($1)"
+                " ORDER BY created_at",
+                loop_ids,
+            )
+        grouped: dict[UUID, list[LoopSource]] = {}
+        for row in rows:
+            grouped.setdefault(row["loop_id"], []).append(_source_from_row(row))
+        return grouped
+
+    async def promote(
+        self, loop_id: UUID, *, confidence: float, window_days: int
+    ) -> OpenLoop | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE open_loops
+                SET state = 'active', confidence = GREATEST(confidence, $2),
+                    confirmed_at = now(),
+                    drift_deadline = now() + make_interval(days => $3),
+                    drift_rationale = NULL, updated_at = now()
+                WHERE id = $1 AND state = 'suspected'
+                RETURNING *
+                """,
+                loop_id,
+                confidence,
+                window_days,
+            )
+        if row is None:
+            return None
+        log.info("open_loop_promoted", loop_id=str(loop_id))
+        return _loop_from_row(row)
+
+    async def mark_source_promoted(self, source_id: UUID) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE open_loop_sources SET promoted = true WHERE id = $1",
+                source_id,
             )

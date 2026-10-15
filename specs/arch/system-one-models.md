@@ -1,6 +1,6 @@
 # System One models — living roadmap
 
-> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; the first four surfaces are on in the shipped config with calibrated bars: 163 (2026-10-09), 164 as fixed by phase [167](../phases/167-routing-choice-criteria/spec.md) (2026-10-12), and 166 (2026-10-12). See [docs/system-one.md](../../docs/system-one.md) for the reader-facing summary. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented; enabled 2026-10-12. Phase [168](../phases/168-loop-extraction-gate/spec.md) (O4, loop extraction gate) is specified and in progress; it is enabled in the shipped config (2026-10-12) after an `ENABLE` verdict on the held-out set for English and Portuguese. Later opportunities in this document wait for their own phase.
+> **Status:** Living. Phases [162](../phases/162-system-one-client/spec.md)–[164](../phases/164-routing-choice-after-e5/spec.md) Implemented; the first four surfaces are on in the shipped config with calibrated bars: 163 (2026-10-09), 164 as fixed by phase [167](../phases/167-routing-choice-criteria/spec.md) (2026-10-12), and 166 (2026-10-12). See [docs/system-one.md](../../docs/system-one.md) for the reader-facing summary. Phase [166](../phases/166-skill-suggestion-system-one/spec.md) (O3) specified and implemented; enabled 2026-10-12. Phase [168](../phases/168-loop-extraction-gate/spec.md) (O4, loop extraction gate) is specified and in progress; it is enabled in the shipped config (2026-10-12) after an `ENABLE` verdict on the held-out set for English and Portuguese. Phase [172](../phases/172-corroboration-promotion/spec.md) (corroboration promotion) is implemented; its surface ships off with null bars after a held-out `KEEP OFF` on 2026-10-15. Later opportunities in this document wait for their own phase.
 > **Date:** 2026-09-30
 > **Related:** [Ze Doctrine](ze-doctrine.md), [Contribution Seam](contribution-seam.md), [Memory Honesty Roadmap](memory-honesty-roadmap.md), [Claim Topology](claim-topology.md), [OpenRouter Gateway](openrouter-gateway.md), [Local Embeddings](local-embeddings.md), [Pre-v1 Hard Cuts](pre-v1-hard-cuts.md), NLI [080](../phases/080-nli-client/spec.md), speech-act [142](../phases/142-speech-act-routing/spec.md)–[148](../phases/148-extractor-dual-write/spec.md), E5 routing [160](../phases/160-e5-routing-confidence/spec.md)
 
@@ -89,6 +89,7 @@ Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selec
 | O2 | Agent after E5 shortlist + complexity | Cosine-as-confidence; regex complexity; Haiku on low gap | Choice shortlist ∪ `none`; Score complexity | 4 + 1 (decompose) | **Complement E5**; keep decompose | M | **164 (Implemented); 167 (Implemented, enabled)** |
 | O3 | Skill gating after E5 shortlist | Every skill with cosine ≥ 0.5 applies, plus `/slug` | Choice shortlist ∪ `none`; Noul `needs_skill`; `/slug` stays code | 1 | **Complement E5**; keep `/slug` | M | **166 (Implemented)** |
 | O4 | Loop extraction gate | Haiku JSON `is_loop` | Three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration`); Haiku writes the title and window only after a positive gate | 1 + 2 (title) | **Replace LLM judge**; keep matching, dismissal, drift | M | **168 (Implemented; enabled)** |
+| O4b | Suspected-loop corroboration | A match on a `suspected` loop links the evidence and does nothing else | One Noul `same_concern` on an independent match; two bars (corroborate, promote); `open_loop_sources` provenance | 1 | **Complement E5/matching**; E5 is the shortlist via `find_matching_loop`, independence and arithmetic stay in code | M | **172 (Implemented; ships off)** |
 
 ### Queued (do not start before their own phase)
 
@@ -118,6 +119,8 @@ Implement **in order**. 163 and 164 both need 162; they do not need each other. 
 4. **166 — Skill gating (Implemented)** — Shortlist in code; Choice ∪ `none` plus Noul `needs_skill`; one automatic skill; `/skill-name` unchanged; trace marks below-floor applies. Depends on 162; reuses the 163/164 patterns, not their bars.
 
 5. **168 — Loop extraction gate (Implemented)** — Three Nouls gate extraction; Haiku writes the title and window only after a positive gate; the conversation gate runs in `write_memory`, other inflows run the gate, log judgments, and write no trace rows; enabled 2026-10-12 with `loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8 after an `ENABLE` verdict for EN and PT. Depends on 162; reuses the 163/166 patterns, not their bars.
+
+6. **172 — Corroboration promotion (Implemented)** — one Noul `same_concern` on an independent suspected-loop match; two bars set the loop's confidence or promote it to `active`; code owns independence and the arithmetic; provenance in `open_loop_sources` (`zw003`); ships off after a held-out `KEEP OFF` (2026-10-15). Depends on 162; reuses the 168 patterns, not its bars.
 
 Later: O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
 
@@ -185,6 +188,7 @@ preprocess → embed_route → [decompose] → fetch_context → match_skills �
 | Inline loops | entity overlap, no τ | keep (policy) |
 | `passes_push_bar` | numeric τ + NLI | queued O6 |
 | Loop extraction | Haiku `is_loop` | **168 Implemented** — three Nouls gate, Haiku title writer; Haiku `is_loop` on fallback |
+| Loop corroboration | Link evidence only (170) | **172 Implemented** — Noul `same_concern`; promote above the bar |
 | Correlate / dream | LLM + NLI/Sonnet | queued O7/O8 |
 
 Proactive: `CorrelationJob` (LLM), `AttentionArbitrationJob` (rank; `PushSweepJob` is **removed**). Drift/stale/decay jobs are time/math only.
@@ -206,6 +210,8 @@ Proactive: `CorrelationJob` (LLM), `AttentionArbitrationJob` (rank; `PushSweepJo
 | `passes_push_bar` | `ze_worldstate/surfacing.py` |
 | Loop gate (`decide()`, questions, bars) | `ze_worldstate/loop_judge.py` |
 | `LoopInflow` (gate + commit, title writer) | `ze_worldstate/admission.py` |
+| Loop corroboration (independence rule, effects) | `ze_worldstate/corroboration.py` |
+| Corroboration judge (`same_concern`, bars, `decide()`) | `ze_worldstate/corroboration_judge.py` |
 | Loop extraction (109 Haiku gate, fallback) | `ze_worldstate/extraction.py` |
 | `MessageTrace` | `ze_core/conversation/messages/types.py` |
 | `CapabilityGate` | `ze_core/capability/gate.py` |
@@ -238,3 +244,5 @@ Defaults: `ze_agents/defaults.py` (`ROUTING_THRESHOLD` 0.73, gap 0.02); `apps/ze
 6. TypeSafe data handling vs biography text in `state` (prefer zero retention if offered).
 
 > **164 tuning notes:** The first live run (model `typesafe/jev-1.13`, 56 rows) gave Choice accuracy 0.87 EN / 0.91 PT. Every miss was a research turn sent to companion or `none`, and research was outside the top-4 shortlist in 3 cases. The Score arrives as the expected level index (0 lookup, 1 single_tool, 2 multi_hop), not a [0, 1] value; the judge now divides it by 2, so `complexity_lookup_max` stays on [0, 1]. Gold-agent shortlist recall (`python eval/calibration/routing.py --recall`, offline, no credits) was 0.826 at k=4 and 0.870 at k=5; after rewriting the research description it is 0.870 at k=4 and 0.957 at k=5, so `shortlist_k` defaults to 5. No `choice_trust` bar was safe on that run; bars stay `null` until the next live run.
+
+> **172 tuning notes:** Run 2026-10-15 by the ENG lead with `make calibrate-corroboration` (model `typesafe/jev-1.13`; 84 tuned rows, 42 EN + 42 PT; 47 held-out, 24 EN + 23 PT). Question wording unchanged from R4. On the tuned set, precision is 1.000 at every bar and no negative scores above 0.5, so the grid cannot separate corroborate from promote by false promotions; the ENG lead chose `corroborate_hold` 0.6 and `promote_hold` 0.8 (scores of 0.8 or more are 32 of 32 gold-same; recall 0.91 at 0.6), a deliberate departure from R9's arithmetic made before the held-out run. The E5 title-cosine baseline at 0.75 matches every row (tuned precision 0.524 / recall 1.000; held-out precision 0.574 / recall 1.000), so its recall is a ceiling, not a rival. Held-out verdict, one run at 0.6 / 0.8: EN ENABLE (precision 1.000, recall 14 of 14, zero false promotions); PT KEEP OFF (precision 1.000, recall 12 of 13 = 0.923, below the E5 recall minus 0.05); overall KEEP OFF. The surface ships off with null bars, and the held-out set is spent for these bars. Follow-ups: a larger held-out set per language, an absolute recall floor, or a lower `corroborate_hold`.

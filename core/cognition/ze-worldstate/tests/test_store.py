@@ -5,9 +5,19 @@ from uuid import uuid4
 
 import pytest
 
+from ze_plugin.contribution import EvidenceRef
+
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.store import PostgresLoopStore
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import (
+    LoopClaimKind,
+    LoopProvenance,
+    LoopSource,
+    LoopSourceRole,
+    LoopState,
+    OpenLoop,
+    SourceKey,
+)
 from tests.conftest import make_pool
 
 
@@ -221,3 +231,115 @@ async def test_record_corroboration_only_moves_active_deadlines_forward():
     assert "GREATEST" in sql
     assert "state = 'active'" in sql
     assert window == 7
+
+
+def _source_row(**overrides) -> dict:
+    base = {
+        "id": uuid4(),
+        "loop_id": uuid4(),
+        "role": "corroboration",
+        "inflow": "email",
+        "source_ref": "thread-1",
+        "evidence_kind": "episode",
+        "evidence_id": uuid4(),
+        "same_concern": 0.8,
+        "promoted": False,
+        "model": "m",
+        "latency_ms": 120,
+        "created_at": datetime.now(timezone.utc),
+    }
+    base.update(overrides)
+    return base
+
+
+def _source(loop_id=None) -> LoopSource:
+    return LoopSource(
+        loop_id=loop_id or uuid4(),
+        role=LoopSourceRole.CORROBORATION,
+        key=SourceKey("email", "thread-1"),
+        evidence=EvidenceRef(kind="episode", id=uuid4()),
+        same_concern=0.8,
+        model="m",
+        latency_ms=120,
+    )
+
+
+async def test_add_source_inserts_and_returns_the_row():
+    row = _source_row()
+    pool, conn = make_pool(fetchrow=row)
+    result = await PostgresLoopStore(pool=pool).add_source(_source(row["loop_id"]))
+
+    sql = " ".join(conn.fetchrow.await_args.args[0].split())
+    assert "ON CONFLICT (loop_id, inflow, source_ref) DO NOTHING RETURNING" in sql
+    assert result is not None
+    assert result.key == SourceKey("email", "thread-1")
+    assert result.role is LoopSourceRole.CORROBORATION
+    assert result.evidence == EvidenceRef(kind="episode", id=row["evidence_id"])
+
+
+async def test_add_source_returns_none_on_conflict():
+    pool, _conn = make_pool(fetchrow=None)
+    assert await PostgresLoopStore(pool=pool).add_source(_source()) is None
+
+
+async def test_list_sources_orders_by_created_at():
+    pool, conn = make_pool(fetch=[_source_row(), _source_row(evidence_kind=None, evidence_id=None)])
+    sources = await PostgresLoopStore(pool=pool).list_sources(uuid4())
+
+    assert "ORDER BY created_at" in conn.fetch.await_args.args[0]
+    assert len(sources) == 2
+    assert sources[1].evidence is None
+
+
+async def test_list_sources_for_is_one_query_grouped_by_loop():
+    a, b = uuid4(), uuid4()
+    pool, conn = make_pool(
+        fetch=[
+            _source_row(loop_id=a),
+            _source_row(loop_id=b),
+            _source_row(loop_id=a, inflow="chat"),
+        ]
+    )
+    grouped = await PostgresLoopStore(pool=pool).list_sources_for([a, b])
+
+    conn.fetch.assert_awaited_once()
+    assert "ANY($1)" in conn.fetch.await_args.args[0]
+    assert [len(grouped[a]), len(grouped[b])] == [2, 1]
+
+
+async def test_list_sources_for_empty_makes_no_query():
+    pool, conn = make_pool(fetch=[])
+    assert await PostgresLoopStore(pool=pool).list_sources_for([]) == {}
+    conn.fetch.assert_not_awaited()
+
+
+async def test_promote_is_a_guarded_single_update():
+    row = _row(state="active", confidence=0.7)
+    pool, conn = make_pool(fetchrow=row)
+    loop = await PostgresLoopStore(pool=pool).promote(
+        row["id"], confidence=0.7, window_days=7
+    )
+
+    sql = " ".join(conn.fetchrow.await_args.args[0].split())
+    assert "WHERE id = $1 AND state = 'suspected'" in sql
+    assert "GREATEST(confidence, $2)" in sql
+    assert "make_interval(days => $3)" in sql
+    assert loop is not None and loop.state is LoopState.ACTIVE
+
+
+async def test_promote_returns_none_when_not_suspected():
+    pool, _conn = make_pool(fetchrow=None)
+    assert (
+        await PostgresLoopStore(pool=pool).promote(uuid4(), confidence=0.7, window_days=7)
+        is None
+    )
+
+
+async def test_mark_source_promoted_updates_the_row():
+    pool, conn = make_pool()
+    source_id = uuid4()
+    await PostgresLoopStore(pool=pool).mark_source_promoted(source_id)
+
+    sql, arg = conn.execute.await_args.args
+    assert "SET promoted = true" in sql
+    assert arg == source_id

@@ -419,7 +419,7 @@ stores it on `app.state.connection_manager`. It exposes:
 | Method | Description |
 |---|---|
 | `connect(ws, message_store, confirmation_store=None)` | Accept a new connection; closes the previous one; replays unread messages; replays any pending confirmation |
-| `disconnect()` | Clear the active connection |
+| `disconnect(ws)` | Clear the active connection, but only when `ws` is still the live socket |
 | `push(message)` | Send a message frame; silently no-ops if disconnected |
 | `send_frame(frame)` | Send an arbitrary JSON frame |
 | `try_set_busy() → bool` | Claim the invocation slot; returns False if already busy |

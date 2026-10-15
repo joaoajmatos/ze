@@ -65,7 +65,10 @@ class MemorySink:
         if self.loop_extractor is not None:
             try:
                 await self.loop_extractor(
-                    ". ".join(facts), "ingestion", evidence=evidence
+                    ". ".join(facts),
+                    "ingestion",
+                    evidence=evidence,
+                    source_ref=ingestion_id,
                 )
             except Exception as exc:
                 log.warning(
