@@ -2697,6 +2697,32 @@ export type ProcedureVersionResponse = {
 };
 
 /**
+ * ProfileFacetItem
+ */
+export type ProfileFacetItem = {
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Value
+     */
+    value: string;
+    /**
+     * Stability
+     */
+    stability: string;
+    /**
+     * Confidence
+     */
+    confidence: number;
+    /**
+     * Updated At
+     */
+    updated_at: string;
+};
+
+/**
  * QuietHoursResponse
  */
 export type QuietHoursResponse = {
@@ -3540,33 +3566,13 @@ export type UserFactResponse = {
  */
 export type UserProfileResponse = {
     /**
-     * Preferences
+     * Facets
      */
-    preferences: string;
-    /**
-     * Habits
-     */
-    habits: string;
-    /**
-     * Topics
-     */
-    topics: string;
-    /**
-     * Relationships
-     */
-    relationships: string;
-    /**
-     * Goals
-     */
-    goals: string;
+    facets: Array<ProfileFacetItem>;
     /**
      * Updated At
      */
-    updated_at: string;
-    /**
-     * Version
-     */
-    version: number;
+    updated_at?: string | null;
 };
 
 /**

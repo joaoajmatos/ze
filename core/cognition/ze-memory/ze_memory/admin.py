@@ -252,23 +252,16 @@ async def get_memory_timeline_bounds(pool: Any) -> dict:
 
 async def get_profile(pool: Any) -> dict | None:
     async with pool.acquire() as conn:
-        row = await conn.fetchrow(
-            "SELECT preferences, habits, topics, relationships, goals, updated_at, version "
-            "FROM user_profile WHERE id = 1"
+        rows = await conn.fetch(
+            "SELECT key, value, stability, confidence, updated_at"
+            " FROM memory_profile_facets ORDER BY confidence DESC"
         )
-    if row is None:
+    if not rows:
         return None
-    if not any(
-        [
-            row["preferences"],
-            row["habits"],
-            row["topics"],
-            row["relationships"],
-            row["goals"],
-        ]
-    ):
-        return None
-    return dict(row)
+    return {
+        "facets": [dict(r) for r in rows],
+        "updated_at": max(r["updated_at"] for r in rows),
+    }
 
 
 async def get_memory_graph(

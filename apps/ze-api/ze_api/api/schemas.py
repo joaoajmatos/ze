@@ -348,14 +348,17 @@ class MemoryDigestResponse(BaseModel):
     expiring_facts: list[ExpiringFactDigestItem]
 
 
-class UserProfileResponse(BaseModel):
-    preferences: str
-    habits: str
-    topics: str
-    relationships: str
-    goals: str
+class ProfileFacetItem(BaseModel):
+    key: str
+    value: str
+    stability: str
+    confidence: float
     updated_at: datetime
-    version: int
+
+
+class UserProfileResponse(BaseModel):
+    facets: list[ProfileFacetItem]
+    updated_at: datetime | None = None
 
 
 class ConsolidationReportResponse(BaseModel):

@@ -178,7 +178,7 @@ export const getFactQuality = <ThrowOnError extends boolean = false>(options?: O
 /**
  * Current user profile
  *
- * The synthesised user profile — preferences, habits, topics, relationships, and goals. Updated nightly by the consolidation job.
+ * The synthesised user profile as key/value facets (preferences, topics, and other traits). Updated nightly by the consolidation job.
  */
 export const getProfile = <ThrowOnError extends boolean = false>(options?: Options<GetProfileData, ThrowOnError>): RequestResult<GetProfileResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetProfileResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
