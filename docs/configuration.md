@@ -400,7 +400,7 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The `loop_gate` surface is on too. The code defaults are off, and without a `system_one:` block everything is off.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The `loop_gate` surface is on too. The `corroboration` surface is off; it ships off with null bars until a held-out `ENABLE`. The code defaults are off, and without a `system_one:` block everything is off.
 
 ```yaml
 system_one:
@@ -429,6 +429,10 @@ system_one:
       loop_hold: null             # shipped: 0.75 — set from make calibrate-loop-gate
       explicit_hold: null         # shipped: 0.85
       resolves_hold: null         # shipped: 0.8
+    corroboration:                # Suspected-loop corroboration (Phase 172)
+      enabled: false              # ships false — make calibrate-corroboration returned KEEP OFF on 2026-10-15
+      corroborate_hold: null      # candidate 0.6 — set from make calibrate-corroboration
+      promote_hold: null          # candidate 0.8
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -507,6 +511,25 @@ The keys:
 Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all three bars set. If you enable it and leave any bar `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75, 0.85 and 0.8 (calibrated 2026-10-12).
 
 To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-loop-gate`. This run is live and costs credits. It tunes on `eval/calibration/loop_gate.jsonl` by default and measures the Haiku gate on the same rows. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout`). Set `surfaces.loop_gate.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false creates on negatives, recall no more than 0.05 below Haiku's, and precision at least Haiku's. `--check-sets` validates both files offline.
+
+#### `surfaces.corroboration`
+
+A `suspected` loop moves closer to active when a second, independent source mentions the same matter. When the surface is on and calibrated, one System One Noul, `same_concern`, judges an independent match, and code decides:
+
+- At or above `corroborate_hold`, Ze links the evidence and raises the loop's confidence, capped at 0.6. The loop stays `suspected`.
+- At or above `promote_hold`, Ze does the same, then promotes the loop to `active` at confidence 0.7 with a 7-day drift deadline.
+- Below both, a skip, an invalid answer, or an unset bar, the earlier behavior stands: Ze links the evidence and changes nothing else.
+
+Independence is code, not a model. The source key must be new to the loop, the evidence must not already be linked, and the key must not be on a matching dropped loop. A non-independent match makes no request.
+
+The keys:
+
+- `corroborate_hold` is the minimum probability that the text is about the same unfinished matter.
+- `promote_hold` is the stricter bar that also promotes the loop.
+
+Each bar is a number from 0 to 1. At the bar counts as positive. `corroborate_hold` must be at or below `promote_hold`; otherwise Ze logs a warning and makes no request. An out-of-range or non-numeric value becomes `null`, with a warning.
+
+To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-corroboration`. This run is live and costs credits. It tunes on `eval/calibration/corroboration.jsonl` and compares each row with the E5 title-cosine baseline at 0.75. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout --bars C,P`). Set `surfaces.corroboration.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false promotions, corroborate precision at least 0.9 and at least the E5 baseline, and recall no more than 0.05 below the E5 baseline. `--check-sets` validates both files offline. The 2026-10-15 run suggested 0.6 and 0.8: English passed on the held-out set, Portuguese missed one recall clause, and the surface ships off.
 
 ## `config/persona.yaml`
 
