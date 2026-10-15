@@ -68,18 +68,23 @@ def _episode_row(summary="Had a long research session"):
     return {"summary": summary, "response": None, "created_at": None}
 
 
-def _profile_row():
-    return {
-        "preferences": "prefers async communication",
-        "habits": "reads in the morning",
-        "topics": "distributed systems, sleep",
-        "relationships": "",
-        "goals": "learn Portuguese",
-    }
+def _profile_facets():
+    return [{"key": "preferences", "value": "prefers async communication"}]
 
 
 def _insight_json(text="You've mentioned sleep four times.", category="pattern"):
     return json.dumps([{"text": text, "category": category}])
+
+
+def _fetch_side_effect(facts=None, episodes=None, profile=None):
+    """fetch call order: facts, episodes, profile, recent_insights, pushed."""
+    return [
+        facts if facts is not None else [],
+        episodes if episodes is not None else [],
+        profile if profile is not None else [],
+        [],  # recent insights
+        [],  # pushed categories
+    ]
 
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
@@ -88,21 +93,14 @@ def _insight_json(text="You've mentioned sleep four times.", category="pattern")
 async def test_insights_generates_and_pushes():
     inserted_id = uuid4()
     conn = make_conn()
-    # fetch call order: facts, episodes, recent_insights, pushed_categories
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],  # facts
-            [_episode_row()],  # episodes
-            [],  # recent insights
-            [],  # pushed categories
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            _profile_row(),  # profile
-            {"id": inserted_id},  # INSERT RETURNING id
-        ]
-    )
+    conn.fetchrow = AsyncMock(return_value={"id": inserted_id})
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value=_insight_json())
@@ -124,14 +122,12 @@ async def test_insights_generates_and_pushes():
 async def test_insights_calls_complete_with_messages_not_prompt():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],  # facts
-            [_episode_row()],  # episodes
-            [],  # recent insights
-            [],  # pushed categories
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     captured: dict = {}
 
@@ -161,19 +157,13 @@ async def test_insights_calls_complete_with_messages_not_prompt():
 async def test_insights_uses_models_override_when_set():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],  # facts
-            [_episode_row()],  # episodes
-            [],  # recent insights
-            [],  # pushed categories
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            _profile_row(),
-            {"id": uuid4()},
-        ]
-    )
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value=_insight_json())
@@ -194,14 +184,12 @@ async def test_insights_uses_models_override_when_set():
 async def test_insights_skips_sparse():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row()],  # facts — only 1
-            [],  # episodes — 0
-            [],  # recent insights
-            [],  # pushed categories
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row()],  # only 1
+            episodes=[],  # 0
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock()
@@ -220,11 +208,11 @@ async def test_insights_filters_category_cooldown():
         side_effect=[
             [_fact_row(), _fact_row(), _fact_row()],
             [_episode_row()],
+            _profile_facets(),
             [],
             [{"category": "pattern"}],  # "pattern" is on cooldown
         ]
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value=_insight_json(category="pattern"))
@@ -243,21 +231,13 @@ async def test_insights_caps_max_per_run():
     inserted_id = uuid4()
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            _profile_row(),
-            {"id": inserted_id},
-            {"id": inserted_id},
-            {"id": inserted_id},
-        ]
-    )
+    conn.fetchrow = AsyncMock(return_value={"id": inserted_id})
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value=five_insights)
@@ -275,14 +255,12 @@ async def test_insights_caps_max_per_run():
 async def test_insights_haiku_failure():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock(side_effect=Exception("API error"))
@@ -297,14 +275,12 @@ async def test_insights_haiku_failure():
 async def test_insights_bad_json():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value="not json at all")
@@ -319,14 +295,12 @@ async def test_insights_bad_json():
 async def test_insights_empty_array():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value="[]")
@@ -342,14 +316,12 @@ async def test_insights_invalid_category_discarded():
     bad_item = json.dumps([{"text": "Something interesting.", "category": "other"}])
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value=bad_item)
@@ -367,11 +339,11 @@ async def test_insights_passes_recent_to_llm():
         side_effect=[
             [_fact_row(), _fact_row(), _fact_row()],
             [_episode_row()],
+            _profile_facets(),
             [{"text": "You mentioned sleep a lot last week.", "category": "pattern"}],
             [],
         ]
     )
-    conn.fetchrow = AsyncMock(return_value=_profile_row())
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value="[]")
@@ -388,15 +360,12 @@ async def test_insights_passes_recent_to_llm():
 async def test_insights_no_profile_uses_placeholder():
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=[],  # no facets
+        )
     )
-    # profile row is None — all fields empty / missing
-    conn.fetchrow = AsyncMock(return_value=None)
 
     client = AsyncMock()
     client.complete = AsyncMock(return_value="[]")
@@ -422,14 +391,13 @@ async def test_insights_no_profile_uses_placeholder():
 async def test_insights_tolerates_fenced_and_prose_replies(wrap):
     conn = make_conn()
     conn.fetch = AsyncMock(
-        side_effect=[
-            [_fact_row(), _fact_row(), _fact_row()],
-            [_episode_row()],
-            [],
-            [],
-        ]
+        side_effect=_fetch_side_effect(
+            facts=[_fact_row(), _fact_row(), _fact_row()],
+            episodes=[_episode_row()],
+            profile=_profile_facets(),
+        )
     )
-    conn.fetchrow = AsyncMock(side_effect=[_profile_row(), {"id": uuid4()}])
+    conn.fetchrow = AsyncMock(return_value={"id": uuid4()})
     client = AsyncMock()
     client.complete = AsyncMock(return_value=wrap(_insight_json()))
     notifier = make_notifier()
@@ -450,8 +418,12 @@ async def test_insights_reads_memory_tables():
     sqls = [call[0][0] for call in conn.fetch.call_args_list]
     fact_sqls = [sql for sql in sqls if "memory_facts" in sql]
     episode_sqls = [sql for sql in sqls if "memory_episodes" in sql]
+    profile_sqls = [sql for sql in sqls if "memory_profile_facets" in sql]
     assert len(fact_sqls) == 1
     assert len(episode_sqls) == 1
+    assert len(profile_sqls) == 1
     assert "predicate AS key" in fact_sqls[0]
+    assert "agent <> 'consolidator'" in episode_sqls[0]
     assert all("user_facts" not in sql for sql in sqls)
     assert all("FROM episodes" not in sql for sql in sqls)
+    assert all("user_profile" not in sql for sql in sqls)
