@@ -258,7 +258,7 @@ async def websocket_endpoint(
     except Exception as exc:
         log.exception("ws_handler_error", error=str(exc))
     finally:
-        await conn_mgr.disconnect()
+        await conn_mgr.disconnect(ws)
         log.info("ws_disconnected")
 
 
