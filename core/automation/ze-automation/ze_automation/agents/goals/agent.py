@@ -105,6 +105,8 @@ class GoalAgent(BaseAgent):
         ),
         "delete": Intent(Mode.CONFIRM, "Abandon a goal."),
     }
+    # A delegate with no declared intent is a read; goal writes confirm at the tool.
+    default_mode = Mode.AUTONOMOUS
 
     def __init__(
         self,

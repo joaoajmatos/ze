@@ -203,3 +203,11 @@ async def test_gathered_tool_confirmation_becomes_a_tool_error_not_a_crash():
     assert "needs your confirmation" in seen[0].error
     assert len(state["subtask_results"]) == 2
     clear_tool_registry()
+
+
+def test_delegate_to_goals_without_an_intent_is_not_gated_but_writes_still_are():
+    agent(GoalAgent)
+    gate = CapabilityGate()
+    assert gate.evaluate("goals", "", {}) == GateDecision.EXECUTE
+    assert gate.evaluate("goals", "read", {}) == GateDecision.EXECUTE
+    assert gate.evaluate("goals", "create", {}) == GateDecision.AWAIT_CONFIRMATION
