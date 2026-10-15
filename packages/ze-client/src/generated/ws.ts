@@ -175,6 +175,8 @@ export type TargetType = string | null;
 export type TargetId = string | null;
 export type CreatedAt1 = string;
 export type Read1 = boolean;
+export type PushClass = string;
+export type Delivery = string;
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
  * via the `definition` "WsOutboundFrame".
@@ -561,6 +563,8 @@ export interface WsNotificationFrame {
   target_id: TargetId;
   created_at: CreatedAt1;
   read?: Read1;
+  push_class: PushClass;
+  delivery: Delivery;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

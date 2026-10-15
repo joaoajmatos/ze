@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from ze_logging import get_logger
 from ze_sdk import parse_llm_json
 from ze_sdk.proactive import PushLogStore
+from ze_calendar.push_kinds import (
+    CALENDAR_REMINDER,
+    CALENDAR_REMINDERS_SCHEDULED,
+)
 from ze_calendar.reminders.calendar_store import CalendarReminderStore
 from ze_agents.client import LLMClient
 from ze_agents.model_resolution import resolve_model
@@ -145,32 +150,53 @@ class CalendarReminderService:
             await self._process_event(event, now)
 
     async def replay_unsent(self) -> None:
-        """Startup recovery: re-register unsent reminders into the scheduler."""
-        reminders = await self._store.list_unsent()
+        """Startup recovery: fire overdue reminders now, schedule future ones."""
+        reminders = await self._store.list_unsent(include_overdue=True)
+        now = datetime.now(timezone.utc)
         for r in reminders:
-            self._scheduler.schedule_at(
-                fn=self.fire_reminder,
-                dt=r.fire_at,
-                job_id=f"reminder:{r.id}",
-                args=(r.id,),
-            )
+            fire_at = r.fire_at
+            if fire_at.tzinfo is None:
+                fire_at = fire_at.replace(tzinfo=timezone.utc)
+            if fire_at <= now:
+                asyncio.create_task(self.fire_reminder(r.id, late_from=fire_at))
+            else:
+                self._scheduler.schedule_at(
+                    fn=self.fire_reminder,
+                    dt=r.fire_at,
+                    job_id=f"reminder:{r.id}",
+                    args=(r.id,),
+                )
         log.info("reminders_replayed", count=len(reminders))
 
-    async def fire_reminder(self, reminder_id: UUID) -> None:
+    async def fire_reminder(
+        self, reminder_id: UUID, late_from: datetime | None = None
+    ) -> None:
         """Scheduler callback: push the notification and mark the reminder sent."""
         label = await self._store.mark_sent(reminder_id)
         if label is None:
             return
+        body = label
+        if late_from is not None:
+            local = late_from.astimezone(self._user_tz())
+            body = f"{label} (late, was due {local:%H:%M})"
         await self._notifier.notify(
-            "calendar_reminder",
+            CALENDAR_REMINDER,
             "Calendar reminder",
-            label,
-            source="calendar",
+            body,
             target_type="reminder",
             target_id=str(reminder_id),
         )
         await self._push_log.log(f"calendar_reminder:{reminder_id}", label)
         log.info("reminder_fired", id=str(reminder_id))
+
+    def _user_tz(self) -> tzinfo:
+        name = getattr(self._settings, "timezone", None)
+        if not isinstance(name, str) or not name:
+            return timezone.utc
+        try:
+            return ZoneInfo(name)
+        except Exception:
+            return timezone.utc
 
     # ── Private ───────────────────────────────────────────────────────────────
 
@@ -232,7 +258,11 @@ class CalendarReminderService:
             )
 
         confirmation_lines.extend(["", "Tell me if you'd like to change these."])
-        await self._notifier.push("\n".join(confirmation_lines))
+        await self._notifier.notify(
+            CALENDAR_REMINDERS_SCHEDULED,
+            "Reminders scheduled",
+            "\n".join(confirmation_lines),
+        )
         log.info("event_reminders_scheduled", event_id=event_id, count=len(fire_ats))
 
     async def _assess_intervals(

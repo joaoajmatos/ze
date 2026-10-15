@@ -486,3 +486,18 @@ async def test_nested_delegate_call_keeps_the_delegate_agent(effect_tools) -> No
     assert nested.agent == "reminders"
     assert nested.undo_args == {"reminder_id": "r9"}
     assert nested.call_index == 1
+
+
+# ── Phase 171: loop offers on the trace ──────────────────────────────────────
+
+
+def test_stored_trace_round_trips_loop_offer_ids():
+    base = {
+        "agent": "a",
+        "routing_method": "embedding",
+        "confidence": 1.0,
+        "score_gap": 0.0,
+        "is_compound": False,
+    }
+    assert _parse_trace({**base, "loop_offer_ids": ["abc"]}).loop_offer_ids == ["abc"]
+    assert _parse_trace(base).loop_offer_ids == []

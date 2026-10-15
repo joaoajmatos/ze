@@ -1,15 +1,25 @@
 from __future__ import annotations
 
+from datetime import datetime, time, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 
-from ze_api.api.dependencies import get_notification_store, require_api_key
+from ze_api.api.dependencies import (
+    get_interruption_settings_store,
+    get_notification_store,
+    get_notifier,
+    require_api_key,
+)
 from ze_api.api.schemas import (
     MarkAllReadResponse,
     NotificationItem,
     NotificationListResponse,
+    QuietHoursResponse,
+    QuietHoursUpdate,
     UnreadCountResponse,
 )
 from ze_proactive.notification_store import InvalidCursorError
+from ze_proactive.quiet_hours import is_active
 
 router = APIRouter(
     prefix="/notifications",
@@ -64,6 +74,68 @@ async def get_unread_count(
 ) -> UnreadCountResponse:
     count = await notification_store.unread_count()
     return UnreadCountResponse(count=count)
+
+
+def _parse_quiet_time(value: str | None) -> time | None:
+    return time.fromisoformat(value) if value else None
+
+
+async def _quiet_hours_response(
+    setting, notification_store, notifier
+) -> QuietHoursResponse:
+    return QuietHoursResponse(
+        enabled=setting.enabled,
+        start=setting.start.strftime("%H:%M") if setting.start else None,
+        end=setting.end.strftime("%H:%M") if setting.end else None,
+        timezone=setting.timezone,
+        active_now=is_active(setting, datetime.now(timezone.utc)),
+        held_count=await notification_store.count_held(),
+        max_discretionary_per_day=notifier.max_discretionary_per_day,
+    )
+
+
+@router.get(
+    "/quiet-hours",
+    response_model=QuietHoursResponse,
+    operation_id="getQuietHours",
+    summary="Get quiet hours",
+    description=(
+        "The user's quiet-hours setting, whether it is active now, how many pushes "
+        "are held, and the daily budget for unprompted pushes."
+    ),
+)
+async def get_quiet_hours(
+    settings_store=Depends(get_interruption_settings_store),
+    notification_store=Depends(get_notification_store),
+    notifier=Depends(get_notifier),
+) -> QuietHoursResponse:
+    setting = await settings_store.get()
+    return await _quiet_hours_response(setting, notification_store, notifier)
+
+
+@router.put(
+    "/quiet-hours",
+    response_model=QuietHoursResponse,
+    operation_id="updateQuietHours",
+    summary="Update quiet hours",
+    description=(
+        "Save the quiet-hours window. While active, only reminders the user set are "
+        "pushed; other pushes are held and released when quiet hours end."
+    ),
+)
+async def update_quiet_hours(
+    body: QuietHoursUpdate,
+    settings_store=Depends(get_interruption_settings_store),
+    notification_store=Depends(get_notification_store),
+    notifier=Depends(get_notifier),
+) -> QuietHoursResponse:
+    setting = await settings_store.upsert(
+        body.enabled,
+        _parse_quiet_time(body.start),
+        _parse_quiet_time(body.end),
+        body.timezone,
+    )
+    return await _quiet_hours_response(setting, notification_store, notifier)
 
 
 @router.post(

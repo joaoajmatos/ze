@@ -11,6 +11,7 @@ from ze_automation.accountability.store import AccountabilityStore
 from ze_automation.accountability.summarizer import build_narrative
 from ze_automation.accountability.types import ActivitySummary, AgentCostSummary
 from ze_automation.goals.store import GoalStore
+from ze_automation.push_kinds import ACCOUNTABILITY_NARRATIVE
 
 log = get_logger(__name__)
 
@@ -48,10 +49,9 @@ class AccountabilityJob:
         narrative = build_narrative(summary)
 
         await self._notifier.notify(
-            "accountability_narrative",
+            ACCOUNTABILITY_NARRATIVE,
             "Weekly accountability report",
             narrative,
-            source="accountability",
         )
         await self._push_log.log(_DEDUP_KEY)
         log.info("accountability_job_sent", total_cost=summary.total_cost_usd)

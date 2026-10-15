@@ -7,7 +7,6 @@ module to dump preference/identity facts as inline mentions.
 
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 from typing import Any, Sequence
 from uuid import UUID
@@ -15,8 +14,10 @@ from uuid import UUID
 from ze_logging import get_logger
 from ze_priority.errors import ZePriorityError
 from ze_priority.merge import merge
+from ze_priority.open_query import OpenQueryDetector
 from ze_priority.store import PriorityOverrideStore
 from ze_priority.types import (
+    LoopOffer,
     LoopSignal,
     MergedPriorityItem,
     OpenItemMention,
@@ -26,21 +27,18 @@ from ze_priority.types import (
 from ze_priority.view import PriorityView
 from ze_worldstate.matching import _loops_linked_to_entities
 from ze_worldstate.surfacing import format_hedged_mention
+from ze_worldstate.types import LoopState
 
 log = get_logger(__name__)
 
 UTC = timezone.utc
 
 INLINE_MENTION_LIMIT = 3
-
-_GLOBAL_OPEN_RE = re.compile(
-    r"\b("
-    r"what(?:'s|s| is) open"
-    r"|what(?:'s|s| is) outstanding"
-    r"|what(?:'s|s| is) on my plate"
-    r")\b",
-    re.IGNORECASE,
-)
+OFFER_LIMIT = 3
+OFFER_COOLDOWN_HOURS = 168
+RECAP_LIMIT = 5
+OPEN_QUERY_LIMIT = 10
+OFFER_EVENT_PREFIX = "worldstate_loop_offer:"
 
 _MIN_NAME_LEN = 3
 
@@ -54,28 +52,70 @@ class TurnSurfacing:
         override_store: PriorityOverrideStore | None,
         graph_store: Any,
         loop_store: Any,
+        embedder: Any,
         push_log: Any | None = None,
+        open_query_detector: OpenQueryDetector | None = None,
     ) -> None:
         self._priority_view = priority_view
         self._override_store = override_store
         self._graph_store = graph_store
         self._loop_store = loop_store
         self._push_log = push_log
+        self._open_query = open_query_detector or OpenQueryDetector(embedder)
 
-    @staticmethod
-    def is_global_open_query(prompt: str) -> bool:
-        return bool(_GLOBAL_OPEN_RE.search(prompt or ""))
+    def is_global_open_query(self, embedding: Any) -> bool:
+        return self._open_query.is_open_query(embedding)
 
-    async def recap_mentions(self) -> list[OpenItemMention]:
+    async def recap_mentions(self, limit: int | None = None) -> list[OpenItemMention]:
         snapshot = await self._snapshot()
         if snapshot is None:
             return []
         merged, items_by_id = snapshot
-        return [
+        mentions = [
             self._format_mention(items_by_id[row.source_id])
             for row in merged
             if row.source_id in items_by_id
         ]
+        return mentions if limit is None else mentions[:limit]
+
+    async def resume_loop_offers(self, limit: int = OFFER_LIMIT) -> list[LoopOffer]:
+        """Suspected loops to ask about at session resume, recorded as offered.
+
+        Without a push log there is no cooldown record, so nothing is offered.
+        """
+        if self._push_log is None:
+            return []
+        try:
+            loops = await self._loop_store.list(states=[LoopState.SUSPECTED.value])
+        except Exception as exc:
+            log.warning("turn_surfacing_offer_list_failed", error=str(exc))
+            return []
+        candidates = sorted(
+            (loop for loop in loops if loop.id is not None),
+            key=lambda loop: (
+                -loop.confidence,
+                -(loop.created_at.timestamp() if loop.created_at else 0.0),
+            ),
+        )
+        offers: list[LoopOffer] = []
+        for loop in candidates:
+            if len(offers) == limit:
+                break
+            try:
+                cooling = await self._push_log.was_sent_within_hours(
+                    f"{OFFER_EVENT_PREFIX}{loop.id}", OFFER_COOLDOWN_HOURS
+                )
+            except Exception as exc:
+                log.warning("turn_surfacing_offer_cooldown_failed", error=str(exc))
+                return []
+            if not cooling:
+                offers.append(LoopOffer(loop.id, loop.title, loop.provenance))
+        for offer in offers:
+            try:
+                await self._push_log.log(f"{OFFER_EVENT_PREFIX}{offer.loop_id}")
+            except Exception as exc:
+                log.warning("turn_surfacing_offer_log_failed", error=str(exc))
+        return offers
 
     async def inline_mentions(
         self,

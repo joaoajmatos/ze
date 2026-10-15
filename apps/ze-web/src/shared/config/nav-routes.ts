@@ -14,6 +14,7 @@ import {
   PenTool,
   FolderOpen,
   ListOrdered,
+  ListChecks,
   BookOpen,
 } from "lucide-react";
 import { redirectHintPath } from "@/shared/lib/redirect-hint";
@@ -31,6 +32,7 @@ export const navRoutes: NavRouteMeta[] = [
   { path: "/", label: "Chat", icon: MessageCircle, index: true, showInMobileNav: true },
   { path: "goals", label: "Goals", icon: Target, showInMobileNav: true },
   { path: "priority", label: "Priority", icon: ListOrdered, showInMobileNav: false },
+  { path: "loops", label: "Open loops", icon: ListChecks, showInMobileNav: false },
   { path: "workflows", label: "Workflows", icon: Workflow, showInMobileNav: true },
   { path: "skills", label: "Skills", icon: PenTool, showInMobileNav: false },
   { path: "costs", label: "Usage", icon: BarChart2, showInMobileNav: true },
@@ -47,6 +49,7 @@ export const automationNavRoutes: NavRouteMeta[] = navRoutes.filter(
     r.path === "goals" ||
     r.path === "workflows" ||
     r.path === "priority" ||
+    r.path === "loops" ||
     r.path === "skills",
 );
 

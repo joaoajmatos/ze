@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LoopReviewList } from "./LoopReviewList";
 
@@ -32,6 +32,23 @@ const activeLoop = {
   confidence: 0.9,
 };
 
+const driftingLoop = {
+  ...suspectedLoop,
+  id: "loop-3",
+  title: "Book the dentist appointment",
+  state: "drifting",
+  provenance: "email",
+  confidence: 0.5,
+};
+
+const suspectedLoop2 = {
+  ...suspectedLoop,
+  id: "loop-4",
+  title: "Chase the insurance refund",
+  state: "suspected",
+  confidence: 0.4,
+};
+
 function setup(loops: (typeof suspectedLoop)[], mutate = vi.fn()) {
   useLoopsQuery.mockReturnValue({
     data: loops,
@@ -41,6 +58,12 @@ function setup(loops: (typeof suspectedLoop)[], mutate = vi.fn()) {
   });
   useLoopTransitionMutation.mockReturnValue({ mutate, isPending: false });
   return mutate;
+}
+
+function sectionFor(heading: string): HTMLElement {
+  const section = screen.getByText(heading).closest("section");
+  if (!section) throw new Error(`no section for ${heading}`);
+  return section;
 }
 
 describe("LoopReviewList", () => {
@@ -58,19 +81,49 @@ describe("LoopReviewList", () => {
     expect(screen.getByText("Active")).toBeInTheDocument();
   });
 
-  it("only offers Confirm on suspected loops", () => {
-    setup([suspectedLoop, activeLoop]);
+  it("groups suspected loops under 'Needs your OK' above tracking loops", () => {
+    setup([activeLoop, suspectedLoop, driftingLoop, suspectedLoop2]);
     render(<LoopReviewList />);
 
-    expect(screen.getAllByText("Confirm")).toHaveLength(1);
-    expect(screen.getAllByText("Close")).toHaveLength(1);
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings).toEqual(["Needs your OK", "Tracking"]);
+
+    const needsOk = sectionFor("Needs your OK");
+    expect(within(needsOk).getByText(suspectedLoop.title)).toBeInTheDocument();
+    expect(within(needsOk).getByText(suspectedLoop2.title)).toBeInTheDocument();
+    expect(within(needsOk).queryByText(activeLoop.title)).toBeNull();
+
+    const tracking = sectionFor("Tracking");
+    expect(within(tracking).getByText(activeLoop.title)).toBeInTheDocument();
+    expect(within(tracking).getByText(driftingLoop.title)).toBeInTheDocument();
+    expect(within(tracking).queryByText(suspectedLoop.title)).toBeNull();
   });
 
-  it("calls the transition mutation with confirm on click", () => {
+  it("offers Keep and Drop on suspected rows and no Close", () => {
+    setup([suspectedLoop, suspectedLoop2]);
+    render(<LoopReviewList />);
+
+    const needsOk = sectionFor("Needs your OK");
+    expect(within(needsOk).getAllByText("Keep")).toHaveLength(2);
+    expect(within(needsOk).getAllByText("Drop")).toHaveLength(2);
+    expect(within(needsOk).queryByText("Close")).toBeNull();
+  });
+
+  it("offers Close and Drop on active and drifting rows", () => {
+    setup([activeLoop, driftingLoop]);
+    render(<LoopReviewList />);
+
+    const tracking = sectionFor("Tracking");
+    expect(within(tracking).getAllByText("Close")).toHaveLength(2);
+    expect(within(tracking).getAllByText("Drop")).toHaveLength(2);
+    expect(within(tracking).queryByText("Keep")).toBeNull();
+  });
+
+  it("calls the transition mutation with confirm on Keep click", () => {
     const mutate = setup([suspectedLoop]);
     render(<LoopReviewList />);
 
-    fireEvent.click(screen.getByText("Confirm"));
+    fireEvent.click(screen.getByText("Keep"));
 
     expect(mutate).toHaveBeenCalledWith({ loopId: "loop-1", kind: "confirm" });
   });
@@ -82,5 +135,19 @@ describe("LoopReviewList", () => {
     fireEvent.click(screen.getByText("Drop"));
 
     expect(mutate).toHaveBeenCalledWith({ loopId: "loop-1", kind: "drop" });
+  });
+
+  it("hides the 'Needs your OK' section when only tracking loops exist", () => {
+    setup([activeLoop, driftingLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.queryByText("Needs your OK")).toBeNull();
+  });
+
+  it("hides the 'Tracking' section when only suspected loops exist", () => {
+    setup([suspectedLoop, suspectedLoop2]);
+    render(<LoopReviewList />);
+
+    expect(screen.queryByText("Tracking")).toBeNull();
   });
 });

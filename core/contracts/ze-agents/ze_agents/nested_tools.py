@@ -102,9 +102,12 @@ def loop_review_earned(tool_calls: list[ToolCall]) -> bool:
     return False
 
 
-def track_loop_succeeded(tool_calls: list[ToolCall]) -> bool:
+_TRACKING_TOOLS = frozenset({"track_loop", "confirm_loop"})
+
+
+def tracking_earned(tool_calls: list[ToolCall]) -> bool:
     for call in flatten_tool_calls(tool_calls):
-        if call.tool_name != "track_loop":
+        if call.tool_name not in _TRACKING_TOOLS:
             continue
         payload = tool_payload(call.result)
         if payload is not None and payload.get("ok") is True:
@@ -192,7 +195,7 @@ def enforce_domain_cancel_confirmations(
     earned_cancel = cancel_reminder_earned(calls)
     earned_close = loop_review_earned(calls)
     earned_abandon = abandon_goal_earned(calls)
-    earned_track = track_loop_succeeded(calls)
+    earned_track = tracking_earned(calls)
     stripped_track = False
     stripped_cancel = False
     stripped_close = False

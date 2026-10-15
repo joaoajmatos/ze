@@ -78,6 +78,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         total_duration_ms=total_duration_ms,
         compaction=compaction,
         resume_recap_applied=bool(state.get("resume_recap_applied")),
+        loop_offer_ids=list(state.get("loop_offer_ids") or []),
         skills_used=_extract_skills_used(state.get("skill_matches"), agent_result),
         workspace=await _extract_workspace(agent_result, config),
         procedure=_extract_procedure(state.get("agent_context")),

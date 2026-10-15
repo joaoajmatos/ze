@@ -12,6 +12,7 @@ from ze_automation.accountability.types import (
 )
 from ze_automation.jobs.accountability import AccountabilityJob
 from ze_automation.jobs.cost_anomaly import CostAnomalyJob
+from ze_automation.push_kinds import ACCOUNTABILITY_NARRATIVE, COST_ANOMALY
 
 
 # ── ActivitySummary / build_narrative ─────────────────────────────────────────
@@ -145,6 +146,7 @@ async def test_accountability_job_sends_narrative_when_no_dedup():
     job = _make_accountability_job(dedup_hit=False)
     await job.run()
     job._notifier.notify.assert_called_once()
+    assert job._notifier.notify.call_args.args[0] is ACCOUNTABILITY_NARRATIVE
     job._push_log.log.assert_called_once()
 
 
@@ -199,7 +201,8 @@ async def test_anomaly_job_fires_when_cost_exceeds_threshold():
     job._acc_store.record_anomaly.assert_called_once()
     job._notifier.notify.assert_called_once()
     call = job._notifier.notify.call_args
-    assert call.args[0] == "cost_anomaly"
+    assert call.args[0] is COST_ANOMALY
+    assert call.args[1] == "Cost anomaly detected"
     assert "research" in call.args[2]
 
 

@@ -103,7 +103,7 @@ After the last step, `workflow_synthesize` calls the verify-class model to merge
 
 ### Failure handling
 
-When a run ends as failed, `workflow_failed` records the error and, if any steps succeeded, writes a partial summary of their output. The scheduler's failure handler then sends a `workflow_failure` notification through `ProactiveNotifier` (WebSocket or ntfy). The alert honors `proactive.alerts.workflow_failure_enabled` and `workflow_failure_cooldown_hours`.
+When a run ends as failed, `workflow_failed` records the error and, if any steps succeeded, writes a partial summary of their output. The scheduler's failure handler then sends a `workflow_failure` notification (an `accountability` push) through `ProactiveNotifier` (WebSocket or ntfy). The alert honors `proactive.alerts.workflow_failure_enabled` and `workflow_failure_cooldown_hours`.
 
 ### Cancellation
 
@@ -158,6 +158,11 @@ the live APScheduler job registry atomically.
 
 `WorkflowScheduler` computes `next_run_at` from the cron expression after each run
 and writes it to Postgres.
+
+On startup, `WorkflowScheduler` also catches up a missed scheduled workflow. When the
+most recent scheduled time passed after the workflow's last execution, it starts one
+execution. Each cron job sets `misfire_grace_time=None` with `coalesce=True`, so a run
+missed while the process was suspended runs once on resume.
 
 ---
 

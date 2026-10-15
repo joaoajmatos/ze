@@ -121,9 +121,10 @@ milestone.
 
 ### Progress notifications
 
-After each milestone completes, Ze pushes a short line via `ProactiveNotifier`
-(WebSocket if connected, ntfy otherwise), e.g. *"✅ Draft target list done (2/8)."*
-Gate checkpoints use a richer format (title, done list, planned list, options).
+After each milestone completes, Ze sends a short line as an `accountability` push
+(kind `goal_milestone_done`) via `ProactiveNotifier` (WebSocket if connected, ntfy
+otherwise), e.g. *"✅ Draft target list done (2/8)."* Gate checkpoints use a richer
+format (kind `goal_gate`, `accountability`; title, done list, planned list, options).
 
 ---
 
@@ -131,7 +132,7 @@ Gate checkpoints use a richer format (title, done list, planned list, options).
 
 When all milestones finish, `GoalExecutor` runs these steps automatically:
 
-1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Ze sends it through `ProactiveNotifier` as the completion message.
+1. **Retrospective** — `GoalPlanner.synthesize_retrospective()` produces a short narrative of what Ze accomplished and what was learned. Ze sends it as an `accountability` push (kind `goal_completed`) through `ProactiveNotifier` as the completion message.
 2. **Retrospective stored** — Ze saves the narrative to `goals.retrospective_text`. The weekly goal narrative job and future goal suggestions read it.
 3. **Procedure candidate** — Ze extracts a reusable procedure from the goal and submits it as a procedure candidate (`submit_procedure_candidate`). The governed procedure lifecycle in `ze-memory` decides whether to admit it. See [memory.md](memory.md). If a procedure was provisional while the goal ran, Ze resolves it at completion.
 
@@ -167,15 +168,15 @@ Later milestones and replans see the eligible learnings of their goal. Ze labels
 
 ### Weekly goal narrative (Sunday 6 PM UTC)
 
-Ze pushes a one-paragraph update per active goal summarizing what was completed that week, any pending gate, and what comes next. `GoalNarrativeJob` (`ze_automation/jobs/goal_narrative.py`) drives this.
+Ze sends a one-paragraph update per active goal (kind `goal_narrative`, `accountability`) summarizing what was completed that week, any pending gate, and what comes next. `GoalNarrativeJob` (`ze_automation/jobs/goal_narrative.py`) drives this.
 
 ### Weekly goal suggestions (Sunday 7 PM UTC)
 
-Ze analyzes recent memory facts, episodes, and retrospectives to propose one new goal. Sent via `ProactiveNotifier` with **Accept** / **Dismiss** options. Accepted suggestions pre-fill a goal creation flow. `GoalSuggestionJob` (`ze_automation/jobs/goal_suggestion.py`) drives this.
+Ze analyzes recent memory facts, episodes, and retrospectives to propose one new goal. Ze sends it as a `discretionary` push (kind `goal_suggestion`) with **Accept** / **Dismiss** options. Accepted suggestions pre-fill a goal creation flow. `GoalSuggestionJob` (`ze_automation/jobs/goal_suggestion.py`) drives this.
 
 ### Stuck goal detection (Tuesday 9 AM UTC)
 
-Ze checks for active goals with no milestone progress, and for goals waiting at a gate, for 7 days or more. The window is fixed in code. For a goal at a gate, Ze counts the first open gate that has fired and ignores gates it has not reached, so each goal appears once. After an alert, Ze waits 14 days before it alerts about the same goal again. One push notification lists the stuck goals. An idle active goal offers **Redirect**, **Pause**, and **Abandon**. A goal at a gate offers **Approve**, **Redirect**, and **Stop**. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
+Ze checks for active goals with no milestone progress, and for goals waiting at a gate, for 7 days or more. The window is fixed in code. For a goal at a gate, Ze counts the first open gate that has fired and ignores gates it has not reached, so each goal appears once. After an alert, Ze waits 14 days before it alerts about the same goal again. One `discretionary` push (kind `stuck_goal`) lists the stuck goals. An idle active goal offers **Redirect**, **Pause**, and **Abandon**. A goal at a gate offers **Approve**, **Redirect**, and **Stop**. `StuckGoalJob` (`ze_automation/jobs/stuck_goals.py`) drives this.
 
 ---
 

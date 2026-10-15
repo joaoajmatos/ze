@@ -1,0 +1,88 @@
+{"id": "oq-tuned-en-pos-01", "lang": "en", "text": "What do I have open at the moment?", "label": true}
+{"id": "oq-tuned-en-pos-02", "lang": "en", "text": "Anything still hanging over me?", "label": true}
+{"id": "oq-tuned-en-pos-03", "lang": "en", "text": "What's waiting for me to deal with it?", "label": true}
+{"id": "oq-tuned-en-pos-04", "lang": "en", "text": "What have I got left to do?", "label": true}
+{"id": "oq-tuned-en-pos-05", "lang": "en", "text": "What's not finished yet?", "label": true}
+{"id": "oq-tuned-en-pos-06", "lang": "en", "text": "What do I still have in the air?", "label": true}
+{"id": "oq-tuned-en-pos-07", "lang": "en", "text": "Give me a list of what's outstanding.", "label": true}
+{"id": "oq-tuned-en-pos-08", "lang": "en", "text": "Anything unfinished on my list?", "label": true}
+{"id": "oq-tuned-en-pos-09", "lang": "en", "text": "What's left on my plate today?", "label": true}
+{"id": "oq-tuned-en-pos-10", "lang": "en", "text": "What am I still on the hook for?", "label": true}
+{"id": "oq-tuned-en-pos-11", "lang": "en", "text": "Is anything still pending on my end?", "label": true}
+{"id": "oq-tuned-en-pos-12", "lang": "en", "text": "What open things do I have going on?", "label": true}
+{"id": "oq-tuned-en-pos-13", "lang": "en", "text": "What's unresolved right now?", "label": true}
+{"id": "oq-tuned-en-pos-14", "lang": "en", "text": "Anything I've left half-done?", "label": true}
+{"id": "oq-tuned-en-pos-15", "lang": "en", "text": "What still requires a decision from me?", "label": true}
+{"id": "oq-tuned-en-pos-16", "lang": "en", "text": "What do I have outstanding with other people?", "label": true}
+{"id": "oq-tuned-en-pos-17", "lang": "en", "text": "Anything that still needs closing out?", "label": true}
+{"id": "oq-tuned-en-pos-18", "lang": "en", "text": "What's still open from last week?", "label": true}
+{"id": "oq-tuned-en-pos-19", "lang": "en", "text": "What's still weighing on me?", "label": true}
+{"id": "oq-tuned-en-pos-20", "lang": "en", "text": "What am I still carrying around?", "label": true}
+{"id": "oq-tuned-en-pos-21", "lang": "en", "text": "What do I still have weighing on my mind?", "label": true}
+{"id": "oq-tuned-en-pos-22", "lang": "en", "text": "What's still sitting on me that I haven't sorted?", "label": true}
+{"id": "oq-tuned-en-neg-01", "lang": "en", "text": "What time does the bank open tomorrow?", "label": false}
+{"id": "oq-tuned-en-neg-02", "lang": "en", "text": "When does the corner shop open in the morning?", "label": false}
+{"id": "oq-tuned-en-neg-03", "lang": "en", "text": "Is the museum open on Mondays?", "label": false}
+{"id": "oq-tuned-en-neg-04", "lang": "en", "text": "Open the spreadsheet with the budget.", "label": false}
+{"id": "oq-tuned-en-neg-05", "lang": "en", "text": "Can you open that attachment for me?", "label": false}
+{"id": "oq-tuned-en-neg-06", "lang": "en", "text": "Open the garage door.", "label": false}
+{"id": "oq-tuned-en-neg-07", "lang": "en", "text": "Open the front window, it's warm.", "label": false}
+{"id": "oq-tuned-en-neg-08", "lang": "en", "text": "Open the docs folder and find the contract.", "label": false}
+{"id": "oq-tuned-en-neg-09", "lang": "en", "text": "Is the marketing job still open?", "label": false}
+{"id": "oq-tuned-en-neg-10", "lang": "en", "text": "Are there open roles at that startup?", "label": false}
+{"id": "oq-tuned-en-neg-11", "lang": "en", "text": "Is the position still open for applications?", "label": false}
+{"id": "oq-tuned-en-neg-12", "lang": "en", "text": "Is anything good on TV tonight?", "label": false}
+{"id": "oq-tuned-en-neg-13", "lang": "en", "text": "What's showing at the cinema this weekend?", "label": false}
+{"id": "oq-tuned-en-neg-14", "lang": "en", "text": "What should I make for dinner?", "label": false}
+{"id": "oq-tuned-en-neg-15", "lang": "en", "text": "What can I cook with what's in the fridge?", "label": false}
+{"id": "oq-tuned-en-neg-16", "lang": "en", "text": "I'm anxious about the visa appointment.", "label": false}
+{"id": "oq-tuned-en-neg-17", "lang": "en", "text": "I keep worrying about the mortgage.", "label": false}
+{"id": "oq-tuned-en-neg-18", "lang": "en", "text": "I'm stressed about the interview tomorrow.", "label": false}
+{"id": "oq-tuned-en-neg-19", "lang": "en", "text": "I can't stop thinking about the exam result.", "label": false}
+{"id": "oq-tuned-en-neg-20", "lang": "en", "text": "I'm nervous about the moving date.", "label": false}
+{"id": "oq-tuned-en-neg-21", "lang": "en", "text": "I'm worried about my mum's health.", "label": false}
+{"id": "oq-tuned-en-neg-22", "lang": "en", "text": "Are the pool and gym open to visitors?", "label": false}
+{"id": "oq-tuned-pt-pos-01", "lang": "pt", "text": "O que é que tenho em aberto neste momento?", "label": true}
+{"id": "oq-tuned-pt-pos-02", "lang": "pt", "text": "Há alguma coisa à minha espera?", "label": true}
+{"id": "oq-tuned-pt-pos-03", "lang": "pt", "text": "O que é que ainda não resolvi?", "label": true}
+{"id": "oq-tuned-pt-pos-04", "lang": "pt", "text": "O que é que ficou por acabar?", "label": true}
+{"id": "oq-tuned-pt-pos-05", "lang": "pt", "text": "O que ainda está à espera de mim?", "label": true}
+{"id": "oq-tuned-pt-pos-06", "lang": "pt", "text": "O que é que me falta ainda?", "label": true}
+{"id": "oq-tuned-pt-pos-07", "lang": "pt", "text": "O que é que tenho por resolver?", "label": true}
+{"id": "oq-tuned-pt-pos-08", "lang": "pt", "text": "Há coisas inacabadas na minha lista?", "label": true}
+{"id": "oq-tuned-pt-pos-09", "lang": "pt", "text": "O que é que ainda tenho de tratar?", "label": true}
+{"id": "oq-tuned-pt-pos-10", "lang": "pt", "text": "O que é que me está a ocupar agora?", "label": true}
+{"id": "oq-tuned-pt-pos-11", "lang": "pt", "text": "O que é que ainda está aberto da semana passada?", "label": true}
+{"id": "oq-tuned-pt-pos-12", "lang": "pt", "text": "Algo que eu tenha deixado a meio?", "label": true}
+{"id": "oq-tuned-pt-pos-13", "lang": "pt", "text": "O que é que continua sem solução?", "label": true}
+{"id": "oq-tuned-pt-pos-14", "lang": "pt", "text": "O que é que ainda depende de mim?", "label": true}
+{"id": "oq-tuned-pt-pos-15", "lang": "pt", "text": "O que é que tenho pendente com outras pessoas?", "label": true}
+{"id": "oq-tuned-pt-pos-16", "lang": "pt", "text": "O que é que falta fechar?", "label": true}
+{"id": "oq-tuned-pt-pos-17", "lang": "pt", "text": "O que é que ainda está em cima da mesa?", "label": true}
+{"id": "oq-tuned-pt-pos-18", "lang": "pt", "text": "Tenho assim alguma coisa por terminar?", "label": true}
+{"id": "oq-tuned-pt-pos-19", "lang": "pt", "text": "O que ainda me anda a pesar?", "label": true}
+{"id": "oq-tuned-pt-pos-20", "lang": "pt", "text": "Com o que é que ainda ando às voltas?", "label": true}
+{"id": "oq-tuned-pt-pos-21", "lang": "pt", "text": "O que ainda trago em cima de mim?", "label": true}
+{"id": "oq-tuned-pt-pos-22", "lang": "pt", "text": "O que ainda ando a arrastar sem resolver?", "label": true}
+{"id": "oq-tuned-pt-neg-01", "lang": "pt", "text": "A que horas abre a farmácia?", "label": false}
+{"id": "oq-tuned-pt-neg-02", "lang": "pt", "text": "Quando é que o banco abre amanhã?", "label": false}
+{"id": "oq-tuned-pt-neg-03", "lang": "pt", "text": "O museu está aberto às segundas?", "label": false}
+{"id": "oq-tuned-pt-neg-04", "lang": "pt", "text": "Abre a janela da sala, por favor.", "label": false}
+{"id": "oq-tuned-pt-neg-05", "lang": "pt", "text": "Abre o ficheiro dos relatórios.", "label": false}
+{"id": "oq-tuned-pt-neg-06", "lang": "pt", "text": "Consegues abrir esse anexo?", "label": false}
+{"id": "oq-tuned-pt-neg-07", "lang": "pt", "text": "Abre a porta da garagem.", "label": false}
+{"id": "oq-tuned-pt-neg-08", "lang": "pt", "text": "Abre a pasta dos documentos e encontra o contrato.", "label": false}
+{"id": "oq-tuned-pt-neg-09", "lang": "pt", "text": "A posição de designer ainda está aberta?", "label": false}
+{"id": "oq-tuned-pt-neg-10", "lang": "pt", "text": "Há vagas abertas naquela startup?", "label": false}
+{"id": "oq-tuned-pt-neg-11", "lang": "pt", "text": "A candidatura continua aberta?", "label": false}
+{"id": "oq-tuned-pt-neg-12", "lang": "pt", "text": "O que é que dá hoje na televisão?", "label": false}
+{"id": "oq-tuned-pt-neg-13", "lang": "pt", "text": "Está a dar alguma coisa boa na televisão?", "label": false}
+{"id": "oq-tuned-pt-neg-14", "lang": "pt", "text": "O que é que posso fazer para o jantar?", "label": false}
+{"id": "oq-tuned-pt-neg-15", "lang": "pt", "text": "O que posso cozinhar com o que está no frigorífico?", "label": false}
+{"id": "oq-tuned-pt-neg-16", "lang": "pt", "text": "Estou preocupado com a consulta do dentista.", "label": false}
+{"id": "oq-tuned-pt-neg-17", "lang": "pt", "text": "Ando ansioso com a mudança de casa.", "label": false}
+{"id": "oq-tuned-pt-neg-18", "lang": "pt", "text": "Estou stressado com a entrevista de amanhã.", "label": false}
+{"id": "oq-tuned-pt-neg-19", "lang": "pt", "text": "Não consigo parar de pensar no resultado do exame.", "label": false}
+{"id": "oq-tuned-pt-neg-20", "lang": "pt", "text": "Estou nervoso por causa da reunião com o senhorio.", "label": false}
+{"id": "oq-tuned-pt-neg-21", "lang": "pt", "text": "Preocupa-me a saúde da minha mãe.", "label": false}
+{"id": "oq-tuned-pt-neg-22", "lang": "pt", "text": "O supermercado está aberto aos feriados?", "label": false}

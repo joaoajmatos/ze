@@ -239,6 +239,19 @@ ntfy push notifications as the fallback when the machine is cold.
 
 ---
 
+## Laptop hosts
+
+Ze also runs locally on a laptop, where a scheduled time can pass while the machine
+sleeps or is shut. Ze runs each missed cron job once on startup, within the job's
+`catch_up_max_age_hours` (the morning briefing defaults to 6 hours). A process that
+was suspended over a fire time runs the job once on resume, because APScheduler uses
+`misfire_grace_time=None` with `coalesce=True`. Overdue calendar reminders fire on
+startup, marked late. A job with no recorded run does not catch up. When quiet hours
+end while the host was down, the release sweep runs within five minutes of startup.
+See [scheduled-jobs.md](scheduled-jobs.md#catch-up-for-missed-runs).
+
+---
+
 ## Troubleshooting
 
 **`ze_startup_complete` not in logs after deploy**

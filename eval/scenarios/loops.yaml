@@ -55,3 +55,19 @@
     - Turn 1 should say the Porto move is now tracked
     - Turn 2 should say it is already on the radar, not that it was newly created
     - Turn 2 should not claim a second loop was created
+
+- id: loops-whats-open-en
+  description: "Ask what is still open. Any speaker may answer; the judge checks the reply lists open items or says nothing is open."
+  prompt: "What's still on my plate?"
+  tags: [loops, executive, phase-171]
+  criteria:
+    - The reply either lists open items (loops, goals, workflows) or says plainly that nothing is open
+    - It does not answer a different question (opening hours, files)
+
+- id: loops-whats-open-pt
+  description: "Ask what is still open (PT). Any speaker may answer; the judge checks the reply lists open items or says nothing is open."
+  prompt: "O que tenho em aberto?"
+  tags: [loops, executive, phase-171]
+  criteria:
+    - The reply either lists open items (loops, goals, workflows) or says plainly that nothing is open
+    - It does not answer a different question (opening hours, files)

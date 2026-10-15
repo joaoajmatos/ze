@@ -26,12 +26,22 @@ class CalendarReminderStore:
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
-    async def list_unsent(self) -> list[CalendarReminder]:
+    async def list_unsent(
+        self, *, include_overdue: bool = False
+    ) -> list[CalendarReminder]:
+        """Unsent reminders ordered by fire time.
+
+        Defaults to upcoming reminders only (what ``CalendarSignalSource``
+        wants). Pass ``include_overdue=True`` so ``replay_unsent`` also sees
+        reminders whose fire time passed while the host was down (FR-025).
+        """
+        condition = "" if include_overdue else " AND fire_at > NOW()"
+        query = (
+            "SELECT id, event_id, event_title, fire_at, label, sent, assessed_at "
+            f"FROM calendar_reminders WHERE sent = false{condition} ORDER BY fire_at"
+        )
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT id, event_id, event_title, fire_at, label, sent, assessed_at "
-                "FROM calendar_reminders WHERE sent = false AND fire_at > NOW() ORDER BY fire_at"
-            )
+            rows = await conn.fetch(query)
         return [_to_reminder(r) for r in rows]
 
     async def list_for_event(self, event_id: str) -> list[CalendarReminder]:

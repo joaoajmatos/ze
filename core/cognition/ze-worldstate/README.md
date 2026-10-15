@@ -14,10 +14,11 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 - Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion. The 109 Haiku gate stays as the fallback. Its parse tolerates the code fence Haiku puts around JSON; before phase 168 it did not, so this extraction created no loops in production. Each created loop links the evidence that triggered it: the conversation or email turn episode, or the ingestion ref. The calendar inflow passes no evidence, because its event has no UUID record
 - Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` is on in the shipped config (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8), after an `ENABLE` verdict on the held-out set for English and Portuguese
 - Track tool (`tracking.py`, `agents/tools.py`) — phase 169. The `track_loop` tool, on the `loops` agent, starts tracking a concern the user asked Ze to keep in mind. `LoopTracker` matches existing loops and returns one outcome: `created`, `confirmed`, `reinforced`, or `revived`. The reply may claim tracking only after a successful call
+- Confirm — phase 171. A confirm, from the Open loops page or the `confirm_loop` tool on the `loops` agent, stamps a suspected loop like a declaration: confidence 0.9 and a 7-day drift deadline. The `track_loop` result also reports whether tracking was earned (`tracking_earned`)
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition. The sweep selects `active` loops whose `drift_deadline` has passed. New evidence on an active loop calls `record_corroboration`, which moves the deadline to at least 7 days from now (the default window is a code constant)
-- `LoopSurfacer` (`surfacing.py`) — a push-bar-gated path (`ze_correlation`'s shared push budget) for `drifting` loops that sends a hedged mention. The grounding gate checks the loop title against its evidence
+- `LoopSurfacer` (`surfacing.py`) — a push-bar-gated `notify` path (discretionary, shared budget) for `drifting` loops that sends a hedged mention. The grounding gate checks the loop title against its evidence
 - Review (`review.py`) — confirm / close / drop lifecycle transitions
 - Jobs (`jobs/`) — `DriftSweepJob` and `StaleSuspicionJob`, scheduled via `ze-proactive`. `ze-priority`'s `AttentionArbitrationJob` replaced the old `PushSweepJob`
 
@@ -38,7 +39,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
 | `decay.py` | Confidence decay cascade, called at the evidence-writing code path |
 | `drift.py` | Drift deadline computation and rationale composition |
-| `surfacing.py` | `LoopSurfacer` — push-bar-gated ntfy path with a hedged mention |
+| `surfacing.py` | `LoopSurfacer` — push-bar-gated `notify` path with a hedged mention |
 | `review.py` | Confirm / close / drop lifecycle transitions |
 | `inflow.py` | Wiring helpers for the four inflows (conversation, email, calendar, ingestion) |
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |

@@ -62,6 +62,7 @@ help:
 	@echo "    calibrate-routing  LIVE System One run over eval/calibration/routing.jsonl; costs credits (needs OPENROUTER_API_KEY)"
 	@echo "    calibrate-skills   LIVE System One run over eval/calibration/skills.jsonl; costs credits (needs OPENROUTER_API_KEY); --recall is offline"
 	@echo "    calibrate-loop-gate  LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (needs OPENROUTER_API_KEY); --check-sets is offline"
+	@echo "    calibrate-open-query  LOCAL E5 run over eval/calibration/open_query.jsonl; free; --check-sets is offline"
 	@echo "    eval-clean       Delete eval-namespaced rows from DB"
 	@echo ""
 	@echo "  Testing (see docs/testing.md)"
@@ -224,7 +225,7 @@ db-reset-seed: db-reset
 	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.seed apply
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
-.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act calibrate-routing calibrate-skills calibrate-loop-gate
+.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act calibrate-routing calibrate-skills calibrate-loop-gate calibrate-open-query
 
 eval:
 	uv run python eval/run.py
@@ -252,6 +253,9 @@ calibrate-skills:
 
 calibrate-loop-gate:
 	uv run python eval/calibration/loop_gate.py
+
+calibrate-open-query:
+	uv run python eval/calibration/open_query.py $(ARGS)
 
 eval-clean:
 	@echo "Removing eval-namespaced rows from routing_log, checkpoints, llm_cost_log..."

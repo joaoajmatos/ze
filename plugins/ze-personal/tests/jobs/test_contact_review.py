@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from ze_personal.contacts.types import Person, PersonSource
 from ze_personal.jobs.contacts import ContactReviewNotifier
+from ze_personal.push_kinds import CONTACT_REVIEW
 
 
 def _make_person(**kwargs) -> Person:
@@ -40,7 +41,7 @@ async def test_run_does_nothing_when_no_pending():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 async def test_run_pushes_one_message_per_pending():
@@ -58,7 +59,7 @@ async def test_run_pushes_one_message_per_pending():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    assert notifier.push_notification.call_count == 2
+    assert notifier.notify.call_count == 2
 
 
 async def test_run_message_contains_name_and_relationship():
@@ -70,9 +71,10 @@ async def test_run_message_contains_name_and_relationship():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    notif = notifier.push_notification.call_args[0][0]
-    assert "Maria Costa" in notif.content
-    assert "aviation lawyer" in notif.content
+    call = notifier.notify.call_args
+    assert call.args[0] is CONTACT_REVIEW
+    assert "Maria Costa" in call.args[2]
+    assert "aviation lawyer" in call.args[2]
 
 
 async def test_run_message_contains_context_snippet():
@@ -85,8 +87,8 @@ async def test_run_message_contains_context_snippet():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    notif = notifier.push_notification.call_args[0][0]
-    assert "discussed charter pricing" in notif.content
+    call = notifier.notify.call_args
+    assert "discussed charter pricing" in call.args[2]
 
 
 async def test_run_message_truncates_long_context():
@@ -100,8 +102,8 @@ async def test_run_message_truncates_long_context():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    notif = notifier.push_notification.call_args[0][0]
-    assert "…" in notif.content
+    call = notifier.notify.call_args
+    assert "…" in call.args[2]
 
 
 async def test_run_passes_keyboard_with_correct_person_id():
@@ -113,8 +115,8 @@ async def test_run_passes_keyboard_with_correct_person_id():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    notif = notifier.push_notification.call_args[0][0]
-    assert any(str(person.id) in a.payload for a in notif.actions)
+    call = notifier.notify.call_args
+    assert any(str(person.id) in a.payload for a in call.kwargs["actions"])
 
 
 async def test_run_omits_classification_when_unknown():
@@ -126,6 +128,6 @@ async def test_run_omits_classification_when_unknown():
     reviewer = ContactReviewNotifier(person_store=store, notifier=notifier)
     await reviewer.run()
 
-    notif = notifier.push_notification.call_args[0][0]
-    assert "unknown" not in notif.content
-    assert "Classification:" not in notif.content
+    call = notifier.notify.call_args
+    assert "unknown" not in call.args[2]
+    assert "Classification:" not in call.args[2]

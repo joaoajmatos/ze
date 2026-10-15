@@ -40,6 +40,8 @@ const item = {
   target_id: "goal-a",
   created_at: new Date().toISOString(),
   read: false,
+  push_class: "accountability",
+  delivery: "delivered",
 };
 
 function setup({
@@ -114,5 +116,33 @@ describe("NotificationBell", () => {
     fireEvent.click(screen.getByText("Goal stuck"));
 
     expect(mutate).toHaveBeenCalledWith("notif-1");
+  });
+
+  it("labels a held item", () => {
+    setup({ items: [{ ...item, delivery: "held" }] });
+    renderBell();
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+
+    expect(screen.getByText("Held for quiet hours")).toBeInTheDocument();
+  });
+
+  it("labels a suppressed item", () => {
+    setup({ items: [{ ...item, delivery: "suppressed" }] });
+    renderBell();
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+
+    expect(screen.getByText("Not pushed: daily limit")).toBeInTheDocument();
+  });
+
+  it("shows no label for an ordinary delivery", () => {
+    setup({ items: [item] });
+    renderBell();
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+
+    expect(screen.queryByText("Held for quiet hours")).not.toBeInTheDocument();
+    expect(screen.queryByText("Not pushed: daily limit")).not.toBeInTheDocument();
   });
 });

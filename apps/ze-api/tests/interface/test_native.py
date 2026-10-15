@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 
 from ze_agents.interface.types import Notification, OutboundMessage
 from ze_api.interface.native import NativeAppInterface
@@ -308,3 +310,104 @@ async def test_trace_update_hides_agent_and_undo_args():
         "failure_code",
     }
     assert frame["rollback"]["replaces"] == "old"
+
+
+# ── governor (phase 177) ────────────────────────────────────────────────────
+
+
+def _notif(**kw):
+    base = dict(
+        content="body",
+        id="n-1",
+        event_type="insight",
+        source="personal",
+        title="T",
+        push_class="discretionary",
+    )
+    base.update(kw)
+    return Notification(**base)
+
+
+def _iface_with_quiet(quiet, *, connected=False):
+    store = AsyncMock()
+    conn = _make_conn(connected=connected)
+    notifier = AsyncMock()
+
+    async def quiet_now():
+        return quiet
+
+    return (
+        NativeAppInterface(
+            message_store=store,
+            connection_manager=conn,
+            notifier=notifier,
+            quiet_now=quiet_now,
+        ),
+        store,
+        conn,
+        notifier,
+    )
+
+
+@pytest.mark.parametrize("delivery", ["held", "suppressed"])
+async def test_silent_delivery_sends_only_the_notification_frame(delivery):
+    iface, store, conn, notifier = _make_interface(connected=False)
+    from ze_agents.interface.types import Action
+
+    await iface.push(_notif(delivery=delivery, buzz=False, actions=[Action("Go", "p")]))
+
+    store.save.assert_not_called()
+    conn.push.assert_not_called()
+    notifier.push.assert_not_called()
+    conn.send_frame.assert_called_once()
+    frame = conn.send_frame.call_args.args[0]
+    assert frame["type"] == "notification"
+    assert frame["delivery"] == delivery and frame["push_class"] == "discretionary"
+
+
+async def test_buzz_false_skips_ntfy_but_saves_message():
+    iface, store, conn, notifier = _make_interface(connected=False)
+    await iface.push(_notif(delivery="released", buzz=False))
+    store.save.assert_called_once()
+    notifier.push.assert_not_called()
+
+
+async def test_low_urgency_maps_to_priority_2():
+    iface, _, _, notifier = _make_interface(connected=False)
+    await iface.push(_notif(urgency="low", delivery="delivered"))
+    assert notifier.push.call_args.args[0].priority == 2
+
+
+async def test_quiet_skips_reply_ntfy():
+    iface, store, conn, notifier = _iface_with_quiet(True)
+    await iface.send(OutboundMessage(content="hi"))
+    store.save.assert_called_once()
+    notifier.push.assert_not_called()
+
+
+async def test_quiet_skips_confirmation_ntfy():
+    from ze_agents.interface.types import ConfirmationRequest
+
+    iface, _, conn, notifier = _iface_with_quiet(True)
+    await iface.send_confirmation(
+        ConfirmationRequest(content="ok?", options=["approve", "deny"])
+    )
+    conn.send_frame.assert_called_once()
+    notifier.push.assert_not_called()
+
+
+async def test_quiet_does_not_affect_governed_push():
+    iface, _, _, notifier = _iface_with_quiet(True)
+    await iface.push(_notif(delivery="delivered", urgency="high"))
+    assert notifier.push.call_args.args[0].priority == 5
+
+
+async def test_quiet_check_error_counts_as_not_quiet():
+    store, conn, notifier = AsyncMock(), _make_conn(), AsyncMock()
+
+    async def boom():
+        raise RuntimeError("x")
+
+    iface = NativeAppInterface(store, conn, notifier, quiet_now=boom)
+    await iface.send(OutboundMessage(content="hi"))
+    notifier.push.assert_called_once()

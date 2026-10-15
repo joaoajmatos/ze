@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -41,6 +42,7 @@ from ze_skills.store import SkillStore
 from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
 from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
 from ze_api.feedback_domain import feedback_data_domains
+from ze_api.interruption_domain import interruption_data_domains
 from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
 from ze_priority import import_agent_modules as import_priority_agents
@@ -103,7 +105,10 @@ from ze_plugin.ui import collect_ui_contributions, filter_ui_manifest_by_openapi
 from ze_communication.registry import ChannelRegistry
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.push_log_store import PushLogStore
+from ze_proactive.bootstrap import shared_push_budget
+from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.compose import (
@@ -112,6 +117,7 @@ from ze_api.compose import (
 )
 from ze_api.db import create_checkpointer_pool, create_pool
 from ze_api.interface.native import NativeAppInterface
+from ze_api.push_kinds import WORKSPACE_RUN_COMPLETED
 from ze_api.webhook import (
     EventDeduplicator,
     WebhookDispatcher,
@@ -178,13 +184,11 @@ class _NotifierPushSender:
         title = "Workspace run finished"
         body = _push_body(run)
         await self._notifier.notify(
-            "workspace_run_completed",
+            WORKSPACE_RUN_COMPLETED,
             title,
             body,
-            source="workspace",
             target_type="workspace_run",
             target_id=str(run.id) if run.id else None,
-            urgency="normal",
         )
 
 
@@ -254,6 +258,8 @@ class ZeContainer(CoreContainer):
     reset_service: ResetService
     _checkpointer: Any
     _push_log_store: PushLogStore
+    interruption_settings_store: InterruptionSettingsStore
+    notifier: ProactiveNotifier
     notification_store: NotificationStore
     data_portability_service: DataPortabilityService
     dev_data_seeder: DevDataSeeder
@@ -512,19 +518,31 @@ async def build_container(settings: Settings) -> ZeContainer:
     session_store = PostgresSessionStore(pool=pool)
     connection_manager = ConnectionManager()
     confirmation_store = PendingConfirmationStore(pool=pool)
+    interruption_settings_store = InterruptionSettingsStore(pool)
+
+    async def quiet_now() -> bool:
+        return is_active(
+            await interruption_settings_store.get(), datetime.now(timezone.utc)
+        )
+
     interface = NativeAppInterface(
         message_store=message_store,
         connection_manager=connection_manager,
         notifier=push_notifier,
+        quiet_now=quiet_now,
     )
     validate_interface(interface)
 
     notification_store = NotificationStore(pool=pool)
+    push_log_store = PushLogStore(pool=pool)
     notifier = ProactiveNotifier(
-        interface=interface, notification_store=notification_store
+        interface=interface,
+        notification_store=notification_store,
+        push_log=push_log_store,
+        settings_store=interruption_settings_store,
+        max_discretionary_per_day=shared_push_budget(settings),
     )
     push_sender.bind(notifier)
-    push_log_store = PushLogStore(pool=pool)
 
     from ze_worldstate.bootstrap import build_loop_surfacer
 
@@ -540,6 +558,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         override_store=priority_override_store,
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
+        embedder=shared.embedder,
         push_log=push_log_store,
     )
 
@@ -749,6 +768,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         + automation_data_domains(pool)
         + worldstate_data_domains(pool)
         + feedback_data_domains(pool)
+        + interruption_data_domains(pool)
         + [d for plugin in plugins for d in plugin.data_domains()]
     )
     data_portability_service = DataPortabilityService(pool=pool, domains=all_domains)
@@ -785,7 +805,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         workflow_store=automation.workflow_store,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
-        proactive_scheduler=ProactiveScheduler(),
+        proactive_scheduler=ProactiveScheduler(run_store=JobRunStore(pool)),
         browser_client=browser_client,
         workspace_client=workspace.client,
         workspace_gate=workspace.gate,
@@ -804,6 +824,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         plugins=plugins,
         _checkpointer=checkpointer,
         _push_log_store=push_log_store,
+        interruption_settings_store=interruption_settings_store,
+        notifier=notifier,
         notification_store=notification_store,
         data_portability_service=data_portability_service,
         dev_data_seeder=dev_data_seeder,

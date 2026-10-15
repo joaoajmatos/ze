@@ -365,6 +365,9 @@ class PersonalPlugin(ZePlugin):
             scheduler.register(
                 self.morning_briefing,
                 cron=briefing_cfg.get("cron", "0 8 * * *"),
+                catch_up_max_age_hours=float(
+                    briefing_cfg.get("catch_up_max_age_hours", 6)
+                ),
             )
             log.info("briefing_scheduled", cron=briefing_cfg.get("cron", "0 8 * * *"))
 

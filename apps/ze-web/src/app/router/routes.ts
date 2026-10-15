@@ -13,6 +13,7 @@ const lazyByPath: Record<string, RouteMeta["lazy"]> = {
   "/": () => import("@/pages/chat").then((m) => ({ default: m.ChatPage })),
   goals: () => import("@/pages/goals").then((m) => ({ default: m.GoalsPage })),
   priority: () => import("@/pages/priority").then((m) => ({ default: m.PriorityPage })),
+  loops: () => import("@/pages/loops").then((m) => ({ default: m.LoopsPage })),
   workflows: () => import("@/pages/workflows").then((m) => ({ default: m.WorkflowsPage })),
   costs: () => import("@/pages/costs").then((m) => ({ default: m.CostsPage })),
   "brain-memory": () => import("@/pages/brain-memory").then((m) => ({ default: m.BrainMemoryPage })),

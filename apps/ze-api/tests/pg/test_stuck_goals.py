@@ -97,7 +97,8 @@ async def test_priority_view_ranks_the_goal_with_no_failed_sources(pg_pool):
 async def test_stuck_goal_job_alerts_once_and_marks(pg_pool):
     goal_id = await make_goal_with_gates(pg_pool, status="awaiting_gate", gates=_dev_shape_gates())
     notifier = AsyncMock()
+    notifier.notify.return_value = "delivered"
     await StuckGoalJob(notifier, PostgresGoalStore(pg_pool)).run()
-    assert notifier.push_notification.await_count == 1
+    assert notifier.notify.await_count == 1
     async with pg_pool.acquire() as conn:
         assert await conn.fetchval("SELECT last_stuck_alert_at FROM goals WHERE id = $1", goal_id)

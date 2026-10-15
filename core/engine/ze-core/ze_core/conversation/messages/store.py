@@ -350,6 +350,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         rollback=RollbackTrace.from_dict(data["rollback"])
         if data.get("rollback")
         else None,
+        loop_offer_ids=list(data.get("loop_offer_ids") or []),
     )
 
 

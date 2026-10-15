@@ -14,6 +14,7 @@ from ze_automation.goals.types import (
     VerificationGate,
     GateStatus,
 )
+from ze_automation.push_kinds import GOAL_NARRATIVE
 
 
 def _goal(title="Test Goal", status=GoalStatus.ACTIVE) -> Goal:
@@ -55,7 +56,6 @@ def _make_job(
     goals=None, milestones=None, gate=None, dedup=False, paragraph="Progress summary."
 ):
     notifier = AsyncMock()
-    notifier.push_notification = AsyncMock()
 
     push_log = AsyncMock()
     push_log.was_sent_within_hours = AsyncMock(return_value=dedup)
@@ -84,7 +84,7 @@ def _make_job(
 async def test_run_skips_when_dedup_within_6_days():
     job, notifier, _, _ = _make_job(dedup=True)
     await job.run()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── No active goals ───────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ async def test_run_skips_when_dedup_within_6_days():
 async def test_run_skips_when_no_active_goals():
     job, notifier, _, _ = _make_job(goals=[])
     await job.run()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── Happy path ────────────────────────────────────────────────────────────────
@@ -112,10 +112,12 @@ async def test_run_sends_narrative_for_goals_with_progress():
     await job.run()
 
     planner.synthesize_weekly_narrative.assert_called_once()
-    notifier.push_notification.assert_called_once()
-    notif = notifier.push_notification.call_args.args[0]
-    assert "Job search" in notif.content
-    assert "Ze found 10 prospects" in notif.content
+    notifier.notify.assert_called_once()
+    call = notifier.notify.call_args
+    assert call.args[0] is GOAL_NARRATIVE
+    assert call.args[1] == "Goal progress this week"
+    assert "Job search" in call.args[2]
+    assert "Ze found 10 prospects" in call.args[2]
     push_log.log.assert_called_once_with("goal_narrative", "weekly")
 
 
@@ -133,7 +135,7 @@ async def test_run_skips_goals_with_no_progress_this_week():
     await job.run()
 
     planner.synthesize_weekly_narrative.assert_not_called()
-    notifier.push_notification.assert_not_called()
+    notifier.notify.assert_not_called()
 
 
 # ── Awaiting gate ─────────────────────────────────────────────────────────────
@@ -153,8 +155,8 @@ async def test_run_includes_awaiting_gate_even_without_weekly_progress():
     await job.run()
 
     planner.synthesize_weekly_narrative.assert_called_once()
-    notif = notifier.push_notification.call_args.args[0]
-    assert "Week 1 review" in notif.content
+    call = notifier.notify.call_args
+    assert "Week 1 review" in call.args[2]
 
 
 # ── Resilience ────────────────────────────────────────────────────────────────
@@ -166,7 +168,6 @@ async def test_run_continues_when_one_goal_narrative_fails():
     m = _milestone(1, MilestoneStatus.COMPLETED)
 
     notifier = AsyncMock()
-    notifier.push_notification = AsyncMock()
     push_log = AsyncMock()
     push_log.was_sent_within_hours = AsyncMock(return_value=False)
     push_log.log = AsyncMock()
@@ -188,7 +189,7 @@ async def test_run_continues_when_one_goal_narrative_fails():
     await job.run()
 
     # Goal B paragraph should still be sent
-    notifier.push_notification.assert_called_once()
-    notif = notifier.push_notification.call_args.args[0]
-    assert "Goal B" in notif.content
-    assert "Goal A" not in notif.content
+    notifier.notify.assert_called_once()
+    call = notifier.notify.call_args
+    assert "Goal B" in call.args[2]
+    assert "Goal A" not in call.args[2]

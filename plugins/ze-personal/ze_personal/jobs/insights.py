@@ -10,6 +10,7 @@ from ze_agents.model_resolution import resolve_model
 from ze_sdk.proactive import ProactiveNotifier
 from ze_agents.settings import Settings
 from ze_sdk.proactive import proactive_job
+from ze_personal.push_kinds import INSIGHT
 
 _VALID_CATEGORIES = {"pattern", "trend", "goal", "tension"}
 
@@ -160,16 +161,19 @@ class InsightEngine:
                     insight["category"],
                     week_of,
                 )
-                await self._notifier.notify(
-                    "insight_digest",
+                outcome = await self._notifier.notify(
+                    INSIGHT,
                     f"New insight: {insight['category'].capitalize()}",
                     insight["text"],
-                    source="personal",
+                    target_type="insight",
+                    target_id=str(row["id"]),
+                    budget_key=f"insight:{row['id']}",
                 )
-                await conn.execute(
-                    "UPDATE insights SET pushed = true, pushed_at = NOW() WHERE id = $1",
-                    row["id"],
-                )
+                if outcome in ("delivered", "held"):
+                    await conn.execute(
+                        "UPDATE insights SET pushed = true, pushed_at = NOW() WHERE id = $1",
+                        row["id"],
+                    )
                 self._log.info(
                     "insight_pushed",
                     category=insight["category"],

@@ -277,6 +277,7 @@ proactive:
     enabled: true
     cron: "0 8 * * *"               # When to send the morning briefing (cron, UTC)
     unreviewed_nudge_threshold: 5   # Include a review nudge if unreviewed facts >= this
+    catch_up_max_age_hours: 6       # A briefing missed by more than this is skipped
 
   alerts:
     workflow_failure_enabled: true
@@ -315,9 +316,25 @@ proactive:
     anomaly_min_samples: 5          # min historical runs needed before alerting
     anomaly_retention_days: 30      # prune anomaly records older than N days
     stall_days: 3                   # milestone idle days before counted as stalled
+
+  budget:
+    max_pushes_per_day: 5           # shared by every discretionary push (phase 177)
+
+  notifications:
+    prune_cron: "0 4 * * *"         # delete read notifications older than retention_days
+    retention_days: 90
+    release_cron: "*/5 * * * *"     # release pushes held during quiet hours
 ```
 
 Disable any proactive feature by setting `enabled: false` or toggling the relevant flag.
+
+`proactive.budget.max_pushes_per_day` (default 5) is the one shared daily budget for every discretionary push. Ze sends a discretionary nudge only while a slot remains. Once the budget is spent, further nudges enter the notification bell with delivery `suppressed`. Accountability and requested pushes never claim the budget.
+
+`proactive.briefing.catch_up_max_age_hours` (default 6) sets how late a missed briefing may be and still run at startup. After downtime, the scheduler runs each missed cron job once, within this age.
+
+`proactive.notifications.release_cron` (default `*/5 * * * *`) sets how often Ze checks whether quiet hours have ended and releases the pushes it held.
+
+Quiet hours are not a YAML value. The user sets them in Settings › Notifications. Ze stores them in the `interruption_settings` table and exposes them over REST at `/api/v0/notifications/quiet-hours`. Quiet hours ship off.
 
 ### `news:`
 
@@ -479,7 +496,7 @@ Ze extracts open loops from conversation, email, calendar events, and ingested c
 - Anything else creates a suspected loop.
 - A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate now strips the code fence Haiku wraps around its JSON.
 
-After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. The gate also steps aside on a turn where the `track_loop` tool succeeded. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
+After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. The gate also steps aside on a turn where the `track_loop` or `confirm_loop` tool succeeded. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
 
 The keys:
 

@@ -15,6 +15,9 @@ from ze_core.orchestration.state import AgentState
 log = get_logger(__name__)
 
 SESSION_HISTORY_LIMIT = 10
+# Mirror ze_priority.turn.RECAP_LIMIT / OPEN_QUERY_LIMIT (ze_core cannot import ze_priority).
+_RECAP_LIMIT = 5
+_OPEN_QUERY_LIMIT = 10
 _DEFAULT_INACTIVITY_MINUTES = 30
 
 
@@ -23,6 +26,7 @@ class ResumeRecap:
     session_narrative: str | None
     open_item_lines: list[str] = field(default_factory=list)
     in_flight_workflow_lines: list[str] = field(default_factory=list)
+    loop_offers: list[Any] = field(default_factory=list)
     gap_minutes: float = 0.0
 
     def has_content(self) -> bool:
@@ -30,6 +34,7 @@ class ResumeRecap:
             self.session_narrative
             or self.open_item_lines
             or self.in_flight_workflow_lines
+            or self.loop_offers
         )
 
     def render(self) -> str:
@@ -44,6 +49,16 @@ class ResumeRecap:
         if self.in_flight_workflow_lines:
             lines.append("In-flight workflows:")
             lines.extend(f"- {line}" for line in self.in_flight_workflow_lines)
+        if self.loop_offers:
+            lines.append(
+                "Not yet tracked (Ze noticed these; the user has not confirmed them):"
+            )
+            lines.extend(f"- {offer.title}" for offer in self.loop_offers)
+            lines.append(
+                "End your reply with one short question, in the user's language, "
+                "asking whether they want you to keep track of these. "
+                "Do not say they are being tracked."
+            )
         return "\n".join(lines)
 
 
@@ -67,10 +82,17 @@ async def _assemble_resume_recap(
     surfacer = configurable.get("turn_surfacer")
     if surfacer is not None:
         try:
-            mentions = await surfacer.recap_mentions()
+            mentions = await surfacer.recap_mentions(limit=_RECAP_LIMIT)
             open_item_lines = [m.mention_text for m in mentions]
         except Exception as exc:
             log.warning("resume_recap_turn_surfacing_failed", error=str(exc))
+
+    loop_offers: list[Any] = []
+    if surfacer is not None and not configurable.get("retry_mode"):
+        try:
+            loop_offers = list(await surfacer.resume_loop_offers())
+        except Exception as exc:
+            log.warning("resume_recap_loop_offers_failed", error=str(exc))
 
     in_flight_workflow_lines: list[str] = []
     workflow_store = configurable.get("workflow_store")
@@ -88,20 +110,31 @@ async def _assemble_resume_recap(
         session_narrative=session_narrative,
         open_item_lines=open_item_lines,
         in_flight_workflow_lines=in_flight_workflow_lines,
+        loop_offers=loop_offers,
         gap_minutes=gap_minutes,
     )
     return recap if recap.has_content() else None
 
 
-async def _open_priorities_note(prompt: str, config: RunnableConfig) -> str | None:
+def _is_open_query(embedding: Any, config: RunnableConfig) -> bool:
     surfacer = config["configurable"].get("turn_surfacer")
     if surfacer is None:
-        return None
-    checker = getattr(surfacer, "is_global_open_query", None)
-    if checker is None or not checker(prompt):
+        return False
+    try:
+        return bool(surfacer.is_global_open_query(embedding))
+    except Exception as exc:
+        log.warning("open_query_detection_failed", error=str(exc))
+        return False
+
+
+async def _open_priorities_note(
+    open_items_query: bool, config: RunnableConfig
+) -> str | None:
+    surfacer = config["configurable"].get("turn_surfacer")
+    if surfacer is None or not open_items_query:
         return None
     try:
-        mentions = await surfacer.recap_mentions()
+        mentions = await surfacer.recap_mentions(limit=_OPEN_QUERY_LIMIT)
     except Exception as exc:
         log.warning("open_priorities_note_failed", error=str(exc))
         return None
@@ -137,6 +170,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
 
     embed_text = state.get("image_caption") or state["prompt"]
     prompt_embedding = embedder.encode(embed_text)
+    open_items_query = _is_open_query(prompt_embedding, config)
 
     _request = RetrievalRequest(
         module=agent_name,
@@ -159,12 +193,15 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     last_active = state.get("last_active_at")
     recap: ResumeRecap | None = None
     resume_recap_applied = False
+    loop_offer_ids: list[str] = []
     if last_active and (now - last_active) > (inactivity_minutes * 60):
         history: list[dict] = []
         log.info("session_expired", session_id=state["session_id"])
         gap_minutes = (now - last_active) / 60
         recap = await _assemble_resume_recap(state["session_id"], config, gap_minutes)
         resume_recap_applied = recap is not None
+        if recap is not None:
+            loop_offer_ids = [str(offer.loop_id) for offer in recap.loop_offers]
     else:
         history = list(state.get("messages") or [])
 
@@ -199,7 +236,7 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     agent_context.retry_mode = bool(config["configurable"].get("retry_mode"))
     if recap is not None:
         agent_context.resume_recap = recap.render()
-    note = await _open_priorities_note(prompt_for_ctx, config)
+    note = await _open_priorities_note(open_items_query, config)
     if note is not None:
         agent_context.open_priorities_note = note
 
@@ -271,6 +308,8 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         "agent_context": agent_context,
         "last_active_at": now,
         "resume_recap_applied": resume_recap_applied,
+        "loop_offer_ids": loop_offer_ids,
+        "open_items_query": open_items_query,
         "procedure_matches": getattr(agent_context, "procedure_matches", None),
     }
 
