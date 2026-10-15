@@ -84,14 +84,6 @@ class ResetService:
         async with self._pool.acquire() as conn:
             table_sql = ", ".join(preview.counts)
             await conn.execute(f"TRUNCATE {table_sql} RESTART IDENTITY CASCADE")
-            if "user_profile" in preview.counts:
-                await conn.execute(
-                    """
-                    INSERT INTO user_profile (id)
-                    VALUES (1)
-                    ON CONFLICT DO NOTHING
-                    """
-                )
         return ResetResult(scope=scope, deleted=preview.counts)
 
 
