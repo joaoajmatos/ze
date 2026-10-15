@@ -1,0 +1,40 @@
+{"id": "oq-hold-en-pos-01", "lang": "en", "text": "What's still on my plate this week?", "label": true}
+{"id": "oq-hold-en-pos-02", "lang": "en", "text": "Anything I need to follow up on?", "label": true}
+{"id": "oq-hold-en-pos-03", "lang": "en", "text": "What have I got outstanding right now?", "label": true}
+{"id": "oq-hold-en-pos-04", "lang": "en", "text": "What loose ends am I leaving around?", "label": true}
+{"id": "oq-hold-en-pos-05", "lang": "en", "text": "Is there anything I've left hanging?", "label": true}
+{"id": "oq-hold-en-pos-06", "lang": "en", "text": "What still needs my attention?", "label": true}
+{"id": "oq-hold-en-pos-07", "lang": "en", "text": "What's pending on my side?", "label": true}
+{"id": "oq-hold-en-pos-08", "lang": "en", "text": "What have I not dealt with yet?", "label": true}
+{"id": "oq-hold-en-pos-09", "lang": "en", "text": "Anything still waiting on me?", "label": true}
+{"id": "oq-hold-en-pos-10", "lang": "en", "text": "Show me everything that's still open.", "label": true}
+{"id": "oq-hold-en-neg-01", "lang": "en", "text": "What time does the supermarket open on Sunday?", "label": false}
+{"id": "oq-hold-en-neg-02", "lang": "en", "text": "When does the pharmacy open in the morning?", "label": false}
+{"id": "oq-hold-en-neg-03", "lang": "en", "text": "Open the file in the reports folder.", "label": false}
+{"id": "oq-hold-en-neg-04", "lang": "en", "text": "Can you open the window in the bedroom?", "label": false}
+{"id": "oq-hold-en-neg-05", "lang": "en", "text": "Is the engineering role still open at that company?", "label": false}
+{"id": "oq-hold-en-neg-06", "lang": "en", "text": "Are there any open positions on their careers page?", "label": false}
+{"id": "oq-hold-en-neg-07", "lang": "en", "text": "What's on TV tonight?", "label": false}
+{"id": "oq-hold-en-neg-08", "lang": "en", "text": "What should I cook for dinner?", "label": false}
+{"id": "oq-hold-en-neg-09", "lang": "en", "text": "I'm worried about the visa interview.", "label": false}
+{"id": "oq-hold-en-neg-10", "lang": "en", "text": "I can't stop thinking about the dentist appointment.", "label": false}
+{"id": "oq-hold-pt-pos-01", "lang": "pt", "text": "O que é que ainda tenho em aberto?", "label": true}
+{"id": "oq-hold-pt-pos-02", "lang": "pt", "text": "O que é que me falta resolver?", "label": true}
+{"id": "oq-hold-pt-pos-03", "lang": "pt", "text": "Há assim alguma coisa pendente para mim?", "label": true}
+{"id": "oq-hold-pt-pos-04", "lang": "pt", "text": "O que é que ainda ficou para trás?", "label": true}
+{"id": "oq-hold-pt-pos-05", "lang": "pt", "text": "O que ainda está pendente da minha parte?", "label": true}
+{"id": "oq-hold-pt-pos-06", "lang": "pt", "text": "Há alguma coisa à minha espera que eu não tenha resolvido?", "label": true}
+{"id": "oq-hold-pt-pos-07", "lang": "pt", "text": "O que é que ainda não tratei?", "label": true}
+{"id": "oq-hold-pt-pos-08", "lang": "pt", "text": "O que é que me anda a faltar fazer?", "label": true}
+{"id": "oq-hold-pt-pos-09", "lang": "pt", "text": "Mostra-me tudo o que ainda está em aberto.", "label": true}
+{"id": "oq-hold-pt-pos-10", "lang": "pt", "text": "O que é que está pendente agora?", "label": true}
+{"id": "oq-hold-pt-neg-01", "lang": "pt", "text": "A farmácia está aberta ao domingo?", "label": false}
+{"id": "oq-hold-pt-neg-02", "lang": "pt", "text": "A que horas abre o supermercado?", "label": false}
+{"id": "oq-hold-pt-neg-03", "lang": "pt", "text": "Podes abrir o ficheiro das faturas?", "label": false}
+{"id": "oq-hold-pt-neg-04", "lang": "pt", "text": "Podes abrir a janela do quarto?", "label": false}
+{"id": "oq-hold-pt-neg-05", "lang": "pt", "text": "A vaga de engenheiro ainda está aberta naquela empresa?", "label": false}
+{"id": "oq-hold-pt-neg-06", "lang": "pt", "text": "Há vagas abertas na página deles?", "label": false}
+{"id": "oq-hold-pt-neg-07", "lang": "pt", "text": "O que é que passa na televisão esta noite?", "label": false}
+{"id": "oq-hold-pt-neg-08", "lang": "pt", "text": "O que é que faço para o jantar?", "label": false}
+{"id": "oq-hold-pt-neg-09", "lang": "pt", "text": "Estou preocupado com a entrevista do visto.", "label": false}
+{"id": "oq-hold-pt-neg-10", "lang": "pt", "text": "Não consigo deixar de pensar na consulta do dentista.", "label": false}

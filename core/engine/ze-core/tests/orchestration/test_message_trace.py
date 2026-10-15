@@ -431,3 +431,18 @@ def test_sources_round_trip_through_stored_trace_and_old_traces_default_empty():
     legacy = asdict(trace)
     del legacy["sources"]
     assert _parse_trace(legacy).sources == []
+
+
+# ── Phase 171: loop offers on the trace ──────────────────────────────────────
+
+
+def test_stored_trace_round_trips_loop_offer_ids():
+    base = {
+        "agent": "a",
+        "routing_method": "embedding",
+        "confidence": 1.0,
+        "score_gap": 0.0,
+        "is_compound": False,
+    }
+    assert _parse_trace({**base, "loop_offer_ids": ["abc"]}).loop_offer_ids == ["abc"]
+    assert _parse_trace(base).loop_offer_ids == []

@@ -49,7 +49,7 @@ function LoopRow({ loop }: { loop: LoopListItem }) {
             disabled={transition.isPending}
             onClick={() => transition.mutate({ loopId: loop.id, kind: "confirm" })}
           >
-            Confirm
+            Keep
           </Button>
         )}
         {(loop.state === "active" || loop.state === "drifting") && (
@@ -75,8 +75,24 @@ function LoopRow({ loop }: { loop: LoopListItem }) {
   );
 }
 
+function LoopGroup({ heading, loops }: { heading: string; loops: LoopListItem[] }) {
+  if (loops.length === 0) return null;
+  return (
+    <section>
+      <h2 className="text-sm font-medium text-smoke mb-2">{heading}</h2>
+      <div className="space-y-2">
+        {loops.map((loop) => <LoopRow key={loop.id} loop={loop} />)}
+      </div>
+    </section>
+  );
+}
+
 export function LoopReviewList() {
   const { data: loops, isLoading, isError, refetch } = useLoopsQuery();
+
+  const suspected = loops?.filter((loop) => loop.state === "suspected") ?? [];
+  const tracking =
+    loops?.filter((loop) => loop.state === "active" || loop.state === "drifting") ?? [];
 
   return (
     <ListPage
@@ -88,8 +104,9 @@ export function LoopReviewList() {
       errorMessage="Could not load open loops."
       onRetry={() => void refetch()}
     >
-      <div className="space-y-2">
-        {loops?.map((loop) => <LoopRow key={loop.id} loop={loop} />)}
+      <div className="space-y-6">
+        <LoopGroup heading="Needs your OK" loops={suspected} />
+        <LoopGroup heading="Tracking" loops={tracking} />
       </div>
     </ListPage>
   );

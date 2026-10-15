@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from ze_logging import get_logger
@@ -7,7 +8,7 @@ from ze_logging import get_logger
 from ze_worldstate import drift
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.store import LoopStore
-from ze_worldstate.types import LoopState, OpenLoop
+from ze_worldstate.types import DECLARED_CONFIDENCE, LoopState, OpenLoop
 
 log = get_logger(__name__)
 
@@ -15,14 +16,20 @@ log = get_logger(__name__)
 async def confirm_loop(loop_store: LoopStore, loop_id: UUID) -> OpenLoop:
     """Only valid from `suspected` (FR-007, FR-015).
 
-    Sets `drift_deadline` at the moment of confirmation (research.md §1) —
-    no `implied_window_days` signal exists on this path, so the default window
-    always applies here.
+    The user's confirmation is stamped like a declaration (0.9, a fresh drift
+    window) so the page, REST and chat confirm all mean the same thing.
+    Provenance is kept: the loop was still inferred.
     """
     loop = await loop_store.transition(loop_id, LoopState.ACTIVE.value)
-    deadline = drift.compute_drift_deadline(loop.confirmed_at)
-    await loop_store.set_drift_deadline(loop_id, deadline)
+    deadline = datetime.now(timezone.utc) + timedelta(
+        days=drift.DEFAULT_DRIFT_WINDOW_DAYS
+    )
+    await loop_store.stamp_declared(
+        loop_id, confidence=DECLARED_CONFIDENCE, deadline=deadline
+    )
+    loop.confidence = DECLARED_CONFIDENCE
     loop.drift_deadline = deadline
+    loop.drift_rationale = None
     return loop
 
 

@@ -26,3 +26,8 @@ def test_judgments_default_empty():
         total_duration_ms=0,
     )
     assert trace.judgments == []
+
+
+def test_message_trace_schema_includes_loop_offer_ids():
+    props = MessageTraceResponse.model_json_schema()["properties"]
+    assert "loop_offer_ids" in props

@@ -43,12 +43,11 @@ def _memory_ctx(entity_ids: list[UUID] | None = None) -> MemoryContext:
     return MemoryContext(entities=entities)
 
 
-def _surfacer(mentions: list | None = None, *, global_query: bool = False) -> Any:
+def _surfacer(mentions: list | None = None) -> Any:
     s = AsyncMock()
     s.inline_mentions = AsyncMock(
         return_value=[_Mention()] if mentions is None else mentions
     )
-    s.is_global_open_query = lambda _prompt: global_query
     return s
 
 
@@ -116,7 +115,6 @@ async def test_no_mentions_yields_no_update():
 
 async def test_surfacer_exception_drops_section_silently():
     surfacer = AsyncMock()
-    surfacer.is_global_open_query = lambda _p: False
     surfacer.inline_mentions = AsyncMock(side_effect=RuntimeError("boom"))
     result = await surface_loops(_state(), _config(surfacer=surfacer))
     assert result == {}
@@ -154,9 +152,9 @@ async def test_existing_components_are_preserved():
 
 
 async def test_global_open_query_skips_unsolicited_append():
-    surfacer = _surfacer(global_query=True)
-    result = await surface_loops(
-        _state(prompt="what's open right now"), _config(surfacer=surfacer)
-    )
+    surfacer = _surfacer()
+    state = _state(prompt="what's open right now")
+    state["open_items_query"] = True
+    result = await surface_loops(state, _config(surfacer=surfacer))
     assert result == {}
     surfacer.inline_mentions.assert_not_awaited()

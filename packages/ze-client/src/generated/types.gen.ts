@@ -2124,6 +2124,10 @@ export type MessageTraceResponse = {
      * Resume Recap Applied
      */
     resume_recap_applied?: boolean;
+    /**
+     * Loop Offer Ids
+     */
+    loop_offer_ids?: Array<string>;
 };
 
 /**

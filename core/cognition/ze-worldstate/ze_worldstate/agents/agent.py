@@ -17,6 +17,7 @@ You manage the user's lingering open loops (concerns without a fire time).
 Available tools:
 - list_open_loops: pending/suspected/active/drifting loops (id, title, state)
 - track_loop: start tracking a concern the user explicitly asked you to keep in mind
+- confirm_loop: confirm a suspected loop by id when the user wants it kept
 - close_loop: close a loop by id when the concern is resolved
 - drop_loop: drop a loop by id when the user wants it gone
 
@@ -26,6 +27,12 @@ When the user asks you to keep, hold or watch something ("keep it on my radar", 
 - Say it is tracked only after track_loop returns ok true this turn. For outcome created or confirmed, say it is now tracked; for reinforced, say it was already tracked; for revived, say it is back on the radar.
 - If it returns ok false, say you could not track it and give the reason in one short sentence.
 - Never claim you are tracking something without a successful track_loop call this turn.
+
+When the user answers a "keep track of these?" question or names suspected loops to keep:
+- Call list_open_loops, then match each title to a unique `suspected` loop.
+- Call confirm_loop once per loop to keep and drop_loop once per loop to discard.
+- If the match is already active or drifting, say it is already tracked and call nothing.
+- Say a loop is tracked only after confirm_loop or track_loop returned ok true this turn.
 
 When the user says forget/drop/close a concern:
 - Call list_open_loops first.
@@ -43,7 +50,8 @@ class LoopsAgent(BaseAgent):
       Lingering concerns and open loops without a timed reminder.
       Use for: "keep the Porto move on my radar", "mantém isso no radar",
       "forget that job-switch worry", "close the loop about X",
-      "drop the concern about Y", "what am I still sitting with".
+      "drop the concern about Y", "what am I still sitting with",
+      "keep the bank one", "fica com a do banco".
       Not for timed reminders, biography facts, or multi-week goals.
     """
     routing_criteria = """
@@ -51,16 +59,17 @@ class LoopsAgent(BaseAgent):
       ("I haven't decided about X yet, keep it on my radar", "keep an eye on X for me",
       "hold that thought", "mantém X no radar"), and for listing, tracking, closing or
       dropping such a concern
-      ("close the worry about X", "fecha a preocupação sobre X").
+      ("close the worry about X", "fecha a preocupação sobre X"), and for keeping or
+      dropping loops Ze asked about ("keep the first two", "fica com a do banco").
       Not for: a timed reminder, a multi-week outcome to work towards, or a chat about
       feelings where the user wants to talk it through now.
     """
     model = "anthropic/claude-haiku-4-5"
     vision_capable = False
     timeout = 15
-    tools = ["list_open_loops", "track_loop", "close_loop", "drop_loop"]
+    tools = ["list_open_loops", "track_loop", "confirm_loop", "close_loop", "drop_loop"]
     intents = {
-        "manage": Intent(Mode.AUTONOMOUS, "List, track, close, or drop an open loop."),
+        "manage": Intent(Mode.AUTONOMOUS, "List, track, confirm, close, or drop an open loop."),
     }
     default_mode = Mode.AUTONOMOUS
 

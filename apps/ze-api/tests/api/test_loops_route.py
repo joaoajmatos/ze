@@ -129,6 +129,7 @@ async def test_confirm_close_drop_persist_across_relist():
         )
         assert confirm_resp.status_code == 200
         assert confirm_resp.json()["state"] == "active"
+        assert confirm_resp.json()["confidence"] == 0.9
 
         close_resp = await client.post(
             f"/api/v0/loops/{loop.id}/close",

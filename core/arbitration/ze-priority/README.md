@@ -13,7 +13,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 - `reprioritize_item` — a conversational tool that makes a named item more or less urgent
 - `AttentionArbitrationJob` — one scheduled job that sends ranked candidates through the interruption governor until one is delivered or held. It reads `worldstate.push.enabled` for loops and `correlation.push.enabled`/`dry_run` for hypotheses
 - The snapshot response carries `{items, sources_failed}`, so the page can name the sources it could not read. `source_kind` accepts `loop`, `goal`, `hypothesis`, and `relationship`
-- `TurnSurfacing` — inline mentions and the resume recap use the same merged ranking
+- `TurnSurfacing` — inline mentions and the resume recap use the same merged ranking. It detects "what's open" questions with `OpenQueryDetector`, which compares the message to example questions by E5 similarity in English and Portuguese. The recap lists at most 5 items. An explicit "what's open" answer lists at most 10. At resume, it offers up to 3 suspected loops as a question. A loop it offered stays quiet for 7 days, tracked in `push_log`
 
 ### Integration
 
@@ -30,7 +30,8 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 | `store.py` | `PriorityOverrideStore` Protocol and Postgres store |
 | `contribution.py` | Turns an override into seam contributions |
 | `tools.py`, `agent.py` | The `reprioritize_item` tool |
-| `turn.py` | `TurnSurfacing` — open-item mentions and recap for a turn |
+| `turn.py` | `TurnSurfacing` — open-item mentions, resume loop offers, and recap for a turn |
+| `open_query.py` | `OpenQueryDetector` — E5 similarity check for "what's open" questions |
 | `arbitration.py` | `AttentionArbitrationJob` |
 | `rest.py` | Snapshot helper for the REST routes |
 | `migrations/` | `zpri001` — creates `priority_overrides` |

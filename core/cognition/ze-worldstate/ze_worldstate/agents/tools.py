@@ -3,14 +3,18 @@ from __future__ import annotations
 from uuid import UUID
 
 from ze_agents.errors import ZeError
+from ze_logging import get_logger
 from ze_agents.tool import ToolAccess, tool
 from ze_agents.reversibility import ToolReversibility
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.review import close_loop as review_close
+from ze_worldstate.review import confirm_loop as review_confirm
 from ze_worldstate.review import drop_loop as review_drop
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
 from ze_worldstate.types import LoopState
+
+log = get_logger(__name__)
 
 _OPEN = (
     LoopState.SUSPECTED.value,
@@ -70,6 +74,39 @@ async def track_loop(
         "id": str(result.loop.id),
         "title": result.loop.title,
         "state": result.loop.state.value,
+    }
+
+
+@tool(
+    access=ToolAccess.WRITE,
+    description=(
+        "Confirm a suspected open loop by id after listing, when the user says to "
+        "keep track of it. Only tell the user it is tracked if this returned ok true."
+    ),
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="drop_loop",
+    undo_note="Dropping the loop removes it; it does not return it to suspected.",
+    effect_phrase="confirmed an open loop",
+)
+async def confirm_loop(loop_store: LoopStore, loop_id: str) -> dict:
+    try:
+        uid = UUID(loop_id)
+    except ValueError:
+        return {"ok": False, "error": f"Invalid loop ID: {loop_id!r}"}
+    try:
+        loop = await review_confirm(loop_store, uid)
+    except LoopNotFoundError:
+        return {"ok": False, "error": f"No loop found with ID {loop_id}."}
+    except InvalidLoopTransitionError as exc:
+        return {"ok": False, "error": str(exc)}
+    except Exception as exc:
+        log.warning("confirm_loop_failed", loop_id=loop_id, error=str(exc))
+        return {"ok": False, "error": "could not confirm the loop"}
+    return {
+        "ok": True,
+        "id": str(loop.id),
+        "title": loop.title,
+        "state": loop.state.value,
     }
 
 

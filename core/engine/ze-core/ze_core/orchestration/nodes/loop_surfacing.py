@@ -15,8 +15,7 @@ async def surface_loops(state: AgentState, config: RunnableConfig) -> dict:
     if surfacer is None:
         return {}
 
-    prompt = state.get("prompt") or ""
-    if getattr(surfacer, "is_global_open_query", lambda _p: False)(prompt):
+    if state.get("open_items_query"):
         return {}
 
     memory_context = state.get("memory_context")

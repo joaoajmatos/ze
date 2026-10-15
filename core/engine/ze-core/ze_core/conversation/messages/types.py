@@ -112,6 +112,7 @@ class MessageTrace:
     total_duration_ms: int = 0
     compaction: CompactionTrace | None = None
     resume_recap_applied: bool = False
+    loop_offer_ids: list[str] = field(default_factory=list)
     skills_used: list[SkillUsageTrace] = field(default_factory=list)
     workspace: WorkspaceUsageTrace | None = None
     procedure: ProcedureUsageTrace | None = None

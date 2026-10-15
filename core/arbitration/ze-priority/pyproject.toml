@@ -16,6 +16,7 @@ dependencies = [
     "ze-plugin",
     "ze-collision",
     "asyncpg==0.31.0",
+    "numpy==2.4.6",
 ]
 
 [dependency-groups]
