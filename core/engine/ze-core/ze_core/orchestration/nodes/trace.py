@@ -16,6 +16,7 @@ from ze_core.conversation.messages.types import (
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
+from ze_core.orchestration.loop_offer import with_loop_offer_line
 from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
 
@@ -90,7 +91,13 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         ),
         effects_known=True,
     )
-    return {"message_trace": trace}
+    updates: dict[str, Any] = {"message_trace": trace}
+    offer_ids = list(state.get("loop_offer_ids") or [])
+    reply = state.get("final_response") or getattr(agent_result, "response", "") or ""
+    with_offer = with_loop_offer_line(reply, state.get("prompt") or "", offer_ids)
+    if with_offer != reply:
+        updates["final_response"] = with_offer
+    return updates
 
 
 def _extract_sources(agent_result: Any, subtask_results: list[Any]) -> list[SourceTrace]:
