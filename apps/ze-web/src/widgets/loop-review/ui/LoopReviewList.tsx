@@ -1,6 +1,6 @@
 import type { LoopListItem } from "@myguyze/ze-client";
 import { ListTodo } from "lucide-react";
-import { useLoopsQuery, useLoopTransitionMutation } from "@/entities/loop";
+import { useLoopsQuery, useLoopTransitionMutation, promotedLine } from "@/entities/loop";
 import { Button, ListPage } from "@/shared/ui";
 
 const STATE_LABEL: Record<string, string> = {
@@ -29,6 +29,7 @@ function StateBadge({ state }: { state: string }) {
 
 function LoopRow({ loop }: { loop: LoopListItem }) {
   const transition = useLoopTransitionMutation();
+  const promoted = promotedLine(loop);
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 px-4 py-3">
@@ -40,6 +41,7 @@ function LoopRow({ loop }: { loop: LoopListItem }) {
         <p className="mt-1 text-xs text-smoke">
           {loop.provenance} · confidence {(loop.confidence * 100).toFixed(0)}%
         </p>
+        {promoted && <p className="mt-1 text-xs text-smoke">{promoted}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {loop.state === "suspected" && (
