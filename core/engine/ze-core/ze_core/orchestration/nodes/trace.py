@@ -5,7 +5,7 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_agents.types import Source, add_sources
+from ze_agents.types import GateDecision, Source, add_sources
 from ze_core.conversation.messages.types import (
     CompactionTrace,
     MemoryChunkTrace,
@@ -21,6 +21,7 @@ from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
 
 
+_DRAFT_GATES = (GateDecision.DRAFT, GateDecision.AWAIT_CONFIRMATION)
 _STILL_RUNNING_ID_PATTERN = re.compile(r"^\[still running\] run ([^:]+):")
 
 _MAX_MEMORY_CHUNKS = 10
@@ -93,7 +94,11 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
     )
     updates: dict[str, Any] = {"message_trace": trace}
     offer_ids = list(state.get("loop_offer_ids") or [])
-    if agent_result is not None and not state.get("error"):
+    if (
+        agent_result is not None
+        and not state.get("error")
+        and state.get("gate_decision") not in _DRAFT_GATES
+    ):
         reply = (
             state.get("final_response") or getattr(agent_result, "response", "") or ""
         )
