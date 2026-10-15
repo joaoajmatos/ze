@@ -182,9 +182,10 @@ class PersonalPlugin(ZePlugin):
             )
 
         return [
+            # Facts reference entities and episodes (FK) — import last, delete first.
+            _domain("memory.facts", "memory_facts", 5),
             # Memory (leaf, no FK dependencies) — order 10
-            _domain("memory.facts", "user_facts", 10),
-            _domain("memory.episodes", "episodes", 10),
+            _domain("memory.episodes", "memory_episodes", 10),
             _domain("memory.profile", "user_profile", 10),
             _domain("memory.profile_facets", "memory_profile_facets", 10),
             _domain("memory.entities", "memory_entities", 10),
