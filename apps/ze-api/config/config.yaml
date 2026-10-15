@@ -50,6 +50,11 @@ system_one:
       loop_hold: 0.75
       explicit_hold: 0.85
       resolves_hold: 0.8
+    corroboration:
+      # Phase 172: same-concern Noul for suspected-loop corroboration. Off with null bars until make calibrate-corroboration gives ENABLE on the held-out set.
+      enabled: false
+      corroborate_hold: null
+      promote_hold: null
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.
