@@ -135,7 +135,7 @@ make calibrate-corroboration   # tuned set by default; --set holdout --bars C,P 
 
 ## Trace
 
-Every judgment appears in the message trace as a `JudgmentTrace` row: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The speech-act and loop-gate rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
+Judgments appear in the message trace as `JudgmentTrace` rows: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The speech-act and loop-gate rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
 
 ---
 

@@ -431,8 +431,8 @@ system_one:
       resolves_hold: null         # shipped: 0.8
     corroboration:                # Suspected-loop corroboration (Phase 172)
       enabled: false              # ships false — make calibrate-corroboration returned KEEP OFF on 2026-10-15
-      corroborate_hold: null      # candidate 0.6 — set from make calibrate-corroboration
-      promote_hold: null          # candidate 0.8
+      corroborate_hold: null      # candidate 0.6 — the ENG lead's choice on the 2026-10-15 run
+      promote_hold: null          # candidate 0.8 — same run
 ```
 
 When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
@@ -529,7 +529,7 @@ The keys:
 
 Each bar is a number from 0 to 1. At the bar counts as positive. `corroborate_hold` must be at or below `promote_hold`; otherwise Ze logs a warning and makes no request. An out-of-range or non-numeric value becomes `null`, with a warning.
 
-To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-corroboration`. This run is live and costs credits. It tunes on `eval/calibration/corroboration.jsonl` and compares each row with the E5 title-cosine baseline at 0.75. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout --bars C,P`). Set `surfaces.corroboration.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false promotions, corroborate precision at least 0.9 and at least the E5 baseline, and recall no more than 0.05 below the E5 baseline. `--check-sets` validates both files offline. The 2026-10-15 run suggested 0.6 and 0.8: English passed on the held-out set, Portuguese missed one recall clause, and the surface ships off.
+To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-corroboration`. This run is live and costs credits. It tunes on `eval/calibration/corroboration.jsonl` and compares each row with the E5 title-cosine baseline at 0.75. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout --bars C,P`). Set `surfaces.corroboration.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false promotions, corroborate precision at least 0.9 and at least the E5 baseline, and recall no more than 0.05 below the E5 baseline. `--check-sets` validates both files offline. On the 2026-10-15 run the script's arithmetic suggested 0.55 and 0.55, which collapses the two tiers; the ENG lead chose candidate bars 0.6 and 0.8. English passed on the held-out set, Portuguese missed one recall clause, and the surface ships off.
 
 ## `config/persona.yaml`
 
