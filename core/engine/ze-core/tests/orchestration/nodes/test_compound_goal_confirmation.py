@@ -144,3 +144,62 @@ async def test_single_goal_write_approved_at_the_graph_is_not_asked_twice():
     state["approved_agents"] = ["goals"]
     await execute_tool(state, config)
     assert runs == [("goals", "create", True, True)]
+
+
+async def test_gathered_tool_confirmation_becomes_a_tool_error_not_a_crash():
+    from ze_agents.base_agent import BaseAgent
+    from ze_agents.errors import ToolConfirmationRequired
+    from ze_agents.tool import ToolAccess, clear_tool_registry, tool
+
+    clear_tool_registry()
+    executed: list = []
+
+    async def risky_delete() -> str:
+        if not workspace_confirmed.get():
+            raise ToolConfirmationRequired("Delete the file?")
+        executed.append("deleted")
+        return "deleted"
+
+    tool(access=ToolAccess.READ, description="risky")(risky_delete)
+
+    seen: list = []
+
+    @agent
+    class Workspacer(BaseAgent):
+        name = "workspacer"
+        description = "ws"
+        enabled = True
+        timeout = 30
+        intents = {"create": Intent(Mode.AUTONOMOUS)}
+
+        async def run(self, ctx: AgentContext) -> AgentResult:
+            call = await self.call_tool("risky_delete", ctx)
+            seen.append(call)
+            return AgentResult(agent=self.name, response=call.error or "ok")
+
+    register_instance("workspacer", Workspacer())
+    runs: list = []
+    _register("messenger", {"create": Intent(Mode.AUTONOMOUS)}, runs)
+    config = {"configurable": {"capability_gate": CapabilityGate(), "thread_id": "s1"}}
+    state = _state(runs)
+    state["envelope"] = RoutingEnvelope(
+        primary_agent="messenger",
+        confidence=0.9,
+        score_gap=0.3,
+        routing_method="haiku",
+        is_compound=True,
+        subtasks=[
+            SubTask(agent="messenger", intent="create", prompt="email Ana"),
+            SubTask(agent="workspacer", intent="create", prompt="delete the file"),
+        ],
+        requires_synthesis=True,
+    )
+    state.update(await capability_check(state, config))
+    state.update(await execute_tool(state, config))
+
+    assert [r[0] for r in runs] == ["messenger"]
+    assert executed == []
+    assert seen[0].success is False
+    assert "needs your confirmation" in seen[0].error
+    assert len(state["subtask_results"]) == 2
+    clear_tool_registry()

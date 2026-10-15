@@ -393,7 +393,18 @@ class BaseAgent(ABC):
         except ToolConfirmationRequired as exc:
             interrupt_fn = tool_interrupt_fn.get()
             if interrupt_fn is None:
-                raise
+                tool_call = ToolCall(
+                    tool_name=name,
+                    args=stored_args,
+                    result=None,
+                    duration_ms=int((time.monotonic() - start) * 1000),
+                    success=False,
+                    error=(
+                        "this action needs your confirmation; ask for it on its own"
+                    ),
+                )
+                await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
+                return tool_call
             decision = interrupt_fn(
                 {
                     "kind": "workspace",
