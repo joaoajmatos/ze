@@ -122,3 +122,25 @@ Acceptance (user): per language on the held-out set: zero false promotions; corr
 - Fix the single-entity shortcut in `find_matching_loop` (below-bar match → separate loop).
 - Choice over several candidate loops.
 - Let held texts corroborate (title-less matching), user answer 4A.
+
+## Tuning notes (T033)
+
+Run 2026-10-15 by the ENG lead with `make calibrate-corroboration`. System One model as configured: `typesafe/jev-1.13`. Rows: 84 tuned (42 EN, 42 PT), 47 held-out (24 EN, 23 PT). Question wording unchanged from R4 (no iteration was needed).
+
+**Tuned set.** Zero false promotions at every bar pair on the grid. Corroborate precision 1.000 at every bar. Recall (both languages): 0.95 at `corroborate_hold` 0.50, 0.93 at 0.55, 0.91 at 0.60 to 0.70, 0.80 at 0.75, 0.73 at 0.80. The reliability table is clean: every score of 0.5 or more is a gold-same row (40 of 40); every negative scores below 0.5; the grey zone 0.2 to 0.5 holds three rows, one positive each in the 0.2 and 0.4 bins. Misses at 0.55: `t-en-017` (0.46), `t-pt-016` (0.54), `t-pt-017` (0.23), all paraphrases.
+
+**Bar choice.** Research R9's literal rule returns `0.55 / 0.55` (smallest zero-false-promotion `promote_hold` 0.50 plus one step). That collapses the two tiers, so every counted match would promote. Because no tuned negative scores above 0.5, the grid cannot separate corroborate from promote by false promotions. The ENG lead chose `corroborate_hold 0.6` and `promote_hold 0.8` on the tuned set alone: promotion changes loop state and is the costlier error, scores of 0.8 and above are 32 of 32 gold-same, and recall at 0.6 is 0.91. This is a deliberate departure from R9's arithmetic, made before the held-out run.
+
+**E5 baseline.** Title cosine at 0.75 matches every row (tuned: P 0.524, R 1.000; held-out: P 0.574, R 1.000). E5 title similarity cannot tell the same matter from the same person, so the baseline's recall is a ceiling that the recall clause compares against, and its precision is the bar the system clears easily.
+
+**Held-out verdict (one run, bars 0.6 / 0.8).**
+
+| Lang | Counted | P | R | False promotions | Verdict |
+|---|---|---|---|---|---|
+| EN | 14 of 14 positives | 1.000 | 1.000 | 0 | ENABLE |
+| PT | 12 of 13 positives | 1.000 | 0.923 | 0 | KEEP OFF: recall 0.923 < E5 1.000 - 0.05 |
+| Overall | | 1.000 | 0.963 | 0 | KEEP OFF |
+
+The surface ships off with null bars. PT misses one positive row. Under the spec's rule the surface turns on only when both languages pass. The held-out file is now spent for these bars and this wording. Any change to wording or bars needs a new held-out file before another verdict (FR-020).
+
+**What would change the verdict.** The recall clause is relative to an E5 baseline that matches everything, so with a small set one PT miss fails it. Follow-ups for the Maestro to decide: (1) a larger held-out set per language so one row is less than 0.05 of recall; (2) amend the recall clause to an absolute floor (for example recall at least 0.9) while keeping the precision and false-promotion clauses; (3) a lower `corroborate_hold` such as 0.5 or 0.55, which recovers about two points of tuned recall at no precision cost on the tuned set. None of these was applied.
