@@ -69,7 +69,34 @@ def _state(**extra):
     }
 
 
+class TestShortReplyLanguage:
+    def test_english_no_is_not_portuguese(self):
+        out = with_loop_offer_line("No.", "do I owe anyone an email?", IDS)
+        assert out.endswith("Want me to keep tracking it?")
+
+    def test_short_portuguese_replies_use_earlier_user_language(self):
+        history = [{"role": "user", "content": "o que tenho em aberto esta semana?"}]
+        for reply in ("Sim.", "Vou ver."):
+            out = with_loop_offer_line(reply, "ok", IDS, history=history)
+            assert out.endswith("acompanhá-la?")
+
+    def test_short_english_reply_uses_earlier_user_language(self):
+        history = [{"role": "user", "content": "what is still open on my list?"}]
+        out = with_loop_offer_line("Okay.", "ok", IDS, history=history)
+        assert out.endswith("Want me to keep tracking it?")
+
+
 class TestRecordTraceAppendsOffer:
+    async def test_error_turn_gets_no_line(self):
+        result = await record_trace(_state(error="boom"), {"configurable": {}})
+        assert "final_response" not in result
+
+    async def test_draft_turn_without_agent_result_gets_no_line(self):
+        state = _state(final_response="Draft: send this?!")
+        state["agent_result"] = None
+        result = await record_trace(state, {"configurable": {}})
+        assert "final_response" not in result
+
     async def test_appends_line_to_final_response_and_trace_keeps_ids(self):
         result = await record_trace(_state(), {"configurable": {}})
         assert result["final_response"].startswith("Tens duas coisas.")

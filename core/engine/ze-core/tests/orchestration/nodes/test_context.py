@@ -495,3 +495,19 @@ class TestOpenQueryAnsweredByCompanion:
         state["envelope"] = _envelope("goals", "create")
         result = await fetch_context(state, self._config(global_query=True))
         assert "envelope" not in result
+
+
+class TestOpenQueryRerouteTrace:
+    async def test_rerouted_envelope_drops_the_old_route_scores(self):
+        _register_agent("goals", {"create": Mode.CONFIRM})
+        _register_agent("companion", {"reason": Mode.AUTONOMOUS})
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("goals", "create")
+        config = _config(turn_surfacer=_surfacer(_ranked_mentions(), global_query=True))
+        result = await fetch_context(state, config)
+        env = result["envelope"]
+        assert env.routing_method == "open_query"
+        assert (env.confidence, env.score_gap) == (1.0, 0.0)
+        assert env.raw_scores == {"companion": 1.0}
+        assert env.judgment is None
+        clear_registry()

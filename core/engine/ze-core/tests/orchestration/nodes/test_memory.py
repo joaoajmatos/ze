@@ -105,6 +105,22 @@ class TestWriteMemory:
         assert len(msgs) <= SESSION_HISTORY_LIMIT
         assert msgs[-1] == {"role": "assistant", "content": "response"}
 
+    async def test_history_stores_the_reply_the_user_saw(self):
+        state = {
+            "session_id": "s1",
+            "agent_context": _ctx("new prompt"),
+            "agent_result": AgentResult(agent="a", response="response"),
+            "final_response": "response\n\nWant me to keep tracking it?",
+            "subtask_results": [],
+            "messages": [],
+            "input_modality": "text",
+        }
+        result = await write_memory(state, _config(thread_id="s1"))
+        assert result["messages"][-1] == {
+            "role": "assistant",
+            "content": "response\n\nWant me to keep tracking it?",
+        }
+
     async def test_no_agent_context_returns_empty(self):
         result = await write_memory(
             {"agent_context": None, "session_id": "s1"}, _config()

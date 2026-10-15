@@ -179,9 +179,9 @@ def _open_query_envelope(
     prompt = envelope.subtasks[0].prompt
     return RoutingEnvelope(
         primary_agent=_OPEN_QUERY_AGENT,
-        confidence=envelope.confidence,
-        score_gap=envelope.score_gap,
-        routing_method=envelope.routing_method,
+        confidence=1.0,
+        score_gap=0.0,
+        routing_method="open_query",
         is_compound=False,
         subtasks=[
             SubTask(
@@ -192,9 +192,8 @@ def _open_query_envelope(
             )
         ],
         requires_synthesis=False,
-        raw_scores=envelope.raw_scores,
+        raw_scores={_OPEN_QUERY_AGENT: 1.0},
         complexity=envelope.complexity,
-        judgment=envelope.judgment,
         complexity_source=envelope.complexity_source,
     )
 
