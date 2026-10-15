@@ -40,8 +40,22 @@ async def test_memory_episodes_domain_exports_memory_episodes():
 
 
 async def test_memory_facts_import_after_entities_and_episodes():
-    # memory_facts has FKs to memory_entities and memory_episodes, so it must be
-    # imported after them (lower delete_order = deleted first, imported last).
+    # memory_facts references memory_entities (subject_id/object_id) and
+    # memory_episodes (source_episode_id, zm005), so it must be imported after
+    # them (lower delete_order = deleted first, imported last).
     facts = _domain("memory.facts")
     assert facts.delete_order < _domain("memory.entities").delete_order
     assert facts.delete_order < _domain("memory.episodes").delete_order
+
+
+async def test_profile_export_uses_facets_not_user_profile():
+    domains = PersonalPlugin.data_domains(PersonalPlugin.__new__(PersonalPlugin))
+    assert "memory.profile" not in {d.name for d in domains}
+
+    conn = AsyncMock()
+    conn.fetch = AsyncMock(return_value=[])
+    await _domain("memory.profile_facets").export(_pool(conn))
+
+    sql = conn.fetch.call_args_list[0][0][0]
+    assert "memory_profile_facets" in sql
+    assert "user_profile" not in sql
