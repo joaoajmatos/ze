@@ -277,7 +277,7 @@ eval-clean:
 	docker compose exec -T postgres psql -U ze -d ze -c \
 		"DELETE FROM goals WHERE objective ILIKE '%books%' OR objective ILIKE '%rust%' OR objective ILIKE '%cli%';"
 	docker compose exec -T postgres psql -U ze -d ze -c \
-		"DELETE FROM user_facts WHERE value ILIKE '%dark mode%' OR value ILIKE '%rust%';"
+		"DELETE FROM memory_facts WHERE value ILIKE '%dark mode%' OR value ILIKE '%rust%';"
 	docker compose exec -T postgres psql -U ze -d ze -c \
 		"DELETE FROM contacts WHERE name ILIKE '%pedro%' OR name ILIKE '%maria%';"
 

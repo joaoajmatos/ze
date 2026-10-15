@@ -3,7 +3,7 @@
   description: User explicitly states a preference — Ze should acknowledge and store it
   expected_agent: companion
   verify:
-    - table: user_facts
+    - table: memory_facts
       where: {value__icontains: dark mode, contradicted: false}
       expect: exists
   tags: [companion, memory]
@@ -16,7 +16,7 @@
 - id: memory_recall_stored_fact
   description: "Multi-turn: store a fact then ask Ze to recall it"
   verify:
-    - table: user_facts
+    - table: memory_facts
       where: {value__icontains: rust, contradicted: false}
       expect: exists
   turns:
@@ -257,7 +257,7 @@
     - prompt: "What's my favourite programming language?"
       description: "Turn 2: ask Ze to recall it with phase-106 defaults enabled"
   verify:
-    - table: user_facts
+    - table: memory_facts
       where: {value__icontains: rust, contradicted: false}
       expect: exists
   expected_agent: companion
