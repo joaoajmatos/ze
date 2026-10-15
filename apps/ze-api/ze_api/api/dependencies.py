@@ -97,6 +97,14 @@ def get_notification_store(request: Request):
     return request.app.state.container.notification_store
 
 
+def get_interruption_settings_store(request: Request):
+    return request.app.state.container.interruption_settings_store
+
+
+def get_notifier(request: Request):
+    return request.app.state.container.notifier
+
+
 def get_loop_store(request: Request):
     return request.app.state.container.loop_store
 

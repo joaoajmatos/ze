@@ -39,3 +39,16 @@ def test_trace_response_without_sources_is_empty():
         total_duration_ms=0,
     )
     assert _trace_to_response(trace).sources == []
+
+
+def test_trace_response_carries_loop_offer_ids():
+    trace = MessageTrace(
+        agent="companion",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.1,
+        is_compound=False,
+        subtasks=[],
+        loop_offer_ids=["L1"],
+    )
+    assert _trace_to_response(trace).loop_offer_ids == ["L1"]

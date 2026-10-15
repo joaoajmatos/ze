@@ -11,7 +11,7 @@ Ze's memory graph connects facts, episodes, contacts, news signals, and calendar
 - `CorrelationEngine` — LLM-driven hypothesis formation from graph seeds
 - Graph neighbourhood expansion with configurable hop limits and recall guarantees
 - `PostgresHypothesisStore` — persists hypotheses with evidence references
-- Proactive push delivery for high-salience correlations via ntfy
+- Proactive push delivery for high-salience correlations (discretionary, shared budget, via ntfy)
 - Inline correlation during conversation turns (graph node in `ze-core`)
 
 ### Integration
@@ -25,7 +25,7 @@ A graph node in `ze-core` runs inline correlation during `fetch_context`. `Corre
 | `engine.py` | `CorrelationEngine` — forms hypotheses from graph signals |
 | `store.py` | `PostgresHypothesisStore` — hypothesis persistence |
 | `job.py` | `CorrelationJob` — scheduled correlation runs |
-| `push.py` | `CorrelationPushConsumer` — delivers correlation insights via push |
+| `push.py` | `CorrelationPushConsumer` — delivers correlation insights as discretionary pushes |
 | `prompts.py` | LLM prompt templates for hypothesis generation |
 | `types.py` | `Hypothesis`, `HypothesisEvidence` |
 

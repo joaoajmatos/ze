@@ -13,6 +13,8 @@ from ze_correlation.engine import CorrelationEngine
 from ze_correlation.store import PostgresHypothesisStore
 from ze_correlation.types import Hypothesis
 from ze_memory.nli_config import nli_config
+from ze_correlation.push_kinds import HYPOTHESIS
+from ze_proactive.types import PushOutcome
 
 log = get_logger(__name__)
 
@@ -159,6 +161,8 @@ class CorrelationPushCandidateSource:
         self._cfg = _load_config(settings)
 
     async def eligible_candidates(self) -> list[Hypothesis]:
+        if not self._cfg.enabled:
+            return []
         try:
             hypotheses = await self._hypothesis_store.list_unsurfaced()
         except Exception as exc:
@@ -169,25 +173,34 @@ class CorrelationPushCandidateSource:
         for hypothesis in hypotheses:
             if await self._passes_push_bar(hypothesis):
                 eligible.append(hypothesis)
+
+        if self._cfg.dry_run:
+            for hypothesis in eligible:
+                log.info(
+                    "correlation_push_dry_run",
+                    hypothesis_id=str(hypothesis.id),
+                    summary=hypothesis.summary,
+                )
+            return []
         return eligible
 
-    async def send(self, hypothesis: Hypothesis) -> bool:
-        try:
-            await self._notifier.push(
-                f"Ze noticed a connection:\n\n{hypothesis.summary}\n\n{hypothesis.narrative}",
-                urgency="normal",
-            )
-        except Exception as exc:
-            log.warning(
-                "correlation_push_send_failed",
+    async def send(self, hypothesis: Hypothesis) -> PushOutcome:
+        outcome = await self._notifier.notify(
+            HYPOTHESIS,
+            "Ze noticed a connection",
+            f"{hypothesis.summary}\n\n{hypothesis.narrative}",
+            target_type="hypothesis",
+            target_id=str(hypothesis.id),
+            budget_key=f"hypothesis:{hypothesis.id}",
+        )
+        if outcome in ("delivered", "held"):
+            await self._hypothesis_store.mark_surfaced(hypothesis.id)
+            log.info(
+                "correlation_pushed",
                 hypothesis_id=str(hypothesis.id),
-                error=str(exc),
+                outcome=outcome,
             )
-            return False
-
-        await self._hypothesis_store.mark_surfaced(hypothesis.id)
-        log.info("correlation_pushed", hypothesis_id=str(hypothesis.id))
-        return True
+        return outcome
 
     async def _passes_push_bar(self, hypothesis: Hypothesis) -> bool:
         if not passes_confidence(hypothesis.confidence, self._cfg.tau_push):

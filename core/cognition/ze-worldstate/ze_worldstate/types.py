@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
@@ -13,6 +13,10 @@ from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.loop_judge import LoopGateDecision
 
 LoopClaimKind = ClaimKind
+
+# Confidence for a user-stated ("declared") loop, shared by the 168 explicit
+# declaration path and the 169 user-asked track path.
+DECLARED_CONFIDENCE = 0.9
 
 
 class LoopProvenance:
@@ -53,12 +57,21 @@ class OpenLoop:
     closed_at: datetime | None = None
 
 
+class TrackOutcome:
+    """Plain string constants for a `track_loop` ask (data-model.md)."""
+
+    CREATED = "created"
+    CONFIRMED = "confirmed"
+    REINFORCED = "reinforced"
+    REVIVED = "revived"
+
+
 @dataclass
-class DriftingLoopMention:
-    loop_id: UUID
-    title: str
-    mention_text: str
-    evidence: list[EvidenceRef]
+class TrackResult:
+    ok: bool
+    outcome: str | None = None
+    loop: OpenLoop | None = None
+    error: str | None = None
 
 
 @dataclass
@@ -77,4 +90,4 @@ class LoopAdmission:
     question_kinds: dict[str, str] = field(default_factory=dict)
     consumed: frozenset[str] = frozenset()
     skip_reason: str | None = None
-    commit: Callable[[], Awaitable[list[OpenLoop]]] | None = None
+    commit: Callable[[Sequence[EvidenceRef]], Awaitable[list[OpenLoop]]] | None = None

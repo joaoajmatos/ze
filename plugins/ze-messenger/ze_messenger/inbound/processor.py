@@ -9,12 +9,13 @@ from typing import TYPE_CHECKING, Any
 from ze_communication.types import ChannelType, InboundMessage
 from ze_agents.claims import Provenance
 from ze_logging import get_logger
+from ze_messenger.push_kinds import INBOUND_MESSAGE
 from ze_sdk.memory import (
     MemoryStore,
     PerceptionFactSubmit,
     submit_perception_facts,
 )
-from ze_sdk.contribution import TargetFace
+from ze_sdk.contribution import EvidenceRef, TargetFace
 
 if TYPE_CHECKING:
     from ze_agents.client import LLMClient
@@ -103,7 +104,7 @@ class InboundMessageProcessor:
         # Optional hook wired post-construction by ze-api (open-loop extraction,
         # FR-008's email/messenger inflow) — kept generic here so ze-messenger has
         # no dependency on ze-worldstate (plan.md: ze-api is the only wiring point).
-        self.loop_extractor: Callable[[str, str], Awaitable[None]] | None = None
+        self.loop_extractor: Callable[..., Awaitable[None]] | None = None
 
     async def process(self, msg: InboundMessage, channel_id: str) -> SenderClass:
         sender_class = await self._classify(msg)
@@ -123,7 +124,7 @@ class InboundMessageProcessor:
             else None
         )
 
-        await self._memory.write_episode(
+        episode_id = await self._memory.write_episode(
             session_id=msg.message_id,
             agent="messenger",
             prompt=prompt,
@@ -145,16 +146,24 @@ class InboundMessageProcessor:
             )
             if known:
                 subject_part = f": {msg.subject}" if msg.subject else ""
-                await self._notifier.push(
-                    title=f"Message from {known.name or msg.sender}{subject_part}",
-                    body=msg.body[:200],
-                    tags=["message", str(msg.channel_type)],
+                await self._notifier.notify(
+                    INBOUND_MESSAGE,
+                    f"Message from {known.name or msg.sender}{subject_part}",
+                    msg.body[:200],
+                    budget_key=f"inbound:{msg.channel_type}:{msg.message_id}",
                 )
 
         if significant:
             asyncio.create_task(self._extract_facts(msg))
             if self.loop_extractor is not None:
-                asyncio.create_task(self.loop_extractor(msg.body, "email"))
+                evidence = (
+                    [EvidenceRef(kind="episode", id=episode_id)]
+                    if episode_id is not None
+                    else []
+                )
+                asyncio.create_task(
+                    self.loop_extractor(msg.body, "email", evidence=evidence)
+                )
 
         return sender_class
 

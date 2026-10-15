@@ -9,6 +9,7 @@ from ze_agents.types import ToolCall
 COULD_NOT_CANCEL = "I could not cancel that."
 COULD_NOT_CLOSE = "I could not close that."
 COULD_NOT_ABANDON = "I could not abandon that."
+COULD_NOT_TRACK = "I could not track that."
 
 
 def tool_payload(result: Any) -> dict[str, Any] | None:
@@ -99,6 +100,19 @@ def loop_review_earned(tool_calls: list[ToolCall]) -> bool:
     return False
 
 
+_TRACKING_TOOLS = frozenset({"track_loop", "confirm_loop"})
+
+
+def tracking_earned(tool_calls: list[ToolCall]) -> bool:
+    for call in flatten_tool_calls(tool_calls):
+        if call.tool_name not in _TRACKING_TOOLS:
+            continue
+        payload = tool_payload(call.result)
+        if payload is not None and payload.get("ok") is True:
+            return True
+    return False
+
+
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _CANCEL_CLAIM = re.compile(
     r"("
@@ -132,6 +146,23 @@ _ABANDON_CLAIM = re.compile(
     r")",
     re.IGNORECASE,
 )
+_TRACK_CLAIM = re.compile(
+    r"("
+    r"i['’]ll keep (that|this|it|\w+( \w+){0,5}) on (my|your) radar|"
+    r"(it|that|this)['’]?s on (my|your) radar|"
+    r"on (my|your) radar now|"
+    r"keeping an eye on|"
+    r"keep(ing)? track of|"
+    r"i['’]ve (started|begun) tracking|"
+    r"i['’]m (now )?tracking|"
+    r"fico atento|"
+    r"j[áa] est[áa] no (meu|teu) radar|"
+    r"vou acompanhar|"
+    r"fica no (meu|teu) radar|"
+    r"estou a acompanhar"
+    r")",
+    re.IGNORECASE,
+)
 _FORGET_CLAIM = re.compile(
     r"("
     r"i['’]ve forgotten|"
@@ -155,11 +186,15 @@ def _split_sentences(text: str) -> list[str]:
 def enforce_domain_cancel_confirmations(
     response: str,
     tool_calls: list[ToolCall],
+    *,
+    strip_track_claims: bool = False,
 ) -> str:
     calls = flatten_tool_calls(tool_calls)
     earned_cancel = cancel_reminder_earned(calls)
     earned_close = loop_review_earned(calls)
     earned_abandon = abandon_goal_earned(calls)
+    earned_track = tracking_earned(calls)
+    stripped_track = False
     stripped_cancel = False
     stripped_close = False
     stripped_abandon = False
@@ -172,6 +207,12 @@ def enforce_domain_cancel_confirmations(
             _ABANDON_CLAIM.search(sentence) is not None and not earned_abandon
         )
         drop_forget = _FORGET_CLAIM.search(sentence) is not None
+        drop_track = (
+            strip_track_claims
+            and "?" not in sentence
+            and _TRACK_CLAIM.search(sentence) is not None
+            and not earned_track
+        )
         mixed = (
             (earned_cancel or earned_close or earned_abandon)
             and drop_forget
@@ -179,13 +220,17 @@ def enforce_domain_cancel_confirmations(
                 _CANCEL_CLAIM.search(sentence)
                 or _CLOSE_CLAIM.search(sentence)
                 or _ABANDON_CLAIM.search(sentence)
+                or (strip_track_claims and _TRACK_CLAIM.search(sentence))
             )
         )
         if mixed:
             drop_cancel = True
             drop_close = True
             drop_abandon = True
-        if drop_cancel or drop_close or drop_abandon or drop_forget:
+            drop_track = bool(strip_track_claims and _TRACK_CLAIM.search(sentence))
+        if drop_cancel or drop_close or drop_abandon or drop_forget or drop_track:
+            if drop_track:
+                stripped_track = True
             if drop_cancel:
                 stripped_cancel = True
             if drop_close:
@@ -199,7 +244,9 @@ def enforce_domain_cancel_confirmations(
     remainder = " ".join(kept).strip()
     if remainder:
         return remainder
-    if stripped_forget and not (stripped_cancel or stripped_close or stripped_abandon):
+    if stripped_forget and not (
+        stripped_cancel or stripped_close or stripped_abandon or stripped_track
+    ):
         return COULD_NOT_CANCEL
     if stripped_cancel:
         return COULD_NOT_CANCEL
@@ -207,6 +254,8 @@ def enforce_domain_cancel_confirmations(
         return COULD_NOT_CLOSE
     if stripped_abandon:
         return COULD_NOT_ABANDON
+    if stripped_track:
+        return COULD_NOT_TRACK
     if stripped_forget:
         return COULD_NOT_CANCEL
     return response

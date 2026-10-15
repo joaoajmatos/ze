@@ -9,6 +9,7 @@ from langchain_core.runnables import RunnableConfig
 from ze_agents.claims import Provenance
 from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
+from ze_agents.nested_tools import tracking_earned
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
 from ze_core.conversation.messages.judgments import judgments_from_result
@@ -20,7 +21,7 @@ from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
 from ze_memory.speech_act_judge import SPEECH_ACT_QUESTIONS
 from ze_memory.fact_identity import fact_identity, identities_from_remember_calls
-from ze_plugin.contribution import TargetFace
+from ze_plugin.contribution import EvidenceRef, TargetFace
 
 log = get_logger(__name__)
 
@@ -112,7 +113,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     judged_trace: Any = None
     if not is_eval and not is_retry:
         embedding = embedder.encode(ctx.prompt)
-        fire_and_forget(
+        episode_task = fire_and_forget(
             store.write_episode(
                 session_id=ctx.session_id,
                 agent=result.agent,
@@ -124,6 +125,9 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         )
         fact_extractor = config["configurable"].get("fact_extractor")
         loop_admission = config["configurable"].get("loop_admission")
+        if loop_admission is not None and tracking_earned(result.tool_calls or []):
+            loop_admission = None
+            log.debug("write_memory_loop_gate_skipped_track", session_id=ctx.session_id)
         trace = state.get("message_trace")
         fact_result, loop_result = await asyncio.gather(
             _run_fact_extractor(fact_extractor, config, result, ctx),
@@ -152,7 +156,10 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                     skip_reason=loop_result.skip_reason,
                 )
             if loop_result.commit is not None:
-                fire_and_forget(loop_result.commit(), label="loop_commit")
+                fire_and_forget(
+                    _commit_with_episode(loop_result.commit, episode_task),
+                    label="loop_commit",
+                )
         if rows and trace is not None:
             judged_trace = dataclasses.replace(
                 trace, judgments=[*trace.judgments, *rows]
@@ -240,6 +247,17 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
         "compaction_span": None,
         **trace_update,
     }
+
+
+async def _commit_with_episode(commit: Any, episode_task: asyncio.Task) -> Any:
+    """Hand the loop commit the turn's episode as evidence once the write finishes."""
+    episode_id = None
+    try:
+        episode_id = await episode_task
+    except Exception:
+        pass  # fire_and_forget already logged it
+    refs = [EvidenceRef(kind="episode", id=episode_id)] if episode_id else []
+    return await commit(refs)
 
 
 def _should_compact(updated: list[dict], ctx: Any, config: RunnableConfig) -> bool:

@@ -64,3 +64,8 @@ def test_prompt_states_the_date_and_empty_tool_list():
     assert "Today's date: 2026-10-12" in text
     assert "- none recorded" in text
     assert "Waiting for the user's confirmation: no" in text
+
+
+def test_prompt_labels_the_turn_a_tool_call_came_from():
+    text = _prompt(tool_calls=[{"tool_name": "search", "turn": 1}])
+    assert "- [turn 1] search (ok)" in text

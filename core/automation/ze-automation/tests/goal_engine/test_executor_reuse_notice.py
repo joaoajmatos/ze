@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -12,6 +14,19 @@ from ze_automation.goals.types import (
     MilestoneStatus,
 )
 from ze_agents.interface.types import Notification
+
+
+def _n(call):
+    """View a `notify(kind, title, body, **kw)` call as the old Notification."""
+    kind, _title, body = call.args[:3]
+    kw = call.kwargs
+    return SimpleNamespace(
+        kind=kind,
+        content=body,
+        urgency=kind.urgency,
+        format=kw.get("format", "text"),
+        actions=list(kw.get("actions", ())),
+    )
 
 
 def _goal() -> Goal:
@@ -41,7 +56,7 @@ def _make_executor(push=None):
     executor = GoalExecutor(
         goal_store=AsyncMock(),
         goal_planner=AsyncMock(),
-        push=push,
+        notify=push,
         agent_getter=MagicMock(return_value=AsyncMock()),
     )
     return executor, push
@@ -60,13 +75,15 @@ async def test_push_reuse_notice_sends_notification():
     await executor._push_reuse_notice(goal, milestone)
 
     push.assert_called_once()
-    notification: Notification = push.call_args[0][0]
+    notification: Notification = _n(push.call_args)
     assert "Prior work reused" in notification.content
     assert goal.title in notification.content
     assert milestone.title in notification.content
     assert "Market Research" in notification.content
     assert notification.urgency == "low"
     assert notification.format == "html"
+    assert push.await_count == 1  # awaited, not a dropped coroutine
+    assert push.call_args.kwargs["budget_key"] == f"goal_reuse:{milestone.id}"
 
 
 async def test_push_reuse_notice_includes_hint_content():
@@ -77,7 +94,7 @@ async def test_push_reuse_notice_includes_hint_content():
 
     await executor._push_reuse_notice(goal, milestone)
 
-    notification: Notification = push.call_args[0][0]
+    notification: Notification = _n(push.call_args)
     assert "XYZ" in notification.content
 
 
@@ -114,7 +131,7 @@ async def test_advance_fires_reuse_notice_when_hint_set():
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=MagicMock(return_value=agent_mock),
     )
 
@@ -157,7 +174,7 @@ async def test_advance_does_not_fire_reuse_notice_when_hint_empty():
     executor = GoalExecutor(
         goal_store=store,
         goal_planner=planner,
-        push=push,
+        notify=push,
         agent_getter=MagicMock(return_value=agent_mock),
     )
 

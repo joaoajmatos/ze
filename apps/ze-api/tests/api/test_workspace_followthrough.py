@@ -288,6 +288,9 @@ class _FakeNotificationStore:
             target_id=kwargs.get("target_id"),
             created_at=datetime.now(timezone.utc),
             read_at=None,
+            push_class=kwargs["push_class"],
+            urgency=kwargs["urgency"],
+            delivery=kwargs["delivery"],
         )
 
 

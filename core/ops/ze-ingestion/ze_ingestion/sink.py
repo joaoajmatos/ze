@@ -19,7 +19,7 @@ class MemorySink:
     def __init__(
         self,
         memory_store: Any,
-        loop_extractor: Callable[[str, str], Awaitable[None]] | None = None,
+        loop_extractor: Callable[..., Awaitable[None]] | None = None,
     ) -> None:
         self._store = memory_store
         # Optional hook wired post-construction by ze-api (open-loop extraction,
@@ -64,7 +64,9 @@ class MemorySink:
 
         if self.loop_extractor is not None:
             try:
-                await self.loop_extractor(". ".join(facts), "ingestion")
+                await self.loop_extractor(
+                    ". ".join(facts), "ingestion", evidence=evidence
+                )
             except Exception as exc:
                 log.warning(
                     "ingestion_loop_extraction_failed",

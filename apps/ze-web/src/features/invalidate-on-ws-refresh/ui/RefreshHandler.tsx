@@ -32,6 +32,8 @@ export function RefreshHandler() {
           target_id: frame.target_id,
           created_at: frame.created_at,
           read: false,
+          push_class: frame.push_class,
+          delivery: frame.delivery,
         };
         const updatedFirstPage: NotificationListResponse = firstPage
           ? { ...firstPage, items: [item, ...firstPage.items] }

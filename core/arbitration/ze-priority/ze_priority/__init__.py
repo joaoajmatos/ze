@@ -6,6 +6,7 @@ from ze_priority.errors import (
 from ze_priority.types import (
     GoalSignal,
     HypothesisSignal,
+    LoopOffer,
     LoopSignal,
     MergedPriorityItem,
     OpenItemMention,
@@ -17,6 +18,7 @@ from ze_priority.types import (
     SourceKind,
     SourceSignal,
 )
+from ze_priority.open_query import OpenQueryDetector
 from ze_priority.turn import TurnSurfacing
 from ze_priority.view import PriorityView
 
@@ -37,6 +39,8 @@ def import_agent_modules() -> None:
 __all__ = [
     "GoalSignal",
     "HypothesisSignal",
+    "LoopOffer",
+    "OpenQueryDetector",
     "LoopSignal",
     "MergedPriorityItem",
     "OpenItemMention",

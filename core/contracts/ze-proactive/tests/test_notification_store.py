@@ -18,6 +18,8 @@ def _make_row(
     target_id="goal-a",
     created_at=None,
     read_at=None,
+    push_class="accountability",
+    delivery="delivered",
 ):
     return {
         "id": id_ or uuid4(),
@@ -29,6 +31,12 @@ def _make_row(
         "target_id": target_id,
         "created_at": created_at or datetime.now(timezone.utc),
         "read_at": read_at,
+        "push_class": push_class,
+        "urgency": "normal",
+        "format": "text",
+        "actions": "[]",
+        "delivery": delivery,
+        "delivered_at": None,
     }
 
 
@@ -76,6 +84,11 @@ async def test_create_inserts_and_returns_row():
         body="Workflow X failed",
         target_type="workflow_run",
         target_id="run-1",
+        push_class="accountability",
+        urgency="high",
+        format="text",
+        actions=[],
+        delivery="delivered",
     )
 
     assert result.event_type == "workflow_failure"
@@ -248,3 +261,94 @@ async def test_prune_read_older_than_only_targets_read_rows_past_cutoff():
     sql = conn.execute.call_args.args[0]
     assert "read_at IS NOT NULL" in sql
     assert "read_at < NOW()" in sql
+
+
+# ── governor columns (phase 177) ───────────────────────────────────────────
+
+
+async def test_create_writes_governor_columns():
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value=_make_row(push_class="discretionary"))
+    store, conn = make_store(conn)
+
+    result = await store.create(
+        event_type="insight",
+        source="personal",
+        title="t",
+        body="b",
+        target_type=None,
+        target_id=None,
+        push_class="discretionary",
+        urgency="low",
+        format="html",
+        actions=[{"label": "Go", "payload": "p", "row": 0}],
+        delivery="held",
+    )
+
+    sql, *args = conn.fetchrow.call_args.args
+    assert "push_class" in sql and "delivery" in sql and "delivered_at" in sql
+    assert "discretionary" in args and "low" in args and "html" in args
+    assert "held" in args
+    assert '"label": "Go"' in "".join(a for a in args if isinstance(a, str))
+    assert result.push_class == "discretionary"
+
+
+async def test_create_delivered_stamps_delivered_at():
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value=_make_row())
+    store, conn = make_store(conn)
+    await store.create(
+        event_type="e",
+        source="s",
+        title="t",
+        body="b",
+        target_type=None,
+        target_id=None,
+        push_class="accountability",
+        urgency="normal",
+        format="text",
+        actions=[],
+        delivery="delivered",
+    )
+    sql = conn.fetchrow.call_args.args[0]
+    assert "CASE WHEN" in sql and "NOW()" in sql
+
+
+async def test_list_held_orders_by_urgency_then_age():
+    rows = [_make_row(delivery="held")]
+    store, conn = make_store(make_conn(rows))
+
+    held = await store.list_held()
+
+    sql = conn.fetch.call_args.args[0]
+    assert "delivery = 'held'" in sql
+    assert "WHEN 'high' THEN 0" in sql and "created_at" in sql
+    assert held[0].delivery == "held"
+
+
+async def test_mark_released_and_failed_update_delivery():
+    conn = make_conn(execute_result="UPDATE 1")
+    store, _ = make_store(conn)
+    nid = str(uuid4())
+
+    await store.mark_released(nid)
+    assert "delivery = 'released'" in conn.execute.call_args.args[0]
+    await store.mark_failed(nid)
+    assert "delivery = 'failed'" in conn.execute.call_args.args[0]
+
+
+async def test_count_held():
+    conn = make_conn()
+    conn.fetchrow = AsyncMock(return_value=[3])
+    store, conn = make_store(conn)
+    assert await store.count_held() == 3
+    assert "delivery = 'held'" in conn.fetchrow.call_args.args[0]
+
+
+async def test_list_page_returns_push_class_and_delivery():
+    rows = [_make_row(push_class="discretionary", delivery="suppressed")]
+    store, conn = make_store(make_conn(rows))
+    items, _ = await store.list_page()
+    assert items[0].push_class == "discretionary"
+    assert items[0].delivery == "suppressed"
+    assert "push_class" in conn.fetch.call_args.args[0]

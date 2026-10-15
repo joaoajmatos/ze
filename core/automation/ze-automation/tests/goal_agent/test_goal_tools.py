@@ -82,7 +82,7 @@ def _make_deps(
         planner.plan = AsyncMock(return_value=(ms, gs))
 
     notifier = AsyncMock()
-    notifier.push_notification = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
 
     return store, planner, notifier
 

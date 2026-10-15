@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from ze_agents.interface.types import Notification
 from ze_logging import get_logger
 from ze_sdk.proactive import proactive_job
 from ze_sdk.proactive import ProactiveNotifier
@@ -10,6 +9,7 @@ from ze_sdk.proactive import PushLogStore
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import GoalStatus, MilestoneStatus
+from ze_automation.push_kinds import GOAL_NARRATIVE
 
 log = get_logger(__name__)
 
@@ -84,9 +84,11 @@ class GoalNarrativeJob:
             return
 
         body = "\n\n".join(paragraphs)
-        content = f"<b>Goal progress — this week</b>\n\n{body}"
-        await self._notifier.push_notification(
-            Notification(content=content, format="html", urgency="normal")
+        await self._notifier.notify(
+            GOAL_NARRATIVE,
+            "Goal progress this week",
+            body,
+            format="html",
         )
         await self._push_log.log("goal_narrative", "weekly")
         log.info("goal_narrative_sent", goals=len(paragraphs))

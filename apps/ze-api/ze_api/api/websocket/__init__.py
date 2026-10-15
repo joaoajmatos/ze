@@ -2,7 +2,7 @@ from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.confirmation import (
     confirmation_timeout,
     handle_confirm,
-    push_confirmation_ntfy,
+    notify_confirmation_request,
     send_confirmation_request,
 )
 from ze_api.api.websocket.onboarding import send_onboarding_view
@@ -14,7 +14,7 @@ __all__ = [
     "extract_thread_id",
     "handle_confirm",
     "message_to_dict",
-    "push_confirmation_ntfy",
+    "notify_confirmation_request",
     "send_confirmation_request",
     "send_onboarding_view",
 ]

@@ -26,7 +26,9 @@ from ze_automation.workflow.store import WorkflowStore
 from ze_automation.workspace_unattended import unattended_workspace
 from ze_data.domain import DataDomain
 from ze_data.portability.assembler import bulk_insert
+from ze_automation.push_kinds import WORKFLOW_FAILURE
 from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.types import PushOutcome
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 
@@ -154,7 +156,7 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
     goal_executor = GoalExecutor(
         goal_store=goal_store,
         goal_planner=goal_planner,
-        push=lambda _: None,
+        notify=_unwired_notify,
         agent_getter=_get_agent,
         memory_store=memory_store,
     )
@@ -182,10 +184,13 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
     )
 
 
+async def _unwired_notify(*_args: Any, **_kwargs: Any) -> PushOutcome:
+    return "failed"
+
+
 def wire_goal_executor_push(
     stack: AutomationStack, notifier: ProactiveNotifier
 ) -> None:
-    stack.goal_executor._push = notifier.push_notification
     stack.goal_executor._notify = notifier.notify
 
 
@@ -266,13 +271,11 @@ async def configure_workflow_executor(
             :200
         ]
         await notifier.notify(
-            "workflow_failure",
+            WORKFLOW_FAILURE,
             f'Workflow failed: "{workflow.name}"',
             body,
-            source="workflows",
             target_type="workflow_run",
             target_id=str(workflow.id),
-            urgency="high",
         )
         await push_log_store.log(event_type, workflow.name)
         log.info("failure_alert_sent", workflow=workflow.name)

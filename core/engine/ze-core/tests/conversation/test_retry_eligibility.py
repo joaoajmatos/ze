@@ -161,6 +161,13 @@ def test_unknown_tool_in_known_trace_blocks() -> None:
             "saved something to memory",
         ),
         (
+            "confirm_loop",
+            "reversible",
+            "confirmed an open loop",
+            RetryReason.HAS_REVERSIBLE_ACTION,
+            "confirmed an open loop",
+        ),
+        (
             "close_loop",
             "irreversible",
             "closed an open loop",

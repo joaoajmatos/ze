@@ -4,6 +4,8 @@ User Story 2)."""
 
 from __future__ import annotations
 
+import pytest
+
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID, uuid4
@@ -121,7 +123,7 @@ def _make_candidate_source(
     )
 
     notifier = MagicMock()
-    notifier.push = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
 
     if nli_client is None:
         nli_client = AsyncMock()
@@ -288,24 +290,75 @@ async def test_eligible_candidates_permissive_on_store_failure():
     assert await source.eligible_candidates() == []
 
 
+# ── correlation push switch (phase 170 US5) ───────────────────────────────────
+
+
+async def test_eligible_candidates_disabled_skips_store():
+    settings = _make_settings(enabled=False, dry_run=False)
+    h = _make_hypothesis(confidence=0.75, relevance=0.65)
+    source, mocks = _make_candidate_source(settings, unsurfaced=[h])
+
+    assert await source.eligible_candidates() == []
+    mocks["hypothesis_store"].list_unsurfaced.assert_not_awaited()
+
+
+async def test_eligible_candidates_dry_run_logs_each_and_returns_empty(mocker):
+    settings = _make_settings(enabled=True, dry_run=True)
+    h1 = _make_hypothesis(confidence=0.75, relevance=0.65, summary="A links B")
+    h2 = _make_hypothesis(confidence=0.8, relevance=0.7, summary="C links D")
+    source, mocks = _make_candidate_source(settings, unsurfaced=[h1, h2])
+    log = mocker.patch("ze_correlation.push.log")
+
+    assert await source.eligible_candidates() == []
+
+    mocks["hypothesis_store"].list_unsurfaced.assert_awaited_once()
+    dry_run_calls = [
+        call
+        for call in log.info.call_args_list
+        if call.args and call.args[0] == "correlation_push_dry_run"
+    ]
+    assert len(dry_run_calls) == 2
+    logged_ids = {call.kwargs["hypothesis_id"] for call in dry_run_calls}
+    assert logged_ids == {str(h1.id), str(h2.id)}
+
+
+async def test_eligible_candidates_live_returns_candidates():
+    settings = _make_settings(enabled=True, dry_run=False)
+    h = _make_hypothesis(confidence=0.75, relevance=0.65)
+    source, _ = _make_candidate_source(settings, unsurfaced=[h])
+
+    assert await source.eligible_candidates() == [h]
+
+
 # ── CorrelationPushCandidateSource: send ───────────────────────────────────────
 
 
 async def test_send_pushes_and_marks_surfaced():
     h = _make_hypothesis()
     source, mocks = _make_candidate_source()
-    sent = await source.send(h)
-    assert sent is True
-    mocks["notifier"].push.assert_awaited_once()
+    outcome = await source.send(h)
+    assert outcome == "delivered"
+    mocks["notifier"].notify.assert_awaited_once()
+    kw = mocks["notifier"].notify.await_args.kwargs
+    assert kw["budget_key"] == f"hypothesis:{h.id}"
+    assert kw["target_type"] == "hypothesis"
     mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
 
 
-async def test_send_returns_false_on_notify_failure():
+async def test_send_marks_surfaced_when_held():
     h = _make_hypothesis()
     source, mocks = _make_candidate_source()
-    mocks["notifier"].push = AsyncMock(side_effect=RuntimeError("ntfy down"))
-    sent = await source.send(h)
-    assert sent is False
+    mocks["notifier"].notify = AsyncMock(return_value="held")
+    assert await source.send(h) == "held"
+    mocks["hypothesis_store"].mark_surfaced.assert_awaited_once_with(h.id)
+
+
+@pytest.mark.parametrize("outcome", ["failed", "duplicate", "suppressed_budget"])
+async def test_send_does_not_mark_surfaced_when_not_sent(outcome):
+    h = _make_hypothesis()
+    source, mocks = _make_candidate_source()
+    mocks["notifier"].notify = AsyncMock(return_value=outcome)
+    assert await source.send(h) == outcome
     mocks["hypothesis_store"].mark_surfaced.assert_not_awaited()
 
 

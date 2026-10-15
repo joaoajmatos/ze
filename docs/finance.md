@@ -290,8 +290,9 @@ Detected candidates have three states:
 | `confirmed` | User said "yes, track this" |
 | `dismissed` | User said "ignore this" |
 
-When Ze finds new candidates, it sends a push notification listing them. When the
-user opens the chat, Ze shows a `render_confirm` card for each item:
+When Ze finds new candidates, it sends a `discretionary` push (kind
+`finance_recurring_new`) listing them. When the user opens the chat, Ze shows a
+`render_confirm` card for each item:
 
 > *"Is this a subscription you want to track?"*  
 > Netflix — EUR 15.99/monthly  **[Yes, track it]** **[Ignore]**
@@ -302,7 +303,8 @@ Tapping a button calls `confirm_recurring` or `dismiss_recurring` respectively.
 
 A dismissed charge is normally permanent. However, if the detected amount changes
 by more than `finance.recurring_price_change_threshold` (default 10%), Ze resets
-the status to `detected` and sends a targeted notification:
+the status to `detected` and sends a targeted `discretionary` push (kind
+`finance_price_change`):
 
 > "Your Netflix charge changed from EUR 15.99 to EUR 17.99 — still happy with it?"
 
@@ -316,7 +318,8 @@ transaction:
 
 - **CSV-sourced accounts** (`source_id` starts with `csv:`): if Ze has not seen a new
   transaction in more than `finance.recurring_staleness_days` (default 35) days, it
-  skips detection and sends a push nudge:
+  skips detection and sends a `discretionary` push nudge (kind
+  `finance_stale_nudge`):
 
   > "I haven't seen new transactions for 'Revolut' in 40 days. Upload a fresh bank
   > statement so I can keep your recurring expense list up to date."

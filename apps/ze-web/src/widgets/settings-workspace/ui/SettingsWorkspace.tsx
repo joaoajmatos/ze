@@ -10,6 +10,7 @@ import { getConfig, saveConfig, clearConfig, settingsDataSectionId } from "@/sha
 import { resetClient } from "@/shared/lib";
 import { Button, Input, RedirectHintTarget } from "@/shared/ui";
 import { PluginSettingsSection } from "@/widgets/plugin-settings-section";
+import { QuietHoursSettings } from "@/widgets/quiet-hours-settings";
 
 export function SettingsWorkspace() {
   const cfg = getConfig();
@@ -113,6 +114,7 @@ export function SettingsWorkspace() {
         <p className="text-sm text-smoke leading-relaxed">
           Ze uses ntfy for push notifications. Install the ntfy app and subscribe to your topic.
         </p>
+        <QuietHoursSettings />
         <Button
           variant="ghost"
           onClick={() => window.open("https://ntfy.sh", "_blank")}

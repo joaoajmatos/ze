@@ -21,6 +21,13 @@ class LoopSignal:
     drift_rationale: str | None = None
 
 
+@dataclass(frozen=True)
+class LoopOffer:
+    loop_id: UUID
+    title: str
+    provenance: str
+
+
 @dataclass
 class GoalSignal:
     kind: Literal["active", "awaiting_gate"]
@@ -124,6 +131,15 @@ class MergedPriorityItem:
     computed_rank: int
     overridden_from_computed: bool
     override: PriorityOverride | None
+
+
+@dataclass
+class PrioritySnapshotResult:
+    """`GET /priority/snapshot` payload — merged rows plus the source kinds that
+    could not be read this call (FR-016)."""
+
+    items: list[MergedPriorityItem]
+    sources_failed: tuple[SourceKind, ...]
 
 
 @dataclass

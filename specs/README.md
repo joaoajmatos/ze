@@ -215,6 +215,10 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 166 | [System One Skill Gating](phases/166-skill-suggestion-system-one/spec.md) | ✅ Implemented |
 | 167 | [Routing Choice Criteria](phases/167-routing-choice-criteria/spec.md) | ✅ Implemented (surface enabled) |
 | 168 | [Loop Extraction Gate](phases/168-loop-extraction-gate/spec.md) | ✅ Implemented (surface enabled) |
+| 169 | [Loop Track Tool](phases/169-loop-track-tool/spec.md) | ✅ Implemented |
+| 170 | [Executive Repair](phases/170-executive-repair/spec.md) | ✅ Implemented |
+| 171 | [Loop Confirmation](phases/171-loop-confirmation/spec.md) | ✅ Implemented |
+| 177 | [Interruption Governor](phases/177-interruption-governor/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 

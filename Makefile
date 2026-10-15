@@ -62,6 +62,7 @@ help:
 	@echo "    calibrate-routing  LIVE System One run over eval/calibration/routing.jsonl; costs credits (needs OPENROUTER_API_KEY)"
 	@echo "    calibrate-skills   LIVE System One run over eval/calibration/skills.jsonl; costs credits (needs OPENROUTER_API_KEY); --recall is offline"
 	@echo "    calibrate-loop-gate  LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (needs OPENROUTER_API_KEY); --check-sets is offline"
+	@echo "    calibrate-open-query  LOCAL E5 run over eval/calibration/open_query.jsonl; free; --check-sets is offline"
 	@echo "    eval-clean       Delete eval-namespaced rows from DB"
 	@echo ""
 	@echo "  Testing (see docs/testing.md)"
@@ -100,6 +101,7 @@ help:
 	@echo "    test-web / web-test  Run @myguyze/ze-ui + ze-web tests (vitest)"
 	@echo "    test-py              Run every Python package suite, report all failures (CI gate)"
 	@echo "    test-all             Run all package tests (includes slow)"
+	@echo "    test-pg              Real-Postgres tests (needs Docker or ZE_TEST_PG_URL); not part of test-py"
 	@echo ""
 	@echo "  Code quality"
 	@echo "    check            Lint Python + ze-web build (CI lint gates)"
@@ -223,7 +225,7 @@ db-reset-seed: db-reset
 	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.seed apply
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
-.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act calibrate-routing calibrate-skills calibrate-loop-gate
+.PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-speech-act calibrate-routing calibrate-skills calibrate-loop-gate calibrate-open-query
 
 eval:
 	uv run python eval/run.py
@@ -251,6 +253,9 @@ calibrate-skills:
 
 calibrate-loop-gate:
 	uv run python eval/calibration/loop_gate.py
+
+calibrate-open-query:
+	uv run python eval/calibration/open_query.py $(ARGS)
 
 eval-clean:
 	@echo "Removing eval-namespaced rows from routing_log, checkpoints, llm_cost_log..."
@@ -322,7 +327,7 @@ TEST_PY_PACKAGES := \
 .PHONY: test test-api test-core test-logging test-agents test-communication test-plugin test-sdk test-proactive \
 	test-memory test-onboarding test-seed test-correlation test-browser test-notifications \
 	test-components test-eval test-google test-trading212 test-yt test-ingestion test-automation test-worldstate test-priority test-skills test-workspace test-collision test-personal test-prospecting test-messenger \
-	test-calendar test-news test-finance test-workspace-sidecar test-py test-all test-web web-test
+	test-calendar test-news test-finance test-workspace-sidecar test-py test-all test-pg test-web web-test
 
 test test-api:
 	$(call pytest_pkg,apps/ze-api/tests)
@@ -436,6 +441,9 @@ test-py:
 
 test-all:
 	@rc=0; $(MAKE) SLOW=1 test-py || rc=1; $(MAKE) test-web || rc=1; exit $$rc
+
+test-pg:
+	ZE_TEST_PG=1 uv run pytest -q -m pg apps/ze-api/tests/pg
 
 test-web web-test:
 	cd packages/ze-ui && bun run test

@@ -7,7 +7,7 @@ import pytest
 
 from ze_agents.claims import Provenance
 from ze_ingestion.sink import MemorySink
-from ze_plugin.contribution import TargetFace
+from ze_plugin.contribution import EvidenceRef, TargetFace
 
 
 @pytest.fixture
@@ -71,3 +71,30 @@ async def test_push_memory_store_exception_is_caught(memory_store: AsyncMock) ->
         side_effect=RuntimeError("DB down"),
     ):
         await sink.push(ingestion_id=str(uuid4()), facts=["A fact."])
+
+
+async def test_push_forwards_ingestion_evidence_to_loop_extractor(
+    memory_store: AsyncMock,
+) -> None:
+    sink = MemorySink(memory_store)
+    extractor = AsyncMock()
+    sink.loop_extractor = extractor
+    ingest_id = uuid4()
+    with patch("ze_ingestion.sink.submit_perception_facts", new_callable=AsyncMock):
+        await sink.push(ingestion_id=str(ingest_id), facts=["Python is popular."])
+
+    extractor.assert_awaited_once_with(
+        "Python is popular.",
+        "ingestion",
+        evidence=[EvidenceRef(kind="ingestion", id=ingest_id)],
+    )
+
+
+async def test_push_non_uuid_forwards_empty_evidence(memory_store: AsyncMock) -> None:
+    sink = MemorySink(memory_store)
+    extractor = AsyncMock()
+    sink.loop_extractor = extractor
+    with patch("ze_ingestion.sink.submit_perception_facts", new_callable=AsyncMock):
+        await sink.push(ingestion_id="not-a-uuid", facts=["A fact."])
+
+    extractor.assert_awaited_once_with("A fact.", "ingestion", evidence=[])

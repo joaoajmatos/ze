@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, create_autospec
 
 from ze_personal.contacts.types import StaleFollowUpNudge
 from ze_personal.jobs.briefing import MorningBriefing
+from ze_personal.push_kinds import MORNING_BRIEF
+from ze_sdk.memory import PostgresMemoryStore
 from ze_sdk.proactive import PushLogEntry
 from ze_agents.settings import Settings
 from ze_sdk.proactive import ProactiveNotifier
@@ -54,7 +56,8 @@ def make_briefing(
     push_log.log = AsyncMock()
 
     memory = memory_store or MagicMock()
-    memory.count_unreviewed_facts = AsyncMock(return_value=unreviewed)
+    if memory_store is None:
+        memory.count_unreviewed_facts = AsyncMock(return_value=unreviewed)
     if not hasattr(memory, "list_recent_facts"):
         memory.list_recent_facts = AsyncMock(return_value=[])
     if not hasattr(memory, "get_profile"):
@@ -87,6 +90,7 @@ async def test_briefing_sends_stats():
     await b.run()
 
     notifier.notify.assert_awaited_once()
+    assert notifier.notify.call_args[0][0] is MORNING_BRIEF
     text = notifier.notify.call_args[0][2]
     assert "Good morning" in text
     assert "Unreviewed facts: 2" in text
@@ -142,6 +146,24 @@ async def test_briefing_writes_push_log():
     await b.run()
 
     push_log.log.assert_awaited_once_with("morning_brief")
+
+
+async def test_briefing_calls_memory_store_real_interface():
+    """The job runs against `PostgresMemoryStore`'s real interface. The mock is
+    autospecced on the store class, so a call to a method the store does not
+    define fails — the regression guard for `count_unreviewed_facts`, which the
+    briefing relied on but the store lost in the ze_memory extraction."""
+    notifier = make_notifier()
+    memory = create_autospec(PostgresMemoryStore, instance=True)
+    memory.count_unreviewed_facts.return_value = 3
+
+    b, _ = make_briefing(notifier=notifier, memory_store=memory)
+    await b.run()
+
+    notifier.notify.assert_awaited_once()
+    text = notifier.notify.call_args[0][2]
+    assert "Unreviewed facts: 3" in text
+    memory.count_unreviewed_facts.assert_awaited_once()
 
 
 async def test_briefing_includes_stale_contact_nudge():

@@ -305,7 +305,7 @@ class PostgresMemoryStore:
         prompt: str,
         response: str,
         embedding: Any,
-    ) -> None:
+    ) -> UUID | None:
         try:
             emb_list = _to_list(embedding)
             async with self._pool.acquire() as conn:
@@ -337,8 +337,10 @@ class PostgresMemoryStore:
                     self._link_episode_entities(episode_id, f"{prompt} {response}"),
                     label="link_episode_entities",
                 )
+            return episode_id
         except Exception as exc:
             log.warning("memory_write_episode_failed", error=str(exc))
+            return None
 
     async def _persist_facts(self, proposals: list[Fact]) -> None:
         for fact in proposals:
@@ -671,6 +673,14 @@ class PostgresMemoryStore:
                 until,
                 signal_ids,
             )
+
+    async def count_unreviewed_facts(self) -> int:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT COUNT(*) AS n FROM memory_facts"
+                " WHERE reviewed = false AND contradicted = false"
+            )
+        return int(row["n"])
 
     async def list_recent_facts(self, days: int, limit: int) -> list[Fact]:
         async with self._pool.acquire() as conn:

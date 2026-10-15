@@ -952,7 +952,7 @@ class PostgresGoalStore:
 
             gate_rows = await conn.fetch(
                 """
-                SELECT
+                SELECT DISTINCT ON (g.id)
                     g.id, g.title, g.objective, g.success_condition, g.time_horizon,
                     g.status, g.type, g.retrospective_text,
                     g.last_stuck_alert_at, g.created_at, g.updated_at,
@@ -977,13 +977,15 @@ class PostgresGoalStore:
                     ) AS last_milestone_title
                 FROM goals g
                 JOIN goal_gates vg
-                    ON vg.goal_id = g.id AND vg.status IN ('pending', 'awaiting_approval')
+                    ON vg.goal_id = g.id
+                   AND vg.status IN ('pending', 'awaiting_approval')
+                   AND vg.fired_at IS NOT NULL
                 WHERE g.status = 'awaiting_gate'
                   AND (
                       g.last_stuck_alert_at IS NULL
                       OR g.last_stuck_alert_at < now() - ($1 || ' days')::interval
                   )
-                ORDER BY vg.fired_at ASC
+                ORDER BY g.id, vg.fired_at ASC
                 """,
                 str(alert_cooldown_days),
             )
@@ -1012,6 +1014,11 @@ class PostgresGoalStore:
 
         for r in gate_rows:
             fired_at = r["fired_at"]
+            if fired_at is None:
+                log.warning(
+                    "list_stuck_open_gate_without_fired_at", goal_id=str(r["id"])
+                )
+                continue
             fired_at = (
                 fired_at.replace(tzinfo=timezone.utc)
                 if fired_at.tzinfo is None

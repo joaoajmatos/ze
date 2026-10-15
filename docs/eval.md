@@ -249,7 +249,7 @@ scenario runs:
 
 Ze deletes verified rows after the check so eval runs don't contaminate each
 other. Requires `DATABASE_URL` in your environment (same as Ze). Tables you can
-verify against: `user_reminders`, `workflows`, `goals`, `memory_facts`, `contacts`.
+verify against: `user_reminders`, `workflows`, `goals`, `memory_facts`, `contacts`, `open_loops`. The `eval/scenarios/loops.yaml` scenarios use `open_loops` to check that `track_loop` wrote one row.
 Calendar and email write to Google's APIs, not Ze's DB, so they have no `verify` blocks.
 
 ### Retry scenarios
@@ -313,6 +313,14 @@ Ze saves results to `eval/results/<timestamp>.json`. The judge uses
 - **pass** (bool): Would a real user be satisfied?
 
 ---
+
+## Detector calibration
+
+`make calibrate-open-query` runs the open-query detector over the sets in
+`eval/calibration/open_query*.jsonl`. It runs locally and costs nothing. Use
+`--check-sets` to validate the files offline. The default run sweeps the
+tuned set. One held-out run gives the verdict. `test_open_query_holdout.py` is
+a slow test, so it runs only with `SLOW=1`.
 
 ## Latency and token tracking
 

@@ -83,3 +83,9 @@ Specified with 150: [`specs/phases/150-eval-guide-honesty/`](../phases/150-eval-
 - Claude-style `/memories` filesystem.
 - Rewriting 140–142 write/read/routing contracts as a bundle.
 - Starting P5 inside 143.
+
+---
+
+## Loops follow-up
+
+- Phase 169 ([`169-loop-track-tool`](../phases/169-loop-track-tool/spec.md)) adds `track_loop` to the loops agent, with a code-level tracking-claim guard and a post-turn gate skip on a tracked turn.

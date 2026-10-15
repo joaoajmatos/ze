@@ -9,6 +9,7 @@ from ze_sdk.proactive import proactive_job
 from ze_sdk.proactive import ProactiveNotifier
 from ze_automation.accountability.store import AccountabilityStore
 from ze_automation.accountability.types import AnomalyRecord
+from ze_automation.push_kinds import COST_ANOMALY
 
 log = get_logger(__name__)
 
@@ -114,11 +115,9 @@ class CostAnomalyJob:
                 f"Date: {rec.detected_at[:10]}"
             )
             await self._notifier.notify(
-                "cost_anomaly",
+                COST_ANOMALY,
                 "Cost anomaly detected",
                 body,
-                source="accountability",
-                urgency="high",
             )
             log.info(
                 "cost_anomaly_detected",

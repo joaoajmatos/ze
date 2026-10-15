@@ -14,12 +14,13 @@ from ze_memory.bootstrap import (
     register_memory_jobs,
 )
 from ze_priority.arbitration import AttentionArbitrationJob
-from ze_proactive.bootstrap import register_notification_jobs, shared_push_budget
+from ze_proactive.bootstrap import register_notification_jobs
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_skills.bootstrap import register_proactive_jobs as register_skills_jobs
+from ze_worldstate.bootstrap import loop_push_settings
 from ze_worldstate.bootstrap import register_proactive_jobs as register_worldstate_jobs
 from ze_logging import get_logger
 
@@ -54,7 +55,7 @@ def register_all_proactive_jobs(
         push_log_store=push_log_store,
     )
     if notification_store is not None:
-        register_notification_jobs(scheduler, settings, notification_store)
+        register_notification_jobs(scheduler, settings, notification_store, notifier)
     register_engine_jobs(automation.workflow_scheduler, settings, shared)
     register_memory_jobs(scheduler, settings, shared)
     register_correlation_jobs(
@@ -80,8 +81,8 @@ def register_all_proactive_jobs(
                 priority_view=priority_view,
                 loop_surfacer=loop_surfacer,
                 correlation_push_source=correlation_push_source,
-                push_log=push_log_store,
-                max_pushes_per_day=shared_push_budget(settings),
+                notifier=notifier,
+                loop_push=loop_push_settings(settings),
             )
             scheduler.add_cron_job(
                 fn=arbitration_job.run,

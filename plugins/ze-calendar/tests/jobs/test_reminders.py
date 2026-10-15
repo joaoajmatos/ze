@@ -1,10 +1,13 @@
 import pytest
+import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 
 from ze_proactive.notifier import ProactiveNotifier
+from ze_automation.push_kinds import WORKFLOW_FAILURE
+from ze_calendar.push_kinds import CALENDAR_REMINDER, CALENDAR_REMINDERS_SCHEDULED
 from ze_calendar.reminders.calendar import (
     CalendarReminderService,
     _human_offset,
@@ -27,7 +30,6 @@ def make_settings():
 
 def make_notifier():
     n = MagicMock(spec=ProactiveNotifier)
-    n.push = AsyncMock()
     n.notify = AsyncMock()
     return n
 
@@ -264,8 +266,10 @@ async def test_sync_schedules_new_event():
     await svc.sync(fake_creds)
 
     sched.schedule_at.assert_called_once()
-    notifier.push.assert_awaited_once()
-    assert "Reminders set" in notifier.push.call_args[0][0]
+    notifier.notify.assert_awaited_once()
+    call = notifier.notify.call_args
+    assert call.args[0] is CALENDAR_REMINDERS_SCHEDULED
+    assert "Reminders set" in call.args[2]
 
 
 async def test_sync_skips_known_event():
@@ -306,7 +310,7 @@ async def test_sync_skips_known_event():
     await svc.sync(fake_creds)
 
     client.complete.assert_not_awaited()
-    notifier.push.assert_not_awaited()
+    notifier.notify.assert_not_awaited()
 
 
 # ── fire_reminder ─────────────────────────────────────────────────────────────
@@ -327,7 +331,7 @@ async def test_fire_reminder_pushes_and_logs():
 
     notifier.notify.assert_awaited_once()
     call = notifier.notify.call_args
-    assert call.args[0] == "calendar_reminder"
+    assert call.args[0] is CALENDAR_REMINDER
     assert call.args[2] == "Meeting in 1 hour"
     assert call.kwargs["target_id"] == str(rid)
     push_log.log.assert_awaited_once()
@@ -346,7 +350,7 @@ async def test_fire_reminder_noop_when_already_sent_or_missing():
     svc._push_log = push_log
     await svc.fire_reminder(rid)
 
-    notifier.push.assert_not_awaited()
+    notifier.notify.assert_not_awaited()
     push_log.log.assert_not_awaited()
 
 
@@ -389,6 +393,54 @@ async def test_start_replays_unsent_reminders():
     assert sched.schedule_at.call_count == 2
 
 
+async def test_replay_unsent_fires_overdue_reminder_late():
+    from ze_calendar.reminders.calendar_store import CalendarReminder
+
+    past = datetime.now(timezone.utc) - timedelta(hours=2)
+    future = _future(minutes=60)
+    reminders = [
+        CalendarReminder(
+            id=uuid4(),
+            event_id="e1",
+            event_title="A",
+            fire_at=past,
+            label="Past reminder",
+            sent=False,
+            assessed_at=past,
+        ),
+        CalendarReminder(
+            id=uuid4(),
+            event_id="e2",
+            event_title="B",
+            fire_at=future,
+            label="Future reminder",
+            sent=False,
+            assessed_at=future,
+        ),
+    ]
+    store = MagicMock(spec=CalendarReminderStore)
+    store.list_unsent = AsyncMock(return_value=reminders)
+    store.mark_sent = AsyncMock(return_value="Past reminder")
+    sched = make_workflow_scheduler()
+    notifier = make_notifier()
+
+    svc, _ = make_reminder_service(notifier=notifier)
+    svc._store = store
+    svc._scheduler = sched
+    await svc.replay_unsent()
+
+    for _ in range(10):
+        if notifier.notify.await_count:
+            break
+        await asyncio.sleep(0)
+
+    assert sched.schedule_at.call_count == 1
+    notifier.notify.assert_awaited_once()
+    call = notifier.notify.call_args
+    assert call.args[0] is CALENDAR_REMINDER
+    assert "(late, was due" in call.args[2]
+
+
 # ── WorkflowScheduler failure alerts ─────────────────────────────────────────
 
 
@@ -413,10 +465,12 @@ def make_failure_handler(settings=None, push_log=None, notifier=None):
         event_type = f"workflow_failure:{workflow.id}"
         if await _push_log.was_sent_within_hours(event_type, cooldown):
             return
-        await _notifier.push(
-            f"Workflow failed: *{workflow.name}*\n`{str(exc)[:200]}`",
-            format="markdown",
-            urgency="high",
+        await _notifier.notify(
+            WORKFLOW_FAILURE,
+            f'Workflow failed: "{workflow.name}"',
+            str(exc)[:200],
+            target_type="workflow_run",
+            target_id=str(workflow.id),
         )
         await _push_log.log(event_type, workflow.name)
 
@@ -433,9 +487,10 @@ async def test_workflow_failure_alert_fires():
     wf = make_workflow("my_workflow")
     await handler(wf, Exception("boom"))
 
-    notifier.push.assert_awaited_once()
-    msg = notifier.push.call_args[0][0]
-    assert "my_workflow" in msg
+    notifier.notify.assert_awaited_once()
+    call = notifier.notify.call_args
+    assert call.args[0] is WORKFLOW_FAILURE
+    assert "my_workflow" in call.args[1]
 
 
 async def test_workflow_failure_alert_respects_cooldown():
@@ -445,7 +500,7 @@ async def test_workflow_failure_alert_respects_cooldown():
     handler = make_failure_handler(push_log=push_log, notifier=notifier)
 
     await handler(make_workflow(), Exception("boom"))
-    notifier.push.assert_not_awaited()
+    notifier.notify.assert_not_awaited()
 
 
 async def test_workflow_failure_alert_disabled():
@@ -473,7 +528,7 @@ async def test_workflow_failure_alert_disabled():
     notifier = make_notifier()
     handler = make_failure_handler(settings=settings, notifier=notifier)
     await handler(make_workflow(), Exception("boom"))
-    notifier.push.assert_not_awaited()
+    notifier.notify.assert_not_awaited()
 
 
 # ── schedule_at ───────────────────────────────────────────────────────────────
@@ -517,3 +572,36 @@ async def test_assess_intervals_tolerates_fenced_and_prose_replies(reply):
     result = await svc._assess_intervals(event, now + timedelta(hours=5), now)
 
     assert {td for td, _ in result} == {timedelta(hours=2), timedelta(minutes=30)}
+
+
+# ── CalendarReminderJob loop extraction (Phase 170) ─────────────────────────────
+
+
+async def test_calendar_loop_extractor_two_positional_args_no_evidence():
+    from types import SimpleNamespace
+
+    from ze_calendar.jobs.calendar_reminder import CalendarReminderJob
+
+    signal = SimpleNamespace(
+        title="Dentist appointment",
+        summary="Checkup at 10:00",
+        external_ref="evt_1",
+    )
+    source = MagicMock()
+    source.poll = AsyncMock(return_value=[signal])
+    gate = MagicMock()
+    gate.check_and_ingest = AsyncMock()
+    extractor = AsyncMock()
+
+    job = CalendarReminderJob(
+        service=MagicMock(),
+        credentials=MagicMock(),
+        signal_source=source,
+        admission_gate=gate,
+        loop_extractor=extractor,
+    )
+    await job._emit_via_source()
+
+    extractor.assert_awaited_once_with(
+        "Dentist appointment. Checkup at 10:00", "calendar"
+    )

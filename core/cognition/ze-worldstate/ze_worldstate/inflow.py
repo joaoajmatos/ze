@@ -45,7 +45,7 @@ def make_loop_extractor_from_parts(
     system_one_client: Any = None,
     settings: Any = None,
 ):
-    """Builds a plain `(text, provenance) -> None` async callable, for wiring into
+    """Builds an async `(text, provenance, evidence=()) -> None` callable, for wiring into
     inflow modules (ze-messenger, ze-calendar, ze-ingestion) that must not import
     `ze_worldstate` directly (plan.md: ze-api is the only wiring point for FR-017's
     direct-write proto-contribution). Judges with the loop gate, logs, then commits.

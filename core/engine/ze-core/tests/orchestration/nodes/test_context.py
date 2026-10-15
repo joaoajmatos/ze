@@ -73,7 +73,8 @@ def _surfacer(
     else:
         s.recap_mentions = AsyncMock(return_value=mentions or [])
     s.inline_mentions = AsyncMock(return_value=mentions or [])
-    s.is_global_open_query = lambda _prompt: global_query
+    s.resume_loop_offers = AsyncMock(return_value=[])
+    s.is_global_open_query = MagicMock(return_value=global_query)
     return s
 
 
@@ -253,6 +254,7 @@ class TestFetchContextWhatsOpen:
         loop_result = await surface_loops(
             {
                 "prompt": "what's open right now",
+                "open_items_query": fetch_result["open_items_query"],
                 "envelope": None,
                 "memory_context": MemoryContext(
                     entities=[
@@ -271,3 +273,127 @@ class TestFetchContextWhatsOpen:
         )
         assert loop_result == {}
         surfacer.inline_mentions.assert_not_awaited()
+
+
+def _offer(title: str) -> SimpleNamespace:
+    return SimpleNamespace(loop_id=uuid4(), title=title, provenance="email")
+
+
+_OFFER_INSTRUCTION = (
+    "End your reply with one short question, in the user's language, asking whether "
+    "they want you to keep track of these. Do not say they are being tracked."
+)
+
+
+class TestFetchContextLoopOffers:
+    async def test_gap_with_offers_renders_block_after_open_items(self):
+        offers = [_offer("Switch bank"), _offer("Dentist appointment")]
+        surfacer = _surfacer(_ranked_mentions())
+        surfacer.resume_loop_offers = AsyncMock(return_value=offers)
+        state = _state(last_active_at=time.time() - (31 * 60))
+
+        result = await fetch_context(state, _config(turn_surfacer=surfacer))
+
+        recap = result["agent_context"].resume_recap
+        assert (
+            "Not yet tracked (Ze noticed these; the user has not confirmed them):\n"
+            "- Switch bank\n- Dentist appointment\n" + _OFFER_INSTRUCTION
+        ) in recap
+        assert recap.index("Renew passport") < recap.index("Not yet tracked")
+        assert result["loop_offer_ids"] == [str(o.loop_id) for o in offers]
+        assert result["resume_recap_applied"] is True
+
+    async def test_offers_alone_still_apply_the_recap(self):
+        surfacer = _surfacer([])
+        surfacer.resume_loop_offers = AsyncMock(return_value=[_offer("Switch bank")])
+        state = _state(last_active_at=time.time() - (31 * 60))
+
+        result = await fetch_context(state, _config(turn_surfacer=surfacer))
+
+        assert result["resume_recap_applied"] is True
+        assert "Switch bank" in result["agent_context"].resume_recap
+
+    async def test_no_gap_does_not_ask_for_offers(self):
+        surfacer = _surfacer([])
+        state = _state(last_active_at=time.time() - 5)
+
+        result = await fetch_context(state, _config(turn_surfacer=surfacer))
+
+        surfacer.resume_loop_offers.assert_not_awaited()
+        assert result["loop_offer_ids"] == []
+
+    async def test_retry_mode_does_not_ask_for_offers(self):
+        surfacer = _surfacer(_ranked_mentions())
+        config = _config(turn_surfacer=surfacer)
+        config["configurable"]["retry_mode"] = True
+        state = _state(last_active_at=time.time() - (31 * 60))
+
+        result = await fetch_context(state, config)
+
+        surfacer.resume_loop_offers.assert_not_awaited()
+        assert result["loop_offer_ids"] == []
+
+    async def test_offer_failure_does_not_break_the_turn(self):
+        surfacer = _surfacer(_ranked_mentions())
+        surfacer.resume_loop_offers = AsyncMock(side_effect=RuntimeError("db"))
+        state = _state(last_active_at=time.time() - (31 * 60))
+
+        result = await fetch_context(state, _config(turn_surfacer=surfacer))
+
+        assert result["loop_offer_ids"] == []
+        assert "Not yet tracked" not in result["agent_context"].resume_recap
+
+
+class TestFetchContextCaps:
+    async def test_resume_recap_is_capped_at_five(self):
+        surfacer = _surfacer(_ranked_mentions())
+        state = _state(last_active_at=time.time() - (31 * 60))
+
+        await fetch_context(state, _config(turn_surfacer=surfacer))
+
+        surfacer.recap_mentions.assert_awaited_once_with(limit=5)
+
+    async def test_open_priorities_note_is_capped_at_ten(self):
+        surfacer = _surfacer(_ranked_mentions(), global_query=True)
+
+        await fetch_context(
+            _state(prompt="what's open right now"), _config(turn_surfacer=surfacer)
+        )
+
+        surfacer.recap_mentions.assert_awaited_once_with(limit=10)
+
+
+class TestFetchContextOpenQueryFlag:
+    async def test_detector_receives_the_prompt_embedding(self):
+        surfacer = _surfacer([], global_query=True)
+        embedder = _make_embedder()
+        embedder.encode = MagicMock(return_value=[0.3, 0.4])
+
+        result = await fetch_context(
+            _state(prompt="o que tenho em aberto?"),
+            _config(turn_surfacer=surfacer, embedder=embedder),
+        )
+
+        surfacer.is_global_open_query.assert_called_once_with([0.3, 0.4])
+        assert result["open_items_query"] is True
+
+    async def test_false_when_not_an_open_query(self):
+        surfacer = _surfacer(_ranked_mentions(), global_query=False)
+
+        result = await fetch_context(_state(), _config(turn_surfacer=surfacer))
+
+        assert result["open_items_query"] is False
+        assert result["agent_context"].open_priorities_note is None
+
+    async def test_false_without_a_surfacer(self):
+        result = await fetch_context(_state(), _config())
+        assert result["open_items_query"] is False
+
+    async def test_detector_failure_is_false_and_turn_completes(self):
+        surfacer = _surfacer(_ranked_mentions())
+        surfacer.is_global_open_query = MagicMock(side_effect=RuntimeError("boom"))
+
+        result = await fetch_context(_state(), _config(turn_surfacer=surfacer))
+
+        assert result["open_items_query"] is False
+        assert result["agent_context"].open_priorities_note is None

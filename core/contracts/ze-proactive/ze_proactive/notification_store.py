@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import base64
+import json
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 import asyncpg
@@ -10,6 +12,11 @@ from ze_logging import get_logger
 from ze_proactive.types import Notification, NotificationRow
 
 log = get_logger(__name__)
+
+_COLUMNS = (
+    "id, event_type, source, title, body, target_type, target_id, created_at, "
+    "read_at, push_class, urgency, format, actions, delivery, delivered_at"
+)
 
 
 class InvalidCursorError(ValueError):
@@ -30,6 +37,12 @@ def _decode_cursor(cursor: str) -> tuple[datetime, str]:
         raise InvalidCursorError(f"invalid cursor: {cursor}") from exc
 
 
+def _parse_actions(raw: Any) -> list[dict]:
+    if isinstance(raw, str):
+        return json.loads(raw)
+    return list(raw or [])
+
+
 def _row_to_dataclass(row: asyncpg.Record) -> NotificationRow:
     return NotificationRow(
         id=str(row["id"]),
@@ -41,6 +54,12 @@ def _row_to_dataclass(row: asyncpg.Record) -> NotificationRow:
         target_id=row["target_id"],
         created_at=row["created_at"],
         read_at=row["read_at"],
+        push_class=row["push_class"],
+        urgency=row["urgency"],
+        format=row["format"],
+        actions=_parse_actions(row["actions"]),
+        delivery=row["delivery"],
+        delivered_at=row["delivered_at"],
     )
 
 
@@ -57,6 +76,9 @@ def _row_to_notification(
         target_id=row.target_id,
         created_at=row.created_at,
         read=read_override or row.read_at is not None,
+        push_class=row.push_class,
+        urgency=row.urgency,
+        delivery=row.delivery,
     )
 
 
@@ -71,15 +93,23 @@ class NotificationStore:
         source: str,
         title: str,
         body: str,
-        target_type: str | None = None,
-        target_id: str | None = None,
+        target_type: str | None,
+        target_id: str | None,
+        push_class: str,
+        urgency: str,
+        format: str,
+        actions: list[dict],
+        delivery: str,
     ) -> NotificationRow:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                """
-                INSERT INTO notifications (event_type, source, title, body, target_type, target_id)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING id, event_type, source, title, body, target_type, target_id, created_at, read_at
+                f"""
+                INSERT INTO notifications
+                    (event_type, source, title, body, target_type, target_id,
+                     push_class, urgency, format, actions, delivery, delivered_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11,
+                        CASE WHEN $11 = 'delivered' THEN NOW() END)
+                RETURNING {_COLUMNS}
                 """,
                 event_type,
                 source,
@@ -87,9 +117,53 @@ class NotificationStore:
                 body,
                 target_type,
                 target_id,
+                push_class,
+                urgency,
+                format,
+                json.dumps(actions),
+                delivery,
             )
-        log.debug("notification_created", event_type=event_type, source=source)
+        log.debug(
+            "notification_created",
+            event_type=event_type,
+            source=source,
+            delivery=delivery,
+        )
         return _row_to_dataclass(row)
+
+    async def list_held(self) -> list[NotificationRow]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                f"""
+                SELECT {_COLUMNS} FROM notifications
+                WHERE delivery = 'held'
+                ORDER BY CASE urgency WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
+                         created_at
+                """
+            )
+        return [_row_to_dataclass(r) for r in rows]
+
+    async def count_held(self) -> int:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT COUNT(*) FROM notifications WHERE delivery = 'held'"
+            )
+        return int(row[0]) if row else 0
+
+    async def mark_released(self, id_: str) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE notifications SET delivery = 'released', delivered_at = NOW() "
+                "WHERE id = $1",
+                UUID(id_),
+            )
+
+    async def mark_failed(self, id_: str) -> None:
+        async with self._pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE notifications SET delivery = 'failed' WHERE id = $1",
+                UUID(id_),
+            )
 
     async def list_page(
         self,
@@ -120,7 +194,7 @@ class NotificationStore:
             async with conn.transaction():
                 rows = await conn.fetch(
                     f"""
-                    SELECT id, event_type, source, title, body, target_type, target_id, created_at, read_at
+                    SELECT {_COLUMNS}
                     FROM notifications
                     {where_clause}
                     ORDER BY created_at DESC, id DESC

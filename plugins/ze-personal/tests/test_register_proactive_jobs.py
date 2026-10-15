@@ -25,3 +25,36 @@ def test_contacts_consolidation_follows_consolidation_flag():
     _plugin().register_proactive_jobs(off, settings, consolidation_enabled=False)
     assert "contacts_consolidation" in _cron_job_ids(on)
     assert "contacts_consolidation" not in _cron_job_ids(off)
+
+
+def test_briefing_registers_with_catch_up_age():
+    settings = MagicMock()
+    settings.config = {"proactive": {"briefing": {"catch_up_max_age_hours": 9}}}
+    plugin = _plugin()
+    scheduler = MagicMock()
+
+    plugin.register_proactive_jobs(scheduler, settings)
+
+    briefing_calls = [
+        c
+        for c in scheduler.register.call_args_list
+        if c.args and c.args[0] is plugin.morning_briefing
+    ]
+    assert len(briefing_calls) == 1
+    assert briefing_calls[0].kwargs["catch_up_max_age_hours"] == 9.0
+
+
+def test_briefing_catch_up_age_defaults_to_six():
+    settings = MagicMock()
+    settings.config = {"proactive": {"briefing": {}}}
+    plugin = _plugin()
+    scheduler = MagicMock()
+
+    plugin.register_proactive_jobs(scheduler, settings)
+
+    briefing_calls = [
+        c
+        for c in scheduler.register.call_args_list
+        if c.args and c.args[0] is plugin.morning_briefing
+    ]
+    assert briefing_calls[0].kwargs["catch_up_max_age_hours"] == 6.0

@@ -22,26 +22,6 @@ def _loop(**overrides) -> OpenLoop:
     return OpenLoop(**base)
 
 
-def _rel(target_id, target_type="open_loop"):
-    from ze_memory.graph.types import Relationship
-
-    return Relationship(
-        source_id=uuid4(),
-        source_type="entity",
-        predicate="has_open_loop",
-        target_id=target_id,
-        target_type=target_type,
-    )
-
-
-def _surfacer(loop_store, graph_store, push_log=None) -> LoopSurfacer:
-    return LoopSurfacer(
-        loop_store=loop_store,
-        graph_store=graph_store,
-        push_log=push_log or AsyncMock(),
-    )
-
-
 def test_format_hedged_mention_starts_with_hedge_prefix():
     text = format_hedged_mention("Renew passport", "Deadline elapsed.")
     assert text.startswith("It looks like")
@@ -53,79 +33,6 @@ def test_format_hedged_mention_without_rationale():
     text = format_hedged_mention("Renew passport", None)
     assert text.startswith("It looks like")
     assert text.endswith(".")
-
-
-async def test_entity_overlap_surfaces_a_mention():
-    loop = _loop()
-    graph_store = AsyncMock()
-    graph_store.list_relationships = AsyncMock(return_value=[_rel(loop.id)])
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=loop)
-    loop_store.list_evidence = AsyncMock(return_value=[])
-    push_log = AsyncMock()
-
-    surfacer = _surfacer(loop_store, graph_store, push_log)
-    mentions = await surfacer.inline_candidates([uuid4()])
-
-    assert len(mentions) == 1
-    assert mentions[0].loop_id == loop.id
-    assert mentions[0].mention_text.startswith("It looks like")
-    push_log.log.assert_awaited_once_with(f"worldstate_loop_inline:{loop.id}")
-
-
-async def test_no_overlap_produces_no_mention():
-    graph_store = AsyncMock()
-    graph_store.list_relationships = AsyncMock(return_value=[])
-    loop_store = AsyncMock()
-    loop_store.list = AsyncMock(return_value=[])
-
-    surfacer = _surfacer(loop_store, graph_store)
-    mentions = await surfacer.inline_candidates([uuid4()])
-
-    assert mentions == []
-
-
-async def test_non_drifting_linked_loop_is_not_surfaced():
-    loop = _loop(state=LoopState.ACTIVE)
-    graph_store = AsyncMock()
-    graph_store.list_relationships = AsyncMock(return_value=[_rel(loop.id)])
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=loop)
-
-    surfacer = _surfacer(loop_store, graph_store)
-    mentions = await surfacer.inline_candidates([uuid4()])
-
-    assert mentions == []
-
-
-async def test_repeated_relevant_turns_may_mention_again():
-    """No novelty/budget gate on inline (FR-006) — every call re-surfaces."""
-    loop = _loop()
-    graph_store = AsyncMock()
-    graph_store.list_relationships = AsyncMock(return_value=[_rel(loop.id)])
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=loop)
-    loop_store.list_evidence = AsyncMock(return_value=[])
-    push_log = AsyncMock()
-
-    surfacer = _surfacer(loop_store, graph_store, push_log)
-    first = await surfacer.inline_candidates([uuid4()])
-    second = await surfacer.inline_candidates([uuid4()])
-
-    assert len(first) == 1
-    assert len(second) == 1
-    assert push_log.log.await_count == 2
-
-
-async def test_no_entity_ids_returns_empty_without_query():
-    graph_store = AsyncMock()
-    loop_store = AsyncMock()
-    surfacer = _surfacer(loop_store, graph_store)
-
-    mentions = await surfacer.inline_candidates([])
-
-    assert mentions == []
-    graph_store.list_relationships.assert_not_awaited()
 
 
 # ── passes_push_bar (T032, T038) ───────────────────────────────────────────────
@@ -179,24 +86,6 @@ async def test_passes_push_bar_rejects_low_relevance():
     assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
 
 
-async def test_passes_push_bar_rejects_budget_exhausted():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.8, budget_count=3)
-    assert (
-        await surfacer.passes_push_bar(loop, loop.drift_rationale, max_pushes_per_day=3)
-        is False
-    )
-
-
-async def test_passes_push_bar_ignores_budget_when_check_budget_false():
-    loop = _loop(confidence=0.8)
-    surfacer = _push_bar_surfacer(relevance_value=0.8, budget_count=3)
-    assert (
-        await surfacer.passes_push_bar(loop, loop.drift_rationale, check_budget=False)
-        is True
-    )
-
-
 # ── eligible_candidates / send (phase 123 User Story 2) ────────────────────────
 
 
@@ -244,6 +133,7 @@ async def test_send_pushes_when_loop_still_drifting():
     loop_store = AsyncMock()
     loop_store.get = AsyncMock(return_value=loop)
     notifier = AsyncMock()
+    notifier.notify = AsyncMock(return_value="delivered")
     surfacer = LoopSurfacer(
         loop_store=loop_store,
         graph_store=AsyncMock(),
@@ -251,10 +141,14 @@ async def test_send_pushes_when_loop_still_drifting():
         notifier=notifier,
     )
 
-    sent = await surfacer.send(loop)
+    outcome = await surfacer.send(loop)
 
-    assert sent is True
-    notifier.push.assert_awaited_once()
+    assert outcome == "delivered"
+    notifier.notify.assert_awaited_once()
+    args = notifier.notify.await_args
+    assert args.args[0].event_type == "loop_drift"
+    assert args.kwargs["budget_key"] == f"loop:{loop.id}"
+    assert args.kwargs["target_type"] == "open_loop"
 
 
 async def test_send_returns_false_when_loop_no_longer_drifting():
@@ -270,42 +164,68 @@ async def test_send_returns_false_when_loop_no_longer_drifting():
         notifier=notifier,
     )
 
-    sent = await surfacer.send(loop)
+    outcome = await surfacer.send(loop)
 
-    assert sent is False
-    notifier.push.assert_not_awaited()
+    assert outcome is None
+    notifier.notify.assert_not_awaited()
 
 
 async def test_passes_push_bar_rejects_within_inline_cooldown():
     loop = _loop(confidence=0.8)
     surfacer = _push_bar_surfacer(relevance_value=0.8, inline_sent=True)
     assert await surfacer.passes_push_bar(loop, loop.drift_rationale) is False
+# ── grounding checks the title (phase 170) ─────────────────────────────────────
 
 
-async def test_claim_push_calls_try_claim_with_loop_id_as_idempotency_key():
-    push_log = AsyncMock()
-    push_log.count_sent_within_hours = AsyncMock(return_value=0)
-    push_log.try_claim = AsyncMock(return_value=True)
-    surfacer = LoopSurfacer(
-        loop_store=AsyncMock(), graph_store=AsyncMock(), push_log=push_log
+class _RecordingNli:
+    def __init__(self, score: float = 0.9):
+        self.pairs: list = []
+        self._score = score
+
+    async def scores(self, pairs):
+        self.pairs.extend(pairs)
+        return [self._score] * len(pairs)
+
+    def grounding_score(self, summary, labels, scores=None):
+        return max(scores) if scores else 0.0
+
+
+async def test_grounding_hypothesis_is_the_loop_title_not_the_rationale(monkeypatch):
+    from ze_worldstate import surfacing
+
+    async def fake_summaries(pool, loop_store, loop_id):
+        return [{"type": "episode", "id": uuid4(), "summary": "I need to send Maria the contract"}]
+
+    monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
+    loop = _loop(confidence=0.8)
+    nli = _RecordingNli()
+
+    passed = await _push_bar_surfacer().passes_push_bar(
+        loop, loop.drift_rationale, nli_client=nli
     )
-    loop_id = uuid4()
-    result = await surfacer.claim_push(loop_id, "rationale text")
-    assert result is True
-    push_log.try_claim.assert_awaited_once_with(
-        "attention_push",
-        idempotency_key=f"loop:{loop_id}",
-        payload="rationale text",
+
+    assert passed is True
+    assert nli.pairs == [("I need to send Maria the contract", loop.title)]
+
+
+async def test_grounding_fails_when_the_title_is_not_supported(monkeypatch):
+    from ze_worldstate import surfacing
+
+    async def fake_summaries(pool, loop_store, loop_id):
+        return [{"type": "episode", "id": uuid4(), "summary": "unrelated"}]
+
+    monkeypatch.setattr(surfacing, "_fetch_evidence_summaries", fake_summaries)
+    loop = _loop(confidence=0.8)
+    assert (
+        await _push_bar_surfacer().passes_push_bar(
+            loop, loop.drift_rationale, nli_client=_RecordingNli(score=0.01)
+        )
+        is False
     )
 
 
-async def test_release_push_claim_calls_release_claim():
-    push_log = AsyncMock()
-    surfacer = LoopSurfacer(
-        loop_store=AsyncMock(), graph_store=AsyncMock(), push_log=push_log
-    )
-    loop_id = uuid4()
-    await surfacer.release_push_claim(loop_id)
-    push_log.release_claim.assert_awaited_once_with(
-        "attention_push", idempotency_key=f"loop:{loop_id}"
-    )
+async def test_grounding_passes_without_evidence_labels():
+    loop = _loop(confidence=0.8)
+    nli = _RecordingNli(score=0.0)
+    assert await _push_bar_surfacer().passes_push_bar(loop, loop.drift_rationale, nli_client=nli) is True
+    assert nli.pairs == []
