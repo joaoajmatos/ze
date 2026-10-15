@@ -28,6 +28,7 @@ ze/                           # monorepo root
 │   │   │       ├── db.py        # DBPool Protocol
 │   │   │       ├── delegate.py  # delegate_to_agent — conductor fan-out to specialists
 │   │   │       ├── errors.py    # Full ZeError hierarchy
+│   │   │       ├── rollback.py  # RollbackScope ContextVar, is_error_result — undo plumbing for Retry
 │   │   │       ├── hooks.py     # HarnessHook ABC (agentic loop — not a plugin concern)
 │   │   │       ├── llm_json.py  # parse_llm_json — tolerant JSON parse of LLM replies (fences, prose), raises LLMJsonParseError
 │   │   │       ├── registry.py  # @agent decorator + module-level agent registry
@@ -51,7 +52,7 @@ ze/                           # monorepo root
 │   │   └── ze-core/             # Engine — routing, orchestration, telemetry, DI container
 │   │       └── ze_core/
 │   │           ├── capability/  # CapabilityGate, PostgresCapabilityOverrideStore, modes
-│   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py
+│   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
 │   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state)
 │   │           ├── routing/     # EmbeddingRouter, ComplexityEstimator, fallback, store
@@ -94,7 +95,7 @@ ze/                           # monorepo root
 │   │   │       ├── jobs/        # goal/workflow/accountability proactive jobs
 │   │   │       ├── runtime/     # AutomationPlanner, AutomationStore contracts
 │   │   │       └── migrations/  # zc006–zc009 (goal traces/suggestions/stuck/reuse), zc011 (workflows), zc014 (accountability),
-│   │   │                        # zc021/zc025 (workflow execution summary/snapshot), zc026 (workflow revisions), zc030 (goal learning claims), zc031 (message supersession)
+│   │   │                        # zc021/zc025 (workflow execution summary/snapshot), zc026 (workflow revisions), zc030 (goal learning claims), zc031 (message supersession), zc032 (messages.rollback)
 │   │   └── ze-skills/            # Agent Skills — import, review, matching, tool-narrowing
 │   │       └── ze_skills/
 │   │           ├── types.py     # Skill, SkillReview, ReferenceFile, SkillStatus/Source/Trigger
@@ -442,7 +443,7 @@ and runs them against a single `alembic_version` table.
 
 | Package | Branch prefix | Tables |
 |---|---|---|
-| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, capability_overrides, LangGraph checkpoints, messages, sessions, pending_confirmations |
+| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, capability_overrides, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`) |
 | ze-automation | `zc` (continues ze-core chain) | goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
 | ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
 | ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
@@ -632,6 +633,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 168 | Loop Extraction Gate (O4) — one batched System One request asks three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration` on conversation only); pure `decide()` in `ze_worldstate/loop_judge.py` maps them to resolve / create-declared / create-suspected / hold; Haiku only writes the title (and optional `implied_window_days`) after a positive gate; `LoopInflow` (`admission.py`) owns gate and commit; conversation gate runs in `write_memory` beside the fact extractor (rows on `MessageTrace.judgments`, fire-and-forget commit), worldstate `conversation_memory_hook` deleted; email/calendar/ingestion run the gate, log judgments, and write no trace rows; off, uncalibrated, skip or invalid → the 109 Haiku gate; surface `system_one.surfaces.loop_gate` enabled 2026-10-12 (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8) after an `ENABLE` verdict for EN and PT on the held-out set; the 109 Haiku fallback now parses Haiku's fenced JSON (before 168 it did not, so production created no loops); no migration | Implemented |
 | 169 | Loop Track Tool — `track_loop(title, window_days)` on the `loops` agent starts tracking a concern the user explicitly asked Ze to keep in mind; injected `LoopTracker` (`ze_worldstate/tracking.py`) returns one of four outcomes (`created` active/`user_declared`/PRIORITY/0.9 via the contribution seam, `confirmed` a suspected match, `reinforced` an active match, `revived` a drifting match), optional `window_days` (default 7, clamp 1-365); `LoopStore.transition(..., user_asked=True)` adds the only `drifting → active` edge and `stamp_declared()` writes the confirmed/revive field set in one statement; `write_memory` skips the loop gate on a turn where `track_loop` succeeded (`track_loop_succeeded` in `ze_agents/nested_tools.py`); opt-in `strip_track_claims` honesty guard (EN + PT) on `enforce_domain_cancel_confirmations`, on for `LoopsAgent` only; `eval/scenarios/loops.yaml` and two routing training rows; drift sweep stays inert for declared loops until phase 170; no migration | Implemented |
 | 170 | Executive Repair — drift fires on the deadline (`active AND drift_deadline <= now()`) and `record_corroboration` moves the deadline on new evidence; `list_stuck` returns one row per goal from the earliest fired open gate; loops carry evidence (conversation and email turn episodes, ingestion refs; calendar none) and the push grounding gate checks the loop title; the priority snapshot returns `{items, sources_failed}` and accepts `source_kind: relationship`; dead code and unread config removed; real-Postgres test harness (`make test-pg`); no migration | Implemented |
+| 180 | Retry Rollback — Retry undoes the reversible actions of the latest reply, then regenerates it. Reversible tools return a per-call `undo_payload` (`ze_sdk`) that `call_tool` stores on `ToolCall.undo` and the trace; `retry_eligibility` builds a public plan (entry ids = hash of message, call index, tool, args), the client confirms it as `confirmed_plan`, and the server recomputes it under the thread lock (`undo_not_confirmed` / `plan_changed`); `run_rollback` (`ze_core/conversation/rollback.py`) runs each undo through the owning agent's `BaseAgent.run_undo` with no model call and records each entry on `messages.rollback` (`zc032`; states `partial`, `rolled_back_awaiting_confirmation`, `rolled_back_retry_failed`, `superseded`); one retry policy (irreversible writes refused, reversible writes run under the normal gates, a confirmation pauses the retry); `message_rollback` frame, `retry_partial`, `history_unavailable`; `remember_fact` and priority overrides restore what they displaced; web two-step consent, rollback notice, trace `RollbackSection` | Implemented |
 
 ## graphify
 
@@ -726,5 +728,5 @@ before adding one.
 - Perception/memory fact writes go through the contribution seam (`specs/arch/contribution-seam.md`): Phase 133 wraps writers; Phase 134 hard-cuts `memory_facts` onto shared claim vocabulary and removes public `propose_facts`.
 - Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
 - Memory honesty is phases 140–150 in `specs/arch/memory-honesty-roadmap.md`. Companion-conductor is `specs/arch/companion-conductor-roadmap.md` (151–161): companion sole speaker/conductor, fat `delegate_to_agent`, no `plan_sequential`/swarm; phase dir 151 is conductor ACI, not memory-honesty.
-- Every `WRITE` `@tool` declares `reversibility` (plus `undo_tool`/`undo_note` when reversible, and `effect_phrase`); an undeclared WRITE tool fails registration. Retry eligibility reads it. Perception holds two licences: `FACT` and `FEEDBACK_RECORD`.
+- Every `WRITE` `@tool` declares `reversibility` (plus `undo_tool`/`undo_note` when reversible, and `effect_phrase`); an undeclared WRITE tool fails registration. Retry eligibility reads it. A `REVERSIBLE` tool returns `undo_payload(...)` per call, only in the clean case, so Retry can undo that exact call. Perception holds two licences: `FACT` and `FEEDBACK_RECORD`.
 - `.cursor/rules/` is gitignored; do not commit Cursor rules.

@@ -217,6 +217,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 168 | [Loop Extraction Gate](phases/168-loop-extraction-gate/spec.md) | ✅ Implemented (surface enabled) |
 | 169 | [Loop Track Tool](phases/169-loop-track-tool/spec.md) | ✅ Implemented |
 | 170 | [Executive Repair](phases/170-executive-repair/spec.md) | ✅ Implemented |
+| 180 | [Retry Rollback](phases/180-retry-rollback/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 
