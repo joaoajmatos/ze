@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-12
 
-**Status**: Ready to implement (starts after 170 and 171 land)
+**Status**: Implemented
 
 **Input**: User description: "Phase 172 (user decision D2 in `specs/arch/executive-function.md`): when an independent source mentions a suspected open loop's concern, its confidence rises, and above a calibrated System One bar it auto-promotes to active. Independence is defined in code. A System One same-concern judgment is used where entity and embedding matching is not enough. Provenance records the corroborating sources. Calibration as in 163-168: tuned and held-out sets, a `make calibrate-*` target, fail open, single attempt, ships off until calibrated. Promotion is open-loop state, never a fact; the user can drop; dropped loops are not re-promoted by the same evidence."
 

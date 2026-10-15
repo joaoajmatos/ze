@@ -121,6 +121,7 @@ Acceptance (user): per language on the held-out set: zero false promotions; corr
 - Gate 170's `record_corroboration` on active loops with the same Noul.
 - Fix the single-entity shortcut in `find_matching_loop` (below-bar match → separate loop).
 - Choice over several candidate loops.
+- Derive the ingestion source key from the document or URL instead of the run id. `ze_ingestion/pipeline.py` mints a fresh `uuid4` per run, so a re-ingest of the same document gets a new key and new evidence ids and is judged independent. The key guards only a repeated push of the same ingestion id. Known limitation of FR-001 while the surface is off.
 - Let held texts corroborate (title-less matching), user answer 4A.
 
 ## Tuning notes (T033)
