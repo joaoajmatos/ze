@@ -22,8 +22,7 @@ def _source_inflows(sources: list[LoopSource]) -> list[str]:
     return list(dict.fromkeys(source.key.inflow for source in sources))
 
 
-def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource] | None = None) -> dict:
-    sources = sources or []
+def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
     return {
         "id": loop.id,
         "title": loop.title,
