@@ -11,6 +11,7 @@ from langchain_core.runnables import RunnableConfig
 from ze_logging import get_logger
 from ze_agents.types import AgentContext, RetrievalRequest
 from ze_core.orchestration.state import AgentState
+from ze_core.routing.types import RoutingEnvelope, SubTask
 
 log = get_logger(__name__)
 
@@ -146,6 +147,58 @@ async def _open_priorities_note(
     return "\n".join(lines)
 
 
+_OPEN_QUERY_AGENT = "companion"
+_OPEN_QUERY_INTENT = "reason"
+
+
+def _open_query_envelope(
+    envelope: RoutingEnvelope | None, config: RunnableConfig
+) -> RoutingEnvelope | None:
+    """Reroute a single-agent "what's open?" turn to companion.
+
+    The merged PriorityView is not any specialist's data: the goals agent would
+    answer with its own goals and gate on whichever intent it declares first.
+    Forced (eval) routes, compound turns and an absent companion stay as routed.
+    """
+    from ze_agents.registry import get_enabled_agents
+
+    if envelope is None or not envelope.subtasks or envelope.is_compound:
+        return None
+    if envelope.primary_agent == _OPEN_QUERY_AGENT:
+        return None
+    if config["configurable"].get("forced_agent"):
+        return None
+    if _OPEN_QUERY_AGENT not in get_enabled_agents():
+        return None
+    router = config["configurable"].get("router")
+    model = (
+        router._resolve_model(_OPEN_QUERY_AGENT, envelope.complexity)
+        if router is not None
+        else envelope.subtasks[0].model
+    )
+    prompt = envelope.subtasks[0].prompt
+    return RoutingEnvelope(
+        primary_agent=_OPEN_QUERY_AGENT,
+        confidence=envelope.confidence,
+        score_gap=envelope.score_gap,
+        routing_method=envelope.routing_method,
+        is_compound=False,
+        subtasks=[
+            SubTask(
+                agent=_OPEN_QUERY_AGENT,
+                intent=_OPEN_QUERY_INTENT,
+                prompt=prompt,
+                model=model,
+            )
+        ],
+        requires_synthesis=False,
+        raw_scores=envelope.raw_scores,
+        complexity=envelope.complexity,
+        judgment=envelope.judgment,
+        complexity_source=envelope.complexity_source,
+    )
+
+
 async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     store: Any = config["configurable"]["memory_store"]
     embedder: Any = config["configurable"]["embedder"]
@@ -163,14 +216,19 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     person_store: Any = config["configurable"].get("person_store")
 
     envelope = state.get("envelope")
+    embed_text = state.get("image_caption") or state["prompt"]
+    prompt_embedding = embedder.encode(embed_text)
+    open_items_query = _is_open_query(prompt_embedding, config)
+    rerouted: RoutingEnvelope | None = None
+    if open_items_query:
+        rerouted = _open_query_envelope(envelope, config)
+        if rerouted is not None:
+            envelope = rerouted
+            log.info("open_query_rerouted", session_id=state["session_id"])
     agent_name = (
         envelope.subtasks[0].agent if envelope and envelope.subtasks else "global"
     )
     intent = envelope.subtasks[0].intent if envelope and envelope.subtasks else "read"
-
-    embed_text = state.get("image_caption") or state["prompt"]
-    prompt_embedding = embedder.encode(embed_text)
-    open_items_query = _is_open_query(prompt_embedding, config)
 
     _request = RetrievalRequest(
         module=agent_name,
@@ -303,7 +361,11 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
             f"{existing}\n\n{note}" if existing else note
         )
 
+    updates: dict[str, Any] = {}
+    if rerouted is not None:
+        updates["envelope"] = rerouted
     return {
+        **updates,
         "memory_context": memory_context,
         "agent_context": agent_context,
         "last_active_at": now,

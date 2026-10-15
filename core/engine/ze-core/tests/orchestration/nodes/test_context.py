@@ -3,12 +3,16 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from ze_agents.types import AgentResult
+import pytest
+from ze_agents.base_agent import BaseAgent
+from ze_agents.registry import agent, clear_registry
+from ze_agents.types import AgentContext, AgentResult, Intent, Mode
 from ze_automation.workflow.types import Workflow, WorkflowExecution
 from ze_memory.types import Entity, MemoryContext, SessionSummary
 
 from ze_core.orchestration.nodes.context import fetch_context
 from ze_core.orchestration.nodes.loop_surfacing import surface_loops
+from ze_core.routing.types import RoutingEnvelope, SubTask
 
 
 def _make_store(memory_context=None) -> MagicMock:
@@ -397,3 +401,97 @@ class TestFetchContextOpenQueryFlag:
 
         assert result["open_items_query"] is False
         assert result["agent_context"].open_priorities_note is None
+
+
+def _register_agent(name: str, intents: dict[str, Mode]) -> None:
+    class _A(BaseAgent):
+        async def run(self, ctx: AgentContext) -> AgentResult:
+            return AgentResult(agent=name, response="ok")
+
+    _A.name = name
+    _A.description = f"The {name} agent"
+    _A.enabled = True
+    _A.intents = {k: Intent(m, k) for k, m in intents.items()}
+    agent(_A)
+
+
+def _envelope(agent_name: str, intent: str, *, compound: bool = False):
+    return RoutingEnvelope(
+        primary_agent=agent_name,
+        confidence=0.9,
+        score_gap=0.3,
+        routing_method="embedding",
+        is_compound=compound,
+        subtasks=[
+            SubTask(agent=agent_name, intent=intent, prompt="p", model="m-goals")
+        ],
+        requires_synthesis=False,
+        complexity="complex",
+    )
+
+
+class TestOpenQueryAnsweredByCompanion:
+    @pytest.fixture(autouse=True)
+    def registry(self):
+        clear_registry()
+        _register_agent("goals", {"create": Mode.CONFIRM, "read": Mode.AUTONOMOUS})
+        _register_agent("companion", {"reason": Mode.AUTONOMOUS})
+        yield
+        clear_registry()
+
+    def _config(self, *, global_query: bool, forced: str | None = None):
+        config = _config(
+            turn_surfacer=_surfacer(_ranked_mentions(), global_query=global_query)
+        )
+        router = MagicMock()
+        router._resolve_model = MagicMock(return_value="m-companion")
+        config["configurable"]["router"] = router
+        config["configurable"]["forced_agent"] = forced
+        return config
+
+    async def test_open_query_reroutes_goals_envelope_to_companion(self):
+        state = _state(prompt="what's still on my plate?")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(state, self._config(global_query=True))
+
+        env = result["envelope"]
+        assert env.primary_agent == "companion"
+        assert [(s.agent, s.intent, s.model) for s in env.subtasks] == [
+            ("companion", "reason", "m-companion")
+        ]
+        assert result["agent_context"].intent == "reason"
+        assert result["agent_context"].open_priorities_note is not None
+
+    async def test_non_open_prompt_keeps_envelope(self):
+        state = _state(prompt="what goals do I have?")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(state, self._config(global_query=False))
+        assert "envelope" not in result
+
+    async def test_companion_envelope_is_left_alone(self):
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("companion", "reason")
+        result = await fetch_context(state, self._config(global_query=True))
+        assert "envelope" not in result
+
+    async def test_compound_envelope_is_left_alone(self):
+        state = _state(prompt="what's open and email Ana")
+        state["envelope"] = _envelope("goals", "create", compound=True)
+        result = await fetch_context(state, self._config(global_query=True))
+        assert "envelope" not in result
+
+    async def test_forced_agent_is_respected(self):
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(
+            state, self._config(global_query=True, forced="goals")
+        )
+        assert "envelope" not in result
+
+    async def test_missing_companion_keeps_envelope(self):
+        clear_registry()
+        _register_agent("goals", {"create": Mode.CONFIRM})
+        state = _state(prompt="what's open")
+        state["envelope"] = _envelope("goals", "create")
+        result = await fetch_context(state, self._config(global_query=True))
+        assert "envelope" not in result
