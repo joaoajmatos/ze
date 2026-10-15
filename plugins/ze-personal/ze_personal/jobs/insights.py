@@ -67,17 +67,21 @@ class InsightEngine:
 
         async with self._pool.acquire() as conn:
             fact_rows = await conn.fetch(
-                "SELECT key, value, updated_at FROM user_facts "
+                "SELECT predicate AS key, value, updated_at FROM memory_facts "
                 "WHERE contradicted = false "
                 "AND updated_at > NOW() - ($1 * INTERVAL '1 day') "
                 "ORDER BY updated_at DESC",
                 lookback_days,
             )
+            # memory_episodes has no is_archive flag; the sleep pass marks archived
+            # episodes in memory_episode_metadata, which we exclude as before.
             episode_rows = await conn.fetch(
-                "SELECT summary, response, created_at FROM episodes "
-                "WHERE created_at > NOW() - ($1 * INTERVAL '1 day') "
-                "AND is_archive = false "
-                "ORDER BY created_at DESC",
+                "SELECT me.summary, me.response, me.created_at FROM memory_episodes me "
+                "WHERE me.created_at > NOW() - ($1 * INTERVAL '1 day') "
+                "AND NOT EXISTS ("
+                "SELECT 1 FROM memory_episode_metadata em "
+                "WHERE em.episode_id = me.id AND em.provenance = 'archived') "
+                "ORDER BY me.created_at DESC",
                 lookback_days,
             )
             profile_row = await conn.fetchrow(

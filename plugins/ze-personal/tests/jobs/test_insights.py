@@ -438,3 +438,20 @@ async def test_insights_tolerates_fenced_and_prose_replies(wrap):
     await engine.run()
 
     notifier.notify.assert_awaited_once()
+
+
+async def test_insights_reads_memory_tables():
+    conn = make_conn()
+    conn.fetch = AsyncMock(return_value=[])
+    engine, _ = make_engine(conn=conn)
+
+    await engine.run()
+
+    sqls = [call[0][0] for call in conn.fetch.call_args_list]
+    fact_sqls = [sql for sql in sqls if "memory_facts" in sql]
+    episode_sqls = [sql for sql in sqls if "memory_episodes" in sql]
+    assert len(fact_sqls) == 1
+    assert len(episode_sqls) == 1
+    assert "predicate AS key" in fact_sqls[0]
+    assert all("user_facts" not in sql for sql in sqls)
+    assert all("FROM episodes" not in sql for sql in sqls)
