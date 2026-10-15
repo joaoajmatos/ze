@@ -250,7 +250,7 @@ undo, Retry undoes it first.
    and the WebSocket handler both call it, so both give the same answer. When every
    effect of the reply can be undone, the result carries a public undo `plan`.
 2. The plan lists one entry per reversible call, in reverse call order. An entry id is
-   `sha256(message_id:call_index:tool:canonical_args)[:16]`. The plan shows the
+   `sha256(message_id:call_index:tool:canonical_undo_args)[:16]`. The plan shows the
    `effect_phrase` and `undo_note` of each entry. It never shows `undo_args`.
 3. The client asks the person to confirm the plan, then sends the entry ids as
    `confirmed_plan`. The server recomputes the plan under the thread lock. If the ids
@@ -267,8 +267,8 @@ undo, Retry undoes it first.
    request fails with `history_unavailable`. The turn runs the graph with the original
    user text and `config["configurable"]["retry_mode"]`.
 6. One policy applies in `retry_mode`. `BaseAgent.call_tool` and `delegate_to_agent`
-   refuse every irreversible `WRITE` tool and hand the model a message that says so.
-   Reversible `WRITE` tools run under the normal gates, so a confirmation can pause the
+   refuse every irreversible `WRITE` tool. They hand the model a message that says so.
+   Reversible `WRITE` tools run under the normal gates. A confirmation can pause the
    retry. `write_memory` skips fact admission, the episode write, and procedure
    completion. It still extends session history.
 7. On success the new reply is saved with `replaces` set, and the old reply gets
@@ -276,12 +276,13 @@ undo, Retry undoes it first.
    and feedback. `MessageStore` listings hide it unless asked. The new reply's trace
    carries a `RollbackTrace` with the undone entries, and the record state becomes
    `superseded`.
-8. If the retry reaches a confirmation, the pending confirmation keeps `retry_mode` and
-   `retry_replaces`. The record state is `rolled_back_awaiting_confirmation`. When the
-   person approves or denies, Ze saves the reply that results with `replaces` and marks
-   the old reply superseded. A delivered reply drops `retry_replaces`, so a second gate
-   in the same turn cannot supersede the reply twice. If no reply results (a denied
-   abort or an expired confirmation), the state becomes `rolled_back_retry_failed`.
+8. A retry can reach a confirmation. The pending confirmation then keeps `retry_mode`
+   and `retry_replaces`. The record state is `rolled_back_awaiting_confirmation`. The
+   person approves or denies. Ze saves the reply that results with `replaces` and marks
+   the old reply superseded. A delivered reply drops `retry_replaces`. A second gate in
+   the same turn then cannot supersede the reply twice. Sometimes no reply results. The
+   person may abort, or the confirmation may expire. The state then becomes
+   `rolled_back_retry_failed`.
 9. On failure `restore_messages` puts the old history back and the original reply stays.
    If the undos already ran, the state is `rolled_back_retry_failed`, and the
    notice names what Ze undid. If an undo failed, the state is `partial`, Ze does not

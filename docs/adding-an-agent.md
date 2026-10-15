@@ -120,8 +120,10 @@ Follow these rules:
   return it for a no-op (for example, enabling a workflow that was already enabled), for
   a call that failed, or for a record that existed before the call.
 - Ze removes the payload from the result before the model sees it. It stores the payload
-  on the trace. Ze also drops it for a tool that is not `REVERSIBLE` and for an error
-  result (`{"error": ...}`, `{"ok": False}`, or `{"status": "error"}`).
+  on the trace. Ze also drops it for a tool that is not `REVERSIBLE`, for an error
+  result (`{"error": ...}`, `{"ok": False}`, or `{"status": "error"}`), and for an
+  invalid payload (a value that is not a scalar or a list of scalars). Ze logs
+  `undo_payload_dropped` when it drops an invalid payload.
 - If the payload is missing, Ze treats the call as not undoable and Retry is unavailable
   with the reason `not_undoable`.
 
@@ -141,7 +143,8 @@ await self.agentic_loop(ctx, deps=self.tool_deps())
 
 `BaseAgent.run_undo` merges `tool_deps()` with the undo payload by parameter name. Every
 parameter of an undo tool that the model does not set must be a key of `tool_deps()` or
-of the payload. Do not add a `ctx` parameter to an undo tool.
+of the payload. `run_undo` supplies `ctx` itself, with a rollback context that has no
+prompt and sets `retry_mode` off, so an undo tool needs no `ctx` from the payload.
 
 **Draft mode suppression** — when the capability gate returns `DRAFT`, calling
 `self.call_tool("send_email", ctx, ...)` will **not** execute the tool. Instead,
