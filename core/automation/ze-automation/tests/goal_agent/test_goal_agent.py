@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -13,6 +14,8 @@ from ze_automation.goals.types import (
     MilestoneStatus,
 )
 from ze_sdk.memory import MemoryContext
+
+pytestmark = pytest.mark.usefixtures("goal_writes_confirmed")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

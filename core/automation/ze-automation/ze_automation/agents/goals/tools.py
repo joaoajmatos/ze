@@ -6,7 +6,8 @@ from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
 from ze_agents.reversibility import ToolReversibility
-from ze_agents.errors import GoalPlanError
+from ze_agents.errors import GoalPlanError, ToolConfirmationRequired
+from ze_agents.interrupt import workspace_confirmed
 from ze_automation.goals.executor import GoalExecutor
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.postgres import PostgresGoalStore as GoalStore
@@ -17,6 +18,14 @@ from ze_logging import get_logger
 from ze_sdk.proactive import ProactiveNotifier
 
 log = get_logger(__name__)
+
+
+def _confirm(prompt: str) -> None:
+    """Ask before a goal write. The agent loop turns this into a confirmation
+    interrupt and re-runs the tool with `workspace_confirmed` set on approval."""
+    if workspace_confirmed.get():
+        return
+    raise ToolConfirmationRequired(prompt, editable=False)
 
 
 @tool(
@@ -30,6 +39,7 @@ async def steer_goal(executor: GoalExecutor, goal_id: str, instruction: str) -> 
         uid = UUID(goal_id)
     except ValueError:
         return f"Invalid goal ID: {goal_id!r}"
+    _confirm(f"Steer this goal: {instruction}")
     ok = await executor.steer(uid, instruction)
     if not ok:
         return "That goal is not currently active. Use list_goals to check status."
@@ -159,6 +169,7 @@ async def create_goal(
     time_horizon: str = "",
     goal_type: str = "custom",
 ) -> dict:
+    _confirm(f'Create the goal "{goal_title}" and plan its milestones?')
     active_goals = await store.list_active()
 
     goal = Goal(
@@ -248,6 +259,7 @@ async def pause_goal(store: GoalStore, goal_id: str) -> dict:
     goal = await store.get_goal(uid)
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
+    _confirm(f'Pause the goal "{goal.title}"?')
     await store.update_status(uid, GoalStatus.PAUSED)
     return {"title": goal.title, "status": "paused"}
 
@@ -270,6 +282,7 @@ async def resume_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) ->
         return {
             "error": f"Goal '{goal.title}' is not paused (status: {goal.status.value})."
         }
+    _confirm(f'Resume the goal "{goal.title}"?')
     await store.update_status(uid, GoalStatus.ACTIVE)
     asyncio.create_task(executor.advance(uid))
     return {"title": goal.title, "status": "active"}
@@ -324,5 +337,6 @@ async def abandon_goal(store: GoalStore, goal_id: str) -> dict:
     goal = await store.get_goal(uid)
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
+    _confirm(f'Abandon the goal "{goal.title}" permanently?')
     await store.update_status(uid, GoalStatus.ABANDONED)
     return {"title": goal.title, "status": "abandoned"}

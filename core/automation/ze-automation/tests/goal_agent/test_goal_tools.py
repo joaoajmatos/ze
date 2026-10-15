@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import pytest
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 
 from ze_automation.goals.types import Goal, GoalStatus, PriorMilestoneOutput
+
+pytestmark = pytest.mark.usefixtures("goal_writes_confirmed")
 
 
 def _goal() -> Goal:

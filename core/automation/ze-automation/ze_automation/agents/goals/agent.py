@@ -91,19 +91,19 @@ class GoalAgent(BaseAgent):
         "render_confirm",
     ]
     intents = {
-        "create": Intent(
-            Mode.CONFIRM,
-            "Create a new multi-week goal and decompose it into milestones.",
-        ),
         "read": Intent(
             Mode.AUTONOMOUS,
             "Inspect goal status, list active goals, or review progress and traces.",
         ),
+        "create": Intent(
+            Mode.AUTONOMOUS,
+            "Create a new multi-week goal and decompose it into milestones.",
+        ),
         "update": Intent(
-            Mode.CONFIRM,
+            Mode.AUTONOMOUS,
             "Pause, resume, or redirect (steer) an active goal mid-execution.",
         ),
-        "delete": Intent(Mode.CONFIRM, "Abandon a goal."),
+        "delete": Intent(Mode.AUTONOMOUS, "Abandon a goal."),
     }
 
     def __init__(

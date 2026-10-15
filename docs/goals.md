@@ -59,6 +59,8 @@ You can also manage goals conversationally:
 `GoalAgent` handles create / inspect / steer / pause / resume / abandon. It does **not**
 execute milestones — that is `GoalExecutor`'s job.
 
+Reading goals never pauses a turn. Each write tool (`create_goal`, `steer_goal`, `pause_goal`, `resume_goal`, `abandon_goal`) asks for your confirmation before it acts. The agent's intents are all autonomous, so the question comes from the tool, not from the turn's capability gate.
+
 **Steering** (`steer_goal` tool) enqueues a free-text instruction that is applied before the next milestone runs: Ze re-plans the remaining milestones around the instruction and continues. Steering only works while the goal is `ACTIVE`; if the goal is `AWAITING_GATE`, resolve the gate first.
 
 ### Goal overview
