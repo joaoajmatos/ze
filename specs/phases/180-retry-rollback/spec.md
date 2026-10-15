@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-13
 
-**Status**: Ready to implement
+**Status**: Implemented
 
 **Input**: User description: "Automatic rollback for Retry: when the user retries a reply whose turn ran reversible WRITE tools, undo those actions, then regenerate. Today (phase 165) Retry is refused for such turns via retry_eligibility; every WRITE @tool already declares reversibility plus undo_tool/undo_note/effect_phrase, and that declaration was designed for this. Rollback should leave an honest ActionRecord."
 
