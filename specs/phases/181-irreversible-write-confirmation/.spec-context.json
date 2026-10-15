@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Irreversible Write Confirmation",
+  "branch": "181-irreversible-write-confirmation",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T21:38:14.652Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-15T21:54:34.531Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-15T21:59:17.001Z"
+    }
+  ]
+}
