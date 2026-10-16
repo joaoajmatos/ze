@@ -24,7 +24,7 @@ from ze_automation.goals.types import (
     VerificationGate,
 )
 from ze_logging import get_logger
-from ze_sdk.proactive import ProactiveNotifier
+from ze_proactive.notifier import ProactiveNotifier
 
 log = get_logger(__name__)
 

@@ -10,7 +10,7 @@ from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import Goal, GoalStatus, Milestone, VerificationGate
 from ze_automation.push_kinds import GOAL_OVERLAP, GOAL_PLAN_PROPOSED
 from ze_logging import get_logger
-from ze_sdk.proactive import ProactiveNotifier
+from ze_proactive.notifier import ProactiveNotifier
 
 log = get_logger(__name__)
 

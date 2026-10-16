@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ze_logging import get_logger
 from ze_proactive.staleness import is_stale
-from ze_sdk.proactive import proactive_job
+from ze_proactive.job import proactive_job
 
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopState

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 
 from ze_automation.agents.workflow.agent import WorkflowManagerAgent
 from ze_agents.types import AgentContext, AgentResult
-from ze_sdk.memory import MemoryContext
+from ze_memory.types import MemoryContext
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

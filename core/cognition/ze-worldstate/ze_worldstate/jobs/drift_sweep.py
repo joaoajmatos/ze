@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ze_logging import get_logger
-from ze_sdk.proactive import proactive_job
+from ze_proactive.job import proactive_job
 
 from ze_worldstate import drift
 from ze_worldstate.errors import InvalidLoopTransitionError

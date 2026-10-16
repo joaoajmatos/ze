@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 
 from ze_agents.interface.types import Action
 from ze_logging import get_logger
-from ze_sdk.memory import MemoryStore
-from ze_sdk.proactive import proactive_job
-from ze_sdk.proactive import ProactiveNotifier
+from ze_memory.store import MemoryStore
+from ze_proactive.job import proactive_job
+from ze_proactive.notifier import ProactiveNotifier
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.suggestion_store import GoalSuggestionStore

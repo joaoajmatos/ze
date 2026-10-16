@@ -10,7 +10,7 @@ from ze_automation.goals.executor import GoalExecutor
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.postgres import PostgresGoalStore as GoalStore
 from ze_agents.client import LLMClient
-from ze_sdk.proactive import ProactiveNotifier
+from ze_proactive.notifier import ProactiveNotifier
 import ze_automation.agents.goals.tools  # noqa: F401
 import ze_components.tools  # noqa: F401 — registers render_* tools
 

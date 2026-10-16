@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from ze_automation.holds.resumer import HeldWriteNotOpenError, HeldWriteResumer
 from ze_automation.holds.store import HeldWriteStore
 from ze_logging import get_logger
-from ze_sdk.proactive import proactive_job
+from ze_proactive.job import proactive_job
 
 log = get_logger(__name__)
 

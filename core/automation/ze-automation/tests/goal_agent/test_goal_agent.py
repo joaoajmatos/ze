@@ -11,7 +11,7 @@ from ze_automation.goals.types import (
     Milestone,
     MilestoneStatus,
 )
-from ze_sdk.memory import MemoryContext
+from ze_memory.types import MemoryContext
 
 
 
