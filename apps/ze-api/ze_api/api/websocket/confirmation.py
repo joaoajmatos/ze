@@ -17,6 +17,7 @@ from ze_logging import get_logger
 from ze_workspace import rest as workspace_rest
 from ze_api.api.websocket.frames import build_confirm_frame, confirmation_payload
 from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
+from ze_api.api.websocket.held import handle_held_confirm
 
 log = get_logger(__name__)
 
@@ -56,6 +57,9 @@ async def handle_confirm(
         await conn_mgr.send_frame(
             {"type": "confirm_cancel", "id": request_id}, thread_id
         )
+        return None
+
+    if await handle_held_confirm(data, container, conn_mgr, thread_id):
         return None
 
     row: dict | None = None
