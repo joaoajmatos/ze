@@ -2101,6 +2101,7 @@ export type MessageTraceEntry = {
      */
     message_id: string;
     trace: MessageTraceResponse;
+    tier?: TierTraceResponse | null;
 };
 
 /**
@@ -2181,6 +2182,7 @@ export type MessageTraceResponse = {
      * Loop Offer Ids
      */
     loop_offer_ids?: Array<string>;
+    tier?: TierTraceResponse | null;
 };
 
 /**
@@ -3386,6 +3388,28 @@ export type StepResultResponse = {
      * No Results
      */
     no_results?: boolean;
+};
+
+/**
+ * TierTraceResponse
+ */
+export type TierTraceResponse = {
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tier
+     */
+    tier: 'simple' | 'full';
+    /**
+     * Decided By
+     */
+    decided_by: string;
+    /**
+     * Model
+     */
+    model: string;
 };
 
 /**

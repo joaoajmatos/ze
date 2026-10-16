@@ -117,7 +117,19 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         resume_recap_applied=bool(getattr(trace, "resume_recap_applied", False)),
         rollback=getattr(trace, "rollback", None),
         loop_offer_ids=list(getattr(trace, "loop_offer_ids", None) or []),
+        tier=_tier_to_response(getattr(trace, "tier", None)),
     )
+
+
+def _tier_to_response(tier) -> dict | None:
+    if tier is None:
+        return None
+    return {
+        "agent": tier.agent,
+        "tier": tier.tier,
+        "decided_by": tier.decided_by,
+        "model": tier.model,
+    }
 
 
 def _judgments_to_response(judgments) -> list[dict]:
@@ -183,7 +195,11 @@ async def get_message_traces(
     traces = await store.get_traces(ids)
     return MessageTracesResponse(
         traces=[
-            MessageTraceEntry(message_id=message_id, trace=_trace_to_response(trace))
+            MessageTraceEntry(
+                message_id=message_id,
+                trace=_trace_to_response(trace),
+                tier=_tier_to_response(getattr(trace, "tier", None)),
+            )
             for message_id, trace in traces.items()
         ]
     )

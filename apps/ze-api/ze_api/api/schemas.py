@@ -203,6 +203,13 @@ class CompactionTraceResponse(BaseModel):
     span_end: int
 
 
+class TierTraceResponse(BaseModel):
+    agent: str
+    tier: Literal["simple", "full"]
+    decided_by: str
+    model: str
+
+
 class SourceTraceResponse(BaseModel):
     url: str
     title: str = ""
@@ -230,11 +237,13 @@ class MessageTraceResponse(BaseModel):
     resume_recap_applied: bool = False
     rollback: RollbackTraceResponse | None = None
     loop_offer_ids: list[str] = []
+    tier: TierTraceResponse | None = None
 
 
 class MessageTraceEntry(BaseModel):
     message_id: UUIDType
     trace: MessageTraceResponse
+    tier: TierTraceResponse | None = None
 
 
 class MessageTracesResponse(BaseModel):
@@ -877,6 +886,7 @@ class WsTraceUpdateFrame(BaseModel):
     sources: list[SourceTraceResponse] = []
     effects_known: bool = False
     rollback: RollbackTraceResponse | None = None
+    tier: TierTraceResponse | None = None
 
 
 class WsNotificationFrame(BaseModel):

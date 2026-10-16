@@ -25,5 +25,6 @@ export function toTraceFrame(
     judgments: trace.judgments ?? [],
     sources: trace.sources ?? [],
     rollback: trace.rollback,
+    tier: trace.tier,
   } as WsTraceUpdateFrame;
 }

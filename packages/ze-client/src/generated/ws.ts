@@ -165,6 +165,10 @@ export type Sources = SourceTraceResponse[];
 export type EffectsKnown = boolean;
 export type Replaces1 = string;
 export type Entries1 = RollbackEntryResponse[];
+export type Agent2 = string;
+export type Tier = "simple" | "full";
+export type DecidedBy = string;
+export type Model1 = string;
 export type Type12 = "notification";
 export type Id5 = string;
 export type EventType = string;
@@ -430,6 +434,7 @@ export interface WsTraceUpdateFrame {
   sources?: Sources;
   effects_known?: EffectsKnown;
   rollback?: RollbackTraceResponse | null;
+  tier?: TierTraceResponse | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -547,6 +552,16 @@ export interface SourceTraceResponse {
 export interface RollbackTraceResponse {
   replaces: Replaces1;
   entries?: Entries1;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "TierTraceResponse".
+ */
+export interface TierTraceResponse {
+  agent: Agent2;
+  tier: Tier;
+  decided_by: DecidedBy;
+  model: Model1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
