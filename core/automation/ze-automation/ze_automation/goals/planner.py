@@ -16,7 +16,6 @@ from ze_automation.goals.types import (
     GateStatus,
     GoalConvergence,
     GoalLearning,
-    GoalStatus,
     GoalSuggestion,
     Milestone,
     MilestoneStatus,
@@ -677,14 +676,4 @@ class GoalPlanner:
             source_ref=source_ref,
             status=SuggestionStatus.PENDING,
             suggested_at=datetime.now(timezone.utc),
-        )
-
-    def create_goal_from_suggestion(self, suggestion: GoalSuggestion) -> Goal:
-        """Pure mapping — no LLM call. Maps suggestion fields into an active Goal."""
-        return Goal(
-            title=suggestion.title,
-            objective=suggestion.objective,
-            success_condition=suggestion.objective,
-            status=GoalStatus.ACTIVE,
-            type="suggested",
         )

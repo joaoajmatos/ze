@@ -96,6 +96,24 @@ class GoalSuggestionStore:
             )
             return row is not None
 
+    async def reopen(self, suggestion_id: UUID, goal_id: UUID) -> bool:
+        """
+        Returns an ACCEPTED suggestion to PENDING when the goal it created could not
+        be planned. Returns False if the suggestion is no longer accepted for that goal.
+        """
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE goal_suggestions
+                SET status = 'pending', resolved_at = NULL, created_goal_id = NULL
+                WHERE id = $1 AND status = 'accepted' AND created_goal_id = $2
+                RETURNING id
+                """,
+                suggestion_id,
+                goal_id,
+            )
+            return row is not None
+
     async def mark_expired(self, suggestion_id: UUID) -> None:
         """Unconditional status update to EXPIRED."""
         async with self._pool.acquire() as conn:

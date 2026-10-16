@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import html as _html
 from uuid import UUID
 
 from ze_agents.tool import AskDecision, ToolAccess, tool, undo_payload
@@ -16,6 +15,7 @@ from ze_automation.holds.planned import (
 )
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.postgres import PostgresGoalStore as GoalStore
+from ze_automation.goals.proposal import plan_for_goal, propose_goal
 from ze_automation.goals.types import (
     Goal,
     GoalStatus,
@@ -23,8 +23,6 @@ from ze_automation.goals.types import (
     MilestoneStatus,
     VerificationGate,
 )
-from ze_agents.interface.types import Action
-from ze_automation.push_kinds import GOAL_OVERLAP, GOAL_PLAN_PROPOSED
 from ze_logging import get_logger
 from ze_sdk.proactive import ProactiveNotifier
 
@@ -116,45 +114,6 @@ async def get_goal_status(store: GoalStore, goal_id: str) -> dict:
     return result
 
 
-async def _check_convergence(
-    store: GoalStore,
-    planner: GoalPlanner,
-    notifier: ProactiveNotifier,
-    new_goal: Goal,
-    active_goals: list[Goal],
-) -> None:
-    others = [g for g in active_goals if g.id != new_goal.id]
-    if not others:
-        return
-    try:
-        conv = await planner.detect_convergence(new_goal, others)
-    except Exception as exc:
-        log.warning("goal_convergence_check_failed", error=str(exc))
-        return
-    if conv is None:
-        return
-    log.info(
-        "goal_convergence_detected",
-        new_goal_id=str(new_goal.id),
-        overlapping_goal_id=str(conv.overlapping_goal_id),
-    )
-    await notifier.notify(
-        GOAL_OVERLAP,
-        "Goal overlap detected",
-        f"<b>Goal overlap detected</b>\n\n"
-        f"<b>{_html.escape(new_goal.title)}</b> and "
-        f"<b>{_html.escape(conv.overlapping_goal_title)}</b> share scope: "
-        f"{_html.escape(conv.overlap_description)}\n\n"
-        f"Suggested approach: <i>{_html.escape(conv.suggestion)}</i>. "
-        f"Let me know if you'd like to share outputs between them, sequence one "
-        f"after the other, or keep them running independently.",
-        format="html",
-        target_type="goal",
-        target_id=str(new_goal.id),
-        budget_key=f"goal_overlap:{new_goal.id}",
-    )
-
-
 def _new_goal(
     goal_title: str,
     objective: str,
@@ -189,16 +148,7 @@ async def _plan_goal(
         shown = memo.take(key) if consume else memo.get(key)
         if shown is not None:
             return shown[0], shown[1], True
-    try:
-        prior_work = await store.list_completed_milestone_summaries(
-            days=90,
-            limit=20,
-            exclude_goal_id=None,
-        )
-    except Exception as exc:
-        log.warning("goal_prior_work_query_failed", error=str(exc))
-        prior_work = []
-    milestones, gates = await planner.plan(goal, prior_work=prior_work or None)
+    milestones, gates = await plan_for_goal(store, planner, goal)
     if memo is not None and not consume:
         memo.put(key, (milestones, gates))
     return milestones, gates, False
@@ -256,45 +206,8 @@ async def create_goal(
     if shown and approval_given():
         grant_planned_writes(milestones)
 
-    goal = await store.create_goal(goal)
-
-    for m in milestones:
-        m.goal_id = goal.id
-    for g in gates:
-        g.goal_id = goal.id
-
-    for m in milestones:
-        await store.create_milestone(m)
-    for g in gates:
-        await store.create_gate(g)
-
-    step_summary = "\n".join(f"  {m.sequence}. {m.title}" for m in milestones)
-    gate_summary = (
-        "\n".join(f"  Gate after step {g.after_sequence}: {g.title}" for g in gates)
-        or "  (none)"
-    )
-
-    plan_text = (
-        f"🎯 <b>{_html.escape(goal_title)}</b> — proposed plan\n\n"
-        f"<b>Milestones:</b>\n{_html.escape(step_summary)}\n\n"
-        f"<b>Checkpoints:</b>\n{_html.escape(gate_summary)}\n\n"
-        "Start this goal?"
-    )
-    await notifier.notify(
-        GOAL_PLAN_PROPOSED,
-        "Goal plan ready",
-        plan_text,
-        format="html",
-        actions=(
-            Action(label="Start goal", payload=f"goal_plan:yes:{goal.id}"),
-            Action(label="Cancel", payload=f"goal_plan:no:{goal.id}"),
-        ),
-        target_type="goal",
-        target_id=str(goal.id),
-    )
-
-    asyncio.create_task(
-        _check_convergence(store, planner, notifier, goal, active_goals)
+    goal = await propose_goal(
+        store, planner, notifier, goal, milestones, gates, active_goals=active_goals
     )
 
     return {

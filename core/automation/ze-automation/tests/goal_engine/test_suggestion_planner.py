@@ -220,30 +220,3 @@ async def test_generate_suggestion_returns_suggestion_on_valid_output():
     assert result.status == SuggestionStatus.PENDING
     assert result.id is not None
     assert result.suggested_at is not None
-
-
-# ── create_goal_from_suggestion ───────────────────────────────────────────────
-
-
-def test_create_goal_from_suggestion_maps_fields_correctly():
-    client = AsyncMock()
-    planner = GoalPlanner(client=client, model="test-model")
-
-    suggestion = GoalSuggestion(
-        id=uuid4(),
-        title="Learn Spanish",
-        objective="Achieve conversational fluency in Spanish within 6 months.",
-        rationale="Based on retrospective for Travel to South America in 2024.",
-        source_type="retrospective",
-        source_ref="Travel to South America",
-        status=SuggestionStatus.PENDING,
-        suggested_at=datetime.now(timezone.utc),
-    )
-
-    goal = planner.create_goal_from_suggestion(suggestion)
-
-    assert goal.title == "Learn Spanish"
-    assert goal.objective == suggestion.objective
-    assert goal.status == GoalStatus.ACTIVE
-    assert goal.type == "suggested"
-    assert goal.id is None  # not yet persisted

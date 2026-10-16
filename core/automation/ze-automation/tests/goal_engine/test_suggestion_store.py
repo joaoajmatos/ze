@@ -138,6 +138,33 @@ async def test_mark_dismissed_returns_false_when_already_accepted():
     assert result is False
 
 
+# ── reopen ────────────────────────────────────────────────────────────────────
+
+
+async def test_reopen_returns_an_accepted_suggestion_to_pending():
+    s = _suggestion(status=SuggestionStatus.ACCEPTED)
+    goal_id = uuid4()
+    pool, conn = _make_pool(fetchrow=MagicMock())
+    store = GoalSuggestionStore(pool)
+
+    result = await store.reopen(s.id, goal_id)
+
+    assert result is True
+    sql = conn.fetchrow.call_args.args[0]
+    assert "status = 'accepted'" in sql
+    assert "created_goal_id = $2" in sql
+    assert "status = 'pending'" in sql
+    assert "created_goal_id = NULL" in sql
+    assert conn.fetchrow.call_args.args[1:] == (s.id, goal_id)
+
+
+async def test_reopen_returns_false_when_the_suggestion_moved_on():
+    pool, conn = _make_pool(fetchrow=None)
+    store = GoalSuggestionStore(pool)
+
+    assert await store.reopen(uuid4(), uuid4()) is False
+
+
 # ── expire_stale_pending ──────────────────────────────────────────────────────
 
 
