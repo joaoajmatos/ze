@@ -1,5 +1,5 @@
 from ze_agents.types import ToolCall
-from ze_personal.agents.companion.honesty import (
+from ze_agents.honesty import (
     COULD_NOT_APPLY_CONSTRAINT,
     COULD_NOT_CANCEL,
     COULD_NOT_FORGET,

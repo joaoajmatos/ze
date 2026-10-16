@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
 
-from ze_sdk import DBPool
+from ze_agents.db import DBPool
 from ze_proactive.staleness import is_stale
 import json
 

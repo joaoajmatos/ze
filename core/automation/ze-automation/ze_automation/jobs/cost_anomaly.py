@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ze_logging import get_logger
-from ze_sdk.proactive import proactive_job
-from ze_sdk.proactive import ProactiveNotifier
+from ze_proactive.job import proactive_job
+from ze_proactive.notifier import ProactiveNotifier
 from ze_automation.accountability.store import AccountabilityStore
 from ze_automation.accountability.types import AnomalyRecord
 from ze_automation.push_kinds import COST_ANOMALY

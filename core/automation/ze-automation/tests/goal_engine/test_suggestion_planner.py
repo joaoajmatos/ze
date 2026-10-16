@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.types import Goal, GoalStatus, GoalSuggestion, SuggestionStatus
-from ze_sdk.memory import Episode, Fact
+from ze_memory.types import Episode, Fact
 
 
 def _client(response: str = "{}"):

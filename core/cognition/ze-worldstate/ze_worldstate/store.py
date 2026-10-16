@@ -6,7 +6,7 @@ from uuid import UUID
 
 from ze_logging import get_logger
 from ze_plugin.contribution import EvidenceRef
-from ze_sdk import DBPool
+from ze_agents.db import DBPool
 
 from ze_worldstate.drift import DEFAULT_DRIFT_WINDOW_DAYS
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError

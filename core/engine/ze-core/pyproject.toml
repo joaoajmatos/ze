@@ -22,13 +22,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# pip install 'ze-core[migrations]'  — required to run `python -m ze_core.migrate`
-# or to use ZC_AUTO_MIGRATE=true
-migrations = [
-    "alembic==1.18.4",
-    "psycopg2-binary==2.9.12",
-    "sqlalchemy==2.0.50",
-]
 # pip install 'ze-core[sqlite]'  — SQLite storage backend (no Postgres required)
 sqlite = [
     "aiosqlite==0.22.1",

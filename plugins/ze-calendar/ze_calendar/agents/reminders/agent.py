@@ -10,7 +10,7 @@ from ze_agents.client import LLMClient
 from ze_sdk.proactive import ProactiveNotifier
 from ze_agents.settings import Settings
 from ze_calendar.reminders.store import ReminderStore
-from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
+from ze_sdk import hold_token_sink, publish_honest_reply
 from ze_automation.workflow.scheduler import WorkflowScheduler
 
 _AGENT_INSTRUCTIONS = """\

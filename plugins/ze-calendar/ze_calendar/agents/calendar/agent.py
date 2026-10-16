@@ -7,7 +7,7 @@ from ze_personal.contacts.extractors import (
     extract_calendar_contacts,
     extract_calendar_social_edges,
 )
-from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
+from ze_sdk import hold_token_sink, publish_honest_reply
 from ze_google.auth import GoogleCredentials
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings

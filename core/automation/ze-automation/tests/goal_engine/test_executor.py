@@ -787,7 +787,7 @@ async def test_task_state_sync_skipped_when_no_memory_store(
 
 def test_build_milestone_prompt_includes_provisional_procedures():
     from ze_automation.goals.executor import _build_milestone_prompt
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     goal = _goal()
     m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
@@ -817,7 +817,7 @@ def test_build_milestone_prompt_no_provisional_procedures_omits_section():
 async def test_provisional_procedure_extracted_at_third_milestone(
     executor, store, planner, push, agent_mock
 ):
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     goal = _goal()
     m1 = _milestone(1, MilestoneStatus.COMPLETED, goal_id=goal.id)
@@ -872,7 +872,7 @@ async def test_provisional_procedure_not_extracted_at_first_or_second_milestone(
 async def test_provisional_procedure_injected_into_milestone_prompt(
     executor, store, planner, push, agent_mock
 ):
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     goal = _goal()
     m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)
@@ -894,7 +894,7 @@ async def test_provisional_procedure_injected_into_milestone_prompt(
 async def test_provisional_procedure_cleared_on_goal_completion(
     executor, store, planner, push
 ):
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     goal = _goal()
     store.get_goal = AsyncMock(return_value=goal)
@@ -918,7 +918,7 @@ async def test_provisional_procedure_cleared_on_goal_completion(
 async def test_provisional_procedure_passed_to_adaptive_replan(
     executor, store, planner, push, agent_mock
 ):
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     goal = _goal()
     m1 = _milestone(1, MilestoneStatus.PENDING, goal_id=goal.id)

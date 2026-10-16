@@ -5,6 +5,7 @@ description = "Shared Google OAuth2 credentials and Gmail channel for Ze package
 requires-python = ">=3.12"
 dependencies = [
     "ze-communication",
+    "ze-agents",
     "google-api-python-client==2.196.0",
     "google-auth==2.53.0",
     "google-auth-oauthlib==1.4.0",
@@ -14,6 +15,7 @@ dependencies = [
 
 [tool.uv.sources]
 ze-communication = { workspace = true }
+ze-agents = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

@@ -11,7 +11,8 @@ from dataclasses import dataclass
 
 from ze_agents.errors import GoalExecutionError, LoopParked
 from ze_agents.park import ParkedLoop, WriteDecision
-from ze_sdk.memory import MemoryStore, Procedure, TaskState
+from ze_memory.store import MemoryStore
+from ze_memory.types import Procedure, TaskState
 from ze_agents.types import AgentContext, ToolCall
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore

@@ -5,10 +5,12 @@ description = "Ze component descriptor types and render tools"
 requires-python = ">=3.12"
 dependencies = [
     "ze-agents",
+    "ze-logging",
 ]
 
 [tool.uv.sources]
 ze-agents = { workspace = true }
+ze-logging = { workspace = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

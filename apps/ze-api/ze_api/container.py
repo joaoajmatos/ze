@@ -929,7 +929,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             _calendar_reminder_job.loop_extractor = _loop_extractor
             log.info("calendar_loop_extractor_wired")
 
-    from ze_api.workflow_graph import build_workflow_graph
+    from ze_api.workflow_graph import begin_workflow_turn, build_workflow_graph
 
     await configure_workflow_executor(
         automation,
@@ -942,6 +942,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         router=router,
         persona_store=persona_store,
         workflow_graph_builder=build_workflow_graph,
+        begin_workflow_turn=begin_workflow_turn,
         workspace_gate=workspace.gate,
     )
 
