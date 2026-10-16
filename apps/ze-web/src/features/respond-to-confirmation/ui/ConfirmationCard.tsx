@@ -1,15 +1,16 @@
-import type { WsConfirmAction, WsConfirmItem, WsConfirmSource } from "@myguyze/ze-client";
+import type { WsConfirmAction } from "@myguyze/ze-client";
 import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
+import type { ConfirmItem, ConfirmSource } from "../model/types";
 
 export type ConfirmChoice = "approve" | "deny";
 
 interface ConfirmationCardProps {
   title: string;
-  items: WsConfirmItem[];
+  items: ConfirmItem[];
   actions: WsConfirmAction[];
   onRespond: (choice: ConfirmChoice, edits: Record<string, string>) => void;
-  source?: WsConfirmSource | null;
+  source?: ConfirmSource | null;
   disabled?: boolean;
 }
 

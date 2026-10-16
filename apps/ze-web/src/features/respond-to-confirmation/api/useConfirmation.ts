@@ -1,12 +1,8 @@
-import type {
-  WsConfirmAction,
-  WsConfirmItem,
-  WsConfirmSource,
-  WsOutboundFrame,
-} from "@myguyze/ze-client";
+import type { WsConfirmAction, WsOutboundFrame } from "@myguyze/ze-client";
 import { useState } from "react";
 import { useSendNotice } from "@/features/send-context-notice";
 import { useFrame, useWsStore, send } from "@/shared/api";
+import type { ConfirmItem, ConfirmSource } from "../model/types";
 
 export interface PendingConfirm {
   id: string;
@@ -14,8 +10,8 @@ export interface PendingConfirm {
   kind: "write" | "budget" | "held";
   round: number;
   title: string;
-  items: WsConfirmItem[];
-  source: WsConfirmSource | null;
+  items: ConfirmItem[];
+  source: ConfirmSource | null;
   expiresAt: string | null;
   actions: WsConfirmAction[];
   submitted: boolean;

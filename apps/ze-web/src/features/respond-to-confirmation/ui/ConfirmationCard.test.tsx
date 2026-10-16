@@ -1,6 +1,7 @@
-import type { WsConfirmAction, WsConfirmItem } from "@myguyze/ze-client";
+import type { WsConfirmAction } from "@myguyze/ze-client";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { ConfirmItem } from "../model/types";
 import { ConfirmationCard } from "./ConfirmationCard";
 
 const actions: WsConfirmAction[] = [
@@ -8,7 +9,7 @@ const actions: WsConfirmAction[] = [
   { label: "Deny all", value: "deny", style: "secondary" },
 ];
 
-function item(overrides: Partial<WsConfirmItem> = {}): WsConfirmItem {
+function item(overrides: Partial<ConfirmItem> = {}): ConfirmItem {
   return {
     item_id: "c1",
     agent: "calendar",
