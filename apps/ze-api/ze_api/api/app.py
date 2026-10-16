@@ -27,6 +27,7 @@ from ze_api.api.routes import (
     ui,
     version,
     webhooks,
+    held_writes,
     workflows,
     workspace,
     ws_schema,
@@ -131,6 +132,7 @@ def create_app() -> FastAPI:
     app.include_router(workflows.router, prefix="/api/v0/workflows")
     app.include_router(costs.router, prefix="/api/v0/costs")
     app.include_router(goals.router, prefix="/api/v0")
+    app.include_router(held_writes.router, prefix="/api/v0")
     app.include_router(sessions.router, prefix="/api/v0")
     app.include_router(messages_router, prefix="/api/v0")
     app.include_router(feedback.router, prefix="/api/v0")

@@ -234,6 +234,8 @@ class ZeContainer(CoreContainer):
     correlation_engine: Any | None
     persona_store: Any
     workflow_store: Any
+    held_write_store: Any
+    held_write_resumer: Any
     _plugin_stores: dict
     workflow_scheduler: Any
     proactive_scheduler: ProactiveScheduler
@@ -787,6 +789,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         correlation_engine=correlation.correlation_engine,
         persona_store=persona_store,
         workflow_store=automation.workflow_store,
+        held_write_store=automation.held_write_store,
+        held_write_resumer=automation.held_write_resumer,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
         proactive_scheduler=ProactiveScheduler(run_store=JobRunStore(pool)),

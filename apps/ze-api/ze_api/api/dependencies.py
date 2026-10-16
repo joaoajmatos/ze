@@ -60,6 +60,14 @@ def get_workflow_store(request: Request):
     return request.app.state.container.workflow_store
 
 
+def get_held_write_store(request: Request):
+    return request.app.state.container.held_write_store
+
+
+def get_held_write_resumer(request: Request):
+    return request.app.state.container.held_write_resumer
+
+
 def get_memory_consolidator(request: Request) -> MemoryConsolidator:
     return request.app.state.container.memory_consolidator
 

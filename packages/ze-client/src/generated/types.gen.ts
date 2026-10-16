@@ -322,6 +322,44 @@ export type ConductorLedgerEntryResponse = {
 };
 
 /**
+ * ConfirmItemOut
+ */
+export type ConfirmItemOut = {
+    /**
+     * Item Id
+     */
+    item_id: string;
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tool
+     */
+    tool?: string | null;
+    /**
+     * Effect Phrase
+     */
+    effect_phrase: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Conflict
+     */
+    conflict?: string | null;
+    /**
+     * Editable Field
+     */
+    editable_field?: string | null;
+    /**
+     * Proposed Text
+     */
+    proposed_text?: string | null;
+};
+
+/**
  * ConsolidationReportResponse
  */
 export type ConsolidationReportResponse = {
@@ -1343,6 +1381,75 @@ export type HeatmapDay = {
      */
     agents: Array<AgentDayCount>;
 };
+
+/**
+ * HeldWriteDecisionIn
+ */
+export type HeldWriteDecisionIn = {
+    /**
+     * Choice
+     */
+    choice: 'approve' | 'deny';
+    /**
+     * Edits
+     */
+    edits?: {
+        [key: string]: string;
+    };
+};
+
+/**
+ * HeldWriteListResponse
+ */
+export type HeldWriteListResponse = {
+    /**
+     * Items
+     */
+    items: Array<HeldWriteOut>;
+};
+
+/**
+ * HeldWriteOut
+ */
+export type HeldWriteOut = {
+    /**
+     * Request Id
+     */
+    request_id: string;
+    /**
+     * Source
+     */
+    source: 'workflow' | 'goal';
+    /**
+     * Source Name
+     */
+    source_name: string;
+    /**
+     * Owner Ref
+     */
+    owner_ref: string;
+    /**
+     * Items
+     */
+    items: Array<ConfirmItemOut>;
+    /**
+     * Status
+     */
+    status: 'open' | 'approved' | 'denied' | 'expired';
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Expires At
+     */
+    expires_at?: string | null;
+};
+
+/**
+ * HeldWriteStatus
+ */
+export type HeldWriteStatus = 'open' | 'approved' | 'denied' | 'expired';
 
 /**
  * ImportResponse
@@ -3240,6 +3347,24 @@ export type StepResultResponse = {
 };
 
 /**
+ * StepWritesNeedingApproval
+ */
+export type StepWritesNeedingApproval = {
+    /**
+     * Step Id
+     */
+    step_id: string;
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tools
+     */
+    tools: Array<string>;
+};
+
+/**
  * TimelineBoundsResponse
  */
 export type TimelineBoundsResponse = {
@@ -3391,6 +3516,56 @@ export type UpdateWorkflowStepsRequest = {
      * Steps
      */
     steps: Array<WorkflowStepInput>;
+    /**
+     * Approve Writes
+     */
+    approve_writes?: boolean;
+};
+
+/**
+ * UpdateWorkflowStepsResponse
+ */
+export type UpdateWorkflowStepsResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Schedule
+     */
+    schedule: string | null;
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Last Run At
+     */
+    last_run_at: string | null;
+    /**
+     * Next Run At
+     */
+    next_run_at: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Steps
+     */
+    steps: Array<WorkflowStepResponse>;
+    /**
+     * Writes Needing Approval
+     */
+    writes_needing_approval?: Array<StepWritesNeedingApproval>;
 };
 
 /**
@@ -3738,10 +3913,6 @@ export type WorkflowStepInput = {
      */
     verify?: string | null;
     /**
-     * Intent
-     */
-    intent?: string;
-    /**
      * Id
      */
     id: string;
@@ -3791,6 +3962,10 @@ export type WorkflowStepResponse = {
      * On Failure
      */
     on_failure?: string;
+    /**
+     * Approved Writes
+     */
+    approved_writes?: Array<string>;
 };
 
 /**
@@ -4769,10 +4944,10 @@ export type UpdateWorkflowStepsResponses = {
     /**
      * Successful Response
      */
-    200: WorkflowDetailResponse;
+    200: UpdateWorkflowStepsResponse;
 };
 
-export type UpdateWorkflowStepsResponse = UpdateWorkflowStepsResponses[keyof UpdateWorkflowStepsResponses];
+export type UpdateWorkflowStepsResponse2 = UpdateWorkflowStepsResponses[keyof UpdateWorkflowStepsResponses];
 
 export type ListWorkflowRevisionsData = {
     body?: never;
@@ -5206,6 +5381,63 @@ export type StartGoalResponses = {
 };
 
 export type StartGoalResponse = StartGoalResponses[keyof StartGoalResponses];
+
+export type ListHeldWritesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        status?: HeldWriteStatus;
+    };
+    url: '/api/v0/held-writes';
+};
+
+export type ListHeldWritesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListHeldWritesError = ListHeldWritesErrors[keyof ListHeldWritesErrors];
+
+export type ListHeldWritesResponses = {
+    /**
+     * Successful Response
+     */
+    200: HeldWriteListResponse;
+};
+
+export type ListHeldWritesResponse = ListHeldWritesResponses[keyof ListHeldWritesResponses];
+
+export type DecideHeldWriteData = {
+    body: HeldWriteDecisionIn;
+    path: {
+        /**
+         * Request Id
+         */
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v0/held-writes/{request_id}/decision';
+};
+
+export type DecideHeldWriteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DecideHeldWriteError = DecideHeldWriteErrors[keyof DecideHeldWriteErrors];
+
+export type DecideHeldWriteResponses = {
+    /**
+     * Successful Response
+     */
+    200: HeldWriteOut;
+};
+
+export type DecideHeldWriteResponse = DecideHeldWriteResponses[keyof DecideHeldWriteResponses];
 
 export type ListSessionsData = {
     body?: never;

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Awaitable, Callable
 
+from ze_agents.errors import LoopParked
 from ze_logging import get_logger
 from ze_proactive.catchup import missed_fire_time
 
@@ -99,6 +100,13 @@ class ProactiveScheduler:
                 await store.record_start(job_id)
             try:
                 await fn()
+            except LoopParked:
+                # A job must hold and ask through the held-write path; a parked write
+                # escaping it is a bug. Never retry: retrying would repeat the work.
+                log.error("proactive_job_loop_parked", job_id=job_id)
+                if store is not None:
+                    await store.record_finish(job_id, "error")
+                return
             except BaseException:
                 if store is not None:
                     await store.record_finish(job_id, "error")

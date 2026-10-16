@@ -20,6 +20,7 @@ from ze_automation.jobs.accountability import AccountabilityJob
 from ze_automation.jobs.cost_anomaly import CostAnomalyJob
 from ze_automation.jobs.goal_narrative import GoalNarrativeJob
 from ze_automation.jobs.goal_suggestion import GoalSuggestionJob
+from ze_automation.jobs.held_write_expiry import HeldWriteExpiryJob
 from ze_automation.jobs.stuck_goals import StuckGoalJob
 from ze_automation.workflow.planner import WorkflowPlanner
 from ze_automation.workflow.postgres import PostgresWorkflowStore
@@ -353,6 +354,13 @@ def register_proactive_jobs(
     )
 
     _proactive_cfg = core_settings.config.get("proactive", {})
+    _expiry_cfg = _proactive_cfg.get("held_write_expiry", {})
+    if _expiry_cfg.get("enabled", True):
+        scheduler.register(
+            HeldWriteExpiryJob(stack.held_write_store, stack.held_write_resumer),
+            cron=_expiry_cfg.get("cron", "0 * * * *"),
+        )
+        log.info("held_write_expiry_scheduled")
     _narrative_cfg = _proactive_cfg.get("goal_narrative", {})
     if _narrative_cfg.get("enabled", True):
         scheduler.register(

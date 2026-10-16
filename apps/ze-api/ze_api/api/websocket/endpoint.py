@@ -68,7 +68,12 @@ async def websocket_endpoint(
     confirmation_store = container.confirmation_store
     session_store = container.session_store
 
-    await conn_mgr.connect(ws, msg_store, confirmation_store)
+    await conn_mgr.connect(
+        ws,
+        msg_store,
+        confirmation_store,
+        held_store=getattr(container, "held_write_store", None),
+    )
     log.info("ws_connected")
 
     onboarding_cfg = settings.config.get("onboarding", {})

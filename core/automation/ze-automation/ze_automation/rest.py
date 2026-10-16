@@ -4,6 +4,8 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.errors import WorkflowPlanError
+from ze_automation.holds.store import HeldWriteStore
+from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 from ze_automation.holds.planned import planned_writes, writes_needing_approval
 from ze_automation.workflow.revision_summary import changed_step_ids
 from ze_automation.workflow.store import WorkflowStore
@@ -291,3 +293,20 @@ async def cancel_workflow_execution(
         "execution_id": execution_id,
         "message": message,
     }
+
+
+def held_write_to_dict(hold: HeldWrite) -> dict:
+    return {
+        "request_id": hold.request_id,
+        "source": hold.source,
+        "source_name": hold.payload.get("source_name", ""),
+        "owner_ref": hold.owner_ref,
+        "items": list(hold.items),
+        "status": str(hold.status),
+        "created_at": hold.created_at.isoformat() if hold.created_at else None,
+        "expires_at": hold.expires_at.isoformat() if hold.expires_at else None,
+    }
+
+
+async def list_held_writes(store: HeldWriteStore, status: HeldWriteStatus) -> list[dict]:
+    return [held_write_to_dict(h) for h in await store.list(status)]
