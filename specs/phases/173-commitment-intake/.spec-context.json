@@ -169,9 +169,25 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T15:57:37.689Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:08:14.413Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:08:14.501Z"
     }
   ],
-  "currentTask": "T041",
+  "currentTask": "T044",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -233,6 +249,14 @@
     "T041": {
       "status": "DONE",
       "did": "Live runner, report, bar grid, holdout verdict, make target (f8aacbbd)"
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "Held-out 9f7c949a (15 fact, 16 loop per language); minimums in check-sets 38e0b8c4; tests 52797688"
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "Choice accuracy on turn_created none rows, link accuracy reported outside verdict (86e21b02); tests 52797688"
     }
   }
 }

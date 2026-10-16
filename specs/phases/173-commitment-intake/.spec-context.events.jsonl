@@ -16,3 +16,5 @@
 {"step": "implement", "substep": null, "task": "T026", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.213Z", "did": "Wired CommitmentIntake into ze-api container (90ff30dd)"}
 {"step": "implement", "substep": null, "task": "T040", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.453Z", "did": "Frozen 163+168 baseline replay module (f8aacbbd)"}
 {"step": "implement", "substep": null, "task": "T041", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.689Z", "did": "Live runner, report, bar grid, holdout verdict, make target (f8aacbbd)"}
+{"step": "implement", "substep": null, "task": "T005", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:08:14.413Z", "did": "Held-out 9f7c949a (15 fact, 16 loop per language); minimums in check-sets 38e0b8c4; tests 52797688"}
+{"step": "implement", "substep": null, "task": "T044", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:08:14.501Z", "did": "Choice accuracy on turn_created none rows, link accuracy reported outside verdict (86e21b02); tests 52797688"}
