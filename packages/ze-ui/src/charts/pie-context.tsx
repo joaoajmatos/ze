@@ -10,7 +10,7 @@ import {
 } from "react";
 
 // CSS variable references for pie chart theming
-export const pieCssVars = {
+const pieCssVars = {
   background: "var(--chart-background)",
   foreground: "var(--chart-foreground)",
   foregroundMuted: "var(--chart-foreground-muted)",
@@ -197,9 +197,3 @@ export function usePieHover(): PieHoverContextValue {
   }
   return context;
 }
-
-export function usePie(): PieContextValue {
-  return { ...usePieStable(), ...usePieHover() };
-}
-
-export default PieStableContext;

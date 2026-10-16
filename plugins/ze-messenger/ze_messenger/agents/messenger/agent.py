@@ -13,7 +13,7 @@ from ze_personal.contacts.extractors import (
     extract_email_contacts,
     extract_email_social_edges,
 )
-from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
+from ze_sdk import hold_token_sink, publish_honest_reply
 
 _AGENT_INSTRUCTIONS = """\
 You manage the user's messaging inbox across communication channels.
@@ -50,7 +50,6 @@ class MessengerAgent(BaseAgent):
       "search my inbox for X". Not for calendar events or reminders.
     """
     model = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 30
     tools = ["list_emails", "get_email", "draft_email", "send_email", "archive_email"]
 

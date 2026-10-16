@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import type { WsConfirmAction, WsConfirmRequestFrame } from "@myguyze/ze-client";
+import { create } from "zustand";
 import type { ConfirmItem, ConfirmSource } from "./types";
 
 export interface PendingConfirm {
@@ -37,7 +37,8 @@ function without(byThread: Record<string, PendingConfirm[]>, threadId: string, k
   const next = current.filter(keep);
   if (next.length === current.length) return byThread;
   if (next.length === 0) {
-    const { [threadId]: _gone, ...rest } = byThread;
+    const rest = { ...byThread };
+    delete rest[threadId];
     return rest;
   }
   return { ...byThread, [threadId]: next };

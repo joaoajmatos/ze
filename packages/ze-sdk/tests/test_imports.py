@@ -51,3 +51,12 @@ def test_undo_payload_reexport():
     assert undo_payload is ze_agents.tool.undo_payload
     assert "undo_payload" in ze_sdk.__all__
     assert undo_payload(reminder_id="r1") == {"reminder_id": "r1"}
+
+
+def test_honesty_reexports_are_the_real_helpers():
+    import ze_agents.honesty
+    import ze_sdk
+
+    assert ze_sdk.hold_token_sink is ze_agents.honesty.hold_token_sink
+    assert ze_sdk.publish_honest_reply is ze_agents.honesty.publish_honest_reply
+    assert {"hold_token_sink", "publish_honest_reply"} <= set(ze_sdk.__all__)

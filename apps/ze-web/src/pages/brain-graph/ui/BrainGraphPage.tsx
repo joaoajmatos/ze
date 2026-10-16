@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Network } from "lucide-react";
-import { useMemoryGraphQuery } from "@/entities/memory-graph";
+import { useState } from "react";
 import { MemoryGraph } from "@/widgets/memory-graph";
+import { useMemoryGraphQuery } from "@/entities/memory-graph";
 import { EmptyState, ErrorState } from "@/shared/ui";
 
 export function BrainGraphPage() {

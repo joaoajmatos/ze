@@ -59,4 +59,3 @@ export function TooltipContent({ title, rows, children }: TooltipContentProps) {
 
 TooltipContent.displayName = "TooltipContent";
 
-export default TooltipContent;

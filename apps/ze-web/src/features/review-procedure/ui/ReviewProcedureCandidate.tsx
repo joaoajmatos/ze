@@ -1,6 +1,6 @@
-import { Button } from "@/shared/ui";
 import type { ProcedureCandidate } from "@/entities/procedure";
 import { useReviewProcedureMutation } from "@/entities/procedure";
+import { Button } from "@/shared/ui";
 
 interface ReviewProcedureCandidateProps {
   candidate: ProcedureCandidate;

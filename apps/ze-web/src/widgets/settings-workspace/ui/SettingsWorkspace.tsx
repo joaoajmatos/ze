@@ -9,8 +9,8 @@ import { reconnect } from "@/shared/api";
 import { getConfig, saveConfig, clearConfig, settingsDataSectionId } from "@/shared/config";
 import { resetClient } from "@/shared/lib";
 import { Button, Input, RedirectHintTarget } from "@/shared/ui";
-import { PluginSettingsSection } from "@/widgets/plugin-settings-section";
-import { QuietHoursSettings } from "@/widgets/quiet-hours-settings";
+import { PluginSettingsSection } from "./PluginSettingsSection";
+import { QuietHoursSettings } from "./QuietHoursSettings";
 
 export function SettingsWorkspace() {
   const cfg = getConfig();

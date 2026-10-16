@@ -4,8 +4,6 @@ import type { LineConfig } from "./chart-context";
 /** Default axis id when `yAxisId` is omitted (Recharts-style `0` / primary left axis). */
 export const DEFAULT_Y_AXIS_ID = "left";
 
-export type YAxisOrientation = "left" | "right";
-
 export function normalizeYAxisId(id?: string | number): string {
   if (id == null || id === "") {
     return DEFAULT_Y_AXIS_ID;

@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from ze_logging import get_logger
-from ze_sdk.proactive import proactive_job
-from ze_sdk.proactive import ProactiveNotifier
-from ze_sdk.proactive import PushLogStore
+from ze_proactive.job import proactive_job
+from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.push_log_store import PushLogStore
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import GoalStatus, MilestoneStatus

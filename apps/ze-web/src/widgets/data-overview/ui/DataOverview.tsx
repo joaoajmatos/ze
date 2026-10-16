@@ -1,6 +1,6 @@
-import { useMemo } from "react";
 import type { DataDomainItem } from "@myguyze/ze-client";
 import { PieChart } from "@myguyze/ze-ui/charts";
+import { useMemo } from "react";
 import { useDataDomainsQuery } from "@/entities/data-domain";
 import { settingsDataPath } from "@/shared/config";
 import { useTopBarQuickActions } from "@/shared/lib";

@@ -1,5 +1,6 @@
 from functools import lru_cache
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -8,7 +9,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from ze_agents.settings import Settings as CoreSettings
 from ze_memory.bootstrap import consolidation_enabled
 
+from ze_api.errors import ProfileConfigError
+
 _ROOT = Path(__file__).parent.parent  # apps/ze-api/
+_PROFILE_NAME = re.compile(r"[A-Za-z0-9_-]+")
 
 
 class ZeApiSettings(BaseSettings):
@@ -72,6 +76,9 @@ class ZeApiSettings(BaseSettings):
 
     # ── Config paths ─────────────────────────────────────────────────────────
     config_dir: Path = _ROOT / "config"
+    # Name of a `config/profiles/<name>.yaml` overlay deep-merged over config.yaml
+    # (`make dev` sets `quiet`; empty means the shipped config as is).
+    ze_profile: str = ""
 
     # ── Derived config (loaded from YAML, not env) ────────────────────────────
 
@@ -81,7 +88,10 @@ class ZeApiSettings(BaseSettings):
 
     @property
     def config(self) -> dict[str, Any]:
-        return _load_yaml(self.config_dir / "config.yaml")
+        base = _load_yaml(self.config_dir / "config.yaml")
+        if not self.ze_profile:
+            return base
+        return _deep_merge(base, _load_profile(self.config_dir, self.ze_profile))
 
     @property
     def routing_config(self) -> dict[str, Any]:
@@ -173,7 +183,6 @@ class ZeApiSettings(BaseSettings):
             openrouter_base_url=self.openrouter_base_url,
             session_inactivity_minutes=self.session_inactivity_minutes,
             consolidation_enabled=consolidation_enabled(self),
-            auto_migrate=False,
             log_level=self.log_level,
             timezone=tz,
             gmail_pubsub_topic=self.gmail_pubsub_topic,
@@ -187,6 +196,28 @@ Settings = ZeApiSettings
 def _load_yaml(path: Path) -> dict[str, Any]:
     with open(path) as f:
         return yaml.safe_load(f) or {}
+
+
+def _load_profile(config_dir: Path, name: str) -> dict[str, Any]:
+    if not _PROFILE_NAME.fullmatch(name):
+        raise ProfileConfigError(
+            f"invalid ZE_PROFILE {name!r}: use letters, digits, - or _"
+        )
+    path = config_dir / "profiles" / f"{name}.yaml"
+    if not path.is_file():
+        raise ProfileConfigError(f"ZE_PROFILE {name!r} has no overlay file at {path}")
+    return _load_yaml(path)
+
+
+def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    """Overlay wins; nested dicts merge, lists and scalars replace."""
+    merged = dict(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
 
 @lru_cache

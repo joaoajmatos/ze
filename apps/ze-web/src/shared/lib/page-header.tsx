@@ -32,8 +32,10 @@ export function usePageHeader() {
 /** Register a title/icon override for the top bar. Cleared on unmount. Used by routes not in the static nav table (e.g. plugin pages). */
 export function useSetPageHeader(header: PageHeader | null) {
   const { setPageHeader } = usePageHeader();
+  const title = header?.title;
+  const icon = header?.icon;
   useEffect(() => {
-    setPageHeader(header);
+    setPageHeader(title !== undefined && icon ? { title, icon } : null);
     return () => setPageHeader(null);
-  }, [header?.title, header?.icon, setPageHeader]);
+  }, [title, icon, setPageHeader]);
 }

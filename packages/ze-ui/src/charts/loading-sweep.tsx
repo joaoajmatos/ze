@@ -64,7 +64,7 @@ function hashFract(n: number): number {
 }
 
 /** Deterministic heights (percentages of the available height) for a seed. */
-export function getSkeletonHeights(
+function getSkeletonHeights(
   count: number,
   seed = 0,
   min = HEIGHT_MIN_PCT,

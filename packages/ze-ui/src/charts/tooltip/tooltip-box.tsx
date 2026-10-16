@@ -232,4 +232,3 @@ function TooltipBoxInner({
 
 TooltipBox.displayName = "TooltipBox";
 
-export default TooltipBox;

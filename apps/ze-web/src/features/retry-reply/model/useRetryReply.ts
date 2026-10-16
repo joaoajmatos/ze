@@ -1,10 +1,10 @@
+import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { send, useFrame, useWsStore } from "@/shared/api";
 import { queryKeys } from "@/shared/lib";
 
-export const RETRY_FAILED_NOTICE = "Retry failed. The original reply is unchanged.";
+const RETRY_FAILED_NOTICE = "Retry failed. The original reply is unchanged.";
 const PARTIAL_NOTICE = "Ze could not undo everything, so the original reply stays.";
 const ROLLED_BACK_FAILED_NOTICE = "Ze undid the earlier actions but could not write a new reply.";
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";

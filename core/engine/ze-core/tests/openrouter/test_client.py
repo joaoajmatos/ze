@@ -449,3 +449,60 @@ async def test_stream_complete_with_tools_sends_temperature(client, mock_sdk):
         token_sink=AsyncMock(),
     )
     assert mock_sdk.chat.send_async.call_args.kwargs["temperature"] == 0.1
+
+
+def _sdk_error(cls, status: int):
+    err = cls.__new__(cls)
+    Exception.__init__(err, "x")
+    err.status_code = status
+    err.message = "x"
+    return err
+
+
+class TestFetchGenerationCost:
+    def _client(self, sdk_call):
+        from ze_core.openrouter.client import OpenRouterClient
+
+        client = OpenRouterClient(api_key="k", base_url="https://openrouter.ai/api/v1")
+        client._sdk = MagicMock()
+        client._sdk.generations.get_generation_async = sdk_call
+        return client
+
+    async def test_returns_total_cost(self):
+        resp = MagicMock()
+        resp.data.total_cost = 0.000236
+        client = self._client(AsyncMock(return_value=resp))
+        assert await client.fetch_generation_cost("gen-1") == 0.000236
+
+    @pytest.mark.parametrize(
+        ("name", "status"),
+        [
+            ("NotFoundResponseError", 404),
+            ("BadRequestResponseError", 400),
+            ("OpenRouterDefaultError", 400),
+        ],
+    )
+    async def test_missing_record_is_unavailable(self, name, status):
+        import openrouter.errors as sdk_errors
+        from ze_agents.errors import GenerationUnavailableError
+
+        client = self._client(
+            AsyncMock(side_effect=_sdk_error(getattr(sdk_errors, name), status))
+        )
+        with pytest.raises(GenerationUnavailableError) as info:
+            await client.fetch_generation_cost("gen-1")
+        assert info.value.status_code == status
+
+    async def test_server_error_is_transient(self):
+        import openrouter.errors as sdk_errors
+
+        client = self._client(
+            AsyncMock(
+                side_effect=_sdk_error(sdk_errors.InternalServerResponseError, 500)
+            )
+        )
+        assert await client.fetch_generation_cost("gen-1") is None
+
+    async def test_network_error_is_transient(self):
+        client = self._client(AsyncMock(side_effect=RuntimeError("boom")))
+        assert await client.fetch_generation_cost("gen-1") is None

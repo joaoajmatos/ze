@@ -23,11 +23,11 @@ src/
 | Path | What it provides |
 |------|------------------|
 | `app/router/routes.ts` | Route registry — paths, lazy imports, nav meta |
-| `widgets/chat-workspace/` | Main chat UI |
+| `widgets/chat-workspace/` | Main chat UI: thread, bubbles, input, trace panel, and the context overlay |
 | `widgets/*-overview/` | Management list screens |
-| `entities/message/` | Message bubbles, chat input |
+| `entities/message-trace/` | Per-message trace query and the trace UI pieces shared by bubbles and the trace panel |
 | `entities/message-feedback/`, `features/reply-feedback/`, `features/retry-reply/` | Thumbs up/down, Retry, and their reasons on assistant replies |
-| `entities/primitive-tree/` | Server-driven UI renderer |
+| `features/primitive-tree/` | Server-driven UI renderer and its WebSocket actions |
 | `shared/api/ws-client.ts` | WebSocket singleton |
 | `shared/config/` | Server URL + API key (`localStorage`) |
 

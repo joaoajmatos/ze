@@ -2,7 +2,7 @@
 
 # Ze
 
-**A self-hosted personal assistant for one person.**
+**A personal companion with a living model of your life at its center.**
 
 <p>
   <a href="https://github.com/joaoajmatos/ze/actions/workflows/ci.yml"><img src="https://github.com/joaoajmatos/ze/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -16,11 +16,15 @@
 
 ---
 
-This repository is for engineers who design agent systems and want to follow one as it is built.
+Ze is a personal companion, built for one person and meant to last a lifetime. At its center is a living model of that person's life. The docs call it the world-state. It holds who Ze is to you, who you are, the people and projects that make up your world, and what is still open, promised or slipping.
 
-Ze keeps one record of your world: you, your people, your projects, and the things still open. One agent writes to it. Each claim in the record has a kind, a source, and a confidence that decays over time. When Ze only suspects something, it says so.
+That model is what lasts. The language model is rented, and it changes. The agents, the persona, the storage and the orchestration are parts Ze replaces on purpose. If every part is rebuilt and the model still knows those things, it is still Ze.
 
-Ze is pre-v1. It has one user, it runs locally, and it is in active development.
+Seven functions work around the model. Perception turns your email, calendar, documents and conversations into signals, and keeps only what matters to you. Memory holds what happened and what Ze learned. Executive function decides what deserves your attention and follows through. That covers the goals you declare and the loose ends you never write down: a promise in a thread, a decision left pending, a project that went quiet. Social cognition models the people in your life; it is still the thinnest part. Reflection revises the model overnight. Action changes the world for you. Governance decides what may be written and what may be done, and asks you before anything that can't be undone.
+
+Ze is careful about what it knows. Each claim has a kind, a source and a confidence that fades over time, and the kind decides how Ze may say it. A suspicion reaches you as a question. What you tell Ze outranks what it concluded about you, and a correction stays corrected.
+
+Ze is pre-v1. It has one user, runs locally, and is built in the open, one function at a time. This repository is for engineers who design agent systems. The gaps are on the record.
 
 ---
 

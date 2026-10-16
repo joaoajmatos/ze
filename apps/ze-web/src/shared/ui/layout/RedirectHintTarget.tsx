@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { REDIRECT_HINT_DURATION_MS } from "@/shared/lib/redirect-hint";
 import { cn } from "@/shared/lib/cn";
+import { REDIRECT_HINT_DURATION_MS } from "@/shared/lib/redirect-hint";
 
 type RedirectHintTargetProps = HTMLAttributes<HTMLDivElement> & {
   hintId: string;

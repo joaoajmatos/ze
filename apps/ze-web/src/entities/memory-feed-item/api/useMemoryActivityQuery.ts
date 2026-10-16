@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { getMemoryActivity } from "@myguyze/ze-client";
 import type { MemoryActivityResponse } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 
 export function useMemoryActivityQuery(start: Date | undefined, end: Date | undefined) {
   return useQuery({

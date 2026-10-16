@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any
@@ -273,22 +274,6 @@ async def write_fact_values(
     )
 
 
-_EVENT_SYSTEM = (
-    "You extract events from AI assistant conversations. "
-    "An event is anything that happened (or will happen) at a point in time that is worth remembering: "
-    "meetings, calls, trips, appointments, meals, decisions made, accomplishments achieved, "
-    "milestones reached, experiences had, or any other significant occurrence. "
-    "Only extract events the user explicitly mentioned — do not infer. "
-    "Return a JSON array — no markdown, just the array. "
-    'Each item: {"event_type": "meeting|call|trip|appointment|meal|decision|accomplishment|experience|milestone|other", '
-    '"title": "concise description", '
-    '"start_at": "ISO8601 datetime or null", "end_at": "ISO8601 datetime or null", '
-    '"participants": ["name1", "name2"], '
-    '"outcome": "result/outcome if already past, or null"}. '
-    "If no events are present, return []."
-)
-
-
 def parse_event_response(raw: str) -> list[dict]:
     try:
         parsed = parse_llm_json(raw, expect=list)
@@ -329,65 +314,6 @@ def raw_to_events(raw: list[dict]) -> list[Event]:
     ]
 
 
-async def extract_events(
-    client: Any,
-    *,
-    prompt: str,
-    response: str,
-    model: str,
-) -> list[Event]:
-    if response.startswith("[ERROR]"):
-        return []
-    try:
-        raw = await client.complete(
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"User said: {prompt}\n\nAssistant replied: {response[:1000]}",
-                }
-            ],
-            model=model,
-            system=_EVENT_SYSTEM,
-            max_tokens=400,
-        )
-        return raw_to_events(parse_event_response(raw))
-    except Exception as exc:
-        log.warning("memory_event_extraction_failed", error=str(exc))
-        return []
-
-
-async def gather_event_proposals(
-    configurable: dict,
-    *,
-    prompt: str,
-    response: str,
-) -> list[Event]:
-    """Extract conversational events (past or future) from a conversation turn."""
-    client = configurable.get("openrouter_client")
-    if client is None:
-        return []
-
-    settings = configurable.get("settings")
-    settings_dict = (
-        settings.config
-        if settings is not None and hasattr(settings, "config")
-        else settings
-    )
-    model = fact_extraction_model(settings_dict)
-    return await extract_events(client, prompt=prompt, response=response, model=model)
-
-
-_ENTITY_SYSTEM = (
-    "You extract named entities from AI assistant conversations. "
-    "Only extract proper nouns explicitly mentioned: people, organisations, places, products, projects, or concepts. "
-    "Do not extract generic terms, pronouns, or inferred entities. "
-    "Return a JSON array — no markdown, just the array. "
-    'Each item: {"name": "canonical name", "entity_type": "person|organisation|place|product|project|concept", '
-    '"aliases": ["alt name 1"]}. '
-    "If no named entities are present, return []."
-)
-
-
 def raw_to_entities(raw: list[dict]) -> list["Entity"]:
     from ze_memory.types import Entity
 
@@ -404,17 +330,45 @@ def raw_to_entities(raw: list[dict]) -> list["Entity"]:
     ]
 
 
-async def extract_entities(
+_TURN_GRAPH_SYSTEM = (
+    "You extract events and named entities from AI assistant conversations. "
+    "An event is anything that happened (or will happen) at a point in time that is worth remembering: "
+    "meetings, calls, trips, appointments, meals, decisions made, accomplishments achieved, "
+    "milestones reached, experiences had, or any other significant occurrence. "
+    "Only extract events the user explicitly mentioned — do not infer. "
+    "An entity is a proper noun explicitly mentioned: a person, organisation, place, product, project, or concept. "
+    "Do not extract generic terms, pronouns, or inferred entities. "
+    "Return one JSON object — no markdown, just the object — with two arrays. "
+    'Each event: {"event_type": "meeting|call|trip|appointment|meal|decision|accomplishment|experience|milestone|other", '
+    '"title": "concise description", '
+    '"start_at": "ISO8601 datetime or null", "end_at": "ISO8601 datetime or null", '
+    '"participants": ["name1", "name2"], '
+    '"outcome": "result/outcome if already past, or null"}. '
+    'Each entity: {"name": "canonical name", '
+    '"entity_type": "person|organisation|place|product|project|concept", '
+    '"aliases": ["alt name 1"]}. '
+    'Shape: {"events": [...], "entities": [...]}. Use [] for an array with nothing to extract.'
+)
+
+
+@dataclass
+class TurnProposals:
+    events: list[Event] = field(default_factory=list)
+    entities: list["Entity"] = field(default_factory=list)
+
+
+async def extract_turn_graph(
     client: Any,
     *,
     prompt: str,
     response: str,
     model: str,
-) -> list["Entity"]:
+) -> TurnProposals:
+    """One request for the turn's events and entities (they used to be two)."""
     if response.startswith("[ERROR]"):
-        return []
+        return TurnProposals()
     try:
-        raw_text = await client.complete(
+        raw = await client.complete(
             messages=[
                 {
                     "role": "user",
@@ -422,35 +376,53 @@ async def extract_entities(
                 }
             ],
             model=model,
-            system=_ENTITY_SYSTEM,
-            max_tokens=300,
+            system=_TURN_GRAPH_SYSTEM,
+            max_tokens=700,
         )
-        try:
-            parsed = parse_llm_json(raw_text, expect=list)
-        except LLMJsonParseError:
-            return []
-        return raw_to_entities(
-            [
-                e
-                for e in parsed
-                if isinstance(e, dict) and e.get("name") and e.get("entity_type")
-            ]
-        )
+        parsed = parse_llm_json(raw, expect=dict)
+    except LLMJsonParseError:
+        return TurnProposals()
     except Exception as exc:
-        log.warning("memory_entity_extraction_failed", error=str(exc))
+        log.warning("memory_turn_extraction_failed", error=str(exc))
+        return TurnProposals()
+
+    return TurnProposals(
+        events=_parse_list(parsed.get("events"), raw_to_events, "events"),
+        entities=_parse_list(
+            parsed.get("entities"),
+            lambda items: raw_to_entities(
+                [
+                    e
+                    for e in items
+                    if isinstance(e, dict) and e.get("name") and e.get("entity_type")
+                ]
+            ),
+            "entities",
+        ),
+    )
+
+
+def _parse_list(value: Any, convert: Any, label: str) -> list:
+    """One malformed array costs only that array, never the turn or the other array."""
+    if not isinstance(value, list):
+        return []
+    try:
+        return convert(value)
+    except Exception as exc:
+        log.warning("memory_turn_extraction_item_failed", array=label, error=str(exc))
         return []
 
 
-async def gather_entity_proposals(
+async def gather_turn_proposals(
     configurable: dict,
     *,
     prompt: str,
     response: str,
-) -> list["Entity"]:
-    """Extract named entities from a conversation turn."""
+) -> TurnProposals:
+    """Events and entities of a conversation turn; a trivial turn makes no request."""
     client = configurable.get("openrouter_client")
-    if client is None:
-        return []
+    if client is None or is_trivial_turn(prompt):
+        return TurnProposals()
 
     settings = configurable.get("settings")
     settings_dict = (
@@ -459,7 +431,9 @@ async def gather_entity_proposals(
         else settings
     )
     model = fact_extraction_model(settings_dict)
-    return await extract_entities(client, prompt=prompt, response=response, model=model)
+    return await extract_turn_graph(
+        client, prompt=prompt, response=response, model=model
+    )
 
 
 async def gather_fact_proposals(

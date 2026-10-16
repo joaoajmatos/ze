@@ -172,6 +172,10 @@ class RateLimitError(OpenRouterError):
     """OpenRouter returned HTTP 429."""
 
 
+class GenerationUnavailableError(OpenRouterError):
+    """OpenRouter has no cost record for a generation id (HTTP 400 or 404), now or ever."""
+
+
 # ── LLM output ────────────────────────────────────────────────────────────────
 
 

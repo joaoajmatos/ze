@@ -1,4 +1,4 @@
-import type { UiManifest } from "@/entities/ui-manifest";
+import type { UiManifestResponse } from "@myguyze/ze-client";
 
 export const queryKeys = {
   goals: ["goals"] as const,
@@ -52,7 +52,7 @@ const CORE_REFRESH_SCREEN_MAP: Record<string, readonly string[]> = {
 
 export function refreshKeysForScreen(
   screen: string,
-  manifest?: UiManifest | null,
+  manifest?: UiManifestResponse | null,
 ): readonly string[] | undefined {
   const coreKeys = CORE_REFRESH_SCREEN_MAP[screen];
   if (coreKeys) {

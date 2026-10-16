@@ -20,11 +20,11 @@ export interface HeatmapGrid {
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-export function parseIsoDay(iso: string): Date {
+function parseIsoDay(iso: string): Date {
   return new Date(`${iso}T00:00:00`);
 }
 
-export function toIsoDay(date: Date): string {
+function toIsoDay(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");

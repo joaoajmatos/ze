@@ -1,6 +1,6 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { listNotifications } from "@myguyze/ze-client";
 import type { NotificationListResponse } from "@myguyze/ze-client";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useNotificationsQuery(options?: { unreadOnly?: boolean; markRead?: boolean }) {

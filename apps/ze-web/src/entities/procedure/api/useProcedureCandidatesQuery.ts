@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { listProcedureCandidates } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 import type { ProcedureCandidate } from "../model/types";
 

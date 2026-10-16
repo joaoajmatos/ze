@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { getMemoryTimelineBounds } from "@myguyze/ze-client";
 import type { TimelineBoundsResponse } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 
 export function useMemoryTimelineBoundsQuery() {
   return useQuery({

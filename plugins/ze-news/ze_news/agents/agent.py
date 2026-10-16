@@ -14,7 +14,7 @@ from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_news.jobs.fetch import NewsFetchJob
 from ze_news.preferences import NewsPreferenceBuilder, is_diagnostic_query
 from ze_news.store import NewsStore
-from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
+from ze_sdk import hold_token_sink, publish_honest_reply
 from ze_news.types import (
     GoalTitleProvider,
     PersonalizationContext,
@@ -127,7 +127,6 @@ class NewsAgent(BaseAgent):
       For news digest and headline summaries only — not for factual research or web search.
     """
     model = "openai/gpt-4o-mini"
-    vision_capable = False
     timeout = 30
     tools = ["refresh_news", "get_headlines", "search_news"]
 

@@ -4,6 +4,8 @@ from ze_core.telemetry.context import (
     get_cost_context,
     set_agent_context,
     set_flow_context,
+    start_flow_context,
+    enter_turn_context,
 )
 from ze_core.telemetry.postgres import PostgresCostStore
 from ze_core.telemetry.pricing import DEFAULT_PRICING, MODEL_PRICING, estimate_cost_usd
@@ -31,4 +33,6 @@ __all__ = [
     "get_cost_context",
     "set_agent_context",
     "set_flow_context",
+    "start_flow_context",
+    "enter_turn_context",
 ]

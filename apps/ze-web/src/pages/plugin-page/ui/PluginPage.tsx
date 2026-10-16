@@ -1,6 +1,6 @@
 import { Navigate, useParams } from "react-router-dom";
-import { useUiManifestQuery } from "@/entities/ui-manifest";
 import { PluginScreen } from "@/widgets/plugin-screen";
+import { useUiManifestQuery } from "@/entities/ui-manifest";
 import { ErrorState } from "@/shared/ui";
 
 export function PluginPage() {

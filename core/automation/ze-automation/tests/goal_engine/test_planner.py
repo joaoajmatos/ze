@@ -244,7 +244,7 @@ async def test_extract_procedure_returns_procedure(planner, client):
         _milestone_obj(3, "Send outreach", MilestoneStatus.COMPLETED),
     ]
 
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     result = await planner.extract_procedure(goal, milestones)
 
@@ -293,7 +293,7 @@ async def test_extract_procedure_returns_none_when_name_missing(planner, client)
 
 
 async def test_replan_remaining_injects_local_procedures_into_prompt(planner, client):
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
 
     proc = Procedure(
         id=None, name="Interview loop", trigger="Run interviews", steps=["a", "b"]
@@ -313,7 +313,7 @@ async def test_replan_remaining_local_procedure_wins_over_global_on_name_collisi
 ):
     from uuid import uuid4
 
-    from ze_sdk.memory import Procedure
+    from ze_memory.types import Procedure
     from ze_memory.procedures.types import MatchState, ProcedureMatch
 
     local_proc = Procedure(

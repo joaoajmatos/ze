@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 import asyncpg
 
@@ -220,6 +220,7 @@ async def configure_workflow_executor(
     router: Any,
     persona_store: Any,
     workflow_graph_builder: Any,
+    begin_workflow_turn: Callable[[Any], dict[str, Any]],
     workspace_gate: Any = None,
 ) -> None:
     workflow_graph = workflow_graph_builder(
@@ -242,16 +243,8 @@ async def configure_workflow_executor(
     }
 
     async def _workflow_executor(workflow: Any, execution_id: Any) -> None:
-        from ze_agents.interface.types import RawInput as _RawInput
-        from ze_core.conversation import make_graph_input
-        from ze_core.telemetry.context import set_flow_context
-
-        set_flow_context("workflow_execution", session_id=f"workflow:{workflow.id}")
         initial_state = {
-            **make_graph_input(
-                _RawInput(text=f"[workflow] {workflow.name}"),
-                f"workflow:{workflow.id}",
-            ),
+            **begin_workflow_turn(workflow),
             "workflow_id": workflow.id,
             "workflow_execution_id": execution_id,
             "workflow_steps": workflow.steps,
@@ -301,6 +294,33 @@ async def configure_workflow_executor(
     )
 
 
+def register_goal_advance_sweep(
+    scheduler: ProactiveScheduler, settings: Any, stack: AutomationStack
+) -> None:
+    """Advance every active goal on a cron. An idle goal costs three queries, not a model call:
+    `GoalExecutor.advance` returns before the LLM when a milestone is held or the goal is not active."""
+    cfg = (
+        (getattr(settings, "config", None) or {})
+        .get("proactive", {})
+        .get("goal_advance_sweep", {})
+    )
+    if not cfg.get("enabled", True):
+        return
+    cron = cfg.get("cron", "*/15 * * * *")
+
+    async def _sweep_active_goals() -> None:
+        goals = await stack.goal_store.list_for_advance()
+        for g in goals:
+            asyncio.create_task(stack.goal_executor.advance(g.id))
+
+    scheduler.add_cron_job(
+        fn=_sweep_active_goals,
+        cron=cron,
+        job_id="goal_advance_sweep",
+    )
+    log.info("goal_advance_sweep_scheduled", cron=cron)
+
+
 def register_proactive_jobs(
     scheduler: ProactiveScheduler,
     settings: Any,
@@ -312,17 +332,7 @@ def register_proactive_jobs(
     core_settings = settings.to_core_settings()
     wire_goal_executor_push(stack, notifier)
 
-    async def _sweep_active_goals() -> None:
-        goals = await stack.goal_store.list_for_advance()
-        for g in goals:
-            asyncio.create_task(stack.goal_executor.advance(g.id))
-
-    scheduler.add_cron_job(
-        fn=_sweep_active_goals,
-        cron="*/15 * * * *",
-        job_id="goal_advance_sweep",
-    )
-    log.info("goal_advance_sweep_scheduled")
+    register_goal_advance_sweep(scheduler, settings, stack)
 
     _goal_narrative = GoalNarrativeJob(
         notifier=notifier,

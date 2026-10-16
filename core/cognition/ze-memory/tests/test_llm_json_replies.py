@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ze_memory.extractor import (
-    extract_entities,
+    extract_turn_graph,
     parse_event_response,
     parse_fact_response,
     write_fact_values,
@@ -23,7 +23,9 @@ WRAPS = [
 
 @pytest.mark.parametrize("wrap", WRAPS)
 def test_parse_fact_response(wrap):
-    raw = wrap(json.dumps([{"predicate": "preference", "value": "tea", "confidence": 0.9}]))
+    raw = wrap(
+        json.dumps([{"predicate": "preference", "value": "tea", "confidence": 0.9}])
+    )
     assert parse_fact_response(raw)
 
 
@@ -38,13 +40,19 @@ def test_parse_event_response_garbage_is_empty():
 
 
 @pytest.mark.parametrize("wrap", WRAPS)
-async def test_extract_entities(wrap):
+async def test_extract_turn_graph(wrap):
     client = AsyncMock()
     client.complete.return_value = wrap(
-        json.dumps([{"name": "Ana", "entity_type": "person"}])
+        json.dumps(
+            {
+                "events": [{"title": "Dinner", "event_type": "meal"}],
+                "entities": [{"name": "Ana", "entity_type": "person"}],
+            }
+        )
     )
-    entities = await extract_entities(client, prompt="p", response="r", model="m")
-    assert [e.canonical_name for e in entities] == ["Ana"]
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert [e.canonical_name for e in proposals.entities] == ["Ana"]
+    assert [e.title for e in proposals.events] == ["Dinner"]
 
 
 @pytest.mark.parametrize("wrap", WRAPS)

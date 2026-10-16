@@ -1,18 +1,17 @@
 import { Settings, Puzzle } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { useOverlay } from "@/features/open-context-overlay";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
-import { NoticeBanner } from "@/features/send-context-notice";
 import { mergeMobileNavRoutes, pluginNavRoutes, useUiManifestQuery } from "@/entities/ui-manifest";
 import { AutomationIcon, KnowledgeIcon, SystemIcon, automationNavRoutes, knowledgeNavRoutes, systemNavRoutes, navRoutes, settingsNavRoute } from "@/shared/config";
 import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider } from "@/shared/lib";
 import { cn } from "@/shared/lib/cn";
-import { TopBar } from "@/shared/ui";
+import { NoticeBanner } from "@/shared/ui";
 import { ChatNavGroup } from "./ChatNavGroup";
-import { ContextOverlay } from "./ContextOverlay";
 import { NavGroup } from "./NavGroup";
+import { TopBar } from "./TopBar";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
@@ -32,7 +31,7 @@ const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-foreground" : "text-smoke",
   );
 
-export function AppShell() {
+export function AppShell({ overlay }: { overlay?: ReactNode }) {
   const { data: uiManifest } = useUiManifestQuery();
 
   const mobileNavRoutes = useMemo(
@@ -165,7 +164,7 @@ export function AppShell() {
 
       <RefreshHandler />
       <ConfirmationFrameHandler />
-      <ContextOverlay />
+      {overlay}
     </div>
   );
 }

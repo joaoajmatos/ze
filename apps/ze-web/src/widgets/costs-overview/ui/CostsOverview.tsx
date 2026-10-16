@@ -1,5 +1,6 @@
+import type { CostAnomalyItem, DailyCostBucket } from "@myguyze/ze-client";
+import { HeatmapChart, PieChart } from "@myguyze/ze-ui/charts";
 import { FloatingButton } from "@/features/open-context-overlay";
-import { ActivityHeatmapPanel } from "@/widgets/activity-heatmap-panel";
 import {
   formatAgentName,
   formatPluginName,
@@ -21,8 +22,7 @@ import {
   MetricProgressBar,
   SectionPanel,
 } from "@/shared/ui";
-import { HeatmapChart, PieChart } from "@myguyze/ze-ui/charts";
-import type { CostAnomalyItem, DailyCostBucket } from "@myguyze/ze-client";
+import { ActivityHeatmapPanel } from "./ActivityHeatmapPanel";
 
 function formatRelativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();

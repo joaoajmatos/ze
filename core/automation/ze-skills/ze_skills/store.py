@@ -5,7 +5,7 @@ from typing import Protocol
 from uuid import UUID
 
 from ze_logging import get_logger
-from ze_sdk import DBPool
+from ze_agents.db import DBPool
 
 from ze_skills.types import (
     ReferenceFile,

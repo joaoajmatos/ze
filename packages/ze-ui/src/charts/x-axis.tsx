@@ -312,7 +312,7 @@ function isBetterTickLayout(
  * Picks tick indices with the most even on-screen spacing. Tries
  * `targetCount ± 1` and evaluates every gap layout when feasible.
  */
-export function selectEvenlySpacedIndices(
+function selectEvenlySpacedIndices(
   length: number,
   targetCount: number,
   options?: {
@@ -664,4 +664,3 @@ const XAxisInner = memo(function XAxisInner({
 
 XAxis.displayName = "XAxis";
 
-export default XAxis;

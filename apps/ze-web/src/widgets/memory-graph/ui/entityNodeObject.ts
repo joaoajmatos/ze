@@ -11,7 +11,7 @@ const ENTITY_COLORS: Record<string, string> = {
 };
 const DEFAULT_COLOR = "#a8a8a8";
 
-export function entityColor(entityType: string): string {
+function entityColor(entityType: string): string {
   return ENTITY_COLORS[entityType] ?? DEFAULT_COLOR;
 }
 

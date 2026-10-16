@@ -9,7 +9,7 @@ from ze_agents.client import LLMClient
 from ze_agents.errors import GoalPlanError, LLMJsonParseError
 from ze_agents.llm_json import parse_llm_json
 from typing import Any
-from ze_sdk.memory import Episode, Fact, Procedure
+from ze_memory.types import Episode, Fact, Procedure
 from ze_memory.procedures.types import ProcedureTaskContext
 from ze_automation.goals.types import (
     Goal,

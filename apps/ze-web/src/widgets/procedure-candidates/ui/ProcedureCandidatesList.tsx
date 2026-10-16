@@ -1,6 +1,6 @@
-import { SectionPanel } from "@/shared/ui";
-import { useProcedureCandidatesQuery } from "@/entities/procedure";
 import { ReviewProcedureCandidate } from "@/features/review-procedure";
+import { useProcedureCandidatesQuery } from "@/entities/procedure";
+import { SectionPanel } from "@/shared/ui";
 
 export function ProcedureCandidatesList() {
   const { data, isLoading } = useProcedureCandidatesQuery();

@@ -2,7 +2,7 @@ import { act, renderHook as baseRenderHook } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSession } from "@/entities/session";
-import { useSendNotice } from "@/features/send-context-notice";
+import { useSendNotice } from "@/shared/lib";
 import { usePendingConfirms } from "../model/pending-store";
 import { ConfirmationFrameHandler } from "../ui/ConfirmationFrameHandler";
 import { useConfirmation } from "./useConfirmation";

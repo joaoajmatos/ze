@@ -1,54 +1,6 @@
 "use client";
-import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { cn } from "@/shared/lib/cn";
-
-export function BackgroundBeams({ className }: { className?: string }) {
-  const beams = [
-    { x1: "20%", y1: "0%", x2: "50%", y2: "100%", delay: 0 },
-    { x1: "50%", y1: "0%", x2: "30%", y2: "100%", delay: 0.5 },
-    { x1: "80%", y1: "0%", x2: "60%", y2: "100%", delay: 1 },
-    { x1: "10%", y1: "0%", x2: "70%", y2: "100%", delay: 1.5 },
-    { x1: "90%", y1: "0%", x2: "20%", y2: "100%", delay: 2 },
-  ];
-
-  return (
-    <div className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}>
-      <svg
-        className="absolute inset-0 w-full h-full"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <radialGradient id="beam-fade" cx="50%" cy="0%" r="80%">
-            <stop offset="0%" stopColor="#8052ff" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#8052ff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#beam-fade)" />
-        {beams.map((beam, i) => (
-          <motion.line
-            key={i}
-            x1={beam.x1}
-            y1={beam.y1}
-            x2={beam.x2}
-            y2={beam.y2}
-            stroke="#8052ff"
-            strokeWidth="1"
-            strokeOpacity="0"
-            initial={{ strokeOpacity: 0 }}
-            animate={{ strokeOpacity: [0, 0.3, 0] }}
-            transition={{
-              duration: 4,
-              delay: beam.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
 
 // Simplified canvas-based version for richer effect
 export function BackgroundBeamsCanvas({ className }: { className?: string }) {

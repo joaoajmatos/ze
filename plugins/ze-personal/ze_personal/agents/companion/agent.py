@@ -9,7 +9,7 @@ from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
-from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
+from ze_sdk import hold_token_sink, publish_honest_reply
 from ze_sdk.memory import PostgresMemoryStore
 
 _AGENT_INSTRUCTIONS = """\
@@ -136,7 +136,6 @@ class CompanionAgent(BaseAgent):
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 60
     tools = [
         "remember_fact",

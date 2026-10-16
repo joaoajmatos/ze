@@ -8,7 +8,7 @@ from ze_agents.llm_json import parse_llm_json
 from ze_logging import get_logger
 from ze_automation.holds.planned import PlanMemo, plan_system_prompt
 from ze_agents.client import LLMClient
-from ze_sdk.memory import Procedure
+from ze_memory.types import Procedure
 from ze_automation.workflow.types import Branch, StepResult, WorkflowStep
 from ze_automation.workflow.validation import validate_workflow_steps
 

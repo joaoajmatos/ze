@@ -1,0 +1,33 @@
+# Quiet dev profile: ZE_PROFILE=quiet (set by `make dev`, `dev-full`, `dev-eval`).
+# Turns off the unattended LLM work that nobody watches while developing.
+# The per-turn System One surfaces are untouched, so chat and evals behave as shipped.
+# Deep-merged over config.yaml; production never sets ZE_PROFILE.
+
+news:
+  fetch_schedule: "0 8 * * *"      # daily; the news agent refreshes on demand
+  credibility:
+    llm_scoring: false             # heuristics only, no gpt-4o-mini call per article
+
+correlation:
+  push:
+    dry_run: false                 # with enabled: false the scan returns before its LLM call
+
+proactive:
+  catch_up: false                  # a restart fires no missed job
+  insights:
+    enabled: false
+  goal_narrative:
+    enabled: false
+  goal_suggestion:
+    enabled: false
+  accountability:
+    enabled: false
+
+dream:
+  enabled: false
+
+memory:
+  consolidation:
+    enabled: false
+  session_summary:
+    enabled: false

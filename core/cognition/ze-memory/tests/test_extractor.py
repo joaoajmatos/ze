@@ -9,10 +9,11 @@ import pytest
 
 
 from ze_memory.extractor import (
-    extract_events,
+    TurnProposals,
     extract_facts,
-    gather_event_proposals,
+    extract_turn_graph,
     gather_fact_proposals,
+    gather_turn_proposals,
     parse_event_response,
     parse_fact_response,
     raw_to_events,
@@ -120,80 +121,192 @@ def test_raw_to_events_empty_list():
     assert raw_to_events([]) == []
 
 
-# ── extract_events ────────────────────────────────────────────────────────────
+# ── extract_turn_graph ────────────────────────────────────────────────────────
 
 
-async def test_extract_events_calls_llm_and_parses():
+def _turn_reply(events=None, entities=None) -> str:
+    return json.dumps({"events": events or [], "entities": entities or []})
+
+
+async def test_extract_turn_graph_makes_one_call_for_events_and_entities():
     client = AsyncMock()
     client.complete = AsyncMock(
-        return_value=json.dumps(
-            [
-                {"title": "Weekly sync", "event_type": "meeting"},
-            ]
+        return_value=_turn_reply(
+            events=[{"title": "Weekly sync", "event_type": "meeting"}],
+            entities=[{"name": "Ana", "entity_type": "person"}],
         )
     )
 
-    events = await extract_events(
-        client, prompt="meeting notes", response="We had a weekly sync.", model="test"
+    proposals = await extract_turn_graph(
+        client,
+        prompt="meeting notes",
+        response="We had a weekly sync with Ana.",
+        model="test",
     )
 
     client.complete.assert_called_once()
-    assert len(events) == 1
-    assert events[0].title == "Weekly sync"
+    assert [e.title for e in proposals.events] == ["Weekly sync"]
+    assert [e.canonical_name for e in proposals.entities] == ["Ana"]
 
 
-async def test_extract_events_skips_error_responses():
+async def test_extract_turn_graph_skips_error_responses():
     client = AsyncMock()
-    events = await extract_events(
+    proposals = await extract_turn_graph(
         client, prompt="hi", response="[ERROR] something went wrong", model="test"
     )
     client.complete.assert_not_called()
-    assert events == []
+    assert proposals == TurnProposals()
 
 
-async def test_extract_events_returns_empty_on_llm_failure():
+async def test_extract_turn_graph_returns_empty_on_llm_failure():
     client = AsyncMock()
     client.complete = AsyncMock(side_effect=RuntimeError("LLM down"))
-
-    events = await extract_events(
+    proposals = await extract_turn_graph(
         client, prompt="hi", response="We met yesterday.", model="test"
     )
-    assert events == []
+    assert proposals == TurnProposals()
 
 
-async def test_extract_events_returns_empty_on_bad_json():
+async def test_extract_turn_graph_returns_empty_on_bad_json():
     client = AsyncMock()
     client.complete = AsyncMock(return_value="not json")
-
-    events = await extract_events(client, prompt="hi", response="We met.", model="test")
-    assert events == []
-
-
-# ── gather_event_proposals ────────────────────────────────────────────────────
+    proposals = await extract_turn_graph(
+        client, prompt="hi", response="We met.", model="test"
+    )
+    assert proposals == TurnProposals()
 
 
-async def test_gather_event_proposals_with_client():
+async def test_extract_turn_graph_keeps_events_when_entities_are_malformed():
     client = AsyncMock()
     client.complete = AsyncMock(
         return_value=json.dumps(
-            [
-                {"title": "Dinner with Alice", "event_type": "dinner"},
-            ]
+            {
+                "events": [{"title": "Dinner", "event_type": "meal"}],
+                "entities": "oops",
+            }
         )
     )
+    proposals = await extract_turn_graph(
+        client, prompt="p", response="Dinner was nice.", model="test"
+    )
+    assert [e.title for e in proposals.events] == ["Dinner"]
+    assert proposals.entities == []
 
-    configurable = {"openrouter_client": client}
-    events = await gather_event_proposals(
-        configurable, prompt="I had dinner", response="Nice dinner with Alice."
+
+async def test_extract_turn_graph_drops_incomplete_items():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=_turn_reply(
+            events=[{"title": "no type"}],
+            entities=[{"name": "no type either"}],
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert proposals == TurnProposals()
+
+
+async def test_extract_turn_graph_null_participants_does_not_raise():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps(
+            {
+                "events": [
+                    {"title": "x", "event_type": "meeting", "participants": None}
+                ],
+                "entities": [],
+            }
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert isinstance(proposals, TurnProposals)
+
+
+async def test_extract_turn_graph_null_aliases_does_not_raise():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps(
+            {
+                "events": [{"title": "Dinner", "event_type": "meal"}],
+                "entities": [{"name": "Ana", "entity_type": "person", "aliases": None}],
+            }
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    # the bad entity array is dropped, the good events survive
+    assert [e.title for e in proposals.events] == ["Dinner"]
+
+
+async def test_extract_turn_graph_a_bad_events_array_keeps_the_entities():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps(
+            {
+                "events": [
+                    {"title": "x", "event_type": "meeting", "participants": None}
+                ],
+                "entities": [{"name": "Ana", "entity_type": "person"}],
+            }
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert [e.canonical_name for e in proposals.entities] == ["Ana"]
+
+
+async def test_extract_turn_graph_non_list_events_value():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps({"events": {"title": "x"}, "entities": 3})
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert proposals == TurnProposals()
+
+
+# ── gather_turn_proposals ─────────────────────────────────────────────────────
+
+
+async def test_gather_turn_proposals_with_client():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=_turn_reply(
+            events=[{"title": "Dinner with Alice", "event_type": "meal"}]
+        )
+    )
+    proposals = await gather_turn_proposals(
+        {"openrouter_client": client},
+        prompt="I had dinner with Alice",
+        response="Nice dinner with Alice.",
+    )
+    assert [e.title for e in proposals.events] == ["Dinner with Alice"]
+
+
+async def test_gather_turn_proposals_without_client_returns_empty():
+    assert await gather_turn_proposals({}, prompt="hi there", response="hello") == (
+        TurnProposals()
     )
 
-    assert len(events) == 1
-    assert events[0].title == "Dinner with Alice"
+
+@pytest.mark.parametrize("prompt", ["hi", "Thanks!", "ok", "", "   "])
+async def test_gather_turn_proposals_skips_trivial_turns(prompt):
+    client = AsyncMock()
+    proposals = await gather_turn_proposals(
+        {"openrouter_client": client}, prompt=prompt, response="Hello! How can I help?"
+    )
+    client.complete.assert_not_called()
+    assert proposals == TurnProposals()
 
 
-async def test_gather_event_proposals_without_client_returns_empty():
-    events = await gather_event_proposals({}, prompt="hi", response="hello")
-    assert events == []
+async def test_gather_turn_proposals_uses_the_fact_extraction_model():
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value=_turn_reply())
+    settings = type(
+        "S", (), {"config": {"memory": {"fact_extraction_model": "cheap/model"}}}
+    )()
+    await gather_turn_proposals(
+        {"openrouter_client": client, "settings": settings},
+        prompt="I moved to Porto",
+        response="Noted.",
+    )
+    assert client.complete.call_args.kwargs["model"] == "cheap/model"
 
 
 # ── facts ─────────────────────────────────────────────────────────────────────

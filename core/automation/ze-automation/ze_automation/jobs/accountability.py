@@ -4,9 +4,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from ze_logging import get_logger
-from ze_sdk.proactive import proactive_job
-from ze_sdk.proactive import ProactiveNotifier
-from ze_sdk.proactive import PushLogStore
+from ze_proactive.job import proactive_job
+from ze_proactive.notifier import ProactiveNotifier
+from ze_proactive.push_log_store import PushLogStore
 from ze_automation.accountability.store import AccountabilityStore
 from ze_automation.accountability.summarizer import build_narrative
 from ze_automation.accountability.types import ActivitySummary, AgentCostSummary

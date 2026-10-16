@@ -113,6 +113,7 @@ from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.compose import (
+    build_proactive_scheduler,
     reconcile_workspace_at_startup,
     register_all_proactive_jobs,
 )
@@ -826,7 +827,9 @@ async def build_container(settings: Settings) -> ZeContainer:
         held_write_resumer=automation.held_write_resumer,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
-        proactive_scheduler=ProactiveScheduler(run_store=JobRunStore(pool)),
+        proactive_scheduler=build_proactive_scheduler(
+            settings, run_store=JobRunStore(pool)
+        ),
         browser_client=browser_client,
         workspace_client=workspace.client,
         workspace_gate=workspace.gate,
@@ -929,7 +932,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             _calendar_reminder_job.loop_extractor = _loop_extractor
             log.info("calendar_loop_extractor_wired")
 
-    from ze_api.workflow_graph import build_workflow_graph
+    from ze_api.workflow_graph import begin_workflow_turn, build_workflow_graph
 
     await configure_workflow_executor(
         automation,
@@ -942,6 +945,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         router=router,
         persona_store=persona_store,
         workflow_graph_builder=build_workflow_graph,
+        begin_workflow_turn=begin_workflow_turn,
         workspace_gate=workspace.gate,
     )
 

@@ -8,7 +8,7 @@ export interface ThreadTraceBucket {
   hydrating: boolean;
 }
 
-export function emptyThreadTrace(): ThreadTraceBucket {
+function emptyThreadTrace(): ThreadTraceBucket {
   return { traces: [], pending: false, pendingTrace: null, hydrating: false };
 }
 

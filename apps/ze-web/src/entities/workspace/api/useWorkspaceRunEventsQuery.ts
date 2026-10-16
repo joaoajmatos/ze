@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getConfig } from "@/shared/config";
 
-export type WorkspaceRunEventsStatus = "streaming" | "closed" | "unavailable";
+type WorkspaceRunEventsStatus = "streaming" | "closed" | "unavailable";
 
 export interface WorkspaceRunEventsState {
   lines: string;

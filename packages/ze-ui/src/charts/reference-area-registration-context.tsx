@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext } from "react";
 import type { ReferenceAreaConfig } from "./reference-area-config";
 
 export interface ReferenceAreaRegistrationContextValue {
@@ -10,7 +10,3 @@ export interface ReferenceAreaRegistrationContextValue {
 
 export const ReferenceAreaRegistrationContext =
   createContext<ReferenceAreaRegistrationContextValue | null>(null);
-
-export function useReferenceAreaRegistration(): ReferenceAreaRegistrationContextValue | null {
-  return useContext(ReferenceAreaRegistrationContext);
-}

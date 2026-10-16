@@ -14,7 +14,6 @@ export type {
   WsSendMessageFrame,
   WsAckFrame,
   WsConfirmFrame,
-  WsActionFrame,
   WsCommandFrame,
   WsComponentSubmitFrame,
   WsPingFrame,
