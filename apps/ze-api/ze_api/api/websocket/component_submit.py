@@ -9,7 +9,7 @@ from fastapi import WebSocket
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.onboarding import send_onboarding_view
 from ze_api.api.websocket.turns import handle_message
-from ze_api.errors import OnboardingError
+from ze_agents.errors import OnboardingError
 from ze_logging import get_logger
 
 log = get_logger(__name__)

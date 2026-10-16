@@ -621,12 +621,6 @@ class CancelWorkflowExecutionResponse(BaseModel):
     message: str
 
 
-class ActorContextResponse(BaseModel):
-    source: Literal["agent", "api", "system"]
-    session_id: str | None = None
-    user_message_id: str | None = None
-
-
 class WorkflowRevisionResponse(BaseModel):
     id: UUIDType
     workflow_id: UUIDType

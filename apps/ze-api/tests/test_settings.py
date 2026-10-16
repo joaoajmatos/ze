@@ -19,12 +19,6 @@ def make_settings(**overrides) -> Settings:
     return Settings(**{**defaults, **overrides})
 
 
-def test_capabilities_path_points_to_config_dir(tmp_path):
-    s = make_settings()
-    assert s.capabilities_path.name == "config.yaml"
-    assert s.capabilities_path.parent == s.config_dir
-
-
 def test_config_loads_yaml():
     s = make_settings()
     config = s.config

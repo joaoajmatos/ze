@@ -54,7 +54,6 @@ def client(container, mock_pool):
     app.include_router(goals.router, prefix="/api/v0")
     app.include_router(costs.router, prefix="/api/v0/costs")
 
-    app.dependency_overrides[dependencies.get_pool] = lambda: pool
     app.dependency_overrides[dependencies.require_api_key] = lambda: None
 
     with TestClient(app) as c:

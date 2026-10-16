@@ -51,7 +51,3 @@ async def create_checkpointer_pool(settings: Settings) -> AsyncConnectionPool:
     await pool.open()
     await pool.wait()
     return pool
-
-
-async def dispose_checkpointer_pool(pool: AsyncConnectionPool) -> None:
-    await pool.close()

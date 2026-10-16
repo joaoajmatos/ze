@@ -1,10 +1,7 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from ze_memory.retriever import PostgresMemoryStore as MemoryStore
 from ze_core.conversation.messages import PostgresMessageStore as MessageStore
-from ze_core.openrouter.client import OpenRouterClient
-from ze_core.routing.router import EmbeddingRouter
 from ze_api.settings import Settings, get_settings as _get_settings
 
 
@@ -29,30 +26,6 @@ def get_settings() -> Settings:
 
 def get_container(request: Request):
     return request.app.state.container
-
-
-def get_pool(request: Request):
-    return request.app.state.container.pool
-
-
-def get_openrouter_client(request: Request) -> OpenRouterClient:
-    return request.app.state.container.openrouter_client
-
-
-def get_router(request: Request) -> EmbeddingRouter:
-    return request.app.state.container.router
-
-
-def get_memory_store(request: Request) -> MemoryStore:
-    return request.app.state.container.memory_store
-
-
-def get_embedder(request: Request):
-    return request.app.state.container.embedder
-
-
-def get_graph(request: Request):
-    return request.app.state.container.graph
 
 
 def get_workflow_store(request: Request):
