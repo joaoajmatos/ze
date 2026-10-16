@@ -332,6 +332,7 @@ TEST_PY_PACKAGES := \
 	test-prospecting \
 	test-news \
 	test-finance \
+	test-scripts \
 	test-api
 
 .PHONY: test test-api test-core test-logging test-agents test-communication test-plugin test-sdk test-proactive \
