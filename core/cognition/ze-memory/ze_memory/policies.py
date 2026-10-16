@@ -37,6 +37,7 @@ from ze_memory.entity_anchor import augment_with_entity_anchor
 from ze_memory.relevance_config import RelevanceConfig, relevance_config
 from ze_memory.store import MemoryQueryable
 from ze_memory.types import MemoryContext, RetrievalRequest
+from ze_memory.vectors import to_vector_literal
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -57,11 +58,6 @@ _EPISODE_NO_SUMMARY = """
         WHERE ss.session_id = memory_episodes.session_id
     )
 """
-
-
-def _to_list(embedding: Any) -> str:
-    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
-    return "[" + ",".join(str(v) for v in vals) + "]"
 
 
 def _sim_col(param: str = "$1") -> str:
@@ -275,7 +271,7 @@ class CompanionPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cur_sid = getattr(request, "current_session_id", None)
         cfg = relevance_config(store.settings)
 
@@ -351,7 +347,7 @@ class ResearchPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cur_sid = getattr(request, "current_session_id", None)
         cfg = relevance_config(store.settings)
 
@@ -421,7 +417,7 @@ class GoalsPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
@@ -468,7 +464,7 @@ class WorkflowPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
@@ -500,7 +496,7 @@ class CalendarPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
@@ -542,7 +538,7 @@ class RemindersPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
@@ -572,7 +568,7 @@ class EmailPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cur_sid = getattr(request, "current_session_id", None)
         cfg = relevance_config(store.settings)
 
@@ -637,7 +633,7 @@ class ProspectingPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cur_sid = getattr(request, "current_session_id", None)
         cfg = relevance_config(store.settings)
 
@@ -697,7 +693,7 @@ class PlannerPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
@@ -749,7 +745,7 @@ class ToolExecutorPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
         cfg = relevance_config(store.settings)
 
         async with store.pool.acquire() as conn:
@@ -814,7 +810,7 @@ class MemoryUIPolicy:
     async def retrieve(
         self, request: RetrievalRequest, store: MemoryQueryable
     ) -> MemoryContext:
-        emb = _to_list(request.query_embedding)
+        emb = to_vector_literal(request.query_embedding)
 
         async with store.pool.acquire() as conn:
             fact_rows = await conn.fetch(

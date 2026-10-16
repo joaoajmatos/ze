@@ -68,6 +68,7 @@ from ze_memory.types import (
     SignalIngestResult,
     TaskState,
 )
+from ze_memory.vectors import to_vector_literal
 
 log = get_logger(__name__)
 
@@ -107,11 +108,6 @@ _EVENT_OUTCOME_SYSTEM = (
     '"facts": [{"value": "the generalizable fact", "confidence": 0.0-1.0}]}. '
     "facts must be empty when family is drop."
 )
-
-
-def _to_list(embedding: Any) -> str:
-    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
-    return "[" + ",".join(str(v) for v in vals) + "]"
 
 
 def _normalize_forget_text(text: str) -> str:
@@ -307,7 +303,7 @@ class PostgresMemoryStore:
         embedding: Any,
     ) -> UUID | None:
         try:
-            emb_list = _to_list(embedding)
+            emb_list = to_vector_literal(embedding)
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow(
                     "INSERT INTO memory_episodes"
@@ -328,7 +324,7 @@ class PostgresMemoryStore:
             if embedding is not None:
                 fire_and_forget(
                     self._check_synthetic_corroboration(
-                        episode_id, _to_list(embedding)
+                        episode_id, to_vector_literal(embedding)
                     ),
                     label="check_synthetic_corroboration",
                 )
@@ -450,7 +446,7 @@ class PostgresMemoryStore:
                 participants = list({*event.participants, *resolved})
 
                 emb_list = (
-                    _to_list(self._embedder.encode(event.title))
+                    to_vector_literal(self._embedder.encode(event.title))
                     if self._embedder is not None
                     else None
                 )
@@ -495,7 +491,7 @@ class PostgresMemoryStore:
             entity.attrs,
         )
         emb_list = (
-            _to_list(self._embedder.encode(entity.canonical_name))
+            to_vector_literal(self._embedder.encode(entity.canonical_name))
             if self._embedder is not None
             else None
         )
@@ -775,7 +771,7 @@ class PostgresMemoryStore:
         provenance = _persist_provenance(fact)
         claim_kind = _persist_claim_kind(fact, provenance)
         value_emb = self._embedder.encode(fact.value)
-        emb_list = _to_list(value_emb)
+        emb_list = to_vector_literal(value_emb)
         nli_cfg = nli_config(self._settings)
 
         async with self._pool.acquire() as conn:
