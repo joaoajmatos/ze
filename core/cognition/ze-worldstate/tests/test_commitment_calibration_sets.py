@@ -79,3 +79,58 @@ def test_repeated_ids_across_sets_are_rejected(cal):
     holdout = cal.load_rows(cal.HOLDOUT)
     clash = _row(cal, id=holdout[0].id, text="something else entirely")
     assert any("ids repeat" in p for p in cal.shape_problems([clash], holdout))
+
+
+def _depth_rows(cal, lang, facts, loops):
+    rows = [
+        _row(
+            cal,
+            id=f"{lang}-f{i}",
+            lang=lang,
+            gold_choice="fact",
+            gold_family="identity",
+        )
+        for i in range(facts)
+    ]
+    rows += [
+        _row(cal, id=f"{lang}-l{i}", lang=lang, gold_choice="loop")
+        for i in range(loops)
+    ]
+    return rows
+
+
+def test_shipped_holdout_meets_the_fact_and_loop_minimums(cal):
+    assert cal.holdout_depth_problems(cal.load_rows(cal.HOLDOUT)) == []
+
+
+def test_holdout_below_the_fact_minimum_fails(cal):
+    rows = _depth_rows(cal, "en", cal.MIN_HOLDOUT_FACT_PER_LANG - 1, 15) + _depth_rows(
+        cal, "pt", 15, 15
+    )
+    problems = cal.holdout_depth_problems(rows)
+    assert problems == [
+        f"holdout/en: {cal.MIN_HOLDOUT_FACT_PER_LANG - 1} fact rows, need >= 15"
+    ]
+    assert any("fact rows" in p for p in cal.shape_problems(None, rows))
+
+
+def test_holdout_below_the_loop_minimum_fails(cal):
+    rows = _depth_rows(cal, "en", 15, 15) + _depth_rows(
+        cal, "pt", 15, cal.MIN_HOLDOUT_LOOP_PER_LANG - 1
+    )
+    problems = cal.holdout_depth_problems(rows)
+    assert problems == [
+        f"holdout/pt: {cal.MIN_HOLDOUT_LOOP_PER_LANG - 1} gold-loop rows, need >= 15"
+    ]
+    assert any("gold-loop rows" in p for p in cal.shape_problems(None, rows))
+
+
+def test_loop_rows_that_the_turn_already_booked_do_not_count_as_gold_loop(cal):
+    booked = [
+        _row(cal, id=f"b{i}", gold_choice="loop", turn_created="reminder")
+        for i in range(20)
+    ]
+    assert cal.holdout_depth_problems(booked + _depth_rows(cal, "pt", 15, 15))[0] == (
+        "holdout/en: 0 fact rows, need >= 15"
+    )
+    assert any("gold-loop rows" in p for p in cal.holdout_depth_problems(booked))

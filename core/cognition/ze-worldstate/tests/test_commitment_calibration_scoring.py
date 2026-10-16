@@ -287,3 +287,32 @@ def test_baseline_fact_rule_follows_the_frozen_163_bars(baseline):
         baseline.decide_fact_163(SystemOneResult(outcome="skip", skip_reason="error"))
         == "fallback"
     )
+
+
+def test_choice_accuracy_ignores_rows_where_the_turn_created_something(cal):
+    plain = _row(cal, id="p", gold_choice="none")
+    booked = _row(cal, id="b", gold_choice="loop", turn_created="reminder")
+    results = {
+        "p": cal.RowResults(_system("none"), _r163("drop"), _r168()),
+        "b": cal.RowResults(_system("reminder"), _r163("reminder"), _r168()),
+    }
+    rows = [plain, booked]
+    c = cal.score(
+        rows,
+        cal.preds_for(rows, results, _bars(cal)),
+        cal.choices_for(rows, results),
+    )
+    assert (c.choice_ok, c.choice_total) == (1, 1)
+    assert (c.link_ok, c.link_total) == (1, 1)
+
+
+def test_link_accuracy_misses_when_the_turn_resolved_a_loop_instead(cal):
+    booked = _row(cal, id="g", gold_choice="goal", turn_created="goal")
+    linked = {"g": cal.RowResults(_system("goal"), _r163("goal"), _r168())}
+    c = cal.score([booked], cal.preds_for([booked], linked, _bars(cal)))
+    assert c.link_acc == 1.0
+    resolved = {
+        "g": cal.RowResults(_system("goal", resolves=0.99), _r163("goal"), _r168())
+    }
+    c = cal.score([booked], cal.preds_for([booked], resolved, _bars(cal)))
+    assert (c.link_ok, c.link_total) == (0, 1)
