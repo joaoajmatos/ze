@@ -62,7 +62,7 @@ not `ZeApiSettings`.
 
 | Variable | Default | Description |
 |---|---|---|
-| `CONFIRM_TIMEOUT_SECONDS` | `900` | How long (seconds) a `confirm`-mode graph pause waits before expiring |
+| `CONFIRM_TIMEOUT_SECONDS` | `900` | How long (seconds) a write confirmation or budget pause waits. When it expires, the request counts as a deny |
 | `SESSION_INACTIVITY_MINUTES` | `30` | Minutes of inactivity before a session is considered stale |
 | `CONSOLIDATION_ENABLED` | `true` | Set to `false` to disable memory/contacts consolidation jobs (override via `config.yaml` `memory.consolidation.enabled`) |
 | `SCHEDULER_ENABLED` | `true` | Set to `false` to disable the workflow scheduler (override via `config.yaml` `workflows.scheduler_enabled`) |
@@ -602,7 +602,7 @@ is set — there are no `calendar.enabled` / `email.enabled` YAML flags.
 
 ## Hot-reloading
 
-Send `SIGHUP` to the running process to reload capability modes and YAML config
+Send `SIGHUP` to the running process to reload YAML config
 without restarting:
 
 ```bash

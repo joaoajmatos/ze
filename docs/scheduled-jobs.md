@@ -23,7 +23,7 @@ richer:
 
 **Facts** (`ze_memory/extractor.py`)
 
-After each `execute_tool` or `draft_response` node, `write_memory` fires
+After each `execute_tool` node, `write_memory` fires
 (fire-and-forget). Explicit companion writes already landed via `remember_fact`.
 The extractor then runs a keep/drop + `speech_act` gate. It writes remaining facts
 through `submit_perception_facts` as synthesized, `reviewed = false`. Eval threads

@@ -65,6 +65,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "ack", "ids": ["<uuid>", ...]}` | After displaying messages | Marks messages as read in `MessageStore` |
 | `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context |
 | `{"type": "retry", "message_id": "<uuid>", "thread_id": "..."}` | User presses Retry on the latest reply | Regenerates that reply with write tools blocked (see [Reply feedback and Retry](#reply-feedback-and-retry)) |
+| `{"type": "confirm", "id": "<request id>", "choice": "approve" \| "deny", "edits": {...}}` | Answer a `confirm_request` | Approves or denies the parked writes in that request. `edits` is optional (see [Confirmation flow](#confirmation-flow)) |
 | `{"type": "command", "name": "cancel"}` | Cancel pending confirmation | Aborts the awaited graph turn |
 | `{"type": "command", "name": "costs"}` | Introspection | Returns a 7-day cost summary message |
 | `{"type": "command", "name": "status", "period_days": 1}` | Accountability | Returns an activity narrative (default: past 24 h; set `period_days: 7` for the weekly view) |
@@ -80,7 +81,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "pong"}` | Heartbeat reply |
 | `{"type": "typing"}` | Sent immediately after receiving a user message while Ze is processing. May include an optional `"text"` field with a localized progress string (e.g. `"📡 Fetching the latest news..."`). Re-sent mid-turn by agents to update the status and reset the client's 3-second display timer. |
 | `{"type": "message", "message": Message}` | Outbound message from Ze (see Message shape below) |
-| `{"type": "confirm_request", "id": "...", "prompt": "...", "actions": [...]}` | Capability gate confirmation request |
+| `{"type": "confirm_request", "id": "...", "kind": "write" \| "budget" \| "held", "round": 1, "title": "...", "items": [...], "actions": [...], "expires_at": "..."}` | Asks the user to approve one or more parked writes, a spend-budget pause, or a held unattended write |
 | `{"type": "confirm_cancel", "id": "..."}` | Confirmation cancelled (timeout or cancel command) |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
 | `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
@@ -143,29 +144,70 @@ components submit `component_submit` frames.
 
 ## Confirmation flow
 
-When an agent action requires user approval (`confirm` capability mode), the graph
-pauses at `await_confirmation`. The server sends:
+A turn pauses for approval at most once per pause. Each pause sends one `confirm_request`.
+Its `kind` says why Ze pauses:
+
+| `kind` | Why | Items |
+|---|---|---|
+| `write` | Ze parked one or more irreversible writes. A turn has at most 3 rounds. `round` counts the pause. | One item per parked write |
+| `budget` | The turn may take today's spend past the limit (113). | One item, `tool: null` |
+| `held` | An unattended workflow or goal run wants a write it may not run on its own. `source` names the run. | One item per held write |
+
+The server sends:
 
 ```json
 {
   "type": "confirm_request",
-  "id": "request-uuid",
-  "prompt": "Ze proposes to send an email to João about...",
+  "id": "8d0f…",
+  "thread_id": "…",
+  "kind": "write",
+  "round": 1,
+  "title": "Ze needs your OK",
+  "items": [
+    {
+      "item_id": "c1",
+      "agent": "calendar",
+      "tool": "delete_event",
+      "effect_phrase": "delete a calendar event",
+      "summary": "Dentist — today 15:00",
+      "conflict": null,
+      "editable_field": null,
+      "proposed_text": null
+    }
+  ],
+  "source": null,
+  "expires_at": "2026-10-15T20:15:00Z",
   "actions": [
-    {"label": "Approve", "payload": "yes"},
-    {"label": "Cancel",  "payload": "no"}
+    {"label": "Approve all", "value": "approve", "style": "primary"},
+    {"label": "Deny all", "value": "deny", "style": "secondary"}
   ]
 }
 ```
 
-The client presents this to the user. On user action, the client sends a message:
+- `conflict` holds the constraint text when a reviewed constraint needs the user's OK.
+- `editable_field` and `proposed_text` appear only for items whose tool allows an edit, such as the body of an email.
+- `source` is set only for `kind: "held"`.
+
+The client shows one card for the whole request. It shows each item in the imperative
+form, for example "delete a calendar event". The user answers with a `confirm` frame:
 
 ```json
-{"type": "message", "text": "yes", "thread_id": "<original-thread-id>"}
+{"type": "confirm", "id": "8d0f…", "choice": "approve"}
+{"type": "confirm", "id": "8d0f…", "choice": "approve", "edits": {"c2": "new body text"}}
+{"type": "confirm", "id": "8d0f…", "choice": "deny"}
 ```
 
-The WS handler resumes the LangGraph checkpoint with `graph.ainvoke(None, config)` on
-the same `thread_id`.
+- `edits` keys must name an item with an `editable_field`. Ze rejects any other key with an
+  `error` frame, and nothing runs.
+- An answer for an unknown, expired or superseded `id` returns an `error` frame with the
+  detail "No pending confirmation." Nothing runs.
+- When Ze supersedes or expires a request, or a held write is answered elsewhere, it sends
+  `confirm_cancel` for that `id`.
+
+Approval runs exactly the approved calls with the approved arguments. Each parked turn
+then resumes with the real results, and the model writes the reply. Denial runs nothing.
+Ze adds an "Okay, I didn't <effect>." line for each denied item, so the reply does not
+claim that the write happened.
 
 ### Persistence across disconnects
 
@@ -182,7 +224,7 @@ Ze clears the row when:
 ### ntfy push on background
 
 When the app is not connected and a confirmation is required, Ze also pushes an ntfy
-notification with the prompt text (urgency `high`) so the user is alerted even with
+notification with the request title (urgency `high`) so the user is alerted even with
 the app closed. Ze skips this buzz during quiet hours; the frame is still sent, and
 the request stays in chat.
 
@@ -190,11 +232,9 @@ the request stays in chat.
 
 A `CONFIRM_TIMEOUT_SECONDS` (default: 900 s / 15 min) watchdog runs in the background
 from the moment the server sends the `confirm_request`. If the window elapses with no
-user response, Ze sends:
-
-```
-"I waited for your approval but the window elapsed — let me know if you'd like me to try again."
-```
+user response, Ze counts the request as a deny. Each parked call returns a declined
+result, and Ze gives the "Okay, I didn't <effect>." line for each item. Held writes in
+unattended runs expire after 24 hours and count as a deny too.
 
 If the turn still has unfinished conductor work, Ze appends an offer to continue that
 job as a goal or as a workflow. Ze does not create either until the user accepts.

@@ -19,6 +19,14 @@ Ze no longer builds throwaway "dynamic plans". A request with several dependent 
 
 ---
 
+## Irreversible steps in unattended runs
+
+A scheduled run has no one to answer a prompt. When a step needs an irreversible write
+that you have not approved, Ze holds that write and sends you a push. The run waits
+until you answer from the notification or the chat. A hold that you do not answer within
+24 hours expires and counts as a deny. The run then continues, and the step reports that
+the write did not run.
+
 ## Creating a workflow (conversational)
 
 Just describe what you want in the chat. Ze's `WorkflowManagerAgent` handles
@@ -30,7 +38,7 @@ Ze will:
 
 1. Parse the description into an ordered list of steps.
 2. Extract a cron expression from the schedule phrase.
-3. Ask you to confirm the plan (`manage` intent actions use `confirm` mode by default).
+3. Ask you to confirm the plan.
 4. Store the workflow and schedule it.
 
 You can also manage workflows conversationally:
@@ -58,7 +66,7 @@ For a workflow with N steps, the graph runs through the following loop for each 
 
 `load_workflow_step` resets per-step state and sets `prompt` to the step's task.
 The graph then routes normally — `embed_route` picks the right agent, memory is
-injected, and capability is enforced — exactly as if the user had typed the task.
+injected, and irreversible writes still ask first — exactly as if the user had typed the task.
 
 ### Branching
 
@@ -118,7 +126,7 @@ workflows
   id           UUID
   name         TEXT  (unique)
   description  TEXT
-  steps        JSONB (list of WorkflowStep: task, agent_hint, verify, intent,
+  steps        JSONB (list of WorkflowStep: task, agent_hint, verify,
                       id, branches, default_next, on_failure)
   schedule     TEXT  (cron expression, NULL = on-demand only)
   enabled      BOOL

@@ -73,7 +73,7 @@ Ze returns a summary of active and awaiting-gate goals with milestone progress a
 
 ## Verification gates
 
-Gates are the multi-step equivalent of the per-action capability gate. Ze batches
+Gates are the multi-step check-in for a goal. They do not replace the write confirmation for an irreversible action. Ze batches
 meaningful work, then surfaces a checkpoint message:
 
 - What Ze has completed (summarized milestone outputs).
@@ -212,7 +212,7 @@ goals
   retrospective_text, last_stuck_alert_at, ...
 
 goal_milestones
-  id, goal_id, sequence, title, description, intent, agent_hint,
+  id, goal_id, sequence, title, description, agent_hint,
   status, output, reuse_hint, completed_at, ...
 
 goal_gates
@@ -244,8 +244,8 @@ The planner sets `reuse_hint` on milestones when a prior goal's output may be re
 
 ## Configuration
 
-The `@agent` class in `ze_automation/agents/goals/agent.py` declares goal capabilities.
-Intent capabilities default to `confirm` for create, update, and delete; read is autonomous.
+The `@agent` class in `ze_automation/agents/goals/agent.py` declares the goal tools.
+An irreversible write asks first by default, and a read runs without asking.
 
 `ze_automation/bootstrap.py` fixes the advance sweep cron (`*/15 * * * *`, job id
 `goal_advance_sweep`). Proactive job crons are configurable via `proactive.*` in
