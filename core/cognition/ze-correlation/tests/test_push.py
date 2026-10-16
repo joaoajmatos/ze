@@ -232,7 +232,9 @@ async def test_eligible_candidates_excludes_too_similar_novelty():
     import numpy as np
 
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=np.array([1.0, 0.0, 0.0]))
+    embedder.encode_passage = embedder.encode_query = MagicMock(
+        return_value=np.array([1.0, 0.0, 0.0])
+    )
     h = _make_hypothesis(confidence=0.75, relevance=0.65, summary="A connects to B")
     source, _ = _make_candidate_source(
         unsurfaced=[h],
@@ -388,7 +390,9 @@ async def test_passes_novelty_rejects_similar_summary():
     import numpy as np
 
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=np.array([1.0, 0.0, 0.0]))
+    embedder.encode_passage = embedder.encode_query = MagicMock(
+        return_value=np.array([1.0, 0.0, 0.0])
+    )
     result = await passes_novelty(
         "A connects to B", ["A connects to B almost identically"], embedder, 0.85
     )

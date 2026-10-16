@@ -22,7 +22,9 @@ def _make_store(conn, *, nli=None):
     store._pool = MagicMock()
     store._pool.acquire = MagicMock(return_value=_async_ctx(conn))
     store._embedder = MagicMock()
-    store._embedder.encode = MagicMock(return_value=[1.0, 0.0])
+    store._embedder.encode_passage = store._embedder.encode_query = MagicMock(
+        return_value=[1.0, 0.0]
+    )
     store._client = None
     store._graph_store = None
     store._traversal = None

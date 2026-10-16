@@ -22,11 +22,12 @@ pytestmark = pytest.mark.pg
 class _TitleEmbedder:
     """Same title -> same vector; different titles -> orthogonal."""
 
-    def encode(self, text):
+    def encode_passage(self, text):
         digest = hashlib.sha256(text.encode()).digest()
         vec = [0.0] * 32
         vec[digest[0] % 32] = 1.0
         return vec
+    encode_query = encode_passage
 
 
 class _Llm:

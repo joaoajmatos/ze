@@ -103,8 +103,9 @@ class FakeGraphStore:
 
 
 class FakeEmbedder:
-    def encode(self, text: str) -> list[float]:
+    def encode_passage(self, text: str) -> list[float]:
         return [1.0, 0.0] if "porto" in text.lower() else [0.0, 1.0]
+    encode_query = encode_passage
 
 
 class SeamRecorder:

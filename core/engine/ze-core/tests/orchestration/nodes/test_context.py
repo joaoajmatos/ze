@@ -24,7 +24,7 @@ def _make_store(memory_context=None) -> MagicMock:
 
 def _make_embedder() -> MagicMock:
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1, 0.2])
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[0.1, 0.2])
     return embedder
 
 
@@ -371,17 +371,24 @@ class TestFetchContextCaps:
 
 
 class TestFetchContextOpenQueryFlag:
-    async def test_detector_receives_the_prompt_embedding(self):
+    async def test_detector_receives_the_passage_embedding(self):
+        # The detector is calibrated passage-vs-passage; retrieval gets the query vector.
         surfacer = _surfacer([], global_query=True)
-        embedder = _make_embedder()
-        embedder.encode = MagicMock(return_value=[0.3, 0.4])
+        store = _make_store()
+        embedder = MagicMock()
+        embedder.encode_passage = MagicMock(return_value=[0.3, 0.4])
+        embedder.encode_query = MagicMock(return_value=[0.7, 0.8])
 
         result = await fetch_context(
             _state(prompt="o que tenho em aberto?"),
-            _config(turn_surfacer=surfacer, embedder=embedder),
+            _config(store=store, turn_surfacer=surfacer, embedder=embedder),
         )
 
+        embedder.encode_passage.assert_called_once_with("o que tenho em aberto?")
+        embedder.encode_query.assert_called_once_with("o que tenho em aberto?")
         surfacer.is_global_open_query.assert_called_once_with([0.3, 0.4])
+        request = store.retrieve.await_args.args[0]
+        assert request.query_embedding == [0.7, 0.8]
         assert result["open_items_query"] is True
 
     async def test_false_when_not_an_open_query(self):

@@ -75,11 +75,13 @@ async def find_matching_loop(
     if not pool or not candidate_title:
         return None
 
-    candidate_embedding = embedder.encode(candidate_title)
+    candidate_embedding = embedder.encode_passage(candidate_title)
     best_match: OpenLoop | None = None
     best_score = 0.0
     for loop in pool:
-        score = _cosine_similarity(candidate_embedding, embedder.encode(loop.title))
+        score = _cosine_similarity(
+            candidate_embedding, embedder.encode_passage(loop.title)
+        )
         if score > best_score:
             best_score = score
             best_match = loop

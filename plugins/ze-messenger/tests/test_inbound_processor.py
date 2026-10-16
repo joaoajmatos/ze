@@ -43,7 +43,7 @@ def _make_processor(
     notifier = AsyncMock()
     signal_source = MessagingSignalSource()
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1] * 10)
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[0.1] * 10)
 
     processor = InboundMessageProcessor(
         memory_store=memory,

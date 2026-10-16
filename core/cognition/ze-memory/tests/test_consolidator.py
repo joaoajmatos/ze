@@ -37,7 +37,7 @@ def _store(**overrides):
 def _embedder(vec=None):
     v = vec or [1.0, 0.0]
     e = MagicMock()
-    e.encode = MagicMock(return_value=v)
+    e.encode_passage = e.encode_query = MagicMock(return_value=v)
     return e
 
 
@@ -135,7 +135,7 @@ class TestDedupFacts:
             return v
 
         embedder = MagicMock()
-        embedder.encode = MagicMock(side_effect=_encode)
+        embedder.encode_passage = embedder.encode_query = MagicMock(side_effect=_encode)
         client = _client(response="merged fact")
         nli = _nli([{"contradiction": 0.05, "neutral": 0.1, "entailment": 0.85}])
         merged = await _consolidator(
@@ -157,7 +157,7 @@ class TestDedupFacts:
             return v
 
         embedder = MagicMock()
-        embedder.encode = MagicMock(side_effect=_encode)
+        embedder.encode_passage = embedder.encode_query = MagicMock(side_effect=_encode)
         assert await _consolidator(store=store, embedder=embedder).dedup_facts() == 0
 
 
@@ -310,7 +310,7 @@ class TestArchiveSessionEpisodes:
         store.fetch_session_archive_candidates.assert_awaited_once_with(7, 3, 10)
         store.fetch_raw_session_episodes.assert_awaited_once_with(session_id, 7)
         client.complete.assert_awaited_once()
-        embedder.encode.assert_called_once_with("session summary")
+        embedder.encode_passage.assert_called_once_with("session summary")
         store.replace_session_episodes_with_summary.assert_awaited_once_with(
             session_id=session_id,
             episode_count=3,

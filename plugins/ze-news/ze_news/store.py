@@ -118,7 +118,7 @@ class NewsStore:
         async with self._pool.acquire() as conn:
             for article in articles:
                 text = f"{article.title}. {article.summary}"
-                embedding = self._embedder.encode(text)
+                embedding = self._embedder.encode_passage(text)
                 vec = _to_pgvector(embedding)
 
                 status = await conn.execute(
@@ -157,7 +157,7 @@ class NewsStore:
         async with self._pool.acquire() as conn:
             for article in articles:
                 text = f"{article.title}. {article.summary}"
-                embedding = self._embedder.encode(text)
+                embedding = self._embedder.encode_passage(text)
                 vec = _to_pgvector(embedding)
                 emb_arr = np.array(embedding, dtype=float)
 
@@ -241,7 +241,7 @@ class NewsStore:
         limit: int = 10,
         tags: list[str] | None = None,
     ) -> list[Article]:
-        embedding = self._embedder.encode(query)
+        embedding = self._embedder.encode_query(query)
         vec = _to_pgvector(embedding)
 
         if tags:
@@ -328,7 +328,7 @@ class NewsStore:
         candidates = await self.get_recent(limit=limit * 3, tags=tags)
         candidates = self._apply_exclusions(candidates, ctx.exclusions)
 
-        interest_vec = self._embedder.encode(ctx.interest_text)
+        interest_vec = self._embedder.encode_query(ctx.interest_text)
         scored = self._score_articles(candidates, interest_vec)
         scored.sort(key=lambda x: x[1], reverse=True)
 
@@ -356,7 +356,7 @@ class NewsStore:
         results = []
         for article in articles:
             text = f"{article.title}. {article.summary}"
-            emb = self._embedder.encode(text)
+            emb = self._embedder.encode_passage(text)
             av = np.array(emb, dtype=float)
             av_norm = np.linalg.norm(av)
             if iv_norm == 0 or av_norm == 0:
@@ -377,9 +377,11 @@ class NewsStore:
         query_preferences = [p for p in include_preferences if p.source == "query"]
         stored_preferences = [p for p in include_preferences if p.source != "query"]
 
-        query_vectors = [(p, self._embedder.encode(p.topic)) for p in query_preferences]
+        query_vectors = [
+            (p, self._embedder.encode_query(p.topic)) for p in query_preferences
+        ]
         preference_vectors = [
-            (p, self._embedder.encode(p.topic)) for p in stored_preferences
+            (p, self._embedder.encode_query(p.topic)) for p in stored_preferences
         ]
 
         newest = max((a.published_at for a in articles), default=None)
@@ -387,7 +389,9 @@ class NewsStore:
 
         scored: list[tuple[Article, float]] = []
         for article in articles:
-            article_vec = self._embedder.encode(f"{article.title}. {article.summary}")
+            article_vec = self._embedder.encode_passage(
+                f"{article.title}. {article.summary}"
+            )
             query_score = _weighted_similarity(article_vec, query_vectors)
             preference_score = _weighted_similarity(article_vec, preference_vectors)
             freshness_score = _freshness_score(article.published_at, oldest, newest)

@@ -1,9 +1,46 @@
-import pytest
 import numpy as np
-from ze_core.embeddings import get_embedder
+import pytest
+
+from ze_core import embeddings
+from ze_core.embeddings import E5Embedder, get_embedder
 
 
-@pytest.fixture(autouse=True)
+class _RecordingModel:
+    def __init__(self, name: str) -> None:
+        self.calls: list[object] = []
+
+    def encode(self, text, normalize_embeddings=True, **kwargs):
+        self.calls.append(text)
+        return np.ones(3) if isinstance(text, str) else np.ones((len(text), 3))
+
+
+@pytest.fixture
+def embedder(monkeypatch) -> E5Embedder:
+    monkeypatch.setattr(embeddings, "SentenceTransformer", _RecordingModel)
+    return E5Embedder("stub")
+
+
+def test_encode_query_prefixes_query(embedder):
+    embedder.encode_query("what is on my plate")
+    assert embedder._model.calls == ["query: what is on my plate"]
+
+
+def test_encode_passage_prefixes_passage(embedder):
+    embedder.encode_passage("lives in Porto")
+    assert embedder._model.calls == ["passage: lives in Porto"]
+
+
+def test_encode_passage_batches_with_prefix(embedder):
+    vecs = embedder.encode_passage(["a", "b"])
+    assert embedder._model.calls == [["passage: a", "passage: b"]]
+    assert vecs.shape == (2, 3)
+
+
+def test_there_is_no_unprefixed_encode(embedder):
+    assert not hasattr(embedder, "encode")
+
+
+@pytest.fixture
 def clear_embedder_cache():
     get_embedder.cache_clear()
     yield
@@ -11,46 +48,21 @@ def clear_embedder_cache():
 
 
 @pytest.mark.slow
-def test_embedder_returns_sentence_transformer():
-    from sentence_transformers import SentenceTransformer
-
+def test_real_model_vectors_are_768_dim_and_normalised(clear_embedder_cache):
     embedder = get_embedder()
-    assert isinstance(embedder, SentenceTransformer)
+    vec = embedder.encode_passage("hello world")
+    assert vec.shape == (768,)
+    assert abs(np.linalg.norm(vec) - 1.0) < 1e-5
 
 
 @pytest.mark.slow
-def test_embedder_is_singleton():
-    e1 = get_embedder()
-    e2 = get_embedder()
-    assert e1 is e2
+def test_real_model_query_and_passage_differ(clear_embedder_cache):
+    embedder = get_embedder()
+    query = embedder.encode_query("where do I live?")
+    passage = embedder.encode_passage("where do I live?")
+    assert float(np.dot(query, passage)) < 0.999
 
 
 @pytest.mark.slow
-def test_embedder_produces_384_dim_vector():
-    embedder = get_embedder()
-    vec = embedder.encode("hello world")
-    assert vec.shape == (384,)
-
-
-@pytest.mark.slow
-def test_embedder_vectors_are_normalised():
-    embedder = get_embedder()
-    vec = embedder.encode("test sentence")
-    norm = np.linalg.norm(vec)
-    assert abs(norm - 1.0) < 1e-5
-
-
-@pytest.mark.slow
-def test_embedder_batch_encode():
-    embedder = get_embedder()
-    vecs = embedder.encode(["hello", "world", "test"])
-    assert vecs.shape == (3, 384)
-
-
-@pytest.mark.slow
-def test_different_sentences_produce_different_vectors():
-    embedder = get_embedder()
-    v1 = embedder.encode("book a calendar event for tomorrow")
-    v2 = embedder.encode("search the web for latest news")
-    similarity = float(np.dot(v1, v2))
-    assert similarity < 0.99  # not identical
+def test_real_model_is_singleton(clear_embedder_cache):
+    assert get_embedder() is get_embedder()

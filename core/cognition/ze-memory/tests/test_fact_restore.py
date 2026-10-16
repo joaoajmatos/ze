@@ -8,8 +8,10 @@ from ze_memory.types import Fact
 
 
 class _Embedder:
-    def encode(self, text: str) -> list[float]:
+    def encode_passage(self, text: str) -> list[float]:
         return [0.1, 0.2]
+
+    encode_query = encode_passage
 
 
 def _store(conn: AsyncMock) -> PostgresMemoryStore:

@@ -26,19 +26,23 @@ def _make_store(encode_return=None):
     pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
 
     embedder = MagicMock()
-    embedder.encode.return_value = encode_return or [0.1] * 384
+    embedder.encode_passage.return_value = embedder.encode_query.return_value = (
+        encode_return or [0.1] * 384
+    )
 
     return NewsStore(pool=pool, embedder=embedder), conn
 
 
 class _KeywordEmbedder:
-    def encode(self, text: str) -> list[float]:
+    def encode_passage(self, text: str) -> list[float]:
         lowered = text.lower()
         return [
             1.0 if "tech" in lowered or "ai" in lowered else 0.0,
             1.0 if "banana" in lowered or "fruit" in lowered else 0.0,
             1.0 if "econom" in lowered else 0.0,
         ]
+
+    encode_query = encode_passage
 
 
 # ── NewsPreferenceBuilder ────────────────────────────────────────────────────
@@ -569,7 +573,7 @@ async def test_get_personalized_caps_repeated_topics():
 def test_score_articles_zero_vector_gives_zero():
     store, _ = _make_store()
     article = _make_article()
-    store._embedder.encode.return_value = [0.0] * 384
+    store._embedder.encode_passage.return_value = [0.0] * 384
     results = store._score_articles([article], [0.0] * 384)
     assert results[0][1] == 0.0
 
@@ -577,7 +581,7 @@ def test_score_articles_zero_vector_gives_zero():
 def test_score_articles_identical_vectors_give_one():
     store, _ = _make_store()
     vec = [0.1] * 384
-    store._embedder.encode.return_value = vec
+    store._embedder.encode_passage.return_value = vec
     article = _make_article()
     results = store._score_articles([article], vec)
     assert abs(results[0][1] - 1.0) < 1e-6

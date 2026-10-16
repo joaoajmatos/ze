@@ -33,8 +33,13 @@ class _Embedder:
     def __init__(self, vectors: dict[str, list[float]]) -> None:
         self._vectors = vectors
 
-    def encode(self, text: str) -> list[float]:
+    def encode_passage(self, text: str) -> list[float]:
         return self._vectors[text]
+
+    def encode_query(self, text: str) -> list[float]:
+        raise AssertionError(
+            "forget matching compares fact-like text; it is not a query"
+        )
 
 
 async def test_retract_exact_identity_on_value():

@@ -268,7 +268,7 @@ def e5_similarity(embedder: Any, rows: list[Row]) -> dict[str, float]:
     return {
         r.id: float(
             _cosine_similarity(
-                embedder.encode(r.new_title), embedder.encode(r.loop_title)
+                embedder.encode_passage(r.new_title), embedder.encode_passage(r.loop_title)
             )
         )
         for r in rows

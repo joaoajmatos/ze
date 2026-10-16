@@ -46,7 +46,9 @@ def _make_sleep_pass(pool=None, episodes=None, entities=None, settings=None):
     if pool is None:
         pool, _ = _make_pool(episodes or [], entities=entities or [])
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1] * 384)
+    embedder.encode_passage = embedder.encode_query = MagicMock(
+        return_value=[0.1] * 384
+    )
     consolidator = MagicMock()
     consolidator.archive_session_episodes = AsyncMock(return_value=0)
     consolidator.dedup_facts = AsyncMock(return_value=0)

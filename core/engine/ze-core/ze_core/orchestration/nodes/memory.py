@@ -137,7 +137,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     admission_path = "none"
     judged_trace: Any = None
     if not is_eval and not is_retry:
-        embedding = embedder.encode(ctx.prompt)
+        embedding = embedder.encode_passage(ctx.prompt)
         episode_task = fire_and_forget(
             store.write_episode(
                 session_id=ctx.session_id,

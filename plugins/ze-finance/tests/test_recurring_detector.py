@@ -234,7 +234,7 @@ async def test_recurring_merchant_merge() -> None:
     ]
 
     embedder = MagicMock()
-    embedder.encode.return_value = [
+    embedder.encode_passage.return_value = [
         [1.0, 0.0],
         [0.95, 0.05],
         [0.94, 0.06],

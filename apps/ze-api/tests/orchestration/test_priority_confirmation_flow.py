@@ -45,9 +45,11 @@ def _item(title: str, rank: int) -> PriorityItem:
 class _FakeEmbedder:
     """Matches "berlin" strongly to the item titled "the berlin move" only."""
 
-    def encode(self, text: str) -> np.ndarray:
+    def encode_passage(self, text: str) -> np.ndarray:
         lowered = text.lower()
         return np.array([1.0 if "berlin" in lowered else 0.0, 1.0])
+
+    encode_query = encode_passage
 
 
 def _client(responses: list) -> MagicMock:
