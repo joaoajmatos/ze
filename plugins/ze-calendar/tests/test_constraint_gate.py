@@ -183,3 +183,31 @@ async def test_cancel_reminder_with_reminder_constraint_does_not_complete_silent
     finally:
         get_tool("cancel_reminder").func = original
         clear_hooks()
+
+
+def _decide(name: str, args: dict):
+    from ze_memory.constraint_veto import match_constraints, view_from_describe
+
+    spec = get_tool(name)
+    view = view_from_describe(name, args, spec.constraint_describe)
+    decision, _ids, _text = match_constraints(
+        view,
+        [ReviewedConstraint(id=uuid4(), value="No meetings before 10:00")],
+        user_timezone="UTC",
+    )
+    return decision.value
+
+
+def test_a_write_that_sets_no_time_cannot_break_a_time_window():
+    assert _decide("delete_event", {"event_id": "evt_1"}) == "allow"
+    assert _decide("update_event", {"event_id": "evt_1", "summary": "x"}) == "allow"
+    assert _decide("cancel_reminder", {"reminder_id": str(uuid4())}) == "allow"
+
+
+def test_a_write_that_sets_a_time_is_still_checked_against_the_window():
+    assert (
+        _decide(
+            "update_event", {"event_id": "evt_1", "start": "2026-10-17T09:00:00+00:00"}
+        )
+        != "allow"
+    )

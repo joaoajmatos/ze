@@ -41,6 +41,9 @@ class ConstraintWriteView:
     parties: list[str] = field(default_factory=list)
     when: datetime | None = None
     summary: str = ""
+    # False when the write schedules nothing (a delete, a cancel, an update that
+    # leaves the time alone): a time-window constraint cannot apply to it.
+    sets_time: bool = True
 
 
 @dataclass
@@ -100,6 +103,7 @@ def view_from_describe(
             parties=[str(p) for p in parties if p],
             when=when,
             summary=str(raw.get("summary") or ""),
+            sets_time=bool(raw.get("sets_time", True)),
         )
     return default_describe(tool_name, args)
 
@@ -165,7 +169,7 @@ def _match_one(
     compatible = _channel_compatible(view.channel, channels)
     party_hit = _party_hit(view.parties, text)
     window = _parse_time_window(text)
-    ignore_time = view.kind == KIND_OUTBOUND_DRAFT
+    ignore_time = view.kind == KIND_OUTBOUND_DRAFT or not view.sets_time
     in_window = False
     if window is not None and not ignore_time and write_when is not None:
         local = write_when.astimezone(tz).time()

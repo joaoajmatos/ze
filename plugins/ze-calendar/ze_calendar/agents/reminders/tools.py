@@ -20,6 +20,7 @@ def _reminder_write_view(args: dict) -> dict:
         "parties": [label] if label else [],
         "when": args.get("fire_at"),
         "summary": label or args.get("reminder_id") or "reminder write",
+        "sets_time": args.get("fire_at") is not None,
     }
 
 

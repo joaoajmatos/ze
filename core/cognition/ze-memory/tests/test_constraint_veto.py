@@ -313,3 +313,23 @@ async def test_load_reviewed_constraints_skips_unreviewed_and_contradicted():
     facts = await load_reviewed_constraints(store)
     assert len(facts) == 1
     assert facts[0].id == kept_id
+
+
+def test_a_time_window_does_not_apply_to_a_write_that_sets_no_time():
+    from ze_memory.constraint_veto import (
+        ConstraintWriteView,
+        ReviewedConstraint as _Constraint,
+        VetoDecision as _Decision,
+        match_constraints as _match,
+    )
+
+    facts = [_Constraint(id="c1", value="No meetings before 10:00")]
+    removal = ConstraintWriteView(
+        tool_name="delete_event", kind="calendar_mutation", sets_time=False
+    )
+    unknown_time = ConstraintWriteView(
+        tool_name="create_event", kind="calendar_mutation"
+    )
+
+    assert _match(removal, facts, user_timezone="UTC")[0] == _Decision.ALLOW
+    assert _match(unknown_time, facts, user_timezone="UTC")[0] == _Decision.CONFIRM

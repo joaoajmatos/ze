@@ -19,6 +19,7 @@ def _calendar_write_view(args: dict) -> dict:
         "parties": parties,
         "when": args.get("start"),
         "summary": summary or args.get("event_id") or location or "calendar write",
+        "sets_time": bool(args.get("start") or args.get("end")),
     }
 
 
