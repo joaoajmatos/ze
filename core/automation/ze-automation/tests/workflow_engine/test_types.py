@@ -8,7 +8,7 @@ def test_workflow_step_defaults_reproduce_todays_shape():
 
     assert step.agent_hint is None
     assert step.verify is None
-    assert step.intent == "execute"
+    assert step.approved_writes == []
     assert step.id == ""
     assert step.branches == []
     assert step.default_next is None

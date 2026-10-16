@@ -4,6 +4,8 @@ from typing import Any
 from uuid import UUID
 
 from ze_agents.errors import WorkflowPlanError
+from ze_automation.holds.planned import planned_writes, writes_needing_approval
+from ze_automation.workflow.revision_summary import changed_step_ids
 from ze_automation.workflow.store import WorkflowStore
 from ze_automation.workflow.types import ActorContext, ActorSource, WorkflowStep
 from ze_automation.workflow.validation import validate_workflow_steps
@@ -44,13 +46,13 @@ async def get_workflow(store: WorkflowStore, workflow_id: UUID) -> dict | None:
                 "task": s.task,
                 "agent_hint": s.agent_hint,
                 "verify": s.verify,
-                "intent": s.intent,
                 "id": s.id,
                 "branches": [
                     {"condition": b.condition, "to": b.to} for b in s.branches
                 ],
                 "default_next": s.default_next,
                 "on_failure": s.on_failure,
+                "approved_writes": list(s.approved_writes),
             }
             for s in wf.steps
         ],
@@ -78,11 +80,11 @@ def _step_to_response_dict(step: WorkflowStep) -> dict:
         "task": step.task,
         "agent_hint": step.agent_hint,
         "verify": step.verify,
-        "intent": step.intent,
         "id": step.id,
         "branches": [{"condition": b.condition, "to": b.to} for b in step.branches],
         "default_next": step.default_next,
         "on_failure": step.on_failure,
+        "approved_writes": list(step.approved_writes),
     }
 
 
@@ -214,16 +216,37 @@ async def build_status_summary(container: Any, *, period_days: int = 1) -> str:
 
 
 async def update_workflow_steps(
-    store: WorkflowStore, workflow_id: UUID, steps: list[WorkflowStep]
+    store: WorkflowStore,
+    workflow_id: UUID,
+    steps: list[WorkflowStep],
+    approve_writes: bool = False,
 ) -> dict:
+    """Replace a workflow's steps. A changed step loses its pre-approvals (FR-024).
+
+    With `approve_writes` the caller grants the asks-first tools of each changed step's
+    agent; otherwise the steps are listed in `writes_needing_approval`.
+    """
     wf = await store.get(workflow_id)
     if wf is None:
         raise WorkflowPlanError(f"Workflow {workflow_id} not found")
     validate_workflow_steps(steps)
+    changed = changed_step_ids(wf.steps, steps)
+    before_by_id = {s.id: s for s in wf.steps}
+    for step in steps:
+        if step.id not in changed:
+            step.approved_writes = list(before_by_id[step.id].approved_writes)
+        elif approve_writes:
+            step.approved_writes = planned_writes(step)
+        else:
+            step.approved_writes = []
     await store.update_steps(
         workflow_id, steps, actor=ActorContext(source=ActorSource.API)
     )
-    return await get_workflow(store, workflow_id)
+    result = await get_workflow(store, workflow_id)
+    result["writes_needing_approval"] = writes_needing_approval(
+        [s for s in steps if s.id in changed]
+    )
+    return result
 
 
 def _revision_to_response_dict(rev) -> dict:

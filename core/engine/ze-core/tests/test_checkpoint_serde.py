@@ -52,7 +52,7 @@ def test_core_modules_cover_routing_and_memory() -> None:
 
 def test_workflow_types_round_trip_through_built_serde() -> None:
     serde = build_checkpoint_serde(plugins=[_PluginWithWorkflowTypes()])
-    original = WorkflowStep(task="send email", agent_hint="email", intent="execute")
+    original = WorkflowStep(task="send email", agent_hint="email")
     type_, data = serde.dumps_typed(original)
     restored = serde.loads_typed((type_, data))
     assert isinstance(restored, WorkflowStep)

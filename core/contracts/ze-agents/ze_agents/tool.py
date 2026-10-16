@@ -4,7 +4,7 @@ import asyncio
 import inspect
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Literal, get_type_hints
+from typing import Any, Awaitable, Callable, Literal, get_type_hints
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
 from ze_agents.reversibility import ToolReversibility
@@ -65,7 +65,9 @@ class ToolSpec:
     effect_phrase: str | None = None
     asks_first: bool | None = None
     no_ask_reason: str | None = None
-    ask_check: Callable[[dict[str, Any], Any], AskDecision] | None = None
+    ask_check: (
+        Callable[[dict[str, Any], Any], AskDecision | Awaitable[AskDecision]] | None
+    ) = None
     editable_field: str | None = None
     summarize: Callable[[dict[str, Any]], str] | None = None
 
@@ -210,7 +212,8 @@ def tool(
     effect_phrase: str | None = None,
     asks_first: bool | None = None,
     no_ask_reason: str | None = None,
-    ask_check: Callable[[dict[str, Any], Any], AskDecision] | None = None,
+    ask_check: Callable[[dict[str, Any], Any], AskDecision | Awaitable[AskDecision]]
+    | None = None,
     editable_field: str | None = None,
     summarize: Callable[[dict[str, Any]], str] | None = None,
 ) -> Callable:

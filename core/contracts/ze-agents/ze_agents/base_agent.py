@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import time
 from dataclasses import dataclass
@@ -591,6 +592,8 @@ class BaseAgent(ABC):
                     return _AskResolution(text=decision.reason, reason="constraint")
         if spec.ask_check is not None:
             decision = spec.ask_check(args, ctx)
+            if inspect.isawaitable(decision):
+                decision = await decision
             if decision.kind == "refuse":
                 return _AskResolution(refuse=decision.message)
             if decision.kind == "ask":

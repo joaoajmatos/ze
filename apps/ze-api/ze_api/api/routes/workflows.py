@@ -7,8 +7,10 @@ from ze_api.api.dependencies import get_workflow_store, require_api_key
 from ze_api.api.schemas import (
     CancelWorkflowExecutionResponse,
     StepResultResponse,
+    StepWritesNeedingApproval,
     TriggerWorkflowResponse,
     UpdateWorkflowStepsRequest,
+    UpdateWorkflowStepsResponse,
     WorkflowDetailResponse,
     WorkflowExecutionResponse,
     WorkflowResponse,
@@ -140,7 +142,6 @@ def _steps_from_request(steps: list) -> list[WorkflowStep]:
             task=s.task,
             agent_hint=s.agent_hint,
             verify=s.verify,
-            intent=s.intent,
             id=s.id,
             branches=[Branch(condition=b.condition, to=b.to) for b in s.branches],
             default_next=s.default_next,
@@ -152,25 +153,39 @@ def _steps_from_request(steps: list) -> list[WorkflowStep]:
 
 @router.patch(
     "/{workflow_id}/steps",
-    response_model=WorkflowDetailResponse,
+    response_model=UpdateWorkflowStepsResponse,
     operation_id="updateWorkflowSteps",
     summary="Update workflow steps",
-    description="Replace the full step list on an existing workflow. Schedule and run history are unchanged.",
+    description=(
+        "Replace the full step list on an existing workflow. Schedule and run history "
+        "are unchanged. A changed step loses its pre-approved writes; the response lists "
+        "the changed steps whose agent has asks-first tools in writes_needing_approval. "
+        "Send approve_writes=true to grant them."
+    ),
 )
 async def update_workflow_steps(
     workflow_id: UUID,
     body: UpdateWorkflowStepsRequest,
     store: WorkflowStore = Depends(get_workflow_store),
-) -> WorkflowDetailResponse:
+) -> UpdateWorkflowStepsResponse:
     try:
         wf = await workflow_rest.update_workflow_steps(
-            store, workflow_id, _steps_from_request(body.steps)
+            store,
+            workflow_id,
+            _steps_from_request(body.steps),
+            approve_writes=body.approve_writes,
         )
     except WorkflowPlanError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return WorkflowDetailResponse(
-        **{k: v for k, v in wf.items() if k != "steps"},
+    return UpdateWorkflowStepsResponse(
+        **{
+            k: v for k, v in wf.items() if k not in ("steps", "writes_needing_approval")
+        },
         steps=[WorkflowStepResponse.model_validate(s) for s in wf["steps"]],
+        writes_needing_approval=[
+            StepWritesNeedingApproval.model_validate(w)
+            for w in wf["writes_needing_approval"]
+        ],
     )
 
 

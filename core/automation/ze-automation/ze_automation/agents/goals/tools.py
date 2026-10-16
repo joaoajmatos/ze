@@ -4,13 +4,25 @@ import asyncio
 import html as _html
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import AskDecision, ToolAccess, tool
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import GoalPlanError
 from ze_automation.goals.executor import GoalExecutor
+from ze_automation.holds.planned import (
+    approval_given,
+    grant_planned_writes,
+    memo_of,
+    plan_writes_check,
+)
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.postgres import PostgresGoalStore as GoalStore
-from ze_automation.goals.types import Goal, GoalStatus, MilestoneStatus
+from ze_automation.goals.types import (
+    Goal,
+    GoalStatus,
+    Milestone,
+    MilestoneStatus,
+    VerificationGate,
+)
 from ze_agents.interface.types import Action
 from ze_automation.push_kinds import GOAL_OVERLAP, GOAL_PLAN_PROPOSED
 from ze_logging import get_logger
@@ -143,6 +155,74 @@ async def _check_convergence(
     )
 
 
+def _new_goal(
+    goal_title: str,
+    objective: str,
+    success_condition: str,
+    time_horizon: str,
+    goal_type: str,
+) -> Goal:
+    return Goal(
+        title=goal_title,
+        objective=objective,
+        success_condition=success_condition,
+        time_horizon=time_horizon,
+        type=goal_type,
+        status=GoalStatus.PLANNING,
+    )
+
+
+async def _plan_goal(
+    store: GoalStore, planner: GoalPlanner, goal: Goal, *, consume: bool
+) -> tuple[list[Milestone], list[VerificationGate], bool]:
+    """Plan once: the check shows the plan, the approved call runs that same plan."""
+    memo = memo_of(planner)
+    key = (
+        "goal",
+        goal.title,
+        goal.objective,
+        goal.success_condition,
+        goal.time_horizon,
+        goal.type,
+    )
+    if memo is not None:
+        shown = memo.take(key) if consume else memo.get(key)
+        if shown is not None:
+            return shown[0], shown[1], True
+    try:
+        prior_work = await store.list_completed_milestone_summaries(
+            days=90,
+            limit=20,
+            exclude_goal_id=None,
+        )
+    except Exception as exc:
+        log.warning("goal_prior_work_query_failed", error=str(exc))
+        prior_work = []
+    milestones, gates = await planner.plan(goal, prior_work=prior_work or None)
+    if memo is not None and not consume:
+        memo.put(key, (milestones, gates))
+    return milestones, gates, False
+
+
+async def create_goal_check(args: dict, ctx) -> AskDecision:
+    store = args.get("store")
+    planner = args.get("planner")
+    if store is None or planner is None:
+        return AskDecision.run()
+    goal = _new_goal(
+        args.get("goal_title", ""),
+        args.get("objective", ""),
+        args.get("success_condition", ""),
+        args.get("time_horizon", ""),
+        args.get("goal_type", "custom"),
+    )
+    try:
+        milestones, _, _ = await _plan_goal(store, planner, goal, consume=False)
+    except GoalPlanError:
+        return AskDecision.run()
+    return plan_writes_check(milestones, label="Milestone")
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Create a new goal and propose a milestone plan for user approval.",
@@ -150,6 +230,7 @@ async def _check_convergence(
     undo_tool="abandon_goal",
     undo_note="Abandoning the goal does not undo work already started",
     effect_phrase="created a goal",
+    ask_check=create_goal_check,
 )
 async def create_goal(
     store: GoalStore,
@@ -163,29 +244,14 @@ async def create_goal(
 ) -> dict:
     active_goals = await store.list_active()
 
-    goal = Goal(
-        title=goal_title,
-        objective=objective,
-        success_condition=success_condition,
-        time_horizon=time_horizon,
-        type=goal_type,
-        status=GoalStatus.PLANNING,
-    )
+    goal = _new_goal(goal_title, objective, success_condition, time_horizon, goal_type)
 
     try:
-        prior_work = await store.list_completed_milestone_summaries(
-            days=90,
-            limit=20,
-            exclude_goal_id=None,
-        )
-    except Exception as exc:
-        log.warning("goal_prior_work_query_failed", error=str(exc))
-        prior_work = []
-
-    try:
-        milestones, gates = await planner.plan(goal, prior_work=prior_work or None)
+        milestones, gates, shown = await _plan_goal(store, planner, goal, consume=True)
     except GoalPlanError as exc:
         return {"error": f"Couldn't plan the goal: {exc}"}
+    if shown and approval_given():
+        grant_planned_writes(milestones)
 
     goal = await store.create_goal(goal)
 

@@ -240,6 +240,84 @@ async def test_update_workflow_steps_success():
     assert resp.json()["steps"][0]["on_failure"] == "continue"
 
 
+@pytest.fixture
+def mail_agent(monkeypatch):
+    import ze_agents.registry as registry_mod
+    import ze_agents.tool as tool_mod
+    from ze_agents.base_agent import BaseAgent
+    from ze_agents.registry import agent
+    from ze_agents.reversibility import ToolReversibility
+    from ze_agents.tool import ToolAccess, tool
+
+    monkeypatch.setattr(registry_mod, "_registry", dict(registry_mod._registry))
+    monkeypatch.setattr(tool_mod, "_tools", dict(tool_mod._tools))
+
+    async def route_send_mail(to: str = "") -> str:
+        return "sent"
+
+    tool(
+        access=ToolAccess.WRITE,
+        description="send",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+        effect_phrase="sent an email",
+    )(route_send_mail)
+    agent(
+        type(
+            "_RouteMail",
+            (BaseAgent,),
+            {"name": "route_mail", "description": "m", "tools": ["route_send_mail"]},
+        )
+    )
+
+
+async def _patch_steps(approve_writes: bool):
+    workflow = _workflow(
+        [
+            WorkflowStep(task="Draft", id="s0"),
+            WorkflowStep(task="Send", id="s1", agent_hint="route_mail"),
+        ]
+    )
+    app = _make_app(workflow)
+    app.state.container.workflow_store.update_steps = AsyncMock()
+    app.state.container.workflow_store.get = AsyncMock(return_value=workflow)
+    payload = {
+        "approve_writes": approve_writes,
+        "steps": [
+            {"id": "s0", "task": "Draft"},
+            {"id": "s1", "task": "Send it", "agent_hint": "route_mail"},
+        ],
+    }
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.patch(
+            f"/api/v0/workflows/{workflow.id}/steps",
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            json=payload,
+        )
+    saved = app.state.container.workflow_store.update_steps.await_args.args[1]
+    return resp, saved
+
+
+@pytest.mark.asyncio
+async def test_update_steps_clears_pre_approvals_and_lists_writes_needing_approval(
+    mail_agent,
+):
+    resp, saved = await _patch_steps(approve_writes=False)
+    assert resp.status_code == 200
+    assert resp.json()["writes_needing_approval"] == [
+        {"step_id": "s1", "agent": "route_mail", "tools": ["route_send_mail"]}
+    ]
+    assert [s.approved_writes for s in saved] == [[], []]
+
+
+@pytest.mark.asyncio
+async def test_update_steps_with_approve_writes_grants_the_changed_steps(mail_agent):
+    resp, saved = await _patch_steps(approve_writes=True)
+    assert resp.status_code == 200
+    assert [s.approved_writes for s in saved] == [[], ["route_send_mail"]]
+
+
 @pytest.mark.asyncio
 async def test_update_workflow_steps_validation_error():
     workflow = _workflow([WorkflowStep(task="Check status", id="s0")])

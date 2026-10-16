@@ -30,13 +30,14 @@ def _step_to_dict(step: WorkflowStep) -> dict:
         "task": step.task,
         "agent_hint": step.agent_hint,
         "verify": step.verify,
-        "intent": step.intent,
         "id": step.id,
         "branches": [{"condition": b.condition, "to": b.to} for b in step.branches],
         "default_next": step.default_next,
     }
     if step.on_failure != "fail":
         data["on_failure"] = step.on_failure
+    if step.approved_writes:
+        data["approved_writes"] = list(step.approved_writes)
     return data
 
 
@@ -62,7 +63,6 @@ def _step_from_dict(d: dict | str, index: int) -> WorkflowStep:
         task=d["task"],
         agent_hint=d.get("agent_hint"),
         verify=d.get("verify"),
-        intent=d.get("intent", "execute"),
         id=d.get("id") or f"s{index}",
         branches=[
             Branch(condition=b["condition"], to=b["to"])
@@ -70,6 +70,7 @@ def _step_from_dict(d: dict | str, index: int) -> WorkflowStep:
         ],
         default_next=d.get("default_next"),
         on_failure=d.get("on_failure", "fail"),
+        approved_writes=list(d.get("approved_writes") or []),
     )
 
 

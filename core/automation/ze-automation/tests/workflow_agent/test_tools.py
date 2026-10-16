@@ -143,8 +143,8 @@ def _legacy_workflow(name: str = "morning-briefing") -> Workflow:
         name=name,
         description="Legacy stored workflow",
         steps=[
-            WorkflowStep(task="Fetch news", agent_hint="news", intent="read", id="s0"),
-            WorkflowStep(task="Summarize", intent="reason", id="s1"),
+            WorkflowStep(task="Fetch news", agent_hint="news", id="s0"),
+            WorkflowStep(task="Summarize", id="s1"),
         ],
         schedule="0 8 * * *",
         enabled=True,
@@ -162,8 +162,8 @@ def _linear_workflow(name: str = "morning-briefing-new") -> Workflow:
         name=name,
         description="Newly authored linear workflow",
         steps=[
-            WorkflowStep(task="Fetch news", agent_hint="news", intent="read", id="s0"),
-            WorkflowStep(task="Summarize", intent="reason", id="s1"),
+            WorkflowStep(task="Fetch news", agent_hint="news", id="s0"),
+            WorkflowStep(task="Summarize", id="s1"),
         ],
         schedule=None,
         enabled=True,
@@ -188,20 +188,20 @@ async def test_get_workflow_returns_legacy_steps_with_backfilled_branch_fields()
         {
             "task": "Fetch news",
             "agent_hint": "news",
-            "intent": "read",
             "id": "s0",
             "branches": [],
             "default_next": None,
             "on_failure": "fail",
+            "approved_writes": [],
         },
         {
             "task": "Summarize",
             "agent_hint": None,
-            "intent": "reason",
             "id": "s1",
             "branches": [],
             "default_next": None,
             "on_failure": "fail",
+            "approved_writes": [],
         },
     ]
     assert legacy_result["steps"] == linear_result["steps"]

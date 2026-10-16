@@ -594,13 +594,13 @@ class WorkflowStepResponse(BaseModel):
     branches: list[BranchResponse]
     default_next: str | None
     on_failure: str = "fail"
+    approved_writes: list[str] = []
 
 
 class WorkflowStepInput(BaseModel):
     task: str
     agent_hint: str | None = None
     verify: str | None = None
-    intent: str = "execute"
     id: str
     branches: list[BranchInput] = []
     default_next: str | None = None
@@ -609,6 +609,7 @@ class WorkflowStepInput(BaseModel):
 
 class UpdateWorkflowStepsRequest(BaseModel):
     steps: list[WorkflowStepInput]
+    approve_writes: bool = False
 
 
 class WorkflowResponse(BaseModel):
@@ -624,6 +625,16 @@ class WorkflowResponse(BaseModel):
 
 class WorkflowDetailResponse(WorkflowResponse):
     steps: list[WorkflowStepResponse]
+
+
+class StepWritesNeedingApproval(BaseModel):
+    step_id: str
+    agent: str
+    tools: list[str]
+
+
+class UpdateWorkflowStepsResponse(WorkflowDetailResponse):
+    writes_needing_approval: list[StepWritesNeedingApproval] = []
 
 
 class WorkflowExecutionResponse(BaseModel):
@@ -1253,11 +1264,7 @@ class QuietHoursUpdate(BaseModel):
             return None
         if not _QUIET_HOURS_TIME_RE.match(value):
             raise ValueError("must be HH:MM in 24-hour time")
-        if (
-            info.field_name == "end"
-            and enabled
-            and info.data.get("start") == value
-        ):
+        if info.field_name == "end" and enabled and info.data.get("start") == value:
             raise ValueError("start and end must differ")
         return value
 

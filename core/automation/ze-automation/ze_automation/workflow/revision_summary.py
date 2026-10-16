@@ -6,10 +6,10 @@ _COMPARED_FIELDS = (
     "task",
     "agent_hint",
     "verify",
-    "intent",
     "branches",
     "default_next",
     "on_failure",
+    "approved_writes",
 )
 
 
@@ -55,3 +55,19 @@ def build_change_summary(
                 )
 
     return "; ".join(clauses)
+
+
+_DEFINITION_FIELDS = tuple(f for f in _COMPARED_FIELDS if f != "approved_writes")
+
+
+def changed_step_ids(before: list[WorkflowStep], after: list[WorkflowStep]) -> set[str]:
+    """Ids of steps in `after` that are new or differ from `before` (not counting grants)."""
+    before_by_id = {s.id: s for s in before}
+    changed: set[str] = set()
+    for step in after:
+        prior = before_by_id.get(step.id)
+        if prior is None or any(
+            _field_value(prior, f) != _field_value(step, f) for f in _DEFINITION_FIELDS
+        ):
+            changed.add(step.id)
+    return changed
