@@ -67,40 +67,6 @@ export type AgentDayCount = {
 };
 
 /**
- * ArticleItem
- */
-export type ArticleItem = {
-    /**
-     * Url
-     */
-    url: string;
-    /**
-     * Source Key
-     */
-    source_key: string;
-    /**
-     * Title
-     */
-    title: string;
-    /**
-     * Summary
-     */
-    summary: string;
-    /**
-     * Published At
-     */
-    published_at: string;
-    /**
-     * Tags
-     */
-    tags: Array<string>;
-    /**
-     * Credibility Flags
-     */
-    credibility_flags: Array<CredibilityFlagItem>;
-};
-
-/**
  * Body_importData
  */
 export type BodyImportData = {
@@ -108,24 +74,6 @@ export type BodyImportData = {
      * File
      */
     file: Blob | File;
-};
-
-/**
- * Body_ingest
- */
-export type BodyIngest = {
-    /**
-     * Url
-     */
-    url?: string | null;
-    /**
-     * File
-     */
-    file?: Blob | File | null;
-    /**
-     * Label
-     */
-    label?: string | null;
 };
 
 /**
@@ -140,20 +88,6 @@ export type BodyUploadWorkspaceFile = {
      * Path
      */
     path?: string | null;
-};
-
-/**
- * BranchInput
- */
-export type BranchInput = {
-    /**
-     * Condition
-     */
-    condition: string;
-    /**
-     * To
-     */
-    to: string;
 };
 
 /**
@@ -186,107 +120,6 @@ export type CancelWorkflowExecutionResponse = {
      * Message
      */
     message: string;
-};
-
-/**
- * ChannelInfo
- */
-export type ChannelInfo = {
-    /**
-     * Channel Id
-     */
-    channel_id: string;
-    /**
-     * Channel Type
-     */
-    channel_type: string;
-    /**
-     * Handle
-     */
-    handle: string;
-    /**
-     * Display Name
-     */
-    display_name: string | null;
-    /**
-     * Is Default Outbound
-     */
-    is_default_outbound: boolean;
-    /**
-     * Poll Enabled
-     */
-    poll_enabled: boolean;
-    /**
-     * Supports Push
-     */
-    supports_push: boolean;
-    /**
-     * Last Polled At
-     */
-    last_polled_at: string | null;
-};
-
-/**
- * ChannelListResponse
- */
-export type ChannelListResponse = {
-    /**
-     * Channels
-     */
-    channels: Array<ChannelInfo>;
-};
-
-/**
- * ChannelResponse
- */
-export type ChannelResponse = {
-    channel: ChannelInfo;
-};
-
-/**
- * ChannelUpdateRequest
- */
-export type ChannelUpdateRequest = {
-    /**
-     * Poll Enabled
-     */
-    poll_enabled?: boolean | null;
-    /**
-     * Is Default Outbound
-     */
-    is_default_outbound?: boolean | null;
-    /**
-     * Display Name
-     */
-    display_name?: string | null;
-};
-
-/**
- * CollisionLogEntrySchema
- */
-export type CollisionLogEntrySchema = {
-    /**
-     * Id
-     */
-    id: string;
-    contribution_a: ContributionRefSchema;
-    contribution_b: ContributionRefSchema;
-    /**
-     * Matched Entity Id
-     */
-    matched_entity_id: string | null;
-    /**
-     * Matched Target Face
-     */
-    matched_target_face: string;
-    /**
-     * Conflict Summary
-     */
-    conflict_summary: string;
-    /**
-     * Created At
-     */
-    created_at: string;
 };
 
 /**
@@ -360,88 +193,6 @@ export type ConfirmItemOut = {
 };
 
 /**
- * ConsolidationReportResponse
- */
-export type ConsolidationReportResponse = {
-    /**
-     * Facts Merged
-     */
-    facts_merged: number;
-    /**
-     * Facts Soft Expired
-     */
-    facts_soft_expired: number;
-    /**
-     * Facts Hard Deleted
-     */
-    facts_hard_deleted: number;
-    /**
-     * Episodes Archived
-     */
-    episodes_archived: number;
-    /**
-     * Episodes Deleted
-     */
-    episodes_deleted: number;
-    /**
-     * Session Episodes Archived
-     */
-    session_episodes_archived: number;
-    /**
-     * Profile Updated
-     */
-    profile_updated: boolean;
-    /**
-     * Duration Ms
-     */
-    duration_ms: number;
-};
-
-/**
- * ContactListItem
- */
-export type ContactListItem = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Email
-     */
-    email?: string | null;
-    /**
-     * Notes
-     */
-    notes?: string | null;
-};
-
-/**
- * ContributionRefSchema
- */
-export type ContributionRefSchema = {
-    /**
-     * Domain Id
-     */
-    domain_id: string;
-    /**
-     * Producer Kind
-     */
-    producer_kind: string;
-    /**
-     * Source Function
-     */
-    source_function: string;
-    /**
-     * Claim Kind
-     */
-    claim_kind: string;
-};
-
-/**
  * CostAnomaliesResponse
  */
 export type CostAnomaliesResponse = {
@@ -483,38 +234,6 @@ export type CostAnomalyItem = {
      * Detected At
      */
     detected_at: string;
-};
-
-/**
- * CreateSessionRequest
- */
-export type CreateSessionRequest = {
-    /**
-     * Id
-     */
-    id?: string | null;
-    /**
-     * Title
-     */
-    title?: string | null;
-};
-
-/**
- * CredibilityFlagItem
- */
-export type CredibilityFlagItem = {
-    /**
-     * Type
-     */
-    type: string;
-    /**
-     * Label
-     */
-    label: string;
-    /**
-     * Detail
-     */
-    detail: string;
 };
 
 /**
@@ -604,170 +323,6 @@ export type DeleteRequest = {
 };
 
 /**
- * DreamArtifactResponse
- */
-export type DreamArtifactResponse = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Run Id
-     */
-    run_id: string;
-    /**
-     * Artifact Type
-     */
-    artifact_type: string;
-    /**
-     * Content
-     */
-    content: string;
-    /**
-     * Source Episode Ids
-     */
-    source_episode_ids: Array<string>;
-    /**
-     * Source Fact Ids
-     */
-    source_fact_ids: Array<string>;
-    /**
-     * Support Count
-     */
-    support_count: number;
-    /**
-     * Distinct Session Count
-     */
-    distinct_session_count: number;
-    /**
-     * Temporal Spread Days
-     */
-    temporal_spread_days: number;
-    /**
-     * User Asserted Source Count
-     */
-    user_asserted_source_count: number;
-    /**
-     * Faithfulness Score
-     */
-    faithfulness_score: number | null;
-    /**
-     * Novelty Score
-     */
-    novelty_score: number | null;
-    /**
-     * Retrievable
-     */
-    retrievable: boolean | null;
-    /**
-     * Critic A Verdict
-     */
-    critic_a_verdict: string | null;
-    /**
-     * Critic A Reason
-     */
-    critic_a_reason: string | null;
-    /**
-     * Critic B Verdict
-     */
-    critic_b_verdict: string | null;
-    /**
-     * Critic B Reason
-     */
-    critic_b_reason: string | null;
-    /**
-     * Status
-     */
-    status: string;
-    /**
-     * User Revised Content
-     */
-    user_revised_content: string | null;
-    /**
-     * Promoted To
-     */
-    promoted_to: string | null;
-    /**
-     * Promoted Id
-     */
-    promoted_id: string | null;
-    /**
-     * Created At
-     */
-    created_at: string;
-    /**
-     * Reviewed At
-     */
-    reviewed_at: string | null;
-};
-
-/**
- * DreamJournalEntryResponse
- */
-export type DreamJournalEntryResponse = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Run Id
-     */
-    run_id: string;
-    /**
-     * Summary
-     */
-    summary: string;
-    /**
-     * Episodes Processed
-     */
-    episodes_processed: number;
-    /**
-     * Insights Promoted
-     */
-    insights_promoted: number;
-    /**
-     * Procedures Extracted
-     */
-    procedures_extracted: number;
-    /**
-     * Plan Risks Surfaced
-     */
-    plan_risks_surfaced: number;
-    /**
-     * Pending Review
-     */
-    pending_review: number;
-    /**
-     * Created At
-     */
-    created_at: string;
-};
-
-/**
- * DreamReviseRequest
- */
-export type DreamReviseRequest = {
-    /**
-     * Content
-     */
-    content: string;
-};
-
-/**
- * DreamRollbackResponse
- */
-export type DreamRollbackResponse = {
-    /**
-     * Rolled Back
-     */
-    rolled_back: number;
-    /**
-     * Summaries Flagged
-     */
-    summaries_flagged: number;
-};
-
-/**
  * EntityDetailResponse
  */
 export type EntityDetailResponse = {
@@ -825,147 +380,6 @@ export type ErrorDetail = {
 };
 
 /**
- * EvalChatRequest
- */
-export type EvalChatRequest = {
-    /**
-     * Prompt
-     */
-    prompt: string;
-    /**
-     * Session Id
-     */
-    session_id?: string;
-    /**
-     * Force Agent
-     */
-    force_agent?: string | null;
-};
-
-/**
- * EvalChatResponse
- */
-export type EvalChatResponse = {
-    /**
-     * Session Id
-     */
-    session_id: string;
-    /**
-     * Response
-     */
-    response: string | null;
-    /**
-     * Agent Used
-     */
-    agent_used: string | null;
-    routing: EvalRoutingInfo | null;
-    /**
-     * Pending Confirmation
-     */
-    pending_confirmation: boolean;
-    /**
-     * Error
-     */
-    error: string | null;
-    /**
-     * Tool Calls
-     */
-    tool_calls?: Array<EvalToolCall>;
-    /**
-     * Tokens Used
-     */
-    tokens_used?: number;
-};
-
-/**
- * EvalConfirmRequest
- */
-export type EvalConfirmRequest = {
-    /**
-     * Session Id
-     */
-    session_id?: string;
-    /**
-     * Choice
-     */
-    choice: 'approve' | 'deny';
-    /**
-     * Edits
-     */
-    edits?: {
-        [key: string]: string;
-    };
-};
-
-/**
- * EvalRoutingInfo
- */
-export type EvalRoutingInfo = {
-    /**
-     * Primary Agent
-     */
-    primary_agent: string;
-    /**
-     * Confidence
-     */
-    confidence: number;
-    /**
-     * Routing Method
-     */
-    routing_method: string;
-    /**
-     * Is Compound
-     */
-    is_compound: boolean;
-    /**
-     * Score Gap
-     */
-    score_gap: number;
-    /**
-     * Raw Scores
-     */
-    raw_scores: {
-        [key: string]: number;
-    };
-};
-
-/**
- * EvalToolCall
- */
-export type EvalToolCall = {
-    /**
-     * Tool Name
-     */
-    tool_name: string;
-    /**
-     * Args
-     */
-    args: {
-        [key: string]: unknown;
-    };
-    /**
-     * Duration Ms
-     */
-    duration_ms: number;
-    /**
-     * Success
-     */
-    success: boolean;
-    /**
-     * Error
-     */
-    error?: string | null;
-    /**
-     * Gate
-     */
-    gate?: string;
-    /**
-     * Parked
-     */
-    parked?: boolean;
-};
-
-/**
  * ExecutionTraceResponse
  */
 export type ExecutionTraceResponse = {
@@ -1015,32 +429,6 @@ export type ExecutionTraceResponse = {
      * Created At
      */
     created_at: string;
-};
-
-/**
- * ExpiringFactDigestItem
- */
-export type ExpiringFactDigestItem = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Key
-     */
-    key: string;
-    /**
-     * Value
-     */
-    value: string;
-    /**
-     * Agent
-     */
-    agent: string;
-    /**
-     * Expires At
-     */
-    expires_at: string;
 };
 
 /**
@@ -1469,32 +857,6 @@ export type ImportResponse = {
 };
 
 /**
- * IngestResponse
- */
-export type IngestResponse = {
-    /**
-     * Ingestion Id
-     */
-    ingestion_id: string;
-    /**
-     * Content Type
-     */
-    content_type: string;
-    /**
-     * Summary
-     */
-    summary: string;
-    /**
-     * Facts Count
-     */
-    facts_count: number;
-    /**
-     * Tags
-     */
-    tags: Array<string>;
-};
-
-/**
  * JudgmentTraceResponse
  */
 export type JudgmentTraceResponse = {
@@ -1540,116 +902,6 @@ export type JudgmentTraceResponse = {
      * Skip Reason
      */
     skip_reason?: string | null;
-};
-
-/**
- * LearningDetailResponse
- */
-export type LearningDetailResponse = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Content
-     */
-    content: string;
-    /**
-     * Claim Kind
-     */
-    claim_kind: string;
-    /**
-     * Provenance
-     */
-    provenance: string;
-    /**
-     * Confidence
-     */
-    confidence: number;
-    /**
-     * Status
-     */
-    status: string;
-    /**
-     * Evidence Count
-     */
-    evidence_count: number;
-    /**
-     * Promotion State
-     */
-    promotion_state: string | null;
-    /**
-     * Review Needed
-     */
-    review_needed: boolean;
-    /**
-     * Created At
-     */
-    created_at: string | null;
-    /**
-     * Evidence
-     */
-    evidence: Array<LearningEvidenceSummary>;
-};
-
-/**
- * LearningEvidenceSummary
- */
-export type LearningEvidenceSummary = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Evidence Kind
-     */
-    evidence_kind: string;
-    /**
-     * Role
-     */
-    role: string;
-    /**
-     * Excerpt
-     */
-    excerpt: string;
-    /**
-     * Action Record Id
-     */
-    action_record_id?: string | null;
-    /**
-     * Execution Context Key
-     */
-    execution_context_key?: string | null;
-};
-
-/**
- * LearningPromotionResponse
- */
-export type LearningPromotionResponse = {
-    /**
-     * Id
-     */
-    id: string | null;
-    /**
-     * Learning Id
-     */
-    learning_id: string;
-    /**
-     * State
-     */
-    state: string;
-    /**
-     * Memory Fact Id
-     */
-    memory_fact_id: string | null;
-    /**
-     * Failure Reason
-     */
-    failure_reason: string | null;
-    /**
-     * Created At
-     */
-    created_at: string | null;
 };
 
 /**
@@ -1717,112 +969,6 @@ export type LearningReviewRequest = {
 };
 
 /**
- * LoopDetail
- */
-export type LoopDetail = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Title
-     */
-    title: string;
-    /**
-     * State
-     */
-    state: string;
-    /**
-     * Claim Kind
-     */
-    claim_kind: string;
-    /**
-     * Provenance
-     */
-    provenance: string;
-    /**
-     * Confidence
-     */
-    confidence: number;
-    /**
-     * Drift Rationale
-     */
-    drift_rationale: string | null;
-    /**
-     * Goal Id
-     */
-    goal_id: string | null;
-    /**
-     * Reminder Id
-     */
-    reminder_id: string | null;
-    /**
-     * Created At
-     */
-    created_at: string | null;
-    /**
-     * Updated At
-     */
-    updated_at: string | null;
-    /**
-     * Promoted
-     */
-    promoted: boolean;
-    /**
-     * Source Inflows
-     */
-    source_inflows: Array<string>;
-    /**
-     * Evidence
-     */
-    evidence: Array<LoopEvidenceItem>;
-    /**
-     * Entities
-     */
-    entities: Array<LoopEntityItem>;
-    /**
-     * Sources
-     */
-    sources: Array<LoopSourceItem>;
-};
-
-/**
- * LoopEntityItem
- */
-export type LoopEntityItem = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Canonical Name
-     */
-    canonical_name: string;
-    /**
-     * Entity Type
-     */
-    entity_type: string;
-};
-
-/**
- * LoopEvidenceItem
- */
-export type LoopEvidenceItem = {
-    /**
-     * Type
-     */
-    type: string;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Summary
-     */
-    summary: string;
-};
-
-/**
  * LoopListItem
  */
 export type LoopListItem = {
@@ -1878,36 +1024,6 @@ export type LoopListItem = {
      * Source Inflows
      */
     source_inflows: Array<string>;
-};
-
-/**
- * LoopSourceItem
- */
-export type LoopSourceItem = {
-    /**
-     * Role
-     */
-    role: string;
-    /**
-     * Inflow
-     */
-    inflow: string;
-    /**
-     * Evidence Kind
-     */
-    evidence_kind: string | null;
-    /**
-     * Same Concern
-     */
-    same_concern: number | null;
-    /**
-     * Promoted
-     */
-    promoted: boolean;
-    /**
-     * Created At
-     */
-    created_at: string | null;
 };
 
 /**
@@ -1994,68 +1110,6 @@ export type MemoryChunkTraceResponse = {
      * Extraction Confidence
      */
     extraction_confidence?: number | null;
-};
-
-/**
- * MemoryDigestResponse
- */
-export type MemoryDigestResponse = {
-    /**
-     * Unreviewed Facts
-     */
-    unreviewed_facts: Array<FactDigestItem>;
-    /**
-     * Contradicted Facts
-     */
-    contradicted_facts: Array<FactDigestItem>;
-    /**
-     * Recent Episodes
-     */
-    recent_episodes: Array<EpisodeDigestItem>;
-    /**
-     * Expiring Facts
-     */
-    expiring_facts: Array<ExpiringFactDigestItem>;
-};
-
-/**
- * MemoryFactQualityResponse
- */
-export type MemoryFactQualityResponse = {
-    /**
-     * Total
-     */
-    total: number;
-    /**
-     * By Provenance
-     */
-    by_provenance: {
-        [key: string]: number;
-    };
-    /**
-     * Avg Confidence
-     */
-    avg_confidence: number;
-    /**
-     * Low Confidence Count
-     */
-    low_confidence_count: number;
-    /**
-     * Contradicted Count
-     */
-    contradicted_count: number;
-    /**
-     * Synthesized Unreviewed
-     */
-    synthesized_unreviewed: number;
-    /**
-     * Synthesized Uncorroborated
-     */
-    synthesized_uncorroborated: number;
-    /**
-     * Synthesized Expired
-     */
-    synthesized_expired: number;
 };
 
 /**
@@ -2862,32 +1916,6 @@ export type ProcedureVersionResponse = {
 };
 
 /**
- * ProfileFacetItem
- */
-export type ProfileFacetItem = {
-    /**
-     * Key
-     */
-    key: string;
-    /**
-     * Value
-     */
-    value: string;
-    /**
-     * Stability
-     */
-    stability: string;
-    /**
-     * Confidence
-     */
-    confidence: number;
-    /**
-     * Updated At
-     */
-    updated_at: string;
-};
-
-/**
  * QuietHoursResponse
  */
 export type QuietHoursResponse = {
@@ -2941,28 +1969,6 @@ export type QuietHoursUpdate = {
      * Timezone
      */
     timezone?: string | null;
-};
-
-/**
- * ReminderListItem
- */
-export type ReminderListItem = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Label
-     */
-    label: string;
-    /**
-     * Fire At
-     */
-    fire_at: string;
-    /**
-     * Fired
-     */
-    fired: boolean;
 };
 
 /**
@@ -3047,54 +2053,6 @@ export type RollbackTraceResponse = {
      * Entries
      */
     entries?: Array<RollbackEntryResponse>;
-};
-
-/**
- * RoutingLogEntry
- */
-export type RoutingLogEntry = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Session Id
-     */
-    session_id: string;
-    /**
-     * Prompt
-     */
-    prompt: string;
-    /**
-     * Method
-     */
-    method: string;
-    /**
-     * Primary Agent
-     */
-    primary_agent: string;
-    /**
-     * Confidence
-     */
-    confidence: number | null;
-    /**
-     * Score Gap
-     */
-    score_gap: number | null;
-    /**
-     * Is Compound
-     */
-    is_compound: boolean;
-    /**
-     * Raw Scores
-     */
-    raw_scores: {
-        [key: string]: number;
-    } | null;
-    /**
-     * Created At
-     */
-    created_at: string;
 };
 
 /**
@@ -3302,24 +2260,6 @@ export type SkillListResponse = {
 };
 
 /**
- * SkillReferenceFileResponse
- */
-export type SkillReferenceFileResponse = {
-    /**
-     * Filename
-     */
-    filename: string;
-    /**
-     * Content Type
-     */
-    content_type: string;
-    /**
-     * Content
-     */
-    content: string;
-};
-
-/**
  * SkillReferenceFileSummary
  */
 export type SkillReferenceFileSummary = {
@@ -3504,24 +2444,6 @@ export type StepResultResponse = {
 };
 
 /**
- * StepWritesNeedingApproval
- */
-export type StepWritesNeedingApproval = {
-    /**
-     * Step Id
-     */
-    step_id: string;
-    /**
-     * Agent
-     */
-    agent: string;
-    /**
-     * Tools
-     */
-    tools: Array<string>;
-};
-
-/**
  * TimelineBoundsResponse
  */
 export type TimelineBoundsResponse = {
@@ -3685,118 +2607,6 @@ export type UnreadCountResponse = {
      * Count
      */
     count: number;
-};
-
-/**
- * UpdateWorkflowStepsRequest
- */
-export type UpdateWorkflowStepsRequest = {
-    /**
-     * Steps
-     */
-    steps: Array<WorkflowStepInput>;
-    /**
-     * Approve Writes
-     */
-    approve_writes?: boolean;
-};
-
-/**
- * UpdateWorkflowStepsResponse
- */
-export type UpdateWorkflowStepsResponse = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Description
-     */
-    description: string;
-    /**
-     * Schedule
-     */
-    schedule: string | null;
-    /**
-     * Enabled
-     */
-    enabled: boolean;
-    /**
-     * Last Run At
-     */
-    last_run_at: string | null;
-    /**
-     * Next Run At
-     */
-    next_run_at: string | null;
-    /**
-     * Created At
-     */
-    created_at: string;
-    /**
-     * Steps
-     */
-    steps: Array<WorkflowStepResponse>;
-    /**
-     * Writes Needing Approval
-     */
-    writes_needing_approval?: Array<StepWritesNeedingApproval>;
-};
-
-/**
- * UserFactResponse
- */
-export type UserFactResponse = {
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Key
-     */
-    key: string;
-    /**
-     * Value
-     */
-    value: string;
-    /**
-     * Agent
-     */
-    agent: string;
-    /**
-     * Confidence
-     */
-    confidence: number;
-    /**
-     * Reviewed
-     */
-    reviewed: boolean;
-    /**
-     * Contradicted
-     */
-    contradicted: boolean;
-    /**
-     * Updated At
-     */
-    updated_at: string;
-};
-
-/**
- * UserProfileResponse
- */
-export type UserProfileResponse = {
-    /**
-     * Facets
-     */
-    facets: Array<ProfileFacetItem>;
-    /**
-     * Updated At
-     */
-    updated_at?: string | null;
 };
 
 /**
@@ -4056,44 +2866,6 @@ export type WorkflowRevisionResponse = {
 };
 
 /**
- * WorkflowStepInput
- */
-export type WorkflowStepInput = {
-    /**
-     * Task
-     */
-    task: string;
-    /**
-     * Agent Hint
-     */
-    agent_hint?: string | null;
-    /**
-     * Verify
-     */
-    verify?: string | null;
-    /**
-     * Id
-     */
-    id: string;
-    /**
-     * Branches
-     */
-    branches?: Array<BranchInput>;
-    /**
-     * Default Next
-     */
-    default_next?: string | null;
-    /**
-     * On Failure
-     */
-    on_failure?: string;
-    /**
-     * Planned Writes
-     */
-    planned_writes?: Array<string>;
-};
-
-/**
  * WorkflowStepResponse
  */
 export type WorkflowStepResponse = {
@@ -4193,46 +2965,6 @@ export type WorkspaceFileTraceResponse = {
      * Op
      */
     op: 'read' | 'write' | 'delete' | 'ingest';
-};
-
-/**
- * WorkspaceIngestResponse
- */
-export type WorkspaceIngestResponse = {
-    /**
-     * Ingestion Id
-     */
-    ingestion_id: string;
-    /**
-     * Content Type
-     */
-    content_type: string;
-    /**
-     * Summary
-     */
-    summary: string;
-    /**
-     * Facts Count
-     */
-    facts_count: number;
-    /**
-     * Tags
-     */
-    tags: Array<string>;
-};
-
-/**
- * WorkspaceResetRequest
- */
-export type WorkspaceResetRequest = {
-    /**
-     * Confirmation Id
-     */
-    confirmation_id?: string | null;
-    /**
-     * Choice
-     */
-    choice?: 'approve' | 'deny' | null;
 };
 
 /**
@@ -4453,24 +3185,6 @@ export type WriteConfirmationOutcomeResponse = {
     outcome: 'approved' | 'edited' | 'pre_approved' | 'denied' | 'timed_out' | 'superseded' | 'refused';
 };
 
-/**
- * WsSchemaResponse
- */
-export type WsSchemaResponse = {
-    /**
-     * Inbound
-     */
-    inbound: {
-        [key: string]: unknown;
-    };
-    /**
-     * Outbound
-     */
-    outbound: {
-        [key: string]: unknown;
-    };
-};
-
 export type GetVersionData = {
     body?: never;
     path?: never;
@@ -4502,68 +3216,6 @@ export type HealthCheckResponses = {
 };
 
 export type HealthCheckResponse = HealthCheckResponses[keyof HealthCheckResponses];
-
-export type EvalChatEvalChatPostData = {
-    body: EvalChatRequest;
-    headers?: {
-        /**
-         * X-Ze-Api-Key
-         */
-        'x-ze-api-key'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/eval/chat';
-};
-
-export type EvalChatEvalChatPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type EvalChatEvalChatPostError = EvalChatEvalChatPostErrors[keyof EvalChatEvalChatPostErrors];
-
-export type EvalChatEvalChatPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: EvalChatResponse;
-};
-
-export type EvalChatEvalChatPostResponse = EvalChatEvalChatPostResponses[keyof EvalChatEvalChatPostResponses];
-
-export type EvalConfirmData = {
-    body: EvalConfirmRequest;
-    headers?: {
-        /**
-         * X-Ze-Api-Key
-         */
-        'x-ze-api-key'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/eval/confirm';
-};
-
-export type EvalConfirmErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type EvalConfirmError = EvalConfirmErrors[keyof EvalConfirmErrors];
-
-export type EvalConfirmResponses = {
-    /**
-     * Successful Response
-     */
-    200: EvalChatResponse;
-};
-
-export type EvalConfirmResponse = EvalConfirmResponses[keyof EvalConfirmResponses];
 
 export type GetActivityHeatmapData = {
     body?: never;
@@ -4719,24 +3371,6 @@ export type GetMemoryActivityResponses = {
 
 export type GetMemoryActivityResponse = GetMemoryActivityResponses[keyof GetMemoryActivityResponses];
 
-export type ListFactsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/memory/facts';
-};
-
-export type ListFactsResponses = {
-    /**
-     * Response Listfacts
-     *
-     * Successful Response
-     */
-    200: Array<UserFactResponse>;
-};
-
-export type ListFactsResponse = ListFactsResponses[keyof ListFactsResponses];
-
 export type ReviewFactsData = {
     body: FactReviewRequest;
     path?: never;
@@ -4763,70 +3397,6 @@ export type ReviewFactsResponses = {
 };
 
 export type ReviewFactsResponse = ReviewFactsResponses[keyof ReviewFactsResponses];
-
-export type GetMemoryDigestData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/memory/digest';
-};
-
-export type GetMemoryDigestResponses = {
-    /**
-     * Successful Response
-     */
-    200: MemoryDigestResponse;
-};
-
-export type GetMemoryDigestResponse = GetMemoryDigestResponses[keyof GetMemoryDigestResponses];
-
-export type ConsolidateMemoryData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/memory/consolidate';
-};
-
-export type ConsolidateMemoryResponses = {
-    /**
-     * Successful Response
-     */
-    200: ConsolidationReportResponse;
-};
-
-export type ConsolidateMemoryResponse = ConsolidateMemoryResponses[keyof ConsolidateMemoryResponses];
-
-export type GetFactQualityData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/memory/facts/quality';
-};
-
-export type GetFactQualityResponses = {
-    /**
-     * Successful Response
-     */
-    200: MemoryFactQualityResponse;
-};
-
-export type GetFactQualityResponse = GetFactQualityResponses[keyof GetFactQualityResponses];
-
-export type GetProfileData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/memory/profile';
-};
-
-export type GetProfileResponses = {
-    /**
-     * Successful Response
-     */
-    200: UserProfileResponse;
-};
-
-export type GetProfileResponse = GetProfileResponses[keyof GetProfileResponses];
 
 export type GetMemoryGraphData = {
     body?: never;
@@ -4901,46 +3471,6 @@ export type GetEntityDetailResponses = {
 };
 
 export type GetEntityDetailResponse = GetEntityDetailResponses[keyof GetEntityDetailResponses];
-
-export type GetRoutingLogData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Limit
-         *
-         * Maximum rows to return
-         */
-        limit?: number;
-        /**
-         * Offset
-         *
-         * Number of rows to skip
-         */
-        offset?: number;
-    };
-    url: '/api/v0/routing/log';
-};
-
-export type GetRoutingLogErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetRoutingLogError = GetRoutingLogErrors[keyof GetRoutingLogErrors];
-
-export type GetRoutingLogResponses = {
-    /**
-     * Response Getroutinglog
-     *
-     * Successful Response
-     */
-    200: Array<RoutingLogEntry>;
-};
-
-export type GetRoutingLogResponse = GetRoutingLogResponses[keyof GetRoutingLogResponses];
 
 export type ListWorkflowsData = {
     body?: never;
@@ -5086,36 +3616,6 @@ export type TriggerWorkflowResponses = {
 
 export type TriggerWorkflowResponse2 = TriggerWorkflowResponses[keyof TriggerWorkflowResponses];
 
-export type UpdateWorkflowStepsData = {
-    body: UpdateWorkflowStepsRequest;
-    path: {
-        /**
-         * Workflow Id
-         */
-        workflow_id: string;
-    };
-    query?: never;
-    url: '/api/v0/workflows/{workflow_id}/steps';
-};
-
-export type UpdateWorkflowStepsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateWorkflowStepsError = UpdateWorkflowStepsErrors[keyof UpdateWorkflowStepsErrors];
-
-export type UpdateWorkflowStepsResponses = {
-    /**
-     * Successful Response
-     */
-    200: UpdateWorkflowStepsResponse;
-};
-
-export type UpdateWorkflowStepsResponse2 = UpdateWorkflowStepsResponses[keyof UpdateWorkflowStepsResponses];
-
 export type ListWorkflowRevisionsData = {
     body?: never;
     path: {
@@ -5239,48 +3739,6 @@ export type GetCostAnomaliesResponses = {
 
 export type GetCostAnomaliesResponse = GetCostAnomaliesResponses[keyof GetCostAnomaliesResponses];
 
-export type GetCostDetailData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Days
-         *
-         * Lookback window in days
-         */
-        days?: number;
-        /**
-         * Group By
-         *
-         * Grouping dimension
-         */
-        group_by?: string;
-    };
-    url: '/api/v0/costs/detail';
-};
-
-export type GetCostDetailErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetCostDetailError = GetCostDetailErrors[keyof GetCostDetailErrors];
-
-export type GetCostDetailResponses = {
-    /**
-     * Response Getcostdetail
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type GetCostDetailResponse = GetCostDetailResponses[keyof GetCostDetailResponses];
-
 export type ListGoalsData = {
     body?: never;
     path?: never;
@@ -5329,77 +3787,6 @@ export type GetGoalDetailResponses = {
 
 export type GetGoalDetailResponse = GetGoalDetailResponses[keyof GetGoalDetailResponses];
 
-export type ListGoalLearningsData = {
-    body?: never;
-    path: {
-        /**
-         * Goal Id
-         */
-        goal_id: string;
-    };
-    query?: {
-        /**
-         * Include History
-         */
-        include_history?: boolean;
-    };
-    url: '/api/v0/goals/{goal_id}/learnings';
-};
-
-export type ListGoalLearningsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListGoalLearningsError = ListGoalLearningsErrors[keyof ListGoalLearningsErrors];
-
-export type ListGoalLearningsResponses = {
-    /**
-     * Response Listgoallearnings
-     *
-     * Successful Response
-     */
-    200: Array<LearningResponse>;
-};
-
-export type ListGoalLearningsResponse = ListGoalLearningsResponses[keyof ListGoalLearningsResponses];
-
-export type GetGoalLearningData = {
-    body?: never;
-    path: {
-        /**
-         * Goal Id
-         */
-        goal_id: string;
-        /**
-         * Learning Id
-         */
-        learning_id: string;
-    };
-    query?: never;
-    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}';
-};
-
-export type GetGoalLearningErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetGoalLearningError = GetGoalLearningErrors[keyof GetGoalLearningErrors];
-
-export type GetGoalLearningResponses = {
-    /**
-     * Successful Response
-     */
-    200: LearningDetailResponse;
-};
-
-export type GetGoalLearningResponse = GetGoalLearningResponses[keyof GetGoalLearningResponses];
-
 export type ReviewGoalLearningData = {
     body: LearningReviewRequest;
     path: {
@@ -5433,40 +3820,6 @@ export type ReviewGoalLearningResponses = {
 };
 
 export type ReviewGoalLearningResponse = ReviewGoalLearningResponses[keyof ReviewGoalLearningResponses];
-
-export type PromoteGoalLearningData = {
-    body?: never;
-    path: {
-        /**
-         * Goal Id
-         */
-        goal_id: string;
-        /**
-         * Learning Id
-         */
-        learning_id: string;
-    };
-    query?: never;
-    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}/promote';
-};
-
-export type PromoteGoalLearningErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PromoteGoalLearningError = PromoteGoalLearningErrors[keyof PromoteGoalLearningErrors];
-
-export type PromoteGoalLearningResponses = {
-    /**
-     * Successful Response
-     */
-    200: LearningPromotionResponse;
-};
-
-export type PromoteGoalLearningResponse = PromoteGoalLearningResponses[keyof PromoteGoalLearningResponses];
 
 export type ListGoalTracesData = {
     body?: never;
@@ -5643,31 +3996,6 @@ export type ListSessionsResponses = {
 };
 
 export type ListSessionsResponse = ListSessionsResponses[keyof ListSessionsResponses];
-
-export type CreateSessionData = {
-    body: CreateSessionRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v0/sessions';
-};
-
-export type CreateSessionErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CreateSessionError = CreateSessionErrors[keyof CreateSessionErrors];
-
-export type CreateSessionResponses = {
-    /**
-     * Successful Response
-     */
-    201: SessionSchema;
-};
-
-export type CreateSessionResponse = CreateSessionResponses[keyof CreateSessionResponses];
 
 export type SearchSessionsData = {
     body?: never;
@@ -5908,10 +4236,12 @@ export type ExportDataData = {
 
 export type ExportDataResponses = {
     /**
-     * Successful Response
+     * ZIP archive
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type ExportDataResponse = ExportDataResponses[keyof ExportDataResponses];
 
 export type ImportDataData = {
     body: BodyImportData;
@@ -5978,247 +4308,6 @@ export type DeleteDataResponses = {
 };
 
 export type DeleteDataResponse = DeleteDataResponses[keyof DeleteDataResponses];
-
-export type IngestData = {
-    body?: BodyIngest;
-    path?: never;
-    query?: never;
-    url: '/api/v0/ingest';
-};
-
-export type IngestErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type IngestError = IngestErrors[keyof IngestErrors];
-
-export type IngestResponses = {
-    /**
-     * Successful Response
-     */
-    200: IngestResponse;
-};
-
-export type IngestResponse2 = IngestResponses[keyof IngestResponses];
-
-export type GetWsSchemaData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/ws-schema';
-};
-
-export type GetWsSchemaResponses = {
-    /**
-     * Successful Response
-     */
-    200: WsSchemaResponse;
-};
-
-export type GetWsSchemaResponse = GetWsSchemaResponses[keyof GetWsSchemaResponses];
-
-export type ListDreamJournalData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v0/memory/dream/journal';
-};
-
-export type ListDreamJournalErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListDreamJournalError = ListDreamJournalErrors[keyof ListDreamJournalErrors];
-
-export type ListDreamJournalResponses = {
-    /**
-     * Response Listdreamjournal
-     *
-     * Successful Response
-     */
-    200: Array<DreamJournalEntryResponse>;
-};
-
-export type ListDreamJournalResponse = ListDreamJournalResponses[keyof ListDreamJournalResponses];
-
-export type ListDreamArtifactsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/memory/dream/artifacts';
-};
-
-export type ListDreamArtifactsResponses = {
-    /**
-     * Response Listdreamartifacts
-     *
-     * Successful Response
-     */
-    200: Array<DreamArtifactResponse>;
-};
-
-export type ListDreamArtifactsResponse = ListDreamArtifactsResponses[keyof ListDreamArtifactsResponses];
-
-export type GetDreamArtifactData = {
-    body?: never;
-    path: {
-        /**
-         * Artifact Id
-         */
-        artifact_id: string;
-    };
-    query?: never;
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}';
-};
-
-export type GetDreamArtifactErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetDreamArtifactError = GetDreamArtifactErrors[keyof GetDreamArtifactErrors];
-
-export type GetDreamArtifactResponses = {
-    /**
-     * Successful Response
-     */
-    200: DreamArtifactResponse;
-};
-
-export type GetDreamArtifactResponse = GetDreamArtifactResponses[keyof GetDreamArtifactResponses];
-
-export type ApproveDreamArtifactData = {
-    body?: never;
-    path: {
-        /**
-         * Artifact Id
-         */
-        artifact_id: string;
-    };
-    query?: never;
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}/approve';
-};
-
-export type ApproveDreamArtifactErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ApproveDreamArtifactError = ApproveDreamArtifactErrors[keyof ApproveDreamArtifactErrors];
-
-export type ApproveDreamArtifactResponses = {
-    /**
-     * Successful Response
-     */
-    200: DreamArtifactResponse;
-};
-
-export type ApproveDreamArtifactResponse = ApproveDreamArtifactResponses[keyof ApproveDreamArtifactResponses];
-
-export type RejectDreamArtifactData = {
-    body?: never;
-    path: {
-        /**
-         * Artifact Id
-         */
-        artifact_id: string;
-    };
-    query?: never;
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}/reject';
-};
-
-export type RejectDreamArtifactErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type RejectDreamArtifactError = RejectDreamArtifactErrors[keyof RejectDreamArtifactErrors];
-
-export type RejectDreamArtifactResponses = {
-    /**
-     * Successful Response
-     */
-    200: DreamArtifactResponse;
-};
-
-export type RejectDreamArtifactResponse = RejectDreamArtifactResponses[keyof RejectDreamArtifactResponses];
-
-export type ReviseDreamArtifactData = {
-    body: DreamReviseRequest;
-    path: {
-        /**
-         * Artifact Id
-         */
-        artifact_id: string;
-    };
-    query?: never;
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}/revise';
-};
-
-export type ReviseDreamArtifactErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ReviseDreamArtifactError = ReviseDreamArtifactErrors[keyof ReviseDreamArtifactErrors];
-
-export type ReviseDreamArtifactResponses = {
-    /**
-     * Successful Response
-     */
-    200: DreamArtifactResponse;
-};
-
-export type ReviseDreamArtifactResponse = ReviseDreamArtifactResponses[keyof ReviseDreamArtifactResponses];
-
-export type RollbackDreamRunData = {
-    body?: never;
-    path: {
-        /**
-         * Run Id
-         */
-        run_id: string;
-    };
-    query?: never;
-    url: '/api/v0/memory/dream/runs/{run_id}/rollback';
-};
-
-export type RollbackDreamRunErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type RollbackDreamRunError = RollbackDreamRunErrors[keyof RollbackDreamRunErrors];
-
-export type RollbackDreamRunResponses = {
-    /**
-     * Successful Response
-     */
-    200: DreamRollbackResponse;
-};
-
-export type RollbackDreamRunResponse = RollbackDreamRunResponses[keyof RollbackDreamRunResponses];
 
 export type ListNotificationsData = {
     body?: never;
@@ -6397,36 +4486,6 @@ export type ListLoopsResponses = {
 
 export type ListLoopsResponse = ListLoopsResponses[keyof ListLoopsResponses];
 
-export type GetLoopData = {
-    body?: never;
-    path: {
-        /**
-         * Loop Id
-         */
-        loop_id: string;
-    };
-    query?: never;
-    url: '/api/v0/loops/{loop_id}';
-};
-
-export type GetLoopErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetLoopError = GetLoopErrors[keyof GetLoopErrors];
-
-export type GetLoopResponses = {
-    /**
-     * Successful Response
-     */
-    200: LoopDetail;
-};
-
-export type GetLoopResponse = GetLoopResponses[keyof GetLoopResponses];
-
 export type ConfirmLoopData = {
     body?: never;
     path: {
@@ -6516,54 +4575,6 @@ export type DropLoopResponses = {
 };
 
 export type DropLoopResponse = DropLoopResponses[keyof DropLoopResponses];
-
-export type ListCollisionsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Entity Id
-         */
-        entity_id?: string | null;
-        /**
-         * Source Function
-         */
-        source_function?: string | null;
-        /**
-         * Since
-         */
-        since?: string | null;
-        /**
-         * Until
-         */
-        until?: string | null;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v0/collisions';
-};
-
-export type ListCollisionsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListCollisionsError = ListCollisionsErrors[keyof ListCollisionsErrors];
-
-export type ListCollisionsResponses = {
-    /**
-     * Response Listcollisions
-     *
-     * Successful Response
-     */
-    200: Array<CollisionLogEntrySchema>;
-};
-
-export type ListCollisionsResponse = ListCollisionsResponses[keyof ListCollisionsResponses];
 
 export type GetPrioritySnapshotData = {
     body?: never;
@@ -6858,100 +4869,6 @@ export type ListSkillsResponses = {
 
 export type ListSkillsResponse = ListSkillsResponses[keyof ListSkillsResponses];
 
-export type DeleteSkillData = {
-    body?: never;
-    path: {
-        /**
-         * Skill Id
-         */
-        skill_id: string;
-    };
-    query?: never;
-    url: '/api/v0/skills/{skill_id}';
-};
-
-export type DeleteSkillErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type DeleteSkillError = DeleteSkillErrors[keyof DeleteSkillErrors];
-
-export type DeleteSkillResponses = {
-    /**
-     * Successful Response
-     */
-    204: void;
-};
-
-export type DeleteSkillResponse = DeleteSkillResponses[keyof DeleteSkillResponses];
-
-export type GetSkillData = {
-    body?: never;
-    path: {
-        /**
-         * Skill Id
-         */
-        skill_id: string;
-    };
-    query?: never;
-    url: '/api/v0/skills/{skill_id}';
-};
-
-export type GetSkillErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetSkillError = GetSkillErrors[keyof GetSkillErrors];
-
-export type GetSkillResponses = {
-    /**
-     * Successful Response
-     */
-    200: SkillDetailResponse;
-};
-
-export type GetSkillResponse = GetSkillResponses[keyof GetSkillResponses];
-
-export type GetSkillReferenceFileData = {
-    body?: never;
-    path: {
-        /**
-         * Skill Id
-         */
-        skill_id: string;
-        /**
-         * Filename
-         */
-        filename: string;
-    };
-    query?: never;
-    url: '/api/v0/skills/{skill_id}/reference-files/{filename}';
-};
-
-export type GetSkillReferenceFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetSkillReferenceFileError = GetSkillReferenceFileErrors[keyof GetSkillReferenceFileErrors];
-
-export type GetSkillReferenceFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: SkillReferenceFileResponse;
-};
-
-export type GetSkillReferenceFileResponse = GetSkillReferenceFileResponses[keyof GetSkillReferenceFileResponses];
-
 export type ImportSkillData = {
     body: SkillImportRequest;
     path?: never;
@@ -7127,7 +5044,7 @@ export type EnableSkillResponses = {
 
 export type EnableSkillResponse = EnableSkillResponses[keyof EnableSkillResponses];
 
-export type RefreshSkillData = {
+export type DeleteSkillData = {
     body?: never;
     path: {
         /**
@@ -7136,26 +5053,26 @@ export type RefreshSkillData = {
         skill_id: string;
     };
     query?: never;
-    url: '/api/v0/skills/{skill_id}/refresh';
+    url: '/api/v0/skills/{skill_id}';
 };
 
-export type RefreshSkillErrors = {
+export type DeleteSkillErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type RefreshSkillError = RefreshSkillErrors[keyof RefreshSkillErrors];
+export type DeleteSkillError = DeleteSkillErrors[keyof DeleteSkillErrors];
 
-export type RefreshSkillResponses = {
+export type DeleteSkillResponses = {
     /**
      * Successful Response
      */
-    200: SkillDetailResponse;
+    204: void;
 };
 
-export type RefreshSkillResponse = RefreshSkillResponses[keyof RefreshSkillResponses];
+export type DeleteSkillResponse = DeleteSkillResponses[keyof DeleteSkillResponses];
 
 export type GetWorkspaceData = {
     body?: never;
@@ -7228,36 +5145,6 @@ export type UploadWorkspaceFileResponses = {
 
 export type UploadWorkspaceFileResponse = UploadWorkspaceFileResponses[keyof UploadWorkspaceFileResponses];
 
-export type IngestWorkspaceFileData = {
-    body?: never;
-    path: {
-        /**
-         * File Path
-         */
-        file_path: string;
-    };
-    query?: never;
-    url: '/api/v0/workspace/files/{file_path}/ingest';
-};
-
-export type IngestWorkspaceFileErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type IngestWorkspaceFileError = IngestWorkspaceFileErrors[keyof IngestWorkspaceFileErrors];
-
-export type IngestWorkspaceFileResponses = {
-    /**
-     * Successful Response
-     */
-    200: WorkspaceIngestResponse;
-};
-
-export type IngestWorkspaceFileResponse = IngestWorkspaceFileResponses[keyof IngestWorkspaceFileResponses];
-
 export type DeleteWorkspaceFileData = {
     body?: never;
     path: {
@@ -7311,10 +5198,12 @@ export type GetWorkspaceFileError = GetWorkspaceFileErrors[keyof GetWorkspaceFil
 
 export type GetWorkspaceFileResponses = {
     /**
-     * Successful Response
+     * File bytes
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type GetWorkspaceFileResponse = GetWorkspaceFileResponses[keyof GetWorkspaceFileResponses];
 
 export type ListWorkspaceRunsData = {
     body?: never;
@@ -7373,10 +5262,12 @@ export type WatchWorkspaceRunEventsError = WatchWorkspaceRunEventsErrors[keyof W
 
 export type WatchWorkspaceRunEventsResponses = {
     /**
-     * Successful Response
+     * Newline-delimited JSON events
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type WatchWorkspaceRunEventsResponse = WatchWorkspaceRunEventsResponses[keyof WatchWorkspaceRunEventsResponses];
 
 export type CancelWorkspaceRunData = {
     body?: never;
@@ -7407,78 +5298,6 @@ export type CancelWorkspaceRunResponses = {
 };
 
 export type CancelWorkspaceRunResponse = CancelWorkspaceRunResponses[keyof CancelWorkspaceRunResponses];
-
-export type ResetWorkspaceData = {
-    /**
-     * Body
-     */
-    body?: WorkspaceResetRequest | null;
-    path?: never;
-    query?: never;
-    url: '/api/v0/workspace/reset';
-};
-
-export type ResetWorkspaceErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ResetWorkspaceError = ResetWorkspaceErrors[keyof ResetWorkspaceErrors];
-
-export type ResetWorkspaceResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type ListChannelsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/channels';
-};
-
-export type ListChannelsResponses = {
-    /**
-     * Successful Response
-     */
-    200: ChannelListResponse;
-};
-
-export type ListChannelsResponse = ListChannelsResponses[keyof ListChannelsResponses];
-
-export type UpdateChannelData = {
-    body: ChannelUpdateRequest;
-    path: {
-        /**
-         * Channel Id
-         */
-        channel_id: string;
-    };
-    query?: never;
-    url: '/api/v0/channels/{channel_id}';
-};
-
-export type UpdateChannelErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpdateChannelError = UpdateChannelErrors[keyof UpdateChannelErrors];
-
-export type UpdateChannelResponses = {
-    /**
-     * Successful Response
-     */
-    200: ChannelResponse;
-};
-
-export type UpdateChannelResponse = UpdateChannelResponses[keyof UpdateChannelResponses];
 
 export type GetUiManifestData = {
     body?: never;
@@ -7519,7 +5338,7 @@ export type ReceiveWebhookError = ReceiveWebhookErrors[keyof ReceiveWebhookError
 
 export type ReceiveWebhookResponses = {
     /**
-     * Response Receive Webhook
+     * Response Receivewebhook
      *
      * Successful Response
      */
@@ -7529,46 +5348,6 @@ export type ReceiveWebhookResponses = {
 };
 
 export type ReceiveWebhookResponse = ReceiveWebhookResponses[keyof ReceiveWebhookResponses];
-
-export type ListNewsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Limit
-         *
-         * Maximum articles to return
-         */
-        limit?: number;
-        /**
-         * Tag
-         *
-         * Filter by tag
-         */
-        tag?: string | null;
-    };
-    url: '/api/v0/news';
-};
-
-export type ListNewsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListNewsError = ListNewsErrors[keyof ListNewsErrors];
-
-export type ListNewsResponses = {
-    /**
-     * Response Listnews
-     *
-     * Successful Response
-     */
-    200: Array<ArticleItem>;
-};
-
-export type ListNewsResponse = ListNewsResponses[keyof ListNewsResponses];
 
 export type GetNewsPageData = {
     body?: never;
@@ -7618,24 +5397,6 @@ export type GetNewsSettingsResponses = {
 
 export type GetNewsSettingsResponse = GetNewsSettingsResponses[keyof GetNewsSettingsResponses];
 
-export type ListContactsData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/contacts';
-};
-
-export type ListContactsResponses = {
-    /**
-     * Response Listcontacts
-     *
-     * Successful Response
-     */
-    200: Array<ContactListItem>;
-};
-
-export type ListContactsResponse = ListContactsResponses[keyof ListContactsResponses];
-
 export type GetContactsPageData = {
     body?: never;
     path?: never;
@@ -7651,24 +5412,6 @@ export type GetContactsPageResponses = {
 };
 
 export type GetContactsPageResponse = GetContactsPageResponses[keyof GetContactsPageResponses];
-
-export type ListRemindersData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/reminders';
-};
-
-export type ListRemindersResponses = {
-    /**
-     * Response Listreminders
-     *
-     * Successful Response
-     */
-    200: Array<ReminderListItem>;
-};
-
-export type ListRemindersResponse = ListRemindersResponses[keyof ListRemindersResponses];
 
 export type GetRemindersPageData = {
     body?: never;

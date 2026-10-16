@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { workspaceFetch } from "@/entities/workspace/api/workspaceFetch";
+import { disableProcedure, editProcedure } from "@myguyze/ze-client";
 import { queryKeys } from "@/shared/lib";
 import type { ProcedureAdmissionResult, ProcedureVersion } from "../model/types";
 
@@ -13,12 +13,12 @@ export function useDisableProcedureMutation() {
       procedureId: string;
       reason: string;
     }): Promise<ProcedureVersion> => {
-      const res = await workspaceFetch(`/procedures/${procedureId}/disable`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
+      const { data, error } = await disableProcedure({
+        path: { procedure_id: procedureId },
+        body: { reason },
       });
-      return (await res.json()) as ProcedureVersion;
+      if (error) throw error;
+      return data!;
     },
     onSuccess: (_data, { procedureId }) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.procedureLibrary() });
@@ -32,13 +32,7 @@ export function useEditProcedureMutation() {
   return useMutation({
     mutationFn: async ({
       procedureId,
-      name,
-      trigger,
-      preconditions,
-      steps,
-      success_criteria,
-      limits,
-      reason,
+      ...body
     }: {
       procedureId: string;
       name: string;
@@ -49,20 +43,12 @@ export function useEditProcedureMutation() {
       limits: string[];
       reason: string;
     }): Promise<ProcedureAdmissionResult> => {
-      const res = await workspaceFetch(`/procedures/${procedureId}/edit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          trigger,
-          preconditions,
-          steps,
-          success_criteria,
-          limits,
-          reason,
-        }),
+      const { data, error } = await editProcedure({
+        path: { procedure_id: procedureId },
+        body,
       });
-      return (await res.json()) as ProcedureAdmissionResult;
+      if (error) throw error;
+      return data!;
     },
     onSuccess: (_data, { procedureId }) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.procedureLibrary() });

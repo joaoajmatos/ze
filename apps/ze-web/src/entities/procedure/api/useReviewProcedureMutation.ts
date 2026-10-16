@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { workspaceFetch } from "@/entities/workspace/api/workspaceFetch";
+import { reviewProcedureCandidate } from "@myguyze/ze-client";
 import { queryKeys } from "@/shared/lib";
 import type { ProcedureAdmissionResult } from "../model/types";
 
@@ -21,12 +21,12 @@ export function useReviewProcedureMutation() {
       decision: ProcedureReviewDecision;
       reason: string;
     }): Promise<ProcedureAdmissionResult> => {
-      const res = await workspaceFetch(`/procedures/candidates/${candidateId}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, reason }),
+      const { data, error } = await reviewProcedureCandidate({
+        path: { candidate_id: candidateId },
+        body: { decision, reason },
       });
-      return (await res.json()) as ProcedureAdmissionResult;
+      if (error) throw error;
+      return data!;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.procedureCandidates() });
