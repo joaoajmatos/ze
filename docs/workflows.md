@@ -21,11 +21,29 @@ Ze no longer builds throwaway "dynamic plans". A request with several dependent 
 
 ## Irreversible steps in unattended runs
 
-A scheduled run has no one to answer a prompt. When a step needs an irreversible write
-that you have not approved, Ze holds that write and sends you a push. The run waits
-until you answer from the notification or the chat. A hold that you do not answer within
-24 hours expires and counts as a deny. The run then continues, and the step reports that
-the write did not run.
+A scheduled run has no one to answer a prompt, so approval happens at plan time.
+
+- Approving a workflow plan approves, for each step, the tools that ask first (irreversible
+  writes) that the step names. The approval covers any arguments the step passes.
+- Editing a step clears its approval. The next run holds that step's irreversible writes
+  until you approve them again.
+
+A write that is not approved holds the run:
+
+1. Ze holds the call and sends a `write_approval_held` push. The push counts as a
+   requested notification, so quiet hours do not delay it.
+2. You answer the hold in one of three places:
+   - the notification bell in the web app;
+   - the REST API: `POST /api/v0/held-writes/{request_id}/decision` with `choice`
+     (`approve` or `deny`) and optional `edits`. `GET /api/v0/held-writes?status=open`
+     lists open holds;
+   - the chat, with a `confirm` reply for the hold.
+3. On approval, Ze runs the held call with the approved arguments and the run continues.
+   On denial, nothing runs, and the step gets a declined result.
+
+A hold that nobody answers within 24 hours expires and counts as a deny. The expiry job
+runs hourly by default. Set `proactive.held_write_expiry.cron` to change the schedule, or
+`enabled: false` to turn the job off (see [scheduled-jobs.md](scheduled-jobs.md)).
 
 ## Creating a workflow (conversational)
 
@@ -38,7 +56,8 @@ Ze will:
 
 1. Parse the description into an ordered list of steps.
 2. Extract a cron expression from the schedule phrase.
-3. Ask you to confirm the plan.
+3. Ask you to approve the plan. Approving it also approves the irreversible writes
+   that each step names (see [Irreversible steps in unattended runs](#irreversible-steps-in-unattended-runs)).
 4. Store the workflow and schedule it.
 
 You can also manage workflows conversationally:

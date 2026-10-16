@@ -44,7 +44,10 @@ Ze will:
 1. Create a `Goal` record (title, objective, success condition, time horizon).
 2. Run `GoalPlanner` to produce milestones and verification gates.
 3. Send the plan via the native app / WebSocket with **Start goal** / **Cancel** options.
-4. On approval, set status to `ACTIVE` and begin the advance loop.
+4. On approval, set status to `ACTIVE` and begin the advance loop. Approving the plan also
+   approves the irreversible writes that each milestone names, as in
+   [workflows.md](workflows.md#irreversible-steps-in-unattended-runs). Editing a milestone
+   clears its approval.
 
 You can also manage goals conversationally:
 
@@ -109,6 +112,11 @@ Gate placement (enforced by the planner prompt):
 - The scheduler fires `goal_advance_sweep` (every 15 minutes for all active goals).
 - You approve a gate or finish a redirect.
 - You approve the initial plan after creation.
+
+A milestone that calls an irreversible write without your approval holds the advance loop.
+You answer the hold from the notification bell, the REST API or the chat. A hold that
+nobody answers within 24 hours counts as a deny. See
+[workflows.md](workflows.md#irreversible-steps-in-unattended-runs).
 
 ![Flowchart showing a goal advancing: if not active it returns, if a gate is due it fires the gate and awaits confirmation, otherwise it runs the milestone, stores output and learning, and checks for more milestones, looping back or marking the goal complete](diagrams/docs/goal-milestone-loop.svg)
 
