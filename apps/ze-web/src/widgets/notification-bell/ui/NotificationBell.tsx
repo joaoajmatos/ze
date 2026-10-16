@@ -9,6 +9,7 @@ import {
   useNotificationsQuery,
   useUnreadCountQuery,
 } from "@/entities/notification";
+import { useSession } from "@/entities/session";
 import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { EmptyState } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
@@ -78,10 +79,18 @@ export function NotificationBell() {
     if (confirmId === requestId) setConfirmParam(null);
   }
 
+  const selectSession = useSession((s) => s.selectSession);
+
   function handleItemClick(item: NotificationItem) {
     if (!item.read) void markRead.mutate(item.id);
     if (item.target_type === "held_write" && item.target_id) {
       setConfirmParam(item.target_id);
+      return;
+    }
+    if (item.target_type === "chat_thread" && item.target_id) {
+      selectSession(item.target_id);
+      setOpen(false);
+      navigate("/");
       return;
     }
     const route = targetRoute(item.target_type, item.target_id);

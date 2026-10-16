@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
+import { useSession } from "@/entities/session";
 import { NotificationBell } from "./NotificationBell";
 
 const {
@@ -185,6 +186,28 @@ describe("NotificationBell", () => {
     expect(mutate).toHaveBeenCalledWith("n-confirm");
     expect(screen.getByTestId("location")).toHaveTextContent("/chat");
     expect(screen.getByText("abandon a goal")).toBeInTheDocument();
+  });
+
+  it("opens the chat on the paused thread for a chat_thread notification", () => {
+    setup({
+      items: [
+        {
+          ...item,
+          id: "n-thread",
+          event_type: "confirmation_request",
+          title: "Ze needs your approval",
+          target_type: "chat_thread",
+          target_id: "thread-9",
+        },
+      ],
+    });
+    renderBell("/goals");
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+    fireEvent.click(screen.getByText("Ze needs your approval"));
+
+    expect(useSession.getState().threadId).toBe("thread-9");
+    expect(screen.getByTestId("location")).toHaveTextContent(/^\/$/);
   });
 
   it("labels a held item", () => {
