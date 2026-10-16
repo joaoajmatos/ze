@@ -208,3 +208,19 @@ OVERALL: ENABLE
 **Overall: ENABLE** (FR-016: zero false downgrades, light recall at least 0.5, skipped or invalid at most 10%, in both languages).
 
 Margin on the blind set, stated plainly because the tuned set did not predict it: the lowest PT `full` row sits in the 0.30 to 0.50 bin; since it was not judged light at 0.40 it lies between 0.40 and 0.50, within 0.10 of the bar (tuned lowest `full` was 0.56 to 0.60). The tuned-set noise (single rows move up to about 0.04 between runs) is about half that gap. The verdict is ENABLE, but the harm cap has less slack on held-out data than the tuned margin of 0.16 suggested. The set cannot be re-scored to measure it.
+
+### Routing check after the Score cut (T032, report-only), 2026-10-16
+
+`make calibrate-routing` once on the tuned `routing.jsonl` (70 rows, 30 EN and 30 PT per language scored, `k` 9, model `typesafe/jev-1.13`), with the routing request now carrying two questions (agent, multi_specialist) and no Score. Acceptance verdict of the script: **PASS** (not gating here).
+
+| | 167 (2026-10-12, held-out `routing_holdout` / `routing_holdout2`) | 182 (this run, tuned `routing.jsonl`) |
+|---|---|---|
+| EN accuracy | 1.000 | 29 of 30 = 0.967 |
+| PT accuracy | 1.000 | 30 of 30 = 1.000 |
+| ECE | 0.041 and 0.014 | 0.043 |
+| research to companion trusted misses | 0 | 0 |
+| harmful trusts at `choice_trust` 0.5 / `multi_specialist_hold` 0.5 | 0 | 0 |
+| `none` precision / recall | | 1.00 / 1.00 |
+| suggested bars | 0.5 / 0.5 shipped | 0.8 / 0.55 (the script's suggestion; the shipped bars stay) |
+
+The one EN miss is a `loops` row predicted as `companion`. It is one of the four training rows phase 171 appended (T034) after 167 recorded its training figures (26 of 26 on 52 rows, ECE 0.034), and it is a context-dependent confirmation sentence. 167's tuned and held-out figures are for different row sets, so the comparison is indicative only; no pre-182 baseline exists for the 171 rows, and I did not spend a second live run to build one. A drop beyond 167's figures is not shown (accuracy 0.967 against 1.000 on one row; ECE 0.043 against 0.041).
