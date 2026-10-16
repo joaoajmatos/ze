@@ -9,7 +9,7 @@ Hard cut (pre-v1): the top-level `prompt`, `editable`, `proposed` fields of `con
   "type": "confirm_request",
   "id": "8d0f…",                 // request_id (pending_confirmations key, 113)
   "thread_id": "…",
-  "kind": "write",               // "write" | "budget" | "held"
+  "kind": "write",               // "write" | "budget" | "held" | "prompt"
   "round": 1,                    // 1..3 within the turn ("write" only)
   "title": "Ze needs your OK",   // short heading, code-built
   "items": [
@@ -34,6 +34,8 @@ Hard cut (pre-v1): the top-level `prompt`, `editable`, `proposed` fields of `con
 ```
 
 `kind: "budget"` has one item with `tool: null`, `effect_phrase` "continue past today's spend limit" and `summary` "$4.10 of $4.00".
+
+`kind: "prompt"` is a confirmation with no parked writes: goal gates (Proceed/Stop/Redirect), goal suggestions, the workspace reset, and `AppInterface.send_confirmation`. `round` is 1, `items` is `[]`, `title` is the producer's prompt, and `actions` are the producer's own buttons. An `approve`/`deny` value comes back as a `confirm` frame; any other value (e.g. `goal_plan:yes:<id>`) comes back as `{"type": "action", "payload": "<value>", "thread_id": …}`. The stored row keeps `{kind, round, items, title, actions}`, so a reconnect replays the same frame. All producers build it with `build_prompt_frame` (`ze_api/api/websocket/frames.py`).
 
 Items show the effect in the imperative ("delete a calendar event"). One helper, `effect_imperative(effect_phrase)`, converts the declared past-tense phrase using a regular "-ed" rule plus an explicit irregular map (sent → send, ran → run, …). A test runs it over every registered `effect_phrase`; a phrase it cannot convert fails the test, and the author adds it to the map.
 

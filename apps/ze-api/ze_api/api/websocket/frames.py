@@ -57,11 +57,57 @@ def build_confirm_frame(
     }
 
 
+def prompt_payload(title: str, actions: list[dict[str, str]]) -> dict[str, Any]:
+    """What `pending_confirmations.actions` stores for a prompt-only confirmation."""
+    return {
+        "kind": "prompt",
+        "round": 1,
+        "items": [],
+        "title": title,
+        "actions": [dict(a) for a in actions],
+    }
+
+
+def build_prompt_frame(
+    *,
+    request_id: str,
+    thread_id: str | None,
+    title: str,
+    actions: list[dict[str, str]],
+    expires_at: datetime | None = None,
+) -> dict[str, Any]:
+    """A confirmation with no parked writes: a goal gate, a suggestion, a workspace reset.
+
+    Same contract as a write confirmation, kind "prompt", no items, the producer's
+    own actions (a non-approve/deny value comes back as an `action` frame).
+    """
+    return {
+        "type": "confirm_request",
+        "id": request_id,
+        "thread_id": thread_id,
+        "kind": "prompt",
+        "round": 1,
+        "title": title,
+        "items": [],
+        "source": None,
+        "expires_at": expires_at.isoformat() if expires_at is not None else None,
+        "actions": [dict(a) for a in actions],
+    }
+
+
 def frame_from_pending(pending: dict[str, Any]) -> dict[str, Any]:
     """Rebuild a frame from a `pending_confirmations` row (replay on connect)."""
     payload = pending.get("actions") or {}
     if not isinstance(payload, dict):
         payload = {}
+    if payload.get("kind") == "prompt":
+        return build_prompt_frame(
+            request_id=pending["request_id"],
+            thread_id=pending.get("thread_id"),
+            title=str(payload.get("title") or pending.get("prompt") or ""),
+            actions=list(payload.get("actions") or []),
+            expires_at=pending.get("expires_at"),
+        )
     return build_confirm_frame(
         request_id=pending["request_id"],
         thread_id=pending.get("thread_id"),

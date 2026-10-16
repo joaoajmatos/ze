@@ -137,41 +137,44 @@ class TestMessageFrameConformance:
 
 
 class TestConfirmRequestFrameConformance:
-    """confirm_request frame: {type, id, prompt, actions: [{label, value, style?}]}"""
+    """confirm_request frames from both builders validate against WsConfirmRequestFrame."""
 
-    async def test_confirm_request_shape_matches_protocol(self):
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
+    def test_write_confirmation_frame_matches_the_schema(self):
+        from ze_api.api.schemas import WsConfirmRequestFrame
+        from ze_api.api.websocket.frames import build_confirm_frame
 
-        request_id = str(uuid4())
-        frame = {
-            "type": "confirm_request",
-            "id": request_id,
-            "prompt": "Delete 10 emails?",
-            "actions": [
-                {"label": "Approve", "value": "approve", "style": "primary"},
-                {"label": "Cancel", "value": "deny", "style": "secondary"},
+        frame = build_confirm_frame(
+            request_id=str(uuid4()),
+            thread_id="t1",
+            kind="write",
+            round_=1,
+            items=[
+                {
+                    "item_id": "i1",
+                    "agent": "calendar",
+                    "tool": "delete_event",
+                    "effect_phrase": "delete a calendar event",
+                    "summary": "Dentist 15:00",
+                }
             ],
-        }
-        await mgr.send_frame(frame)
+            expires_at=datetime.now(timezone.utc),
+        )
+        WsConfirmRequestFrame.model_validate(frame)
 
-        sent = _frames_sent(ws)[0]
-        assert sent["type"] == "confirm_request"
-        assert isinstance(sent["id"], str)
-        assert isinstance(sent["prompt"], str)
-        assert isinstance(sent["actions"], list)
-        for action in sent["actions"]:
-            assert "label" in action
-            assert "value" in action
+    def test_prompt_frame_matches_the_schema(self):
+        from ze_api.api.schemas import WsConfirmRequestFrame
+        from ze_api.api.websocket.frames import build_prompt_frame
 
-    async def test_confirm_request_action_style_is_primary_secondary_or_danger(self):
-        valid_styles = {"primary", "secondary", "danger"}
-        for style in valid_styles:
-            action = {"label": "OK", "value": "approve", "style": style}
-            assert action["style"] in valid_styles
+        frame = build_prompt_frame(
+            request_id=str(uuid4()),
+            thread_id=None,
+            title="Start this goal?",
+            actions=[
+                {"label": "Start", "value": "goal_plan:yes:g1", "style": "primary"},
+                {"label": "Cancel", "value": "goal_plan:no:g1", "style": "danger"},
+            ],
+        )
+        WsConfirmRequestFrame.model_validate(frame)
 
 
 class TestConfirmCancelFrameConformance:

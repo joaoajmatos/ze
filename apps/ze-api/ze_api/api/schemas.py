@@ -806,7 +806,7 @@ class WsConfirmRequestFrame(BaseModel):
     type: Literal["confirm_request"]
     id: str
     thread_id: str | None = None
-    kind: Literal["write", "budget", "held"]
+    kind: Literal["write", "budget", "held", "prompt"]
     round: int = 1
     title: str
     items: list[WsConfirmItem]

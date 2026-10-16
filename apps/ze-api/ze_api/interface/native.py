@@ -15,6 +15,7 @@ from ze_agents.interface.types import (
     Notification,
     OutboundMessage,
 )
+from ze_api.api.websocket.frames import build_prompt_frame
 from ze_core.conversation.messages import Message
 from ze_logging import get_logger
 
@@ -231,14 +232,13 @@ class NativeAppInterface:
 
     async def send_confirmation(self, request: ConfirmationRequest) -> None:
         """Deliver a confirmation UI frame over WebSocket (and ntfy if backgrounded)."""
-        actions = _confirmation_actions(request.options)
         await self._conn.send_frame(
-            {
-                "type": "confirm_request",
-                "id": str(uuid4()),
-                "prompt": request.content,
-                "actions": actions,
-            }
+            build_prompt_frame(
+                request_id=str(uuid4()),
+                thread_id=None,
+                title=request.content,
+                actions=_confirmation_actions(request.options),
+            )
         )
 
         if (
@@ -290,14 +290,12 @@ class NativeAppInterface:
             else notification.content
         )
         await self._conn.send_frame(
-            {
-                "type": "confirm_request",
-                "id": str(uuid4()),
-                "prompt": prompt,
-                "actions": [
-                    _action_to_frame(action) for action in notification.actions
-                ],
-            }
+            build_prompt_frame(
+                request_id=str(uuid4()),
+                thread_id=None,
+                title=prompt,
+                actions=[_action_to_frame(action) for action in notification.actions],
+            )
         )
 
 
