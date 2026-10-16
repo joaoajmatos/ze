@@ -353,3 +353,26 @@ async def test_an_approved_call_with_a_constraint_that_wants_an_ok_runs(veto) ->
 
     assert calls == [("send_it", {"event_id": "e1", "body": "hello"})]
     assert tc.gate == "approved"
+
+
+async def test_a_hard_veto_wins_over_an_earlier_hook_that_only_asks(
+    monkeypatch,
+) -> None:
+    import ze_agents.hooks as hooks_mod
+
+    monkeypatch.setattr(
+        hooks_mod,
+        "_hooks",
+        [
+            _VetoHook(AskDecision.ask("You said be careful with X")),
+            _VetoHook(AskDecision.refuse("Blocked by your rule: never email X.")),
+        ],
+    )
+    _irreversible("send_it", constraint_gate=True)
+
+    tc = await _Agent().call_tool(
+        "send_it", _ctx(), _lm_args={"event_id": "e1"}, _call_id="c1", event_id="e1"
+    )
+
+    assert calls == []
+    assert tc.gate == "refused" and tc.parked is None

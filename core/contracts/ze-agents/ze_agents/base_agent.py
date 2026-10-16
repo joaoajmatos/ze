@@ -601,17 +601,20 @@ class BaseAgent(ABC):
     async def _constraint_check(
         self, spec: Any, ctx: AgentContext, args: dict[str, Any], hooks: list
     ) -> Any:
-        """The first constraint hook decision that is not run (FR-020), else None."""
+        """The strictest constraint hook decision (FR-020): refuse over ask, else None."""
         if not spec.constraint_gate:
             return None
+        asked = None
         for hook in hooks:
             check = getattr(hook, "check_call", None)
             if check is None:
                 continue
             decision = await check(ToolStartEvent(spec.name, args, ctx, -1))
-            if decision.kind in ("refuse", "ask"):
+            if decision.kind == "refuse":
                 return decision
-        return None
+            if decision.kind == "ask" and asked is None:
+                asked = decision
+        return asked
 
     async def _resolve_ask(
         self,
