@@ -164,7 +164,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 ### Nodes
 
-![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, match_skills then capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate then independent compound synthesizes, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
+![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, then preflight runs the turn while execute_tool parks irreversible writes into await_write_confirmation, which resumes the run, before correlate, compound, synthesize and write_memory return the response](diagrams/docs/graph-node-flow.svg)
 
 <sub>[Interactive version](diagrams/docs/graph-node-flow.html)</sub>
 

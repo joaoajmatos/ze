@@ -79,7 +79,7 @@ You can also manage workflows conversationally:
 
 For a workflow with N steps, the graph runs through the following loop for each step:
 
-![Flowchart showing a workflow step loading, routing, fetching context, then a capability check that executes or pauses for confirmation, writing memory and verifying the step, which loops back, synthesizes, or fails, ending at END](diagrams/docs/workflow-graph.svg)
+![Flowchart showing a workflow step loading, routing, fetching context, then preflight running the step; a write the step does not pre-approve parks at await_write_confirmation, which holds an unattended run, then write_memory and verify_step, looping back for more steps or ending in synthesis or failure](diagrams/docs/workflow-graph.svg)
 
 <sub>[Interactive version](diagrams/docs/workflow-graph.html)</sub>
 
