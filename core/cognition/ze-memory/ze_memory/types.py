@@ -19,6 +19,18 @@ class SpeechAct(StrEnum):
     NONE = "none"
 
 
+class CommitmentChoice(StrEnum):
+    REMINDER = "reminder"
+    LOOP = "loop"
+    GOAL = "goal"
+    WAITING_ON = "waiting_on"
+    FACT = "fact"
+    FORGET = "forget"
+    INGEST = "ingest"
+    CLARIFY = "clarify"
+    NONE = "none"
+
+
 @dataclass
 class EntityRef:
     name: str
