@@ -223,10 +223,63 @@ def test_row6_waiting_on_holds_at_any_confidence(conf):
 
 
 @pytest.mark.parametrize("choice", ["reminder", "goal"])
-@pytest.mark.parametrize("conf", [0.99, 0.1])
-def test_row7_reminder_or_goal_not_created_holds(choice, conf):
+@pytest.mark.parametrize("conf", [0.99, 0.6])
+def test_row7_reminder_or_goal_at_or_above_bar_not_created_holds(choice, conf):
     out = _d(make(choice, conf=conf, concern=0.99, explicit=0.99))
     assert (out.kind, out.reason) == ("hold", f"{choice}_not_created")
+    assert out.consumed == frozenset({"commitment", "resolves_existing"})
+
+
+# ── row 7a: unsure reminder or goal with nothing created falls through to the loop rules ──
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_bar_edge_holds_at_bar_and_falls_through_below(choice):
+    at = _d(make(choice, conf=0.6, concern=0.9, explicit=0.9))
+    below = _d(make(choice, conf=0.5999, concern=0.9, explicit=0.9))
+    assert at.reason == f"{choice}_not_created"
+    assert (below.kind, below.reason) == ("create_loop_declared", "explicit")
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_falls_through_to_declared(choice):
+    out = _d(make(choice, conf=0.3, concern=0.9, explicit=0.9))
+    assert (out.kind, out.reason) == ("create_loop_declared", "explicit")
+    assert out.consumed == frozenset(
+        {"commitment", "resolves_existing", "is_open_concern", "explicit_declaration"}
+    )
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_falls_through_to_suspected(choice):
+    out = _d(make(choice, conf=0.3, concern=0.9, explicit=0.1))
+    assert (out.kind, out.reason) == ("create_loop_suspected", "implied")
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_falls_through_to_not_open_concern(choice):
+    out = _d(make(choice, conf=0.3, concern=0.1, explicit=0.9))
+    assert (out.kind, out.reason) == ("hold", "not_open_concern")
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_tracked_still_holds(choice):
+    out = _d(make(choice, conf=0.3, concern=0.9, explicit=0.9), tracked=True)
+    assert (out.kind, out.reason) == ("hold", "tracked")
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_never_reports_loop_unsure(choice):
+    assert _d(make(choice, conf=0.0, concern=0.9, explicit=0.9)).reason != "loop_unsure"
+
+
+@pytest.mark.parametrize("choice", ["reminder", "goal"])
+def test_row7a_row5_created_id_still_links(choice):
+    out = _d(
+        make(choice, conf=0.3, concern=0.9, explicit=0.9),
+        created=TurnCreation(reminder_id="r1"),
+    )
+    assert (out.kind, out.reason) == ("link", "turn_created")
 
 
 @pytest.mark.parametrize("choice", ["forget", "ingest", "clarify", "none"])

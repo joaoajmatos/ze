@@ -38,22 +38,29 @@ _USER_ONLY = " Judge the user's words; the assistant reply is context only."
 
 _COMMITMENT_CRITERIA: dict[str, str] = {
     "reminder": (
-        "The user wants a ping at a specific time or date, or cancels one. Time wins. "
-        "Examples: 'remind me Tuesday at 3 to call the dentist', 'remember to call Mom at 3', "
-        "'lembra-me terça às 3 de ligar ao dentista'. "
+        "The user asks for a ping, alarm or nudge at a specific time or date, or cancels one. "
+        "The ask is what makes it a reminder. "
+        "Examples: 'remind me Tuesday at 3 to call the dentist', 'ping me at 6 to take the bins "
+        "out', 'lembra-me terça às 3 de ligar ao dentista', 'avisa-me às 6 para sair'. "
+        "A first-person obligation with a deadline and no ask to be pinged is a loop, not this: "
+        "'I have to send the tax form by Friday'. "
         "Cancelling a ping stays here: 'forget the dentist', 'esquece o dentista'."
     ),
     "loop": (
-        "The user voices a lingering concern or open question to keep an eye on, with no date, "
-        "or drops one. Examples: 'I need to figure out whether to switch jobs', "
-        "'I haven't decided on the job offer yet', 'preciso de decidir se mudo de emprego', "
+        "The user voices a lingering concern, open question or obligation to keep an eye on, "
+        "with or without a deadline but with no ask to be pinged at a time, or drops one. "
+        "Examples: 'I need to figure out whether to switch jobs', "
+        "'I haven't decided on the job offer yet', 'I have to send the tax form by Friday', "
+        "'preciso de decidir se mudo de emprego', 'tenho de entregar o IRS até sexta', "
         "'preciso de renovar o passaporte antes da viagem'. "
         "Dropping the concern stays here: 'forget the job switch', 'esquece a mudança de emprego'."
     ),
     "goal": (
-        "The user states a multi-week outcome they want to achieve, or abandons one. "
+        "The user states a multi-week outcome they want to pursue and build up over time, or "
+        "abandons one. A one-off task with a deadline is not a goal. "
         "Examples: 'I want to ship the thesis by June', 'I want to learn Portuguese up to B1 "
-        "in three months', 'quero acabar a tese até junho'. "
+        "in three months', 'quero acabar a tese até junho', 'quero correr uma meia maratona "
+        "este ano'. "
         "Abandoning the outcome stays here: 'cancel the thesis goal', 'esquece a meta da tese'."
     ),
     "waiting_on": (
@@ -249,7 +256,9 @@ def _decide(
     if choice is CommitmentChoice.WAITING_ON:
         return IntakeOutcome("hold", "waiting_on", _BASE)
     if choice in (CommitmentChoice.REMINDER, CommitmentChoice.GOAL):
-        return IntakeOutcome("hold", f"{choice.value}_not_created", _BASE)
+        if confidence >= cfg.choice_hold:
+            return IntakeOutcome("hold", f"{choice.value}_not_created", _BASE)
+        return _loop(result, cfg, confidence, tracked, unsure_holds=False)
     if choice is not CommitmentChoice.LOOP and confidence < cfg.choice_hold:
         return IntakeOutcome("hold", "choice_unsure", _BASE)
     if choice is CommitmentChoice.FACT:
@@ -281,10 +290,12 @@ def _loop(
     cfg: CommitmentIntakeSurfaceConfig,
     confidence: float,
     tracked: bool,
+    *,
+    unsure_holds: bool = True,
 ) -> IntakeOutcome:
     assert cfg.choice_hold is not None and cfg.loop_hold is not None
     assert cfg.explicit_hold is not None
-    if confidence < cfg.choice_hold:
+    if unsure_holds and confidence < cfg.choice_hold:
         return IntakeOutcome("hold", "loop_unsure", _BASE)
     if not (
         _valid_noul(result.answers.get(Q_CONCERN))
