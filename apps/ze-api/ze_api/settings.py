@@ -173,7 +173,6 @@ class ZeApiSettings(BaseSettings):
             openrouter_base_url=self.openrouter_base_url,
             session_inactivity_minutes=self.session_inactivity_minutes,
             consolidation_enabled=consolidation_enabled(self),
-            auto_migrate=False,
             log_level=self.log_level,
             timezone=tz,
             gmail_pubsub_topic=self.gmail_pubsub_topic,

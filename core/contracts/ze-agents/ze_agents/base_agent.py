@@ -161,7 +161,6 @@ class BaseAgent(ABC):
     routing_criteria: str = ""
     model: str = MODEL_AGENT_DEFAULT
     model_simple: str | None = None
-    vision_capable: bool = False
     timeout: int = MODEL_AGENT_TIMEOUT
     enabled: bool = True
     tools: list[str] = []

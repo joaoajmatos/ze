@@ -65,7 +65,6 @@ class LoopsAgent(BaseAgent):
       feelings where the user wants to talk it through now.
     """
     model = "anthropic/claude-haiku-4-5"
-    vision_capable = False
     timeout = 15
     tools = ["list_open_loops", "track_loop", "confirm_loop", "close_loop", "drop_loop"]
 

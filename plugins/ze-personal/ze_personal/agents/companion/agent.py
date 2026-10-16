@@ -136,7 +136,6 @@ class CompanionAgent(BaseAgent):
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 60
     tools = [
         "remember_fact",
