@@ -35,6 +35,12 @@ _EXPLICIT_INSTRUCTIONS = (
     "something, or ask to be reminded of it?"
 )
 
+_RESOLVES_INSTRUCTIONS = (
+    "Does the user report that something they needed to do is now done, in the past tense? "
+    "A request to save, read, import or remember something is not a report that something is "
+    "done, whatever it mentions."
+)
+
 _USER_ONLY = " Judge the user's words; the assistant reply is context only."
 
 _COMMITMENT_CRITERIA: dict[str, str] = {
@@ -50,15 +56,21 @@ _COMMITMENT_CRITERIA: dict[str, str] = {
     "loop": (
         "The user voices a lingering concern, open question or obligation to keep an eye on, "
         "with or without a deadline but with no ask to be pinged at a time, or drops one. "
+        "A one-off task with a deadline is a loop, even if it takes weeks, unless the user "
+        "frames it as an outcome to pursue. "
         "Examples: 'I need to figure out whether to switch jobs', "
         "'I haven't decided on the job offer yet', 'I have to send the tax form by Friday', "
+        "'I need to file the visa paperwork before March', "
         "'preciso de decidir se mudo de emprego', 'tenho de entregar o IRS até sexta', "
+        "'tenho de entregar o pedido de visto antes de março', "
         "'preciso de renovar o passaporte antes da viagem'. "
         "Dropping the concern stays here: 'forget the job switch', 'esquece a mudança de emprego'."
     ),
     "goal": (
-        "The user states a multi-week outcome they want to pursue and build up over time, or "
-        "abandons one. A one-off task with a deadline is not a goal. "
+        "The user states a multi-week outcome they want to pursue and build up over time, such "
+        "as a target, a habit or a skill, or abandons one. The user frames it as something to "
+        "achieve. A one-off task with a deadline is not a goal, even if it takes weeks: that is "
+        "a loop. "
         "Examples: 'I want to ship the thesis by June', 'I want to learn Portuguese up to B1 "
         "in three months', 'quero acabar a tese até junho', 'quero correr uma meia maratona "
         "este ano'. "
@@ -88,8 +100,12 @@ _COMMITMENT_CRITERIA: dict[str, str] = {
         "'guarda este documento'."
     ),
     "clarify": (
-        "The message is too ambiguous to place. The user must be asked what they mean. "
-        "Examples: 'remember that', 'lembra-te disso'."
+        "The message is too ambiguous to place, so the user must be asked what they mean. "
+        "Use it for a bare pointer with no object: a remember, keep, do or watch request that "
+        "says only 'that', 'it', 'the thing' or 'isso', 'aquilo', so there is nothing to act on. "
+        "Judge the user's words alone; it is not clarify when the message names what to keep. "
+        "Examples: 'remember that', 'do the thing we talked about', 'keep an eye on it', "
+        "'lembra-te disso', 'faz aquilo de que falámos', 'fica de olho nisso'."
     ),
     "none": (
         "Filler, thanks, mood, weather, right-now location, an idle plan with no commitment, or "
@@ -108,6 +124,7 @@ COMMITMENT_QUESTIONS: dict[str, SystemOneQuestion] = {
     **FACT_QUESTIONS,
     **LOOP_QUESTIONS,
     Q_EXPLICIT: SystemOneQuestion(type="noul", instructions=_EXPLICIT_INSTRUCTIONS),
+    Q_RESOLVES: SystemOneQuestion(type="noul", instructions=_RESOLVES_INSTRUCTIONS),
 }
 
 _BAR_NAMES = (

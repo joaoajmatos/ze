@@ -91,6 +91,33 @@ def test_criteria_are_filled_and_bilingual():
         assert pt in joined
 
 
+def test_goal_and_loop_criteria_break_the_deadline_task_tie():
+    criteria = COMMITMENT_QUESTIONS["commitment"].criteria
+    assert "even if it takes weeks" in criteria["loop"]
+    assert "one-off task" in criteria["goal"] and "loop" in criteria["goal"]
+    assert "frames" in criteria["goal"]
+
+
+def test_clarify_criterion_names_the_bare_pointer_cases():
+    text = COMMITMENT_QUESTIONS["commitment"].criteria["clarify"]
+    for marker in ("'that'", "'it'", "'isso'", "'aquilo'", "no object"):
+        assert marker in text
+
+
+def test_resolves_question_ignores_save_and_remember_requests():
+    q = COMMITMENT_QUESTIONS["resolves_existing"]
+    assert q.type == "noul"
+    for word in ("save", "import", "remember"):
+        assert word in q.instructions
+    assert "past" in q.instructions
+
+
+def test_loop_gate_resolves_wording_is_untouched_for_other_inflows():
+    from ze_worldstate.loop_judge import LOOP_QUESTIONS
+
+    assert "save" not in LOOP_QUESTIONS["resolves_existing"].instructions
+
+
 def test_state_is_user_and_capped_assistant():
     state = build_state("hi", "x" * 1500)
     assert set(state) == {"user", "assistant"}
