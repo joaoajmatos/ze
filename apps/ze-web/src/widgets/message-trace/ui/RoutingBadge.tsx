@@ -1,3 +1,5 @@
+import type { TierTraceResponse } from "@myguyze/ze-client";
+
 interface RoutingBadgeProps {
   agent: string;
   routingMethod: string;
@@ -6,6 +8,29 @@ interface RoutingBadgeProps {
   isCompound: boolean;
   subtasks: string[];
   totalDurationMs: number;
+  tier?: TierTraceResponse | null;
+}
+
+export function tierText(tier: TierTraceResponse): string | null {
+  if (tier.decided_by === "no_simple_model") return null;
+  if (tier.tier === "simple") {
+    return tier.decided_by === "system_one" ? "Light model · System One" : null;
+  }
+  switch (tier.decided_by) {
+    case "system_one":
+      return "Full model · System One";
+    case "off":
+      return "Full model · tiering off";
+    case "uncalibrated":
+      return "Full model · tiering not calibrated";
+    case "skip":
+    case "invalid_answer":
+      return "Full model · System One unavailable";
+    case "compound":
+      return "Full model · multi-agent turn";
+    default:
+      return null;
+  }
 }
 
 export function RoutingBadge({
@@ -16,8 +41,10 @@ export function RoutingBadge({
   isCompound,
   subtasks,
   totalDurationMs,
+  tier,
 }: RoutingBadgeProps) {
   const confidencePct = Math.round(confidence * 100);
+  const tierLine = tier ? tierText(tier) : null;
 
   return (
     <div className="space-y-2">
@@ -43,6 +70,8 @@ export function RoutingBadge({
         <span>{isCompound ? `Compound (${subtasks.length})` : "Direct"}</span>
         {totalDurationMs > 0 && <span>{totalDurationMs}ms</span>}
       </div>
+
+      {tierLine && <div className="text-xs text-smoke">{tierLine}</div>}
 
       {isCompound && subtasks.length > 0 && (
         <div className="flex flex-wrap gap-1">

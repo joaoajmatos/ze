@@ -2296,6 +2296,7 @@ export type MessageTraceResponse = {
      * Write Confirmations
      */
     write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
+    tier?: TierTraceResponse | null;
 };
 
 /**
@@ -3519,6 +3520,28 @@ export type StepWritesNeedingApproval = {
      * Tools
      */
     tools: Array<string>;
+};
+
+/**
+ * TierTraceResponse
+ */
+export type TierTraceResponse = {
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tier
+     */
+    tier: 'simple' | 'full';
+    /**
+     * Decided By
+     */
+    decided_by: string;
+    /**
+     * Model
+     */
+    model: string;
 };
 
 /**

@@ -6,6 +6,8 @@
 
 **Status**: Implemented (surface enabled)
 
+**Status note (182)**: The complexity Score is removed by [182](../182-complexity-routing/spec.md). The routing request now asks two questions, and `complexity_lookup_max` no longer exists. Superseded by 182 for the complexity question.
+
 **Input**: User description: "Make the 164 routing Choice safe to enable. Live recalibration 2026-10-12 (k=5): 0.957 on the tuned set, 0.70 EN / 0.80 PT on the held-out set, ECE 0.27. Every held-out miss is an explain / compare / how-to research question sent to companion."
 
 **Governed by**: [`specs/arch/system-one-models.md`](../../arch/system-one-models.md) O2, [`specs/arch/companion-conductor-roadmap.md`](../../arch/companion-conductor-roadmap.md), [`specs/arch/pre-v1-hard-cuts.md`](../../arch/pre-v1-hard-cuts.md).

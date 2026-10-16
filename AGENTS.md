@@ -56,7 +56,7 @@ ze/                           # monorepo root
 │   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
 │   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state)
-│   │           ├── routing/     # EmbeddingRouter, ComplexityEstimator, fallback, store
+│   │           ├── routing/     # EmbeddingRouter, tier.py (System One model tier), fallback, store
 │   │           ├── telemetry/   # CostTracker, CostReconciler, PostgresCostStore, ContextVar
 │   │           ├── container.py # Base Container with DI wiring and invoke/resume entry points
 │   │           ├── embeddings.py # Shared intfloat/multilingual-e5-base singleton
@@ -283,6 +283,7 @@ make calibrate-skills      # LIVE System One run over eval/calibration/skills.js
 make calibrate-open-query # Local, free: open-query detector sweep over eval/calibration/open_query*.jsonl (--check-sets offline; one held-out verdict)
 make calibrate-loop-gate  # LIVE System One + Haiku baseline over eval/calibration/loop_gate.jsonl; costs credits (--set holdout = the one verdict run; --check-sets offline)
 make calibrate-corroboration  # LIVE System One + E5 baseline over eval/calibration/corroboration.jsonl; costs credits (--set holdout = the one verdict run; --check-sets offline)
+make calibrate-complexity  # LIVE System One over eval/calibration/complexity.jsonl; costs credits (--check-sets offline; --set holdout = the one verdict run)
 ```
 
 ## Stack decisions (do not relitigate without reading specs/)
@@ -452,7 +453,7 @@ and runs them against a single `alembic_version` table.
 
 | Package | Branch prefix | Tables |
 |---|---|---|
-| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`); capability_overrides dropped (`zc034`) |
+| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`); capability_overrides dropped (`zc034`); routing_log.complexity and routing_log.model_selected dropped (`zc035`, phase 182) |
 | ze-automation | `zc` (continues ze-core chain) | held_writes (`zc033`), goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
 | ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
 | ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
@@ -489,7 +490,7 @@ and runs them against a single `alembic_version` table.
 
 ```
 preprocess (voice → transcript, image → caption) → [inject_routing_context, when a plugin adds a pre_route_node]
-  → embed_route → (compound?) → decompose → fetch_context → match_skills → preflight
+  → embed_route → (compound?) → decompose → fetch_context → match_skills → choose_tier → preflight
                 ↘ fetch_context ↗
 
 preflight → blocked (disabled agent) → END
@@ -647,6 +648,7 @@ preflight → blocked (disabled agent) → END
 | 177 | Interruption Governor (part 1) — one governor for every proactive push: `PushKind` (class requested/accountability/discretionary + urgency) registered process-wide, pure `decide()` in `ze_proactive/governor.py`; the shared daily budget (`proactive.budget.max_pushes_per_day` default 5) covers every discretionary push; quiet hours (`interruption_settings`, ship off) hold accountability and discretionary pushes, `QuietHoursReleaseJob` releases them with one summary buzz; `notify()` is the only send path (`push()`/`push_notification()` deleted); ntfy priority low 2/normal 3/high 5 and a `buzz` flag; REST `GET/PUT /api/v0/notifications/quiet-hours` + a Settings form; cron catch-up (`proactive_job_runs`, `catch_up_max_age_hours`), workflow catch-up, late calendar reminders; migration `zpro004` | Implemented |
 | 180 | Retry Rollback — Retry undoes the reversible actions of the latest reply, then regenerates it. Reversible tools return a per-call `undo_payload` (`ze_sdk`) that `call_tool` stores on `ToolCall.undo` and the trace; `retry_eligibility` builds a public plan (entry ids = hash of message, call index, tool, args), the client confirms it as `confirmed_plan`, and the server recomputes it under the thread lock (`undo_not_confirmed` / `plan_changed`); `run_rollback` (`ze_core/conversation/rollback.py`) runs each undo through the owning agent's `BaseAgent.run_undo` with no model call and records each entry on `messages.rollback` (`zc032`; states `partial`, `rolled_back_awaiting_confirmation`, `rolled_back_retry_failed`, `superseded`); one retry policy (irreversible writes refused, reversible writes run under the normal gates, a confirmation pauses the retry); `message_rollback` frame, `retry_partial`, `history_unavailable`; `remember_fact` and priority overrides restore what they displaced; web two-step consent, rollback notice, trace `RollbackSection` | Implemented |
 | 181 | Irreversible Write Confirmation — every WRITE tool that is IRREVERSIBLE asks first unless it declares `asks_first=False` with a reason: `call_tool` parks it, `LoopParked` is caught at the delegate/subtask boundary, one `await_write_confirmation` pause per turn (`confirm_request` frame with items; at most 3 rounds, a 4th is `refused_over_cap`), resume runs exactly the approved calls before any model call; approval is an `ApprovedCall` built only from park state (model `_` args are stripped, injected deps win and are hidden from schemas); one item per identical `(tool, args)` (repeat gate `duplicate`); deny/timeout give a code-guaranteed "Okay, I didn't <effect>."; the 144 veto runs before pre-approval; summaries name the target (`summarize` gets deps); goal gates/suggestions/workspace reset use `kind: "prompt"` frames; a confirmation push rings the bell without a chat message (`PushKind.in_chat`); intents, modes, `CapabilityGate` and capabilities REST/WS hard-cut (`zc032`); per-step `approved_writes` for workflows/goals, unplanned writes hold in `held_writes` (`zc033`, 24 h, `write_approval_held` push, REST `/api/v0/held-writes`, `HeldWriteExpiryJob`); eval `/eval/confirm` + `confirm:` scenario step | Implemented |
+| 182 | Complexity Routing — routing always assigns the agent's full model; the `choose_tier` node runs after `match_skills` and asks one System One Noul (`needs_deep_reasoning`, `ze_core/routing/tier.py`) only for a single-agent turn whose agent declares a different `model_simple`; `model_simple` runs only when the answer is at or below `simple_max`; the complexity Score, `complexity_lookup_max`, the word-count classifier and `RoutingEnvelope.complexity` are removed; the surface is enabled at `simple_max` 0.40 (`system_one.surfaces.complexity`) after a held-out ENABLE in English and Portuguese on 2026-10-16; the code default without the config block is off; `MessageTrace.tier` (`TierTrace`: agent, tier, decided_by, model) reaches REST, the `trace_update` frame and the trace panel's Routing section; `routing_log.complexity` and `model_selected` are dropped (`zc035`); `make calibrate-complexity` runs the tuned and held-out calibration | Implemented |
 
 ## graphify
 

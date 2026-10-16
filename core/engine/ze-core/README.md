@@ -8,7 +8,7 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 
 ### Key features
 
-- Embedding-based intent routing with complexity estimation and compound-query decomposition
+- Embedding-based intent routing, a System One model-tier step, and compound-query decomposition
 - LangGraph state machine with confirmation pauses, multimodal preprocessing, and checkpoint persistence
 - Write confirmation — irreversible writes park until the user approves that exact call; one pause per turn
 - Cost telemetry — per-flow and per-agent token tracking with automatic reconciliation
@@ -23,7 +23,7 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 | Module | What it provides |
 |---|---|
 | `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges |
-| `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `PostgresRoutingStore`, fallback |
+| `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `PostgresRoutingStore`, fallback |
 | `openrouter/` | `OpenRouterClient`, streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers. `retry.py` decides Retry eligibility from the trace, `rewind.py` rewinds thread history for a retry, `rollback.py` (`run_rollback`) undoes the actions of a reply before a retry and records each undo on `messages.rollback`, and messages carry `replaces`/`replaced_by`/`rollback` |

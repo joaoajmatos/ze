@@ -11,7 +11,7 @@ DI, wires plugins together. Plugin code never imports from `ze_core`.
 
 ## Purpose
 
-Owns the full request lifecycle: receive a message → embed → route → check capability →
+Owns the full request lifecycle: receive a message → embed → route → preflight →
 execute agent → write memory → send response. Manages the LangGraph graph with
 `AsyncPostgresSaver` checkpoints, the DI container, plugin discovery, and telemetry.
 
@@ -20,13 +20,14 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
 ## Responsibilities
 
 - **Routing** — `EmbeddingRouter` embeds the message, cosine-similarity matches to
-  agent intents; `ComplexityEstimator` decides compound vs. single-agent; fallback
+  agent intents; `ComplexityEstimator` decided compound vs. single-agent (superseded by 182: removed); fallback
   to haiku-class on low-confidence. With `system_one.surfaces.routing` on and
   calibrated (Phase 164), E5 stays the shortlist and one batched System One request
   (`ze_core/routing/judge.py`) asks a Choice over the shortlist plus `none`, a Noul
-  ("more than one specialist?") and a Score (complexity). Pure `decide()` turns the
-  answers into trust / decompose / abstain / skip; abstain and skip fall back to the
-  E5 bars and the regex `ComplexityEstimator`. `embed_route` records the judgments on
+  ("more than one specialist?") and, until 182, a Score (complexity; superseded by 182,
+  removed). Pure `decide()` turns the answers into trust / decompose / abstain / skip;
+  abstain and skip fall back to the E5 bars and the regex `ComplexityEstimator`
+  (superseded by 182, removed: routing always assigns the full model). `embed_route` records the judgments on
   the trace. Both call sites (`Container` and `bootstrap.build_router`) build the
   router through `build_embedding_router` in `ze_core/routing/factory.py`.
 - **Skill matching glue** — `match_skills` (`orchestration/nodes/skills.py`) calls the
@@ -38,10 +39,11 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
   with `judgments_from_result` and **appends** to `state["judgments"]`. It never
   replaces the rows `embed_route` wrote. `SkillUsageTrace.below_floor` marks an
   automatic skill applied under `match_threshold`.
-- **Capability gate** — `CapabilityGate` checks the current `Mode` against the matched
-  agent; `PostgresCapabilityOverrideStore` persists per-agent overrides
+- **Preflight** — the node after `choose_tier` (`orchestration/nodes/execution.py`) refuses
+  a disabled agent and pauses for the spend budget. Phase 181 removed the capability gate,
+  its confirmation modes and the per-agent override store; writes ask first.
 - **Orchestration graph** — `graph_builder` compiles the LangGraph graph; nodes are
-  `transcribe`, `embed_route`, `decompose`, `fetch_context`, `capability_check`,
+  `transcribe`, `embed_route`, `decompose`, `fetch_context`, `choose_tier`, `preflight`,
   `execute_tool`, `synthesize`, `write_memory`, `draft_response`, `await_confirmation`,
   `record_trace`
 - **Container** — `BaseContainer` wires all dependencies; `invoke_raw_turn` and `resume`
@@ -76,8 +78,8 @@ execute agent → write memory → send response. Manages the LangGraph graph wi
 ```
 core/engine/ze-core/ze_core/
   orchestration/      ← graph_builder, nodes, AgentState, edges, agent registry
-  routing/            ← EmbeddingRouter, ComplexityEstimator, fallback, RouterStore
-  capability/         ← CapabilityGate, PostgresCapabilityOverrideStore, Mode
+  routing/            ← EmbeddingRouter, tier.py, fallback, RouterStore (ComplexityEstimator superseded by 182)
+  (capability/ removed by 181)
   telemetry/          ← CostTracker, CostReconciler, PostgresCostStore, ContextVar
   openrouter/         ← OpenRouterClient + OpenRouterSystemOneClient (engine-internal)
   interface/          ← AppInterface wiring, InputPreprocessor

@@ -41,9 +41,7 @@ class RoutingEnvelope:
     requires_synthesis: bool
     raw_scores: dict[str, float] = field(default_factory=dict)
     is_sequential: bool = False
-    complexity: str = "complex"  # "simple" | "complex"
     judgment: RoutingJudgment | None = None
-    complexity_source: str = "regex"  # "regex" | "score"
 
 
 @dataclass

@@ -74,8 +74,7 @@ transcription or image captioning.
 
 **System One choice (optional).** E5 stays the shortlist. When `system_one.surfaces.routing`
 is enabled and calibrated (as in the shipped config), one System One request judges the top `shortlist_k` agents. It
-picks one agent (or `none`), says whether the request needs more than one specialist, and
-grades complexity. Code then decides: a confident choice routes directly, `none` or a
+picks one agent (or `none`), says whether the request needs more than one specialist. Code then decides: a confident choice routes directly, `none` or a
 multi-specialist answer goes to `decompose`, and an unsure choice or a skip falls back to
 the E5 rules above. The surface is on in the shipped config (calibrated 2026-10-12). See
 [system-one.md](system-one.md) and [configuration.md](configuration.md#system_one).
@@ -86,11 +85,11 @@ The decomposed subtasks stay as a hint. Companion then calls specialists through
 `delegate_to_agent`, one at a time, each with its own write confirmation check.
 Only independent compound requests keep the parallel fan-out and `synthesize`.
 
-**Cost-aware routing** (`ze_core.routing.complexity`): agents with a `model_simple`
-class attribute receive a cheaper model when the request scores as simple. By default the
-in-process classifier decides (word count, question marks, conjunctions — no extra LLM
-call). With the System One routing surface calibrated, its complexity score decides
-instead (`complexity_lookup_max`).
+**Model tier** (`ze_core.routing.tier`): routing always assigns the agent's full model.
+After `match_skills`, the `choose_tier` node asks one System One Noul whether the task
+needs a stronger model. An agent with a `model_simple` class attribute runs that model for
+the turn only when the answer is at or below the bar. Every other outcome keeps the full
+model. The surface is on in the shipped config at `simple_max` 0.40. See [configuration.md](configuration.md#surfacescomplexity).
 
 ---
 
@@ -176,8 +175,9 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
-| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. When one fires on a single-agent turn, it swaps the route to `companion` before `capability_check`, so the turn answers from the ranked priority list, followed by suspected loops marked unconfirmed, and never pauses on a specialist's confirmation intent. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
+| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. When one fires on a single-agent turn, it swaps the route to `companion` before `preflight`, so the turn answers from the ranked priority list, followed by suspected loops marked unconfirmed, and never pauses on a specialist's confirmation intent. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
 | `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
+| `choose_tier` | `nodes/tier.py` | Single-agent turns only: System One Noul `needs_deep_reasoning` picks `model_simple` when light; every other outcome keeps the full model |
 | `preflight` | `nodes/execution.py` | Refuse a disabled agent. Pause for the spend budget (113) before the turn runs, unless the user already approved it |
 | `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout; fans independent subtasks out in parallel |
 | `await_write_confirmation` | `nodes/execution.py` | Pause once per turn for every parked write, then resume the parked agent loops with the user's answer (at most 3 rounds) |
@@ -244,6 +244,23 @@ marks a tool the registry did not know, and Retry treats it as unavailable.
 metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
+
+### Model tier in the trace
+
+`choose_tier` writes a `TierTrace` to `MessageTrace.tier` with four fields: `agent`, `tier`
+(`simple` or `full`), `decided_by`, and `model`, the model that ran. `decided_by` is one of
+`system_one`, `off`, `uncalibrated`, `skip`, `invalid_answer`, `no_simple_model`, or
+`compound`. Older traces have no `tier` and parse to `null`.
+
+The REST trace response (`GET /api/v0/messages/{id}/trace` and the batch route) returns
+`tier` on the trace. The WebSocket sends a partial `trace_update` frame with `{"tier": ...}`
+as soon as `choose_tier` finishes, and the final frame repeats it. The Routing section of the
+trace panel shows one line, such as "Light model · System One" or "Full model · tiering off".
+It shows nothing when `decided_by` is `no_simple_model`, because that agent has one model.
+The Noul itself appears in `judgments` as `needs_deep_reasoning`.
+
+`routing_log` no longer stores a model or a complexity label. Routing always assigns the
+full model, so only the trace records which model ran.
 
 ### Web sources
 
@@ -355,7 +372,9 @@ See [docs/adding-an-agent.md](adding-an-agent.md) for a full authoring guide.
 
 ### Agent roster
 
-| Agent | Key tools | Package | Default model tier |
+Routing always assigns the model in the last column (the full model). The complexity surface can swap in the agent's `model_simple` for one turn. It is on in the shipped config.
+
+| Agent | Key tools | Package | Full model |
 |---|---|---|---|
 | `research` | OpenRouter web search, synthesis | `ze-personal` | Full |
 | `companion` | Pure reasoning + memory | `ze-personal` | Full |
@@ -939,7 +958,7 @@ it owns no tables and no revision files.
 
 | Table | Purpose |
 |---|---|
-| `routing_log` | Every routing decision with scores and outcome |
+| `routing_log` | Every routing decision with scores and outcome (not the model tier; that is in the message trace) |
 | `memory_facts` | Facts with pgvector embeddings, review status, expiry |
 | `memory_episodes` | Episodic memory summaries with pgvector embeddings |
 | `memory_entities` | Named entities with canonical names, aliases, and attributes |
