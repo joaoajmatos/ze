@@ -1,5 +1,5 @@
 import type { WorkspaceUsageTraceResponse } from "@myguyze/ze-client";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
+import { TraceSection } from "@/entities/message-trace";
 
 interface WorkspaceSectionProps {
   workspace: WorkspaceUsageTraceResponse | null | undefined;

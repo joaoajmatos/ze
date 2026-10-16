@@ -1,5 +1,5 @@
 import { FloatingButton } from "@/features/open-context-overlay";
-import { ActivityHeatmapPanel } from "@/widgets/activity-heatmap-panel";
+import { ActivityHeatmapPanel } from "./ActivityHeatmapPanel";
 import {
   formatAgentName,
   formatPluginName,

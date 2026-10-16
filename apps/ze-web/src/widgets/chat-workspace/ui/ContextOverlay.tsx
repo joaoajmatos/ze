@@ -2,10 +2,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ExternalLink, GripHorizontal, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChatInput, ChatMessageList } from "@/entities/message";
 import { useSession } from "@/entities/session";
 import { resolveOverlayScreen, useOverlayStore } from "@/features/open-context-overlay";
-import { useChatWorkspace } from "@/widgets/chat-workspace";
+import { useChatWorkspace } from "../model/useChatWorkspace";
+import { ChatInput } from "./ChatInput";
+import { ChatMessageList } from "./ChatMessageList";
 
 const DESKTOP_W = 368;
 const DESKTOP_H = 520;

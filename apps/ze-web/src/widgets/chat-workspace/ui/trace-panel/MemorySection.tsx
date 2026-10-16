@@ -1,6 +1,6 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { MemoryChunkList } from "@/widgets/message-trace/ui/MemoryChunkList";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
+import { MemoryChunkList } from "@/entities/message-trace";
+import { TraceSection } from "@/entities/message-trace";
 
 interface MemorySectionProps {
   chunks: WsTraceUpdateFrame["memory_chunks"];

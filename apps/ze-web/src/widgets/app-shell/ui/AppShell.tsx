@@ -1,5 +1,5 @@
 import { Settings, Puzzle } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { useOverlay } from "@/features/open-context-overlay";
@@ -11,7 +11,6 @@ import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider } from "@
 import { cn } from "@/shared/lib/cn";
 import { TopBar } from "./TopBar";
 import { ChatNavGroup } from "./ChatNavGroup";
-import { ContextOverlay } from "./ContextOverlay";
 import { NavGroup } from "./NavGroup";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -32,7 +31,7 @@ const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-foreground" : "text-smoke",
   );
 
-export function AppShell() {
+export function AppShell({ overlay }: { overlay?: ReactNode }) {
   const { data: uiManifest } = useUiManifestQuery();
 
   const mobileNavRoutes = useMemo(
@@ -165,7 +164,7 @@ export function AppShell() {
 
       <RefreshHandler />
       <ConfirmationFrameHandler />
-      <ContextOverlay />
+      {overlay}
     </div>
   );
 }

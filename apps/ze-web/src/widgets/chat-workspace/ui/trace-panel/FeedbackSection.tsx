@@ -1,7 +1,7 @@
 import type { MessageFeedback } from "@/entities/message-feedback";
 import { useSession } from "@/entities/session";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
-import { feedbackKindLabel, formatFeedbackTime } from "../lib/format";
+import { TraceSection } from "@/entities/message-trace";
+import { feedbackKindLabel, formatFeedbackTime } from "./lib/format";
 
 interface FeedbackSectionProps {
   feedback: MessageFeedback | undefined;

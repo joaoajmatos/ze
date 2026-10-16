@@ -1,7 +1,7 @@
 import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { FloatingButton } from "@/features/open-context-overlay";
-import { usePluginScreenActions } from "@/entities/primitive-tree";
+import { usePluginScreenActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginPageQuery } from "@/entities/ui-manifest";
 import { useSetPageHeader } from "@/shared/lib";

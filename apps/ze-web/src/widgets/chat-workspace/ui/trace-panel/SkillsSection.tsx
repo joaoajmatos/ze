@@ -1,5 +1,5 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
+import { TraceSection } from "@/entities/message-trace";
 
 interface SkillsSectionProps {
   skillsUsed: WsTraceUpdateFrame["skills_used"];

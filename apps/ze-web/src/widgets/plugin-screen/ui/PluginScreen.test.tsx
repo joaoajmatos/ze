@@ -28,7 +28,7 @@ vi.mock("@/features/open-context-overlay", () => ({
   FloatingButton: () => null,
 }));
 
-vi.mock("@/entities/primitive-tree", () => ({
+vi.mock("@/features/primitive-tree", () => ({
   usePluginScreenActions: () => ({
     onButtonAction: vi.fn(),
     onFormSubmit: vi.fn(),

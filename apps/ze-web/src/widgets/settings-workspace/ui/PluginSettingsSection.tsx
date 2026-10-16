@@ -7,7 +7,7 @@ import { usePluginSettingsQuery } from "@/entities/ui-manifest";
 import { resolveNavIcon } from "@/shared/ui/icons";
 import { cn } from "@/shared/lib/cn";
 import { ErrorState, ListSkeleton } from "@/shared/ui";
-import { usePluginScreenActions } from "@/entities/primitive-tree";
+import { usePluginScreenActions } from "@/features/primitive-tree";
 
 export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
   const [open, setOpen] = useState(true);

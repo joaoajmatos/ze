@@ -1,6 +1,6 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { ToolCallList } from "@/widgets/message-trace/ui/ToolCallList";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
+import { ToolCallList } from "@/entities/message-trace";
+import { TraceSection } from "@/entities/message-trace";
 
 interface ToolsSectionProps {
   toolCalls: WsTraceUpdateFrame["tool_calls"];

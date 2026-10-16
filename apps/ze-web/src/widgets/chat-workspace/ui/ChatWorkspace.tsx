@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ChatMessageList, ChatInput } from "@/entities/message";
-import type { ChatAttachment } from "@/entities/message";
+import { ChatInput, type ChatAttachment } from "./ChatInput";
+import { ChatMessageList } from "./ChatMessageList";
 import { placeWorkspaceFile } from "@/entities/workspace";
 import { reconnect } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";

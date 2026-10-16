@@ -1,6 +1,6 @@
 import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
-import { RoutingBadge } from "@/widgets/message-trace/ui/RoutingBadge";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
+import { RoutingBadge } from "@/entities/message-trace";
+import { TraceSection } from "@/entities/message-trace";
 
 interface RoutingSectionProps {
   trace: WsTraceUpdateFrame;

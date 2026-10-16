@@ -1,6 +1,6 @@
 import type { WriteConfirmationOutcomeResponse } from "@myguyze/ze-client";
-import { TraceSection } from "@/widgets/message-trace/ui/TraceSection";
-import { groupByRound, outcomeLabel } from "../lib/format";
+import { TraceSection } from "@/entities/message-trace";
+import { groupByRound, outcomeLabel } from "./lib/format";
 
 interface ConfirmationsSectionProps {
   outcomes: WriteConfirmationOutcomeResponse[] | undefined;

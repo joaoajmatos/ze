@@ -13,7 +13,7 @@ vi.mock("@/entities/cost-entry", async (importOriginal) => {
   return { ...actual, useCostsQuery, useCostAnomaliesQuery };
 });
 
-vi.mock("@/widgets/activity-heatmap-panel", () => ({
+vi.mock("./ActivityHeatmapPanel", () => ({
   ActivityHeatmapPanel: () => <div data-testid="heatmap" />,
 }));
 

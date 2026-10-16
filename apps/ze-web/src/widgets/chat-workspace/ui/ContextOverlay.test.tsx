@@ -6,7 +6,7 @@ import { ContextOverlay } from "./ContextOverlay";
 
 const chatMock = vi.hoisted(() => ({ context: undefined as unknown }));
 
-vi.mock("@/widgets/chat-workspace", () => ({
+vi.mock("../model/useChatWorkspace", () => ({
   useChatWorkspace: (options: { context?: unknown }) => {
     chatMock.context = options.context;
     return {

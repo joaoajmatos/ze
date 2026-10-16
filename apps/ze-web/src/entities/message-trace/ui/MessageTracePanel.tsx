@@ -1,4 +1,4 @@
-import { useMessageTraceQuery } from "@/entities/message";
+import { useMessageTraceQuery } from "../api/useMessageTraceQuery";
 import { MemoryChunkList } from "./MemoryChunkList";
 import { RoutingBadge } from "./RoutingBadge";
 import { ToolCallList } from "./ToolCallList";

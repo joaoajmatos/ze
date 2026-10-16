@@ -2,9 +2,9 @@ import type { MessageSchema as Message, SourceTraceResponse } from "@myguyze/ze-
 import { Info } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-import { MessageTracePanel } from "@/widgets/message-trace";
+import { MessageTracePanel } from "@/entities/message-trace";
 import { useTraceStore } from "@/features/trace-state";
-import { ConnectedPrimitiveTree } from "@/entities/primitive-tree";
+import { ConnectedPrimitiveTree } from "@/features/primitive-tree";
 import { useWorkspaceRunEventsQuery } from "@/entities/workspace";
 import { MessageSources } from "./MessageSources";
 

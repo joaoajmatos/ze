@@ -14,7 +14,6 @@ vi.mock("@/shared/ui", async (importOriginal) => ({
 }));
 vi.mock("./TopBar", () => ({ TopBar: () => null }));
 vi.mock("./ChatNavGroup", () => ({ ChatNavGroup: () => null }));
-vi.mock("./ContextOverlay", () => ({ ContextOverlay: () => null }));
 
 function renderShell() {
   return render(
