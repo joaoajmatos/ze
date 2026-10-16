@@ -1,4 +1,4 @@
-from ze_onboarding.coordinator import OnboardingCoordinator, OnboardingError
+from ze_onboarding.coordinator import OnboardingCoordinator
 from ze_onboarding.persistence import (
     OnboardingPersistence as PostgresOnboardingPersistence,
 )
@@ -35,7 +35,6 @@ __all__ = [
     "PostgresOnboardingStore",
     "OnboardingChoice",
     "OnboardingCoordinator",
-    "OnboardingError",
     "OnboardingField",
     "OnboardingPersistence",
     "OnboardingProvider",
