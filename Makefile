@@ -7,7 +7,8 @@ ZE_CORE := core/engine/ze-core
 ZE_WEB  := apps/ze-web
 
 LOG_FILE     ?= $(ZE)/logs/ze.log
-DB_SYNC_URL  ?= postgresql+psycopg2://ze:ze@localhost:5432/ze
+# A DATABASE_URL_SYNC in the environment (a floor's throwaway DB) wins over the shared dev DB.
+DB_SYNC_URL  ?= $(or $(DATABASE_URL_SYNC),postgresql+psycopg2://ze:ze@localhost:5432/ze)
 ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze_api.migrate
 
 # ── Help ──────────────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ help:
 	@echo "    db-down          Stop Postgres"
 	@echo "    db-reset         Drop + recreate ze database and apply all migrations"
 	@echo "    reset-personal-state  Delete learned personal state after CONFIRM=RESET"
-	@echo "    migrate          Apply all pending migrations (upgrade heads)"
+	@echo "    migrate          Apply all pending migrations (upgrade heads); honors DATABASE_URL_SYNC / DB_SYNC_URL, default is the shared dev DB `ze`"
 	@echo "    migrate-down     Roll back one migration step"
 	@echo "    migrate-status   Show current migration revision"
 	@echo "    migrate-history  List all migrations"
@@ -43,7 +44,7 @@ help:
 	@echo "    db-reset-seed    Reset DB, migrate, and apply dev fixtures"
 	@echo "    web              Start React web app (bun dev on :5173)"
 	@echo "    dev-full         Start backend + React web app + workspace sidecar (Ctrl-C stops backend/web)"
-	@echo "    dev-eval         Start backend without background jobs (use before evals)"
+	@echo "    dev-eval         Start backend in eval mode: no dev seed data, PUBLIC_URL cleared, background jobs still start"
 	@echo "    logs             Tail the server log file (LOG_FILE=$(LOG_FILE))"
 	@echo ""
 	@echo "  Web app"
@@ -76,6 +77,7 @@ help:
 	@echo "    test-proactive       Run ze-proactive tests"
 	@echo "    test-memory          Run ze-memory tests"
 	@echo "    test-onboarding      Run ze-onboarding tests"
+	@echo "    test-seed            Run ze-seed tests"
 	@echo "    test-correlation     Run ze-correlation tests"
 	@echo "    test-browser         Run ze-browser tests"
 	@echo "    test-notifications   Run ze-notifications tests"
