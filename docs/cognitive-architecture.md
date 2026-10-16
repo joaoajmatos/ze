@@ -107,9 +107,6 @@ worldstate's) were consolidated into one shared, atomically-claimed attention bu
 reorderings merge into `PriorityView.rank()` at render time. Phase 173 (commitment intake) ended the double booking: one System One request now judges a conversation turn, so a timed reminder no longer also opens a loop. A loop that matches a reminder or goal the turn created links to it instead.
 
 **What is still missing:**
-- **A suspected loop has no reachable confirm path.** The review list is not mounted and no agent can
-  confirm one, so `StaleSuspicionJob` drops every suspected loop after 14 days. The confirmation path is
-  Phase 171.
 - **Loops and goals are deliberately un-unified** (`specs/phases/110-open-loop-drift-surfacing/spec.md`
   FR-014). `PriorityView` ranks both together but does not merge their stores; there is still no
   shared query surface for "everything open right now" beyond that ranked view. Whether and how

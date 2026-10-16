@@ -3,7 +3,7 @@
   "specName": "One Commitment Intake",
   "branch": "173-commitment-intake",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -329,9 +329,56 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T19:27:08.236Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:27:51.759Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:27:51.932Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:27:52.132Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:27:52.381Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T057",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:27:52.613Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T19:27:52.926Z"
     }
   ],
-  "currentTask": "T045",
+  "currentTask": "T052",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -473,6 +520,26 @@
     "T045": {
       "status": "DONE",
       "did": "also_loop field: loader, check-sets rule, scoring, tests (done earlier, ticked late)"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "Tuned set eval/calibration/commitment_intake.jsonl exists (160 rows)"
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "Stop point cleared: user OK given for live runs via the Maestro"
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "holdout2 written by Brook, e3084f1f"
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "Wording fixes by Mortise: 63e0b014, 108e02c9, f35350de"
+    },
+    "T057": {
+      "status": "DONE",
+      "did": "holdout3 written by Wren, 0b13f211"
     }
   }
 }

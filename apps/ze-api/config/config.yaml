@@ -13,7 +13,7 @@ routing:
   threshold: 0.73
   gap_threshold: 0.02
 
-# Typed judgments (Jev via OpenRouter System One). 164 routing (167-calibrated), 166 skills and 168 loop gate are on; 173 commitment intake is off until a held-out ENABLE.
+# Typed judgments (Jev via OpenRouter System One). 164 routing (167-calibrated), 166 skills, 168 loop gate (email, calendar, ingestion) and 173 commitment intake are on; 173 was enabled 2026-10-16 after the holdout3 ENABLE verdict (EN and PT).
 system_one:
   enabled: true
   model: typesafe/jev-1.13
