@@ -24,7 +24,6 @@ module.exports = {
   },
   rules: {
     "import/no-internal-modules": "off",
-    "boundaries/element-types": "off",
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
   },
   ignorePatterns: ["dist", "node_modules", "**/*.test.ts", "**/*.test.tsx"],

@@ -4,7 +4,7 @@ import ForceGraph3D, { type ForceGraphMethods } from "react-force-graph-3d";
 import { useEntityDetailQuery } from "@/entities/memory-graph";
 import { graphComposition } from "../lib/graphComposition";
 import { EntityDetailPanel } from "./EntityDetailPanel";
-import { buildEntityNodeObject, entityColor, entityRadius, type GraphNodeDatum } from "./entityNodeObject";
+import { buildEntityNodeObject, entityRadius, type GraphNodeDatum } from "./entityNodeObject";
 import { GraphSearchBar } from "./GraphSearchBar";
 import { GraphToolbar } from "./GraphToolbar";
 
@@ -174,4 +174,4 @@ export function MemoryGraph({ data, entityType, onEntityTypeChange }: MemoryGrap
   );
 }
 
-export { entityColor };
+;

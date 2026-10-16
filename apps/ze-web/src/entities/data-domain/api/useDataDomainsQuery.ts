@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { listDataDomains } from "@myguyze/ze-client";
 import type { DataDomainsResponse } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useDataDomainsQuery() {

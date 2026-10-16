@@ -1,4 +1,3 @@
 export { useLoopsQuery } from "./api/useLoopsQuery";
 export { useLoopTransitionMutation } from "./api/useLoopTransitionMutation";
-export type { LoopTransitionKind } from "./api/useLoopTransitionMutation";
-export { linkChips, promotedLine, sourceLabel } from "./lib/format";
+export { linkChips, promotedLine } from "./lib/format";

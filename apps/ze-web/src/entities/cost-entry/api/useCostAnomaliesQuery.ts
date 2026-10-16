@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { getCostAnomalies } from "@myguyze/ze-client";
 import type { CostAnomaliesResponse } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useCostAnomaliesQuery() {

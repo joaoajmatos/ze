@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { Target } from "lucide-react";
 import type { GoalListItem } from "@myguyze/ze-client";
+import { Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { humanizeStatus } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 import { useStartGoalMutation } from "../api/useStartGoalMutation";

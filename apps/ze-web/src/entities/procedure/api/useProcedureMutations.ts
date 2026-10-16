@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { disableProcedure, editProcedure } from "@myguyze/ze-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 import type { ProcedureAdmissionResult, ProcedureVersion } from "../model/types";
 

@@ -1,8 +1,8 @@
 import type { SessionSchema, SessionSearchResult } from "@myguyze/ze-client";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
-import { matchSourceLabel } from "../lib/matchSourceLabel";
 import { formatRelative } from "../lib/formatRelative";
+import { matchSourceLabel } from "../lib/matchSourceLabel";
 import { parseSearchSnippet } from "../lib/parseSearchSnippet";
 import { MarkdownPreview } from "./MarkdownPreview";
 

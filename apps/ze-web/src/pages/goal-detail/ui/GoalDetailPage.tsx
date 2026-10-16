@@ -1,11 +1,11 @@
-import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Target } from "lucide-react";
-import { useGoalDetailQuery } from "@/entities/goal";
-import { useSetBreadcrumbTitle } from "@/shared/lib";
-import { MilestoneTimeline } from "@/widgets/milestone-timeline";
+import { useParams, useNavigate } from "react-router-dom";
 import { GateStatusCard } from "@/widgets/gate-status";
 import { GoalLearningsList } from "@/widgets/goal-learnings";
+import { MilestoneTimeline } from "@/widgets/milestone-timeline";
 import { ReviewGoalLearning } from "@/features/review-goal-learning";
+import { useGoalDetailQuery } from "@/entities/goal";
+import { useSetBreadcrumbTitle } from "@/shared/lib";
 import { ListSkeleton, ErrorState, PageShell, SectionPanel } from "@/shared/ui";
 
 const ACTIVE_STATUSES = new Set(["active", "planning"]);

@@ -1,8 +1,8 @@
 import { ChevronRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, useLocation } from "react-router-dom";
-import type { LucideIcon } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { motion } from "@/shared/lib/motion";
 import { useMediaQuery } from "@/shared/lib/use-media-query";
@@ -176,10 +176,11 @@ function AccordionGroup({
 }: NavGroupProps) {
   const isChildActive = useChildActive(childPaths);
   const [open, setOpen] = useState(defaultOpen || isChildActive);
-
-  useEffect(() => {
+  const [wasChildActive, setWasChildActive] = useState(isChildActive);
+  if (wasChildActive !== isChildActive) {
+    setWasChildActive(isChildActive);
     if (isChildActive) setOpen(true);
-  }, [isChildActive]);
+  }
 
   const toggle = () => setOpen((o) => !o);
 

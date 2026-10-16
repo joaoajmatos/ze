@@ -8,10 +8,12 @@ vi.mock("@/entities/ui-manifest", async (importOriginal) => ({
   useUiManifestQuery: () => ({ data: undefined }),
 }));
 vi.mock("@/features/invalidate-on-ws-refresh", () => ({ RefreshHandler: () => null }));
-vi.mock("@/features/send-context-notice", () => ({ NoticeBanner: () => null }));
-vi.mock("@/shared/ui", () => ({ TopBar: () => null }));
+vi.mock("@/shared/ui", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/ui")>()),
+  NoticeBanner: () => null,
+}));
+vi.mock("./TopBar", () => ({ TopBar: () => null }));
 vi.mock("./ChatNavGroup", () => ({ ChatNavGroup: () => null }));
-vi.mock("./ContextOverlay", () => ({ ContextOverlay: () => null }));
 
 function renderShell() {
   return render(

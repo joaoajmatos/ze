@@ -1,7 +1,7 @@
-import { Button } from "@/shared/ui";
+import { useState } from "react";
 import { useDisableProcedureMutation, useEditProcedureMutation } from "@/entities/procedure";
 import type { ProcedureDetail } from "@/entities/procedure";
-import { useState } from "react";
+import { Button } from "@/shared/ui";
 
 interface ProcedureControlsProps {
   detail: ProcedureDetail;

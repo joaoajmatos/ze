@@ -1,6 +1,6 @@
 import type { LearningResponse } from "@myguyze/ze-client";
-import { Button } from "@/shared/ui";
 import { useReviewGoalLearningMutation } from "@/entities/goal";
+import { Button } from "@/shared/ui";
 
 interface ReviewGoalLearningProps {
   goalId: string;

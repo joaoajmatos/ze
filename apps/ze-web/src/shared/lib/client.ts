@@ -1,7 +1,5 @@
-import { configure, ApiError } from "@myguyze/ze-client";
+import { configure } from "@myguyze/ze-client";
 import { getConfig } from "@/shared/config";
-
-export { ApiError };
 
 export function applyConfig(): void {
   const cfg = getConfig();

@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
+import { MemoryFeed } from "@/widgets/memory-feed";
+import { ProcedureCandidatesList } from "@/widgets/procedure-candidates";
+import { TimelineScrubber } from "@/widgets/timeline-scrubber";
 import type { MemoryFeedFilters } from "@/entities/memory-feed-item";
 import { useMemoryActivityQuery, useMemoryTimelineBoundsQuery } from "@/entities/memory-feed-item";
-import { MemoryFeed } from "@/widgets/memory-feed";
-import { TimelineScrubber } from "@/widgets/timeline-scrubber";
-import { ProcedureCandidatesList } from "@/widgets/procedure-candidates";
 import { FilterChips, SearchBar } from "@/shared/ui";
 import type { FilterOption } from "@/shared/ui";
 

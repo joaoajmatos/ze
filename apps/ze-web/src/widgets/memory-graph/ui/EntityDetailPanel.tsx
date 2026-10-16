@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import { X, User, MapPin, Building2, Hash, HelpCircle, ChevronDown } from "lucide-react";
 import type { EntityDetailResponse, GraphEntityNode } from "@myguyze/ze-client";
 import { LineChart } from "@myguyze/ze-ui/charts";
+import { X, User, MapPin, Building2, Hash, HelpCircle, ChevronDown } from "lucide-react";
+import { useMemo } from "react";
 import { entityActivitySeries } from "../lib/entityActivitySeries";
 
 const ENTITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {

@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateQuietHours } from "@myguyze/ze-client";
 import type { QuietHoursUpdate } from "@myguyze/ze-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useUpdateQuietHoursMutation() {

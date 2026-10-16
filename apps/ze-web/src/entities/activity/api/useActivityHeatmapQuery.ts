@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { getActivityHeatmap } from "@myguyze/ze-client";
 import type { ActivityHeatmapResponse } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useActivityHeatmapQuery(start?: string, end?: string) {

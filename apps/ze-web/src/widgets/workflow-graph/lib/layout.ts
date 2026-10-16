@@ -1,8 +1,8 @@
 import { Position, type Node, type Edge } from "@xyflow/react";
 import dagre from "dagre";
 
-export const NODE_WIDTH = 220;
-export const NODE_HEIGHT = 64;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 64;
 
 export function layoutGraph<NodeData extends Record<string, unknown>>(
   nodes: Node<NodeData>[],

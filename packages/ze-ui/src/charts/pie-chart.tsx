@@ -27,7 +27,7 @@ import {
 } from "./pie-context";
 
 /** Default hover offset in pixels */
-export const DEFAULT_HOVER_OFFSET = 10;
+const DEFAULT_HOVER_OFFSET = 10;
 
 export interface PieChartProps {
   /** Data array - each item represents a slice */
@@ -526,4 +526,3 @@ export function PieChart({
 
 PieChart.displayName = "PieChart";
 
-export default PieChart;

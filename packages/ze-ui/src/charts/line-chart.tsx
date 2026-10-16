@@ -298,6 +298,5 @@ export function LineChart({
   );
 }
 
-export { Line, type LineProps } from "./line";
+;
 
-export default LineChart;

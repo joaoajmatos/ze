@@ -1,7 +1,7 @@
-export const BAR_DEPTH_MAX_PX = 7;
+const BAR_DEPTH_MAX_PX = 7;
 /** The side parallelogram's back edge lifts by `depth * this ratio`, giving a
  * subtle head-on perspective slope. */
-export const BAR_DEPTH_PERSPECTIVE_RATIO = 0.45;
+const BAR_DEPTH_PERSPECTIVE_RATIO = 0.45;
 
 /**
  * Maximum side-face depth in px for a chart, clamped so depth never spills past

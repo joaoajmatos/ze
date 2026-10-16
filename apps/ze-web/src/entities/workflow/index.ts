@@ -6,6 +6,6 @@ export { useLiveExecutionQuery } from "./api/useLiveExecutionQuery";
 export { useTriggerWorkflowMutation } from "./api/useTriggerWorkflowMutation";
 export { useCancelExecutionMutation } from "./api/useCancelExecutionMutation";
 export { WorkflowCard } from "./ui/WorkflowCard";
-export { formatSchedule, formatTimestamp, formatDurationMs, averageSuccessfulRunDuration } from "./lib/format";
-export { buildWorkflowGraph, type StepState, type WorkflowGraphNode, type WorkflowGraphEdge } from "./lib/buildWorkflowGraph";
+export { formatSchedule, formatDurationMs, averageSuccessfulRunDuration } from "./lib/format";
+export { buildWorkflowGraph, type StepState, type WorkflowGraphNode } from "./lib/buildWorkflowGraph";
 export { stepsDifferFromSnapshot } from "./lib/stepsSnapshot";

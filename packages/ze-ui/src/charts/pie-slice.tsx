@@ -42,7 +42,7 @@ function getSliceOffset(
 }
 
 /** Hover effect types */
-export type PieSliceHoverEffect = "translate" | "grow" | "none";
+type PieSliceHoverEffect = "translate" | "grow" | "none";
 
 export interface PieSliceProps {
   /** Index of the slice in the data array */
@@ -508,4 +508,3 @@ export const PieSlice = memo(function PieSlice({
 
 PieSlice.displayName = "PieSlice";
 
-export default PieSlice;

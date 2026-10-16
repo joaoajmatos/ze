@@ -147,4 +147,3 @@ export function DateTicker({ currentIndex, labels, visible }: DateTickerProps) {
 
 DateTicker.displayName = "DateTicker";
 
-export default DateTicker;
