@@ -23,19 +23,25 @@ through `ze_agents.bootstrap`, domain stacks through package bootstrap modules �
 serves via uvicorn. Nothing in `core/` or `plugins/` runs standalone — `ze-api` is
 always the entry point.
 
-Collects plugin signal sources via `collect_plugin_signal_sources()` in `container.py` — deduplicates by `source_key` and registers them with the correlation engine. Current emitters: `NewsSignalSource`, `CalendarSignalSource`.
+Collects plugin signal sources via `collect_plugin_signal_sources()` in `wiring/agents.py` — deduplicates by `source_key` and registers them with the correlation engine. Current emitters: `NewsSignalSource`, `CalendarSignalSource`.
 
 ## Responsibilities
 
 | Module | What it provides |
 |---|---|
-| `api/` | FastAPI app, WebSocket (`/ws`), REST routes, schemas |
+| `main.py` | `create_app()` and `app` (`uvicorn ze_api.main:app`) |
+| `lifespan.py` | Startup: migrate, check schema, build the container, dev seed, mount plugin routers |
+| `api/v0/<domain>/` | One `router.py` and `schemas.py` per REST domain, all mounted under `/api/v0` |
+| `api/ws/` | WebSocket endpoint (`/ws`), frame schemas, and the turn, confirmation and goal-action handlers |
+| `api/eval/` | Eval chat, collisions and routing log; mounted only when `EVAL_MODE` is on |
+| `api/shared_schemas.py` | Types shared by more than one router |
 | `interface/native.py` | `NativeAppInterface` — WebSocket + ntfy delivery |
-| `onboarding/` | Postgres-backed onboarding store, persistence, and reset |
-| `container.py` | `ZeContainer` — DI wiring, plugin signal source collection |
-| `compose.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
+| `wiring/container.py` | `ZeContainer` and `build_container()`, the only place that joins packages |
+| `wiring/stores.py`, `agents.py`, `hooks.py` | Phases of `build_container()`: stores, plugin and agent layer, cross-package hooks |
+| `wiring/jobs.py` | `register_all_proactive_jobs()` — core + plugin cron registration |
+| `wiring/plugin_routes.py` | Plugin router collection; the OpenAPI export and the runtime mount share it |
 | `settings.py` | `ZeApiSettings` (Pydantic BaseSettings + YAML) |
-| `migrate.py` | Alembic meta-migrator — discovers all package migration chains |
+| `cli/` | `migrate` (Alembic meta-migrator), `seed`, `openapi_export`, `gmail_push` |
 | `migrations/env.py` | Alembic runner harness (no owned tables) |
 
 Agents and proactive jobs live in plugin packages (`ze-personal`, `ze-messenger`, `ze-calendar`, etc.) — not in `ze-api`. Core package jobs (automation, memory, correlation) are registered via package bootstrap modules — see [specs/phases/076-ze-api-shell-cleanup/spec.md](../../specs/phases/076-ze-api-shell-cleanup/spec.md).
