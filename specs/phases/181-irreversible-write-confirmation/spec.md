@@ -320,7 +320,7 @@ Eval scenarios cover "delete my 3pm", "send Ana the notes", a compound read + se
 
 **Composition**
 
-- **FR-020**: The 144 constraint veto MUST be evaluated when a constraint-gated call is made, before it parks or runs. A conflict that needs the user's OK MUST park the call (even if the tool opted out) with the conflict text on the item. A hard veto MUST refuse the call without parking.
+- **FR-020**: The 144 constraint veto MUST be evaluated when a constraint-gated call is made, before it parks or runs. A conflict that needs the user's OK MUST park the call (even if the tool opted out) with the conflict text on the item. A hard veto MUST refuse the call without parking. The veto MUST run before any approval or pre-approval lets a call run: a pre-approved unattended call that conflicts MUST hold (CONFIRM) or be refused (VETO), and an approved call MUST still be refused by a hard veto that matches it as it will run (with the user's edits).
 - **FR-021**: The 113 spend budget check MUST run as its own pause before the turn executes. Approve runs the turn (writes still park). Deny ends the turn with nothing run. It MUST NOT be combined with write confirmations.
 - **FR-022**: A retry turn MUST NOT park or open a confirmation; WRITE tools stay refused (165). Retry eligibility (165, 180) is unchanged.
 

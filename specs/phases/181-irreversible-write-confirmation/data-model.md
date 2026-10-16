@@ -14,14 +14,17 @@
 
 `AskDecision`: `RUN` \| `ASK(reason: str = "")` \| `REFUSE(message: str)`.
 
-Resolution order in `call_tool` (first match wins):
+Resolution order in `call_tool` (first match wins). The constraint veto runs before any approval or pre-approval can let a call through (amended 2026-10-16, Plumb B2):
 1. `ctx.retry_mode` and WRITE → refused (165, unchanged).
-2. `call_id` in `ctx.approved_call_ids` → run (resume branch only).
-3. tool in `ctx.pre_approved_writes` (unattended step) → run, outcome `pre_approved`.
-4. constraint veto (CG tools): VETO → refuse; CONFIRM(text) → park with `conflict=text`.
-5. `ask_check` result if declared: ASK → park; REFUSE → refuse; RUN → run.
-6. `asks_first` resolved `True` → park.
-7. run.
+2. constraint veto (constraint-gated tools), on every other WRITE call, approved and pre-approved ones included: VETO → refuse (gate `refused`), whatever the approval.
+3. `_approval` (an `ApprovedCall` built only by the resume path from park state, never from model args) → run, outcome `approved`. A CONFIRM-level conflict is not asked again: the user saw it on the item.
+4. constraint veto CONFIRM(text) on a call that is not approved → park with `conflict=text`, even when the tool opted out or is pre-approved. In an unattended run that park becomes a hold (FR-025).
+5. tool in `ctx.pre_approved_writes` (unattended step) → run, outcome `pre_approved`.
+6. `ask_check` result if declared: ASK → park; REFUSE → refuse; RUN → run.
+7. `asks_first` resolved `True` → park.
+8. run.
+
+Why the veto re-checks an approved call: an unattended hold can be approved up to 24 hours after it parked, and an approve can carry edits (a new email body). A hard VETO that matches the call as it will run still refuses it.
 
 A park on the 4th confirmation round of a turn (`ctx.write_round >= 3`) is converted to a refusal: result "This needs the user's approval; ask them in your reply instead.", outcome `refused_over_cap`.
 
@@ -86,8 +89,8 @@ Add `write_confirmations: list[dict]` (= `write_outcomes`). `record_trace` stops
 
 ## Automation
 
-- `WorkflowStep`: remove `intent`; add `approved_writes: list[str] = []` (inside `workflows.steps` JSONB; no migration). Planned writes are derived, not stored: `planned_writes(step) = asks-first tools of get_agent_class(step.agent_hint).tools` (empty when no hint).
-- `Milestone`: remove `intent`; add `approved_writes: list[str]`; `MilestoneStatus` gains `HELD = "held"`.
+- `WorkflowStep`: remove `intent`; add `approved_writes: list[str] = []` (inside `workflows.steps` JSONB; no migration). `planned_writes: list[str]` is stored on the step too: the asks-first tools the planner (or the REST caller) names for it. `planned_writes(step)` returns the named tools that the step's agent really has (asks-first tools of `get_agent_class(step.agent_hint).tools`); a step that names none plans no writes (e2e finding 4, 5e677605). Approving the plan grants exactly `planned_writes(step)`; any other asks-first call in that step holds at run time.
+- `Milestone`: remove `intent`; add `approved_writes: list[str]` and `planned_writes: list[str]` (same rule as steps); `MilestoneStatus` gains `HELD = "held"`.
 - `WorkflowExecution` status gains `held`: the `workflow_executions_status_check` constraint (last set in `zc025`) is replaced to allow `pending, running, completed, failed, cancelled, held`.
 
 ## Tables

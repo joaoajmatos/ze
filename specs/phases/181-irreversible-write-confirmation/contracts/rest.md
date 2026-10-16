@@ -35,4 +35,8 @@ The `capabilities` OpenAPI tag, the `/capabilities` WS command (`websocket/comma
 
 ## Changed: workflow step edit (`PATCH` in `apps/ze-api/ze_api/api/routes/workflows.py`)
 
-The request gains `approve_writes: bool` (default `false`). The response gains `writes_needing_approval: [{step_id, agent, tools: [str]}]` for changed steps whose agent has asks-first tools. With `approve_writes=false` the changed steps' `approved_writes` are cleared; with `true` they are set to the listed tools. No ze-web screen calls this route today (`updateWorkflowSteps` has no caller in `apps/ze-web/src`), so no web change; an API caller re-sends with `approve_writes=true` to grant.
+The request gains `approve_writes: bool` (default `false`), and each step carries `planned_writes: [str]` (the asks-first tools the step may call; default `[]`). The response gains `writes_needing_approval: [{step_id, agent, tools: [str], unplanned: [str]}]`, one row per changed step where either list is non-empty:
+- `tools` = `planned_writes(step)`: the named tools the step's agent really has. These are what `approve_writes=true` grants.
+- `unplanned` = the step agent's other asks-first tools, the ones the step does not name. They are never granted by this route; a call to one holds the run at run time (FR-025). To grant one, name it in `planned_writes` and send again.
+
+With `approve_writes=false` the changed steps' `approved_writes` are cleared; with `true` they are set to `tools`. (Amended 2026-10-16 after e2e finding 4, 5e677605, and Tally's e2e question: a caller that omits `planned_writes` must still learn that the step can hold.) No ze-web screen calls this route today (`updateWorkflowSteps` has no caller in `apps/ze-web/src`), so no web change; an API caller re-sends with `approve_writes=true` to grant.
