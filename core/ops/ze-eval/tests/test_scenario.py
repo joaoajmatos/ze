@@ -58,8 +58,8 @@ def test_sandbox_scenarios_run_only_with_the_explicit_flag(monkeypatch) -> None:
     assert is_runnable({"id": "y"}) is True
 
 
-def test_every_calendar_delete_in_write_confirmation_is_sandbox_only() -> None:
-    for scenario in load_scenarios(tag="confirmation"):
+def test_every_calendar_write_is_sandbox_only() -> None:
+    for scenario in load_scenarios():
         tools = [
             t if isinstance(t, str) else t.get("name")
             for t in scenario.get("expected_tools") or []

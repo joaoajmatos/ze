@@ -22,6 +22,7 @@
     - Response should be organised by day if multiple events exist
 
 - id: calendar_create_simple
+  requires_sandbox: true
   prompt: "Add a team standup every day at 9am starting Monday."
   description: Create a recurring calendar event — requires writing to calendar
   expected_agent: calendar
@@ -34,6 +35,7 @@
     - Should not silently fail if Google Calendar is unavailable
 
 - id: calendar_create_with_attendees
+  requires_sandbox: true
   prompt: "Schedule a 1:1 with Ana tomorrow at 3pm and invite ana@example.com."
   description: Create event with an attendee — tests contact and invite handling
   expected_agent: calendar
@@ -57,17 +59,39 @@
     - Should return specific time slots, not a vague "check your calendar"
     - Should acknowledge if calendar access fails
 
+# Sandbox only. Creates one event, then deletes that same event. It never
+# touches an event that existed before the scenario ran.
 - id: calendar_delete_event
-  prompt: "Cancel my dentist appointment on Thursday."
-  description: Delete a calendar event by label hint
+  requires_sandbox: true
+  description: >
+    Create an event this scenario owns, then cancel it by its title. create_event
+    and delete_event both park; the user approves each. Only the event created in
+    turn 1 may be deleted.
+  turns:
+    - prompt: "Add a 'Ze eval dentist check' on Thursday at 10am, 30 minutes."
+      description: "Turn 1: create_event parks"
+    - confirm: approve
+      description: "Turn 2: approve the create"
+    - prompt: "Cancel the 'Ze eval dentist check' event on Thursday."
+      description: "Turn 3: delete_event parks, naming the event from turn 1"
+    - confirm: approve
+      description: "Turn 4: approve the delete"
   expected_agent: calendar
-  expected_tools: [list_events, delete_event]
+  expected_tools:
+    - name: create_event
+      gate: approved
+      turn: 2
+      count: 1
+    - name: delete_event
+      gate: approved
+      turn: 4
+      count: 1
   tags: [routing, calendar]
   criteria:
     - Should route to the calendar agent
-    - Should search for an event matching "dentist" on Thursday
-    - If found, should confirm cancellation
-    - If not found, should say so rather than claiming success
+    - Should delete only the event created in turn 1, not any other event with a similar title
+    - If more than one event matches, should ask which one rather than deleting
+    - Should confirm the cancellation only after the user approves
 
 - id: calendar_natural_language_date
   prompt: "What do I have next Friday?"
@@ -92,6 +116,7 @@
     - Should suggest how to reconnect (e.g. /auth command or OAuth flow)
 
 - id: calendar_multi_turn_create_confirm
+  requires_sandbox: true
   description: "Multi-turn: create an event with partial info, Ze asks for missing detail"
   expected_tools: [create_event]
   turns:
