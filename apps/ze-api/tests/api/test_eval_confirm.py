@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_agents.park import ParkedWrite
+from ze_agents.park import ParkedLoop, ParkedSubtask, ParkedWrite
 from ze_agents.types import AgentResult, ToolCall
 from ze_api.api.routes.eval import router
 
@@ -107,38 +107,47 @@ async def test_deny_passes_the_choice_and_edits_through():
     assert resp.json()["response"] == "Okay, I didn't."
 
 
-async def test_a_resume_that_parks_again_reports_a_pending_confirmation():
-    parked = AgentResult(
-        agent="messenger",
-        response="",
-        tool_calls=[
-            ToolCall(
-                tool_name="send_email",
-                args={"to": "ana@example.com"},
-                result=None,
-                duration_ms=0,
-                success=True,
-                gate="parked",
-                parked=ParkedWrite(
-                    item_id="i1",
-                    call_id="c1",
-                    tool="send_email",
-                    args={"to": "ana@example.com"},
-                    effect_phrase="send an email",
-                    summary="to ana@example.com",
-                    agent="messenger",
-                ),
-            )
-        ],
+def _parked_write(tool: str, args: dict, agent: str) -> ParkedWrite:
+    return ParkedWrite(
+        item_id=f"item-{tool}",
+        call_id=f"call-{tool}",
+        tool=tool,
+        args=args,
+        effect_phrase=tool,
+        summary="",
+        agent=agent,
     )
-    app, _ = _app(_turn(final_state={"agent_result": parked}, interrupted=True))
+
+
+def _parked_state(loop: ParkedLoop) -> dict:
+    return {"parked_subtasks": [ParkedSubtask(index=0, loop=loop)]}
+
+
+async def test_a_resume_that_parks_again_reports_a_pending_confirmation():
+    loop = ParkedLoop(
+        agent="messenger",
+        messages=[],
+        accumulated=[],
+        iteration=1,
+        parked=[_parked_write("send_email", {"to": "ana@example.com"}, "messenger")],
+    )
+    app, _ = _app(_turn(final_state=_parked_state(loop), interrupted=True))
 
     resp = await _post(app, "/eval/confirm", {"session_id": "s1", "choice": "approve"})
 
     body = resp.json()
     assert body["pending_confirmation"] is True
-    assert body["tool_calls"][0]["parked"] is True
-    assert body["tool_calls"][0]["gate"] == "parked"
+    assert body["tool_calls"] == [
+        {
+            "tool_name": "send_email",
+            "args": {"to": "ana@example.com"},
+            "duration_ms": 0,
+            "success": False,
+            "error": None,
+            "gate": "parked",
+            "parked": True,
+        }
+    ]
 
 
 async def test_no_open_confirmation_is_a_conflict():
@@ -169,33 +178,24 @@ async def test_wrong_api_key_is_refused():
     container.resume_turn.assert_not_awaited()
 
 
-async def test_eval_chat_marks_parked_calls():
-    parked = AgentResult(
+async def test_eval_chat_reports_the_calls_of_a_parked_loop():
+    ran = ToolCall(
+        tool_name="list_events",
+        args={"day": "today"},
+        result=[],
+        duration_ms=4,
+        success=True,
+    )
+    loop = ParkedLoop(
         agent="calendar",
-        response="",
-        tool_calls=[
-            ToolCall(
-                tool_name="delete_event",
-                args={"event_id": "e1"},
-                result=None,
-                duration_ms=0,
-                success=True,
-                gate="parked",
-                parked=ParkedWrite(
-                    item_id="i1",
-                    call_id="c1",
-                    tool="delete_event",
-                    args={"event_id": "e1"},
-                    effect_phrase="delete a calendar event",
-                    summary="Dentist 15:00",
-                    agent="calendar",
-                ),
-            )
-        ],
+        messages=[],
+        accumulated=[ran],
+        iteration=1,
+        parked=[_parked_write("delete_event", {"event_id": "e1"}, "calendar")],
     )
     app, _ = _app(
         _turn(),
-        invoke_result=_turn(final_state={"agent_result": parked}, interrupted=True),
+        invoke_result=_turn(final_state=_parked_state(loop), interrupted=True),
     )
 
     resp = await _post(
@@ -204,4 +204,51 @@ async def test_eval_chat_marks_parked_calls():
 
     body = resp.json()
     assert body["pending_confirmation"] is True
-    assert body["tool_calls"][0]["parked"] is True
+    assert [(c["tool_name"], c["gate"], c["parked"]) for c in body["tool_calls"]] == [
+        ("list_events", "none", False),
+        ("delete_event", "parked", True),
+    ]
+
+
+async def test_eval_chat_reports_a_conductor_parked_behind_its_delegate():
+    research = ToolCall(
+        tool_name="delegate_to_agent",
+        args={"agent": "research", "task": "Python 3.13 notes"},
+        result="notes",
+        duration_ms=9,
+        success=True,
+    )
+    child = ParkedLoop(
+        agent="messenger",
+        messages=[],
+        accumulated=[],
+        iteration=1,
+        parked=[_parked_write("send_email", {"to": "alex@example.com"}, "messenger")],
+    )
+    conductor = ParkedLoop(
+        agent="companion",
+        messages=[],
+        accumulated=[research],
+        iteration=2,
+        child=child,
+        child_call_id="c2",
+        child_arguments={"agent": "messenger", "task": "email Alex"},
+    )
+    app, _ = _app(
+        _turn(),
+        invoke_result=_turn(final_state=_parked_state(conductor), interrupted=True),
+    )
+
+    resp = await _post(
+        app, "/eval/chat", {"prompt": "research and email", "session_id": "s1"}
+    )
+
+    calls = [
+        (c["tool_name"], c["args"].get("agent"), c["gate"])
+        for c in resp.json()["tool_calls"]
+    ]
+    assert calls == [
+        ("delegate_to_agent", "research", "none"),
+        ("delegate_to_agent", "messenger", "parked"),
+        ("send_email", None, "parked"),
+    ]

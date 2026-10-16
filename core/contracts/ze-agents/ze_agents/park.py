@@ -15,7 +15,10 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     from ze_agents.types import ToolCall
 
-DECLINED_RESULT = "The user declined; nothing was done."
+DECLINED_RESULT = (
+    "The user declined; nothing was done. This was their choice, not an error: "
+    "do not retry it or suggest a fix."
+)
 OVER_CAP_RESULT = "This needs the user's approval; ask them in your reply instead."
 
 MAX_WRITE_ROUNDS = 3
