@@ -66,6 +66,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "message", "text": "...", "thread_id": "...", "context": {...}}` | User sends a message | `thread_id` is optional; `context` is optional screen context |
 | `{"type": "retry", "message_id": "<uuid>", "thread_id": "..."}` | User presses Retry on the latest reply | Regenerates that reply with write tools blocked (see [Reply feedback and Retry](#reply-feedback-and-retry)) |
 | `{"type": "confirm", "id": "<request id>", "choice": "approve" \| "deny", "edits": {...}}` | Answer a `confirm_request` | Approves or denies the parked writes in that request. `edits` is optional (see [Confirmation flow](#confirmation-flow)) |
+| `{"type": "action", "payload": "<action value>", "thread_id": "..."}` | User presses a prompt button that is not approve or deny | Runs the action named by the button value, e.g. a goal gate's `goal_plan:yes:<id>` (see [Confirmation flow](#confirmation-flow)) |
 | `{"type": "command", "name": "cancel"}` | Cancel pending confirmation | Aborts the awaited graph turn |
 | `{"type": "command", "name": "costs"}` | Introspection | Returns a 7-day cost summary message |
 | `{"type": "command", "name": "status", "period_days": 1}` | Accountability | Returns an activity narrative (default: past 24 h; set `period_days: 7` for the weekly view) |
@@ -81,7 +82,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "pong"}` | Heartbeat reply |
 | `{"type": "typing"}` | Sent immediately after receiving a user message while Ze is processing. May include an optional `"text"` field with a localized progress string (e.g. `"📡 Fetching the latest news..."`). Re-sent mid-turn by agents to update the status and reset the client's 3-second display timer. |
 | `{"type": "message", "message": Message}` | Outbound message from Ze (see Message shape below) |
-| `{"type": "confirm_request", "id": "...", "kind": "write" \| "budget" \| "held", "round": 1, "title": "...", "items": [...], "actions": [...], "expires_at": "..."}` | Asks the user to approve one or more parked writes, a spend-budget pause, or a held unattended write |
+| `{"type": "confirm_request", "id": "...", "kind": "write" \| "budget" \| "held" \| "prompt", "round": 1, "title": "...", "items": [...], "actions": [...], "expires_at": "..."}` | Asks the user to approve one or more parked writes, a spend-budget pause, a held unattended write, or a prompt (goal gate, goal suggestion, workspace reset) |
 | `{"type": "confirm_cancel", "id": "..."}` | Confirmation cancelled (timeout or cancel command) |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
 | `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
@@ -152,6 +153,7 @@ Its `kind` says why Ze pauses:
 | `write` | Ze parked one or more irreversible writes. A turn has at most 3 rounds. `round` counts the pause. | One item per parked write |
 | `budget` | The turn may take today's spend past the limit (113). | One item, `tool: null` |
 | `held` | An unattended workflow or goal run wants a write it may not run on its own. `source` names the run. | One item per held write |
+| `prompt` | A goal gate, a goal suggestion, or a workspace reset asks a question. `title` holds the question and `actions` hold its buttons. The client sends an `approve` or `deny` value as a `confirm` frame and any other value as an `action` frame. | None |
 
 The server sends:
 
