@@ -393,3 +393,26 @@ async def test_a_new_turn_clears_open_confirmations_and_records_them_as_supersed
     assert trace.write_confirmations[0]["tool"] == "send_email"
     cancels = [f for f in _frames(ws) if f["type"] == "confirm_cancel"]
     assert cancels and cancels[0]["id"] == "req-1"
+
+
+@pytest.mark.parametrize("choice", ["approve", "deny"])
+async def test_an_answer_cancels_the_card_on_every_client(choice) -> None:
+    ws, mgr = await _connected()
+    store = _store(_confirmation())
+
+    await handle_confirm(
+        ws,
+        {"type": "confirm", "id": "req-1", "choice": choice},
+        _container(),
+        mgr,
+        CONFIG,
+        thread_id="t1",
+        confirmation_store=store,
+    )
+
+    assert {
+        "type": "confirm_cancel",
+        "id": "req-1",
+        "reason": "answered",
+        "thread_id": "t1",
+    } in _frames(ws)

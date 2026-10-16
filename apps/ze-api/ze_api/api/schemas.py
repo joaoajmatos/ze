@@ -823,6 +823,8 @@ class WsConfirmCancelFrame(BaseModel):
     type: Literal["confirm_cancel"]
     id: str
     thread_id: str | None = None
+    # "answered": the user approved or denied it (possibly on another client).
+    reason: Literal["answered"] | None = None
 
 
 class WsTypingFrame(BaseModel):

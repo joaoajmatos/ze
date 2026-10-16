@@ -97,6 +97,11 @@ async def handle_confirm(
             if not await confirmation_store.clear(thread_id, request_id):
                 await _no_pending(conn_mgr, thread_id)
                 return None
+            # Every client (other tabs, other devices) closes the answered card.
+            await conn_mgr.send_frame(
+                {"type": "confirm_cancel", "id": request_id, "reason": "answered"},
+                thread_id,
+            )
         await conn_mgr.send_frame({"type": "typing"}, thread_id)
         with bound_turn_context(thread_id):
             outcome = await container.resume_turn(

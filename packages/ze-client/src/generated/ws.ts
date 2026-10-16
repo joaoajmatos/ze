@@ -61,6 +61,7 @@ export type Actions = WsConfirmAction[];
 export type Type3 = "confirm_cancel";
 export type Id3 = string;
 export type ThreadId3 = string | null;
+export type Reason = "answered" | null;
 export type Type4 = "typing";
 export type ThreadId4 = string | null;
 export type Text2 = string | null;
@@ -331,6 +332,7 @@ export interface WsConfirmCancelFrame {
   type: Type3;
   id: Id3;
   thread_id?: ThreadId3;
+  reason?: Reason;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
