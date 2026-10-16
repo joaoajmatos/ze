@@ -146,3 +146,65 @@ Latency (provider time, run 6): EN p50 529 ms, p90 802 ms; PT p50 547 ms, p90 81
 > Will doing this task well need a stronger model: careful reasoning, weighing options, synthesis across several sources, planning, nuanced personal or emotional judgment, or several dependent steps? Answer no for greetings, thanks, acknowledgments, a single fact or status lookup, a short confirmation, or one routine action. Judge the task the user is trying to get done, not only their last message: use the conversation, recap, memory, focus and skill to work out what 'it', 'that plan', 'go ahead' or 'the other one' refers to.
 
 - **Held-out run, once, after the Maestro's go and Soffit's written confirmation**: `make calibrate-complexity ARGS="--set holdout --simple-max 0.40"`. The runner refuses a second scoring unless `--rerun` is passed. Verdict (FR-016): per language zero false downgrades, light recall at least 0.5, skipped or invalid at most 10%.
+
+### Held-out verdict (T031), 2026-10-16
+
+One live run of the blind held-out set (`eval/calibration/complexity_holdout.jsonl`, 54 rows, 27 EN and 27 PT, written by Quoin in 024bb325 before the tuned set) at the frozen bar: `make calibrate-complexity ARGS="--set holdout --simple-max 0.40"`, model `typesafe/jev-1.13`, `timeout_ms` 2000, `max_attempts=1`, the production `build_tier_state`. Run after the freeze f48ac21f, after the Maestro's go, and after the Spec Architect's and Soffit's written confirmations; the runner's spent marker did not exist before it. The held-out set is now spent for this bar and instruction text (FR-019). A tuned smoke run (run 7, 94 rows) immediately before showed 0 false downgrades and 23 of 23 light recall in each language, one transient timeout (1 of 47 EN rows), lowest `full` 0.60, highest `simple` 0.44.
+
+Full report (histograms and counts only; the runner prints no row text or ids on this path):
+
+```
+== Noul histogram by gold tier [en]
+bin           simple   full
+[0.00,0.05)       1      0
+[0.05,0.10)       1      0
+[0.10,0.20)       6      0
+[0.20,0.30)       5      0
+[0.30,0.50)       1      0
+[0.50,0.70)       0      3
+[0.70,1.00)       0     10
+
+== [en] at simple_max=0.4
+  rows=27 simple=14 full=13 light=14 falseDowngrades=0 recall=1.000 (14/14) precision=1.000
+  skipped/invalid=0 (0.000) 
+  latency ms p50=550 p90=880
+  companion  rows= 11 simple=  5 full=  6 light=  5
+  research   rows=  9 simple=  5 full=  4 light=  5
+  goals      rows=  7 simple=  4 full=  3 light=  4
+
+== Noul histogram by gold tier [pt]
+bin           simple   full
+[0.05,0.10)       3      0
+[0.10,0.20)       5      0
+[0.20,0.30)       4      0
+[0.30,0.50)       1      1
+[0.50,0.70)       1      1
+[0.70,1.00)       0     11
+
+== [pt] at simple_max=0.4
+  rows=27 simple=14 full=13 light=13 falseDowngrades=0 recall=0.929 (13/14) precision=1.000
+  skipped/invalid=0 (0.000) 
+  latency ms p50=552 p90=985
+  companion  rows= 11 simple=  5 full=  6 light=  4
+  research   rows=  9 simple=  5 full=  4 light=  5
+  goals      rows=  7 simple=  4 full=  3 light=  4
+
+== HELD-OUT VERDICT
+simple_max: 0.4
+[en] ENABLE  falseDowngrades=0 recall=1.000 (14/14) skipped=0.000 precision=1.000
+[pt] ENABLE  falseDowngrades=0 recall=0.929 (13/14) skipped=0.000 precision=1.000
+OVERALL: ENABLE
+```
+
+| | EN | PT |
+|---|---|---|
+| (a) false downgrades (`full` judged light) | 0 | 0 |
+| (b) light recall (gold `simple` judged light) | 14 of 14 = 1.000 | 13 of 14 = 0.929 |
+| (c) skipped or invalid | 0 of 27 = 0.000 | 0 of 27 = 0.000 |
+| precision of the light decision (reported) | 1.000 | 1.000 |
+| latency p50 / p90 (reported) | 550 ms / 880 ms | 552 ms / 985 ms |
+| verdict | **ENABLE** | **ENABLE** |
+
+**Overall: ENABLE** (FR-016: zero false downgrades, light recall at least 0.5, skipped or invalid at most 10%, in both languages).
+
+Margin on the blind set, stated plainly because the tuned set did not predict it: the lowest PT `full` row sits in the 0.30 to 0.50 bin; since it was not judged light at 0.40 it lies between 0.40 and 0.50, within 0.10 of the bar (tuned lowest `full` was 0.56 to 0.60). The tuned-set noise (single rows move up to about 0.04 between runs) is about half that gap. The verdict is ENABLE, but the harm cap has less slack on held-out data than the tuned margin of 0.16 suggested. The set cannot be re-scored to measure it.

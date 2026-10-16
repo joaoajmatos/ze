@@ -60,6 +60,8 @@ system_one:
       promote_hold: null
     complexity:
       # Phase 182: needs_deep_reasoning Noul picks model_simple after fetch_context/match_skills. Off = every agent runs its full model. Enable only after a held-out ENABLE in EN and PT (make calibrate-complexity).
+      # Held-out 2026-10-16 (make calibrate-complexity, 54 blind EN+PT rows, simple_max 0.40): verdict ENABLE for EN and PT. 0 false downgrades each, light recall 14/14 EN and 13/14 PT, 0 skipped, latency p50/p90 550/880 ms EN and 552/985 ms PT.
+      # Tuned (94 rows): lowest full-model row 0.56, so 0.40 keeps a 0.16 margin; the lowest PT full row on the held-out set sat between 0.40 and 0.50. Enable by setting enabled: true and simple_max: 0.40 in a separate commit (FR-020).
       enabled: false
       simple_max: null
 
