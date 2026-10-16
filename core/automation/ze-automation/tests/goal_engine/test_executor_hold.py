@@ -339,3 +339,27 @@ async def test_denying_a_deduplicated_call_declines_both() -> None:
     await rig.resumer.resume(request_id, "deny")
 
     assert calls == []
+
+
+async def test_an_advance_with_a_held_milestone_makes_no_model_call() -> None:
+    """The 15-minute sweep reaches held goals too; it must cost nothing (cost audit 2026-10)."""
+    rig = Rig(
+        []
+    )  # an empty script raises if the agent loop asks the model for anything
+    rig.milestone.status = MilestoneStatus.HELD
+
+    await rig.advance()
+
+    rig.store.update_milestone.assert_not_awaited()
+    assert rig.executor._planner.mock_calls == []
+    assert calls == []
+
+
+async def test_an_advance_for_a_paused_goal_makes_no_model_call() -> None:
+    rig = Rig([])
+    rig.goal.status = GoalStatus.PAUSED
+
+    await rig.advance()
+
+    rig.store.update_milestone.assert_not_awaited()
+    assert rig.executor._planner.mock_calls == []
