@@ -516,24 +516,23 @@ VULTURE_NOISE   := ^(apps/ze-api/ze_api/api/|plugins/[^/]+/[^/]+/api/|core/kerne
 VULTURE_CHECK    = rc=$$?; if [ $$rc -ne 0 ] && [ $$rc -ne 3 ]; then echo "vulture failed ($$rc)" >&2; exit $$rc; fi
 
 deadcode:
-	@tmp=$$(mktemp); trap 'rm -f $$tmp' EXIT; \
+	@tmp=$$(mktemp); trap 'rm -f $$tmp $$tmp.clean' EXIT; \
 	$(VULTURE) $(VULTURE_PATHS) $(VULTURE_FLAGS) --exclude "$(VULTURE_SKIP)" > $$tmp; $(VULTURE_CHECK); \
 	grep -vE '$(VULTURE_NOT_TESTS)' $$tmp | grep -vE '$(VULTURE_NOISE)' | grep -v "unreachable code after 'raise'" | sort > $$tmp.clean; \
 	echo "== Functions, methods, classes, properties (no reference anywhere)"; \
 	grep -vE "unused (variable|attribute) " $$tmp.clean; \
 	echo; echo "== Constants, fields, enum members (check stored values before deleting: report §10)"; \
 	grep -E "unused (variable|attribute) " $$tmp.clean; \
-	echo; echo "$$(wc -l < $$tmp.clean | tr -d ' ') hits. Report only: whitelist false positives in scripts/vulture_whitelist.py."; \
-	rm -f $$tmp.clean
+	echo; echo "$$(wc -l < $$tmp.clean | tr -d ' ') hits. Report only: whitelist false positives in scripts/vulture_whitelist.py."
 
 deadcode-tests-only:
-	@a=$$(mktemp); b=$$(mktemp); trap 'rm -f $$a $$b' EXIT; \
+	@a=$$(mktemp); b=$$(mktemp); trap 'rm -f $$a $$b $$a.s $$b.s' EXIT; \
 	$(VULTURE) $(VULTURE_PATHS) $(VULTURE_FLAGS) --exclude "$(VULTURE_SKIP)" > $$a; $(VULTURE_CHECK); \
 	$(VULTURE) $(VULTURE_PATHS) $(VULTURE_FLAGS) --exclude "$(VULTURE_SKIP),*/tests/*,*/conftest.py" > $$b; $(VULTURE_CHECK); \
 	grep -vE '$(VULTURE_NOT_TESTS)' $$a | grep -vE '$(VULTURE_NOISE)' | grep -v "unreachable code after 'raise'" | sort > $$a.s; \
 	grep -vE '$(VULTURE_NOISE)' $$b | grep -v "unreachable code after 'raise'" | sort > $$b.s; \
 	echo "== Reached only from tests (wire it or delete it with its tests)"; \
-	comm -13 $$a.s $$b.s; rm -f $$a.s $$b.s
+	comm -13 $$a.s $$b.s
 
 test-scripts:
 	$(call pytest_pkg,scripts/tests)

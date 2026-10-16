@@ -6,7 +6,10 @@ showing up as dead code. The file never runs.
 
 Only add a name when a framework, an entry point, or a protocol calls it by name.
 Never add a name because it looks dead: that hides a real finding. A whitelisted
-name is hidden everywhere, so keep entries specific.
+name is hidden everywhere, so keep entries specific. Vulture cannot scope an entry to a
+class: the generic ZePlugin and HarnessHook hook names (`agents`, `jobs`, `channels`,
+`onboarding`, `startup`, `shutdown`, …) also hide a dead method with the same name in
+any other class, so check those by hand.
 
 Decorated functions need no entry. The Makefile passes `--ignore-decorators` for
 `@tool`, `@agent`, `@render_tool`, `@mcp.tool`, `@proactive_job`, `@pytest.fixture`,

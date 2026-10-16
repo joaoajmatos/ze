@@ -22,6 +22,7 @@ canonical node with almost no inbound edges. This script, run right after
 Usage:
     python scripts/graphify_reexports.py                 # repair in place
     python scripts/graphify_reexports.py --dry-run       # report only
+    python scripts/graphify_reexports.py --no-spec-rename  # keep spec-doc node labels
     python scripts/graphify_reexports.py --out fixed.json
     python scripts/graphify_reexports.py --graph graphify-out/graph.json --root .
 """
@@ -287,7 +288,10 @@ def enclosing_scopes(tree: ast.Module):
 
 
 def repair(
-    graph: Graph, modules: dict[str, ModuleInfo], by_dotted: dict[str, ModuleInfo]
+    graph: Graph,
+    modules: dict[str, ModuleInfo],
+    by_dotted: dict[str, ModuleInfo],
+    rename_spec_nodes: bool = True,
 ) -> Report:
     rep = Report()
 
@@ -428,7 +432,7 @@ def repair(
             existing.add((caller, cid, "calls"))
             rep.calls_added += 1
     code_labels = {name.lower(): ids for name, ids in graph.by_name.items()}
-    for n in graph.nodes.values():
+    for n in graph.nodes.values() if rename_spec_nodes else ():
         sf = n.get("source_file") or ""
         if n.get("file_type") == "code" or not sf.endswith(".md"):
             continue
@@ -461,6 +465,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--root", default=".", help="repo root the graph was built from")
     ap.add_argument("--out", default=None, help="write here instead of in place")
+    ap.add_argument(
+        "--no-spec-rename",
+        action="store_true",
+        help='keep spec-doc node labels (default: suffix " (spec)" when a code symbol shares the name)',
+    )
     ap.add_argument("--dry-run", action="store_true", help="report, write nothing")
     args = ap.parse_args(argv)
 
@@ -479,7 +488,7 @@ def main(argv: list[str] | None = None) -> int:
         parse_module(root, info, by_dotted)
 
     graph = Graph(data)
-    rep = repair(graph, modules, by_dotted)
+    rep = repair(graph, modules, by_dotted, rename_spec_nodes=not args.no_spec_rename)
 
     print(
         f"phantom nodes: {rep.phantoms_total} "
@@ -500,7 +509,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         return 0
     out = Path(args.out) if args.out else graph_path
-    out.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, out)
     print(f"wrote {out}")
     return 0
 
