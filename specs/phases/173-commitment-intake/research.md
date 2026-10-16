@@ -93,3 +93,32 @@ Diagnosis (saved answers only, no re-tuning):
 What the evidence supports: the structure works (zero duplicate bookings against 5, fact side at or above baseline, link 10/10, `waiting_on` never written). It does not yet meet FR-022 because (1) the `goal` versus `loop` border for deadline tasks is still unresolved, (2) `resolves_existing` fires on save-for-later requests, (3) `clarify` is weak at low confidence, and (4) four of my own held-out gold labels are doubtful.
 
 Per FR-020 any wording, criteria or bar change now needs a fresh held-out set.
+
+### Run 3 and frozen bars for the holdout2 verdict (T049, 2026-10-16, tuned set only)
+
+Wording: Mortise's `108e02c9` (goal/loop deadline tie-break, `clarify` bare pointers, `resolves_existing` ignores save requests). Scoring: FR-022 with the `also_loop` field and the false-resolves clause (`4b8c5806`). Same model and seed 173. Raw results: `eval/results/commitment_intake_tuned_run3.json` (gitignored).
+
+Distributions on the tuned set (what each bar sits between):
+
+- `resolves_existing`: true resolves rows score 0.95 and up; every other row scores 0.27 or less.
+- `is_open_concern`: gold loop rows score 0.74 and up; loop recall stays 1.00 for `loop_hold` 0.50 to 0.70 and falls from 0.75.
+- `choice_hold`: identical results from 0.5 to 0.8 (loop recall 28/28, zero false creates, zero duplicates); loop recall drops at 0.9 (25/28) and 0.95 (21/28).
+- `biography`: gold fact rows score 0.63 and up.
+- `explicit_declaration`: gold explicit rows score 0.95 and up; two non-explicit loop rows score 0.94 and 0.95, so `explicit_hold` sits on the edge. It only decides declared versus suspected and is not an FR-022 clause.
+
+Frozen bars (centre of each plateau; `resolves_hold` in the wide gap but biased high because a false resolve is the costlier error):
+
+| bar | frozen value |
+|---|---|
+| `choice_hold` | 0.65 |
+| `family_hold` | 0.65 |
+| `biography_hold` | 0.55 |
+| `loop_hold` | 0.60 |
+| `explicit_hold` | 0.95 |
+| `resolves_hold` | 0.80 |
+
+Tuned set at these bars, EN / PT (baseline in brackets): Choice accuracy 1.00 / 1.00, link accuracy 24/24 both, duplicate bookings 0 / 0 (18 / 16), false loop creates 0 / 0 (5 / 5), false resolves 0 / 0 (0 / 0), fact precision 1.00 / 1.00, fact recall 1.00 / 0.83 (0.83 / 0.67), loop precision and recall 1.00 / 1.00 (precision 0.38 / 0.40), `waiting_on` writes 0/10. The one tuned miss is `ci-t-pt-049`, a fact row the model reads as `fact`@0.49.
+
+Wording and bars are frozen at the commit that carries this note. holdout2 (`e3084f1f`) was written blind and has had no model run. One verdict follows; any later change needs a fresh held-out set (FR-020).
+
+Config proposal if the verdict is `ENABLE`: `enabled: true`, `choice_hold: 0.65`, `family_hold: 0.65`, `biography_hold: 0.55`, `loop_hold: 0.6`, `explicit_hold: 0.95`, `resolves_hold: 0.8`.
