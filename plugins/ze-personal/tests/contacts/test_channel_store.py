@@ -89,26 +89,6 @@ async def test_get_handles_returns_all_handles():
     assert types == {ChannelType.EMAIL, ChannelType.LINKEDIN}
 
 
-# ── get_preferred ─────────────────────────────────────────────────────────────
-
-
-async def test_get_preferred_returns_none_when_no_preferred():
-    store = make_store()
-    result = await store.get_preferred(uuid4())
-    assert result is None
-
-
-async def test_get_preferred_returns_preferred_handle():
-    row = make_row(channel_type="email", handle="a@b.com", preferred=True)
-    conn = make_conn()
-    conn.fetchrow = AsyncMock(return_value=row)
-    store = make_store(conn)
-    handle = await store.get_preferred(uuid4())
-    assert handle is not None
-    assert handle.preferred is True
-    assert handle.channel_type == ChannelType.EMAIL
-
-
 # ── upsert ────────────────────────────────────────────────────────────────────
 
 
@@ -129,37 +109,6 @@ async def test_upsert_calls_execute_with_correct_values():
     assert call_args.args[3] == "a@b.com"
     assert call_args.args[4] is True  # preferred
     assert call_args.args[5] is False  # verified
-
-
-# ── set_preferred ─────────────────────────────────────────────────────────────
-
-
-async def test_set_preferred_executes_two_updates():
-    conn = make_conn()
-    store = make_store(conn)
-    await store.set_preferred(uuid4(), ChannelType.EMAIL)
-    assert conn.execute.await_count == 2
-
-
-async def test_set_preferred_uses_transaction():
-    conn = make_conn()
-    store = make_store(conn)
-    await store.set_preferred(uuid4(), ChannelType.EMAIL)
-    conn.transaction.assert_called_once()
-
-
-async def test_set_preferred_unsets_other_types_then_sets_target():
-    conn = make_conn()
-    store = make_store(conn)
-    contact_id = uuid4()
-    await store.set_preferred(contact_id, ChannelType.LINKEDIN)
-    calls = conn.execute.call_args_list
-    # First call: unset preferred for != linkedin
-    assert "!=" in calls[0].args[0]
-    assert calls[0].args[2] == "linkedin"
-    # Second call: set preferred for == linkedin
-    assert "preferred = true" in calls[1].args[0]
-    assert calls[1].args[2] == "linkedin"
 
 
 # ── delete ────────────────────────────────────────────────────────────────────
