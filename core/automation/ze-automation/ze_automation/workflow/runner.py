@@ -32,6 +32,9 @@ def open_confirmation(snapshot: Any) -> WriteConfirmation | None:
     return None
 
 
+_RECURSION_LIMIT = 10_000
+
+
 class WorkflowRunner:
     """Drives one workflow execution through the compiled graph.
 
@@ -65,7 +68,12 @@ class WorkflowRunner:
                 **self._configurable,
                 "thread_id": str(execution_id),
                 "workflow_store": self._workflows,
-            }
+            },
+            # Explicit: a run started from a chat turn (trigger_workflow) otherwise
+            # inherits that turn's runnable context and LangChain's limit of 25,
+            # and each workflow step takes about a dozen graph steps. Step visits
+            # and retries are capped by the workflow nodes; this is only a backstop.
+            "recursion_limit": _RECURSION_LIMIT,
         }
 
     async def run(
