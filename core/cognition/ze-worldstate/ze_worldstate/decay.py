@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from ze_agents.claims import CONFIDENCE_FLOOR, DecayProfile, decay  # noqa: F401 — re-export
+from ze_agents.claims import DecayProfile, decay
 from ze_logging import get_logger
 
 from ze_worldstate import drift

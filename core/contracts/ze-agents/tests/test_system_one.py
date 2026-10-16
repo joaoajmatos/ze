@@ -87,9 +87,7 @@ class TestParseBar:
         assert parse_bar(1, "x", event="bar_invalid") == 1.0
         assert parse_bar(0.25, "x", event="bar_invalid") == 0.25
 
-    @pytest.mark.parametrize(
-        "value", [True, "0.5", -0.1, 1.1, float("nan"), [0.5]]
-    )
+    @pytest.mark.parametrize("value", [True, "0.5", -0.1, 1.1, float("nan"), [0.5]])
     def test_rejects_everything_else(self, value):
         assert parse_bar(value, "x", event="bar_invalid") is None
 
@@ -101,7 +99,9 @@ class TestSurfaceBlock:
 
     def test_reads_a_settings_object_config(self):
         cfg = {"system_one": {"surfaces": {"routing": {"enabled": True}}}}
-        assert surface_block(SimpleNamespace(config=cfg), "routing") == {"enabled": True}
+        assert surface_block(SimpleNamespace(config=cfg), "routing") == {
+            "enabled": True
+        }
 
     @pytest.mark.parametrize(
         "settings",

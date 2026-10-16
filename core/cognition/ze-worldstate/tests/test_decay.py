@@ -3,7 +3,8 @@ from __future__ import annotations
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from ze_worldstate.decay import CONFIDENCE_FLOOR, cascade_from_evidence
+from ze_agents.claims import CONFIDENCE_FLOOR
+from ze_worldstate.decay import cascade_from_evidence
 from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
 
 
