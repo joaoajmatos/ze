@@ -35,7 +35,7 @@ async def _call(store, planner):
     )
 
 
-async def test_create_goal_returns_undo_payload_on_success():
+async def test_create_goal_returns_undo_payload_on_success(goal_writes_confirmed):
     gid = uuid4()
     planner = AsyncMock()
     planner.plan = AsyncMock(return_value=([], []))
@@ -44,7 +44,7 @@ async def test_create_goal_returns_undo_payload_on_success():
     assert result["id"] == str(gid)
 
 
-async def test_create_goal_no_payload_on_planner_error():
+async def test_create_goal_no_payload_on_planner_error(goal_writes_confirmed):
     planner = AsyncMock()
     planner.plan = AsyncMock(side_effect=GoalPlanError("bad plan"))
     store = _store(uuid4())

@@ -12,6 +12,7 @@ import pytest
 
 from tests.test_tool_reversibility import _load_all_tool_modules
 from ze_agents.base_agent import _merge_deps
+from ze_agents.interrupt import workspace_confirmed
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import (
     ToolAccess,
@@ -79,6 +80,14 @@ def _ctx() -> AgentContext:
 @pytest.fixture(autouse=True)
 def _tools():
     _load_all_tool_modules()
+
+
+@pytest.fixture
+def goal_writes_confirmed():
+    """Run a goal write tool as if the user already approved its confirmation."""
+    token = workspace_confirmed.set(True)
+    yield
+    workspace_confirmed.reset(token)
 
 
 async def _call(agent, name: str, **llm_args):
@@ -155,7 +164,9 @@ class _GoalStore:
         self.goals[gid].status = status
 
 
-async def test_goal_round_trip_abandons_it_and_it_cannot_be_approved() -> None:
+async def test_goal_round_trip_abandons_it_and_it_cannot_be_approved(
+    goal_writes_confirmed,
+) -> None:
     from ze_automation.agents.goals import tools as goal_tools
     from ze_automation.agents.goals.agent import GoalAgent
     from ze_automation.goals.executor import GoalExecutor
