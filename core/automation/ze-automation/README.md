@@ -34,7 +34,7 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 | `graph/routing_context.py` | Goal/workflow context injected into the LangGraph routing node |
 | `bootstrap.py` | DI wiring — stores, planners, executors, schedulers, jobs |
 | `rest.py` | Workflow list/detail/execution/revision REST handlers |
-| `migrations/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025`/`zc026` (workflow execution + revisions), `zc030` (goal learning claims), `zc037` (learning evidence checks) — continues the `ze-core` `zc` migration chain |
+| `migrations/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025`/`zc026` (workflow execution + revisions), `zc030` (goal learning claims), `zc038` (learning evidence checks) — continues the `ze-core` `zc` migration chain |
 
 Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
 

@@ -39,16 +39,16 @@ schema.
 5. A keyset watermark skips a row that commits after the watermark passed it with an
    earlier `created_at` (a turn whose transaction is still open when the job runs). The
    job runs nightly and turns commit in seconds, so this is accepted.
-6. `zc037` (separate X-15 change) narrows the `goal_learning_evidence` CHECKs. It fails
+6. `zc038` (separate X-15 change) narrows the `goal_learning_evidence` CHECKs. It fails
    on a database that holds `user_correction` or `derives` rows. No code ever wrote
    them, and a seeded throwaway DB held none.
 7. Migrations (numbers set by the Maestro, rechained on land):
-   - `zc035` (ze-personal): create `contacts_episode_watermark`; drop `zc013`'s
+   - `zc036` (ze-personal): create `contacts_episode_watermark`; drop `zc013`'s
      `episodes.contacts_extracted` column and index.
-   - `zc036` (ze-core): drop `user_facts`, `episodes`, `user_profile`. It declares
+   - `zc037` (ze-core): drop `user_facts`, `episodes`, `user_profile`. It declares
      `depends_on = "zc022"`: the `zc` chain branches at `zc020`, and `zc022`–`zc024`
-     (which alter these tables) are not ancestors of `zc035`.
-   - `zc037` (ze-automation): narrow the learning evidence CHECKs (point 6).
+     (which alter these tables) are not ancestors of `zc036`.
+   - `zc038` (ze-automation): narrow the learning evidence CHECKs (point 6).
 
 ## Not changed
 

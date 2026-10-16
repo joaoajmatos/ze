@@ -3,7 +3,7 @@
 The consolidator reads memory_episodes and tracks progress with a ze-personal-owned
 keyset watermark instead of a flag column on the legacy episodes table (zc013).
 
-Revision ID: zc035
+Revision ID: zc036
 Revises: zc032
 """
 
@@ -13,7 +13,7 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "zc035"
+revision: str = "zc036"
 down_revision: Union[str, Sequence[str], None] = "zc032"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

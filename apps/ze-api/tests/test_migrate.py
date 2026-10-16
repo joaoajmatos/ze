@@ -120,8 +120,8 @@ def test_cleanup_cf04_revisions_extend_the_core_chain():
 
     cfg = ze_migrate._build_config("postgresql+psycopg2://test/test")
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_revision("zc035").down_revision == "zc032"
-    assert script.get_revision("zc036").down_revision == "zc035"
-    assert "zc022" in script.get_revision("zc036").dependencies
+    assert script.get_revision("zc036").down_revision == "zc032"
     assert script.get_revision("zc037").down_revision == "zc036"
-    assert "zc037" in set(script.get_heads())
+    assert "zc022" in script.get_revision("zc037").dependencies
+    assert script.get_revision("zc038").down_revision == "zc037"
+    assert "zc038" in set(script.get_heads())

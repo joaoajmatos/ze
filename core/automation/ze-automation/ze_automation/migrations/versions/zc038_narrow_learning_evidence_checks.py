@@ -3,8 +3,8 @@
 No producer writes evidence_kind 'user_correction' or role 'derives'; their enum
 members are gone from ze_automation.goals.types.
 
-Revision ID: zc037
-Revises: zc036
+Revision ID: zc038
+Revises: zc037
 """
 
 from __future__ import annotations
@@ -13,8 +13,8 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "zc037"
-down_revision: Union[str, Sequence[str], None] = "zc036"
+revision: str = "zc038"
+down_revision: Union[str, Sequence[str], None] = "zc037"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

@@ -2,10 +2,10 @@
 
 ze-memory owns memory since phase 2's rewrite (memory_facts, memory_episodes,
 memory_profile_facets). Nothing writes these tables; the last reader, the contacts
-consolidator, moved to memory_episodes in zc035.
+consolidator, moved to memory_episodes in zc036.
 
-Revision ID: zc036
-Revises: zc035
+Revision ID: zc037
+Revises: zc036
 Depends on: zc022
 """
 
@@ -15,11 +15,11 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "zc036"
-down_revision: Union[str, Sequence[str], None] = "zc035"
+revision: str = "zc037"
+down_revision: Union[str, Sequence[str], None] = "zc036"
 branch_labels: Union[str, Sequence[str], None] = None
 # zc022 resizes these tables on the zc020 -> zc024 branch, which does not
-# precede zc035 in the chain.
+# precede zc036 in the chain.
 depends_on: Union[str, Sequence[str], None] = "zc022"
 
 
