@@ -15,7 +15,7 @@ vi.mock("@myguyze/ze-client", async (importOriginal) => {
   };
 });
 
-vi.mock("@/features/send-context-notice", () => ({
+vi.mock("@/shared/lib", () => ({
   useSendNotice: (selector: (state: { showNotice: typeof showNotice }) => unknown) =>
     selector({ showNotice }),
 }));

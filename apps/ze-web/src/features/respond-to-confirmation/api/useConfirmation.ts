@@ -1,5 +1,5 @@
 import type { WsOutboundFrame } from "@myguyze/ze-client";
-import { useSendNotice } from "@/features/send-context-notice";
+import { useSendNotice } from "@/shared/lib";
 import { useWsStore, send } from "@/shared/api";
 import { useMemo } from "react";
 import { HELD_KEY, type PendingConfirm, usePendingConfirms } from "../model/pending-store";

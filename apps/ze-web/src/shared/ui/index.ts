@@ -26,12 +26,12 @@ export {
 export { EmptyState } from "./layout/EmptyState";
 export { ErrorState } from "./layout/ErrorState";
 export { ListSkeleton } from "./layout/ListSkeleton";
+export { NoticeBanner } from "./layout/NoticeBanner";
 export { ChatErrorBoundary } from "./layout/ChatErrorBoundary";
 export { ChatShell } from "./layout/ChatShell";
 export { ZeErrorBoundary } from "./layout/ZeErrorBoundary";
 export { ZeErrorFallback } from "./layout/ZeErrorFallback";
 export { ListPage } from "./layout/ListPage";
 export { SidePanel } from "./layout/SidePanel";
-export { TopBar } from "./layout/TopBar";
 export { TopBarQuickActionButton, TopBarQuickActionLink } from "./layout/TopBarQuickAction";
 export { RedirectHintTarget } from "./layout/RedirectHintTarget";

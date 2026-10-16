@@ -3,7 +3,7 @@ import { getRoute, navRoutes, settingsNavRoute } from "@/shared/config";
 import { useBreadcrumb } from "@/shared/lib/breadcrumb";
 import { usePageHeader } from "@/shared/lib/page-header";
 import { useTopBarActions } from "@/shared/lib/top-bar-actions";
-import { NotificationBell } from "@/widgets/notification-bell";
+import { NotificationBell } from "./NotificationBell";
 
 const allRoutes = [...navRoutes, settingsNavRoute];
 

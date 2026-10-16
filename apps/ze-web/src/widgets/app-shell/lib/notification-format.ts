@@ -11,7 +11,7 @@ export function relativeTime(dateStr: string): string {
 /** Route for a notification's deep link target, or null if it has none / isn't navigable. */
 export function targetRoute(targetType: string | null, targetId: string | null): string | null {
   if (!targetType || !targetId) return null;
-  if (targetType === "goal" || targetType === "goal_suggestion") return `/goals/${targetId}`;
+  if (targetType === "goal") return `/goals/${targetId}`;
   if (targetType === "workflow_run") return `/workflows/${targetId}`;
   return null;
 }

@@ -1,6 +1,6 @@
 import type { PrimitiveRendererActions } from "@myguyze/ze-ui/react";
 import { useMemo } from "react";
-import { useSendNotice } from "@/features/send-context-notice";
+import { useSendNotice } from "@/shared/lib";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
 import { send } from "@/shared/api";

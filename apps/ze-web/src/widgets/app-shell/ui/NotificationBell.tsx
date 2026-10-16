@@ -13,7 +13,7 @@ import { useSession } from "@/entities/session";
 import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { EmptyState } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
-import { relativeTime, targetRoute } from "../lib/format";
+import { relativeTime, targetRoute } from "../lib/notification-format";
 
 const HELD_ACTIONS = [
   { label: "Approve all", value: "approve", style: "primary" as const },

@@ -5,7 +5,7 @@ import type { ChatAttachment } from "@/entities/message";
 import { placeWorkspaceFile } from "@/entities/workspace";
 import { reconnect } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";
-import { useSendNotice } from "@/features/send-context-notice";
+import { useSendNotice } from "@/shared/lib";
 import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { ReplyActions, RollbackNotice } from "@/features/reply-feedback";
 import { RetryButton, useRetryReply } from "@/features/retry-reply";

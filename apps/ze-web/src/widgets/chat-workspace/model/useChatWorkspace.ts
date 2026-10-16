@@ -3,7 +3,7 @@ import type { MessageSchema as Message, WsScreenContext as ScreenContext } from 
 import { useEffect, useRef, useState } from "react";
 import { useMessages } from "@/features/load-chat-history";
 import { useConfirmation } from "@/features/respond-to-confirmation";
-import { useSendNotice } from "@/features/send-context-notice";
+import { useSendNotice } from "@/shared/lib";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
 import { useFrame, useWsStore, send } from "@/shared/api";

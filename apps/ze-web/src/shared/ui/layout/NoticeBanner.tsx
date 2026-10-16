@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useSendNotice } from "@/features/send-context-notice";
+import { useSendNotice } from "@/shared/lib";
 
 export function NoticeBanner() {
   const notice = useSendNotice((s) => s.notice);

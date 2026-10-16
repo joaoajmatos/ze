@@ -8,5 +8,6 @@ export {
   TopBarActionsProvider,
   useTopBarQuickActions,
 } from "./top-bar-actions";
+export { useSendNotice } from "./notice-store";
 export { humanizeStatus, humanizeIdentifier } from "./humanize";
 export { useOptionalCharts } from "./optional-charts";

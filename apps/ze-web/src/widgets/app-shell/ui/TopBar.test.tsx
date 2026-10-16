@@ -6,7 +6,7 @@ import { PageHeaderProvider } from "@/shared/lib/page-header";
 import { TopBarActionsProvider } from "@/shared/lib/top-bar-actions";
 import { TopBar } from "./TopBar";
 
-vi.mock("@/widgets/notification-bell", () => ({ NotificationBell: () => null }));
+vi.mock("./NotificationBell", () => ({ NotificationBell: () => null }));
 
 function Where() {
   return <p data-testid="where">{useLocation().pathname}</p>;
