@@ -14,8 +14,5 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
-  },
-  "dependencies": {
-    "@hey-api/client-fetch": "0.13.1"
   }
 }

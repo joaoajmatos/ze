@@ -3,8 +3,6 @@ import { createClient } from "./generated/client/client.gen";
 import { createConfig } from "./generated/client/utils.gen";
 import type { Client } from "./generated/client/types.gen";
 
-export type { Client };
-
 /**
  * Configure the default Ze API client.
  *
