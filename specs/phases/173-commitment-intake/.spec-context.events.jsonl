@@ -27,3 +27,5 @@
 {"step": "implement", "substep": null, "task": "T054", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:04.391Z", "did": "false resolves <= baseline clause + tests (4b8c5806)"}
 {"step": "implement", "substep": null, "task": "T053", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:04.452Z", "did": "holdout2 verdict recorded: EN ENABLE, PT KEEP OFF"}
 {"step": "implement", "substep": null, "task": "T046", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:18.501Z", "did": "--set holdout2 wired, spent set reference-only (eb649cbd)"}
+{"step": "implement", "substep": null, "task": "T055", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:51:02.824Z", "did": "Choice accuracy excludes gold_resolves; holdout3 wired (26383319)"}
+{"step": "implement", "substep": null, "task": "T060", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:51:02.887Z", "did": "waiting_on-writes verdict clause + tests (c4ef634f)"}

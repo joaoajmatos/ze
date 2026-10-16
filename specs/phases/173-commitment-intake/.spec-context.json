@@ -257,9 +257,25 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T16:45:18.501Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:51:02.824Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T060",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:51:02.887Z"
     }
   ],
-  "currentTask": "T046",
+  "currentTask": "T060",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -365,6 +381,14 @@
     "T046": {
       "status": "DONE",
       "did": "--set holdout2 wired, spent set reference-only (eb649cbd)"
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "Choice accuracy excludes gold_resolves; holdout3 wired (26383319)"
+    },
+    "T060": {
+      "status": "DONE",
+      "did": "waiting_on-writes verdict clause + tests (c4ef634f)"
     }
   }
 }
