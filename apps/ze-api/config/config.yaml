@@ -95,6 +95,22 @@ memory:
     session_grouping_enabled: true
     min_session_episodes: 3
     max_sessions_per_run: 10
+    # Read with these defaults when omitted (ze_memory/defaults.py):
+    # nightly_cron: "0 2 * * *"
+    # unreviewed_ttl_days: 90
+    # contradicted_ttl_days: 30
+    # expiry_grace_days: 7
+    # episode_recency_days: 14
+    # episode_min_archive_batch: 10
+    # merge_silent_threshold: 0.95
+    # merge_llm_threshold: 0.85
+  # Read with these defaults when omitted (ze_memory/defaults.py):
+  # session_summary:
+  #   enabled: true
+  #   check_interval_minutes: 10
+  #   min_episodes: 2
+  #   max_sessions_per_run: 5
+  #   max_transcript_tokens: 6000
   graph:
     enabled: true
     max_hops: 1
@@ -110,9 +126,6 @@ contacts:
     max_episodes_per_run: 50
     nightly_cron: "0 3 * * *"
     review_cron: "30 8 * * *"
-  follow_up:
-    stale_days: 7
-    max_nudges: 3
 
 onboarding:
   enabled: true
@@ -120,9 +133,6 @@ onboarding:
 
 skills:
   match_threshold: 0.5   # relevance floor for automatic /-less skill matching (US2)
-  require_review: true
-  reset:
-    allow_full_dev_from_app: false
   recheck:
     enabled: true
     cron: "0 6 * * *"    # daily source-content recheck (US4)
@@ -169,6 +179,12 @@ proactive:
   attention_arbitration:
     enabled: true
     cron: "0 */4 * * *"
+  # Read with these defaults when omitted:
+  # inbound_poll_interval_seconds: 300   # messenger inbound poll, rounded down to whole minutes (min 1)
+  # notifications:
+  #   prune_cron: "0 4 * * *"
+  #   retention_days: 90
+  #   release_cron: "*/5 * * * *"        # releases pushes held during quiet hours
 
 correlation:
   inline:
@@ -209,11 +225,19 @@ correlation:
     relevance:
       episode_lookback_days: 30
       cache_ttl_minutes: 30
+  # Read with this default when omitted:
+  # hypothesis_decay:
+  #   schedule: "0 3 * * *"
 
 worldstate:
   drift:
     enabled: true
     cron: "0 5 * * *"
+  # Read with these defaults when omitted:
+  # stale_suspicion:
+  #   enabled: true
+  #   window_days: 14
+  #   cron: "0 4 * * *"
   push:
     enabled: true
     inline_cooldown_hours: 12
@@ -290,6 +314,26 @@ finance:
   nli_merchant_merge_enabled: false
   nli_merchant_cosine_threshold: 0.70
   nli_merchant_entailment_threshold: 0.70
+  # Read with these defaults when omitted:
+  # recurring_detection_enabled: false
+  # recurring_detection_schedule: "0 9 1 * *"
+  # recurring_staleness_days: 35
+  # recurring_nudge_cooldown_days: 14
+  # recurring_price_change_threshold: 0.10
+
+# Prospecting settings come from the environment (PROSPECTING_*, BROWSER_DELAY_MS,
+# BROWSER_MAX_TEXT_CHARS). A non-empty `prospecting:` block replaces the env values
+# entirely, so set all five keys if you uncomment it. Defaults:
+# prospecting:
+#   max_iterations: 15
+#   max_loop_tokens: 24000
+#   stale_timeout_minutes: 10
+#   browser_delay_ms: 2000
+#   browser_max_text_chars: 8000
+
+# Read with this default when omitted:
+# messaging:
+#   automated_senders: []   # regexes matched (case-insensitive) against the sender address; a match skips the mail as automated
 
 dream:
   enabled: true
@@ -298,7 +342,6 @@ dream:
   max_synthesis_per_run: 20
   max_stress_tests_per_goal: 2
   max_schema_candidates_per_run: 30
-  session_archive_threshold_days: 7
   auto_promote_min_support: 3
   auto_promote_min_distinct_sessions: 2
   auto_promote_min_temporal_spread_days: 7
@@ -320,7 +363,5 @@ dream:
 # Durable workspace sidecar (files + shell). Secrets stay in .env.
 workspace:
   run_timeout_seconds: 120
-  output_preview_chars: 8000
-  storage_ceiling_bytes: 1073741824
-  run_lock_wait_seconds: 30
-  follow_through_short_wait_seconds: 25
+  # The short wait before a turn detaches a run is the env var
+  # WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS (docs/configuration.md), not a YAML key.
