@@ -237,11 +237,8 @@ repeatedly-failing workflows.
 
 ## Goal advance sweep (every 15 minutes)
 
-**Module:** `ze_automation/goals/executor.py` · registered by `register_goal_advance_sweep` in `ze_automation/bootstrap.py`  
-**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *` (set `proactive.goal_advance_sweep.cron`; `enabled: false` turns it off)
-
-An idle goal costs three database queries and no model call. `advance` returns before the
-model when a milestone is held or the goal is not `ACTIVE`.
+**Module:** `ze_automation/goals/executor.py` · registered in `ze_api/container.py`  
+**Job id:** `goal_advance_sweep` · **Cron:** `*/15 * * * *`
 
 For each goal with status `ACTIVE`, the sweep calls `GoalExecutor.advance(goal_id)`.
 The advance loop either:
@@ -507,8 +504,6 @@ The user sets quiet hours in Settings › Notifications. The window is stored in
 ### Catch-up for missed runs
 
 Ze runs on a laptop, so a scheduled time can pass while the host is asleep. `ProactiveScheduler` records each run in `proactive_job_runs`. On startup, it runs a catch-up job once when the scheduled time passed since the last recorded run, within the job's `catch_up_max_age_hours`. The morning briefing sets this from `proactive.briefing.catch_up_max_age_hours` (default 6). A job with no recorded run does not run at startup. APScheduler `misfire_grace_time=None` with `coalesce=True` covers a process that was suspended over a fire time. The `quiet_hours_release` job does not catch up.
-
-Two config keys control catch-up. `proactive.catch_up: false` turns it off for every job. `proactive.catch_up_max_age_hours` maps a job id to the oldest missed run that still catches up. A max age set at registration (the briefing) wins over this map. The shipped config limits the jobs that run every few minutes or hours, because their next tick comes soon anyway.
 
 ---
 

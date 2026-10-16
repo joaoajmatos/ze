@@ -8,25 +8,6 @@ Ze has three layers of configuration:
 
 All files live in `apps/ze-api/config/` (or the path set by `config_dir`).
 
-### Config profiles
-
-A profile is a YAML file in `config/profiles/` that overrides part of `config.yaml`.
-Set `ZE_PROFILE=<name>` to load it. Ze merges the profile over `config.yaml`: nested
-mappings merge, and lists and scalars replace. An unknown name stops startup with an error.
-
-`make dev`, `make dev-full`, and `make dev-eval` set `ZE_PROFILE=quiet`. The `quiet`
-profile turns off the work nobody watches while you develop:
-
-- It scores news with heuristics only (no model call per article) and fetches once a day.
-- It turns off the weekly insight and goal jobs, the nightly dream and consolidation
-  jobs, and session summaries.
-- It stops the correlation scan.
-- It stops a restart from running every job it missed.
-
-It leaves routing, skills, and commitment intake as shipped, so chat and evals behave the
-same. Run `make dev ZE_PROFILE=` to use the full shipped config. Production never sets
-`ZE_PROFILE`.
-
 ---
 
 ## `.env`
