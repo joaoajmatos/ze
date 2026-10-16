@@ -198,7 +198,6 @@ async def get_message_traces(
             MessageTraceEntry(
                 message_id=message_id,
                 trace=_trace_to_response(trace),
-                tier=_tier_to_response(getattr(trace, "tier", None)),
             )
             for message_id, trace in traces.items()
         ]

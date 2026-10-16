@@ -58,7 +58,7 @@ The trace gains `MessageTrace.tier` (REST, `trace_update`, Routing section in ze
 | `build_embedding_router` (drops `estimator`; sibling `build_tier_judge` added) | ze-core: `bootstrap.build_router` L160, `container._build_router` L457 / `from_config` L357; ze-api: `container.build_container` L747; tests `test_router_factory.py` |
 | `Container._build_config` / `ZeContainer._build_config` (add `tier_judge`) | ze-core `container.py` L45; ze-api `container.py` L289 |
 | `graph_builder` edges (`match_skills → choose_tier → capability_check`) | ze-core `orchestration/graph.py`, `orchestration/nodes/__init__.py`; no test asserts node names today (grep), so the node test is new |
-| `MessageTrace` (+ `tier`) | ze-core `conversation/messages/types.py`, `nodes/trace.py` `record_trace` L71, `conversation/turn.py` (partial frame); ze-api `api/schemas.py` `MessageTraceResponse` L211, `MessageTraceEntry` L860, WS frame schema → `make codegen` (`@myguyze/ze-client`); ze-web `widgets/message-trace/ui/RoutingBadge.tsx`, `MessageTracePanel.tsx`, `widgets/trace-panel/ui/RoutingSection.tsx` |
+| `MessageTrace` (+ `tier`) | ze-core `conversation/messages/types.py`, `nodes/trace.py` `record_trace` L71, `conversation/turn.py` (partial frame); ze-api `api/schemas.py` `MessageTraceResponse` L211 (wrapped by `MessageTraceEntry.trace`), `WsTraceUpdateFrame` L860 → `make codegen` (`@myguyze/ze-client`); ze-web `widgets/message-trace/ui/RoutingBadge.tsx`, `MessageTracePanel.tsx`, `widgets/trace-panel/ui/RoutingSection.tsx` |
 | `routing_log` columns (dropped) | ze-core `routing/store.py` `write_log`; `001_initial_schema.py` (history only); `rest.py` and `RoutingLogEntry` do not select them |
 | `model_simple` (semantics unchanged; now read by the tier step) | declared on companion, research (ze-personal), goals (ze-automation); `BaseAgent` attribute (ze-agents); `ze_api/testing.py` L44 and `tests/support/gate.py` L38 expose it (unchanged) |
 
@@ -106,7 +106,7 @@ Add `build_tier_state(state) -> dict[str, str]` per research R3, reading `agent_
 ### Trace and storage
 
 - `TierTrace(agent, tier, decided_by, model)` in `conversation/messages/types.py`; JSON-safe in `trace_update` (117 rule).
-- ze-api: `TierTraceResponse`; `tier` on `MessageTraceResponse` and `MessageTraceEntry`; WS schema; `make codegen`.
+- ze-api: `TierTraceResponse`; `tier` on `MessageTraceResponse` (which `MessageTraceEntry` wraps as `trace`, so the entry carries no own `tier`) and on `WsTraceUpdateFrame`; `make codegen`.
 - Migration `zc0NN_drop_routing_log_tier.py`: `ALTER TABLE routing_log DROP COLUMN IF EXISTS complexity, DROP COLUMN IF EXISTS model_selected`; downgrade re-adds both as nullable `TEXT`. `write_log` stops writing them.
 - ze-web: `RoutingBadge` gets an optional `tier` prop and renders one line; `MessageTracePanel` and `RoutingSection` pass `trace.tier`.
 

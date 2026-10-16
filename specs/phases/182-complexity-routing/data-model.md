@@ -36,7 +36,7 @@ Appended to `state["judgments"]` and `MessageTrace.judgments` via `judgments_fro
 
 ## API
 
-`TierTraceResponse` (Pydantic, `ze_api/api/schemas.py`): `agent: str`, `tier: Literal["simple","full"]`, `decided_by: str`, `model: str`. Optional `tier: TierTraceResponse | None = None` on `MessageTraceResponse` and `MessageTraceEntry`; the same object in the `trace_update` WS frame.
+`TierTraceResponse` (Pydantic, `ze_api/api/schemas.py`): `agent: str`, `tier: Literal["simple","full"]`, `decided_by: str`, `model: str`. Optional `tier: TierTraceResponse | None = None` on `MessageTraceResponse` and on `WsTraceUpdateFrame` (the `trace_update` frame). `MessageTraceEntry` wraps `trace: MessageTraceResponse` and has no `tier` of its own (no duplicated field, pre-v1).
 
 ## Storage
 

@@ -258,7 +258,7 @@ async def test_get_message_trace_tier_is_null_when_absent():
 
 
 @pytest.mark.asyncio
-async def test_get_message_traces_batch_carries_tier():
+async def test_get_message_traces_batch_carries_tier_on_the_trace_only():
     message_id = uuid4()
     store = AsyncMock()
     store.get_traces = AsyncMock(return_value={message_id: _tiered_trace()})
@@ -274,5 +274,6 @@ async def test_get_message_traces_batch_carries_tier():
         )
 
     entry = resp.json()["traces"][0]
-    assert entry["tier"]["tier"] == "simple"
+    assert "tier" not in entry
+    assert entry["trace"]["tier"]["tier"] == "simple"
     assert entry["trace"]["tier"]["decided_by"] == "system_one"

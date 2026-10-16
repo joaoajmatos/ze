@@ -243,7 +243,6 @@ class MessageTraceResponse(BaseModel):
 class MessageTraceEntry(BaseModel):
     message_id: UUIDType
     trace: MessageTraceResponse
-    tier: TierTraceResponse | None = None
 
 
 class MessageTracesResponse(BaseModel):

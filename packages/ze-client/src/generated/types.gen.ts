@@ -2101,7 +2101,6 @@ export type MessageTraceEntry = {
      */
     message_id: string;
     trace: MessageTraceResponse;
-    tier?: TierTraceResponse | null;
 };
 
 /**
