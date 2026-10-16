@@ -47,7 +47,7 @@ Today's date: {today}. Your own knowledge may be older; do not mark a date or ve
 Tool calls:
 {tool_calls}
 Waiting for the user's confirmation: {pending_confirmation}
-Notes: a call marked "parked" waits for the user's approval; it counts as invoking the tool. A call marked "denied", "expired" or "refused_over_cap" did not run. A call marked "ok (approved)" ran after the user approved it. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. Web search runs on the server and never appears in the tool call list.
+Notes: a call marked "parked" waits for the user's approval; it counts as invoking the tool. A call marked "denied", "refused", "expired" or "refused_over_cap" did not run. A call marked "ok (approved)" ran after the user approved it. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. Web search runs on the server and never appears in the tool call list.
 
 ## Criteria
 {criteria}
@@ -62,7 +62,7 @@ Return JSON with exactly these fields:
 """
 
 
-_UNRUN_GATES = frozenset({"parked", "denied", "expired", "refused_over_cap"})
+_UNRUN_GATES = frozenset({"parked", "denied", "refused", "expired", "refused_over_cap"})
 _APPROVED_GATES = frozenset({"approved", "pre_approved"})
 
 

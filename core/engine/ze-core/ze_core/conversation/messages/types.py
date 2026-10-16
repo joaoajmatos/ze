@@ -42,7 +42,7 @@ class ToolCallTrace:
     access: str = "unknown"  # "read" | "write" | "delegate" | "unknown"
     reversibility: str | None = None  # "reversible" | "irreversible" | None
     undo_tool: str | None = None
-    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
+    gate: str = "none"  # "none" | "approved" | "denied" | "refused" | "expired"
     effect_phrase: str | None = None
 
 

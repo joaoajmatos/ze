@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -22,11 +23,13 @@ from ze_automation.holds.store import HeldWriteStore
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 from ze_automation.push_kinds import WRITE_APPROVAL_HELD
 from ze_automation.workflow.runner import WorkflowRunner
+from ze_automation.workflow.scheduler import WorkflowScheduler
 from ze_automation.workflow.types import Workflow, WorkflowStep
 from ze_core.conversation import make_graph_input
 from ze_core.routing.types import RoutingEnvelope, SubTask
 
 calls: list[str] = []
+probes: list = []
 
 
 class MemoryHeldStore(HeldWriteStore):
@@ -63,6 +66,7 @@ def registry(monkeypatch):
     monkeypatch.setattr(tool_mod, "_tools", dict(tool_mod._tools))
     monkeypatch.setattr(registry_mod, "_instances", dict(registry_mod._instances))
     calls.clear()
+    probes.clear()
 
     async def hold_send_email(to: str = "") -> str:
         calls.append("send_email")
@@ -78,6 +82,8 @@ def registry(monkeypatch):
 
     async def hold_delete_event(event_id: str = "") -> str:
         calls.append("delete_event")
+        for probe in probes:
+            probe()
         return "deleted"
 
     tool(
@@ -126,7 +132,25 @@ class Harness:
         register_instance("holdagent", cls())
 
         self.workflow_store = AsyncMock()
-        self.workflow_store.get_execution = AsyncMock(return_value=None)
+        self.exec_status: dict = {}
+
+        async def _set_status(execution_id, status, expected=None):
+            if expected is not None and self.exec_status.get(execution_id) != expected:
+                return False
+            self.exec_status[execution_id] = status
+            return True
+
+        async def _finish(execution_id, status, error=None, summary=None):
+            self.exec_status[execution_id] = status
+
+        async def _get_execution(workflow_id, execution_id):
+            return SimpleNamespace(
+                status=self.exec_status.get(execution_id, "running"), error=None
+            )
+
+        self.workflow_store.set_execution_status = AsyncMock(side_effect=_set_status)
+        self.workflow_store.finish_execution = AsyncMock(side_effect=_finish)
+        self.workflow_store.get_execution = AsyncMock(side_effect=_get_execution)
         self.held = MemoryHeldStore()
         self.notifier = MagicMock()
         self.notifier.notify = AsyncMock(return_value="sent")
@@ -145,7 +169,9 @@ class Harness:
             updated_at=datetime.now(tz=timezone.utc),
         )
         self.workflow_store.get = AsyncMock(return_value=self.workflow)
+        self.scheduler = WorkflowScheduler(self.workflow_store, enabled=False)
         self.runner = WorkflowRunner(
+            scheduler=self.scheduler,
             graph=self.graph,
             configurable={
                 "openrouter_client": client,
@@ -395,3 +421,75 @@ async def test_a_hard_veto_refuses_a_pre_approved_write_without_holding(
 
     assert calls == []
     assert h.held.rows == {}
+
+
+async def test_a_refused_veto_fails_the_step_and_the_run(monkeypatch) -> None:
+    import ze_agents.hooks as hooks_mod
+
+    monkeypatch.setattr(
+        hooks_mod,
+        "_hooks",
+        [_ConstraintHook(AskDecision.refuse("Blocked by your rule."))],
+    )
+    h = Harness(_digest_script() + [("done", None)])
+    execution_id = await h.run(_steps())
+
+    assert h.exec_status[execution_id] == "failed"
+
+
+async def test_a_denied_step_leaves_no_write_state_for_the_next_step() -> None:
+    steps = [
+        WorkflowStep(task="tidy my calendar", id="s0"),
+        WorkflowStep(task="say hello", id="s1"),
+    ]
+    h = Harness(_delete_script() + [("Hello.", None)])
+    execution_id = await h.run(steps)
+    request_id = next(iter(h.held.rows))
+
+    await h.resumer.resume(request_id, "deny")
+
+    state = await h.graph.aget_state({"configurable": {"thread_id": str(execution_id)}})
+    results = state.values["workflow_step_results"]
+    assert [r.step_id for r in results] == ["s0", "s1"]
+    assert "didn't" in results[0].output
+    assert "didn't" not in results[1].output
+    assert state.values["write_rounds"] == 0
+    assert state.values["write_outcomes"] == []
+    assert h.exec_status[execution_id] == "completed"
+
+
+async def test_a_resumed_run_is_tracked_by_the_scheduler() -> None:
+    h = Harness(_delete_script())
+    execution_id = await h.run(_delete_steps())
+    request_id = next(iter(h.held.rows))
+    seen: list[bool] = []
+    probes.append(lambda: seen.append(execution_id in h.scheduler._running_executions))
+    probes.append(
+        lambda: seen.append(
+            h.scheduler._cancellation.is_cancelled(execution_id) is False
+        )
+    )
+
+    await h.resumer.resume(request_id, "approve")
+
+    assert seen == [True, True]
+    assert execution_id not in h.scheduler._running_executions
+    h.workflow_store.update_run_timestamps.assert_awaited_once()
+
+
+async def test_cancelling_a_held_run_denies_its_hold_and_it_cannot_resume() -> None:
+    from ze_automation.holds.resumer import HeldWriteNotOpenError
+
+    h = Harness(_delete_script())
+    execution_id = await h.run(_delete_steps())
+    request_id = next(iter(h.held.rows))
+    h.scheduler.configure_held_canceller(h.runner.cancel_held)
+
+    result = await h.scheduler.cancel_execution(h.workflow.id, execution_id)
+
+    assert result == "cancelled"
+    assert h.exec_status[execution_id] == "cancelled"
+    assert h.held.rows[request_id].status is HeldWriteStatus.DENIED
+    with pytest.raises(HeldWriteNotOpenError):
+        await h.resumer.resume(request_id, "approve")
+    assert calls == []

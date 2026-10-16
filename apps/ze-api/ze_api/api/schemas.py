@@ -98,6 +98,7 @@ class ToolCallTraceResponse(BaseModel):
         "approved",
         "pre_approved",
         "denied",
+        "refused",
         "refused_over_cap",
         "expired",
     ] = "none"

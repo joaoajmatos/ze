@@ -78,7 +78,7 @@ class ToolCall:
     duration_ms: int
     success: bool
     error: str | None = None
-    # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused_over_cap" | "expired"
+    # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused" | "refused_over_cap" | "expired"
     gate: str = "none"
     parked: ParkedWrite | None = None
     child_loop: ParkedLoop | None = None

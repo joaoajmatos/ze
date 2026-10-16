@@ -373,7 +373,7 @@ async def test_retry_refused_write_is_not_recorded_as_an_action(effect_tools) ->
     refused = await _A().call_tool("send_email", ctx)
     result = AgentResult(agent="companion", response="ok", tool_calls=[refused])
     trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
-    assert trace.tool_calls[0].gate == "denied"
+    assert trace.tool_calls[0].gate == "refused"
 
 
 async def test_web_search_turn_stays_retryable(effect_tools) -> None:

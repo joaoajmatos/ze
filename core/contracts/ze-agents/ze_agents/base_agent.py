@@ -352,7 +352,7 @@ class BaseAgent(ABC):
                 duration_ms=0,
                 success=False,
                 error="blocked: retry runs cannot change anything",
-                gate="denied",
+                gate="refused",
             )
 
         hooks = get_hooks()
@@ -920,7 +920,7 @@ def _refusal(
     args: dict[str, Any],
     message: str,
     *,
-    gate: str = "denied",
+    gate: str = "refused",
     result: Any = None,
 ) -> ToolCall:
     return ToolCall(

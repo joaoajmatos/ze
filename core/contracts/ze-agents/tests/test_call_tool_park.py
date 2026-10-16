@@ -114,7 +114,7 @@ async def test_retry_mode_refuses_before_parking() -> None:
     _irreversible("delete_event")
     tc = await _Agent().call_tool("delete_event", _ctx(retry_mode=True), event_id="e1")
     assert calls == []
-    assert tc.parked is None and tc.gate == "denied"
+    assert tc.parked is None and tc.gate == "refused"
 
 
 async def test_opt_out_runs() -> None:
@@ -161,7 +161,7 @@ async def test_ask_check_ask_run_refuse() -> None:
     calls.clear()
     tc = await _Agent().call_tool("ws_write", _ctx())
     assert calls == [] and tc.parked is None
-    assert tc.result == "no way" and tc.gate == "denied"
+    assert tc.result == "no way" and tc.gate == "refused"
 
 
 async def test_round_cap_refuses() -> None:

@@ -109,7 +109,7 @@ async def ze_chat(prompt: str, session_id: str = "eval") -> str:
       - routing: { primary_agent, confidence, routing_method, is_compound, score_gap, raw_scores }
       - pending_confirmation: true if Ze paused to ask the user to approve a write
         it cannot undo; answer it with ze_confirm using the same session_id
-      - tool_calls: each call has gate (none, parked, approved, denied,
+      - tool_calls: each call has gate (none, parked, approved, denied, refused,
         refused_over_cap, expired, pre_approved) and parked; a parked call waits
         for the user's approval and has not run
       - error: error message if the graph failed

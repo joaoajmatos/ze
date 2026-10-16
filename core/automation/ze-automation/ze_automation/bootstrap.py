@@ -285,15 +285,16 @@ async def configure_workflow_executor(
         log.info("failure_alert_sent", workflow=workflow.name)
 
     runner = WorkflowRunner(
+        scheduler=stack.workflow_scheduler,
         graph=workflow_graph,
         configurable=workflow_graph_config["configurable"],
         workflow_store=stack.workflow_store,
         held_store=stack.held_write_store,
         notifier=notifier,
         workspace_gate=workspace_gate,
-        on_failure=_workflow_failure_handler,
     )
     stack.held_write_resumer.configure(resume_workflow=runner.resume)
+    stack.workflow_scheduler.configure_held_canceller(runner.cancel_held)
     stack.workflow_scheduler.configure_executor(
         executor=_workflow_executor,
         on_failure=_workflow_failure_handler,

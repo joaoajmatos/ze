@@ -109,7 +109,15 @@ async def load_workflow_step(state: dict[str, Any], config: RunnableConfig) -> d
         "agent_context": None,
         "agent_result": None,
         "subtask_results": [],
+        "completed_subtask_indexes": [],
         "final_response": None,
+        "blocked": False,
+        "budget_approved": False,
+        "parked_subtasks": [],
+        "write_confirmation": None,
+        "write_decisions": [],
+        "write_rounds": 0,
+        "write_outcomes": [],
     }
 
 

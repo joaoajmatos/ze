@@ -83,7 +83,7 @@ async def record_guided_actions(
             continue
         success = bool(getattr(call, "success", False))
         gate = str(getattr(call, "gate", "none") or "none")
-        if gate in ("denied", "refused_over_cap", "expired"):
+        if gate in ("denied", "refused", "refused_over_cap", "expired"):
             decision = CapabilityDecision.DENIED
             outcome = ProcedureActionOutcome.NOT_EXECUTED
         elif gate == "parked":

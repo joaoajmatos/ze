@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
 from typing import Any
 from uuid import UUID
 
 from ze_agents.park import WriteConfirmation
 from ze_automation.holds.resumer import open_hold
 from ze_automation.holds.store import HeldWriteStore
-from ze_automation.holds.types import HeldWrite
+from ze_automation.holds.types import HeldWrite, HeldWriteStatus
+from ze_automation.workflow.scheduler import WorkflowScheduler
 from ze_automation.workflow.store import WorkflowStore
 from ze_automation.workflow.types import Workflow
 from ze_automation.workspace_unattended import unattended_workspace
 from ze_logging import get_logger
 
 log = get_logger(__name__)
-
-FailureHandler = Callable[[Workflow, Exception], Awaitable[None]]
 
 
 def open_confirmation(snapshot: Any) -> WriteConfirmation | None:
@@ -45,13 +43,13 @@ class WorkflowRunner:
     def __init__(
         self,
         *,
+        scheduler: WorkflowScheduler,
         graph: Any,
         configurable: dict[str, Any],
         workflow_store: WorkflowStore,
         held_store: HeldWriteStore,
         notifier: Any,
         workspace_gate: Any = None,
-        on_failure: FailureHandler | None = None,
     ) -> None:
         self._graph = graph
         self._configurable = configurable
@@ -59,7 +57,7 @@ class WorkflowRunner:
         self._held = held_store
         self._notifier = notifier
         self._gate = workspace_gate
-        self._on_failure = on_failure
+        self._scheduler = scheduler
 
     def _config(self, execution_id: UUID) -> dict[str, Any]:
         return {
@@ -103,29 +101,21 @@ class WorkflowRunner:
                 execution_id, "failed", error="Workflow was deleted while held"
             )
             return
-        await self._workflows.set_execution_status(
+        if not await self._workflows.set_execution_status(
             execution_id, "running", expected="held"
-        )
-        try:
-            await self.run(
-                workflow,
-                execution_id,
-                Command(resume={"choice": choice, "edits": edits}),
-            )
-        except Exception as exc:
-            log.exception("held_workflow_resume_failed", execution_id=str(execution_id))
-            await self._workflows.finish_execution(
-                execution_id, "failed", error=str(exc)
-            )
-            if self._on_failure is not None:
-                await self._on_failure(workflow, exc)
-            return
-        execution = await self._workflows.get_execution(workflow.id, execution_id)
-        if (
-            execution is not None
-            and execution.status == "failed"
-            and self._on_failure is not None
         ):
-            await self._on_failure(
-                workflow, RuntimeError(execution.error or "Workflow step failed")
-            )
+            log.info("held_workflow_not_held", execution_id=str(execution_id))
+            return
+        resume_input = Command(resume={"choice": choice, "edits": edits})
+
+        async def _continue(wf: Workflow, exec_id: UUID) -> None:
+            await self.run(wf, exec_id, resume_input)
+
+        await self._scheduler.resume_execution(workflow, execution_id, _continue)
+
+    async def cancel_held(self, execution_id: UUID) -> None:
+        """Cancel a held run: deny its open hold so a later answer cannot resume it."""
+        for hold in await self._held.list(HeldWriteStatus.OPEN):
+            if hold.source == "workflow" and hold.owner_ref == str(execution_id):
+                await self._held.decide(hold.request_id, HeldWriteStatus.DENIED)
+        await self._workflows.finish_execution(execution_id, "cancelled")

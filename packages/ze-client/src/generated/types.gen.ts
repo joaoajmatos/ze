@@ -3413,7 +3413,7 @@ export type ToolCallTraceResponse = {
     /**
      * Gate
      */
-    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused_over_cap' | 'expired';
+    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused' | 'refused_over_cap' | 'expired';
     /**
      * Effect Phrase
      */

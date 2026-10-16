@@ -9,7 +9,7 @@ from ze_core.conversation.messages.types import Message, MessageTrace, ToolCallT
 
 _WORKSPACE_RUN_TOOLS = frozenset({"workspace_run", "workspace_run_skill_script"})
 _MAX_PHRASES = 3
-_NEVER_RAN = ("denied", "expired", "parked", "refused_over_cap")
+_NEVER_RAN = ("denied", "refused", "expired", "parked", "refused_over_cap")
 
 
 class RetryReason(StrEnum):
