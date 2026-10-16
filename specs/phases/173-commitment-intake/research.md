@@ -29,3 +29,20 @@ At those bars, per language (EN / PT), intake vs frozen baseline:
 FR-022 clauses failing on the tuned set: loop recall (needs >= 0.95) and Choice accuracy (needs >= 0.9). Everything else passes, `waiting_on` rows write nothing (0/10).
 
 Cause (from the error list): explicit obligations with a time word ("I need to reply to the landlord this week", "Preciso de responder ao email do senhorio esta semana") get Choice `goal` or `reminder` at confidence 0.33 to 0.55, or `loop` at 0.44 to 0.61. The current `reminder` criterion says "Time wins" and carries no "the user must ask for a ping" test. The 12 `loop_turn_*` rows also read as `reminder` or `goal` because the assistant reply says it created one; they link correctly (row 5) but cost Choice accuracy against gold `loop`. Criteria and decision-table changes are outside ENG-B's files and wait on the Maestro.
+
+### Run 2 (T042, 2026-10-16, tuned set only, same model and seed)
+
+Wording after T028 (`63e0b014`: reworded `reminder`/`goal` criteria, row 7a), scoring after T044 (Choice accuracy over `turn_created` `none` rows, link accuracy reported apart). Raw results: `eval/results/commitment_intake_tuned_run2.json` (gitignored).
+
+Choice accuracy 0.98 EN / 0.96 PT (was 0.92 / 0.94 on the same run-1 rows under T044); link accuracy 24/24 both; `waiting_on` writes 0/10; duplicate bookings 0 against 18 / 17 for the baseline.
+
+Two bar sets, both from the tuned set only:
+
+| bars (choice=family, bio, loop, explicit, resolves) | EN | PT |
+|---|---|---|
+| suggested: 0.95, 0.55, 0.60, 0.95, 0.95 | passes every FR-022 clause (fact R 0.86 vs 0.71, loop P/R 1.00/1.00) | loop recall 0.857 vs baseline 1.00: FAILS |
+| hand-picked: 0.85, 0.60, 0.60, 0.85, 0.90 | false loop create 1: FAILS zero-false-creates (loop P 0.93) | passes every clause (fact R 0.71 vs 0.57, loop P/R 1.00/1.00) |
+
+The whole difference is `ci-t-en-073` / `ci-t-pt-073`, mixed rows with gold `fact` ("I'm allergic to nuts, and I still haven't answered the school about the trip"). The text also carries a real open concern, so the model's `loop` Choice at 0.93 EN / 0.80 PT is defensible, but the gold counts it as a false create. The suggested `choice_hold` 0.95 only avoids it because EN-073 scores 0.93, which is a grid-edge fit to one ambiguous row. Two PT loop rows (`ci-t-pt-029`, `-031`) score `loop` at 0.88 / 0.91 and are held at 0.95. A bar around 0.85 recovers them but lets the mixed row through.
+
+Open question for the Maestro: score a `mixed` row whose text also carries an open concern as "loop acceptable" (neither a false create nor a required hit), for example with an optional `also_loop` row field. Changing the held-out rows is still allowed before the first held-out run.
