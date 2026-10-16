@@ -14,7 +14,7 @@ No foreign key (reminders belong to ze-calendar). `goal_id` already exists. Down
 - `TurnCreation` (`ze_agents/nested_tools.py`, frozen dataclass): `reminder_id: str | None`, `goal_id: str | None`.
 - `CommitmentIntakeSurfaceConfig` (`ze_worldstate/commitment_judge.py`): `enabled`, `choice_hold`, `family_hold`, `biography_hold`, `loop_hold`, `explicit_hold`, `resolves_hold`; `calibrated` = enabled and all six bars set.
 - `IntakeOutcome` kinds: `persist_fact`, `resolve_loop`, `create_loop_declared`, `create_loop_suspected`, `link`, `hold`, `fallback`; fields `reason`, `consumed`, `link_kind` (`reminder` | `goal`).
-- `IntakeAdmission`: `fact: FactAdmission | None`, `loop: LoopAdmission | None`, `link: LinkOutcome | None`, `judgment`, `question_kinds`, `consumed`, `skip_reason`.
+- `IntakeAdmission`: `fact: FactAdmission | None`, `loop: LoopAdmission | None`, `links: tuple[LinkOutcome, ...]` (one per kind the turn created; a turn that created a reminder and a goal links both; `LinkOutcome` = `kind`, `linked`), `judgment`, `question_kinds`, `consumed`, `skip_reason`.
 - `SpeechAct` (`ze_memory/types.py`) shrinks to `FACT, FORGET, INGEST, CLARIFY, NONE`.
 
 ## Store
