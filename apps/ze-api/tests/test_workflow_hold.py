@@ -493,3 +493,14 @@ async def test_cancelling_a_held_run_denies_its_hold_and_it_cannot_resume() -> N
     with pytest.raises(HeldWriteNotOpenError):
         await h.resumer.resume(request_id, "approve")
     assert calls == []
+
+
+async def test_cancelling_loses_to_an_answer_that_already_claimed_the_hold() -> None:
+    h = Harness(_delete_script())
+    execution_id = await h.run(_delete_steps())
+    request_id = next(iter(h.held.rows))
+    await h.held.decide(request_id, HeldWriteStatus.APPROVED)
+
+    await h.runner.cancel_held(execution_id)
+
+    assert h.exec_status[execution_id] == "held"
