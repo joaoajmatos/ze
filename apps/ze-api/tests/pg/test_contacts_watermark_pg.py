@@ -22,6 +22,8 @@ def _consolidator(pool, client):
 async def test_consolidator_reads_turn_episodes_once_past_the_watermark(pg_pool):
     async with pg_pool.acquire() as conn:
         await conn.execute("TRUNCATE contacts_episode_watermark")
+        for legacy in ("episodes", "user_facts", "user_profile"):
+            assert await conn.fetchval("SELECT to_regclass($1)", legacy) is None
     first = await make_episode(pg_pool, prompt="Lunch with Rita Gomes from Acme")
     await make_episode(pg_pool, agent="consolidator", prompt="archive")
     client = AsyncMock()
