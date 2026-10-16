@@ -224,3 +224,11 @@ Margin on the blind set, stated plainly because the tuned set did not predict it
 | suggested bars | 0.5 / 0.5 shipped | 0.8 / 0.55 (the script's suggestion; the shipped bars stay) |
 
 The one EN miss is a `loops` row predicted as `companion`. It is one of the four training rows phase 171 appended (T034) after 167 recorded its training figures (26 of 26 on 52 rows, ECE 0.034), and it is a context-dependent confirmation sentence. 167's tuned and held-out figures are for different row sets, so the comparison is indicative only; no pre-182 baseline exists for the 171 rows, and I did not spend a second live run to build one. A drop beyond 167's figures is not shown (accuracy 0.967 against 1.000 on one row; ECE 0.043 against 0.041).
+
+### Enabling (T033) authorisation, 2026-10-16
+
+FR-020 and T033 require the user's go-ahead, relayed by the Maestro, before the enable commit. After the verdict report (265330fe) the Maestro answered, and the enable commit followed as 2996e4c2 (19:42:46 +01:00), separate from the implementation commits:
+
+> Maestro: the user approves. ASK 1: do T033 now (separate commit: system_one.surfaces.complexity enabled: true, simple_max: 0.40, config comment cites the verdict and the thinner PT held-out margin). ASK 2: run T032 once (report-only routing calibration). ASK 3: floor 181 has not landed yet (Halyard is merging main into it); I will tell you. Continue T034-T040, Soffit final pass, then QA e2e (I will assign Tally).
+
+The same message is quoted in the 182 Handoffs note. The enable commit touches only `config.yaml`, its container test and the task bookkeeping.
