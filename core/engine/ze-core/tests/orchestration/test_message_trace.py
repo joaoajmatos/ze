@@ -482,3 +482,54 @@ async def test_pre_approved_call_gate_survives_to_the_trace(effect_tools) -> Non
     )
     trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
     assert trace.tool_calls[0].gate == "pre_approved"
+
+
+async def test_a_call_refused_over_the_cap_is_on_the_trace(effect_tools) -> None:
+    refused = ToolCall(
+        tool_name="send_email",
+        args={"to": "ana@example.com"},
+        result="This needs the user's approval; ask them in your reply instead.",
+        duration_ms=0,
+        success=False,
+        gate="refused_over_cap",
+    )
+    result = AgentResult(agent="messenger", response="ok", tool_calls=[refused])
+    state = _state(result, write_rounds=3)
+
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+
+    [row] = trace.write_confirmations
+    assert row["outcome"] == "refused"
+    assert (row["agent"], row["tool"], row["round"]) == ("messenger", "send_email", 4)
+    assert row["effect"] == "send an email"
+    assert row["summary"] == "to: ana@example.com"
+    assert row["request_id"] == "" and row["item_id"]
+
+
+async def test_a_refusal_inside_a_delegate_is_on_the_trace(effect_tools) -> None:
+    delegate = ToolCall(
+        tool_name="delegate_to_agent",
+        args={"agent": "messenger", "task": "email Ana"},
+        result={
+            "response": "I need your OK first.",
+            "tool_calls": [
+                {
+                    "tool_name": "send_email",
+                    "args": {"to": "ana@example.com"},
+                    "gate": "refused_over_cap",
+                }
+            ],
+        },
+        duration_ms=5,
+        success=True,
+    )
+    result = AgentResult(agent="companion", response="ok", tool_calls=[delegate])
+
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+
+    [row] = trace.write_confirmations
+    assert (row["agent"], row["tool"], row["outcome"]) == (
+        "messenger",
+        "send_email",
+        "refused",
+    )

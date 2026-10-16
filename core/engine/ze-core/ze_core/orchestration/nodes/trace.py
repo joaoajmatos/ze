@@ -6,7 +6,11 @@ from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_agents.effects import ensure_declined_lines
+from ze_agents.delegate import DELEGATE_TOOL_NAME
+from ze_agents.effects import effect_imperative, ensure_declined_lines
+from ze_agents.errors import UnknownToolError
+from ze_agents.park import generic_summary
+from ze_agents.tool import get_tool
 from ze_agents.types import Source, add_sources
 from ze_core.conversation.messages.types import (
     CompactionTrace,
@@ -89,11 +93,63 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
             agent_result, list(state.get("subtask_results") or [])
         ),
         effects_known=True,
-        write_confirmations=[dict(row) for row in state.get("write_outcomes") or []],
+        write_confirmations=[
+            *(dict(row) for row in state.get("write_outcomes") or []),
+            *_refused_over_cap_rows(state, agent_result),
+        ],
     )
     update: dict[str, Any] = {"message_trace": trace}
     update.update(_with_declined_lines(state, agent_result))
     return update
+
+
+def _refused_over_cap_rows(
+    state: AgentState, agent_result: Any
+) -> list[dict[str, Any]]:
+    """One row per asks-first call refused for being past the round cap (FR-029).
+
+    No confirmation was opened for them, so `request_id` is empty; `round` is the
+    round that would have been asked.
+    """
+    round_ = int(state.get("write_rounds") or 0) + 1
+    refused: list[tuple[str, str, dict]] = []
+    for result in [agent_result, *(state.get("subtask_results") or [])]:
+        for call in getattr(result, "tool_calls", None) or []:
+            if getattr(call, "gate", None) == "refused_over_cap":
+                refused.append((result.agent, call.tool_name, call.args))
+            if call.tool_name == DELEGATE_TOOL_NAME and isinstance(
+                getattr(call, "result", None), dict
+            ):
+                for nested in call.result.get("tool_calls") or []:
+                    if nested.get("gate") == "refused_over_cap":
+                        refused.append(
+                            (
+                                str(call.args.get("agent") or ""),
+                                nested.get("tool_name", ""),
+                                nested.get("args") or {},
+                            )
+                        )
+    return [
+        {
+            "request_id": "",
+            "round": round_,
+            "item_id": f"refused-{index}",
+            "agent": agent,
+            "tool": tool_name,
+            "effect": _effect(tool_name),
+            "summary": generic_summary(args),
+            "outcome": "refused",
+        }
+        for index, (agent, tool_name, args) in enumerate(refused)
+    ]
+
+
+def _effect(tool_name: str) -> str | None:
+    try:
+        phrase = get_tool(tool_name).effect_phrase
+    except UnknownToolError:
+        return None
+    return effect_imperative(phrase) if phrase else None
 
 
 def _with_declined_lines(state: AgentState, agent_result: Any) -> dict[str, Any]:
@@ -113,7 +169,9 @@ def _with_declined_lines(state: AgentState, agent_result: Any) -> dict[str, Any]
     return update
 
 
-def _extract_sources(agent_result: Any, subtask_results: list[Any]) -> list[SourceTrace]:
+def _extract_sources(
+    agent_result: Any, subtask_results: list[Any]
+) -> list[SourceTrace]:
     found: list[Source] = []
     for result in [agent_result, *subtask_results]:
         add_sources(found, list(getattr(result, "sources", None) or []))
