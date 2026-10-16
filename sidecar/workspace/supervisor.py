@@ -14,7 +14,6 @@ from uuid import UUID, uuid4
 
 WORKSPACE_ROOT = Path(os.environ.get("WORKSPACE_ROOT", "/workspace")).resolve()
 OUTPUT_PREVIEW_CHARS = int(os.environ.get("WORKSPACE_OUTPUT_PREVIEW_CHARS", "8000"))
-RUN_LOCK_WAIT_SECONDS = float(os.environ.get("WORKSPACE_RUN_LOCK_WAIT_SECONDS", "30"))
 DEFAULT_TIMEOUT = int(os.environ.get("WORKSPACE_RUN_TIMEOUT_SECONDS", "120"))
 STORAGE_CEILING = int(
     os.environ.get("WORKSPACE_STORAGE_CEILING_BYTES", str(1024 * 1024 * 1024))
@@ -188,6 +187,8 @@ class RunJournal:
 
 
 journal = RunJournal()
+
+_run_tasks: set[asyncio.Task] = set()
 
 _workspace_lock = asyncio.Lock()  # serializes create() calls only (race guard)
 
@@ -483,9 +484,13 @@ async def spawn_run(
     recorded — does not await process exit (FR-001). Raises RunBusyError if the
     one-slot invariant is already occupied."""
     entry = journal.create(command, run_id, cwd=cwd)
-    asyncio.create_task(
+    task = asyncio.create_task(
         _execute(entry, timeout_seconds=timeout_seconds, env=env, stdin_bytes=stdin_bytes)
     )
+    # The loop holds only a weak reference to a task; without this one a
+    # running command's task can be garbage-collected mid-run.
+    _run_tasks.add(task)
+    task.add_done_callback(_run_tasks.discard)
     return entry
 
 
@@ -504,6 +509,16 @@ async def cancel_handle(run_id: UUID) -> tuple[JournalEntry | None, str]:
     except TimeoutError:
         pass
     return journal.get(run_id), "cancelled"
+
+
+async def shutdown() -> None:
+    """Stops the running command and waits for every _execute task, so no child
+    process outlives the event loop that owns its transport."""
+    current = journal.running()
+    if current is not None:
+        await cancel_handle(current.id)
+    if _run_tasks:
+        await asyncio.gather(*_run_tasks, return_exceptions=True)
 
 
 async def reset_workspace() -> None:

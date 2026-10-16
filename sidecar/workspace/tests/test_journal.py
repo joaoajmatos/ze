@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 def _wait_until(predicate, timeout=2.0, interval=0.02):
@@ -158,3 +158,28 @@ def test_retention_evicts_oldest_terminal_entry(sidecar):
     assert oldest.status_code == 404
     newest = sidecar.get(f"/runs/{ids[-1]}")
     assert newest.status_code == 200
+
+
+def test_spawn_run_holds_a_reference_to_the_running_task(sidecar):
+    import supervisor
+
+    run_id = sidecar.post("/run", json={"command": ["sh", "-c", "sleep 5"]}).json()["id"]
+    assert len(supervisor._run_tasks) == 1
+
+    sidecar.post(f"/runs/{run_id}/cancel")
+    assert _wait_until(lambda: not supervisor._run_tasks)
+
+
+def test_shutdown_cancels_the_running_run_and_awaits_its_task(sidecar, monkeypatch):
+    import main
+    import supervisor
+    from fastapi.testclient import TestClient
+
+    with TestClient(main.app) as other:
+        run_id = other.post("/run", json={"command": ["sh", "-c", "sleep 5"]}).json()[
+            "id"
+        ]
+        entry = supervisor.journal.get(UUID(run_id))
+
+    assert entry.status == "cancelled"
+    assert not supervisor._run_tasks
