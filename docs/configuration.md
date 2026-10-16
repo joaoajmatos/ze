@@ -556,7 +556,7 @@ What off means: when `enabled` is `false` or `simple_max` is `null`, every agent
 
 The shipped bar of 0.40 passed the held-out verdict in English and Portuguese on 2026-10-16. In the held-out Portuguese set, the lowest `full` row sat between 0.40 and 0.50, so the margin there is thinner than on the tuning set (where the lowest `full` row was 0.56).
 
-The bar is chosen on the tuned set only. Three rules apply. No tuned row whose gold tier is `full` is judged light. The bar sits at least 0.15 below the lowest such Noul. Light-model recall on the tuned set is at least 0.8 in each language. Among the bars that meet all three, the larger margin wins. Freeze the bar before the held-out run.
+Pick the bar on the tuned set only. Three rules apply. No tuned row whose gold tier is `full` is judged light. The bar sits at least 0.15 below the lowest such Noul. Light-model recall on the tuned set is at least 0.8 in each language. Among the bars that meet all three, the larger margin wins. Freeze the bar before the held-out run.
 
 To re-measure the surface or choose a new bar:
 
