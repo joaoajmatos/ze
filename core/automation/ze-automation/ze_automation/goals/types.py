@@ -121,13 +121,11 @@ class LearningStatus(StrEnum):
 class LearningEvidenceKind(StrEnum):
     ACTION_RECORD = "action_record"
     USER_CONFIRMATION = "user_confirmation"
-    USER_CORRECTION = "user_correction"
 
 
 class LearningEvidenceRole(StrEnum):
     SUPPORTS = "supports"
     CONTRADICTS = "contradicts"
-    DERIVES = "derives"
 
 
 class LearningReviewDecision(StrEnum):
