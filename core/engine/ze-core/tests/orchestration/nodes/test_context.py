@@ -74,8 +74,10 @@ def _surfacer(
     s = AsyncMock()
     if error is not None:
         s.recap_mentions = AsyncMock(side_effect=error)
+        s.open_query_mentions = AsyncMock(side_effect=error)
     else:
         s.recap_mentions = AsyncMock(return_value=mentions or [])
+        s.open_query_mentions = AsyncMock(return_value=mentions or [])
     s.inline_mentions = AsyncMock(return_value=mentions or [])
     s.resume_loop_offers = AsyncMock(return_value=[])
     s.is_global_open_query = MagicMock(return_value=global_query)
@@ -236,7 +238,8 @@ class TestFetchContextWhatsOpen:
         assert note is not None
         assert note.index("Ship v2") < note.index("Renew passport")
         assert result["agent_context"].resume_recap is None
-        surfacer.recap_mentions.assert_awaited_once()
+        surfacer.open_query_mentions.assert_awaited_once()
+        surfacer.recap_mentions.assert_not_awaited()
 
     async def test_non_open_prompt_does_not_set_note(self):
         surfacer = _surfacer(_ranked_mentions(), global_query=False)
@@ -244,7 +247,7 @@ class TestFetchContextWhatsOpen:
             _state(prompt="how's the weather"), _config(turn_surfacer=surfacer)
         )
         assert result["agent_context"].open_priorities_note is None
-        surfacer.recap_mentions.assert_not_awaited()
+        surfacer.open_query_mentions.assert_not_awaited()
 
     async def test_whats_open_does_not_also_append_inline_mentions(self):
         mentions = _ranked_mentions()
@@ -364,7 +367,7 @@ class TestFetchContextCaps:
             _state(prompt="what's open right now"), _config(turn_surfacer=surfacer)
         )
 
-        surfacer.recap_mentions.assert_awaited_once_with(limit=10)
+        surfacer.open_query_mentions.assert_awaited_once_with(limit=10)
 
 
 class TestFetchContextOpenQueryFlag:

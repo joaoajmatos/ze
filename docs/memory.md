@@ -237,7 +237,9 @@ questions (“Want me to keep this on your radar?”) are never stripped. Only t
 whether the user asks what is open. It compares the message to English and
 Portuguese example questions by E5 similarity, with a threshold of 0.88. It
 replaced a regex. Inline mentions and the recap list at most 5 loops. An
-explicit "what's open" answer lists at most 10. After a session gap, Ze also
+explicit "what's open" answer lists at most 10: ranked items first, then
+suspected loops, each marked unconfirmed. Suspected loops never join the ranking
+or the push budget. After a session gap, Ze also
 asks about up to 3 suspected loops. A loop it offered stays quiet for 7 days,
 tracked in `push_log`. The detector ships under an amended bar: Portuguese
 recall is lower than English, and no false positives were measured. See

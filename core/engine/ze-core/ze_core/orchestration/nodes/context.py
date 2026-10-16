@@ -135,7 +135,7 @@ async def _open_priorities_note(
     if surfacer is None or not open_items_query:
         return None
     try:
-        mentions = await surfacer.recap_mentions(limit=_OPEN_QUERY_LIMIT)
+        mentions = await surfacer.open_query_mentions(limit=_OPEN_QUERY_LIMIT)
     except Exception as exc:
         log.warning("open_priorities_note_failed", error=str(exc))
         return None

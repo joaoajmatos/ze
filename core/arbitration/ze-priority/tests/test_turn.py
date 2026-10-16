@@ -419,3 +419,72 @@ async def test_offers_never_repeat_inside_cooldown_over_two_weeks():
     for times in offered_on.values():
         assert len(times) <= 2
         assert all(b - a >= cooldown for a, b in zip(times, times[1:]))
+
+
+async def test_open_query_mentions_list_suspected_loops_as_unconfirmed():
+    ranked = score_loop(make_loop(title="Car service", state=LoopState.ACTIVE))
+    suspected = [
+        _suspected("Maybe renew passport", confidence=0.4),
+        _suspected("Maybe call Ana", confidence=0.3),
+    ]
+    surfacer, loop_store = _offer_surfacer(suspected, _PushLog())
+    surfacer._priority_view = _view(_ranking(ranked))
+
+    mentions = await surfacer.open_query_mentions(limit=10)
+
+    assert [m.title for m in mentions] == [
+        "Car service",
+        "Maybe renew passport",
+        "Maybe call Ana",
+    ]
+    assert "unconfirmed" not in mentions[0].mention_text
+    assert all("unconfirmed" in m.mention_text for m in mentions[1:])
+    assert all(m.source_kind == "loop" for m in mentions)
+    loop_store.list.assert_awaited_once_with(states=["suspected"])
+
+
+async def test_open_query_mentions_respect_the_limit_with_ranked_first():
+    ranked = [
+        score_loop(make_loop(title=f"Ranked {i}", state=LoopState.ACTIVE))
+        for i in range(2)
+    ]
+    surfacer, _ = _offer_surfacer([_suspected("Suspected")], _PushLog())
+    surfacer._priority_view = _view(_ranking(*ranked))
+
+    mentions = await surfacer.open_query_mentions(limit=2)
+
+    assert sorted(m.title for m in mentions) == ["Ranked 0", "Ranked 1"]
+    assert all("unconfirmed" not in m.mention_text for m in mentions)
+
+
+async def test_recap_mentions_never_include_suspected_loops():
+    surfacer, loop_store = _offer_surfacer([_suspected("Suspected")], _PushLog())
+    surfacer._priority_view = _view(
+        _ranking(score_loop(make_loop(title="Ranked", state=LoopState.ACTIVE)))
+    )
+
+    mentions = await surfacer.recap_mentions(limit=5)
+
+    assert [m.title for m in mentions] == ["Ranked"]
+    loop_store.list.assert_not_awaited()
+
+
+async def test_open_query_mentions_keep_ranked_items_when_suspected_listing_fails():
+    surfacer, loop_store = _offer_surfacer([], _PushLog())
+    loop_store.list = AsyncMock(side_effect=RuntimeError("db down"))
+    surfacer._priority_view = _view(
+        _ranking(score_loop(make_loop(title="Ranked", state=LoopState.ACTIVE)))
+    )
+
+    mentions = await surfacer.open_query_mentions(limit=10)
+
+    assert [m.title for m in mentions] == ["Ranked"]
+
+
+async def test_open_query_mentions_list_suspected_when_ranking_fails():
+    surfacer, _ = _offer_surfacer([_suspected("Suspected")], _PushLog())
+    surfacer._priority_view = _view(error=ZePriorityError("all failed"))
+
+    mentions = await surfacer.open_query_mentions(limit=10)
+
+    assert [m.title for m in mentions] == ["Suspected"]
