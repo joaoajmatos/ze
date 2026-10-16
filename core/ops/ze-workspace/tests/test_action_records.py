@@ -6,16 +6,16 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 from ze_agents.claims import ClaimKind
-from ze_memory.action_records.types import ActionLifecycle, ActionOutcome
+from ze_memory.action_records.types import (
+    ActionLifecycle,
+    ActionOutcome,
+    ActionRecordDraft,
+)
 from ze_plugin.contribution import SourceFunction
 
 from ze_workspace.action_handoff import (
     configure_action_ledger,
     record_workspace_run,
-)
-from ze_workspace.action_records import (
-    contribution_from_workspace_run,
-    draft_from_workspace_run,
 )
 from ze_workspace.types import WorkspaceRun, WorkspaceRunOrigin, WorkspaceRunStatus
 
@@ -37,18 +37,30 @@ def _run(**overrides) -> WorkspaceRun:
     return WorkspaceRun(**base)
 
 
-def test_adapter_does_not_copy_command_or_output() -> None:
-    draft = draft_from_workspace_run(
+async def _submitted(run: WorkspaceRun) -> ActionRecordDraft:
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=None)
+    store.append = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+    configure_action_ledger(action_record_store=store, workspace_store=AsyncMock())
+    await record_workspace_run(run)
+    contribution = store.append.await_args.args[0]
+    assert contribution.source_function is SourceFunction.ACTION
+    assert contribution.claim_kind is ClaimKind.ACTION_RECORD
+    return contribution.action_record
+
+
+async def test_adapter_does_not_copy_command_or_output() -> None:
+    draft = await _submitted(
         _run(command="cat /etc/passwd", output_preview="secret-output")
     )
     assert "passwd" not in draft.summary
     assert "secret-output" not in draft.summary
-    assert draft.authoritative_ref.domain == "workspace.runs"
+    assert draft.authoritative_ref.domain == "workspace.workspace_run"
     assert draft.lifecycle is ActionLifecycle.SUCCEEDED
 
 
-def test_failed_run_is_failed_not_success() -> None:
-    draft = draft_from_workspace_run(
+async def test_failed_run_is_failed_not_success() -> None:
+    draft = await _submitted(
         _run(status=WorkspaceRunStatus.FAILED, exit_code=1, error_summary="boom")
     )
     assert draft.lifecycle is ActionLifecycle.FAILED
@@ -56,21 +68,21 @@ def test_failed_run_is_failed_not_success() -> None:
     assert draft.failure_code == "nonzero_exit"
 
 
-def test_timeout_and_cancel_are_distinct() -> None:
-    timeout = draft_from_workspace_run(_run(status=WorkspaceRunStatus.TIMED_OUT))
-    cancelled = draft_from_workspace_run(_run(status=WorkspaceRunStatus.CANCELLED))
+async def test_timeout_and_cancel_are_distinct() -> None:
+    timeout = await _submitted(_run(status=WorkspaceRunStatus.TIMED_OUT))
+    cancelled = await _submitted(_run(status=WorkspaceRunStatus.CANCELLED))
     assert timeout.lifecycle is ActionLifecycle.TIMED_OUT
     assert cancelled.lifecycle is ActionLifecycle.CANCELLED
 
 
-def test_in_progress_has_no_outcome() -> None:
-    draft = draft_from_workspace_run(_run(status=None, ended_at=None, exit_code=None))
+async def test_in_progress_has_no_outcome() -> None:
+    draft = await _submitted(_run(status=None, ended_at=None, exit_code=None))
     assert draft.lifecycle is ActionLifecycle.STARTED
     assert draft.outcome is None
 
 
-def test_lost_run_is_unknown() -> None:
-    draft = draft_from_workspace_run(
+async def test_lost_run_is_unknown() -> None:
+    draft = await _submitted(
         _run(
             status=WorkspaceRunStatus.FAILED,
             error_summary="the computer restarted and lost this run — no fabricated result",
@@ -78,12 +90,6 @@ def test_lost_run_is_unknown() -> None:
     )
     assert draft.lifecycle is ActionLifecycle.UNKNOWN
     assert draft.outcome is ActionOutcome.UNKNOWN
-
-
-def test_contribution_is_action_not_fact() -> None:
-    contribution = contribution_from_workspace_run(_run())
-    assert contribution.source_function is SourceFunction.ACTION
-    assert contribution.claim_kind is ClaimKind.ACTION_RECORD
 
 
 async def test_duplicate_delivery_reuses_submit() -> None:
