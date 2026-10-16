@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 
-from ze_api.interruption_domain import interruption_data_domains
+from ze_proactive.data_domain import interruption_data_domains
 from ze_data.portability.assembler import bulk_insert  # noqa: F401
 
 

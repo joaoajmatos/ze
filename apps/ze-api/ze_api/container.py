@@ -41,9 +41,8 @@ from ze_skills.bootstrap import (
 from ze_skills.store import SkillStore
 from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
 from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
-from ze_api.feedback_domain import feedback_data_domains
-from ze_api.interruption_domain import interruption_data_domains
 from ze_memory.feedback_records import PostgresFeedbackStore
+from ze_memory.feedback_records.data_domain import feedback_data_domains
 from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
 from ze_priority import import_agent_modules as import_priority_agents
 from ze_browser import BrowserClient
@@ -51,6 +50,7 @@ from ze_workspace.bootstrap import build_workspace_stack
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.gate import WorkspaceGate
+from ze_workspace.push_kinds import WORKSPACE_RUN_COMPLETED
 from ze_workspace.store import WorkspaceStore
 from ze_workspace.turn_lock import ThreadTurnLock
 from ze_components.hook import ComponentCollectionHook
@@ -109,6 +109,7 @@ from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.bootstrap import shared_push_budget
+from ze_proactive.data_domain import interruption_data_domains
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
@@ -119,7 +120,6 @@ from ze_api.compose import (
 )
 from ze_api.db import create_checkpointer_pool, create_pool
 from ze_api.interface.native import NativeAppInterface
-from ze_api.push_kinds import WORKSPACE_RUN_COMPLETED
 from ze_api.webhook import (
     EventDeduplicator,
     WebhookDispatcher,

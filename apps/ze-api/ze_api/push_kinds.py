@@ -8,6 +8,3 @@ CONFIRMATION_REQUEST = PushKind(
 CONFIRMATION_TIMEOUT = PushKind(
     "confirmation_timeout", "accountability", "low", "conversation"
 )
-WORKSPACE_RUN_COMPLETED = PushKind(
-    "workspace_run_completed", "accountability", "normal", "workspace"
-)

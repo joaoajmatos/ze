@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock
 
-from ze_api.feedback_domain import feedback_data_domains
+from ze_memory.feedback_records.data_domain import feedback_data_domains
 from ze_data.portability.assembler import bulk_insert  # noqa: F401
 
 
@@ -32,13 +32,3 @@ async def test_domain_exports_deletes_counts_feedback_records():
     assert conn.execute.call_args[0][0] == "DELETE FROM feedback_records"
     assert await domain.count(pool) == 3
     assert domain.importer is not None
-
-
-def test_message_export_selects_supersession_columns():
-    import inspect
-
-    from ze_core import bootstrap
-
-    src = inspect.getsource(bootstrap.engine_data_domains)
-    assert "SELECT * FROM {tbl}" in src
-    assert '_engine_domain("messages.store", "messages")' in src

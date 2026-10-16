@@ -22,6 +22,7 @@ KIND_MODULES = [
     "ze_finance.push_kinds",
     "ze_messenger.push_kinds",
     "ze_calendar.push_kinds",
+    "ze_workspace.push_kinds",
 ]
 
 R, A, D = "requested", "accountability", "discretionary"
