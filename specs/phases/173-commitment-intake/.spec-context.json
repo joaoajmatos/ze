@@ -113,9 +113,25 @@
       "kind": "complete",
       "by": "ENG-A",
       "at": "2026-10-16T11:59:52.609Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T15:07:29.836Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T15:07:30.108Z"
     }
   ],
-  "currentTask": "T002",
+  "currentTask": "T030",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -149,6 +165,14 @@
     },
     "T024": {
       "status": "DONE"
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "zw004 reminder_id, OpenLoop.reminder_id, LoopStore.link set-once, REST ids"
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "REST reminder_id/goal_id list+detail, route test"
     }
   }
 }

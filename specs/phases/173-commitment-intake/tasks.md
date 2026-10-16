@@ -13,7 +13,7 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 - [ ] T010 [ENG-A] `ze_memory/types.py`: shrink `SpeechAct` to `FACT, FORGET, INGEST, CLARIFY, NONE`; `extractor.py`: `admit_speech_act` unknown -> `NONE`, Haiku fallback prompt and `_admit_parsed` use the same set (FR-016, FR-017). Update the tests and fixtures that target removed labels (`test_extractor*.py`, `test_speech_act_gate.py`, `test_speech_act_judge.py`, `test_speech_act_system_one.py`, `test_speech_act_calibration_set.py`, `fixtures/speech_act_gold.py`, `ze-core/tests/memory/test_extractor.py`); keep a gold-fact test mapped to `decide_fact`. Owns: `core/cognition/ze-memory/ze_memory/{types.py,extractor.py}`, those memory tests, `packages/ze-sdk/ze_sdk/memory.py`.
 - [x] T011 [ENG-A] Rename `speech_act_judge.py` to `fact_judge.py`: keep `family` and `biography` questions, `build_state`, add `decide_fact(choice, family, bio, cfg)` carrying the 163 persist/hold rules; delete the `speech_act` question, `SpeechActSurfaceConfig`, `speech_act_surface_config`, old `decide`. Owns: `ze_memory/fact_judge.py`, `ze_memory/__init__.py`.
-- [ ] T012 [JR] Migration `zw004_loop_reminder_link.py` (nullable `reminder_id`), `OpenLoop.reminder_id`, `store.py` row mapping, `create`, new `LoopStore.link()` set-once, Protocol update. Owns: `ze_worldstate/{migrations/versions/zw004_loop_reminder_link.py,types.py,store.py}`.
+- [x] T012 [JR] Migration `zw004_loop_reminder_link.py` (nullable `reminder_id`), `OpenLoop.reminder_id`, `store.py` row mapping, `create`, new `LoopStore.link()` set-once, Protocol update. Owns: `ze_worldstate/{migrations/versions/zw004_loop_reminder_link.py,types.py,store.py}`.
 - [x] T013 [ENG-A] [P] `ze_agents/nested_tools.py`: `TurnCreation` + `turn_creation(tool_calls)` (D-3). **(181)** shared file.
 - [ ] T014 [JR] [P] Tests: `turn_creation` table (success, error payload, `success=False`, nested, missing id); `link()` real-Postgres test (`@pytest.mark.pg`); `SpeechAct` consumer test (every label read by a decision path). Owns: `core/contracts/ze-agents/tests/test_turn_creation.py`, `core/cognition/ze-worldstate/tests/pg/test_loop_link.py`, `core/cognition/ze-memory/tests/test_speech_act_labels.py`.
 
@@ -30,7 +30,7 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 ## Phase 3: US8 links on REST and web
 
-- [ ] T030 [JR] REST: `reminder_id` and `goal_id` on list and detail in `ze_api/api/routes/loops.py` and `schemas.py`; TestClient tests. Owns those files and `apps/ze-api/tests/api/test_loops*.py`.
+- [x] T030 [JR] REST: `reminder_id` and `goal_id` on list and detail in `ze_api/api/routes/loops.py` and `schemas.py`; TestClient tests. Owns those files and `apps/ze-api/tests/api/test_loops*.py`.
 - [ ] T031 [WEB] `make codegen` (never hand-edit generated files), commit regenerated `packages/ze-client`.
 - [ ] T032 [WEB] `entities/loop`: `lib/format.ts` helpers `linkChips(loop)`; `widgets/loop-review/ui/LoopReviewList.tsx`: "Has reminder" and "Linked goal" chips; vitest for both, both, neither. Owns: `apps/ze-web/src/entities/loop/**`, `apps/ze-web/src/widgets/loop-review/**`. Run `make test-web typecheck-web`.
 
