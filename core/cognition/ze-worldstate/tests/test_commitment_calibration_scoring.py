@@ -390,3 +390,22 @@ def test_false_resolve_counts_a_resolve_on_a_row_that_is_not_a_resolves_row(cal)
     system = cal.score([ingest], cal.preds_for([ingest], results, _bars(cal)))
     base = cal.score([ingest], cal.baseline_preds([ingest], results))
     assert system.false_resolve == 1 and base.false_resolve == 1
+
+
+def test_choice_accuracy_excludes_gold_resolves_rows(cal):
+    plain = _row(cal, id="p", gold_choice="none")
+    resolves = _row(cal, id="r", gold_choice="none", gold_resolves=True)
+    results = {
+        "p": cal.RowResults(_system("none"), _r163("drop"), _r168()),
+        "r": cal.RowResults(
+            _system("fact", resolves=0.95), _r163("fact"), _r168(resolves=0.95)
+        ),
+    }
+    rows = [plain, resolves]
+    c = cal.score(
+        rows,
+        cal.preds_for(rows, results, _bars(cal)),
+        cal.choices_for(rows, results),
+    )
+    assert (c.choice_ok, c.choice_total) == (1, 1)
+    assert c.resolves_ok == 2

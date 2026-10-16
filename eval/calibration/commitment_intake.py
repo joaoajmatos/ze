@@ -18,9 +18,10 @@ as the baseline. It costs credits and is never collected by pytest.
 
 Acceptance rule per language (FR-022): zero duplicate bookings, zero false loop creates, fact
 precision >= baseline and fact recall >= baseline - 0.05, loop precision >= baseline and loop
-recall >= baseline - 0.05, false resolves <= baseline, Choice accuracy >= 0.9. Choice accuracy covers rows where the turn
-created nothing; link accuracy (outcome is a link of the right kind) covers the rest and is
-reported beside it (amendment of FR-022, 2026-10-16).
+recall >= baseline - 0.05, false resolves <= baseline, Choice accuracy >= 0.9. Choice accuracy
+covers rows where the turn created nothing and that are not resolves rows; link accuracy
+(outcome is a link of the right kind) covers the created-something rows and is reported beside
+it (amendments of FR-022, 2026-10-16).
 """
 
 from __future__ import annotations
@@ -67,6 +68,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TUNED = Path(__file__).with_name("commitment_intake.jsonl")
 HOLDOUT = Path(__file__).with_name("commitment_intake_holdout.jsonl")
 HOLDOUT2 = Path(__file__).with_name("commitment_intake_holdout2.jsonl")
+HOLDOUT3 = Path(__file__).with_name("commitment_intake_holdout3.jsonl")
 CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
 LANGS = ("en", "pt")
 CHOICES = (
@@ -243,13 +245,29 @@ def holdout_depth_problems(rows: list[Row], name: str = "holdout") -> list[str]:
     return problems
 
 
+def _blind_problems(name: str, rows: list[Row], others: list[Row]) -> list[str]:
+    problems = set_problems(name, rows, MIN_HOLDOUT_PER_LANG, require_kinds=False)
+    problems += holdout_depth_problems(rows, name)
+    if len({r.id for r in [*others, *rows]}) != len(others) + len(rows):
+        problems.append(f"ids repeat between {name} and the other sets")
+    seen = {_norm(r.text) for r in others}
+    for r in rows:
+        if _norm(r.text) in seen:
+            problems.append(
+                f"{name}/{r.id}: text equals a tuned or earlier held-out text"
+            )
+    return problems
+
+
 def shape_problems(
     tuned: list[Row] | None,
     holdout: list[Row],
     holdout2: list[Row] | None = None,
+    holdout3: list[Row] | None = None,
 ) -> list[str]:
-    """`holdout` is the spent 2026-10-16 set, kept loadable for reference. `holdout2` is the
-    blind set written for the next verdict; it need not use our hard-negative kind names."""
+    """`holdout` and `holdout2` are spent (verdicts 2026-10-16), kept loadable for reference.
+    `holdout3` is the blind set written for the next verdict. Blind sets need not use our
+    hard-negative kind names."""
     problems = set_problems("holdout", holdout, MIN_HOLDOUT_PER_LANG)
     problems += holdout_depth_problems(holdout)
     if tuned is not None:
@@ -261,20 +279,12 @@ def shape_problems(
         for r in tuned:
             if _norm(r.text) in held:
                 problems.append(f"tuned/{r.id}: text equals a held-out text")
+    earlier = [*holdout, *(tuned or [])]
     if holdout2 is not None:
-        problems += set_problems(
-            "holdout2", holdout2, MIN_HOLDOUT_PER_LANG, require_kinds=False
-        )
-        problems += holdout_depth_problems(holdout2, "holdout2")
-        others = [*holdout, *(tuned or [])]
-        if len({r.id for r in [*others, *holdout2]}) != len(others) + len(holdout2):
-            problems.append("ids repeat between holdout2 and the other sets")
-        seen = {_norm(r.text) for r in others}
-        for r in holdout2:
-            if _norm(r.text) in seen:
-                problems.append(
-                    f"holdout2/{r.id}: text equals a tuned or spent held-out text"
-                )
+        problems += _blind_problems("holdout2", holdout2, earlier)
+        earlier = [*earlier, *holdout2]
+    if holdout3 is not None:
+        problems += _blind_problems("holdout3", holdout3, earlier)
     return problems
 
 
@@ -282,16 +292,23 @@ def check_sets() -> int:
     holdout = load_rows(HOLDOUT)
     tuned = load_rows(TUNED) if TUNED.exists() else None
     holdout2 = load_rows(HOLDOUT2) if HOLDOUT2.exists() else None
+    holdout3 = load_rows(HOLDOUT3) if HOLDOUT3.exists() else None
     print(f"holdout (spent, reference only): {len(holdout)} rows")
     print(
-        f"holdout2: {len(holdout2)} rows" if holdout2 else "holdout2: not written yet"
+        f"holdout2 (spent, reference only): {len(holdout2)} rows"
+        if holdout2
+        else "holdout2: not written yet"
+    )
+    print(
+        f"holdout3: {len(holdout3)} rows" if holdout3 else "holdout3: not written yet"
     )
     print(f"tuned: {len(tuned)} rows" if tuned else "tuned: not written yet")
-    problems = shape_problems(tuned, holdout, holdout2)
+    problems = shape_problems(tuned, holdout, holdout2, holdout3)
     for p in problems:
         print(f"PROBLEM {p}")
-    for n in kind_notes("holdout2", holdout2) if holdout2 else []:
-        print(f"NOTE {n}")
+    for name, rows in (("holdout2", holdout2), ("holdout3", holdout3)):
+        for n in kind_notes(name, rows) if rows else []:
+            print(f"NOTE {n}")
     return 1 if problems else 0
 
 
@@ -412,9 +429,12 @@ def score(
     is acceptable there (neither a false create nor a required hit), and the row leaves the fact
     recall denominator when the pipeline answered with the loop.
 
-    Choice accuracy covers rows where the turn created nothing. When a reminder or goal already
-    exists the outcome is a link whatever the Choice says (decision row 5), so those rows are
-    scored by `link_acc` instead (dated amendment of FR-022, 2026-10-16)."""
+    Choice accuracy covers rows where the turn created nothing and that are not resolves rows:
+    the resolves clause judges those outcomes and the Choice question has no resolves option
+    (amendment of 2026-10-16 after the holdout2 verdict, effective for the next verdict only).
+    When a reminder or goal already exists the outcome is a link whatever the Choice says
+    (decision row 5), so those rows are scored by `link_acc` instead (amendment of FR-022,
+    2026-10-16)."""
     c = Counts()
     for r in rows:
         p = preds[r.id]
@@ -440,7 +460,7 @@ def score(
         if r.gold_choice == "waiting_on":
             c.waiting_total += 1
             c.waiting_written += p.wrote
-        if choices is not None and r.turn_created == "none":
+        if choices is not None and r.turn_created == "none" and not r.gold_resolves:
             c.choice_total += 1
             c.choice_ok += choices[r.id] == r.gold_choice or (
                 r.also_loop and choices[r.id] == "loop"
@@ -702,11 +722,13 @@ def _fmt(c: Counts) -> str:
 def report_choice(rows: list[Row], results: dict[str, RowResults]) -> None:
     for lang in LANGS:
         in_lang = [r for r in rows if r.lang == lang]
-        scoped = [r for r in in_lang if r.turn_created == "none"]
+        scoped = [
+            r for r in in_lang if r.turn_created == "none" and not r.gold_resolves
+        ]
         chosen = choices_for(scoped, results)
         ok = sum(chosen[r.id] == r.gold_choice for r in scoped)
         print(
-            f"\n== [{lang}] Choice accuracy (turn created nothing): {ok}/{len(scoped)} = "
+            f"\n== [{lang}] Choice accuracy (turn created nothing, not a resolves row): {ok}/{len(scoped)} = "
             f"{ok / len(scoped) if scoped else 0:.3f} (skipped count as wrong)"
         )
         linked = [r for r in in_lang if r.turn_created != "none"]
@@ -977,17 +999,17 @@ def report_verdict(
 async def main_async(args: argparse.Namespace) -> int:
     if args.check_sets:
         return check_sets()
-    verdict_run = args.set == "holdout2"
-    if args.set == "holdout" and not args.replay:
+    verdict_run = args.set == "holdout3"
+    if args.set in ("holdout", "holdout2") and not args.replay:
         print(
-            "The 2026-10-16 held-out set is spent (verdict KEEP OFF). It stays loadable for "
-            "reference through --replay only; use --set holdout2 for a verdict (FR-020).",
+            f"The {args.set} set is spent (verdict KEEP OFF, 2026-10-16). It stays loadable "
+            "for reference through --replay only; use --set holdout3 for a verdict (FR-020).",
             file=sys.stderr,
         )
         return 2
     if verdict_run and not args.bars:
         print(
-            "--set holdout2 needs frozen --bars CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES.",
+            "--set holdout3 needs frozen --bars CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES.",
             file=sys.stderr,
         )
         return 2
@@ -997,20 +1019,26 @@ async def main_async(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
-    if verdict_run and not HOLDOUT2.exists():
-        print(f"{HOLDOUT2.name} does not exist yet.", file=sys.stderr)
+    if verdict_run and not HOLDOUT3.exists():
+        print(f"{HOLDOUT3.name} does not exist yet.", file=sys.stderr)
         return 2
     problems = shape_problems(
         load_rows(TUNED) if TUNED.exists() else None,
         load_rows(HOLDOUT),
         load_rows(HOLDOUT2) if HOLDOUT2.exists() else None,
+        load_rows(HOLDOUT3) if HOLDOUT3.exists() else None,
     )
     if problems:
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
-    path = {"tuned": TUNED, "holdout": HOLDOUT, "holdout2": HOLDOUT2}[args.set]
+    path = {
+        "tuned": TUNED,
+        "holdout": HOLDOUT,
+        "holdout2": HOLDOUT2,
+        "holdout3": HOLDOUT3,
+    }[args.set]
     rows = load_rows(path)
-    if args.set == "holdout":
+    if args.set in ("holdout", "holdout2"):
         print("REFERENCE: spent held-out set, replayed offline. Not a verdict.")
 
     if args.replay:
@@ -1075,11 +1103,13 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--check-sets", action="store_true", help="offline dataset shape check"
     )
-    p.add_argument("--set", choices=("tuned", "holdout", "holdout2"), default="tuned")
+    p.add_argument(
+        "--set", choices=("tuned", "holdout", "holdout2", "holdout3"), default="tuned"
+    )
     p.add_argument(
         "--bars",
         default=None,
-        help="CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES (required for --set holdout2)",
+        help="CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES (required for --set holdout3)",
     )
     p.add_argument("--save", type=Path, default=None, help="store raw results as JSON")
     p.add_argument(
