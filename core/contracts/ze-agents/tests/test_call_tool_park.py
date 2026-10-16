@@ -294,3 +294,14 @@ async def test_an_approved_call_that_fails_keeps_its_approval() -> None:
     assert tc.success is False and tc.error == "No email channel available"
     assert tc.gate == "approved"
     assert tc.approval == {"request_id": "req-1", "outcome": "approved"}
+
+
+async def test_a_custom_summary_is_capped_like_the_generic_one() -> None:
+    from ze_agents.park import SUMMARY_MAX_CHARS
+
+    _irreversible("delete_event", summarize=lambda a: "x" * 500)
+    tc = await _Agent().call_tool(
+        "delete_event", _ctx(), _lm_args={"event_id": "e1"}, event_id="e1"
+    )
+    assert len(tc.parked.summary) == SUMMARY_MAX_CHARS
+    assert tc.parked.summary.endswith("…")

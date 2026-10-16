@@ -123,9 +123,15 @@ class WriteConfirmation:
     aliases: dict[str, str] = field(default_factory=dict)
 
 
-def generic_summary(args: dict[str, Any]) -> str:
-    """`key: value` pairs of the model's arguments, truncated to SUMMARY_MAX_CHARS."""
-    text = ", ".join(f"{k}: {v}" for k, v in args.items() if v not in (None, ""))
+def cap_summary(text: str) -> str:
+    """A confirmation summary cut to SUMMARY_MAX_CHARS, ending in an ellipsis."""
     if len(text) > SUMMARY_MAX_CHARS:
         text = text[: SUMMARY_MAX_CHARS - 1].rstrip() + "…"
     return text
+
+
+def generic_summary(args: dict[str, Any]) -> str:
+    """`key: value` pairs of the model's arguments, truncated to SUMMARY_MAX_CHARS."""
+    return cap_summary(
+        ", ".join(f"{k}: {v}" for k, v in args.items() if v not in (None, ""))
+    )

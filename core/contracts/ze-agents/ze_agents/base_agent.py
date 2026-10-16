@@ -36,6 +36,7 @@ from ze_agents.park import (
     ParkedLoop,
     ParkedWrite,
     ParkReason,
+    cap_summary,
     current_approval,
     generic_summary,
 )
@@ -966,7 +967,7 @@ async def _summarize(
             if inspect.isawaitable(text):
                 text = await asyncio.wait_for(text, _SUMMARIZE_TIMEOUT_S)
             if text:
-                return str(text)
+                return cap_summary(str(text))
         except Exception as exc:
             log.warning("tool_summarize_failed", tool=spec.name, error=str(exc))
     return generic_summary(model_args)
