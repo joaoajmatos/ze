@@ -215,13 +215,24 @@ async def invoke_raw_turn(
 
 
 async def resume_turn(
-    container: Container, config: dict, resume: Any = None
+    container: Container,
+    config: dict,
+    resume: Any = None,
+    *,
+    request_id: str | None = None,
 ) -> TurnResult:
-    """Resume the graph after the user answers its open confirmation."""
+    """Resume the graph after the user answers its open confirmation.
+
+    With `request_id`, only the confirmation of that id is answered: an answer to a
+    superseded confirmation never resumes the one that replaced it.
+    """
     from langgraph.types import Command
 
     graph_state_obj = await container.graph.aget_state(config)
-    if open_confirmation(graph_state_obj) is None:
+    confirmation = open_confirmation(graph_state_obj)
+    if confirmation is None or (
+        request_id is not None and confirmation.request_id != request_id
+    ):
         return TurnResult(
             final_state={},
             config=config,

@@ -16,7 +16,7 @@ from ze_api.api.websocket.session_titles import schedule_session_title_from_thre
 from ze_logging import get_logger
 from ze_workspace import rest as workspace_rest
 from ze_api.api.websocket.frames import build_confirm_frame, confirmation_payload
-from ze_api.api.websocket.held import handle_held_confirm
+from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 
 log = get_logger(__name__)
 
@@ -58,24 +58,18 @@ async def handle_confirm(
         )
         return None
 
-    if await handle_held_confirm(data, container, conn_mgr, thread_id):
-        return None
-
     row: dict | None = None
     if confirmation_store is not None:
         row = await confirmation_store.get_pending(request_id)
         if row is None:
-            await conn_mgr.send_frame(
-                {"type": "error", "detail": "No pending confirmation."}, thread_id
-            )
+            await _no_pending(conn_mgr, thread_id)
             return None
+        thread_id = row.get("thread_id") or thread_id
+        if pending_config is None or extract_thread_id(pending_config) != thread_id:
+            pending_config = container._build_config(thread_id)
     elif pending_config is None:
-        await conn_mgr.send_frame(
-            {"type": "error", "detail": "No pending confirmation."}, thread_id
-        )
+        await _no_pending(conn_mgr, thread_id)
         return None
-    if pending_config is None:
-        pending_config = container._build_config(thread_id)
 
     if choice not in ("approve", "deny"):
         await conn_mgr.send_frame(
@@ -94,12 +88,17 @@ async def handle_confirm(
         await conn_mgr.send_frame({"type": "error", "detail": "busy"}, thread_id)
         return request_id, pending_config
     try:
+        # Whoever clears the row answers it: a second answer (or the timeout) loses.
         if confirmation_store is not None and thread_id:
-            await confirmation_store.clear(thread_id, request_id)
+            if not await confirmation_store.clear(thread_id, request_id):
+                await _no_pending(conn_mgr, thread_id)
+                return None
         await conn_mgr.send_frame({"type": "typing"}, thread_id)
         with bound_turn_context(thread_id):
             outcome = await container.resume_turn(
-                pending_config, resume={"choice": choice, "edits": edits}
+                pending_config,
+                resume={"choice": choice, "edits": edits},
+                request_id=request_id,
             )
     except Exception as exc:
         log.exception("ws_resume_error", error=str(exc))
@@ -110,6 +109,9 @@ async def handle_confirm(
     finally:
         conn_mgr.clear_busy(thread_id)
 
+    if outcome.error == NO_PENDING_CONFIRMATION:
+        await _no_pending(conn_mgr, thread_id)
+        return None
     return await _deliver_outcome(
         outcome,
         container,
@@ -118,6 +120,12 @@ async def handle_confirm(
         confirmation_store=confirmation_store,
         session_store=session_store,
         msg_store=msg_store,
+    )
+
+
+async def _no_pending(conn_mgr: ConnectionManager, thread_id: str) -> None:
+    await conn_mgr.send_frame(
+        {"type": "error", "detail": "No pending confirmation."}, thread_id
     )
 
 
@@ -213,13 +221,21 @@ async def confirmation_timeout(
     await conn_mgr.send_frame({"type": "confirm_cancel", "id": request_id}, thread_id)
     if container is None or graph_config is None:
         return
+    if not conn_mgr.try_set_busy(thread_id):
+        # A turn is running on this thread; it supersedes the paused checkpoint.
+        log.info("confirmation_timeout_thread_busy", thread_id=thread_id)
+        return
     try:
         with bound_turn_context(thread_id):
             outcome = await container.resume_turn(
-                graph_config, resume={"choice": "timeout"}
+                graph_config, resume={"choice": "timeout"}, request_id=request_id
             )
     except Exception as exc:
         log.exception("ws_timeout_resume_error", error=str(exc))
+        return
+    finally:
+        conn_mgr.clear_busy(thread_id)
+    if outcome.error == NO_PENDING_CONFIRMATION:
         return
     await _deliver_outcome(
         outcome,
@@ -228,6 +244,24 @@ async def confirmation_timeout(
         thread_id,
         confirmation_store=confirmation_store,
     )
+
+
+async def supersede_open_confirmations(
+    conn_mgr: ConnectionManager, confirmation_store: Any, thread_id: str
+) -> list[dict]:
+    """Clear and cancel every open confirmation on the thread; returns the cleared rows.
+
+    A newer turn's checkpoint replaced theirs, so they can no longer be answered.
+    """
+    stale = await confirmation_store.get_pending_for_thread(thread_id)
+    cleared = []
+    for row in stale:
+        if await confirmation_store.clear(thread_id, row["request_id"]):
+            cleared.append(row)
+        await conn_mgr.send_frame(
+            {"type": "confirm_cancel", "id": row["request_id"]}, thread_id
+        )
+    return cleared
 
 
 async def send_confirmation_request(
@@ -255,6 +289,9 @@ async def send_confirmation_request(
     )
 
     if confirmation_store is not None and effective_thread_id:
+        await supersede_open_confirmations(
+            conn_mgr, confirmation_store, effective_thread_id
+        )
         await confirmation_store.save(
             thread_id=effective_thread_id,
             request_id=request_id,

@@ -219,10 +219,13 @@ async def _locked_resume_turn(
     turn_lock: ThreadTurnLock,
     config: dict,
     resume: object = None,
+    request_id: str | None = None,
 ) -> TurnResult:
     thread_id = (config.get("configurable") or {}).get("thread_id") or ""
     async with turn_lock.acquire(thread_id):
-        return await resume_turn(container, config, resume=resume)
+        return await resume_turn(
+            container, config, resume=resume, request_id=request_id
+        )
 
 
 @dataclass(kw_only=True)
@@ -234,8 +237,6 @@ class ZeContainer(CoreContainer):
     correlation_engine: Any | None
     persona_store: Any
     workflow_store: Any
-    held_write_store: Any
-    held_write_resumer: Any
     _plugin_stores: dict
     workflow_scheduler: Any
     proactive_scheduler: ProactiveScheduler
@@ -354,8 +355,12 @@ class ZeContainer(CoreContainer):
                 self, thread_id, user_text, config_extra=config_extra
             )
 
-    async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:
-        return await _locked_resume_turn(self, self.turn_lock, config, resume=resume)
+    async def resume_turn(
+        self, config: dict, resume: object = None, *, request_id: str | None = None
+    ) -> TurnResult:
+        return await _locked_resume_turn(
+            self, self.turn_lock, config, resume=resume, request_id=request_id
+        )
 
     async def close(self) -> None:
         for plugin in reversed(self.plugins):
@@ -789,8 +794,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         correlation_engine=correlation.correlation_engine,
         persona_store=persona_store,
         workflow_store=automation.workflow_store,
-        held_write_store=automation.held_write_store,
-        held_write_resumer=automation.held_write_resumer,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
         proactive_scheduler=ProactiveScheduler(run_store=JobRunStore(pool)),

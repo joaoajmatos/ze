@@ -145,7 +145,7 @@ async def test_approve_resumes_with_choice_and_empty_edits() -> None:
     )
     assert result is None
     container.resume_turn.assert_awaited_once_with(
-        CONFIG, resume={"choice": "approve", "edits": {}}
+        CONFIG, resume={"choice": "approve", "edits": {}}, request_id="req-1"
     )
     store.clear.assert_awaited_once_with("t1", "req-1")
     container.interface.send_with_thread.assert_awaited_once()
@@ -168,7 +168,7 @@ async def test_approve_with_a_valid_edit_resumes_with_it() -> None:
         confirmation_store=store,
     )
     container.resume_turn.assert_awaited_once_with(
-        CONFIG, resume={"choice": "approve", "edits": {"i1": "new"}}
+        CONFIG, resume={"choice": "approve", "edits": {"i1": "new"}}, request_id="req-1"
     )
 
 
@@ -208,7 +208,7 @@ async def test_deny_resumes_the_graph_without_aborting_the_checkpoint() -> None:
     )
     assert result is None
     container.resume_turn.assert_awaited_once_with(
-        CONFIG, resume={"choice": "deny", "edits": {}}
+        CONFIG, resume={"choice": "deny", "edits": {}}, request_id="req-1"
     )
     container.abort_pending_checkpoint.assert_not_awaited()
     sent = container.interface.send_with_thread.await_args
@@ -298,7 +298,9 @@ async def test_timeout_resumes_as_a_denial_and_delivers_the_reply() -> None:
     await confirmation_timeout(
         store, mgr, None, "t1", 0, "req-1", container=container, graph_config=CONFIG
     )
-    container.resume_turn.assert_awaited_once_with(CONFIG, resume={"choice": "timeout"})
+    container.resume_turn.assert_awaited_once_with(
+        CONFIG, resume={"choice": "timeout"}, request_id="req-1"
+    )
     container.abort_pending_checkpoint.assert_not_awaited()
     container.interface.send_with_thread.assert_awaited_once()
     cancel = [f for f in _frames(ws) if f["type"] == "confirm_cancel"]

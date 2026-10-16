@@ -8,7 +8,10 @@ from fastapi import WebSocket
 
 from ze_agents.interface.types import RawInput
 from ze_agents.progress.reporter import ProgressReporter
-from ze_api.api.websocket.confirmation import send_confirmation_request
+from ze_api.api.websocket.confirmation import (
+    send_confirmation_request,
+    supersede_open_confirmations,
+)
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.context import bound_turn_context
 from ze_api.api.websocket.serializers import extract_thread_id
@@ -125,13 +128,9 @@ async def handle_message(
         if confirmation_store is not None and effective_thread_id:
             # This turn completed with a direct response, superseding any gate(s)
             # left open on this thread — their checkpoints can no longer be resumed.
-            stale = await confirmation_store.get_pending_for_thread(effective_thread_id)
-            for row in stale:
-                await confirmation_store.clear(effective_thread_id, row["request_id"])
-                await conn_mgr.send_frame(
-                    {"type": "confirm_cancel", "id": row["request_id"]},
-                    effective_thread_id,
-                )
+            stale = await supersede_open_confirmations(
+                conn_mgr, confirmation_store, effective_thread_id
+            )
             _record_superseded(outcome.final_state.get("message_trace"), stale)
 
         if session_store is not None and effective_thread_id:
