@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter
 
-from ze_api.api.deps import require_api_key
-from ze_api.api.v0.system.schemas import (
-    HealthResponse,
-    UiManifestResponse,
-    VersionResponse,
-)
+from ze_api.api.v0.system.schemas import HealthResponse, VersionResponse
 
 _CLIENT_VERSION = "0.1.0"
 _API_VERSION = "v0"
@@ -44,23 +39,3 @@ def get_version() -> VersionResponse:
 )
 async def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
-
-
-@router.get(
-    "/ui/manifest",
-    response_model=UiManifestResponse,
-    operation_id="getUiManifest",
-    summary="UI shell manifest",
-    description=(
-        "Returns plugin-contributed nav entries and settings sections. "
-        "Core routes (chat, goals, settings) are not included — they are "
-        "hardcoded in the web client."
-    ),
-    tags=["ui"],
-)
-async def get_ui_manifest(
-    request: Request,
-    _: str = Depends(require_api_key),
-) -> UiManifestResponse:
-    manifest = request.app.state.container.ui_manifest
-    return UiManifestResponse.from_domain(manifest)
