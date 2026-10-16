@@ -189,3 +189,20 @@ async def test_timeout_on_a_busy_thread_does_not_resume() -> None:
     )
 
     container.resume_turn.assert_not_awaited()
+
+
+async def test_the_confirmation_push_targets_the_thread_of_the_paused_turn() -> None:
+    import asyncio
+
+    ws, mgr = await _connected()
+    container = _container()
+    container.notifier = AsyncMock()
+    outcome = _outcome(_confirmation("new"), response=None)
+
+    await send_confirmation_request(
+        mgr, container, outcome, "t1", confirmation_store=_store()
+    )
+    await asyncio.sleep(0)
+
+    kwargs = container.notifier.notify.await_args.kwargs
+    assert (kwargs["target_type"], kwargs["target_id"]) == ("chat_thread", "t1")

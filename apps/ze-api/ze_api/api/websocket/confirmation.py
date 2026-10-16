@@ -193,12 +193,20 @@ async def _deliver_outcome(
     return None
 
 
-async def notify_confirmation_request(notifier: Any, prompt: str) -> None:
+CHAT_THREAD_TARGET = "chat_thread"
+
+
+async def notify_confirmation_request(
+    notifier: Any, prompt: str, thread_id: str | None = None
+) -> None:
+    """Ring the bell for an open card; the row opens the thread the card is on."""
     try:
         await notifier.notify(
             CONFIRMATION_REQUEST,
             "Ze needs your approval",
             prompt or "Ze needs your approval.",
+            target_type=CHAT_THREAD_TARGET if thread_id else None,
+            target_id=thread_id or None,
         )
     except Exception as exc:
         log.warning("ws_confirmation_notify_failed", error=str(exc))
@@ -315,7 +323,7 @@ async def send_confirmation_request(
             if len(confirmation.items) > 1:
                 body += f" (+{len(confirmation.items) - 1} more)"
         fire_and_forget(
-            notify_confirmation_request(notifier, body),
+            notify_confirmation_request(notifier, body, effective_thread_id),
             label="notify_confirmation_request",
         )
 
