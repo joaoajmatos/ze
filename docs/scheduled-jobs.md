@@ -259,6 +259,22 @@ See [docs/goals.md](goals.md) for the full goal engine documentation.
 
 ---
 
+## Held write expiry (hourly)
+
+**Module:** `ze_automation/jobs/held_write_expiry.py` · registered in `ze_automation/bootstrap.py`
+**Job id:** `held_write_expiry` · **Cron:** `0 * * * *` (set `proactive.held_write_expiry.cron` to change it)
+
+A held write is an irreversible call from an unattended run that nobody approved in advance.
+Ze pushes a `write_approval_held` notification when it holds the call. The hold stays open
+for 24 hours. This job finds holds past that time and resumes each one as a timeout. A timeout
+counts as a deny: the call does not run, the step gets a declined result, and the run continues.
+
+Set `proactive.held_write_expiry.enabled: false` to turn the job off. Holds then stay open
+until someone answers them. The hold itself is described in
+[workflows.md](workflows.md#irreversible-steps-in-unattended-runs).
+
+---
+
 ## Weekly goal narrative (Sunday 6 PM UTC)
 
 **Module:** `ze_automation/jobs/goal_narrative.py`  
@@ -473,7 +489,7 @@ Kinds by class:
 
 | Class | Kinds |
 |---|---|
-| `requested` | `user_reminder`, `calendar_reminder` |
+| `requested` | `user_reminder`, `calendar_reminder`, `write_approval_held` |
 | `accountability` | `confirmation_request`, `confirmation_timeout`, `workspace_run_completed`, `workflow_failure`, `goal_plan_proposed`, `goal_attention_needed`, `goal_plan_adapted`, `goal_milestone_done`, `goal_completed`, `goal_gate`, `cost_anomaly`, `accountability_narrative`, `goal_narrative`, `morning_brief`, `calendar_reminders_scheduled`, `quiet_hours_summary` |
 | `discretionary` | `loop_drift`, `hypothesis`, `stuck_goal`, `goal_suggestion`, `goal_overlap`, `goal_reuse`, `dream_review`, `insight`, `contact_review`, `finance_stale_nudge`, `finance_recurring_new`, `finance_price_change`, `inbound_message` |
 
@@ -540,6 +556,7 @@ tier instead of literal clock position.
 | Every 5 min | Quiet-hours release sweep | `ze_proactive/jobs/release_held.py` |
 | Every 6 hours | **Cost anomaly detection** | `ze_automation/jobs/cost_anomaly.py` |
 | Every 15 min | Goal advance sweep | `ze_automation/goals/executor.py` |
+| Hourly | Held write expiry | `ze_automation/jobs/held_write_expiry.py` |
 | Hourly | Checkpoint pruning | `ze_core/orchestration/checkpoint_pruner.py` |
 | Every 15 min | Cost reconciliation | `ze_core/telemetry/reconciler.py` |
 | Every 15 min | Stale campaign recovery | `ze_prospecting/jobs/campaigns.py` |
