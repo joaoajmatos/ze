@@ -248,9 +248,137 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-16T11:48:30.103Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:16.987Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:17.668Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:18.313Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:18.850Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:35.314Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:36.040Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:36.719Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:54.558Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:25:25.767Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:25:51.687Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:25:59.178Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:06.013Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:13.312Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:19.572Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:28.462Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:33.508Z"
     }
   ],
-  "currentTask": "T037",
+  "currentTask": "T046",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -425,6 +553,73 @@
       "files": [
         "core/ops/ze-workspace/ze_workspace/tools.py"
       ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "compound/deny/timeout/supersede"
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "compound/deny/timeout/supersede"
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "compound/deny/timeout/supersede"
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "budget pause tests",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_budget_pause.py"
+      ]
+    },
+    "T038": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T039": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
     }
   }
 }

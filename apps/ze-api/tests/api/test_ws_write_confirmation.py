@@ -342,3 +342,52 @@ async def test_reconnect_replays_the_items_frame() -> None:
     assert frame == frame_from_pending(store.get_all_pending.return_value[0])
     assert frame["items"][0]["tool"] == "send_email"
     assert frame["thread_id"] == "t1" and frame["kind"] == "write"
+
+
+async def test_a_new_turn_clears_open_confirmations_and_records_them_as_superseded() -> (
+    None
+):
+    from ze_agents.park import WriteConfirmation  # noqa: F401
+    from ze_api.api.websocket.frames import confirmation_payload
+    from ze_api.api.websocket.turns import handle_message
+    from ze_core.conversation.messages.types import MessageTrace
+
+    ws, mgr = await _connected()
+    trace = MessageTrace(
+        agent="companion",
+        routing_method="embedding",
+        confidence=1.0,
+        score_gap=1.0,
+        is_compound=False,
+        subtasks=[],
+    )
+    outcome = _outcome(response="Fresh answer")
+    outcome.final_state = {"components": [], "message_trace": trace}
+    outcome.message_id = ""
+    container = _container(outcome)
+    container.invoke_raw_turn = AsyncMock(return_value=outcome)
+    container.translations = None
+    store = _store(_confirmation())
+    store.get_pending_for_thread = AsyncMock(
+        return_value=[
+            {
+                "thread_id": "t1",
+                "request_id": "req-1",
+                "actions": confirmation_payload(_confirmation()),
+            }
+        ]
+    )
+    await handle_message(
+        ws,
+        {"text": "never mind", "thread_id": "t1"},
+        container,
+        AsyncMock(),
+        mgr,
+        None,
+        confirmation_store=store,
+    )
+    store.clear.assert_awaited_with("t1", "req-1")
+    assert [r["outcome"] for r in trace.write_confirmations] == ["superseded"]
+    assert trace.write_confirmations[0]["tool"] == "send_email"
+    cancels = [f for f in _frames(ws) if f["type"] == "confirm_cancel"]
+    assert cancels and cancels[0]["id"] == "req-1"

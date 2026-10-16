@@ -60,7 +60,7 @@ Added: `resume: ParkedLoop | None`, `write_decisions: dict[str, WriteDecision]` 
 
 ## ToolCall (`ze_agents/types.py`)
 
-Removed: `is_draft`. Added: `parked: ParkedWrite | None`, `child_loop: ParkedLoop | None` (delegate only), `approval: dict | None` (`{request_id, outcome}` for approved/edited calls, `{outcome: "pre_approved"}` for unattended pre-approval; copied into the call's action record, FR-030). `gate` gains values: `"approved"` (user approved), `"pre_approved"`, `"denied"`, `"refused_over_cap"`, `"none"`.
+Removed: `is_draft`. Added: `parked: ParkedWrite | None`, `child_loop: ParkedLoop | None` (delegate only), `approval: dict | None` (`{request_id, outcome}` for approved/edited calls, `{outcome: "pre_approved"}` for unattended pre-approval; published to `ze_agents.park.current_approval` (a ContextVar) while the approved call runs; `ActionRecorder` reads it and adds `CausalRef(kind="approval", id=request_id)` to the action record, FR-030). `gate` gains values: `"approved"` (user approved), `"pre_approved"`, `"denied"`, `"refused_over_cap"`, `"none"`.
 
 ## AgentState (`ze_core/orchestration/state.py`)
 
@@ -99,7 +99,7 @@ Add `write_confirmations: list[dict]` (= `write_outcomes`). `record_trace` stops
 - `CREATE TABLE held_writes (request_id TEXT PRIMARY KEY, source TEXT NOT NULL /* workflow | goal */, owner_ref TEXT NOT NULL /* workflow execution id | milestone id */, items JSONB NOT NULL, payload JSONB NOT NULL /* graph config for workflows; ParkedLoop for goals */, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), expires_at TIMESTAMPTZ NOT NULL, decided_at TIMESTAMPTZ)`, index on `(status, expires_at)`.
 - Owner: `ze_automation/holds/store.py` `PostgresHeldWriteStore` (Protocol `HeldWriteStore`). Added to the AGENTS.md migration table under ze-automation.
 
-`pending_confirmations` (zc027) is unchanged; `actions` JSONB now stores the items list.
+`pending_confirmations` (zc027) keeps its columns; `actions` JSONB now stores `{kind, round, items}` (`kind` is `"write"` or `"budget"`; `items` is the frame's item list), so a replay or a superseding turn can rebuild the frame and the trace rows from the row alone.
 
 ## State transitions
 

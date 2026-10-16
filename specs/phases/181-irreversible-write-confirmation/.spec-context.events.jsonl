@@ -25,3 +25,19 @@
 {"step": "implement", "substep": null, "task": "T034", "kind": "complete", "by": "ai", "at": "2026-10-16T11:47:13.306Z", "did": "HarnessHook.check_call, veto refactor", "files": ["core/cognition/ze-memory/ze_memory/constraint_veto.py", "core/contracts/ze-agents/ze_agents/hooks.py"]}
 {"step": "implement", "substep": null, "task": "T036", "kind": "complete", "by": "ai", "at": "2026-10-16T11:48:29.541Z", "did": "workspace ask check tests", "files": ["core/ops/ze-workspace/tests/test_workspace_ask_check.py"]}
 {"step": "implement", "substep": null, "task": "T037", "kind": "complete", "by": "ai", "at": "2026-10-16T11:48:30.103Z", "did": "workspace tools use ask_check, _confirm removed", "files": ["core/ops/ze-workspace/ze_workspace/tools.py"]}
+{"step": "implement", "substep": null, "task": "T026", "kind": "complete", "by": "ai", "at": "2026-10-16T11:52:16.987Z", "did": "covered by graph tests / implemented in execution.py"}
+{"step": "implement", "substep": null, "task": "T027", "kind": "complete", "by": "ai", "at": "2026-10-16T11:52:17.668Z", "did": "covered by graph tests / implemented in execution.py"}
+{"step": "implement", "substep": null, "task": "T028", "kind": "complete", "by": "ai", "at": "2026-10-16T11:52:18.313Z", "did": "covered by graph tests / implemented in execution.py"}
+{"step": "implement", "substep": null, "task": "T030", "kind": "complete", "by": "ai", "at": "2026-10-16T11:52:18.850Z", "did": "covered by graph tests / implemented in execution.py"}
+{"step": "implement", "substep": null, "task": "T029", "kind": "complete", "by": "ai", "at": "2026-10-16T11:54:35.314Z", "did": "compound/deny/timeout/supersede"}
+{"step": "implement", "substep": null, "task": "T031", "kind": "complete", "by": "ai", "at": "2026-10-16T11:54:36.040Z", "did": "compound/deny/timeout/supersede"}
+{"step": "implement", "substep": null, "task": "T032", "kind": "complete", "by": "ai", "at": "2026-10-16T11:54:36.719Z", "did": "compound/deny/timeout/supersede"}
+{"step": "implement", "substep": null, "task": "T035", "kind": "complete", "by": "ai", "at": "2026-10-16T11:54:54.558Z", "did": "budget pause tests", "files": ["core/engine/ze-core/tests/orchestration/test_budget_pause.py"]}
+{"step": "implement", "substep": null, "task": "T038", "kind": "complete", "by": "ai", "at": "2026-10-16T12:25:25.767Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T039", "kind": "complete", "by": "ai", "at": "2026-10-16T12:25:51.687Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T040", "kind": "complete", "by": "ai", "at": "2026-10-16T12:25:59.178Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T041", "kind": "complete", "by": "ai", "at": "2026-10-16T12:26:06.013Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T042", "kind": "complete", "by": "ai", "at": "2026-10-16T12:26:13.312Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T043", "kind": "complete", "by": "ai", "at": "2026-10-16T12:26:19.572Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T044", "kind": "complete", "by": "ai", "at": "2026-10-16T12:26:28.462Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
+{"step": "implement", "substep": null, "task": "T046", "kind": "complete", "by": "ai", "at": "2026-10-16T12:26:33.508Z", "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"}
