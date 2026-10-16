@@ -12,13 +12,18 @@ from openrouter.components.chatassistantmessage import ChatAssistantMessage
 from openrouter.components.chatresult import ChatResult
 from openrouter.components.chatstreamchunk import ChatStreamChunk
 from openrouter.types import UNSET, UNSET_SENTINEL
-from ze_agents.errors import OpenRouterError, RateLimitError
+from ze_agents.errors import (
+    GenerationUnavailableError,
+    OpenRouterError,
+    RateLimitError,
+)
 from ze_agents.types import Source
 from ze_core.openrouter.citations import CitationTransport, capture_citations
 from ze_core.openrouter.types import TokenUsage
 from ze_logging import get_logger
 
 _RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+_NO_RECORD_STATUS = {400, 404}
 _BACKOFFS = [1.0, 2.0, 4.0]
 _TRANSCRIBE_FORMATS = {"mp3", "wav", "ogg", "flac", "m4a"}
 _TRANSCRIBE_SYSTEM = (
@@ -54,9 +59,20 @@ class OpenRouterClient:
         await self._sdk.__aexit__(None, None, None)
 
     async def fetch_generation_cost(self, generation_id: str) -> float | None:
+        """Cost in USD, None on a transient failure; raises when OpenRouter has no record."""
         try:
             resp = await self._sdk.generations.get_generation_async(id=generation_id)
             return resp.data.total_cost
+        except sdk_errors.OpenRouterError as exc:
+            status = getattr(exc, "status_code", None)
+            if status not in _NO_RECORD_STATUS:
+                self._log.warning(
+                    "cost_fetch_failed", generation_id=generation_id, error=str(exc)
+                )
+                return None
+            raise GenerationUnavailableError(
+                f"no cost record for {generation_id}", status_code=status
+            ) from exc
         except Exception as exc:
             self._log.warning(
                 "cost_fetch_failed", generation_id=generation_id, error=str(exc)

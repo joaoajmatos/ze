@@ -5,6 +5,7 @@ from typing import Any
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
 from ze_core.conversation.sessions import SessionTitleGenerator
+from ze_core.telemetry.context import set_agent_context
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -32,7 +33,10 @@ async def _generate_and_save(
     user_text: str,
     assistant_text: str,
 ) -> None:
+    set_agent_context("session_title")
     session = await session_store.get(thread_id)
+    # The first message is saved as a placeholder title with source "user" before
+    # the turn runs, so only a generated title ends the job.
     if session is None or session.title_source == "generated":
         return
 

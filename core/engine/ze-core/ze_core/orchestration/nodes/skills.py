@@ -8,6 +8,7 @@ from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.orchestration.judgment_state import build_judgment_state
 from ze_core.orchestration.state import AgentState
+from ze_core.telemetry.context import set_agent_context
 
 log = get_logger(__name__)
 
@@ -26,6 +27,7 @@ async def match_skills(state: AgentState, config: RunnableConfig) -> dict:
     a no-op (returns `{}`) when no matcher is injected, no agent context is available yet,
     or no skill matched this turn.
     """
+    set_agent_context("skills")
     matcher: Any = config["configurable"].get("skill_matcher")
     if matcher is None:
         return {}

@@ -107,3 +107,20 @@ async def test_resume_turn_without_open_confirmation_does_nothing(container):
     outcome = await resume_turn(container, {"configurable": {"thread_id": "42"}})
     assert outcome.error == "No pending confirmation."
     container.graph.ainvoke.assert_not_awaited()
+
+
+async def test_invoke_raw_turn_sets_cost_context_for_the_graph(container):
+    from ze_core.telemetry.context import get_cost_context
+
+    seen = []
+    original = container.graph.astream_events
+
+    def _spy(*a, **kw):
+        seen.append(get_cost_context())
+        return original(*a, **kw)
+
+    container.graph.astream_events = _spy
+    await invoke_raw_turn(container, "42", RawInput(text="hello"))
+
+    assert seen[0].flow_type == "user_message"
+    assert seen[0].session_id == "42"

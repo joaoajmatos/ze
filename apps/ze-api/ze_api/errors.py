@@ -16,6 +16,13 @@ class CapabilityConfigError(CapabilityError):
     """capabilities.yaml could not be loaded or is invalid."""
 
 
+# ── Config ────────────────────────────────────────────────────────────────────
+
+
+class ProfileConfigError(ZeError):
+    """A ZE_PROFILE config overlay is missing or its name is not a plain profile name."""
+
+
 # ── Migrations ────────────────────────────────────────────────────────────────
 
 

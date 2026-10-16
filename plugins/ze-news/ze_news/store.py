@@ -121,12 +121,14 @@ class NewsStore:
                 embedding = self._embedder.encode_passage(text)
                 vec = _to_pgvector(embedding)
 
-                status = await conn.execute(
+                # DO UPDATE reports "INSERT 0 1" for an update too; xmax = 0 marks a fresh row.
+                inserted = await conn.fetchval(
                     """
                     INSERT INTO news_articles
                         (url, source_key, title, summary, published_at, tags, embedding)
                     VALUES ($1, $2, $3, $4, $5, $6, $7::vector)
                     ON CONFLICT (url) DO UPDATE SET fetched_at = now()
+                    RETURNING (xmax = 0) AS inserted
                     """,
                     article.url,
                     article.source_key,
@@ -136,7 +138,7 @@ class NewsStore:
                     article.tags,
                     vec,
                 )
-                if status == "INSERT 0 1":
+                if inserted:
                     new_articles.append(article)
 
         return new_articles

@@ -32,6 +32,8 @@ from ze_core.telemetry import (
     get_cost_context,
     set_agent_context,
     set_flow_context,
+    start_flow_context,
+    enter_turn_context,
 )
 from ze_core.openrouter.client import OpenRouterClient
 from ze_agents.base_agent import BaseAgent
@@ -73,6 +75,8 @@ __all__ = [
     "get_cost_context",
     "set_agent_context",
     "set_flow_context",
+    "start_flow_context",
+    "enter_turn_context",
     "OpenRouterClient",
     "BaseAgent",
     "agent",
