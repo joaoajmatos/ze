@@ -82,3 +82,52 @@ async def test_connect_replays_open_held_writes() -> None:
     await ConnectionManager().connect(ws, messages, held_store=store)
     assert [f["id"] for f in sent] == ["open"]
     assert sent[0]["kind"] == "held"
+
+
+async def test_handle_confirm_routes_a_held_id_to_the_resumer() -> None:
+    from ze_api.api.websocket.confirmation import handle_confirm
+
+    container, conn, store, run = _setup(_hold("r1"))
+    confirmation_store = AsyncMock()
+    confirmation_store.get_pending = AsyncMock(return_value=None)
+
+    result = await handle_confirm(
+        SimpleNamespace(),
+        {"type": "confirm", "id": "r1", "choice": "approve"},
+        container,
+        conn,
+        None,
+        thread_id="t1",
+        confirmation_store=confirmation_store,
+    )
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+
+    assert result is None
+    assert store.rows["r1"].status is HeldWriteStatus.APPROVED
+    run.assert_awaited_once()
+    confirmation_store.get_pending.assert_not_awaited()
+    conn.send_frame.assert_awaited_with({"type": "confirm_cancel", "id": "r1"}, "t1")
+
+
+async def test_handle_confirm_leaves_a_chat_confirmation_id_to_the_chat_path() -> None:
+    from ze_api.api.websocket.confirmation import handle_confirm
+
+    container, conn, store, run = _setup(_hold("r1"))
+    confirmation_store = AsyncMock()
+    confirmation_store.get_pending = AsyncMock(return_value=None)
+
+    await handle_confirm(
+        SimpleNamespace(),
+        {"type": "confirm", "id": "chat-req", "choice": "approve"},
+        container,
+        conn,
+        None,
+        thread_id="t1",
+        confirmation_store=confirmation_store,
+    )
+
+    confirmation_store.get_pending.assert_awaited_once_with("chat-req")
+    assert conn.send_frame.await_args.args[0]["detail"] == "No pending confirmation."
+    assert store.rows["r1"].status is HeldWriteStatus.OPEN
+    run.assert_not_awaited()

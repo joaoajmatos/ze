@@ -54,7 +54,7 @@ from ze_automation.holds.resumer import (
 )
 from ze_automation.holds.serialize import loop_from_dict, loop_to_dict
 from ze_automation.holds.store import HeldWriteStore
-from ze_automation.holds.types import HeldWrite
+from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -430,29 +430,60 @@ class GoalExecutor:
     async def resume_held(
         self, hold: HeldWrite, choice: str, edits: dict[str, str]
     ) -> None:
-        """Continue a held milestone with the user's answer (approve, deny or timeout)."""
+        """Continue a held milestone with the user's answer (approve, deny or timeout).
+
+        Everything is read and changed under the goal's advance lock, so a concurrent
+        `advance` cannot reset or re-run the milestone being resumed.
+        """
         goal_id = UUID(hold.payload["goal_id"])
-        goal = await self._store.get_goal(goal_id)
-        milestones = await self._store.list_milestones(goal_id)
-        milestone = next(
-            (m for m in milestones if str(m.id) == hold.payload["milestone_id"]), None
-        )
-        if (
-            goal is None
-            or milestone is None
-            or milestone.status != MilestoneStatus.HELD
-        ):
-            log.warning("held_milestone_gone", request_id=hold.request_id)
-            return
-        await self._store.update_milestone(milestone.id, MilestoneStatus.IN_PROGRESS)
-        resume = _HeldResume(
-            loop=loop_from_dict(hold.payload["loop"]),
-            decisions=decisions_for(hold, choice, edits),
-            request_id=hold.request_id,
-            round=int(hold.payload.get("round", 1)),
-        )
         async with self._advance_locks[goal_id]:
+            goal = await self._store.get_goal(goal_id)
+            milestones = await self._store.list_milestones(goal_id)
+            milestone = next(
+                (m for m in milestones if str(m.id) == hold.payload["milestone_id"]),
+                None,
+            )
+            if (
+                goal is None
+                or milestone is None
+                or milestone.status != MilestoneStatus.HELD
+            ):
+                log.warning("held_milestone_gone", request_id=hold.request_id)
+                return
+            if goal.status != GoalStatus.ACTIVE:
+                # The goal was paused or abandoned after the hold opened: run nothing.
+                await self._store.update_milestone(
+                    milestone.id, MilestoneStatus.PENDING
+                )
+                log.info(
+                    "held_milestone_goal_inactive",
+                    request_id=hold.request_id,
+                    goal_status=str(goal.status),
+                )
+                return
+            await self._store.update_milestone(
+                milestone.id, MilestoneStatus.IN_PROGRESS
+            )
+            resume = _HeldResume(
+                loop=loop_from_dict(hold.payload["loop"]),
+                decisions=decisions_for(hold, choice, edits),
+                request_id=hold.request_id,
+                round=int(hold.payload.get("round", 1)),
+            )
             await self._run_milestone(goal, goal_id, milestone, milestones, resume)
+
+    async def close_holds(self, goal_id: UUID) -> None:
+        """Deny the goal's open holds and free its held milestones (pause, abandon)."""
+        if self._held_store is None:
+            return
+        for hold in await self._held_store.list(HeldWriteStatus.OPEN):
+            if hold.source == "goal" and hold.payload.get("goal_id") == str(goal_id):
+                await self._held_store.decide(hold.request_id, HeldWriteStatus.DENIED)
+        for milestone in await self._store.list_milestones(goal_id):
+            if milestone.status == MilestoneStatus.HELD:
+                await self._store.update_milestone(
+                    milestone.id, MilestoneStatus.PENDING
+                )
 
     async def approve_plan(self, goal_id: UUID) -> bool:
         """Activate a goal after the user approves its plan. Returns False if not in planning state."""
@@ -493,6 +524,7 @@ class GoalExecutor:
             return
         await self._store.resolve_gate(gate_id, GateStatus.STOPPED)
         await self._store.update_status(gate.goal_id, GoalStatus.ABANDONED)
+        await self.close_holds(gate.goal_id)
         if self._procedures is not None:
             await self._procedures.resolve_provisional(
                 gate.goal_id, discard=True, reason="goal stopped"

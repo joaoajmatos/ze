@@ -235,3 +235,69 @@ async def test_advance_waits_while_a_milestone_is_held() -> None:
 
     rig.store.update_milestone.assert_not_awaited()
     assert second.status is MilestoneStatus.PENDING
+
+
+async def test_resume_waits_for_the_advance_lock_before_touching_the_milestone() -> (
+    None
+):
+    import asyncio
+
+    rig = Rig(_send_script())
+    await rig.advance()
+    request_id = next(iter(rig.held.rows))
+    hold = await rig.resumer.decide(request_id, "approve")
+
+    async with rig.executor._advance_locks[rig.goal.id]:
+        task = asyncio.create_task(rig.executor.resume_held(hold, "approve", {}))
+        for _ in range(5):
+            await asyncio.sleep(0)
+        assert rig.milestone.status is MilestoneStatus.HELD
+        assert calls == []
+    await task
+
+    assert rig.milestone.status is MilestoneStatus.COMPLETED
+    assert calls == ["send_email"]
+
+
+@pytest.mark.parametrize("status", [GoalStatus.PAUSED, GoalStatus.ABANDONED])
+async def test_a_held_write_is_not_run_after_its_goal_stopped(status) -> None:
+    rig = Rig(_send_script())
+    await rig.advance()
+    request_id = next(iter(rig.held.rows))
+    rig.goal.status = status
+
+    await rig.resumer.resume(request_id, "approve")
+
+    assert calls == []
+    assert rig.milestone.status is MilestoneStatus.PENDING
+
+
+async def test_closing_a_goals_holds_denies_them_and_frees_the_milestone() -> None:
+    from ze_automation.holds.resumer import HeldWriteNotOpenError
+
+    rig = Rig(_send_script())
+    await rig.advance()
+    request_id = next(iter(rig.held.rows))
+
+    await rig.executor.close_holds(rig.goal.id)
+
+    assert rig.held.rows[request_id].status is HeldWriteStatus.DENIED
+    assert rig.milestone.status is MilestoneStatus.PENDING
+    with pytest.raises(HeldWriteNotOpenError):
+        await rig.resumer.resume(request_id, "approve")
+    assert calls == []
+
+
+async def test_abandoning_a_goal_closes_its_open_holds() -> None:
+    import ze_automation.agents.goals.tools as goal_tools
+
+    rig = Rig(_send_script())
+    await rig.advance()
+    request_id = next(iter(rig.held.rows))
+    rig.store.update_status = AsyncMock()
+
+    await goal_tools.abandon_goal(
+        store=rig.store, executor=rig.executor, goal_id=str(rig.goal.id)
+    )
+
+    assert rig.held.rows[request_id].status is HeldWriteStatus.DENIED

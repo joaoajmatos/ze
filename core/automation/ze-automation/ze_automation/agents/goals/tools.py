@@ -310,7 +310,7 @@ async def create_goal(
     undo_note="Resumes the goal.",
     effect_phrase="paused a goal",
 )
-async def pause_goal(store: GoalStore, goal_id: str) -> dict:
+async def pause_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> dict:
     try:
         uid = UUID(goal_id)
     except ValueError:
@@ -319,6 +319,7 @@ async def pause_goal(store: GoalStore, goal_id: str) -> dict:
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
     await store.update_status(uid, GoalStatus.PAUSED)
+    await executor.close_holds(uid)
     return {"title": goal.title, "status": "paused"}
 
 
@@ -388,7 +389,7 @@ async def get_milestone_trace(
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="abandoned a goal",
 )
-async def abandon_goal(store: GoalStore, goal_id: str) -> dict:
+async def abandon_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> dict:
     try:
         uid = UUID(goal_id)
     except ValueError:
@@ -397,4 +398,5 @@ async def abandon_goal(store: GoalStore, goal_id: str) -> dict:
     if not goal:
         return {"error": f"Goal not found: {goal_id}"}
     await store.update_status(uid, GoalStatus.ABANDONED)
+    await executor.close_holds(uid)
     return {"title": goal.title, "status": "abandoned"}
