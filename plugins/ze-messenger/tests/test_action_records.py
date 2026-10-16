@@ -6,9 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from ze_agents.claims import ClaimKind
 from ze_communication.registry import ChannelRegistry
 from ze_communication.types import ChannelType, SentMessage
 from ze_memory.action_records.types import ActionLifecycle
+from ze_plugin.contribution import SourceFunction
 
 from ze_messenger.outbound.adapter import (
     configure_outbound_ledger,
@@ -41,25 +43,40 @@ async def _appended_draft(send: OutboundSend):
         outbound_store=AsyncMock(), action_record_store=action_store
     )
     await record_outbound_message(send)
-    return action_store.append.await_args.args[0].action_record
+    return action_store.append.await_args.args[0]
 
 
 async def test_ledger_summary_omits_recipient_and_body() -> None:
     send = _send()
-    draft = await _appended_draft(send)
+    draft = (await _appended_draft(send)).action_record
     assert send.channel_id not in draft.summary
     assert "secret" not in draft.summary
     assert draft.authoritative_ref.record_id == str(send.id)
     assert draft.authoritative_ref.domain == "messenger.outbound"
 
 
+async def test_outbound_contribution_is_action_record() -> None:
+    send = _send()
+    contribution = await _appended_draft(send)
+    assert contribution.claim_kind is ClaimKind.ACTION_RECORD
+    assert contribution.source_function is SourceFunction.ACTION
+    assert (
+        contribution.action_record.idempotency_key
+        == f"messenger:outbound:{send.id}:send_email:succeeded"
+    )
+
+
 async def test_failure_and_unknown_are_truthful() -> None:
-    failed = await _appended_draft(
-        _send(outcome=OutboundSendOutcome.FAILURE, failure_code="ChannelSendError")
-    )
-    unknown = await _appended_draft(
-        _send(outcome=OutboundSendOutcome.UNKNOWN, failure_code="Timeout")
-    )
+    failed = (
+        await _appended_draft(
+            _send(outcome=OutboundSendOutcome.FAILURE, failure_code="ChannelSendError")
+        )
+    ).action_record
+    unknown = (
+        await _appended_draft(
+            _send(outcome=OutboundSendOutcome.UNKNOWN, failure_code="Timeout")
+        )
+    ).action_record
     assert failed.lifecycle is ActionLifecycle.FAILED
     assert unknown.lifecycle is ActionLifecycle.UNKNOWN
 
