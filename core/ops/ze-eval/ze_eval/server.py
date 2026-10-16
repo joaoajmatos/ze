@@ -187,7 +187,9 @@ async def ze_run_scenario(scenario_id: str) -> str:
         return json.dumps({"error": f"Scenario '{scenario_id}' not found"})
     if not is_runnable(scenario):
         return json.dumps(
-            {"error": f"Scenario '{scenario_id}' is sandbox-only; set ZE_EVAL_SANDBOX=1"}
+            {
+                "error": f"Scenario '{scenario_id}' is sandbox-only; set ZE_EVAL_SANDBOX=1"
+            }
         )
 
     result = await _run_scenario_turns(scenario, f"eval-{scenario_id}")
