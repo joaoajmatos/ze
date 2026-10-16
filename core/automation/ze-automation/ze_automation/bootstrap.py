@@ -14,6 +14,8 @@ from ze_automation.goals.executor import GoalExecutor
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.postgres import PostgresGoalStore
 from ze_automation.goals.suggestion_store import GoalSuggestionStore
+from ze_automation.holds.resumer import HeldWriteResumer
+from ze_automation.holds.store import HeldWriteStore, PostgresHeldWriteStore
 from ze_automation.jobs.accountability import AccountabilityJob
 from ze_automation.jobs.cost_anomaly import CostAnomalyJob
 from ze_automation.jobs.goal_narrative import GoalNarrativeJob
@@ -21,9 +23,9 @@ from ze_automation.jobs.goal_suggestion import GoalSuggestionJob
 from ze_automation.jobs.stuck_goals import StuckGoalJob
 from ze_automation.workflow.planner import WorkflowPlanner
 from ze_automation.workflow.postgres import PostgresWorkflowStore
+from ze_automation.workflow.runner import WorkflowRunner
 from ze_automation.workflow.scheduler import WorkflowScheduler
 from ze_automation.workflow.store import WorkflowStore
-from ze_automation.workspace_unattended import unattended_workspace
 from ze_data.domain import DataDomain
 from ze_data.portability.assembler import bulk_insert
 from ze_automation.push_kinds import WORKFLOW_FAILURE
@@ -61,6 +63,8 @@ class AutomationStack:
     workflow_planner: WorkflowPlanner
     workflow_scheduler: WorkflowScheduler
     accountability_store: AccountabilityStore
+    held_write_store: HeldWriteStore
+    held_write_resumer: HeldWriteResumer
     deps: dict[type, Any] = field(default_factory=dict)
 
 
@@ -153,7 +157,10 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
         embedder=shared.embedder,
     )
 
+    held_write_store = PostgresHeldWriteStore(db_pool=pool)
+    held_write_resumer = HeldWriteResumer(held_write_store)
     goal_executor = GoalExecutor(
+        held_store=held_write_store,
         goal_store=goal_store,
         goal_planner=goal_planner,
         notify=_unwired_notify,
@@ -171,6 +178,9 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
         GoalSuggestionStore: goal_suggestion_store,
     }
 
+    deps[HeldWriteResumer] = held_write_resumer
+    deps[HeldWriteStore] = held_write_store
+
     return AutomationStack(
         goal_store=goal_store,
         goal_suggestion_store=goal_suggestion_store,
@@ -180,6 +190,8 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
         workflow_planner=workflow_planner,
         workflow_scheduler=workflow_scheduler,
         accountability_store=AccountabilityStore(pool=pool),
+        held_write_store=held_write_store,
+        held_write_resumer=held_write_resumer,
         deps=deps,
     )
 
@@ -215,7 +227,6 @@ async def configure_workflow_executor(
 
     workflow_graph_config: dict = {
         "configurable": {
-            "pre_approved_writes": _asks_first_tools(),
             "memory_store": shared.memory_store,
             "persona_store": persona_store,
             "openrouter_client": shared.openrouter_client,
@@ -245,16 +256,7 @@ async def configure_workflow_executor(
             "current_step_id": workflow.steps[0].id if workflow.steps else "",
             "workflow_step_results": [],
         }
-        run_config = {
-            **workflow_graph_config,
-            "configurable": {
-                **workflow_graph_config.get("configurable", {}),
-                "thread_id": str(execution_id),
-                "workflow_store": stack.workflow_store,
-            },
-        }
-        async with unattended_workspace(workspace_gate):
-            await workflow_graph.ainvoke(initial_state, run_config)
+        await runner.run(workflow, execution_id, initial_state)
 
     async def _workflow_failure_handler(workflow: Any, exc: Exception) -> None:
         alerts_cfg = settings.proactive_config.get("alerts", {})
@@ -280,6 +282,16 @@ async def configure_workflow_executor(
         await push_log_store.log(event_type, workflow.name)
         log.info("failure_alert_sent", workflow=workflow.name)
 
+    runner = WorkflowRunner(
+        graph=workflow_graph,
+        configurable=workflow_graph_config["configurable"],
+        workflow_store=stack.workflow_store,
+        held_store=stack.held_write_store,
+        notifier=notifier,
+        workspace_gate=workspace_gate,
+        on_failure=_workflow_failure_handler,
+    )
+    stack.held_write_resumer.configure(resume_workflow=runner.resume)
     stack.workflow_scheduler.configure_executor(
         executor=_workflow_executor,
         on_failure=_workflow_failure_handler,
@@ -388,12 +400,3 @@ def register_proactive_jobs(
             "cost_anomaly_scheduled",
             cron=_acc_cfg.get("cost_anomaly_schedule", "0 */6 * * *"),
         )
-
-
-def _asks_first_tools() -> frozenset[str]:
-    """Transitional (until per-step pre-approval): workflow creation was the gate."""
-    from ze_agents.tool import registered_tools
-
-    return frozenset(
-        name for name, spec in registered_tools().items() if spec.asks_first
-    )

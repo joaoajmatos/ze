@@ -44,6 +44,7 @@ from ze_automation.push_kinds import (
 )
 from ze_proactive.types import PushKind, PushOutcome
 from ze_automation.workspace_unattended import unattended_workspace
+from ze_automation.holds.store import HeldWriteStore
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -146,7 +147,9 @@ class GoalExecutor:
         action_record_store: ActionRecordStore | None = None,
         nli_client: object | None = None,
         procedure_admission: object | None = None,
+        held_store: HeldWriteStore | None = None,
     ) -> None:
+        self._held_store = held_store
         self._store = goal_store
         self._planner = goal_planner
         self._notify = notify

@@ -393,6 +393,23 @@ class PostgresWorkflowStore:
                 execution_id,
             )
 
+    async def set_execution_status(
+        self, execution_id: UUID, status: str, *, expected: str | None = None
+    ) -> bool:
+        """Move a run between `running` and `held`; `expected` guards the old status."""
+        async with self._pool.acquire() as conn:
+            tag = await conn.execute(
+                """
+                UPDATE workflow_executions
+                SET status = $1
+                WHERE id = $2 AND ($3::text IS NULL OR status = $3)
+                """,
+                status,
+                execution_id,
+                expected,
+            )
+        return tag.endswith(" 1")
+
     async def finish_execution(
         self,
         execution_id: UUID,

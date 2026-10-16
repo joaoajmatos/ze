@@ -364,11 +364,14 @@ class BaseAgent(ABC):
                     "request_id": ctx.approval_request_id,
                     "outcome": "approved",
                 }
-            elif name in ctx.pre_approved_writes:
-                confirmation_gate = "pre_approved"
-                approval = {"outcome": "pre_approved"}
             else:
-                resolution = await self._resolve_ask(spec, ctx, dict(kwargs), hooks)
+                pre_approved = name in ctx.pre_approved_writes
+                resolution = await self._resolve_ask(
+                    spec, ctx, dict(kwargs), hooks, veto_only=pre_approved
+                )
+                if resolution is None and pre_approved:
+                    confirmation_gate = "pre_approved"
+                    approval = {"outcome": "pre_approved"}
                 if resolution is not None:
                     if resolution.refuse is not None:
                         return _refusal(
@@ -573,9 +576,20 @@ class BaseAgent(ABC):
         )
 
     async def _resolve_ask(
-        self, spec: Any, ctx: AgentContext, args: dict[str, Any], hooks: list
+        self,
+        spec: Any,
+        ctx: AgentContext,
+        args: dict[str, Any],
+        hooks: list,
+        *,
+        veto_only: bool = False,
     ) -> _AskResolution | None:
-        """Steps 4-6 of the resolution order: None means the call may run."""
+        """Resolution steps 3-6: None means the call may run.
+
+        The constraint veto (3) runs for every call, pre-approved ones included: a
+        pre-approval never overrides a reviewed constraint (FR-020). `veto_only`
+        stops after it.
+        """
         if spec.access.value != "write":
             return None
         if spec.constraint_gate:
@@ -590,6 +604,8 @@ class BaseAgent(ABC):
                     )
                 if decision.kind == "ask":
                     return _AskResolution(text=decision.reason, reason="constraint")
+        if veto_only:
+            return None
         if spec.ask_check is not None:
             decision = spec.ask_check(args, ctx)
             if inspect.isawaitable(decision):

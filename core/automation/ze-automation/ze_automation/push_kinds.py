@@ -22,3 +22,6 @@ STUCK_GOAL = PushKind("stuck_goal", "discretionary", "normal", "goals")
 GOAL_SUGGESTION = PushKind("goal_suggestion", "discretionary", "normal", "goals")
 GOAL_OVERLAP = PushKind("goal_overlap", "discretionary", "normal", "goals")
 GOAL_REUSE = PushKind("goal_reuse", "discretionary", "low", "goals")
+WRITE_APPROVAL_HELD = PushKind(
+    "write_approval_held", "requested", "normal", "automation"
+)

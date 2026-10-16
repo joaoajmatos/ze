@@ -60,6 +60,10 @@ class WorkflowStore(Protocol):
 
     async def record_step(self, execution_id: UUID, result: StepResult) -> None: ...
 
+    async def set_execution_status(
+        self, execution_id: UUID, status: str, *, expected: str | None = None
+    ) -> bool: ...
+
     async def finish_execution(
         self,
         execution_id: UUID,

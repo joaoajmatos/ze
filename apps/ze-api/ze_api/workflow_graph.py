@@ -7,7 +7,11 @@ from __future__ import annotations
 from typing import Any
 
 
-def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
+def build_workflow_graph(
+    checkpointer: Any,
+    plugins: list | None = None,
+    node_overrides: dict[str, Any] | None = None,
+) -> Any:
     """Build and compile the workflow execution graph."""
     from langgraph.constants import END
 
@@ -30,7 +34,7 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
     )
 
     state_type = build_state_type(plugins or [])
-    builder = graph_builder(state_type=state_type)
+    builder = graph_builder(state_type=state_type, node_overrides=node_overrides)
 
     builder.add_node("load_workflow_step", load_workflow_step)
     builder.add_node("verify_step", verify_step)
@@ -50,7 +54,6 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
         {"decompose": "decompose", "fetch_context": "fetch_context"},
     )
     builder.add_edge("decompose", "fetch_context")
-    builder.add_edge("fetch_context", "preflight")
     builder.add_conditional_edges(
         "preflight",
         after_preflight_workflow,

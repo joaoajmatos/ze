@@ -103,6 +103,7 @@ async def load_workflow_step(state: dict[str, Any], config: RunnableConfig) -> d
         "step_attempt": step_attempt,
         "from_retry": False,
         "prompt": step.task,
+        "pre_approved_writes": list(step.approved_writes),
         "envelope": None,
         "memory_context": None,
         "agent_context": None,
@@ -136,7 +137,8 @@ async def verify_step(state: dict[str, Any], config: RunnableConfig) -> dict:
         failed = [
             tc
             for tc in tool_calls
-            if not tc.success and getattr(tc, "gate", "none") != "parked"
+            if not tc.success
+            and getattr(tc, "gate", "none") not in ("parked", "denied")
         ]
         if failed:
             return await _fail_step(

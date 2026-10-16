@@ -251,6 +251,14 @@ class WorkflowScheduler:
                 )
             return
 
+        if execution is not None and execution.status == "held":
+            log.info(
+                "workflow_execution_held",
+                workflow=workflow.name,
+                execution_id=str(execution_id),
+            )
+            return
+
         if execution is not None and execution.status == "cancelled":
             log.info(
                 "workflow_execution_cancelled",

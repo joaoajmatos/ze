@@ -179,3 +179,62 @@ async def test_asks_first_outside_loop_is_a_config_error() -> None:
     with pytest.raises(AgentConfigError, match="outside the agent loop"):
         await _Agent().call_tool("delete_event", _ctx(loop_active=False), event_id="e1")
     assert calls == []
+
+
+class _VetoHook:
+    def __init__(self, decision: AskDecision) -> None:
+        self._decision = decision
+
+    async def check_call(self, event) -> AskDecision:
+        return self._decision
+
+    async def on_tool_start(self, event):
+        return None
+
+    async def on_tool_end(self, event):
+        return None
+
+
+@pytest.fixture
+def veto(monkeypatch):
+    import ze_agents.hooks as hooks_mod
+
+    def _install(decision: AskDecision) -> None:
+        monkeypatch.setattr(hooks_mod, "_hooks", [_VetoHook(decision)])
+
+    return _install
+
+
+async def _pre_approved_call(name: str):
+    return await _Agent().call_tool(
+        name,
+        _ctx(pre_approved_writes=frozenset({name})),
+        _lm_args={"event_id": "e1"},
+        _call_id="c1",
+        event_id="e1",
+    )
+
+
+async def test_pre_approval_does_not_skip_a_hard_veto(veto) -> None:
+    _irreversible("send_it", constraint_gate=True)
+    veto(AskDecision.refuse("Blocked by your rule: no email to X."))
+    tc = await _pre_approved_call("send_it")
+    assert calls == []
+    assert tc.success is False and tc.gate != "pre_approved"
+
+
+async def test_pre_approval_does_not_skip_a_constraint_that_wants_an_ok(veto) -> None:
+    _irreversible("send_it", constraint_gate=True)
+    veto(AskDecision.ask("You said never email X"))
+    tc = await _pre_approved_call("send_it")
+    assert calls == []
+    assert tc.gate == "parked"
+    assert tc.parked is not None and tc.parked.conflict == "You said never email X"
+
+
+async def test_pre_approval_runs_when_the_constraint_allows(veto) -> None:
+    _irreversible("send_it", constraint_gate=True)
+    veto(AskDecision.run())
+    tc = await _pre_approved_call("send_it")
+    assert calls == [("send_it", {"event_id": "e1", "body": ""})]
+    assert tc.gate == "pre_approved"

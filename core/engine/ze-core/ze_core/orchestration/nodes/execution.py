@@ -232,9 +232,12 @@ def _park_updates(state: dict, new_parked: list[ParkedSubtask]) -> dict:
     return updates
 
 
-def _pre_approved(base_ctx: AgentContext, config: RunnableConfig) -> frozenset[str]:
+def _pre_approved(
+    base_ctx: AgentContext, config: RunnableConfig, state: dict
+) -> frozenset[str]:
     extra = config["configurable"].get("pre_approved_writes") or ()
-    return frozenset(base_ctx.pre_approved_writes) | frozenset(extra)
+    step = state.get("pre_approved_writes") or ()
+    return frozenset(base_ctx.pre_approved_writes) | frozenset(extra) | frozenset(step)
 
 
 def _resume_kwargs(state: dict, index: int) -> dict[str, Any]:
@@ -365,7 +368,7 @@ async def _execute_single(
         token_sink=token_sink,
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
-        pre_approved_writes=_pre_approved(base_ctx, config),
+        pre_approved_writes=_pre_approved(base_ctx, config, state),
         **_resume_kwargs(state, 0),
         **_procedure_kwargs(base_ctx),
         **_conductor_kwargs(base_ctx),
@@ -466,7 +469,7 @@ async def _execute_compound(
             embed_fn=embed_fn,
             active_skills=base_ctx.active_skills,
             skill_tool_names=base_ctx.skill_tool_names,
-            pre_approved_writes=_pre_approved(base_ctx, config),
+            pre_approved_writes=_pre_approved(base_ctx, config, state),
             **_resume_kwargs(state, index),
             **_procedure_kwargs(base_ctx),
             **_conductor_kwargs(base_ctx),

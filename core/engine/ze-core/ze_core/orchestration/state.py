@@ -45,6 +45,9 @@ class AgentState(TypedDict):
     write_decisions: list  # list[WriteDecision]; answers to the open one
     write_rounds: int  # confirmations answered this turn
     write_outcomes: list  # list[dict]; per item, every round; copied to the trace
+    pre_approved_writes: (
+        list  # list[str]; tools a workflow step or milestone may run unasked
+    )
 
     # ── Conversation history ───────────────────────────────────────────────
     messages: list[dict]
