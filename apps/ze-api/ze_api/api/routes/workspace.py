@@ -131,6 +131,17 @@ async def upload_workspace_file(
     operation_id="getWorkspaceFile",
     summary="Download a workspace file",
     description="Return file bytes as an attachment. Directories and escapes are 400.",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "File bytes",
+            "content": {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            },
+        }
+    },
 )
 async def get_workspace_file(
     file_path: str,
@@ -207,6 +218,17 @@ async def list_workspace_runs(
         "Does not replace follow-through — the follow-up turn still fires "
         "exactly once when the run becomes terminal (FR-011)."
     ),
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Newline-delimited JSON events",
+            "content": {
+                "application/x-ndjson": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            },
+        }
+    },
 )
 async def watch_workspace_run_events(
     run_id: UUID,
