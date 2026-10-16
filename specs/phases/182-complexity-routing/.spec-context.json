@@ -3,7 +3,7 @@
   "specName": "Complexity Routing",
   "branch": "182-complexity-routing",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -321,9 +321,40 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-16T19:33:14.312Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T19:39:39.802Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T19:39:40.309Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T19:39:53.086Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T19:39:54.626Z"
     }
   ],
-  "currentTask": "T025",
+  "currentTask": "T040",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -434,6 +465,15 @@
       "status": "DONE"
     },
     "T039": {
+      "status": "DONE"
+    },
+    "T038": {
+      "status": "DONE"
+    },
+    "T040": {
+      "status": "DONE"
+    },
+    "T025": {
       "status": "DONE"
     }
   }
