@@ -82,7 +82,6 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   const deliveryFailed = failedThread === threadId;
 
   const { pendingConfirm, respond: respondToConfirm, clear: clearConfirm } = useConfirmation(
-    active,
     ephemeral,
     threadId,
   );
