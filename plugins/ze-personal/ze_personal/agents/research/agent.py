@@ -37,7 +37,6 @@ class ResearchAgent(BaseAgent):
     """
     model = "anthropic/claude-sonnet-4-5"
     model_simple = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 90
     tools = ["openrouter:web_search"]
 
