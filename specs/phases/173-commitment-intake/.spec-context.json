@@ -273,9 +273,17 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T16:51:02.887Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T16:51:27.558Z"
     }
   ],
-  "currentTask": "T060",
+  "currentTask": "T056",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -389,6 +397,10 @@
     "T060": {
       "status": "DONE",
       "did": "waiting_on-writes verdict clause + tests (c4ef634f)"
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "Wording f35350de (waiting_on never resolves, fact+question, keep-an-eye); 12 new tuned rows (c9e592d4), examples decoupled from tuned/held-out texts"
     }
   }
 }
