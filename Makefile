@@ -7,6 +7,9 @@ ZE_CORE := core/engine/ze-core
 ZE_WEB  := apps/ze-web
 
 LOG_FILE     ?= $(ZE)/logs/ze.log
+# Config overlay config/profiles/$(ZE_PROFILE).yaml for the dev targets: no unattended LLM jobs.
+# `make dev ZE_PROFILE=` runs the shipped config as is.
+ZE_PROFILE   ?= quiet
 # A DATABASE_URL_SYNC in the environment (a floor's throwaway DB) wins over the shared dev DB.
 DB_SYNC_URL  ?= $(or $(DATABASE_URL_SYNC),postgresql+psycopg2://ze:ze@localhost:5432/ze)
 DB_NAME      := $(firstword $(subst ?, ,$(lastword $(subst /, ,$(DB_SYNC_URL)))))
@@ -41,6 +44,7 @@ help:
 	@echo ""
 	@echo "  Development"
 	@echo "    dev              Start backend (uvicorn --reload on :8000); also brings up the workspace sidecar"
+	@echo "                     dev targets use ZE_PROFILE=$(ZE_PROFILE) (quiet: no unattended LLM jobs); ZE_PROFILE= for the full config"
 	@echo "    seed             Apply dev narrative fixtures to the database"
 	@echo "    db-reset-seed    Reset DB, migrate, and apply dev fixtures"
 	@echo "    web              Start React web app (bun dev on :5173)"
@@ -203,7 +207,7 @@ migrate-stamp:
 
 dev: workspace-up
 	uv sync -q --package ze-api
-	AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
+	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
 
 web:
 	cd $(ZE_WEB) && bun run dev
@@ -213,7 +217,7 @@ web:
 dev-full: workspace-up
 	@trap 'kill %1 2>/dev/null; exit 0' INT TERM; \
 	uv sync -q --package ze-api; \
-	AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000 & \
+	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000 & \
 	until nc -z localhost 8000 2>/dev/null; do sleep 1; done; \
 	echo "Backend ready — starting React web app..."; \
 	cd $(ZE_WEB) && bun run dev; \
@@ -221,7 +225,7 @@ dev-full: workspace-up
 
 dev-eval:
 	uv sync -q --package ze-api
-	AUTO_MIGRATE=true EVAL_MODE=true PUBLIC_URL= LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
+	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true EVAL_MODE=true PUBLIC_URL= LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
 
 logs:
 	tail -f $(LOG_FILE)

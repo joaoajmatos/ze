@@ -401,6 +401,11 @@ LOG_LEVEL=INFO
 CONFIRM_TIMEOUT_SECONDS=900
 ```
 
+### `apps/ze-api/config/profiles/<name>.yaml`
+Optional overlay deep-merged over `config.yaml` when `ZE_PROFILE=<name>` is set. `make dev`,
+`dev-full` and `dev-eval` set `quiet` (no unattended LLM jobs, no boot-time catch-up); production
+never sets it. Every key in an overlay must exist in `config.yaml` (a test pins this).
+
 ### `apps/ze-api/config/config.yaml`
 Structural config: model assignments, contacts consolidation settings, proactive
 schedules. Agent config (description, model) lives on

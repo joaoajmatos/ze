@@ -148,6 +148,18 @@ skills:
     cron: "0 6 * * *"    # daily source-content recheck (US4)
 
 proactive:
+  catch_up: true                   # false: a restart fires no missed job (the quiet dev profile sets it)
+  catch_up_max_age_hours:          # per job: skip a catch-up whose missed fire is older than this
+    news_fetch: 1                  # these run every few minutes or hours, so the next tick is soon enough
+    session_summary: 1
+    goal_advance_sweep: 1
+    inbound_poll: 1
+    quiet_hours_release: 1
+    correlation_scan: 4
+    attention_arbitration: 4
+  goal_advance_sweep:
+    enabled: true
+    cron: "*/15 * * * *"           # advances every active goal; no model call when nothing is runnable
   briefing:
     enabled: true
     cron: "0 8 * * *"
