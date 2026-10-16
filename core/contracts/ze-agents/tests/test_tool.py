@@ -1,3 +1,10 @@
+from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Set as AbstractSet
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
+from pathlib import Path
+from uuid import UUID
+
 import pytest
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
@@ -243,7 +250,26 @@ class TestToolSpecLlmSchema:
 
     @pytest.mark.parametrize(
         "annotation",
-        [set[str], tuple[str, str], str | int, list[ToolSpec], dict[int, str]],
+        [
+            set[str],
+            tuple[str, str],
+            str | int,
+            list[ToolSpec],
+            dict[int, str],
+            datetime | None,
+            date,
+            time,
+            timedelta,
+            UUID | None,
+            Decimal,
+            Path,
+            bytes,
+            Sequence[str] | None,
+            Mapping[str, str],
+            Iterable[str],
+            AbstractSet[str],
+            Sequence,
+        ],
     )
     def test_visible_param_without_json_shape_fails_registration(self, annotation):
         async def bad(x): ...
@@ -252,6 +278,13 @@ class TestToolSpecLlmSchema:
         with pytest.raises(AgentConfigError, match="x"):
             tool(access=ToolAccess.READ, description="t")(bad)
         assert "bad" not in registered_tools()
+
+    def test_union_of_injected_and_json_type_names_the_cause(self):
+        async def mixed_union(x): ...
+
+        mixed_union.__annotations__ = {"x": Injected[str] | int}
+        with pytest.raises(AgentConfigError, match="mark the whole parameter"):
+            tool(access=ToolAccess.READ, description="t")(mixed_union)
 
     def test_constraint_gate_defaults_false(self):
         @tool(

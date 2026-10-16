@@ -35,13 +35,21 @@ Runtime dump of every registered tool on `0f7f0432`:
    are all dependencies is a dependency. A parameter is required when it has no
    default.
 4. **Registration fails** (`AgentConfigError`) for a visible parameter whose type
-   is data-shaped but has no JSON form: `set`, `frozenset`, `tuple`, `Literal`,
-   `Enum`, a union of several JSON types, `list` of a dependency, `dict` with
-   non-`str` keys. The message says to change the type or mark it `Injected`.
-   The bug class cannot come back silently.
+   is data-shaped but has no JSON form: `set`, `frozenset`, `tuple`, `bytes`,
+   `Literal`, `Enum`, `date` / `datetime` / `time` / `timedelta`, `UUID`,
+   `Decimal`, `Path`, any `collections.abc` iterable (`Sequence`, `Mapping`,
+   `Set`, `Iterable`, bare or parametrized), a union of several JSON types, a
+   union of a dependency (or `Injected`) type with a JSON type, `list` of a
+   dependency, `dict` with non-`str` keys. The message says to use `str` or mark
+   the parameter `Injected`.
+   Known limit: an annotation that does not resolve at runtime (a
+   `TYPE_CHECKING`-only import) is treated as a dependency and hidden, because
+   its type cannot be inspected. Data types such as `datetime` are always
+   importable, so the list above still catches them.
 5. **Model values for hidden parameters are dropped** in the agentic loop before
    deps merge (`_model_args`). The stored `ToolCall.args` is the filtered dict.
-   `ToolSpec.hidden_params()` names the hidden set.
+   `ToolSpec.hidden_params()` names the hidden set. The schema and hidden set
+   are computed once at registration and cached on the `ToolSpec`.
 6. **Undo path unchanged.** `BaseAgent.run_undo` still passes undo-payload args
    (`restore_*`) through to `Injected` parameters.
 7. `_schema_override` (render tools) is unchanged and filters nothing.

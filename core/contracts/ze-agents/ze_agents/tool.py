@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import inspect
 import types
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date, time, timedelta
+from decimal import Decimal
 from enum import Enum
+from pathlib import PurePath
+from uuid import UUID
 from typing import (
     Annotated,
     Any,
@@ -49,6 +54,23 @@ tool's schema, and a value the model sends for it is dropped before the call.
 
 _HIDDEN = object()
 
+# Data-shaped types with no JSON schema form here: a visible param of one of
+# these fails registration instead of silently disappearing from the schema.
+_NO_JSON_FORM: tuple[type, ...] = (
+    set,
+    frozenset,
+    tuple,
+    bytes,
+    date,  # datetime is a date subclass
+    time,
+    timedelta,
+    Decimal,
+    UUID,
+    PurePath,
+    Enum,
+    collections.abc.Iterable,  # Sequence, Mapping, Set, ... (list/dict handled above)
+)
+
 
 class _UnsupportedParam(Exception):
     pass
@@ -74,6 +96,11 @@ def _param_schema(annotation: Any) -> dict | object:
             return _HIDDEN
         if len(schemas) == 1:
             return schemas[0]
+        if any(schema is _HIDDEN for schema in schemas):
+            raise _UnsupportedParam(
+                f"a union of a dependency or Injected type with a JSON type "
+                f"({annotation}); mark the whole parameter Injected[...]"
+            )
         raise _UnsupportedParam(f"a union of several types ({annotation})")
     if origin is list:
         if not get_args(annotation):
@@ -90,12 +117,11 @@ def _param_schema(annotation: Any) -> dict | object:
         return {"type": "object"}
     if annotation in _PY_TO_JSON:
         return {"type": _PY_TO_JSON[annotation]}
-    if (
-        origin in (set, frozenset, tuple, Literal)
-        or annotation in (set, frozenset, tuple, type(None))
-        or (inspect.isclass(annotation) and issubclass(annotation, Enum))
-    ):
+    if annotation is type(None) or origin is Literal:
         raise _UnsupportedParam(f"type {annotation!r}")
+    base = origin if inspect.isclass(origin) else annotation
+    if inspect.isclass(base) and issubclass(base, _NO_JSON_FORM):
+        raise _UnsupportedParam(f"type {annotation!r}; use str")
     return _HIDDEN
 
 
@@ -160,12 +186,20 @@ class ToolSpec:
     undo_tool: str | None = None
     undo_note: str | None = None
     effect_phrase: str | None = None
+    _parameters: tuple[dict, frozenset[str]] | None = field(
+        default=None, repr=False, compare=False
+    )
+
+    def _built(self) -> tuple[dict, frozenset[str]]:
+        if self._parameters is None:
+            self._parameters = _build_parameters(self.name, self.func)
+        return self._parameters
 
     def llm_schema(self) -> dict:
         if self._schema_override is not None:
             params = self._schema_override
         else:
-            params, _ = _build_parameters(self.name, self.func)
+            params, _ = self._built()
         return {
             "type": "function",
             "function": {
@@ -179,8 +213,7 @@ class ToolSpec:
         """Parameters the model cannot set: `Injected[...]` ones and dependencies."""
         if self._schema_override is not None:
             return frozenset()
-        _, hidden = _build_parameters(self.name, self.func)
-        return hidden
+        return self._built()[1]
 
 
 def _check_declaration(
@@ -289,7 +322,7 @@ def tool(
         _check_declaration(
             name, access_val, reversibility_val, undo_tool, undo_note, effect_phrase
         )
-        _build_parameters(name, func)
+        parameters = _build_parameters(name, func)
         _tools[name] = ToolSpec(
             name=name,
             access=access_val,
@@ -301,6 +334,7 @@ def tool(
             undo_tool=undo_tool,
             undo_note=undo_note,
             effect_phrase=effect_phrase,
+            _parameters=parameters,
         )
         return func
 
