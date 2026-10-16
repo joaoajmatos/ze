@@ -9,3 +9,7 @@ class ProfileConfigError(ZeError):
 
 class MigrationReadinessError(ZeError):
     """Database migrations are not at the expected Alembic heads."""
+
+
+class PluginRouteDriftError(ZeError):
+    """A plugin mounts a router that the OpenAPI export does not know about."""

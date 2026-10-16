@@ -1,11 +1,8 @@
 """Tests for OpenAPI export including plugin routes."""
 
 from ze_api.api.eval.schemas import EvalChatResponse
-from ze_api.cli.openapi_export import (
-    collect_openapi_operation_ids,
-    collect_static_plugin_routers,
-    export_openapi,
-)
+from ze_api.cli.openapi_export import collect_openapi_operation_ids, export_openapi
+from ze_api.wiring.plugin_routes import collect_static_plugin_routers
 
 
 def test_collect_static_plugin_routers_includes_news():
