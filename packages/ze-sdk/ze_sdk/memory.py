@@ -6,9 +6,9 @@ from ze_memory.types import (
     Entity,
     EntityRef,
     TaskState,
-    RetrievalRequest,
     Signal,
 )
+from ze_agents.types import RetrievalRequest
 from ze_memory.errors import FactRestoreConflictError
 from ze_memory.store import MemoryStore
 from ze_memory.retriever import PostgresMemoryStore

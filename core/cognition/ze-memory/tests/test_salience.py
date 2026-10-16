@@ -187,14 +187,6 @@ async def test_relevance_set_caches_within_ttl():
     model._memory_store.get_profile.assert_awaited_once()
 
 
-async def test_relevance_set_invalidate_clears_cache():
-    model = _make_relevance_model(profile=[_make_facet("topics", "AI")])
-    await model.build()
-    model.invalidate_cache()
-    await model.build()
-    assert model._memory_store.get_profile.await_count == 2
-
-
 async def test_relevance_set_skips_goals_when_no_provider():
     store = _make_memory_store()
     model = RelevanceModel(memory_store=store, goal_provider=None)

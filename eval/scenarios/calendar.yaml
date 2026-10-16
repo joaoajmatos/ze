@@ -130,3 +130,25 @@
     - Turn 1 should ask for a time since none was given
     - Turn 2 should use the provided time and confirm the event
     - Ze should not forget the "design team" label from turn 1
+
+- id: calendar_update_event_time
+  prompt: "Move my dentist appointment on Thursday to 4pm."
+  description: Reschedule an event — update_event must receive the new start/end
+  expected_agent: calendar
+  expected_tools: [list_events, update_event]
+  tags: [routing, calendar, tool_schema]
+  criteria:
+    - Should find the dentist event on Thursday before changing it
+    - Should call update_event with new start and end times, keeping the original duration
+    - Should not delete and recreate the event
+    - If no matching event exists, should say so rather than claiming success
+
+- id: calendar_world_time_locations
+  prompt: "What time is it right now in Tokyo and in Lisbon?"
+  description: world_time takes a list of locations
+  expected_agent: calendar
+  expected_tools: [world_time]
+  tags: [routing, calendar, tool_schema]
+  criteria:
+    - Should call world_time once with both Tokyo and Lisbon in locations
+    - Should report the current local time for each city

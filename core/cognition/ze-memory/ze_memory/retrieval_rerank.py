@@ -14,6 +14,7 @@ from ze_memory.retrieval_cache import (
     is_rerank_module,
     query_hash,
 )
+from ze_memory.vectors import to_vector_literal
 
 log = get_logger(__name__)
 
@@ -43,11 +44,6 @@ _SUMMARY_SELECT = """
     FROM memory_session_summaries
     WHERE embedding IS NOT NULL
 """
-
-
-def _to_list(embedding: Any) -> str:
-    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
-    return "[" + ",".join(str(v) for v in vals) + "]"
 
 
 def nli_rank_score(score: dict[str, float] | None) -> float:
@@ -241,7 +237,7 @@ async def build_retrieval_cache(
     limits = MODULE_RERANK_LIMITS[request.module]
     multiplier = int(cfg.get("nli_rerank_candidate_multiplier", 2))
     min_candidates = int(cfg.get("nli_rerank_min_candidates", 5))
-    emb = _to_list(request.query_embedding)
+    emb = to_vector_literal(request.query_embedding)
 
     fact_limit = limits["facts"] * multiplier
     if request.module == "companion":

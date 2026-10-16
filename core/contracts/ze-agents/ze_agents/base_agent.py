@@ -1067,11 +1067,26 @@ def _hide_deps(schema: dict, deps: dict[str, Any]) -> dict:
 
 
 def _model_args(tool_name: str, llm_args: dict) -> dict:
-    """The model's arguments without `_`-prefixed keys, which only Ze code may pass."""
-    reserved = [key for key in llm_args if key.startswith("_")]
+    """Drop values the model sent for parameters it cannot set.
+
+    `_`-prefixed keys are reserved for Ze code (an approval can never come from
+    the model), and a tool's hidden parameters (`Injected`) are not the model's.
+    """
+    from ze_agents.tool import get_tool
+
+    args = _without_reserved(tool_name, llm_args)
+    if _is_openrouter_server_tool(tool_name):
+        return args
+    hidden = get_tool(tool_name).hidden_params()
+    return {k: v for k, v in args.items() if k not in hidden}
+
+
+def _without_reserved(tool_name: str, args: dict) -> dict:
+    """`args` without `_`-prefixed keys: only Ze code passes those to `call_tool`."""
+    reserved = [key for key in args if key.startswith("_")]
     if reserved:
         log.warning("tool_reserved_args_dropped", tool=tool_name, keys=reserved)
-    return {k: v for k, v in llm_args.items() if not k.startswith("_")}
+    return {k: v for k, v in args.items() if not k.startswith("_")}
 
 
 def _split_undo(spec: Any, result: Any) -> tuple[Any, dict[str, Any] | None]:
@@ -1105,7 +1120,7 @@ def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
         return dict(llm_args)
 
     spec = get_tool(tool_name)
-    merged = _model_args(tool_name, llm_args)
+    merged = _without_reserved(tool_name, llm_args)
     for param_name in inspect.signature(spec.func).parameters:
         if param_name in deps:
             merged[param_name] = deps[param_name]

@@ -9,8 +9,6 @@ from ze_plugin.contribution import EvidenceRef
 
 from ze_memory.procedures.errors import (
     InvalidProcedureTransitionError,
-    MissingActionRecordError,
-    UnavailableRollbackTargetError,
 )
 from ze_memory.procedures.store import ProcedureStore
 from ze_memory.procedures.types import (
@@ -22,12 +20,10 @@ from ze_memory.procedures.types import (
     ProcedureAdmissionDecision,
     ProcedureAdmissionResult,
     ProcedureCandidate,
-    ProcedureFeedback,
     ProcedureIdentity,
     ProcedureLifecycleEvent,
     ProcedureOutcome,
     ProcedureOutcomeFeedback,
-    ProcedureRollbackResult,
     ProcedureSourceKind,
     ProcedureVersion,
     ProvisionalProcedure,
@@ -35,7 +31,6 @@ from ze_memory.procedures.types import (
     VersionStatus,
 )
 from ze_memory.procedures.validate import validate_candidate
-from ze_memory.types import Procedure
 
 UTC = timezone.utc
 
@@ -113,135 +108,6 @@ class ProcedureAdmissionService:
             candidate.resolved_at = datetime.now(UTC)
         await self._store.save_candidate(candidate)
         return ProcedureAdmissionResult(candidate=candidate, admission=admission)
-
-    async def record_procedure_feedback(
-        self,
-        procedure_version_id: UUID,
-        *,
-        action_record_id: UUID,
-        outcome: ProcedureOutcome,
-        summary: str,
-        evidence: Sequence[EvidenceRef] = (),
-        learnings: Sequence[LearningRef] = (),
-    ) -> ProcedureFeedback:
-        version = await self._store.get_version(procedure_version_id)
-        if version is None:
-            raise InvalidProcedureTransitionError("procedure version not found")
-        if not await self._store.action_record_exists(action_record_id):
-            raise MissingActionRecordError(
-                f"ActionRecord {action_record_id} does not exist"
-            )
-        feedback = await self._store.save_feedback(
-            ProcedureFeedback(
-                procedure_version_id=procedure_version_id,
-                action_record_id=action_record_id,
-                outcome=outcome,
-                summary=summary,
-                evidence_refs=list(evidence),
-                learning_refs=list(learnings),
-            )
-        )
-        await self._store.save_event(
-            ProcedureLifecycleEvent(
-                kind=LifecycleEventKind.FEEDBACK_RECORDED,
-                reason=summary,
-                version_id=procedure_version_id,
-                identity_id=version.procedure_id,
-                evidence_refs=list(evidence),
-                learning_refs=list(learnings),
-            )
-        )
-        if outcome is ProcedureOutcome.FAILED:
-            identity = await self._store.get_identity(version.procedure_id)
-            if identity is not None:
-                await self._store.save_event(
-                    ProcedureLifecycleEvent(
-                        kind=LifecycleEventKind.REVIEWED,
-                        reason="failure feedback requires review",
-                        identity_id=identity.id,
-                        version_id=procedure_version_id,
-                    )
-                )
-        return feedback
-
-    async def rollback_procedure(
-        self,
-        procedure_id: UUID,
-        *,
-        target_version_id: UUID | None,
-        reason: str,
-        evidence: Sequence[EvidenceRef] = (),
-        learnings: Sequence[LearningRef] = (),
-    ) -> ProcedureRollbackResult:
-        identity = await self._store.get_identity(procedure_id)
-        if identity is None:
-            raise InvalidProcedureTransitionError("procedure identity not found")
-        current = (
-            await self._store.get_version(identity.active_version_id)
-            if identity.active_version_id
-            else None
-        )
-        versions = await self._store.list_versions(procedure_id)
-        target = None
-        if target_version_id is not None:
-            target = await self._store.get_version(target_version_id)
-            if target is None or target.procedure_id != procedure_id:
-                raise UnavailableRollbackTargetError("rollback target not found")
-        else:
-            eligible = [
-                v
-                for v in reversed(versions)
-                if v.status is not VersionStatus.RETIRED
-                and (current is None or v.id != current.id)
-            ]
-            target = eligible[0] if eligible else None
-        if current is not None:
-            current.status = VersionStatus.ROLLED_BACK
-            current.ended_at = datetime.now(UTC)
-            await self._store.save_version(current)
-        if target is None:
-            identity.status = IdentityStatus.RETIRED
-            identity.active_version_id = None
-            await self._store.save_identity(identity)
-            await self._store.save_event(
-                ProcedureLifecycleEvent(
-                    kind=LifecycleEventKind.RETIRED,
-                    reason=reason,
-                    identity_id=identity.id,
-                    evidence_refs=list(evidence),
-                    learning_refs=list(learnings),
-                )
-            )
-            return ProcedureRollbackResult(
-                identity=identity, restored_version=None, retired=True
-            )
-        target.status = VersionStatus.ACTIVE
-        target.ended_at = None
-        await self._store.save_version(target)
-        identity.active_version_id = target.id
-        identity.status = IdentityStatus.ACTIVE
-        await self._store.save_identity(identity)
-        await self._store.save_event(
-            ProcedureLifecycleEvent(
-                kind=LifecycleEventKind.ROLLED_BACK,
-                reason=reason,
-                identity_id=identity.id,
-                version_id=target.id,
-                evidence_refs=list(evidence),
-                learning_refs=list(learnings),
-            )
-        )
-        await self._store.save_event(
-            ProcedureLifecycleEvent(
-                kind=LifecycleEventKind.RESTORED,
-                reason=reason,
-                identity_id=identity.id,
-                version_id=target.id,
-            )
-        )
-        return ProcedureRollbackResult(
-            identity=identity, restored_version=target, retired=False
-        )
 
     async def retrieve_procedures(
         self, *, include_history: bool = False
@@ -470,16 +336,3 @@ class ProcedureAdmissionService:
                     version_id=feedback.version_id,
                 )
             )
-
-
-def version_to_procedure(version: ProcedureVersion) -> Procedure:
-    return Procedure(
-        id=version.id,
-        name=version.name,
-        trigger=version.trigger,
-        preconditions=list(version.preconditions),
-        steps=list(version.steps),
-        success_criteria=list(version.success_criteria),
-        version=version.version_number,
-        source_refs=[ref.learning_id for ref in version.learning_refs],
-    )

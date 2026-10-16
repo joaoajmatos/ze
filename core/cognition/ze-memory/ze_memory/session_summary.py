@@ -11,6 +11,7 @@ from ze_memory.defaults import (
     SESSION_SUMMARY_MAX_TRANSCRIPT_TOKENS,
     SESSION_SUMMARY_MIN_EPISODES,
 )
+from ze_memory.vectors import to_vector_literal
 
 log = get_logger(__name__)
 
@@ -26,11 +27,6 @@ _SUMMARY_SYSTEM = (
 
 _EXCLUDED_SESSION_IDS = ("", "app-main", "consolidator", "migrated")
 _EXCLUDED_PREFIXES = ("workflow:", "onboarding:", "eval-")
-
-
-def _to_list(embedding: Any) -> str:
-    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
-    return "[" + ",".join(str(v) for v in vals) + "]"
 
 
 def _is_excluded_session(session_id: str) -> bool:
@@ -205,7 +201,7 @@ class SessionSummariser:
         last_turn_at: Any,
         embedding: Any,
     ) -> None:
-        emb_list = _to_list(embedding)
+        emb_list = to_vector_literal(embedding)
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """

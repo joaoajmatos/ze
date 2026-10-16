@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from ze_memory.consolidation_store import PostgresConsolidationStore
 from ze_memory.consolidator import MemoryConsolidator
+from ze_memory.defaults import EPISODE_ARCHIVE_DAYS
 from ze_memory.types import ConsolidationReport
 
 
@@ -217,7 +218,6 @@ class TestArchiveEpisodes:
         client = _client(response="archive summary")
         settings = {
             "memory": {
-                "episode_recency_days": 14,
                 "episode_min_archive_batch": 10,
                 "episode_archive_batch": 20,
             }
@@ -230,6 +230,18 @@ class TestArchiveEpisodes:
         store.insert_archive_episode.assert_awaited_once_with("archive summary")
         store.delete_episodes_by_ids.assert_awaited_once()
 
+    async def test_archive_window_uses_episode_archive_days(self):
+        store = _store()
+        settings = {"memory": {"consolidation": {"episode_archive_days": 3}}}
+        await _consolidator(store=store, settings=settings).archive_episodes()
+        assert store.fetch_episode_candidates.await_args.args[0] == 3
+
+    async def test_episode_recency_days_is_not_an_archive_window(self):
+        store = _store()
+        settings = {"memory": {"consolidation": {"episode_recency_days": 3}}}
+        await _consolidator(store=store, settings=settings).archive_episodes()
+        assert store.fetch_episode_candidates.await_args.args[0] == EPISODE_ARCHIVE_DAYS
+
     async def test_llm_failure_returns_zero(self):
         candidates = [
             {"id": uuid4(), "prompt": "p", "response": "r", "summary": None}
@@ -240,7 +252,6 @@ class TestArchiveEpisodes:
         client.complete = AsyncMock(side_effect=Exception("llm down"))
         settings = {
             "memory": {
-                "episode_recency_days": 14,
                 "episode_min_archive_batch": 10,
                 "episode_archive_batch": 20,
             }

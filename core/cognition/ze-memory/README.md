@@ -25,8 +25,8 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 
 | Module | What it provides |
 |---|---|
-| `store.py` | `PostgresMemoryStore` — fact and episode CRUD |
-| `retriever.py` | Semantic retrieval with embedding similarity; signal ingest and pinning; `retract_fact_and_restore` retracts a fact and restores the facts it displaced, and raises `FactRestoreConflictError` when a restore is not safe |
+| `store.py` | `MemoryStore` and retrieval-policy protocols |
+| `retriever.py` | `PostgresMemoryStore` — fact and episode CRUD; semantic retrieval with embedding similarity; signal ingest and pinning; `retract_fact_and_restore` retracts a fact and restores the facts it displaced, and raises `FactRestoreConflictError` when a restore is not safe |
 | `extractor.py` | LLM-driven fact extraction from conversations |
 | `consolidator.py` | Dedup, expiry, and episode summarisation |
 | `consolidation_store.py` | Consolidation run persistence |
@@ -36,6 +36,7 @@ Plugins emit candidate signals via `SignalSource` (defined in `ze-plugin`, type 
 | `feedback_records/` | Append-only `FeedbackRecord` evidence for thumbs and Retry requests on assistant replies, `FeedbackStore`, `submit_feedback_record`. Never read during a turn |
 | `graph/` | Memory graph store, traversal, predicates, projection |
 | `synthesizer.py` | User profile synthesis from facts and episodes |
+| `vectors.py` | `to_vector_literal` — pgvector text literal for embedding binds |
 | `types.py` | Memory domain types (`Fact`, `Episode`, `Signal`, …) |
 
 `Entity` is the aggregate root every other type ultimately links back to — facts, episodes, signals, and events all reference one or more entities:
@@ -57,7 +58,7 @@ Third-party: `asyncpg`, `numpy`.
 Wired into the orchestration graph by `ze-core` and extended by plugins via `memory_policies()`:
 
 ```python
-from ze_memory.store import PostgresMemoryStore
+from ze_memory.retriever import PostgresMemoryStore
 from ze_memory.policies import MemoryRetrievalPolicy
 ```
 

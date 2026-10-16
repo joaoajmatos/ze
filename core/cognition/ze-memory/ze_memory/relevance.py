@@ -142,10 +142,6 @@ class RelevanceModel:
 
         return RelevanceScore(value=min(1.0, total), contributions=contributions)
 
-    def invalidate_cache(self) -> None:
-        self._cached = None
-        self._cache_built_at = None
-
     # ── private builders ──────────────────────────────────────────────────────
 
     async def _add_profile_entries(

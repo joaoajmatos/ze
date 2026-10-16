@@ -437,3 +437,15 @@ def test_openrouter_client_signature_matches_llm_client_protocol(method):
     for name, param in proto.items():
         assert impl[name].kind == param.kind
         assert impl[name].default == param.default
+
+
+async def test_stream_complete_with_tools_sends_temperature(client, mock_sdk):
+    mock_sdk.chat.send_async.return_value = FakeEventStream([make_chunk("ok")])
+    await client.stream_complete_with_tools(
+        [{"role": "user", "content": "hi"}],
+        model="m",
+        tools=_TOOLS,
+        temperature=0.1,
+        token_sink=AsyncMock(),
+    )
+    assert mock_sdk.chat.send_async.call_args.kwargs["temperature"] == 0.1

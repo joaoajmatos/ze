@@ -16,17 +16,6 @@ from ze_memory.action_records.sanitize import (
     sanitize_summary,
 )
 
-TERMINAL_LIFECYCLES = frozenset(
-    {
-        "succeeded",
-        "failed",
-        "cancelled",
-        "partial",
-        "timed_out",
-        "unknown",
-    }
-)
-
 NON_TERMINAL_LIFECYCLES = frozenset({"started", "in_progress"})
 
 

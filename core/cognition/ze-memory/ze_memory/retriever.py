@@ -17,6 +17,7 @@ from ze_memory.defaults import (
     MODEL_SYNTHESIS,
 )
 from ze_agents.nli import NLIClient
+from ze_agents.types import RetrievalRequest
 from ze_memory.dream.scorer import refresh_episode_sensitive_flag, tag_episode_metadata
 from ze_memory.dream.sensitive import is_sensitive_entity
 from ze_memory.errors import (
@@ -34,7 +35,6 @@ from ze_memory.retrieval_rerank import (
     fetch_facts_by_ids,
     fetch_summaries_by_ids,
     live_rerank,
-    rerank_rows,
     should_build_retrieval_cache,
 )
 from ze_memory.graph.predicates import (
@@ -63,12 +63,12 @@ from ze_memory.types import (
     MemoryContext,
     ProfileFacet,
     RetrievalCacheEntry,
-    RetrievalRequest,
     SessionSummary,
     Signal,
     SignalIngestResult,
     TaskState,
 )
+from ze_memory.vectors import to_vector_literal
 
 log = get_logger(__name__)
 
@@ -108,11 +108,6 @@ _EVENT_OUTCOME_SYSTEM = (
     '"facts": [{"value": "the generalizable fact", "confidence": 0.0-1.0}]}. '
     "facts must be empty when family is drop."
 )
-
-
-def _to_list(embedding: Any) -> str:
-    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
-    return "[" + ",".join(str(v) for v in vals) + "]"
 
 
 def _normalize_forget_text(text: str) -> str:
@@ -308,7 +303,7 @@ class PostgresMemoryStore:
         embedding: Any,
     ) -> UUID | None:
         try:
-            emb_list = _to_list(embedding)
+            emb_list = to_vector_literal(embedding)
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow(
                     "INSERT INTO memory_episodes"
@@ -329,7 +324,7 @@ class PostgresMemoryStore:
             if embedding is not None:
                 fire_and_forget(
                     self._check_synthetic_corroboration(
-                        episode_id, _to_list(embedding)
+                        episode_id, to_vector_literal(embedding)
                     ),
                     label="check_synthetic_corroboration",
                 )
@@ -342,17 +337,6 @@ class PostgresMemoryStore:
         except Exception as exc:
             log.warning("memory_write_episode_failed", error=str(exc))
             return None
-
-    async def _persist_facts(self, proposals: list[Fact]) -> None:
-        for fact in proposals:
-            try:
-                await self._write_fact_with_contradiction_check(fact)
-            except Exception as exc:
-                log.warning(
-                    "memory_propose_fact_failed",
-                    predicate=fact.predicate,
-                    error=str(exc),
-                )
 
     async def _retract_facts_matching(self, query: str) -> list[UUID]:
         needle = query.strip()
@@ -462,7 +446,7 @@ class PostgresMemoryStore:
                 participants = list({*event.participants, *resolved})
 
                 emb_list = (
-                    _to_list(self._embedder.encode(event.title))
+                    to_vector_literal(self._embedder.encode(event.title))
                     if self._embedder is not None
                     else None
                 )
@@ -507,7 +491,7 @@ class PostgresMemoryStore:
             entity.attrs,
         )
         emb_list = (
-            _to_list(self._embedder.encode(entity.canonical_name))
+            to_vector_literal(self._embedder.encode(entity.canonical_name))
             if self._embedder is not None
             else None
         )
@@ -767,35 +751,6 @@ class PostgresMemoryStore:
             )
         return [row["id"] for row in rows]
 
-    async def upsert_session_summary(
-        self,
-        session_id: str,
-        summary: str,
-        episode_count: int,
-        last_turn_at: Any,
-        embedding: Any,
-    ) -> None:
-        emb_list = _to_list(embedding)
-        async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO memory_session_summaries
-                    (session_id, summary, episode_count, last_turn_at, summary_updated_at, embedding)
-                VALUES ($1, $2, $3, $4, now(), $5::vector)
-                ON CONFLICT (session_id) DO UPDATE SET
-                    summary            = EXCLUDED.summary,
-                    episode_count      = EXCLUDED.episode_count,
-                    last_turn_at       = EXCLUDED.last_turn_at,
-                    summary_updated_at = now(),
-                    embedding          = EXCLUDED.embedding
-                """,
-                session_id,
-                summary,
-                episode_count,
-                last_turn_at,
-                emb_list,
-            )
-
     async def get_session_summary(self, session_id: str) -> SessionSummary | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -810,74 +765,13 @@ class PostgresMemoryStore:
 
         return _session_summary_from_row(row)
 
-    async def search_session_summaries(
-        self,
-        embedding: Any,
-        limit: int,
-        *,
-        query_text: str | None = None,
-    ) -> list[SessionSummary]:
-        cfg = nli_config(self._settings)
-        emb_list = _to_list(embedding)
-        fetch_limit = limit
-        if query_text and cfg.get("nli_retrieval_rerank"):
-            fetch_limit = limit * int(cfg.get("nli_rerank_candidate_multiplier", 2))
-
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT id, session_id, summary, episode_count, last_turn_at,
-                       created_at, summary_updated_at
-                FROM memory_session_summaries
-                WHERE embedding IS NOT NULL
-                ORDER BY embedding <=> $1::vector
-                LIMIT $2
-                """,
-                emb_list,
-                fetch_limit,
-            )
-
-        row_list = list(rows)
-        if (
-            query_text
-            and cfg.get("nli_retrieval_rerank")
-            and len(row_list) >= int(cfg.get("nli_rerank_min_candidates", 5))
-        ):
-            row_list = await self._rerank_session_summary_rows(
-                row_list, query_text, limit
-            )
-
-        from ze_memory.projection import session_summaries_from_rows
-        from ze_memory.defaults import DEFAULT_SESSION_SUMMARY_BUDGET_TOKENS
-
-        return session_summaries_from_rows(
-            row_list, DEFAULT_SESSION_SUMMARY_BUDGET_TOKENS
-        )
-
-    async def _rerank_session_summary_rows(
-        self,
-        rows: list,
-        query_text: str,
-        limit: int,
-    ) -> list:
-        cfg = nli_config(self._settings)
-        min_candidates = int(cfg.get("nli_rerank_min_candidates", 5))
-        ranked = await rerank_rows(
-            rows,
-            "summary",
-            query_text,
-            min_candidates=min_candidates,
-            nli_client=getattr(self, "_nli", None),
-        )
-        return ranked[:limit]
-
     # ── internal ──────────────────────────────────────────────────────────────
 
     async def _write_fact_with_contradiction_check(self, fact: Fact) -> UUID | None:
         provenance = _persist_provenance(fact)
         claim_kind = _persist_claim_kind(fact, provenance)
         value_emb = self._embedder.encode(fact.value)
-        emb_list = _to_list(value_emb)
+        emb_list = to_vector_literal(value_emb)
         nli_cfg = nli_config(self._settings)
 
         async with self._pool.acquire() as conn:
@@ -1164,30 +1058,6 @@ class PostgresMemoryStore:
             log.warning(
                 "graph_link_event_participants_failed",
                 event_id=str(event_id),
-                error=str(exc),
-            )
-
-    async def _link_procedure_to_task(
-        self, procedure_id: UUID, task_id: UUID, task_type: str
-    ) -> None:
-        """Create USES_PROCEDURE edge from a stored procedure to the goal/workflow that produced it."""
-        try:
-            from ze_memory.graph.predicates import USES_PROCEDURE
-
-            await self._graph_store.upsert_relationship(
-                Relationship(
-                    source_id=procedure_id,
-                    source_type="procedure",
-                    predicate=USES_PROCEDURE,
-                    target_id=task_id,
-                    target_type=task_type,
-                    creation_method="explicit",
-                )
-            )
-        except Exception as exc:
-            log.warning(
-                "graph_link_procedure_failed",
-                procedure_id=str(procedure_id),
                 error=str(exc),
             )
 
