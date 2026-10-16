@@ -297,9 +297,17 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T19:14:37.399Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:26:52.354Z"
     }
   ],
-  "currentTask": "T059",
+  "currentTask": "T002",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -425,6 +433,10 @@
     "T059": {
       "status": "DONE",
       "did": "holdout3 verdict once: ENABLE EN and PT at frozen bars"
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "Gates green after merging main 5d13ca86: lint, test-memory/worldstate/core/test, test-py, test-pg 57, test-web 358, typecheck-web; spec status Implemented"
     }
   }
 }

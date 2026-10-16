@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-15
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Phase 173, Option 2 of `specs/arch/executive-function.md` (finding F4). The speech-act judge (163) and the loop gate (168) judge the same user message in two separate System One batches and double-book: 'remind me at 5pm to call Ana' makes a reminder and a declared loop at 0.9, and the two surfaces disagree on goal versus loop. Replace both conversation judgments with one batched request per user message whose commitment Choice covers reminder, loop, goal, waiting_on, fact and none, plus the loop-gate Nouls. Pure code merges the answers, routes, and links loop, reminder and goal rows by pointer. Calibrate on new EN and PT held-out sets under the 168 rules."
 
