@@ -1,3 +1,4 @@
+import type { LoopListItem } from "@myguyze/ze-client";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LoopReviewList } from "./LoopReviewList";
@@ -7,23 +8,30 @@ const { useLoopsQuery, useLoopTransitionMutation } = vi.hoisted(() => ({
   useLoopTransitionMutation: vi.fn(),
 }));
 
-vi.mock("@/entities/loop", () => ({
-  useLoopsQuery,
-  useLoopTransitionMutation,
-}));
+vi.mock("@/entities/loop", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/entities/loop")>();
+  return {
+    ...actual,
+    useLoopsQuery,
+    useLoopTransitionMutation,
+  };
+});
 
-const suspectedLoop = {
+const suspectedLoop: LoopListItem = {
   id: "loop-1",
   title: "Renew passport before the trip",
   state: "suspected",
   claim_kind: "suspicion",
   provenance: "conversation",
   confidence: 0.35,
+  drift_rationale: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
+  promoted: false,
+  source_inflows: [],
 };
 
-const activeLoop = {
+const activeLoop: LoopListItem = {
   ...suspectedLoop,
   id: "loop-2",
   title: "Follow up with the accountant",
@@ -32,7 +40,7 @@ const activeLoop = {
   confidence: 0.9,
 };
 
-const driftingLoop = {
+const driftingLoop: LoopListItem = {
   ...suspectedLoop,
   id: "loop-3",
   title: "Book the dentist appointment",
@@ -41,7 +49,7 @@ const driftingLoop = {
   confidence: 0.5,
 };
 
-const suspectedLoop2 = {
+const suspectedLoop2: LoopListItem = {
   ...suspectedLoop,
   id: "loop-4",
   title: "Chase the insurance refund",
@@ -49,7 +57,15 @@ const suspectedLoop2 = {
   confidence: 0.4,
 };
 
-function setup(loops: (typeof suspectedLoop)[], mutate = vi.fn()) {
+const promotedLoop: LoopListItem = {
+  ...activeLoop,
+  id: "loop-5",
+  title: "Sort out the deposit with the landlord",
+  promoted: true,
+  source_inflows: ["conversation", "email"],
+};
+
+function setup(loops: LoopListItem[], mutate = vi.fn()) {
   useLoopsQuery.mockReturnValue({
     data: loops,
     isLoading: false,
@@ -149,5 +165,19 @@ describe("LoopReviewList", () => {
     render(<LoopReviewList />);
 
     expect(screen.queryByText("Tracking")).toBeNull();
+  });
+
+  it("shows the 'Promoted · seen in' line for a promoted loop", () => {
+    setup([promotedLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.getByText("Promoted · seen in: chat, email")).toBeInTheDocument();
+  });
+
+  it("shows no promoted line for loops that were not promoted", () => {
+    setup([suspectedLoop, activeLoop, driftingLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.queryByText(/Promoted/)).toBeNull();
   });
 });

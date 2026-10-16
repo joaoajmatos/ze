@@ -15,6 +15,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 - Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` is on in the shipped config (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8), after an `ENABLE` verdict on the held-out set for English and Portuguese
 - Track tool (`tracking.py`, `agents/tools.py`) — phase 169. The `track_loop` tool, on the `loops` agent, starts tracking a concern the user asked Ze to keep in mind. `LoopTracker` matches existing loops and returns one outcome: `created`, `confirmed`, `reinforced`, or `revived`. The reply may claim tracking only after a successful call
 - Confirm — phase 171. A confirm, from the Open loops page or the `confirm_loop` tool on the `loops` agent, stamps a suspected loop like a declaration: confidence 0.9 and a 7-day drift deadline. The `track_loop` result also reports whether tracking was earned (`tracking_earned`)
+- Corroboration (`corroboration.py`, `corroboration_judge.py`) — phase 172. A second, independent source that matches a `suspected` loop is judged by one System One Noul, `same_concern`. Code raises the loop's confidence and can promote it to `active`. The origin and every counted corroboration are recorded in `open_loop_sources` (`zw003`). See [Corroboration](#corroboration)
 - Matching (`matching.py`) — entity-overlap + embedding-similarity dedup against existing loops
 - Decay (`decay.py`) — confidence decay cascade, invoked at every evidence-writing code path
 - Drift (`drift.py`) — deadline computation and contradiction/absence rationale for the `active → drifting` transition. The sweep selects `active` loops whose `drift_deadline` has passed. New evidence on an active loop calls `record_corroboration`, which moves the deadline to at least 7 days from now (the default window is a code constant)
@@ -26,6 +27,54 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 `ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. A turn where `track_loop` succeeded skips the gate. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
 
+## Corroboration
+
+A `suspected` loop gains support when a second, independent source mentions the same matter. Phase 172 turns that second mention into a promotion. The path runs when the 168 gate admits a text as a concern and `find_matching_loop` returns a `suspected` loop, on both the `_create_suspected_loop` matched branch and the declared-path match.
+
+### Independence (`corroboration.py`)
+
+Code decides independence first. A non-independent match makes no System One request and keeps the 170 behavior. A text carries a source key `(inflow, source_ref)`: the conversation thread id, the Gmail thread id (the message id when there is none), the calendar event `external_ref`, or the ingestion id.
+
+| Check, in order | Reason when it fails |
+|---|---|
+| The key is set and its ref is not empty | `no_key` |
+| The key is on no source row of the loop | `same_source` |
+| No evidence ref is already linked to the loop | `same_evidence` |
+| The key is on no source row of a matching `dropped` loop | `dropped_source` |
+
+When all four checks pass, the text is independent. These checks cover the repeats the user already saw: the same chat thread, the same email thread, a re-ingested document, and evidence recorded on a dropped loop.
+
+### Same concern (`corroboration_judge.py`)
+
+One System One Noul, `same_concern`, asks whether the text is about the same unfinished matter as the loop title. The same person, place, or topic alone is not enough. The state holds the loop title (capped at 200 characters), the new text's inflow, and the text capped with the 168 per-inflow caps. Ze makes one attempt. A pure `decide()` maps the score against two bars:
+
+- At or above `corroborate_hold`: link the evidence, raise the confidence, stay `suspected`.
+- At or above `promote_hold`: do the same, then move the loop to `active`.
+- Below both, or a skip, an invalid answer, or a failure: the 170 behavior.
+
+An answer exactly at a bar counts. The bars live in `system_one.surfaces.corroboration`.
+
+### Effects and constants
+
+The constants are code, not config, and never model output:
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `CORROBORATION_WEIGHT` | 0.5 | The score's weight in the noisy-OR |
+| `CORROBORATED_CAP` | 0.6 | A corroborated loop stays below the promoted level until it is promoted |
+| `PROMOTED_CONFIDENCE` | 0.7 | The confidence a promoted loop is set to, below the 0.9 of a user-confirmed loop |
+| `PROMOTED_WINDOW_DAYS` | 7 (`drift.DEFAULT_DRIFT_WINDOW_DAYS`) | The drift deadline after promotion |
+
+Corroborate links evidence and entities, writes one `corroboration` source row with `promoted = false`, and sets the confidence to `min(0.6, 1 − (1 − c)(1 − 0.5·s))`, where `c` is the current confidence and `s` the score. Promote does the same, then runs one update guarded by `state = 'suspected'`: it sets `state = 'active'`, `confidence = GREATEST(confidence, 0.7)`, `confirmed_at = now()`, and a 7-day drift deadline, and marks the source row `promoted = true` only when the update changed a row. Promotion changes loop state only. It keeps the provenance and claim kind, writes no fact, and does not go through the contribution seam.
+
+### Sources (`open_loop_sources`, `zw003`)
+
+Every loop created through `propose_loop_candidates` with a key gets an `origin` row, whether the surface is on or off. Each counted corroboration adds a `corroboration` row with its score, model, and latency. `(loop_id, inflow, source_ref)` is unique, so a repeated key is a no-op and its judgment does not count. Rows are deleted with their loop. `GET /api/v0/loops` reports `promoted` and `source_inflows`; `GET /api/v0/loops/{id}` lists `sources` in time order.
+
+### Fail-open
+
+The surface ships off with null bars. Off, uncalibrated, skipped, invalid, or failing, a suspected match behaves exactly as after phase 170: Ze links the evidence and changes nothing else. Every judged match is logged as `corroboration_judgment` (loop id, inflow, outcome, reason, score, latency, skip reason); a non-independent match logs `corroboration_skipped` with the reason. No exception from the surface reaches the commit's caller.
+
 ## Responsibilities
 
 | Module | What it provides |
@@ -35,6 +84,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `extraction.py` | Relevance-gated loop extraction from inflow text; the 109 Haiku gate is the fallback |
 | `loop_judge.py` | System One loop gate: three Noul questions, bars, pure `decide()` |
 | `admission.py` | `LoopInflow`: gate, Haiku title writer, commit |
+| `corroboration.py` | Independence rule, confidence arithmetic, corroborate/promote effects |
+| `corroboration_judge.py` | System One same-concern Noul: state, surface config, pure `decide()` |
 | `tracking.py` | `LoopTracker`: normalize, match, and write a user-asked loop |
 | `matching.py` | Entity-overlap + embedding dedup against existing loops |
 | `decay.py` | Confidence decay cascade, called at the evidence-writing code path |
@@ -45,7 +96,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |
 | `bootstrap.py` | `build_worldstate_stack()` — DI wiring for `ze-api` |
 | `rest.py` | `GET/POST /api/v0/loops` handlers |
-| `migrations/` | `zw001` (open_loops table), `zw002` (drift columns) |
+| `migrations/` | `zw001` (open_loops table), `zw002` (drift columns), `zw003` (open_loop_sources table) |
 
 Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
 

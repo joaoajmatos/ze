@@ -162,7 +162,12 @@ class InboundMessageProcessor:
                     else []
                 )
                 asyncio.create_task(
-                    self.loop_extractor(msg.body, "email", evidence=evidence)
+                    self.loop_extractor(
+                        msg.body,
+                        "email",
+                        evidence=evidence,
+                        source_ref=msg.thread_id or msg.message_id,
+                    )
                 )
 
         return sender_class

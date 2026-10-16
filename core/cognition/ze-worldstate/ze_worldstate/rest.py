@@ -6,12 +6,23 @@ from uuid import UUID
 from ze_worldstate import review
 from ze_worldstate.errors import LoopNotFoundError
 from ze_worldstate.store import LoopStore
-from ze_worldstate.types import OpenLoop
+from ze_worldstate.types import LoopSource, LoopSourceRole, OpenLoop
 
 DEFAULT_LIST_STATES = ["suspected", "active", "drifting"]
 
 
-def _loop_to_list_item(loop: OpenLoop) -> dict:
+def _is_promoted(sources: list[LoopSource]) -> bool:
+    return any(
+        source.role == LoopSourceRole.CORROBORATION and source.promoted
+        for source in sources
+    )
+
+
+def _source_inflows(sources: list[LoopSource]) -> list[str]:
+    return list(dict.fromkeys(source.key.inflow for source in sources))
+
+
+def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
     return {
         "id": loop.id,
         "title": loop.title,
@@ -22,6 +33,20 @@ def _loop_to_list_item(loop: OpenLoop) -> dict:
         "drift_rationale": loop.drift_rationale,
         "created_at": loop.created_at.isoformat() if loop.created_at else None,
         "updated_at": loop.updated_at.isoformat() if loop.updated_at else None,
+        "promoted": _is_promoted(sources),
+        "source_inflows": _source_inflows(sources),
+    }
+
+
+def _source_to_item(source: LoopSource) -> dict:
+    evidence = source.evidence
+    return {
+        "role": source.role.value,
+        "inflow": source.key.inflow,
+        "evidence_kind": evidence.kind if evidence else None,
+        "same_concern": source.same_concern,
+        "promoted": source.promoted,
+        "created_at": source.created_at.isoformat() if source.created_at else None,
     }
 
 
@@ -30,7 +55,12 @@ async def list_loops(
 ) -> list[dict]:
     effective_states = states if states is not None else DEFAULT_LIST_STATES
     loops = await loop_store.list(effective_states)
-    return [_loop_to_list_item(loop) for loop in loops]
+    sources_by_loop = await loop_store.list_sources_for(
+        [loop.id for loop in loops if loop.id is not None]
+    )
+    return [
+        _loop_to_list_item(loop, sources_by_loop.get(loop.id, [])) for loop in loops
+    ]
 
 
 async def _fetch_evidence_summaries(
@@ -93,11 +123,13 @@ async def get_loop(loop_store: LoopStore, loop_id: UUID, pool: Any = None) -> di
     loop = await loop_store.get(loop_id)
     if loop is None:
         raise LoopNotFoundError(f"Loop {loop_id} not found")
+    sources = await loop_store.list_sources(loop_id)
     return {
-        **_loop_to_list_item(loop),
+        **_loop_to_list_item(loop, sources),
         "goal_id": loop.goal_id,
         "evidence": await _fetch_evidence_summaries(pool, loop_store, loop_id),
         "entities": await _fetch_entities(pool, loop_id),
+        "sources": [_source_to_item(source) for source in sources],
     }
 
 

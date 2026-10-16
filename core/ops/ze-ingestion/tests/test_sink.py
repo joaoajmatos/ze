@@ -87,6 +87,7 @@ async def test_push_forwards_ingestion_evidence_to_loop_extractor(
         "Python is popular.",
         "ingestion",
         evidence=[EvidenceRef(kind="ingestion", id=ingest_id)],
+        source_ref=str(ingest_id),
     )
 
 
@@ -97,4 +98,6 @@ async def test_push_non_uuid_forwards_empty_evidence(memory_store: AsyncMock) ->
     with patch("ze_ingestion.sink.submit_perception_facts", new_callable=AsyncMock):
         await sink.push(ingestion_id="not-a-uuid", facts=["A fact."])
 
-    extractor.assert_awaited_once_with("A fact.", "ingestion", evidence=[])
+    extractor.assert_awaited_once_with(
+        "A fact.", "ingestion", evidence=[], source_ref="not-a-uuid"
+    )

@@ -12,6 +12,7 @@ from ze_collision.detect import submit_and_detect_collisions
 from ze_plugin.contribution import EvidenceRef
 
 from ze_worldstate import drift
+from ze_worldstate.corroboration import corroborate_match
 from ze_worldstate.contribution import loop_to_contribution
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.matching import find_matching_loop
@@ -22,8 +23,11 @@ from ze_worldstate.types import (
     LoopAdmission,
     LoopClaimKind,
     LoopProvenance,
+    LoopSource,
+    LoopSourceRole,
     LoopState,
     OpenLoop,
+    SourceKey,
     TitleWriterResult,
 )
 
@@ -237,6 +241,61 @@ async def _corroborate_match(
         await loop_store.record_corroboration(existing.id)
 
 
+async def _record_origin(
+    loop_id: UUID,
+    source: SourceKey | None,
+    evidence_refs: list[EvidenceRef],
+    loop_store: LoopStore,
+) -> None:
+    if source is None or not source.ref:
+        return
+    try:
+        await loop_store.add_source(
+            LoopSource(
+                loop_id=loop_id,
+                role=LoopSourceRole.ORIGIN,
+                key=source,
+                evidence=evidence_refs[0] if evidence_refs else None,
+            )
+        )
+    except Exception as exc:
+        log.warning("loop_origin_source_failed", loop_id=str(loop_id), error=str(exc))
+
+
+async def _match_existing(
+    existing: OpenLoop,
+    dropped: OpenLoop | None,
+    *,
+    text: str,
+    prov: str,
+    source: SourceKey | None,
+    evidence_refs: list[EvidenceRef],
+    entity_ids: list[UUID],
+    loop_store: LoopStore,
+    system_one_client: Any,
+    settings: Any,
+) -> None:
+    async def link() -> None:
+        await _corroborate_match(existing, evidence_refs, entity_ids, loop_store)
+
+    if existing.state is not LoopState.SUSPECTED:
+        await link()
+        return
+    await corroborate_match(
+        existing=existing,
+        text=text,
+        inflow=source.inflow if source else prov,
+        key=source,
+        evidence_refs=evidence_refs,
+        entity_ids=entity_ids,
+        dropped=dropped,
+        loop_store=loop_store,
+        system_one_client=system_one_client,
+        settings=settings,
+        link=link,
+    )
+
+
 async def _create_declared_loop(
     title: str,
     prov: str,
@@ -249,6 +308,10 @@ async def _create_declared_loop(
     implied_window_days: int | None = None,
     collision_store: Any = None,
     nli_client: Any = None,
+    text: str = "",
+    source: SourceKey | None = None,
+    system_one_client: Any = None,
+    settings: Any = None,
 ) -> OpenLoop:
     if graph_store is not None:
         existing = await find_matching_loop(
@@ -260,7 +323,28 @@ async def _create_declared_loop(
             states=["suspected", "active", "drifting"],
         )
         if existing is not None:
-            await _corroborate_match(existing, evidence_refs, entity_ids, loop_store)
+            dropped = None
+            if existing.state is LoopState.SUSPECTED:
+                dropped = await find_matching_loop(
+                    entity_ids,
+                    title,
+                    loop_store=loop_store,
+                    graph_store=graph_store,
+                    embedder=embedder,
+                    states=["dropped"],
+                )
+            await _match_existing(
+                existing,
+                dropped,
+                text=text or title,
+                prov=prov,
+                source=source,
+                evidence_refs=evidence_refs,
+                entity_ids=entity_ids,
+                loop_store=loop_store,
+                system_one_client=system_one_client,
+                settings=settings,
+            )
             return existing
 
     check_fact_exists, check_episode_exists = _existence_checkers(memory_store)
@@ -289,6 +373,7 @@ async def _create_declared_loop(
     await loop_store.set_drift_deadline(created.id, loop.drift_deadline)
     created.drift_deadline = loop.drift_deadline
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
+    await _record_origin(created.id, source, evidence_refs, loop_store)
     return created
 
 
@@ -326,6 +411,10 @@ async def _create_suspected_loop(
     memory_store: Any,
     collision_store: Any,
     nli_client: Any,
+    text: str = "",
+    source: SourceKey | None = None,
+    system_one_client: Any = None,
+    settings: Any = None,
 ) -> list[OpenLoop]:
     fingerprint = compute_evidence_fingerprint(evidence_refs)
 
@@ -354,7 +443,18 @@ async def _create_suspected_loop(
             states=["suspected", "active", "drifting"],
         )
         if existing is not None:
-            await _corroborate_match(existing, evidence_refs, entity_ids, loop_store)
+            await _match_existing(
+                existing,
+                dismissed,
+                text=text or title,
+                prov=prov,
+                source=source,
+                evidence_refs=evidence_refs,
+                entity_ids=entity_ids,
+                loop_store=loop_store,
+                system_one_client=system_one_client,
+                settings=settings,
+            )
             return [existing]
 
     loop = OpenLoop(
@@ -378,6 +478,7 @@ async def _create_suspected_loop(
         nli_client=nli_client,
     )
     await _link_evidence_and_entities(created.id, evidence_refs, entity_ids, loop_store)
+    await _record_origin(created.id, source, evidence_refs, loop_store)
     return [created]
 
 
@@ -395,6 +496,9 @@ async def _commit_admitted(
     model: str,
     collision_store: Any,
     nli_client: Any,
+    source: SourceKey | None = None,
+    system_one_client: Any = None,
+    settings: Any = None,
 ) -> list[OpenLoop]:
     """System One already decided; Haiku only writes the title (and a create window)."""
     kind = admission.decision.kind
@@ -421,6 +525,10 @@ async def _commit_admitted(
             implied_window_days=written.implied_window_days,
             collision_store=collision_store,
             nli_client=nli_client,
+            text=text,
+            source=source,
+            system_one_client=system_one_client,
+            settings=settings,
         )
         return [created]
     return await _create_suspected_loop(
@@ -434,6 +542,10 @@ async def _commit_admitted(
         memory_store,
         collision_store,
         nli_client,
+        text=text,
+        source=source,
+        system_one_client=system_one_client,
+        settings=settings,
     )
 
 
@@ -452,6 +564,9 @@ async def propose_loop_candidates(
     collision_store: Any = None,
     nli_client: Any = None,
     admission: LoopAdmission | None = None,
+    source: SourceKey | None = None,
+    system_one_client: Any = None,
+    settings: Any = None,
 ) -> list[OpenLoop]:
     """Conservative, relevance-gated (FR-009). Returns [] for ordinary content.
 
@@ -484,6 +599,10 @@ async def propose_loop_candidates(
             memory_store,
             collision_store=collision_store,
             nli_client=nli_client,
+            text=text,
+            source=source,
+            system_one_client=system_one_client,
+            settings=settings,
         )
         return [created]
 
@@ -506,6 +625,9 @@ async def propose_loop_candidates(
             model,
             collision_store,
             nli_client,
+            source=source,
+            system_one_client=system_one_client,
+            settings=settings,
         )
 
     gate = await _run_extraction_gate(text, llm_client, model)
@@ -535,6 +657,10 @@ async def propose_loop_candidates(
             implied_window_days=gate.implied_window_days,
             collision_store=collision_store,
             nli_client=nli_client,
+            text=text,
+            source=source,
+            system_one_client=system_one_client,
+            settings=settings,
         )
         return [created]
 
@@ -549,4 +675,8 @@ async def propose_loop_candidates(
         memory_store,
         collision_store,
         nli_client,
+        text=text,
+        source=source,
+        system_one_client=system_one_client,
+        settings=settings,
     )
