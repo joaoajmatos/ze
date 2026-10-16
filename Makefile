@@ -114,6 +114,9 @@ help:
 	@echo "    lint             Lint all packages with ruff"
 	@echo "    lint-web         Lint ze-web with ESLint (FSD boundaries)"
 	@echo "    format           Auto-format and fix all packages with ruff"
+	@echo "    deadcode         Dead-code report (vulture); report only, not a gate"
+	@echo "    deadcode-tests-only  Definitions only tests reference"
+	@echo "    test-scripts     Run scripts/ tests (graphify_reexports)"
 	@echo "    clean            Remove __pycache__, .pytest_cache, .ruff_cache, *.pyc"
 	@echo ""
 	@echo "  Code generation"
@@ -493,6 +496,47 @@ typecheck-web:
 format:
 	uv run ruff format .
 	uv run ruff check --fix .
+
+# ── Dead-code report (report only, never a gate) ──────────────────────────────
+# `make deadcode` lists definitions nothing references (tests count as callers).
+# `make deadcode-tests-only` lists definitions only tests reference.
+# Needs `uvx` (uv) and network on the first run. Triage rules: specs/arch/cleanup-report-2026-10.md §1 and §10.
+.PHONY: deadcode deadcode-tests-only test-scripts
+
+VULTURE         := uvx vulture@2.16
+VULTURE_PATHS   := core packages plugins integrations apps/ze-api eval scripts sidecar
+VULTURE_SKIP    := */migrations/*,*/node_modules/*,*/.venv/*,*/generated/*
+VULTURE_FLAGS   := --min-confidence 60 --ignore-decorators "@tool,@agent,@render_tool,@mcp.tool,@proactive_job,@pytest.fixture,@pytest_asyncio.fixture,@router.*,@app.*,@field_validator,@model_validator,@abstractmethod"
+# Dropped hits: test files (they only supply references), plus variables that frameworks
+# read by name: Pydantic response models under api/, LangGraph state keys, component descriptors.
+# Also dropped: "unreachable code after 'raise'" (the `raise NotImplementedError` + `yield` async-generator stub idiom).
+VULTURE_NOT_TESTS := ^[^:]*(/tests?/|/conftest\.py)
+VULTURE_NOISE   := ^(apps/ze-api/ze_api/api/|plugins/[^/]+/[^/]+/api/|core/kernel/ze-components/ze_components/|core/engine/ze-core/ze_core/orchestration/state\.py|plugins/ze-personal/ze_personal/graph/workflow\.py)[^:]*:[0-9]+: unused variable
+# vulture exits 3 when it finds dead code and 1 on a real error.
+VULTURE_CHECK    = rc=$$?; if [ $$rc -ne 0 ] && [ $$rc -ne 3 ]; then echo "vulture failed ($$rc)" >&2; exit $$rc; fi
+
+deadcode:
+	@tmp=$$(mktemp); trap 'rm -f $$tmp' EXIT; \
+	$(VULTURE) $(VULTURE_PATHS) $(VULTURE_FLAGS) --exclude "$(VULTURE_SKIP)" > $$tmp; $(VULTURE_CHECK); \
+	grep -vE '$(VULTURE_NOT_TESTS)' $$tmp | grep -vE '$(VULTURE_NOISE)' | grep -v "unreachable code after 'raise'" | sort > $$tmp.clean; \
+	echo "== Functions, methods, classes, properties (no reference anywhere)"; \
+	grep -vE "unused (variable|attribute) " $$tmp.clean; \
+	echo; echo "== Constants, fields, enum members (check stored values before deleting: report §10)"; \
+	grep -E "unused (variable|attribute) " $$tmp.clean; \
+	echo; echo "$$(wc -l < $$tmp.clean | tr -d ' ') hits. Report only: whitelist false positives in scripts/vulture_whitelist.py."; \
+	rm -f $$tmp.clean
+
+deadcode-tests-only:
+	@a=$$(mktemp); b=$$(mktemp); trap 'rm -f $$a $$b' EXIT; \
+	$(VULTURE) $(VULTURE_PATHS) $(VULTURE_FLAGS) --exclude "$(VULTURE_SKIP)" > $$a; $(VULTURE_CHECK); \
+	$(VULTURE) $(VULTURE_PATHS) $(VULTURE_FLAGS) --exclude "$(VULTURE_SKIP),*/tests/*,*/conftest.py" > $$b; $(VULTURE_CHECK); \
+	grep -vE '$(VULTURE_NOT_TESTS)' $$a | grep -vE '$(VULTURE_NOISE)' | grep -v "unreachable code after 'raise'" | sort > $$a.s; \
+	grep -vE '$(VULTURE_NOISE)' $$b | grep -v "unreachable code after 'raise'" | sort > $$b.s; \
+	echo "== Reached only from tests (wire it or delete it with its tests)"; \
+	comm -13 $$a.s $$b.s; rm -f $$a.s $$b.s
+
+test-scripts:
+	$(call pytest_pkg,scripts/tests)
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
