@@ -1,0 +1,154 @@
+{
+  "workflow": "speckit",
+  "specName": "One Commitment Intake",
+  "branch": "173-commitment-intake",
+  "currentStep": "implement",
+  "status": "implementing",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T21:57:50.314Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T22:01:13.730Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T22:03:15.194Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "Tenon",
+      "at": "2026-10-16T11:50:37.306Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "Tenon",
+      "at": "2026-10-16T11:50:37.731Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:51:49.912Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:52:52.671Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:52:52.907Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "Tenon",
+      "at": "2026-10-16T11:54:13.255Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "Tenon",
+      "at": "2026-10-16T11:54:13.505Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:54:42.291Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:54:42.513Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:59:52.428Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T11:59:52.609Z"
+    }
+  ],
+  "currentTask": "T002",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE"
+    },
+    "T003": {
+      "status": "DONE"
+    },
+    "T011": {
+      "status": "DONE"
+    },
+    "T013": {
+      "status": "DONE"
+    },
+    "T020": {
+      "status": "DONE"
+    },
+    "T025": {
+      "status": "DONE"
+    },
+    "T027": {
+      "status": "DONE"
+    },
+    "T021": {
+      "status": "DONE"
+    },
+    "T022": {
+      "status": "DONE"
+    },
+    "T023": {
+      "status": "DONE"
+    },
+    "T024": {
+      "status": "DONE"
+    }
+  }
+}
