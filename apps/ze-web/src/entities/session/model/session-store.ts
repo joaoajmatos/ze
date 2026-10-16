@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 const THREAD_KEY = "ze_current_thread_id";
 
-export function createThreadId(): string {
+function createThreadId(): string {
   return `ze-${crypto.randomUUID()}`;
 }
 

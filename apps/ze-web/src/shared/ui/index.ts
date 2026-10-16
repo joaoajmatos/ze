@@ -1,6 +1,5 @@
 export { Button } from "./primitives/button";
 export { Input } from "./primitives/input";
-export { Sheet, SheetContent, SheetTrigger } from "./primitives/sheet";
 export { Slider } from "./primitives/slider";
 export { SearchBar } from "./primitives/SearchBar";
 export { FilterChips } from "./primitives/FilterChips";
@@ -11,7 +10,6 @@ export type { ViewMode } from "./primitives/ViewToggle";
 export { SortSelect } from "./primitives/SortSelect";
 export type { SortOption } from "./primitives/SortSelect";
 
-export { PageHeader } from "./layout/PageHeader";
 export { PageShell } from "./layout/PageShell";
 export { SectionPanel } from "./layout/SectionPanel";
 export { DashboardShell } from "./layout/DashboardShell";

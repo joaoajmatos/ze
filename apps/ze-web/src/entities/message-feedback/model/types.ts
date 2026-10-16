@@ -2,7 +2,7 @@ import type { FeedbackHistoryItem, FeedbackView, RetryEligibilityResponse } from
 
 export type FeedbackRating = "up" | "down" | "none";
 export type FeedbackKind = FeedbackHistoryItem["kind"];
-export type { FeedbackHistoryItem };
+;
 export type RetryEligibility = RetryEligibilityResponse;
 export type MessageFeedback = FeedbackView;
 

@@ -1,5 +1,4 @@
 export {
-  type AppConfig,
   getConfig,
   saveConfig,
   clearConfig,
@@ -16,9 +15,7 @@ export {
   SystemIcon,
   settingsNavRoute,
   getRoute,
-  getRouteLabel,
-  mobileNavRoutes,
   settingsDataSectionId,
   settingsDataPath,
 } from "./nav-routes";
-export { AGENT_COLORS, AGENT_COLOR_FALLBACK, agentColor } from "./agents";
+export { AGENT_COLORS, AGENT_COLOR_FALLBACK } from "./agents";

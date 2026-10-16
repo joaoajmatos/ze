@@ -6,7 +6,7 @@ import { useOptionalCharts } from "@/shared/lib";
 const ENTITY_TYPES = ["all", "person", "place", "org", "topic"] as const;
 type EntityTypeFilter = (typeof ENTITY_TYPES)[number];
 
-export interface GraphCompositionView {
+interface GraphCompositionView {
   byEntityType: ChartPoint[];
   byRelationType: ChartPoint[];
 }

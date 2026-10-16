@@ -11,7 +11,7 @@ interface RoutingBadgeProps {
   tier?: TierTraceResponse | null;
 }
 
-export function tierText(tier: TierTraceResponse): string | null {
+function tierText(tier: TierTraceResponse): string | null {
   if (tier.decided_by === "no_simple_model") return null;
   if (tier.tier === "simple") {
     return tier.decided_by === "system_one" ? "Light model · System One" : null;

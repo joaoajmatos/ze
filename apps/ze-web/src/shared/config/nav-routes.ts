@@ -79,11 +79,6 @@ export function settingsDataPath(): string {
   return redirectHintPath(`/${settingsNavRoute.path}`, settingsDataSectionId);
 }
 
-export const mobileNavRoutes = [
-  ...navRoutes.filter((r) => r.showInMobileNav),
-  settingsNavRoute,
-];
-
 const allRoutes: NavRouteMeta[] = [...navRoutes, settingsNavRoute];
 
 /** The nav route owning `pathname` (detail pages resolve to their parent list). */

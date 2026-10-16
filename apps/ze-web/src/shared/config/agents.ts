@@ -11,7 +11,3 @@ export const AGENT_COLORS: Record<string, string> = {
 };
 
 export const AGENT_COLOR_FALLBACK = "#6b7280";
-
-export function agentColor(agent: string): string {
-  return AGENT_COLORS[agent] ?? AGENT_COLOR_FALLBACK;
-}

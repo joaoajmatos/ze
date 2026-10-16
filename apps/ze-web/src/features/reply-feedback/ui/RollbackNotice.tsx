@@ -11,7 +11,7 @@ function joinPhrases(phrases: string[]): string {
   return `${phrases.slice(0, -1).join(", ")} and ${phrases.at(-1)}`;
 }
 
-export function rollbackNoticeText(rollback: RollbackRecordResponse): string | null {
+function rollbackNoticeText(rollback: RollbackRecordResponse): string | null {
   const undone = joinPhrases(
     (rollback.entries ?? []).filter((e) => e.outcome === "undone").map((e) => e.effect_phrase),
   );
