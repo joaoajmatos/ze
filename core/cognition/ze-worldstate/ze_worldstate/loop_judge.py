@@ -1,7 +1,8 @@
 """Loop-gate judgment — System One questions, state, surface config and the decision table.
 
-Three independent Nouls decide whether a text opens, declares or resolves a loop. Pure code turns
-the answers into a decision (specs/phases/168-loop-extraction-gate/contracts/loop-gate-judgment.md).
+Two independent Nouls decide whether a text opens or resolves a loop on the email, calendar and
+ingestion inflows (conversation turns use commitment_judge). Pure code turns the answers into a
+decision (specs/phases/168-loop-extraction-gate/contracts/loop-gate-judgment.md).
 Imports ze_agents types only; ze-worldstate never depends on ze-core.
 """
 
