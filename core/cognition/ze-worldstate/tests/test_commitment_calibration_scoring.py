@@ -352,3 +352,41 @@ def test_also_loop_row_still_scores_a_fact_answer_as_a_hit(cal):
     }
     c = cal.score([mixed], cal.preds_for([mixed], fact_answer, _bars(cal)))
     assert (c.fact_hits, c.fact_pos) == (1, 1)
+
+
+def _good(cal, **over):
+    base = dict(
+        fact_pos=10,
+        fact_pred=10,
+        fact_hits=10,
+        loop_pos=10,
+        loop_pred=10,
+        loop_hits=10,
+        choice_total=10,
+        choice_ok=10,
+    )
+    base.update(over)
+    return cal.Counts(**base)
+
+
+def test_verdict_fails_when_the_intake_resolves_more_than_the_baseline(cal):
+    ok, failing = cal.verdict(_good(cal, false_resolve=1), _good(cal, false_resolve=0))
+    assert not ok
+    assert failing == ["false resolves 1 > baseline 0"]
+
+
+def test_verdict_allows_false_resolves_up_to_the_baseline(cal):
+    assert cal.verdict(_good(cal, false_resolve=1), _good(cal, false_resolve=1))[0]
+    assert cal.verdict(_good(cal, false_resolve=0), _good(cal, false_resolve=2))[0]
+
+
+def test_false_resolve_counts_a_resolve_on_a_row_that_is_not_a_resolves_row(cal):
+    ingest = _row(cal, id="i", gold_choice="ingest")
+    results = {
+        "i": cal.RowResults(
+            _system("ingest", resolves=0.95), _r163("ingest"), _r168(resolves=0.95)
+        )
+    }
+    system = cal.score([ingest], cal.preds_for([ingest], results, _bars(cal)))
+    base = cal.score([ingest], cal.baseline_preds([ingest], results))
+    assert system.false_resolve == 1 and base.false_resolve == 1
