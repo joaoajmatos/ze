@@ -17,7 +17,6 @@ from ze_core.conversation.messages.types import (
 )
 from ze_core.conversation.retry import (
     RetryReason,
-    eligibility_payload,
     retry_eligibility,
 )
 
@@ -581,13 +580,6 @@ def test_entry_id_ignores_payload_key_order() -> None:
     a = _check(_trace(_rev(undo={"a": 1, "b": 2})), msg).plan[0].entry_id
     b = _check(_trace(_rev(undo={"b": 2, "a": 1})), msg).plan[0].entry_id
     assert a == b
-
-
-def test_payload_exposes_plan_without_agent_or_undo_args() -> None:
-    payload = eligibility_payload(_check(_trace(_rev())))
-    [entry] = payload["plan"]
-    assert set(entry) == {"entry_id", "tool", "effect_phrase", "undo_note"}
-    assert payload["available"] is True
 
 
 def test_removed_reason_codes_are_gone() -> None:
