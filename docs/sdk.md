@@ -12,7 +12,7 @@ Plugin packages never import `ze-core` directly.
 ```python
 from ze_sdk import ZePlugin, agent, tool, ToolAccess, BaseAgent, get_logger, Settings, DBPool, NLIClient
 from ze_sdk import DataDomain
-from ze_sdk.types import AgentContext, AgentResult, ToolCall, AskDecision, AbortToken, Action, Notification
+from ze_sdk.types import AgentContext, AgentResult, ToolCall, AbortToken, Action, Notification
 from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, PushLogStore, PushLogEntry
 from ze_sdk.channels import Channel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus

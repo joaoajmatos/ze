@@ -1,16 +1,16 @@
 # ze-core
 
-LangGraph orchestration engine for Ze. Pure infrastructure — routing, graph execution, capability gate, OpenRouter client, telemetry, and DI container. Contains no personal-assistant domain logic.
+LangGraph orchestration engine for Ze. Pure infrastructure — routing, graph execution, write confirmation, OpenRouter client, telemetry, and DI container. Contains no personal-assistant domain logic.
 
 ## Role in Ze
 
-Every user message flows through the LangGraph built by `ze-core`. The graph handles routing, context retrieval, capability checks, agent execution, memory writes, and response synthesis. `ze-core` is the engine layer — it knows how to orchestrate agents but not what those agents do.
+Every user message flows through the LangGraph built by `ze-core`. The graph handles routing, context retrieval, preflight checks, agent execution, memory writes, and response synthesis. `ze-core` is the engine layer — it knows how to orchestrate agents but not what those agents do.
 
 ### Key features
 
 - Embedding-based intent routing with complexity estimation and compound-query decomposition
 - LangGraph state machine with confirmation pauses, multimodal preprocessing, and checkpoint persistence
-- Capability gate — per-agent permission modes with Postgres-backed overrides
+- Write confirmation — irreversible writes park until the user approves that exact call; one pause per turn
 - Cost telemetry — per-flow and per-agent token tracking with automatic reconciliation
 - OpenRouter client — all LLM, transcription, and vision calls go through a single gateway
 
@@ -24,7 +24,6 @@ Every user message flows through the LangGraph built by `ze-core`. The graph han
 |---|---|
 | `orchestration/` | `graph_builder`, `AgentState`, graph nodes and edges |
 | `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `PostgresRoutingStore`, fallback |
-| `capability/` | `CapabilityGate`, `PostgresCapabilityOverrideStore`, permission modes |
 | `openrouter/` | `OpenRouterClient`, streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context var |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers. `retry.py` decides Retry eligibility from the trace, `rewind.py` rewinds thread history for a retry, and messages carry `replaces`/`replaced_by` |
