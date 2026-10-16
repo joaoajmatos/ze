@@ -17,10 +17,7 @@ from ze_logging import get_logger
 log = get_logger(__name__)
 
 Q_CONCERN = "is_open_concern"
-Q_EXPLICIT = "explicit_declaration"
 Q_RESOLVES = "resolves_existing"
-
-CONVERSATION = "conversation"
 
 _STATE_KEY_AND_CAP: dict[str, tuple[str, int]] = {
     "conversation": ("user", 1000),
@@ -35,29 +32,18 @@ _CONCERN_INSTRUCTIONS = (
     "Questions, small talk, notifications, marketing deadlines, routine events and "
     "reference facts do not."
 )
-_EXPLICIT_INSTRUCTIONS = (
-    "Does the user say, in the first person, that they need to, have to or must do "
-    "something, or ask to be reminded of it?"
-)
 _RESOLVES_INSTRUCTIONS = (
     "Does the text report that something the user needed to do is now done?"
 )
 
 LOOP_QUESTIONS: dict[str, SystemOneQuestion] = {
     Q_CONCERN: SystemOneQuestion(type="noul", instructions=_CONCERN_INSTRUCTIONS),
-    Q_EXPLICIT: SystemOneQuestion(type="noul", instructions=_EXPLICIT_INSTRUCTIONS),
     Q_RESOLVES: SystemOneQuestion(type="noul", instructions=_RESOLVES_INSTRUCTIONS),
 }
 
 
 def supported_provenance(provenance: str) -> bool:
     return provenance in _STATE_KEY_AND_CAP
-
-
-def questions_for(provenance: str) -> dict[str, SystemOneQuestion]:
-    if provenance == CONVERSATION:
-        return dict(LOOP_QUESTIONS)
-    return {k: q for k, q in LOOP_QUESTIONS.items() if k != Q_EXPLICIT}
 
 
 def capped_text(text: str, provenance: str) -> str:
@@ -146,7 +132,7 @@ def decide(
     """Pure decision over one result (contract rows 1 to 7). Never raises."""
     if result.outcome == "skip":
         return LoopGateDecision("fallback", result.skip_reason or "error")
-    asked = tuple(questions_for(provenance))
+    asked = tuple(LOOP_QUESTIONS)
     if not all(_valid_noul(result.answers.get(qid)) for qid in asked):
         return LoopGateDecision("fallback", "invalid_answer")
     loop_bar, explicit_bar, resolves_bar = (
@@ -167,6 +153,4 @@ def decide(
             "hold", "not_open_concern", frozenset({Q_CONCERN, Q_RESOLVES})
         )
     consumed = frozenset(asked)
-    if provenance == CONVERSATION and score(Q_EXPLICIT) >= explicit_bar:
-        return LoopGateDecision("create_declared", "explicit", consumed)
     return LoopGateDecision("create_suspected", "implied", consumed)

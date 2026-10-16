@@ -41,13 +41,12 @@ from ze_worldstate.extraction import (
     _run_extraction_gate,
 )
 from ze_worldstate.loop_judge import (
+    LOOP_QUESTIONS,
     Q_CONCERN,
-    Q_EXPLICIT,
     Q_RESOLVES,
     LoopGateSurfaceConfig,
     build_state,
     decide,
-    questions_for,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +55,8 @@ HOLDOUT = Path(__file__).with_name("loop_gate_holdout.jsonl")
 CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
 LANGS = ("en", "pt")
 PROVENANCES = ("conversation", "email", "calendar", "ingestion")
+# Conversation turns are judged by the commitment intake (173), not by this gate. Their rows stay
+# in the files and in the shape check, and live runs skip them.
 GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
 BINS = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0001]
 MIN_TUNED_PER_LANG = 40
@@ -274,7 +275,7 @@ async def run_system_one(
     async def one(row: Row) -> tuple[str, SystemOneResult]:
         async with sem:
             result = await client.evaluate(
-                build_state(row.text, row.provenance), questions_for(row.provenance)
+                build_state(row.text, row.provenance), dict(LOOP_QUESTIONS)
             )
         return row.id, result
 
@@ -372,7 +373,6 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
     gold = {
         Q_CONCERN: lambda r: r.gold_loop,
         Q_RESOLVES: lambda r: r.gold_resolves,
-        Q_EXPLICIT: lambda r: r.gold_explicit,
     }
     for qid, truth in gold.items():
         points = []
@@ -380,10 +380,6 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
             res = results[r.id]
             ans = res.answers.get(qid) if res.outcome == "ok" else None
             if ans is None or ans.noul is None:
-                continue
-            if qid == Q_EXPLICIT and not (
-                r.provenance == "conversation" and r.gold_loop
-            ):
                 continue
             points.append((ans.noul, truth(r)))
         print(f"\n== Noul reliability: {qid} (n={len(points)})")
@@ -490,7 +486,11 @@ async def main_async(args: argparse.Namespace) -> int:
     )
 
     holdout = args.set == "holdout"
-    rows = load_rows(HOLDOUT if holdout else TUNED)
+    rows = [
+        r
+        for r in load_rows(HOLDOUT if holdout else TUNED)
+        if r.provenance != "conversation"
+    ]
     problems = shape_problems(load_rows(TUNED), load_rows(HOLDOUT))
     if problems:
         print("Dataset problems; run --check-sets.", file=sys.stderr)

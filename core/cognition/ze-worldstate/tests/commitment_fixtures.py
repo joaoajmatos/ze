@@ -61,12 +61,9 @@ def make(
     )
 
 
-async def conversation_admit(inflow, configurable: dict, *, prompt: str):
-    """The pre-173 conversation gate (loop_gate surface), kept for tests of the commit paths."""
-    from ze_worldstate.loop_judge import CONVERSATION
-    from ze_worldstate.types import SourceKey
-
-    thread_id = configurable.get("thread_id")
-    admission = await inflow._judge(prompt, CONVERSATION)
-    admission.source = SourceKey(CONVERSATION, str(thread_id)) if thread_id else None
-    return admission
+async def conversation_admit(intake, configurable: dict, *, prompt: str):
+    """The conversation loop admission `CommitmentIntake` builds for a turn, ready to commit."""
+    admission = await intake.admit(
+        configurable, prompt=prompt, response="", agent="companion"
+    )
+    return admission.loop

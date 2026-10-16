@@ -23,16 +23,17 @@ from ze_memory.fact_judge import (
 )
 from ze_memory.types import CommitmentChoice
 
-from ze_worldstate.loop_judge import (
-    LOOP_QUESTIONS,
-    Q_CONCERN,
-    Q_EXPLICIT,
-    Q_RESOLVES,
-)
+from ze_worldstate.loop_judge import LOOP_QUESTIONS, Q_CONCERN, Q_RESOLVES
 
 log = get_logger(__name__)
 
 Q_COMMITMENT = "commitment"
+Q_EXPLICIT = "explicit_declaration"
+
+_EXPLICIT_INSTRUCTIONS = (
+    "Does the user say, in the first person, that they need to, have to or must do "
+    "something, or ask to be reminded of it?"
+)
 
 _USER_ONLY = " Judge the user's words; the assistant reply is context only."
 
@@ -106,6 +107,7 @@ COMMITMENT_QUESTIONS: dict[str, SystemOneQuestion] = {
     ),
     **FACT_QUESTIONS,
     **LOOP_QUESTIONS,
+    Q_EXPLICIT: SystemOneQuestion(type="noul", instructions=_EXPLICIT_INSTRUCTIONS),
 }
 
 _BAR_NAMES = (

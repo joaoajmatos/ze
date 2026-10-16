@@ -71,20 +71,17 @@ def test_bad_bars_become_none(bad):
     assert not cfg.calibrated
 
 
-def test_three_noul_questions_without_criteria():
-    assert set(LOOP_QUESTIONS) == {
-        "is_open_concern",
-        "explicit_declaration",
-        "resolves_existing",
-    }
+def test_two_noul_questions_without_criteria():
+    assert set(LOOP_QUESTIONS) == {"is_open_concern", "resolves_existing"}
     for q in LOOP_QUESTIONS.values():
         assert q.type == "noul"
         assert q.criteria is None
 
 
-def test_questions_for_conversation_vs_other():
-    assert set(lj.questions_for("conversation")) == set(LOOP_QUESTIONS)
-    assert set(lj.questions_for("email")) == {"is_open_concern", "resolves_existing"}
+def test_explicit_declaration_belongs_to_the_commitment_intake_only():
+    assert not hasattr(lj, "Q_EXPLICIT")
+    assert not hasattr(lj, "questions_for")
+    assert "explicit_declaration" not in LOOP_QUESTIONS
 
 
 @pytest.mark.parametrize(
@@ -123,14 +120,12 @@ CFG = LoopGateSurfaceConfig(
 
 
 def test_decide_skip_is_fallback():
-    d = decide(
-        SystemOneResult(outcome="skip", skip_reason="timeout"), CFG, "conversation"
-    )
+    d = decide(SystemOneResult(outcome="skip", skip_reason="timeout"), CFG, "email")
     assert (d.kind, d.reason) == ("fallback", "timeout")
 
 
 def test_decide_missing_answer_is_invalid():
-    d = decide(_result(is_open_concern=0.9, resolves_existing=0.1), CFG, "conversation")
+    d = decide(_result(is_open_concern=0.9), CFG, "email")
     assert (d.kind, d.reason) == ("fallback", "invalid_answer")
 
 
@@ -157,9 +152,9 @@ def test_decide_null_bar_is_uncalibrated():
 
 def test_resolves_wins_and_concern_not_consumed():
     d = decide(
-        _result(is_open_concern=0.9, resolves_existing=0.7, explicit_declaration=0.9),
+        _result(is_open_concern=0.9, resolves_existing=0.7),
         CFG,
-        "conversation",
+        "email",
     )
     assert d.kind == "resolve"
     assert d.consumed == frozenset({"resolves_existing"})
@@ -169,23 +164,6 @@ def test_below_loop_hold_is_hold():
     d = decide(_result(is_open_concern=0.49, resolves_existing=0.1), CFG, "email")
     assert (d.kind, d.reason) == ("hold", "not_open_concern")
     assert d.consumed == frozenset({"is_open_concern", "resolves_existing"})
-
-
-def test_explicit_only_on_conversation():
-    res = _result(is_open_concern=0.9, resolves_existing=0.1, explicit_declaration=0.95)
-    d = decide(res, CFG, "conversation")
-    assert d.kind == "create_declared"
-    assert d.consumed == frozenset(LOOP_QUESTIONS)
-    assert decide(res, CFG, "email").kind == "create_suspected"
-
-
-def test_conversation_below_explicit_bar_is_suspected():
-    d = decide(
-        _result(is_open_concern=0.9, resolves_existing=0.1, explicit_declaration=0.3),
-        CFG,
-        "conversation",
-    )
-    assert d.kind == "create_suspected"
 
 
 def test_at_the_bar_is_positive():
@@ -200,8 +178,8 @@ def test_at_the_bar_is_positive():
 
 def test_decide_out_of_range_noul_is_invalid():
     d = decide(
-        _result(is_open_concern=1.5, resolves_existing=0.1, explicit_declaration=0.1),
+        _result(is_open_concern=1.5, resolves_existing=0.1),
         CFG,
-        "conversation",
+        "email",
     )
     assert (d.kind, d.reason) == ("fallback", "invalid_answer")

@@ -2,7 +2,7 @@
 
 `LoopInflow` judges a text (email, calendar, ingestion) with the loop Nouls, decides in pure code,
 and commits inline. The conversation inflow is judged by `CommitmentIntake` (173), which builds its
-`LoopAdmission` through `finish`. Any failure falls back to the 109 Haiku gate (FR-012, FR-013).
+`LoopAdmission` through `finish`; this class never judges a conversation turn. Any failure falls back to the 109 Haiku gate (FR-012, FR-013).
 """
 
 from __future__ import annotations
@@ -12,13 +12,11 @@ from typing import Any
 
 from ze_agents.client import LLMClient
 from ze_logging import get_logger
-from ze_memory.extractor import is_trivial_turn
 from ze_plugin.contribution import EvidenceRef
 
 from ze_worldstate import loop_judge
 from ze_worldstate.extraction import DEFAULT_EXTRACTION_MODEL, propose_loop_candidates
 from ze_worldstate.loop_judge import (
-    CONVERSATION,
     LoopGateDecision,
     loop_gate_surface_config,
 )
@@ -146,11 +144,7 @@ class LoopInflow:
         return admission
 
     async def _judge(self, text: str, provenance: str) -> LoopAdmission:
-        if (
-            not text
-            or not text.strip()
-            or (provenance == CONVERSATION and is_trivial_turn(text))
-        ):
+        if not text or not text.strip():
             return self.finish(text, provenance, LoopGateDecision("hold", "trivial"))
 
         cfg = loop_gate_surface_config(self._settings)
@@ -171,7 +165,7 @@ class LoopInflow:
                 text, provenance, LoopGateDecision("fallback", "unavailable")
             )
 
-        questions = loop_judge.questions_for(provenance)
+        questions = dict(loop_judge.LOOP_QUESTIONS)
         try:
             result = await self._system_one.evaluate(
                 loop_judge.build_state(text, provenance), questions, max_attempts=1

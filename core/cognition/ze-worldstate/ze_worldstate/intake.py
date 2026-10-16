@@ -35,9 +35,9 @@ from ze_worldstate.commitment_judge import (
     decide,
 )
 from ze_worldstate.extraction import resolve_entities
-from ze_worldstate.loop_judge import CONVERSATION, LoopGateDecision
+from ze_worldstate.loop_judge import LoopGateDecision
 from ze_worldstate.matching import find_matching_loop
-from ze_worldstate.types import LoopAdmission, SourceKey
+from ze_worldstate.types import LoopAdmission, LoopProvenance, SourceKey
 
 log = get_logger(__name__)
 
@@ -178,7 +178,11 @@ class CommitmentIntake:
 
     def _source(self, configurable: dict) -> SourceKey | None:
         thread_id = configurable.get("thread_id")
-        return SourceKey(CONVERSATION, str(thread_id)) if thread_id else None
+        return (
+            SourceKey(LoopProvenance.CONVERSATION, str(thread_id))
+            if thread_id
+            else None
+        )
 
     def _loop_admission(
         self,
@@ -189,7 +193,7 @@ class CommitmentIntake:
         skip_reason: str | None = None,
     ) -> LoopAdmission:
         admission = self._inflow.finish(
-            prompt, CONVERSATION, decision, skip_reason=skip_reason
+            prompt, LoopProvenance.CONVERSATION, decision, skip_reason=skip_reason
         )
         admission.source = source
         return admission

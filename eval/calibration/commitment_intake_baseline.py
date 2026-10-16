@@ -18,11 +18,13 @@ from dataclasses import dataclass, replace
 
 from ze_agents.system_one import SystemOneQuestion, SystemOneResult
 from ze_memory.extractor import PredicateFamily, admit_family
+from ze_worldstate.commitment_judge import Q_EXPLICIT, COMMITMENT_QUESTIONS
 from ze_worldstate.loop_judge import (
+    LOOP_QUESTIONS,
+    Q_CONCERN,
+    Q_RESOLVES,
     LoopGateSurfaceConfig,
     build_state as loop_build_state,
-    decide as decide_loop,
-    questions_for as loop_questions_for,
 )
 
 ASSISTANT_CAP = 1000
@@ -151,7 +153,35 @@ def state_168(prompt: str) -> dict[str, str]:
 
 
 def questions_168() -> dict[str, SystemOneQuestion]:
-    return loop_questions_for("conversation")
+    return {**LOOP_QUESTIONS, Q_EXPLICIT: COMMITMENT_QUESTIONS[Q_EXPLICIT]}
+
+
+def decide_loop_168(result: SystemOneResult, cfg: LoopGateSurfaceConfig) -> str:
+    """The deleted 168 conversation rules (resolves, concern, explicit), bars as shipped."""
+    if result.outcome == "skip":
+        return "fallback"
+    scores: dict[str, float] = {}
+    for qid in questions_168():
+        answer = result.answers.get(qid)
+        value = getattr(answer, "noul", None)
+        if (
+            answer is None
+            or answer.type != "noul"
+            or not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not 0.0 <= value <= 1.0
+        ):
+            return "fallback"
+        scores[qid] = float(value)
+    if cfg.loop_hold is None or cfg.explicit_hold is None or cfg.resolves_hold is None:
+        return "fallback"
+    if scores[Q_RESOLVES] >= cfg.resolves_hold:
+        return "resolve"
+    if scores[Q_CONCERN] < cfg.loop_hold:
+        return "hold"
+    if scores[Q_EXPLICIT] >= cfg.explicit_hold:
+        return "create_declared"
+    return "create_suspected"
 
 
 def decide_fact_163(
@@ -212,5 +242,5 @@ def decide_baseline(
     """Both old requests merged. Each ran independently, so a turn can persist and create."""
     return BaselineOutcome(
         fact=decide_fact_163(result_163),
-        loop=decide_loop(result_168, BASELINE_LOOP_BARS, "conversation").kind,
+        loop=decide_loop_168(result_168, BASELINE_LOOP_BARS),
     )
