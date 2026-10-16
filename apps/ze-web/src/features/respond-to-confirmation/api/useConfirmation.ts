@@ -7,7 +7,7 @@ import type { ConfirmItem, ConfirmSource } from "../model/types";
 export interface PendingConfirm {
   id: string;
   threadId: string;
-  kind: "write" | "budget" | "held" | "prompt";
+  kind: WsConfirmRequestFrame["kind"];
   round: number;
   title: string;
   items: ConfirmItem[];
@@ -17,22 +17,17 @@ export interface PendingConfirm {
   submitted: boolean;
 }
 
-// Prompt-only frames (goal gates, workspace reset, notification actions) carry
-// `prompt` and `actions` but no kind, title or items.
-type ConfirmRequestFields = Partial<WsConfirmRequestFrame> & { prompt?: string };
-
 function toPending(frame: WsConfirmRequestFrame, threadId: string): PendingConfirm {
-  const raw: ConfirmRequestFields = frame;
   return {
     id: frame.id,
     threadId,
-    kind: raw.kind ?? "prompt",
-    round: raw.round ?? 1,
-    title: raw.title ?? raw.prompt ?? "",
-    items: raw.items ?? [],
-    source: raw.source ?? null,
-    expiresAt: raw.expires_at ?? null,
-    actions: raw.actions ?? [],
+    kind: frame.kind,
+    round: frame.round ?? 1,
+    title: frame.title,
+    items: frame.items,
+    source: frame.source ?? null,
+    expiresAt: frame.expires_at ?? null,
+    actions: frame.actions,
     submitted: false,
   };
 }
