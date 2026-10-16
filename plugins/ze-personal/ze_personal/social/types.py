@@ -36,5 +36,4 @@ class CoOccurrenceCandidate:
     target_entity_id: UUID  # project, or another person
     predicate: Predicate
     evidence_events: list[CoOccurrenceEvidenceEvent] = field(default_factory=list)
-    existing_hypothesis_id: UUID | None = None
     existing_edge_exists: bool = False
