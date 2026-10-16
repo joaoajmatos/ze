@@ -82,11 +82,6 @@ def get_agent(name: str) -> BaseAgent:
         raise UnknownAgentError(f"No agent instance registered for {name!r}")
 
 
-def get_agent_instances() -> dict[str, BaseAgent]:
-    """Return all registered live instances."""
-    return dict(_instances)
-
-
 def get_enabled_instances() -> dict[str, BaseAgent]:
     """Return all live instances (all registered instances are enabled by definition)."""
     return dict(_instances)

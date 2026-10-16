@@ -4,9 +4,9 @@ import json
 from typing import Any, Awaitable, Callable
 
 from ze_agents.claims import Provenance
+from ze_agents.errors import OnboardingError
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
 from ze_memory.types import Fact
-from ze_onboarding.coordinator import OnboardingError
 from ze_onboarding.types import StoredOnboardingSeed
 from ze_plugin.contribution import TargetFace
 

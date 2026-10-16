@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from ze_agents.registry import agent, clear_registry
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_core.embeddings import get_embedder
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.types import RouterConfig
@@ -20,7 +20,6 @@ def _register(name: str, description: str) -> None:
     _A.enabled = True
     _A.model = "m"
     _A.model_simple = None
-    _A.intents = {"read": Intent(Mode.AUTONOMOUS, "Read")}
     agent(_A)
 
 

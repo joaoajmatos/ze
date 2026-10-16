@@ -1,8 +1,9 @@
-import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
+import type { WriteConfirmationOutcomeResponse, WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { MessageFeedback } from "@/entities/message-feedback";
 import { ConductorSection } from "./ConductorSection";
+import { ConfirmationsSection } from "./ConfirmationsSection";
 import { FeedbackSection } from "./FeedbackSection";
 import { JudgmentsSection } from "./JudgmentsSection";
 import { MemorySection } from "./MemorySection";
@@ -24,6 +25,9 @@ export function TraceEntry({ trace, index, defaultOpen = false, live, feedback }
   const [open, setOpen] = useState(defaultOpen);
   const confidencePct = Math.round(trace.confidence * 100);
   const workspace = trace.workspace;
+  const { write_confirmations: confirmations } = trace as WsTraceUpdateFrame & {
+    write_confirmations?: WriteConfirmationOutcomeResponse[];
+  };
 
   return (
     <div className={`border-b border-foreground/[0.06] last:border-b-0${live ? " ring-1 ring-inset ring-plum-voltage/20" : ""}`}>
@@ -61,6 +65,7 @@ export function TraceEntry({ trace, index, defaultOpen = false, live, feedback }
           <RollbackSection rollback={trace.rollback} record={feedback?.rollback} live={live} />
           <MemorySection chunks={trace.memory_chunks} live={live} />
           <ToolsSection toolCalls={trace.tool_calls} live={live} />
+          <ConfirmationsSection outcomes={confirmations} />
           <SkillsSection skillsUsed={trace.skills_used} live={live} />
           <WorkspaceSection workspace={workspace} live={live} />
         </div>

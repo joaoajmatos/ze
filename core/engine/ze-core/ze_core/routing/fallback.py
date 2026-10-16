@@ -17,21 +17,21 @@ _SYSTEM_PROMPT = """\
 You are a routing assistant for a personal AI assistant.
 Analyze the user prompt and decide which agent(s) should handle it.
 
-Available agents (name: description [valid intents]):
+Available agents (name: description):
 {agent_descriptions}
 
 Respond ONLY with a JSON object — no prose, no markdown:
 {{
   "subtasks": [
-    {{ "agent": "<name>", "intent": "<intent>", "prompt": "<isolated prompt>" }}
+    {{ "agent": "<name>", "prompt": "<isolated prompt>", "changes": false }}
   ],
   "sequential": false
 }}
 
 Rules:
 - ALWAYS return at least one subtask. An empty subtasks array is never valid.
-- Use only intent values listed for that agent (shown in brackets above).
-- When uncertain and no tool use is needed, default to the agent with "reason" intent.
+- Set "changes" to true when the subtask creates, updates, deletes or sends something; false when it only reads or looks things up.
+- When uncertain and no tool use is needed, default to the "companion" agent.
 - Use exactly one subtask for single-agent tasks.
 - Use multiple subtasks only when the request genuinely requires different agents.
 - Each subtask prompt must be self-contained for its agent.
@@ -47,16 +47,10 @@ def _hard_fallback_agent(
     last_exc: Exception | None,
 ) -> RoutingEnvelope:
     log.error("fallback_exhausted", error=str(last_exc))
-    reason_agent = next(
-        (
-            name
-            for name, cls in agent_registry.items()
-            if "reason" in getattr(cls, "intents", {})
-        ),
-        None,
+    fallback_name = (
+        "companion" if "companion" in agent_registry else next(iter(agent_registry))
     )
-    fallback_name = reason_agent or next(iter(agent_registry))
-    fallback = SubTask(agent=fallback_name, intent="reason", prompt=prompt)
+    fallback = SubTask(agent=fallback_name, prompt=prompt)
     return RoutingEnvelope(
         primary_agent=fallback_name,
         confidence=0.0,
@@ -82,8 +76,7 @@ async def decompose(
     known_agents = set(agent_registry)
 
     agent_descriptions = "\n".join(
-        f"- {name} [{', '.join(getattr(cls, 'intents', {}).keys()) or 'read'}]: {cls.description.strip()}"
-        for name, cls in agent_registry.items()
+        f"- {name}: {cls.description.strip()}" for name, cls in agent_registry.items()
     )
     system = _SYSTEM_PROMPT.format(agent_descriptions=agent_descriptions)
     messages = [{"role": "user", "content": prompt}]
@@ -125,7 +118,11 @@ async def decompose(
             continue
 
         subtasks = [
-            SubTask(agent=st["agent"], intent=st["intent"], prompt=st["prompt"])
+            SubTask(
+                agent=st["agent"],
+                prompt=st["prompt"],
+                changes=bool(st.get("changes", False)),
+            )
             for st in raw_subtasks
         ]
         is_compound = len(subtasks) > 1

@@ -28,6 +28,13 @@ Copy `.env.example` to `.env` and fill in every value before starting the server
 | `DATABASE_URL` | `postgresql://ze:ze@localhost:5432/ze` | asyncpg connection URL (runtime) |
 | `DATABASE_URL_SYNC` | `postgresql+psycopg2://ze:ze@localhost:5432/ze` | psycopg2 URL for Alembic CLI |
 
+`make migrate`, `make migrate-down`, `make migrate-status`, `make migrate-history` and
+`make db-reset` use `DATABASE_URL_SYNC` from your shell when it is set. Otherwise they
+use the default above, the shared dev database `ze`. To work on a throwaway database,
+export `DATABASE_URL_SYNC` first or pass `DB_SYNC_URL=...` to `make`. `make db-reset`
+drops and recreates the database named in that URL, inside the Compose Postgres.
+`make eval-clean` deletes eval rows from that same database.
+
 ### ntfy push notifications
 
 | Variable | Default | Description |
@@ -62,7 +69,7 @@ not `ZeApiSettings`.
 
 | Variable | Default | Description |
 |---|---|---|
-| `CONFIRM_TIMEOUT_SECONDS` | `900` | How long (seconds) a `confirm`-mode graph pause waits before expiring |
+| `CONFIRM_TIMEOUT_SECONDS` | `900` | How long (seconds) a write confirmation or budget pause waits. When it expires, the request counts as a deny |
 | `SESSION_INACTIVITY_MINUTES` | `30` | Minutes of inactivity before a session is considered stale |
 | `CONSOLIDATION_ENABLED` | `true` | Set to `false` to disable memory/contacts consolidation jobs (override via `config.yaml` `memory.consolidation.enabled`) |
 | `SCHEDULER_ENABLED` | `true` | Set to `false` to disable the workflow scheduler (override via `config.yaml` `workflows.scheduler_enabled`) |
@@ -188,9 +195,17 @@ memory:
     contradicted_ttl_days: 30
     unreviewed_ttl_days: 90
     expiry_grace_days: 7
-    episode_recency_days: 14
+    episode_archive_days: 7
     episode_min_archive_batch: 10
     nightly_cron: "0 2 * * *"
+
+  # Idle-session summaries — defaults shown (ze_memory/defaults.py)
+  session_summary:
+    enabled: true
+    check_interval_minutes: 10
+    min_episodes: 2
+    max_sessions_per_run: 5
+    max_transcript_tokens: 6000
 
   profile:
     min_facts: 3       # Skip profile synthesis below this many reviewed facts
@@ -253,6 +268,9 @@ hypothesis push candidates. With `enabled: true` and `dry_run: true` Ze logs eac
 would-be push under `correlation_push_dry_run` and sends nothing. Only `enabled: true`
 with `dry_run: false` sends a push. The shipped config is `enabled: false`.
 
+`correlation.hypothesis_decay.schedule` (default `"0 3 * * *"`) sets when the job that
+decays hypothesis confidence runs.
+
 ### `contacts:`
 
 ```yaml
@@ -262,9 +280,6 @@ contacts:
     max_episodes_per_run: 50
     nightly_cron: "0 3 * * *"
     review_cron: "30 8 * * *"
-  follow_up:
-    stale_days: 7
-    max_nudges: 3
 ```
 
 ### `proactive:`
@@ -324,6 +339,8 @@ proactive:
     prune_cron: "0 4 * * *"         # delete read notifications older than retention_days
     retention_days: 90
     release_cron: "*/5 * * * *"     # release pushes held during quiet hours
+
+  inbound_poll_interval_seconds: 300  # messenger inbound poll; rounded down to whole minutes, minimum 1
 ```
 
 Disable any proactive feature by setting `enabled: false` or toggling the relevant flag.
@@ -335,6 +352,57 @@ Disable any proactive feature by setting `enabled: false` or toggling the releva
 `proactive.notifications.release_cron` (default `*/5 * * * *`) sets how often Ze checks whether quiet hours have ended and releases the pushes it held.
 
 Quiet hours are not a YAML value. The user sets them in Settings › Notifications. Ze stores them in the `interruption_settings` table and exposes them over REST at `/api/v0/notifications/quiet-hours`. Quiet hours ship off.
+
+### `finance:`
+
+The shipped `config.yaml` sets `snapshot_schedule`, `large_transaction_threshold`,
+`llm_categorization` and the `nli_merchant_*` keys. The recurring-expense detector reads
+five more keys. Each has a default, so you only set one to change it:
+
+```yaml
+finance:
+  recurring_detection_enabled: false        # true → run the detector job
+  recurring_detection_schedule: "0 9 1 * *"
+  recurring_staleness_days: 35              # days without a charge before a recurring item is stale
+  recurring_nudge_cooldown_days: 14         # min days between nudges for the same item
+  recurring_price_change_threshold: 0.10    # relative change that counts as a price change
+```
+
+### `prospecting:`
+
+The prospecting agent reads its limits from the environment (`PROSPECTING_MAX_ITERATIONS`,
+`PROSPECTING_MAX_LOOP_TOKENS`, `PROSPECTING_STALE_TIMEOUT_MINUTES`, `BROWSER_DELAY_MS`,
+`BROWSER_MAX_TEXT_CHARS`). The shipped `config.yaml` has no `prospecting:` block. If you
+add a non-empty block, it replaces the environment values entirely, so set all five keys:
+
+```yaml
+prospecting:
+  max_iterations: 15
+  max_loop_tokens: 24000
+  stale_timeout_minutes: 10
+  browser_delay_ms: 2000
+  browser_max_text_chars: 8000
+```
+
+### `messaging:`
+
+```yaml
+messaging:
+  automated_senders: []   # regexes matched, case-insensitive, against the sender address
+```
+
+A match makes the inbound processor treat the mail as automated. The processor already
+skips common no-reply prefixes and bulk-mail headers.
+
+### `workspace:`
+
+```yaml
+workspace:
+  run_timeout_seconds: 120   # timeout for a single workspace run
+```
+
+The wait before a turn detaches a long run is the environment variable
+`WORKSPACE_FOLLOW_THROUGH_SHORT_WAIT_SECONDS`, not a YAML key.
 
 ### `news:`
 
@@ -655,7 +723,7 @@ is set — there are no `calendar.enabled` / `email.enabled` YAML flags.
 
 ## Hot-reloading
 
-Send `SIGHUP` to the running process to reload capability modes and YAML config
+Send `SIGHUP` to the running process to reload YAML config
 without restarting:
 
 ```bash

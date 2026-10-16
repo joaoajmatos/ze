@@ -4,7 +4,6 @@ from typing import AsyncIterator
 
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
-from ze_agents.types import Intent, Mode
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.client import LLMClient
 from ze_automation.workflow.planner import WorkflowPlanner
@@ -76,13 +75,6 @@ class WorkflowManagerAgent(BaseAgent):
         "trigger_workflow",
         "cancel_workflow_run",
     ]
-    intents = {
-        "read": Intent(Mode.AUTONOMOUS, "List or inspect stored workflows."),
-        "manage": Intent(
-            Mode.CONFIRM,
-            "Create, update, enable, disable, delete, or trigger a workflow.",
-        ),
-    }
 
     def __init__(
         self,
@@ -104,8 +96,7 @@ class WorkflowManagerAgent(BaseAgent):
         }
 
     async def run(self, ctx: AgentContext) -> AgentResult:
-        key = "workflow.managing" if ctx.intent == "manage" else "workflow.reading"
-        await self.emit(ctx, key)
+        await self.emit(ctx, "workflow.managing")
         system = self._build_system_prompt(_AGENT_INSTRUCTIONS, ctx)
         response, loop_tool_calls = await self.agentic_loop(
             ctx,

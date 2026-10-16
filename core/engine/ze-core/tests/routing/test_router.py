@@ -10,7 +10,7 @@ import pytest
 
 from ze_agents.errors import InvalidPromptError, RoutingError
 from ze_agents.registry import agent, clear_registry
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.store import PostgresRoutingStore
 from ze_core.routing.types import RouterConfig
@@ -39,8 +39,6 @@ def _register(
     _A.enabled = True
     _A.model = model
     _A.model_simple = model_simple
-    raw = intent_map or {"read": "Read"}
-    _A.intents = {k: Intent(Mode.AUTONOMOUS, v) for k, v in raw.items()}
     agent(_A)
 
 
@@ -123,7 +121,6 @@ class TestSingleAgentShortCircuit:
         assert env.primary_agent == "solo"
         assert env.routing_method == "embedding"
         assert env.confidence == 1.0
-        assert env.subtasks[0].intent == "execute"
 
     async def test_no_enabled_agents_raises_at_construction(self):
         with pytest.raises(RoutingError, match="No enabled agents"):

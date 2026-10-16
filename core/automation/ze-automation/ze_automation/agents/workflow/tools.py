@@ -4,10 +4,19 @@ import json
 from datetime import datetime, timezone
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool, undo_payload
+from ze_agents.tool import AskDecision, Injected, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import WorkflowPlanError
+from ze_automation.holds.planned import (
+    approval_given,
+    describe_planned_writes,
+    grant_planned_writes,
+    memo_of,
+    planned_writes,
+    plan_writes_check,
+)
 from ze_automation.workflow.planner import WorkflowPlanner, validate_step_targets
+from ze_automation.workflow.revision_summary import changed_step_ids
 from ze_automation.workflow.validation import validate_workflow_steps
 from ze_automation.workflow.store import WorkflowStore
 from ze_automation.workflow.types import (
@@ -51,7 +60,8 @@ def _serialize_step(step: WorkflowStep) -> dict:
     return {
         "task": step.task,
         "agent_hint": step.agent_hint,
-        "intent": step.intent,
+        "planned_writes": list(step.planned_writes),
+        "approved_writes": list(step.approved_writes),
         "id": step.id,
         "branches": [{"condition": b.condition, "to": b.to} for b in step.branches],
         "default_next": step.default_next,
@@ -133,6 +143,38 @@ async def list_workflow_executions(
     }
 
 
+async def _plan_workflow(
+    planner: WorkflowPlanner, description: str, *, consume: bool
+) -> tuple[list[WorkflowStep], bool]:
+    """Plan once: the check shows the plan, the approved call runs that same plan.
+
+    Returns the steps and whether they are the plan the user was shown.
+    """
+    memo = memo_of(planner)
+    key = ("workflow", description)
+    if memo is not None:
+        shown = memo.take(key) if consume else memo.get(key)
+        if shown is not None:
+            return shown, True
+    steps = await planner.plan(description)
+    validate_step_targets(steps)
+    if memo is not None and not consume:
+        memo.put(key, steps)
+    return steps, False
+
+
+async def create_workflow_check(args: dict, ctx) -> AskDecision:
+    planner = args.get("planner")
+    description = args.get("description")
+    if planner is None or not description:
+        return AskDecision.run()
+    try:
+        steps, _ = await _plan_workflow(planner, description, consume=False)
+    except WorkflowPlanError:
+        return AskDecision.run()
+    return plan_writes_check(steps)
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Create a new workflow from a description with an optional recurring schedule.",
@@ -140,6 +182,7 @@ async def list_workflow_executions(
     undo_tool="delete_workflow",
     undo_note="Deleting the workflow does not undo runs already started",
     effect_phrase="created a workflow",
+    ask_check=create_workflow_check,
 )
 async def create_workflow(
     store: WorkflowStore,
@@ -148,15 +191,16 @@ async def create_workflow(
     workflow_name: str,
     description: str,
     schedule_description: str = "",
-    session_id: str | None = None,
-    user_message_id: str | None = None,
+    session_id: Injected[str | None] = None,
+    user_message_id: Injected[str | None] = None,
 ) -> dict:
     try:
-        steps = await planner.plan(description)
-        validate_step_targets(steps)
+        steps, shown = await _plan_workflow(planner, description, consume=True)
         schedule = await planner.extract_schedule(schedule_description or description)
     except WorkflowPlanError as exc:
         return {"error": f"Couldn't plan the workflow: {exc}"}
+    if shown and approval_given():
+        grant_planned_writes(steps)
 
     next_run = None
     if schedule:
@@ -301,6 +345,8 @@ async def delete_workflow(
     description="Trigger a workflow to run immediately, outside its schedule.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="started a workflow run",
+    asks_first=False,
+    no_ask_reason="Starts a run now; the run's own asks-first steps are gated by plan pre-approval.",
 )
 async def trigger_workflow(
     store: WorkflowStore, scheduler: WorkflowScheduler, workflow_name: str
@@ -312,44 +358,77 @@ async def trigger_workflow(
     return {"triggered": workflow_name}
 
 
+def _parse_steps(steps_json: str) -> list[WorkflowStep]:
+    raw_steps = json.loads(steps_json)
+    if not isinstance(raw_steps, list):
+        raise ValueError("steps_json must be a JSON array")
+    steps = [
+        WorkflowStep(
+            task=item["task"],
+            agent_hint=item.get("agent_hint"),
+            verify=item.get("verify"),
+            planned_writes=[
+                w for w in item.get("planned_writes") or [] if isinstance(w, str)
+            ],
+            id=item["id"],
+            branches=[
+                Branch(condition=b["condition"], to=b["to"])
+                for b in item.get("branches") or []
+            ],
+            default_next=item.get("default_next"),
+            on_failure=item.get("on_failure", "fail"),
+        )
+        for item in raw_steps
+    ]
+    validate_workflow_steps(steps)
+    return steps
+
+
+async def edit_workflow_steps_check(args: dict, ctx) -> AskDecision:
+    store = args.get("store")
+    name = args.get("workflow_name")
+    if store is None or not name:
+        return AskDecision.run()
+    wf = await store.get_by_name(name)
+    if wf is None:
+        return AskDecision.run()
+    try:
+        steps = _parse_steps(args.get("steps_json") or "")
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError, WorkflowPlanError):
+        return AskDecision.run()
+    text = f"Replace the steps of '{name}' ({len(steps)} steps)"
+    planned = describe_planned_writes(steps, only_ids=changed_step_ids(wf.steps, steps))
+    return AskDecision.ask(f"{text}\n{planned}" if planned else text)
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Replace the step list on an existing workflow without changing its schedule.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="edited workflow steps",
+    ask_check=edit_workflow_steps_check,
 )
 async def edit_workflow_steps(
     store: WorkflowStore,
     workflow_name: str,
     steps_json: str,
-    session_id: str | None = None,
-    user_message_id: str | None = None,
+    session_id: Injected[str | None] = None,
+    user_message_id: Injected[str | None] = None,
 ) -> dict:
     wf = await store.get_by_name(workflow_name)
     if wf is None:
         return {"error": f"No workflow named '{workflow_name}' found."}
 
     try:
-        raw_steps = json.loads(steps_json)
-        if not isinstance(raw_steps, list):
-            raise ValueError("steps_json must be a JSON array")
-        steps = [
-            WorkflowStep(
-                task=item["task"],
-                agent_hint=item.get("agent_hint"),
-                verify=item.get("verify"),
-                intent=item.get("intent", "execute"),
-                id=item["id"],
-                branches=[
-                    Branch(condition=b["condition"], to=b["to"])
-                    for b in item.get("branches") or []
-                ],
-                default_next=item.get("default_next"),
-                on_failure=item.get("on_failure", "fail"),
-            )
-            for item in raw_steps
-        ]
-        validate_workflow_steps(steps)
+        steps = _parse_steps(steps_json)
+        changed = changed_step_ids(wf.steps, steps)
+        before_by_id = {s.id: s for s in wf.steps}
+        granted = approval_given()
+        for step in steps:
+            if step.id not in changed:
+                step.approved_writes = list(before_by_id[step.id].approved_writes)
+            elif granted:
+                step.approved_writes = planned_writes(step)
         actor = _build_actor(session_id, user_message_id)
         await store.update_steps(wf.id, steps, actor=actor)
     except (json.JSONDecodeError, KeyError, ValueError, WorkflowPlanError) as exc:
@@ -367,6 +446,8 @@ async def edit_workflow_steps(
     description="Cancel an in-progress workflow run by name (latest running execution).",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="cancelled a workflow run",
+    asks_first=False,
+    no_ask_reason="Stops a run the user asked to stop; the workflow itself is kept.",
 )
 async def cancel_workflow_run(
     store: WorkflowStore,

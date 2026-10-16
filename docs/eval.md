@@ -219,20 +219,58 @@ the response's `tool_calls` with `success: true`. This check is objective and
 free — no LLM judge needed. Omit it for scenarios where not calling tools is
 correct behavior (graceful errors, companion responses, ambiguous routing).
 
-An entry can also be a mapping with `name`, optional `args`, and optional
-`allow_draft`:
+An entry can also be a mapping. It takes `name` and these optional keys:
+
+| Key | Meaning |
+|---|---|
+| `args` | Argument conditions the call must meet. |
+| `gate` | The call's confirmation gate: `none`, `parked`, `approved`, `denied`, `expired`, `refused_over_cap` or `pre_approved`. A list matches any of them. |
+| `turn` | Match only calls made in this turn number. |
+| `count` | Require exactly this many matching calls. `0` proves that a call did not run. |
+| `allow_parked` | Accept a call that parked as a pass. Without it, a parked call never counts. |
 
 ```yaml
   expected_tools:
     - name: create_goal
-      allow_draft: true
+      allow_parked: true
 ```
 
-Some tools only draft in an eval turn. `create_goal` waits for the user's Start
-confirmation, so the trace records the call with `is_draft: true` and
-`success: false` ("suppressed: draft mode"). The scorer does not count drafts by
-default. Set `allow_draft: true` on an entry to accept a draft call as well as a
-successful one. A plain failure never passes, and `args` conditions still apply.
+A parked call waits for the user's approval, so it did not run. It never counts by
+default. A `gate` entry matches on the gate alone and ignores `success`. An approved write
+that failed still proves the approval.
+
+### Confirmation steps
+
+A turn may be `confirm: approve` or `confirm: deny` instead of a `prompt`. The step
+answers the open confirmation of the same session through `POST /eval/confirm`, with the
+same `session_id` as the turns before it. A confirm step with no open confirmation fails
+the scenario. A confirm step is never the first turn.
+
+```yaml
+- id: write_confirmation_send_email_deny
+  turns:
+    - prompt: "Send Ana the notes."
+      description: "Turn 1: send_email parks"
+    - confirm: deny
+      description: "Turn 2: deny the send"
+  expected_tools:
+    - name: send_email
+      gate: parked
+      turn: 1
+    - name: send_email
+      gate: [none, approved, pre_approved]
+      count: 0
+```
+
+`eval/scenarios/write_confirmation.yaml` covers the approve, deny, compound and
+delegation paths.
+
+### Sandbox-only scenarios
+
+A scenario that creates or deletes calendar events sets `requires_sandbox: true`. The
+runner skips it, and the MCP server refuses to run it, unless `ZE_EVAL_SANDBOX=1` is set. Set that flag only
+when Ze's Google credentials point at a sandbox calendar. Such a scenario deletes only an
+event it created itself. It never reads, changes or deletes an event that already existed.
 
 You can also add a `verify` block to check Ze's database directly after the
 scenario runs:
@@ -376,6 +414,7 @@ every 15 min, and the runner does not use it.
 | `goals.yaml` | 7 | Create, list, progress check, milestone update, verification cadence |
 | `workflow.yaml` | 6 | Create, list, pause, manual trigger, approval flow, error inquiry |
 | `contacts.yaml` | 6 | Lookup, list, add, update, company search, multi-turn |
+| `write_confirmation.yaml` | 5 | Approve and deny for parked writes, compound read-then-send, conductor delegation |
 | `prospecting.yaml` | 6 | Company research, outreach draft, lead qualification, target lists |
 
 Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
@@ -395,7 +434,7 @@ Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 | `agent_used` | string | Which agent handled it |
 | `routing` | object | confidence, routing_method, is_compound, score_gap, raw_scores |
 | `pending_confirmation` | bool | True if Ze paused for user approval |
-| `tool_calls` | array | Tools invoked: name, args, duration_ms, success, error. Judge remember/forget from `remember_fact` / `forget_fact`. |
+| `tool_calls` | array | Tools invoked: name, args, duration_ms, success, error, gate, parked, turn. Judge remember/forget from `remember_fact` / `forget_fact`. |
 | `tokens_used` | int | Total tokens consumed by the agent |
 | `error` | string | Error message if the graph failed |
 
@@ -406,8 +445,9 @@ Available tags: `companion`, `routing`, `persona`, `research`, `reminders`,
 - Ze namespaces eval threads as `eval-<session_id>` to avoid contaminating the
   user's real conversation history, but they share the same database. Ze may surface
   user memory in eval responses.
-- If `pending_confirmation` is `true`, Ze would normally pause for user approval.
-  The eval endpoint returns the draft response in `response` and does not auto-resume.
+- If `pending_confirmation` is `true`, Ze paused for user approval. The scenario answers
+  the pause with a `confirm:` step. If no step follows, the scenario ends with the
+  confirmation open, and the parked calls are not counted as run.
 - Calendar and email scenarios require valid Google credentials in `.env`.
   Without them, Ze should return a graceful error — that is itself a valid eval outcome.
 - Reminders scenarios write real rows to the database. Clean up with

@@ -130,7 +130,6 @@ async def test_compaction_llm_failure_end_to_end_turn_still_completes():
     ctx = AgentContext(
         session_id="s1",
         prompt="new message",
-        intent="read",
         memory=MemoryContext(),
         messages=[],
         model="unknown/model",
@@ -167,7 +166,6 @@ async def test_unknown_model_end_to_end_uses_default_context_window_no_error():
     ctx = AgentContext(
         session_id="s1",
         prompt="hello",
-        intent="read",
         memory=MemoryContext(),
         messages=[],
         model="some-provider/does-not-exist",

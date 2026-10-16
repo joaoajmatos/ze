@@ -42,7 +42,7 @@ def _envelope(agent: str = "companion") -> RoutingEnvelope:
         score_gap=0.3,
         routing_method="embedding",
         is_compound=False,
-        subtasks=[SubTask(agent=agent, intent="read", prompt="x", model="m")],
+        subtasks=[SubTask(agent=agent, prompt="x", model="m")],
         requires_synthesis=False,
     )
 
@@ -77,7 +77,6 @@ def _full_state() -> dict:
     ctx = AgentContext(
         session_id="s1",
         prompt="ok go ahead with that plan",
-        intent="reason",
         messages=[*prior, {"role": "user", "content": "ok go ahead with that plan"}],
         resume_recap=RECAP,
         screen_context_note="The user is viewing workflow execution 42",

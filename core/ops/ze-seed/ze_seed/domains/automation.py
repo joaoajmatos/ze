@@ -209,8 +209,8 @@ async def _apply_automation(ctx: SeedContext) -> int:
             await conn.execute(
                 """
                 INSERT INTO goal_milestones
-                    (id, goal_id, title, description, sequence, agent_hint, intent, status, output, completed_at)
-                VALUES ($1, $2, $3, $4, $5, $6, 'execute', $7, $8, $9)
+                    (id, goal_id, title, description, sequence, agent_hint, status, output, completed_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 ON CONFLICT (id) DO NOTHING
                 """,
                 mid,
@@ -437,17 +437,14 @@ async def _apply_automation(ctx: SeedContext) -> int:
                 {
                     "task": "Check Duolingo streak and weekly XP",
                     "agent_hint": "companion",
-                    "intent": "execute",
                 },
                 {
                     "task": "Summarize tutor feedback from last session",
                     "agent_hint": "companion",
-                    "intent": "execute",
                 },
                 {
                     "task": "Suggest one B1 practice resource",
                     "agent_hint": "research",
-                    "intent": "execute",
                 },
             ]
         )
@@ -456,17 +453,14 @@ async def _apply_automation(ctx: SeedContext) -> int:
                 {
                     "task": "List today's calendar events",
                     "agent_hint": "calendar",
-                    "intent": "execute",
                 },
                 {
                     "task": "Surface pending reminders",
                     "agent_hint": "calendar",
-                    "intent": "execute",
                 },
                 {
                     "task": "Draft a one-paragraph day overview",
                     "agent_hint": "companion",
-                    "intent": "execute",
                 },
             ]
         )
@@ -475,17 +469,14 @@ async def _apply_automation(ctx: SeedContext) -> int:
                 {
                     "task": "Collect beta user feedback from the past week",
                     "agent_hint": "research",
-                    "intent": "execute",
                 },
                 {
                     "task": "Summarize signups and active users",
                     "agent_hint": "research",
-                    "intent": "execute",
                 },
                 {
                     "task": "Draft a build-in-public update post",
                     "agent_hint": "companion",
-                    "intent": "execute",
                 },
             ]
         )
@@ -494,7 +485,6 @@ async def _apply_automation(ctx: SeedContext) -> int:
                 {
                     "task": "Check inbox for an Acme invoice",
                     "agent_hint": "messenger",
-                    "intent": "execute",
                     "id": "s0",
                     "branches": [
                         {"condition": "an Acme invoice arrived", "to": "s1"},
@@ -504,13 +494,11 @@ async def _apply_automation(ctx: SeedContext) -> int:
                 {
                     "task": "Forward the invoice to accounting@example.com",
                     "agent_hint": "messenger",
-                    "intent": "execute",
                     "id": "s1",
                 },
                 {
                     "task": "Log that no invoice arrived today",
                     "agent_hint": "companion",
-                    "intent": "execute",
                     "id": "s2",
                 },
             ]
@@ -520,7 +508,6 @@ async def _apply_automation(ctx: SeedContext) -> int:
                 {
                     "task": "Ping the LedgerLite health endpoint",
                     "agent_hint": "research",
-                    "intent": "execute",
                     "id": "s0",
                     "branches": [
                         {"condition": "endpoint is healthy", "to": "END"},

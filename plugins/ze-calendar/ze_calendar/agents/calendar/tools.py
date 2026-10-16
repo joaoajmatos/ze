@@ -19,6 +19,7 @@ def _calendar_write_view(args: dict) -> dict:
         "parties": parties,
         "when": args.get("start"),
         "summary": summary or args.get("event_id") or location or "calendar write",
+        "sets_time": bool(args.get("start") or args.get("end")),
     }
 
 
@@ -102,9 +103,38 @@ async def create_event(
     return {"id": event_id, "htmlLink": result.get("htmlLink")}
 
 
+async def _event_label(args: dict) -> str | None:
+    """The event's title and start, read from the calendar, for a confirmation."""
+    service = args["credentials"].calendar()
+    event = await asyncio.to_thread(
+        lambda: (
+            service.events()
+            .get(
+                calendarId=args.get("calendar_id") or "primary",
+                eventId=args["event_id"],
+            )
+            .execute()
+        )
+    )
+    start = event.get("start") or {}
+    when = start.get("dateTime") or start.get("date") or ""
+    return f'"{event.get("summary") or "untitled event"}" {when}'.strip()
+
+
+async def _event_change_label(args: dict) -> str | None:
+    label = await _event_label(args)
+    changes = ", ".join(
+        f"{key}: {args[key]}"
+        for key in ("summary", "start", "end", "description")
+        if args.get(key) is not None
+    )
+    return f"{label} → {changes}" if changes else label
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Update an existing Google Calendar event.",
+    summarize=_event_change_label,
     constraint_gate=True,
     constraint_describe=_calendar_write_view,
     reversibility=ToolReversibility.IRREVERSIBLE,
@@ -161,6 +191,7 @@ async def update_event(
 @tool(
     access=ToolAccess.WRITE,
     description="Delete a Google Calendar event.",
+    summarize=_event_label,
     constraint_gate=True,
     constraint_describe=_calendar_write_view,
     reversibility=ToolReversibility.IRREVERSIBLE,

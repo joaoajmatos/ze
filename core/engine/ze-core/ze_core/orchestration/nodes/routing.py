@@ -128,30 +128,12 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
     }
 
 
-_GATHER_INTENTS = frozenset({"read", "lookup", "search"})
-_ACT_INTENTS = frozenset({"create", "update", "delete", "send"})
-
-
-def _normalize_intent(intent: str) -> str:
-    return (intent or "").strip().casefold()
-
-
-def _is_gather_intent(intent: str) -> bool:
-    return _normalize_intent(intent) in _GATHER_INTENTS
-
-
-def _is_act_intent(intent: str) -> bool:
-    return _normalize_intent(intent) in _ACT_INTENTS
-
-
 def is_mixed_gather_act(subtasks: list[SubTask]) -> bool:
-    """True when more than one specialist and both gather and act intents are present."""
+    """True when more than one specialist and the turn both gathers and changes things."""
     agents = {s.agent for s in subtasks}
     if len(agents) <= 1:
         return False
-    has_gather = any(_is_gather_intent(s.intent) for s in subtasks)
-    has_act = any(_is_act_intent(s.intent) for s in subtasks)
-    return has_gather and has_act
+    return any(s.changes for s in subtasks) and any(not s.changes for s in subtasks)
 
 
 def apply_conductor_rewrite(
@@ -163,7 +145,7 @@ def apply_conductor_rewrite(
     if not sequential_multi and not mixed:
         return envelope, None
     hint = [
-        {"agent": s.agent, "intent": s.intent, "prompt": s.prompt}
+        {"agent": s.agent, "prompt": s.prompt, "changes": s.changes}
         for s in envelope.subtasks
     ]
     rewritten = RoutingEnvelope(
@@ -172,7 +154,7 @@ def apply_conductor_rewrite(
         score_gap=envelope.score_gap,
         routing_method=envelope.routing_method,
         is_compound=False,
-        subtasks=[SubTask(agent="companion", intent="reason", prompt=user_prompt)],
+        subtasks=[SubTask(agent="companion", prompt=user_prompt)],
         requires_synthesis=False,
         raw_scores=envelope.raw_scores,
         is_sequential=True,

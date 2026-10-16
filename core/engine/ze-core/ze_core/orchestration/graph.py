@@ -59,10 +59,9 @@ def graph_builder(
 
     from ze_core.orchestration import nodes
     from ze_core.orchestration.edges import (
-        after_await_confirmation,
-        after_await_subtask_confirmation,
-        after_capability_check,
+        after_await_budget_confirmation,
         after_execute_tool,
+        after_preflight,
         after_surface_loops,
     )
     from ze_core.orchestration.state import AgentState
@@ -76,20 +75,18 @@ def graph_builder(
     builder.add_node("fetch_context", ov.get("fetch_context", nodes.fetch_context))
     builder.add_node("match_skills", ov.get("match_skills", nodes.match_skills))
     builder.add_node("choose_tier", ov.get("choose_tier", nodes.choose_tier))
+    builder.add_node("preflight", ov.get("preflight", nodes.preflight))
     builder.add_node(
-        "capability_check", ov.get("capability_check", nodes.capability_check)
+        "await_budget_confirmation",
+        ov.get("await_budget_confirmation", nodes.await_budget_confirmation),
     )
     builder.add_node("execute_tool", ov.get("execute_tool", nodes.execute_tool))
     builder.add_node(
-        "await_subtask_confirmation",
-        ov.get("await_subtask_confirmation", nodes.await_subtask_confirmation),
+        "await_write_confirmation",
+        ov.get("await_write_confirmation", nodes.await_write_confirmation),
     )
     builder.add_node("correlate", ov.get("correlate", nodes.correlate))
     builder.add_node("surface_loops", ov.get("surface_loops", nodes.surface_loops))
-    builder.add_node("draft_response", ov.get("draft_response", nodes.draft_response))
-    builder.add_node(
-        "await_confirmation", ov.get("await_confirmation", nodes.await_confirmation)
-    )
     builder.add_node("synthesize", ov.get("synthesize", nodes.synthesize))
     builder.add_node("record_trace", ov.get("record_trace", nodes.record_trace))
     builder.add_node("write_memory", ov.get("write_memory", nodes.write_memory))
@@ -106,40 +103,35 @@ def graph_builder(
 
     builder.add_edge("fetch_context", "match_skills")
     builder.add_edge("match_skills", "choose_tier")
-    builder.add_edge("choose_tier", "capability_check")
+    builder.add_edge("choose_tier", "preflight")
     builder.add_conditional_edges(
-        "capability_check",
-        after_capability_check,
+        "preflight",
+        after_preflight,
         {
             "execute_tool": "execute_tool",
-            "draft_response": "draft_response",
+            "await_budget_confirmation": "await_budget_confirmation",
             "end_blocked": END,
         },
+    )
+    builder.add_conditional_edges(
+        "await_budget_confirmation",
+        after_await_budget_confirmation,
+        {"execute_tool": "execute_tool", "record_trace": "record_trace"},
     )
     builder.add_conditional_edges(
         "execute_tool",
         after_execute_tool,
         {
             "correlate": "correlate",
-            "await_subtask_confirmation": "await_subtask_confirmation",
+            "await_write_confirmation": "await_write_confirmation",
         },
     )
-    builder.add_conditional_edges(
-        "await_subtask_confirmation",
-        after_await_subtask_confirmation,
-        {"execute_tool": "execute_tool"},
-    )
+    builder.add_edge("await_write_confirmation", "execute_tool")
     builder.add_edge("correlate", "surface_loops")
     builder.add_conditional_edges(
         "surface_loops",
         after_surface_loops,
         {"synthesize": "synthesize", "record_trace": "record_trace"},
-    )
-    builder.add_edge("draft_response", "await_confirmation")
-    builder.add_conditional_edges(
-        "await_confirmation",
-        after_await_confirmation,
-        {"execute_tool": "execute_tool", "record_trace": "record_trace"},
     )
     builder.add_edge("synthesize", "record_trace")
     builder.add_edge("record_trace", "write_memory")
@@ -176,7 +168,4 @@ def build_graph(checkpointer: Any, plugins: list[ZePlugin] | None = None) -> Any
             builder.add_node(name, fn)
         plugin.graph_edges(builder)
 
-    return builder.compile(
-        checkpointer=checkpointer,
-        interrupt_before=["await_confirmation"],
-    )
+    return builder.compile(checkpointer=checkpointer)

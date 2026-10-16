@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_agents.types import GateDecision, Source, add_sources
+from ze_agents.delegate import DELEGATE_TOOL_NAME
+from ze_agents.effects import effect_imperative, ensure_declined_lines
+from ze_agents.errors import UnknownToolError
+from ze_agents.park import generic_summary
+from ze_agents.tool import get_tool
+from ze_agents.types import Source, add_sources
 from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 from ze_core.conversation.messages.types import (
     CompactionTrace,
@@ -21,7 +27,6 @@ from ze_core.orchestration.promote import ledger_with_promote_offer
 from ze_core.orchestration.state import AgentState
 
 
-_DRAFT_GATES = (GateDecision.DRAFT, GateDecision.AWAIT_CONFIRMATION)
 _STILL_RUNNING_ID_PATTERN = re.compile(r"^\[still running\] run ([^:]+):")
 
 _WORKSPACE_TOOL_NAMES = frozenset(
@@ -46,11 +51,9 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         return {}
 
     memory_chunks = extract_memory_chunks(state.get("memory_context"))
-    approved_agents = set(state.get("approved_agents") or [])
     tool_calls = _extract_tool_calls(
         agent_result,
         list(state.get("subtask_results") or []),
-        approved_agents=approved_agents,
     )
     total_duration_ms = sum(t.duration_ms for t in tool_calls)
 
@@ -90,17 +93,21 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
             agent_result, list(state.get("subtask_results") or [])
         ),
         effects_known=True,
+        write_confirmations=[
+            *(dict(row) for row in state.get("write_outcomes") or []),
+            *_refused_over_cap_rows(state, agent_result),
+        ],
         tier=state.get("tier"),
     )
-    updates: dict[str, Any] = {"message_trace": trace}
+    update: dict[str, Any] = {"message_trace": trace}
+    update.update(_with_declined_lines(state, agent_result))
     offer_ids = list(state.get("loop_offer_ids") or [])
-    if (
-        agent_result is not None
-        and not state.get("error")
-        and state.get("gate_decision") not in _DRAFT_GATES
-    ):
+    if agent_result is not None and not state.get("error"):
         reply = (
-            state.get("final_response") or getattr(agent_result, "response", "") or ""
+            update.get("final_response")
+            or state.get("final_response")
+            or getattr(agent_result, "response", "")
+            or ""
         )
         with_offer = with_loop_offer_line(
             reply,
@@ -109,8 +116,74 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
             history=list(state.get("messages") or []),
         )
         if with_offer != reply:
-            updates["final_response"] = with_offer
-    return updates
+            update["final_response"] = with_offer
+    return update
+
+
+def _refused_over_cap_rows(
+    state: AgentState, agent_result: Any
+) -> list[dict[str, Any]]:
+    """One row per asks-first call refused for being past the round cap (FR-029).
+
+    No confirmation was opened for them, so `request_id` is empty; `round` is the
+    round that would have been asked.
+    """
+    round_ = int(state.get("write_rounds") or 0) + 1
+    refused: list[tuple[str, str, dict]] = []
+    for result in [agent_result, *(state.get("subtask_results") or [])]:
+        for call in getattr(result, "tool_calls", None) or []:
+            if getattr(call, "gate", None) == "refused_over_cap":
+                refused.append((result.agent, call.tool_name, call.args))
+            if call.tool_name == DELEGATE_TOOL_NAME and isinstance(
+                getattr(call, "result", None), dict
+            ):
+                for nested in call.result.get("tool_calls") or []:
+                    if nested.get("gate") == "refused_over_cap":
+                        refused.append(
+                            (
+                                str(call.args.get("agent") or ""),
+                                nested.get("tool_name", ""),
+                                nested.get("args") or {},
+                            )
+                        )
+    return [
+        {
+            "request_id": "",
+            "round": round_,
+            "item_id": f"refused-{index}",
+            "agent": agent,
+            "tool": tool_name,
+            "effect": _effect(tool_name),
+            "summary": generic_summary(args),
+            "outcome": "refused",
+        }
+        for index, (agent, tool_name, args) in enumerate(refused)
+    ]
+
+
+def _effect(tool_name: str) -> str | None:
+    try:
+        phrase = get_tool(tool_name).effect_phrase
+    except UnknownToolError:
+        return None
+    return effect_imperative(phrase) if phrase else None
+
+
+def _with_declined_lines(state: AgentState, agent_result: Any) -> dict[str, Any]:
+    """Append "Okay, I didn't ..." for each declined item the reply leaves out."""
+    rows = list(state.get("write_outcomes") or [])
+    if not rows:
+        return {}
+    reply = state.get("final_response") or (
+        agent_result.response if agent_result is not None else ""
+    )
+    fixed = ensure_declined_lines(reply or "", rows)
+    if fixed == (reply or ""):
+        return {}
+    update: dict[str, Any] = {"final_response": fixed}
+    if agent_result is not None and not state.get("final_response"):
+        update["agent_result"] = replace(agent_result, response=fixed)
+    return update
 
 
 def _extract_sources(
@@ -250,8 +323,6 @@ def _conductor_ledger(state: AgentState) -> list[dict[str, str]]:
 def _extract_tool_calls(
     agent_result: Any,
     subtask_results: list[Any] | None = None,
-    *,
-    approved_agents: set[str] | frozenset[str] = frozenset(),
 ) -> list[ToolCallTrace]:
     """Resolve every call (nested delegate calls flattened) against the registry now,
     so retry eligibility never depends on registry state at retry time."""
@@ -264,13 +335,8 @@ def _extract_tool_calls(
 
     registry = registered_tools()
     result = []
-    tagged = [
-        (c, getattr(r, "agent", None) in approved_agents)
-        for r in results
-        for c in (getattr(r, "tool_calls", None) or [])
-    ]
-    confirmed_by_call = {id(c): ok for c, ok in tagged}
-    for call_index, tc in enumerate(flatten_tool_calls([c for c, _ in tagged])):
+    top_level = [c for r in results for c in (getattr(r, "tool_calls", None) or [])]
+    for call_index, tc in enumerate(flatten_tool_calls(top_level)):
         name = getattr(tc, "tool_name", "unknown")
         raw_result = getattr(tc, "result", "") or ""
         snippet = str(raw_result)[:200] if raw_result else ""
@@ -284,8 +350,6 @@ def _extract_tool_calls(
         else:
             access = "write" if spec.access is ToolAccess.WRITE else "read"
         gate = getattr(tc, "gate", "none")
-        if gate == "none" and access == "write" and _confirmed(tc, confirmed_by_call):
-            gate = "approved"
         result.append(
             ToolCallTrace(
                 name=name,
@@ -308,12 +372,6 @@ def _extract_tool_calls(
             )
         )
     return result
-
-
-def _confirmed(call: Any, confirmed_by_call: dict[int, bool]) -> bool:
-    """Top-level calls are approved with their agent's gate; nested delegate calls
-    carry their own gate from the delegate, so only top-level ids are in the map."""
-    return confirmed_by_call.get(id(call), False)
 
 
 def _extract_procedure(agent_context: Any) -> ProcedureUsageTrace | None:

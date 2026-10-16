@@ -10,10 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-
-def _to_list(embedding: Any) -> str:
-    vals = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
-    return "[" + ",".join(str(v) for v in vals) + "]"
+from ze_memory.vectors import to_vector_literal
 
 
 def _as_float_vector(embedding: Any) -> list[float]:
@@ -86,7 +83,7 @@ class PostgresConsolidationStore:
                 predicate,
                 value,
                 confidence,
-                _to_list(embedding),
+                to_vector_literal(embedding),
             )
 
     async def soft_expire_unreviewed_facts(self, ttl_days: int, grace_days: int) -> int:
@@ -192,7 +189,7 @@ class PostgresConsolidationStore:
         embedding: Any,
         recency_days: int,
     ) -> int:
-        emb_list = _to_list(embedding)
+        emb_list = to_vector_literal(embedding)
         async with self._pool.acquire() as conn:
             async with conn.transaction():
                 await conn.execute(

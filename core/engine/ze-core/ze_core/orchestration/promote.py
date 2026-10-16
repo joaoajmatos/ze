@@ -5,10 +5,6 @@ from typing import Any, Literal
 LEDGER_TERMINAL_STATUSES = frozenset({"done", "skipped", "denied"})
 PROMOTE_OFFERED_STATUS = "promote_offered"
 
-CONFIRMATION_TIMEOUT_BASE = (
-    "I waited for your approval but the window elapsed — "
-    "let me know if you'd like me to try again."
-)
 PROMOTE_OFFER_SUFFIX = (
     " If you want this job to keep going after this turn, tell me and I can "
     "continue it as a goal or as a workflow — not both, and not until you accept."
@@ -55,12 +51,6 @@ def should_offer_promote(
     if timeout_or_abort:
         return True
     return not any(item.get("status") == "ask_user" for item in ledger)
-
-
-def confirmation_timeout_message(ledger: list[dict[str, Any]] | None) -> str:
-    if should_offer_promote(ledger, timeout_or_abort=True):
-        return CONFIRMATION_TIMEOUT_BASE + PROMOTE_OFFER_SUFFIX
-    return CONFIRMATION_TIMEOUT_BASE
 
 
 def classify_promote_kind(text: str) -> PromoteKind:

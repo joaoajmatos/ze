@@ -13,11 +13,9 @@ from ze_memory.procedures.errors import (
     IneligibleProcedureError,
     InvalidProcedureEvidenceError,
     InvalidProcedureTransitionError,
-    MissingActionRecordError,
     ProcedureLifecycleError,
     StaleProcedureInvocationError,
     UnapprovedWorkspaceRunError,
-    UnavailableRollbackTargetError,
 )
 from ze_memory.procedures.store import (
     InMemoryProcedureStore,
@@ -44,7 +42,6 @@ __all__ = [
     "InvalidProcedureEvidenceError",
     "InvalidProcedureTransitionError",
     "LearningRef",
-    "MissingActionRecordError",
     "PostgresProcedureStore",
     "ProcedureActivator",
     "ProcedureAdmissionDecision",
@@ -58,7 +55,6 @@ __all__ = [
     "ProcedureVersion",
     "StaleProcedureInvocationError",
     "UnapprovedWorkspaceRunError",
-    "UnavailableRollbackTargetError",
     "VersionStatus",
     "intersect_tools",
     "format_procedure_guidance",

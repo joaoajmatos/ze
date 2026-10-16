@@ -352,6 +352,11 @@ def _parse_trace(data: dict) -> MessageTrace:
         if data.get("rollback")
         else None,
         loop_offer_ids=list(data.get("loop_offer_ids") or []),
+        write_confirmations=[
+            dict(row)
+            for row in data.get("write_confirmations") or []
+            if isinstance(row, dict)
+        ],
         tier=TierTrace(**data["tier"]) if data.get("tier") else None,
     )
 

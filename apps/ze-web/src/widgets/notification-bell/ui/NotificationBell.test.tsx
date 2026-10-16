@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
+import { useSession } from "@/entities/session";
 import { NotificationBell } from "./NotificationBell";
 
 const {
@@ -8,11 +9,20 @@ const {
   useUnreadCountQuery,
   useMarkReadMutation,
   useMarkAllReadMutation,
+  useHeldWritesQuery,
+  useDecideHeldWriteMutation,
 } = vi.hoisted(() => ({
   useNotificationsQuery: vi.fn(),
   useUnreadCountQuery: vi.fn(),
   useMarkReadMutation: vi.fn(),
   useMarkAllReadMutation: vi.fn(),
+  useHeldWritesQuery: vi.fn(),
+  useDecideHeldWriteMutation: vi.fn(),
+}));
+
+vi.mock("@/entities/confirmation", () => ({
+  useHeldWritesQuery,
+  useDecideHeldWriteMutation,
 }));
 
 vi.mock("@/entities/notification", () => ({
@@ -22,12 +32,44 @@ vi.mock("@/entities/notification", () => ({
   useMarkAllReadMutation,
 }));
 
-function renderBell() {
+function renderBell(initialEntry = "/") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <NotificationBell />
+      <LocationProbe />
     </MemoryRouter>,
   );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="location">{location.pathname + location.search}</span>;
+}
+
+const heldWrite = {
+  request_id: "req-1",
+  source: "workflow" as const,
+  source_name: "Weekly summary",
+  owner_ref: "wf-1",
+  status: "open" as const,
+  items: [
+    {
+      item_id: "c1",
+      agent: "messenger",
+      tool: "send_email",
+      effect_phrase: "send an email",
+      summary: "To Ana — Weekly summary",
+      conflict: null,
+      editable_field: "body",
+      proposed_text: "Hi Ana",
+    },
+  ],
+};
+
+function setHeld(held: (typeof heldWrite)[] = [], mutate = vi.fn()) {
+  useHeldWritesQuery.mockReturnValue({ data: held });
+  useDecideHeldWriteMutation.mockReturnValue({ mutate, isPending: false, variables: undefined });
+  return mutate;
 }
 
 const item = {
@@ -58,6 +100,7 @@ function setup({
   });
   useMarkReadMutation.mockReturnValue({ mutate: vi.fn() });
   useMarkAllReadMutation.mockReturnValue({ mutate: vi.fn() });
+  setHeld();
 }
 
 describe("NotificationBell", () => {
@@ -118,6 +161,55 @@ describe("NotificationBell", () => {
     expect(mutate).toHaveBeenCalledWith("notif-1");
   });
 
+  it("renders a targetless confirmation_request row and opens nothing on click", () => {
+    const mutate = vi.fn();
+    setup({
+      items: [
+        {
+          ...item,
+          id: "n-confirm",
+          event_type: "confirmation_request",
+          source: "conversation",
+          title: "Ze needs your approval",
+          body: "abandon a goal",
+          target_type: null as unknown as string,
+          target_id: null as unknown as string,
+        },
+      ],
+    });
+    useMarkReadMutation.mockReturnValue({ mutate });
+    renderBell("/chat");
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+    fireEvent.click(screen.getByText("Ze needs your approval"));
+
+    expect(mutate).toHaveBeenCalledWith("n-confirm");
+    expect(screen.getByTestId("location")).toHaveTextContent("/chat");
+    expect(screen.getByText("abandon a goal")).toBeInTheDocument();
+  });
+
+  it("opens the chat on the paused thread for a chat_thread notification", () => {
+    setup({
+      items: [
+        {
+          ...item,
+          id: "n-thread",
+          event_type: "confirmation_request",
+          title: "Ze needs your approval",
+          target_type: "chat_thread",
+          target_id: "thread-9",
+        },
+      ],
+    });
+    renderBell("/goals");
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+    fireEvent.click(screen.getByText("Ze needs your approval"));
+
+    expect(useSession.getState().threadId).toBe("thread-9");
+    expect(screen.getByTestId("location")).toHaveTextContent(/^\/$/);
+  });
+
   it("labels a held item", () => {
     setup({ items: [{ ...item, delivery: "held" }] });
     renderBell();
@@ -144,5 +236,82 @@ describe("NotificationBell", () => {
 
     expect(screen.queryByText("Held for quiet hours")).not.toBeInTheDocument();
     expect(screen.queryByText("Not pushed: daily limit")).not.toBeInTheDocument();
+  });
+
+  describe("held writes", () => {
+    it("shows nothing extra when no write is held", () => {
+      setup({ items: [item] });
+      renderBell();
+      fireEvent.click(screen.getByLabelText("Notifications"));
+      expect(screen.queryByText(/waiting for your OK/i)).not.toBeInTheDocument();
+    });
+
+    it("lists each open held write as a confirmation card with its source", () => {
+      setup({ items: [] });
+      setHeld([heldWrite]);
+      renderBell();
+      fireEvent.click(screen.getByLabelText("Notifications"));
+      expect(screen.getByText("send an email")).toBeInTheDocument();
+      expect(screen.getByText(/workflow: Weekly summary/i)).toBeInTheDocument();
+      expect(screen.queryByText("You're all caught up.")).not.toBeInTheDocument();
+    });
+
+    it("approves with only the edited text", () => {
+      setup();
+      const mutate = setHeld([heldWrite]);
+      renderBell();
+      fireEvent.click(screen.getByLabelText("Notifications"));
+      fireEvent.change(screen.getByRole("textbox"), { target: { value: "Hello Ana" } });
+      fireEvent.click(screen.getByRole("button", { name: "Approve all" }));
+      expect(mutate).toHaveBeenCalledWith({
+        requestId: "req-1",
+        choice: "approve",
+        edits: { c1: "Hello Ana" },
+      });
+    });
+
+    it("denies a held write", () => {
+      setup();
+      const mutate = setHeld([heldWrite]);
+      renderBell();
+      fireEvent.click(screen.getByLabelText("Notifications"));
+      fireEvent.click(screen.getByRole("button", { name: "Deny all" }));
+      expect(mutate).toHaveBeenCalledWith({ requestId: "req-1", choice: "deny", edits: {} });
+    });
+
+    it("opens the panel and highlights the card named by ?confirm=", () => {
+      setup();
+      setHeld([heldWrite]);
+      renderBell("/?confirm=req-1");
+      expect(screen.getByTestId("held-write-req-1")).toHaveAttribute("data-highlighted", "true");
+    });
+
+    it("leaves the panel closed when ?confirm= matches no held write", () => {
+      setup();
+      setHeld([heldWrite]);
+      renderBell("/?confirm=other");
+      expect(screen.queryByTestId("held-write-req-1")).not.toBeInTheDocument();
+    });
+
+    it("clears ?confirm= once the write is answered", () => {
+      setup();
+      setHeld([heldWrite]);
+      renderBell("/chat?confirm=req-1");
+      fireEvent.click(screen.getByRole("button", { name: "Deny all" }));
+      expect(screen.getByTestId("location")).toHaveTextContent("/chat");
+      expect(screen.getByTestId("location")).not.toHaveTextContent("confirm=");
+    });
+
+    it("deep-links a held_write notification to its card", () => {
+      setup({
+        items: [{ ...item, id: "n2", target_type: "held_write", target_id: "req-1", title: "Approve?" }],
+      });
+      setHeld([heldWrite]);
+      renderBell("/goals");
+      fireEvent.click(screen.getByLabelText("Notifications"));
+      fireEvent.click(screen.getByText("Approve?"));
+      expect(screen.getByTestId("location")).toHaveTextContent("/goals?confirm=req-1");
+      expect(screen.getByTestId("held-write-req-1")).toHaveAttribute("data-highlighted", "true");
+    });
   });
 });

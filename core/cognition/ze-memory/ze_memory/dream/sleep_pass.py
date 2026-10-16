@@ -145,23 +145,6 @@ class SleepPass:
 
         return len(upsert_rows)
 
-    async def _check_sensitive_entities(self, episode_id: Any) -> bool:
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT 1
-                FROM memory_entities ent
-                WHERE ent.sensitive = true
-                  AND ent.id::text = ANY(
-                    SELECT jsonb_array_elements_text(ep.linked_entity_ids)
-                    FROM memory_episodes ep WHERE ep.id = $1
-                  )
-                LIMIT 1
-                """,
-                episode_id,
-            )
-        return row is not None
-
     async def _select_replay_candidates(self, cfg: dict) -> int:
         max_replay = int(cfg.get("max_replay_episodes", _DEFAULT_MAX_REPLAY))
         async with self._pool.acquire() as conn:

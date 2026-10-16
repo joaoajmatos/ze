@@ -84,7 +84,7 @@ The full feature list is in [docs/features.md](docs/features.md).
 
 Every turn runs through a LangGraph graph checkpointed in Postgres.
 
-![Flowchart showing a message moving from ze-web through preprocess, embed_route, fetch_context, and a capability_check decision that either executes a tool or pauses for confirmation, then through correlate, surface_loops, synthesize, and a combined record_trace/write_memory step back to the response](docs/diagrams/root/graph-flow.svg)
+![Flowchart showing a message moving from ze-web through preprocess, embed_route, fetch_context, and a preflight decision; execute_tool parks irreversible writes into one await_write_confirmation pause, then correlate, surface_loops, synthesize, and a combined record_trace/write_memory step back to the response](docs/diagrams/root/graph-flow.svg)
 
 <sub>[Interactive version](docs/diagrams/root/graph-flow.html)</sub>
 

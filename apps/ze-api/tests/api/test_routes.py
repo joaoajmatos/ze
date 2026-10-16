@@ -7,8 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ze_api.api import dependencies
-from ze_api.api.routes import capabilities, memory, routing
-from ze_api.testing import make_gate
+from ze_api.api.routes import memory, routing
 from ze_logging import configure_logging
 from ze_api.settings import Settings, get_settings
 
@@ -29,28 +28,9 @@ def make_settings(config_dir):
 
 
 @pytest.fixture
-def capabilities_yaml(tmp_path):
-    cfg = {
-        "agents": {
-            "research": {"enabled": True, "capabilities": {"read": "autonomous"}},
-            "companion": {"enabled": True, "capabilities": {"reason": "autonomous"}},
-        }
-    }
-    path = tmp_path / "config.yaml"
-    path.write_text(yaml.dump(cfg))
-    return path
-
-
-@pytest.fixture
-def gate(capabilities_yaml):
-    cfg = yaml.safe_load(capabilities_yaml.read_text())
-    store = MagicMock()
-    store.get_all = AsyncMock(return_value={})
-    store.set = AsyncMock()
-    gate = make_gate(cfg["agents"], override_store=store)
-    gate._persistent_cache = {}
-    yield gate
-    gate._restore_registry()
+def config_dir(tmp_path):
+    (tmp_path / "config.yaml").write_text(yaml.dump({"agents": {}}))
+    return tmp_path
 
 
 @pytest.fixture
@@ -66,69 +46,23 @@ def mock_pool():
 
 
 @pytest.fixture
-def client(gate, mock_pool, capabilities_yaml):
+def client(mock_pool, config_dir):
     pool, conn = mock_pool
-    settings = make_settings(capabilities_yaml.parent)
+    settings = make_settings(config_dir)
 
     container = SimpleNamespace(pool=pool)
 
     app = FastAPI()
     app.state.container = container
-    app.include_router(capabilities.router, prefix="/capabilities")
     app.include_router(memory.router, prefix="/memory")
     app.include_router(routing.router, prefix="/routing")
 
-    app.dependency_overrides[dependencies.get_capability_gate] = lambda: gate
     app.dependency_overrides[dependencies.get_container] = lambda: container
     app.dependency_overrides[dependencies.get_settings] = lambda: settings
     app.dependency_overrides[dependencies.require_api_key] = lambda: None
 
     with TestClient(app) as c:
         yield c, conn
-
-
-# ── GET /capabilities ─────────────────────────────────────────────────────────
-
-
-def test_get_capabilities_returns_config(client):
-    c, _ = client
-    resp = c.get("/capabilities")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "research" in data
-    assert data["research"]["read"] == "autonomous"
-
-
-# ── PUT /capabilities/{agent}/{intent} ────────────────────────────────────────
-
-
-def test_put_capability_updates_mode(client, gate):
-    c, _ = client
-    resp = c.put("/capabilities/research/read", json={"mode": "confirm"})
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["research"]["read"] == "confirm"
-    from ze_agents.types import GateDecision
-
-    assert gate.evaluate("research", "read", {}) == GateDecision.AWAIT_CONFIRMATION
-
-
-def test_put_capability_unknown_agent_returns_422(client):
-    c, _ = client
-    resp = c.put("/capabilities/ghost/read", json={"mode": "confirm"})
-    assert resp.status_code == 422
-
-
-def test_put_capability_unknown_intent_returns_422(client):
-    c, _ = client
-    resp = c.put("/capabilities/research/delete", json={"mode": "confirm"})
-    assert resp.status_code == 422
-
-
-def test_put_capability_invalid_mode_returns_422(client):
-    c, _ = client
-    resp = c.put("/capabilities/research/read", json={"mode": "full_send"})
-    assert resp.status_code == 422
 
 
 # ── GET /routing/log ──────────────────────────────────────────────────────────
@@ -214,18 +148,7 @@ def test_openapi_includes_rest_paths(client):
     c, _ = client
     schema = c.get("/openapi.json").json()
     paths = schema["paths"]
-    assert "/capabilities" in paths
-    assert "/capabilities/{agent}/{intent}" in paths
     assert "/memory/facts" in paths
     assert "/memory/facts/review" in paths
     assert "/memory/digest" in paths
     assert "/routing/log" in paths
-
-
-def test_openapi_capabilities_get_has_response_schema(client):
-    c, _ = client
-    schema = c.get("/openapi.json").json()
-    get_op = schema["paths"]["/capabilities"]["get"]
-    assert "200" in get_op["responses"]
-    assert get_op["summary"]
-    assert get_op["description"]

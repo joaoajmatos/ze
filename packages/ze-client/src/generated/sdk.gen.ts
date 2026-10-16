@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetGoalLearningData, GetGoalLearningErrors, GetGoalLearningResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageFeedbackData, GetMessageFeedbackErrors, GetMessageFeedbackResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetProfileData, GetProfileResponses, GetQuietHoursData, GetQuietHoursResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, IngestWorkspaceFileData, IngestWorkspaceFileErrors, IngestWorkspaceFileResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListCapabilitiesData, ListCapabilitiesResponses, ListChannelsData, ListChannelsResponses, ListCollisionsData, ListCollisionsErrors, ListCollisionsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalLearningsData, ListGoalLearningsErrors, ListGoalLearningsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, PromoteGoalLearningData, PromoteGoalLearningErrors, PromoteGoalLearningResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RefreshSkillData, RefreshSkillErrors, RefreshSkillResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ResetWorkspaceData, ResetWorkspaceErrors, ResetWorkspaceResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, SetMessageFeedbackData, SetMessageFeedbackErrors, SetMessageFeedbackResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateCapabilityData, UpdateCapabilityErrors, UpdateCapabilityResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateQuietHoursData, UpdateQuietHoursErrors, UpdateQuietHoursResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
+import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DecideHeldWriteData, DecideHeldWriteErrors, DecideHeldWriteResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, EvalConfirmData, EvalConfirmErrors, EvalConfirmResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetGoalLearningData, GetGoalLearningErrors, GetGoalLearningResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageFeedbackData, GetMessageFeedbackErrors, GetMessageFeedbackResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetProfileData, GetProfileResponses, GetQuietHoursData, GetQuietHoursResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, IngestWorkspaceFileData, IngestWorkspaceFileErrors, IngestWorkspaceFileResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListChannelsData, ListChannelsResponses, ListCollisionsData, ListCollisionsErrors, ListCollisionsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalLearningsData, ListGoalLearningsErrors, ListGoalLearningsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListHeldWritesData, ListHeldWritesErrors, ListHeldWritesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, PromoteGoalLearningData, PromoteGoalLearningErrors, PromoteGoalLearningResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RefreshSkillData, RefreshSkillErrors, RefreshSkillResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ResetWorkspaceData, ResetWorkspaceErrors, ResetWorkspaceResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, SetMessageFeedbackData, SetMessageFeedbackErrors, SetMessageFeedbackResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateQuietHoursData, UpdateQuietHoursErrors, UpdateQuietHoursResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -47,6 +47,20 @@ export const evalChatEvalChatPost = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
+ * Eval confirm
+ *
+ * Answer the open write confirmation of an eval session (approve or deny, with optional edits to editable items) and return the resumed turn in the eval chat shape. 409 when the session has no open confirmation.
+ */
+export const evalConfirm = <ThrowOnError extends boolean = false>(options: Options<EvalConfirmData, ThrowOnError>): RequestResult<EvalConfirmResponses, EvalConfirmErrors, ThrowOnError> => (options.client ?? client).post<EvalConfirmResponses, EvalConfirmErrors, ThrowOnError>({
+    url: '/eval/confirm',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Agent activity heatmap
  *
  * Returns per-day, per-agent assistant message counts for the given date range (defaults to rolling 12 months). Suitable for rendering a calendar heatmap.
@@ -55,32 +69,6 @@ export const getActivityHeatmap = <ThrowOnError extends boolean = false>(options
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/activity/heatmap',
     ...options
-});
-
-/**
- * List capability modes
- *
- * Return effective capability modes per agent (class defaults merged with any persistent DB overrides).
- */
-export const listCapabilities = <ThrowOnError extends boolean = false>(options?: Options<ListCapabilitiesData, ThrowOnError>): RequestResult<ListCapabilitiesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListCapabilitiesResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/capabilities',
-    ...options
-});
-
-/**
- * Update capability mode
- *
- * Set the permission mode for an agent intent. The change is persisted in the database and takes precedence over class defaults until cleared.
- */
-export const updateCapability = <ThrowOnError extends boolean = false>(options: Options<UpdateCapabilityData, ThrowOnError>): RequestResult<UpdateCapabilityResponses, UpdateCapabilityErrors, ThrowOnError> => (options.client ?? client).put<UpdateCapabilityResponses, UpdateCapabilityErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/capabilities/{agent}/{intent}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
 });
 
 /**
@@ -277,7 +265,7 @@ export const triggerWorkflow = <ThrowOnError extends boolean = false>(options: O
 /**
  * Update workflow steps
  *
- * Replace the full step list on an existing workflow. Schedule and run history are unchanged.
+ * Replace the full step list on an existing workflow. Schedule and run history are unchanged. A changed step loses its pre-approved writes; the response lists the changed steps whose agent has asks-first tools in writes_needing_approval. Send approve_writes=true to grant them.
  */
 export const updateWorkflowSteps = <ThrowOnError extends boolean = false>(options: Options<UpdateWorkflowStepsData, ThrowOnError>): RequestResult<UpdateWorkflowStepsResponses, UpdateWorkflowStepsErrors, ThrowOnError> => (options.client ?? client).patch<UpdateWorkflowStepsResponses, UpdateWorkflowStepsErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -434,6 +422,32 @@ export const startGoal = <ThrowOnError extends boolean = false>(options: Options
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/goals/{goal_id}/start',
     ...options
+});
+
+/**
+ * List held writes
+ *
+ * Return the writes an unattended workflow or goal run is holding for the user's approval. Defaults to the open ones.
+ */
+export const listHeldWrites = <ThrowOnError extends boolean = false>(options?: Options<ListHeldWritesData, ThrowOnError>): RequestResult<ListHeldWritesResponses, ListHeldWritesErrors, ThrowOnError> => (options?.client ?? client).get<ListHeldWritesResponses, ListHeldWritesErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/held-writes',
+    ...options
+});
+
+/**
+ * Approve or deny a held write
+ *
+ * Answer a held write. Approve runs the exact held call and continues the run; deny continues it with a declined result. The run resumes in the background. 404 when the id is unknown, 409 when it was already decided or expired.
+ */
+export const decideHeldWrite = <ThrowOnError extends boolean = false>(options: Options<DecideHeldWriteData, ThrowOnError>): RequestResult<DecideHeldWriteResponses, DecideHeldWriteErrors, ThrowOnError> => (options.client ?? client).post<DecideHeldWriteResponses, DecideHeldWriteErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v0/held-writes/{request_id}/decision',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

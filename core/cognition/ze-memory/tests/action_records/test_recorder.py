@@ -122,3 +122,33 @@ async def test_terminal_is_causally_linked_to_started() -> None:
     )
     assert started.id != finished.id
     assert any(ref.id == started.id for ref in finished.causal_refs)
+
+
+async def test_record_cites_the_approval_it_ran_under() -> None:
+    from ze_agents.park import current_approval
+
+    store = InMemoryActionRecordStore()
+    recorder = ActionRecorder(store)
+    kwargs = dict(
+        producer_kind="messenger",
+        source_record_type="send",
+        source_record_id="m1",
+        action_kind="send_email",
+        lifecycle=ActionLifecycle.SUCCEEDED,
+        outcome=ActionOutcome.SUCCESS,
+        actor="ze",
+        producer_plugin="ze-messenger",
+        occurred_at=datetime.now(timezone.utc),
+        summary="sent an email",
+    )
+    token = current_approval.set({"request_id": "req-1", "outcome": "approved"})
+    try:
+        record = await recorder.record_action(**kwargs)
+    finally:
+        current_approval.reset(token)
+    assert any(
+        ref.kind == "approval" and ref.id == "req-1" for ref in record.causal_refs
+    )
+
+    other = await recorder.record_action(**{**kwargs, "source_record_id": "m2"})
+    assert not any(ref.kind == "approval" for ref in other.causal_refs)

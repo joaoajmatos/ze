@@ -17,10 +17,11 @@ import pytest
 
 from ze_agents.base_agent import BaseAgent
 from ze_agents.errors import RetryFailedError
+from ze_agents.park import ApprovedCall
 from ze_agents.registry import clear_registry, register_instance
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool, undo_payload
-from ze_agents.types import AgentContext, AgentResult, GateDecision
+from ze_agents.types import AgentContext, AgentResult
 from ze_api.api.websocket import turns
 from ze_api.api.websocket.confirmation import handle_confirm
 from ze_api.api.websocket.turns import handle_retry
@@ -196,6 +197,7 @@ class Env:
         self.conf = AsyncMock()
         self.conf.get_pending_for_thread = AsyncMock(return_value=[])
         self.container = MagicMock()
+        self.container.held_write_store = None
         self.container.is_thread_locked = MagicMock(return_value=False)
         self.container.translations = None
         self.container.retry_rewindable = AsyncMock(return_value=True)
@@ -247,7 +249,7 @@ class Env:
                 subtasks=[],
             ),
             "agent_result": result,
-            "agent_context": AgentContext(session_id=THREAD, prompt="x", intent="w"),
+            "agent_context": AgentContext(session_id=THREAD, prompt="x"),
         }
         return (await record_trace(state, {"configurable": {}}))["message_trace"]
 
@@ -255,15 +257,21 @@ class Env:
         ctx = AgentContext(
             session_id=THREAD,
             prompt="x",
-            intent="write",
-            gate_decision=GateDecision.EXECUTE,
             retry_mode=retry,
         )
         calls = []
         for agent, name, args in steps:
+            # The original turn ran its calls with the user's approval; a retry
+            # runs unapproved, so it refuses irreversible writes (Phase 181).
+            approval = None if retry else ApprovedCall("e2e")
             calls.append(
                 await agent.call_tool(
-                    name, ctx, _lm_args=args, world=self.world, **args
+                    name,
+                    ctx,
+                    _lm_args=args,
+                    _approval=approval,
+                    world=self.world,
+                    **args,
                 )
             )
         return calls
@@ -479,17 +487,27 @@ async def test_regenerated_turn_cannot_start_an_irreversible_action(env):
     old = await env.store.get_message(reply.id)
     new_trace = await env.store.get_trace(old.replaced_by)
     email = next(c for c in new_trace.tool_calls if c.name == "send_e2e")
-    assert email.gate == "denied" and email.success is False
+    assert email.gate == "refused" and email.success is False
 
 
 async def test_reminder_with_an_email_is_not_retryable(env):
     reply = await env.original_turn(env.set_reminder(), env.send_email())
     elig = await env.eligibility(reply)
     assert elig.available is False
-    assert elig.reason_code.value == "has_irreversible_action"
+    # Under Phase 181 the irreversible send ran only because the user approved it.
+    assert elig.reason_code.value == "confirmed_action"
     await env.retry(reply, [])
-    assert env.errors()[0]["reason_code"] == "has_irreversible_action"
+    assert env.errors()[0]["reason_code"] == "confirmed_action"
     assert len(env.world.reminders) == 1
+
+
+def _pending_row_store() -> AsyncMock:
+    store = AsyncMock()
+    store.get_pending = AsyncMock(
+        return_value={"thread_id": THREAD, "request_id": "req-1", "actions": {}}
+    )
+    store.clear = AsyncMock(return_value=True)
+    return store
 
 
 async def test_pause_at_confirmation_then_deny_still_supersedes(env):
@@ -529,6 +547,7 @@ async def test_pause_at_confirmation_then_deny_still_supersedes(env):
         return_value=SimpleNamespace(
             response="Okay, I left it.",
             interrupted=False,
+            error=None,
             message_id=str(new_id),
             config=retry_config,
             final_state={"components": [], "message_trace": await env._trace_for([])},
@@ -541,7 +560,7 @@ async def test_pause_at_confirmation_then_deny_still_supersedes(env):
         env.conn,
         retry_config,
         thread_id=THREAD,
-        confirmation_store=AsyncMock(),
+        confirmation_store=_pending_row_store(),
         msg_store=env.store,
     )
     old = await env.store.get_message(reply.id)

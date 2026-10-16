@@ -66,3 +66,13 @@
     - Turn 1 should surface relevant facts about Figma (product direction, team focus)
     - Turn 2 email should reference specifics from turn 1, not be a generic template
     - The outreach should feel personalised and demonstrate that Ze used the research
+
+- id: prospecting_add_prospect_company_role
+  prompt: "Find the head of engineering at a Lisbon fintech startup and add them as a prospect."
+  description: add_prospect takes company and role; the campaign id comes from Ze, not the model
+  expected_agent: prospecting
+  expected_tools: [add_prospect]
+  tags: [prospecting, tool_schema]
+  criteria:
+    - Should call add_prospect with the person's company and role filled in
+    - The add_prospect call arguments should not include campaign_id (Ze supplies it)

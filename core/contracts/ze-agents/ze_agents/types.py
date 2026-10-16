@@ -2,36 +2,11 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Callable, Protocol, runtime_checkable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
-
-
-# ── Capability types ──────────────────────────────────────────────────────────
-
-
-class Mode(str, Enum):
-    AUTONOMOUS = "autonomous"
-    CONFIRM = "confirm"
-    DRAFT_ONLY = "draft_only"
-    DISABLED = "disabled"
-
-
-class GateDecision(str, Enum):
-    EXECUTE = "execute"
-    DRAFT = "draft"
-    AWAIT_CONFIRMATION = "confirm"
-    BLOCKED = "blocked"
-
-
-@dataclass
-class Intent:
-    """An agent capability: execution mode and a human-readable description."""
-
-    mode: Mode
-    description: str = ""
+from ze_agents.park import ParkedLoop, ParkedWrite, WriteDecision
 
 
 # ── Orchestration types ───────────────────────────────────────────────────────
@@ -103,8 +78,12 @@ class ToolCall:
     duration_ms: int
     success: bool
     error: str | None = None
-    is_draft: bool = False
-    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
+    # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused" | "refused_over_cap" | "expired" | "duplicate"
+    gate: str = "none"
+    parked: ParkedWrite | None = None
+    child_loop: ParkedLoop | None = None
+    # {request_id, outcome} for approved/edited calls; {outcome: "pre_approved"} for unattended
+    approval: dict[str, Any] | None = None
     agent: str | None = None
     undo: dict[str, Any] | None = None
 
@@ -113,8 +92,6 @@ class ToolCall:
 class AgentContext:
     session_id: str
     prompt: str
-    intent: str
-    gate_decision: GateDecision = GateDecision.EXECUTE
     memory: Any = None
     contacts: Any = None
     tool_calls: list[ToolCall] = field(default_factory=list)
@@ -167,9 +144,6 @@ class AgentContext:
     procedure_invocation_id: str | None = field(default=None, repr=False)
     procedure_invoked_id: str | None = field(default=None, repr=False)
     procedure_invoked_version_id: str | None = field(default=None, repr=False)
-    # evaluate_delegate is runtime-only (engine-injected). Never checkpoint.
-    # Signature: (agent: str, intent: str) -> GateDecision (sync or async).
-    evaluate_delegate: Any = field(default=None, repr=False)
     # Turn-local conductor hint/ledger (Phase 153). Lists of primitives only.
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
@@ -177,6 +151,14 @@ class AgentContext:
     conductor_delegate_total: int = 0
     # Phase 165: a retry run regenerates text only; WRITE tools are refused.
     retry_mode: bool = False
+    # Phase 181 write confirmation. `resume` is the saved loop to re-enter after the
+    # user answered; the rest are runtime/turn-local. Never checkpoint a context.
+    resume: ParkedLoop | None = None
+    write_decisions: dict[str, WriteDecision] = field(default_factory=dict)
+    pre_approved_writes: frozenset[str] = frozenset()
+    write_round: int = 0
+    approval_request_id: str | None = None
+    loop_active: bool = False
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)
@@ -189,7 +171,6 @@ class RetrievalRequest:
     agent: str
     query_text: str
     query_embedding: Any
-    intent: str | None = None
     task_id: UUID | None = None
     goal_id: UUID | None = None
     max_tokens: int = 2000

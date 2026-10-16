@@ -28,7 +28,6 @@ async def test_record_trace_serializes_procedure_invocation_ids() -> None:
             "agent_context": AgentContext(
                 session_id="s1",
                 prompt="clear inbox",
-                intent="execute",
                 procedure_invocation_id=str(invocation_id),
                 procedure_invoked_id=str(procedure_id),
                 procedure_invoked_version_id=str(version_id),
@@ -57,7 +56,8 @@ async def test_record_trace_omits_procedure_when_not_invoked() -> None:
             ),
             "agent_result": AgentResult(agent="companion", response="ok"),
             "agent_context": AgentContext(
-                session_id="s1", prompt="hello", intent="read"
+                session_id="s1",
+                prompt="hello",
             ),
         },
         {"configurable": {}},
@@ -66,7 +66,7 @@ async def test_record_trace_omits_procedure_when_not_invoked() -> None:
 
 
 async def test_record_trace_copies_conductor_ledger() -> None:
-    hint = [{"agent": "calendar", "intent": "read", "prompt": "tue"}]
+    hint = [{"agent": "calendar", "prompt": "tue"}]
     ledger = [
         {"agent": "calendar", "status": "stalled"},
         {"agent": "calendar", "status": "replanned"},
@@ -86,7 +86,8 @@ async def test_record_trace_copies_conductor_ledger() -> None:
             "conductor_hint": hint,
             "conductor_ledger": ledger,
             "agent_context": AgentContext(
-                session_id="s1", prompt="hello", intent="reason"
+                session_id="s1",
+                prompt="hello",
             ),
         },
         {"configurable": {}},
@@ -114,7 +115,8 @@ async def test_record_trace_marks_promote_offered_on_unfinished_close() -> None:
             "agent_result": AgentResult(agent="companion", response="ok"),
             "conductor_ledger": ledger,
             "agent_context": AgentContext(
-                session_id="s1", prompt="hello", intent="reason"
+                session_id="s1",
+                prompt="hello",
             ),
         },
         {"configurable": {}},
@@ -203,7 +205,10 @@ def _state(result, **extra) -> dict:
             subtasks=[],
         ),
         "agent_result": result,
-        "agent_context": AgentContext(session_id="s1", prompt="x", intent="read"),
+        "agent_context": AgentContext(
+            session_id="s1",
+            prompt="x",
+        ),
         **extra,
     }
 
@@ -264,17 +269,19 @@ async def test_record_trace_flattens_nested_delegate_send(effect_tools) -> None:
 
 async def test_record_trace_includes_compound_subtask_calls(effect_tools) -> None:
     sub = AgentResult(
-        agent="messenger", response="ok", tool_calls=[_call("send_email")]
+        agent="messenger",
+        response="ok",
+        tool_calls=[_call("send_email", gate="approved")],
     )
-    state = _state(None, subtask_results=[sub], approved_agents=["messenger"])
+    state = _state(None, subtask_results=[sub])
     trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
     assert [t.name for t in trace.tool_calls] == ["send_email"]
     assert trace.tool_calls[0].gate == "approved"
 
 
-async def test_turn_confirmation_does_not_mark_reads_approved(effect_tools) -> None:
+async def test_a_read_call_keeps_the_none_gate(effect_tools) -> None:
     result = AgentResult(agent="companion", response="ok", tool_calls=[_call("lookup")])
-    state = _state(result, approved_agents=["companion"])
+    state = _state(result)
     trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
     assert trace.tool_calls[0].gate == "none"
 
@@ -326,18 +333,18 @@ def test_new_trace_round_trips_effect_fields() -> None:
     assert _parse_trace(asdict(trace)) == trace
 
 
-async def test_only_the_approved_subtask_agent_is_labelled_approved(
+async def test_only_the_approved_call_is_labelled_approved(
     effect_tools,
 ) -> None:
     approved = AgentResult(
-        agent="messenger", response="ok", tool_calls=[_call("send_email")]
+        agent="messenger",
+        response="ok",
+        tool_calls=[_call("send_email", gate="approved")],
     )
     autonomous = AgentResult(
         agent="calendar", response="ok", tool_calls=[_call("set_reminder")]
     )
-    state = _state(
-        None, subtask_results=[approved, autonomous], approved_agents=["messenger"]
-    )
+    state = _state(None, subtask_results=[approved, autonomous])
     trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
     gates = {t.name: t.gate for t in trace.tool_calls}
     assert gates == {"send_email": "approved", "set_reminder": "none"}
@@ -362,11 +369,11 @@ async def test_retry_refused_write_is_not_recorded_as_an_action(effect_tools) ->
         async def run(self, ctx):
             return AgentResult(agent=self.name, response="ok")
 
-    ctx = AgentContext(session_id="s", prompt="p", intent="read", retry_mode=True)
+    ctx = AgentContext(session_id="s", prompt="p", retry_mode=True)
     refused = await _A().call_tool("send_email", ctx)
     result = AgentResult(agent="companion", response="ok", tool_calls=[refused])
     trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
-    assert trace.tool_calls[0].gate == "denied"
+    assert trace.tool_calls[0].gate == "refused"
 
 
 async def test_web_search_turn_stays_retryable(effect_tools) -> None:
@@ -501,3 +508,83 @@ def test_stored_trace_round_trips_loop_offer_ids():
     }
     assert _parse_trace({**base, "loop_offer_ids": ["abc"]}).loop_offer_ids == ["abc"]
     assert _parse_trace(base).loop_offer_ids == []
+
+
+async def test_write_outcomes_are_copied_to_the_trace(effect_tools) -> None:
+    rows = [
+        {
+            "request_id": "r1",
+            "round": 1,
+            "item_id": "i1",
+            "agent": "messenger",
+            "tool": "send_email",
+            "effect": "send an email",
+            "summary": "to: ana",
+            "outcome": "denied",
+        }
+    ]
+    result = AgentResult(agent="companion", response="ok", tool_calls=[])
+    state = _state(result, write_outcomes=rows)
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+    assert trace.write_confirmations == rows
+
+
+async def test_pre_approved_call_gate_survives_to_the_trace(effect_tools) -> None:
+    result = AgentResult(
+        agent="messenger",
+        response="ok",
+        tool_calls=[_call("send_email", gate="pre_approved")],
+    )
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+    assert trace.tool_calls[0].gate == "pre_approved"
+
+
+async def test_a_call_refused_over_the_cap_is_on_the_trace(effect_tools) -> None:
+    refused = ToolCall(
+        tool_name="send_email",
+        args={"to": "ana@example.com"},
+        result="This needs the user's approval; ask them in your reply instead.",
+        duration_ms=0,
+        success=False,
+        gate="refused_over_cap",
+    )
+    result = AgentResult(agent="messenger", response="ok", tool_calls=[refused])
+    state = _state(result, write_rounds=3)
+
+    trace = (await record_trace(state, {"configurable": {}}))["message_trace"]
+
+    [row] = trace.write_confirmations
+    assert row["outcome"] == "refused"
+    assert (row["agent"], row["tool"], row["round"]) == ("messenger", "send_email", 4)
+    assert row["effect"] == "send an email"
+    assert row["summary"] == "to: ana@example.com"
+    assert row["request_id"] == "" and row["item_id"]
+
+
+async def test_a_refusal_inside_a_delegate_is_on_the_trace(effect_tools) -> None:
+    delegate = ToolCall(
+        tool_name="delegate_to_agent",
+        args={"agent": "messenger", "task": "email Ana"},
+        result={
+            "response": "I need your OK first.",
+            "tool_calls": [
+                {
+                    "tool_name": "send_email",
+                    "args": {"to": "ana@example.com"},
+                    "gate": "refused_over_cap",
+                }
+            ],
+        },
+        duration_ms=5,
+        success=True,
+    )
+    result = AgentResult(agent="companion", response="ok", tool_calls=[delegate])
+
+    trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]
+
+    [row] = trace.write_confirmations
+    assert (row["agent"], row["tool"], row["outcome"]) == (
+        "messenger",
+        "send_email",
+        "refused",
+    )

@@ -73,7 +73,7 @@ Hard rules:
 | `reversibility.py` | `ToolReversibility` enum — required on every `WRITE` tool |
 | `plugin.py` | `ZePlugin` ABC — container and graph extension seam |
 | `onboarding/` | Compatibility re-export of `ze_onboarding` onboarding symbols |
-| `types.py` | `AgentContext`, `AgentResult`, `ToolCall`, `GateDecision`, `Mode`, `AbortToken` |
+| `types.py` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken` |
 | `client.py` | `LLMClient` Protocol — the interface `BaseAgent` calls; `OpenRouterClient` satisfies it |
 | `nli.py` | `NLIClient` Protocol — local cross-encoder entailment/contradiction; `LocalNLIClient` satisfies it |
 | `db.py` | `DBPool` Protocol — structural type for asyncpg pools |
@@ -117,7 +117,7 @@ Plugin authors list `ze-sdk` as their only Ze dependency and import everything f
 | Module | What it re-exports |
 |--------|-----------------|
 | `ze_sdk` | `ZePlugin`, `agent`, `tool`, `ToolAccess`, `BaseAgent`, `get_logger`, `Settings`, `DBPool` |
-| `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `GateDecision`, `Mode`, `AbortToken`, `Action`, `Notification` |
+| `ze_sdk.types` | `AgentContext`, `AgentResult`, `ToolCall`, `AbortToken`, `Action`, `Notification` |
 | `ze_sdk.proactive` | `ProactiveJob`, `proactive_job`, `ProactiveScheduler`, `ProactiveNotifier`, `PushKind`, `PushOutcome`, `PushLogStore`, `PushLogEntry` |
 | `ze_sdk.channels` | `Channel`, `ChannelType`, `ChannelHandle`, `Message`, `SentMessage`, `Thread`, `ThreadMessage`, `ChannelSendError` |
 | `ze_sdk.memory` | `MemoryContext`, `Fact`, `Episode`, `Procedure`, `Entity`, `TaskState`, `RetrievalRequest`, `MemoryStore`, `PostgresMemoryStore` |
@@ -159,7 +159,6 @@ packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instea
 |--------|-----------------|
 | `orchestration/` | LangGraph graph builder, node implementations, `AgentState` (graph-private), edges |
 | `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `RoutingFallback` |
-| `capability/` | `CapabilityGate`, `PostgresCapabilityOverrideStore` |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`), `retry.py` (Retry eligibility), `rewind.py` (thread history rewind for Retry) |
 | `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |
@@ -485,7 +484,7 @@ not import this package. Approved skill scripts run here via
 | Module | What it provides |
 |--------|-----------------|
 | `client.py` | `WorkspaceClient` — async HTTP client for the sidecar |
-| `gate.py` | `WorkspaceGate` — mode × action × origin |
+| `gate.py` | Workspace ask check — decides per action and origin whether a call asks first |
 | `tools.py` | `workspace_*` tools |
 | `store.py` | `workspace_state` and `workspace_runs` |
 | `rest.py` | `/api/v0/workspace` routes |

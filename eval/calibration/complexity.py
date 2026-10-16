@@ -382,7 +382,6 @@ def row_state(row: Row) -> dict[str, str]:
     ctx = AgentContext(
         session_id="calibration",
         prompt=row.prompt,
-        intent="reason",
         messages=[*row.conversation, {"role": "user", "content": row.prompt}],
         resume_recap=recap,
         active_skills=[SimpleNamespace(**row.skill)] if row.skill else [],

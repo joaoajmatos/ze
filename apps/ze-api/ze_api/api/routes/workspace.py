@@ -24,6 +24,7 @@ from ze_api.api.dependencies import (
     get_workspace_store,
     require_api_key,
 )
+from ze_api.api.websocket.frames import build_prompt_frame, prompt_payload
 from ze_api.api.schemas import (
     WorkspaceFileListResponse,
     WorkspaceIngestResponse,
@@ -336,25 +337,24 @@ async def reset_workspace(
         {"label": "Approve", "value": "approve", "style": "primary"},
         {"label": "Cancel", "value": "deny", "style": "secondary"},
     ]
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=900)
     if confirmation_store is not None:
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=900)
         await confirmation_store.save(
             thread_id="workspace",
             request_id=confirmation_id,
             prompt=_RESET_PROMPT,
-            actions=actions,
+            actions=prompt_payload(_RESET_PROMPT, actions),
             expires_at=expires_at,
         )
     if conn_mgr is not None:
         await conn_mgr.send_frame(
-            {
-                "type": "confirm_request",
-                "id": confirmation_id,
-                "prompt": _RESET_PROMPT,
-                "editable": False,
-                "proposed": "",
-                "actions": actions,
-            }
+            build_prompt_frame(
+                request_id=confirmation_id,
+                thread_id=None,
+                title=_RESET_PROMPT,
+                actions=actions,
+                expires_at=expires_at,
+            )
         )
     return JSONResponse(
         status_code=202,

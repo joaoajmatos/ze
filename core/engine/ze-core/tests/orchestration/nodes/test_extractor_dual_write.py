@@ -9,7 +9,6 @@ def _ctx(prompt: str = "hello") -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         memory=MemoryContext(),
         messages=[],
     )

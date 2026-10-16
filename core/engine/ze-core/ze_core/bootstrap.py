@@ -14,8 +14,6 @@ from ze_logging import get_logger
 from ze_agents.settings import Settings as CoreSettings
 from ze_agents.tool_cap_hook import ToolCallCapHook
 from ze_components.hook import ComponentCollectionHook
-from ze_core.capability.gate import CapabilityGate
-from ze_core.capability.overrides import PostgresCapabilityOverrideStore
 from ze_core.checkpoint_serde import build_checkpoint_serde
 from ze_core.embeddings import get_embedder
 from ze_core.orchestration.checkpoint_pruner import CheckpointPruner
@@ -54,7 +52,6 @@ class EngineStack:
     memory_store: PostgresMemoryStore
     memory_consolidator: MemoryConsolidator
     session_summariser: SessionSummariser
-    capability_gate: CapabilityGate
     core_settings: CoreSettings
     dep_map: dict[type, Any] = field(default_factory=dict)
 
@@ -107,9 +104,6 @@ async def build_engine_stack(
         settings=settings,
     )
 
-    override_store = PostgresCapabilityOverrideStore(pool=pool)
-    capability_gate = CapabilityGate(override_store=override_store)
-    await capability_gate.load_persistent_overrides()
 
     dep_map: dict[type, Any] = {
         asyncpg.Pool: pool,
@@ -134,7 +128,6 @@ async def build_engine_stack(
         memory_store=memory_store,
         memory_consolidator=memory_consolidator,
         session_summariser=session_summariser,
-        capability_gate=capability_gate,
         core_settings=core_settings,
         dep_map=dep_map,
     )
@@ -257,7 +250,6 @@ def engine_data_domains(pool: asyncpg.Pool) -> list[DataDomain]:
 
     return [
         _engine_domain("telemetry.costs", "llm_cost_log"),
-        _engine_domain("telemetry.capabilities", "capability_overrides"),
         _engine_domain("routing.log", "routing_log"),
         _engine_domain("messages.store", "messages"),
         _engine_domain("confirmations", "pending_confirmations"),

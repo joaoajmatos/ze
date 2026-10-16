@@ -84,7 +84,6 @@ def test_row_to_workflow_accepts_string_steps():
     assert workflow.steps[0] == WorkflowStep(
         task="Fetch news",
         agent_hint="news",
-        intent="execute",
         id="s0",
     )
 
@@ -121,7 +120,6 @@ def test_step_to_dict_and_from_dict_round_trip_branches_and_default_next():
         task="Check invoice",
         agent_hint="finance",
         verify="an invoice was found",
-        intent="read",
         id="s1",
         branches=[
             Branch(condition="invoice found", to="s2"),

@@ -36,7 +36,9 @@ Imported by `ze-plugin`, `ze-core`, and `ze-onboarding`. Re-exported to plugin a
 | `progress/` | `ProgressReporter`, locale-key translations |
 | `delegate.py` | Multi-agent handoff helpers |
 | `tasks.py` | Background task utilities |
-| `types.py` | Shared domain types (`Mode`, etc.) |
+| `types.py` | Shared domain types |
+| `park.py` | Park types for irreversible writes that wait for the user: `ParkedWrite`, `ParkedLoop`, `ParkedSubtask`, `WriteDecision`, `WriteConfirmation` |
+| `effects.py` | `effect_imperative` (the imperative form of an effect phrase) and `ensure_declined_lines` (the "Okay, I didn't …" line for denied writes) |
 
 ## Dependencies
 
@@ -44,7 +46,7 @@ Imported by `ze-plugin`, `ze-core`, and `ze-onboarding`. Re-exported to plugin a
 
 <sub>[Interactive version](../../docs/diagrams/core/contracts/ze-agents/dependencies.html)</sub>
 
-No other Ze package dependencies. Third-party: `structlog`, `pyyaml`, `typing_extensions`.
+Depends on `ze-logging` only. Third-party: `pyyaml`, `typing_extensions`.
 
 ## Usage
 

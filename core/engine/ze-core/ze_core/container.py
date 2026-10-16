@@ -12,7 +12,10 @@ from ze_agents.errors import AgentConfigError, RoutingError
 from ze_agents.interface.types import RawInput
 from ze_logging import get_logger
 from ze_agents.types import AbortToken
+from langgraph.types import Command
+
 from ze_core.conversation import make_graph_input
+from ze_core.conversation.turn import open_confirmation
 from ze_core.routing.factory import build_embedding_router, build_tier_judge
 
 if TYPE_CHECKING:
@@ -30,7 +33,6 @@ class Container:
     embedder: Any
     openrouter_client: Any
     router: Any
-    capability_gate: Any
     memory_store: Any
     memory_consolidator: Any
     graph: Any
@@ -57,7 +59,6 @@ class Container:
                 "router": self.router,
                 "tier_judge": self.tier_judge,
                 "openrouter_client": self.openrouter_client,
-                "capability_gate": self.capability_gate,
                 "memory_store": self.memory_store,
                 "fact_extractor": self._fact_extractor,
                 "event_extractor": self._event_extractor,
@@ -72,7 +73,6 @@ class Container:
         prompt: str,
         thread_id: str,
         *,
-        session_overrides: dict[str, str] | None = None,
         audio_data: bytes | None = None,
         audio_mime: str | None = None,
         image_data: bytes | None = None,
@@ -82,7 +82,7 @@ class Container:
         """Run a full conversation turn, handling the confirmation loop.
 
         For **inline** confirmation: calls interface.confirm(), resumes the
-        graph on approval, and delivers the final response via interface.send().
+        graph with the answer, and delivers the final response via interface.send().
 
         For **async** confirmation: calls interface.send_confirmation() and
         returns InvokeResult(confirmation_pending=True). The caller must invoke
@@ -106,7 +106,6 @@ class Container:
                 image_mime=image_mime,
             ),
             thread_id,
-            session_overrides=session_overrides,
         )
         # Only overwrite the checkpointed history when the caller supplies one;
         # otherwise the prior turns persist and write_memory keeps appending.
@@ -122,11 +121,14 @@ class Container:
             if state.get("error"):
                 return InvokeResult(session_id=thread_id, error=state["error"])
 
-            if state.get("pending_confirmation"):
-                agent_result = state.get("agent_result")
-                draft = agent_result.response if agent_result is not None else ""
+            snapshot = await self.graph.aget_state(config)
+            confirmation = open_confirmation(snapshot)
+            if confirmation is not None:
                 request = ConfirmationRequest(
-                    content=draft or "",
+                    content="\n".join(
+                        f"{item.effect_phrase}: {item.summary}".strip(": ")
+                        for item in confirmation.items
+                    ),
                     options=["Approve", "Cancel"],
                     timeout_seconds=getattr(
                         self.settings, "confirm_timeout_seconds", None
@@ -144,12 +146,10 @@ class Container:
 
                 # inline — block until user responds
                 decision = await self.interface.confirm(request)
-                if not decision.approved:
-                    cancelled = decision.edited_content or draft or ""
-                    return InvokeResult(session_id=thread_id, response=cancelled)
-
-                # Resume the graph after approval
-                state = await self.graph.ainvoke(None, config)
+                choice = "approve" if decision.approved else "deny"
+                state = await self.graph.ainvoke(
+                    Command(resume={"choice": choice, "edits": {}}), config
+                )
 
             response = state.get("final_response") or ""
             if self.interface and response:
@@ -167,37 +167,11 @@ class Container:
         if token is not None:
             token.abort(reason)
 
-    async def abort_pending_checkpoint(self, config: dict) -> None:
-        """Finalize a LangGraph checkpoint paused at await_confirmation.
-
-        The graph compiles with interrupt_before=["await_confirmation"], so a
-        deny or timeout leaves a checkpoint with next=["await_confirmation"].
-        This advances past that node without executing the pending action, so
-        the next turn starts from the entry node instead of the interrupted state.
-        """
-        try:
-            state = await self.graph.aget_state(config)
-            if not state or not state.next:
-                return
-            await self.graph.update_state(
-                config,
-                {
-                    "pending_confirmation": False,
-                    "agent_result": None,
-                    "agent_context": None,
-                },
-                as_node="write_memory",
-            )
-            await self.graph.ainvoke(None, config)
-        except Exception as exc:
-            log.warning("abort_pending_checkpoint_failed", error=str(exc))
-
     async def invoke_raw(
         self,
         raw: RawInput,
         thread_id: str,
         *,
-        session_overrides: dict[str, str] | None = None,
         messages: list[dict] | None = None,
     ) -> "InvokeResult":
         """Run a conversation turn from raw transport input.
@@ -209,7 +183,6 @@ class Container:
         return await self.invoke(
             prompt=raw.text or "",
             thread_id=thread_id,
-            session_overrides=session_overrides,
             audio_data=raw.audio,
             audio_mime=raw.audio_mime,
             image_data=raw.image,
@@ -217,16 +190,22 @@ class Container:
             messages=messages,
         )
 
-    async def resume(self, thread_id: str) -> "InvokeResult":
-        """Resume a graph that paused at await_confirmation (async style).
+    async def resume(
+        self,
+        thread_id: str,
+        choice: str = "approve",
+        edits: dict[str, str] | None = None,
+    ) -> "InvokeResult":
+        """Answer the confirmation a paused graph is waiting on (async style).
 
-        Called by the transport callback handler after the user decision has
-        been written into AgentState and the application is ready to continue.
+        Called by the transport callback handler once the user has decided.
         """
         from ze_agents.interface.types import InvokeResult, OutboundMessage
 
         config = self._build_config(thread_id)
-        state = await self.graph.ainvoke(None, config)
+        state = await self.graph.ainvoke(
+            Command(resume={"choice": choice, "edits": edits or {}}), config
+        )
 
         if state.get("error"):
             return InvokeResult(session_id=thread_id, error=state["error"])
@@ -369,11 +348,6 @@ class Container:
             settings=settings, system_one_client=system_one_client
         )
 
-        # 10. Build CapabilityGate
-        from ze_core.capability.gate import CapabilityGate
-
-        capability_gate = CapabilityGate()
-
         # 11. Build MemoryStore and MemoryConsolidator
         from ze_memory.extractor import (
             gather_entity_proposals,
@@ -437,7 +411,6 @@ class Container:
             openrouter_client=openrouter_client,
             router=router,
             tier_judge=tier_judge,
-            capability_gate=capability_gate,
             memory_store=memory_store,
             memory_consolidator=memory_consolidator,
             graph=graph,
@@ -487,7 +460,7 @@ def _discover_agents(app_root: Path, package: str) -> None:
 
 
 def _validate_registry(settings: Any) -> None:
-    """Validate tool names against the tool registry (name/description/capabilities
+    """Validate tool names against the tool registry (name and description
     are already validated by @agent at decoration time)."""
     from ze_agents.registry import get_registered_agents
     from ze_agents.tool import registered_tools, validate_tool_declarations

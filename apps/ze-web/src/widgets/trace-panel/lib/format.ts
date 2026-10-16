@@ -19,3 +19,25 @@ export function formatFeedbackTime(iso: string): string {
     minute: "2-digit",
   });
 }
+
+const OUTCOME_LABEL: Record<string, string> = {
+  approved: "Approved",
+  edited: "Edited",
+  denied: "Denied",
+  timed_out: "Timed out",
+  superseded: "Superseded",
+  refused: "Refused",
+  pre_approved: "Pre-approved",
+};
+
+export function outcomeLabel(outcome: string): string {
+  return OUTCOME_LABEL[outcome] ?? outcome;
+}
+
+export function groupByRound<T extends { round: number }>(items: T[]): [number, T[]][] {
+  const byRound = new Map<number, T[]>();
+  for (const item of items) {
+    byRound.set(item.round, [...(byRound.get(item.round) ?? []), item]);
+  }
+  return [...byRound.entries()].sort(([a], [b]) => a - b);
+}

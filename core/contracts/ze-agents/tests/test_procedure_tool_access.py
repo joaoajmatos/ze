@@ -22,7 +22,7 @@ def clean():
 
 
 def _ctx(**kwargs) -> AgentContext:
-    return AgentContext(session_id="s1", prompt="hello", intent="read", **kwargs)
+    return AgentContext(session_id="s1", prompt="hello", **kwargs)
 
 
 def _agent(tools: list[str]) -> BaseAgent:

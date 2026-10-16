@@ -54,10 +54,7 @@ def _envelope(*agents: str, compound: bool = False) -> RoutingEnvelope:
         score_gap=0.3,
         routing_method="embedding",
         is_compound=compound,
-        subtasks=[
-            SubTask(agent=a, intent="read", prompt="thanks", model=f"{a}-full")
-            for a in agents
-        ],
+        subtasks=[SubTask(agent=a, prompt="thanks", model=f"{a}-full") for a in agents],
         requires_synthesis=False,
     )
 
@@ -67,7 +64,6 @@ def _state(envelope=None, messages=None, **extra) -> dict:
     ctx = AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         messages=messages or [{"role": "user", "content": prompt}],
     )
     return {

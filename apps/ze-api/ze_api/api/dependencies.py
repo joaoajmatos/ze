@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from ze_core.capability.gate import CapabilityGate
 from ze_memory.consolidator import MemoryConsolidator
 from ze_memory.retriever import PostgresMemoryStore as MemoryStore
 from ze_core.conversation.messages import PostgresMessageStore as MessageStore
@@ -45,10 +44,6 @@ def get_router(request: Request) -> EmbeddingRouter:
     return request.app.state.container.router
 
 
-def get_capability_gate(request: Request) -> CapabilityGate:
-    return request.app.state.container.capability_gate
-
-
 def get_memory_store(request: Request) -> MemoryStore:
     return request.app.state.container.memory_store
 
@@ -63,6 +58,14 @@ def get_graph(request: Request):
 
 def get_workflow_store(request: Request):
     return request.app.state.container.workflow_store
+
+
+def get_held_write_store(request: Request):
+    return request.app.state.container.held_write_store
+
+
+def get_held_write_resumer(request: Request):
+    return request.app.state.container.held_write_resumer
 
 
 def get_memory_consolidator(request: Request) -> MemoryConsolidator:

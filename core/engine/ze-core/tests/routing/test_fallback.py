@@ -5,7 +5,7 @@ import pytest
 
 from ze_agents.errors import RoutingError
 from ze_agents.registry import agent, clear_registry
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_core.routing.fallback import decompose
 
 
@@ -25,8 +25,6 @@ def _register(name: str, intent_map: dict | None = None) -> None:
     _A.name = name
     _A.description = f"The {name} agent"
     _A.enabled = True
-    raw = intent_map or {}
-    _A.intents = {k: Intent(Mode.AUTONOMOUS, v) for k, v in raw.items()}
     agent(_A)
 
 
@@ -48,7 +46,7 @@ class TestDecomposeSingleAgent:
         payload = json.dumps(
             {
                 "subtasks": [
-                    {"agent": "research", "intent": "read", "prompt": "find X"}
+                    {"agent": "research", "changes": False, "prompt": "find X"}
                 ],
                 "sequential": False,
             }
@@ -66,7 +64,7 @@ class TestDecomposeSingleAgent:
         _register("research")
         payload = json.dumps(
             {
-                "subtasks": [{"agent": "research", "intent": "read", "prompt": "q"}],
+                "subtasks": [{"agent": "research", "changes": False, "prompt": "q"}],
                 "sequential": False,
             }
         )
@@ -84,8 +82,8 @@ class TestDecomposeCompound:
         payload = json.dumps(
             {
                 "subtasks": [
-                    {"agent": "research", "intent": "read", "prompt": "research X"},
-                    {"agent": "calendar", "intent": "create", "prompt": "create event"},
+                    {"agent": "research", "changes": False, "prompt": "research X"},
+                    {"agent": "calendar", "changes": True, "prompt": "create event"},
                 ],
                 "sequential": False,
             }
@@ -104,8 +102,8 @@ class TestDecomposeCompound:
         payload = json.dumps(
             {
                 "subtasks": [
-                    {"agent": "research", "intent": "read", "prompt": "research X"},
-                    {"agent": "calendar", "intent": "create", "prompt": "create event"},
+                    {"agent": "research", "changes": False, "prompt": "research X"},
+                    {"agent": "calendar", "changes": True, "prompt": "create event"},
                 ],
                 "sequential": True,
             }
@@ -121,7 +119,7 @@ class TestErrorHandling:
         _register("research")
         payload = json.dumps(
             {
-                "subtasks": [{"agent": "ghost", "intent": "read", "prompt": "q"}],
+                "subtasks": [{"agent": "ghost", "changes": False, "prompt": "q"}],
                 "sequential": False,
             }
         )
@@ -143,15 +141,14 @@ class TestErrorHandling:
         env = await decompose("q", {}, client, _registry_from_names(), "haiku")
         assert env.routing_method == "fallback"
 
-    async def test_hard_fallback_prefers_reason_agent(self):
+    async def test_hard_fallback_prefers_the_companion(self):
         _register("alpha")
-        _register("beta", intent_map={"reason": "Reasoning"})
+        _register("companion")
         client = _mock_client("not json")
         env = await decompose("q", {}, client, _registry_from_names(), "haiku")
-        assert env.primary_agent == "beta"
-        assert env.subtasks[0].intent == "reason"
+        assert env.primary_agent == "companion"
 
-    async def test_hard_fallback_uses_first_agent_if_no_reason(self):
+    async def test_hard_fallback_uses_first_agent_if_no_companion(self):
         _register("alpha")
         _register("beta")
         client = _mock_client("not json")
@@ -163,7 +160,7 @@ class TestErrorHandling:
 class TestMarkdownFenceStripping:
     async def test_strips_markdown_code_fence(self):
         _register("research")
-        payload = '```json\n{"subtasks": [{"agent": "research", "intent": "read", "prompt": "q"}], "sequential": false}\n```'
+        payload = '```json\n{"subtasks": [{"agent": "research", "changes": False, "prompt": "q"}], "sequential": false}\n```'
         client = _mock_client(payload)
         env = await decompose("q", {}, client, _registry_from_names(), "haiku")
         assert env.primary_agent == "research"
@@ -184,7 +181,7 @@ class TestDecomposeLLMReplyShapes:
         _register("research")
         payload = json.dumps(
             {
-                "subtasks": [{"agent": "research", "intent": "read", "prompt": "q"}],
+                "subtasks": [{"agent": "research", "changes": False, "prompt": "q"}],
                 "sequential": False,
             }
         )

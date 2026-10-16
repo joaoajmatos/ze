@@ -1,0 +1,326 @@
+from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Set as AbstractSet
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
+from pathlib import Path
+from uuid import UUID
+
+import pytest
+
+from ze_agents.errors import AgentConfigError, UnknownToolError
+from ze_agents.reversibility import ToolReversibility
+from ze_agents.tool import (
+    Injected,
+    ToolAccess,
+    ToolSpec,
+    clear_tool_registry,
+    get_tool,
+    registered_tools,
+    tool,
+)
+
+
+@pytest.fixture(autouse=True)
+def clean_tools():
+    clear_tool_registry()
+    yield
+    clear_tool_registry()
+
+
+class TestToolDecorator:
+    def test_registers_async_function(self):
+        @tool(access=ToolAccess.READ, description="A search tool")
+        async def web_search(query: str) -> str:
+            return "result"
+
+        assert "web_search" in registered_tools()
+        spec = get_tool("web_search")
+        assert spec.description == "A search tool"
+        assert spec.access == ToolAccess.READ
+
+    def test_accepts_string_access(self):
+        @tool(
+            access="write",
+            description="write tool",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
+        async def my_write(text: str) -> str:
+            return text
+
+        assert get_tool("my_write").access == ToolAccess.WRITE
+
+    def test_raises_for_sync_function(self):
+        with pytest.raises(TypeError, match="async"):
+
+            @tool(access=ToolAccess.READ, description="sync")
+            def sync_tool(q: str) -> str:
+                return "result"
+
+    def test_raises_on_duplicate_name(self):
+        @tool(access=ToolAccess.READ, description="first")
+        async def dup_tool(q: str) -> str: ...
+
+        with pytest.raises(AgentConfigError, match="Duplicate"):
+
+            @tool(access=ToolAccess.READ, description="second")
+            async def dup_tool(q: str) -> str: ...  # noqa: F811
+
+    async def test_returns_original_function(self):
+        @tool(access=ToolAccess.READ, description="passthrough")
+        async def passthrough(q: str) -> str:
+            return q
+
+        result = await passthrough("hello")
+        assert result == "hello"
+
+
+class TestGetTool:
+    def test_raises_unknown_tool_error(self):
+        with pytest.raises(UnknownToolError, match="nonexistent"):
+            get_tool("nonexistent")
+
+    def test_returns_correct_spec(self):
+        @tool(
+            access=ToolAccess.WRITE,
+            description="desc",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
+        async def special_tool(x: int) -> str: ...
+
+        spec = get_tool("special_tool")
+        assert isinstance(spec, ToolSpec)
+        assert spec.name == "special_tool"
+
+
+class TestRegisteredTools:
+    def test_empty_after_clear(self):
+        assert registered_tools() == {}
+
+    def test_contains_registered_tools(self):
+        @tool(access=ToolAccess.READ, description="t1")
+        async def tool_a(q: str) -> str: ...
+
+        @tool(access=ToolAccess.READ, description="t2")
+        async def tool_b(q: str) -> str: ...
+
+        tools = registered_tools()
+        assert "tool_a" in tools
+        assert "tool_b" in tools
+
+    def test_returns_copy(self):
+        result = registered_tools()
+        result["injected"] = None  # type: ignore
+        assert "injected" not in registered_tools()
+
+
+class TestToolSpecLlmSchema:
+    def test_includes_primitive_params(self):
+        @tool(access=ToolAccess.READ, description="schema test")
+        async def schema_tool(
+            query: str, count: int, active: bool, ratio: float
+        ) -> str: ...
+
+        schema = get_tool("schema_tool").llm_schema()
+        props = schema["function"]["parameters"]["properties"]
+        assert props["query"] == {"type": "string"}
+        assert props["count"] == {"type": "integer"}
+        assert props["active"] == {"type": "boolean"}
+        assert props["ratio"] == {"type": "number"}
+
+    def test_excludes_non_primitive_params(self):
+        class _InternalClient:
+            pass
+
+        @tool(access=ToolAccess.READ, description="exclude test")
+        async def mixed_tool(query: str, client: _InternalClient) -> str: ...
+
+        schema = get_tool("mixed_tool").llm_schema()
+        props = schema["function"]["parameters"]["properties"]
+        assert "query" in props
+        assert "client" not in props
+
+    def test_required_list_excludes_optional_params(self):
+        @tool(access=ToolAccess.READ, description="optional test")
+        async def optional_tool(query: str, limit: int = 10) -> str: ...
+
+        schema = get_tool("optional_tool").llm_schema()
+        assert "query" in schema["function"]["parameters"]["required"]
+        assert "limit" not in schema["function"]["parameters"]["required"]
+
+    def test_schema_name_and_description(self):
+        @tool(
+            access=ToolAccess.WRITE,
+            description="send an email",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
+        async def send_email(to: str, body: str) -> str: ...
+
+        schema = get_tool("send_email").llm_schema()
+        assert schema["type"] == "function"
+        assert schema["function"]["name"] == "send_email"
+        assert schema["function"]["description"] == "send an email"
+
+    def test_schema_parameters_type_is_object(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def obj_tool(q: str) -> str: ...
+
+        schema = get_tool("obj_tool").llm_schema()
+        assert schema["function"]["parameters"]["type"] == "object"
+
+    def test_schema_override_used_when_set(self):
+        override = {
+            "type": "object",
+            "properties": {"items": {"type": "array", "items": {"type": "object"}}},
+            "required": ["items"],
+        }
+
+        async def _inner(items: list) -> str: ...
+
+        spec = ToolSpec(
+            name="render_test",
+            access=ToolAccess.READ,
+            description="render test",
+            func=_inner,
+            _schema_override=override,
+        )
+        schema = spec.llm_schema()
+        assert schema["function"]["parameters"] is override
+        assert "items" in schema["function"]["parameters"]["properties"]
+
+    def test_optional_params_are_visible_and_not_required(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def opt_tool(event_id: str, summary: str | None = None) -> str: ...
+
+        params = get_tool("opt_tool").llm_schema()["function"]["parameters"]
+        assert params["properties"]["summary"] == {"type": "string"}
+        assert params["required"] == ["event_id"]
+
+    def test_typed_lists_and_dicts(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def list_tool(
+            locations: list[str],
+            tags: list[str] | None = None,
+            counts: dict[str, int] | None = None,
+        ) -> str: ...
+
+        params = get_tool("list_tool").llm_schema()["function"]["parameters"]
+        array = {"type": "array", "items": {"type": "string"}}
+        assert params["properties"]["locations"] == array
+        assert params["properties"]["tags"] == array
+        assert params["properties"]["counts"] == {"type": "object"}
+        assert params["required"] == ["locations"]
+
+    def test_injected_params_are_hidden(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def inj_tool(
+            q: str,
+            delay_ms: Injected[int],
+            session_id: Injected[str | None] = None,
+            restore_ids: Injected[list[str] | None] = None,
+        ) -> str: ...
+
+        params = get_tool("inj_tool").llm_schema()["function"]["parameters"]
+        assert list(params["properties"]) == ["q"]
+        assert params["required"] == ["q"]
+
+    def test_dependency_types_are_hidden(self):
+        from typing import Any
+
+        from ze_agents.types import AgentContext
+
+        @tool(access=ToolAccess.READ, description="t")
+        async def dep_tool(
+            q: str,
+            ctx: AgentContext | None = None,
+            embedder: Any = None,
+            store: object = None,
+        ) -> str: ...
+
+        params = get_tool("dep_tool").llm_schema()["function"]["parameters"]
+        assert list(params["properties"]) == ["q"]
+
+    def test_hidden_params_lists_injected_and_dependencies(self):
+        class _Store:
+            pass
+
+        @tool(access=ToolAccess.READ, description="t")
+        async def mixed(q: str, store: _Store, sid: Injected[str]) -> str: ...
+
+        assert get_tool("mixed").hidden_params() == frozenset({"store", "sid"})
+
+    @pytest.mark.parametrize(
+        "annotation",
+        [
+            set[str],
+            tuple[str, str],
+            str | int,
+            list[ToolSpec],
+            dict[int, str],
+            datetime | None,
+            date,
+            time,
+            timedelta,
+            UUID | None,
+            Decimal,
+            Path,
+            bytes,
+            Sequence[str] | None,
+            Mapping[str, str],
+            Iterable[str],
+            AbstractSet[str],
+            Sequence,
+        ],
+    )
+    def test_visible_param_without_json_shape_fails_registration(self, annotation):
+        async def bad(x): ...
+
+        bad.__annotations__ = {"x": annotation}
+        with pytest.raises(AgentConfigError, match="x"):
+            tool(access=ToolAccess.READ, description="t")(bad)
+        assert "bad" not in registered_tools()
+
+    def test_union_of_injected_and_json_type_names_the_cause(self):
+        async def mixed_union(x): ...
+
+        mixed_union.__annotations__ = {"x": Injected[str] | int}
+        with pytest.raises(AgentConfigError, match="mark the whole parameter"):
+            tool(access=ToolAccess.READ, description="t")(mixed_union)
+
+    def test_constraint_gate_defaults_false(self):
+        @tool(
+            access=ToolAccess.WRITE,
+            description="ungated",
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
+        async def remember_nothing(x: str) -> str: ...
+
+        spec = get_tool("remember_nothing")
+        assert spec.constraint_gate is False
+        assert spec.constraint_describe is None
+
+    def test_constraint_gate_opt_in(self):
+        @tool(
+            access=ToolAccess.WRITE,
+            description="gated",
+            constraint_gate=True,
+            reversibility=ToolReversibility.IRREVERSIBLE,
+        )
+        async def ping_contact(to: str) -> str: ...
+
+        spec = get_tool("ping_contact")
+        assert spec.constraint_gate is True
+
+    def test_auto_schema_when_override_is_none(self):
+        async def _inner(query: str) -> str: ...
+
+        spec = ToolSpec(
+            name="auto_test",
+            access=ToolAccess.READ,
+            description="auto",
+            func=_inner,
+            _schema_override=None,
+        )
+        schema = spec.llm_schema()
+        assert schema["function"]["parameters"]["properties"]["query"] == {
+            "type": "string"
+        }

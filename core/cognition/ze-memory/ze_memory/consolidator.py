@@ -215,10 +215,7 @@ class MemoryConsolidator:
 
     async def archive_episodes(self) -> tuple[int, int]:
         cfg = self._consolidation_config()
-        recency_days = cfg.get(
-            "episode_archive_days",
-            cfg.get("episode_recency_days", EPISODE_ARCHIVE_DAYS),
-        )
+        recency_days = cfg.get("episode_archive_days", EPISODE_ARCHIVE_DAYS)
         min_batch = cfg.get("episode_min_archive_batch", EPISODE_MIN_ARCHIVE_BATCH)
         max_batch = cfg.get("episode_archive_batch", EPISODE_ARCHIVE_BATCH)
 
@@ -259,10 +256,7 @@ class MemoryConsolidator:
         if not enabled:
             return 0
 
-        recency_days = cfg.get(
-            "episode_archive_days",
-            cfg.get("episode_recency_days", EPISODE_ARCHIVE_DAYS),
-        )
+        recency_days = cfg.get("episode_archive_days", EPISODE_ARCHIVE_DAYS)
         min_session_episodes = cfg.get("min_session_episodes", MIN_SESSION_EPISODES)
         max_sessions = cfg.get("max_sessions_per_run", MAX_SESSIONS_PER_RUN)
 

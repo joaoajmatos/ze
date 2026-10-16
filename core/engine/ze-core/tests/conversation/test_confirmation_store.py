@@ -34,7 +34,8 @@ def _make_row(thread_id="thread-1", request_id="req-1", prompt="Approve?"):
         "thread_id": thread_id,
         "request_id": request_id,
         "prompt": prompt,
-        "actions": [{"label": "Approve", "value": "approve"}],
+        "actions": {"kind": "write", "round": 1, "items": []},
+        "expires_at": None,
     }[key]
     return row
 

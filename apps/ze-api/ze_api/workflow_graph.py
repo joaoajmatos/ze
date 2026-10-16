@@ -7,7 +7,11 @@ from __future__ import annotations
 from typing import Any
 
 
-def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
+def build_workflow_graph(
+    checkpointer: Any,
+    plugins: list | None = None,
+    node_overrides: dict[str, Any] | None = None,
+) -> Any:
     """Build and compile the workflow execution graph."""
     from langgraph.constants import END
 
@@ -15,7 +19,7 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
     from ze_core.orchestration.graph import graph_builder
     from ze_core.orchestration.state import build_state_type
     from ze_personal.graph.workflow import (
-        after_capability_check_workflow,
+        after_preflight_workflow,
         after_handle_step_failure,
         after_route_branch,
         after_verify_step,
@@ -30,7 +34,7 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
     )
 
     state_type = build_state_type(plugins or [])
-    builder = graph_builder(state_type=state_type)
+    builder = graph_builder(state_type=state_type, node_overrides=node_overrides)
 
     builder.add_node("load_workflow_step", load_workflow_step)
     builder.add_node("verify_step", verify_step)
@@ -50,10 +54,9 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
         {"decompose": "decompose", "fetch_context": "fetch_context"},
     )
     builder.add_edge("decompose", "fetch_context")
-    builder.add_edge("fetch_context", "capability_check")
     builder.add_conditional_edges(
-        "capability_check",
-        after_capability_check_workflow,
+        "preflight",
+        after_preflight_workflow,
         {"execute_tool": "execute_tool", "workflow_failed": "workflow_failed"},
     )
     # Do NOT add execute_tool → write_memory here. The base graph already has

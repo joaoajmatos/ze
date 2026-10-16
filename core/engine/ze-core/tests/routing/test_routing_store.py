@@ -24,7 +24,7 @@ def _envelope() -> RoutingEnvelope:
         score_gap=0.2,
         routing_method="embedding",
         is_compound=False,
-        subtasks=[SubTask(agent="research", intent="read", prompt="p", model="m")],
+        subtasks=[SubTask(agent="research", prompt="p", model="m")],
         requires_synthesis=False,
         raw_scores={"research": 0.8},
     )

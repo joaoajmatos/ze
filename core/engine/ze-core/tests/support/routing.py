@@ -10,14 +10,13 @@ from ze_agents.system_one import (
     SystemOneQuestion,
     SystemOneResult,
 )
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 
 
 def register_agent(
     name: str,
     *,
     description: str | None = None,
-    intents: dict[str, str] | None = None,
     model: str = "m",
     model_simple: str | None = None,
     routing_criteria: str = "",
@@ -33,8 +32,6 @@ def register_agent(
     _A.enabled = True
     _A.model = model
     _A.model_simple = model_simple
-    raw = intents or {"read": "Read"}
-    _A.intents = {k: Intent(Mode.AUTONOMOUS, v) for k, v in raw.items()}
     agent(_A)
 
 

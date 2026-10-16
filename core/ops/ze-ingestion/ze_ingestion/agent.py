@@ -6,7 +6,7 @@ from ze_logging import get_logger
 from ze_agents.registry import agent
 from ze_agents.tool import ToolAccess, tool
 from ze_agents.reversibility import ToolReversibility
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 
 log = get_logger(__name__)
 
@@ -34,6 +34,8 @@ def _set_pipeline(pipeline: object) -> None:
     description="Fetch, process, and ingest content at the given URL (extraction, not remember_fact).",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ingested a web page",
+    asks_first=False,
+    no_ask_reason="Saves content the user asked to save; nothing leaves Ze.",
 )
 async def ingest_url(url: str) -> dict:
     if _pipeline is None:
@@ -56,6 +58,8 @@ async def ingest_url(url: str) -> dict:
     description="Ingest raw text or pre-extracted document content (extraction, not remember_fact).",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ingested text",
+    asks_first=False,
+    no_ask_reason="Saves content the user asked to save; nothing leaves Ze.",
 )
 async def ingest_text(text: str, label: str = "") -> dict:
     if _pipeline is None:
@@ -86,10 +90,6 @@ class IngestionAgent(BaseAgent):
     description = "Ingest external content — URLs, PDFs, videos, audio — via the ingestion pipeline"
     model = "anthropic/claude-sonnet-4-5"
     timeout = 120
-    intents = {
-        "write": Intent(Mode.AUTONOMOUS, "Ingest content via the extraction pipeline."),
-    }
-    default_mode = Mode.AUTONOMOUS
     tools = ["ingest_url", "ingest_text"]
 
     def __init__(self, openrouter_client: LLMClient) -> None:

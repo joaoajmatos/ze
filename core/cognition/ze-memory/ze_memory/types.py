@@ -8,7 +8,6 @@ from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.system_one import SystemOneResult
-from ze_agents.types import RetrievalRequest as RetrievalRequest  # noqa: F401 — re-export
 
 
 class SpeechAct(StrEnum):

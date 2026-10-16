@@ -15,7 +15,7 @@ from ze_proactive.attention_budget import (
 from ze_proactive.errors import PushPolicyError
 from ze_proactive.governor import decide
 from ze_proactive.notification_store import NotificationStore
-from ze_proactive.push_kinds import QUIET_HOURS_SUMMARY
+from ze_proactive.push_kinds import QUIET_HOURS_SUMMARY, registered_push_kinds
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.types import NotificationRow, PushKind, PushOutcome
@@ -275,6 +275,8 @@ class ProactiveNotifier:
         buzz: bool,
         delivery: str = "delivered",
     ) -> None:
+        kind = registered_push_kinds().get(row.event_type)
+        in_chat = kind.in_chat if kind is not None else True
         chunks = _split(body)
         for i, chunk in enumerate(chunks):
             last = i == len(chunks) - 1
@@ -295,6 +297,7 @@ class ProactiveNotifier:
                     actions=actions if last else [],
                     buzz=buzz,
                 )
+            n.in_chat = in_chat
             await self._interface.push(n)
 
     @staticmethod

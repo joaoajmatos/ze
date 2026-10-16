@@ -41,7 +41,6 @@ def make_ctx(
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="reason",
         memory=memory or MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
         identity_builder=build_identity_block,
@@ -336,6 +335,6 @@ def test_detect_outreach_event_no_name():
 
 
 def test_agent_context_defaults():
-    ctx = AgentContext(session_id="x", prompt="hi", intent="reason")
+    ctx = AgentContext(session_id="x", prompt="hi", )
     assert ctx.tool_calls == []
     assert ctx.memory is None

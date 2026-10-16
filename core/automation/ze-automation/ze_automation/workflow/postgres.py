@@ -30,13 +30,16 @@ def _step_to_dict(step: WorkflowStep) -> dict:
         "task": step.task,
         "agent_hint": step.agent_hint,
         "verify": step.verify,
-        "intent": step.intent,
         "id": step.id,
         "branches": [{"condition": b.condition, "to": b.to} for b in step.branches],
         "default_next": step.default_next,
     }
     if step.on_failure != "fail":
         data["on_failure"] = step.on_failure
+    if step.planned_writes:
+        data["planned_writes"] = list(step.planned_writes)
+    if step.approved_writes:
+        data["approved_writes"] = list(step.approved_writes)
     return data
 
 
@@ -62,7 +65,6 @@ def _step_from_dict(d: dict | str, index: int) -> WorkflowStep:
         task=d["task"],
         agent_hint=d.get("agent_hint"),
         verify=d.get("verify"),
-        intent=d.get("intent", "execute"),
         id=d.get("id") or f"s{index}",
         branches=[
             Branch(condition=b["condition"], to=b["to"])
@@ -70,6 +72,8 @@ def _step_from_dict(d: dict | str, index: int) -> WorkflowStep:
         ],
         default_next=d.get("default_next"),
         on_failure=d.get("on_failure", "fail"),
+        planned_writes=list(d.get("planned_writes") or []),
+        approved_writes=list(d.get("approved_writes") or []),
     )
 
 
@@ -391,6 +395,23 @@ class PostgresWorkflowStore:
                 [_step_result_to_dict(result)],
                 execution_id,
             )
+
+    async def set_execution_status(
+        self, execution_id: UUID, status: str, *, expected: str | None = None
+    ) -> bool:
+        """Move a run between `running` and `held`; `expected` guards the old status."""
+        async with self._pool.acquire() as conn:
+            tag = await conn.execute(
+                """
+                UPDATE workflow_executions
+                SET status = $1
+                WHERE id = $2 AND ($3::text IS NULL OR status = $3)
+                """,
+                status,
+                execution_id,
+                expected,
+            )
+        return tag.endswith(" 1")
 
     async def finish_execution(
         self,

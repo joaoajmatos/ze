@@ -14,7 +14,8 @@ from ze_agents.interface.types import (
     ConfirmationResponse,
     OutboundMessage,
 )
-from ze_agents.types import AbortToken, AgentResult
+from ze_agents.park import ConfirmItem, WriteConfirmation
+from ze_agents.types import AbortToken
 
 
 # ── Fixtures / helpers ────────────────────────────────────────────────────────
@@ -25,13 +26,26 @@ def _state(
     pending: bool = False,
     error: str | None = None,
 ) -> dict:
-    result = AgentResult(agent="test", response=response) if pending else None
     return {
         "final_response": None if pending else response,
-        "pending_confirmation": pending,
-        "agent_result": result,
+        "pending": pending,
+        "draft": response if pending else None,
         "error": error,
     }
+
+
+def _snapshot(pending: bool, draft: str | None):
+    if not pending:
+        return MagicMock(next=(), interrupts=(), tasks=())
+    confirmation = WriteConfirmation(
+        request_id="r1",
+        kind="write",
+        round=1,
+        items=[ConfirmItem("i1", "calendar", "delete_event", "delete", draft or "")],
+    )
+    task = MagicMock()
+    task.interrupts = [MagicMock(value=confirmation)]
+    return MagicMock(next=("await_write_confirmation",), interrupts=(), tasks=(task,))
 
 
 def _container(
@@ -40,6 +54,10 @@ def _container(
 ) -> Container:
     graph = MagicMock()
     graph.ainvoke = AsyncMock(side_effect=graph_states)
+    first = graph_states[0] if graph_states else {}
+    graph.aget_state = AsyncMock(
+        return_value=_snapshot(bool(first.get("pending")), first.get("draft"))
+    )
     return Container(
         settings=MagicMock(confirm_timeout_seconds=60),
         pool=None,
@@ -47,7 +65,6 @@ def _container(
         embedder=None,
         openrouter_client=None,
         router=None,
-        capability_gate=None,
         memory_store=None,
         memory_consolidator=None,
         graph=graph,
@@ -161,23 +178,29 @@ class TestInvokeInlineConfirmation:
         assert len(iface.sent) == 1
         assert iface.sent[0].content == "final answer"
 
-    async def test_confirm_rejected_returns_draft(self):
+    async def test_confirm_rejected_resumes_the_graph_as_a_denial(self):
         iface = _InlineInterface(approve=False)
-        c = _container([_state("draft text", pending=True)], interface=iface)
+        c = _container(
+            [_state("draft text", pending=True), _state("Okay, I didn't.")],
+            interface=iface,
+        )
         result = await c.invoke("q", "s1")
 
-        assert result.response == "draft text"
+        assert result.response == "Okay, I didn't."
         assert result.confirmation_pending is False
-        # Graph not resumed
-        assert c.graph.ainvoke.call_count == 1
+        assert c.graph.ainvoke.call_count == 2
+        command = c.graph.ainvoke.call_args_list[1][0][0]
+        assert command.resume["choice"] == "deny"
 
     async def test_confirmation_request_contains_draft(self):
         iface = _InlineInterface(approve=False)
-        c = _container([_state("my draft", pending=True)], interface=iface)
+        c = _container(
+            [_state("my draft", pending=True), _state("done")], interface=iface
+        )
         await c.invoke("q", "s1")
 
         assert len(iface.confirmations) == 1
-        assert iface.confirmations[0].content == "my draft"
+        assert "my draft" in iface.confirmations[0].content
 
     async def test_no_interface_returns_confirmation_pending(self):
         c = _container([_state("draft", pending=True)])
@@ -197,7 +220,7 @@ class TestInvokeAsyncConfirmation:
 
         assert result.confirmation_pending is True
         assert len(iface.confirmations) == 1
-        assert iface.confirmations[0].content == "draft"
+        assert "draft" in iface.confirmations[0].content
 
     async def test_graph_not_resumed_in_async_style(self):
         iface = _AsyncInterface()
@@ -232,11 +255,11 @@ class TestResume:
         assert result.error == "agent failed"
         assert result.response is None
 
-    async def test_resume_calls_ainvoke_with_none(self):
+    async def test_resume_sends_the_choice_as_a_command(self):
         c = _container([_state("ok")])
-        await c.resume("thread-99")
-        graph_input = c.graph.ainvoke.call_args[0][0]
-        assert graph_input is None
+        await c.resume("thread-99", choice="deny", edits={"i1": "x"})
+        command = c.graph.ainvoke.call_args[0][0]
+        assert command.resume == {"choice": "deny", "edits": {"i1": "x"}}
 
     async def test_resume_thread_id_in_config(self):
         c = _container([_state("ok")])
@@ -258,6 +281,7 @@ class TestAbortInvocation:
 
         graph = MagicMock()
         graph.ainvoke = AsyncMock(side_effect=_capture_and_return)
+        graph.aget_state = AsyncMock(return_value=_snapshot(False, None))
         c = Container(
             settings=MagicMock(confirm_timeout_seconds=60),
             pool=None,
@@ -265,7 +289,6 @@ class TestAbortInvocation:
             embedder=None,
             openrouter_client=None,
             router=None,
-            capability_gate=None,
             memory_store=None,
             memory_consolidator=None,
             graph=graph,

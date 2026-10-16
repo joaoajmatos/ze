@@ -23,14 +23,6 @@ class InvalidProcedureTransitionError(ProcedureLifecycleError):
     pass
 
 
-class MissingActionRecordError(ProcedureLifecycleError):
-    pass
-
-
-class UnavailableRollbackTargetError(ProcedureLifecycleError):
-    pass
-
-
 class IneligibleProcedureError(ProcedureLifecycleError):
     pass
 

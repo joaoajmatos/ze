@@ -7,8 +7,9 @@ import pytest
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
-from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentResult, GateDecision
+from ze_agents.tool import Injected, ToolAccess, clear_tool_registry, tool
+from ze_agents.park import ApprovedCall
+from ze_agents.types import AgentResult
 
 
 @pytest.fixture(autouse=True)
@@ -86,6 +87,7 @@ async def test_run_undo_context_is_a_normal_executing_context():
 
         async def call_tool(self, name, ctx, **kwargs):
             seen["ctx"] = ctx
+            seen["approval"] = kwargs.get("_approval")
             return await super().call_tool(name, ctx, **kwargs)
 
     @tool(
@@ -99,9 +101,9 @@ async def test_run_undo_context_is_a_normal_executing_context():
     await _Spy().run_undo("undo_it", {}, session_id="thread-9")
     ctx = seen["ctx"]
     assert ctx.session_id == "thread-9"
-    assert ctx.gate_decision is GateDecision.EXECUTE
     assert ctx.retry_mode is False
-    assert ctx.intent == "rollback"
+    # The user asked for this undo: it runs as an approved call (Phase 181).
+    assert isinstance(seen["approval"], ApprovedCall)
 
 
 async def test_run_undo_reports_tool_failure_without_raising():
@@ -116,3 +118,23 @@ async def test_run_undo_reports_tool_failure_without_raising():
     tc = await _agent(_Store()).run_undo("broken", {}, session_id="t")
     assert tc.success is False
     assert "db down" in tc.error
+
+
+async def test_run_undo_passes_payload_args_to_injected_params():
+    seen: dict = {}
+
+    @tool(
+        access=ToolAccess.WRITE,
+        description="restore",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+    )
+    async def restore_things(restore_ids: Injected[list[str] | None] = None) -> str:
+        seen["restore_ids"] = restore_ids
+        return "restored"
+
+    call = await _agent(_Store()).run_undo(
+        "restore_things", {"restore_ids": ["a", "b"]}, session_id="s1"
+    )
+
+    assert call.success is True
+    assert seen["restore_ids"] == ["a", "b"]

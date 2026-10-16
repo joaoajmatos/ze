@@ -13,6 +13,7 @@ from ze_api.api.websocket.confirmation import (
     handle_confirm,
     send_confirmation_request,
 )
+from ze_agents.park import ConfirmItem, WriteConfirmation
 from ze_core.conversation.messages.types import RollbackEntry, RollbackRecord
 
 
@@ -55,8 +56,14 @@ class _Env:
         self.conn.try_set_busy = MagicMock(return_value=True)
         self.conn.clear_busy = MagicMock()
         self.store = AsyncMock()
+        self.store.get_pending = AsyncMock(
+            return_value={"thread_id": "t1", "request_id": "req-1", "actions": {}}
+        )
+        self.store.get_pending_for_thread = AsyncMock(return_value=[])
+        self.store.clear = AsyncMock(return_value=True)
         self.container = MagicMock()
         self.container.message_store = self.msgs
+        self.container.held_write_store = None
 
         async def _send(*args, after_save=None, **kw):
             if after_save is not None and not await after_save():
@@ -67,6 +74,7 @@ class _Env:
         self.outcome = SimpleNamespace(
             response=response,
             interrupted=False,
+            error=None,
             message_id=str(self.new_id),
             config=self.config,
             final_state={"components": [], "message_trace": _trace()},
@@ -135,18 +143,6 @@ async def test_deny_without_a_reply_marks_retry_failed_and_keeps_the_old_reply()
     assert "message_superseded" not in env.types()
 
 
-async def test_deny_abort_path_marks_retry_failed():
-    env = _Env()
-    env.container.graph.aget_state = AsyncMock(
-        return_value=SimpleNamespace(interrupts=[])
-    )
-    await env.confirm("deny")
-    env.container.abort_pending_checkpoint.assert_awaited_once()
-    assert env.states() == ["rolled_back_retry_failed"]
-    assert "confirm_cancel" in env.types()
-    env.msgs.mark_superseded.assert_not_awaited()
-
-
 async def test_resume_error_marks_retry_failed():
     env = _Env()
     env.container.resume_turn = AsyncMock(side_effect=RuntimeError("boom"))
@@ -194,9 +190,25 @@ async def test_a_plain_confirmation_is_untouched():
     env.msgs.set_rollback.assert_not_awaited()
 
 
-async def test_expiry_marks_a_paused_retry_failed():
+async def test_expiry_with_a_reply_supersedes_like_a_deny():
+    """181: an expiry resumes the turn as a denial, which produces a reply."""
     env = _Env()
-    env.store.clear = AsyncMock(return_value=True)
+    await confirmation_timeout(
+        env.store,
+        env.conn,
+        None,
+        "t1",
+        0,
+        "req-1",
+        container=env.container,
+        graph_config=env.config,
+    )
+    env.msgs.mark_superseded.assert_awaited_once_with(env.old.id, env.new_id)
+    assert env.states() == ["superseded"]
+
+
+async def test_expiry_without_a_reply_marks_a_paused_retry_failed():
+    env = _Env(response="")
     await confirmation_timeout(
         env.store,
         env.conn,
@@ -232,10 +244,14 @@ async def test_pending_confirmation_config_keeps_the_retry_keys():
     env.container.settings = SimpleNamespace(confirm_timeout_seconds=900)
     env.container.notifier = None
     outcome = SimpleNamespace(
-        confirm_request_id="req-7",
-        draft="Send it?",
-        confirm_editable=False,
-        confirm_proposed="",
+        confirmation=WriteConfirmation(
+            request_id="req-7",
+            kind="write",
+            round=1,
+            items=[
+                ConfirmItem("i1", "messenger", "send_email", "send an email", "to: a")
+            ],
+        ),
         config=env.config,
     )
     with patch("asyncio.create_task", side_effect=lambda coro: coro.close()):
@@ -261,3 +277,75 @@ async def test_reply_then_second_gate_does_not_supersede_twice():
     env.msgs.mark_superseded.assert_awaited_once()
     assert "retry_replaces" not in seen["config"]["configurable"]
     assert seen["config"]["configurable"]["retry_mode"] is True
+
+
+async def test_a_paused_retry_row_remembers_what_it_replaces():
+    env = _Env()
+    env.container.settings = SimpleNamespace(confirm_timeout_seconds=900)
+    env.container.notifier = None
+    outcome = SimpleNamespace(
+        confirmation=WriteConfirmation(
+            request_id="req-7",
+            kind="write",
+            round=1,
+            items=[
+                ConfirmItem("i1", "messenger", "send_email", "send an email", "to: a")
+            ],
+        ),
+        config=env.config,
+    )
+    with patch("asyncio.create_task", side_effect=lambda coro: coro.close()):
+        await send_confirmation_request(
+            env.conn, env.container, outcome, "t1", confirmation_store=env.store
+        )
+    saved = env.store.save.await_args.kwargs["actions"]
+    assert saved["retry_replaces"] == str(env.old.id)
+
+
+async def test_a_paused_retry_superseded_by_a_new_turn_is_marked_failed():
+    env = _Env()
+    env.store.get_pending_for_thread = AsyncMock(
+        return_value=[
+            {
+                "thread_id": "t1",
+                "request_id": "req-1",
+                "actions": {"kind": "write", "retry_replaces": str(env.old.id)},
+            }
+        ]
+    )
+
+    await confirmation.supersede_open_confirmations(
+        env.conn, env.store, "t1", msg_store=env.msgs
+    )
+
+    assert env.states() == ["rolled_back_retry_failed"]
+
+
+async def test_after_a_restart_the_resumed_retry_still_supersedes():
+    env = _Env()
+    env.store.get_pending = AsyncMock(
+        return_value={
+            "thread_id": "t1",
+            "request_id": "req-1",
+            "actions": {"kind": "write", "retry_replaces": str(env.old.id)},
+        }
+    )
+    env.container._build_config = lambda thread_id, **extra: {
+        "configurable": {"thread_id": thread_id, **extra}
+    }
+
+    await handle_confirm(
+        MagicMock(),
+        {"type": "confirm", "id": "req-1", "choice": "approve"},
+        env.container,
+        env.conn,
+        None,
+        thread_id="t1",
+        confirmation_store=env.store,
+        msg_store=env.msgs,
+    )
+
+    resumed = env.container.resume_turn.await_args.args[0]["configurable"]
+    assert resumed["retry_replaces"] == str(env.old.id)
+    assert resumed["retry_mode"] is True
+    env.msgs.mark_superseded.assert_awaited_once_with(env.old.id, env.new_id)

@@ -17,6 +17,9 @@ export function RefreshHandler() {
   });
 
   useFrame("notification", (frame) => {
+    if (frame.target_type === "held_write") {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.heldWrites });
+    }
     queryClient.setQueriesData<InfiniteData<NotificationListResponse>>(
       { queryKey: ["notifications"] },
       (data) => {

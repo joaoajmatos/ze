@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import yaml
+
+# Set to 1 only when Ze's Google credentials point at a sandbox calendar.
+# Scenarios with `requires_sandbox: true` create and delete events, so they
+# are skipped unless this flag is set.
+SANDBOX_ENV = "ZE_EVAL_SANDBOX"
 
 # Default: eval/scenarios/ at the repo root (core/ops/ze-eval/ze_eval/ -> repo root)
 _DEFAULT_SCENARIOS_DIR = (
@@ -27,6 +33,13 @@ def load_scenarios(
     if tag:
         scenarios = [s for s in scenarios if tag in s.get("tags", [])]
     return scenarios
+
+
+def is_runnable(scenario: dict) -> bool:
+    """False for a sandbox-only scenario when ZE_EVAL_SANDBOX=1 is not set."""
+    if not scenario.get("requires_sandbox"):
+        return True
+    return os.environ.get(SANDBOX_ENV) == "1"
 
 
 def load_scenario_by_id(

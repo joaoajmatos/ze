@@ -53,7 +53,7 @@ def _envelope(agent: str = "t182") -> RoutingEnvelope:
         score_gap=0.3,
         routing_method="embedding",
         is_compound=False,
-        subtasks=[SubTask(agent=agent, intent="read", prompt="hi", model="full-m")],
+        subtasks=[SubTask(agent=agent, prompt="hi", model="full-m")],
         requires_synthesis=False,
     )
 

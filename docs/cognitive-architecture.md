@@ -163,7 +163,7 @@ roster will churn for years without threatening continuity.
 
 > *permissioning, provenance, reversibility, confidence thresholds, user corrections*
 
-Maturity: 🟢🟡 mostly substantial — Capability gate (autonomous/confirm/draft_only/disabled),
+Maturity: 🟢🟡 mostly substantial — write confirmation (irreversible writes park until the user approves that exact call),
 confirmation persistence + timeout, workspace access (chat confirms writes/commands; unattended may use the same computer),
 skill review plus a second executable approval for scripts, provenance tags in memory +
 correlation, memory review flows (propose→user reviews), dream rollback lineage, data

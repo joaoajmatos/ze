@@ -88,7 +88,6 @@ def _ctx() -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt="keep the Porto move on my radar",
-        intent="manage",
     )
 
 

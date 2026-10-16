@@ -9,7 +9,6 @@ from ze_agents.errors import OnboardingError
 from ze_api.api.websocket.component_submit import handle_component_submit
 from ze_api.api.websocket.confirmation import handle_confirm, send_confirmation_request
 from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.endpoint import _track_gate, _untrack_gate
 from ze_api.api.websocket.onboarding import send_onboarding_view
 from ze_api.api.websocket.serializers import message_to_dict
 from ze_onboarding import OnboardingView
@@ -428,8 +427,15 @@ async def test_component_submit_falls_back_to_graph_on_unknown_session():
 
 
 def _make_outcome(thread_id: str, draft: str = "Approve?") -> MagicMock:
+    from ze_agents.park import ConfirmItem, WriteConfirmation
+
     outcome = MagicMock()
-    outcome.draft = draft
+    outcome.confirmation = WriteConfirmation(
+        request_id=f"req-{draft}",
+        kind="write",
+        round=1,
+        items=[ConfirmItem("i1", "calendar", "delete_event", "delete", draft)],
+    )
     outcome.config = {"configurable": {"thread_id": thread_id}}
     return outcome
 
@@ -441,11 +447,14 @@ def _make_gate_container() -> AsyncMock:
     snapshot = MagicMock()
     snapshot.interrupts = None
     container.graph.aget_state = AsyncMock(return_value=snapshot)
+    container.resume_turn = AsyncMock(
+        return_value=MagicMock(response="", interrupted=False)
+    )
     return container
 
 
-async def test_two_gates_on_same_thread_both_tracked_independently():
-    """Two confirmation-triggering turns on one thread, neither answered yet."""
+async def test_a_second_gate_on_a_thread_supersedes_the_first():
+    """One thread has one checkpoint, so a newer gate cancels the older one (181)."""
     thread_id = "thread-1"
     mgr = ConnectionManager()
     ws = _make_ws()
@@ -454,63 +463,56 @@ async def test_two_gates_on_same_thread_both_tracked_independently():
     await mgr.connect(ws, store)
     ws.send_json.reset_mock()
 
+    rows: dict[str, dict] = {}
     confirmation_store = AsyncMock()
-    confirmation_store.save = AsyncMock()
 
+    async def _save(*, thread_id, request_id, **_):
+        rows[request_id] = {"thread_id": thread_id, "request_id": request_id}
+
+    async def _clear(thread_id, request_id):
+        return rows.pop(request_id, None) is not None
+
+    confirmation_store.save = AsyncMock(side_effect=_save)
+    confirmation_store.clear = AsyncMock(side_effect=_clear)
+    confirmation_store.get_pending_for_thread = AsyncMock(
+        side_effect=lambda _t: list(rows.values())
+    )
+    confirmation_store.get_pending = AsyncMock(side_effect=lambda rid: rows.get(rid))
     container = _make_gate_container()
 
-    pending_configs: dict[str, dict] = {}
-    thread_pending_requests: dict[str, set[str]] = {}
-
-    request_id_a, config_a = await send_confirmation_request(
+    request_id_a, _ = await send_confirmation_request(
         mgr,
         container,
         _make_outcome(thread_id, "Approve A?"),
         thread_id,
         confirmation_store=confirmation_store,
     )
-    _track_gate(
-        pending_configs, thread_pending_requests, request_id_a, thread_id, config_a
-    )
-
-    request_id_b, config_b = await send_confirmation_request(
+    request_id_b, _ = await send_confirmation_request(
         mgr,
         container,
         _make_outcome(thread_id, "Approve B?"),
         thread_id,
         confirmation_store=confirmation_store,
     )
-    _track_gate(
-        pending_configs, thread_pending_requests, request_id_b, thread_id, config_b
-    )
 
-    assert request_id_a != request_id_b
-
+    assert set(rows) == {request_id_b}
     frames = [call[0][0] for call in ws.send_json.call_args_list]
-    confirm_frames = [f for f in frames if f.get("type") == "confirm_request"]
-    assert len(confirm_frames) == 2
-    assert {f["id"] for f in confirm_frames} == {request_id_a, request_id_b}
+    assert {"type": "confirm_cancel", "id": request_id_a} in [
+        {k: v for k, v in f.items() if k != "thread_id"} for f in frames
+    ]
 
-    assert set(pending_configs.keys()) == {request_id_a, request_id_b}
-    assert thread_pending_requests[thread_id] == {request_id_a, request_id_b}
-
-    # Resolving gate A (deny) must not affect gate B's tracked config.
     result = await handle_confirm(
         ws,
         {"type": "confirm", "id": request_id_a, "choice": "deny"},
         container,
         mgr,
-        pending_configs.get(request_id_a),
+        None,
         thread_id=thread_id,
         confirmation_store=confirmation_store,
     )
     assert result is None
-    _untrack_gate(pending_configs, thread_pending_requests, request_id_a, thread_id)
-
-    confirmation_store.clear.assert_awaited_once_with(thread_id, request_id_a)
-    assert request_id_a not in pending_configs
-    assert pending_configs[request_id_b] == config_b
-    assert thread_pending_requests[thread_id] == {request_id_b}
+    container.resume_turn.assert_not_awaited()
+    assert set(rows) == {request_id_b}
 
 
 # ── terminal frame + tagged errors (117) ──────────────────────────────────────

@@ -17,8 +17,6 @@ from ze_memory.procedures.types import MatchState, ProcedureInvocationOrigin
 
 log = get_logger(__name__)
 
-INVOKE_PROCEDURE_TOOL = "invoke_procedure"
-
 _activator: Any = None
 
 
@@ -67,5 +65,5 @@ async def invoke_procedure(procedure_id: str, ctx: AgentContext | None = None) -
     return (
         f"Invoked procedure {match.name} version {match.version_number}. "
         "Follow its steps using only the now-narrowed tools. "
-        "The capability gate still applies to every action."
+        "Actions that cannot be undone still need the user's approval."
     )

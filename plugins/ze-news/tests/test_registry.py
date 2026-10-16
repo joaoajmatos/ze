@@ -21,17 +21,6 @@ def test_build_registry_unknown_type():
         build_registry([_make_config(type="unknown")])
 
 
-def test_by_tag():
-    configs = [
-        _make_config(key="global_src", tags=["global"]),
-        _make_config(key="local_src", tags=["local", "pt"]),
-    ]
-    registry = build_registry(configs)
-    local = registry.by_tag("local")
-    assert len(local) == 1
-    assert local[0].key == "local_src"
-
-
 def test_by_key_missing():
     registry = SourceRegistry([])
     assert registry.by_key("nope") is None

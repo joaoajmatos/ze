@@ -127,7 +127,6 @@ from ze_api.webhook import (
 from ze_logging import get_logger
 from ze_api.settings import Settings, get_settings
 import ze_components.tools  # noqa: F401 — registers all render tools at import time
-import ze_agents.nli_tools  # noqa: F401 — registers shared NLI tools at import time
 
 log = get_logger(__name__)
 
@@ -224,10 +223,13 @@ async def _locked_resume_turn(
     turn_lock: ThreadTurnLock,
     config: dict,
     resume: object = None,
+    request_id: str | None = None,
 ) -> TurnResult:
     thread_id = (config.get("configurable") or {}).get("thread_id") or ""
     async with turn_lock.acquire(thread_id):
-        return await resume_turn(container, config, resume=resume)
+        return await resume_turn(
+            container, config, resume=resume, request_id=request_id
+        )
 
 
 @dataclass(kw_only=True)
@@ -239,6 +241,8 @@ class ZeContainer(CoreContainer):
     correlation_engine: Any | None
     persona_store: Any
     workflow_store: Any
+    held_write_store: Any
+    held_write_resumer: Any
     _plugin_stores: dict
     workflow_scheduler: Any
     proactive_scheduler: ProactiveScheduler
@@ -299,7 +303,6 @@ class ZeContainer(CoreContainer):
             "thread_id": str(thread_id),
             "router": self.router,
             "tier_judge": self.tier_judge,
-            "capability_gate": self.capability_gate,
             "memory_store": self.memory_store,
             "fact_extractor": gather_fact_proposals,
             "persona_store": self.persona_store,
@@ -370,8 +373,12 @@ class ZeContainer(CoreContainer):
     async def retry_rewindable(self, thread_id: str) -> bool:
         return await history_rewindable(self.graph, self._build_config(thread_id))
 
-    async def resume_turn(self, config: dict, resume: object = None) -> TurnResult:
-        return await _locked_resume_turn(self, self.turn_lock, config, resume=resume)
+    async def resume_turn(
+        self, config: dict, resume: object = None, *, request_id: str | None = None
+    ) -> TurnResult:
+        return await _locked_resume_turn(
+            self, self.turn_lock, config, resume=resume, request_id=request_id
+        )
 
     async def close(self) -> None:
         for plugin in reversed(self.plugins):
@@ -528,11 +535,14 @@ async def build_container(settings: Settings) -> ZeContainer:
             await interruption_settings_store.get(), datetime.now(timezone.utc)
         )
 
+    from ze_api.api.websocket.held import held_push_frame
+
     interface = NativeAppInterface(
         message_store=message_store,
         connection_manager=connection_manager,
         notifier=push_notifier,
         quiet_now=quiet_now,
+        confirm_frame_for=held_push_frame(automation.held_write_store),
     )
     validate_interface(interface)
 
@@ -799,7 +809,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         openrouter_client=shared.openrouter_client,
         router=router,
         tier_judge=tier_judge,
-        capability_gate=shared.capability_gate,
         budget_checker=budget_checker,
         memory_store=shared.memory_store,
         memory_consolidator=shared.memory_consolidator,
@@ -810,6 +819,8 @@ async def build_container(settings: Settings) -> ZeContainer:
         correlation_engine=correlation.correlation_engine,
         persona_store=persona_store,
         workflow_store=automation.workflow_store,
+        held_write_store=automation.held_write_store,
+        held_write_resumer=automation.held_write_resumer,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
         proactive_scheduler=ProactiveScheduler(run_store=JobRunStore(pool)),

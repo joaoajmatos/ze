@@ -57,7 +57,7 @@ class _Hypothesis:
 
 
 def _envelope(agent: str = "research", is_compound: bool = False) -> RoutingEnvelope:
-    st = SubTask(agent=agent, intent="read", prompt="news on Anthropic")
+    st = SubTask(agent=agent, prompt="news on Anthropic")
     return RoutingEnvelope(
         primary_agent=agent,
         confidence=0.9,
@@ -246,8 +246,8 @@ async def test_compound_turn_does_not_set_final_response():
 
     eng = _engine()
     subtask_results = [AgentResult(agent="research", response="data")]
-    st1 = SubTask(agent="research", intent="read", prompt="hi")
-    st2 = SubTask(agent="news", intent="read", prompt="hi")
+    st1 = SubTask(agent="research", prompt="hi")
+    st2 = SubTask(agent="news", prompt="hi")
     compound_envelope = RoutingEnvelope(
         primary_agent="research",
         confidence=0.9,

@@ -18,9 +18,9 @@
     A turn that proposes a goal. Goal creation waits for the Start confirmation, but the trace records create_goal as a write call, so Retry must stay unavailable.
   expected_tools:
     # Goal creation waits for the user's Start confirmation, so the eval turn
-    # records a draft (is_draft, success false) rather than an executed call.
+    # may record a parked call (gate parked) rather than an executed one.
     - name: create_goal
-      allow_draft: true
+      allow_parked: true
   tags: [retry, feedback]
   criteria:
     - Should create the goal through the goal tool, not just describe one

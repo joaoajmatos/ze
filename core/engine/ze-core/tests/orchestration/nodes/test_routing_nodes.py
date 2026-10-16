@@ -7,7 +7,7 @@ import pytest
 from ze_agents.registry import agent, clear_registry
 from ze_agents.base_agent import BaseAgent
 from ze_core.orchestration.nodes.routing import decompose, embed_route
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_core.routing.types import RouterConfig, RoutingEnvelope, SubTask
 
 
@@ -26,8 +26,6 @@ def _register(name: str, intent_map: dict | None = None) -> None:
     _A.name = name
     _A.description = f"The {name} agent"
     _A.enabled = True
-    raw = intent_map or {"read": "Read"}
-    _A.intents = {k: Intent(Mode.AUTONOMOUS, v) for k, v in raw.items()}
     agent(_A)
 
 
@@ -40,7 +38,7 @@ def _envelope(
         score_gap=0.1,
         routing_method="embedding",
         is_compound=is_compound,
-        subtasks=[SubTask(agent="alpha", intent="read", prompt="do it")],
+        subtasks=[SubTask(agent="alpha", prompt="do it")],
         requires_synthesis=False,
         raw_scores=raw_scores or {"alpha": 0.4, "beta": 0.3},
     )
@@ -72,8 +70,8 @@ class TestDecomposeNode:
             return_value=json.dumps(
                 {
                     "subtasks": [
-                        {"agent": "alpha", "intent": "read", "prompt": "research part"},
-                        {"agent": "beta", "intent": "create", "prompt": "write part"},
+                        {"agent": "alpha", "changes": False, "prompt": "research part"},
+                        {"agent": "beta", "changes": True, "prompt": "write part"},
                     ],
                     "sequential": False,
                 }
@@ -102,7 +100,7 @@ class TestDecomposeNode:
             return_value=json.dumps(
                 {
                     "subtasks": [
-                        {"agent": "alpha", "intent": "read", "prompt": "simple"}
+                        {"agent": "alpha", "changes": False, "prompt": "simple"}
                     ],
                     "sequential": False,
                 }
@@ -123,7 +121,7 @@ class TestDecomposeNode:
         client.complete = AsyncMock(
             return_value=json.dumps(
                 {
-                    "subtasks": [{"agent": "alpha", "intent": "read", "prompt": "p"}],
+                    "subtasks": [{"agent": "alpha", "changes": False, "prompt": "p"}],
                     "sequential": False,
                 }
             )
@@ -144,7 +142,7 @@ class TestDecomposeNode:
             captured.update(kwargs)
             return json.dumps(
                 {
-                    "subtasks": [{"agent": "alpha", "intent": "read", "prompt": "p"}],
+                    "subtasks": [{"agent": "alpha", "changes": False, "prompt": "p"}],
                     "sequential": False,
                 }
             )
@@ -166,8 +164,8 @@ class TestDecomposeNode:
             return_value=json.dumps(
                 {
                     "subtasks": [
-                        {"agent": "alpha", "intent": "read", "prompt": "step 1"},
-                        {"agent": "beta", "intent": "create", "prompt": "step 2"},
+                        {"agent": "alpha", "changes": False, "prompt": "step 1"},
+                        {"agent": "beta", "changes": True, "prompt": "step 2"},
                     ],
                     "sequential": True,
                 }
@@ -201,7 +199,7 @@ class TestDecomposeNode:
         client.complete = AsyncMock(
             return_value=json.dumps(
                 {
-                    "subtasks": [{"agent": "alpha", "intent": "read", "prompt": "p"}],
+                    "subtasks": [{"agent": "alpha", "changes": False, "prompt": "p"}],
                     "sequential": False,
                 }
             )
@@ -223,7 +221,7 @@ class TestEmbedRouteNode:
             score_gap=0.3,
             routing_method="embedding",
             is_compound=False,
-            subtasks=[SubTask(agent="goals", intent="update", prompt="steer")],
+            subtasks=[SubTask(agent="goals", prompt="steer")],
             requires_synthesis=False,
             raw_scores={"goals": 0.9},
         )
@@ -283,7 +281,7 @@ class TestEmbedRouteFollowUps:
             score_gap=0.3,
             routing_method="embedding",
             is_compound=False,
-            subtasks=[SubTask(agent="news", intent="read", prompt="x")],
+            subtasks=[SubTask(agent="news", prompt="x")],
             requires_synthesis=False,
             raw_scores={"news": 0.9},
         )
@@ -389,7 +387,7 @@ class TestEmbedRouteJudgment:
             score_gap=0.3,
             routing_method="embedding",
             is_compound=False,
-            subtasks=[SubTask(agent="calendar", intent="read", prompt="x")],
+            subtasks=[SubTask(agent="calendar", prompt="x")],
             requires_synthesis=False,
             raw_scores={"calendar": 0.84},
             judgment=judgment,
@@ -520,8 +518,8 @@ class TestDecomposeAssignsFullModels:
         self._register_tiered("beta")
         client = self._client(
             [
-                {"agent": "alpha", "intent": "read", "prompt": "a"},
-                {"agent": "beta", "intent": "read", "prompt": "b"},
+                {"agent": "alpha", "changes": False, "prompt": "a"},
+                {"agent": "beta", "changes": False, "prompt": "b"},
             ]
         )
 
@@ -536,7 +534,7 @@ class TestDecomposeAssignsFullModels:
 
     async def test_overrides_apply_to_the_full_model(self):
         self._register_tiered("alpha")
-        client = self._client([{"agent": "alpha", "intent": "read", "prompt": "a"}])
+        client = self._client([{"agent": "alpha", "changes": False, "prompt": "a"}])
         router = self._router({"alpha": "pinned"})
 
         result = await decompose(_state(), _config(client, router=router))
@@ -549,8 +547,8 @@ class TestDecomposeAssignsFullModels:
         self._register_tiered("companion", {"reason": "Reason"})
         client = self._client(
             [
-                {"agent": "alpha", "intent": "read", "prompt": "look it up"},
-                {"agent": "beta", "intent": "create", "prompt": "then act"},
+                {"agent": "alpha", "changes": False, "prompt": "look it up"},
+                {"agent": "beta", "changes": True, "prompt": "then act"},
             ]
         )
 

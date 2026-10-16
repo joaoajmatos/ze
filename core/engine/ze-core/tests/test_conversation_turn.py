@@ -9,6 +9,7 @@ from ze_core.conversation import (
     resume_turn,
 )
 from ze_agents.interface.types import RawInput
+from ze_agents.park import ConfirmItem, WriteConfirmation
 
 
 def test_graph_input_preserves_conversation_history():
@@ -61,35 +62,48 @@ async def test_invoke_raw_turn_completed(container):
     assert outcome.response == "Done."
 
 
+def _paused_state(confirmation):
+    task = MagicMock()
+    task.interrupts = [MagicMock(value=confirmation)]
+    state = MagicMock(next=("await_write_confirmation",), interrupts=(), tasks=(task,))
+    state.values = {"error": None}
+    return state
+
+
+def _confirmation():
+    return WriteConfirmation(
+        request_id="r1",
+        kind="write",
+        round=1,
+        items=[ConfirmItem("i1", "calendar", "delete_event", "delete", "Dentist")],
+    )
+
+
 async def test_invoke_raw_turn_interrupted(container):
-    class _Result:
-        response = "draft text"
-
-    class _Envelope:
-        primary_agent = "calendar"
-        subtasks = [MagicMock(intent="create")]
-
-    state_values = {
-        "agent_result": _Result(),
-        "envelope": _Envelope(),
-        "error": None,
-    }
-    graph_state = MagicMock(next=("await_confirmation",))
-    graph_state.values = state_values
-    container.graph.aget_state.return_value = graph_state
+    confirmation = _confirmation()
+    container.graph.aget_state.return_value = _paused_state(confirmation)
     container.graph.astream_events = lambda *a, **kw: _astream_events([])
 
-    outcome = await invoke_raw_turn(container, "42", RawInput(text="book meeting"))
+    outcome = await invoke_raw_turn(container, "42", RawInput(text="delete my 3pm"))
     assert outcome.interrupted is True
-    assert outcome.draft == "draft text"
-    assert outcome.confirm_agent == "calendar"
-    assert outcome.confirm_action == "create"
+    assert outcome.confirmation is confirmation
     assert outcome.response is None
 
 
-async def test_resume_turn(container):
-    container.graph.ainvoke = AsyncMock(return_value={"final_response": "Created."})
+async def test_resume_turn_sends_the_answer_as_a_command(container):
+    container.graph.aget_state = AsyncMock(
+        side_effect=[_paused_state(_confirmation()), MagicMock(next=())]
+    )
+    container.graph.ainvoke = AsyncMock(return_value={"final_response": "Deleted."})
     config = {"configurable": {"thread_id": "42"}}
-    outcome = await resume_turn(container, config)
-    assert outcome.response == "Created."
-    container.graph.ainvoke.assert_awaited_with(None, config)
+    outcome = await resume_turn(container, config, resume={"choice": "approve"})
+    assert outcome.response == "Deleted."
+    command = container.graph.ainvoke.await_args.args[0]
+    assert command.resume == {"choice": "approve"}
+
+
+async def test_resume_turn_without_open_confirmation_does_nothing(container):
+    container.graph.ainvoke = AsyncMock()
+    outcome = await resume_turn(container, {"configurable": {"thread_id": "42"}})
+    assert outcome.error == "No pending confirmation."
+    container.graph.ainvoke.assert_not_awaited()
