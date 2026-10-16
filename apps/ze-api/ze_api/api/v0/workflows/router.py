@@ -17,7 +17,7 @@ from ze_api.api.schemas import (
 from ze_automation import rest as workflow_rest
 from ze_automation.workflow.store import WorkflowStore
 
-router = APIRouter(tags=["workflows"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/workflows", tags=["workflows"], dependencies=[Depends(require_api_key)])
 
 
 @router.get(

@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from ze_api.api.deps import require_api_key
-from ze_api.api.routes.workspace import router
+from ze_api.api.v0.workspace.router import router
 from ze_workspace.errors import (
     WorkspaceFullError,
     WorkspacePathError,

@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from ze_api.api.deps import require_api_key
-from ze_api.api.routes.held_writes import router
+from ze_api.api.v0.held_writes.router import router
 from ze_automation.holds.resumer import HeldWriteResumer
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 

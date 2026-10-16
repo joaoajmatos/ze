@@ -12,7 +12,7 @@ import inspect
 
 import pytest
 
-import ze_api.api.routes.eval as eval_route
+import ze_api.api.eval.router as eval_route
 import ze_api.api.ws.confirmation as confirmation_module
 import ze_api.api.ws.turns as turns_module
 import ze_api.wiring.container as container_module

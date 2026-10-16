@@ -14,7 +14,7 @@ from ze_agents.registry import get_registered_agents
 from ze_automation.accountability.store import AccountabilityStore
 from ze_core.telemetry import rest as telemetry_rest
 
-router = APIRouter(tags=["costs"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/costs", tags=["costs"], dependencies=[Depends(require_api_key)])
 
 
 def _build_agent_to_plugin_map() -> dict[str, str]:

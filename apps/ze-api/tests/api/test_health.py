@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api.routes import health
+from ze_api.api.v0.system import router as health
 
 
 def _client() -> TestClient:

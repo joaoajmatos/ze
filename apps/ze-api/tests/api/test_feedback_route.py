@@ -19,7 +19,7 @@ from ze_api.api.deps import (
     get_turn_lock,
     require_api_key,
 )
-from ze_api.api.routes.feedback import router
+from ze_api.api.v0.messages.router import router
 from ze_core.conversation.messages.types import Message, MessageTrace
 from ze_memory.feedback_records import FeedbackKind, FeedbackRecord
 from ze_agents.claims import Confidence, DecayProfile, Provenance

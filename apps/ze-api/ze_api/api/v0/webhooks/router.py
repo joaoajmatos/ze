@@ -6,7 +6,7 @@ from ze_api.wiring.webhooks import (
     WebhookSourceNotFoundError,
 )
 
-router = APIRouter(tags=["webhooks"])
+router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
 def _get_dispatcher(request: Request) -> WebhookDispatcher:
@@ -14,7 +14,7 @@ def _get_dispatcher(request: Request) -> WebhookDispatcher:
 
 
 @router.post(
-    "/api/v0/webhooks/{source}",
+    "/{source}",
     status_code=200,
     summary="Receive inbound webhook from an external source",
     description="Authenticated by the source's own signing scheme, not the Ze API key.",

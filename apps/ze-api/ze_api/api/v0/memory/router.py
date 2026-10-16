@@ -20,7 +20,7 @@ from ze_api.api.schemas import (
 )
 from ze_memory import admin as memory_admin
 
-router = APIRouter(tags=["memory"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/memory", tags=["memory"], dependencies=[Depends(require_api_key)])
 
 
 @router.get(

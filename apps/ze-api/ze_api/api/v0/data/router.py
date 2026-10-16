@@ -23,7 +23,7 @@ from ze_data.portability.service import (
 
 log = get_logger(__name__)
 
-router = APIRouter(tags=["data"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/data", tags=["data"], dependencies=[Depends(require_api_key)])
 
 
 def _service(request: Request) -> DataPortabilityService:
@@ -31,7 +31,7 @@ def _service(request: Request) -> DataPortabilityService:
 
 
 @router.get(
-    "/data/domains",
+    "/domains",
     response_model=DataDomainsResponse,
     operation_id="listDataDomains",
     summary="List registered data domains",
@@ -66,7 +66,7 @@ async def list_data_domains(request: Request) -> DataDomainsResponse:
 
 
 @router.get(
-    "/data/export",
+    "/export",
     operation_id="exportData",
     summary="Export all user data",
     description=(
@@ -96,7 +96,7 @@ async def export_data(request: Request) -> Response:
 
 
 @router.post(
-    "/data/import",
+    "/import",
     response_model=ImportResponse,
     operation_id="importData",
     summary="Import a data archive",
@@ -127,7 +127,7 @@ async def import_data(
 
 
 @router.post(
-    "/data/delete-intent",
+    "/delete-intent",
     response_model=DeleteIntentResponse,
     operation_id="createDeleteIntent",
     summary="Issue a deletion confirmation token",
@@ -147,7 +147,7 @@ async def create_delete_intent(request: Request) -> DeleteIntentResponse:
 
 
 @router.delete(
-    "/data",
+    "",
     operation_id="deleteData",
     summary="Hard-delete all user data",
     description=(

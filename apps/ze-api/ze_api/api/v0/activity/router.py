@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends, Query
 from ze_api.api.deps import get_container, require_api_key
 from ze_api.api.schemas import ActivityHeatmapResponse, AgentDayCount, HeatmapDay
 
-router = APIRouter(tags=["activity"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/activity", tags=["activity"], dependencies=[Depends(require_api_key)])
 
 
 @router.get(
-    "/activity/heatmap",
+    "/heatmap",
     response_model=ActivityHeatmapResponse,
     operation_id="getActivityHeatmap",
     summary="Agent activity heatmap",

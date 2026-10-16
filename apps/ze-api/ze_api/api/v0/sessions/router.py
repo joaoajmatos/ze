@@ -12,7 +12,7 @@ from ze_api.api.schemas import (
 )
 from ze_core.conversation.sessions import SessionSearchHit, SessionStore
 
-router = APIRouter(tags=["sessions"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/sessions", tags=["sessions"], dependencies=[Depends(require_api_key)])
 
 
 def _get_session_store(request: Request) -> SessionStore:
@@ -34,7 +34,7 @@ def _search_hit_to_result(hit: SessionSearchHit) -> SessionSearchResult:
 
 
 @router.get(
-    "/sessions",
+    "",
     response_model=SessionListResponse,
     operation_id="listSessions",
     summary="List chat sessions",
@@ -56,7 +56,7 @@ async def list_sessions(
 
 
 @router.get(
-    "/sessions/search",
+    "/search",
     response_model=list[SessionSearchResult],
     operation_id="searchSessions",
     summary="Search chat sessions",

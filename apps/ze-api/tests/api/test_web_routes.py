@@ -7,7 +7,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ze_api.api import deps
-from ze_api.api.routes import costs, goals
+from ze_api.api.v0.costs import router as costs
+from ze_api.api.v0.goals import router as goals
 
 
 @pytest.fixture
@@ -52,7 +53,7 @@ def client(container, mock_pool):
     app = FastAPI()
     app.state.container = container
     app.include_router(goals.router, prefix="/api/v0")
-    app.include_router(costs.router, prefix="/api/v0/costs")
+    app.include_router(costs.router, prefix="/api/v0")
 
     app.dependency_overrides[deps.require_api_key] = lambda: None
 

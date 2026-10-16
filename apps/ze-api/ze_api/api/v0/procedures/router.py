@@ -24,7 +24,7 @@ from ze_memory.procedures.errors import (
 )
 from ze_memory.procedures.types import CandidateStatus, ProcedureAdmissionDecision
 
-router = APIRouter(tags=["procedures"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/procedures", tags=["procedures"], dependencies=[Depends(require_api_key)])
 
 
 def _evidence(refs) -> list[ProcedureEvidenceRefResponse]:
@@ -73,7 +73,7 @@ def _version_response(version) -> ProcedureVersionResponse:
 
 
 @router.get(
-    "/procedures/candidates",
+    "/candidates",
     response_model=list[ProcedureCandidateResponse],
     operation_id="listProcedureCandidates",
     summary="List procedure candidates",
@@ -95,7 +95,7 @@ async def list_procedure_candidates(
 
 
 @router.get(
-    "/procedures",
+    "",
     response_model=list[ProcedureVersionResponse],
     operation_id="listActiveProcedures",
     summary="List active procedures",
@@ -111,7 +111,7 @@ async def list_active_procedures(
 
 
 @router.get(
-    "/procedures/library",
+    "/library",
     response_model=list[ProcedureSummaryResponse],
     operation_id="listProcedureLibrary",
     summary="List procedure identities",
@@ -143,7 +143,7 @@ async def list_procedure_library(
 
 
 @router.get(
-    "/procedures/{procedure_id}",
+    "/{procedure_id}",
     response_model=ProcedureDetailResponse,
     operation_id="getProcedure",
     summary="Get procedure detail",
@@ -191,7 +191,7 @@ async def get_procedure(
 
 
 @router.post(
-    "/procedures/{procedure_id}/edit",
+    "/{procedure_id}/edit",
     response_model=ProcedureAdmissionResultResponse,
     operation_id="editProcedure",
     summary="Edit a procedure",
@@ -226,7 +226,7 @@ async def edit_procedure(
 
 
 @router.post(
-    "/procedures/candidates/{candidate_id}/review",
+    "/candidates/{candidate_id}/review",
     response_model=ProcedureAdmissionResultResponse,
     operation_id="reviewProcedureCandidate",
     summary="Review a procedure candidate",
@@ -256,7 +256,7 @@ async def review_procedure_candidate(
 
 
 @router.post(
-    "/procedures/{procedure_id}/disable",
+    "/{procedure_id}/disable",
     response_model=ProcedureVersionResponse,
     operation_id="disableProcedure",
     summary="Disable a procedure",

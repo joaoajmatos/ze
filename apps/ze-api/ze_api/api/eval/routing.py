@@ -4,7 +4,7 @@ from ze_api.api.deps import get_container, require_api_key
 from ze_api.api.schemas import RoutingLogEntry
 from ze_core.routing import rest as routing_rest
 
-router = APIRouter(tags=["routing"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/routing", tags=["routing"], dependencies=[Depends(require_api_key)])
 
 
 @router.get(

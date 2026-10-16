@@ -13,7 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from ze_agents.claims import ClaimKind
 from ze_plugin.contribution import SourceFunction, TargetFace
 
-from ze_api.api.routes.collisions import router
+from ze_api.api.eval.collisions import router
 from ze_collision.types import CollisionLogEntry
 
 API_KEY = "test-key"

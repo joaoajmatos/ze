@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ze_api.api import deps
-from ze_api.api.routes import procedures
+from ze_api.api.v0.procedures import router as procedures
 from ze_agents.claims import Provenance
 from ze_memory.procedures.admission import ProcedureAdmissionService
 from ze_memory.procedures.store import InMemoryProcedureStore

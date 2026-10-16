@@ -10,7 +10,7 @@ from httpx import ASGITransport, AsyncClient
 
 from ze_agents.park import ParkedLoop, ParkedSubtask, ParkedWrite
 from ze_agents.types import AgentResult, ToolCall
-from ze_api.api.routes.eval import router
+from ze_api.api.eval.router import router
 
 KEY = "k"
 

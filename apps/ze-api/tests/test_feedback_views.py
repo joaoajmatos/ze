@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from ze_api.feedback_views import ThreadState, build_view
+from ze_api.api.v0.messages.views import ThreadState, build_view
 from ze_core.conversation.messages.types import (
     Message,
     MessageTrace,

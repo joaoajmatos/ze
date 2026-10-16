@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ze_api.api import deps
-from ze_api.api.routes import goals
+from ze_api.api.v0.goals import router as goals
 
 
 def _summary(**overrides):

@@ -17,7 +17,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ze_api.api import deps
-from ze_api.api.routes import workspace as workspace_route
+from ze_api.api.v0.workspace import router as workspace_route
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.types import WorkspaceRun, WorkspaceRunOrigin, WorkspaceRunStatus
 

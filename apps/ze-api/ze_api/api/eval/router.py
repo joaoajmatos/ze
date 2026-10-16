@@ -19,11 +19,11 @@ from ze_logging import get_logger
 
 log = get_logger(__name__)
 
-router = APIRouter(tags=["eval"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/eval", tags=["eval"], dependencies=[Depends(require_api_key)])
 
 
 @router.post(
-    "/eval/chat",
+    "/chat",
     response_model=EvalChatResponse,
     operation_id="evalChat",
     summary="Eval chat",
@@ -78,7 +78,7 @@ async def eval_chat(
 
 
 @router.post(
-    "/eval/confirm",
+    "/confirm",
     response_model=EvalChatResponse,
     operation_id="evalConfirm",
     summary="Eval confirm",

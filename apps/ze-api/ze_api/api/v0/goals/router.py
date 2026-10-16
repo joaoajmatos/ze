@@ -17,7 +17,7 @@ from ze_api.api.schemas import (
     MilestoneResponse,
 )
 
-router = APIRouter(tags=["goals"], dependencies=[Depends(require_api_key)])
+router = APIRouter(prefix="/goals", tags=["goals"], dependencies=[Depends(require_api_key)])
 
 
 def _learning_response(row) -> LearningResponse:
@@ -36,7 +36,7 @@ def _learning_response(row) -> LearningResponse:
 
 
 @router.get(
-    "/goals",
+    "",
     response_model=list[GoalListItem],
     operation_id="listGoals",
     summary="List goals for the web client",
@@ -64,7 +64,7 @@ async def list_goals(request: Request) -> list[GoalListItem]:
 
 
 @router.get(
-    "/goals/{goal_id}",
+    "/{goal_id}",
     response_model=GoalDetailResponse,
     operation_id="getGoalDetail",
     summary="Get goal detail",
@@ -125,7 +125,7 @@ async def get_goal_detail(request: Request, goal_id: UUID) -> GoalDetailResponse
 
 
 @router.post(
-    "/goals/{goal_id}/learnings/{learning_id}/review",
+    "/{goal_id}/learnings/{learning_id}/review",
     response_model=LearningResponse,
     operation_id="reviewGoalLearning",
     summary="Review a goal learning",
@@ -160,7 +160,7 @@ async def review_goal_learning(
 
 
 @router.get(
-    "/goals/{goal_id}/traces",
+    "/{goal_id}/traces",
     response_model=list[ExecutionTraceResponse],
     operation_id="listGoalTraces",
     summary="List goal execution traces",
@@ -204,7 +204,7 @@ async def list_goal_traces(
 
 
 @router.post(
-    "/goals/{goal_id}/start",
+    "/{goal_id}/start",
     response_model=GoalActionResponse,
     operation_id="startGoal",
     summary="Start a planned goal",

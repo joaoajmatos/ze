@@ -313,7 +313,7 @@ async def _prepare_retry(
     Run once to refuse fast, and again with the thread lock held (`thread_held`), when
     nothing else can touch the thread.
     """
-    from ze_api.feedback_views import evaluate_retry, public_plan, thread_state
+    from ze_api.api.v0.messages.views import evaluate_retry, public_plan, thread_state
 
     thread_id: str = data.get("thread_id") or ""
     raw_id = str(data.get("message_id") or "")

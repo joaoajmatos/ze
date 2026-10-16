@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from ze_api.api.messages import _trace_to_response
+from ze_api.api.v0.messages.router import _trace_to_response
 from ze_api.api.schemas import MessageTraceResponse, WsTraceUpdateFrame
 from ze_core.conversation.messages.types import MessageTrace, SourceTrace
 

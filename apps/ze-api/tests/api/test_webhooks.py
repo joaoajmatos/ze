@@ -253,10 +253,10 @@ async def test_trigger_messenger_skips_invoke_for_automated():
 
 
 def _make_app_with_dispatcher(dispatcher: WebhookDispatcher) -> FastAPI:
-    from ze_api.api.routes.webhooks import router
+    from ze_api.api.v0.webhooks.router import router
 
     app = FastAPI()
-    app.include_router(router)
+    app.include_router(router, prefix="/api/v0")
     container = SimpleNamespace(webhook_dispatcher=dispatcher)
     app.state.container = container
     return app

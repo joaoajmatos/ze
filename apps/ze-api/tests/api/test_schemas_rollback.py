@@ -3,7 +3,7 @@
 from types import SimpleNamespace
 from uuid import uuid4
 
-from ze_api.api.messages import _trace_to_response
+from ze_api.api.v0.messages.router import _trace_to_response
 from ze_api.api.schemas import (
     FeedbackView,
     MessageSchema,
