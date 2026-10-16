@@ -114,9 +114,15 @@ class WorkflowRunner:
         await self._scheduler.resume_execution(workflow, execution_id, _continue)
 
     async def cancel_held(self, execution_id: UUID) -> None:
-        """Cancel a held run: deny its open hold so a later answer cannot resume it."""
+        """Cancel a held run: deny its open hold so a later answer cannot resume it.
+
+        An answer that already claimed the hold wins: the run resumes, not cancels.
+        """
+        claimed = False
         for hold in await self._held.list(HeldWriteStatus.OPEN):
             if hold.source == "workflow" and hold.owner_ref == str(execution_id):
-                if not await self._held.decide(hold.request_id, HeldWriteStatus.DENIED):
-                    return  # an answer won the race; the run resumes
-        await self._workflows.finish_execution(execution_id, "cancelled")
+                claimed = await self._held.decide(
+                    hold.request_id, HeldWriteStatus.DENIED
+                )
+        if claimed:
+            await self._workflows.finish_execution(execution_id, "cancelled")
