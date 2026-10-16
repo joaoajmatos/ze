@@ -126,7 +126,6 @@ from ze_api.webhook import (
 from ze_logging import get_logger
 from ze_api.settings import Settings, get_settings
 import ze_components.tools  # noqa: F401 — registers all render tools at import time
-import ze_agents.nli_tools  # noqa: F401 — registers shared NLI tools at import time
 
 log = get_logger(__name__)
 
