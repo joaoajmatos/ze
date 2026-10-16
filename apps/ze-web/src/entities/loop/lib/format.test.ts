@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { promotedLine, sourceLabel } from "./format";
+import { linkChips, promotedLine, sourceLabel } from "./format";
 
 describe("sourceLabel", () => {
   it("maps the known inflows to readable labels", () => {
@@ -29,5 +29,26 @@ describe("promotedLine", () => {
 
   it("degrades to 'Promoted' when a promoted loop lists no inflows", () => {
     expect(promotedLine({ promoted: true, source_inflows: [] })).toBe("Promoted");
+  });
+});
+
+describe("linkChips", () => {
+  it("returns the reminder chip when only a reminder is linked", () => {
+    expect(linkChips({ reminder_id: "r-1", goal_id: null })).toEqual(["Has reminder"]);
+  });
+
+  it("returns the goal chip when only a goal is linked", () => {
+    expect(linkChips({ reminder_id: null, goal_id: "g-1" })).toEqual(["Linked goal"]);
+  });
+
+  it("returns both chips, reminder first", () => {
+    expect(linkChips({ reminder_id: "r-1", goal_id: "g-1" })).toEqual([
+      "Has reminder",
+      "Linked goal",
+    ]);
+  });
+
+  it("returns no chips for an unlinked loop", () => {
+    expect(linkChips({ reminder_id: null, goal_id: null })).toEqual([]);
   });
 });
