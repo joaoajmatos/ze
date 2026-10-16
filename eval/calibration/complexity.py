@@ -6,10 +6,13 @@ production `build_tier_state` over a synthetic `AgentState`/`AgentContext`, so t
 production sees. It costs credits and is never collected by pytest.
 
 - Default `--set tuned`: per language the Noul histogram by gold tier, false downgrades, light
-  recall, precision, skipped share, latency, and the suggested `simple_max` (tuned set only).
+  recall, precision, skipped share, latency, and the suggested `simple_max` (tuned set only;
+  amended FR-017: at least 0.15 under the lowest `full` row, tuned recall >= 0.8 per language).
 - `--set holdout --simple-max X`: the single verdict run on eval/calibration/complexity_holdout.jsonl
   at the frozen bar. ENABLE or KEEP OFF per language with the failing clause. Tuning after this
-  run voids the set (FR-019): write a new held-out file before the next verdict.
+  run voids the set (FR-019): write a new held-out file before the next verdict. A run where
+  more than half the rows were skipped for transport reasons is reported as an infrastructure
+  failure (exit 3), prints no verdict and does not mark the set as spent.
 - `--check-sets`: offline. Schema and quotas only, no network. Prints counts, never row text.
 
 Acceptance rule per language (FR-016): zero false downgrades, light recall >= 0.5, skipped or
@@ -66,6 +69,9 @@ ROLES = ("user", "assistant")
 MAX_MEMORY = 5
 BAR_STEP = 0.05
 RECALL_FLOOR = 0.5
+TUNED_MARGIN = 0.15
+TUNED_RECALL = 0.8
+INFRA_SKIPS = frozenset({"timeout", "overload", "error", "missing_key"})
 SKIPPED_CEILING = 0.10
 BINS = [0.0, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0001]
 
@@ -274,24 +280,33 @@ def cross_problems(tuned: list[Row], holdout: list[Row]) -> list[str]:
 
 
 def suggest_simple_max(outcomes: Sequence[Outcome]) -> float | None:
-    """Research R8 / FR-017: the highest 0.05 step strictly below every ``full`` row's Noul.
+    """Amended FR-017, chosen on the tuned set only.
 
-    ``None`` when there is no ``full`` row to bound the bar, or no ``simple`` row lies at or
-    below the bar (the classes overlap so that no safe bar gives any light-model recall).
+    The highest 0.05 step that is at least ``TUNED_MARGIN`` below the lowest ``full`` row's
+    Noul (so no tuned ``full`` row is judged light), provided every language keeps tuned
+    light recall of at least ``TUNED_RECALL`` at that bar (a skipped row is a miss).
+    ``None`` when there is no ``full`` row, the margin leaves no room, or recall fails.
     """
     full = [o.noul for o in outcomes if o.gold_tier == "full" and o.noul is not None]
     if not full:
         return None
-    steps = math.floor(round(min(full) / BAR_STEP, 9) - 1e-9)
+    steps = math.floor(round((min(full) - TUNED_MARGIN) / BAR_STEP, 9))
     bar = round(steps * BAR_STEP, 2)
     if bar < 0.0:
         return None
-    if not any(
-        o.gold_tier == "simple" and o.noul is not None and o.noul <= bar
-        for o in outcomes
-    ):
-        return None
+    for lang in LANGS:
+        simple = [o for o in outcomes if o.lang == lang and o.gold_tier == "simple"]
+        light = sum(o.noul is not None and o.noul <= bar for o in simple)
+        if simple and light < TUNED_RECALL * len(simple):
+            return None
     return bar
+
+
+def infrastructure_failure(outcomes: Sequence[Outcome]) -> bool:
+    """More than half the rows skipped for a transport reason: the run says nothing about
+    the surface and must not spend the held-out set."""
+    broken = sum(o.noul is None and o.skip_reason in INFRA_SKIPS for o in outcomes)
+    return broken * 2 > len(outcomes)
 
 
 def verdict(outcomes: Sequence[Outcome], simple_max: float) -> Verdict:
@@ -633,6 +648,14 @@ async def main_async(args: argparse.Namespace) -> int:
         return 0
 
     bar = args.simple_max
+    if infrastructure_failure(outcomes):
+        skipped = Counter(o.skip_reason for o in outcomes if o.noul is None)
+        print(
+            "\nINFRASTRUCTURE FAILURE: more than half the rows were skipped for transport"
+            f" reasons {dict(skipped)}. No verdict; the held-out set is NOT spent."
+            " Fix the cause (key, network, rate limit) and run again."
+        )
+        return 3
     v = verdict(outcomes, bar)
     for lang in LANGS:
         report_histogram(outcomes, lang)

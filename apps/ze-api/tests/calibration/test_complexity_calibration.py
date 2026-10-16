@@ -44,32 +44,70 @@ def _clean_lang(calib, lang: str, light: int = 10, full: int = 10):
     ]
 
 
-# --- suggest_simple_max --------------------------------------------------------------
+# --- suggest_simple_max (amended FR-017) ---------------------------------------------
 
 
-def test_separable_set_takes_the_step_below_the_lowest_full_row(calib):
+def test_bar_keeps_a_margin_of_at_least_0_15_under_the_lowest_full_row(calib):
     outcomes = [
         _out(calib, "en", "simple", 0.02, 0),
         _out(calib, "en", "simple", 0.08, 1),
-        _out(calib, "en", "full", 0.37, 2),
+        _out(calib, "en", "full", 0.56, 2),
         _out(calib, "en", "full", 0.9, 3),
+    ]
+    assert calib.suggest_simple_max(outcomes) == 0.40
+
+
+def test_margin_may_be_exactly_0_15(calib):
+    outcomes = [
+        _out(calib, "en", "simple", 0.1, 0),
+        _out(calib, "en", "full", 0.55, 1),
+        _out(calib, "en", "full", 0.9, 2),
+    ]
+    assert calib.suggest_simple_max(outcomes) == 0.40
+
+
+def test_bar_is_rounded_down_to_a_0_05_step(calib):
+    outcomes = [
+        _out(calib, "en", "simple", 0.05, 0),
+        _out(calib, "en", "full", 0.52, 1),
     ]
     assert calib.suggest_simple_max(outcomes) == 0.35
 
 
-def test_full_row_exactly_on_a_step_is_not_passed_by_the_bar(calib):
-    outcomes = [
-        _out(calib, "en", "simple", 0.1, 0),
-        _out(calib, "en", "full", 0.30, 1),
-        _out(calib, "en", "full", 0.9, 2),
+def test_each_language_needs_tuned_recall_of_at_least_0_8(calib):
+    en = [_out(calib, "en", "simple", 0.1, i) for i in range(5)]
+    pt = [_out(calib, "pt", "simple", 0.1, i) for i in range(4)] + [
+        _out(calib, "pt", "simple", 0.9, 9)
     ]
-    assert calib.suggest_simple_max(outcomes) == 0.25
+    full = [_out(calib, "en", "full", 0.7, 20), _out(calib, "pt", "full", 0.7, 21)]
+    assert calib.suggest_simple_max(en + pt + full) == 0.55
+    pt_low = [_out(calib, "pt", "simple", 0.1, i) for i in range(3)] + [
+        _out(calib, "pt", "simple", 0.9, i) for i in (8, 9)
+    ]
+    assert calib.suggest_simple_max(en + pt_low + full) is None
+
+
+def test_skipped_simple_rows_count_as_missed_light_rows(calib):
+    outcomes = [_out(calib, "en", "simple", 0.1, i) for i in range(3)] + [
+        _out(calib, "en", "simple", None, 8),
+        _out(calib, "en", "simple", None, 9),
+        _out(calib, "en", "full", 0.8, 20),
+    ]
+    assert calib.suggest_simple_max(outcomes) is None
 
 
 def test_overlapping_set_has_no_safe_bar(calib):
     outcomes = [
         _out(calib, "en", "simple", 0.4, 0),
         _out(calib, "en", "full", 0.3, 1),
+    ]
+    assert calib.suggest_simple_max(outcomes) is None
+
+
+def test_lowest_full_row_too_low_for_the_margin_has_no_bar(calib):
+    outcomes = [
+        _out(calib, "en", "simple", 0.01, 0),
+        _out(calib, "en", "full", 0.10, 1),
     ]
     assert calib.suggest_simple_max(outcomes) is None
 
@@ -356,3 +394,132 @@ def test_check_sets_returns_zero_for_valid_sets(calib, monkeypatch, tmp_path, ca
 
     assert calib.check_sets() == 0
     assert "PROBLEM" not in capsys.readouterr().err
+
+
+# --- infrastructure failures must not spend the held-out set -------------------------
+
+
+def _skipped(calib, reason, i):
+    return calib.Outcome(
+        id=f"s{i}",
+        lang="en",
+        agent="companion",
+        gold_tier="simple",
+        noul=None,
+        skip_reason=reason,
+    )
+
+
+def test_more_than_half_infrastructure_skips_is_an_infrastructure_failure(calib):
+    rows = [_skipped(calib, "timeout", i) for i in range(6)] + [
+        _out(calib, "en", "simple", 0.1, i) for i in range(4)
+    ]
+    assert calib.infrastructure_failure(rows) is True
+
+
+def test_exactly_half_is_not_an_infrastructure_failure(calib):
+    rows = [_skipped(calib, "overload", i) for i in range(5)] + [
+        _out(calib, "en", "simple", 0.1, i) for i in range(5)
+    ]
+    assert calib.infrastructure_failure(rows) is False
+
+
+def test_invalid_answers_are_the_models_fault_not_infrastructure(calib):
+    rows = [_skipped(calib, "invalid_answer", i) for i in range(9)] + [
+        _out(calib, "en", "simple", 0.1, 0)
+    ]
+    assert calib.infrastructure_failure(rows) is False
+
+
+@pytest.mark.parametrize("reason", ["timeout", "overload", "error", "missing_key"])
+def test_each_transport_reason_counts(calib, reason):
+    rows = [_skipped(calib, reason, i) for i in range(3)] + [
+        _out(calib, "en", "simple", 0.1, 0)
+    ]
+    assert calib.infrastructure_failure(rows) is True
+
+
+def _holdout_args(calib, **over):
+    import argparse
+
+    base = dict(
+        check_sets=False,
+        set="holdout",
+        simple_max=0.40,
+        model=None,
+        timeout_ms=None,
+        concurrency=2,
+        rerun=False,
+        without=[],
+    )
+    base.update(over)
+    return argparse.Namespace(**base)
+
+
+def _prepare_holdout(calib, monkeypatch, tmp_path, answer_for):
+    from ze_agents.system_one import SystemOneAnswer, SystemOneResult
+
+    rows = _holdout_rows(calib)
+    monkeypatch.setattr(
+        calib, "TUNED", _write(tmp_path / "tuned.jsonl", _tuned_rows(calib))
+    )
+    monkeypatch.setattr(calib, "HOLDOUT", _write(tmp_path / "holdout.jsonl", rows))
+    monkeypatch.setattr(calib, "VERDICT_MARKER", tmp_path / "results" / "marker.json")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key-not-real")
+
+    async def fake_run(client, rows_, concurrency, without=()):
+        out = {}
+        for r in rows_:
+            value = answer_for(r)
+            if value is None:
+                out[r.id] = SystemOneResult(outcome="skip", skip_reason="timeout")
+            else:
+                out[r.id] = SystemOneResult(
+                    outcome="ok",
+                    answers={calib.Q_DEEP: SystemOneAnswer(type="noul", noul=value)},
+                    latency_ms=500,
+                )
+        return out
+
+    monkeypatch.setattr(calib, "run_system_one", fake_run)
+    return rows
+
+
+async def test_a_valid_holdout_run_writes_the_marker_and_cannot_be_repeated(
+    calib, monkeypatch, tmp_path, capsys
+):
+    _prepare_holdout(
+        calib, monkeypatch, tmp_path, lambda r: 0.1 if r.gold_tier == "simple" else 0.9
+    )
+    assert await calib.main_async(_holdout_args(calib)) == 0
+    out = capsys.readouterr().out
+    assert "OVERALL: ENABLE" in out
+    assert calib.VERDICT_MARKER.exists()
+
+    assert await calib.main_async(_holdout_args(calib)) == 2
+    assert await calib.main_async(_holdout_args(calib, rerun=True)) == 0
+
+
+async def test_an_infrastructure_failure_does_not_spend_the_holdout_set(
+    calib, monkeypatch, tmp_path, capsys
+):
+    _prepare_holdout(calib, monkeypatch, tmp_path, lambda r: None)
+    assert await calib.main_async(_holdout_args(calib)) == 3
+    captured = capsys.readouterr()
+    assert "INFRASTRUCTURE FAILURE" in captured.out
+    assert "KEEP OFF" not in captured.out
+    assert not calib.VERDICT_MARKER.exists()
+
+    _prepare_holdout(
+        calib, monkeypatch, tmp_path, lambda r: 0.1 if r.gold_tier == "simple" else 0.9
+    )
+    assert await calib.main_async(_holdout_args(calib)) == 0
+
+
+async def test_a_failing_verdict_still_spends_the_set(
+    calib, monkeypatch, tmp_path, capsys
+):
+    _prepare_holdout(calib, monkeypatch, tmp_path, lambda r: 0.1)
+    assert await calib.main_async(_holdout_args(calib)) == 0
+    assert "OVERALL: KEEP OFF" in capsys.readouterr().out
+    assert calib.VERDICT_MARKER.exists()
