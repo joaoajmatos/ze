@@ -229,10 +229,10 @@ def test_holdout3_below_the_depth_minimums_fails(cal):
     assert any(p.startswith("holdout3/pt:") and "fact rows" in p for p in problems)
 
 
-async def test_the_spent_sets_cannot_run_a_verdict(cal, capsys):
+async def test_the_spent_sets_cannot_run_live(cal, capsys):
     import argparse
 
-    for name in ("holdout", "holdout2"):
+    for name in ("holdout", "holdout2", "holdout3"):
         args = argparse.Namespace(
             check_sets=False,
             set=name,
@@ -240,17 +240,15 @@ async def test_the_spent_sets_cannot_run_a_verdict(cal, capsys):
             bars="0.5,0.5,0.5,0.5,0.5,0.5",
         )
         assert await cal.main_async(args) == 2
-        assert "spent" in capsys.readouterr().err
+        err = capsys.readouterr().err
+        assert "spent" in err and "fresh" in err
 
 
-async def test_holdout3_verdict_needs_bars_and_refuses_replay(cal, capsys, tmp_path):
+async def test_replaying_spent_holdout3_needs_the_frozen_bars(cal, capsys, tmp_path):
     import argparse
 
-    base = dict(check_sets=False, set="holdout3")
-    no_bars = argparse.Namespace(**base, replay=None, bars=None)
-    assert await cal.main_async(no_bars) == 2
-    replay = argparse.Namespace(
-        **base, replay=tmp_path / "r.json", bars="0.5,0.5,0.5,0.5,0.5,0.5"
+    args = argparse.Namespace(
+        check_sets=False, set="holdout3", replay=tmp_path / "r.json", bars=None
     )
-    assert await cal.main_async(replay) == 2
-    assert "tuning" in capsys.readouterr().err
+    assert await cal.main_async(args) == 2
+    assert "--bars" in capsys.readouterr().err

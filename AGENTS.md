@@ -277,7 +277,7 @@ make format          # ruff format + fix across all Python packages
 # Evals
 make dev-eval        # backend for evals — no dev seed data, PUBLIC_URL cleared (background jobs still start)
 make eval-server     # start MCP eval server (requires dev-eval running; see docs/eval.md)
-make calibrate-commitment-intake  # LIVE System One + old-pipeline baseline over eval/calibration/commitment_intake.jsonl; costs credits (--set holdout3 = the one verdict run; --check-sets offline)
+make calibrate-commitment-intake  # LIVE System One + old-pipeline baseline over eval/calibration/commitment_intake.jsonl; costs credits (--set holdout3 gave the one verdict on 2026-10-16 and is spent; --check-sets offline)
 make calibrate-routing     # LIVE System One run over eval/calibration/routing.jsonl; costs credits
 make calibrate-skills      # LIVE System One run over eval/calibration/skills.jsonl; costs credits (--recall: offline shortlist recall)
 make calibrate-open-query # Local, free: open-query detector sweep over eval/calibration/open_query*.jsonl (--check-sets offline; one held-out verdict)

@@ -148,7 +148,7 @@ Ze stores each counted score on the loop's `open_loop_sources` row (score, model
 Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits:
 
 ```bash
-make calibrate-commitment-intake   # tuned set by default; --set holdout3 --bars ... gave the 2026-10-16 verdict; a verdict set is never reused
+make calibrate-commitment-intake   # tuned set by default; --set holdout3 gave the 2026-10-16 verdict and is spent; a verdict set is never reused
 make calibrate-routing
 make calibrate-skills       # add --recall for the offline shortlist check
 make calibrate-loop-gate    # tuned set by default; --set holdout gives the verdict

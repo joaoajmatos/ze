@@ -71,6 +71,7 @@ HOLDOUT2 = Path(__file__).with_name("commitment_intake_holdout2.jsonl")
 HOLDOUT3 = Path(__file__).with_name("commitment_intake_holdout3.jsonl")
 CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
 LANGS = ("en", "pt")
+SPENT_SETS = ("holdout", "holdout2", "holdout3")
 CHOICES = (
     "reminder",
     "loop",
@@ -265,9 +266,8 @@ def shape_problems(
     holdout2: list[Row] | None = None,
     holdout3: list[Row] | None = None,
 ) -> list[str]:
-    """`holdout` and `holdout2` are spent (verdicts 2026-10-16), kept loadable for reference.
-    `holdout3` is the blind set written for the next verdict. Blind sets need not use our
-    hard-negative kind names."""
+    """`holdout`, `holdout2` and `holdout3` are spent (verdicts 2026-10-16), kept loadable for
+    reference. Blind sets need not use our hard-negative kind names."""
     problems = set_problems("holdout", holdout, MIN_HOLDOUT_PER_LANG)
     problems += holdout_depth_problems(holdout)
     if tuned is not None:
@@ -1003,28 +1003,19 @@ def report_verdict(
 async def main_async(args: argparse.Namespace) -> int:
     if args.check_sets:
         return check_sets()
-    verdict_run = args.set == "holdout3"
-    if args.set in ("holdout", "holdout2") and not args.replay:
+    if args.set in SPENT_SETS and not args.replay:
         print(
-            f"The {args.set} set is spent (verdict KEEP OFF, 2026-10-16). It stays loadable "
-            "for reference through --replay only; use --set holdout3 for a verdict (FR-020).",
+            f"The {args.set} set is spent (verdict 2026-10-16). It stays loadable "
+            "for reference through --replay only; a new verdict needs a fresh "
+            "blind held-out file first (FR-020).",
             file=sys.stderr,
         )
         return 2
-    if verdict_run and not args.bars:
+    if args.set == "holdout3" and not args.bars:
         print(
-            "--set holdout3 needs frozen --bars CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES.",
+            "--replay on holdout3 needs the frozen --bars CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES.",
             file=sys.stderr,
         )
-        return 2
-    if verdict_run and args.replay:
-        print(
-            "--replay is refused on the verdict set: re-scoring it at other bars is tuning (FR-020).",
-            file=sys.stderr,
-        )
-        return 2
-    if verdict_run and not HOLDOUT3.exists():
-        print(f"{HOLDOUT3.name} does not exist yet.", file=sys.stderr)
         return 2
     problems = shape_problems(
         load_rows(TUNED) if TUNED.exists() else None,
@@ -1042,7 +1033,7 @@ async def main_async(args: argparse.Namespace) -> int:
         "holdout3": HOLDOUT3,
     }[args.set]
     rows = load_rows(path)
-    if args.set in ("holdout", "holdout2"):
+    if args.set in SPENT_SETS:
         print("REFERENCE: spent held-out set, replayed offline. Not a verdict.")
 
     if args.replay:
@@ -1067,11 +1058,6 @@ async def main_async(args: argparse.Namespace) -> int:
             OpenRouterSystemOneClient,
         )
 
-        if verdict_run:
-            print(
-                "WARNING: held-out verdict run. Changing wording or bars after this run voids the set;"
-                " write a fresh held-out file before the next verdict (FR-020)."
-            )
         client = OpenRouterSystemOneClient(
             api_key=api_key,
             model=args.model or config_model() or DEFAULT_MODEL,
@@ -1095,7 +1081,7 @@ async def main_async(args: argparse.Namespace) -> int:
         print("Every intake call was skipped; nothing to calibrate.", file=sys.stderr)
         return 1
 
-    if verdict_run:
+    if args.set == "holdout3":
         report_verdict(rows, results, args.bars_cfg)
     else:
         report_tuned(rows, results, args.bars_cfg)
@@ -1113,7 +1099,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--bars",
         default=None,
-        help="CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES (required for --set holdout3)",
+        help="CHOICE,FAMILY,BIOGRAPHY,LOOP,EXPLICIT,RESOLVES (required to replay --set holdout3)",
     )
     p.add_argument("--save", type=Path, default=None, help="store raw results as JSON")
     p.add_argument(
