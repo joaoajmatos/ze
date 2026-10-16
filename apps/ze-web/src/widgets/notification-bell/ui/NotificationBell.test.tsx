@@ -160,6 +160,33 @@ describe("NotificationBell", () => {
     expect(mutate).toHaveBeenCalledWith("notif-1");
   });
 
+  it("renders a targetless confirmation_request row and opens nothing on click", () => {
+    const mutate = vi.fn();
+    setup({
+      items: [
+        {
+          ...item,
+          id: "n-confirm",
+          event_type: "confirmation_request",
+          source: "conversation",
+          title: "Ze needs your approval",
+          body: "abandon a goal",
+          target_type: null as unknown as string,
+          target_id: null as unknown as string,
+        },
+      ],
+    });
+    useMarkReadMutation.mockReturnValue({ mutate });
+    renderBell("/chat");
+
+    fireEvent.click(screen.getByLabelText("Notifications"));
+    fireEvent.click(screen.getByText("Ze needs your approval"));
+
+    expect(mutate).toHaveBeenCalledWith("n-confirm");
+    expect(screen.getByTestId("location")).toHaveTextContent("/chat");
+    expect(screen.getByText("abandon a goal")).toBeInTheDocument();
+  });
+
   it("labels a held item", () => {
     setup({ items: [{ ...item, delivery: "held" }] });
     renderBell();
