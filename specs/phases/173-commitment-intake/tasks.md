@@ -44,6 +44,13 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 - [x] T042 [ENG-B] Live tuned run -> choose bars (after T004 OK). Record in `research.md` tuning notes.
 - [ ] T045 [ENG-B] Spec R7 / FR-019: optional `also_loop` row field. `commitment_intake.py`: load it (default false); `--check-sets` rejects it unless `kind` is `mixed` and `gold_choice` is `fact`; scoring counts a `loop` Choice as correct on such rows and leaves a loop create out of false creates, loop precision and loop recall, for intake and baseline alike. Offline tests. Set the field on the qualifying mixed rows of both sets before T043, from the row text alone, and commit each set separately. Owns: `eval/calibration/commitment_intake.py`, its tests, both jsonl sets.
 - [x] T043 [ENG-B] Live held-out run (user OK given 2026-10-16, R8; after T045) once at frozen bars -> verdict. `ENABLE`: set bars and `enabled: true` in `config.yaml`; `KEEP OFF`: leave off and record the failing clause. (User OK required.)
+## Phase 4b: second verdict after KEEP OFF (spec R9)
+
+- [ ] T046 [ENG-B] Runner: `--set holdout2` is the verdict set (`eval/calibration/commitment_intake_holdout2.jsonl`); `--set holdout` with `--bars` refuses to print a verdict (spent set, R9) but `--check-sets` still validates it; check-sets applies the held-out rules and minimums to holdout2 and rejects any holdout2 text equal to a tuned or spent-set text, printing only the holdout2 row id. Offline tests. Land before T047 hands over. Owns: `eval/calibration/commitment_intake.py`, `core/cognition/ze-worldstate/tests/test_commitment_calibration_sets.py`.
+- [ ] T047 [JR: Brook] Write `eval/calibration/commitment_intake_holdout2.jsonl` blind, from `holdout2-brief.md` only (no run output, no earlier set, no judge wording, no research notes, no Clarifications). `--check-sets` exits 0. Commit that file alone; never edit it after. Owns: that file.
+- [ ] T048 [ENG-A] Fix the wording (criteria, question text) in `commitment_judge.py` using tuned-set evidence only; keep FR-003/R4 definitions. Table tests stay green. Owns: `ze_worldstate/commitment_judge.py`, its tests.
+- [ ] T049 [ENG-B] Tuned run 3 on the T048 wording; choose and freeze bars on the tuned set only; record in `research.md` with the commit that freezes wording and bars. Needs T046, T048.
+- [ ] T053 [ENG-B] The one verdict on holdout2 at the T049 frozen bars (user OK given 2026-10-16, R9). `ENABLE`: set bars and `enabled: true` in `config.yaml`. `KEEP OFF`: leave off, record the clauses, stop and ask the Maestro. Needs T047, T049.
 
 ## Phase 5: Docs and polish
 
@@ -53,4 +60,4 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 ## Dependencies
 
-T001 -> T002/T003 -> T004 -> T042; T028, T044 -> T042 (tuned run 2); T005 -> T043. T043 must say `ENABLE` before the floor lands (spec R1). T010,T011 -> T021 -> T022,T023 -> T024,T025,T026. T012,T013 -> T023. T030 -> T031 -> T032. T040 after T021. T050 after T043. [P] tasks run beside their phase siblings. Shared-file order for 181: land the smaller diff first; the other rebases (`nodes/memory.py`, `nested_tools.py`).
+T001 -> T002/T003 -> T004 -> T042; T028, T044 -> T042 (tuned run 2); T005 -> T043. R9: T046 -> T047; T048 -> T049; T047, T049 -> T053; T053 replaces T043 as the landing gate. T043 must say `ENABLE` before the floor lands (spec R1). T010,T011 -> T021 -> T022,T023 -> T024,T025,T026. T012,T013 -> T023. T030 -> T031 -> T032. T040 after T021. T050 after T053. [P] tasks run beside their phase siblings. Shared-file order for 181: land the smaller diff first; the other rebases (`nodes/memory.py`, `nested_tools.py`).
