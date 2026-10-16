@@ -174,3 +174,30 @@ Distributions on the tuned set:
 Frozen bars (one set, for the holdout3 verdict): `choice_hold=0.70 family_hold=0.70 biography_hold=0.55 loop_hold=0.60 explicit_hold=0.95 resolves_hold=0.80`.
 
 Offline replay of run 4 at the frozen bars: EN clean (fact 8/8, loop 16/16); PT fact recall 7/9 (`ci-t-pt-049` `fact`@0.57 held as `choice_unsure`; `ci-t-pt-073`, the mixed also-loop row, held as `loop_unsure`), above the baseline recall 0.50 minus 0.05; everything else clean. No Choice or bar is tuned further on any held-out set.
+
+### holdout3 verdict (T059, 2026-10-16): ENABLE, both languages
+
+One run, 147 rows (EN 73, PT 74; Wren, blind, `eval/calibration/commitment_intake_holdout3.jsonl`, committed in 0b13f211 before any run), model `typesafe/jev-1.13`, seed 173, bars frozen in the run 4 section above (`choice=family 0.70, biography 0.55, loop 0.60, explicit 0.95, resolves 0.80`; wording f35350de, tuned set c9e592d4). Raw results `eval/results/commitment_intake_holdout3_verdict.json` (gitignored). Nothing was re-scored or re-tuned afterwards.
+
+| Clause (per language) | EN | PT | Bar |
+|---|---|---|---|
+| duplicate bookings | 0 (baseline 5) | 0 (baseline 3) | 0 |
+| false loop creates | 0 (baseline 3) | 0 (baseline 3) | 0 |
+| fact precision | 1.000 (baseline 1.000) | 1.000 (1.000) | ≥ baseline |
+| fact recall | 0.810, 17/21 (baseline 0.714) | 0.762, 16/21 (baseline 0.571) | ≥ baseline − 0.05 |
+| loop precision | 1.000 (baseline 0.733) | 1.000 (baseline 0.786) | ≥ baseline |
+| loop recall | 1.000, 22/22 (baseline 1.000) | 1.000, 22/22 (baseline 1.000) | ≥ baseline − 0.05 |
+| false resolves | 0 (baseline 0) | 0 (baseline 1) | ≤ baseline |
+| waiting_on rows write nothing | 0/7 | 0/7 | 0 |
+| Choice accuracy (`turn_created` none, not resolves) | 1.000 | 1.000 | ≥ 0.90 |
+| fallbacks | 0 | 0 | none |
+
+Verdict: **ENABLE** in EN and PT, overall ENABLE.
+
+Not verdict clauses, for the record:
+
+- Link accuracy 7/7 per language (outcome `link` with the right kind). Resolves accuracy 0.986 in both languages.
+- Explicit-versus-implied accuracy is 0.545 (EN) and 0.455 (PT) against baseline 0.500 and 0.364; false declarations 10 and 13 against baseline 15 and 19. As in earlier sets, the explicit Noul over-declares; the result is a `user_declared` loop where `suspected` was gold, not a false create. Not an FR-022 clause.
+- Fact misses (9 of 42, all held, none persisted wrongly): `family` confidence under 0.70 on short statements (EN `h3-en-57` 0.48, `-63` 0.56, `-69` 0.50; PT `h3-pt-64` 0.60, `-70` 0.60), `biography` under 0.55 (EN `h3-en-59` 0.52; PT `h3-pt-56` 0.42, `-60` 0.43), one `fact` Choice at 0.55 (`h3-pt-72`, a fact plus a question). The two mixed fact-plus-open-task rows (`h3-en-70`, `h3-pt-71`) were read as `loop`; the fact was held and the loop created, which the `also_loop` rule allows. These misses cost recall only; recall still clears the baseline in both languages.
+
+Config: the surface can be enabled with the frozen bars in a separate commit.
