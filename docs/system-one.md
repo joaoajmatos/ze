@@ -96,7 +96,9 @@ A pure function, `decide()`, merges the answers with what the turn already did. 
 
 A commitment answer below `choice_hold` is held as unsure and never goes to Haiku. The one exception is an unsure `reminder` or `goal`, which goes to the loop rules. A skip, an invalid answer, an unset bar, or a surface that is off runs the older paths: the Haiku fact extractor and the phase 109 Haiku loop gate. The extractor's Haiku fallback labels a message `fact`, `forget`, `ingest`, `clarify`, or `none`. The request makes one attempt, no retries.
 
-Ze records the judgment rows and an outcome row on the message trace, and runs the loop commit after the episode exists, without blocking the reply. A loop that links to a reminder stores the reminder id on the loop (`reminder_id`, migration `zw004`), beside the existing `goal_id`. The `/loops` page shows a chip for each link.
+Ze records the judgment rows and an outcome row on the message trace, and runs the loop commit after the episode exists, without blocking the reply. On the held-out set, about half of the implied conversation loops were created as active, user-declared loops instead of suspected ones (10 of 21 in English, 13 of 21 in Portuguese, fewer than the old gate made), so they skip the suspected path. A follow-up will narrow declarations.
+
+A loop that links to a reminder stores the reminder id on the loop (`reminder_id`, migration `zw004`), beside the existing `goal_id`. The `/loops` page shows a chip for each link.
 
 ### Routing
 
