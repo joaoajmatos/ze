@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 
 from ze_api.api.deps import require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.v0.data.schemas import (
     DataDomainItem,
     DataDomainsResponse,
     DeleteIntentResponse,
@@ -23,7 +23,9 @@ from ze_data.portability.service import (
 
 log = get_logger(__name__)
 
-router = APIRouter(prefix="/data", tags=["data"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/data", tags=["data"], dependencies=[Depends(require_api_key)]
+)
 
 
 def _service(request: Request) -> DataPortabilityService:

@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
 
 from ze_api.api.deps import require_api_key
-from ze_api.api.schemas import HealthResponse, UiManifestResponse
+from ze_api.api.v0.system.schemas import (
+    HealthResponse,
+    UiManifestResponse,
+    VersionResponse,
+)
 
 _CLIENT_VERSION = "0.1.0"
 _API_VERSION = "v0"
 
 router = APIRouter()
-
-
-class VersionResponse(BaseModel):
-    api_version: str
-    client_version: str
 
 
 @router.get(

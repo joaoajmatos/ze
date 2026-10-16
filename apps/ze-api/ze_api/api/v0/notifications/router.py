@@ -10,7 +10,7 @@ from ze_api.api.deps import (
     get_notifier,
     require_api_key,
 )
-from ze_api.api.schemas import (
+from ze_api.api.v0.notifications.schemas import (
     MarkAllReadResponse,
     NotificationItem,
     NotificationListResponse,

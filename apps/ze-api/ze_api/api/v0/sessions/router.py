@@ -5,14 +5,16 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Request
 
 from ze_api.api.deps import require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.v0.sessions.schemas import (
     SessionListResponse,
     SessionSchema,
     SessionSearchResult,
 )
 from ze_core.conversation.sessions import SessionSearchHit, SessionStore
 
-router = APIRouter(prefix="/sessions", tags=["sessions"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/sessions", tags=["sessions"], dependencies=[Depends(require_api_key)]
+)
 
 
 def _get_session_store(request: Request) -> SessionStore:

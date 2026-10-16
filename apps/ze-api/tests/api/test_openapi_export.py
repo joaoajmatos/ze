@@ -1,6 +1,6 @@
 """Tests for OpenAPI export including plugin routes."""
 
-from ze_api.api.schemas import EvalChatResponse
+from ze_api.api.eval.schemas import EvalChatResponse
 from ze_api.cli.openapi_export import (
     collect_openapi_operation_ids,
     collect_static_plugin_routers,

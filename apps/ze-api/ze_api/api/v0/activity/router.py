@@ -6,9 +6,15 @@ from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Query
 
 from ze_api.api.deps import get_container, require_api_key
-from ze_api.api.schemas import ActivityHeatmapResponse, AgentDayCount, HeatmapDay
+from ze_api.api.v0.activity.schemas import (
+    ActivityHeatmapResponse,
+    AgentDayCount,
+    HeatmapDay,
+)
 
-router = APIRouter(prefix="/activity", tags=["activity"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/activity", tags=["activity"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.get(

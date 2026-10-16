@@ -1,10 +1,10 @@
 """Write confirmation outcomes on live and stored message traces (phase 181)."""
 
-from ze_api.api.schemas import (
+from ze_api.api.v0.messages.schemas import (
     MessageTraceResponse,
     WriteConfirmationOutcomeResponse,
-    WsTraceUpdateFrame,
 )
+from ze_api.api.ws.schemas import WsTraceUpdateFrame
 
 
 def test_live_trace_update_carries_write_confirmations():

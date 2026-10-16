@@ -15,7 +15,7 @@ from ze_api.api.deps import (
     get_turn_lock,
     require_api_key,
 )
-from ze_api.api.schemas import (
+from ze_api.api.v0.messages.schemas import (
     FeedbackView,
     MessageFeedbackResponse,
     MessageSchema,
@@ -38,7 +38,9 @@ from ze_memory.feedback_records import (
     submit_feedback_record,
 )
 
-router = APIRouter(prefix="/messages", tags=["messages"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/messages", tags=["messages"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.get(
@@ -264,6 +266,7 @@ async def get_message_trace(
     if trace is None:
         raise HTTPException(status_code=404, detail="Trace not found")
     return _trace_to_response(trace)
+
 
 _KIND_FOR_RATING = {
     "up": FeedbackKind.THUMBS_UP,

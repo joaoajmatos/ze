@@ -140,7 +140,7 @@ class TestConfirmRequestFrameConformance:
     """confirm_request frames from both builders validate against WsConfirmRequestFrame."""
 
     def test_write_confirmation_frame_matches_the_schema(self):
-        from ze_api.api.schemas import WsConfirmRequestFrame
+        from ze_api.api.ws.schemas import WsConfirmRequestFrame
         from ze_api.api.ws.frames import build_confirm_frame
 
         frame = build_confirm_frame(
@@ -162,7 +162,7 @@ class TestConfirmRequestFrameConformance:
         WsConfirmRequestFrame.model_validate(frame)
 
     def test_prompt_frame_matches_the_schema(self):
-        from ze_api.api.schemas import WsConfirmRequestFrame
+        from ze_api.api.ws.schemas import WsConfirmRequestFrame
         from ze_api.api.ws.frames import build_prompt_frame
 
         frame = build_prompt_frame(
@@ -307,7 +307,7 @@ class TestErrorFrameSchemaConformance:
         return mgr, ws
 
     async def test_turn_error_frames_validate_and_carry_thread_id(self):
-        from ze_api.api.schemas import WsErrorFrame
+        from ze_api.api.ws.schemas import WsErrorFrame
         from ze_api.api.ws.turns import handle_message
 
         mgr, ws = await self._connected()
@@ -344,7 +344,7 @@ class TestErrorFrameSchemaConformance:
         assert [f.get("thread_id") for f in errors] == ["t1", "t2", None]
 
     async def test_component_submit_error_carries_thread_id(self):
-        from ze_api.api.schemas import WsErrorFrame
+        from ze_api.api.ws.schemas import WsErrorFrame
         from ze_api.api.ws.component_submit import handle_component_submit
 
         mgr, ws = await self._connected()

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ze_api.api.deps import get_loop_store, require_api_key
-from ze_api.api.schemas import LoopListItem, LoopTransitionResponse
+from ze_api.api.v0.loops.schemas import LoopListItem, LoopTransitionResponse
 from ze_worldstate import rest as loop_rest
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.store import LoopStore

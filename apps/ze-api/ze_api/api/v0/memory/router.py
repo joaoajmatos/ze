@@ -9,7 +9,7 @@ from ze_api.api.deps import (
     require_api_key,
 )
 from ze_api.api.openapi import OPENAPI_RESPONSES_422
-from ze_api.api.schemas import (
+from ze_api.api.v0.memory.schemas import (
     EntityDetailResponse,
     FactReviewRequest,
     MemoryActivityResponse,
@@ -20,7 +20,9 @@ from ze_api.api.schemas import (
 )
 from ze_memory import admin as memory_admin
 
-router = APIRouter(prefix="/memory", tags=["memory"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/memory", tags=["memory"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.get(

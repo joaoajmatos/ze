@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ze_api.api.deps import get_procedure_admission, require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.v0.procedures.schemas import (
     ProcedureAdmissionResultResponse,
     ProcedureCandidateResponse,
     ProcedureDetailResponse,
@@ -24,7 +24,9 @@ from ze_memory.procedures.errors import (
 )
 from ze_memory.procedures.types import CandidateStatus, ProcedureAdmissionDecision
 
-router = APIRouter(prefix="/procedures", tags=["procedures"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/procedures", tags=["procedures"], dependencies=[Depends(require_api_key)]
+)
 
 
 def _evidence(refs) -> list[ProcedureEvidenceRefResponse]:

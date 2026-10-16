@@ -9,7 +9,7 @@ from ze_api.api.deps import (
     get_priority_view,
     require_api_key,
 )
-from ze_api.api.schemas import (
+from ze_api.api.v0.priority.schemas import (
     PriorityOverrideRequestSchema,
     PrioritySnapshotItem,
     PrioritySnapshotResponse,

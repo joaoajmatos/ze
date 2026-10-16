@@ -59,7 +59,7 @@ console.log("Extracting WebSocket schemas from Python...");
 const wsSchemaJson = execSync(
   `cd ${root} && uv run --project apps/ze-api python -c "` +
     `import json; from pydantic import TypeAdapter; ` +
-    `from ze_api.api.schemas import WsInboundFrame, WsOutboundFrame; ` +
+    `from ze_api.api.ws.schemas import WsInboundFrame, WsOutboundFrame; ` +
     `inbound = TypeAdapter(WsInboundFrame).json_schema(); ` +
     `outbound = TypeAdapter(WsOutboundFrame).json_schema(); ` +
     `defs = {**inbound.pop('\\$defs', {}), **outbound.pop('\\$defs', {})}; ` +

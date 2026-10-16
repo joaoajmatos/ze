@@ -1,4 +1,4 @@
-from ze_api.api.schemas import ErrorDetail
+from ze_api.api.shared_schemas import ErrorDetail
 
 OPENAPI_TAGS = [
     {

@@ -20,7 +20,7 @@ from ze_api.api.deps import (
     get_workspace_store,
     require_api_key,
 )
-from ze_api.api.schemas import (
+from ze_api.api.v0.workspace.schemas import (
     WorkspaceFileListResponse,
     WorkspaceRunListResponse,
     WorkspaceRunResponse,

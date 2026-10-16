@@ -3,10 +3,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
 from ze_api.api.deps import get_container, require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.v0.costs.schemas import (
     AgentCostBucket,
-    CostAnomalyItem,
     CostAnomaliesResponse,
+    CostAnomalyItem,
     DailyCostBucket,
     WebCostSummaryResponse,
 )
@@ -14,7 +14,9 @@ from ze_agents.registry import get_registered_agents
 from ze_automation.accountability.store import AccountabilityStore
 from ze_core.telemetry import rest as telemetry_rest
 
-router = APIRouter(prefix="/costs", tags=["costs"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/costs", tags=["costs"], dependencies=[Depends(require_api_key)]
+)
 
 
 def _build_agent_to_plugin_map() -> dict[str, str]:

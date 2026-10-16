@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from ze_api.api.schemas import (
+from ze_api.api.shared_schemas import RollbackRecordResponse
+from ze_api.api.v0.messages.schemas import (
     FeedbackHistoryItem,
     FeedbackView,
     RetryEligibilityResponse,
-    RollbackRecordResponse,
     UndoPlanEntryResponse,
 )
 from ze_core.conversation.messages.types import Message, MessageTrace

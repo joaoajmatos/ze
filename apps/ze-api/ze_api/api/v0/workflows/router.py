@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ze_agents.errors import WorkflowPlanError
 from ze_api.api.deps import get_workflow_store, require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.v0.workflows.schemas import (
     CancelWorkflowExecutionResponse,
     StepResultResponse,
     TriggerWorkflowResponse,
@@ -17,7 +17,9 @@ from ze_api.api.schemas import (
 from ze_automation import rest as workflow_rest
 from ze_automation.workflow.store import WorkflowStore
 
-router = APIRouter(prefix="/workflows", tags=["workflows"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/workflows", tags=["workflows"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.get(

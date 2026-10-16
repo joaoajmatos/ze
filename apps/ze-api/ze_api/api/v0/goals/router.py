@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ze_automation.goals.types import LearningReviewDecision
 from ze_api.api.deps import require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.v0.goals.schemas import (
     ExecutionTraceResponse,
     GateResponse,
     GoalActionResponse,
@@ -17,7 +17,9 @@ from ze_api.api.schemas import (
     MilestoneResponse,
 )
 
-router = APIRouter(prefix="/goals", tags=["goals"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/goals", tags=["goals"], dependencies=[Depends(require_api_key)]
+)
 
 
 def _learning_response(row) -> LearningResponse:

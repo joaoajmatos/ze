@@ -8,7 +8,7 @@ from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 from ze_core.telemetry.context import set_flow_context
 
 from ze_api.api.deps import require_api_key
-from ze_api.api.schemas import (
+from ze_api.api.eval.schemas import (
     EvalChatRequest,
     EvalChatResponse,
     EvalConfirmRequest,
@@ -19,7 +19,9 @@ from ze_logging import get_logger
 
 log = get_logger(__name__)
 
-router = APIRouter(prefix="/eval", tags=["eval"], dependencies=[Depends(require_api_key)])
+router = APIRouter(
+    prefix="/eval", tags=["eval"], dependencies=[Depends(require_api_key)]
+)
 
 
 @router.post(

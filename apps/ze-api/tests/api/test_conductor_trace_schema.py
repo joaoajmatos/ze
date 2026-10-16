@@ -1,6 +1,7 @@
 """OpenAPI / REST: conductor fields on message traces (phase 154)."""
 
-from ze_api.api.schemas import MessageTraceResponse, WsTraceUpdateFrame
+from ze_api.api.v0.messages.schemas import MessageTraceResponse
+from ze_api.api.ws.schemas import WsTraceUpdateFrame
 
 
 def test_message_trace_schema_includes_conductor_fields():

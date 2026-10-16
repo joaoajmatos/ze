@@ -8,7 +8,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from ze_api.api.ws.connection import ConnectionManager
-from ze_api.api.schemas import RollbackRecordResponse
+from ze_api.api.shared_schemas import RollbackRecordResponse
 from ze_core.conversation.messages.types import (
     RollbackRecord,
     RollbackState,
