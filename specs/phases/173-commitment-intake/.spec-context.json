@@ -225,9 +225,41 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T16:31:42.485Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:45:04.328Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:45:04.391Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:45:04.452Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T16:45:18.501Z"
     }
   ],
-  "currentTask": "T043",
+  "currentTask": "T046",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -317,6 +349,22 @@
     "T043": {
       "status": "DONE",
       "did": "Held-out verdict KEEP OFF, failing clauses recorded (93b76e20)"
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "Tuned run 3, wording+bars frozen (7ae261d6)"
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "false resolves <= baseline clause + tests (4b8c5806)"
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "holdout2 verdict recorded: EN ENABLE, PT KEEP OFF"
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "--set holdout2 wired, spent set reference-only (eb649cbd)"
     }
   }
 }
