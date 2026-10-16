@@ -20,7 +20,7 @@ System One is a small model that returns typed judgments (a choice among labels,
 - **Loop gate** decides whether email, calendar, or ingested text opens or resolves an open loop.
 - **Corroboration** decides whether an independent source is about the same open matter as a suspected loop, and can promote it.
 
-Four of the five surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-commitment-intake`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`); the corroboration surface ships off until `make calibrate-corroboration` gives a held-out `ENABLE`. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing and skills, the Haiku fact extractor and loop gate for the commitment intake, the Haiku judge for the loop gate, and the plain evidence link for corroboration. See [configuration.md](configuration.md#system_one).
+Five of the six surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-commitment-intake`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`, `make calibrate-complexity`); the corroboration surface ships off until `make calibrate-corroboration` gives a held-out `ENABLE`. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing and skills, the Haiku fact extractor and loop gate for the commitment intake, the Haiku judge for the loop gate, the plain evidence link for corroboration, and the agent's full model for complexity. See [configuration.md](configuration.md#system_one).
 
 ## Goal engine
 

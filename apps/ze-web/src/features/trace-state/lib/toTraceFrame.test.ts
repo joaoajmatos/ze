@@ -70,4 +70,26 @@ describe("toTraceFrame", () => {
     } as MessageTraceResponse;
     expect(toTraceFrame("msg-2", trace, "t").rollback).toEqual(rollback);
   });
+
+  it("carries the tier record onto the frame", () => {
+    const tier = {
+      agent: "companion",
+      tier: "simple" as const,
+      decided_by: "system_one",
+      model: "anthropic/claude-haiku-4-5",
+    };
+    const trace = {
+      agent: "companion",
+      routing_method: "embedding",
+      confidence: 1,
+      score_gap: 0,
+      is_compound: false,
+      subtasks: [],
+      memory_chunks: [],
+      tool_calls: [],
+      total_duration_ms: 0,
+      tier,
+    } as MessageTraceResponse;
+    expect(toTraceFrame("msg-3", trace, "t").tier).toEqual(tier);
+  });
 });

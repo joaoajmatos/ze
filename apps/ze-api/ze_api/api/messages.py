@@ -121,6 +121,7 @@ def _trace_to_response(trace) -> MessageTraceResponse:
             _write_confirmation_row(row)
             for row in getattr(trace, "write_confirmations", None) or []
         ],
+        tier=_tier_to_response(getattr(trace, "tier", None)),
     )
 
 
@@ -134,6 +135,17 @@ def _write_confirmation_row(row: dict) -> dict:
         "effect": row.get("effect"),
         "summary": str(row.get("summary", "")),
         "outcome": row.get("outcome", "denied"),
+    }
+
+
+def _tier_to_response(tier) -> dict | None:
+    if tier is None:
+        return None
+    return {
+        "agent": tier.agent,
+        "tier": tier.tier,
+        "decided_by": tier.decided_by,
+        "model": tier.model,
     }
 
 
@@ -200,7 +212,10 @@ async def get_message_traces(
     traces = await store.get_traces(ids)
     return MessageTracesResponse(
         traces=[
-            MessageTraceEntry(message_id=message_id, trace=_trace_to_response(trace))
+            MessageTraceEntry(
+                message_id=message_id,
+                trace=_trace_to_response(trace),
+            )
             for message_id, trace in traces.items()
         ]
     )

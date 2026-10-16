@@ -1,8 +1,8 @@
 """Routing judgment — System One questions, state, surface config and the decision table.
 
 E5 stays the shortlist. One batched request asks a Choice over the shortlist plus
-``none``, a Noul ("more than one specialist?") and a Score (complexity). Pure code
-turns the answers into trust / decompose / abstain / skip.
+``none`` and a Noul ("more than one specialist?"). Pure code turns the answers into
+trust / decompose / abstain / skip.
 """
 
 from __future__ import annotations
@@ -26,8 +26,7 @@ MIN_SHORTLIST = 2
 NONE_KEY = "none"
 Q_AGENT = "agent"
 Q_MULTI = "multi_specialist"
-Q_COMPLEXITY = "complexity"
-QUESTION_IDS = (Q_AGENT, Q_MULTI, Q_COMPLEXITY)
+QUESTION_IDS = (Q_AGENT, Q_MULTI)
 
 _JUDGE_SUFFIX = "Judge the user's words; history and context are background only."
 
@@ -46,29 +45,6 @@ _AGENT_INSTRUCTIONS = (
     "searches the web or uses tools over one that would answer from its own "
     "knowledge. Answer none if no listed agent can do it alone. " + _JUDGE_SUFFIX
 )
-_COMPLEXITY_INSTRUCTIONS = (
-    "How much work does this request need? Rate it from a simple lookup up to a "
-    "multi-step task. " + _JUDGE_SUFFIX
-)
-_COMPLEXITY_LEVELS = [
-    "lookup: a single fact or status check that needs no tool or one trivial read",
-    "single_tool: one tool call or one clear action",
-    "multi_hop: several dependent steps, tools or sources",
-]
-# The wire Score is the expected level index (0 = first level), not a [0, 1] probability.
-COMPLEXITY_SCORE_MAX = float(len(_COMPLEXITY_LEVELS) - 1)
-
-
-def normalise_complexity_score(score: Any) -> float | None:
-    """Wire Score (0..COMPLEXITY_SCORE_MAX) → [0, 1]; ``None`` when malformed."""
-    if (
-        isinstance(score, bool)
-        or not isinstance(score, (int, float))
-        or math.isnan(score)
-        or not 0.0 <= score <= COMPLEXITY_SCORE_MAX
-    ):
-        return None
-    return score / COMPLEXITY_SCORE_MAX
 
 
 @dataclass(frozen=True)
@@ -76,7 +52,6 @@ class RoutingSurfaceConfig:
     enabled: bool = False
     choice_trust: float | None = None
     multi_specialist_hold: float | None = None
-    complexity_lookup_max: float | None = None
     shortlist_k: int = DEFAULT_SHORTLIST_K
 
     @property
@@ -88,7 +63,7 @@ class RoutingSurfaceConfig:
         )
 
 
-def _bar(value: Any, name: str) -> float | None:
+def parse_bar(value: Any, name: str) -> float | None:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -119,12 +94,9 @@ def routing_surface_config(settings: Any) -> RoutingSurfaceConfig:
         return RoutingSurfaceConfig()
     return RoutingSurfaceConfig(
         enabled=block.get("enabled") is True,
-        choice_trust=_bar(block.get("choice_trust"), "choice_trust"),
-        multi_specialist_hold=_bar(
+        choice_trust=parse_bar(block.get("choice_trust"), "choice_trust"),
+        multi_specialist_hold=parse_bar(
             block.get("multi_specialist_hold"), "multi_specialist_hold"
-        ),
-        complexity_lookup_max=_bar(
-            block.get("complexity_lookup_max"), "complexity_lookup_max"
         ),
         shortlist_k=_shortlist_k(block.get("shortlist_k", DEFAULT_SHORTLIST_K)),
     )
@@ -153,11 +125,6 @@ def build_questions(
             type="choice", instructions=_AGENT_INSTRUCTIONS, criteria=criteria
         ),
         Q_MULTI: SystemOneQuestion(type="noul", instructions=_MULTI_INSTRUCTIONS),
-        Q_COMPLEXITY: SystemOneQuestion(
-            type="score",
-            instructions=_COMPLEXITY_INSTRUCTIONS,
-            criteria=list(_COMPLEXITY_LEVELS),
-        ),
     }
 
 
@@ -179,7 +146,6 @@ class RoutingDecision:
     reason: str
     agent: str | None = None
     confidence: float | None = None
-    complexity: Literal["simple", "complex"] | None = None
     consumed: frozenset[str] = frozenset()
 
 
@@ -202,20 +168,6 @@ def _valid_noul(answer: SystemOneAnswer | None) -> bool:
     )
 
 
-def _complexity(
-    result: SystemOneResult, cfg: RoutingSurfaceConfig
-) -> Literal["simple", "complex"] | None:
-    """Score level → model tier. ``None`` means the regex classifier runs."""
-    bar = cfg.complexity_lookup_max
-    answer = result.answers.get(Q_COMPLEXITY)
-    if bar is None or answer is None or answer.type != "score":
-        return None
-    score = normalise_complexity_score(answer.score)
-    if score is None:
-        return None
-    return "simple" if score <= bar else "complex"
-
-
 def decide(
     result: SystemOneResult, cfg: RoutingSurfaceConfig, names: Sequence[str]
 ) -> RoutingDecision:
@@ -235,21 +187,15 @@ def decide(
         return RoutingDecision("skip", "invalid_answer")
     peakedness = float(choice.confidence or 0.0)
 
-    complexity = _complexity(result, cfg)
-    extra = frozenset({Q_COMPLEXITY}) if complexity is not None else frozenset()
-
     if choice.choice == NONE_KEY:
         return RoutingDecision(
             "decompose",
             "choice_none",
             confidence=peakedness,
-            complexity=complexity,
-            consumed=frozenset({Q_AGENT}) | extra,
+            consumed=frozenset({Q_AGENT}),
         )
     if peakedness < trust_bar:
-        return RoutingDecision(
-            "abstain", "choice_unsure", complexity=complexity, consumed=extra
-        )
+        return RoutingDecision("abstain", "choice_unsure")
 
     noul = result.answers.get(Q_MULTI)
     if not _valid_noul(noul):
@@ -258,16 +204,14 @@ def decide(
             "trusted",
             agent=choice.choice,
             confidence=peakedness,
-            complexity=complexity,
-            consumed=frozenset({Q_AGENT}) | extra,
+            consumed=frozenset({Q_AGENT}),
         )
-    consumed = frozenset({Q_AGENT, Q_MULTI}) | extra
+    consumed = frozenset({Q_AGENT, Q_MULTI})
     if float(noul.noul or 0.0) >= hold_bar:
         return RoutingDecision(
             "decompose",
             "multi_specialist",
             confidence=peakedness,
-            complexity=complexity,
             consumed=consumed,
         )
     return RoutingDecision(
@@ -275,6 +219,5 @@ def decide(
         "trusted",
         agent=choice.choice,
         confidence=peakedness,
-        complexity=complexity,
         consumed=consumed,
     )

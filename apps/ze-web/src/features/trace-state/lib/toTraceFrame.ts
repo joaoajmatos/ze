@@ -26,5 +26,6 @@ export function toTraceFrame(
     sources: trace.sources ?? [],
     write_confirmations: trace.write_confirmations,
     rollback: trace.rollback,
+    tier: trace.tier,
   } as WsTraceUpdateFrame;
 }

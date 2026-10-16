@@ -5,6 +5,7 @@ from ze_logging import get_logger
 from ze_core.conversation.messages.judgments import judgments_from_result
 from ze_core.orchestration.state import AgentState
 from ze_core.orchestration.judgment_state import build_judgment_state, history_hint
+from ze_core.routing.tier import resolve_agent_model
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze_core.telemetry.context import get_cost_context, set_agent_context
 
@@ -101,22 +102,6 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
         logger=log,
     )
 
-    # Patch per-subtask model. A Score tier chosen on the embedding path is kept.
-    if router is not None and new_envelope.subtasks:
-        keep_score = envelope is not None and envelope.complexity_source == "score"
-        if keep_score:
-            complexity = envelope.complexity
-        else:
-            complexity = router._estimator.classify(
-                state["prompt"],
-                new_envelope.subtasks[0].agent,
-                new_envelope.confidence,
-            )
-        for subtask in new_envelope.subtasks:
-            subtask.model = router._resolve_model(subtask.agent, complexity)
-        new_envelope.complexity = complexity
-        new_envelope.complexity_source = "score" if keep_score else "regex"
-
     log.info(
         "orchestration_decomposed",
         session_id=state["session_id"],
@@ -124,6 +109,11 @@ async def decompose(state: AgentState, config: RunnableConfig) -> dict:
         is_sequential=new_envelope.is_sequential,
     )
     rewritten, hint = apply_conductor_rewrite(new_envelope, state["prompt"])
+    if router is not None:
+        for subtask in rewritten.subtasks:
+            subtask.model = resolve_agent_model(
+                subtask.agent, "full", router._app_config
+            )
     ledger = [{"agent": h["agent"], "status": "planned"} for h in hint] if hint else []
     if hint is not None:
         log.info(
@@ -168,6 +158,5 @@ def apply_conductor_rewrite(
         requires_synthesis=False,
         raw_scores=envelope.raw_scores,
         is_sequential=True,
-        complexity=envelope.complexity,
     )
     return rewritten, hint

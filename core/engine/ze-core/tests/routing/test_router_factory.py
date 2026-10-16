@@ -13,8 +13,13 @@ from ze_agents.defaults import (
     ROUTING_THRESHOLD,
 )
 from ze_agents.registry import clear_registry
-from ze_core.routing.factory import build_embedding_router, router_config_from
+from ze_core.routing.factory import (
+    build_embedding_router,
+    build_tier_judge,
+    router_config_from,
+)
 from ze_core.routing.judge import RoutingSurfaceConfig
+from ze_core.routing.tier import ComplexitySurfaceConfig, TierJudge
 from tests.support.routing import FakeSystemOneClient, cosine_embedder, register_agent
 
 
@@ -64,8 +69,8 @@ class TestBuildEmbeddingRouter:
 
     def test_models_overrides_change_resolved_model(self):
         router, _ = _build({"models": {"overrides": {"alpha": "override/alpha"}}})
-        assert router._resolve_model("alpha", "complex") == "override/alpha"
-        assert router._resolve_model("beta", "complex") == "m"
+        assert router._full_model("alpha") == "override/alpha"
+        assert router._full_model("beta") == "m"
 
     def test_router_fallback_model_reaches_router(self):
         router, _ = _build({"models": {"overrides": {"router_fallback": "x/y"}}})
@@ -93,6 +98,36 @@ class TestBuildEmbeddingRouter:
         assert router._surface == RoutingSurfaceConfig()
 
 
+class TestBuildTierJudge:
+    def test_judge_carries_client_surface_and_config(self):
+        client = FakeSystemOneClient()
+        config = {
+            "system_one": {
+                "enabled": True,
+                "surfaces": {"complexity": {"enabled": True, "simple_max": 0.15}},
+            }
+        }
+        judge = build_tier_judge(config=config, system_one_client=client)
+        assert isinstance(judge, TierJudge)
+        assert judge._client is client
+        assert judge.surface == ComplexitySurfaceConfig(enabled=True, simple_max=0.15)
+        assert judge.app_config is config
+
+    def test_off_by_default(self):
+        judge = build_tier_judge(config={}, system_one_client=FakeSystemOneClient())
+        assert judge.surface == ComplexitySurfaceConfig()
+
+    def test_system_one_disabled_turns_the_surface_off(self):
+        config = {
+            "system_one": {
+                "enabled": False,
+                "surfaces": {"complexity": {"enabled": True, "simple_max": 0.15}},
+            }
+        }
+        judge = build_tier_judge(config=config, system_one_client=FakeSystemOneClient())
+        assert not judge.surface.enabled
+
+
 class TestCallSites:
     def test_bootstrap_build_router_uses_factory(self):
         from ze_core import bootstrap
@@ -101,7 +136,6 @@ class TestCallSites:
             embedder=MagicMock(),
             openrouter_client=MagicMock(),
             pool=MagicMock(),
-            estimator=MagicMock(),
             system_one_client=FakeSystemOneClient(),
         )
         settings = SimpleNamespace(config={"routing": {"threshold": 0.4}})
@@ -113,7 +147,7 @@ class TestCallSites:
         assert kwargs["config"] is settings.config
         assert kwargs["system_one_client"] is stack.system_one_client
         assert kwargs["embedder"] is stack.embedder
-        assert kwargs["estimator"] is stack.estimator
+        assert "estimator" not in kwargs
 
     def test_base_container_step_uses_factory(self):
         from ze_core import container

@@ -74,6 +74,7 @@ def graph_builder(
     builder.add_node("decompose", ov.get("decompose", nodes.decompose))
     builder.add_node("fetch_context", ov.get("fetch_context", nodes.fetch_context))
     builder.add_node("match_skills", ov.get("match_skills", nodes.match_skills))
+    builder.add_node("choose_tier", ov.get("choose_tier", nodes.choose_tier))
     builder.add_node("preflight", ov.get("preflight", nodes.preflight))
     builder.add_node(
         "await_budget_confirmation",
@@ -101,7 +102,8 @@ def graph_builder(
     # embed_route and decompose routing conditionals are NOT wired here — see docstring.
 
     builder.add_edge("fetch_context", "match_skills")
-    builder.add_edge("match_skills", "preflight")
+    builder.add_edge("match_skills", "choose_tier")
+    builder.add_edge("choose_tier", "preflight")
     builder.add_conditional_edges(
         "preflight",
         after_preflight,

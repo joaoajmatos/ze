@@ -6,6 +6,8 @@
 
 **Status**: Implemented
 
+**Status note (182)**: The complexity Score is removed by [182](../182-complexity-routing/spec.md). Routing asks two questions now (agent and multi-specialist). The model tier is a separate Noul at `choose_tier`. Superseded by 182 for the complexity question.
+
 **Status note (2026-10-12)**: Phase [167](../167-routing-choice-criteria/spec.md) fixed the held-out failures this phase shipped with (`routing_criteria`, `shortlist_k` 9) and enabled the surface with calibrated bars: `choice_trust` 0.5, `multi_specialist_hold` 0.5, `complexity_lookup_max` null. Where this spec says the surface ships off, read 167 for the current state.
 
 **Input**: User description: "Complement EmbeddingRouter with System One Choice over the E5 shortlist plus none, and a complexity Score. Keep E5 encode, 160 bars as shortlist, Haiku decompose when none/low confidence/multi-specialist. Do not change 153/155. Depends on 162. Do not start in the 163 tree."

@@ -158,7 +158,7 @@ packages. Plugin authors never import `ze_core` directly — use `ze_sdk` instea
 | Module | What it provides |
 |--------|-----------------|
 | `orchestration/` | LangGraph graph builder, node implementations, `AgentState` (graph-private), edges |
-| `routing/` | `EmbeddingRouter`, `ComplexityEstimator`, `RoutingFallback` |
+| `routing/` | `EmbeddingRouter`, `tier.py` (model tier), `RoutingFallback` |
 | `conversation/` | Message/session/confirmation stores + graph turn helpers (`turn.py`), `retry.py` (Retry eligibility), `rewind.py` (thread history rewind for Retry) |
 | `openrouter/` | `OpenRouterClient` (satisfies `LLMClient` Protocol), streaming, transcription |
 | `telemetry/` | `CostTracker`, `CostReconciler`, `PostgresCostStore`, context vars |

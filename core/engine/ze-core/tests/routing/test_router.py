@@ -207,34 +207,53 @@ class TestEmbeddingRouting:
 
 
 class TestModelResolution:
-    async def test_uses_model_simple_for_simple_prompt(self):
-        _register(
-            "a",
-            model="big-model",
-            model_simple="small-model",
-            intent_map={"read": "Read"},
-        )
-        embedder = _FakeEmbedder({"a": [1.0]}, [1.0])
-        r = EmbeddingRouter(embedder, _make_client(), _make_routing_store())
-        # Short simple prompt → should be "simple" complexity
-        env = await r.route("what is python", "s1")
-        assert env.subtasks[0].model == "small-model"
+    _PROMPTS = [
+        "what is python",
+        "o que é python",
+        "analyze and explain in depth the trade-offs between "
+        + " ".join(["word"] * 30),
+    ]
 
-    async def test_uses_primary_model_for_complex_prompt(self):
-        _register(
-            "a",
-            model="big-model",
-            model_simple="small-model",
-            intent_map={"reason": "Reason"},
+    def _router(self, *agents):
+        for name in agents:
+            _register(
+                name,
+                model="big-model",
+                model_simple="small-model",
+                intent_map={"read": "Read"},
+            )
+        vecs = {name: [1.0 if i == 0 else 0.1] for i, name in enumerate(agents)}
+        return EmbeddingRouter(
+            _FakeEmbedder(vecs, [1.0]), _make_client(), _make_routing_store()
         )
-        embedder = _FakeEmbedder({"a": [1.0]}, [1.0])
-        r = EmbeddingRouter(embedder, _make_client(), _make_routing_store())
-        long_complex = (
-            "analyze and explain in depth the trade-offs between "
-            + " ".join(["word"] * 30)
-        )
-        env = await r.route(long_complex, "s1")
+
+    @pytest.mark.parametrize("prompt", _PROMPTS)
+    async def test_route_assigns_full_model(self, prompt):
+        r = self._router("a")
+        env = await r.route(prompt, "s1")
         assert env.subtasks[0].model == "big-model"
+
+    @pytest.mark.parametrize("prompt", _PROMPTS)
+    async def test_route_assigns_full_model_with_two_agents(self, prompt):
+        r = self._router("a", "b")
+        env = await r.route(prompt, "s1")
+        assert all(s.model == "big-model" for s in env.subtasks)
+
+    @pytest.mark.parametrize("prompt", _PROMPTS)
+    async def test_route_forced_assigns_full_model(self, prompt):
+        r = self._router("a", "b")
+        env = await r.route_forced(prompt, "s1", "a")
+        assert env.subtasks[0].model == "big-model"
+
+    async def test_router_takes_no_estimator(self):
+        _register("a", model="big-model", intent_map={"read": "Read"})
+        with pytest.raises(TypeError):
+            EmbeddingRouter(
+                _FakeEmbedder({"a": [1.0]}, [1.0]),
+                _make_client(),
+                _make_routing_store(),
+                estimator=object(),
+            )
 
 
 class TestAppConfigResolution:
