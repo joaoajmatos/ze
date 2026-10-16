@@ -29,7 +29,8 @@ All six are sent in every request (one batch); pure code reads only the ones the
 | 4 | `resolves_existing` >= `resolves_hold` | `resolve_loop` | `resolves` |
 | 5 | `created` has reminder or goal | `link` (kind from `created`) | `turn_created`; never creates a loop and persists no fact (a tool call that created a reminder or goal outranks a contradicting `fact` label) |
 | 6 | Choice = `waiting_on` | `hold` | `waiting_on` (label only, Phase 174) |
-| 7 | Choice in `reminder, goal` | `hold` | `reminder_not_created` / `goal_not_created` |
+| 7 | Choice in `reminder, goal`, confidence >= `choice_hold` | `hold` | `reminder_not_created` / `goal_not_created` |
+| 7a | Choice in `reminder, goal`, confidence < `choice_hold` | continue at row 11 (loop rules; row 10 does not apply) | reasons of rows 11-14 |
 | 8 | Choice = `fact` and confidence >= `choice_hold` | fact rules of 163 (`family`>= `family_hold`, `biography` >= `biography_hold`) -> `persist_fact` or `hold` | as 163 |
 | 9 | Choice in `forget, ingest, clarify, none` | `hold` | choice name |
 | 10 | Choice = `loop`, confidence < `choice_hold` | `hold` | `loop_unsure` |
@@ -38,7 +39,7 @@ All six are sent in every request (one batch); pure code reads only the ones the
 | 13 | Choice = `loop`, `explicit_declaration` >= `explicit_hold` | `create_loop_declared` | `explicit` |
 | 14 | Choice = `loop` | `create_loop_suspected` | `implied` |
 
-A confidence below `choice_hold` on any non-loop Choice is `hold` with reason `choice_unsure`. Bars compare at or above. `decide()` never raises.
+A confidence below `choice_hold` on `fact`, `forget`, `ingest`, `clarify` or `none` is `hold` with reason `choice_unsure`. `waiting_on` is held at any confidence (row 6). `reminder` and `goal` below the bar fall through to the loop rules (row 7a, amended 2026-10-16, spec R5): `is_open_concern` and `explicit_declaration` decide, and `tracked` still holds. Row 5 is checked first, so a created id always links. Bars compare at or above. `decide()` never raises.
 
 Row 5 note: a successful tool call outranks the label. The loop-side link target is found by the existing `find_matching_loop` (entity overlap, then E5 0.75 title similarity) over live loops (`suspected`, `active`, `drifting`).
 

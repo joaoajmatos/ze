@@ -39,6 +39,8 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 - [x] T040 [ENG-B] `eval/calibration/commitment_intake_baseline.py`: frozen 163 questions + decide + `loop_judge.decide` replay (D-6). Owns that file.
 - [x] T041 [ENG-B] Finish `commitment_intake.py`: live run (tuned), report (FR-021), bar grid, reliability tables, `--set holdout --bars`, verdict per FR-022. Delete `eval/calibration/speech_act.{py,jsonl}`. Makefile: `calibrate-commitment-intake` replaces `calibrate-speech-act` (help text + .PHONY). Owns: Makefile calibrate lines, the eval files.
+- [ ] T028 [ENG-A] Spec R4/R5: reword the `reminder` and `goal` criteria in `commitment_judge.py` (reminder = the user asks for a ping/alarm/nudge at a time; obligation with a deadline and no ask = loop; goal = multi-week outcome, not a one-off task with a deadline; EN+PT examples, name-free), tuned on the tuned set only. Add contract row 7a to `decide()`: `reminder`/`goal` below `choice_hold` with nothing created falls through to the loop rules. Table tests in `test_commitment_judge.py`: 7a at bar edge (== bar holds, below falls through), fall-through to declared, suspected, `not_open_concern` and `tracked`; row 5 still wins over 7a. Owns: `ze_worldstate/commitment_judge.py`, `tests/test_commitment_judge.py`.
+- [ ] T044 [ENG-B] Spec R6 / FR-021, FR-022 amendment: in `commitment_intake.py` score Choice accuracy only on rows with `turn_created` `none`, report link accuracy for the others (outcome `link` with the right kind), keep it out of the verdict clauses; update the baseline replay report to match; test the scoring split offline. Owns: `eval/calibration/commitment_intake.py` and its tests.
 - [ ] T042 [ENG-B] Live tuned run -> choose bars (after T004 OK). Record in `research.md` tuning notes.
 - [ ] T043 [ENG-B] Live held-out run once at frozen bars -> verdict. `ENABLE`: set bars and `enabled: true` in `config.yaml`; `KEEP OFF`: leave off and record the failing clause. (User OK required.)
 
@@ -50,4 +52,4 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 ## Dependencies
 
-T001 -> T002/T003 -> T004 -> T042; T005 -> T043. T043 must say `ENABLE` before the floor lands (spec R1). T010,T011 -> T021 -> T022,T023 -> T024,T025,T026. T012,T013 -> T023. T030 -> T031 -> T032. T040 after T021. T050 after T043. [P] tasks run beside their phase siblings. Shared-file order for 181: land the smaller diff first; the other rebases (`nodes/memory.py`, `nested_tools.py`).
+T001 -> T002/T003 -> T004 -> T042; T028, T044 -> T042 (tuned run 2); T005 -> T043. T043 must say `ENABLE` before the floor lands (spec R1). T010,T011 -> T021 -> T022,T023 -> T024,T025,T026. T012,T013 -> T023. T030 -> T031 -> T032. T040 after T021. T050 after T043. [P] tasks run beside their phase siblings. Shared-file order for 181: land the smaller diff first; the other rebases (`nodes/memory.py`, `nested_tools.py`).
