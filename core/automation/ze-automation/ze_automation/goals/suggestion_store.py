@@ -140,26 +140,6 @@ class GoalSuggestionStore:
             )
             return row is not None
 
-    async def was_topic_suggested_recently(self, title: str, days: int = 30) -> bool:
-        """
-        Returns True if a suggestion with a similar title (case-insensitive substring match)
-        was sent within the last `days` days, excluding EXPIRED suggestions.
-        """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT 1 FROM goal_suggestions
-                WHERE status != 'expired'
-                  AND suggested_at >= $1
-                  AND LOWER(title) LIKE '%' || LOWER($2) || '%'
-                LIMIT 1
-                """,
-                cutoff,
-                title,
-            )
-            return row is not None
-
     async def resolve_short_id(self, short_id: str) -> GoalSuggestion | None:
         """
         Finds a suggestion whose UUID starts with `short_id` (8 hex chars).
