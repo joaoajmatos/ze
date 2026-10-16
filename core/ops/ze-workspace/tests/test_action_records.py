@@ -16,6 +16,7 @@ from ze_plugin.contribution import SourceFunction
 from ze_workspace.action_handoff import (
     configure_action_ledger,
     record_workspace_run,
+    retry_pending_workspace_action_records,
 )
 from ze_workspace.types import WorkspaceRun, WorkspaceRunOrigin, WorkspaceRunStatus
 
@@ -125,3 +126,53 @@ async def test_ledger_failure_does_not_rerun_and_stays_pending() -> None:
     ]
     assert True in pending_marks
     assert False not in pending_marks
+
+
+def _ledger(pending: list[WorkspaceRun], *, append=None):
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=None)
+    store.append = append or AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+    workspace_store = AsyncMock()
+    workspace_store.list_ledger_pending = AsyncMock(return_value=pending)
+    configure_action_ledger(action_record_store=store, workspace_store=workspace_store)
+    return store, workspace_store
+
+
+async def test_retry_delivers_pending_rows_and_clears_the_flag() -> None:
+    run = _run()
+    store, workspace_store = _ledger([run])
+
+    assert await retry_pending_workspace_action_records() == 1
+
+    assert store.append.await_count == 1
+    assert workspace_store.mark_ledger_handoff.await_args.kwargs["pending"] is False
+
+
+async def test_retry_keeps_the_row_pending_when_the_ledger_is_still_down() -> None:
+    async def boom(_contribution):
+        raise RuntimeError("ledger down")
+
+    _, workspace_store = _ledger([_run()], append=boom)
+
+    assert await retry_pending_workspace_action_records() == 0
+    assert all(
+        call.kwargs["pending"] is True
+        for call in workspace_store.mark_ledger_handoff.await_args_list
+    )
+
+
+async def test_retry_survives_one_row_failing_outside_the_ledger() -> None:
+    first, second = _run(), _run()
+    _, workspace_store = _ledger([first, second])
+    workspace_store.mark_ledger_handoff = AsyncMock(
+        side_effect=[RuntimeError("db"), None, None]
+    )
+
+    assert await retry_pending_workspace_action_records() == 1
+
+
+async def test_retry_with_an_unreadable_pending_list_returns_zero() -> None:
+    _, workspace_store = _ledger([])
+    workspace_store.list_ledger_pending = AsyncMock(side_effect=RuntimeError("db"))
+
+    assert await retry_pending_workspace_action_records() == 0

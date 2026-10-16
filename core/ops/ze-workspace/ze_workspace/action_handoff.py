@@ -85,11 +85,25 @@ async def record_workspace_run(run: WorkspaceRun) -> ActionRecord | None:
 
 
 async def retry_pending_workspace_action_records() -> int:
+    """Resubmit runs whose ledger handoff was marked pending but never completed
+    (a crash or ledger outage between persisting the run and submitting it).
+    Runs at startup; the source row and idempotency key make the replay safe."""
     if _action_store is None or _workspace_store is None:
         return 0
-    pending = await _workspace_store.list_ledger_pending()
+    try:
+        pending = await _workspace_store.list_ledger_pending()
+    except Exception as exc:
+        log.warning("action_record_retry_list_failed", error=type(exc).__name__)
+        return 0
     delivered = 0
     for run in pending:
-        if await record_workspace_run(run) is not None:
-            delivered += 1
+        try:
+            if await record_workspace_run(run) is not None:
+                delivered += 1
+        except Exception as exc:
+            log.warning(
+                "action_record_retry_failed",
+                run_id=str(run.id),
+                error=type(exc).__name__,
+            )
     return delivered

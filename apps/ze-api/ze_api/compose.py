@@ -23,6 +23,7 @@ from ze_skills.bootstrap import register_proactive_jobs as register_skills_jobs
 from ze_worldstate.bootstrap import loop_push_settings
 from ze_worldstate.bootstrap import register_proactive_jobs as register_worldstate_jobs
 from ze_logging import get_logger
+from ze_workspace.action_handoff import retry_pending_workspace_action_records
 
 log = get_logger(__name__)
 
@@ -120,3 +121,9 @@ async def reconcile_in_progress_workspace_runs(store: Any, run_watcher: Any) -> 
             log.warning(
                 "workspace_run_reattach_failed", run_id=str(run.id), error=str(exc)
             )
+
+
+async def reconcile_workspace_at_startup(store: Any, run_watcher: Any) -> None:
+    """Re-adopt detached runs, then resubmit action-ledger handoffs a crash left pending."""
+    await reconcile_in_progress_workspace_runs(store, run_watcher)
+    await retry_pending_workspace_action_records()
