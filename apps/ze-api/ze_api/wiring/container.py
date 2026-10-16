@@ -9,26 +9,16 @@ from typing import Any
 from uuid import UUID
 
 import aiohttp
-from sentence_transformers import SentenceTransformer
 
-from ze_agents.nli import NLIClient
-from ze_agents.system_one import SystemOneClient
-from ze_agents.bootstrap import bootstrap_agents
 from ze_agents.interface.types import RawInput
 from ze_agents.interface.validation import validate_interface
-from ze_agents.settings import Settings as CoreSettings
 from ze_automation.bootstrap import (
     automation_data_domains,
     build_automation_stack,
     configure_workflow_executor,
-    import_agent_modules as import_automation_agents,
-)
-from ze_automation.action_records import (
-    configure_action_recorder as configure_automation_action_recorder,
 )
 from ze_worldstate.bootstrap import (
     build_worldstate_stack,
-    import_agent_modules as import_worldstate_agents,
     worldstate_data_domains,
 )
 from ze_worldstate.store import LoopStore
@@ -36,15 +26,11 @@ from ze_worldstate.tracking import LoopTracker
 from ze_skills.bootstrap import (
     build_skill_matcher,
     build_skills_stack,
-    register_bundled_skills,
 )
 from ze_skills.store import SkillStore
-from ze_collision.store import CollisionLogStore, PostgresCollisionLogStore
-from ze_memory.action_records.store import ActionRecordStore, PostgresActionRecordStore
 from ze_memory.feedback_records import PostgresFeedbackStore
 from ze_memory.feedback_records.data_domain import feedback_data_domains
-from ze_priority.store import PostgresPriorityOverrideStore, PriorityOverrideStore
-from ze_priority import import_agent_modules as import_priority_agents
+from ze_priority.store import PriorityOverrideStore
 from ze_browser import BrowserClient
 from ze_workspace.bootstrap import build_workspace_stack
 from ze_workspace.client import WorkspaceClient
@@ -54,7 +40,6 @@ from ze_workspace.push_kinds import WORKSPACE_RUN_COMPLETED
 from ze_workspace.store import WorkspaceStore
 from ze_workspace.turn_lock import ThreadTurnLock
 from ze_components.hook import ComponentCollectionHook
-from ze_core.nli import LocalNLIClient
 from ze_core.bootstrap import (
     build_checkpointer,
     build_engine_stack,
@@ -64,7 +49,7 @@ from ze_core.bootstrap import (
 )
 from ze_core.container import Container as CoreContainer
 from ze_core.routing.factory import build_tier_judge
-from ze_core.telemetry.budget import SpendBudgetChecker, SpendBudgetConfig
+from ze_core.telemetry.budget import SpendBudgetChecker
 from ze_core.conversation import (
     TurnResult,
     invoke_raw_turn,
@@ -76,37 +61,23 @@ from ze_core.conversation.messages import PostgresMessageStore
 from ze_core.conversation.rewind import history_rewindable
 from ze_core.conversation.sessions import PostgresSessionStore
 from ze_core.orchestration.graph import build_graph
-from ze_correlation.bootstrap import build_correlation_stack
-from ze_correlation.store import PostgresHypothesisStore
 from ze_priority.view import PriorityView
 from ze_priority.turn import TurnSurfacing
 from ze_data.portability.service import DataPortabilityService
 from ze_seed.service import DevDataSeeder, collect_seed_domains
 from ze_ingestion.bootstrap import (
     build_ingestion_stack,
-    import_agent_modules as import_ingestion_agents,
 )
 from ze_memory.policies import build_policy_registry
 from ze_notifications.ntfy import NtfyConfig, NtfyNotifier
 from ze_onboarding import (
-    CoreOnboardingProvider,
     OnboardingCoordinator,
-    PostgresOnboardingPersistence as OnboardingPersistence,
-    PostgresOnboardingStore as OnboardingStore,
     ResetService,
 )
-from ze_personal.persona.postgres import PostgresPersonaStore
-from ze_personal.channels.user_channel_store import UserChannelStore
-from ze_personal.channels.watermark_store import ChannelWatermarkStore
-from ze_personal.channels.thread_channel_map import ThreadChannelMap
-from ze_personal.contacts.channel_store import ContactChannelStore
-from ze_api.cli.openapi_export import collect_openapi_operation_ids
 from ze_plugin.bootstrap import discover_and_instantiate_plugins
-from ze_plugin.ui import collect_ui_contributions, filter_ui_manifest_by_openapi
 from ze_communication.registry import ChannelRegistry
 from ze_proactive.notification_store import NotificationStore
 from ze_proactive.notifier import ProactiveNotifier
-from ze_proactive.job_run_store import JobRunStore
 from ze_proactive.push_log_store import PushLogStore
 from ze_proactive.bootstrap import shared_push_budget
 from ze_proactive.data_domain import interruption_data_domains
@@ -120,13 +91,38 @@ from ze_api.wiring.jobs import (
 )
 from ze_api.wiring.db import create_checkpointer_pool, create_pool
 from ze_api.interface.native import NativeAppInterface
-from ze_api.wiring.webhooks import (
-    EventDeduplicator,
-    WebhookDispatcher,
-    collect_plugin_webhook_handlers,
-)
 from ze_logging import get_logger
 from ze_api.settings import Settings, get_settings
+from ze_api.wiring.agents import (
+    bootstrap_agent_layer,
+    build_agent_deps,
+    build_channels_and_webhooks,
+    build_dep_map,
+    build_onboarding_coordinator,
+    build_translations,
+    build_ui_manifest,
+    collect_plugin_signal_sources,
+    collect_plugin_stores,
+)
+from ze_api.wiring.hooks import (
+    build_budget_checker,
+    build_commitment_intake,
+    build_dream_job,
+    install_contradiction_hook,
+    wire_automation,
+    wire_collision_detection,
+    wire_ingestion_loop_extractor,
+    wire_plugin_consolidators,
+    wire_plugin_loop_extractors,
+)
+from ze_api.wiring.stores import build_stores
+from ze_api.wiring.workflow_graph import begin_workflow_turn, build_workflow_graph
+from ze_agents.registry import get_registered_agents
+from ze_correlation.bootstrap import (
+    build_correlation_push_candidate_source,
+    build_correlation_stack,
+)
+from ze_worldstate.bootstrap import build_loop_surfacer
 import ze_components.tools  # noqa: F401 — registers all render tools at import time
 
 log = get_logger(__name__)
@@ -418,19 +414,17 @@ class ZeContainer(CoreContainer):
 Container = ZeContainer
 
 
-def collect_plugin_signal_sources(plugins: list) -> dict:
-    from ze_agents.errors import AgentConfigError
-
-    sources: dict = {}
-    for plugin in plugins:
-        for source in plugin.signal_sources():
-            if source.source_key in sources:
-                raise AgentConfigError(
-                    f"Duplicate signal source key {source.source_key!r} "
-                    f"contributed by {type(plugin).__name__}"
-                )
-            sources[source.source_key] = source
-    return sources
+def _build_push_notifier(settings: Settings) -> NtfyNotifier | None:
+    if not settings.ntfy_topic:
+        return None
+    ntfy_config = NtfyConfig(
+        base_url=settings.ntfy_base_url,
+        topic=settings.ntfy_topic,
+        token=settings.ntfy_token or None,
+    )
+    notifier = NtfyNotifier(config=ntfy_config, session=aiohttp.ClientSession())
+    log.info("ntfy_notifier_registered", topic=settings.ntfy_topic)
+    return notifier
 
 
 async def build_container(settings: Settings) -> ZeContainer:
@@ -442,13 +436,12 @@ async def build_container(settings: Settings) -> ZeContainer:
     correlation = build_correlation_stack(shared, settings)
     worldstate = build_worldstate_stack(shared, settings)
 
+    stores = build_stores(pool, shared, settings)
     priority_view = PriorityView(
         loop_store=worldstate.loop_store,
         goal_store=automation.goal_store,
         hypothesis_store=correlation.hypothesis_store,
     )
-    priority_override_store = PostgresPriorityOverrideStore(pool=pool)
-    collision_store = PostgresCollisionLogStore(pool=pool)
 
     skills_stack = build_skills_stack(shared, settings)
     skill_matcher = build_skill_matcher(
@@ -460,86 +453,40 @@ async def build_container(settings: Settings) -> ZeContainer:
     turn_lock = ThreadTurnLock()
     turn_starter = _ContainerTurnStarter()
     push_sender = _NotifierPushSender()
-    action_record_store = PostgresActionRecordStore(pool=pool)
-    configure_automation_action_recorder(action_record_store)
-    from ze_memory.procedures.admission import ProcedureAdmissionService
-    from ze_memory.procedures.activation import ProcedureActivator
-    from ze_memory.procedures.discovery import ProcedureDiscovery
-    from ze_memory.procedures.store import PostgresProcedureStore
-
-    procedure_store = PostgresProcedureStore(pool, embedder=shared.embedder)
-    procedure_admission = ProcedureAdmissionService(procedure_store)
     loop_tracker = LoopTracker(
         loop_store=worldstate.loop_store,
         graph_store=worldstate.graph_store,
         entity_resolver=worldstate.entity_resolver,
         embedder=shared.embedder,
-        collision_store=collision_store,
+        collision_store=stores.collision_store,
         nli_client=shared.nli_client,
     )
-    procedure_discovery = ProcedureDiscovery(procedure_store)
-    procedure_activator = ProcedureActivator(procedure_store)
-    import ze_memory.procedures.tools as procedure_tools
-
-    procedure_tools.configure(activator=procedure_activator)
     workspace = build_workspace_stack(
         shared,
         settings,
         turn_starter=turn_starter,
         push_sender=push_sender,
-        action_record_store=action_record_store,
+        action_record_store=stores.action_record_store,
     )
-    automation.goal_executor._workspace_gate = workspace.gate
-    automation.goal_executor._action_records = action_record_store
-    automation.goal_executor._nli = shared.nli_client
-    automation.goal_executor._procedures = procedure_admission
-    automation.goal_planner._discovery = procedure_discovery
-    automation.workflow_planner._discovery = procedure_discovery
-    automation.goal_store._action_records = action_record_store
-    automation.goal_store._memory_store = shared.memory_store
-    shared.dep_map.update(automation.deps)
-    shared.dep_map.update(worldstate.deps)
-    shared.dep_map.update(skills_stack.deps)
-    shared.dep_map.update(workspace.deps)
-
-    async def _worldstate_contradiction_hook(fact_id) -> None:
-        from ze_worldstate.decay import cascade_from_evidence
-
-        await cascade_from_evidence("fact", fact_id, worldstate.loop_store)
-
-    shared.memory_consolidator.contradiction_hook = _worldstate_contradiction_hook
+    wire_automation(automation, workspace, stores, shared, worldstate, skills_stack)
+    install_contradiction_hook(shared, worldstate)
 
     browser_client = BrowserClient(
         base_url=settings.browser_service_url,
         timeout=settings.browser_timeout_seconds,
     )
-
-    push_notifier: NtfyNotifier | None = None
-    if settings.ntfy_topic:
-        ntfy_config = NtfyConfig(
-            base_url=settings.ntfy_base_url,
-            topic=settings.ntfy_topic,
-            token=settings.ntfy_token or None,
-        )
-        ntfy_session = aiohttp.ClientSession()
-        push_notifier = NtfyNotifier(config=ntfy_config, session=ntfy_session)
-        log.info("ntfy_notifier_registered", topic=settings.ntfy_topic)
-
-    message_store = PostgresMessageStore(pool=pool)
-    session_store = PostgresSessionStore(pool=pool)
+    push_notifier = _build_push_notifier(settings)
     connection_manager = ConnectionManager()
-    confirmation_store = PendingConfirmationStore(pool=pool)
-    interruption_settings_store = InterruptionSettingsStore(pool)
 
     async def quiet_now() -> bool:
         return is_active(
-            await interruption_settings_store.get(), datetime.now(timezone.utc)
+            await stores.interruption_settings_store.get(), datetime.now(timezone.utc)
         )
 
     from ze_api.api.ws.held import held_push_frame
 
     interface = NativeAppInterface(
-        message_store=message_store,
+        message_store=stores.message_store,
         connection_manager=connection_manager,
         notifier=push_notifier,
         quiet_now=quiet_now,
@@ -547,84 +494,44 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     validate_interface(interface)
 
-    notification_store = NotificationStore(pool=pool)
-    push_log_store = PushLogStore(pool=pool)
     notifier = ProactiveNotifier(
         interface=interface,
-        notification_store=notification_store,
-        push_log=push_log_store,
-        settings_store=interruption_settings_store,
+        notification_store=stores.notification_store,
+        push_log=stores.push_log_store,
+        settings_store=stores.interruption_settings_store,
         max_discretionary_per_day=shared_push_budget(settings),
     )
     push_sender.bind(notifier)
 
-    from ze_worldstate.bootstrap import build_loop_surfacer
-
     loop_surfacer = build_loop_surfacer(
         worldstate,
-        push_log_store,
+        stores.push_log_store,
         getattr(correlation, "relevance_model", None),
         shared.embedder,
         notifier,
     )
     turn_surfacer = TurnSurfacing(
         priority_view=priority_view,
-        override_store=priority_override_store,
+        override_store=stores.priority_override_store,
         graph_store=worldstate.graph_store,
         loop_store=worldstate.loop_store,
         embedder=shared.embedder,
-        push_log=push_log_store,
+        push_log=stores.push_log_store,
     )
-
-    from ze_correlation.bootstrap import build_correlation_push_candidate_source
-
     correlation_push_source = build_correlation_push_candidate_source(
         correlation, notifier, settings, shared.embedder, shared.nli_client
     )
 
-    persona_cfg = settings.persona_config
-    persona_store = PostgresPersonaStore(
-        pool=pool,
-        profiles=persona_cfg.get("profiles", {}),
-        default_profile=persona_cfg.get("profile", "default"),
-    )
-
-    core_settings: CoreSettings = shared.core_settings
-    # Channel stores — created before plugins so they can be auto-wired
-    user_channel_store = UserChannelStore(pool=pool)
-    watermark_store = ChannelWatermarkStore(pool=pool)
-    thread_channel_map = ThreadChannelMap(pool=pool)
-    contact_channel_store = ContactChannelStore(pool=pool)
-
-    dep_map = dict(shared.dep_map)
-    dep_map.update(
-        {
-            Settings: settings,
-            CoreSettings: core_settings,
-            ProactiveNotifier: notifier,
-            PushLogStore: push_log_store,
-            NotificationStore: notification_store,
-            SentenceTransformer: shared.embedder,
-            NLIClient: shared.nli_client,
-            LocalNLIClient: shared.nli_client,
-            SystemOneClient: shared.system_one_client,
-            BrowserClient: browser_client,
-            WorkspaceClient: workspace.client,
-            WorkspaceGate: workspace.gate,
-            WorkspaceStore: workspace.store,
-            UserChannelStore: user_channel_store,
-            ChannelWatermarkStore: watermark_store,
-            ThreadChannelMap: thread_channel_map,
-            ContactChannelStore: contact_channel_store,
-            PriorityView: priority_view,
-            PriorityOverrideStore: priority_override_store,
-            CollisionLogStore: collision_store,
-            PostgresHypothesisStore: correlation.hypothesis_store,
-            ActionRecordStore: action_record_store,
-            PostgresActionRecordStore: action_record_store,
-            ProcedureAdmissionService: procedure_admission,
-            LoopTracker: loop_tracker,
-        }
+    dep_map = build_dep_map(
+        shared,
+        settings,
+        notifier=notifier,
+        stores=stores,
+        browser_client=browser_client,
+        workspace=workspace,
+        priority_view=priority_view,
+        correlation=correlation,
+        loop_tracker=loop_tracker,
     )
 
     plugins = discover_and_instantiate_plugins(dep_map, settings)
@@ -647,119 +554,21 @@ async def build_container(settings: Settings) -> ZeContainer:
     import ze_skills.tools as skills_tools
 
     skills_tools.configure(skill_store=skills_stack.skill_store)
-    from ze_worldstate.inflow import (
-        make_loop_extractor_from_parts,
-        make_loop_inflow_from_parts,
-    )
-    from ze_worldstate.intake import CommitmentIntake
+    wire_ingestion_loop_extractor(ingestion, shared, worldstate, settings)
 
-    ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
-        loop_store=worldstate.loop_store,
-        loop_graph_store=worldstate.graph_store,
-        loop_entity_resolver=worldstate.entity_resolver,
-        openrouter_client=shared.openrouter_client,
-        embedder=shared.embedder,
-        loop_memory_store=shared.memory_store,
-        system_one_client=shared.system_one_client,
-        settings=settings,
-    )
-
-    from ze_agents.progress.translations import ProgressTranslations
-
-    locale: str = settings.config.get("locale", "en")
-    en_layers = [p.locale_data("en") for p in plugins]
-    target_layers = (
-        [p.locale_data(locale) for p in plugins] if locale != "en" else en_layers
-    )
-    app_en = ProgressTranslations._load_file(
-        settings.config_dir / "locales" / "en.yaml"
-    )
-    app_locale = (
-        ProgressTranslations._load_file(
-            settings.config_dir / "locales" / f"{locale}.yaml"
-        )
-        if locale != "en"
-        else app_en
-    )
-    translations = ProgressTranslations.build(
-        layers=target_layers + [app_locale],
-        fallback_layers=en_layers + [app_en],
-    )
-    log.info("progress_translations_built", locale=locale)
-
+    translations = build_translations(settings, plugins)
     shared.memory_store.apply_policy_registry(build_policy_registry(plugins))
     checkpointer = await build_checkpointer(checkpointer_pool, plugins)
-
-    onboarding_providers = [CoreOnboardingProvider()]
-    for plugin in plugins:
-        provider = plugin.onboarding()
-        if provider is not None:
-            onboarding_providers.append(provider)
-            log.info(
-                "onboarding_provider_registered",
-                plugin=provider.plugin_name,
-                priority=provider.priority,
-            )
-    onboarding_coordinator = OnboardingCoordinator(
-        providers=onboarding_providers,
-        store=OnboardingStore(pool=pool),
-        persistence=OnboardingPersistence(memory_store=shared.memory_store),
+    onboarding_coordinator = build_onboarding_coordinator(pool, shared, plugins)
+    channel_registry, webhook_dispatcher, plugin_webhook_handlers = (
+        build_channels_and_webhooks(plugins)
     )
-
-    # Build ChannelRegistry after plugins (channels come from plugins) but before
-    # agent bootstrap so MessengerAgent can receive it via dep injection.
-    channel_registry = ChannelRegistry(
-        channels=[ch for plugin in plugins for ch in plugin.channels()]
-    )
-    log.info("channel_registry_built", channels=list(channel_registry.available()))
-
-    plugin_webhook_handlers = collect_plugin_webhook_handlers(plugins)
-    webhook_dispatcher = WebhookDispatcher(
-        channel_registry=channel_registry,
-        plugin_handlers=plugin_webhook_handlers,
-        container=None,  # back-filled after container construction
-        deduplicator=EventDeduplicator(),
-    )
-    if plugin_webhook_handlers:
-        log.info("webhook_handlers_registered", keys=list(plugin_webhook_handlers))
-
-    agent_deps: dict[type, Any] = dict(dep_map)
-    agent_deps[ChannelRegistry] = channel_registry
-    for plugin in plugins:
-        agent_deps.update(plugin.agent_deps(agent_deps))
-
-    plugin_stores: dict = {}
-    for plugin in plugins:
-        plugin_stores.update(plugin.rest_stores())
-    plugin_stores["procedure_admission"] = procedure_admission
-    plugin_stores["goal_suggestion_store"] = automation.goal_suggestion_store
-    plugin_stores["goal_planner"] = automation.goal_planner
-
-    person_store = plugin_stores.get("person_store")
-    if person_store is not None:
-        priority_view.set_relationship_source(person_store)
-
+    agent_deps = build_agent_deps(dep_map, channel_registry, plugins)
+    plugin_stores = collect_plugin_stores(plugins, stores, automation, priority_view)
     signal_sources = collect_plugin_signal_sources(plugins)
-    if signal_sources:
-        log.info("signal_sources_collected", keys=list(signal_sources))
+    ui_manifest = build_ui_manifest(plugins)
 
-    ui_manifest = collect_ui_contributions(plugins)
-    ui_manifest = filter_ui_manifest_by_openapi(
-        ui_manifest,
-        collect_openapi_operation_ids(),
-    )
-    log.info(
-        "ui_manifest_built",
-        nav=[item.id for item in ui_manifest.nav],
-        settings=[item.id for item in ui_manifest.settings_sections],
-    )
-
-    import_automation_agents()
-    import_ingestion_agents()
-    import_priority_agents()
-    import_worldstate_agents()
-    bootstrap_agents(deps=agent_deps, plugins=plugins)
-    await register_bundled_skills(skills_stack.skill_store, plugins)
+    await bootstrap_agent_layer(agent_deps, plugins, skills_stack)
 
     router = build_router(shared, settings)
     tier_judge = build_tier_judge(
@@ -767,21 +576,6 @@ async def build_container(settings: Settings) -> ZeContainer:
     )
     component_hook = register_harness_hooks(settings, memory_store=shared.memory_store)
     graph = build_graph(checkpointer=checkpointer, plugins=plugins)
-
-    budget_cfg = settings.config.get("budget", {}) or {}
-    session_limit_usd = budget_cfg.get("session_limit_usd")
-    daily_limit_usd = budget_cfg.get("daily_limit_usd")
-    budget_checker = (
-        SpendBudgetChecker(
-            cost_store=shared.cost_store,
-            config=SpendBudgetConfig(
-                session_limit_usd=session_limit_usd,
-                daily_limit_usd=daily_limit_usd,
-            ),
-        )
-        if session_limit_usd is not None or daily_limit_usd is not None
-        else None
-    )
 
     all_domains = (
         engine_data_domains(pool)
@@ -797,13 +591,7 @@ async def build_container(settings: Settings) -> ZeContainer:
     dev_data_seeder = DevDataSeeder(collect_seed_domains(plugins))
     log.info("dev_data_seeder_ready", domains=len(dev_data_seeder._domains))
 
-    from ze_memory.dream.store import PostgresDreamStore
-
-    dream_store = PostgresDreamStore(pool=pool)
-
-    shared.memory_store._collision_store = collision_store
-    correlation.correlation_engine._collision_store = collision_store
-    correlation.correlation_engine._nli_client = shared.nli_client
+    wire_collision_detection(shared, correlation, stores)
 
     container = ZeContainer(
         settings=settings,
@@ -813,7 +601,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         openrouter_client=shared.openrouter_client,
         router=router,
         tier_judge=tier_judge,
-        budget_checker=budget_checker,
+        budget_checker=build_budget_checker(settings, shared),
         memory_store=shared.memory_store,
         memory_consolidator=shared.memory_consolidator,
         graph=graph,
@@ -821,14 +609,14 @@ async def build_container(settings: Settings) -> ZeContainer:
         translations=translations,
         signal_sources=signal_sources,
         correlation_engine=correlation.correlation_engine,
-        persona_store=persona_store,
+        persona_store=stores.persona_store,
         workflow_store=automation.workflow_store,
         held_write_store=automation.held_write_store,
         held_write_resumer=automation.held_write_resumer,
         _plugin_stores=plugin_stores,
         workflow_scheduler=automation.workflow_scheduler,
         proactive_scheduler=build_proactive_scheduler(
-            settings, run_store=JobRunStore(pool)
+            settings, run_store=stores.job_run_store
         ),
         browser_client=browser_client,
         workspace_client=workspace.client,
@@ -837,24 +625,24 @@ async def build_container(settings: Settings) -> ZeContainer:
         workspace_run_watcher=workspace.run_watcher,
         turn_lock=turn_lock,
         push_notifier=push_notifier,
-        message_store=message_store,
-        feedback_store=PostgresFeedbackStore(pool),
-        session_store=session_store,
+        message_store=stores.message_store,
+        feedback_store=stores.feedback_store,
+        session_store=stores.session_store,
         connection_manager=connection_manager,
         component_hook=component_hook,
-        confirmation_store=confirmation_store,
+        confirmation_store=stores.confirmation_store,
         onboarding_coordinator=onboarding_coordinator,
         reset_service=ResetService(pool=pool),
         plugins=plugins,
         _checkpointer=checkpointer,
-        _push_log_store=push_log_store,
-        interruption_settings_store=interruption_settings_store,
+        _push_log_store=stores.push_log_store,
+        interruption_settings_store=stores.interruption_settings_store,
         notifier=notifier,
-        notification_store=notification_store,
+        notification_store=stores.notification_store,
         data_portability_service=data_portability_service,
         dev_data_seeder=dev_data_seeder,
         ingestion_pipeline=ingestion.pipeline,
-        dream_store=dream_store,
+        dream_store=stores.dream_store,
         channel_registry=channel_registry,
         webhook_dispatcher=webhook_dispatcher,
         ui_manifest=ui_manifest,
@@ -866,33 +654,16 @@ async def build_container(settings: Settings) -> ZeContainer:
         priority_view=priority_view,
         skill_store=skills_stack.skill_store,
         skill_matcher=skill_matcher,
-        priority_override_store=priority_override_store,
-        collision_store=collision_store,
+        priority_override_store=stores.priority_override_store,
+        collision_store=stores.collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
-        commitment_intake=CommitmentIntake(
-            loop_inflow=make_loop_inflow_from_parts(
-                loop_store=worldstate.loop_store,
-                loop_graph_store=worldstate.graph_store,
-                loop_entity_resolver=worldstate.entity_resolver,
-                openrouter_client=shared.openrouter_client,
-                embedder=shared.embedder,
-                loop_memory_store=shared.memory_store,
-                collision_store=collision_store,
-                nli_client=shared.nli_client,
-                system_one_client=shared.system_one_client,
-                settings=settings,
-            ),
-            loop_store=worldstate.loop_store,
-            graph_store=worldstate.graph_store,
-            entity_resolver=worldstate.entity_resolver,
-            embedder=shared.embedder,
-            system_one_client=shared.system_one_client,
-            settings=settings,
+        commitment_intake=build_commitment_intake(
+            shared, worldstate, stores, settings
         ),
-        procedure_admission=procedure_admission,
-        procedure_discovery=procedure_discovery,
-        procedure_activator=procedure_activator,
+        procedure_admission=stores.procedure_admission,
+        procedure_discovery=stores.procedure_discovery,
+        procedure_activator=stores.procedure_activator,
     )
 
     webhook_dispatcher._container = container
@@ -908,31 +679,8 @@ async def build_container(settings: Settings) -> ZeContainer:
             )
             raise
 
-    for plugin in plugins:
-        consolidator = getattr(plugin, "contacts_consolidator", None)
-        if consolidator is not None:
-            consolidator._collision_store = collision_store
-            consolidator._nli_client = shared.nli_client
-
-    _webhook_processor = getattr(container, "_webhook_processor", None)
-    _calendar_reminder_job = getattr(container, "_calendar_reminder_job", None)
-    if (
-        _webhook_processor is not None and hasattr(_webhook_processor, "loop_extractor")
-    ) or (
-        _calendar_reminder_job is not None
-        and hasattr(_calendar_reminder_job, "loop_extractor")
-    ):
-        from ze_worldstate.inflow import make_loop_extractor
-
-        _loop_extractor = make_loop_extractor(container)
-        if _webhook_processor is not None:
-            _webhook_processor.loop_extractor = _loop_extractor
-            log.info("messenger_loop_extractor_wired")
-        if _calendar_reminder_job is not None:
-            _calendar_reminder_job.loop_extractor = _loop_extractor
-            log.info("calendar_loop_extractor_wired")
-
-    from ze_api.wiring.workflow_graph import begin_workflow_turn, build_workflow_graph
+    wire_plugin_consolidators(plugins, shared, stores)
+    wire_plugin_loop_extractors(container)
 
     await configure_workflow_executor(
         automation,
@@ -940,34 +688,19 @@ async def build_container(settings: Settings) -> ZeContainer:
         plugins,
         settings=settings,
         notifier=notifier,
-        push_log_store=push_log_store,
+        push_log_store=stores.push_log_store,
         checkpointer=checkpointer,
         router=router,
-        persona_store=persona_store,
+        persona_store=stores.persona_store,
         workflow_graph_builder=build_workflow_graph,
         begin_workflow_turn=begin_workflow_turn,
         workspace_gate=workspace.gate,
     )
 
-    from ze_memory.dream.job import DreamJob
-
-    dream_job = DreamJob(
-        pool=pool,
-        embedder=shared.embedder,
-        consolidator=shared.memory_consolidator,
-        dream_store=dream_store,
-        client=shared.openrouter_client,
-        nli_client=shared.nli_client,
-        settings=settings,
-        procedure_admission=procedure_admission,
-    )
-    if dream_job._dream_pass is not None:
-        dream_job._dream_pass._collision_store = collision_store
-
     register_all_proactive_jobs(
         container.proactive_scheduler,
         settings=settings,
-        core_settings=core_settings,
+        core_settings=shared.core_settings,
         automation=automation,
         correlation=correlation,
         worldstate=worldstate,
@@ -978,17 +711,15 @@ async def build_container(settings: Settings) -> ZeContainer:
         shared=shared,
         plugins=plugins,
         notifier=notifier,
-        push_log_store=push_log_store,
-        notification_store=notification_store,
-        dream_job=dream_job,
+        push_log_store=stores.push_log_store,
+        notification_store=stores.notification_store,
+        dream_job=build_dream_job(pool, shared, stores, settings),
         pool=pool,
     )
     await reconcile_workspace_at_startup(workspace.store, workspace.run_watcher)
 
     await automation.workflow_scheduler.start()
     await container.proactive_scheduler.start()
-
-    from ze_agents.registry import get_registered_agents
 
     log.info(
         "ze_container_ready",
