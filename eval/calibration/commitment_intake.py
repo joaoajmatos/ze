@@ -520,49 +520,63 @@ def _centre(points: list[tuple[float, ...]]) -> tuple[float, ...]:
     return min(points, key=lambda p: sum((p[d] - median[d]) ** 2 for d in dims))
 
 
+def _best_biography(
+    rows: list[Row], results: dict[str, RowResults], choice: float
+) -> float | None:
+    """For one choice_hold: biography_hold at fact precision 1.0 and max fact recall."""
+    best_key: tuple | None = None
+    plateau: list[tuple[float, ...]] = []
+    for bio in GRID:
+        cfg = make_cfg(choice, choice, bio, 0.75, 0.85, 0.8)
+        c = score(rows, preds_for(rows, results, cfg))
+        if c.fact_hits == 0:
+            continue
+        key = (c.fact_precision != 1.0, -c.fact_recall)
+        if best_key is None or key < best_key:
+            best_key, plateau = key, [(bio,)]
+        elif key == best_key:
+            plateau.append((bio,))
+    return _centre(plateau)[0] if plateau else None
+
+
 def suggest_bars(
     rows: list[Row], results: dict[str, RowResults]
 ) -> CommitmentIntakeSurfaceConfig | None:
-    """Stage 1: fact precision 1.0 then max fact recall over (choice, biography).
-    Stage 2: zero duplicates and false creates, zero false resolves, max loop recall over
-    (loop, resolves). Stage 3: explicit bar by fewest false declared then best accuracy.
-    Each stage picks the centre of its plateau. Tuned set only."""
-    fact_key: tuple | None = None
-    fact_plateau: list[tuple[float, ...]] = []
+    """Per choice_hold (family_hold tied to it): the best biography bar for the fact side, then
+    the (loop, resolves) plateau with zero duplicates and false creates and zero false resolves.
+    The choice_hold with the fewest bad writes and the most fact plus loop recall wins; explicit
+    is chosen last by fewest false declared. Centre of each plateau. Tuned set only."""
+    best: tuple | None = None
+    best_cfg: tuple[float, float, float, float] | None = None
     for choice in GRID:
-        for bio in GRID:
-            cfg = make_cfg(choice, choice, bio, 0.75, 0.85, 0.8)
-            c = score(rows, preds_for(rows, results, cfg))
-            if c.fact_hits == 0:
-                continue
-            key = (c.fact_precision != 1.0, -c.fact_recall)
-            if fact_key is None or key < fact_key:
-                fact_key, fact_plateau = key, [(choice, bio)]
-            elif key == fact_key:
-                fact_plateau.append((choice, bio))
-    if not fact_plateau:
+        bio = _best_biography(rows, results, choice)
+        if bio is None:
+            continue
+        loop_key: tuple | None = None
+        plateau: list[tuple[float, ...]] = []
+        for loop_hold in GRID:
+            for resolves in GRID:
+                cfg = make_cfg(choice, choice, bio, loop_hold, 0.85, resolves)
+                c = score(rows, preds_for(rows, results, cfg))
+                key = (
+                    c.false_creates + c.duplicates,
+                    c.fact_pred - c.fact_hits,
+                    c.false_resolve,
+                    -(c.loop_recall + c.fact_recall),
+                )
+                if loop_key is None or key < loop_key:
+                    loop_key, plateau = key, [(loop_hold, resolves)]
+                elif key == loop_key:
+                    plateau.append((loop_hold, resolves))
+        if loop_key is None or loop_key[0] != 0 or loop_key[1] != 0:
+            continue
+        if best is None or loop_key < best:
+            best = loop_key
+            loop_hold, resolves = _centre(plateau)
+            best_cfg = (choice, bio, loop_hold, resolves)
+    if best_cfg is None:
         return None
-    choice, bio = _centre(fact_plateau)
-
-    loop_key: tuple | None = None
-    loop_plateau: list[tuple[float, ...]] = []
-    for loop_hold in GRID:
-        for resolves in GRID:
-            cfg = make_cfg(choice, choice, bio, loop_hold, 0.85, resolves)
-            c = score(rows, preds_for(rows, results, cfg))
-            key = (
-                c.false_creates + c.duplicates,
-                c.false_resolve,
-                -c.loop_recall,
-                -c.fact_recall,
-            )
-            if loop_key is None or key < loop_key:
-                loop_key, loop_plateau = key, [(loop_hold, resolves)]
-            elif key == loop_key:
-                loop_plateau.append((loop_hold, resolves))
-    if loop_key is None or loop_key[0] != 0:
-        return None
-    loop_hold, resolves = _centre(loop_plateau)
+    choice, bio, loop_hold, resolves = best_cfg
 
     exp_key: tuple | None = None
     exp_plateau: list[tuple[float, ...]] = []
