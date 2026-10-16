@@ -33,19 +33,6 @@ class ContactChannelStore:
             )
         return [_handle_from_row(r) for r in rows]
 
-    async def get_preferred(self, contact_id: UUID) -> ChannelHandle | None:
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT * FROM contact_channels
-                WHERE contact_id = $1 AND preferred = true
-                ORDER BY created_at ASC
-                LIMIT 1
-                """,
-                contact_id,
-            )
-        return _handle_from_row(row) if row else None
-
     async def upsert(self, contact_id: UUID, handle: ChannelHandle) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
@@ -68,33 +55,6 @@ class ContactChannelStore:
             contact_id=str(contact_id),
             channel_type=handle.channel_type,
             handle=handle.handle,
-        )
-
-    async def set_preferred(self, contact_id: UUID, channel_type: ChannelType) -> None:
-        async with self._pool.acquire() as conn:
-            async with conn.transaction():
-                await conn.execute(
-                    """
-                    UPDATE contact_channels
-                    SET preferred = false, updated_at = NOW()
-                    WHERE contact_id = $1 AND channel_type != $2
-                    """,
-                    contact_id,
-                    channel_type.value,
-                )
-                await conn.execute(
-                    """
-                    UPDATE contact_channels
-                    SET preferred = true, updated_at = NOW()
-                    WHERE contact_id = $1 AND channel_type = $2
-                    """,
-                    contact_id,
-                    channel_type.value,
-                )
-        self._log.debug(
-            "contact_channel_preferred_set",
-            contact_id=str(contact_id),
-            channel_type=channel_type,
         )
 
     async def find_by_handle(

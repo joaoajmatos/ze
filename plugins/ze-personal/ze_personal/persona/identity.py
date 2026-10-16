@@ -62,15 +62,6 @@ _BIOGRAPHY_TEMPLATE = """\
 {memory_context}\
 {contacts_block}"""
 
-_PROFILE_LABELS = {
-    "preferences": "Preferences",
-    "habits": "Habits",
-    "topics": "Topics",
-    "relationships": "Relationships",
-    "goals": "Goals",
-}
-
-
 def _render_dial_clauses(dials: dict[str, float]) -> str:
     clauses = []
     for name, bands in _DIAL_CLAUSES.items():
@@ -85,19 +76,11 @@ def _render_dial_clauses(dials: dict[str, float]) -> str:
 
 
 def _render_profile_block(profile: Any) -> str:
-    lines = []
-    if isinstance(profile, list):
-        # list[ProfileFacet] from ze_memory
-        for facet in profile:
-            label = facet.key.replace("_", " ").title()
-            if facet.value:
-                lines.append(f"**{label}:** {facet.value}")
-    elif profile is not None:
-        # legacy UserProfile object
-        for key, label in _PROFILE_LABELS.items():
-            value = getattr(profile, key, "")
-            if value:
-                lines.append(f"**{label}:** {value}")
+    lines = [
+        f"**{facet.key.replace('_', ' ').title()}:** {facet.value}"
+        for facet in profile
+        if facet.value
+    ]
     if not lines:
         return ""
     return "## Who this user is\n" + "\n".join(lines) + "\n\n"

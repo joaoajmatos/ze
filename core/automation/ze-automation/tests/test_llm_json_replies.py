@@ -10,7 +10,7 @@ import pytest
 
 from ze_agents.errors import GoalPlanError, WorkflowPlanError
 from ze_automation.goals.planner import GoalPlanner
-from ze_automation.goals.types import Goal, GoalLearning, GoalStatus
+from ze_automation.goals.types import Goal, GoalStatus
 from ze_automation.workflow.planner import WorkflowPlanner
 from ze_automation.workflow.types import StepResult
 
@@ -75,14 +75,6 @@ async def test_goal_extract_procedure(wrap):
     reply = wrap(json.dumps({"name": "Proc", "trigger": "t", "steps": ["a"]}))
     proc = await _goal_planner(reply).extract_procedure(_goal(), [m])
     assert proc is not None and proc.name == "Proc"
-
-
-@pytest.mark.parametrize("wrap", WRAPS)
-async def test_goal_promote_learnings(wrap):
-    reply = wrap(json.dumps({"facts": [{"key": "style", "value": "terse"}]}))
-    learning = GoalLearning(goal_id=uuid4(), content="User likes terse output")
-    facts = await _goal_planner(reply).promote_learnings(_goal(), [learning])
-    assert [f.predicate for f in facts] == ["style"]
 
 
 @pytest.mark.parametrize("wrap", WRAPS)

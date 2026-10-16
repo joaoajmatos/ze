@@ -345,25 +345,62 @@ async def test_run_extracts_collaborates_with_edge_for_two_people():
     assert rel.target_type == "person"
 
 
-# ── Mark processed ────────────────────────────────────────────────────────────
+# ── Episode source + watermark (R-06) ────────────────────────────────────────
 
 
-async def test_run_marks_episodes_as_extracted():
-    episode_id = uuid4()
-    episode = make_episode_row(id=episode_id)
+async def test_load_reads_turn_episodes_from_memory_episodes_after_watermark():
     conn = make_conn()
-    conn.fetch = AsyncMock(return_value=[episode])
-    conn.execute = AsyncMock()
+    consolidator = make_consolidator(pool=make_pool(conn))
 
-    client = AsyncMock()
-    client.complete = AsyncMock(return_value="[]")
-
-    consolidator = make_consolidator(pool=make_pool(conn), client=client)
     await consolidator.run()
 
-    assert conn.execute.called
-    call_sql = conn.execute.call_args[0][0]
-    assert "contacts_extracted = true" in call_sql
+    sql = conn.fetch.call_args[0][0]
+    assert "FROM memory_episodes" in sql
+    assert "FROM episodes" not in sql
+    assert "agent <> 'consolidator'" in sql
+    assert "contacts_episode_watermark" in sql
+    assert "(e.created_at, e.id) > (w.last_created_at, w.last_episode_id)" in sql
+    assert "ORDER BY e.created_at, e.id" in sql
+    assert "e.session_id NOT LIKE 'workflow:%'" in sql
+    assert "e.session_id NOT LIKE 'eval-%'" in sql
+    assert "onboarding" not in sql
+    assert conn.fetch.call_args[0][1] == 50
+
+
+async def test_run_advances_watermark_to_last_episode_of_each_batch():
+    rows = [
+        make_episode_row(id=uuid4(), created_at=datetime(2026, 5, 23, 14, i))
+        for i in range(3)
+    ]
+    conn = make_conn()
+    conn.fetch = AsyncMock(return_value=rows)
+    client = AsyncMock()
+    client.complete = AsyncMock(return_value="{}")
+    settings = {"contacts": {"consolidation": {"episode_batch_size": 2}}}
+    consolidator = make_consolidator(
+        pool=make_pool(conn), client=client, settings=settings
+    )
+
+    await consolidator.run()
+
+    writes = [
+        c for c in conn.execute.call_args_list if "contacts_episode_watermark" in c[0][0]
+    ]
+    assert [(c[0][1], c[0][2]) for c in writes] == [
+        (rows[1]["created_at"], rows[1]["id"]),
+        (rows[2]["created_at"], rows[2]["id"]),
+    ]
+    assert "ON CONFLICT (id) DO UPDATE" in writes[0][0][0]
+    assert all("contacts_extracted" not in c[0][0] for c in conn.execute.call_args_list)
+
+
+async def test_run_writes_no_watermark_when_no_episodes():
+    conn = make_conn()
+    consolidator = make_consolidator(pool=make_pool(conn))
+
+    await consolidator.run()
+
+    conn.execute.assert_not_called()
 
 
 # ── _store_candidate write-path licensing (FR-004, SC-001) ─────────────────────

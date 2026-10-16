@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from uuid import uuid4
 
 
-from ze_automation.agents.goals.tools import _check_convergence
+from ze_automation.goals.proposal import _check_convergence
 from ze_automation.goals.types import Goal, GoalConvergence, GoalStatus
 
 

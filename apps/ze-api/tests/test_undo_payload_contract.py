@@ -158,8 +158,8 @@ class _GoalStore:
 
 
 async def test_goal_round_trip_abandons_it_and_it_cannot_be_approved() -> None:
-    from ze_automation.agents.goals import tools as goal_tools
     from ze_automation.agents.goals.agent import GoalAgent
+    from ze_automation.goals import proposal as goal_proposal
     from ze_automation.goals.executor import GoalExecutor
     from ze_automation.goals.types import GoalStatus
 
@@ -172,7 +172,7 @@ async def test_goal_round_trip_abandons_it_and_it_cannot_be_approved() -> None:
     executor._store = store
     executor._held_store = None
     agent = GoalAgent(MagicMock(), store, planner, executor, notifier)
-    with patch.object(goal_tools, "_check_convergence", AsyncMock()):
+    with patch.object(goal_proposal, "_check_convergence", AsyncMock()):
         call = await _call(
             agent,
             "create_goal",

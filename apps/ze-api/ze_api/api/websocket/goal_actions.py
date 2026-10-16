@@ -3,13 +3,16 @@ from __future__ import annotations
 import html
 import re
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import WebSocket
 
+from ze_agents.errors import GoalPlanError
 from ze_agents.interface.types import OutboundMessage
 from ze_api.api.websocket.connection import ConnectionManager
-from ze_automation.goals.types import GoalStatus
+from ze_api.api.websocket.frames import build_prompt_frame
+from ze_automation.goals.proposal import plan_for_goal, propose_goal
+from ze_automation.goals.types import Goal, GoalStatus, SuggestionStatus
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -60,6 +63,10 @@ async def handle_action(
         elif prefix == "goal_stuck":
             await _handle_stuck_action(
                 container, conn_mgr, executor, store, action, id_str, thread_id
+            )
+        elif prefix == "goal_suggest":
+            await _handle_suggestion_action(
+                container, conn_mgr, store, action, id_str, thread_id
             )
         else:
             await conn_mgr.send_frame(
@@ -250,6 +257,153 @@ async def _handle_stuck_action(
         await conn_mgr.send_frame(
             {"type": "error", "detail": "Unrecognised action."}, thread_id
         )
+
+
+async def _handle_suggestion_action(
+    container: Any,
+    conn_mgr: ConnectionManager,
+    store: Any,
+    action: str,
+    short_id: str,
+    thread_id: str | None,
+) -> None:
+    if action not in ("accept", "dismiss", "more"):
+        await conn_mgr.send_frame(
+            {"type": "error", "detail": "Unrecognised action."}, thread_id
+        )
+        return
+
+    suggestions = container._plugin_stores.get("goal_suggestion_store")
+    planner = container._plugin_stores.get("goal_planner")
+    notifier = getattr(container, "notifier", None)
+    if suggestions is None or planner is None or notifier is None:
+        await conn_mgr.send_frame(
+            {"type": "error", "detail": "Goal suggestions unavailable."}, thread_id
+        )
+        return
+
+    suggestion = await suggestions.resolve_short_id(short_id)
+    if suggestion is None:
+        await conn_mgr.send_frame(
+            {"type": "error", "detail": "Suggestion not found."}, thread_id
+        )
+        return
+    if suggestion.status is not SuggestionStatus.PENDING:
+        await conn_mgr.send_frame(
+            {"type": "error", "detail": "Suggestion already resolved."}, thread_id
+        )
+        return
+
+    title = html.escape(suggestion.title)
+
+    if action == "more":
+        await conn_mgr.send_frame(
+            build_prompt_frame(
+                request_id=str(uuid4()),
+                thread_id=thread_id,
+                title=(
+                    f"{suggestion.title}\n{suggestion.objective}\n\n"
+                    f"{suggestion.rationale}"
+                ),
+                actions=[
+                    {
+                        "label": "Yes, create it",
+                        "value": f"goal_suggest:accept:{short_id}",
+                        "style": "primary",
+                    },
+                    {
+                        "label": "Dismiss",
+                        "value": f"goal_suggest:dismiss:{short_id}",
+                        "style": "primary",
+                    },
+                    {
+                        "label": "Tell me more",
+                        "value": f"goal_suggest:more:{short_id}",
+                        "style": "secondary",
+                    },
+                ],
+            ),
+            thread_id,
+        )
+        return
+
+    if action == "dismiss":
+        if not await suggestions.mark_dismissed(suggestion.id):
+            await conn_mgr.send_frame(
+                {"type": "error", "detail": "Suggestion already resolved."}, thread_id
+            )
+            return
+        await _reply(container, conn_mgr, f"Dismissed <b>{title}</b>.", thread_id)
+        return
+
+    goal = Goal(
+        title=suggestion.title,
+        objective=suggestion.objective,
+        success_condition=suggestion.objective,
+        status=GoalStatus.PLANNING,
+        type="suggested",
+    )
+    try:
+        milestones, gates = await plan_for_goal(store, planner, goal)
+    except GoalPlanError as exc:
+        log.warning(
+            "goal_suggestion_plan_failed",
+            suggestion_id=str(suggestion.id),
+            error=str(exc),
+        )
+        await _reply(
+            container,
+            conn_mgr,
+            f"Couldn't plan <b>{title}</b> right now. The idea stays open: "
+            "tap Yes, create it to try again.",
+            thread_id,
+        )
+        return
+
+    async def claim(created: Goal) -> bool:
+        return await suggestions.mark_accepted(suggestion.id, created.id)
+
+    async def release(created: Goal) -> bool:
+        return await suggestions.reopen(suggestion.id, created.id)
+
+    try:
+        proposed = await propose_goal(
+            store,
+            planner,
+            notifier,
+            goal,
+            milestones,
+            gates,
+            active_goals=await store.list_active(),
+            claim=claim,
+            release=release,
+        )
+    except Exception as exc:
+        log.exception(
+            "goal_suggestion_proposal_failed",
+            suggestion_id=str(suggestion.id),
+            error=str(exc),
+        )
+        await _reply(
+            container,
+            conn_mgr,
+            f"Couldn't set up the plan for <b>{title}</b>. The idea stays open: "
+            "tap Yes, create it to try again.",
+            thread_id,
+        )
+        return
+    if proposed is None:
+        await conn_mgr.send_frame(
+            {"type": "error", "detail": "Suggestion already resolved."}, thread_id
+        )
+        return
+    await _reply(
+        container,
+        conn_mgr,
+        f"Planned <b>{title}</b>. Review the plan and tap Start goal to begin.",
+        thread_id,
+    )
+    await conn_mgr.send_frame({"type": "refresh", "screen": "goals"}, thread_id)
 
 
 async def _reply(

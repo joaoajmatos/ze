@@ -731,6 +731,8 @@ async def build_container(settings: Settings) -> ZeContainer:
     for plugin in plugins:
         plugin_stores.update(plugin.rest_stores())
     plugin_stores["procedure_admission"] = procedure_admission
+    plugin_stores["goal_suggestion_store"] = automation.goal_suggestion_store
+    plugin_stores["goal_planner"] = automation.goal_planner
 
     person_store = plugin_stores.get("person_store")
     if person_store is not None:

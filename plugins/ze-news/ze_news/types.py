@@ -4,19 +4,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal, Protocol, runtime_checkable
 
-FlagType = Literal[
-    "betteridge",
-    "clickbait",
-    "vague_attribution",
-    "headline_mismatch",
-    "weasel_words",
-    "emotional_manipulation",
-    "passive_agency",
-    "false_balance",
-    "missing_context",
-    "sensationalism",
-]
-
 FlagConfidence = Literal["high", "low"]
 
 # High-confidence: shown inline in briefing, counted in summary.

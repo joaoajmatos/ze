@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from ze_personal.contacts.store import PersonStore
 from ze_logging import get_logger
 from ze_priority.view import PriorityView
 from ze_sdk.proactive import PushLogStore
@@ -32,7 +31,6 @@ class MorningBriefing:
         push_log_store: PushLogStore,
         memory_store: PostgresMemoryStore,
         workflow_store: WorkflowStore,
-        person_store: PersonStore,
         settings: Settings,
         priority_view: PriorityView,
         news_store=None,
@@ -43,7 +41,6 @@ class MorningBriefing:
         self._push_log = push_log_store
         self._memory = memory_store
         self._workflows = workflow_store
-        self._persons = person_store
         self._priority_view = priority_view
         self._settings = settings
         self._news = news_store

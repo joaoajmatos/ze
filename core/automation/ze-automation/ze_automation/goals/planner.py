@@ -16,7 +16,6 @@ from ze_automation.goals.types import (
     GateStatus,
     GoalConvergence,
     GoalLearning,
-    GoalStatus,
     GoalSuggestion,
     Milestone,
     MilestoneStatus,
@@ -156,39 +155,6 @@ Respond ONLY in JSON — no explanation, no markdown:
     "source_ref": "..."
   } | null
 }\
-"""
-
-_PROMOTION_SYSTEM = """\
-You are extracting generalizable user facts from the learnings of a completed goal.
-
-A generalizable fact is something true about the USER — their preferences, habits,
-strategies, decision-making patterns — that applies beyond this specific goal and
-would be useful context for future tasks.
-
-A goal-specific learning is NOT a generalizable fact:
-  - research about a third-party company, product, or person
-  - factual findings about the external world
-  - contact details or relationship data
-  - anything that is only relevant to this goal's subject matter
-
-Rules:
-1. Only extract facts that generalise — user preferences, communication style,
-   decision patterns, domain strategies that reflect how the user works.
-2. Every fact must be a statement about the USER, not about a third party or the
-   external world. The subject of each value must be the user ("prefers...",
-   "tends to...", "works best when..."). If the subject is not the user, omit it.
-3. Each fact must be written as a short, atomic key-value pair.
-4. Produce at most 5 facts. If fewer than 1 generalizable fact exists, return an empty list.
-5. Do not fabricate or over-interpret. If a learning is ambiguous, omit it.
-
-Return JSON:
-{
-  "facts": [
-    {"key": "...", "value": "..."},
-    ...
-  ]
-}
-If nothing is promotable, return: {"facts": []}\
 """
 
 _PROCEDURE_SYSTEM = """\
@@ -500,43 +466,6 @@ class GoalPlanner:
             system=_GATE_NARRATIVE_SYSTEM,
         )
 
-    async def promote_learnings(
-        self,
-        goal: Goal,
-        learnings: list[GoalLearning],
-    ) -> list[Fact]:
-        """Extract generalizable user facts from goal learnings. Returns [] on any error."""
-        learnings_text = "\n".join(
-            f"  - [{lr.claim_kind.value}] {lr.content}" for lr in learnings
-        )
-        prompt = (
-            f"Goal: {goal.title}\n"
-            f"Objective: {goal.objective}\n\n"
-            f"Learnings from this goal:\n{learnings_text}"
-        )
-        raw = await self._client.complete(
-            messages=[{"role": "user", "content": prompt}],
-            model=self._model,
-            system=_PROMOTION_SYSTEM,
-        )
-        try:
-            data = parse_llm_json(raw, expect=dict)
-            return [
-                Fact(
-                    id=None,
-                    subject_id=None,
-                    predicate=f["key"],
-                    object_text=None,
-                    object_id=None,
-                    value=f["value"],
-                    reviewed=False,
-                )
-                for f in data.get("facts", [])
-                if isinstance(f.get("key"), str) and isinstance(f.get("value"), str)
-            ][:5]
-        except Exception:
-            return []
-
     async def extract_procedure(
         self,
         goal: Goal,
@@ -747,14 +676,4 @@ class GoalPlanner:
             source_ref=source_ref,
             status=SuggestionStatus.PENDING,
             suggested_at=datetime.now(timezone.utc),
-        )
-
-    def create_goal_from_suggestion(self, suggestion: GoalSuggestion) -> Goal:
-        """Pure mapping — no LLM call. Maps suggestion fields into an active Goal."""
-        return Goal(
-            title=suggestion.title,
-            objective=suggestion.objective,
-            success_condition=suggestion.objective,
-            status=GoalStatus.ACTIVE,
-            type="suggested",
         )

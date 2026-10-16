@@ -56,17 +56,6 @@ class PersonSource:
 
 
 @dataclass
-class PersonCandidate:
-    """Intermediate type produced by extraction — not yet stored as a Person."""
-
-    name: str
-    inferred_classification: str = "unknown"
-    inferred_relationship: str = ""
-    raw_context: str = ""
-    source_type: str = "research"
-
-
-@dataclass
 class PersonContext:
     people: list[Person] = field(default_factory=list)
     token_estimate: int = 0

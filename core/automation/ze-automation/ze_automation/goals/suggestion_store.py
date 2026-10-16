@@ -96,6 +96,24 @@ class GoalSuggestionStore:
             )
             return row is not None
 
+    async def reopen(self, suggestion_id: UUID, goal_id: UUID) -> bool:
+        """
+        Returns an ACCEPTED suggestion to PENDING when the goal it created could not
+        be planned. Returns False if the suggestion is no longer accepted for that goal.
+        """
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                UPDATE goal_suggestions
+                SET status = 'pending', resolved_at = NULL, created_goal_id = NULL
+                WHERE id = $1 AND status = 'accepted' AND created_goal_id = $2
+                RETURNING id
+                """,
+                suggestion_id,
+                goal_id,
+            )
+            return row is not None
+
     async def mark_expired(self, suggestion_id: UUID) -> None:
         """Unconditional status update to EXPIRED."""
         async with self._pool.acquire() as conn:
@@ -137,26 +155,6 @@ class GoalSuggestionStore:
                 LIMIT 1
                 """,
                 cutoff,
-            )
-            return row is not None
-
-    async def was_topic_suggested_recently(self, title: str, days: int = 30) -> bool:
-        """
-        Returns True if a suggestion with a similar title (case-insensitive substring match)
-        was sent within the last `days` days, excluding EXPIRED suggestions.
-        """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                SELECT 1 FROM goal_suggestions
-                WHERE status != 'expired'
-                  AND suggested_at >= $1
-                  AND LOWER(title) LIKE '%' || LOWER($2) || '%'
-                LIMIT 1
-                """,
-                cutoff,
-                title,
             )
             return row is not None
 

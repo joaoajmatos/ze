@@ -101,7 +101,6 @@ def planner():
         return_value="Work was completed successfully."
     )
     p.synthesize_retrospective = AsyncMock(return_value="Goal completed successfully.")
-    p.promote_learnings = AsyncMock(return_value=[])
     p.extract_procedure = AsyncMock(return_value=None)
     return p
 

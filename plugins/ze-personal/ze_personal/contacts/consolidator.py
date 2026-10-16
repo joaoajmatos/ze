@@ -124,7 +124,7 @@ class ContactsConsolidator:
             for edge in edges:
                 await self._store_edge(edge)
 
-            await self._mark_processed([r["id"] for r in batch])
+            await self._advance_watermark(batch[-1])
 
         report.duration_ms = int((time.monotonic() - start) * 1000)
         self._log.info("contacts_consolidation_done", **report.__dict__)
@@ -136,11 +136,17 @@ class ContactsConsolidator:
         async with self._pool.acquire() as conn:
             return await conn.fetch(
                 """
-                SELECT id, agent, prompt, response, summary, created_at
-                FROM episodes
-                WHERE contacts_extracted = false
-                  AND is_archive = false
-                ORDER BY created_at ASC
+                SELECT e.id, e.agent, e.prompt, e.response, e.summary, e.created_at
+                FROM memory_episodes e
+                LEFT JOIN contacts_episode_watermark w ON w.id = 1
+                WHERE e.agent <> 'consolidator'
+                  AND e.session_id NOT LIKE 'workflow:%'
+                  AND e.session_id NOT LIKE 'eval-%'
+                  AND (
+                    w.id IS NULL
+                    OR (e.created_at, e.id) > (w.last_created_at, w.last_episode_id)
+                  )
+                ORDER BY e.created_at, e.id
                 LIMIT $1
                 """,
                 limit,
@@ -278,11 +284,20 @@ class ContactsConsolidator:
             )
             return True
 
-    async def _mark_processed(self, episode_ids: list[UUID]) -> None:
+    async def _advance_watermark(self, last: asyncpg.Record) -> None:
         async with self._pool.acquire() as conn:
             await conn.execute(
-                "UPDATE episodes SET contacts_extracted = true WHERE id = ANY($1::uuid[])",
-                episode_ids,
+                """
+                INSERT INTO contacts_episode_watermark
+                    (id, last_created_at, last_episode_id, updated_at)
+                VALUES (1, $1, $2, now())
+                ON CONFLICT (id) DO UPDATE SET
+                    last_created_at = EXCLUDED.last_created_at,
+                    last_episode_id = EXCLUDED.last_episode_id,
+                    updated_at      = now()
+                """,
+                last["created_at"],
+                last["id"],
             )
 
     def _batch_config(self) -> tuple[int, int]:
