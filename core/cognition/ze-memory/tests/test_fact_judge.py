@@ -101,6 +101,8 @@ def test_bars_are_independent():
         lambda a: setattr(a["family"], "confidence", None),
         lambda a: setattr(a["family"], "choice", None),
         lambda a: setattr(a["biography"], "noul", None),
+        lambda a: setattr(a["biography"], "noul", True),
+        lambda a: setattr(a["biography"], "noul", float("nan")),
         lambda a: a.update(
             biography=SystemOneAnswer(type="choice", choice="x", confidence=0.9)
         ),
