@@ -123,7 +123,6 @@ function extractBarConfigs(children: ReactNode): LineConfig[] {
     const props = child.props as BarProps | undefined;
     const isBarComponent =
       componentName === "Bar" ||
-      componentName === "BarSquares" ||
       (props && typeof props.dataKey === "string" && props.dataKey.length > 0);
 
     if (isBarComponent && props?.dataKey) {
