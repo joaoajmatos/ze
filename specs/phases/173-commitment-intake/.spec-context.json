@@ -321,9 +321,17 @@
       "kind": "complete",
       "by": "ENG-A",
       "at": "2026-10-16T19:26:54.153Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:27:08.236Z"
     }
   ],
-  "currentTask": "T051",
+  "currentTask": "T045",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -461,6 +469,10 @@
     "T051": {
       "status": "DONE",
       "did": "Coverage check: git diff main --stat docs, READMEs, AGENTS.md and specs against T050; every public doc the diff touches is updated, plus docs/sdk.md (CommitmentChoice), docs/testing.md and specs/core/ze-memory.md"
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "also_loop field: loader, check-sets rule, scoring, tests (done earlier, ticked late)"
     }
   }
 }
