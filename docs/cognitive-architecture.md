@@ -21,8 +21,7 @@ So we add a functional taxonomy alongside it. A subsystem is not primarily "the 
 immediately clear: Ze perceived, remembered, reflected, and acted well, but its executive
 function was under-built. `core/cognition/ze-worldstate` (Phases 109–110, repaired in Phase 170) and `core/arbitration/ze-priority`
 (Phases 123, 127) narrowed that gap: loops drift and rank, goals are surfaced, and the priority snapshot
-reports the sources it could not read. Two executive gaps remain (confirmation, Phase 171; duplicate
-intake, Phase 173). The next gap this lens surfaces is **social
+reports the sources it could not read. The confirmation gap (Phase 171) and the duplicate-intake gap (Phase 173) are closed. The next gap this lens surfaces is **social
 cognition** — third-party relationship modeling stays thin (see function 4 below).
 
 The seven functions below are from the external architecture review and are adopted verbatim
@@ -71,7 +70,7 @@ relationship with Y" that the executive layer can read.
 Maturity: 🟢 substantial — `ze-automation`: goals (heavyweight, explicit, multi-week), workflows
 (multi-step plans), scheduler. `core/cognition/ze-worldstate` (Phases 109–110): open loops — the
 lightweight, implicitly-opened active concerns (`suspected → active → drifting →
-closed|dropped`), extracted from all four inflows through a System One gate (Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate could not parse Haiku's fenced JSON, so before 168 no loops were extracted in production; its parse now tolerates the fence), with drift detection and hedged,
+closed|dropped`), extracted from all four inflows through System One (the commitment intake for conversation, Phase 173; the loop gate for email, calendar, and ingestion, Phase 168) with a Haiku title writer behind it (the earlier all-Haiku gate could not parse Haiku's fenced JSON, so before 168 no loops were extracted in production; its parse now tolerates the fence), with drift detection and hedged,
 push-bar-gated surfacing. Before Phase 170 the drift predicate never matched a real row, so no loop drifted by absence; the sweep now fires once the deadline passes, and new evidence moves the deadline (`record_corroboration`). The push grounding gate checks the loop title. You can also ask Ze to track a concern (Phase 169, `track_loop`). That loop starts `active`. An explicit ask can bring a `drifting` loop back to `active`, the only `drifting → active` path. Suspected loops reach the user through the Open loops page and a resume question (Phase 171). A confirm, from the page or the `confirm_loop` tool, stamps the loop like a declaration: confidence 0.9 and a 7-day deadline. A second, independent source that matches a suspected loop is judged by one System One Noul, `same_concern`; at or above a calibrated bar its confidence rises, and at or above a stricter bar the loop is promoted to `active` at confidence 0.7 (Phase 172). Independence is code: the source key is new to the loop, the evidence is not already linked, and the key was never recorded on a matching dropped loop. `core/arbitration/ze-priority` (Phase 123, 127): `PriorityView` ranks loops,
 goals, and correlation hypotheses together, plus user-directed priority override.
 One shared attention budget (Phase 177) now covers every discretionary push, and a single interruption
@@ -105,14 +104,9 @@ mechanism already scores; the two previously-independent daily push budgets (cor
 worldstate's) were consolidated into one shared, atomically-claimed attention budget in
 `core/contracts/ze-proactive`. Interruption-handling is now one policy, not per-mechanism. Phase 127
 (user-directed priority override) layered a first arbitration case on top: decaying/pinned user
-reorderings merge into `PriorityView.rank()` at render time.
+reorderings merge into `PriorityView.rank()` at render time. Phase 173 (commitment intake) ended the double booking: one System One request now judges a conversation turn, so a timed reminder no longer also opens a loop. A loop that matches a reminder or goal the turn created links to it instead.
 
 **What is still missing:**
-- **A suspected loop has no reachable confirm path.** The review list is not mounted and no agent can
-  confirm one, so `StaleSuspicionJob` drops every suspected loop after 14 days. The confirmation path is
-  Phase 171.
-- **One message can open two commitments.** A timed reminder can also become an active loop. One
-  commitment intake is Phase 173.
 - **Loops and goals are deliberately un-unified** (`specs/phases/110-open-loop-drift-surfacing/spec.md`
   FR-014). `PriorityView` ranks both together but does not merge their stores; there is still no
   shared query surface for "everything open right now" beyond that ranked view. Whether and how

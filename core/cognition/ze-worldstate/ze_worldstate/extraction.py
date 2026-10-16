@@ -192,7 +192,7 @@ async def write_loop_title(
     return TitleWriterResult(title=title, implied_window_days=window)
 
 
-async def _resolve_entities(entity_resolver: Any, text: str) -> list[UUID]:
+async def resolve_entities(entity_resolver: Any, text: str) -> list[UUID]:
     if entity_resolver is None:
         return []
     try:
@@ -585,7 +585,7 @@ async def propose_loop_candidates(
     not run. `None`, a `fallback` or a `hold` admission leaves the 109 Haiku gate as is.
     """
     prov = provenance
-    entity_ids = await _resolve_entities(entity_resolver, text)
+    entity_ids = await resolve_entities(entity_resolver, text)
 
     if prov == LoopProvenance.USER_DECLARED:
         created = await _create_declared_loop(

@@ -123,6 +123,7 @@ uv run pytest apps/ze-api/tests -k test_health -q
 | Before opening a PR | `make lint` and `make test-py`; `make typecheck-web` and `make test-web` if ze-web or @myguyze/ze-ui changed |
 | Embedding / routing internals | `make test-core SLOW=1` or `make test-all` |
 | Open-query detector | `make test-priority SLOW=1` runs `test_open_query_holdout.py`; `make calibrate-open-query` sweeps the sets (local, free) |
+| Commitment intake | `make test-worldstate` and `make test-memory` cover the decision table and the labels; `make test-pg` covers the loop link. `uv run python eval/calibration/commitment_intake.py --check-sets` validates the labeled sets offline. `make calibrate-commitment-intake` is live and costs credits |
 
 ---
 

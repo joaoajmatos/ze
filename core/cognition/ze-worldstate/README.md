@@ -12,7 +12,8 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 - `OpenLoop` / `LoopState` — the lifecycle type and its five states
 - Extraction (`extraction.py`) — conservative, relevance-gated loop extraction wired into all four inflows: conversation, email, calendar, and ingestion. The 109 Haiku gate stays as the fallback. Its parse tolerates the code fence Haiku puts around JSON; before phase 168 it did not, so this extraction created no loops in production. Each created loop links the evidence that triggered it: the conversation or email turn episode, or the ingestion ref. The calendar inflow passes no evidence, because its event has no UUID record
-- Loop gate (`loop_judge.py`, `admission.py`) — phase 168. One System One request asks `is_open_concern`, `resolves_existing`, and (conversation only) `explicit_declaration`; a pure `decide()` maps the answers to resolve, create-declared, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` is on in the shipped config (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8), after an `ENABLE` verdict on the held-out set for English and Portuguese
+- Commitment intake (`commitment_judge.py`, `intake.py`) — phase 173. One System One request per conversation turn asks a `commitment` Choice (`reminder`, `loop`, `goal`, `waiting_on`, `fact`, `forget`, `ingest`, `clarify`, `none`) plus the fact questions (`family`, `biography`) and the loop questions (`is_open_concern`, `explicit_declaration`, `resolves_existing`). A pure `decide()` merges the answers with what the turn already did: a turn that created a reminder or goal creates no loop and links to it instead, a `waiting_on` message writes nothing, and a `fact` follows the phase 163 rules. `CommitmentIntake.admit` returns the admitted facts and a loop commit to run after the episode exists. It replaces the phase 163 speech-act judge and the phase 168 conversation loop gate. Surface `system_one.surfaces.commitment_intake` is on in the shipped config (`choice_hold` 0.7, `family_hold` 0.7, `biography_hold` 0.55, `loop_hold` 0.6, `explicit_hold` 0.95, `resolves_hold` 0.8), after an `ENABLE` verdict for English and Portuguese on 147 blind held-out rows. Two earlier held-out sets had returned `KEEP OFF`.
+- Loop gate (`loop_judge.py`, `admission.py`) — phase 168, for email, calendar, and ingestion. One System One request asks `is_open_concern` and `resolves_existing`; a pure `decide()` maps the answers to resolve, create-suspected, hold, or fallback. `LoopInflow` runs the gate, asks Haiku for a title (and an optional window in days) only after a positive gate, and commits. Surface `system_one.surfaces.loop_gate` is on in the shipped config (`loop_hold` 0.75, `resolves_hold` 0.8), after an `ENABLE` verdict on the held-out set for English and Portuguese
 - Track tool (`tracking.py`, `agents/tools.py`) — phase 169. The `track_loop` tool, on the `loops` agent, starts tracking a concern the user asked Ze to keep in mind. `LoopTracker` matches existing loops and returns one outcome: `created`, `confirmed`, `reinforced`, or `revived`. The reply may claim tracking only after a successful call
 - Confirm — phase 171. A confirm, from the Open loops page or the `confirm_loop` tool on the `loops` agent, stamps a suspected loop like a declaration: confidence 0.9 and a 7-day drift deadline. The `track_loop` result also reports whether tracking was earned (`tracking_earned`)
 - Corroboration (`corroboration.py`, `corroboration_judge.py`) — phase 172. A second, independent source that matches a `suspected` loop is judged by one System One Noul, `same_concern`. Code raises the loop's confidence and can promote it to `active`. The origin and every counted corroboration are recorded in `open_loop_sources` (`zw003`). See [Corroboration](#corroboration)
@@ -25,7 +26,7 @@ An open loop moves through `suspected → active → drifting → closed | dropp
 
 ### Integration
 
-`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The conversation gate runs in the `write_memory` node beside the fact extractor and commits fire-and-forget. A turn where `track_loop` succeeded skips the gate. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the same gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the gate is off, uncalibrated, or skips, the 109 Haiku gate runs (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
+`ze-api`'s container calls `build_worldstate_stack()` at startup, which wires `PostgresLoopStore` against the shared `ze-memory` graph store. The commitment intake runs in the `write_memory` node and commits the loop fire-and-forget once the episode exists. A turn where `track_loop` or `confirm_loop` succeeded creates no second loop. The messenger, calendar, and ingestion inflows call a loop extractor (`ze_worldstate.inflow`) that runs the loop gate, can create suspected loops or resolve existing ones, logs its judgments, and writes no message-trace rows. When the intake or the gate is off, uncalibrated, or skips, the Haiku paths run: the Haiku fact extractor and the 109 Haiku loop gate (see the note above on its parse failure). `GET/POST /api/v0/loops` (`rest.py`) exposes review actions to `ze-web`'s `widgets/loop-review`.
 
 ## Corroboration
 
@@ -82,7 +83,9 @@ The surface ships off with null bars. Off, uncalibrated, skipped, invalid, or fa
 | `types.py` | `OpenLoop`, `LoopState`, `LoopProvenance`, `TrackOutcome`, `TrackResult` |
 | `store.py` | `LoopStore` protocol, `PostgresLoopStore` |
 | `extraction.py` | Relevance-gated loop extraction from inflow text; the 109 Haiku gate is the fallback |
-| `loop_judge.py` | System One loop gate: three Noul questions, bars, pure `decide()` |
+| `commitment_judge.py` | System One commitment questions, state, surface config, and the pure `decide()` decision table |
+| `intake.py` | `CommitmentIntake`: the one request, facts, the loop commit, and linking a loop to a reminder or goal |
+| `loop_judge.py` | System One loop gate for email, calendar, and ingestion: two Noul questions, bars, pure `decide()` |
 | `admission.py` | `LoopInflow`: gate, Haiku title writer, commit |
 | `corroboration.py` | Independence rule, confidence arithmetic, corroborate/promote effects |
 | `corroboration_judge.py` | System One same-concern Noul: state, surface config, pure `decide()` |
@@ -96,7 +99,7 @@ The surface ships off with null bars. Off, uncalibrated, skipped, invalid, or fa
 | `jobs/` | `DriftSweepJob`, `StaleSuspicionJob` |
 | `bootstrap.py` | `build_worldstate_stack()` — DI wiring for `ze-api` |
 | `rest.py` | `GET/POST /api/v0/loops` handlers |
-| `migrations/` | `zw001` (open_loops table), `zw002` (drift columns), `zw003` (open_loop_sources table) |
+| `migrations/` | `zw001` (open_loops table), `zw002` (drift columns), `zw003` (open_loop_sources table), `zw004` (`reminder_id` on open_loops) |
 
 Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
 

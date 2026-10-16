@@ -13,12 +13,21 @@ from ze_agents.system_one import SystemOneResult
 class SpeechAct(StrEnum):
     FACT = "fact"
     FORGET = "forget"
+    INGEST = "ingest"
+    CLARIFY = "clarify"
+    NONE = "none"
+
+
+class CommitmentChoice(StrEnum):
     REMINDER = "reminder"
     LOOP = "loop"
     GOAL = "goal"
+    WAITING_ON = "waiting_on"
+    FACT = "fact"
+    FORGET = "forget"
     INGEST = "ingest"
-    DROP = "drop"
     CLARIFY = "clarify"
+    NONE = "none"
 
 
 @dataclass

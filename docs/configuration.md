@@ -468,7 +468,7 @@ Set `recheck.enabled: false` to stop the daily job. Manual
 
 ### `system_one:`
 
-System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `speech_act`, `routing` and `skills` surfaces are on with calibrated bars. The `loop_gate` surface is on too. The `corroboration` surface is off; it ships off with null bars until a held-out `ENABLE`. The code defaults are off, and without a `system_one:` block everything is off.
+System One returns typed judgments (labels and probabilities, never text). Ze uses it behind OpenRouter. In the shipped `config.yaml`, the master switch and the `commitment_intake`, `routing`, `skills` and `loop_gate` surfaces are on with calibrated bars. The `corroboration` surface is off; it ships off with null bars until a held-out `ENABLE`. The code defaults are off, and without a `system_one:` block everything is off.
 
 ```yaml
 system_one:
@@ -476,10 +476,14 @@ system_one:
   model: typesafe/jev-1.13
   timeout_ms: 2000                # Per attempt
   surfaces:
-    speech_act:                   # Post-turn fact admission (Phase 163)
-      enabled: false              # the shipped config.yaml sets true
-      choice_hold: null           # shipped: 0.9 — set from make calibrate-speech-act
-      biography_hold: null        # shipped: 0.7 — set from make calibrate-speech-act
+    commitment_intake:            # Post-turn conversation intake: facts and loops (Phase 173)
+      enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-16)
+      choice_hold: null           # shipped: 0.7 — set from make calibrate-commitment-intake
+      family_hold: null           # shipped: 0.7
+      biography_hold: null        # shipped: 0.55
+      loop_hold: null             # shipped: 0.6
+      explicit_hold: null         # shipped: 0.95
+      resolves_hold: null         # shipped: 0.8
     routing:                      # Agent choice after E5 (Phases 164, 167)
       enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
       choice_trust: null          # shipped: 0.5 — set from make calibrate-routing
@@ -492,10 +496,9 @@ system_one:
       needs_skill_hold: null      # shipped: 0.6 — set from make calibrate-skills
       shortlist_k: 5
       shortlist_floor: 0.35
-    loop_gate:                    # Open-loop extraction gate (Phase 168)
+    loop_gate:                    # Open-loop extraction gate for email, calendar, ingestion (Phase 168)
       enabled: false              # the shipped config.yaml sets true (calibrated 2026-10-12)
       loop_hold: null             # shipped: 0.75 — set from make calibrate-loop-gate
-      explicit_hold: null         # shipped: 0.85
       resolves_hold: null         # shipped: 0.8
     corroboration:                # Suspected-loop corroboration (Phase 172)
       enabled: false              # ships false — make calibrate-corroboration returned KEEP OFF on 2026-10-15
@@ -503,14 +506,34 @@ system_one:
       promote_hold: null          # candidate 0.8 — same run
 ```
 
-When `speech_act` is on and both bars are set, System One decides whether a turn holds a durable fact. It makes one attempt, with no retries. A Haiku call then writes the fact text. When System One skips, Ze runs the previous Haiku judge once.
+#### `surfaces.commitment_intake`
 
-The two bars are not the same number:
+After each non-trivial conversation turn, one System One request asks what the message committed the user to. It replaces the phase 163 speech-act request and the phase 168 conversation loop-gate request. Ze makes one attempt, with no retries. Code reads the turn's tool calls and decides:
 
-- `choice_hold` is the minimum peakedness for the act and family answers.
+- A high `resolves_existing` closes the matching open loop. A message that says the user is waiting on someone never resolves a loop.
+- A turn that already created a reminder or a goal creates no loop and persists no fact. Ze links a matching loop to the reminder or goal instead.
+- A `fact` commitment follows the phase 163 rules. The `family` and `biography` answers must clear their bars. A Haiku call then writes the fact text.
+- A `loop` commitment needs `is_open_concern` at or above `loop_hold`. A high `explicit_declaration` creates an active, user-declared loop. Anything else creates a suspected loop. A Haiku call writes the title. The intake holds the loop on a turn where the `track_loop` or `confirm_loop` tool succeeded.
+- A `waiting_on` commitment, and a confident `reminder` or `goal` that the turn did not create, are held. Ze creates nothing. An unsure `reminder` or `goal` goes to the loop rules.
+- `forget`, `ingest`, `clarify` and `none` are held.
+- A System One skip, an invalid answer, an unset bar, or a surface that is off runs the older paths: the Haiku fact extractor and the Haiku loop gate.
+
+The keys:
+
+- `choice_hold` is the minimum peakedness for the commitment answer.
+- `family_hold` is the minimum peakedness for the fact family answer.
 - `biography_hold` is the minimum yes-probability that the message states a durable fact about the user.
+- `loop_hold` is the minimum probability for `is_open_concern`.
+- `explicit_hold` is the minimum probability for `explicit_declaration`. It applies to conversation only.
+- `resolves_hold` is the minimum probability for `resolves_existing`.
 
-If you enable the surface and leave a bar `null`, Ze logs `speech_act_system_one_uncalibrated` and uses the Haiku judge. The shipped bars (0.9 and 0.7) came from the 2026-10-09 run: exact-act accuracy 0.967, fact precision 1.00, fact recall 0.93. To measure your own, run `OPENROUTER_API_KEY=... make calibrate-speech-act`. This run is live and costs credits. Copy the suggested values into the file. Run it again when you change the model.
+Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all six bars set. If you enable it and leave any bar `null`, Ze logs `commitment_intake_uncalibrated` and uses the older paths. An out-of-range or non-numeric value becomes `null`, with a warning.
+
+The shipped bars (0.7, 0.7, 0.55, 0.6, 0.95 and 0.8) were chosen on the 160-row tuned set on 2026-10-16 and frozen. One verdict run on 147 blind held-out rows (73 English, 74 Portuguese) returned `ENABLE` in both languages. Per language, the intake made zero duplicate bookings and zero false loop creates, where the old two-request pipeline made 5 and 3 duplicates and 3 and 3 false creates. Fact precision was 1.00. Fact recall was 0.81 and 0.76 (old pipeline: 0.71 and 0.57). Loop precision was 1.00 (old: 0.73 and 0.79), and loop recall was 22 of 22. Choice accuracy was 1.00, and the intake wrote nothing on any of the 7 waiting-on rows. Two earlier held-out sets returned `KEEP OFF`. The wording was fixed on the tuned set after each, and each earlier set is spent.
+
+On the held-out set, about half of the implied conversation loops were created as active, user-declared loops instead of suspected ones (10 of 21 in English, 13 of 21 in Portuguese, fewer than the old gate made), so they skip the suspected path. A follow-up will narrow declarations.
+
+To measure your own bars, run `OPENROUTER_API_KEY=... make calibrate-commitment-intake`. This run is live and costs credits. It tunes on `eval/calibration/commitment_intake.jsonl` and replays the old pipeline on the same rows as the baseline. Copy the suggested values into the file. Run it again when you change the model. A verdict run needs a blind held-out set that nobody has tuned on: `--set holdout3` ran the 2026-10-16 verdict. Ze never reuses a set after its verdict, and the script refuses a live run on all three spent sets (`--replay` still works for reference). Write a fresh blind set for the next verdict. Set `surfaces.commitment_intake.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese. `--check-sets` validates the files offline.
 
 #### `surfaces.routing`
 
@@ -560,23 +583,21 @@ The surface needs `choice_trust` and `needs_skill_hold` both set. If you enable 
 
 #### `surfaces.loop_gate`
 
-Ze extracts open loops from conversation, email, calendar events, and ingested content. When `loop_gate` is on, one System One request asks three yes/no questions before any Haiku call. Ze makes one attempt, with no retries. Code then decides:
+Ze extracts open loops from email, calendar events, and ingested content. Conversation turns use [`commitment_intake`](#surfacescommitment_intake) instead. When `loop_gate` is on, one System One request asks two yes/no questions before any Haiku call. Ze makes one attempt, with no retries. Code then decides:
 
 - A high `resolves_existing` closes the matching open loop.
 - A low `is_open_concern` holds. Ze creates nothing and calls no Haiku.
-- A high `explicit_declaration` (conversation only) creates an active, user-declared loop.
-- Anything else creates a suspected loop.
+- Anything else creates a suspected loop. Only a user can declare a loop, so these inflows never create declared loops.
 - A System One skip, an invalid answer, or an unset bar runs the older Haiku gate unchanged. That gate now strips the code fence Haiku wraps around its JSON.
 
-After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Conversation runs the gate in the `write_memory` node, and trivial turns send no request. The gate also steps aside on a turn where the `track_loop` or `confirm_loop` tool succeeded. Email, calendar, and ingestion run the gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
+After a positive answer, a Haiku call writes the loop title and may suggest a window in days. Haiku never decides whether a loop exists. Email, calendar, and ingestion can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows.
 
 The keys:
 
 - `loop_hold` is the minimum probability for `is_open_concern`.
-- `explicit_hold` is the minimum probability for `explicit_declaration`.
 - `resolves_hold` is the minimum probability for `resolves_existing`.
 
-Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs all three bars set. If you enable it and leave any bar `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75, 0.85 and 0.8 (calibrated 2026-10-12).
+Each bar is a number from 0 to 1. At the bar counts as positive. The surface needs both bars set. If you enable it and leave either `null`, Ze logs a warning and uses the Haiku gate. An out-of-range or non-numeric value becomes `null`, with a warning. The code ships no default bars; the shipped `config.yaml` sets 0.75 and 0.8 (calibrated 2026-10-12).
 
 To measure the bars, run `OPENROUTER_API_KEY=... make calibrate-loop-gate`. This run is live and costs credits. It tunes on `eval/calibration/loop_gate.jsonl` by default and measures the Haiku gate on the same rows. Copy the suggested values into the file. Then run the script once on the held-out set (`--set holdout`). Set `surfaces.loop_gate.enabled` to `true` only when the verdict is `ENABLE` for English and Portuguese: zero false creates on negatives, recall no more than 0.05 below Haiku's, and precision at least Haiku's. `--check-sets` validates both files offline.
 

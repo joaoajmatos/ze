@@ -68,12 +68,6 @@ def _ok_result() -> SystemOneResult:
         input_tokens=10,
         latency_ms=5,
         answers={
-            "speech_act": SystemOneAnswer(
-                type="choice",
-                choice="fact",
-                confidence=0.9,
-                probabilities={"fact": 0.9},
-            ),
             "family": SystemOneAnswer(
                 type="choice",
                 choice="preference",
@@ -85,7 +79,7 @@ def _ok_result() -> SystemOneResult:
     )
 
 
-_IDS = ("speech_act", "family", "biography")
+_IDS = ("family", "biography")
 
 
 def _persist_admission(facts=None) -> FactAdmission:
@@ -156,7 +150,7 @@ async def test_trace_merge_also_in_compaction_branch():
     ):
         out = await write_memory(state, config)
     assert out["compaction_span"] is not None
-    assert len(out["message_trace"].judgments) == 3
+    assert len(out["message_trace"].judgments) == 2
 
 
 async def test_missing_message_trace_does_not_crash():
@@ -202,3 +196,141 @@ async def test_skip_path_admission_has_no_duplicate_identity_and_skip_rows():
     rows = out["message_trace"].judgments
     assert [r.question_id for r in rows] == list(_IDS)
     assert all(not r.consumed and r.skip_reason == "timeout" for r in rows)
+
+
+# --- phase 173: single commitment intake ---------------------------------------------
+
+_INTAKE_KINDS = {"commitment": "choice", "family": "choice", "biography": "noul"}
+
+
+def _intake_admission(**over):
+    from types import SimpleNamespace
+
+    base = dict(
+        fact=_persist_admission(),
+        loop=None,
+        link=None,
+        judgment=_ok_result(),
+        question_kinds=_INTAKE_KINDS,
+        consumed=frozenset({"family", "biography"}),
+        skip_reason=None,
+    )
+    base.update(over)
+    return SimpleNamespace(**base)
+
+
+async def _run_intake(intake, trace, *, extractor=None, **kw):
+    config = _config(extractor or AsyncMock())
+    config["configurable"]["commitment_intake"] = intake
+    with patch(
+        "ze_core.orchestration.nodes.memory.submit_perception_facts",
+        new_callable=AsyncMock,
+    ) as submit:
+        out = await write_memory(_state(trace, **kw), config)
+    return out, submit, config
+
+
+async def test_intake_replaces_fact_extractor_and_makes_one_call():
+    intake = AsyncMock(return_value=_intake_admission())
+    extractor = AsyncMock()
+    out, submit, _ = await _run_intake(intake, _trace(), extractor=extractor)
+    intake.assert_awaited_once()
+    extractor.assert_not_awaited()
+    facts = [i.fact for i in submit.await_args.args[1]]
+    assert [(f.predicate, f.value) for f in facts] == [("preference", "aisle seats")]
+
+
+async def test_intake_receives_turn_inputs():
+    call = ToolCall(
+        tool_name="set_reminder",
+        args={},
+        result={"id": "r1"},
+        duration_ms=1,
+        success=True,
+    )
+    intake = AsyncMock(return_value=_intake_admission())
+    await _run_intake(intake, _trace(), tool_calls=[call])
+    kwargs = intake.await_args.kwargs
+    assert kwargs["prompt"] == "I prefer aisle seats"
+    assert kwargs["response"] == "Noted."
+    assert kwargs["agent"] == "companion"
+    assert kwargs["tool_calls"] == [call]
+
+
+async def test_intake_rows_come_from_the_single_judgment():
+    out, _, _ = await _run_intake(AsyncMock(return_value=_intake_admission()), _trace())
+    rows = out["message_trace"].judgments
+    assert [r.question_id for r in rows] == ["family", "biography"] or {
+        r.question_id for r in rows
+    } == set(_INTAKE_KINDS)
+    consumed = {r.question_id for r in rows if r.consumed}
+    assert consumed == {"family", "biography"}
+
+
+async def test_intake_skip_rows_carry_reason():
+    skip = SystemOneResult(outcome="skip", skip_reason="timeout", latency_ms=2000)
+    adm = _intake_admission(
+        fact=FactAdmission(facts=[], path="haiku"),
+        judgment=skip,
+        consumed=frozenset(),
+        skip_reason="timeout",
+    )
+    out, _, _ = await _run_intake(AsyncMock(return_value=adm), _trace())
+    rows = out["message_trace"].judgments
+    assert {r.question_id for r in rows} == set(_INTAKE_KINDS)
+    assert all(r.skip_reason == "timeout" and not r.consumed for r in rows)
+
+
+async def test_intake_failure_never_fails_the_turn():
+    intake = AsyncMock(side_effect=RuntimeError("boom"))
+    out, submit, _ = await _run_intake(intake, _trace())
+    assert "message_trace" not in out
+    submit.assert_not_awaited()
+
+
+async def test_loop_commit_runs_once_from_intake():
+    commit = AsyncMock()
+    loop = MagicMock()
+    loop.commit = commit
+    adm = _intake_admission(loop=loop, fact=FactAdmission(facts=[], path="system_one"))
+    with patch("ze_core.orchestration.nodes.memory.fire_and_forget") as ff:
+        ff.side_effect = lambda coro, label: coro.close() or MagicMock()
+        await _run_intake(AsyncMock(return_value=adm), _trace())
+    labels = [c.kwargs["label"] for c in ff.call_args_list]
+    assert labels.count("loop_commit") == 1
+
+
+async def test_intake_not_run_for_eval_threads():
+    intake = AsyncMock()
+    config = _config(AsyncMock(), thread_id="eval-1")
+    config["configurable"]["commitment_intake"] = intake
+    await write_memory(_state(_trace()), config)
+    intake.assert_not_awaited()
+
+
+async def test_outcome_row_shows_link_and_waiting_on():
+    from ze_worldstate.commitment_judge import IntakeOutcome
+
+    for outcome, expected in (
+        (
+            IntakeOutcome("link", "turn_created", link_kind="reminder"),
+            "link:turn_created:reminder",
+        ),
+        (IntakeOutcome("hold", "waiting_on"), "hold:waiting_on"),
+    ):
+        adm = _intake_admission(outcome=outcome)
+        out, _, _ = await _run_intake(AsyncMock(return_value=adm), _trace())
+        row = out["message_trace"].judgments[-1]
+        assert (row.question_id, row.answer, row.consumed) == (
+            "intake_outcome",
+            expected,
+            True,
+        )
+
+
+async def test_no_outcome_row_without_a_request():
+    from ze_worldstate.commitment_judge import IntakeOutcome
+
+    adm = _intake_admission(outcome=IntakeOutcome("hold", "trivial"), judgment=None)
+    out, _, _ = await _run_intake(AsyncMock(return_value=adm), _trace())
+    assert "message_trace" not in out

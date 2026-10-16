@@ -1,4 +1,5 @@
 from ze_memory.types import (
+    CommitmentChoice,
     MemoryContext,
     Fact,
     Episode,
@@ -56,6 +57,7 @@ from ze_memory.policies import (
 from ze_plugin.signals import SignalSource
 
 __all__ = [
+    "CommitmentChoice",
     "FactRestoreConflictError",
     "MemoryContext",
     "Fact",

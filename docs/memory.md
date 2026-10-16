@@ -245,11 +245,19 @@ tracked in `push_log`. The detector ships under an amended bar: Portuguese
 recall is lower than English, and no false positives were measured. See
 `specs/phases/171-loop-confirmation/research.md`.
 
-**Post-turn extraction.** After each agent run, `write_memory` calls
-`gather_fact_proposals` (`ze_memory/extractor.py`). The extractor classifies
-`speech_act` and keeps facts only when the act is `fact` and the family is one of
-`identity`, `preference`, `relationship`, `constraint`, `contact_detail`. Other
-acts (reminder, loop, goal, ingest, drop, forget, clarify) yield `[]`. Predicates
+**Post-turn extraction.** After each agent run, `write_memory` runs the commitment
+intake (`ze_worldstate/intake.py`, Phase 173). One System One request asks what the
+message committed the user to. Ze keeps a fact only when the commitment is `fact`,
+the family is one of `identity`, `preference`, `relationship`, `constraint`,
+`contact_detail`, and the biography answer clears its bar
+(`ze_memory/fact_judge.py` holds the family and biography questions). A Haiku call
+then writes the fact text. Every other commitment (reminder, loop, goal,
+waiting_on, forget, ingest, clarify, none) yields no fact, and a turn that already
+created a reminder or a goal persists none. When System One skips or the surface is
+off, `gather_fact_proposals` (`ze_memory/extractor.py`) runs the Haiku extractor
+instead. It labels the message `speech_act` as `fact`, `forget`, `ingest`,
+`clarify`, or `none`, and keeps facts only for `fact`. See
+[system-one.md](system-one.md#commitment-intake). Predicates
 already written this turn by `remember_fact` (`ok` true, same predicate+value
 identity after normalize) are dropped. Kept rows are
 `SYNTHESIZED`, `reviewed=false`. Eval threads (`eval-*`) skip this path.

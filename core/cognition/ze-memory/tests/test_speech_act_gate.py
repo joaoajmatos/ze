@@ -11,47 +11,47 @@ from ze_memory.types import SpeechAct
     [
         (
             {
-                "speech_act": "reminder",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "call dentist Tuesday 3"}],
             },
-            SpeechAct.REMINDER,
+            SpeechAct.NONE,
             [],
         ),
         (
             {
-                "speech_act": "loop",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "I'll call Mom Tuesday"}],
             },
-            SpeechAct.LOOP,
+            SpeechAct.NONE,
             [],
         ),
         (
             {
-                "speech_act": "reminder",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "remember to call Mom Tuesday at 3"}],
             },
-            SpeechAct.REMINDER,
+            SpeechAct.NONE,
             [],
         ),
         (
             {
-                "speech_act": "loop",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "figure out whether to switch jobs"}],
             },
-            SpeechAct.LOOP,
+            SpeechAct.NONE,
             [],
         ),
         (
             {
-                "speech_act": "goal",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "ship the thesis by June"}],
             },
-            SpeechAct.GOAL,
+            SpeechAct.NONE,
             [],
         ),
         (
@@ -71,11 +71,11 @@ from ze_memory.types import SpeechAct
         ),
         (
             {
-                "speech_act": "drop",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "tired today"}],
             },
-            SpeechAct.DROP,
+            SpeechAct.NONE,
             [],
         ),
         (
@@ -98,11 +98,11 @@ from ze_memory.types import SpeechAct
         ),
         (
             {
-                "speech_act": "reminder",
+                "speech_act": "none",
                 "family": "drop",
                 "facts": [{"value": "forget the dentist"}],
             },
-            SpeechAct.REMINDER,
+            SpeechAct.NONE,
             [],
         ),
         (
@@ -119,3 +119,8 @@ from ze_memory.types import SpeechAct
 def test_speech_act_gate_table(payload, expected_act, expect_facts):
     assert admit_speech_act(payload["speech_act"]) is expected_act
     assert parse_fact_response(json.dumps(payload)) == expect_facts
+
+
+@pytest.mark.parametrize("raw", ["reminder", "loop", "goal", "drop", "banana", "", None])
+def test_removed_and_unknown_labels_admit_as_none(raw):
+    assert admit_speech_act(raw) is SpeechAct.NONE

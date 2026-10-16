@@ -55,7 +55,7 @@ Ze is pre-v1. One person uses it, self-hosted on their own machine, and it is in
 - Layered memory: facts, episodes, a graph, nightly consolidation, and an offline dream pass.
 - Goals that run for weeks, with verification gates. Open loops with drift detection. One priority ranking over both.
 - Proactive jobs behind one interruption budget and quiet hours.
-- Four System One surfaces on in the shipped config: speech-act admission, routing choice, skill gating, and the loop gate.
+- Four System One surfaces on in the shipped config: the commitment intake, routing choice, skill gating, and the loop gate.
 
 **What is off or unfinished**
 

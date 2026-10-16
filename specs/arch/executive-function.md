@@ -210,7 +210,9 @@ has fired, skips gates with `fired_at IS NULL`, and carries a Postgres-backed re
 
 *Fix size:* S. One row per goal (the earliest fired gate), skip unfired gates, add a Postgres-backed test.
 
-### F4 — Speech-act and loop gate double-book and disagree — *High* — [live]
+### F4 — Speech-act and loop gate double-book and disagree — *High* — [live] — **Fixed by Phase 173 (2026-10-16)**
+
+> Phase 173 replaced the two conversation requests with one commitment intake. A turn that created a reminder or goal now creates no loop and links to it. The held-out verdict (EN and PT, 147 blind rows) shows zero duplicate bookings where the old pipeline made 5 and 3. The table below is the 2026-10-12 evidence.
 
 24 live calls, shipped bars (`loop_hold` 0.75, `explicit_hold` 0.85, `resolves_hold` 0.8):
 
@@ -234,7 +236,7 @@ Speech-act says *goal* where the gate says *declared loop* for the same sentence
 other's answer used. The user's own waiting ("landlord will get back to me") is held: the gate only
 models obligations the user owes, not things the user awaits.
 
-*Fix size:* M. See Option 2.
+*Fix size:* M. See Option 2 (done, Phase 173).
 
 ### F5 — Interruption governance covers two sources; ~15 are free — *High* — [code], [dev-db]
 
@@ -368,7 +370,7 @@ correct and refuse).
 - **Doctrine fit:** licensing unchanged. Honesty improves (no phantom "no evidence" rationale). Agency:
   confirmation becomes reachable.
 
-### Option 2 — One commitment intake
+### Option 2 — One commitment intake — **Done (Phase 173, enabled 2026-10-16)**
 
 - **User notices:** saying "remind me at 5pm to call Ana" creates one thing, not two. "I want to learn
   Portuguese" is routed to a goal suggestion, not left unrouted. "My landlord will get back to me" is held
@@ -453,7 +455,7 @@ overlaps 170 (see the handoff message and §9).
 | **170** | **Executive repair:** F1 drift predicate, F3 `list_stuck`, F9 evidence on gate-created loops, report failed `PriorityView` sources, delete dead code and unread config, honor `correlation.push.enabled/dry_run`, Postgres-backed test harness | 1a | S–M | 169 merge order |
 | **171** | **Confirmation path:** mount `LoopReviewList`; chat-native "keep track of these?" at session resume, max 3; language-neutral "what's open" trigger (F10); cap the recap | 1b | M | 170 |
 | **172** | **Corroboration promotion:** independent source raises a suspected loop's confidence and can auto-promote above a calibrated bar; System One same-concern judgment where entity/embedding match is not enough; provenance records corroborating sources; held-out calibration. Implemented ([spec](../phases/172-corroboration-promotion/spec.md)) | new (D2) | M | 170 (evidence), 171 |
-| **173** | **One commitment intake:** one judgment per message across reminder, loop, goal, waiting-on, fact; link rows; loop gate stops double-booking | 2 | M–L | 170 |
+| **173** | **One commitment intake:** one judgment per message across reminder, loop, goal, waiting-on, fact; link rows; loop gate stops double-booking. Implemented ([spec](../phases/173-commitment-intake/spec.md)) | 2 | M–L | 170 |
 | **174** | **Waiting-for (Gmail):** `waiting_on` loops from sends and spoken requests, closed by a thread reply | 5 | M–L | 170, 173 |
 | *dogfood* | Starts when 171 lands. At least two weeks, overlapping 172–174. Weekly check in §8 D7. Produces labeled data | – | – | 171 |
 | **175** | **Scoring model:** split importance, urgency, confidence; time-to-due from dates; inferred-stakes System One Score with held-out calibration; reminders, calendar and workflows as sources | 4 | M–L | dogfood data |

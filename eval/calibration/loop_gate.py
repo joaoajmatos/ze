@@ -7,7 +7,7 @@ baseline. It costs credits and is never collected by pytest.
 - Default `--set tuned`: per language and provenance precision, recall, false creates, false
   resolve, false declared, explicit and resolves accuracy, a reliability table per Noul, and
   suggested bars chosen on the tuned set only. Held-out rows are never read or printed.
-- `--set holdout --bars LOOP,EXPLICIT,RESOLVES`: the single verdict run on
+- `--set holdout --bars LOOP,RESOLVES`: the single verdict run on
   eval/calibration/loop_gate_holdout.jsonl with frozen wording and bars. ENABLE or KEEP OFF per
   language, with the failing clause. Tuning after this run voids the set (FR-016): write a new
   held-out file before the next verdict.
@@ -41,13 +41,12 @@ from ze_worldstate.extraction import (
     _run_extraction_gate,
 )
 from ze_worldstate.loop_judge import (
+    LOOP_QUESTIONS,
     Q_CONCERN,
-    Q_EXPLICIT,
     Q_RESOLVES,
     LoopGateSurfaceConfig,
     build_state,
     decide,
-    questions_for,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +55,8 @@ HOLDOUT = Path(__file__).with_name("loop_gate_holdout.jsonl")
 CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
 LANGS = ("en", "pt")
 PROVENANCES = ("conversation", "email", "calendar", "ingestion")
+# Conversation turns are judged by the commitment intake (173), not by this gate. Their rows stay
+# in the files and in the shape check, and live runs skip them.
 GRID = [round(0.5 + 0.05 * i, 2) for i in range(10)]
 BINS = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0001]
 MIN_TUNED_PER_LANG = 40
@@ -239,7 +240,7 @@ def suggest_bars(
     plateau: list[tuple[float, float]] = []
     for loop_hold in GRID:
         for resolves_hold in GRID:
-            cfg = LoopGateSurfaceConfig(True, loop_hold, 0.5, resolves_hold)
+            cfg = LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
             c = score(rows, _kinds_for(rows, results, cfg))
             key = (c.false_creates, c.false_resolve, -c.recall)
             if best_key is None or key < best_key:
@@ -250,17 +251,7 @@ def suggest_bars(
         return None
     loop_hold = _median([p[0] for p in plateau])
     resolves_hold = _median([p[1] for p in plateau])
-    best_exp: tuple | None = None
-    exp_plateau: list[float] = []
-    for explicit_hold in GRID:
-        cfg = LoopGateSurfaceConfig(True, loop_hold, explicit_hold, resolves_hold)
-        c = score(rows, _kinds_for(rows, results, cfg))
-        key = (c.false_declared, -c.explicit_acc)
-        if best_exp is None or key < best_exp:
-            best_exp, exp_plateau = key, [explicit_hold]
-        elif key == best_exp:
-            exp_plateau.append(explicit_hold)
-    return LoopGateSurfaceConfig(True, loop_hold, _median(exp_plateau), resolves_hold)
+    return LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
 
 
 # --- live runs -----------------------------------------------------------------------
@@ -274,7 +265,7 @@ async def run_system_one(
     async def one(row: Row) -> tuple[str, SystemOneResult]:
         async with sem:
             result = await client.evaluate(
-                build_state(row.text, row.provenance), questions_for(row.provenance)
+                build_state(row.text, row.provenance), dict(LOOP_QUESTIONS)
             )
         return row.id, result
 
@@ -331,25 +322,6 @@ async def run_haiku_tolerant(
     return dict(await asyncio.gather(*(one(r) for r in rows)))
 
 
-async def run_speech_act(
-    client: Any, rows: list[Row], concurrency: int
-) -> dict[str, str | None]:
-    from ze_memory.speech_act_judge import SPEECH_ACT_QUESTIONS
-    from ze_memory.speech_act_judge import build_state as sa_state
-
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(row: Row) -> tuple[str, str | None]:
-        async with sem:
-            result = await client.evaluate(sa_state(row.text, ""), SPEECH_ACT_QUESTIONS)
-        answer = result.answers.get("speech_act") if result.outcome == "ok" else None
-        return row.id, answer.choice if answer else None
-
-    return dict(
-        await asyncio.gather(*(one(r) for r in rows if r.provenance == "conversation"))
-    )
-
-
 # --- reports -------------------------------------------------------------------------
 
 
@@ -357,8 +329,7 @@ def _fmt(c: Counts) -> str:
     return (
         f"n={c.n} fb={c.fallback} P={c.precision:.3f} R={c.recall:.3f} "
         f"({c.hit_positives}/{c.positives}) creates={c.creates} falseC={c.false_creates} "
-        f"falseRes={c.false_resolve} falseDecl={c.false_declared} "
-        f"explAcc={c.explicit_acc:.3f} resAcc={c.resolves_acc:.3f}"
+        f"falseRes={c.false_resolve} resAcc={c.resolves_acc:.3f}"
     )
 
 
@@ -391,7 +362,6 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
     gold = {
         Q_CONCERN: lambda r: r.gold_loop,
         Q_RESOLVES: lambda r: r.gold_resolves,
-        Q_EXPLICIT: lambda r: r.gold_explicit,
     }
     for qid, truth in gold.items():
         points = []
@@ -399,10 +369,6 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
             res = results[r.id]
             ans = res.answers.get(qid) if res.outcome == "ok" else None
             if ans is None or ans.noul is None:
-                continue
-            if qid == Q_EXPLICIT and not (
-                r.provenance == "conversation" and r.gold_loop
-            ):
                 continue
             points.append((ans.noul, truth(r)))
         print(f"\n== Noul reliability: {qid} (n={len(points)})")
@@ -418,14 +384,12 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
 
 
 def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
-    print(
-        "\n== bar grid: false creates / recall (loop_hold rows, resolves_hold cols; explicit_hold n/a)"
-    )
+    print("\n== bar grid: false creates / recall (loop_hold rows, resolves_hold cols)")
     print("loop\\res   " + "".join(f"{b:>10.2f}" for b in GRID))
     for loop_hold in GRID:
         cells = ""
         for resolves_hold in GRID:
-            cfg = LoopGateSurfaceConfig(True, loop_hold, 0.5, resolves_hold)
+            cfg = LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
             c = score(rows, _kinds_for(rows, results, cfg))
             cells += f"{c.false_creates:>5d}/{c.recall:<4.2f}"
         print(f"{loop_hold:>8.2f}  " + cells)
@@ -457,29 +421,15 @@ def report_errors(
         )
 
 
-def report_agreement(
-    rows: list[Row], speech: dict[str, str | None], system_kinds: dict[str, str]
-) -> None:
-    conv = [r for r in rows if r.provenance == "conversation" and r.id in speech]
-    agree = sum(
-        (speech[r.id] == "loop") == (system_kinds[r.id] in CREATES) for r in conv
-    )
-    both = sum(speech[r.id] == "loop" and system_kinds[r.id] in CREATES for r in conv)
-    print(
-        f"\n== 163 speech-act 'loop' vs gate create on conversation rows: "
-        f"agree {agree}/{len(conv)}, both fire {both} (logged only; not a gate input)"
-    )
-
-
 # --- main ----------------------------------------------------------------------------
 
 
 def parse_bars(text: str) -> LoopGateSurfaceConfig:
     try:
-        loop_hold, explicit_hold, resolves_hold = (float(x) for x in text.split(","))
+        loop_hold, resolves_hold = (float(x) for x in text.split(","))
     except ValueError:
-        raise SystemExit("--bars needs LOOP,EXPLICIT,RESOLVES, e.g. 0.6,0.7,0.8")
-    return LoopGateSurfaceConfig(True, loop_hold, explicit_hold, resolves_hold)
+        raise SystemExit("--bars needs LOOP,RESOLVES, e.g. 0.75,0.8")
+    return LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
 
 
 def config_model() -> str | None:
@@ -523,15 +473,17 @@ async def main_async(args: argparse.Namespace) -> int:
     )
 
     holdout = args.set == "holdout"
-    rows = load_rows(HOLDOUT if holdout else TUNED)
+    rows = [
+        r
+        for r in load_rows(HOLDOUT if holdout else TUNED)
+        if r.provenance != "conversation"
+    ]
     problems = shape_problems(load_rows(TUNED), load_rows(HOLDOUT))
     if problems:
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
     if holdout and not args.bars:
-        print(
-            "--set holdout needs frozen --bars LOOP,EXPLICIT,RESOLVES.", file=sys.stderr
-        )
+        print("--set holdout needs frozen --bars LOOP,RESOLVES.", file=sys.stderr)
         return 2
     if holdout:
         print(
@@ -552,7 +504,6 @@ async def main_async(args: argparse.Namespace) -> int:
     haiku_gates = await run_haiku_tolerant(
         llm, rows, args.haiku_model, args.concurrency
     )
-    speech = {} if holdout else await run_speech_act(system, rows, args.concurrency)
     await llm.aclose()
     skipped = Counter(r.skip_reason for r in results.values() if r.outcome == "skip")
     if skipped:
@@ -593,16 +544,14 @@ async def main_async(args: argparse.Namespace) -> int:
             return 0
         kinds = _kinds_for(rows, results, cfg)
         print(
-            f"\nbars used: loop_hold={cfg.loop_hold} explicit_hold={cfg.explicit_hold} resolves_hold={cfg.resolves_hold}"
+            f"\nbars used: loop_hold={cfg.loop_hold} resolves_hold={cfg.resolves_hold}"
         )
         report_scores(rows, kinds, haiku_kinds, by_provenance=True)
-        report_agreement(rows, speech, kinds)
         report_errors(rows, results, kinds)
         if suggestion:
             print(
                 "\nSuggested bars (tuned set only): "
-                f"loop_hold: {suggestion.loop_hold}  explicit_hold: {suggestion.explicit_hold}"
-                f"  resolves_hold: {suggestion.resolves_hold}"
+                f"loop_hold: {suggestion.loop_hold}  resolves_hold: {suggestion.resolves_hold}"
             )
         return 0
 
@@ -610,9 +559,7 @@ async def main_async(args: argparse.Namespace) -> int:
     kinds = _kinds_for(rows, results, cfg)
     out = report_scores(rows, kinds, haiku_kinds, by_provenance=False)
     print("\n== HELD-OUT VERDICT")
-    print(
-        f"bars: loop_hold={cfg.loop_hold} explicit_hold={cfg.explicit_hold} resolves_hold={cfg.resolves_hold}"
-    )
+    print(f"bars: loop_hold={cfg.loop_hold} resolves_hold={cfg.resolves_hold}")
     overall = True
     for lang in LANGS:
         sys_c, hk_c = out[lang]
@@ -639,7 +586,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--bars",
         default=None,
-        help="LOOP,EXPLICIT,RESOLVES (required for --set holdout)",
+        help="LOOP,RESOLVES (required for --set holdout)",
     )
     p.add_argument("--model", default=None)
     p.add_argument("--haiku-model", default=DEFAULT_EXTRACTION_MODEL)

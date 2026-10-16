@@ -111,3 +111,50 @@ async def test_dismissed_state_filter_only_considers_dropped_loops():
         states=["dropped"],
     )
     assert result is dropped
+
+
+def _passport_embedder():
+    embedder = AsyncMock()
+    embedder.encode = lambda text: (
+        [1.0, 0.0] if "passport" in text.lower() else [0.0, 1.0]
+    )
+    return embedder
+
+
+async def _lone_candidate(title, candidate_title, **kw):
+    existing = _loop(title=title)
+    graph_store = AsyncMock()
+    graph_store.list_relationships = AsyncMock(return_value=[_rel(existing.id)])
+    loop_store = AsyncMock()
+    loop_store.get = AsyncMock(return_value=existing)
+    loop_store.list = AsyncMock(return_value=[])
+    result = await find_matching_loop(
+        [uuid4()],
+        candidate_title,
+        loop_store=loop_store,
+        graph_store=graph_store,
+        embedder=_passport_embedder(),
+        **kw,
+    )
+    return existing, result
+
+
+async def test_verify_similarity_rejects_a_lone_dissimilar_candidate():
+    _, result = await _lone_candidate(
+        "buy groceries", "remind me to renew my passport", verify_similarity=True
+    )
+    assert result is None
+
+
+async def test_verify_similarity_accepts_a_lone_similar_candidate():
+    existing, result = await _lone_candidate(
+        "renew passport", "remind me to renew my passport", verify_similarity=True
+    )
+    assert result is existing
+
+
+async def test_default_still_returns_a_lone_dissimilar_candidate():
+    existing, result = await _lone_candidate(
+        "buy groceries", "remind me to renew my passport"
+    )
+    assert result is existing

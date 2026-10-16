@@ -9,17 +9,17 @@ from langchain_core.runnables import RunnableConfig
 from ze_agents.claims import Provenance
 from ze_logging import get_logger
 from ze_agents.defaults import MODEL_SYNTHESIS
-from ze_agents.nested_tools import tracking_earned
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
 from ze_core.conversation.messages.judgments import judgments_from_result
+from ze_core.conversation.messages.types import JudgmentTrace
 from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
-from ze_memory.speech_act_judge import SPEECH_ACT_QUESTIONS
+from ze_memory.fact_judge import FACT_QUESTIONS
 from ze_memory.fact_identity import fact_identity, identities_from_remember_calls
 from ze_plugin.contribution import EvidenceRef, TargetFace
 
@@ -61,17 +61,40 @@ async def _run_fact_extractor(
     )
 
 
-async def _run_loop_admission(
-    loop_admission: Any, config: RunnableConfig, ctx: Any
+async def _run_commitment_intake(
+    commitment_intake: Any, config: RunnableConfig, result: AgentResult, ctx: Any
 ) -> Any:
-    """Duck-typed loop gate (phase 168); a failure here never fails the turn."""
-    if loop_admission is None:
-        return None
+    """Phase 173 intake; it falls back internally, so a failure here only drops the turn's judgment."""
     try:
-        return await loop_admission(config["configurable"], prompt=ctx.prompt)
+        return await commitment_intake(
+            config["configurable"],
+            prompt=ctx.prompt,
+            response=result.response,
+            agent=result.agent,
+            tool_calls=result.tool_calls or [],
+        )
     except Exception as exc:
-        log.warning("write_memory_loop_admission_failed", error=str(exc))
+        log.warning("write_memory_commitment_intake_failed", error=str(exc))
         return None
+
+
+def _outcome_row(intake: Any) -> JudgmentTrace | None:
+    """The merged decision as one trace row, so link and waiting_on are visible (FR-018)."""
+    outcome = getattr(intake, "outcome", None)
+    judgment = intake.judgment
+    if outcome is None or judgment is None:
+        return None
+    answer = f"{outcome.kind}:{outcome.reason}"
+    if outcome.link_kind:
+        answer += f":{outcome.link_kind}"
+    return JudgmentTrace(
+        question_id="intake_outcome",
+        kind="choice",
+        latency_ms=judgment.latency_ms,
+        answer=answer,
+        consumed=True,
+        skip_reason=intake.skip_reason,
+    )
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
@@ -125,43 +148,48 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             ),
             label="write_episode",
         )
-        fact_extractor = config["configurable"].get("fact_extractor")
-        loop_admission = config["configurable"].get("loop_admission")
-        if loop_admission is not None and tracking_earned(result.tool_calls or []):
-            loop_admission = None
-            log.debug("write_memory_loop_gate_skipped_track", session_id=ctx.session_id)
+        commitment_intake = config["configurable"].get("commitment_intake")
         trace = state.get("message_trace")
-        fact_result, loop_result = await asyncio.gather(
-            _run_fact_extractor(fact_extractor, config, result, ctx),
-            _run_loop_admission(loop_admission, config, ctx),
-        )
         rows: list = []
-        if fact_result is not None:
-            proposals = fact_result.facts
-            admission_path = fact_result.path
-            if fact_result.judgment is not None:
+        loop_result = None
+        if commitment_intake is not None:
+            intake = await _run_commitment_intake(
+                commitment_intake, config, result, ctx
+            )
+            fact_result = intake.fact if intake is not None else None
+            loop_result = intake.loop if intake is not None else None
+            if intake is not None and intake.judgment is not None:
+                rows += judgments_from_result(
+                    intake.judgment,
+                    question_kinds=intake.question_kinds,
+                    consumed=intake.consumed,
+                    skip_reason=intake.skip_reason,
+                )
+                outcome_row = _outcome_row(intake)
+                if outcome_row is not None:
+                    rows.append(outcome_row)
+        else:
+            fact_result = await _run_fact_extractor(
+                config["configurable"].get("fact_extractor"), config, result, ctx
+            )
+            if fact_result is not None and fact_result.judgment is not None:
                 rows += judgments_from_result(
                     fact_result.judgment,
                     question_kinds={
-                        qid: SPEECH_ACT_QUESTIONS[qid].type
+                        qid: FACT_QUESTIONS[qid].type
                         for qid in fact_result.question_ids
                     },
                     consumed=fact_result.consumed,
                     skip_reason=fact_result.skip_reason,
                 )
-        if loop_result is not None:
-            if loop_result.judgment is not None:
-                rows += judgments_from_result(
-                    loop_result.judgment,
-                    question_kinds=loop_result.question_kinds,
-                    consumed=loop_result.consumed,
-                    skip_reason=loop_result.skip_reason,
-                )
-            if loop_result.commit is not None:
-                fire_and_forget(
-                    _commit_with_episode(loop_result.commit, episode_task),
-                    label="loop_commit",
-                )
+        if fact_result is not None:
+            proposals = fact_result.facts
+            admission_path = fact_result.path
+        if loop_result is not None and loop_result.commit is not None:
+            fire_and_forget(
+                _commit_with_episode(loop_result.commit, episode_task),
+                label="loop_commit",
+            )
         if rows and trace is not None:
             judged_trace = dataclasses.replace(
                 trace, judgments=[*trace.judgments, *rows]
