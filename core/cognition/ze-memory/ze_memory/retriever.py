@@ -17,6 +17,7 @@ from ze_memory.defaults import (
     MODEL_SYNTHESIS,
 )
 from ze_agents.nli import NLIClient
+from ze_agents.types import RetrievalRequest
 from ze_memory.dream.scorer import refresh_episode_sensitive_flag, tag_episode_metadata
 from ze_memory.dream.sensitive import is_sensitive_entity
 from ze_memory.errors import (
@@ -62,7 +63,6 @@ from ze_memory.types import (
     MemoryContext,
     ProfileFacet,
     RetrievalCacheEntry,
-    RetrievalRequest,
     SessionSummary,
     Signal,
     SignalIngestResult,

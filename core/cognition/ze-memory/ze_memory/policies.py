@@ -25,6 +25,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ze_agents.types import RetrievalRequest
+
 from ze_memory.defaults import (
     DEFAULT_EPISODE_BUDGET_TOKENS,
     DEFAULT_FACT_BUDGET_TOKENS,
@@ -36,7 +38,7 @@ from ze_memory.dream.retrieval import episode_retrievable_sql
 from ze_memory.entity_anchor import augment_with_entity_anchor
 from ze_memory.relevance_config import RelevanceConfig, relevance_config
 from ze_memory.store import MemoryQueryable
-from ze_memory.types import MemoryContext, RetrievalRequest
+from ze_memory.types import MemoryContext
 from ze_memory.vectors import to_vector_literal
 
 

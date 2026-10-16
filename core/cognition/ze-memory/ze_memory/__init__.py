@@ -23,7 +23,6 @@ from ze_memory.types import (
     MemoryContext,
     Procedure,
     ProfileFacet,
-    RetrievalRequest,
     TaskState,
 )
 
@@ -38,7 +37,6 @@ __all__ = [
     "TaskState",
     "ProfileFacet",
     "MemoryContext",
-    "RetrievalRequest",
     "ConsolidationReport",
     # protocols
     "MemoryStore",
