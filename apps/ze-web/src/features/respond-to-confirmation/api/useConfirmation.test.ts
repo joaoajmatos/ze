@@ -229,6 +229,36 @@ describe("useConfirmation", () => {
     });
   });
 
+  describe("held frames (no thread)", () => {
+    const held = () => requestFrame({ id: "held-1", thread_id: null, kind: "held", source: { kind: "workflow", name: "Weekly" } });
+
+    it("shows a held write on whichever thread is open", () => {
+      const { result, rerender } = renderHook(({ thread }) => useConfirmation(false, thread), {
+        initialProps: { thread: THREAD },
+      });
+      open(held());
+      expect(result.current.pendingConfirms.map((c) => c.id)).toEqual(["held-1"]);
+      rerender({ thread: "thread-2" });
+      expect(result.current.pendingConfirms.map((c) => c.id)).toEqual(["held-1"]);
+    });
+
+    it("answers on the open thread and closes at once", () => {
+      const { result } = renderHook(() => useConfirmation(false, THREAD));
+      open(held());
+      act(() => result.current.respond("held-1", "approve", {}));
+      expect(sendMock).toHaveBeenCalledWith({ type: "confirm", id: "held-1", choice: "approve", thread_id: THREAD, edits: {} });
+      expect(result.current.pendingConfirms).toEqual([]);
+      expect(useWsStore.getState().thinkingThreads[THREAD]).toBeFalsy();
+    });
+
+    it("lists it beside the thread's own confirmation", () => {
+      const { result } = renderHook(() => useConfirmation(false, THREAD));
+      open(held());
+      open(requestFrame({ id: "req-1" }));
+      expect(result.current.pendingConfirms.map((c) => c.id).sort()).toEqual(["held-1", "req-1"]);
+    });
+  });
+
   describe("prompt frames (kind \"prompt\", no items)", () => {
     function promptFrame(overrides: Record<string, unknown> = {}) {
       return {

@@ -15,6 +15,9 @@ export interface PendingConfirm {
   submitted: boolean;
 }
 
+/** Held writes belong to no thread; they sit under this key and show on every thread. */
+export const HELD_KEY = "*";
+
 interface PendingConfirmState {
   byThread: Record<string, PendingConfirm[]>;
   /** Adds or replaces by request id. An answered card of the same thread is dropped: the server moved on. */

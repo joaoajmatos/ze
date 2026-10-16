@@ -1,6 +1,6 @@
 import { useSession } from "@/entities/session";
 import { useFrame, useWsStore } from "@/shared/api";
-import { toPending, usePendingConfirms } from "../model/pending-store";
+import { HELD_KEY, toPending, usePendingConfirms } from "../model/pending-store";
 
 /** Keeps every thread's pending confirmation, so a card is there when its thread opens. */
 export function ConfirmationFrameHandler() {
@@ -9,6 +9,10 @@ export function ConfirmationFrameHandler() {
 
   useFrame("confirm_request", (frame) => {
     const current = useSession.getState().threadId;
+    if (!frame.thread_id && frame.kind === "held") {
+      usePendingConfirms.getState().upsert(toPending(frame, HELD_KEY));
+      return;
+    }
     const frameThread = frame.thread_id ?? current;
     setThreadThinking(frameThread, false);
     usePendingConfirms.getState().upsert(toPending(frame, frameThread));
