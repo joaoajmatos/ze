@@ -305,9 +305,25 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T19:26:52.354Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T19:26:54.053Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T19:26:54.153Z"
     }
   ],
-  "currentTask": "T002",
+  "currentTask": "T051",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -437,6 +453,14 @@
     "T052": {
       "status": "DONE",
       "did": "Gates green after merging main 5d13ca86: lint, test-memory/worldstate/core/test, test-py, test-pg 57, test-web 358, typecheck-web; spec status Implemented"
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "Public docs, AGENTS.md, specs index and arch notes updated for the commitment intake: frozen bars, holdout3 ENABLE verdict, loop_gate without explicit_hold (7659e29d, b377945d)"
+    },
+    "T051": {
+      "status": "DONE",
+      "did": "Coverage check: git diff main --stat docs, READMEs, AGENTS.md and specs against T050; every public doc the diff touches is updated, plus docs/sdk.md (CommitmentChoice), docs/testing.md and specs/core/ze-memory.md"
     }
   }
 }

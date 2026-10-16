@@ -63,8 +63,8 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 ## Phase 5: Docs and polish
 
-- [ ] T050 [DOCS] Update: `docs/system-one.md`, `docs/memory.md`, `docs/configuration.md`, `docs/architecture.md`, `docs/package-architecture.md`, `docs/testing.md`, worldstate and memory package READMEs, root `README.md` if it mentions speech-act, `AGENTS.md` (173 phase row, `zw004` migration row, worldstate layout `commitment_judge.py`/`intake.py`, memory layout, `calibrate-commitment-intake` replacing `calibrate-speech-act`), `specs/README.md` index, `specs/arch/system-one-models.md` (new O-row), `specs/arch/executive-function.md` (F4 fixed, Option 2 done), `specs/phases/163-*` and `168-*` status notes (superseded in part). Follow the `doc-style` skill for `docs/`.
-- [ ] T051 [DOCS] Coverage check: `git diff main...HEAD --stat` against T050; every public doc touched by the diff is listed.
+- [x] T050 [DOCS] Update: `docs/system-one.md`, `docs/memory.md`, `docs/configuration.md`, `docs/architecture.md`, `docs/package-architecture.md`, `docs/testing.md`, worldstate and memory package READMEs, root `README.md` if it mentions speech-act, `AGENTS.md` (173 phase row, `zw004` migration row, worldstate layout `commitment_judge.py`/`intake.py`, memory layout, `calibrate-commitment-intake` replacing `calibrate-speech-act`), `specs/README.md` index, `specs/arch/system-one-models.md` (new O-row), `specs/arch/executive-function.md` (F4 fixed, Option 2 done), `specs/phases/163-*` and `168-*` status notes (superseded in part). Follow the `doc-style` skill for `docs/`.
+- [x] T051 [DOCS] Coverage check: `git diff main...HEAD --stat` against T050; every public doc touched by the diff is listed.
 - [x] T052 [ENG-B] `make lint test-memory test-worldstate test-core test test-pg test-web typecheck-web`; `make test-py` (no OpenRouter calls); set spec status Implemented; run the after-implement hook.
 
 ## Dependencies
