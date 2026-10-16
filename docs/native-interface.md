@@ -83,7 +83,7 @@ The client should send `{"type": "ack", "ids": [...]}` frames to mark messages a
 | `{"type": "typing"}` | Sent immediately after receiving a user message while Ze is processing. May include an optional `"text"` field with a localized progress string (e.g. `"📡 Fetching the latest news..."`). Re-sent mid-turn by agents to update the status and reset the client's 3-second display timer. |
 | `{"type": "message", "message": Message}` | Outbound message from Ze (see Message shape below) |
 | `{"type": "confirm_request", "id": "...", "kind": "write" \| "budget" \| "held" \| "prompt", "round": 1, "title": "...", "items": [...], "actions": [...], "expires_at": "..."}` | Asks the user to approve one or more parked writes, a spend-budget pause, a held unattended write, or a prompt (goal gate, goal suggestion, workspace reset) |
-| `{"type": "confirm_cancel", "id": "..."}` | Confirmation cancelled (timeout or cancel command) |
+| `{"type": "confirm_cancel", "id": "...", "thread_id": "...", "reason": "answered"}` | Closes the card for that `id`. `reason` is `answered` when the user approved or denied it, on any client. Ze sends the frame without `reason` when it supersedes or expires a request. |
 | `{"type": "message_superseded", "message_id": "...", "replaced_by": "...", "thread_id": "..."}` | A retry replaced `message_id` with `replaced_by`. Sent after the new `message` frame. |
 | `{"type": "notification", "id": "...", "event_type": "...", "push_class": "...", "delivery": "..."}` | A proactive push entered the notification bell. `push_class` is `requested`, `accountability`, or `discretionary`. `delivery` is `delivered`, `held`, `suppressed`, `released`, or `failed`. A `held` or `suppressed` row arrives with no chat message and no ntfy. |
 | `{"type": "error", "detail": "...", "code": "..."}` | Error from the server (e.g. "busy"). `code` is optional; see [Error codes](#error-codes). |
@@ -203,13 +203,21 @@ form, for example "delete a calendar event". The user answers with a `confirm` f
   `error` frame, and nothing runs.
 - An answer for an unknown, expired or superseded `id` returns an `error` frame with the
   detail "No pending confirmation." Nothing runs.
+- When Ze accepts an approve or deny, it sends `confirm_cancel` for that `id` with
+  `reason: "answered"`, before the turn resumes. Every open client closes the card.
 - When Ze supersedes or expires a request, or a held write is answered elsewhere, it sends
   `confirm_cancel` for that `id`.
+- A client closes the card when it receives `confirm_cancel` for the card's `id`.
 
 Approval runs exactly the approved calls with the approved arguments. Each parked turn
 then resumes with the real results, and the model writes the reply. Denial runs nothing.
 Ze adds an "Okay, I didn't <effect>." line for each denied item, so the reply does not
 claim that the write happened.
+
+One turn can propose the same call twice, for example when two subtasks send the same
+email. The card shows each distinct call (the same tool with the same arguments) once.
+Approval runs that write once. The repeat's loop learns that the call ran elsewhere, and
+its trace entry shows gate `duplicate`. Denial declines every copy.
 
 ### Persistence across disconnects
 
