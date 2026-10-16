@@ -65,3 +65,31 @@ Run 2 re-scored offline (`--replay`, no new spend). The tuned set is flat across
 Tuned set at these bars, EN / PT: Choice accuracy 1.00 / 0.98, link accuracy 24/24 both, duplicate bookings 0 / 0 (baseline 18 / 17), false loop creates 0 / 0, fact precision 1.00 / 1.00 and recall 1.00 / 0.83 (baseline 0.83 / 0.67), loop precision and recall 1.00 / 1.00 (baseline precision 0.37 / 0.39), `waiting_on` writes 0/10.
 
 Config proposal if the verdict is `ENABLE` (`system_one.surfaces.commitment_intake`): `enabled: true`, `choice_hold: 0.65`, `family_hold: 0.65`, `biography_hold: 0.55`, `loop_hold: 0.6`, `explicit_hold: 0.95`, `resolves_hold: 0.9`. Nothing in the shipped config changes before the verdict. Wording is frozen at the commit that carries this note; any change after the held-out run needs a fresh held-out set (FR-020).
+
+### Held-out verdict (T043, 2026-10-16): KEEP OFF
+
+One live run on `commitment_intake_holdout.jsonl` (120 rows, 60 per language, `typesafe/jev-1.13`, seed 173) at the frozen bars above and the wording of the commit that froze them (`92dd67cc`). Raw results: `eval/results/commitment_intake_holdout_verdict.json` (gitignored). Nothing was tuned or re-scored afterwards; the diagnosis below reads the saved answers only.
+
+| FR-022 clause | EN | PT |
+|---|---|---|
+| duplicate bookings = 0 | 0 pass (baseline 5) | 0 pass (baseline 5) |
+| false loop creates = 0 | **1 FAIL** | **1 FAIL** |
+| fact precision >= baseline | 1.00 vs 1.00 pass | 1.00 vs 1.00 pass |
+| fact recall >= baseline - 0.05 | 1.00 vs 0.86 pass | 1.00 vs 0.86 pass |
+| loop precision >= baseline | 0.93 vs 0.65 pass | 0.93 vs 0.64 pass |
+| loop recall >= baseline - 0.05 | **0.875 vs 0.938 - 0.05 = 0.888 FAIL** | 0.875 vs 0.875 pass |
+| Choice accuracy >= 0.9 | 0.94 pass | **0.88 FAIL** |
+
+Verdict: **EN KEEP OFF** (false loop create, loop recall), **PT KEEP OFF** (false loop create, Choice accuracy), **OVERALL KEEP OFF**. The shipped config stays `enabled: false` with null bars. Link accuracy 10/10 both; `waiting_on` rows write nothing (0/6).
+
+Diagnosis (saved answers only, no re-tuning):
+
+- **False loop creates (both languages), `ho-en-11` and `ho-pt-11`** ("I need to finish the first draft of my thesis chapter by the end of March", gold `goal`, an F4 hard negative). EN: `goal`@0.56 is below `choice_hold` 0.65, so row 7a falls through to the loop rules (`is_open_concern` 0.86, `explicit` 0.98) and creates a declared loop. PT: `loop`@0.95 outright. Under the user's own Q1 definition ("obligation with a deadline and no ask is a loop; goal = multi-week outcome"), this text sits on the border, so the gold is arguable, but the clause counts it.
+- **Loop recall (EN, and the two PT misses), `ho-en-52`, `ho-en-54`, `ho-pt-52`, `ho-pt-54`.** "My neighbour still hasn't answered about the fence", "The tap is still leaking and nobody has come to fix it" are `waiting_on` to the model (0.64 to 1.00), so they are held as designed. These four rows were written by ENG-B in the T005 extension with gold `loop`; they read as `waiting_on` under the contract's own definition, so the gold is probably wrong, not the model. The set is spent, so the labels cannot be fixed in place.
+- **Choice accuracy (PT 0.88).** Two `clarify` rows read as `none` at 0.34 to 0.48 (`ho-pt-31`, `ho-pt-32`; EN `ho-en-31` the same), `ho-pt-37` (a resolves row) reads `fact`@0.40, and `ho-pt-11` and the PT `waiting_on`/`loop` rows above.
+- **Not clause-failing but wrong writes:** `ho-en-30` and `ho-pt-30` ("Save this recipe page for later: <url>", gold `ingest`) score `resolves_existing` 0.93 and 0.91, above `resolves_hold` 0.90, so the intake resolves a loop on an ingest request. The old baseline had 0 false resolves; the intake has 1 per language. FR-022 does not list false resolves, but it is a real defect to fix.
+- **`ho-en-40`, `ho-pt-40`** (the `also_loop` mixed rows) created suspected loops and were accepted by design.
+
+What the evidence supports: the structure works (zero duplicate bookings against 5, fact side at or above baseline, link 10/10, `waiting_on` never written). It does not yet meet FR-022 because (1) the `goal` versus `loop` border for deadline tasks is still unresolved, (2) `resolves_existing` fires on save-for-later requests, (3) `clarify` is weak at low confidence, and (4) four of my own held-out gold labels are doubtful.
+
+Per FR-020 any wording, criteria or bar change now needs a fresh held-out set.
