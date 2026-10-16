@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_collision_store,
     get_nli_client,
     get_priority_override_store,

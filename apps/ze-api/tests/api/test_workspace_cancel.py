@@ -16,7 +16,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api import dependencies
+from ze_api.api import deps
 from ze_api.api.routes import workspace as workspace_route
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.types import WorkspaceRun, WorkspaceRunOrigin, WorkspaceRunStatus
@@ -54,7 +54,7 @@ def app_and_client():
             workspace_run_watcher=run_watcher,
         )
         app.include_router(workspace_route.router, prefix="/api/v0")
-        app.dependency_overrides[dependencies.require_api_key] = lambda: None
+        app.dependency_overrides[deps.require_api_key] = lambda: None
         return TestClient(app)
 
     return _build
@@ -169,7 +169,7 @@ def test_cancel_route_is_real_run_watcher_end_to_end():
         workspace_run_watcher=run_watcher,
     )
     app.include_router(workspace_route.router, prefix="/api/v0")
-    app.dependency_overrides[dependencies.require_api_key] = lambda: None
+    app.dependency_overrides[deps.require_api_key] = lambda: None
 
     with TestClient(app) as client:
         resp = client.post(f"/api/v0/workspace/runs/{run_id}/cancel")

@@ -100,7 +100,7 @@ from ze_personal.channels.user_channel_store import UserChannelStore
 from ze_personal.channels.watermark_store import ChannelWatermarkStore
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
 from ze_personal.contacts.channel_store import ContactChannelStore
-from ze_api.openapi_export import collect_openapi_operation_ids
+from ze_api.cli.openapi_export import collect_openapi_operation_ids
 from ze_plugin.bootstrap import discover_and_instantiate_plugins
 from ze_plugin.ui import collect_ui_contributions, filter_ui_manifest_by_openapi
 from ze_communication.registry import ChannelRegistry
@@ -113,14 +113,14 @@ from ze_proactive.data_domain import interruption_data_domains
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.compose import (
+from ze_api.wiring.jobs import (
     build_proactive_scheduler,
     reconcile_workspace_at_startup,
     register_all_proactive_jobs,
 )
-from ze_api.db import create_checkpointer_pool, create_pool
+from ze_api.wiring.db import create_checkpointer_pool, create_pool
 from ze_api.interface.native import NativeAppInterface
-from ze_api.webhook import (
+from ze_api.wiring.webhooks import (
     EventDeduplicator,
     WebhookDispatcher,
     collect_plugin_webhook_handlers,
@@ -932,7 +932,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             _calendar_reminder_job.loop_extractor = _loop_extractor
             log.info("calendar_loop_extractor_wired")
 
-    from ze_api.workflow_graph import begin_workflow_turn, build_workflow_graph
+    from ze_api.wiring.workflow_graph import begin_workflow_turn, build_workflow_graph
 
     await configure_workflow_executor(
         automation,

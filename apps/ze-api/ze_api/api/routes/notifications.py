@@ -4,7 +4,7 @@ from datetime import datetime, time, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_interruption_settings_store,
     get_notification_store,
     get_notifier,

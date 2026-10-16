@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_held_write_resumer,
     get_held_write_store,
     require_api_key,

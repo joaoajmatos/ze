@@ -31,7 +31,7 @@ console.log("Extracting OpenAPI schema from Python...");
 
 const openapiJson = execSync(
   `cd ${root} && uv run --project apps/ze-api python -c "` +
-    `import json; from ze_api.openapi_export import export_openapi; print(json.dumps(export_openapi()))"`,
+    `import json; from ze_api.cli.openapi_export import export_openapi; print(json.dumps(export_openapi()))"`,
   { encoding: "utf8" },
 );
 

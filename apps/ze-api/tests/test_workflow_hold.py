@@ -17,7 +17,7 @@ from ze_agents.registry import agent, register_instance
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import AskDecision, ToolAccess, tool
 from ze_agents.types import AgentContext, AgentResult
-from ze_api.workflow_graph import build_workflow_graph
+from ze_api.wiring.workflow_graph import build_workflow_graph
 from ze_automation.holds.resumer import HeldWriteResumer
 from ze_automation.holds.store import HeldWriteStore
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus

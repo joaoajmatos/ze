@@ -14,7 +14,7 @@ from fastapi import (
 )
 from fastapi.responses import Response, StreamingResponse
 
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_workspace_client,
     get_workspace_run_watcher,
     get_workspace_store,

@@ -44,7 +44,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        prog="python -m ze_api.cli", description="Ze API admin commands"
+        prog="python -m ze_api.cli.gmail_push", description="Ze API admin commands"
     )
     sub = parser.add_subparsers(dest="command")
     sub.add_parser(

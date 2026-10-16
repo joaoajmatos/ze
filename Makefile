@@ -13,7 +13,7 @@ ZE_PROFILE   ?= quiet
 # A DATABASE_URL_SYNC in the environment (a floor's throwaway DB) wins over the shared dev DB.
 DB_SYNC_URL  ?= $(or $(DATABASE_URL_SYNC),postgresql+psycopg2://ze:ze@localhost:5432/ze)
 DB_NAME      := $(firstword $(subst ?, ,$(lastword $(subst /, ,$(DB_SYNC_URL)))))
-ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze_api.migrate
+ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze_api.cli.migrate
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 .PHONY: help
@@ -207,7 +207,7 @@ migrate-stamp:
 
 dev: workspace-up
 	uv sync -q --package ze-api
-	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
+	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.main:app --reload --host 0.0.0.0 --port 8000
 
 web:
 	cd $(ZE_WEB) && bun run dev
@@ -217,7 +217,7 @@ web:
 dev-full: workspace-up
 	@trap 'kill %1 2>/dev/null; exit 0' INT TERM; \
 	uv sync -q --package ze-api; \
-	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000 & \
+	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true AUTO_SEED_DEV_DATA=true LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.main:app --reload --host 0.0.0.0 --port 8000 & \
 	until nc -z localhost 8000 2>/dev/null; do sleep 1; done; \
 	echo "Backend ready — starting React web app..."; \
 	cd $(ZE_WEB) && bun run dev; \
@@ -225,16 +225,16 @@ dev-full: workspace-up
 
 dev-eval:
 	uv sync -q --package ze-api
-	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true EVAL_MODE=true PUBLIC_URL= LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.api.app:app --reload --host 0.0.0.0 --port 8000
+	ZE_PROFILE=$(ZE_PROFILE) AUTO_MIGRATE=true EVAL_MODE=true PUBLIC_URL= LOG_DEV=true LOG_FILE=$(LOG_FILE) uv run --package ze-api uvicorn ze_api.main:app --reload --host 0.0.0.0 --port 8000
 
 logs:
 	tail -f $(LOG_FILE)
 
 seed:
-	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.seed apply
+	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.cli.seed apply
 
 db-reset-seed: db-reset
-	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.seed apply
+	cd $(ZE) && uv sync -q --package ze-api && AUTO_SEED_DEV_DATA=true uv run --package ze-api python -m ze_api.cli.seed apply
 
 # ── Eval ──────────────────────────────────────────────────────────────────────
 .PHONY: eval eval-judge eval-report eval-diff eval-server eval-clean calibrate-commitment-intake calibrate-routing calibrate-skills calibrate-loop-gate calibrate-corroboration calibrate-complexity calibrate-open-query

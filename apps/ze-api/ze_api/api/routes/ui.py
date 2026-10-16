@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 
-from ze_api.api.dependencies import require_api_key
+from ze_api.api.deps import require_api_key
 from ze_api.api.schemas import UiManifestResponse
 
 router = APIRouter(prefix="/api/v0/ui", tags=["ui"])

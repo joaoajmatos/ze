@@ -16,7 +16,7 @@ from ze_api.api.websocket.rollback_state import (
     move_rollback,
     retry_replaces_of,
 )
-from ze_api.push_kinds import CONFIRMATION_REQUEST
+from ze_api.wiring.push_kinds import CONFIRMATION_REQUEST
 from ze_api.api.websocket.serializers import extract_thread_id
 from ze_api.api.websocket.session_titles import schedule_session_title_from_thread
 from ze_logging import get_logger

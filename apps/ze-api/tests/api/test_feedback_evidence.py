@@ -171,7 +171,7 @@ def test_no_engine_routing_admission_prompt_or_ranking_module_reads_feedback():
 def test_turn_graph_config_has_no_feedback_store():
     text = (ROOT / "core/engine/ze-core/ze_core/container.py").read_text()
     assert "feedback" not in text.lower()
-    api = (ROOT / "apps/ze-api/ze_api/container.py").read_text()
+    api = (ROOT / "apps/ze-api/ze_api/wiring/container.py").read_text()
     # exposed on the container for routes only; never in a configurable/dep map
     for line in api.splitlines():
         if "feedback_store" in line or "FeedbackStore" in line:

@@ -7,7 +7,7 @@ from ze_agents.types import ToolCall
 from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 from ze_core.telemetry.context import set_flow_context
 
-from ze_api.api.dependencies import require_api_key
+from ze_api.api.deps import require_api_key
 from ze_api.api.schemas import (
     EvalChatRequest,
     EvalChatResponse,

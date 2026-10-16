@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from ze_api.api import app as app_module
+from ze_api import lifespan as app_module
 from ze_api.settings import get_settings
 
 

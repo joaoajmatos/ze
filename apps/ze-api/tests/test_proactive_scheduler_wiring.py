@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
-from ze_api.compose import build_proactive_scheduler
+from ze_api.wiring.jobs import build_proactive_scheduler
 from ze_core.telemetry.context import get_cost_context
 from ze_proactive.types import JobRun
 

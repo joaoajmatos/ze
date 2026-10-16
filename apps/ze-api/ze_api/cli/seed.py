@@ -7,7 +7,7 @@ import sys
 
 
 async def _apply() -> None:
-    from ze_api.container import build_container
+    from ze_api.wiring.container import build_container
     from ze_api.settings import get_settings
     from ze_seed.context import SeedContext
     from ze_seed.service import DevDataSeeder, collect_seed_domains
@@ -25,7 +25,7 @@ async def _apply() -> None:
 
 def main() -> None:
     if len(sys.argv) < 2 or sys.argv[1] != "apply":
-        print("Usage: python -m ze_api.seed apply", file=sys.stderr)
+        print("Usage: python -m ze_api.cli.seed apply", file=sys.stderr)
         raise SystemExit(1)
     asyncio.run(_apply())
 

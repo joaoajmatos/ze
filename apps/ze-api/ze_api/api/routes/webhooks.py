@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
-from ze_api.webhook import (
+from ze_api.wiring.webhooks import (
     WebhookAuthError,
     WebhookDispatcher,
     WebhookSourceNotFoundError,

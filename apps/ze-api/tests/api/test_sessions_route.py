@@ -8,7 +8,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api import dependencies
+from ze_api.api import deps
 from ze_api.api.routes import sessions as sessions_route
 from ze_core.conversation.sessions.types import (
     Session,
@@ -51,7 +51,7 @@ def client(mock_store):
     app = FastAPI()
     app.state.container = SimpleNamespace(session_store=mock_store)
     app.include_router(sessions_route.router, prefix="/api/v0")
-    app.dependency_overrides[dependencies.require_api_key] = lambda: None
+    app.dependency_overrides[deps.require_api_key] = lambda: None
 
     with TestClient(app) as test_client:
         yield test_client, mock_store

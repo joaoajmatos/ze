@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.app import create_app
+from ze_api.main import create_app
 from ze_api.settings import get_settings
 
 EVAL_ONLY_PATHS = {

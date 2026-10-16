@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ze_api.api.dependencies import get_container, get_skill_store, require_api_key
+from ze_api.api.deps import get_container, get_skill_store, require_api_key
 from ze_api.api.schemas import (
     SkillDetailResponse,
     SkillImportRequest,

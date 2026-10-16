@@ -16,7 +16,7 @@ from ze_automation.holds.types import HeldWrite
 from ze_automation.workflow.postgres import PostgresWorkflowStore
 from ze_automation.workflow.types import Workflow, WorkflowStep
 
-from ze_api.db import _init_conn
+from ze_api.wiring.db import _init_conn
 from tests.pg._builders import utcnow
 
 pytestmark = pytest.mark.pg

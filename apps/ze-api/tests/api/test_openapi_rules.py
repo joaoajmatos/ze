@@ -6,8 +6,8 @@ import re
 
 import pytest
 
-from ze_api.api.app import create_app
-from ze_api.openapi_export import export_openapi
+from ze_api.main import create_app
+from ze_api.cli.openapi_export import export_openapi
 from ze_api.settings import get_settings
 
 _CAMEL_CASE = re.compile(r"^[a-z][a-zA-Z0-9]*$")

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import yaml
 
-from ze_api.container import ZeContainer
+from ze_api.wiring.container import ZeContainer
 from ze_core.routing.factory import build_tier_judge
 from ze_core.routing.tier import ComplexitySurfaceConfig
 

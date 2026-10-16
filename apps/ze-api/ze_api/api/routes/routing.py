@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 
-from ze_api.api.dependencies import get_container, require_api_key
+from ze_api.api.deps import get_container, require_api_key
 from ze_api.api.schemas import RoutingLogEntry
 from ze_core.routing import rest as routing_rest
 

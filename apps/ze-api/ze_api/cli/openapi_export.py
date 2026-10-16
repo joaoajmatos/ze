@@ -37,7 +37,7 @@ def collect_openapi_operation_ids() -> frozenset[str]:
 
 
 def export_openapi() -> dict:
-    from ze_api.api.app import create_app
+    from ze_api.main import create_app
 
     app = create_app()
     for router in collect_static_plugin_routers():

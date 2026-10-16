@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from ze_automation.goals.types import LearningReviewDecision
-from ze_api.api.dependencies import require_api_key
+from ze_api.api.deps import require_api_key
 from ze_api.api.schemas import (
     ExecutionTraceResponse,
     GateResponse,

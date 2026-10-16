@@ -5,7 +5,7 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api import dependencies
+from ze_api.api import deps
 from ze_api.api.routes import goals
 
 
@@ -35,7 +35,7 @@ def _client(store):
     app = FastAPI()
     app.state.container = SimpleNamespace(_plugin_stores={"goal_store": store})
     app.include_router(goals.router, prefix="/api/v0")
-    app.dependency_overrides[dependencies.require_api_key] = lambda: None
+    app.dependency_overrides[deps.require_api_key] = lambda: None
     return TestClient(app)
 
 

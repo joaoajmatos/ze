@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from ze_api.api.dependencies import get_container, require_api_key
+from ze_api.api.deps import get_container, require_api_key
 from ze_api.api.schemas import (
     AgentCostBucket,
     CostAnomalyItem,

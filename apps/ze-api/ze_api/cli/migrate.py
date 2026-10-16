@@ -6,13 +6,13 @@ Plugin modules listed in _PLUGIN_MODULES are imported at startup so their
 __init_subclass__ hooks fire and populate the ze_plugin registry.
 
 Usage from the shell (via Makefile):
-    python -m ze_api.migrate                         # upgrade heads
-    python -m ze_api.migrate upgrade [revision]
-    python -m ze_api.migrate downgrade [revision]    # default: -1
-    python -m ze_api.migrate current
-    python -m ze_api.migrate history
-    python -m ze_api.migrate heads
-    python -m ze_api.migrate stamp <rev> [<rev>...]
+    python -m ze_api.cli.migrate                         # upgrade heads
+    python -m ze_api.cli.migrate upgrade [revision]
+    python -m ze_api.cli.migrate downgrade [revision]    # default: -1
+    python -m ze_api.cli.migrate current
+    python -m ze_api.cli.migrate history
+    python -m ze_api.cli.migrate heads
+    python -m ze_api.cli.migrate stamp <rev> [<rev>...]
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from ze_api.errors import MigrationReadinessError
 from ze_plugin.bootstrap import import_plugin_modules_for_migrations
 
 # Fixed script_location: the ze migrations directory contains env.py and script.py.mako.
-_SCRIPT_LOCATION = Path(__file__).parent / "migrations"
+_SCRIPT_LOCATION = Path(__file__).parent.parent / "migrations"
 
 # Core package version paths (not ZePlugin subclasses — registered explicitly).
 _ZE_AUTOMATION_VERSIONS = (
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     else:
         print(
             f"Unknown command: {cmd!r}\n"
-            "Usage: python -m ze_api.migrate [upgrade|downgrade|current|history|heads|stamp] [args]",
+            "Usage: python -m ze_api.cli.migrate [upgrade|downgrade|current|history|heads|stamp] [args]",
             file=sys.stderr,
         )
         sys.exit(1)

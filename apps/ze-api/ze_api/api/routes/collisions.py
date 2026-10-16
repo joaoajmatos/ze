@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from ze_api.api.dependencies import get_collision_store, require_api_key
+from ze_api.api.deps import get_collision_store, require_api_key
 from ze_api.api.schemas import CollisionLogEntrySchema
 from ze_collision import rest as collision_rest
 from ze_collision.store import CollisionLogStore

@@ -18,7 +18,7 @@ from ze_worldstate.store import PostgresLoopStore
 from ze_worldstate.surfacing import LoopSurfacer
 from ze_worldstate.types import LoopState
 
-from ze_api.api.dependencies import require_api_key
+from ze_api.api.deps import require_api_key
 from ze_api.api.routes.priority import router
 from tests.pg._builders import make_goal_with_gates, utcnow
 

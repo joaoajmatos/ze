@@ -25,7 +25,7 @@ def test_container_hands_shared_system_one_client_to_skill_matcher():
     import ast
     from pathlib import Path
 
-    import ze_api.container as container_module
+    import ze_api.wiring.container as container_module
 
     tree = ast.parse(Path(container_module.__file__).read_text())
     calls = [

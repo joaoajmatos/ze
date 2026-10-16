@@ -8,7 +8,7 @@ new store methods is covered by core/ops/ze-workspace/tests/test_store.py.
 
 User Story 2's tests (T018-T021) exercise apps/ze-api's real TurnStarter/
 PushSender adapters (_ContainerTurnStarter, _NotifierPushSender in
-ze_api.container) wired into a real RunWatcher, against fakes standing in for
+ze_api.wiring.container) wired into a real RunWatcher, against fakes standing in for
 ZeContainer/NativeAppInterface/ProactiveNotifier's storage layer.
 """
 
@@ -34,7 +34,7 @@ from ze_workspace.types import (
     WorkspaceRunStatusDTO,
 )
 
-from ze_api.container import _ContainerTurnStarter, _NotifierPushSender
+from ze_api.wiring.container import _ContainerTurnStarter, _NotifierPushSender
 from ze_api.interface.native import NativeAppInterface
 from ze_proactive.notifier import ProactiveNotifier
 from ze_proactive.types import NotificationRow

@@ -11,7 +11,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from ze_api.api.dependencies import require_api_key
+from ze_api.api.deps import require_api_key
 from ze_api.api.routes.loops import router
 from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError

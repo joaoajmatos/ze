@@ -6,7 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.api import dependencies
+from ze_api.api import deps
 from ze_api.api.routes import costs, goals
 
 
@@ -54,7 +54,7 @@ def client(container, mock_pool):
     app.include_router(goals.router, prefix="/api/v0")
     app.include_router(costs.router, prefix="/api/v0/costs")
 
-    app.dependency_overrides[dependencies.require_api_key] = lambda: None
+    app.dependency_overrides[deps.require_api_key] = lambda: None
 
     with TestClient(app) as c:
         yield c

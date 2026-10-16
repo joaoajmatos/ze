@@ -10,7 +10,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze_api.compose import reconcile_in_progress_workspace_runs
+from ze_api.wiring.jobs import reconcile_in_progress_workspace_runs
 from ze_workspace.types import WorkspaceRun, WorkspaceRunOrigin
 
 
@@ -57,7 +57,7 @@ async def test_reconcile_survives_one_reattach_failure():
 async def test_startup_resubmits_ledger_pending_runs_and_reattaches_live_ones():
     from types import SimpleNamespace
 
-    from ze_api.compose import reconcile_workspace_at_startup
+    from ze_api.wiring.jobs import reconcile_workspace_at_startup
     from ze_workspace.action_handoff import configure_action_ledger
     from ze_workspace.types import WorkspaceRunStatus
 

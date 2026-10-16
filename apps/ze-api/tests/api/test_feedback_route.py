@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from ze_agents.errors import FeedbackRecordIdempotencyConflictError
-from ze_api.api.dependencies import (
+from ze_api.api.deps import (
     get_confirmation_store,
     get_connection_manager,
     get_feedback_store,

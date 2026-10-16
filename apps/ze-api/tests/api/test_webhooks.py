@@ -10,7 +10,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from ze_api.webhook import (
+from ze_api.wiring.webhooks import (
     EventDeduplicator,
     WebhookAuthError,
     WebhookDispatcher,
