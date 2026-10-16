@@ -49,7 +49,7 @@ function requestFrame(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function open(frame = requestFrame()) {
+function open(frame: Record<string, unknown> = requestFrame()) {
   act(() => handlers.get("confirm_request")?.(frame));
 }
 
@@ -139,5 +139,77 @@ describe("useConfirmation", () => {
     const { result } = renderHook(() => useConfirmation(true, false, THREAD));
     open(requestFrame({ thread_id: "thread-2" }));
     expect(result.current.pendingConfirm).toBeNull();
+  });
+
+  describe("legacy prompt frames (no kind, title or items)", () => {
+    function legacyFrame(overrides: Record<string, unknown> = {}) {
+      return {
+        type: "confirm_request",
+        id: "gate-1",
+        thread_id: THREAD,
+        prompt: "Milestone 2 is ready. Continue?",
+        actions: [
+          { label: "Continue", value: "goal_gate:approve:abc", style: "primary" },
+          { label: "Pause", value: "goal_gate:pause:abc", style: "secondary" },
+        ],
+        ...overrides,
+      };
+    }
+
+    it("opens a card from the prompt without throwing", () => {
+      const { result } = renderHook(() => useConfirmation(true, false, THREAD));
+      open(legacyFrame());
+      expect(result.current.pendingConfirm).toMatchObject({
+        id: "gate-1",
+        kind: "prompt",
+        title: "Milestone 2 is ready. Continue?",
+        items: [],
+        submitted: false,
+      });
+    });
+
+    it("sends a non-checkpoint button as an action frame and closes the card", () => {
+      const { result } = renderHook(() => useConfirmation(true, false, THREAD));
+      open(legacyFrame());
+      act(() => result.current.respond("goal_gate:pause:abc"));
+      expect(sendMock).toHaveBeenCalledWith({
+        type: "action",
+        payload: "goal_gate:pause:abc",
+        thread_id: THREAD,
+      });
+      expect(result.current.pendingConfirm).toBeNull();
+      expect(useWsStore.getState().thinkingThreads[THREAD]).toBeFalsy();
+    });
+
+    it("sends approve/deny on a legacy frame as a confirm frame and closes the card", () => {
+      const { result } = renderHook(() => useConfirmation(true, false, THREAD));
+      open(
+        legacyFrame({
+          id: "reset-1",
+          prompt: "Reset workspace?",
+          actions: [
+            { label: "Approve", value: "approve", style: "primary" },
+            { label: "Cancel", value: "deny", style: "secondary" },
+          ],
+        }),
+      );
+      act(() => result.current.respond("deny"));
+      expect(sendMock).toHaveBeenCalledWith({
+        type: "confirm",
+        id: "reset-1",
+        choice: "deny",
+        thread_id: THREAD,
+      });
+      expect(result.current.pendingConfirm).toBeNull();
+    });
+
+    it("restores the card and shows a notice when an action cannot be sent", () => {
+      sendMock.mockReturnValue(false);
+      const { result } = renderHook(() => useConfirmation(true, false, THREAD));
+      open(legacyFrame());
+      act(() => result.current.respond("goal_gate:pause:abc"));
+      expect(result.current.pendingConfirm?.id).toBe("gate-1");
+      expect(useSendNotice.getState().notice).toMatch(/not connected/i);
+    });
   });
 });

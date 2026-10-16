@@ -1,2 +1,2 @@
 export { useConfirmation, type PendingConfirm } from "./api/useConfirmation";
-export { ConfirmationCard, type ConfirmChoice } from "./ui/ConfirmationCard";
+export { ConfirmationCard } from "./ui/ConfirmationCard";

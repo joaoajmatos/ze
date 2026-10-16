@@ -3,13 +3,11 @@ import { useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import type { ConfirmItem, ConfirmSource } from "../model/types";
 
-export type ConfirmChoice = "approve" | "deny";
-
 interface ConfirmationCardProps {
   title: string;
   items: ConfirmItem[];
   actions: WsConfirmAction[];
-  onRespond: (choice: ConfirmChoice, edits: Record<string, string>) => void;
+  onRespond: (value: string, edits: Record<string, string>) => void;
   source?: ConfirmSource | null;
   disabled?: boolean;
 }
@@ -24,8 +22,8 @@ export function ConfirmationCard({
 }: ConfirmationCardProps) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
-  function editsFor(choice: ConfirmChoice): Record<string, string> {
-    if (choice === "deny") return {};
+  function editsFor(value: string): Record<string, string> {
+    if (value !== "approve") return {};
     const edits: Record<string, string> = {};
     for (const item of items) {
       const draft = drafts[item.item_id];
@@ -44,39 +42,41 @@ export function ConfirmationCard({
           From {source.kind}: {source.name}
         </p>
       )}
-      <ul className="my-3 space-y-3">
-        {items.map((item) => (
-          <li key={item.item_id} className="text-sm text-foreground">
-            <p className="font-medium">{item.effect_phrase}</p>
-            <p className="text-xs text-smoke">{item.summary}</p>
-            {item.conflict && (
-              <p
-                data-testid="confirm-conflict"
-                role="note"
-                className="mt-1 inline-block rounded bg-destructive/10 px-2 py-0.5 text-xs text-destructive"
-              >
-                {item.conflict}
-              </p>
-            )}
-            {item.editable_field && (
-              <textarea
-                aria-label={`Edit ${item.editable_field}`}
-                value={drafts[item.item_id] ?? item.proposed_text ?? ""}
-                disabled={disabled}
-                onChange={(e) => setDrafts((d) => ({ ...d, [item.item_id]: e.target.value }))}
-                className="mt-2 w-full min-h-[5rem] rounded-xl border border-foreground/15 bg-background/30 p-3 text-xs font-mono text-foreground focus:outline-none focus:border-plum-voltage/50 disabled:opacity-60"
-              />
-            )}
-          </li>
-        ))}
-      </ul>
+      {items.length > 0 && (
+        <ul className="my-3 space-y-3">
+          {items.map((item) => (
+            <li key={item.item_id} className="text-sm text-foreground">
+              <p className="font-medium">{item.effect_phrase}</p>
+              <p className="text-xs text-smoke">{item.summary}</p>
+              {item.conflict && (
+                <p
+                  data-testid="confirm-conflict"
+                  role="note"
+                  className="mt-1 inline-block rounded bg-destructive/10 px-2 py-0.5 text-xs text-destructive"
+                >
+                  {item.conflict}
+                </p>
+              )}
+              {item.editable_field && (
+                <textarea
+                  aria-label={`Edit ${item.editable_field}`}
+                  value={drafts[item.item_id] ?? item.proposed_text ?? ""}
+                  disabled={disabled}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [item.item_id]: e.target.value }))}
+                  className="mt-2 w-full min-h-[5rem] rounded-xl border border-foreground/15 bg-background/30 p-3 text-xs font-mono text-foreground focus:outline-none focus:border-plum-voltage/50 disabled:opacity-60"
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="flex flex-wrap gap-2">
         {actions.map((action) => (
           <button
             key={`${action.label}-${action.value}`}
             type="button"
             disabled={disabled}
-            onClick={() => onRespond(action.value as ConfirmChoice, editsFor(action.value as ConfirmChoice))}
+            onClick={() => onRespond(action.value, editsFor(action.value))}
             className={cn(
               "px-4 py-2 rounded-pill text-xs font-semibold tracking-wide transition-opacity disabled:opacity-50",
               action.style === "primary" || !action.style

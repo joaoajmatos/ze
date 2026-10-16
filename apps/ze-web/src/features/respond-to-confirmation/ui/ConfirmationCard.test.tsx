@@ -160,4 +160,23 @@ describe("ConfirmationCard", () => {
     expect(screen.getByRole("button", { name: "Approve all" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Deny all" })).toBeDisabled();
   });
+
+  it("renders a prompt-only card with no items and passes custom action values through", () => {
+    const onRespond = vi.fn();
+    render(
+      <ConfirmationCard
+        title="Milestone 2 is ready. Continue?"
+        items={[]}
+        actions={[
+          { label: "Continue", value: "goal_gate:approve:abc", style: "primary" },
+          { label: "Pause", value: "goal_gate:pause:abc", style: "secondary" },
+        ]}
+        onRespond={onRespond}
+      />,
+    );
+    expect(screen.getByText("Milestone 2 is ready. Continue?")).toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(onRespond).toHaveBeenCalledWith("goal_gate:pause:abc", {});
+  });
 });

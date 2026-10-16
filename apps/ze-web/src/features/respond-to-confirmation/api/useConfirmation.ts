@@ -1,4 +1,4 @@
-import type { WsConfirmAction, WsOutboundFrame } from "@myguyze/ze-client";
+import type { WsConfirmAction, WsConfirmRequestFrame, WsOutboundFrame } from "@myguyze/ze-client";
 import { useState } from "react";
 import { useSendNotice } from "@/features/send-context-notice";
 import { useFrame, useWsStore, send } from "@/shared/api";
@@ -7,7 +7,7 @@ import type { ConfirmItem, ConfirmSource } from "../model/types";
 export interface PendingConfirm {
   id: string;
   threadId: string;
-  kind: "write" | "budget" | "held";
+  kind: "write" | "budget" | "held" | "prompt";
   round: number;
   title: string;
   items: ConfirmItem[];
@@ -15,6 +15,26 @@ export interface PendingConfirm {
   expiresAt: string | null;
   actions: WsConfirmAction[];
   submitted: boolean;
+}
+
+// Prompt-only frames (goal gates, workspace reset, notification actions) carry
+// `prompt` and `actions` but no kind, title or items.
+type ConfirmRequestFields = Partial<WsConfirmRequestFrame> & { prompt?: string };
+
+function toPending(frame: WsConfirmRequestFrame, threadId: string): PendingConfirm {
+  const raw: ConfirmRequestFields = frame;
+  return {
+    id: frame.id,
+    threadId,
+    kind: raw.kind ?? "prompt",
+    round: raw.round ?? 1,
+    title: raw.title ?? raw.prompt ?? "",
+    items: raw.items ?? [],
+    source: raw.source ?? null,
+    expiresAt: raw.expires_at ?? null,
+    actions: raw.actions ?? [],
+    submitted: false,
+  };
 }
 
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
@@ -33,18 +53,7 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
     }
     if (!active) return;
     setThreadThinking(threadId, false);
-    setPendingConfirm({
-      id: frame.id,
-      threadId,
-      kind: frame.kind,
-      round: frame.round ?? 1,
-      title: frame.title,
-      items: frame.items,
-      source: frame.source ?? null,
-      expiresAt: frame.expires_at ?? null,
-      actions: frame.actions,
-      submitted: false,
-    });
+    setPendingConfirm(toPending(frame, threadId));
   });
 
   useFrame("confirm_cancel", (frame) => {
@@ -54,26 +63,31 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
     setPendingConfirm((current) => (current && current.id === frame.id ? null : current));
   });
 
-  function respond(choice: "approve" | "deny", edits: Record<string, string> = {}) {
+  function respond(value: string, edits: Record<string, string> = {}) {
     if (!pendingConfirm || pendingConfirm.submitted) return;
     const confirm = pendingConfirm;
-    setPendingConfirm({ ...confirm, submitted: true });
+    const checkpoint = value === "approve" || value === "deny";
 
-    const sent = send({
-      type: "confirm",
-      id: confirm.id,
-      choice,
-      thread_id: confirm.threadId,
-      ...(choice === "approve" ? { edits } : {}),
-    } as WsOutboundFrame);
+    const sent = send(
+      (checkpoint
+        ? {
+            type: "confirm",
+            id: confirm.id,
+            choice: value,
+            thread_id: confirm.threadId,
+            ...(value === "approve" ? { edits } : {}),
+          }
+        : { type: "action", payload: value, thread_id: confirm.threadId }) as WsOutboundFrame,
+    );
 
     if (!sent) {
-      setPendingConfirm(confirm);
       useSendNotice.getState().showNotice(NOT_CONNECTED_NOTICE);
       return;
     }
 
-    setThreadThinking(threadId, true);
+    // Item cards wait for confirm_cancel or the next round; prompt cards close at once.
+    setPendingConfirm(confirm.items.length > 0 ? { ...confirm, submitted: true } : null);
+    if (checkpoint) setThreadThinking(threadId, true);
   }
 
   function clear() {
