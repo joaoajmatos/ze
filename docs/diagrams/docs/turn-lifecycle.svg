@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 1280 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="turn-title turn-desc">
       <title id="turn-title">Full turn lifecycle through the orchestration graph</title>
-      <desc id="turn-desc">Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a capability check that executes or drafts a response or pauses for confirmation, converging on a compound check that either synthesizes or writes memory directly, ending in a response.</desc>
-      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500&amp;display=swap');</style>
+      <desc id="turn-desc">Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a preflight check that runs the turn or pauses for the spend budget, where execute_tool parks irreversible writes into one await_write_confirmation pause that resumes the run, converging on a compound check that either synthesizes or writes memory directly, ending in a response.</desc>
+      <defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6b6b"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8052ff"/></marker>
       </defs>
@@ -20,12 +20,12 @@
       <!-- decompose -> fetch_context (elbow) -->
       <path d="M616,272 V232 Q616,224 624,224 H664 Q672,224 672,216 V168" fill="none" stroke="#6b6b6b" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <!-- capability_check -> await_confirmation (vertical, same x) -->
-      <line x1="932" y1="176" x2="932" y2="248" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
-      <!-- await_confirmation -> execute_tool/draft_response (loop back, elbow into left edge) -->
-      <path d="M1016,272 H1032 Q1040,272 1040,264 V152 Q1040,144 1048,144" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <!-- execute_tool -> await_write_confirmation: park (dashed, arrow into the single pause) -->
+      <path d="M1100,168 V252 Q1100,260 1092,260 H1016" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <!-- await_write_confirmation -> execute_tool: resume after the answer (dashed loop) -->
+      <path d="M1016,284 H1108 Q1116,284 1116,276 V168" fill="none" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
 
-      <!-- execute_tool/draft_response -> compound? (vertical drop, same x) -->
+      <!-- execute_tool -> compound? (vertical drop, same x) -->
       <line x1="1132" y1="168" x2="1132" y2="332" stroke="#8052ff" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
 
       <!-- compound? -> synth+write -->
@@ -39,11 +39,11 @@
       <rect x="486" y="200" width="88" height="12" rx="2" fill="#f7f6f4"/>
       <text x="530" y="209" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">COMPOUND</text>
       <rect x="984" y="122" width="80" height="12" rx="2" fill="#f7f6f4"/>
-      <text x="1024" y="131" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">EXEC/DRAFT</text>
-      <rect x="900" y="204" width="66" height="12" rx="2" fill="#f7f6f4"/>
-      <text x="932" y="213" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">CONFIRM</text>
-      <rect x="1046" y="200" width="46" height="12" rx="2" fill="#f7f6f4"/>
-      <text x="1069" y="209" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">REPLY</text>
+      <text x="1024" y="131" fill="#8052ff" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">RUN</text>
+      <rect x="1036" y="226" width="40" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1056" y="235" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">PARK</text>
+      <rect x="1050" y="290" width="52" height="12" rx="2" fill="#f7f6f4"/>
+      <text x="1076" y="299" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">RESUME</text>
 
       <!-- Node: Input (start pill) -->
       <rect x="48" y="120" width="168" height="48" rx="24" fill="#f7f6f4"/>
@@ -68,17 +68,15 @@
       <text x="732" y="141" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">fetch_context</text>
       <text x="732" y="155" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">pgvector search</text>
 
-      <!-- Node: capability_check (diamond) -->
+      <!-- Node: preflight (diamond) -->
       <polygon points="932,112 1016,144 932,176 848,144" fill="#f7f6f4"/>
       <polygon points="932,112 1016,144 932,176 848,144" fill="rgba(128,82,255,0.06)" stroke="#8052ff" stroke-width="1.2"/>
-      <text x="932" y="141" fill="#0a0a0a" font-size="10.5" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">capability_</text>
-      <text x="932" y="153" fill="#0a0a0a" font-size="10.5" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">check</text>
+      <text x="932" y="148" fill="#0a0a0a" font-size="10.5" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">preflight</text>
 
-      <!-- Node: execute_tool / draft_response -->
+      <!-- Node: execute_tool -->
       <rect x="1048" y="120" width="168" height="48" rx="6" fill="#f7f6f4"/>
       <rect x="1048" y="120" width="168" height="48" rx="6" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
-      <text x="1132" y="141" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">execute_tool /</text>
-      <text x="1132" y="155" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">draft_response</text>
+      <text x="1132" y="148" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">execute_tool</text>
 
       <!-- Node: decompose (mini row) -->
       <rect x="448" y="248" width="168" height="48" rx="6" fill="#f7f6f4"/>
@@ -86,10 +84,10 @@
       <text x="532" y="269" fill="#0a0a0a" font-size="12" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">decompose</text>
       <text x="532" y="283" fill="#6b6b6b" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">claude-haiku</text>
 
-      <!-- Node: await_confirmation (mini row, dashed) -->
+      <!-- Node: await_write_confirmation (mini row, dashed) -->
       <rect x="848" y="248" width="168" height="48" rx="6" fill="#f7f6f4"/>
       <rect x="848" y="248" width="168" height="48" rx="6" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
-      <text x="932" y="269" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">await_</text>
+      <text x="932" y="269" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">await_write_</text>
       <text x="932" y="281" fill="#0a0a0a" font-size="11" font-weight="600" font-family="'Inter', sans-serif" text-anchor="middle">confirmation</text>
 
       <!-- Node: compound? (diamond, row2) -->
@@ -113,9 +111,9 @@
       <line x1="40" y1="460" x2="1240" y2="460" stroke="rgba(10,10,10,0.10)" stroke-width="0.8"/>
       <text x="40" y="476" fill="#6b6b6b" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
       <rect x="40" y="488" width="14" height="10" rx="2" fill="rgba(128,82,255,0.08)" stroke="#8052ff" stroke-width="1.2"/>
-      <text x="60" y="496" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Primary action path</text>
+      <text x="60" y="496" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Primary action path (RUN)</text>
       <rect x="260" y="488" width="14" height="10" rx="2" fill="rgba(10,10,10,0.02)" stroke="rgba(10,10,10,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
-      <text x="280" y="496" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Graph pauses / loops back</text>
+      <text x="280" y="496" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Pauses for approval (park, resume)</text>
       <rect x="490" y="488" width="14" height="10" rx="2" fill="rgba(107,107,107,0.10)" stroke="#8a8a8a" stroke-width="1"/>
       <text x="510" y="496" fill="#6b6b6b" font-size="8.5" font-family="'Inter', sans-serif">Entry / exit</text>
     </svg>
