@@ -289,9 +289,17 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T19:13:06.267Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T059",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:14:37.399Z"
     }
   ],
-  "currentTask": "T058",
+  "currentTask": "T059",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -413,6 +421,10 @@
     "T058": {
       "status": "DONE",
       "did": "Tuned run 4 on 160 rows at wording f35350de; bars frozen 0.70/0.70/0.55/0.60/0.95/0.80"
+    },
+    "T059": {
+      "status": "DONE",
+      "did": "holdout3 verdict once: ENABLE EN and PT at frozen bars"
     }
   }
 }

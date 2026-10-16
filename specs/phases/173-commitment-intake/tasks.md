@@ -59,7 +59,7 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 - [ ] T057 [JR: holdout3 author, new and blind] Write `eval/calibration/commitment_intake_holdout3.jsonl` from `holdout3-brief.md` only. `--check-sets` exits 0. Commit that file alone; never edit it after. Report what you read. Owns: that file.
 - [x] T058 [ENG-B] Tuned run 4 on the T056 wording; choose and freeze bars on the tuned set only; record in `research.md` with the freezing commit. Needs T055, T056.
 - [x] T060 [ENG-B] Spec R13 / FR-022 amendment, before T059: add the verdict clause "`waiting_on` rows write nothing" per language to `commitment_intake.py` (any `create_loop_*`, `resolve_loop` or `link` outcome on a gold `waiting_on` row fails it); show it in the clause table for intake and baseline; offline test (one write gives KEEP OFF, zero passes). Owns: `eval/calibration/commitment_intake.py` and its tests.
-- [ ] T059 [ENG-B] The one verdict on holdout3 at the T058 frozen bars (user OK given 2026-10-16, R12). `ENABLE`: set bars and `enabled: true` in `config.yaml`. `KEEP OFF`: leave off, record the clauses, stop and ask the Maestro. Needs T057, T058.
+- [x] T059 [ENG-B] The one verdict on holdout3 at the T058 frozen bars (user OK given 2026-10-16, R12). `ENABLE`: set bars and `enabled: true` in `config.yaml`. `KEEP OFF`: leave off, record the clauses, stop and ask the Maestro. Needs T057, T058.
 
 ## Phase 5: Docs and polish
 

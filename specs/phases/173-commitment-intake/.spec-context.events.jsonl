@@ -31,3 +31,4 @@
 {"step": "implement", "substep": null, "task": "T060", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:51:02.887Z", "did": "waiting_on-writes verdict clause + tests (c4ef634f)"}
 {"step": "implement", "substep": null, "task": "T056", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T16:51:27.558Z", "did": "Wording f35350de (waiting_on never resolves, fact+question, keep-an-eye); 12 new tuned rows (c9e592d4), examples decoupled from tuned/held-out texts"}
 {"step": "implement", "substep": null, "task": "T058", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:13:06.267Z", "did": "Tuned run 4 on 160 rows at wording f35350de; bars frozen 0.70/0.70/0.55/0.60/0.95/0.80"}
+{"step": "implement", "substep": null, "task": "T059", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:14:37.399Z", "did": "holdout3 verdict once: ENABLE EN and PT at frozen bars"}
