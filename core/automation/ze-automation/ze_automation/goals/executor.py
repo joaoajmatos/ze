@@ -7,7 +7,10 @@ from typing import Any, Awaitable, Callable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
-from ze_agents.errors import GoalExecutionError
+from dataclasses import dataclass
+
+from ze_agents.errors import GoalExecutionError, LoopParked
+from ze_agents.park import ParkedLoop, WriteDecision
 from ze_sdk.memory import MemoryStore, Procedure, TaskState
 from ze_agents.types import AgentContext, ToolCall
 from ze_automation.goals.planner import GoalPlanner
@@ -44,7 +47,14 @@ from ze_automation.push_kinds import (
 )
 from ze_proactive.types import PushKind, PushOutcome
 from ze_automation.workspace_unattended import unattended_workspace
+from ze_automation.holds.resumer import (
+    confirmation_from_loop,
+    decisions_for,
+    open_hold,
+)
+from ze_automation.holds.serialize import loop_from_dict, loop_to_dict
 from ze_automation.holds.store import HeldWriteStore
+from ze_automation.holds.types import HeldWrite
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -135,6 +145,24 @@ def _to_traces(
     ]
 
 
+@dataclass
+class _HeldResume:
+    """What re-enters a milestone's parked loop after the user answered its hold."""
+
+    loop: ParkedLoop
+    decisions: dict[str, WriteDecision]
+    request_id: str
+    round: int
+
+    def context_kwargs(self) -> dict[str, Any]:
+        return {
+            "resume": self.loop,
+            "write_decisions": self.decisions,
+            "approval_request_id": self.request_id,
+            "write_round": self.round,
+        }
+
+
 class GoalExecutor:
     def __init__(
         self,
@@ -206,6 +234,8 @@ class GoalExecutor:
             return
 
         milestones = await self._store.list_milestones(goal_id)
+        if any(m.status == MilestoneStatus.HELD for m in milestones):
+            return
         for stuck in [m for m in milestones if m.status == MilestoneStatus.IN_PROGRESS]:
             log.warning(
                 "milestone_in_progress_reset",
@@ -248,9 +278,19 @@ class GoalExecutor:
             title=next_milestone.title,
         )
 
+        await self._run_milestone(goal, goal_id, next_milestone, milestones)
+
+    async def _run_milestone(
+        self,
+        goal: Goal,
+        goal_id: UUID,
+        next_milestone: Milestone,
+        milestones: list[Milestone],
+        resume: _HeldResume | None = None,
+    ) -> None:
         try:
             output, tool_calls = await self._execute_milestone(
-                next_milestone, goal, milestones
+                next_milestone, goal, milestones, resume=resume
             )
             await self._store.update_milestone(
                 next_milestone.id, MilestoneStatus.COMPLETED, output=output
@@ -272,6 +312,11 @@ class GoalExecutor:
                 goal_id=str(goal_id),
                 sequence=next_milestone.sequence,
             )
+        except LoopParked as parked:
+            await self._hold_milestone(
+                goal, next_milestone, parked.loop, (resume.round if resume else 0) + 1
+            )
+            return
         except GoalExecutionError as exc:
             error_msg = str(exc)
             log.warning(
@@ -351,6 +396,63 @@ class GoalExecutor:
         )
 
         asyncio.create_task(self.advance(goal_id))
+
+    async def _hold_milestone(
+        self, goal: Goal, milestone: Milestone, loop: ParkedLoop, round_: int
+    ) -> None:
+        """Stop a milestone at its parked write and ask the user (FR-025)."""
+        if self._held_store is None:
+            raise GoalExecutionError(
+                f"Milestone {milestone.sequence} needs approval but holds are not configured"
+            )
+        await self._store.update_milestone(milestone.id, MilestoneStatus.HELD)
+        await open_hold(
+            held_store=self._held_store,
+            notify=self._notify,
+            source="goal",
+            owner_ref=str(milestone.id),
+            source_name=f"Goal '{goal.title}'",
+            confirmation=confirmation_from_loop(loop, round_),
+            payload={
+                "goal_id": str(goal.id),
+                "milestone_id": str(milestone.id),
+                "round": round_,
+                "loop": loop_to_dict(loop),
+            },
+        )
+        log.info(
+            "milestone_held",
+            goal_id=str(goal.id),
+            sequence=milestone.sequence,
+            round=round_,
+        )
+
+    async def resume_held(
+        self, hold: HeldWrite, choice: str, edits: dict[str, str]
+    ) -> None:
+        """Continue a held milestone with the user's answer (approve, deny or timeout)."""
+        goal_id = UUID(hold.payload["goal_id"])
+        goal = await self._store.get_goal(goal_id)
+        milestones = await self._store.list_milestones(goal_id)
+        milestone = next(
+            (m for m in milestones if str(m.id) == hold.payload["milestone_id"]), None
+        )
+        if (
+            goal is None
+            or milestone is None
+            or milestone.status != MilestoneStatus.HELD
+        ):
+            log.warning("held_milestone_gone", request_id=hold.request_id)
+            return
+        await self._store.update_milestone(milestone.id, MilestoneStatus.IN_PROGRESS)
+        resume = _HeldResume(
+            loop=loop_from_dict(hold.payload["loop"]),
+            decisions=decisions_for(hold, choice, edits),
+            request_id=hold.request_id,
+            round=int(hold.payload.get("round", 1)),
+        )
+        async with self._advance_locks[goal_id]:
+            await self._run_milestone(goal, goal_id, milestone, milestones, resume)
 
     async def approve_plan(self, goal_id: UUID) -> bool:
         """Activate a goal after the user approves its plan. Returns False if not in planning state."""
@@ -749,6 +851,7 @@ class GoalExecutor:
         milestone: Milestone,
         goal: Goal,
         all_milestones: list[Milestone],
+        resume: _HeldResume | None = None,
     ) -> tuple[str, list[ToolCall]]:
         agent_name = milestone.agent_hint or "companion"
         try:
@@ -768,15 +871,16 @@ class GoalExecutor:
         ctx = AgentContext(
             session_id=f"goal:{milestone.goal_id}",
             prompt=prompt,
-            pre_approved_writes=_asks_first_tools(),
+            pre_approved_writes=frozenset(milestone.approved_writes),
             memory_store=self._memory,
             extensions={"goal_id": str(milestone.goal_id)},
+            **(resume.context_kwargs() if resume else {}),
         )
 
         try:
             async with unattended_workspace(self._workspace_gate):
                 result = await agent.run(ctx)
-        except GoalExecutionError:
+        except (GoalExecutionError, LoopParked):
             raise
         except Exception as exc:
             raise GoalExecutionError(
@@ -933,12 +1037,3 @@ class GoalExecutor:
             log.warning(
                 "goal_task_state_sync_failed", goal_id=str(goal_id), error=str(exc)
             )
-
-
-def _asks_first_tools() -> frozenset[str]:
-    """Transitional (until per-milestone pre-approval): creating the goal was the gate."""
-    from ze_agents.tool import registered_tools
-
-    return frozenset(
-        name for name, spec in registered_tools().items() if spec.asks_first
-    )

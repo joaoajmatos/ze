@@ -13,9 +13,16 @@ from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
+from uuid import uuid4
 
 from ze_agents.errors import ZeError
-from ze_agents.park import WriteConfirmation
+from ze_agents.effects import effect_imperative
+from ze_agents.park import (
+    ConfirmItem,
+    ParkedLoop,
+    WriteConfirmation,
+    WriteDecision,
+)
 from ze_automation.holds.store import HeldWriteStore
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 from ze_automation.push_kinds import WRITE_APPROVAL_HELD
@@ -52,6 +59,50 @@ class Notify(Protocol):
 
 
 ResumeRun = Callable[[HeldWrite, str, dict[str, str]], Awaitable[None]]
+
+
+def confirmation_from_loop(loop: ParkedLoop, round_: int = 1) -> WriteConfirmation:
+    """The held-write confirmation for a loop that parked, items in model order."""
+    items = [
+        ConfirmItem(
+            item_id=pw.item_id,
+            agent=pw.agent,
+            tool=pw.tool,
+            effect_phrase=effect_imperative(pw.effect_phrase),
+            summary=pw.summary,
+            editable_field=pw.editable_field,
+            proposed_text=(
+                str(pw.args.get(pw.editable_field))
+                if pw.editable_field and pw.args.get(pw.editable_field) is not None
+                else None
+            ),
+            conflict=pw.conflict,
+        )
+        for pw in loop.all_parked()
+    ]
+    return WriteConfirmation(
+        request_id=str(uuid4()), kind="held", round=round_, items=items
+    )
+
+
+def decisions_for(
+    hold: HeldWrite, choice: str, edits: dict[str, str]
+) -> dict[str, WriteDecision]:
+    """Per-item decisions for a held write answered with `choice`."""
+    decisions: dict[str, WriteDecision] = {}
+    for item in hold.items:
+        item_id = item["item_id"]
+        if choice == "approve":
+            text = edits.get(item_id)
+            if text is not None and item.get("editable_field"):
+                decisions[item_id] = WriteDecision(item_id, "edited", str(text))
+            else:
+                decisions[item_id] = WriteDecision(item_id, "approved")
+        elif choice == "timeout":
+            decisions[item_id] = WriteDecision(item_id, "timed_out")
+        else:
+            decisions[item_id] = WriteDecision(item_id, "denied")
+    return decisions
 
 
 async def open_hold(

@@ -178,6 +178,7 @@ def build_automation_stack(shared: Any, settings: Any) -> AutomationStack:
         GoalSuggestionStore: goal_suggestion_store,
     }
 
+    held_write_resumer.configure(resume_goal=goal_executor.resume_held)
     deps[HeldWriteResumer] = held_write_resumer
     deps[HeldWriteStore] = held_write_store
 
