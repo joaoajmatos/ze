@@ -1,9 +1,9 @@
 import type { PrimitiveRendererActions } from "@myguyze/ze-ui/react";
 import { useMemo } from "react";
-import { useSendNotice } from "@/shared/lib";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
 import { send } from "@/shared/api";
+import { useSendNotice } from "@/shared/lib";
 
 const GOAL_ACTION_RE = /^(goal|goal_plan|goal_stuck):[a-z_]+:[0-9a-fA-F-]+$/;
 

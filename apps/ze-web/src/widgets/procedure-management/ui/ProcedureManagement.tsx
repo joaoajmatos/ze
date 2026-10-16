@@ -1,8 +1,8 @@
-import { ListPage } from "@/shared/ui";
 import { BookOpen } from "lucide-react";
-import { useProcedureDetailQuery, useProcedureLibraryQuery } from "@/entities/procedure";
-import { ProcedureControls } from "@/features/procedure-review";
 import { useState } from "react";
+import { ProcedureControls } from "@/features/procedure-review";
+import { useProcedureDetailQuery, useProcedureLibraryQuery } from "@/entities/procedure";
+import { ListPage } from "@/shared/ui";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Active",

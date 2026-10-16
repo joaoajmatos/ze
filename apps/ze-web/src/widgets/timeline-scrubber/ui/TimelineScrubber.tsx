@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { History } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Slider } from "@/shared/ui";
 
 interface ActivityDay {

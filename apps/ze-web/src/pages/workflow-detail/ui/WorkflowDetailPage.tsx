@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Workflow, Loader2, CheckCircle2, XCircle, MessageCircle, Ban, ChevronDown, ChevronRight } from "lucide-react";
-import { useOverlayStore } from "@/features/open-context-overlay";
-import { useSetBreadcrumbTitle } from "@/shared/lib";
-import { useSession } from "@/entities/session";
-import ReactMarkdown from "react-markdown";
 import type { WorkflowExecutionResponse, WorkflowRevisionResponse, WorkflowStepResponse } from "@myguyze/ze-client";
+import { ArrowLeft, Workflow, Loader2, CheckCircle2, XCircle, MessageCircle, Ban, ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { useParams, useNavigate } from "react-router-dom";
+import { WorkflowExecutionsList } from "@/widgets/workflow-executions";
+import { WorkflowGraph, WorkflowDefinitionNotice, type WorkflowDefinitionNoticeMode } from "@/widgets/workflow-graph";
+import { useOverlayStore } from "@/features/open-context-overlay";
+import { useSession } from "@/entities/session";
 import {
   useWorkflowDetailQuery,
   useWorkflowExecutionsQuery,
@@ -17,8 +18,7 @@ import {
   averageSuccessfulRunDuration,
   stepsDifferFromSnapshot,
 } from "@/entities/workflow";
-import { WorkflowGraph, WorkflowDefinitionNotice, type WorkflowDefinitionNoticeMode } from "@/widgets/workflow-graph";
-import { WorkflowExecutionsList } from "@/widgets/workflow-executions";
+import { useSetBreadcrumbTitle } from "@/shared/lib";
 import { ListSkeleton, ErrorState, Button, PageShell, SectionPanel } from "@/shared/ui";
 
 export function WorkflowDetailPage() {

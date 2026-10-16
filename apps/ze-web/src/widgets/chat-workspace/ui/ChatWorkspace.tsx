@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ChatInput, type ChatAttachment } from "./ChatInput";
-import { ChatMessageList } from "./ChatMessageList";
-import { placeWorkspaceFile } from "@/entities/workspace";
-import { reconnect } from "@/shared/api";
-import { useTopBarQuickActions } from "@/shared/lib";
-import { useSendNotice } from "@/shared/lib";
-import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { ReplyActions, RollbackNotice } from "@/features/reply-feedback";
+import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { RetryButton, useRetryReply } from "@/features/retry-reply";
 import { useMessageFeedbackQuery } from "@/entities/message-feedback";
+import { placeWorkspaceFile } from "@/entities/workspace";
+import { reconnect } from "@/shared/api";
 import { BackgroundBeamsCanvas } from "@/shared/effects/background-beams";
 import { GlowingStars } from "@/shared/effects/glowing-stars";
+import { useSendNotice } from "@/shared/lib";
+import { useTopBarQuickActions } from "@/shared/lib";
 import { useChatWorkspace } from "../model/useChatWorkspace";
+import { ChatInput, type ChatAttachment } from "./ChatInput";
 import { ChatLayout } from "./ChatLayout";
+import { ChatMessageList } from "./ChatMessageList";
 import { ChatSidePanel } from "./ChatSidePanel";
 import { ChatSidePanelQuickActions } from "./ChatSidePanelQuickActions";
 

@@ -1,7 +1,7 @@
 import type { MessageSchema as Message } from "@myguyze/ze-client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ChatErrorBoundary } from "@/shared/ui";
 import { useSession } from "@/entities/session";
+import { ChatErrorBoundary } from "@/shared/ui";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 

@@ -1,7 +1,8 @@
+import type { NotificationItem } from "@myguyze/ze-client";
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { NotificationItem } from "@myguyze/ze-client";
+import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { useDecideHeldWriteMutation, useHeldWritesQuery } from "@/entities/confirmation";
 import {
   useMarkAllReadMutation,
@@ -10,9 +11,8 @@ import {
   useUnreadCountQuery,
 } from "@/entities/notification";
 import { useSession } from "@/entities/session";
-import { ConfirmationCard } from "@/features/respond-to-confirmation";
-import { EmptyState } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
+import { EmptyState } from "@/shared/ui";
 import { relativeTime, targetRoute } from "../lib/notification-format";
 
 const HELD_ACTIONS = [

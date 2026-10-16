@@ -1,12 +1,12 @@
-import { useQueryClient } from "@tanstack/react-query";
 import type { MessageSchema as Message, WsScreenContext as ScreenContext } from "@myguyze/ze-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useMessages } from "@/features/load-chat-history";
 import { useConfirmation } from "@/features/respond-to-confirmation";
-import { useSendNotice } from "@/shared/lib";
 import { useOnboardingSession } from "@/entities/onboarding-session";
 import { useSession } from "@/entities/session";
 import { useFrame, useWsStore, send } from "@/shared/api";
+import { useSendNotice } from "@/shared/lib";
 import { queryKeys } from "@/shared/lib";
 
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";

@@ -1,6 +1,6 @@
+import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
-import type { WsTraceUpdateFrame } from "@myguyze/ze-client";
 import {
   threadTraceBucket,
   useSessionTraces,
@@ -9,8 +9,8 @@ import {
 } from "@/features/trace-state";
 import { useMessageFeedbackQuery } from "@/entities/message-feedback";
 import { useWsStore } from "@/shared/api";
-import { TraceEmptyState } from "./TraceEmptyState";
 import { FeedbackSection } from "./FeedbackSection";
+import { TraceEmptyState } from "./TraceEmptyState";
 import { TraceEntry } from "./TraceEntry";
 
 const EMPTY_TRACE: Omit<WsTraceUpdateFrame, "type" | "message_id"> = {

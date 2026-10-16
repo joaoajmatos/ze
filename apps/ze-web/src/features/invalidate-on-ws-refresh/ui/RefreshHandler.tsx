@@ -1,6 +1,6 @@
+import type { NotificationListResponse } from "@myguyze/ze-client";
 import type { InfiniteData } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
-import type { NotificationListResponse } from "@myguyze/ze-client";
 import type { UiManifest } from "@/entities/ui-manifest";
 import { useFrame } from "@/shared/api";
 import { queryKeys, refreshKeysForScreen } from "@/shared/lib";

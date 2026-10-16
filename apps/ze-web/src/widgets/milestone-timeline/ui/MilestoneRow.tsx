@@ -1,6 +1,6 @@
-import { useState } from "react";
 import type { MilestoneResponse } from "@myguyze/ze-client";
 import { CheckCircle2, Circle, Clock, SkipForward, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import { ExecutionTraceLog } from "./ExecutionTraceLog";
 
 const STATUS_ICON: Record<string, React.ReactNode> = {

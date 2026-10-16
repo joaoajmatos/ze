@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { listGoals } from "@myguyze/ze-client";
 import type { GoalListItem } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useGoalsQuery() {

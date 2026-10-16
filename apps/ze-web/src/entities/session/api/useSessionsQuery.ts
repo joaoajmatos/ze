@@ -1,6 +1,6 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { listSessions } from "@myguyze/ze-client";
 import type { SessionListResponse } from "@myguyze/ze-client";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useSessionsQuery(limit = 30) {

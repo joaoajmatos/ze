@@ -4,14 +4,14 @@ import { Outlet, NavLink } from "react-router-dom";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { useOverlay } from "@/features/open-context-overlay";
 import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
-import { NoticeBanner } from "@/shared/ui";
 import { mergeMobileNavRoutes, pluginNavRoutes, useUiManifestQuery } from "@/entities/ui-manifest";
 import { AutomationIcon, KnowledgeIcon, SystemIcon, automationNavRoutes, knowledgeNavRoutes, systemNavRoutes, navRoutes, settingsNavRoute } from "@/shared/config";
 import { BreadcrumbProvider, PageHeaderProvider, TopBarActionsProvider } from "@/shared/lib";
 import { cn } from "@/shared/lib/cn";
-import { TopBar } from "./TopBar";
+import { NoticeBanner } from "@/shared/ui";
 import { ChatNavGroup } from "./ChatNavGroup";
 import { NavGroup } from "./NavGroup";
+import { TopBar } from "./TopBar";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(

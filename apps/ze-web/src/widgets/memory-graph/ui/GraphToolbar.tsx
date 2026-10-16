@@ -1,7 +1,7 @@
-import { Maximize2, RotateCcw } from "lucide-react";
 import { PieChart, type ChartPoint } from "@myguyze/ze-ui/charts";
-import { ChartsToggle } from "@/shared/ui";
+import { Maximize2, RotateCcw } from "lucide-react";
 import { useOptionalCharts } from "@/shared/lib";
+import { ChartsToggle } from "@/shared/ui";
 
 const ENTITY_TYPES = ["all", "person", "place", "org", "topic"] as const;
 type EntityTypeFilter = (typeof ENTITY_TYPES)[number];

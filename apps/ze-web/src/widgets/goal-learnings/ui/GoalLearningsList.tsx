@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import type { LearningResponse } from "@myguyze/ze-client";
+import type { ReactNode } from "react";
 
 interface GoalLearningsListProps {
   learnings: LearningResponse[];

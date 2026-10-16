@@ -1,6 +1,6 @@
+import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { send, useFrame, useWsStore } from "@/shared/api";
 import { queryKeys } from "@/shared/lib";
 

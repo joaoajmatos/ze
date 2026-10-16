@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
 import { searchSessions } from "@myguyze/ze-client";
 import type { SessionSearchResult } from "@myguyze/ze-client";
+import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/shared/lib";
 
 export function useSessionSearchQuery(query: string) {

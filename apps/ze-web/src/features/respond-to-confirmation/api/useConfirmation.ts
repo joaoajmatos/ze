@@ -1,7 +1,7 @@
 import type { WsOutboundFrame } from "@myguyze/ze-client";
-import { useSendNotice } from "@/shared/lib";
-import { useWsStore, send } from "@/shared/api";
 import { useMemo } from "react";
+import { useWsStore, send } from "@/shared/api";
+import { useSendNotice } from "@/shared/lib";
 import { HELD_KEY, type PendingConfirm, usePendingConfirms } from "../model/pending-store";
 
 const NONE: PendingConfirm[] = [];

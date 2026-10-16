@@ -1,6 +1,6 @@
 import type { RollbackRecordResponse, RollbackTraceResponse } from "@myguyze/ze-client";
-import { useSession } from "@/entities/session";
 import { TraceSection } from "@/entities/message-trace";
+import { useSession } from "@/entities/session";
 
 interface RollbackSectionProps {
   /** On a regenerated reply: what was undone before it was written. */

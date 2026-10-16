@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Button, Input } from "@/shared/ui";
 import {
   useQuietHoursQuery,
   useUpdateQuietHoursMutation,
 } from "@/entities/quiet-hours";
+import { Button, Input } from "@/shared/ui";
 
 const TIMEZONE_LIST_ID = "quiet-hours-timezones";
 

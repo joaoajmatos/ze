@@ -1,13 +1,13 @@
-import { ChevronDown } from "lucide-react";
-import { useState } from "react";
 import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { usePluginScreenActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginSettingsQuery } from "@/entities/ui-manifest";
-import { resolveNavIcon } from "@/shared/ui/icons";
 import { cn } from "@/shared/lib/cn";
 import { ErrorState, ListSkeleton } from "@/shared/ui";
-import { usePluginScreenActions } from "@/features/primitive-tree";
+import { resolveNavIcon } from "@/shared/ui/icons";
 
 export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
   const [open, setOpen] = useState(true);

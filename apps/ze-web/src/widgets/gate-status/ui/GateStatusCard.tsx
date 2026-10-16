@@ -1,7 +1,7 @@
 import type { GateResponse } from "@myguyze/ze-client";
 import { ShieldCheck, Clock, CheckCheck, XCircle } from "lucide-react";
-import { Button } from "@/shared/ui";
 import { useStartGoalMutation } from "@/entities/goal";
+import { Button } from "@/shared/ui";
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
   awaiting_approval: <Clock className="w-4 h-4 text-warning" />,

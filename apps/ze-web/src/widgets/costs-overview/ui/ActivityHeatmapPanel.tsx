@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Activity } from "lucide-react";
+import { useState } from "react";
 import { useActivityHeatmapQuery } from "@/entities/activity";
+import { DashboardSectionTitle, EmptyState, ErrorState } from "@/shared/ui";
 import { AgentHeatmap } from "./AgentHeatmap";
 import { HeatmapLegend } from "./HeatmapLegend";
-import { DashboardSectionTitle, EmptyState, ErrorState } from "@/shared/ui";
 
 type Preset = "3M" | "6M" | "12M" | "YTD" | "custom";
 

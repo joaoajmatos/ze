@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { TraceContent } from "./trace-panel/TraceContent";
 import { useChatSidePanelStore } from "@/features/chat-side-panel";
 import { threadTraceBucket, useTraceStore } from "@/features/trace-state";
 import { useSessionsQuery } from "@/entities/session";
 import { cn, motion } from "@/shared/lib";
 import { SearchBar, SidePanel } from "@/shared/ui";
 import { SessionList } from "./SessionList";
+import { TraceContent } from "./trace-panel/TraceContent";
 
 interface ChatSidePanelProps {
   threadId: string;
