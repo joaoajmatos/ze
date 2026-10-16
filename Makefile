@@ -9,6 +9,7 @@ ZE_WEB  := apps/ze-web
 LOG_FILE     ?= $(ZE)/logs/ze.log
 # A DATABASE_URL_SYNC in the environment (a floor's throwaway DB) wins over the shared dev DB.
 DB_SYNC_URL  ?= $(or $(DATABASE_URL_SYNC),postgresql+psycopg2://ze:ze@localhost:5432/ze)
+DB_NAME      := $(firstword $(subst ?, ,$(lastword $(subst /, ,$(DB_SYNC_URL)))))
 ZE_MIGRATE   := cd $(ZE) && DATABASE_URL_SYNC=$(DB_SYNC_URL) uv run python -m ze_api.migrate
 
 # ── Help ──────────────────────────────────────────────────────────────────────
@@ -26,7 +27,7 @@ help:
 	@echo "  Database"
 	@echo "    db-up            Start Postgres via docker-compose"
 	@echo "    db-down          Stop Postgres"
-	@echo "    db-reset         Drop + recreate ze database and apply all migrations"
+	@echo "    db-reset         Drop + recreate the database named in DB_SYNC_URL (default ze) and apply all migrations"
 	@echo "    reset-personal-state  Delete learned personal state after CONFIRM=RESET"
 	@echo "    migrate          Apply all pending migrations (upgrade heads); honors DATABASE_URL_SYNC / DB_SYNC_URL, default is the shared dev DB `ze`"
 	@echo "    migrate-down     Roll back one migration step"
@@ -165,8 +166,8 @@ workspace-down:
 	docker compose stop workspace
 
 db-reset:
-	docker compose exec -T postgres psql -U ze -c "DROP DATABASE IF EXISTS ze"
-	docker compose exec -T postgres psql -U ze -c "CREATE DATABASE ze"
+	docker compose exec -T postgres psql -U ze -d postgres -c "DROP DATABASE IF EXISTS $(DB_NAME)"
+	docker compose exec -T postgres psql -U ze -d postgres -c "CREATE DATABASE $(DB_NAME)"
 	$(ZE_MIGRATE) upgrade
 
 reset-personal-state:
