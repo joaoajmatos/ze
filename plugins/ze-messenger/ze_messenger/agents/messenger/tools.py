@@ -170,9 +170,37 @@ async def send_email(
     }
 
 
+async def _email_label(args: dict) -> str | None:
+    """The message's subject and sender, read from Gmail, for a confirmation."""
+    service = args["credentials"].gmail()
+    message = await asyncio.to_thread(
+        lambda: (
+            service.users()
+            .messages()
+            .get(
+                userId="me",
+                id=args["message_id"],
+                format="metadata",
+                metadataHeaders=["Subject", "From"],
+            )
+            .execute()
+        )
+    )
+    headers = {
+        h.get("name"): h.get("value")
+        for h in (message.get("payload") or {}).get("headers") or []
+    }
+    subject = headers.get("Subject")
+    if not subject:
+        return None
+    sender = headers.get("From")
+    return f'"{subject}" from {sender}' if sender else f'"{subject}"'
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Archive a Gmail message (remove from inbox).",
+    summarize=_email_label,
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="archived an email",
 )

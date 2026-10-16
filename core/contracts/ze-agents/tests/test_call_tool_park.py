@@ -239,3 +239,36 @@ async def test_pre_approval_runs_when_the_constraint_allows(veto) -> None:
     tc = await _pre_approved_call("send_it")
     assert calls == [("send_it", {"event_id": "e1", "body": ""})]
     assert tc.gate == "pre_approved"
+
+
+async def test_an_async_summarize_reads_injected_deps_for_a_title() -> None:
+    titles = {"g1": "Write a novel"}
+
+    async def _title(a):
+        return f'"{a["store"][a["event_id"]]}"'
+
+    _irreversible("delete_event", summarize=_title)
+    tc = await _Agent().call_tool(
+        "delete_event",
+        _ctx(),
+        _lm_args={"event_id": "g1"},
+        _call_id="c1",
+        event_id="g1",
+        store=titles,
+    )
+    assert tc.parked.summary == '"Write a novel"'
+    assert tc.parked.args == {"event_id": "g1"}
+
+
+@pytest.mark.parametrize("result", ["boom", None, ""])
+async def test_a_failed_or_empty_summarize_falls_back_to_the_arguments(result) -> None:
+    def _summary(a):
+        if result == "boom":
+            raise KeyError("missing")
+        return result
+
+    _irreversible("delete_event", summarize=_summary)
+    tc = await _Agent().call_tool(
+        "delete_event", _ctx(), _lm_args={"event_id": "e1"}, event_id="e1"
+    )
+    assert tc.parked.summary == "event_id: e1"

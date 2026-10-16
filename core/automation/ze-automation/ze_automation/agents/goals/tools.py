@@ -383,11 +383,17 @@ async def get_milestone_trace(
     return "\n".join(lines)
 
 
+async def _goal_title(args: dict) -> str | None:
+    goal = await args["store"].get_goal(UUID(args["goal_id"]))
+    return f'"{goal.title}"' if goal else None
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Abandon a goal permanently by its ID.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="abandoned a goal",
+    summarize=_goal_title,
 )
 async def abandon_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> dict:
     try:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 import json
 import time
@@ -393,7 +394,7 @@ class BaseAgent(ABC):
                         raise AgentConfigError(
                             f"asks-first tool {name!r} called outside the agent loop"
                         )
-                    summary = _summarize(spec, stored_args)
+                    summary = await _summarize(spec, kwargs, stored_args)
                     if resolution.reason == "check" and resolution.text:
                         summary = resolution.text
                     return ToolCall(
@@ -944,13 +945,27 @@ def _refusal(
     )
 
 
-def _summarize(spec: Any, args: dict[str, Any]) -> str:
+_SUMMARIZE_TIMEOUT_S = 5.0
+
+
+async def _summarize(
+    spec: Any, call_kwargs: dict[str, Any], model_args: dict[str, Any]
+) -> str:
+    """The tool's own summary of a parked call, else the model's arguments.
+
+    `summarize` gets the call's arguments with its injected deps, so it can look
+    up a title (a goal, a reminder, an event) instead of showing an id.
+    """
     if spec.summarize is not None:
         try:
-            return str(spec.summarize(args))
+            text = spec.summarize(dict(call_kwargs))
+            if inspect.isawaitable(text):
+                text = await asyncio.wait_for(text, _SUMMARIZE_TIMEOUT_S)
+            if text:
+                return str(text)
         except Exception as exc:
             log.warning("tool_summarize_failed", tool=spec.name, error=str(exc))
-    return generic_summary(args)
+    return generic_summary(model_args)
 
 
 async def _dispatch_loop_hooks(hooks: list, method: str, event: Any) -> None:

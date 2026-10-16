@@ -87,9 +87,17 @@ async def list_reminders(store: ReminderStore) -> list:
     ]
 
 
+async def _reminder_label(args: dict) -> str | None:
+    reminder = await args["store"].get(UUID(args["reminder_id"]))
+    if reminder is None:
+        return None
+    return f'"{reminder.label}" at {reminder.fire_at:%Y-%m-%d %H:%M %Z}'.strip()
+
+
 @tool(
     access=ToolAccess.WRITE,
     description="Cancel a pending reminder by its ID. Call list_reminders first to find the ID.",
+    summarize=_reminder_label,
     constraint_gate=True,
     constraint_describe=_reminder_write_view,
     reversibility=ToolReversibility.IRREVERSIBLE,

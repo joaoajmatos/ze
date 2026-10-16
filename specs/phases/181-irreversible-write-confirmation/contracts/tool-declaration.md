@@ -45,7 +45,7 @@ Registration rules (fail with `AgentConfigError` at import):
 | `asks_first=True` | never written explicitly (it is the IRREVERSIBLE default); rejected to keep one spelling |
 | `ask_check` | WRITE tools |
 | `editable_field` | WRITE tools; must name a parameter of the function |
-| `summarize` | any WRITE tool |
+| `summarize` | any WRITE tool. Called with the call's arguments plus injected deps (so it can resolve an id to a title through the tool's store); may be async (5 s cap); a raise or an empty result falls back to `key: value` of the model's arguments |
 
 Behaviour guarantees for tool authors:
 - An asks-first tool's function body runs only after the user approved that exact call (or a plan pre-approved it). A tool body never raises a confirmation itself; `ToolConfirmationRequired` no longer exists.

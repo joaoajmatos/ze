@@ -69,7 +69,9 @@ class ToolSpec:
         Callable[[dict[str, Any], Any], AskDecision | Awaitable[AskDecision]] | None
     ) = None
     editable_field: str | None = None
-    summarize: Callable[[dict[str, Any]], str] | None = None
+    summarize: Callable[[dict[str, Any]], str | Awaitable[str | None] | None] | None = (
+        None
+    )
 
     def llm_schema(self) -> dict:
         if self._schema_override is not None:

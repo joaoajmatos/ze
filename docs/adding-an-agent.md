@@ -115,7 +115,7 @@ without the reason. A `REVERSIBLE` tool cannot ask first.
 | `asks_first=False` | The tool runs without asking. Requires `reversibility=ToolReversibility.IRREVERSIBLE` and `no_ask_reason`. |
 | `no_ask_reason` | One sentence that says why the tool needs no confirmation. Allowed only with `asks_first=False`. |
 | `editable_field` | The name of a parameter the user may edit in the confirmation, for example `"body"` for an email. |
-| `summarize` | A function that returns a short summary of the arguments. The confirmation shows it. |
+| `summarize` | A function that returns a short summary for the confirmation. It gets the call's arguments and the agent's injected dependencies, so it can look up a title instead of showing an ID. It may be `async`. If it fails or returns nothing, the confirmation lists the arguments. |
 | `ask_check` | A function that decides per call whether to ask. It must be cheap and free of side effects. It runs on every call. |
 
 ```python

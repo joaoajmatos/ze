@@ -266,7 +266,7 @@ An irreversible `WRITE` tool asks the user first by default. You pass no argumen
 | `asks_first=False` | The tool runs without asking. Requires `reversibility=ToolReversibility.IRREVERSIBLE` and `no_ask_reason`. |
 | `no_ask_reason` | One sentence that says why no confirmation is needed. Allowed only with `asks_first=False`. |
 | `editable_field` | The name of a parameter the user may edit in the confirmation, for example `"body"`. |
-| `summarize` | A function that returns a short summary of the arguments for the confirmation. |
+| `summarize` | A function that returns a short summary for the confirmation. It gets the call's arguments and injected dependencies and may be `async`. If it fails or returns nothing, the confirmation lists the arguments. |
 | `ask_check` | A function `(args, ctx) -> AskDecision` that decides per call. It must be cheap and free of side effects. |
 
 The function body runs only after the user approves that exact call. A tool body never
