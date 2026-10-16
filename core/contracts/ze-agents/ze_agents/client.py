@@ -44,6 +44,7 @@ class LLMClient(Protocol):
         model: str,
         tools: list[dict],
         system: str | None = None,
+        temperature: float = 0.3,
         max_tokens: int = 2000,
         token_sink: Callable[[str], Awaitable[None]] | None = None,
         source_sink: Callable[[list[Source]], None] | None = None,
