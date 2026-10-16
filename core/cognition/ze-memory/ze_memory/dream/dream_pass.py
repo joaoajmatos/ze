@@ -113,7 +113,7 @@ class DreamPass:
             all_promotable, gates, critic, synthesis_model
         )
 
-        # hindsight facts get gates + critic but are always needs_review
+        # hindsight facts get gates + critic but the promoter always rejects them
         scored_hindsight = await self._run_scoring_pipeline(
             hindsight_ids, gates, critic, synthesis_model
         )

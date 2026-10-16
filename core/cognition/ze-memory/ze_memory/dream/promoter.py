@@ -68,7 +68,6 @@ class DreamPromoter:
         )
 
         promoted = 0
-        needs_review = 0
         rejected = 0
 
         for row in pending_artifacts:
@@ -80,12 +79,12 @@ class DreamPromoter:
                 rejected += 1
                 continue
 
-            # hindsight_fact always goes to needs_review
+            # A hindsight_fact is never auto-promoted, and nobody reviews it by hand.
             if artifact_type == ArtifactType.HINDSIGHT_FACT.value:
                 await self._dream_store.update_artifact_status(
-                    artifact_id, ArtifactStatus.NEEDS_REVIEW.value
+                    artifact_id, ArtifactStatus.REJECTED.value
                 )
-                needs_review += 1
+                rejected += 1
                 continue
 
             # Support validation
@@ -117,9 +116,9 @@ class DreamPromoter:
                 promoted += 1
             else:
                 await self._dream_store.update_artifact_status(
-                    artifact_id, ArtifactStatus.NEEDS_REVIEW.value
+                    artifact_id, ArtifactStatus.REJECTED.value
                 )
-                needs_review += 1
+                rejected += 1
 
         # Synthetic fact confidence decay + hard expiry at valid_until
         await self._run_confidence_decay()
@@ -129,13 +128,11 @@ class DreamPromoter:
         log.info(
             "morning_integration_complete",
             promoted=promoted,
-            needs_review=needs_review,
             rejected=rejected,
             duration_ms=duration_ms,
         )
         return {
             "promoted": promoted,
-            "needs_review": needs_review,
             "rejected": rejected,
             "duration_ms": duration_ms,
         }
@@ -143,7 +140,7 @@ class DreamPromoter:
     async def _promote(self, row: dict, run_id: UUID, valid_days: int) -> None:
         artifact_id = row["id"]
         artifact_type = row["artifact_type"]
-        content = row.get("user_revised_content") or row["content"]
+        content = row["content"]
         valid_until = datetime.now(tz=timezone.utc) + timedelta(days=valid_days)
 
         if artifact_type == ArtifactType.SYNTHESIZED_INSIGHT.value:
@@ -236,97 +233,6 @@ class DreamPromoter:
         if saved.id is None:
             raise ProcedureLifecycleError("dream procedure candidate missing id")
         return saved.id
-
-    async def apply_user_decision(
-        self,
-        artifact_id: UUID,
-        decision: str,
-        revised_content: str | None = None,
-        valid_days: int = _DEFAULT_SYNTHETIC_FACT_VALID_DAYS,
-    ) -> None:
-        """Apply user approve / reject / revise decision from the REST API."""
-        row = await self._dream_store.get_artifact_row(artifact_id)
-        if row is None:
-            return
-
-        if decision == "reject":
-            await self._dream_store.update_artifact_status(
-                artifact_id, ArtifactStatus.REJECTED.value
-            )
-            await self._dream_store.mark_artifact_reviewed(artifact_id)
-            await self._decay_source_episodes(row.get("source_episode_ids") or [])
-            return
-
-        if decision == "revise" and revised_content:
-            await self._dream_store.set_revised_content(artifact_id, revised_content)
-            row = dict(row)
-            row["user_revised_content"] = revised_content
-            row["status"] = ArtifactStatus.REVISED.value
-
-        # approve or revise → promote
-        async with self._pool.acquire() as conn:
-            run_row = await conn.fetchrow(
-                "SELECT id FROM memory_dream_runs WHERE id = $1", row["run_id"]
-            )
-        run_id = run_row["id"] if run_row else row["run_id"]
-
-        await self._promote(row, run_id, valid_days)
-        await self._dream_store.mark_artifact_reviewed(artifact_id)
-
-    async def rollback_run(self, run_id: UUID) -> dict:
-        """Bulk-mark all promoted artifacts from a run as rolled back and contradict promoted facts."""
-        async with self._pool.acquire() as conn:
-            # Get all promoted artifacts for this run
-            rows = await conn.fetch(
-                """
-                SELECT id, promoted_to, promoted_id
-                FROM memory_dream_artifacts
-                WHERE run_id = $1 AND status = $2
-                """,
-                run_id,
-                ArtifactStatus.PROMOTED.value,
-            )
-
-            rolled_back = 0
-            for row in rows:
-                await conn.execute(
-                    "UPDATE memory_dream_artifacts SET status = $2 WHERE id = $1",
-                    row["id"],
-                    ArtifactStatus.ROLLED_BACK.value,
-                )
-                if row["promoted_to"] == "memory_facts" and row["promoted_id"]:
-                    await conn.execute(
-                        "UPDATE memory_facts SET contradicted = true WHERE id = $1",
-                        row["promoted_id"],
-                    )
-                    # Flag derived_from chains for re-evaluation
-                    await conn.execute(
-                        """
-                        UPDATE memory_facts SET reviewed = false
-                        WHERE $1::uuid = ANY(derived_from)
-                        """,
-                        row["promoted_id"],
-                    )
-                rolled_back += 1
-
-            # Clear contaminated session summaries
-            resummary = (
-                await conn.fetchval(
-                    """
-                UPDATE memory_session_summaries SET
-                    needs_resummary = true
-                WHERE dream_artifact_ids && (
-                    SELECT array_agg(id) FROM memory_dream_artifacts WHERE run_id = $1
-                )
-                RETURNING count(*)
-                """,
-                    run_id,
-                )
-                or 0
-            )
-
-        log.info("dream_rollback_complete", run_id=str(run_id), rolled_back=rolled_back)
-        return {"rolled_back": rolled_back, "summaries_flagged": int(resummary)}
 
     async def _run_confidence_decay(self) -> None:
         """Decrement confidence on non-corroborated synthetic facts older than 30 days."""

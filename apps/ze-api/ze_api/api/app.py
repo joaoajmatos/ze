@@ -9,7 +9,6 @@ from ze_api.api.routes import (
     collisions,
     costs,
     data,
-    dream,
     eval,
     feedback,
     goals,
@@ -137,7 +136,6 @@ def create_app() -> FastAPI:
     app.include_router(messages_router, prefix="/api/v0")
     app.include_router(feedback.router, prefix="/api/v0")
     app.include_router(data.router, prefix="/api/v0")
-    app.include_router(dream.router, prefix="/api/v0")
     app.include_router(notifications.router, prefix="/api/v0")
     app.include_router(loops.router, prefix="/api/v0")
     app.include_router(priority.router, prefix="/api/v0")

@@ -946,7 +946,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         client=shared.openrouter_client,
         nli_client=shared.nli_client,
         settings=settings,
-        notifier=notifier,
         procedure_admission=procedure_admission,
     )
     if dream_job._dream_pass is not None:

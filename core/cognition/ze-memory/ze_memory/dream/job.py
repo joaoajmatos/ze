@@ -9,7 +9,6 @@ from ze_memory.dream.dream_pass import DreamPass
 from ze_memory.dream.journal import DreamJournal
 from ze_memory.dream.promoter import DreamPromoter
 from ze_memory.dream.sleep_pass import SleepPass
-from ze_memory.push_kinds import DREAM_REVIEW
 from ze_memory.retrieval_cache import expire_retrieval_cache
 from ze_proactive.job import proactive_job
 
@@ -29,14 +28,12 @@ class DreamJob:
         client: Any | None = None,
         nli_client: Any | None = None,
         settings: Any = None,
-        notifier: Any | None = None,
         procedure_admission: Any | None = None,
     ) -> None:
         self._pool = pool
         self._dream_store = dream_store
         self._client = client
         self._settings = settings
-        self._notifier = notifier
         self._sleep_pass = SleepPass(
             pool=pool,
             embedder=embedder,
@@ -136,7 +133,6 @@ class DreamJob:
         artifacts_generated = dream_stats.get("artifacts_scored", 0)
         artifacts_promoted = integration_stats.get("promoted", 0)
         artifacts_rejected = integration_stats.get("rejected", 0)
-        artifacts_pending = integration_stats.get("needs_review", 0)
 
         await self._dream_store.finish_run(
             run_id,
@@ -145,7 +141,6 @@ class DreamJob:
             artifacts_generated=artifacts_generated,
             artifacts_promoted=artifacts_promoted,
             artifacts_rejected=artifacts_rejected,
-            artifacts_pending=artifacts_pending,
             sleep_pass_duration_ms=sleep_stats.get("duration_ms"),
             dream_pass_duration_ms=dream_stats.get("duration_ms"),
             integration_duration_ms=integration_stats.get("duration_ms"),
@@ -163,19 +158,8 @@ class DreamJob:
                 insights_promoted=artifacts_promoted,
                 procedures_extracted=dream_stats.get("policies", 0),
                 plan_risks_surfaced=dream_stats.get("stress_tests", 0),
-                pending_review=artifacts_pending,
                 synthesis_model=synthesis_model,
             )
-
-        if error is None and artifacts_pending > 0 and self._notifier is not None:
-            cfg = self._dream_config()
-            if cfg.get("review_notifications_enabled", False):
-                await self._notifier.notify(
-                    DREAM_REVIEW,
-                    "Dream insights to review",
-                    f"Ze dreamed overnight — {artifacts_pending} insight(s) await your review.",
-                    budget_key=f"dream:{run_id}",
-                )
 
         log.info(
             "dream_job_complete",
@@ -185,5 +169,4 @@ class DreamJob:
             artifacts_generated=artifacts_generated,
             artifacts_promoted=artifacts_promoted,
             artifacts_rejected=artifacts_rejected,
-            artifacts_pending=artifacts_pending,
         )

@@ -87,10 +87,6 @@ def get_connection_manager(request: Request):
     return request.app.state.container.connection_manager
 
 
-def get_dream_store(request: Request):
-    return request.app.state.container.dream_store
-
-
 def get_notification_store(request: Request):
     return request.app.state.container.notification_store
 

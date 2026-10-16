@@ -17,7 +17,6 @@ KIND_MODULES = [
     "ze_automation.push_kinds",
     "ze_worldstate.push_kinds",
     "ze_correlation.push_kinds",
-    "ze_memory.push_kinds",
     "ze_proactive.push_kinds",
     "ze_personal.push_kinds",
     "ze_finance.push_kinds",
@@ -50,7 +49,6 @@ EXPECTED: dict[str, tuple[str, str]] = {
     "goal_suggestion": (D, "normal"),
     "goal_overlap": (D, "normal"),
     "goal_reuse": (D, "low"),
-    "dream_review": (D, "low"),
     "insight": (D, "normal"),
     "contact_review": (D, "low"),
     "finance_stale_nudge": (D, "low"),
@@ -71,7 +69,7 @@ def test_registry_matches_spec_inventory():
         if k.source != "tests"
     }
     assert registry == EXPECTED
-    assert len(EXPECTED) == 32
+    assert len(EXPECTED) == 31
 
 
 SCAN_ROOTS = ["core", "plugins", "apps/ze-api/ze_api"]
