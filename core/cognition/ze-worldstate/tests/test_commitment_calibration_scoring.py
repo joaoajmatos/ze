@@ -316,3 +316,39 @@ def test_link_accuracy_misses_when_the_turn_resolved_a_loop_instead(cal):
     }
     c = cal.score([booked], cal.preds_for([booked], resolved, _bars(cal)))
     assert (c.link_ok, c.link_total) == (0, 1)
+
+
+def test_also_loop_row_accepts_a_loop_create_without_penalty(cal):
+    mixed = _row(
+        cal, id="m", gold_choice="fact", gold_family="constraint", kind="mixed"
+    )
+    mixed.also_loop = True
+    plain = _row(cal, id="m2", gold_choice="fact", gold_family="constraint")
+    loop_answer = {
+        "m": cal.RowResults(_system("loop", concern=0.95), _r163("fact"), _r168()),
+        "m2": cal.RowResults(_system("loop", concern=0.95), _r163("fact"), _r168()),
+    }
+    c = cal.score(
+        [mixed],
+        cal.preds_for([mixed], loop_answer, _bars(cal)),
+        cal.choices_for([mixed], loop_answer),
+    )
+    assert c.false_creates == 0
+    assert (c.loop_pred, c.fact_pos) == (0, 0)
+    assert (c.choice_ok, c.choice_total) == (1, 1)
+    strict = cal.score([plain], cal.preds_for([plain], loop_answer, _bars(cal)))
+    assert strict.false_creates == 1 and strict.fact_pos == 1
+
+
+def test_also_loop_row_still_scores_a_fact_answer_as_a_hit(cal):
+    mixed = _row(
+        cal, id="m", gold_choice="fact", gold_family="constraint", kind="mixed"
+    )
+    mixed.also_loop = True
+    fact_answer = {
+        "m": cal.RowResults(
+            _system("fact", bio=0.9, family="constraint"), _r163("fact"), _r168()
+        )
+    }
+    c = cal.score([mixed], cal.preds_for([mixed], fact_answer, _bars(cal)))
+    assert (c.fact_hits, c.fact_pos) == (1, 1)

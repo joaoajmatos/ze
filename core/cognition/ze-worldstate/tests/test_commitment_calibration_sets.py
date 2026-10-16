@@ -134,3 +134,24 @@ def test_loop_rows_that_the_turn_already_booked_do_not_count_as_gold_loop(cal):
         "holdout/en: 0 fact rows, need >= 15"
     )
     assert any("gold-loop rows" in p for p in cal.holdout_depth_problems(booked))
+
+
+def test_also_loop_is_only_for_mixed_rows_whose_gold_is_not_loop(cal):
+    ok = _row(cal, id="a", kind="mixed", gold_choice="fact", gold_family="identity")
+    ok.also_loop = True
+    assert cal.row_problems("t", [ok]) == []
+    wrong_kind = _row(cal, id="b", gold_choice="fact", gold_family="identity")
+    wrong_kind.also_loop = True
+    loop_gold = _row(cal, id="c", kind="mixed", gold_choice="loop")
+    loop_gold.also_loop = True
+    booked = _row(
+        cal,
+        id="d",
+        kind="mixed",
+        gold_choice="reminder",
+        turn_created="reminder",
+    )
+    booked.also_loop = True
+    text = "\n".join(cal.row_problems("t", [wrong_kind, loop_gold, booked]))
+    for rid in "bcd":
+        assert f"t/{rid}:" in text

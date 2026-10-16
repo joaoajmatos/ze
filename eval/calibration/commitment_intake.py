@@ -120,6 +120,7 @@ class Row:
     turn_created: str
     kind: str
     gold_family: str = ""
+    also_loop: bool = False
 
     @property
     def gold_fact(self) -> bool:
@@ -180,6 +181,12 @@ def row_problems(name: str, rows: list[Row]) -> list[str]:
             problems.append(f"{name}/{r.id}: goal created under {r.gold_choice}")
         if r.gold_choice == "fact" and not r.gold_family:
             problems.append(f"{name}/{r.id}: fact row needs gold_family")
+        if r.also_loop and (r.kind != MIXED_KIND or r.gold_choice == "loop"):
+            problems.append(
+                f"{name}/{r.id}: also_loop is for mixed rows whose gold is not loop"
+            )
+        if r.also_loop and r.turn_created != "none":
+            problems.append(f"{name}/{r.id}: also_loop with a created reminder or goal")
     return problems
 
 
@@ -363,6 +370,10 @@ def score(
 ) -> Counts:
     """A fallback row counts as a miss and never as a write. A skipped Choice counts as wrong.
 
+    A mixed row with `also_loop` also carries a real open concern: a loop create or a loop Choice
+    is acceptable there (neither a false create nor a required hit), and the row leaves the fact
+    recall denominator when the pipeline answered with the loop.
+
     Choice accuracy covers rows where the turn created nothing. When a reminder or goal already
     exists the outcome is a link whatever the Choice says (decision row 5), so those rows are
     scored by `link_acc` instead (dated amendment of FR-022, 2026-10-16)."""
@@ -371,15 +382,16 @@ def score(
         p = preds[r.id]
         c.n += 1
         c.fallback += p.fallback
-        c.fact_pos += r.gold_fact
+        accepted_loop = r.also_loop and p.create
+        c.fact_pos += r.gold_fact and not accepted_loop
         c.fact_pred += p.fact
         c.fact_hits += p.fact and r.gold_fact
         c.loop_pos += r.gold_loop
-        c.loop_pred += p.create
+        c.loop_pred += p.create and not accepted_loop
         c.loop_hits += p.create and r.gold_loop
         if p.create and r.turn_created != "none":
             c.duplicates += 1
-        elif p.create and not r.gold_loop:
+        elif p.create and not r.gold_loop and not r.also_loop:
             c.false_creates += 1
         c.false_resolve += p.resolve and not r.gold_resolves
         c.false_declared += p.declared and not r.gold_explicit
@@ -392,7 +404,9 @@ def score(
             c.waiting_written += p.wrote
         if choices is not None and r.turn_created == "none":
             c.choice_total += 1
-            c.choice_ok += choices[r.id] == r.gold_choice
+            c.choice_ok += choices[r.id] == r.gold_choice or (
+                r.also_loop and choices[r.id] == "loop"
+            )
         if r.turn_created != "none":
             c.link_total += 1
             c.link_ok += p.link_kind == r.turn_created
@@ -788,10 +802,13 @@ def report_errors(
     print("\n== tuned-set errors at the bars used (id, kind, gold -> outcome, answers)")
     for r in rows:
         o = outcomes[r.id]
-        bad = (
+        accepted_loop = r.also_loop and o.kind in CREATES
+        bad = not accepted_loop and (
             (o.kind in CREATES) != r.gold_loop
             or (o.kind == "persist_fact") != r.gold_fact
-            or (o.kind == "resolve_loop") != r.gold_resolves
+        )
+        bad = bad or (
+            (o.kind == "resolve_loop") != r.gold_resolves
             or (r.gold_choice == "waiting_on" and o.kind in WRITES)
         )
         if not bad:
