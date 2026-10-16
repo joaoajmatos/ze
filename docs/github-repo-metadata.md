@@ -4,11 +4,11 @@ Draft values for the repository settings. Apply them by hand. Nothing in the rep
 
 ## Description
 
-A self-hosted personal assistant for one person. It keeps one record of that person's world, where each claim has a kind, a source, and a confidence that decays.
+A companion I am building for my own life: a living model of me (who I am, my people and projects, what is open or slipping) that outlives every model swap. The language model is rented; the continuity is the product. It follows through on what I commit to and asks before anything it cannot undo. Self-hosted, pre-v1.
 
 Shorter option (under 100 characters):
 
-A self-hosted personal assistant for one person, built around one shared world-state.
+A companion I am building for my own life: a continuous model of me and what is still open. Self-hosted, pre-v1.
 
 ## Website
 
