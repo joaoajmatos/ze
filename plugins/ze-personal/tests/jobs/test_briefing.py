@@ -66,14 +66,11 @@ def make_briefing(
     workflow_store = MagicMock()
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=workflows or [])
 
-    person_store = MagicMock()
-
     b = MorningBriefing(
         notifier=notifier or make_notifier(),
         push_log_store=push_log,
         memory_store=memory,
         workflow_store=workflow_store,
-        person_store=person_store,
         settings=settings or make_settings(),
         news_store=news_store,
         priority_view=priority_view or make_priority_view(stale_contacts),
@@ -307,14 +304,11 @@ def make_briefing_with_personalization(
     workflow_store = MagicMock()
     workflow_store.list_enabled_scheduled = AsyncMock(return_value=[])
 
-    person_store = MagicMock()
-
     b = MorningBriefing(
         notifier=notifier or make_notifier(),
         push_log_store=push_log,
         memory_store=memory_store or memory,
         workflow_store=workflow_store,
-        person_store=person_store,
         settings=make_settings(),
         news_store=news_store,
         goal_store=goal_store,

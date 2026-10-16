@@ -96,7 +96,6 @@ class PersonalPlugin(ZePlugin):
             push_log_store=push_log_store,
             memory_store=memory_store,
             workflow_store=workflow_store,
-            person_store=self.person_store,
             settings=settings,
             news_store=None,
             goal_store=self.goal_store,
