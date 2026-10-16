@@ -8,9 +8,9 @@ from uuid import UUID, uuid4
 
 from tests.api.test_ws_retry import _Env, _call, _msg, _trace
 from ze_agents.errors import RetryFailedError
-from ze_api.api.websocket import turns
-from ze_api.api.websocket.endpoint import _retry_crash_frame, _run_retry_task
-from ze_api.api.websocket.turns import handle_retry
+from ze_api.api.ws import turns
+from ze_api.api.ws.endpoint import _retry_crash_frame, _run_retry_task
+from ze_api.api.ws.turns import handle_retry
 from ze_core.conversation.messages.types import (
     RollbackEntry,
     RollbackRecord,
@@ -310,7 +310,7 @@ async def test_run_retry_task_reports_the_stored_rollback_after_an_exception():
     msgs.get_message = AsyncMock(return_value=_msg(id=mid, rollback=record))
     conn = SimpleNamespace(send_frame=AsyncMock(), clear_busy=lambda tid: None)
     with patch(
-        "ze_api.api.websocket.endpoint.handle_retry",
+        "ze_api.api.ws.endpoint.handle_retry",
         AsyncMock(side_effect=RuntimeError("after rollback")),
     ):
         await _run_retry_task(
@@ -336,7 +336,7 @@ async def test_run_retry_task_tracks_a_paused_gate():
     conn = SimpleNamespace(send_frame=AsyncMock(), clear_busy=lambda tid: None)
     gate = ("req-9", {"configurable": {"retry_replaces": str(uuid4())}})
     with patch(
-        "ze_api.api.websocket.endpoint.handle_retry", AsyncMock(return_value=gate)
+        "ze_api.api.ws.endpoint.handle_retry", AsyncMock(return_value=gate)
     ):
         await _run_retry_task(
             {"message_id": str(uuid4()), "thread_id": "t1"},

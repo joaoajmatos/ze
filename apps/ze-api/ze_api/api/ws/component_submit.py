@@ -6,9 +6,9 @@ from uuid import UUID
 
 from fastapi import WebSocket
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.turns import handle_message
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.onboarding import send_onboarding_view
+from ze_api.api.ws.turns import handle_message
 from ze_agents.errors import OnboardingError
 from ze_logging import get_logger
 

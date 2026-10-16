@@ -4,9 +4,9 @@ from typing import Any
 
 from fastapi import WebSocket
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.serializers import ephemeral_assistant_message
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.onboarding import send_onboarding_view
+from ze_api.api.ws.serializers import ephemeral_assistant_message
 from ze_logging import get_logger
 
 log = get_logger(__name__)

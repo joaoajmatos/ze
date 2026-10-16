@@ -7,8 +7,8 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.held import handle_held_confirm, held_frame
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.held import handle_held_confirm, held_frame
 from ze_automation.holds.resumer import HeldWriteResumer
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
 from tests.api.test_held_writes_routes import MemoryStore, _hold
@@ -85,7 +85,7 @@ async def test_connect_replays_open_held_writes() -> None:
 
 
 async def test_handle_confirm_routes_a_held_id_to_the_resumer() -> None:
-    from ze_api.api.websocket.confirmation import handle_confirm
+    from ze_api.api.ws.confirmation import handle_confirm
 
     container, conn, store, run = _setup(_hold("r1"))
     confirmation_store = AsyncMock()
@@ -111,7 +111,7 @@ async def test_handle_confirm_routes_a_held_id_to_the_resumer() -> None:
 
 
 async def test_handle_confirm_leaves_a_chat_confirmation_id_to_the_chat_path() -> None:
-    from ze_api.api.websocket.confirmation import handle_confirm
+    from ze_api.api.ws.confirmation import handle_confirm
 
     container, conn, store, run = _setup(_hold("r1"))
     confirmation_store = AsyncMock()

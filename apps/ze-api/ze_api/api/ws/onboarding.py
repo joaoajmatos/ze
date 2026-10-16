@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from ze_api.api.websocket.connection import ConnectionManager
+from ze_api.api.ws.connection import ConnectionManager
 from ze_onboarding import OnboardingView
 
 

@@ -7,8 +7,8 @@ from typing import Any
 
 from ze_agents.interface.types import Notification
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.frames import build_confirm_frame
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.frames import build_confirm_frame
 from ze_automation.holds.resumer import (
     HELD_TARGET_TYPE,
     HeldWriteEditError,

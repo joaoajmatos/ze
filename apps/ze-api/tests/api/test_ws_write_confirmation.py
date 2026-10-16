@@ -8,13 +8,13 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from ze_agents.park import ConfirmItem, WriteConfirmation
-from ze_api.api.websocket.confirmation import (
+from ze_api.api.ws.confirmation import (
     confirmation_timeout,
     handle_confirm,
     send_confirmation_request,
 )
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.frames import frame_from_pending
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.frames import frame_from_pending
 
 
 def _confirmation(
@@ -82,7 +82,7 @@ def _store(confirmation: WriteConfirmation | None = None) -> AsyncMock:
     if confirmation is None:
         store.get_pending = AsyncMock(return_value=None)
     else:
-        from ze_api.api.websocket.frames import confirmation_payload
+        from ze_api.api.ws.frames import confirmation_payload
 
         store.get_pending = AsyncMock(
             return_value={
@@ -326,7 +326,7 @@ async def test_reconnect_replays_the_items_frame() -> None:
     msgs = AsyncMock()
     msgs.list_unread = AsyncMock(return_value=[])
     store = AsyncMock()
-    from ze_api.api.websocket.frames import confirmation_payload
+    from ze_api.api.ws.frames import confirmation_payload
 
     store.get_all_pending = AsyncMock(
         return_value=[
@@ -350,8 +350,8 @@ async def test_a_new_turn_clears_open_confirmations_and_records_them_as_supersed
     None
 ):
     from ze_agents.park import WriteConfirmation  # noqa: F401
-    from ze_api.api.websocket.frames import confirmation_payload
-    from ze_api.api.websocket.turns import handle_message
+    from ze_api.api.ws.frames import confirmation_payload
+    from ze_api.api.ws.turns import handle_message
     from ze_core.conversation.messages.types import MessageTrace
 
     ws, mgr = await _connected()

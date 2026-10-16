@@ -7,8 +7,8 @@ from uuid import UUID
 
 from fastapi import WebSocket
 
-from ze_api.api.websocket.frames import frame_from_pending
-from ze_api.api.websocket.serializers import message_to_dict
+from ze_api.api.ws.frames import frame_from_pending
+from ze_api.api.ws.serializers import message_to_dict
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -98,7 +98,7 @@ class ConnectionManager:
         # Replay open held writes (unattended runs waiting for the user).
         if held_store is not None:
             try:
-                from ze_api.api.websocket.held import open_held_frames
+                from ze_api.api.ws.held import open_held_frames
 
                 for frame in await open_held_frames(held_store):
                     async with self._lock:

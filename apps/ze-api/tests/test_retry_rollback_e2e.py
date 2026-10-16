@@ -22,9 +22,9 @@ from ze_agents.registry import clear_registry, register_instance
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool, undo_payload
 from ze_agents.types import AgentContext, AgentResult
-from ze_api.api.websocket import turns
-from ze_api.api.websocket.confirmation import handle_confirm
-from ze_api.api.websocket.turns import handle_retry
+from ze_api.api.ws import turns
+from ze_api.api.ws.confirmation import handle_confirm
+from ze_api.api.ws.turns import handle_retry
 from ze_core.conversation.messages.types import Message
 from ze_core.conversation.retry import retry_eligibility
 from ze_core.orchestration.nodes.trace import record_trace

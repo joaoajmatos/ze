@@ -9,20 +9,20 @@ from uuid import UUID
 from fastapi import WebSocket
 
 from ze_agents.tasks import fire_and_forget
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.context import bound_turn_context
-from ze_api.api.websocket.rollback_state import (
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.context import bound_turn_context
+from ze_api.api.ws.rollback_state import (
     deliver_retry_reply,
     move_rollback,
     retry_replaces_of,
 )
 from ze_api.wiring.push_kinds import CONFIRMATION_REQUEST
-from ze_api.api.websocket.serializers import extract_thread_id
-from ze_api.api.websocket.session_titles import schedule_session_title_from_thread
+from ze_api.api.ws.serializers import extract_thread_id
+from ze_api.api.ws.session_titles import schedule_session_title_from_thread
 from ze_logging import get_logger
-from ze_api.api.websocket.frames import build_confirm_frame, confirmation_payload
+from ze_api.api.ws.frames import build_confirm_frame, confirmation_payload
 from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
-from ze_api.api.websocket.held import handle_held_confirm
+from ze_api.api.ws.held import handle_held_confirm
 
 log = get_logger(__name__)
 

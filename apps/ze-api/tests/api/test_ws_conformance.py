@@ -16,9 +16,9 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.serializers import message_to_dict
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.onboarding import send_onboarding_view
+from ze_api.api.ws.serializers import message_to_dict
 from ze_core.conversation.messages import Message
 
 
@@ -141,7 +141,7 @@ class TestConfirmRequestFrameConformance:
 
     def test_write_confirmation_frame_matches_the_schema(self):
         from ze_api.api.schemas import WsConfirmRequestFrame
-        from ze_api.api.websocket.frames import build_confirm_frame
+        from ze_api.api.ws.frames import build_confirm_frame
 
         frame = build_confirm_frame(
             request_id=str(uuid4()),
@@ -163,7 +163,7 @@ class TestConfirmRequestFrameConformance:
 
     def test_prompt_frame_matches_the_schema(self):
         from ze_api.api.schemas import WsConfirmRequestFrame
-        from ze_api.api.websocket.frames import build_prompt_frame
+        from ze_api.api.ws.frames import build_prompt_frame
 
         frame = build_prompt_frame(
             request_id=str(uuid4()),
@@ -308,7 +308,7 @@ class TestErrorFrameSchemaConformance:
 
     async def test_turn_error_frames_validate_and_carry_thread_id(self):
         from ze_api.api.schemas import WsErrorFrame
-        from ze_api.api.websocket.turns import handle_message
+        from ze_api.api.ws.turns import handle_message
 
         mgr, ws = await self._connected()
         container = MagicMock()
@@ -345,7 +345,7 @@ class TestErrorFrameSchemaConformance:
 
     async def test_component_submit_error_carries_thread_id(self):
         from ze_api.api.schemas import WsErrorFrame
-        from ze_api.api.websocket.component_submit import handle_component_submit
+        from ze_api.api.ws.component_submit import handle_component_submit
 
         mgr, ws = await self._connected()
         await handle_component_submit(

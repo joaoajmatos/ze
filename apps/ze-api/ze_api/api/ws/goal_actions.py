@@ -9,8 +9,8 @@ from fastapi import WebSocket
 
 from ze_agents.errors import GoalPlanError
 from ze_agents.interface.types import OutboundMessage
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.frames import build_prompt_frame
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.frames import build_prompt_frame
 from ze_automation.goals.proposal import plan_for_goal, propose_goal
 from ze_automation.goals.types import Goal, GoalStatus, SuggestionStatus
 from ze_logging import get_logger

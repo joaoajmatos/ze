@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from ze_api.api.websocket.connection import ConnectionManager
+from ze_api.api.ws.connection import ConnectionManager
 from ze_api.interface.native import NativeAppInterface
 from ze_core.conversation.messages import Message
 from ze_core.conversation.messages.types import MessageTrace
@@ -86,7 +86,7 @@ async def test_push_transport_error_clears_socket():
 async def test_replay_serialization_error_keeps_socket():
     from unittest.mock import patch
 
-    from ze_api.api.websocket import connection as connection_module
+    from ze_api.api.ws import connection as connection_module
 
     ws = _make_ws()
     mgr = ConnectionManager()

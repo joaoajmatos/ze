@@ -15,14 +15,14 @@ from ze_agents.interface.types import (
     Notification,
     OutboundMessage,
 )
-from ze_api.api.websocket.frames import build_prompt_frame
+from ze_api.api.ws.frames import build_prompt_frame
 from ze_core.conversation.messages import Message
 from ze_logging import get_logger
 
 if TYPE_CHECKING:
     from ze_notifications.notifier import Notifier as PushNotifier
     from ze_core.conversation.messages import MessageStore
-    from ze_api.api.websocket.connection import ConnectionManager
+    from ze_api.api.ws.connection import ConnectionManager
 
 log = get_logger(__name__)
 

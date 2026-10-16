@@ -3,7 +3,7 @@ import json
 import pytest
 
 from ze_logging import configure_logging, get_logger
-from ze_api.api.websocket.context import bound_turn_context
+from ze_api.api.ws.context import bound_turn_context
 
 
 @pytest.fixture(autouse=True)

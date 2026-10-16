@@ -5,18 +5,18 @@ from uuid import UUID
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from ze_api.api.websocket.commands import handle_command
-from ze_api.api.websocket.component_submit import handle_component_submit
-from ze_api.api.websocket.confirmation import handle_confirm
-from ze_api.api.websocket.goal_actions import handle_action
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.onboarding import send_onboarding_view
-from ze_api.api.websocket.rollback_state import (
+from ze_api.api.ws.commands import handle_command
+from ze_api.api.ws.component_submit import handle_component_submit
+from ze_api.api.ws.confirmation import handle_confirm
+from ze_api.api.ws.goal_actions import handle_action
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.onboarding import send_onboarding_view
+from ze_api.api.ws.rollback_state import (
     public_rollback_record,
     rollback_notice,
     undone_phrases,
 )
-from ze_api.api.websocket.turns import handle_message, handle_retry
+from ze_api.api.ws.turns import handle_message, handle_retry
 from ze_logging import get_logger
 
 log = get_logger(__name__)

@@ -9,14 +9,14 @@ from fastapi import WebSocket
 
 from ze_agents.interface.types import RawInput
 from ze_agents.progress.reporter import ProgressReporter
-from ze_api.api.websocket.confirmation import (
+from ze_api.api.ws.confirmation import (
     send_confirmation_request,
     supersede_open_confirmations,
 )
-from ze_api.api.websocket.connection import ConnectionManager
-from ze_api.api.websocket.context import bound_turn_context
-from ze_api.api.websocket.serializers import extract_thread_id
-from ze_api.api.websocket.rollback_state import (
+from ze_api.api.ws.connection import ConnectionManager
+from ze_api.api.ws.context import bound_turn_context
+from ze_api.api.ws.serializers import extract_thread_id
+from ze_api.api.ws.rollback_state import (
     deliver_retry_reply,
     move_rollback,
     public_rollback_record,
@@ -24,7 +24,7 @@ from ze_api.api.websocket.rollback_state import (
     rollback_notice,
     undone_phrases,
 )
-from ze_api.api.websocket.session_titles import schedule_session_title
+from ze_api.api.ws.session_titles import schedule_session_title
 from ze_agents.errors import RetryError
 from ze_core.conversation.messages import Message
 from ze_core.conversation.messages.types import RollbackRecord

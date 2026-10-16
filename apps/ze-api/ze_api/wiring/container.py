@@ -112,7 +112,7 @@ from ze_proactive.bootstrap import shared_push_budget
 from ze_proactive.data_domain import interruption_data_domains
 from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
-from ze_api.api.websocket.connection import ConnectionManager
+from ze_api.api.ws.connection import ConnectionManager
 from ze_api.wiring.jobs import (
     build_proactive_scheduler,
     reconcile_workspace_at_startup,
@@ -536,7 +536,7 @@ async def build_container(settings: Settings) -> ZeContainer:
             await interruption_settings_store.get(), datetime.now(timezone.utc)
         )
 
-    from ze_api.api.websocket.held import held_push_frame
+    from ze_api.api.ws.held import held_push_frame
 
     interface = NativeAppInterface(
         message_store=message_store,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
-from ze_api.api.websocket.commands import handle_command
-from ze_api.api.websocket.connection import ConnectionManager
+from ze_api.api.ws.commands import handle_command
+from ze_api.api.ws.connection import ConnectionManager
 
 
 def _make_ws():
