@@ -4,7 +4,7 @@ The consolidator reads memory_episodes and tracks progress with a ze-personal-ow
 keyset watermark instead of a flag column on the legacy episodes table (zc013).
 
 Revision ID: zc036
-Revises: zc032
+Revises: zc035
 """
 
 from __future__ import annotations
