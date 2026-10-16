@@ -48,11 +48,11 @@ when, lingering concerns, multi-week goals, ingest requests, and filler are
 NOT biography facts.
 
 speech_act must be one of:
-fact, forget, reminder, loop, goal, ingest, drop, clarify.
+fact, forget, ingest, clarify, none.
 
-Cancel, drop, or abandon aimed at a reminder, open loop, or goal is that
-speech_act (reminder / loop / goal), never forget. "Forget the dentist" as
-cancelling a ping is reminder. Biography retract ("forget that I like aisle
+Reminders, lingering concerns, multi-week goals, filler, and cancelling or
+abandoning any of them are none, never forget. "Forget the dentist" as
+cancelling a ping is none. Biography retract ("forget that I like aisle
 seats") is forget. Time-bound reminders still beat biography (time wins).
 Do not emit two primary acts for one clause.
 
@@ -65,7 +65,7 @@ Closed keep families: identity, preference, relationship, constraint, contact_de
 If speech_act is not fact, family must be drop and facts must be [].
 
 Respond with JSON only — no markdown:
-{"speech_act": "<fact|forget|reminder|loop|goal|ingest|drop|clarify>",
+{"speech_act": "<fact|forget|ingest|clarify|none>",
  "family": "<identity|preference|relationship|constraint|contact_detail|drop>",
  "facts": [{"value": "what was revealed", "confidence": 0.0-1.0}]}
 facts must be empty unless speech_act is fact. Predicate of each kept fact is the family name.
@@ -118,12 +118,12 @@ def is_trivial_turn(prompt: str) -> bool:
 
 def admit_speech_act(raw: str | None) -> SpeechAct:
     if not raw:
-        return SpeechAct.DROP
+        return SpeechAct.NONE
     key = raw.strip().lower()
     try:
         return SpeechAct(key)
     except ValueError:
-        return SpeechAct.DROP
+        return SpeechAct.NONE
 
 
 def admit_family(family: str | None) -> str | None:
@@ -493,76 +493,6 @@ async def gather_fact_proposals(
     )
     model = fact_extraction_model(settings_dict)
 
-    from ze_memory.speech_act_judge import (
-        SPEECH_ACT_QUESTIONS,
-        build_state,
-        decide,
-        speech_act_surface_config,
-    )
-
-    surface = speech_act_surface_config(settings)
-    skip_reason: str | None = None
-    if surface.enabled and not surface.calibrated:
-        log.warning("speech_act_system_one_uncalibrated")
-        skip_reason = "uncalibrated"
-
-    system_one = configurable.get("system_one_client")
-    if surface.calibrated and system_one is not None:
-        try:
-            result = await system_one.evaluate(
-                build_state(prompt, response), SPEECH_ACT_QUESTIONS, max_attempts=1
-            )
-        except Exception as exc:
-            log.warning("speech_act_system_one_call_failed", error=str(exc))
-            extracted = await extract_facts(
-                client, prompt=prompt, response=response, model=model
-            )
-            for fact in extracted:
-                fact.agent = agent
-            return FactAdmission(facts=extracted, path="haiku", skip_reason="error")
-        decision = decide(result, surface)
-        log.info(
-            "speech_act_system_one_decision",
-            kind=decision.kind,
-            reason=decision.reason,
-            family=decision.family,
-            latency_ms=result.latency_ms,
-        )
-        question_ids = tuple(SPEECH_ACT_QUESTIONS)
-        if decision.kind != "skip":
-            facts: list[Fact] = []
-            if decision.kind == "persist":
-                facts = await write_fact_values(
-                    client,
-                    prompt=prompt,
-                    response=response,
-                    family=decision.family or "",
-                    model=model,
-                )
-            for fact in facts:
-                fact.agent = agent
-            return FactAdmission(
-                facts=facts,
-                path="system_one",
-                judgment=result,
-                question_ids=question_ids,
-                consumed=decision.consumed,
-            )
-        if decision.reason == "invalid_answer":
-            log.warning("speech_act_system_one_invalid_answer")
-        extracted = await extract_facts(
-            client, prompt=prompt, response=response, model=model
-        )
-        for fact in extracted:
-            fact.agent = agent
-        return FactAdmission(
-            facts=extracted,
-            path="haiku",
-            judgment=result,
-            question_ids=question_ids,
-            skip_reason=decision.reason,
-        )
-
     extracted = await extract_facts(
         client,
         prompt=prompt,
@@ -571,4 +501,4 @@ async def gather_fact_proposals(
     )
     for fact in extracted:
         fact.agent = agent
-    return FactAdmission(facts=extracted, path="haiku", skip_reason=skip_reason)
+    return FactAdmission(facts=extracted, path="haiku")

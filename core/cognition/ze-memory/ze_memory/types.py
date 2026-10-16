@@ -14,12 +14,9 @@ from ze_agents.types import RetrievalRequest as RetrievalRequest  # noqa: F401 â
 class SpeechAct(StrEnum):
     FACT = "fact"
     FORGET = "forget"
-    REMINDER = "reminder"
-    LOOP = "loop"
-    GOAL = "goal"
     INGEST = "ingest"
-    DROP = "drop"
     CLARIFY = "clarify"
+    NONE = "none"
 
 
 @dataclass

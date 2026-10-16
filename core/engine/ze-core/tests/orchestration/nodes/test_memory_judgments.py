@@ -69,12 +69,6 @@ def _ok_result() -> SystemOneResult:
         input_tokens=10,
         latency_ms=5,
         answers={
-            "speech_act": SystemOneAnswer(
-                type="choice",
-                choice="fact",
-                confidence=0.9,
-                probabilities={"fact": 0.9},
-            ),
             "family": SystemOneAnswer(
                 type="choice",
                 choice="preference",
@@ -86,7 +80,7 @@ def _ok_result() -> SystemOneResult:
     )
 
 
-_IDS = ("speech_act", "family", "biography")
+_IDS = ("family", "biography")
 
 
 def _persist_admission(facts=None) -> FactAdmission:
@@ -157,7 +151,7 @@ async def test_trace_merge_also_in_compaction_branch():
     ):
         out = await write_memory(state, config)
     assert out["compaction_span"] is not None
-    assert len(out["message_trace"].judgments) == 3
+    assert len(out["message_trace"].judgments) == 2
 
 
 async def test_missing_message_trace_does_not_crash():

@@ -19,7 +19,7 @@ from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
-from ze_memory.speech_act_judge import SPEECH_ACT_QUESTIONS
+from ze_memory.fact_judge import FACT_QUESTIONS
 from ze_memory.fact_identity import fact_identity, identities_from_remember_calls
 from ze_plugin.contribution import EvidenceRef, TargetFace
 
@@ -141,7 +141,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                 rows += judgments_from_result(
                     fact_result.judgment,
                     question_kinds={
-                        qid: SPEECH_ACT_QUESTIONS[qid].type
+                        qid: FACT_QUESTIONS[qid].type
                         for qid in fact_result.question_ids
                     },
                     consumed=fact_result.consumed,
