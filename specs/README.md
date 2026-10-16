@@ -219,7 +219,7 @@ Legend: ✅ Implemented · 🔄 In Progress · 🔲 Pending (spec header `Draft`
 | 170 | [Executive Repair](phases/170-executive-repair/spec.md) | ✅ Implemented |
 | 171 | [Loop Confirmation](phases/171-loop-confirmation/spec.md) | ✅ Implemented |
 | 177 | [Interruption Governor](phases/177-interruption-governor/spec.md) | ✅ Implemented |
-| 181 | [Irreversible Write Confirmation](phases/181-irreversible-write-confirmation/spec.md) | 🚧 In progress |
+| 181 | [Irreversible Write Confirmation](phases/181-irreversible-write-confirmation/spec.md) | ✅ Implemented |
 
 ## Ze Core specs (`core/`)
 

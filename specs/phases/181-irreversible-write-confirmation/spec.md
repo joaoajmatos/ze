@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-15
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "One rule, enforced in code wherever a tool runs (agentic loop, delegate/conductor fan-out, workflow and goal executors): every WRITE tool declared IRREVERSIBLE asks the user before it acts, regardless of agent, intent or route. Use the 165 reversibility declaration. Decide reversible writes, unattended runs, composition with the capability gate, budget gate and constraint veto, the fate of `Intent.mode` and `_primary_intent`, the confirmation UX and Retry interplay. Confirm only at a point where the graph can checkpoint, never inside a concurrent child task."
 

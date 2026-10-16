@@ -3,7 +3,7 @@
   "specName": "Irreversible Write Confirmation",
   "branch": "181-irreversible-write-confirmation",
   "currentStep": "implement",
-  "status": "implementing",
+  "status": "implemented",
   "history": [
     {
       "step": "specify",
@@ -376,9 +376,208 @@
       "kind": "complete",
       "by": "ai",
       "at": "2026-10-16T12:26:33.508Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T15:17:42.858Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T15:17:57.709Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T15:18:07.777Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T058",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T15:23:29.183Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T15:37:11.803Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T059",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T15:47:41.539Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T061",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.051Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T062",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.335Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T063",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.636Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T065",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.928Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T060",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T16:08:46.002Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.569Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.640Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.717Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.791Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.861Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.926Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T16:29:12.173Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T064",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:34:19.093Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T066",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T16:41:55.283Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T057",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T16:42:07.791Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "Rivet",
+      "at": "2026-10-16T17:49:50.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "Rivet",
+      "at": "2026-10-16T17:49:50.269Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T067",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T17:53:57.312Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T17:53:57.525Z"
     }
   ],
-  "currentTask": "T046",
+  "currentTask": "T067",
   "task_summaries": {
     "T001": {
       "status": "DONE",
@@ -620,6 +819,100 @@
     "T046": {
       "status": "DONE",
       "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "JR-web: T022 done (ze-web tests + typecheck green)"
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "JR-web: T023 done (ze-web tests + typecheck green)"
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "JR-web: T045 done (ze-web tests + typecheck green)"
+    },
+    "T058": {
+      "status": "DONE",
+      "did": "ENG-core: POST /api/v0/eval/confirm (evalConfirm), parked flag on eval tool calls incl. subtask results; tests/api/test_eval_confirm.py; codegen"
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "ENG-core: sweep of gate leftovers (44ce3d3b); guard test green"
+    },
+    "T059": {
+      "status": "DONE",
+      "did": "JR-eval: T059 eval confirm step, judge text, write_confirmation.yaml (92f56655)"
+    },
+    "T061": {
+      "status": "DONE",
+      "did": "JR-docs: T061 docs committed (see git log)"
+    },
+    "T062": {
+      "status": "DONE",
+      "did": "JR-docs: T062 docs committed (see git log)"
+    },
+    "T063": {
+      "status": "DONE",
+      "did": "JR-docs: T063 docs committed (see git log)"
+    },
+    "T065": {
+      "status": "DONE",
+      "did": "JR-docs: T065 docs committed (see git log)"
+    },
+    "T060": {
+      "status": "DONE"
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "ENG-auto T049"
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "ENG-auto T050"
+    },
+    "T051": {
+      "status": "DONE",
+      "did": "ENG-auto T051"
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "ENG-auto T052"
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "ENG-auto T053"
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "ENG-auto T054"
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "JR-web: held writes in the notification bell, ?confirm= deep link; ze-web 293 tests green"
+    },
+    "T064": {
+      "status": "DONE",
+      "did": "JR-docs: diagrams redrawn (981ca9a9), alt text (6ce43373)"
+    },
+    "T066": {
+      "status": "DONE"
+    },
+    "T057": {
+      "status": "DONE",
+      "did": "N/A: T001 found no 171 Follow-ups goal-local confirmation on this branch"
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "committed by Rivet (174e35d9 / 594f965e); ticked at close"
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "committed by Rivet (174e35d9 / 594f965e); ticked at close"
+    },
+    "T067": {
+      "status": "DONE",
+      "did": "gates on 109878a0: test-py 4443 passed (33 suites), test-pg 41, ze-ui 22 + ze-web 304, typecheck-web, lint; quickstart e2e by Tally (QA) at 496667ef, findings fixed"
     }
   }
 }
