@@ -616,7 +616,9 @@ class PostgresProcedureStore:
         if self._embedder is None:
             return None
         try:
-            return list(self._embedder.encode(f"{version.trigger} {version.name}"))
+            return list(
+                self._embedder.encode_passage(f"{version.trigger} {version.name}")
+            )
         except Exception:
             return None
 

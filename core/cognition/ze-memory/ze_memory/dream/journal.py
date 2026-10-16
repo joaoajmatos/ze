@@ -31,7 +31,6 @@ class DreamJournal:
         insights_promoted: int,
         procedures_extracted: int,
         plan_risks_surfaced: int,
-        pending_review: int,
         synthesis_model: str = _DEFAULT_JOURNAL_MODEL,
     ) -> UUID:
         summary = await self._generate_summary(
@@ -39,7 +38,6 @@ class DreamJournal:
             insights_promoted=insights_promoted,
             procedures_extracted=procedures_extracted,
             plan_risks_surfaced=plan_risks_surfaced,
-            pending_review=pending_review,
             model=synthesis_model,
         )
 
@@ -50,14 +48,12 @@ class DreamJournal:
             insights_promoted=insights_promoted,
             procedures_extracted=procedures_extracted,
             plan_risks_surfaced=plan_risks_surfaced,
-            pending_review=pending_review,
         )
 
         log.info(
             "dream_journal_written",
             run_id=str(run_id),
             insights_promoted=insights_promoted,
-            pending_review=pending_review,
         )
         return entry_id
 
@@ -67,10 +63,9 @@ class DreamJournal:
         insights_promoted: int,
         procedures_extracted: int,
         plan_risks_surfaced: int,
-        pending_review: int,
         model: str,
     ) -> str:
-        if insights_promoted == 0 and pending_review == 0 and plan_risks_surfaced == 0:
+        if insights_promoted == 0 and plan_risks_surfaced == 0:
             return (
                 f"I reviewed {episodes_processed} memory episodes overnight. "
                 "No new insights met the promotion threshold."
@@ -81,7 +76,6 @@ class DreamJournal:
             f"Insights promoted to long-term memory: {insights_promoted}\n"
             f"Procedures extracted: {procedures_extracted}\n"
             f"Plan risks surfaced: {plan_risks_surfaced}\n"
-            f"Items pending your review: {pending_review}\n"
             "\nWrite a 2–3 sentence dream journal entry."
         )
         try:

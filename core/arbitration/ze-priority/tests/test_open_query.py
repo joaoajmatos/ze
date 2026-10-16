@@ -16,7 +16,7 @@ class _Embedder:
     def __init__(self) -> None:
         self.calls = 0
 
-    def encode(self, texts):
+    def encode_passage(self, texts):
         self.calls += 1
         return np.stack([_VECS[t] for t in texts])
 
@@ -56,11 +56,11 @@ def test_none_embedding_is_false():
 
 def test_embedder_failure_is_false_and_retried_later():
     class Flaky(_Embedder):
-        def encode(self, texts):
+        def encode_passage(self, texts):
             self.calls += 1
             if self.calls == 1:
                 raise RuntimeError("model not loaded")
-            return super().encode(texts) if False else np.stack([_VECS[t] for t in texts])
+            return np.stack([_VECS[t] for t in texts])
 
     embedder = Flaky()
     d = _detector(embedder)
@@ -69,3 +69,17 @@ def test_embedder_failure_is_false_and_retried_later():
     assert d.is_open_query(vec) is False
     assert d.is_open_query(vec) is True
     assert embedder.calls == 2
+
+
+def test_detector_embeds_examples_as_passages():
+    # The 0.88 threshold and 0.05 PT offset are calibrated passage-vs-passage
+    # (eval/calibration/open_query.py); a query prefix would shift every score.
+    class Strict(_Embedder):
+        def encode_query(self, texts):
+            raise AssertionError("open-query examples must be passage-encoded")
+
+    embedder = Strict()
+    d = _detector(embedder)
+
+    assert d.is_open_query(np.array([1.0, 0.0, 0.0])) is True
+    assert embedder.calls == 1

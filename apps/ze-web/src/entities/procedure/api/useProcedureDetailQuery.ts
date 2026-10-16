@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { workspaceFetch } from "@/entities/workspace/api/workspaceFetch";
+import { getProcedure } from "@myguyze/ze-client";
 import { queryKeys } from "@/shared/lib";
 import type { ProcedureDetail } from "../model/types";
 
@@ -8,8 +8,9 @@ export function useProcedureDetailQuery(procedureId: string | undefined) {
     queryKey: queryKeys.procedureDetail(procedureId ?? ""),
     enabled: Boolean(procedureId),
     queryFn: async (): Promise<ProcedureDetail> => {
-      const res = await workspaceFetch(`/procedures/${procedureId}`);
-      return (await res.json()) as ProcedureDetail;
+      const { data, error } = await getProcedure({ path: { procedure_id: procedureId! } });
+      if (error) throw error;
+      return data!;
     },
   });
 }

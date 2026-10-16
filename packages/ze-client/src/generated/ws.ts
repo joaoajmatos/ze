@@ -195,6 +195,10 @@ export type Outcome1 = "approved" | "edited" | "pre_approved" | "denied" | "time
 export type WriteConfirmations = WriteConfirmationOutcomeResponse[];
 export type Replaces1 = string;
 export type Entries1 = RollbackEntryResponse[];
+export type Agent4 = string;
+export type Tier = "simple" | "full";
+export type DecidedBy = string;
+export type Model1 = string;
 export type Type12 = "notification";
 export type Id5 = string;
 export type EventType = string;
@@ -486,6 +490,7 @@ export interface WsTraceUpdateFrame {
   effects_known?: EffectsKnown;
   write_confirmations?: WriteConfirmations;
   rollback?: RollbackTraceResponse | null;
+  tier?: TierTraceResponse | null;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -617,6 +622,16 @@ export interface WriteConfirmationOutcomeResponse {
 export interface RollbackTraceResponse {
   replaces: Replaces1;
   entries?: Entries1;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "TierTraceResponse".
+ */
+export interface TierTraceResponse {
+  agent: Agent4;
+  tier: Tier;
+  decided_by: DecidedBy;
+  model: Model1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

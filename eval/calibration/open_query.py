@@ -41,6 +41,7 @@ HOLDOUT_FPR_BAR = 0.05
 TUNED = Path(__file__).with_name("open_query.jsonl")
 HOLDOUT = Path(__file__).with_name("open_query_holdout.jsonl")
 HOLDOUT2 = Path(__file__).with_name("open_query_holdout2.jsonl")
+HOLDOUT3 = Path(__file__).with_name("open_query_holdout3.jsonl")
 
 
 @dataclass(frozen=True)
@@ -65,7 +66,9 @@ def load_rows(path: Path) -> list[Row]:
 
 
 def shape_problems(
-    tuned: list[Row], holdout: list[Row], holdout2: list[Row] | None = None
+    tuned: list[Row],
+    holdout: list[Row],
+    extra: dict[str, list[Row]] | None = None,
 ) -> list[str]:
     problems: list[str] = []
     for name, rows, minimum in (
@@ -83,18 +86,20 @@ def shape_problems(
             problems.append(f"{name}: duplicate ids")
         if len({_norm(r.text) for r in rows}) != len(rows):
             problems.append(f"{name}: duplicate text")
-    if holdout2:
+    seen_rows = tuned + holdout
+    for name, rows in (extra or {}).items():
         for lang in LANGS:
-            if len([r for r in holdout2 if r.lang == lang]) < MIN_HOLDOUT_PER_LANG:
-                problems.append(f"holdout2/{lang}: too few rows")
-        if len({r.id for r in holdout2}) != len(holdout2):
-            problems.append("holdout2: duplicate ids")
-        seen = {_norm(r.text) for r in tuned + holdout}
-        for r in holdout2:
+            if len([r for r in rows if r.lang == lang]) < MIN_HOLDOUT_PER_LANG:
+                problems.append(f"{name}/{lang}: too few rows")
+        if len({r.id for r in rows}) != len(rows):
+            problems.append(f"{name}: duplicate ids")
+        seen = {_norm(r.text) for r in seen_rows}
+        for r in rows:
             if _norm(r.text) in seen:
-                problems.append(f"holdout2/{r.id}: text shared with another set")
-        if {r.id for r in holdout2} & {r.id for r in tuned + holdout}:
-            problems.append("ids repeat across holdout2 and other sets")
+                problems.append(f"{name}/{r.id}: text shared with another set")
+        if {r.id for r in rows} & {r.id for r in seen_rows}:
+            problems.append(f"ids repeat across {name} and other sets")
+        seen_rows = seen_rows + rows
     ids = [r.id for r in tuned + holdout]
     if len(ids) != len(set(ids)):
         problems.append("ids repeat across tuned and holdout")
@@ -108,12 +113,18 @@ def shape_problems(
     return problems
 
 
+def _extra_sets() -> dict[str, list[Row]]:
+    return {
+        name: load_rows(path)
+        for name, path in (("holdout2", HOLDOUT2), ("holdout3", HOLDOUT3))
+        if path.exists()
+    }
+
+
 def check_sets() -> int:
     tuned, holdout = load_rows(TUNED), load_rows(HOLDOUT)
-    holdout2 = load_rows(HOLDOUT2) if HOLDOUT2.exists() else None
-    named = [("tuned", tuned), ("holdout", holdout)]
-    if holdout2:
-        named.append(("holdout2", holdout2))
+    extra = _extra_sets()
+    named = [("tuned", tuned), ("holdout", holdout), *extra.items()]
     for name, rows in named:
         counts = Counter((r.lang, r.label) for r in rows)
         print(f"{name}: {len(rows)} rows")
@@ -121,7 +132,7 @@ def check_sets() -> int:
             pos = counts[(lang, True)]
             neg = counts[(lang, False)]
             print(f"  {lang}: {pos + neg} rows, {pos} positive, {neg} negative")
-    problems = shape_problems(tuned, holdout, holdout2)
+    problems = shape_problems(tuned, holdout, extra)
     for problem in problems:
         print("PROBLEM:", problem, file=sys.stderr)
     return 1 if problems else 0
@@ -138,7 +149,7 @@ def similarities(rows: list[Row]) -> dict[str, float]:
 
     embedder = get_embedder()
     detector = OpenQueryDetector(embedder, threshold=0.0)
-    embeddings = embedder.encode([r.text for r in rows], normalize_embeddings=True)
+    embeddings = embedder.encode_passage([r.text for r in rows], normalize_embeddings=True)
     return {
         r.id: detector.best_similarity(vec) for r, vec in zip(rows, embeddings)
     }
@@ -207,7 +218,7 @@ def report_holdout(rows: list[Row], sims: dict[str, float], threshold: float) ->
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check-sets", action="store_true", help="offline dataset shape check")
-    parser.add_argument("--set", choices=("tuned", "holdout", "holdout2"), default="tuned")
+    parser.add_argument("--set", choices=("tuned", "holdout", "holdout2", "holdout3"), default="tuned")
     parser.add_argument(
         "--threshold",
         type=float,
@@ -219,20 +230,23 @@ def main() -> int:
     if args.check_sets:
         return check_sets()
 
-    problems = shape_problems(
-        load_rows(TUNED),
-        load_rows(HOLDOUT),
-        load_rows(HOLDOUT2) if HOLDOUT2.exists() else None,
-    )
+    problems = shape_problems(load_rows(TUNED), load_rows(HOLDOUT), _extra_sets())
     if problems:
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
 
     if args.set != "tuned" and args.threshold is None:
-        print("--set holdout/holdout2 needs --threshold T.", file=sys.stderr)
+        print("--set holdout/holdout2/holdout3 needs --threshold T.", file=sys.stderr)
         return 2
 
-    rows = load_rows({"tuned": TUNED, "holdout": HOLDOUT, "holdout2": HOLDOUT2}[args.set])
+    rows = load_rows(
+        {
+            "tuned": TUNED,
+            "holdout": HOLDOUT,
+            "holdout2": HOLDOUT2,
+            "holdout3": HOLDOUT3,
+        }[args.set]
+    )
     try:
         sims = similarities(rows)
     except ImportError as exc:

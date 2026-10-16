@@ -166,7 +166,7 @@ class MyAgent(BaseAgent):
     name         = "my_agent"           # unique, snake_case — used for routing
     description  = "What this agent does."  # embedded for cosine-similarity routing
     model        = "anthropic/claude-sonnet-4-5"
-    model_simple = None                 # optional lighter model for simple turns
+    model_simple = None                 # optional lighter model; used only for turns System One judges light (complexity surface, on in the shipped config)
     vision_capable = False              # set True to receive image data in ctx
     timeout      = 30                   # seconds
     tools        = ["tool_a", "tool_b"] # @tool-registered names

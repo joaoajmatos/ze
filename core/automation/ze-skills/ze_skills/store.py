@@ -117,10 +117,6 @@ class SkillStore(Protocol):
 
     async def list_reference_files(self, skill_id: UUID) -> list[ReferenceFile]: ...
 
-    async def get_reference_file(
-        self, skill_id: UUID, filename: str
-    ) -> ReferenceFile | None: ...
-
     async def add_script(self, script: SkillScript) -> SkillScript: ...
 
     async def delete_scripts(self, skill_id: UUID) -> None: ...
@@ -351,18 +347,6 @@ class PostgresSkillStore:
                 skill_id,
             )
         return [_reference_file_from_row(r) for r in rows]
-
-    async def get_reference_file(
-        self, skill_id: UUID, filename: str
-    ) -> ReferenceFile | None:
-        async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT * FROM skill_reference_files"
-                " WHERE skill_id = $1 AND filename = $2",
-                skill_id,
-                filename,
-            )
-        return _reference_file_from_row(row) if row else None
 
     async def add_review(self, review: SkillReview) -> SkillReview:
         async with self._pool.acquire() as conn:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import (
@@ -11,26 +10,18 @@ from fastapi import (
     Form,
     HTTPException,
     Query,
-    Request,
     UploadFile,
 )
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from ze_api.api.dependencies import (
-    get_connection_manager,
-    get_ingestion_pipeline,
     get_workspace_client,
     get_workspace_run_watcher,
     get_workspace_store,
     require_api_key,
 )
-from ze_api.api.websocket.frames import build_prompt_frame, prompt_payload
 from ze_api.api.schemas import (
     WorkspaceFileListResponse,
-    WorkspaceIngestResponse,
-    WorkspaceResetQueuedResponse,
-    WorkspaceResetRequest,
-    WorkspaceResetResultResponse,
     WorkspaceRunListResponse,
     WorkspaceRunResponse,
     WorkspaceStatusResponse,
@@ -135,36 +126,22 @@ async def upload_workspace_file(
     return WorkspaceUploadResponse.model_validate(data)
 
 
-@router.post(
-    "/files/{file_path:path}/ingest",
-    response_model=WorkspaceIngestResponse,
-    operation_id="ingestWorkspaceFile",
-    summary="Ingest a workspace file into memory",
-    description="Opt-in ingest of an existing workspace file. The file is not deleted.",
-)
-async def ingest_workspace_file(
-    file_path: str,
-    client: WorkspaceClient = Depends(get_workspace_client),
-    pipeline: object = Depends(get_ingestion_pipeline),
-) -> WorkspaceIngestResponse:
-    try:
-        data = await workspace_rest.ingest_file(client, pipeline, file_path)
-    except (
-        WorkspaceUnavailableError,
-        WorkspaceBusyError,
-        WorkspacePathError,
-        WorkspaceNotFoundError,
-        WorkspaceFullError,
-    ) as exc:
-        _raise_workspace(exc)
-    return WorkspaceIngestResponse.model_validate(data)
-
-
 @router.get(
     "/files/{file_path:path}",
     operation_id="getWorkspaceFile",
     summary="Download a workspace file",
     description="Return file bytes as an attachment. Directories and escapes are 400.",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "File bytes",
+            "content": {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            },
+        }
+    },
 )
 async def get_workspace_file(
     file_path: str,
@@ -241,6 +218,17 @@ async def list_workspace_runs(
         "Does not replace follow-through — the follow-up turn still fires "
         "exactly once when the run becomes terminal (FR-011)."
     ),
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "Newline-delimited JSON events",
+            "content": {
+                "application/x-ndjson": {
+                    "schema": {"type": "string", "format": "binary"}
+                }
+            },
+        }
+    },
 )
 async def watch_workspace_run_events(
     run_id: UUID,
@@ -286,79 +274,3 @@ async def cancel_workspace_run(
     except WorkspaceError as exc:
         _raise_workspace(exc)
     return WorkspaceRunResponse.model_validate(data)
-
-
-_RESET_PROMPT = (
-    "Reset the workspace? All files will be removed. "
-    "An in-flight command will be stopped first so nothing writes into an emptied tree."
-)
-
-
-@router.post(
-    "/reset",
-    operation_id="resetWorkspace",
-    summary="Reset the workspace",
-    description=(
-        "Does not wipe immediately. Issues a confirmation (editable: false). "
-        "On approve, cancel any in-flight run then wipe. On deny, no change."
-    ),
-)
-async def reset_workspace(
-    request: Request,
-    body: WorkspaceResetRequest | None = None,
-    store: WorkspaceStore = Depends(get_workspace_store),
-    client: WorkspaceClient = Depends(get_workspace_client),
-    conn_mgr=Depends(get_connection_manager),
-) -> JSONResponse:
-    payload = body or WorkspaceResetRequest()
-    if payload.confirmation_id and payload.choice:
-        try:
-            data = await workspace_rest.resolve_reset(
-                store, client, payload.confirmation_id, payload.choice
-            )
-        except (
-            WorkspaceUnavailableError,
-            WorkspaceBusyError,
-            WorkspacePathError,
-            WorkspaceNotFoundError,
-            WorkspaceFullError,
-        ) as exc:
-            _raise_workspace(exc)
-        return JSONResponse(
-            status_code=200,
-            content=WorkspaceResetResultResponse.model_validate(data).model_dump(),
-        )
-
-    queued = workspace_rest.request_reset()
-    confirmation_id = queued["confirmation_id"]
-    container = request.app.state.container if request is not None else None
-    confirmation_store = getattr(container, "confirmation_store", None)
-    actions = [
-        {"label": "Approve", "value": "approve", "style": "primary"},
-        {"label": "Cancel", "value": "deny", "style": "secondary"},
-    ]
-    expires_at = datetime.now(timezone.utc) + timedelta(seconds=900)
-    if confirmation_store is not None:
-        await confirmation_store.save(
-            thread_id="workspace",
-            request_id=confirmation_id,
-            prompt=_RESET_PROMPT,
-            actions=prompt_payload(_RESET_PROMPT, actions),
-            expires_at=expires_at,
-        )
-    if conn_mgr is not None:
-        await conn_mgr.send_frame(
-            build_prompt_frame(
-                request_id=confirmation_id,
-                thread_id=None,
-                title=_RESET_PROMPT,
-                actions=actions,
-                expires_at=expires_at,
-            )
-        )
-    return JSONResponse(
-        status_code=202,
-        content=WorkspaceResetQueuedResponse(
-            confirmation_id=confirmation_id
-        ).model_dump(),
-    )

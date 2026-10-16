@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
 from ze_api.api.dependencies import get_container, require_api_key
 from ze_api.api.schemas import (
@@ -121,25 +121,3 @@ async def cost_anomalies(
         ],
         period_days=days,
     )
-
-
-@router.get(
-    "/detail",
-    operation_id="getCostDetail",
-    summary="Cost detail",
-    description=(
-        "Aggregate LLM token usage and cost grouped by flow_type, agent, model, or session_id. "
-        "Ordered by total_tokens descending."
-    ),
-)
-async def cost_detail(
-    days: int = Query(default=30, ge=1, le=365, description="Lookback window in days"),
-    group_by: str = Query(default="flow_type", description="Grouping dimension"),
-    container=Depends(get_container),
-) -> dict:
-    try:
-        return await telemetry_rest.cost_detail(
-            container.pool, days=days, group_by=group_by
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc

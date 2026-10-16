@@ -4,9 +4,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import pytest
 
-from ze_plugin.contribution import EvidenceRef
 from ze_worldstate import rest
 from ze_worldstate.types import (
     LoopClaimKind,
@@ -139,100 +137,17 @@ async def test_list_loops_empty_list_skips_the_source_query():
     loop_store.list_sources_for.assert_awaited_once_with([])
 
 
-async def test_get_loop_adds_sources_in_time_order():
-    loop = _loop()
-    loop_id = loop.id
-    origin = _source(
-        loop_id,
-        role=LoopSourceRole.ORIGIN,
-        inflow="conversation",
-        ref="T1",
-        evidence=EvidenceRef(kind="episode", id=uuid4()),
-        minutes=0,
-    )
-    corroboration = _source(
-        loop_id,
-        inflow="email",
-        ref="G1",
-        evidence=EvidenceRef(kind="episode", id=uuid4()),
-        same_concern=0.93,
-        promoted=True,
-        minutes=1,
-    )
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=loop)
-    loop_store.list_sources = AsyncMock(return_value=[origin, corroboration])
-
-    detail = await rest.get_loop(loop_store, loop_id)
-
-    loop_store.list_sources.assert_awaited_once_with(loop_id)
-    assert detail["promoted"] is True
-    assert detail["source_inflows"] == ["conversation", "email"]
-    assert detail["sources"] == [
-        {
-            "role": "origin",
-            "inflow": "conversation",
-            "evidence_kind": "episode",
-            "same_concern": None,
-            "promoted": False,
-            "created_at": NOW.isoformat(),
-        },
-        {
-            "role": "corroboration",
-            "inflow": "email",
-            "evidence_kind": "episode",
-            "same_concern": 0.93,
-            "promoted": True,
-            "created_at": (NOW + timedelta(minutes=1)).isoformat(),
-        },
-    ]
-
-
-async def test_get_loop_source_created_at_none_and_no_evidence():
-    loop = _loop()
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=loop)
-    loop_store.list_sources = AsyncMock(
-        return_value=[
-            LoopSource(
-                loop_id=loop.id,
-                role=LoopSourceRole.CORROBORATION,
-                key=SourceKey("calendar", "evt-1"),
-            )
-        ]
-    )
-
-    detail = await rest.get_loop(loop_store, loop.id)
-
-    assert detail["sources"][0]["created_at"] is None
-    assert detail["sources"][0]["evidence_kind"] is None
-
-
-async def test_get_loop_raises_when_missing():
-    from ze_worldstate.errors import LoopNotFoundError
-
-    loop_store = AsyncMock()
-    loop_store.get = AsyncMock(return_value=None)
-
-    with pytest.raises(LoopNotFoundError):
-        await rest.get_loop(loop_store, uuid4())
-
-
-async def test_list_and_detail_expose_reminder_and_goal_ids():
+async def test_list_exposes_reminder_and_goal_ids():
     reminder_id, goal_id = uuid4(), uuid4()
     loop = _loop(reminder_id=reminder_id, goal_id=goal_id)
     loop_store = AsyncMock()
     loop_store.list = AsyncMock(return_value=[loop])
     loop_store.list_sources_for = AsyncMock(return_value={})
-    loop_store.get = AsyncMock(return_value=loop)
-    loop_store.list_sources = AsyncMock(return_value=[])
 
     (item,) = await rest.list_loops(loop_store)
-    detail = await rest.get_loop(loop_store, loop.id)
 
-    for payload in (item, detail):
-        assert payload["reminder_id"] == reminder_id
-        assert payload["goal_id"] == goal_id
+    assert item["reminder_id"] == reminder_id
+    assert item["goal_id"] == goal_id
 
 
 async def test_unlinked_loop_has_null_ids():

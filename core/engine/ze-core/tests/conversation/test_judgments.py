@@ -95,7 +95,11 @@ def test_missing_answer_gets_its_own_skip_row():
     assert bio.skip_reason == "invalid_answer" and not bio.consumed
 
 
-_ROUTING_KINDS = {"agent": "choice", "multi_specialist": "noul", "complexity": "score"}
+_ROUTING_KINDS = {
+    "agent": "choice",
+    "multi_specialist": "noul",
+    "needs_deep_reasoning": "noul",
+}
 
 
 def test_skip_rows_take_kind_from_the_question_kinds_map():
@@ -106,7 +110,7 @@ def test_skip_rows_take_kind_from_the_question_kinds_map():
     assert {r.question_id: r.kind for r in rows} == _ROUTING_KINDS
 
 
-def test_ok_result_missing_score_answer_gives_score_skip_row():
+def test_ok_result_missing_noul_answer_gives_noul_skip_row():
     result = SystemOneResult(
         outcome="ok",
         answers={
@@ -122,24 +126,24 @@ def test_ok_result_missing_score_answer_gives_score_skip_row():
         consumed=frozenset(),
         skip_reason="invalid_answer",
     )
-    score = {r.question_id: r for r in rows}["complexity"]
-    assert score.kind == "score"
-    assert score.answer is None and score.skip_reason == "invalid_answer"
+    deep = {r.question_id: r for r in rows}["needs_deep_reasoning"]
+    assert deep.kind == "noul"
+    assert deep.answer is None and deep.skip_reason == "invalid_answer"
 
 
-def test_ok_score_answer_carries_the_float_only():
+def test_ok_noul_answer_carries_the_float_only():
     result = SystemOneResult(
         outcome="ok",
         model="jev",
-        answers={"complexity": SystemOneAnswer(type="score", score=0.42)},
+        answers={"needs_deep_reasoning": SystemOneAnswer(type="noul", noul=0.42)},
     )
     rows = judgments_from_result(
         result,
-        question_kinds={"complexity": "score"},
-        consumed=frozenset({"complexity"}),
+        question_kinds={"needs_deep_reasoning": "noul"},
+        consumed=frozenset({"needs_deep_reasoning"}),
     )
     (row,) = rows
-    assert row.kind == "score"
+    assert row.kind == "noul"
     assert row.answer == 0.42
     assert row.peakedness is None and row.probabilities is None
     assert row.consumed

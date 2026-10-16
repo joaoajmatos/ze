@@ -334,7 +334,7 @@ def _embed_fn(config: RunnableConfig) -> Any:
     embedder = config["configurable"].get("embedder")
     if embedder is None:
         return None
-    return embedder.encode
+    return embedder.encode_query
 
 
 def _build_messages(state: dict, agent_name: str, base_ctx: AgentContext) -> list[dict]:

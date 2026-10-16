@@ -30,7 +30,6 @@ class PostgresDreamStore:
         artifacts_generated: int = 0,
         artifacts_promoted: int = 0,
         artifacts_rejected: int = 0,
-        artifacts_pending: int = 0,
         sleep_pass_duration_ms: int | None = None,
         dream_pass_duration_ms: int | None = None,
         integration_duration_ms: int | None = None,
@@ -48,11 +47,10 @@ class PostgresDreamStore:
                     artifacts_generated     = $5,
                     artifacts_promoted      = $6,
                     artifacts_rejected      = $7,
-                    artifacts_pending       = $8,
-                    sleep_pass_duration_ms  = $9,
-                    dream_pass_duration_ms  = $10,
-                    integration_duration_ms = $11,
-                    error                   = $12
+                    sleep_pass_duration_ms  = $8,
+                    dream_pass_duration_ms  = $9,
+                    integration_duration_ms = $10,
+                    error                   = $11
                 WHERE id = $1
                 """,
                 run_id,
@@ -62,7 +60,6 @@ class PostgresDreamStore:
                 artifacts_generated,
                 artifacts_promoted,
                 artifacts_rejected,
-                artifacts_pending,
                 sleep_pass_duration_ms,
                 dream_pass_duration_ms,
                 integration_duration_ms,
@@ -120,15 +117,14 @@ class PostgresDreamStore:
         insights_promoted: int = 0,
         procedures_extracted: int = 0,
         plan_risks_surfaced: int = 0,
-        pending_review: int = 0,
     ) -> UUID:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
                 INSERT INTO memory_dream_journal (
                     run_id, summary, episodes_processed, insights_promoted,
-                    procedures_extracted, plan_risks_surfaced, pending_review
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    procedures_extracted, plan_risks_surfaced
+                ) VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING id
                 """,
                 run_id,
@@ -137,7 +133,6 @@ class PostgresDreamStore:
                 insights_promoted,
                 procedures_extracted,
                 plan_risks_surfaced,
-                pending_review,
             )
         return row["id"]
 
@@ -147,14 +142,6 @@ class PostgresDreamStore:
                 "SELECT * FROM memory_dream_journal ORDER BY created_at DESC LIMIT 1"
             )
         return dict(row) if row else None
-
-    async def list_journal_entries(self, limit: int = 10) -> list[dict]:
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT * FROM memory_dream_journal ORDER BY created_at DESC LIMIT $1",
-                limit,
-            )
-        return [dict(r) for r in rows]
 
     async def get_artifact_row(self, artifact_id: UUID) -> dict | None:
         async with self._pool.acquire() as conn:
@@ -188,19 +175,6 @@ class PostgresDreamStore:
                 ORDER BY created_at
                 """,
                 run_id,
-            )
-        return [dict(r) for r in rows]
-
-    async def get_needs_review_artifacts(self, limit: int = 50) -> list[dict]:
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT * FROM memory_dream_artifacts
-                WHERE status = 'needs_review'
-                ORDER BY created_at DESC
-                LIMIT $1
-                """,
-                limit,
             )
         return [dict(r) for r in rows]
 
@@ -275,24 +249,4 @@ class PostgresDreamStore:
                 artifact_id,
                 promoted_to,
                 promoted_id,
-            )
-
-    async def mark_artifact_reviewed(self, artifact_id: UUID) -> None:
-        async with self._pool.acquire() as conn:
-            await conn.execute(
-                "UPDATE memory_dream_artifacts SET reviewed_at = now() WHERE id = $1",
-                artifact_id,
-            )
-
-    async def set_revised_content(self, artifact_id: UUID, content: str) -> None:
-        async with self._pool.acquire() as conn:
-            await conn.execute(
-                """
-                UPDATE memory_dream_artifacts SET
-                    user_revised_content = $2,
-                    status = 'revised'
-                WHERE id = $1
-                """,
-                artifact_id,
-                content,
             )

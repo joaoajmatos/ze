@@ -20,9 +20,6 @@ class ArtifactStatus(str, Enum):
     PENDING = "pending"
     PROMOTED = "promoted"
     REJECTED = "rejected"
-    NEEDS_REVIEW = "needs_review"
-    REVISED = "revised"
-    ROLLED_BACK = "rolled_back"
 
 
 @dataclass
@@ -76,5 +73,4 @@ class DreamJournalEntry:
     insights_promoted: int
     procedures_extracted: int
     plan_risks_surfaced: int
-    pending_review: int
     created_at: datetime

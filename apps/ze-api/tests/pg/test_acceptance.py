@@ -57,7 +57,7 @@ async def test_declared_loop_drifts_and_is_a_push_candidate(pg_pool):
     relevance.build = AsyncMock(return_value=object())
     relevance.score = MagicMock(return_value=SimpleNamespace(value=1.0, contributions=[]))
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[1.0, 0.0])
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[1.0, 0.0])
     nli = MagicMock()
     nli.scores = AsyncMock(return_value=[0.95])
     nli.grounding_score = MagicMock(return_value=0.95)

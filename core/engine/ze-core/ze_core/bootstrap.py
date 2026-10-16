@@ -20,7 +20,6 @@ from ze_core.orchestration.checkpoint_pruner import CheckpointPruner
 from ze_core.nli import LocalNLIClient
 from ze_core.openrouter.client import OpenRouterClient
 from ze_core.openrouter.system_one import build_system_one_client
-from ze_core.routing.complexity import ComplexityEstimator
 from ze_core.routing.factory import build_embedding_router
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.store import PostgresRoutingStore
@@ -53,7 +52,6 @@ class EngineStack:
     memory_store: PostgresMemoryStore
     memory_consolidator: MemoryConsolidator
     session_summariser: SessionSummariser
-    estimator: ComplexityEstimator
     core_settings: CoreSettings
     dep_map: dict[type, Any] = field(default_factory=dict)
 
@@ -106,7 +104,6 @@ async def build_engine_stack(
         settings=settings,
     )
 
-    estimator = ComplexityEstimator()
 
     dep_map: dict[type, Any] = {
         asyncpg.Pool: pool,
@@ -131,7 +128,6 @@ async def build_engine_stack(
         memory_store=memory_store,
         memory_consolidator=memory_consolidator,
         session_summariser=session_summariser,
-        estimator=estimator,
         core_settings=core_settings,
         dep_map=dep_map,
     )
@@ -156,7 +152,6 @@ def build_router(stack: EngineStack, settings: Any) -> EmbeddingRouter:
         config=settings.config,
         system_one_client=stack.system_one_client,
         routing_store=PostgresRoutingStore(stack.pool),
-        estimator=stack.estimator,
     )
 
 

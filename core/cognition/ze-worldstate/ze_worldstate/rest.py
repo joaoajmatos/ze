@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID
 
 from ze_worldstate import review
-from ze_worldstate.errors import LoopNotFoundError
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import LoopSource, LoopSourceRole, OpenLoop
 
@@ -37,18 +36,6 @@ def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
         "updated_at": loop.updated_at.isoformat() if loop.updated_at else None,
         "promoted": _is_promoted(sources),
         "source_inflows": _source_inflows(sources),
-    }
-
-
-def _source_to_item(source: LoopSource) -> dict:
-    evidence = source.evidence
-    return {
-        "role": source.role.value,
-        "inflow": source.key.inflow,
-        "evidence_kind": evidence.kind if evidence else None,
-        "same_concern": source.same_concern,
-        "promoted": source.promoted,
-        "created_at": source.created_at.isoformat() if source.created_at else None,
     }
 
 
@@ -117,19 +104,6 @@ async def _fetch_entities(pool: Any, loop_id: UUID) -> list[dict]:
         }
         for r in rows
     ]
-
-
-async def get_loop(loop_store: LoopStore, loop_id: UUID, pool: Any = None) -> dict:
-    loop = await loop_store.get(loop_id)
-    if loop is None:
-        raise LoopNotFoundError(f"Loop {loop_id} not found")
-    sources = await loop_store.list_sources(loop_id)
-    return {
-        **_loop_to_list_item(loop, sources),
-        "evidence": await _fetch_evidence_summaries(pool, loop_store, loop_id),
-        "entities": await _fetch_entities(pool, loop_id),
-        "sources": [_source_to_item(source) for source in sources],
-    }
 
 
 def _transition_response(loop: OpenLoop) -> dict:

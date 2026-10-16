@@ -74,6 +74,8 @@ Calibrated **act / hold / escalate** is missing on routing, admission, confirms,
 
 > **O2 implementation notes (167):** The 164 surface failed held-out checks (about 0.98 confident, 80% right) because companion and research both claimed "explain X", the `none` criterion was weak, and E5 recall was low. 167 removed the claim from companion's description; added an optional `routing_criteria` on `BaseAgent` (use-for / not-for text; the Choice falls back to `description`; E5 still embeds `description`); and rewrote the Choice instructions and `none` criterion without naming any plugin agent. `shortlist_k` is now chosen by an offline recall sweep: k=9 of a 10-agent roster, the smallest with recall >= 0.95 on `routing`, `routing_holdout` and `routing_holdout2`. Acceptance rule (FR-009, amended in the spec): zero harmful trusts, ECE <= 0.10 and zero research->companion misses on both held-out sets; raw accuracy is reported, not gating. Result: enabled with `choice_trust` 0.5, `multi_specialist_hold` 0.5, `complexity_lookup_max` null (regex tiering stays). Follow-up: a loops-vs-companion criteria refinement.
 
+> **O2 implementation notes (182):** 182 replaced the routing Score with a separate tier judgment. Routing no longer asks a complexity question. The regex `ComplexityEstimator`, `complexity_lookup_max` and `RoutingEnvelope.complexity` are removed. Routing always assigns the agent's full model. A new `choose_tier` node runs after `match_skills`. It asks one System One Noul, `needs_deep_reasoning`, with one attempt, and only for a single-agent turn whose agent declares a `model_simple` that differs from its `model`. The shipped `system_one.surfaces.complexity` is on (`enabled: true`, `simple_max: 0.40`), enabled 2026-10-16 after the held-out ENABLE. The code default without a config block is off (`ComplexitySurfaceConfig()` is disabled). With `enabled: false` or `simple_max: null`, every agent runs its full model and makes no request.
+
 > **O3 implementation notes (166):** The roadmap name is "skill suggestion", but nothing is suggested to the user. The phase gates **automatic application**. E5 stays the shortlist, with a lower shortlist-only pre-floor (`shortlist_floor`, near 0.35) under `match_threshold`, and `shortlist_k` set from the offline recall table, not assumed. One batched request (`evaluate(..., max_attempts=1)`) asks a Choice over the shortlist ∪ `none` and a Noul `needs_skill`. Pure code decides apply, drop, abstain or skip. At most one automatic skill applies (a deliberate narrowing of 114's "all matched skills"); explicit `/skill-name` bypasses the judgment and still stacks. A below-`match_threshold` apply is marked on the trace (`below_floor`). `match_skills` appends its judgment rows to `state["judgments"]` and never replaces `embed_route`'s rows. Two bars (`choice_trust`, `needs_skill_hold`) ship `null`; the surface stayed off until `make calibrate-skills`; enabled 2026-10-12 with `choice_trust` 0.75, `needs_skill_hold` 0.6, `shortlist_k` 5. Off, uncalibrated, skipped or unsure: the 114 result is unchanged.
 
 > **O4 implementation notes (168):** The Haiku `is_loop` call is split into a gate and a writer. One batched System One request (`evaluate(..., max_attempts=1)`) asks three Nouls: `is_open_concern`, `resolves_existing`, and, on conversation only, `explicit_declaration`. Three bars (`loop_hold`, `resolves_hold`, `explicit_hold`) shipped `null` until `make calibrate-loop-gate`; they are now 0.75, 0.8 and 0.85. Pure code in `ze_worldstate/loop_judge.py` (`decide()`) maps the answers to resolve, create-declared, create-suspected, hold or fallback. Haiku only writes the title after a positive gate, and also returns an optional `implied_window_days` on creates. Matching, dismissal fingerprints, confidence, provenance, drift arithmetic and the contribution seam stay in code. Parsing the window from the text in code is a later phase; until then the window comes from the Haiku writer. The conversation gate runs in `write_memory` beside the fact extractor, appends its rows to `MessageTrace.judgments`, and commits fire-and-forget; the worldstate `conversation_memory_hook` is deleted. Email, calendar and ingestion run the same gate, can create suspected loops or resolve existing ones, log their judgments, and write no message-trace rows. Off, uncalibrated, skipped, invalid or missing answers run the 109 Haiku gate unchanged. **Finding:** that gate was inert. It parses the reply with `json.loads`, Haiku wraps its JSON in a ```json fence, and all 136 calibration replies (88 tuned, 48 held-out) failed to parse, so loop extraction created no loops in production before 168. The calibration ran against the gate unchanged, with a fence-tolerant copy of the same prompt as the baseline; afterwards the fallback's parse was fixed with the shared fence-tolerant helper. **Result (held-out, one run, 10 positives per language):** English System One precision 1.00, recall 10/10, zero false creates; Haiku (fence-tolerant) precision 0.90, recall 9/10, one false create. Portuguese System One precision 1.00, recall 10/10, zero false creates; Haiku 0.909, 10/10, one false create. Not gating: one Portuguese false resolve; false declared 0 for System One against 3 for Haiku. The counts are small, so the comparison is coarse. One recorded asymmetry: the Haiku fallback still honors an explicit declaration on non-conversation text, as in 109; a later phase should cut it.
@@ -91,6 +93,7 @@ Cascade: **(1)** System One gates an LLM **(2)** LLM generates, System One selec
 | O4 | Loop extraction gate | Haiku JSON `is_loop` | Three Nouls (`is_open_concern`, `resolves_existing`, `explicit_declaration`); Haiku writes the title and window only after a positive gate | 1 + 2 (title) | **Replace LLM judge**; keep matching, dismissal, drift | M | **168 (Implemented; enabled)** |
 | O4c | Conversation commitment intake | Two batches per turn (163 speech-act + 168 loop gate) that never saw each other | One batch: commitment Choice `{reminder,loop,goal,waiting_on,fact,forget,ingest,clarify,none}` + family Choice + Noul biography + Nouls `is_open_concern`, `explicit_declaration`, `resolves_existing`; pure `decide()` merges them with the turn's tool calls and links loops to reminders and goals | 1 + 2 (title, fact value) | **Replace** the O1 and O4 conversation paths; keep the 163 fact rules, the 168 loop rules and the Haiku writers; O1 and O4 stay for fallback and for the non-conversation inflows | M–L | **173 (Implemented; enabled)** |
 | O4b | Suspected-loop corroboration | A match on a `suspected` loop links the evidence and does nothing else | One Noul `same_concern` on an independent match; two bars (corroborate, promote); `open_loop_sources` provenance | 1 | **Complement E5/matching**; E5 is the shortlist via `find_matching_loop`, independence and arithmetic stay in code | M | **172 (Implemented; ships off)** |
+| O11 | Model tier for one agent turn | Regex word-count tier; routing Score tier (164) | One Noul `needs_deep_reasoning` in `choose_tier`, after `match_skills`; one attempt; `model_simple` only when the answer is at or below `simple_max`; full model otherwise | 1 | **Complement routing**; the full model is the default on off, skip, invalid or uncalibrated | S–M | **182 (Implemented; enabled 2026-10-16 at `simple_max` 0.40 after a held-out ENABLE in EN and PT)** |
 
 ### Queued (do not start before their own phase)
 
@@ -124,6 +127,8 @@ Implement **in order**. 163 and 164 both need 162; they do not need each other. 
 7. **173 — Commitment intake (Implemented)** — one request per conversation turn replaces the 163 speech-act and 168 conversation loop-gate requests; a turn that created a reminder or goal creates no loop and links it (`zw004`); `waiting_on` is a label only; `make calibrate-commitment-intake`; enabled 2026-10-16 with `choice_hold` 0.7, `family_hold` 0.7, `biography_hold` 0.55, `loop_hold` 0.6, `explicit_hold` 0.95, `resolves_hold` 0.8 after an `ENABLE` verdict for EN and PT on a third blind held-out set (two earlier sets returned `KEEP OFF` and are spent). The 168 loop gate keeps two Nouls for email, calendar and ingestion and drops `explicit_hold`. Depends on 163 and 168.
 
 6. **172 — Corroboration promotion (Implemented)** — one Noul `same_concern` on an independent suspected-loop match; two bars set the loop's confidence or promote it to `active`; code owns independence and the arithmetic; provenance in `open_loop_sources` (`zw003`); ships off after a held-out `KEEP OFF` (2026-10-15). Depends on 162; reuses the 168 patterns, not its bars.
+
+7. **182 — Complexity routing (Implemented; enabled at `simple_max` 0.40)** — Routing always assigns the full model. A tier Noul (`needs_deep_reasoning`) in `choose_tier`, after `match_skills`, picks `model_simple` for a light single-agent turn. The complexity Score and the word-count classifier are removed. The held-out run on 2026-10-16 returned ENABLE in English and Portuguese at `simple_max` 0.40. The user approved enabling, and the shipped config sets `enabled: true`. Depends on 162; reuses the 164 judgment pattern, not its bars.
 
 Later: O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
 
@@ -174,14 +179,14 @@ Later: O5 retrieval → O6 push → O7/O8 reflection verify → O9/O10 plugins.
 ## Appendix A — Turn decision surface
 
 ```
-preprocess → embed_route → [decompose] → fetch_context → match_skills → capability_check
+preprocess → embed_route → [decompose] → fetch_context → match_skills → choose_tier → preflight
   → execute_tool → correlate → surface_loops → [synthesize] → record_trace → write_memory
 ```
 
 | Surface | Today | 162–164, 166, 168 |
 |---|---|---|
 | `EmbeddingRouter` | E5 cosine τ/gap | **164 Implemented** — Choice after shortlist (System One, E5 fallback) |
-| `ComplexityEstimator` | regex + word count | **164 Implemented** — Score tier; regex fallback |
+| `ComplexityEstimator` | regex + word count | 182: tier Noul after match_skills; full model on off/skip |
 | Haiku `decompose` | JSON subtasks | **164 Implemented** — gated on `none` / multi-specialist; not deleted |
 | `SkillMatcher` | E5 shortlist, System One Choice + Noul (166), `/slug` in code | **166 Implemented** — 114 path on skip, abstain or off |
 | `CapabilityGate` / budget | lookup + USD | never |
@@ -203,7 +208,9 @@ Proactive: `CorrelationJob` (LLM), `AttentionArbitrationJob` (rank; `PushSweepJo
 | Symbol | Path |
 |---|---|
 | `EmbeddingRouter` | `core/engine/ze-core/ze_core/routing/router.py` |
-| `ComplexityEstimator` | `ze_core/routing/complexity.py` |
+| `ComplexityEstimator` (removed by 182) | `ze_core/routing/complexity.py` |
+| Tier judgment (`needs_deep_reasoning`, `decide_tier`, bar, `build_tier_question`) | `ze_core/routing/tier.py` |
+| `choose_tier` node | `ze_core/orchestration/nodes/tier.py` |
 | Haiku decompose | `ze_core/routing/fallback.py` |
 | `NLIClient` | `core/contracts/ze-agents/ze_agents/nli.py` |
 | `LocalNLIClient` | `ze_core/nli.py` |
@@ -217,7 +224,7 @@ Proactive: `CorrelationJob` (LLM), `AttentionArbitrationJob` (rank; `PushSweepJo
 | Corroboration judge (`same_concern`, bars, `decide()`) | `ze_worldstate/corroboration_judge.py` |
 | Loop extraction (109 Haiku gate, fallback) | `ze_worldstate/extraction.py` |
 | `MessageTrace` | `ze_core/conversation/messages/types.py` |
-| `CapabilityGate` | `ze_core/capability/gate.py` |
+| `CapabilityGate` (removed by 181; `preflight` in `ze_core/orchestration/nodes/execution.py` replaces it) | `ze_core/capability/gate.py` (removed) |
 | SDK re-export | `packages/ze-sdk/ze_sdk/__init__.py` |
 
 Defaults: `ze_agents/defaults.py` (`ROUTING_THRESHOLD` 0.73, gap 0.02); `apps/ze-api/config/config.yaml` (`memory.*`, `skills.match_threshold` 0.5).
@@ -249,3 +256,33 @@ Defaults: `ze_agents/defaults.py` (`ROUTING_THRESHOLD` 0.73, gap 0.02); `apps/ze
 > **164 tuning notes:** The first live run (model `typesafe/jev-1.13`, 56 rows) gave Choice accuracy 0.87 EN / 0.91 PT. Every miss was a research turn sent to companion or `none`, and research was outside the top-4 shortlist in 3 cases. The Score arrives as the expected level index (0 lookup, 1 single_tool, 2 multi_hop), not a [0, 1] value; the judge now divides it by 2, so `complexity_lookup_max` stays on [0, 1]. Gold-agent shortlist recall (`python eval/calibration/routing.py --recall`, offline, no credits) was 0.826 at k=4 and 0.870 at k=5; after rewriting the research description it is 0.870 at k=4 and 0.957 at k=5, so `shortlist_k` defaults to 5. No `choice_trust` bar was safe on that run; bars stay `null` until the next live run.
 
 > **172 tuning notes:** Run 2026-10-15 by the ENG lead with `make calibrate-corroboration` (model `typesafe/jev-1.13`; 84 tuned rows, 42 EN + 42 PT; 47 held-out, 24 EN + 23 PT). Question wording unchanged from R4. On the tuned set, precision is 1.000 at every bar and no negative scores above 0.5, so the grid cannot separate corroborate from promote by false promotions; the ENG lead chose `corroborate_hold` 0.6 and `promote_hold` 0.8 (scores of 0.8 or more are 32 of 32 gold-same; recall 0.91 at 0.6), a deliberate departure from R9's arithmetic made before the held-out run. The E5 title-cosine baseline at 0.75 matches every row (tuned precision 0.524 / recall 1.000; held-out precision 0.574 / recall 1.000), so its recall is a ceiling, not a rival. Held-out verdict, one run at 0.6 / 0.8: EN ENABLE (precision 1.000, recall 14 of 14, zero false promotions); PT KEEP OFF (precision 1.000, recall 12 of 13 = 0.923, below the E5 recall minus 0.05); overall KEEP OFF. The surface ships off with null bars, and the held-out set is spent for these bars. Follow-ups: a larger held-out set per language, an absolute recall floor, or a lower `corroborate_hold`.
+
+> **182 tuning notes:** Tuning and freeze ran on 2026-10-16 with `make calibrate-complexity` (model `typesafe/jev-1.13`, `timeout_ms` 2000, `max_attempts=1`, state from the production `build_tier_state`). The tuned set has 47 English and 47 Portuguese rows (`cx-001` to `cx-094`). The held-out set has 54 rows, 27 per language. Only the offline shape check ran over it before the verdict run, plus one aggregate state-size check that printed total characters only. Source: `specs/phases/182-complexity-routing/research.md`, R12.
+>
+> Tuning runs (bar and light counts; "false" means `full` rows judged light):
+>
+> | Run | State | Bar | EN false / light recall | PT false / light recall | Lowest `full` Noul |
+> |---|---|---|---|---|---|
+> | 1 | A: routing criteria as the `agent` field | 0.30 | 0 / 22 of 23 | 0 / 23 of 23 | 0.30 to 0.35 |
+> | 2 | A, repeat | 0.30 | 0 / 22 of 23 | 0 / 23 of 23 | same band |
+> | 3 | B: tools first, then description | 0.40 | 0 / 22 of 23 | 0 / 23 of 23 | 0.42 |
+> | 4 | C: no `agent` field | 0.55 | 0 / 23 of 23 | 0 / 23 of 23 | 0.60 |
+> | 5 | C on the final code | 0.55 | 0 / 23 of 23 | 0 / 23 of 23 | 0.56 |
+> | 6 | C on the final code, at the frozen bar | 0.40 | 0 / 22 of 23 | 0 / 23 of 23 | 0.56 |
+>
+> **The `agent` field is dropped.** A (routing criteria) left a 0.30 to 0.35 floor under the `full` rows. B (description and tool names, tools first) was worse: its light outlier at 0.43 sat above its lowest `full` row at 0.42. C opened a clear gap: lowest `full` 0.56 to 0.60, highest `simple` 0.44 to 0.47. The field describes scope, not difficulty, so it went (spec FR-006, amended 2026-10-16). The state builder no longer reads the agent registry.
+>
+> **Bar rule (FR-017, amended).** Pick the bar on the tuned set only. No tuned `full` row may be judged light. The bar sits at least 0.15 below the lowest tuned `full` Noul. Tuned light recall is at least 0.8 per language. Among bars that pass, prefer the larger margin. The first rule drafted, the highest step below the lowest `full` row, gives 0.55 on run 5. That bar is 0.01 under the lowest `full` row, inside the measured noise of about 0.04.
+>
+> **Freeze.** `simple_max` = 0.40, frozen on 2026-10-16. On tuned run 6: zero `full` rows judged light; margin 0.16 to the lowest tuned `full` row (0.56); light recall EN 22 of 23 = 0.957, PT 23 of 23 = 1.000. Row `cx-039` sits at exactly 0.400 and counts as light, because a value equal to the bar is light.
+>
+> **Held-out verdict (T031, 2026-10-16).** One run over the blind held-out set at `simple_max` 0.40:
+>
+> | Language | False downgrades | Light recall | Skipped or invalid | Verdict |
+> |---|---|---|---|---|
+> | EN | 0 | 14 of 14 = 1.000 | 0 of 27 | ENABLE |
+> | PT | 0 | 13 of 14 = 0.929 | 0 of 27 | ENABLE |
+>
+> Overall ENABLE. Latency, reported and not gated: EN p50 550 ms and p90 880 ms; PT p50 552 ms and p90 985 ms.
+>
+> **Portuguese near-miss (caveat).** The lowest PT `full` row lies between 0.40 and 0.50. It was not judged light at 0.40, so it sits within 0.10 of the bar. The tuned lowest `full` was 0.56 to 0.60. So the held-out margin is smaller than the tuned margin of 0.16 suggested. Single rows move up to about 0.04 between runs on the tuned set, about half of that gap. The held-out set is spent for this bar and instruction text, and it cannot be re-scored to measure the margin. The user approved enabling; the shipped config sets `enabled: true` at `simple_max` 0.40 (2026-10-16).

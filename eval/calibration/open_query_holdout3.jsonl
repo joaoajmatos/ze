@@ -1,0 +1,48 @@
+{"id": "oq-hold3-en-pos-01", "lang": "en", "text": "Remind me what I've left hanging.", "label": true}
+{"id": "oq-hold3-en-pos-02", "lang": "en", "text": "Which of my obligations are still not done?", "label": true}
+{"id": "oq-hold3-en-pos-03", "lang": "en", "text": "Walk me through everything on my plate that's unfinished.", "label": true}
+{"id": "oq-hold3-en-pos-04", "lang": "en", "text": "What do I owe people right now?", "label": true}
+{"id": "oq-hold3-en-pos-05", "lang": "en", "text": "Is there anything I should be following up on?", "label": true}
+{"id": "oq-hold3-en-pos-06", "lang": "en", "text": "What threads am I still holding?", "label": true}
+{"id": "oq-hold3-en-pos-07", "lang": "en", "text": "Tell me what's still undone on my end.", "label": true}
+{"id": "oq-hold3-en-pos-08", "lang": "en", "text": "What haven't I wrapped up yet?", "label": true}
+{"id": "oq-hold3-en-pos-09", "lang": "en", "text": "Any pending items I should know about?", "label": true}
+{"id": "oq-hold3-en-pos-10", "lang": "en", "text": "What's still hanging over me this week?", "label": true}
+{"id": "oq-hold3-en-pos-11", "lang": "en", "text": "Show me the things I said I'd do but haven't.", "label": true}
+{"id": "oq-hold3-en-pos-12", "lang": "en", "text": "What's waiting for my attention?", "label": true}
+{"id": "oq-hold3-en-neg-01", "lang": "en", "text": "What time does the post office open tomorrow?", "label": false}
+{"id": "oq-hold3-en-neg-02", "lang": "en", "text": "Is the museum still open on Mondays?", "label": false}
+{"id": "oq-hold3-en-neg-03", "lang": "en", "text": "Can you open the PDF I uploaded yesterday?", "label": false}
+{"id": "oq-hold3-en-neg-04", "lang": "en", "text": "Why is my laptop update still pending?", "label": false}
+{"id": "oq-hold3-en-neg-05", "lang": "en", "text": "How much is left of my grocery budget this month?", "label": false}
+{"id": "oq-hold3-en-neg-06", "lang": "en", "text": "Do I have anything planned for Saturday evening?", "label": false}
+{"id": "oq-hold3-en-neg-07", "lang": "en", "text": "Open a new tab with the weather forecast.", "label": false}
+{"id": "oq-hold3-en-neg-08", "lang": "en", "text": "How much is still unpaid on a typical mortgage after five years?", "label": false}
+{"id": "oq-hold3-en-neg-09", "lang": "en", "text": "What was the plate number on that taxi?", "label": false}
+{"id": "oq-hold3-en-neg-10", "lang": "en", "text": "Who is still alive from the original cast of Friends?", "label": false}
+{"id": "oq-hold3-en-neg-11", "lang": "en", "text": "Is the tournament registration still open?", "label": false}
+{"id": "oq-hold3-en-neg-12", "lang": "en", "text": "What should I cook with leftover rice?", "label": false}
+{"id": "oq-hold3-pt-pos-01", "lang": "pt", "text": "Diz-me o que ainda não fechei.", "label": true}
+{"id": "oq-hold3-pt-pos-02", "lang": "pt", "text": "Que compromissos meus continuam por cumprir?", "label": true}
+{"id": "oq-hold3-pt-pos-03", "lang": "pt", "text": "O que é que ficou pendente esta semana?", "label": true}
+{"id": "oq-hold3-pt-pos-04", "lang": "pt", "text": "Há algo que eu deva estar a acompanhar?", "label": true}
+{"id": "oq-hold3-pt-pos-05", "lang": "pt", "text": "Faz-me um resumo do que está por tratar.", "label": true}
+{"id": "oq-hold3-pt-pos-06", "lang": "pt", "text": "O que é que me falta entregar?", "label": true}
+{"id": "oq-hold3-pt-pos-07", "lang": "pt", "text": "Que assuntos tenho ainda em suspenso?", "label": true}
+{"id": "oq-hold3-pt-pos-08", "lang": "pt", "text": "Do que é que me devo lembrar de resolver?", "label": true}
+{"id": "oq-hold3-pt-pos-09", "lang": "pt", "text": "O que está por fazer do meu lado?", "label": true}
+{"id": "oq-hold3-pt-pos-10", "lang": "pt", "text": "Que tarefas minhas ainda estão abertas?", "label": true}
+{"id": "oq-hold3-pt-pos-11", "lang": "pt", "text": "Quais são as coisas que prometi e ainda não fiz?", "label": true}
+{"id": "oq-hold3-pt-pos-12", "lang": "pt", "text": "O que é que continua a pesar-me na lista?", "label": true}
+{"id": "oq-hold3-pt-neg-01", "lang": "pt", "text": "A que horas abre a farmácia amanhã?", "label": false}
+{"id": "oq-hold3-pt-neg-02", "lang": "pt", "text": "O museu está aberto à segunda-feira?", "label": false}
+{"id": "oq-hold3-pt-neg-03", "lang": "pt", "text": "Abre o ficheiro PDF que enviei ontem.", "label": false}
+{"id": "oq-hold3-pt-neg-04", "lang": "pt", "text": "Quanto falta para chegar a Lisboa de comboio?", "label": false}
+{"id": "oq-hold3-pt-neg-05", "lang": "pt", "text": "As inscrições para o concurso ainda estão abertas?", "label": false}
+{"id": "oq-hold3-pt-neg-06", "lang": "pt", "text": "O que posso cozinhar com o arroz que sobrou?", "label": false}
+{"id": "oq-hold3-pt-neg-07", "lang": "pt", "text": "Qual é a previsão do tempo para sábado?", "label": false}
+{"id": "oq-hold3-pt-neg-08", "lang": "pt", "text": "Porque é que a atualização do telemóvel continua pendente?", "label": false}
+{"id": "oq-hold3-pt-neg-09", "lang": "pt", "text": "Quem é que ainda está vivo dos membros dos Beatles?", "label": false}
+{"id": "oq-hold3-pt-neg-10", "lang": "pt", "text": "O que dá hoje na televisão à noite?", "label": false}
+{"id": "oq-hold3-pt-neg-11", "lang": "pt", "text": "Há vagas em aberto na câmara municipal?", "label": false}
+{"id": "oq-hold3-pt-neg-12", "lang": "pt", "text": "Quanto me sobrou do orçamento do mês?", "label": false}

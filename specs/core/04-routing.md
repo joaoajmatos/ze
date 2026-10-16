@@ -1,4 +1,8 @@
 > ⚠️ **Status: Stale** — Written pre-split (Phases 1–20). References `ze_core/...` paths that no longer exist. See the [package specs below](../README.md#ze-core-specs-core) for current documentation.
+>
+> **Superseded by 182 (Complexity Routing).** Routing always assigns the full model. `ComplexityEstimator`, `_resolve_model`, the `estimator` argument and the `routing_log` `complexity` and `model_selected` columns are removed. See [182](../phases/182-complexity-routing/spec.md).
+>
+> **Superseded by 181 (Irreversible Write Confirmation).** The capability gate and its confirmation modes are removed; writes ask first. `SubTask` and `AgentContext` no longer carry `intent`. `SubTask` has a `changes` flag instead. The node after `match_skills` is `preflight`, not `capability_check`.
 
 ---
 
@@ -22,8 +26,8 @@ cases.
 - Return a `RoutingEnvelope` with one or more `SubTask` entries.
 - Fall back to a small LLM (`haiku_fallback`) when embedding confidence is low
   or the gap between top two scores is narrow.
-- Classify each subtask as `"simple"` or `"complex"` and resolve the correct
-  model (`model` vs `model_simple`) from the agent class.
+- (Superseded by 182: routing always assigns the full model. The `choose_tier` node
+  picks `model_simple` for a light single-agent turn.)
 - Log each routing decision asynchronously (fire-and-forget).
 
 ## Out of Scope
@@ -82,7 +86,7 @@ class EmbeddingRouter:
         openrouter_client: OpenRouterClient,
         db_pool: asyncpg.Pool,
         settings: Settings,
-        estimator: ComplexityEstimator | None = None,
+        estimator: ComplexityEstimator | None = None,  # superseded by 182: removed
     ) -> None:
 ```
 
@@ -146,7 +150,7 @@ async def _score_and_route(self, prompt: str) -> RoutingEnvelope:
 
 ### Model resolution
 
-After routing, the resolved model is written to each `SubTask.model`:
+Superseded by 182: routing no longer resolves a tier. `choose_tier` (`ze_core/routing/tier.py`) swaps in `model_simple` through `resolve_agent_model` for a light single-agent turn. The code below shows the removed design.
 
 ```python
 def _resolve_model(self, agent_cls: type[BaseAgent], complexity: str) -> str:
@@ -225,7 +229,9 @@ The system prompt is built from `agent_cls.description` values.
 
 ## ComplexityEstimator
 
-`ze_core/routing/complexity.py`
+> Superseded by 182: removed. The model tier is judged by the `choose_tier` node (`ze_core/routing/tier.py`).
+
+`ze_core/routing/complexity.py` (removed)
 
 Pure function. No I/O. No LLM calls. Classifies a prompt as `"simple"` or
 `"complex"` based on word count, intent, keyword patterns, and routing
@@ -271,8 +277,8 @@ CREATE TABLE routing_log (
     score_gap    FLOAT,
     is_compound  BOOLEAN,
     raw_scores   JSONB,
-    complexity   TEXT,
-    model_selected TEXT
+    complexity   TEXT,             -- superseded by 182: dropped
+    model_selected TEXT            -- superseded by 182: dropped
 );
 ```
 
@@ -314,7 +320,7 @@ the embedding score. The hint is also passed to the Haiku LLM fallback (the
 
 The `envelope` drives all downstream routing decisions:
 - `envelope.is_compound` → whether the graph fans out to multiple agents.
-- `envelope.subtasks[0]` → primary agent and intent for the capability check.
+- `envelope.subtasks[0]` → primary agent for `preflight` (the capability check and `intent` are removed by 181).
 - `envelope.requires_synthesis` → whether a synthesis node is needed after
   all subtasks complete.
 
@@ -327,7 +333,7 @@ The `envelope` drives all downstream routing decisions:
 | `ze_core.orchestration.registry` | `get_enabled_agents()` — reads descriptions, intents, model |
 | `ze_core.routing.types` | `SubTask`, `RoutingEnvelope` |
 | `ze_core.routing.haiku_fallback` | LLM-based decomposition |
-| `ze_core.routing.complexity` | `ComplexityEstimator` |
+| `ze_core.routing.complexity` | `ComplexityEstimator` (superseded by 182: removed) |
 | `ze_core.errors` | `InvalidPromptError`, `RoutingError` |
 | `ze_core.logging` | Structured logging |
 | `sentence_transformers` | Embedding model (injected, not imported directly) |

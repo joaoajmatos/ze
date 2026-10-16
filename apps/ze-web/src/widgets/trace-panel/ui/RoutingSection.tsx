@@ -18,6 +18,7 @@ export function RoutingSection({ trace, live }: RoutingSectionProps) {
         isCompound={trace.is_compound}
         subtasks={trace.subtasks}
         totalDurationMs={trace.total_duration_ms}
+        tier={trace.tier}
       />
     </TraceSection>
   );

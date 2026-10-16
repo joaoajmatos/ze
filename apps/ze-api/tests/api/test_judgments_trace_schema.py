@@ -1,6 +1,29 @@
 """OpenAPI / REST: judgments field on message traces (phase 162 US3)."""
 
-from ze_api.api.schemas import MessageTraceResponse, WsTraceUpdateFrame
+import pytest
+from pydantic import ValidationError
+
+from ze_api.api.schemas import (
+    MessageTraceEntry,
+    MessageTraceResponse,
+    TierTraceResponse,
+    WsTraceUpdateFrame,
+)
+
+
+def test_ws_trace_update_schema_includes_tier():
+    props = WsTraceUpdateFrame.model_json_schema()["properties"]
+    assert "tier" in props
+
+
+def test_message_trace_schema_includes_tier_and_the_entry_does_not_repeat_it():
+    assert "tier" in MessageTraceResponse.model_json_schema()["properties"]
+    assert "tier" not in MessageTraceEntry.model_json_schema()["properties"]
+
+
+def test_tier_trace_response_rejects_an_unknown_tier():
+    with pytest.raises(ValidationError):
+        TierTraceResponse(agent="a", tier="medium", decided_by="x", model="m")
 
 
 def test_message_trace_schema_includes_judgments():

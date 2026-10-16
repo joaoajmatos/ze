@@ -38,7 +38,7 @@ from ze_eval.scenario import load_scenarios
 
 _ZE_EVAL_URL = os.getenv("ZE_EVAL_URL", "http://localhost:8000")
 _ZE_API_KEY = os.getenv("ZE_API_KEY", "")
-_HEADERS = {"x-ze-api-key": _ZE_API_KEY}
+_HEADERS = {"Authorization": f"Bearer {_ZE_API_KEY}"}
 
 mcp = FastMCP("Ze Eval")
 

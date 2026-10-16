@@ -1,5 +1,5 @@
 from ze_agents.registry import get_enabled_agents
-from fastapi import APIRouter, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from ze_agents.delegate import DELEGATE_TOOL_NAME
 from ze_agents.interface.types import RawInput
 from ze_agents.park import ParkedLoop
@@ -7,6 +7,7 @@ from ze_agents.types import ToolCall
 from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 from ze_core.telemetry.context import set_flow_context
 
+from ze_api.api.dependencies import require_api_key
 from ze_api.api.schemas import (
     EvalChatRequest,
     EvalChatResponse,
@@ -18,19 +19,13 @@ from ze_logging import get_logger
 
 log = get_logger(__name__)
 
-router = APIRouter(tags=["eval"])
-
-
-def _check_api_key(x_ze_api_key: str | None, settings) -> None:
-    if not x_ze_api_key or x_ze_api_key != settings.ze_api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key"
-        )
+router = APIRouter(tags=["eval"], dependencies=[Depends(require_api_key)])
 
 
 @router.post(
     "/eval/chat",
     response_model=EvalChatResponse,
+    operation_id="evalChat",
     summary="Eval chat",
     description=(
         "Send a prompt directly to the Ze graph and receive a structured response "
@@ -41,10 +36,7 @@ def _check_api_key(x_ze_api_key: str | None, settings) -> None:
 async def eval_chat(
     body: EvalChatRequest,
     request: Request,
-    x_ze_api_key: str | None = Header(default=None),
 ) -> EvalChatResponse:
-    _check_api_key(x_ze_api_key, request.app.state.settings)
-
     # Set telemetry context so llm_cost_log captures this eval session.
     # session_id is prefixed with "eval-" so eval threads don't collide with real ones.
     set_flow_context("eval", session_id=body.session_id)
@@ -99,9 +91,7 @@ async def eval_chat(
 async def eval_confirm(
     body: EvalConfirmRequest,
     request: Request,
-    x_ze_api_key: str | None = Header(default=None),
 ) -> EvalChatResponse:
-    _check_api_key(x_ze_api_key, request.app.state.settings)
     set_flow_context("eval", session_id=body.session_id)
 
     container = request.app.state.container

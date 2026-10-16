@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query, Request
 
 from ze_api.api.dependencies import require_api_key
 from ze_api.api.schemas import (
-    CreateSessionRequest,
     SessionListResponse,
     SessionSchema,
     SessionSearchResult,
@@ -73,20 +71,3 @@ async def search_sessions(
 ) -> list[SessionSearchResult]:
     hits = await store.search(q, limit=limit)
     return [_search_hit_to_result(hit) for hit in hits]
-
-
-@router.post(
-    "/sessions",
-    response_model=SessionSchema,
-    operation_id="createSession",
-    summary="Create a chat session",
-    description="Creates a new session and returns it. A UUID is minted server-side when id is omitted.",
-    status_code=201,
-)
-async def create_session(
-    body: CreateSessionRequest,
-    store: SessionStore = Depends(_get_session_store),
-) -> SessionSchema:
-    session_id = body.id or str(uuid4())
-    session = await store.create(session_id, title=body.title)
-    return _session_to_schema(session)

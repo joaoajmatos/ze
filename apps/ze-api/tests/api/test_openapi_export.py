@@ -1,5 +1,6 @@
 """Tests for OpenAPI export including plugin routes."""
 
+from ze_api.api.schemas import EvalChatResponse
 from ze_api.openapi_export import (
     collect_openapi_operation_ids,
     collect_static_plugin_routers,
@@ -32,11 +33,13 @@ def test_collect_openapi_operation_ids_includes_plugin_pages():
     assert "getRemindersPage" in operation_ids
 
 
+def test_export_leaves_out_eval_only_routes():
+    paths = export_openapi()["paths"]
+    assert "/eval/chat" not in paths
+    assert "/api/v0/collisions" not in paths
+
+
 def test_eval_chat_response_omits_memory_proposals_count():
-    schema = export_openapi()
-    dumped = str(schema)
-    assert "memory_proposals_count" not in dumped
-    eval_schema = schema["components"]["schemas"].get("EvalChatResponse", {})
-    props = eval_schema.get("properties", {})
-    assert "memory_proposals_count" not in props
-    assert "tool_calls" in props
+    schema = EvalChatResponse.model_json_schema()
+    assert "memory_proposals_count" not in str(schema)
+    assert "tool_calls" in schema["properties"]

@@ -81,3 +81,32 @@ def test_sandbox_delete_scenario_creates_then_deletes_its_own_event() -> None:
     assert max(c["turn"] for c in creates if c.get("gate") == "approved") < min(
         d["turn"] for d in deletes if d.get("gate") == "parked"
     )
+
+
+def test_companion_render_scenarios_cover_every_render_tool_and_two_negatives() -> None:
+    render = [s for s in load_scenarios(tag="render") if s["file"] == "companion"]
+    positive = {
+        t if isinstance(t, str) else t["name"]
+        for s in render
+        if "negative" not in s["tags"]
+        for t in s["expected_tools"]
+    }
+    assert {
+        "render_chart",
+        "render_table",
+        "render_metric",
+        "render_timeline",
+        "render_form",
+        "render_choice_group",
+        "render_consent",
+        "render_connect_account",
+        "render_review",
+        "render_connections",
+    } <= positive
+
+    negatives = [s for s in render if "negative" in s["tags"]]
+    assert len(negatives) == 2
+    for s in negatives:
+        assert s["expected_agent"] == "companion"
+        assert all(t["count"] == 0 for t in s["expected_tools"])
+        assert all(t["name"].startswith("render_") for t in s["expected_tools"])

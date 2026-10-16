@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -7,6 +7,7 @@ from ze_agents.errors import AgentTimeoutError
 from ze_memory.types import MemoryContext
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_core.orchestration.nodes.execution import (
+    _embed_fn,
     execute_tool,
 )
 from ze_agents.types import AgentContext, AgentResult
@@ -196,3 +197,9 @@ class TestPreflight:
             {"envelope": _envelope("a"), "session_id": "s1"}, {"configurable": {}}
         )
         assert result == {}
+
+
+def test_tool_executor_context_embeds_the_prompt_as_a_query():
+    embedder = MagicMock()
+    assert _embed_fn({"configurable": {"embedder": embedder}}) is embedder.encode_query
+    assert _embed_fn({"configurable": {}}) is None

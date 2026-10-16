@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from pathlib import PurePosixPath
-from types import SimpleNamespace
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from ze_workspace.client import WorkspaceClient
 from ze_workspace.errors import (
@@ -16,8 +15,6 @@ from ze_workspace.errors import (
 )
 from ze_workspace.store import WorkspaceStore
 from ze_workspace.types import WorkspaceRunOrigin
-
-_pending_resets: dict[str, bool] = {}
 
 _ERROR_STATUS = {
     WorkspaceUnavailableError: 503,
@@ -163,22 +160,6 @@ async def delete_file(client: WorkspaceClient, path: str) -> None:
     await client.delete(path)
 
 
-async def ingest_file(client: WorkspaceClient, pipeline: object, path: str) -> dict:
-    data = await client.download(path)
-    result = await pipeline.ingest(  # type: ignore[attr-defined]
-        SimpleNamespace(url=None, file_bytes=data, mime_type=None, label=path)
-    )
-    return {
-        "ingestion_id": str(getattr(result, "ingestion_id", "")),
-        "content_type": getattr(
-            getattr(result, "content_type", None), "value", "unknown"
-        ),
-        "summary": getattr(result, "summary", ""),
-        "facts_count": getattr(result, "facts_count", 0),
-        "tags": getattr(result, "tags", []) or [],
-    }
-
-
 async def list_runs(
     store: WorkspaceStore,
     *,
@@ -188,44 +169,3 @@ async def list_runs(
     origin_enum = WorkspaceRunOrigin(origin) if origin else None
     runs = await store.list_runs(limit=limit, origin=origin_enum)
     return {"runs": [_run_to_dict(r) for r in runs]}
-
-
-def has_pending_reset(confirmation_id: str) -> bool:
-    return confirmation_id in _pending_resets
-
-
-def drop_pending_reset(confirmation_id: str) -> None:
-    _pending_resets.pop(confirmation_id, None)
-
-
-def request_reset() -> dict:
-    confirmation_id = str(uuid4())
-    _pending_resets[confirmation_id] = True
-    return {"confirmation_id": confirmation_id}
-
-
-async def execute_reset(store: WorkspaceStore, client: WorkspaceClient) -> dict:
-    # POST /reset on the sidecar now cancels its own current run internally
-    # (supervisor.reset_workspace, Phase 129) before wiping — no separate
-    # cancel call needed here.
-    await client.reset()
-    await store.mark_reset()
-    return {"ok": True, "reset": True}
-
-
-async def resolve_reset(
-    store: WorkspaceStore,
-    client: WorkspaceClient,
-    confirmation_id: str,
-    choice: str,
-) -> dict:
-    if confirmation_id not in _pending_resets:
-        raise WorkspaceNotFoundError("no pending workspace reset")
-    drop_pending_reset(confirmation_id)
-    if choice != "approve":
-        return {"ok": True, "reset": False}
-    return await execute_reset(store, client)
-
-
-async def reset_workspace(store: WorkspaceStore, client: WorkspaceClient) -> dict:
-    return await execute_reset(store, client)

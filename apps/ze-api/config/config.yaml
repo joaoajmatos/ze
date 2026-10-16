@@ -38,7 +38,6 @@ system_one:
       # (ho-loops-en: loops->companion at confidence 0.29, never trusted at 0.5, falls back to decompose).
       choice_trust: 0.5
       multi_specialist_hold: 0.5
-      complexity_lookup_max: null   # suggestion 0.16/0.17 per set but 0.02 combined (outlier); regex tiering stays
       shortlist_k: 9                # 167 recall gate: smallest k with recall >= 0.95 on all three sets (0.571 at k=6 on holdout2)
     skills:
       enabled: true
@@ -65,6 +64,12 @@ system_one:
       enabled: false
       corroborate_hold: null
       promote_hold: null
+    complexity:
+      # Phase 182: the needs_deep_reasoning Noul picks model_simple after fetch_context/match_skills, for a single-agent turn whose agent declares one. Anything else (surface off, no bar, skip, timeout, bad answer, compound or conductor turn) keeps the full model.
+      # Enabled 2026-10-16 at simple_max 0.40 after one held-out run (make calibrate-complexity, 54 blind EN+PT rows): ENABLE for EN and PT. 0 false downgrades each, light recall 14/14 EN and 13/14 PT, 0 skipped, latency p50/p90 550/880 ms EN and 552/985 ms PT.
+      # Tuned (94 rows): lowest full-model row 0.56, so 0.40 keeps a 0.16 margin. The held-out margin is thinner: the lowest PT full row sat between 0.40 and 0.50, within 0.10 of the bar. Watch the tier line in the trace panel; set enabled: false to return every agent to its full model.
+      enabled: true
+      simple_max: 0.40
 
 # Opt-in spend ceiling, token-estimated in real time inside preflight.
 # Absent/null limits = current (telemetry-only) behavior, zero change.
@@ -360,7 +365,6 @@ dream:
   critic_model: "anthropic/claude-sonnet-4-6"
   synthetic_fact_valid_days: 90
   job_timeout_seconds: 1800
-  review_notifications_enabled: false  # enable when React review page ships
   inactivity_trigger_enabled: false    # fire dream job when idle for N hours (no run since last session)
   inactivity_threshold_hours: 6
   inactivity_check_interval_minutes: 30

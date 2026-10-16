@@ -35,7 +35,7 @@ def _config(discovery=None) -> dict:
     store = AsyncMock()
     store.retrieve = AsyncMock(return_value=MemoryContext())
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1, 0.2])
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[0.1, 0.2])
     return {
         "configurable": {
             "memory_store": store,

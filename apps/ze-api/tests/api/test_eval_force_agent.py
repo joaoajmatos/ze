@@ -49,7 +49,9 @@ async def _post(app: FastAPI, body: dict):
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        return await client.post("/eval/chat", json=body, headers={"x-ze-api-key": KEY})
+        return await client.post(
+            "/eval/chat", json=body, headers={"Authorization": f"Bearer {KEY}"}
+        )
 
 
 async def test_forced_agent_reaches_the_graph_config_in_eval_mode():

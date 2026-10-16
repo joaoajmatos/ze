@@ -86,7 +86,7 @@ class SessionSummariser:
                 if not summary:
                     continue
 
-                embedding = self._embedder.encode(summary)
+                embedding = self._embedder.encode_passage(summary)
                 await self._upsert(
                     session_id=session_id,
                     summary=summary,

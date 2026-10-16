@@ -119,7 +119,7 @@ class InboundMessageProcessor:
             f" Subject: {msg.subject}" if msg.subject else ""
         )
         embedding = (
-            self._embedder.encode(f"{prompt} {msg.body[:500]}")
+            self._embedder.encode_passage(f"{prompt} {msg.body[:500]}")
             if self._embedder
             else None
         )

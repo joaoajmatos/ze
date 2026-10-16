@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from ze_memory.consolidator import MemoryConsolidator
 from ze_memory.retriever import PostgresMemoryStore as MemoryStore
 from ze_core.conversation.messages import PostgresMessageStore as MessageStore
 from ze_core.openrouter.client import OpenRouterClient
@@ -68,10 +67,6 @@ def get_held_write_resumer(request: Request):
     return request.app.state.container.held_write_resumer
 
 
-def get_memory_consolidator(request: Request) -> MemoryConsolidator:
-    return request.app.state.container.memory_consolidator
-
-
 def get_message_store(request: Request) -> MessageStore:
     return request.app.state.container.message_store
 
@@ -90,10 +85,6 @@ def get_confirmation_store(request: Request):
 
 def get_connection_manager(request: Request):
     return request.app.state.container.connection_manager
-
-
-def get_dream_store(request: Request):
-    return request.app.state.container.dream_store
 
 
 def get_notification_store(request: Request):
@@ -146,7 +137,3 @@ def get_workspace_client(request: Request):
 
 def get_workspace_run_watcher(request: Request):
     return request.app.state.container.workspace_run_watcher
-
-
-def get_ingestion_pipeline(request: Request):
-    return request.app.state.container.ingestion_pipeline

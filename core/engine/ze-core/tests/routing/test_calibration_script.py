@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -39,9 +38,6 @@ class _OracleClient:
         self.orders.append(list(agent_q.criteria))
         row = self.gold[state["user"]]
         choice = row.gold_agent if row.gold_agent in agent_q.criteria else "none"
-        level = {"lookup": 0.2, "single_tool": 1.0, "multi_hop": 1.8}[
-            row.gold_complexity
-        ]
         return SystemOneResult(
             outcome="ok",
             model="oracle",
@@ -55,7 +51,6 @@ class _OracleClient:
                 "multi_specialist": SystemOneAnswer(
                     type="noul", noul=0.9 if row.gold_multi else 0.05
                 ),
-                "complexity": SystemOneAnswer(type="score", score=level),
             },
         )
 
@@ -87,9 +82,8 @@ async def test_offline_run_reports_and_suggests(calib, capsys):
     assert len(outcomes) == len(rows)
     assert all(len(o.names) == 3 for o in outcomes)
     assert "Choice accuracy" in out and "multiple-specialist Noul" in out
-    assert "complexity Score by gold level" in out
-    assert suggestion["complexity_lookup_max"] is not None
-    assert 0.1 <= suggestion["complexity_lookup_max"] < 0.5
+    assert "complexity" not in out
+    assert "complexity_lookup_max" not in suggestion
     assert suggestion["choice_trust"] is not None
     assert suggestion["multi_specialist_hold"] is not None
 
@@ -112,8 +106,8 @@ async def test_option_order_is_shuffled_per_row(calib):
 def test_shortlist_recall_counts_gold_outside_top_k(calib):
     roster = _roster()
     rows = [
-        calib.Row("a", "en", "x", "calendar", False, "lookup", None),
-        calib.Row("b", "en", "y", "research", False, "lookup", None),
+        calib.Row("a", "en", "x", "calendar", False, None),
+        calib.Row("b", "en", "y", "research", False, None),
     ]
     embedder = cosine_embedder({"calendar": 0.9, "research": 0.1, "messenger": 0.5})
     misses = calib.shortlist_recall(embedder, roster, rows, (2, 5))
@@ -121,57 +115,9 @@ def test_shortlist_recall_counts_gold_outside_top_k(calib):
     assert len(misses[5]) <= len(misses[2])
 
 
-def test_score_values_normalise_the_wire_scale(calib):
-    gold = SimpleNamespace(gold_complexity="multi_hop")
-    ok = SystemOneResult(
-        outcome="ok",
-        answers={"complexity": SystemOneAnswer(type="score", score=1.8)},
-    )
-    bad = SystemOneResult(
-        outcome="ok",
-        answers={"complexity": SystemOneAnswer(type="score", score=3.0)},
-    )
-    outcomes = [
-        calib.Outcome(gold, [], 0.0, 0.0, ok),
-        calib.Outcome(gold, [], 0.0, 0.0, bad),
-    ]
-    assert calib.score_values(outcomes)["multi_hop"] == [0.9]
-
-
-def test_suggest_lookup_max_separates_levels(calib):
-    by_level = {
-        "lookup": [0.05, 0.2],
-        "single_tool": [0.5, 0.6],
-        "multi_hop": [0.8, 0.9],
-    }
-    assert 0.2 <= calib.suggest_lookup_max(by_level) < 0.5
-    assert (
-        calib.suggest_lookup_max({"lookup": [], "single_tool": [0.5], "multi_hop": []})
-        is None
-    )
-
-
-def test_suggest_lookup_max_refuses_a_bar_that_downgrades_a_harder_request(calib):
-    by_level = {
-        "lookup": [0.07, 0.15, 0.32],
-        "single_tool": [0.04, 0.5],
-        "multi_hop": [0.02, 0.9],
-    }
-    assert calib.suggest_lookup_max(by_level) is None
-
-
-def test_suggest_lookup_max_stays_below_every_harder_row(calib):
-    by_level = {
-        "lookup": [0.05, 0.1, 0.3],
-        "single_tool": [0.2, 0.5],
-        "multi_hop": [0.8],
-    }
-    assert calib.suggest_lookup_max(by_level) == 0.1
-
-
 def test_grid_counts_harm_when_trusting_the_wrong_agent(calib):
     roster = _roster()
-    row = calib.Row("r", "en", "p", "calendar", False, "lookup")
+    row = calib.Row("r", "en", "p", "calendar", False)
     result = SystemOneResult(
         outcome="ok",
         answers={
@@ -191,8 +137,8 @@ def test_grid_counts_harm_when_trusting_the_wrong_agent(calib):
 def test_recall_sweep_runs_to_roster_size_and_finds_smallest_passing_k(calib, capsys):
     roster = _roster()
     rows = [
-        calib.Row("a", "en", "x", "calendar", False, "lookup", None),
-        calib.Row("b", "en", "y", "research", False, "lookup", None),
+        calib.Row("a", "en", "x", "calendar", False, None),
+        calib.Row("b", "en", "y", "research", False, None),
     ]
     embedder = cosine_embedder(
         {
@@ -218,7 +164,7 @@ def test_smallest_passing_k_is_none_when_a_set_never_passes(calib):
 
 
 def _outcome(calib, rid, lang, gold, pred, conf):
-    row = calib.Row(rid, lang, "p", gold, False, "lookup")
+    row = calib.Row(rid, lang, "p", gold, False)
     result = SystemOneResult(
         outcome="ok",
         answers={

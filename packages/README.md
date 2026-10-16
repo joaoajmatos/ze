@@ -42,10 +42,10 @@ Generated TypeScript surface for the entire `ze-api` REST and WebSocket protocol
 
 ```typescript
 import { configure } from "@myguyze/ze-client";
-import { listContacts } from "@myguyze/ze-client";
+import { listGoals } from "@myguyze/ze-client";
 
 configure({ serverUrl, apiKey });
-const { data } = await listContacts();
+const { data } = await listGoals();
 ```
 
 ## @myguyze/ze-ui

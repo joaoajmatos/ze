@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
-from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
@@ -75,43 +73,3 @@ async def test_get_reminders_page_returns_tree():
     assert isinstance(data["tree"], list)
     _assert_valid_tree(data["tree"])
     store.list_all.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_list_reminders_returns_empty_without_store():
-    app = _make_app()
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.get(
-            "/api/v0/reminders", headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-    assert resp.status_code == 200
-    assert resp.json() == []
-
-
-@pytest.mark.asyncio
-async def test_list_reminders_returns_items():
-    reminder_id = uuid4()
-    reminder = SimpleNamespace(
-        id=reminder_id,
-        label="Call João",
-        fire_at=datetime(2026, 6, 15, 9, 0, tzinfo=timezone.utc),
-        sent=False,
-    )
-    store = AsyncMock()
-    store.list_all = AsyncMock(return_value=[reminder])
-    app = _make_app(store)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.get(
-            "/api/v0/reminders", headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-
-    assert resp.status_code == 200
-    data = resp.json()
-    assert len(data) == 1
-    assert data[0]["label"] == "Call João"
-    assert data[0]["fired"] is False

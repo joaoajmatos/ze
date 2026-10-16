@@ -29,9 +29,8 @@ class PostgresRoutingStore:
                     """
                     INSERT INTO routing_log
                         (session_id, prompt, method, primary_agent,
-                         confidence, score_gap, is_compound, raw_scores,
-                         complexity, model_selected)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10)
+                         confidence, score_gap, is_compound, raw_scores)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb)
                     """,
                     session_id,
                     prompt,
@@ -41,8 +40,6 @@ class PostgresRoutingStore:
                     envelope.score_gap,
                     envelope.is_compound,
                     json.dumps(envelope.raw_scores),
-                    envelope.complexity,
-                    envelope.subtasks[0].model if envelope.subtasks else None,
                 )
         except Exception as exc:
             log.warning("routing_log_write_failed", error=str(exc))

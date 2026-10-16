@@ -24,7 +24,9 @@ def _make_summariser(settings=None, enabled=True):
         )
     )
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1] * 384)
+    embedder.encode_passage = embedder.encode_query = MagicMock(
+        return_value=[0.1] * 384
+    )
     client = AsyncMock()
     client.complete = AsyncMock(return_value="A brief session summary.")
     if settings is None:

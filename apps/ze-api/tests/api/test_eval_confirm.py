@@ -45,7 +45,9 @@ async def _post(app: FastAPI, path: str, body: dict, key: str = KEY):
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        return await client.post(path, json=body, headers={"x-ze-api-key": key})
+        return await client.post(
+            path, json=body, headers={"Authorization": f"Bearer {key}"}
+        )
 
 
 def _executed_delete() -> AgentResult:

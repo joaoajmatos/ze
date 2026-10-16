@@ -47,7 +47,7 @@ async def _chat(prompt: str, session_id: str, ze_url: str, ze_key: str) -> dict:
         resp = await client.post(
             f"{ze_url.rstrip('/')}/eval/chat",
             json={"prompt": prompt, "session_id": session_id},
-            headers={"x-ze-api-key": ze_key},
+            headers={"Authorization": f"Bearer {ze_key}"},
         )
         resp.raise_for_status()
         return resp.json()
@@ -74,7 +74,7 @@ async def _confirm(
         resp = await client.post(
             f"{ze_url.rstrip('/')}/eval/confirm",
             json=body,
-            headers={"x-ze-api-key": ze_key},
+            headers={"Authorization": f"Bearer {ze_key}"},
         )
         if resp.status_code == 409:
             raise ConfirmStepError(

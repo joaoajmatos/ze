@@ -105,3 +105,66 @@ async def test_promote_synthesized_insight_writes_inference_claim_kind():
     query = conn.fetchrow.call_args.args[0]
     assert "claim_kind" in query
     assert "'inference'" in query
+
+
+# ── run_morning_integration — every artifact ends promoted or rejected ──────
+
+
+def _artifact(**overrides) -> dict:
+    row = {
+        "id": uuid4(),
+        "artifact_type": ArtifactType.SYNTHESIZED_INSIGHT.value,
+        "status": "pending",
+        "content": "User prefers async communication",
+        "source_fact_ids": [],
+        "source_episode_ids": [uuid4()],
+        "support_count": 5,
+        "distinct_session_count": 3,
+        "temporal_spread_days": 14,
+        "user_asserted_source_count": 0,
+        "critic_a_verdict": "PASS",
+        "critic_b_verdict": "PASS",
+    }
+    row.update(overrides)
+    return row
+
+
+async def _integrate(rows: list[dict]) -> tuple[dict, AsyncMock]:
+    pool, conn = _make_pool()
+    conn.execute = AsyncMock(return_value="UPDATE 0")
+    promoter = _make_promoter(pool)
+    store = promoter._dream_store
+    store.get_pending_artifacts_for_run = AsyncMock(return_value=rows)
+    result = await promoter.run_morning_integration(uuid4())
+    return result, store
+
+
+async def test_hindsight_fact_is_rejected_never_promoted_or_left_for_review():
+    row = _artifact(artifact_type=ArtifactType.HINDSIGHT_FACT.value)
+
+    result, store = await _integrate([row])
+
+    store.update_artifact_status.assert_awaited_once_with(row["id"], "rejected")
+    store.mark_artifact_promoted.assert_not_awaited()
+    assert (result["promoted"], result["rejected"]) == (0, 1)
+    assert "needs_review" not in result
+
+
+async def test_artifact_below_the_support_bar_is_rejected():
+    row = _artifact(support_count=1)
+
+    result, store = await _integrate([row])
+
+    store.update_artifact_status.assert_awaited_once_with(row["id"], "rejected")
+    store.mark_artifact_promoted.assert_not_awaited()
+    assert (result["promoted"], result["rejected"]) == (0, 1)
+
+
+async def test_artifact_at_the_bar_is_promoted():
+    row = _artifact()
+
+    result, store = await _integrate([row])
+
+    store.mark_artifact_promoted.assert_awaited_once()
+    store.update_artifact_status.assert_not_awaited()
+    assert (result["promoted"], result["rejected"]) == (1, 0)

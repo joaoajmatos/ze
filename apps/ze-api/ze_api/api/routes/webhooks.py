@@ -18,7 +18,7 @@ def _get_dispatcher(request: Request) -> WebhookDispatcher:
     status_code=200,
     summary="Receive inbound webhook from an external source",
     description="Authenticated by the source's own signing scheme, not the Ze API key.",
-    operation_id="receive_webhook",
+    operation_id="receiveWebhook",
     response_model=dict,
 )
 async def receive_webhook(source: str, request: Request) -> dict:

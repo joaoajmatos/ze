@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApproveDreamArtifactData, ApproveDreamArtifactErrors, ApproveDreamArtifactResponses, ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, ConsolidateMemoryData, ConsolidateMemoryResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, CreateSessionData, CreateSessionErrors, CreateSessionResponses, DecideHeldWriteData, DecideHeldWriteErrors, DecideHeldWriteResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, EvalChatEvalChatPostData, EvalChatEvalChatPostErrors, EvalChatEvalChatPostResponses, EvalConfirmData, EvalConfirmErrors, EvalConfirmResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostDetailData, GetCostDetailErrors, GetCostDetailResponses, GetCostSummaryData, GetCostSummaryResponses, GetDreamArtifactData, GetDreamArtifactErrors, GetDreamArtifactResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetFactQualityData, GetFactQualityResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetGoalLearningData, GetGoalLearningErrors, GetGoalLearningResponses, GetLoopData, GetLoopErrors, GetLoopResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryDigestData, GetMemoryDigestResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageFeedbackData, GetMessageFeedbackErrors, GetMessageFeedbackResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetProfileData, GetProfileResponses, GetQuietHoursData, GetQuietHoursResponses, GetRemindersPageData, GetRemindersPageResponses, GetRoutingLogData, GetRoutingLogErrors, GetRoutingLogResponses, GetSkillData, GetSkillErrors, GetSkillReferenceFileData, GetSkillReferenceFileErrors, GetSkillReferenceFileResponses, GetSkillResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceResponses, GetWsSchemaData, GetWsSchemaResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, IngestData, IngestErrors, IngestResponses, IngestWorkspaceFileData, IngestWorkspaceFileErrors, IngestWorkspaceFileResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListChannelsData, ListChannelsResponses, ListCollisionsData, ListCollisionsErrors, ListCollisionsResponses, ListContactsData, ListContactsResponses, ListDataDomainsData, ListDataDomainsResponses, ListDreamArtifactsData, ListDreamArtifactsResponses, ListDreamJournalData, ListDreamJournalErrors, ListDreamJournalResponses, ListFactsData, ListFactsResponses, ListGoalLearningsData, ListGoalLearningsErrors, ListGoalLearningsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListHeldWritesData, ListHeldWritesErrors, ListHeldWritesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNewsData, ListNewsErrors, ListNewsResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListRemindersData, ListRemindersResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, PromoteGoalLearningData, PromoteGoalLearningErrors, PromoteGoalLearningResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RefreshSkillData, RefreshSkillErrors, RefreshSkillResponses, RejectDreamArtifactData, RejectDreamArtifactErrors, RejectDreamArtifactResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ResetWorkspaceData, ResetWorkspaceErrors, ResetWorkspaceResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, ReviseDreamArtifactData, ReviseDreamArtifactErrors, ReviseDreamArtifactResponses, RollbackDreamRunData, RollbackDreamRunErrors, RollbackDreamRunResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, SetMessageFeedbackData, SetMessageFeedbackErrors, SetMessageFeedbackResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateChannelData, UpdateChannelErrors, UpdateChannelResponses, UpdateQuietHoursData, UpdateQuietHoursErrors, UpdateQuietHoursResponses, UpdateWorkflowStepsData, UpdateWorkflowStepsErrors, UpdateWorkflowStepsResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
+import type { ApproveSkillData, ApproveSkillErrors, ApproveSkillExecutablesData, ApproveSkillExecutablesErrors, ApproveSkillExecutablesResponses, ApproveSkillResponses, CancelWorkflowExecutionData, CancelWorkflowExecutionErrors, CancelWorkflowExecutionResponses, CancelWorkspaceRunData, CancelWorkspaceRunErrors, CancelWorkspaceRunResponses, CloseLoopData, CloseLoopErrors, CloseLoopResponses, ConfirmLoopData, ConfirmLoopErrors, ConfirmLoopResponses, CreateDeleteIntentData, CreateDeleteIntentResponses, DecideHeldWriteData, DecideHeldWriteErrors, DecideHeldWriteResponses, DeleteDataData, DeleteDataErrors, DeleteDataResponses, DeleteSkillData, DeleteSkillErrors, DeleteSkillResponses, DeleteWorkspaceFileData, DeleteWorkspaceFileErrors, DeleteWorkspaceFileResponses, DisableProcedureData, DisableProcedureErrors, DisableProcedureResponses, DisableSkillData, DisableSkillErrors, DisableSkillResponses, DropLoopData, DropLoopErrors, DropLoopResponses, EditProcedureData, EditProcedureErrors, EditProcedureResponses, EnableSkillData, EnableSkillErrors, EnableSkillResponses, ExportDataData, ExportDataResponses, GetActivityHeatmapData, GetActivityHeatmapErrors, GetActivityHeatmapResponses, GetContactsPageData, GetContactsPageResponses, GetCostAnomaliesData, GetCostAnomaliesErrors, GetCostAnomaliesResponses, GetCostSummaryData, GetCostSummaryResponses, GetEntityDetailData, GetEntityDetailErrors, GetEntityDetailResponses, GetGoalDetailData, GetGoalDetailErrors, GetGoalDetailResponses, GetMemoryActivityData, GetMemoryActivityErrors, GetMemoryActivityResponses, GetMemoryFeedData, GetMemoryFeedErrors, GetMemoryFeedResponses, GetMemoryGraphData, GetMemoryGraphErrors, GetMemoryGraphResponses, GetMemoryTimelineBoundsData, GetMemoryTimelineBoundsResponses, GetMessageFeedbackData, GetMessageFeedbackErrors, GetMessageFeedbackResponses, GetMessageTraceData, GetMessageTraceErrors, GetMessageTraceResponses, GetMessageTracesData, GetMessageTracesErrors, GetMessageTracesResponses, GetNewsPageData, GetNewsPageErrors, GetNewsPageResponses, GetNewsSettingsData, GetNewsSettingsResponses, GetPrioritySnapshotData, GetPrioritySnapshotResponses, GetProcedureData, GetProcedureErrors, GetProcedureResponses, GetQuietHoursData, GetQuietHoursResponses, GetRemindersPageData, GetRemindersPageResponses, GetUiManifestData, GetUiManifestResponses, GetUnreadNotificationCountData, GetUnreadNotificationCountResponses, GetVersionData, GetVersionResponses, GetWorkflowData, GetWorkflowErrors, GetWorkflowExecutionData, GetWorkflowExecutionErrors, GetWorkflowExecutionResponses, GetWorkflowResponses, GetWorkspaceData, GetWorkspaceFileData, GetWorkspaceFileErrors, GetWorkspaceFileResponses, GetWorkspaceResponses, HealthCheckData, HealthCheckResponses, ImportDataData, ImportDataErrors, ImportDataResponses, ImportSkillData, ImportSkillErrors, ImportSkillResponses, ListActiveProceduresData, ListActiveProceduresResponses, ListDataDomainsData, ListDataDomainsResponses, ListGoalsData, ListGoalsResponses, ListGoalTracesData, ListGoalTracesErrors, ListGoalTracesResponses, ListHeldWritesData, ListHeldWritesErrors, ListHeldWritesResponses, ListLoopsData, ListLoopsErrors, ListLoopsResponses, ListMessagesData, ListMessagesErrors, ListMessagesResponses, ListNotificationsData, ListNotificationsErrors, ListNotificationsResponses, ListProcedureCandidatesData, ListProcedureCandidatesErrors, ListProcedureCandidatesResponses, ListProcedureLibraryData, ListProcedureLibraryResponses, ListSessionsData, ListSessionsErrors, ListSessionsResponses, ListSkillsData, ListSkillsErrors, ListSkillsResponses, ListWorkflowExecutionsData, ListWorkflowExecutionsErrors, ListWorkflowExecutionsResponses, ListWorkflowRevisionsData, ListWorkflowRevisionsErrors, ListWorkflowRevisionsResponses, ListWorkflowsData, ListWorkflowsResponses, ListWorkspaceFilesData, ListWorkspaceFilesErrors, ListWorkspaceFilesResponses, ListWorkspaceRunsData, ListWorkspaceRunsErrors, ListWorkspaceRunsResponses, MarkAllNotificationsReadData, MarkAllNotificationsReadResponses, MarkNotificationReadData, MarkNotificationReadErrors, MarkNotificationReadResponses, ReceiveWebhookData, ReceiveWebhookErrors, ReceiveWebhookResponses, RejectSkillData, RejectSkillErrors, RejectSkillResponses, ReviewFactsData, ReviewFactsErrors, ReviewFactsResponses, ReviewGoalLearningData, ReviewGoalLearningErrors, ReviewGoalLearningResponses, ReviewProcedureCandidateData, ReviewProcedureCandidateErrors, ReviewProcedureCandidateResponses, SearchSessionsData, SearchSessionsErrors, SearchSessionsResponses, SetMessageFeedbackData, SetMessageFeedbackErrors, SetMessageFeedbackResponses, StartGoalData, StartGoalErrors, StartGoalResponses, SubmitPriorityOverrideData, SubmitPriorityOverrideErrors, SubmitPriorityOverrideResponses, TriggerWorkflowData, TriggerWorkflowErrors, TriggerWorkflowResponses, UnpinPriorityOverrideData, UnpinPriorityOverrideErrors, UnpinPriorityOverrideResponses, UpdateQuietHoursData, UpdateQuietHoursErrors, UpdateQuietHoursResponses, UploadWorkspaceFileData, UploadWorkspaceFileErrors, UploadWorkspaceFileResponses, WatchWorkspaceRunEventsData, WatchWorkspaceRunEventsErrors, WatchWorkspaceRunEventsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -31,34 +31,6 @@ export const getVersion = <ThrowOnError extends boolean = false>(options?: Optio
  * Verifies the server is reachable. Public — no authentication required. Used by the web client during onboarding and settings connection tests.
  */
 export const healthCheck = <ThrowOnError extends boolean = false>(options?: Options<HealthCheckData, ThrowOnError>): RequestResult<HealthCheckResponses, unknown, ThrowOnError> => (options?.client ?? client).get<HealthCheckResponses, unknown, ThrowOnError>({ url: '/api/v0/health', ...options });
-
-/**
- * Eval chat
- *
- * Send a prompt directly to the Ze graph and receive a structured response with routing metadata. Intended for automated evaluation and LLM-as-tester workflows. force_agent routes the turn to a named agent and is accepted only in eval mode.
- */
-export const evalChatEvalChatPost = <ThrowOnError extends boolean = false>(options: Options<EvalChatEvalChatPostData, ThrowOnError>): RequestResult<EvalChatEvalChatPostResponses, EvalChatEvalChatPostErrors, ThrowOnError> => (options.client ?? client).post<EvalChatEvalChatPostResponses, EvalChatEvalChatPostErrors, ThrowOnError>({
-    url: '/eval/chat',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Eval confirm
- *
- * Answer the open write confirmation of an eval session (approve or deny, with optional edits to editable items) and return the resumed turn in the eval chat shape. 409 when the session has no open confirmation.
- */
-export const evalConfirm = <ThrowOnError extends boolean = false>(options: Options<EvalConfirmData, ThrowOnError>): RequestResult<EvalConfirmResponses, EvalConfirmErrors, ThrowOnError> => (options.client ?? client).post<EvalConfirmResponses, EvalConfirmErrors, ThrowOnError>({
-    url: '/eval/confirm',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
 
 /**
  * Agent activity heatmap
@@ -105,17 +77,6 @@ export const getMemoryActivity = <ThrowOnError extends boolean = false>(options:
 });
 
 /**
- * List user facts
- *
- * Return all user facts, reviewed and unreviewed, newest first.
- */
-export const listFacts = <ThrowOnError extends boolean = false>(options?: Options<ListFactsData, ThrowOnError>): RequestResult<ListFactsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListFactsResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/facts',
-    ...options
-});
-
-/**
  * Review memory facts
  *
  * Apply confirm, reject, or edit actions to memory facts. Confirm and edit set `reviewed=true`; reject deletes the row. Edit requires `value` in the action.
@@ -128,50 +89,6 @@ export const reviewFacts = <ThrowOnError extends boolean = false>(options: Optio
         'Content-Type': 'application/json',
         ...options.headers
     }
-});
-
-/**
- * Memory digest
- *
- * Snapshot for the memory UI: unreviewed facts, contradicted facts, and the 10 most recent episodes.
- */
-export const getMemoryDigest = <ThrowOnError extends boolean = false>(options?: Options<GetMemoryDigestData, ThrowOnError>): RequestResult<GetMemoryDigestResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetMemoryDigestResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/digest',
-    ...options
-});
-
-/**
- * Trigger memory consolidation
- *
- * Run dedup, expiry, and episode archival immediately. Returns a report of all changes made.
- */
-export const consolidateMemory = <ThrowOnError extends boolean = false>(options?: Options<ConsolidateMemoryData, ThrowOnError>): RequestResult<ConsolidateMemoryResponses, unknown, ThrowOnError> => (options?.client ?? client).post<ConsolidateMemoryResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/consolidate',
-    ...options
-});
-
-/**
- * Memory fact quality audit
- *
- * Diagnostic snapshot of memory_facts health: distribution by provenance, confidence stats, contradicted count, and synthesized-fact lifecycle status. Use to assess source pool quality before trusting dream synthesis output.
- */
-export const getFactQuality = <ThrowOnError extends boolean = false>(options?: Options<GetFactQualityData, ThrowOnError>): RequestResult<GetFactQualityResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetFactQualityResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/facts/quality',
-    ...options
-});
-
-/**
- * Current user profile
- *
- * The synthesised user profile as key/value facets (preferences, topics, and other traits). Updated nightly by the consolidation job.
- */
-export const getProfile = <ThrowOnError extends boolean = false>(options?: Options<GetProfileData, ThrowOnError>): RequestResult<GetProfileResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetProfileResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/profile',
-    ...options
 });
 
 /**
@@ -193,17 +110,6 @@ export const getMemoryGraph = <ThrowOnError extends boolean = false>(options?: O
 export const getEntityDetail = <ThrowOnError extends boolean = false>(options: Options<GetEntityDetailData, ThrowOnError>): RequestResult<GetEntityDetailResponses, GetEntityDetailErrors, ThrowOnError> => (options.client ?? client).get<GetEntityDetailResponses, GetEntityDetailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/memory/graph/entity/{entity_id}',
-    ...options
-});
-
-/**
- * Routing log
- *
- * Paginated routing decisions, newest first (offset-based pagination).
- */
-export const getRoutingLog = <ThrowOnError extends boolean = false>(options?: Options<GetRoutingLogData, ThrowOnError>): RequestResult<GetRoutingLogResponses, GetRoutingLogErrors, ThrowOnError> => (options?.client ?? client).get<GetRoutingLogResponses, GetRoutingLogErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/routing/log',
     ...options
 });
 
@@ -263,21 +169,6 @@ export const triggerWorkflow = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
- * Update workflow steps
- *
- * Replace the full step list on an existing workflow. Schedule and run history are unchanged. A changed step loses its pre-approved writes; the response lists the changed steps whose agent has asks-first tools in writes_needing_approval. Send approve_writes=true to grant them.
- */
-export const updateWorkflowSteps = <ThrowOnError extends boolean = false>(options: Options<UpdateWorkflowStepsData, ThrowOnError>): RequestResult<UpdateWorkflowStepsResponses, UpdateWorkflowStepsErrors, ThrowOnError> => (options.client ?? client).patch<UpdateWorkflowStepsResponses, UpdateWorkflowStepsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/workflows/{workflow_id}/steps',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * List workflow revisions
  *
  * Return the revision history for a workflow, newest first.
@@ -322,17 +213,6 @@ export const getCostAnomalies = <ThrowOnError extends boolean = false>(options?:
 });
 
 /**
- * Cost detail
- *
- * Aggregate LLM token usage and cost grouped by flow_type, agent, model, or session_id. Ordered by total_tokens descending.
- */
-export const getCostDetail = <ThrowOnError extends boolean = false>(options?: Options<GetCostDetailData, ThrowOnError>): RequestResult<GetCostDetailResponses, GetCostDetailErrors, ThrowOnError> => (options?.client ?? client).get<GetCostDetailResponses, GetCostDetailErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/costs/detail',
-    ...options
-});
-
-/**
  * List goals for the web client
  *
  * Returns planning, active, awaiting-gate, and paused goals for the web client goals screen.
@@ -355,28 +235,6 @@ export const getGoalDetail = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
- * List goal learnings
- *
- * Returns evidence-backed learning summaries. History includes retracted and superseded claims.
- */
-export const listGoalLearnings = <ThrowOnError extends boolean = false>(options: Options<ListGoalLearningsData, ThrowOnError>): RequestResult<ListGoalLearningsResponses, ListGoalLearningsErrors, ThrowOnError> => (options.client ?? client).get<ListGoalLearningsResponses, ListGoalLearningsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/goals/{goal_id}/learnings',
-    ...options
-});
-
-/**
- * Get a goal learning
- *
- * Returns one learning with redaction-safe evidence summaries.
- */
-export const getGoalLearning = <ThrowOnError extends boolean = false>(options: Options<GetGoalLearningData, ThrowOnError>): RequestResult<GetGoalLearningResponses, GetGoalLearningErrors, ThrowOnError> => (options.client ?? client).get<GetGoalLearningResponses, GetGoalLearningErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}',
-    ...options
-});
-
-/**
  * Review a goal learning
  *
  * Approve, reject, correct, or defer an evidence-backed learning.
@@ -389,17 +247,6 @@ export const reviewGoalLearning = <ThrowOnError extends boolean = false>(options
         'Content-Type': 'application/json',
         ...options.headers
     }
-});
-
-/**
- * Promote a goal learning
- *
- * Publishes a user-confirmed FACT through the licensed perception-fact path. Inferences remain labeled learnings and are not written to memory_facts.
- */
-export const promoteGoalLearning = <ThrowOnError extends boolean = false>(options: Options<PromoteGoalLearningData, ThrowOnError>): RequestResult<PromoteGoalLearningResponses, PromoteGoalLearningErrors, ThrowOnError> => (options.client ?? client).post<PromoteGoalLearningResponses, PromoteGoalLearningErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/goals/{goal_id}/learnings/{learning_id}/promote',
-    ...options
 });
 
 /**
@@ -459,21 +306,6 @@ export const listSessions = <ThrowOnError extends boolean = false>(options?: Opt
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/sessions',
     ...options
-});
-
-/**
- * Create a chat session
- *
- * Creates a new session and returns it. A UUID is minted server-side when id is omitted.
- */
-export const createSession = <ThrowOnError extends boolean = false>(options: Options<CreateSessionData, ThrowOnError>): RequestResult<CreateSessionResponses, CreateSessionErrors, ThrowOnError> => (options.client ?? client).post<CreateSessionResponses, CreateSessionErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/sessions',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
 });
 
 /**
@@ -611,114 +443,6 @@ export const deleteData = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * Ingest content
- *
- * Fetch, process, and ingest a URL or uploaded file into Ze's memory. Exactly one of 'url' or 'file' must be provided.
- */
-export const ingest = <ThrowOnError extends boolean = false>(options?: Options<IngestData, ThrowOnError>): RequestResult<IngestResponses, IngestErrors, ThrowOnError> => (options?.client ?? client).post<IngestResponses, IngestErrors, ThrowOnError>({
-    ...formDataBodySerializer,
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/ingest',
-    ...options,
-    headers: {
-        'Content-Type': null,
-        ...options?.headers
-    }
-});
-
-/**
- * WebSocket frame JSON schemas
- *
- * Returns JSON Schema definitions for all WebSocket frame types. Used by the codegen script to generate TypeScript types for the client.
- */
-export const getWsSchema = <ThrowOnError extends boolean = false>(options?: Options<GetWsSchemaData, ThrowOnError>): RequestResult<GetWsSchemaResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetWsSchemaResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/ws-schema',
-    ...options
-});
-
-/**
- * List dream journal entries
- *
- * Return recent dream journal entries, newest first.
- */
-export const listDreamJournal = <ThrowOnError extends boolean = false>(options?: Options<ListDreamJournalData, ThrowOnError>): RequestResult<ListDreamJournalResponses, ListDreamJournalErrors, ThrowOnError> => (options?.client ?? client).get<ListDreamJournalResponses, ListDreamJournalErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/journal',
-    ...options
-});
-
-/**
- * List artifacts pending review
- *
- * Return staged dream artifacts with status=needs_review.
- */
-export const listDreamArtifacts = <ThrowOnError extends boolean = false>(options?: Options<ListDreamArtifactsData, ThrowOnError>): RequestResult<ListDreamArtifactsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListDreamArtifactsResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/artifacts',
-    ...options
-});
-
-/**
- * Get dream artifact detail
- *
- * Return a single dream artifact with its scoring results.
- */
-export const getDreamArtifact = <ThrowOnError extends boolean = false>(options: Options<GetDreamArtifactData, ThrowOnError>): RequestResult<GetDreamArtifactResponses, GetDreamArtifactErrors, ThrowOnError> => (options.client ?? client).get<GetDreamArtifactResponses, GetDreamArtifactErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}',
-    ...options
-});
-
-/**
- * Approve a dream artifact
- *
- * Promote the artifact to long-term memory.
- */
-export const approveDreamArtifact = <ThrowOnError extends boolean = false>(options: Options<ApproveDreamArtifactData, ThrowOnError>): RequestResult<ApproveDreamArtifactResponses, ApproveDreamArtifactErrors, ThrowOnError> => (options.client ?? client).post<ApproveDreamArtifactResponses, ApproveDreamArtifactErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}/approve',
-    ...options
-});
-
-/**
- * Reject a dream artifact
- *
- * Mark the artifact rejected and decrement source episode retrieval weight.
- */
-export const rejectDreamArtifact = <ThrowOnError extends boolean = false>(options: Options<RejectDreamArtifactData, ThrowOnError>): RequestResult<RejectDreamArtifactResponses, RejectDreamArtifactErrors, ThrowOnError> => (options.client ?? client).post<RejectDreamArtifactResponses, RejectDreamArtifactErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}/reject',
-    ...options
-});
-
-/**
- * Revise and promote a dream artifact
- *
- * Replace the artifact content with a user-edited version, then promote it.
- */
-export const reviseDreamArtifact = <ThrowOnError extends boolean = false>(options: Options<ReviseDreamArtifactData, ThrowOnError>): RequestResult<ReviseDreamArtifactResponses, ReviseDreamArtifactErrors, ThrowOnError> => (options.client ?? client).post<ReviseDreamArtifactResponses, ReviseDreamArtifactErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/artifacts/{artifact_id}/revise',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Roll back a dream run
- *
- * Bulk-mark all promoted artifacts from the run as rolled_back, contradict promoted facts, and flag contaminated session summaries for re-summarisation.
- */
-export const rollbackDreamRun = <ThrowOnError extends boolean = false>(options: Options<RollbackDreamRunData, ThrowOnError>): RequestResult<RollbackDreamRunResponses, RollbackDreamRunErrors, ThrowOnError> => (options.client ?? client).post<RollbackDreamRunResponses, RollbackDreamRunErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/memory/dream/runs/{run_id}/rollback',
-    ...options
-});
-
-/**
  * List notifications
  *
  * Reverse-chronological, cursor-paginated notification history. Set mark_read=true to atomically mark the returned page as read (used by the panel-open fetch).
@@ -800,17 +524,6 @@ export const listLoops = <ThrowOnError extends boolean = false>(options?: Option
 });
 
 /**
- * Get open loop detail
- *
- * Return full detail for one loop, including its evidence, entity links and recorded sources (origin and counted corroborations, with the same-concern score) in time order.
- */
-export const getLoop = <ThrowOnError extends boolean = false>(options: Options<GetLoopData, ThrowOnError>): RequestResult<GetLoopResponses, GetLoopErrors, ThrowOnError> => (options.client ?? client).get<GetLoopResponses, GetLoopErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/loops/{loop_id}',
-    ...options
-});
-
-/**
  * Confirm a suspected loop
  *
  * Transition a suspected loop to active (FR-007, FR-015).
@@ -840,17 +553,6 @@ export const closeLoop = <ThrowOnError extends boolean = false>(options: Options
 export const dropLoop = <ThrowOnError extends boolean = false>(options: Options<DropLoopData, ThrowOnError>): RequestResult<DropLoopResponses, DropLoopErrors, ThrowOnError> => (options.client ?? client).post<DropLoopResponses, DropLoopErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/loops/{loop_id}/drop',
-    ...options
-});
-
-/**
- * List logged contribution collisions
- *
- * List cross-function contribution collisions detected by the collision seam (FR-009) — collisions are logged, never blocked or resolved.
- */
-export const listCollisions = <ThrowOnError extends boolean = false>(options?: Options<ListCollisionsData, ThrowOnError>): RequestResult<ListCollisionsResponses, ListCollisionsErrors, ThrowOnError> => (options?.client ?? client).get<ListCollisionsResponses, ListCollisionsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/collisions',
     ...options
 });
 
@@ -992,39 +694,6 @@ export const listSkills = <ThrowOnError extends boolean = false>(options?: Optio
 });
 
 /**
- * Remove an imported skill
- *
- * Permanently remove an imported skill (FR-014), cascading its SkillReview/ReferenceFile rows. Bundled skills can't be removed this way — uninstall the owning plugin instead.
- */
-export const deleteSkill = <ThrowOnError extends boolean = false>(options: Options<DeleteSkillData, ThrowOnError>): RequestResult<DeleteSkillResponses, DeleteSkillErrors, ThrowOnError> => (options.client ?? client).delete<DeleteSkillResponses, DeleteSkillErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/skills/{skill_id}',
-    ...options
-});
-
-/**
- * Get skill detail
- *
- * Return full detail for one skill, including its instructions, tool restrictions, reference-file listing, and — when pending re-review after a content change — the previously-approved version for comparison (FR-005, FR-016).
- */
-export const getSkill = <ThrowOnError extends boolean = false>(options: Options<GetSkillData, ThrowOnError>): RequestResult<GetSkillResponses, GetSkillErrors, ThrowOnError> => (options.client ?? client).get<GetSkillResponses, GetSkillErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/skills/{skill_id}',
-    ...options
-});
-
-/**
- * Get a skill's reference file content
- *
- * Return the full content of one stored non-script supporting reference file bundled with an imported skill (FR-022).
- */
-export const getSkillReferenceFile = <ThrowOnError extends boolean = false>(options: Options<GetSkillReferenceFileData, ThrowOnError>): RequestResult<GetSkillReferenceFileResponses, GetSkillReferenceFileErrors, ThrowOnError> => (options.client ?? client).get<GetSkillReferenceFileResponses, GetSkillReferenceFileErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/skills/{skill_id}/reference-files/{filename}',
-    ...options
-});
-
-/**
  * Import a skill from a URL
  *
  * Fetch and parse a SKILL.md (optionally bundled in a zip archive) from a user-submitted URL, creating a pending-review skill. Never activates it (FR-001-004).
@@ -1095,13 +764,13 @@ export const enableSkill = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * Manually recheck an imported skill's source
+ * Remove an imported skill
  *
- * Re-fetch an imported skill's origin_url and compare content hashes (FR-015). On a change, reverts to pending_review with the prior version kept for comparison (FR-016). An unreachable source sets last_check_error without deactivating the skill.
+ * Permanently remove an imported skill (FR-014), cascading its SkillReview/ReferenceFile rows. Bundled skills can't be removed this way — uninstall the owning plugin instead.
  */
-export const refreshSkill = <ThrowOnError extends boolean = false>(options: Options<RefreshSkillData, ThrowOnError>): RequestResult<RefreshSkillResponses, RefreshSkillErrors, ThrowOnError> => (options.client ?? client).post<RefreshSkillResponses, RefreshSkillErrors, ThrowOnError>({
+export const deleteSkill = <ThrowOnError extends boolean = false>(options: Options<DeleteSkillData, ThrowOnError>): RequestResult<DeleteSkillResponses, DeleteSkillErrors, ThrowOnError> => (options.client ?? client).delete<DeleteSkillResponses, DeleteSkillErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/skills/{skill_id}/refresh',
+    url: '/api/v0/skills/{skill_id}',
     ...options
 });
 
@@ -1141,17 +810,6 @@ export const uploadWorkspaceFile = <ThrowOnError extends boolean = false>(option
         'Content-Type': null,
         ...options.headers
     }
-});
-
-/**
- * Ingest a workspace file into memory
- *
- * Opt-in ingest of an existing workspace file. The file is not deleted.
- */
-export const ingestWorkspaceFile = <ThrowOnError extends boolean = false>(options: Options<IngestWorkspaceFileData, ThrowOnError>): RequestResult<IngestWorkspaceFileResponses, IngestWorkspaceFileErrors, ThrowOnError> => (options.client ?? client).post<IngestWorkspaceFileResponses, IngestWorkspaceFileErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/workspace/files/{file_path}/ingest',
-    ...options
 });
 
 /**
@@ -1210,47 +868,6 @@ export const cancelWorkspaceRun = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * Reset the workspace
- *
- * Does not wipe immediately. Issues a confirmation (editable: false). On approve, cancel any in-flight run then wipe. On deny, no change.
- */
-export const resetWorkspace = <ThrowOnError extends boolean = false>(options?: Options<ResetWorkspaceData, ThrowOnError>): RequestResult<ResetWorkspaceResponses, ResetWorkspaceErrors, ThrowOnError> => (options?.client ?? client).post<ResetWorkspaceResponses, ResetWorkspaceErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/workspace/reset',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
-    }
-});
-
-/**
- * List connected communication channels
- *
- * Returns channels Ze is connected to with poll state and last poll time.
- */
-export const listChannels = <ThrowOnError extends boolean = false>(options?: Options<ListChannelsData, ThrowOnError>): RequestResult<ListChannelsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListChannelsResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/channels',
-    ...options
-});
-
-/**
- * Update channel configuration
- *
- * Toggle poll_enabled or set as default outbound.
- */
-export const updateChannel = <ThrowOnError extends boolean = false>(options: Options<UpdateChannelData, ThrowOnError>): RequestResult<UpdateChannelResponses, UpdateChannelErrors, ThrowOnError> => (options.client ?? client).patch<UpdateChannelResponses, UpdateChannelErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/channels/{channel_id}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * UI shell manifest
  *
  * Returns plugin-contributed nav entries and settings sections. Core routes (chat, goals, settings) are not included — they are hardcoded in the web client.
@@ -1267,17 +884,6 @@ export const getUiManifest = <ThrowOnError extends boolean = false>(options?: Op
  * Authenticated by the source's own signing scheme, not the Ze API key.
  */
 export const receiveWebhook = <ThrowOnError extends boolean = false>(options: Options<ReceiveWebhookData, ThrowOnError>): RequestResult<ReceiveWebhookResponses, ReceiveWebhookErrors, ThrowOnError> => (options.client ?? client).post<ReceiveWebhookResponses, ReceiveWebhookErrors, ThrowOnError>({ url: '/api/v0/webhooks/{source}', ...options });
-
-/**
- * List recent news articles
- *
- * Returns recent news articles from configured RSS sources, newest first.
- */
-export const listNews = <ThrowOnError extends boolean = false>(options?: Options<ListNewsData, ThrowOnError>): RequestResult<ListNewsResponses, ListNewsErrors, ThrowOnError> => (options?.client ?? client).get<ListNewsResponses, ListNewsErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/news',
-    ...options
-});
 
 /**
  * News overview page
@@ -1302,17 +908,6 @@ export const getNewsSettings = <ThrowOnError extends boolean = false>(options?: 
 });
 
 /**
- * List contacts
- *
- * Returns confirmed contacts for the web client contacts screen.
- */
-export const listContacts = <ThrowOnError extends boolean = false>(options?: Options<ListContactsData, ThrowOnError>): RequestResult<ListContactsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListContactsResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/contacts',
-    ...options
-});
-
-/**
  * Contacts overview page
  *
  * Returns the server-driven UI tree for the contacts management screen.
@@ -1320,17 +915,6 @@ export const listContacts = <ThrowOnError extends boolean = false>(options?: Opt
 export const getContactsPage = <ThrowOnError extends boolean = false>(options?: Options<GetContactsPageData, ThrowOnError>): RequestResult<GetContactsPageResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetContactsPageResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v0/contacts/page',
-    ...options
-});
-
-/**
- * List reminders
- *
- * Returns user reminders for the web client reminders screen.
- */
-export const listReminders = <ThrowOnError extends boolean = false>(options?: Options<ListRemindersData, ThrowOnError>): RequestResult<ListRemindersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ListRemindersResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v0/reminders',
     ...options
 });
 

@@ -75,6 +75,14 @@ async def list_data_domains(request: Request) -> DataDomainsResponse:
         "so the archive can be validated at import time."
     ),
     response_class=Response,
+    responses={
+        200: {
+            "description": "ZIP archive",
+            "content": {
+                "application/zip": {"schema": {"type": "string", "format": "binary"}}
+            },
+        }
+    },
 )
 async def export_data(request: Request) -> Response:
     log.info("data_export_requested")

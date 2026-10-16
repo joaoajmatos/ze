@@ -8,7 +8,7 @@ export type { Client };
 /**
  * Configure the default Ze API client.
  *
- * Call once at app startup — all SDK functions (listContacts, listGoals, etc.)
+ * Call once at app startup — all SDK functions (listGoals, listGoals, etc.)
  * use this config automatically without needing `{ client }` passed per-call.
  *
  * ```ts
@@ -16,7 +16,7 @@ export type { Client };
  * configure({ serverUrl: "http://localhost:8000", apiKey: "..." });
  *
  * // then just call functions directly
- * const { data } = await listContacts();
+ * const { data } = await listGoals();
  * ```
  */
 export function configure(options: { serverUrl: string; apiKey: string }): void {
@@ -34,7 +34,7 @@ export function configure(options: { serverUrl: string; apiKey: string }): void 
  *
  * ```ts
  * const { client } = createZeClient({ serverUrl, apiKey });
- * const { data } = await listContacts({ client });
+ * const { data } = await listGoals({ client });
  * ```
  */
 export function createZeClient(options: { serverUrl: string; apiKey: string }): {

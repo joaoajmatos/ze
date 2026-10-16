@@ -59,5 +59,7 @@ class FakeEmbedder:
     def __init__(self, vecs: dict[str, list[float]] | None = None) -> None:
         self._vecs = vecs or {}
 
-    def encode(self, text: str) -> list[float]:
+    def encode_passage(self, text: str) -> list[float]:
         return self._vecs.get(text, [0.0, 0.0])
+
+    encode_query = encode_passage

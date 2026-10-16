@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -65,6 +65,7 @@ def make_graph_input(
         "correlations": [],
         "message_trace": None,
         "judgments": [],
+        "tier": None,
         "skill_matches": None,
     }
 
@@ -119,7 +120,7 @@ async def invoke_raw_turn(
 ) -> TurnResult:
     """Run the conversation graph once from raw transport input and interpret the outcome."""
     from uuid import uuid4
-    from ze_core.orchestration.nodes.trace import _extract_memory_chunks
+    from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 
     graph_input = make_graph_input(raw, thread_id)
     config = container._build_config(thread_id, **(config_extra or {}))
@@ -155,10 +156,17 @@ async def invoke_raw_turn(
                     thread_id,
                 )
 
+        elif kind == "on_chain_end" and name == "choose_tier":
+            tier = (data.get("output") or {}).get("tier")
+            if tier is not None and interface is not None:
+                await interface.send_trace_partial(
+                    pending_message_id, {"tier": asdict(tier)}, thread_id
+                )
+
         elif kind == "on_chain_end" and name == "fetch_context":
             memory_ctx = (data.get("output") or {}).get("memory_context")
             if memory_ctx is not None and interface is not None:
-                chunks = _extract_memory_chunks(memory_ctx)
+                chunks = extract_memory_chunks(memory_ctx)
                 if chunks:
                     await interface.send_trace_partial(
                         pending_message_id,
