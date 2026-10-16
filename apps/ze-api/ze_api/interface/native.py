@@ -89,6 +89,16 @@ class NativeAppInterface:
             if notification.event_type is not None:
                 await self._send_notification_frame(notification)
             return
+        if not notification.in_chat:
+            await self._ntfy(
+                notification.content,
+                _NTFY_PRIORITY_MAP.get(notification.urgency, 3),
+                buzz=notification.buzz,
+                respect_quiet=False,
+            )
+            if notification.event_type is not None:
+                await self._send_notification_frame(notification)
+            return
         await self._send_message(
             notification.content,
             ntfy_priority=_NTFY_PRIORITY_MAP.get(notification.urgency, 3),
@@ -182,6 +192,12 @@ class NativeAppInterface:
         except Exception as exc:
             log.warning("native_interface_push_failed", error=str(exc))
 
+        await self._ntfy(text, ntfy_priority, buzz=buzz, respect_quiet=respect_quiet)
+        return True
+
+    async def _ntfy(
+        self, text: str, priority: int, *, buzz: bool, respect_quiet: bool
+    ) -> None:
         # Only push via ntfy when the WebSocket is not connected — the client is
         # receiving frames in real-time when connected, so a push notification
         # would be redundant noise.
@@ -195,15 +211,10 @@ class NativeAppInterface:
 
             try:
                 await self._notifier.push(
-                    PushNotification(
-                        title="Ze",
-                        body=text[:200],
-                        priority=ntfy_priority,
-                    )
+                    PushNotification(title="Ze", body=text[:200], priority=priority)
                 )
             except Exception as exc:
                 log.warning("native_interface_ntfy_failed", error=str(exc))
-        return True
 
     async def send_with_thread(
         self,

@@ -77,6 +77,8 @@ class Notification:
     buzz: bool = True
     push_class: str | None = None
     delivery: str | None = None
+    # False: no chat message; the bell frame and ntfy only (PushKind.in_chat).
+    in_chat: bool = True
 
 
 @dataclass
