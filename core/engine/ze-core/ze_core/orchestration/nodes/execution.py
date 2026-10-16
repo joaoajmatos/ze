@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
 from typing import Any
 from uuid import uuid4
 
@@ -155,6 +156,13 @@ async def await_write_confirmation(state: AgentState, config: RunnableConfig) ->
             decisions.append(WriteDecision(item.item_id, "timed_out"))
         else:
             decisions.append(WriteDecision(item.item_id, "denied"))
+    shown = {d.item_id: d for d in decisions}
+    for alias, item_id in confirmation.aliases.items():
+        answer = shown[item_id]
+        approved = answer.outcome in ("approved", "edited")
+        decisions.append(
+            WriteDecision(alias, "duplicate" if approved else answer.outcome)
+        )
     log.info(
         "orchestration_write_confirmation_answered",
         session_id=state["session_id"],
@@ -168,26 +176,40 @@ async def await_write_confirmation(state: AgentState, config: RunnableConfig) ->
 
 
 def _build_confirmation(parked: list[ParkedSubtask], round_: int) -> WriteConfirmation:
-    items = [
-        ConfirmItem(
-            item_id=pw.item_id,
-            agent=pw.agent,
-            tool=pw.tool,
-            effect_phrase=effect_imperative(pw.effect_phrase),
-            summary=pw.summary,
-            editable_field=pw.editable_field,
-            proposed_text=(
-                str(pw.args.get(pw.editable_field))
-                if pw.editable_field and pw.args.get(pw.editable_field) is not None
-                else None
-            ),
-            conflict=pw.conflict,
-        )
-        for ps in sorted(parked, key=lambda p: p.index)
-        for pw in ps.loop.all_parked()
-    ]
+    """One item per distinct (tool, args); a repeat of a shown call becomes an alias."""
+    items: list[ConfirmItem] = []
+    aliases: dict[str, str] = {}
+    seen: dict[tuple[str, str], str] = {}
+    for ps in sorted(parked, key=lambda p: p.index):
+        for pw in ps.loop.all_parked():
+            key = (pw.tool, json.dumps(pw.args, sort_keys=True, default=str))
+            if key in seen:
+                aliases[pw.item_id] = seen[key]
+                continue
+            seen[key] = pw.item_id
+            items.append(
+                ConfirmItem(
+                    item_id=pw.item_id,
+                    agent=pw.agent,
+                    tool=pw.tool,
+                    effect_phrase=effect_imperative(pw.effect_phrase),
+                    summary=pw.summary,
+                    editable_field=pw.editable_field,
+                    proposed_text=(
+                        str(pw.args.get(pw.editable_field))
+                        if pw.editable_field
+                        and pw.args.get(pw.editable_field) is not None
+                        else None
+                    ),
+                    conflict=pw.conflict,
+                )
+            )
     return WriteConfirmation(
-        request_id=str(uuid4()), kind="write", round=round_, items=items
+        request_id=str(uuid4()),
+        kind="write",
+        round=round_,
+        items=items,
+        aliases=aliases,
     )
 
 

@@ -28,6 +28,7 @@ from ze_agents.hooks import (
 )
 from ze_agents.park import (
     DECLINED_RESULT,
+    DUPLICATE_RESULT,
     ApprovedCall,
     MAX_WRITE_ROUNDS,
     OVER_CAP_RESULT,
@@ -524,6 +525,15 @@ class BaseAgent(ABC):
                     _approval=ApprovedCall(pw.call_id),
                     **merged,
                 )
+            elif decision is not None and decision.outcome == "duplicate":
+                tool_call = ToolCall(
+                    tool_name=pw.tool,
+                    args=pw.args,
+                    result=DUPLICATE_RESULT,
+                    duration_ms=0,
+                    success=True,
+                    gate="duplicate",
+                )
             else:
                 tool_call = ToolCall(
                     tool_name=pw.tool,
@@ -540,7 +550,7 @@ class BaseAgent(ABC):
                     "role": "tool",
                     "tool_call_id": pw.call_id,
                     "content": DECLINED_RESULT
-                    if not approved
+                    if tool_call.gate == "denied"
                     else _serialise_result(tool_call),
                 }
             )

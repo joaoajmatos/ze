@@ -20,6 +20,10 @@ DECLINED_RESULT = (
     "do not retry it or suggest a fix."
 )
 OVER_CAP_RESULT = "This needs the user's approval; ask them in your reply instead."
+DUPLICATE_RESULT = (
+    "The user approved this exact call once; it runs in another step of this turn "
+    "and was not repeated here."
+)
 
 MAX_WRITE_ROUNDS = 3
 SUMMARY_MAX_CHARS = 160
@@ -43,7 +47,9 @@ class ApprovedCall:
 
 
 ParkReason = Literal["asks_first", "constraint", "check"]
-DecisionOutcome = Literal["approved", "edited", "denied", "timed_out", "superseded"]
+DecisionOutcome = Literal[
+    "approved", "edited", "denied", "timed_out", "superseded", "duplicate"
+]
 ConfirmationKind = Literal["write", "budget", "held"]
 ConfirmationStatus = Literal["open", "approved", "denied", "timed_out", "superseded"]
 
@@ -113,6 +119,8 @@ class WriteConfirmation:
     round: int
     items: list[ConfirmItem] = field(default_factory=list)
     status: ConfirmationStatus = "open"
+    # item_id of a parked call identical (tool, args) to a shown item -> that item's id
+    aliases: dict[str, str] = field(default_factory=dict)
 
 
 def generic_summary(args: dict[str, Any]) -> str:

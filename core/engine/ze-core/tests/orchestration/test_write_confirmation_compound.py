@@ -129,3 +129,48 @@ async def test_interrupt_is_only_called_from_the_pause_node() -> None:
         await graph.ainvoke(h.graph_input("go"), cfg)
         await graph.ainvoke(Command(resume={"choice": "approve"}), cfg)
     assert set(sites) == {"await_write_confirmation"}
+
+
+def _same_call_twice():
+    h.register_agent(
+        "calendar",
+        h.scripted_client(
+            (None, [h.tc("d1", "delete_event", event_id="e1")]),
+            (None, [h.tc("d2", "delete_event", event_id="e1")]),
+            ("Deleted.", None),
+            ("Deleted.", None),
+        ),
+        ["delete_event"],
+    )
+    return h.compiled_graph(
+        [SubTask("calendar", "list then delete"), SubTask("calendar", "delete e1")],
+        compound=True,
+    )
+
+
+async def test_the_same_call_parked_twice_is_one_item_and_runs_once() -> None:
+    graph = _same_call_twice()
+    cfg = h.thread_config()
+    await graph.ainvoke(h.graph_input("go"), cfg)
+    confirmation = (await _state(graph, cfg)).tasks[0].interrupts[0].value
+    assert [(i.tool, i.summary) for i in confirmation.items] == [
+        ("delete_event", "event_id: e1")
+    ]
+
+    out = await graph.ainvoke(Command(resume={"choice": "approve"}), cfg)
+
+    assert h.calls == [("delete_event", {"event_id": "e1"})]
+    assert [(r["tool"], r["outcome"]) for r in out["write_outcomes"]] == [
+        ("delete_event", "approved")
+    ]
+
+
+async def test_denying_a_deduplicated_call_declines_every_copy() -> None:
+    graph = _same_call_twice()
+    cfg = h.thread_config()
+    await graph.ainvoke(h.graph_input("go"), cfg)
+
+    out = await graph.ainvoke(Command(resume={"choice": "deny"}), cfg)
+
+    assert h.calls == []
+    assert out["final_response"].count("Okay, I didn't delete a calendar event.") == 1

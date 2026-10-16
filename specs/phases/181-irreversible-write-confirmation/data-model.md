@@ -45,10 +45,11 @@ Invariant: exactly one of `parked` non-empty or `child` set may be true per resp
 
 **ParkedSubtask**: `index: int` (0 for single turns), `loop: ParkedLoop`.
 
-**WriteDecision**: `item_id: str`, `outcome: "approved" | "edited" | "denied" | "timed_out" | "superseded"`, `edited_text: str | None`.
+**WriteDecision**: `item_id: str`, `outcome: "approved" | "edited" | "denied" | "timed_out" | "superseded" | "duplicate"`, `edited_text: str | None`. `duplicate` is given to an alias whose shown item was approved or edited: the resumed loop gets `DUPLICATE_RESULT` (gate `duplicate`) and the call does not run a second time.
 
 **WriteConfirmation** (graph interrupt payload and trace record)
-- `request_id: str`, `kind: "write" | "budget" | "held"`, `round: int` (1–3), `items: list[ConfirmItem]`, `status: "open" | "approved" | "denied" | "timed_out" | "superseded"`.
+- `request_id: str`, `kind: "write" | "budget" | "held"`, `round: int` (1–3), `items: list[ConfirmItem]`, `status: "open" | "approved" | "denied" | "timed_out" | "superseded"`, `aliases: dict[str, str]`.
+- One item per distinct `(tool, args)`. A parked call identical to a shown one (e.g. two subtasks to the same agent) is not shown; `aliases` maps its `item_id` to the shown item's, and it takes that item's answer (approve → `duplicate`).
 - `ConfirmItem`: `item_id`, `agent`, `tool`, `effect_phrase`, `summary`, `editable_field`, `proposed_text` (current value of the editable field), `conflict`.
 
 **LoopParked** (`ze_agents/errors.py`, `ZeError` subclass): carries one `ParkedLoop`. Raised only by `agentic_loop`; caught by `run_delegate`, `_run_with_timeout`, `GoalExecutor`.
