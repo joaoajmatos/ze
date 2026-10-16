@@ -36,7 +36,7 @@ Python/FastAPI backend, LangGraph orchestration, React web client, plugin-per-do
 
 ### One voice, many specialists
 
-Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own capability and confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
+Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own write confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
 
 ### System One
 
@@ -105,7 +105,9 @@ Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insig
 
 ### Agents
 
-Thirteen agents: research, companion, calendar, messenger, reminders, workflow, goals, loops, priority, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`; tool access is gated per agent. Agents can also use imported Agent Skills (`SKILL.md`), which you review before they take effect, and a chat-first workspace: an isolated computer with files and a shell, reached through chat.
+Thirteen agents: research, companion, calendar, messenger, reminders, workflow, goals, loops, priority, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`. Agents can also use imported Agent Skills (`SKILL.md`), which you review before they take effect, and a chat-first workspace: an isolated computer with files and a shell, reached through chat.
+
+Ze asks before it does anything it cannot undo. An irreversible write waits until you approve that exact action. Reads and reversible writes run without asking. A turn shows one confirmation card for all the writes it parked, and a denied write is reported as not done.
 
 <details>
 <summary>Agent reference</summary>
@@ -114,17 +116,17 @@ Thirteen agents: research, companion, calendar, messenger, reminders, workflow, 
 |---|---|---|
 | `research` | Web search + synthesis, delegation | Autonomous |
 | `companion` | Reasoning, writing, conversation | Autonomous |
-| `calendar` | Google Calendar CRUD + availability | Read auto · writes confirm |
-| `messenger` | Cross-channel messaging (Gmail) | Read auto · draft-first |
+| `calendar` | Google Calendar CRUD + availability | Read auto · irreversible writes ask first |
+| `messenger` | Cross-channel messaging (Gmail) | Read auto · sends ask first |
 | `reminders` | NL reminders + proactive push | Autonomous |
-| `workflow` | Recurring multi-step tasks | Read auto · manage confirm |
-| `goals` | Multi-week autonomous objectives | Read auto · writes confirm |
+| `workflow` | Recurring multi-step tasks | Read auto · irreversible changes ask first |
+| `goals` | Multi-week autonomous objectives | Read auto · irreversible writes ask first |
 | `loops` | List, track, confirm, close, or drop open loops | Autonomous |
-| `priority` | Reorder what Ze treats as most important | Writes confirm |
+| `priority` | Reorder what Ze treats as most important | Irreversible writes ask first |
 | `prospecting` | Browser-sidecar research + outreach | Autonomous |
 | `news` | Personalized RSS headlines + search | Autonomous |
 | `ingestion` | URL / PDF / video / audio / text → memory | Autonomous |
-| `finance` | Portfolio, spending, recurring expenses (Trading212 + CSV) | Read auto · recurring review confirms |
+| `finance` | Portfolio, spending, recurring expenses (Trading212 + CSV) | Read auto · irreversible writes ask first |
 
 </details>
 
