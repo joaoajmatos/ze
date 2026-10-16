@@ -153,6 +153,25 @@ check is shared.
 
 `ClaimKind.FEEDBACK_RECORD` is a closed kind licensed to `SourceFunction.PERCEPTION` only. It records a user reaction (thumbs, retry request) to an assistant reply as `prompt_supplied` provenance, confidence 1.0, target face `WORLD`. It is evidence about Ze's output, not a claim about the user, and it never enters `memory_facts`.
 
+## Evidence references: two kind lists, one shared ref
+
+One `EvidenceRef` dataclass exists. It lives in `ze_plugin/contribution.py` and plugins import it as `ze_sdk.contribution.EvidenceRef`. It does not sit beside the claim vocabulary in `ze_agents/claims.py`, and moving it there is not worth a code change.
+
+Two closed kind lists exist on purpose:
+
+| Type | Home | `kind` values | What it is |
+|---|---|---|---|
+| `EvidenceRef` | `ze_plugin/contribution.py` | `fact`, `episode`, `signal`, `ingestion`, `goal`, `action_record` | A pointer a `Contribution` cites. `validate_and_submit` checks that the record exists. `ingestion` and `goal` skip the check when no checker is passed. |
+| `HypothesisEvidence` | `ze_correlation/types.py` | `fact`, `episode`, `signal` | One displayable item in a hypothesis neighbourhood. It adds a label, `origin` (`Provenance`), `retrieved_at` and `ingested_at`. |
+
+The lists differ because the types answer different questions. Correlation recalls only facts, episodes and signals, so its list cannot grow without a new retrieval source. A contribution can cite any record Ze stores, so its list grows with the producers.
+
+Rules:
+
+- Add an `EvidenceRef` kind only with a matching `check_<kind>_exists` argument on `validate_and_submit` and a store that resolves the id.
+- Add a `HypothesisEvidence` kind only when correlation can recall that record type.
+- Do not merge the two types. A hypothesis converts to `EvidenceRef` kinds that exist in both lists when it submits.
+
 ## Open Questions
 
 - [ ] **Decay profile taxonomy** — is `EVIDENCE_WEIGHTED` / `TIME_LINEAR` / `FROZEN` (marked
