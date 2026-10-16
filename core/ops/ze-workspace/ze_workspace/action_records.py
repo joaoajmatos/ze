@@ -1,23 +1,16 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from uuid import UUID
 
-from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_agents.claims import Provenance
 from ze_memory.action_records.recorder import idempotency_key as make_idempotency_key
 from ze_memory.action_records.types import (
-    ActionContext,
     ActionLifecycle,
     ActionOutcome,
-    ActionRecordDraft,
-    AuthoritativeRef,
 )
-from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
 
 from ze_workspace.sanitize import redact
 from ze_workspace.types import WorkspaceRun, WorkspaceRunOrigin, WorkspaceRunStatus
 
-AUTHORITATIVE_DOMAIN = "workspace.runs"
 
 _LOST_SUMMARIES = {
     "the computer restarted and lost this run — no fabricated result",
@@ -85,42 +78,3 @@ def _provenance_for(run: WorkspaceRun) -> Provenance:
     if run.origin is WorkspaceRunOrigin.UNATTENDED:
         return Provenance.SYNTHESIZED
     return Provenance.PROMPT_SUPPLIED
-
-
-def draft_from_workspace_run(run: WorkspaceRun) -> ActionRecordDraft:
-    lifecycle, outcome, failure_code = _lifecycle_for(run)
-    workspace_run_id = run.id if isinstance(run.id, UUID) else None
-    message_id = run.message_id if isinstance(run.message_id, UUID) else None
-    return ActionRecordDraft(
-        idempotency_key=workspace_idempotency_key(run),
-        action_type="workspace.run",
-        actor=_actor_for(run),
-        producer_plugin="ze-workspace",
-        lifecycle=lifecycle,
-        outcome=outcome,
-        occurred_at=run.ended_at or run.started_at or datetime.now(timezone.utc),
-        summary=_summary_for(run, lifecycle),
-        authoritative_ref=AuthoritativeRef(
-            domain=AUTHORITATIVE_DOMAIN,
-            record_id=str(run.id),
-        ),
-        context=ActionContext(
-            message_id=message_id,
-            workspace_run_id=workspace_run_id,
-        ),
-        failure_code=failure_code,
-    )
-
-
-def contribution_from_workspace_run(run: WorkspaceRun) -> Contribution:
-    return Contribution(
-        claim_kind=ClaimKind.ACTION_RECORD,
-        provenance=_provenance_for(run),
-        confidence=Confidence(
-            value=0.4 if run.status is None else 1.0,
-            decay_profile=DecayProfile.TIME_LINEAR,
-        ),
-        target_face=TargetFace.WORLD,
-        source_function=SourceFunction.ACTION,
-        action_record=draft_from_workspace_run(run),
-    )

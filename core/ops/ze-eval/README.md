@@ -16,7 +16,7 @@ Ze's agent behaviour is tested against YAML scenario definitions — routing acc
 
 ### Integration
 
-Standalone from the runtime path — no import from `ze-api` at startup. Invoked via `make eval`, `eval/run.py`, and `make eval-server`. Requires `make dev-eval` (backend without background jobs) before running.
+Standalone from the runtime path — no import from `ze-api` at startup. Invoked via `make eval`, `eval/run.py`, and `make eval-server`. Requires `make dev-eval` (eval-mode backend: no dev seed data, `PUBLIC_URL` cleared) before running.
 
 ## Responsibilities
 
@@ -42,7 +42,7 @@ No Ze package dependencies. Third-party: `httpx`, `asyncpg`, `pyyaml`, `mcp`, `l
 Scenario definitions live in `eval/scenarios/`. Run evals from the repo root:
 
 ```bash
-make dev-eval    # start backend without background jobs
+make dev-eval    # start the eval-mode backend (no dev seed data)
 python eval/run.py [--judge] [--tag X] [report]
 python eval/server.py   # MCP server — make eval-server
 ```

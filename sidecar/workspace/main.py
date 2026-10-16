@@ -7,6 +7,7 @@ import base64
 import json
 import os
 import shutil
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
@@ -17,11 +18,21 @@ from pydantic import BaseModel
 
 import supervisor
 
-app = FastAPI(title="ze-workspace")
 
 WORKSPACE_ROOT = supervisor.WORKSPACE_ROOT
 STORAGE_CEILING = supervisor.STORAGE_CEILING
 API_TOKEN = os.environ.get("WORKSPACE_API_TOKEN", "")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
+    supervisor.apply_network_isolation()
+    yield
+    await supervisor.shutdown()
+
+
+app = FastAPI(title="ze-workspace", lifespan=lifespan)
 
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:
@@ -85,12 +96,6 @@ class RunBody(BaseModel):
     timeout_seconds: int = supervisor.DEFAULT_TIMEOUT
     stdin_b64: str | None = None
     env: dict[str, str] = {}
-
-
-@app.on_event("startup")
-async def _startup() -> None:
-    WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
-    supervisor.apply_network_isolation()
 
 
 @app.get("/health")

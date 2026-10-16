@@ -35,17 +35,6 @@ DEFAULT_SHORT_WAIT_SECONDS = 25.0
 
 log = get_logger(__name__)
 
-WORKSPACE_TOOLS = [
-    "workspace_list",
-    "workspace_read",
-    "workspace_write",
-    "workspace_delete",
-    "workspace_run",
-    "workspace_run_skill_script",
-    "ingest_workspace_file",
-    "workspace_reset",
-]
-
 _client: Any = None
 _gate: Any = None
 _store: Any = None

@@ -93,16 +93,6 @@ class WorkspaceStat:
 
 
 @dataclass
-class WorkspaceRunResult:
-    exit_code: int
-    timed_out: bool
-    stdout_preview: str
-    stderr_preview: str
-    output_file_path: str | None = None
-    files_touched: list[WorkspaceFileTouch] = field(default_factory=list)
-
-
-@dataclass
 class JournalEventDTO:
     """One event from GET /runs/{id}/events (Phase 129 data-model.md)."""
 

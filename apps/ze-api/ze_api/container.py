@@ -112,7 +112,7 @@ from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.compose import (
-    reconcile_in_progress_workspace_runs,
+    reconcile_workspace_at_startup,
     register_all_proactive_jobs,
 )
 from ze_api.db import create_checkpointer_pool, create_pool
@@ -962,7 +962,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         dream_job=dream_job,
         pool=pool,
     )
-    await reconcile_in_progress_workspace_runs(workspace.store, workspace.run_watcher)
+    await reconcile_workspace_at_startup(workspace.store, workspace.run_watcher)
 
     await automation.workflow_scheduler.start()
     await container.proactive_scheduler.start()
