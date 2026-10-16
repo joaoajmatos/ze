@@ -70,63 +70,6 @@ async def web_cost_summary(pool: Any, *, days: int = _WEB_SUMMARY_DAYS) -> dict:
     }
 
 
-async def cost_detail(pool: Any, *, days: int, group_by: str) -> dict:
-    if group_by not in _VALID_GROUP_BY:
-        raise ValueError(f"group_by must be one of {sorted(_VALID_GROUP_BY)}")
-
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            f"""
-            SELECT
-                {group_by}                   AS grp,
-                COUNT(*)::int                AS calls,
-                SUM(prompt_tokens)::int      AS prompt_tokens,
-                SUM(completion_tokens)::int  AS completion_tokens,
-                SUM(total_tokens)::int       AS total_tokens,
-                SUM(cost_usd)                AS cost_usd
-            FROM llm_cost_log
-            WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
-            GROUP BY {group_by}
-            ORDER BY SUM(total_tokens) DESC
-            """,
-            days,
-        )
-        totals = await conn.fetchrow(
-            """
-            SELECT
-                COUNT(*)::int       AS total_calls,
-                SUM(total_tokens)   AS total_tokens,
-                SUM(cost_usd)       AS total_cost_usd
-            FROM llm_cost_log
-            WHERE created_at >= NOW() - ($1 * INTERVAL '1 day')
-            """,
-            days,
-        )
-
-    buckets = [
-        {
-            "group": row["grp"],
-            "calls": row["calls"],
-            "prompt_tokens": row["prompt_tokens"],
-            "completion_tokens": row["completion_tokens"],
-            "total_tokens": row["total_tokens"],
-            "cost_usd": float(row["cost_usd"]) if row["cost_usd"] is not None else None,
-        }
-        for row in rows
-    ]
-
-    return {
-        "period_days": days,
-        "group_by": group_by,
-        "total_calls": totals["total_calls"] or 0,
-        "total_tokens": int(totals["total_tokens"] or 0),
-        "total_cost_usd": float(totals["total_cost_usd"])
-        if totals["total_cost_usd"] is not None
-        else None,
-        "buckets": buckets,
-    }
-
-
 async def build_cost_summary(container: Any) -> str:
     async with container.pool.acquire() as conn:
         rows = await conn.fetch(

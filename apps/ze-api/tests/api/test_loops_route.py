@@ -63,10 +63,10 @@ def _source(
     )
 
 
-def _make_app(loop_store=None, pool=None) -> tuple[FastAPI, AsyncMock]:
+def _make_app(loop_store=None) -> tuple[FastAPI, AsyncMock]:
     app = FastAPI()
     store = loop_store or AsyncMock()
-    container = SimpleNamespace(loop_store=store, pool=pool)
+    container = SimpleNamespace(loop_store=store)
     app.state.container = container
 
     app.dependency_overrides[require_api_key] = lambda: None
@@ -125,48 +125,13 @@ async def test_list_loops_reports_promotion_and_source_inflows():
 
 
 @pytest.mark.asyncio
-async def test_get_loop_returns_promotion_and_sources():
-    loop = _loop(state=LoopState.ACTIVE)
-    store = AsyncMock()
-    store.get = AsyncMock(return_value=loop)
-    store.list_evidence = AsyncMock(return_value=[])
-    store.list_sources = AsyncMock(
-        return_value=[
-            _source(loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation"),
-            _source(loop.id, inflow="email", same_concern=0.93, promoted=True),
-        ]
-    )
-    app, _ = _make_app(store)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.get(
-            f"/api/v0/loops/{loop.id}", headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["promoted"] is True
-    assert data["source_inflows"] == ["conversation", "email"]
-    assert [s["role"] for s in data["sources"]] == ["origin", "corroboration"]
-    assert data["sources"][0]["same_concern"] is None
-    assert data["sources"][0]["evidence_kind"] == "episode"
-    assert data["sources"][1]["same_concern"] == 0.93
-    assert data["sources"][1]["promoted"] is True
-
-
-@pytest.mark.asyncio
-async def test_list_and_detail_expose_reminder_and_goal_ids():
+async def test_list_exposes_reminder_and_goal_ids():
     reminder_id, goal_id = uuid4(), uuid4()
     linked = _loop(reminder_id=reminder_id, goal_id=goal_id)
     unlinked = _loop()
     store = AsyncMock()
     store.list = AsyncMock(return_value=[linked, unlinked])
     store.list_sources_for = AsyncMock(return_value={})
-    store.get = AsyncMock(return_value=linked)
-    store.list_evidence = AsyncMock(return_value=[])
-    store.list_sources = AsyncMock(return_value=[])
     app, _ = _make_app(store)
     headers = {"Authorization": f"Bearer {API_KEY}"}
 
@@ -174,7 +139,6 @@ async def test_list_and_detail_expose_reminder_and_goal_ids():
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         listed = await client.get("/api/v0/loops", headers=headers)
-        detail = await client.get(f"/api/v0/loops/{linked.id}", headers=headers)
 
     assert listed.status_code == 200
     first, second = listed.json()
@@ -183,47 +147,6 @@ async def test_list_and_detail_expose_reminder_and_goal_ids():
         str(goal_id),
     )
     assert (second["reminder_id"], second["goal_id"]) == (None, None)
-    assert detail.status_code == 200
-    assert detail.json()["reminder_id"] == str(reminder_id)
-    assert detail.json()["goal_id"] == str(goal_id)
-
-
-@pytest.mark.asyncio
-async def test_get_loop_404_when_missing():
-    store = AsyncMock()
-    store.get = AsyncMock(return_value=None)
-    app, _ = _make_app(store)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.get(
-            f"/api/v0/loops/{uuid4()}", headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-
-    assert resp.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_get_loop_returns_evidence_and_entities():
-    loop = _loop()
-    store = AsyncMock()
-    store.get = AsyncMock(return_value=loop)
-    store.list_evidence = AsyncMock(return_value=[])
-    app, _ = _make_app(store)
-
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.get(
-            f"/api/v0/loops/{loop.id}", headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["id"] == str(loop.id)
-    assert data["evidence"] == []
-    assert data["entities"] == []
 
 
 @pytest.mark.asyncio
@@ -304,11 +227,11 @@ async def test_invalid_transition_returns_409():
 
 
 @pytest.mark.asyncio
-async def test_confidence_decay_reflected_on_next_get():
+async def test_confidence_decay_reflected_on_next_list():
     """SC-006 / quickstart's evidence-retraction-cascade scenario, exercised through
     the REST surface: once ze_worldstate.decay.cascade_from_evidence has lowered a
     loop's stored confidence (unit-tested directly in test_decay.py), the next
-    GET /api/v0/loops/{id} must reflect the new value — not a cached one.
+    GET /api/v0/loops must reflect the new value — not a cached one.
     """
     from ze_worldstate.decay import CONFIDENCE_FLOOR, cascade_from_evidence
 
@@ -319,8 +242,8 @@ async def test_confidence_decay_reflected_on_next_get():
     store.set_confidence = AsyncMock(
         side_effect=lambda loop_id, c: setattr(loop, "confidence", c)
     )
-    store.list_evidence = AsyncMock(return_value=[])
-    store.get = AsyncMock(return_value=loop)
+    store.list = AsyncMock(return_value=[loop])
+    store.list_sources_for = AsyncMock(return_value={})
     app, _ = _make_app(store)
 
     await cascade_from_evidence("fact", uuid4(), store)
@@ -330,11 +253,11 @@ async def test_confidence_decay_reflected_on_next_get():
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         resp = await client.get(
-            f"/api/v0/loops/{loop.id}", headers={"Authorization": f"Bearer {API_KEY}"}
+            "/api/v0/loops", headers={"Authorization": f"Bearer {API_KEY}"}
         )
 
     assert resp.status_code == 200
-    assert resp.json()["confidence"] == CONFIDENCE_FLOOR
+    assert resp.json()[0]["confidence"] == CONFIDENCE_FLOOR
 
 
 @pytest.mark.asyncio

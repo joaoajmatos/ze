@@ -136,36 +136,6 @@ async def test_transition_fails_on_stale_status_returns_none():
 
 
 @pytest.mark.asyncio
-async def test_get_reference_file_single_lookup():
-    skill_id = uuid4()
-    ref_row = dict(
-        id=uuid4(),
-        skill_id=skill_id,
-        filename="reference.md",
-        content="# Reference",
-        content_type="text/markdown",
-    )
-    pool, conn = make_pool(fetchrow=ref_row)
-    store = PostgresSkillStore(pool)
-
-    result = await store.get_reference_file(skill_id, "reference.md")
-
-    assert result is not None
-    assert result.filename == "reference.md"
-    assert result.content == "# Reference"
-
-
-@pytest.mark.asyncio
-async def test_get_reference_file_returns_none_when_missing():
-    pool, conn = make_pool(fetchrow=None)
-    store = PostgresSkillStore(pool)
-
-    result = await store.get_reference_file(uuid4(), "does-not-exist.md")
-
-    assert result is None
-
-
-@pytest.mark.asyncio
 async def test_add_reference_file():
     skill_id = uuid4()
     ref_row = dict(

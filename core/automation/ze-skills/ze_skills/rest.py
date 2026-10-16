@@ -5,7 +5,6 @@ from uuid import UUID
 import httpx
 
 from ze_skills import review
-from ze_skills.errors import SkillNotFoundError
 from ze_skills.importer import fetch_skill_source
 from ze_skills.procedure_candidates import candidate_from_skill
 from ze_skills.store import SkillStore
@@ -96,13 +95,6 @@ async def import_skill(
     return await _detail(store, created)
 
 
-async def get_skill(store: SkillStore, skill_id: UUID) -> dict:
-    skill = await store.get(skill_id)
-    if skill is None:
-        raise SkillNotFoundError(f"Skill {skill_id} not found")
-    return await _detail(store, skill)
-
-
 async def list_skills(
     store: SkillStore,
     status: SkillStatus | None = None,
@@ -116,22 +108,6 @@ async def list_skills(
         item["script_filenames"] = [x.filename for x in scripts]
         items.append(item)
     return items
-
-
-async def get_reference_file(store: SkillStore, skill_id: UUID, filename: str) -> dict:
-    skill = await store.get(skill_id)
-    if skill is None:
-        raise SkillNotFoundError(f"Skill {skill_id} not found")
-    ref = await store.get_reference_file(skill_id, filename)
-    if ref is None:
-        raise SkillNotFoundError(
-            f"Reference file {filename!r} not found on skill {skill_id}"
-        )
-    return {
-        "filename": ref.filename,
-        "content_type": ref.content_type,
-        "content": ref.content,
-    }
 
 
 async def approve(
@@ -169,10 +145,3 @@ async def enable(store: SkillStore, skill_id: UUID) -> dict:
 
 async def remove(store: SkillStore, skill_id: UUID) -> None:
     await review.remove_skill(store, skill_id)
-
-
-async def refresh(
-    store: SkillStore, skill_id: UUID, http_client: httpx.AsyncClient | None = None
-) -> dict:
-    skill = await review.refresh_skill(store, skill_id, http_client=http_client)
-    return await _detail(store, skill)

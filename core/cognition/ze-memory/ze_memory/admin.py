@@ -33,15 +33,6 @@ def _attrs_from_row(value: Any) -> dict:
     return {}
 
 
-async def list_facts(pool: Any) -> list[dict]:
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT id, predicate AS key, value, agent, confidence, reviewed, contradicted, updated_at "
-            "FROM memory_facts ORDER BY updated_at DESC"
-        )
-    return [dict(r) for r in rows]
-
-
 async def review_facts(pool: Any, actions: list[Any]) -> list[dict]:
     updated: list[dict] = []
     async with pool.acquire() as conn:
@@ -70,32 +61,6 @@ async def review_facts(pool: Any, actions: list[Any]) -> list[dict]:
                 if row:
                     updated.append(dict(row))
     return updated
-
-
-async def get_memory_digest(pool: Any) -> dict:
-    async with pool.acquire() as conn:
-        unreviewed = await conn.fetch(
-            "SELECT id, predicate AS key, value, agent FROM memory_facts"
-            " WHERE reviewed = false ORDER BY updated_at DESC"
-        )
-        contradicted = await conn.fetch(
-            "SELECT id, predicate AS key, value, agent FROM memory_facts"
-            " WHERE contradicted = true ORDER BY updated_at DESC"
-        )
-        episodes = await conn.fetch(
-            "SELECT id, agent, summary, created_at FROM memory_episodes"
-            " ORDER BY created_at DESC LIMIT 10"
-        )
-        expiring = await conn.fetch(
-            "SELECT id, predicate AS key, value, agent, expires_at FROM memory_facts "
-            "WHERE expires_at IS NOT NULL AND expires_at > NOW() ORDER BY expires_at ASC"
-        )
-    return {
-        "unreviewed_facts": [dict(r) for r in unreviewed],
-        "contradicted_facts": [dict(r) for r in contradicted],
-        "recent_episodes": [dict(r) for r in episodes],
-        "expiring_facts": [dict(r) for r in expiring],
-    }
 
 
 async def get_memory_feed(
@@ -247,20 +212,6 @@ async def get_memory_timeline_bounds(pool: Any) -> dict:
     return {
         "earliest": row["earliest"],
         "latest": datetime.now(timezone.utc),
-    }
-
-
-async def get_profile(pool: Any) -> dict | None:
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT key, value, stability, confidence, updated_at"
-            " FROM memory_profile_facets ORDER BY confidence DESC"
-        )
-    if not rows:
-        return None
-    return {
-        "facets": [dict(r) for r in rows],
-        "updated_at": max(r["updated_at"] for r in rows),
     }
 
 

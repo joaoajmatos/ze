@@ -7,7 +7,6 @@ from ze_api.api.schemas import (
     SkillDetailResponse,
     SkillImportRequest,
     SkillListResponse,
-    SkillReferenceFileResponse,
 )
 from ze_skills import rest as skills_rest
 from ze_skills.errors import (
@@ -38,46 +37,6 @@ async def list_skills(
 ) -> SkillListResponse:
     skills = await skills_rest.list_skills(store, status=status, source=source)
     return SkillListResponse(skills=skills)
-
-
-@router.get(
-    "/{skill_id}",
-    response_model=SkillDetailResponse,
-    operation_id="getSkill",
-    summary="Get skill detail",
-    description="Return full detail for one skill, including its instructions, "
-    "tool restrictions, reference-file listing, and — when pending re-review after "
-    "a content change — the previously-approved version for comparison (FR-005, FR-016).",
-)
-async def get_skill(
-    skill_id: UUID,
-    store: SkillStore = Depends(get_skill_store),
-) -> SkillDetailResponse:
-    try:
-        skill = await skills_rest.get_skill(store, skill_id)
-    except SkillNotFoundError:
-        raise HTTPException(status_code=404, detail="Skill not found")
-    return SkillDetailResponse.model_validate(skill)
-
-
-@router.get(
-    "/{skill_id}/reference-files/{filename}",
-    response_model=SkillReferenceFileResponse,
-    operation_id="getSkillReferenceFile",
-    summary="Get a skill's reference file content",
-    description="Return the full content of one stored non-script supporting "
-    "reference file bundled with an imported skill (FR-022).",
-)
-async def get_skill_reference_file(
-    skill_id: UUID,
-    filename: str,
-    store: SkillStore = Depends(get_skill_store),
-) -> SkillReferenceFileResponse:
-    try:
-        ref = await skills_rest.get_reference_file(store, skill_id, filename)
-    except SkillNotFoundError:
-        raise HTTPException(status_code=404, detail="Reference file not found")
-    return SkillReferenceFileResponse.model_validate(ref)
 
 
 @router.post(
@@ -209,29 +168,6 @@ async def enable_skill(
         raise HTTPException(status_code=404, detail="Skill not found")
     except InvalidSkillTransitionError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
-    return SkillDetailResponse.model_validate(skill)
-
-
-@router.post(
-    "/{skill_id}/refresh",
-    response_model=SkillDetailResponse,
-    operation_id="refreshSkill",
-    summary="Manually recheck an imported skill's source",
-    description="Re-fetch an imported skill's origin_url and compare content hashes "
-    "(FR-015). On a change, reverts to pending_review with the prior version kept "
-    "for comparison (FR-016). An unreachable source sets last_check_error without "
-    "deactivating the skill.",
-)
-async def refresh_skill(
-    skill_id: UUID,
-    store: SkillStore = Depends(get_skill_store),
-) -> SkillDetailResponse:
-    try:
-        skill = await skills_rest.refresh(store, skill_id)
-    except SkillNotFoundError:
-        raise HTTPException(status_code=404, detail="Skill not found")
-    except InvalidSkillTransitionError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
     return SkillDetailResponse.model_validate(skill)
 
 

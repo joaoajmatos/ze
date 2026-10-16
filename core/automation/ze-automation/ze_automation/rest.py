@@ -6,11 +6,8 @@ from uuid import UUID
 from ze_agents.errors import WorkflowPlanError
 from ze_automation.holds.store import HeldWriteStore
 from ze_automation.holds.types import HeldWrite, HeldWriteStatus
-from ze_automation.holds.planned import planned_writes, writes_needing_approval
-from ze_automation.workflow.revision_summary import changed_step_ids
 from ze_automation.workflow.store import WorkflowStore
-from ze_automation.workflow.types import ActorContext, ActorSource, WorkflowStep
-from ze_automation.workflow.validation import validate_workflow_steps
+from ze_automation.workflow.types import WorkflowStep
 
 
 async def list_workflows(store: WorkflowStore) -> list[dict]:
@@ -217,40 +214,6 @@ async def build_status_summary(container: Any, *, period_days: int = 1) -> str:
         total_cost_usd=total_cost,
     )
     return build_narrative(summary)
-
-
-async def update_workflow_steps(
-    store: WorkflowStore,
-    workflow_id: UUID,
-    steps: list[WorkflowStep],
-    approve_writes: bool = False,
-) -> dict:
-    """Replace a workflow's steps. A changed step loses its pre-approvals (FR-024).
-
-    With `approve_writes` the caller grants the asks-first tools of each changed step's
-    agent; otherwise the steps are listed in `writes_needing_approval`.
-    """
-    wf = await store.get(workflow_id)
-    if wf is None:
-        raise WorkflowPlanError(f"Workflow {workflow_id} not found")
-    validate_workflow_steps(steps)
-    changed = changed_step_ids(wf.steps, steps)
-    before_by_id = {s.id: s for s in wf.steps}
-    for step in steps:
-        if step.id not in changed:
-            step.approved_writes = list(before_by_id[step.id].approved_writes)
-        elif approve_writes:
-            step.approved_writes = planned_writes(step)
-        else:
-            step.approved_writes = []
-    await store.update_steps(
-        workflow_id, steps, actor=ActorContext(source=ActorSource.API)
-    )
-    result = await get_workflow(store, workflow_id)
-    result["writes_needing_approval"] = writes_needing_approval(
-        [s for s in steps if s.id in changed]
-    )
-    return result
 
 
 def _revision_to_response_dict(rev) -> dict:

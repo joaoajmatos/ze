@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from ze_api.api.openapi import OPENAPI_TAGS
 from ze_api.api.routes import (
     activity,
-    channels,
     collisions,
     costs,
     data,
@@ -15,7 +14,6 @@ from ze_api.api.routes import (
     feedback,
     goals,
     health,
-    ingest,
     loops,
     memory,
     notifications,
@@ -30,7 +28,6 @@ from ze_api.api.routes import (
     held_writes,
     workflows,
     workspace,
-    ws_schema,
 )
 from ze_api.api.ws import router as ws_router
 from ze_api.api.messages import router as messages_router
@@ -140,8 +137,6 @@ def create_app() -> FastAPI:
     app.include_router(messages_router, prefix="/api/v0")
     app.include_router(feedback.router, prefix="/api/v0")
     app.include_router(data.router, prefix="/api/v0")
-    app.include_router(ingest.router, prefix="/api/v0")
-    app.include_router(ws_schema.router, prefix="/api/v0")
     app.include_router(dream.router, prefix="/api/v0")
     app.include_router(notifications.router, prefix="/api/v0")
     app.include_router(loops.router, prefix="/api/v0")
@@ -149,7 +144,6 @@ def create_app() -> FastAPI:
     app.include_router(procedures.router, prefix="/api/v0")
     app.include_router(skills.router, prefix="/api/v0")
     app.include_router(workspace.router, prefix="/api/v0")
-    app.include_router(channels.router)
     app.include_router(ui.router)
     app.include_router(webhooks.router)
 

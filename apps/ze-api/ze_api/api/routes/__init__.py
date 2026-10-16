@@ -8,7 +8,6 @@ from ze_api.api.routes import (
     goals,
     health,
     held_writes,
-    ingest,
     loops,
     memory,
     routing,
@@ -18,7 +17,6 @@ from ze_api.api.routes import (
     webhooks,
     workflows,
     workspace,
-    ws_schema,
 )
 
 __all__ = [
@@ -31,7 +29,6 @@ __all__ = [
     "goals",
     "health",
     "held_writes",
-    "ingest",
     "loops",
     "memory",
     "routing",
@@ -41,5 +38,4 @@ __all__ = [
     "webhooks",
     "workflows",
     "workspace",
-    "ws_schema",
 ]

@@ -89,58 +89,6 @@ def test_get_routing_log_invalid_limit(client):
     assert resp.status_code == 422
 
 
-# ── GET /memory/digest ────────────────────────────────────────────────────────
-
-
-def test_memory_digest_returns_structure(client):
-    c, conn = client
-    conn.fetch = AsyncMock(return_value=[])
-    resp = c.get("/memory/digest")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "unreviewed_facts" in data
-    assert "contradicted_facts" in data
-    assert "recent_episodes" in data
-
-
-# ── GET /memory/facts ─────────────────────────────────────────────────────────
-
-
-def test_memory_facts_returns_list(client):
-    c, conn = client
-    conn.fetch = AsyncMock(return_value=[])
-    resp = c.get("/memory/facts")
-    assert resp.status_code == 200
-    assert isinstance(resp.json(), list)
-
-
-def test_memory_fact_quality_has_no_raw_bucket(client):
-    c, conn = client
-    conn.fetchrow = AsyncMock(
-        return_value={
-            "total": 3,
-            "avg_confidence": 0.8,
-            "low_confidence_count": 0,
-            "contradicted_count": 0,
-            "synthesized_unreviewed": 1,
-            "synthesized_uncorroborated": 1,
-            "synthesized_expired": 0,
-        }
-    )
-    conn.fetch = AsyncMock(
-        return_value=[
-            {"provenance": "prompt_supplied", "n": 2},
-            {"provenance": "synthesized", "n": 1},
-        ]
-    )
-    resp = c.get("/memory/facts/quality")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "raw" not in data["by_provenance"]
-    assert data["by_provenance"]["prompt_supplied"] == 2
-    assert data["by_provenance"]["synthesized"] == 1
-
-
 # ── OpenAPI schema ────────────────────────────────────────────────────────────
 
 
@@ -148,7 +96,7 @@ def test_openapi_includes_rest_paths(client):
     c, _ = client
     schema = c.get("/openapi.json").json()
     paths = schema["paths"]
-    assert "/memory/facts" in paths
+    assert "/memory/feed" in paths
     assert "/memory/facts/review" in paths
-    assert "/memory/digest" in paths
+    assert "/memory/digest" not in paths
     assert "/routing/log" in paths

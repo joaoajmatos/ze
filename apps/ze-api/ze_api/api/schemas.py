@@ -53,11 +53,6 @@ class SessionSearchResult(BaseModel):
     rank: float
 
 
-class CreateSessionRequest(BaseModel):
-    id: str | None = None
-    title: str | None = None
-
-
 # ── REST: retry rollback (Phase 180) ──────────────────────────────────────────
 
 RollbackOutcomeLiteral = Literal["undone", "failed", "not_attempted"]
@@ -310,17 +305,6 @@ class MessageFeedbackResponse(BaseModel):
 # ── REST: memory ──────────────────────────────────────────────────────────────
 
 
-class UserFactResponse(BaseModel):
-    id: UUIDType
-    key: str
-    value: str
-    agent: str
-    confidence: float
-    reviewed: bool
-    contradicted: bool
-    updated_at: datetime
-
-
 class FactDigestItem(BaseModel):
     id: UUIDType
     key: str
@@ -334,56 +318,6 @@ class EpisodeDigestItem(BaseModel):
     agent: str
     summary: str | None
     created_at: datetime
-
-
-class ExpiringFactDigestItem(BaseModel):
-    id: UUIDType
-    key: str
-    value: str
-    agent: str
-    expires_at: datetime
-
-
-class MemoryDigestResponse(BaseModel):
-    unreviewed_facts: list[FactDigestItem]
-    contradicted_facts: list[FactDigestItem]
-    recent_episodes: list[EpisodeDigestItem]
-    expiring_facts: list[ExpiringFactDigestItem]
-
-
-class ProfileFacetItem(BaseModel):
-    key: str
-    value: str
-    stability: str
-    confidence: float
-    updated_at: datetime
-
-
-class UserProfileResponse(BaseModel):
-    facets: list[ProfileFacetItem]
-    updated_at: datetime | None = None
-
-
-class ConsolidationReportResponse(BaseModel):
-    facts_merged: int
-    facts_soft_expired: int
-    facts_hard_deleted: int
-    episodes_archived: int
-    episodes_deleted: int
-    session_episodes_archived: int
-    profile_updated: bool
-    duration_ms: int
-
-
-class MemoryFactQualityResponse(BaseModel):
-    total: int
-    by_provenance: dict[str, int]
-    avg_confidence: float
-    low_confidence_count: int
-    contradicted_count: int
-    synthesized_unreviewed: int
-    synthesized_uncorroborated: int
-    synthesized_expired: int
 
 
 class FactReviewAction(BaseModel):
@@ -462,15 +396,6 @@ class LearningReviewRequest(BaseModel):
     corrected_content: str | None = None
 
 
-class LearningEvidenceSummary(BaseModel):
-    id: UUIDType
-    evidence_kind: str
-    role: str
-    excerpt: str
-    action_record_id: UUIDType | None = None
-    execution_context_key: str | None = None
-
-
 class LearningResponse(BaseModel):
     id: UUIDType
     content: str
@@ -481,19 +406,6 @@ class LearningResponse(BaseModel):
     evidence_count: int
     promotion_state: str | None
     review_needed: bool
-    created_at: datetime | None
-
-
-class LearningDetailResponse(LearningResponse):
-    evidence: list[LearningEvidenceSummary]
-
-
-class LearningPromotionResponse(BaseModel):
-    id: UUIDType | None
-    learning_id: UUIDType
-    state: str
-    memory_fact_id: UUIDType | None
-    failure_reason: str | None
     created_at: datetime | None
 
 
@@ -566,22 +478,6 @@ class WebCostSummaryResponse(BaseModel):
     period: str
 
 
-class CredibilityFlagItem(BaseModel):
-    type: str
-    label: str
-    detail: str
-
-
-class ArticleItem(BaseModel):
-    url: str
-    source_key: str
-    title: str
-    summary: str
-    published_at: datetime
-    tags: list[str]
-    credibility_flags: list[CredibilityFlagItem]
-
-
 # ── REST: data portability ────────────────────────────────────────────────────
 
 
@@ -634,11 +530,6 @@ class StepResultResponse(BaseModel):
     no_results: bool = False
 
 
-class BranchInput(BaseModel):
-    condition: str
-    to: str
-
-
 class WorkflowStepResponse(BaseModel):
     task: str
     agent_hint: str | None
@@ -649,22 +540,6 @@ class WorkflowStepResponse(BaseModel):
     on_failure: str = "fail"
     planned_writes: list[str] = []
     approved_writes: list[str] = []
-
-
-class WorkflowStepInput(BaseModel):
-    task: str
-    agent_hint: str | None = None
-    verify: str | None = None
-    id: str
-    branches: list[BranchInput] = []
-    default_next: str | None = None
-    on_failure: str = "fail"
-    planned_writes: list[str] = []
-
-
-class UpdateWorkflowStepsRequest(BaseModel):
-    steps: list[WorkflowStepInput]
-    approve_writes: bool = False
 
 
 class WorkflowResponse(BaseModel):
@@ -680,16 +555,6 @@ class WorkflowResponse(BaseModel):
 
 class WorkflowDetailResponse(WorkflowResponse):
     steps: list[WorkflowStepResponse]
-
-
-class StepWritesNeedingApproval(BaseModel):
-    step_id: str
-    agent: str
-    tools: list[str]
-
-
-class UpdateWorkflowStepsResponse(WorkflowDetailResponse):
-    writes_needing_approval: list[StepWritesNeedingApproval] = []
 
 
 class ConfirmItemOut(BaseModel):
@@ -1079,11 +944,6 @@ WsOutboundFrame = Annotated[
 ]
 
 
-class WsSchemaResponse(BaseModel):
-    inbound: dict[str, Any]
-    outbound: dict[str, Any]
-
-
 # ── REST: dream memory ─────────────────────────────────────────────────────────
 
 
@@ -1178,34 +1038,6 @@ class MemoryActivityDay(BaseModel):
 class MemoryActivityResponse(BaseModel):
     days: list[MemoryActivityDay]
     max_count: int
-
-
-# ── REST: channels ────────────────────────────────────────────────────────────
-
-
-class ChannelInfo(BaseModel):
-    channel_id: str
-    channel_type: str
-    handle: str
-    display_name: str | None
-    is_default_outbound: bool
-    poll_enabled: bool
-    supports_push: bool
-    last_polled_at: datetime | None
-
-
-class ChannelListResponse(BaseModel):
-    channels: list[ChannelInfo]
-
-
-class ChannelUpdateRequest(BaseModel):
-    poll_enabled: bool | None = None
-    is_default_outbound: bool | None = None
-    display_name: str | None = None
-
-
-class ChannelResponse(BaseModel):
-    channel: ChannelInfo
 
 
 # ── REST: UI manifest ─────────────────────────────────────────────────────────
@@ -1404,33 +1236,6 @@ class LoopListItem(BaseModel):
     source_inflows: list[str]
 
 
-class LoopEvidenceItem(BaseModel):
-    type: str
-    id: UUIDType
-    summary: str
-
-
-class LoopEntityItem(BaseModel):
-    id: UUIDType
-    canonical_name: str
-    entity_type: str
-
-
-class LoopSourceItem(BaseModel):
-    role: str
-    inflow: str
-    evidence_kind: str | None
-    same_concern: float | None
-    promoted: bool
-    created_at: str | None
-
-
-class LoopDetail(LoopListItem):
-    evidence: list[LoopEvidenceItem]
-    entities: list[LoopEntityItem]
-    sources: list[LoopSourceItem]
-
-
 class LoopTransitionResponse(BaseModel):
     id: UUIDType
     state: str
@@ -1576,12 +1381,6 @@ class SkillDetailResponse(SkillResponse):
     previous_version: dict[str, Any] | None = None
 
 
-class SkillReferenceFileResponse(BaseModel):
-    filename: str
-    content_type: str
-    content: str
-
-
 class SkillImportRequest(BaseModel):
     url: str
 
@@ -1651,28 +1450,6 @@ class WorkspaceRunResponse(BaseModel):
 
 class WorkspaceRunListResponse(BaseModel):
     runs: list[WorkspaceRunResponse]
-
-
-class WorkspaceResetQueuedResponse(BaseModel):
-    confirmation_id: str
-
-
-class WorkspaceResetRequest(BaseModel):
-    confirmation_id: str | None = None
-    choice: Literal["approve", "deny"] | None = None
-
-
-class WorkspaceResetResultResponse(BaseModel):
-    ok: bool
-    reset: bool
-
-
-class WorkspaceIngestResponse(BaseModel):
-    ingestion_id: str
-    content_type: str
-    summary: str
-    facts_count: int
-    tags: list[str]
 
 
 class ProcedureEvidenceRefResponse(BaseModel):

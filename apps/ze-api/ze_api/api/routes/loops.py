@@ -2,8 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ze_api.api.dependencies import get_loop_store, get_pool, require_api_key
-from ze_api.api.schemas import LoopDetail, LoopListItem, LoopTransitionResponse
+from ze_api.api.dependencies import get_loop_store, require_api_key
+from ze_api.api.schemas import LoopListItem, LoopTransitionResponse
 from ze_worldstate import rest as loop_rest
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
 from ze_worldstate.store import LoopStore
@@ -30,27 +30,6 @@ async def list_loops(
     states = [state] if state else None
     loops = await loop_rest.list_loops(store, states)
     return [LoopListItem.model_validate(loop) for loop in loops]
-
-
-@router.get(
-    "/{loop_id}",
-    response_model=LoopDetail,
-    operation_id="getLoop",
-    summary="Get open loop detail",
-    description="Return full detail for one loop, including its evidence, entity "
-    "links and recorded sources (origin and counted corroborations, with the "
-    "same-concern score) in time order.",
-)
-async def get_loop(
-    loop_id: UUID,
-    store: LoopStore = Depends(get_loop_store),
-    pool=Depends(get_pool),
-) -> LoopDetail:
-    try:
-        loop = await loop_rest.get_loop(store, loop_id, pool)
-    except LoopNotFoundError:
-        raise HTTPException(status_code=404, detail="Loop not found")
-    return LoopDetail.model_validate(loop)
 
 
 @router.post(

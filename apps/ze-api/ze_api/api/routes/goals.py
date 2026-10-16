@@ -12,9 +12,6 @@ from ze_api.api.schemas import (
     GoalActionResponse,
     GoalDetailResponse,
     GoalListItem,
-    LearningDetailResponse,
-    LearningEvidenceSummary,
-    LearningPromotionResponse,
     LearningResponse,
     LearningReviewRequest,
     MilestoneResponse,
@@ -127,62 +124,6 @@ async def get_goal_detail(request: Request, goal_id: UUID) -> GoalDetailResponse
     )
 
 
-@router.get(
-    "/goals/{goal_id}/learnings",
-    response_model=list[LearningResponse],
-    operation_id="listGoalLearnings",
-    summary="List goal learnings",
-    description="Returns evidence-backed learning summaries. History includes retracted and superseded claims.",
-)
-async def list_goal_learnings(
-    request: Request,
-    goal_id: UUID,
-    include_history: bool = Query(default=False),
-) -> list[LearningResponse]:
-    store = request.app.state.container._plugin_stores.get("goal_store")
-    if store is None:
-        raise HTTPException(status_code=503, detail="Goal engine unavailable")
-    rows = await store.list_goal_learnings(goal_id, include_history=include_history)
-    return [_learning_response(lr) for lr in rows]
-
-
-@router.get(
-    "/goals/{goal_id}/learnings/{learning_id}",
-    response_model=LearningDetailResponse,
-    operation_id="getGoalLearning",
-    summary="Get a goal learning",
-    description="Returns one learning with redaction-safe evidence summaries.",
-)
-async def get_goal_learning(
-    request: Request, goal_id: UUID, learning_id: UUID
-) -> LearningDetailResponse:
-    store = request.app.state.container._plugin_stores.get("goal_store")
-    if store is None:
-        raise HTTPException(status_code=503, detail="Goal engine unavailable")
-    learning = await store.get_learning(learning_id)
-    if learning is None or learning.goal_id != goal_id:
-        raise HTTPException(status_code=404, detail="Learning not found")
-    summary = await store.list_goal_learnings(goal_id, include_history=True)
-    match = next((row for row in summary if row.id == learning.id), None)
-    if match is None:
-        raise HTTPException(status_code=404, detail="Learning not found")
-    base = _learning_response(match)
-    return LearningDetailResponse(
-        **base.model_dump(),
-        evidence=[
-            LearningEvidenceSummary(
-                id=item.id,
-                evidence_kind=item.evidence_kind.value,
-                role=item.role.value,
-                excerpt=item.excerpt,
-                action_record_id=item.action_record_id,
-                execution_context_key=item.execution_context_key,
-            )
-            for item in learning.evidence
-        ],
-    )
-
-
 @router.post(
     "/goals/{goal_id}/learnings/{learning_id}/review",
     response_model=LearningResponse,
@@ -216,36 +157,6 @@ async def review_goal_learning(
     if match is None:
         raise HTTPException(status_code=404, detail="Learning not found")
     return _learning_response(match)
-
-
-@router.post(
-    "/goals/{goal_id}/learnings/{learning_id}/promote",
-    response_model=LearningPromotionResponse,
-    operation_id="promoteGoalLearning",
-    summary="Promote a goal learning",
-    description=(
-        "Publishes a user-confirmed FACT through the licensed perception-fact path. "
-        "Inferences remain labeled learnings and are not written to memory_facts."
-    ),
-)
-async def promote_goal_learning(
-    request: Request, goal_id: UUID, learning_id: UUID
-) -> LearningPromotionResponse:
-    store = request.app.state.container._plugin_stores.get("goal_store")
-    if store is None:
-        raise HTTPException(status_code=503, detail="Goal engine unavailable")
-    learning = await store.get_learning(learning_id)
-    if learning is None or learning.goal_id != goal_id:
-        raise HTTPException(status_code=404, detail="Learning not found")
-    promotion = await store.promote_learning(learning_id)
-    return LearningPromotionResponse(
-        id=promotion.id,
-        learning_id=promotion.learning_id,
-        state=promotion.state.value,
-        memory_fact_id=promotion.memory_fact_id,
-        failure_reason=promotion.failure_reason,
-        created_at=promotion.created_at,
-    )
 
 
 @router.get(
