@@ -14,7 +14,7 @@ from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_news.jobs.fetch import NewsFetchJob
 from ze_news.preferences import NewsPreferenceBuilder, is_diagnostic_query
 from ze_news.store import NewsStore
-from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
+from ze_sdk import hold_token_sink, publish_honest_reply
 from ze_news.types import (
     GoalTitleProvider,
     PersonalizationContext,

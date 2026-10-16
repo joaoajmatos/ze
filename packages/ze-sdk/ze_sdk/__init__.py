@@ -11,6 +11,7 @@ from ze_logging import get_logger
 from ze_agents.settings import Settings
 from ze_agents.db import DBPool
 from ze_agents.llm_json import parse_llm_json
+from ze_agents.honesty import hold_token_sink, publish_honest_reply
 
 __all__ = [
     "ZePlugin",
@@ -28,6 +29,8 @@ __all__ = [
     "Settings",
     "DBPool",
     "parse_llm_json",
+    "hold_token_sink",
+    "publish_honest_reply",
     "NLIClient",
     "SystemOneClient",
 ]

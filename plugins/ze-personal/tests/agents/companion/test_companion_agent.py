@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import ze_prospecting.agents.tools  # noqa: F401 — registers log_outreach_event
 
 from ze_personal.agents.companion.agent import CompanionAgent, _detect_outreach_event
-from ze_personal.agents.companion.honesty import COULD_NOT_APPLY_CONSTRAINT, COULD_NOT_STORE
+from ze_agents.honesty import COULD_NOT_APPLY_CONSTRAINT, COULD_NOT_STORE
 from ze_agents.types import AgentContext, AgentResult
 from ze_agents.settings import Settings
 from ze_sdk.memory import MemoryContext, Fact

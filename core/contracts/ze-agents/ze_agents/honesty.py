@@ -13,7 +13,7 @@ from ze_agents.nested_tools import (
     flatten_tool_calls,
     loop_review_earned,
 )
-from ze_sdk.types import ToolCall
+from ze_agents.types import ToolCall
 
 COULD_NOT_STORE = "I could not store that."
 COULD_NOT_FORGET = "I could not forget that."
