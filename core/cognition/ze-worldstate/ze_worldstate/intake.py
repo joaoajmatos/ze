@@ -64,7 +64,7 @@ class IntakeAdmission:
     outcome: IntakeOutcome
     fact: FactAdmission | None = None
     loop: LoopAdmission | None = None
-    link: LinkOutcome | None = None
+    links: tuple[LinkOutcome, ...] = ()
     judgment: SystemOneResult | None = None
     question_kinds: dict[str, str] = field(default_factory=dict)
     consumed: frozenset[str] = frozenset()
@@ -270,7 +270,7 @@ class CommitmentIntake:
                 source,
             )
         elif outcome.kind == "link":
-            admission.link = await self._link(prompt, outcome, created)
+            admission.links = await self._link(prompt, created)
         return admission
 
     async def _write_facts(
@@ -305,15 +305,21 @@ class CommitmentIntake:
         )
 
     async def _link(
-        self, prompt: str, outcome: IntakeOutcome, created: TurnCreation
-    ) -> LinkOutcome:
-        kind = outcome.link_kind or "reminder"
-        raw = created.reminder_id if kind == "reminder" else created.goal_id
-        try:
-            target = UUID(str(raw))
-        except (ValueError, TypeError):
-            log.info("commitment_link_skipped", kind=kind, reason="no_id")
-            return LinkOutcome(kind, False, "no_id")
+        self, prompt: str, created: TurnCreation
+    ) -> tuple[LinkOutcome, ...]:
+        """Link every reminder or goal the turn created to the one live loop it matches."""
+        outcomes: list[LinkOutcome] = []
+        targets: list[tuple[str, UUID]] = []
+        for kind, raw in (("reminder", created.reminder_id), ("goal", created.goal_id)):
+            if not raw:
+                continue
+            try:
+                targets.append((kind, UUID(str(raw))))
+            except (ValueError, TypeError):
+                log.info("commitment_link_skipped", kind=kind, reason="no_id")
+                outcomes.append(LinkOutcome(kind, False, "no_id"))
+        if not targets:
+            return tuple(outcomes)
         try:
             entity_ids = await _resolve_entities(self._entity_resolver, prompt)
             loop = await find_matching_loop(
@@ -325,17 +331,28 @@ class CommitmentIntake:
                 states=_LIVE_STATES,
                 verify_similarity=True,
             )
-            if loop is None:
-                log.info("commitment_link_skipped", kind=kind, reason="no_match")
-                return LinkOutcome(kind, False, "no_match")
-            if getattr(loop, f"{kind}_id", None) is not None:
-                log.info(
-                    "commitment_link_skipped",
-                    kind=kind,
-                    reason="already_linked",
-                    loop_id=str(loop.id),
-                )
-                return LinkOutcome(kind, False, "already_linked", loop.id)
+        except Exception as exc:
+            log.warning("commitment_link_failed", error=str(exc))
+            return tuple(
+                outcomes + [LinkOutcome(k, False, "error") for k, _ in targets]
+            )
+        for kind, target in targets:
+            outcomes.append(await self._link_one(loop, kind, target))
+        return tuple(outcomes)
+
+    async def _link_one(self, loop: Any, kind: str, target: UUID) -> LinkOutcome:
+        if loop is None:
+            log.info("commitment_link_skipped", kind=kind, reason="no_match")
+            return LinkOutcome(kind, False, "no_match")
+        if getattr(loop, f"{kind}_id", None) is not None:
+            log.info(
+                "commitment_link_skipped",
+                kind=kind,
+                reason="already_linked",
+                loop_id=str(loop.id),
+            )
+            return LinkOutcome(kind, False, "already_linked", loop.id)
+        try:
             changed = await self._loop_store.link(loop.id, **{f"{kind}_id": target})
         except Exception as exc:
             log.warning("commitment_link_failed", kind=kind, error=str(exc))

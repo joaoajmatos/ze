@@ -272,7 +272,7 @@ async def test_declared_creates_active_loop_with_writer_only():
     intake, loop_store, _ = _build(FakeSystemOne(make("loop", explicit=0.95)), llm)
     adm = await _admit(intake, llm)
     assert adm.outcome.kind == "create_loop_declared"
-    assert adm.fact is None and adm.link is None
+    assert adm.fact is None and not adm.links
     (created,) = await adm.loop.commit()
     assert created.state == LoopState.ACTIVE and created.confidence == 0.9
     assert created.provenance == LoopProvenance.USER_DECLARED
@@ -328,7 +328,7 @@ async def test_hold_has_no_commit_and_no_writes():
     intake, loop_store, llm = _build(FakeSystemOne(make("loop", concern=0.1)))
     adm = await _admit(intake, llm)
     assert adm.outcome.kind == "hold"
-    assert adm.loop is None and adm.fact is None and adm.link is None
+    assert adm.loop is None and adm.fact is None and not adm.links
     loop_store.create.assert_not_called()
     assert llm.calls == []
 
@@ -337,7 +337,7 @@ async def test_waiting_on_creates_nothing():
     intake, loop_store, llm = _build(FakeSystemOne(make("waiting_on")))
     adm = await _admit(intake, llm, prompt="My landlord said he would get back to me")
     assert (adm.outcome.kind, adm.outcome.reason) == ("hold", "waiting_on")
-    assert adm.loop is None and adm.fact is None and adm.link is None
+    assert adm.loop is None and adm.fact is None and not adm.links
     loop_store.create.assert_not_called()
     loop_store.link.assert_not_called()
     assert llm.calls == []
@@ -428,7 +428,7 @@ async def test_link_sets_reminder_pointer_once(monkeypatch):
     rid = uuid4()
     adm = await _admit(intake, llm, tool_calls=[_tc("set_reminder", {"id": str(rid)})])
     loop_store.link.assert_awaited_once_with(loop.id, reminder_id=rid)
-    assert (adm.link.kind, adm.link.linked, adm.link.loop_id) == (
+    assert (adm.links[0].kind, adm.links[0].linked, adm.links[0].loop_id) == (
         "reminder",
         True,
         loop.id,
@@ -446,7 +446,32 @@ async def test_link_sets_goal_pointer(monkeypatch):
     gid = uuid4()
     adm = await _admit(intake, llm, tool_calls=[_tc("create_goal", {"id": str(gid)})])
     loop_store.link.assert_awaited_once_with(loop.id, goal_id=gid)
-    assert adm.link.kind == "goal" and adm.link.linked
+    assert adm.links[0].kind == "goal" and adm.links[0].linked
+
+
+async def test_turn_creating_reminder_and_goal_links_both(monkeypatch):
+    loop = _live()
+    finder = AsyncMock(return_value=loop)
+    monkeypatch.setattr(intake_mod, "find_matching_loop", finder)
+    intake, loop_store, llm = _build(FakeSystemOne(make("reminder")))
+    rid, gid = uuid4(), uuid4()
+    adm = await _admit(
+        intake,
+        llm,
+        tool_calls=[
+            _tc("set_reminder", {"id": str(rid)}),
+            _tc("create_goal", {"id": str(gid)}),
+        ],
+    )
+    assert [(link.kind, link.linked) for link in adm.links] == [
+        ("reminder", True),
+        ("goal", True),
+    ]
+    assert [c.kwargs for c in loop_store.link.await_args_list] == [
+        {"reminder_id": rid},
+        {"goal_id": gid},
+    ]
+    loop_store.create.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -465,7 +490,7 @@ async def test_link_never_overwrites_and_skips_without_match(monkeypatch, loop, 
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
-    assert (adm.link.linked, adm.link.reason) == (False, reason)
+    assert (adm.links[0].linked, adm.links[0].reason) == (False, reason)
     loop_store.link.assert_not_called()
 
 
@@ -478,7 +503,7 @@ async def test_link_terminal_loop_is_refused_by_store(monkeypatch):
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
-    assert (adm.link.linked, adm.link.reason) == (False, "unchanged")
+    assert (adm.links[0].linked, adm.links[0].reason) == (False, "unchanged")
 
 
 async def test_link_non_uuid_id_is_skipped(monkeypatch):
@@ -488,7 +513,7 @@ async def test_link_non_uuid_id_is_skipped(monkeypatch):
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": "not-a-uuid"})]
     )
-    assert adm.link.reason == "no_id"
+    assert adm.links[0].reason == "no_id"
     finder.assert_not_called()
     loop_store.link.assert_not_called()
 
@@ -502,4 +527,4 @@ async def test_link_store_error_never_raises(monkeypatch):
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
-    assert (adm.link.linked, adm.link.reason) == (False, "error")
+    assert (adm.links[0].linked, adm.links[0].reason) == (False, "error")
