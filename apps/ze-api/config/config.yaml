@@ -21,14 +21,16 @@ system_one:
   surfaces:
     commitment_intake:
       # Phase 173: one conversation request (commitment Choice + fact and loop Nouls) replaces the 163 speech-act and 168 conversation loop-gate requests.
-      # Off with null bars until make calibrate-commitment-intake gives ENABLE on the held-out set; the Haiku fact extractor and 109 loop gate run meanwhile.
-      enabled: false
-      choice_hold: null
-      family_hold: null
-      biography_hold: null
-      loop_hold: null
-      explicit_hold: null
-      resolves_hold: null
+      # Calibrated 2026-10-16 (make calibrate-commitment-intake; 160 tuned rows, wording f35350de, then ONE verdict on 147 blind held-out rows, EN+PT).
+      # Held-out verdict ENABLE for EN and PT: zero duplicate bookings (baseline 8), zero false creates (baseline 6), fact precision 1.00,
+      # fact recall 0.81 / 0.76 (baseline 0.71 / 0.57), loop precision 1.00 (baseline 0.73 / 0.79), loop recall 22/22, Choice accuracy 1.00, waiting_on writes 0/7.
+      enabled: true
+      choice_hold: 0.7
+      family_hold: 0.7
+      biography_hold: 0.55
+      loop_hold: 0.6
+      explicit_hold: 0.95
+      resolves_hold: 0.8
     routing:
       enabled: true
       # Calibrated 2026-10-12 (167, k=9, 52 held-out EN+PT rows): zero harmful trusts and zero research->companion
