@@ -112,10 +112,34 @@ def test_resolves_question_ignores_save_and_remember_requests():
     assert "past" in q.instructions
 
 
-def test_loop_gate_resolves_wording_is_untouched_for_other_inflows():
+def test_resolves_question_excludes_waiting_statements():
+    text = COMMITMENT_QUESTIONS["resolves_existing"].instructions
+    assert "waiting" in text and "not" in text
+
+
+def test_concern_question_counts_keep_an_eye_on_requests():
+    text = COMMITMENT_QUESTIONS["is_open_concern"].instructions
+    assert "keep an eye on" in text and "lose track" in text
+
+
+def test_loop_criterion_takes_keep_an_eye_on_with_an_object():
+    loop = COMMITMENT_QUESTIONS["commitment"].criteria["loop"]
+    assert "'keep an eye on the" in loop and "lose track" in loop
+
+
+def test_fact_with_a_question_still_reads_as_fact():
+    criteria = COMMITMENT_QUESTIONS["commitment"].criteria
+    assert "also asks" in criteria["fact"]
+    assert "also asks" in criteria["none"]
+    assert "A pure question is never a fact" in criteria["fact"]
+    assert "Only a statement" not in criteria["fact"]
+
+
+def test_other_inflow_loop_wording_is_untouched():
     from ze_worldstate.loop_judge import LOOP_QUESTIONS
 
     assert "save" not in LOOP_QUESTIONS["resolves_existing"].instructions
+    assert "keep an eye on" not in LOOP_QUESTIONS["is_open_concern"].instructions
 
 
 def test_state_is_user_and_capped_assistant():
@@ -189,11 +213,30 @@ def test_row3_any_null_bar_is_uncalibrated_fallback(bar):
 # ── row 4: resolve ───────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("choice", _LABELS)
-def test_row4_resolves_whatever_the_choice(choice):
+@pytest.mark.parametrize(
+    "choice", [label for label in _LABELS if label != "waiting_on"]
+)
+def test_row4_resolves_whatever_the_choice_but_waiting_on(choice):
     out = _d(make(choice, resolves=0.9))
     assert (out.kind, out.reason) == ("resolve_loop", "resolves")
     assert out.consumed == frozenset({"resolves_existing"})
+
+
+@pytest.mark.parametrize("resolves", [0.85, 0.99])
+def test_row4_waiting_on_never_resolves(resolves):
+    out = _d(make("waiting_on", resolves=resolves))
+    assert (out.kind, out.reason) == ("hold", "waiting_on")
+    assert out.consumed == frozenset({"commitment", "resolves_existing"})
+
+
+def test_row4_unsure_waiting_on_never_resolves_either():
+    out = _d(make("waiting_on", conf=0.2, resolves=0.95))
+    assert (out.kind, out.reason) == ("hold", "waiting_on")
+
+
+def test_row4_waiting_on_with_a_created_id_still_links():
+    out = _d(make("waiting_on", resolves=0.95), created=TurnCreation(goal_id="g1"))
+    assert (out.kind, out.link_kind) == ("link", "goal")
 
 
 def test_row4_boundary_at_bar_resolves_below_does_not():

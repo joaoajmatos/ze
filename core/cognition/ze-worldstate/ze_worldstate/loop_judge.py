@@ -26,7 +26,7 @@ _STATE_KEY_AND_CAP: dict[str, tuple[str, int]] = {
     "ingestion": ("facts", 1500),
 }
 
-_CONCERN_INSTRUCTIONS = (
+CONCERN_INSTRUCTIONS = (
     "Does this text show something the user still has to do, decide, answer or follow up on, "
     "or something that someone is waiting on the user for, that is not yet done? "
     "Questions, small talk, notifications, marketing deadlines, routine events and "
@@ -37,7 +37,7 @@ _RESOLVES_INSTRUCTIONS = (
 )
 
 LOOP_QUESTIONS: dict[str, SystemOneQuestion] = {
-    Q_CONCERN: SystemOneQuestion(type="noul", instructions=_CONCERN_INSTRUCTIONS),
+    Q_CONCERN: SystemOneQuestion(type="noul", instructions=CONCERN_INSTRUCTIONS),
     Q_RESOLVES: SystemOneQuestion(type="noul", instructions=_RESOLVES_INSTRUCTIONS),
 }
 

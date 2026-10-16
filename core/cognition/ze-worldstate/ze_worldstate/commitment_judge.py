@@ -23,7 +23,12 @@ from ze_memory.fact_judge import (
 )
 from ze_memory.types import CommitmentChoice
 
-from ze_worldstate.loop_judge import LOOP_QUESTIONS, Q_CONCERN, Q_RESOLVES
+from ze_worldstate.loop_judge import (
+    CONCERN_INSTRUCTIONS,
+    LOOP_QUESTIONS,
+    Q_CONCERN,
+    Q_RESOLVES,
+)
 
 log = get_logger(__name__)
 
@@ -38,7 +43,13 @@ _EXPLICIT_INSTRUCTIONS = (
 _RESOLVES_INSTRUCTIONS = (
     "Does the user report that something they needed to do is now done, in the past tense? "
     "A request to save, read, import or remember something is not a report that something is "
-    "done, whatever it mentions."
+    "done, whatever it mentions. Waiting for someone else to reply or act is not done either: "
+    "'I sent my CV and I am waiting for her reply' reports a thing sent, not a thing finished."
+)
+
+_CONCERN_INSTRUCTIONS = (
+    CONCERN_INSTRUCTIONS
+    + " Asking to keep an eye on something, or not to lose track of it, counts."
 )
 
 _USER_ONLY = " Judge the user's words; the assistant reply is context only."
@@ -57,7 +68,9 @@ _COMMITMENT_CRITERIA: dict[str, str] = {
         "The user voices a lingering concern, open question or obligation to keep an eye on, "
         "with or without a deadline but with no ask to be pinged at a time, or drops one. "
         "A one-off task with a deadline is a loop, even if it takes weeks, unless the user "
-        "frames it as an outcome to pursue. "
+        "frames it as an outcome to pursue. Asking Ze to keep an eye on something, or not to "
+        "let them lose track of it, is a loop when the message names what to watch: "
+        "'keep an eye on the landlord deposit', 'não me deixes perder o prazo do visto'. "
         "Examples: 'I need to figure out whether to switch jobs', "
         "'I haven't decided on the job offer yet', 'I have to send the tax form by Friday', "
         "'I need to file the visa paperwork before March', "
@@ -86,8 +99,12 @@ _COMMITMENT_CRITERIA: dict[str, str] = {
         "a standing preference, a relationship, a hard constraint, or a contact detail. "
         "No time attached. Examples: 'I prefer aisle seats', 'sou alérgico a amendoins', "
         "'my sister is called Ana'. "
-        "Only a statement. A question is never a fact, even when it mentions one: "
-        "'what is my sister called?', 'prefiro corredor ou janela?'."
+        "A pure question is never a fact, even when it mentions one: "
+        "'what is my sister called?', 'prefiro corredor ou janela?'. "
+        "A message that states a durable fact and also asks something is still a fact; the "
+        "statement counts and the question does not cancel it: "
+        "'I'm vegetarian, what should I cook tonight?', "
+        "'sou alérgico a amendoins, o que posso comer?'."
     ),
     "forget": (
         "Only when the user retracts a standing fact they told you about themselves. "
@@ -109,8 +126,9 @@ _COMMITMENT_CRITERIA: dict[str, str] = {
     ),
     "none": (
         "Filler, thanks, mood, weather, right-now location, an idle plan with no commitment, or "
-        "anything not worth keeping. Also any question to the assistant, including one about what "
-        "it knows of the user. "
+        "anything not worth keeping. Also a pure question to the assistant, including one about "
+        "what it knows of the user. A question that also states a durable fact is not this; "
+        "when a message also asks something, look at what it states first. "
         "Examples: 'thanks, that helps', 'estou cansado hoje', 'what is my sister called?'."
     ),
 }
@@ -124,6 +142,7 @@ COMMITMENT_QUESTIONS: dict[str, SystemOneQuestion] = {
     **FACT_QUESTIONS,
     **LOOP_QUESTIONS,
     Q_EXPLICIT: SystemOneQuestion(type="noul", instructions=_EXPLICIT_INSTRUCTIONS),
+    Q_CONCERN: SystemOneQuestion(type="noul", instructions=_CONCERN_INSTRUCTIONS),
     Q_RESOLVES: SystemOneQuestion(type="noul", instructions=_RESOLVES_INSTRUCTIONS),
 }
 
@@ -267,7 +286,10 @@ def _decide(
     choice, confidence = read
     assert cfg.choice_hold is not None and cfg.resolves_hold is not None
 
-    if float(result.answers[Q_RESOLVES].noul or 0.0) >= cfg.resolves_hold:
+    if (
+        choice is not CommitmentChoice.WAITING_ON
+        and float(result.answers[Q_RESOLVES].noul or 0.0) >= cfg.resolves_hold
+    ):
         return IntakeOutcome("resolve_loop", "resolves", frozenset({Q_RESOLVES}))
     if created.reminder_id or created.goal_id:
         kind: LinkKind = "reminder" if created.reminder_id else "goal"
