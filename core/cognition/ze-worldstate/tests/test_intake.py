@@ -434,6 +434,7 @@ async def test_link_sets_reminder_pointer_once(monkeypatch):
         loop.id,
     )
     assert finder.await_args.kwargs["states"] == ["suspected", "active", "drifting"]
+    assert finder.await_args.kwargs["verify_similarity"] is True
     assert finder.await_args.args[1] == PROMPT[:200]
     loop_store.create.assert_not_called()
 

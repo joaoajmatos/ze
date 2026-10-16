@@ -323,6 +323,7 @@ class CommitmentIntake:
                 graph_store=self._graph_store,
                 embedder=self._embedder,
                 states=_LIVE_STATES,
+                verify_similarity=True,
             )
             if loop is None:
                 log.info("commitment_link_skipped", kind=kind, reason="no_match")
