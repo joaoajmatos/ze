@@ -449,6 +449,7 @@ Plugin agents rarely read memory directly — `ctx.memory` is pre-populated. Use
 |--------|-------------|
 | `MemoryContext` | Retrieval result: `facts`, `episodes`, `procedures`, `entities`, `task_state`, `profile`. |
 | `Fact` | A subject-predicate-value triple stored persistently. |
+| `CommitmentChoice` | Enum of the labels the conversation commitment intake answers: `reminder`, `loop`, `goal`, `waiting_on`, `fact`, `forget`, `ingest`, `clarify`, `none`. |
 | `Episode` | A summarised conversation episode. |
 | `Procedure` | A user-taught step-by-step procedure. |
 | `Entity` | A named entity extracted from conversations. |

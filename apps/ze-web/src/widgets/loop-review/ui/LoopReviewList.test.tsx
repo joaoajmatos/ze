@@ -29,6 +29,8 @@ const suspectedLoop: LoopListItem = {
   updated_at: new Date().toISOString(),
   promoted: false,
   source_inflows: [],
+  goal_id: null,
+  reminder_id: null,
 };
 
 const activeLoop: LoopListItem = {
@@ -63,6 +65,28 @@ const promotedLoop: LoopListItem = {
   title: "Sort out the deposit with the landlord",
   promoted: true,
   source_inflows: ["conversation", "email"],
+};
+
+const reminderLoop: LoopListItem = {
+  ...activeLoop,
+  id: "loop-6",
+  title: "Call the bank",
+  reminder_id: "reminder-1",
+};
+
+const goalLoop: LoopListItem = {
+  ...activeLoop,
+  id: "loop-7",
+  title: "Finish the tax return",
+  goal_id: "goal-1",
+};
+
+const bothLinksLoop: LoopListItem = {
+  ...activeLoop,
+  id: "loop-8",
+  title: "Plan the move",
+  reminder_id: "reminder-2",
+  goal_id: "goal-2",
 };
 
 function setup(loops: LoopListItem[], mutate = vi.fn()) {
@@ -179,5 +203,37 @@ describe("LoopReviewList", () => {
     render(<LoopReviewList />);
 
     expect(screen.queryByText(/Promoted/)).toBeNull();
+  });
+
+  it("shows only 'Has reminder' for a loop with a reminder", () => {
+    setup([reminderLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.getByText("Has reminder")).toBeInTheDocument();
+    expect(screen.queryByText("Linked goal")).toBeNull();
+  });
+
+  it("shows only 'Linked goal' for a loop with a goal", () => {
+    setup([goalLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.getByText("Linked goal")).toBeInTheDocument();
+    expect(screen.queryByText("Has reminder")).toBeNull();
+  });
+
+  it("shows both chips when a loop has a reminder and a goal", () => {
+    setup([bothLinksLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.getByText("Has reminder")).toBeInTheDocument();
+    expect(screen.getByText("Linked goal")).toBeInTheDocument();
+  });
+
+  it("shows no link chips for unlinked loops", () => {
+    setup([suspectedLoop, activeLoop]);
+    render(<LoopReviewList />);
+
+    expect(screen.queryByText("Has reminder")).toBeNull();
+    expect(screen.queryByText("Linked goal")).toBeNull();
   });
 });

@@ -69,10 +69,6 @@ class DataPortabilityService:
             for domain, count, size in zip(self._domains, counts, sizes)
         ]
 
-    async def get_total_size_bytes(self) -> int:
-        summaries = await self.list_domain_summaries()
-        return sum(s.size_bytes for s in summaries)
-
     # ── Export ────────────────────────────────────────────────────────────────
 
     async def export(self) -> bytes:

@@ -113,7 +113,7 @@ from ze_proactive.quiet_hours import InterruptionSettingsStore, is_active
 from ze_proactive.scheduler import ProactiveScheduler
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.compose import (
-    reconcile_in_progress_workspace_runs,
+    reconcile_workspace_at_startup,
     register_all_proactive_jobs,
 )
 from ze_api.db import create_checkpointer_pool, create_pool
@@ -285,7 +285,7 @@ class ZeContainer(CoreContainer):
     collision_store: Any = None
     nli_client: Any = None
     system_one_client: Any = None
-    loop_inflow: Any = None
+    commitment_intake: Any = None
     budget_checker: SpendBudgetChecker | None = None
     procedure_admission: Any = None
     procedure_discovery: Any = None
@@ -332,8 +332,8 @@ class ZeContainer(CoreContainer):
             **plugin_services,
         }
         configurable["memory_hooks"] = [*plugin_services.get("memory_hooks", [])]
-        if self.loop_inflow is not None:
-            configurable["loop_admission"] = self.loop_inflow.admit
+        if self.commitment_intake is not None:
+            configurable["commitment_intake"] = self.commitment_intake.admit
         configurable.update(configurable_extra)
         return {"configurable": configurable}
 
@@ -650,6 +650,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         make_loop_extractor_from_parts,
         make_loop_inflow_from_parts,
     )
+    from ze_worldstate.intake import CommitmentIntake
 
     ingestion.memory_sink.loop_extractor = make_loop_extractor_from_parts(
         loop_store=worldstate.loop_store,
@@ -864,15 +865,23 @@ async def build_container(settings: Settings) -> ZeContainer:
         collision_store=collision_store,
         nli_client=shared.nli_client,
         system_one_client=shared.system_one_client,
-        loop_inflow=make_loop_inflow_from_parts(
+        commitment_intake=CommitmentIntake(
+            loop_inflow=make_loop_inflow_from_parts(
+                loop_store=worldstate.loop_store,
+                loop_graph_store=worldstate.graph_store,
+                loop_entity_resolver=worldstate.entity_resolver,
+                openrouter_client=shared.openrouter_client,
+                embedder=shared.embedder,
+                loop_memory_store=shared.memory_store,
+                collision_store=collision_store,
+                nli_client=shared.nli_client,
+                system_one_client=shared.system_one_client,
+                settings=settings,
+            ),
             loop_store=worldstate.loop_store,
-            loop_graph_store=worldstate.graph_store,
-            loop_entity_resolver=worldstate.entity_resolver,
-            openrouter_client=shared.openrouter_client,
+            graph_store=worldstate.graph_store,
+            entity_resolver=worldstate.entity_resolver,
             embedder=shared.embedder,
-            loop_memory_store=shared.memory_store,
-            collision_store=collision_store,
-            nli_client=shared.nli_client,
             system_one_client=shared.system_one_client,
             settings=settings,
         ),
@@ -969,7 +978,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         dream_job=dream_job,
         pool=pool,
     )
-    await reconcile_in_progress_workspace_runs(workspace.store, workspace.run_watcher)
+    await reconcile_workspace_at_startup(workspace.store, workspace.run_watcher)
 
     await automation.workflow_scheduler.start()
     await container.proactive_scheduler.start()

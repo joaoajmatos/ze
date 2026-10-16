@@ -1,0 +1,43 @@
+{"step": "implement", "substep": null, "task": "T001", "kind": "complete", "by": "Tenon", "at": "2026-10-16T11:50:37.306Z"}
+{"step": "implement", "substep": null, "task": "T003", "kind": "complete", "by": "Tenon", "at": "2026-10-16T11:50:37.731Z"}
+{"step": "implement", "substep": null, "task": "T011", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:51:49.912Z"}
+{"step": "implement", "substep": null, "task": "T013", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:52:52.671Z"}
+{"step": "implement", "substep": null, "task": "T020", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:52:52.907Z"}
+{"step": "implement", "substep": null, "task": "T025", "kind": "complete", "by": "Tenon", "at": "2026-10-16T11:54:13.255Z"}
+{"step": "implement", "substep": null, "task": "T027", "kind": "complete", "by": "Tenon", "at": "2026-10-16T11:54:13.505Z"}
+{"step": "implement", "substep": null, "task": "T021", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:54:42.291Z"}
+{"step": "implement", "substep": null, "task": "T022", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:54:42.513Z"}
+{"step": "implement", "substep": null, "task": "T023", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:59:52.428Z"}
+{"step": "implement", "substep": null, "task": "T024", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T11:59:52.609Z"}
+{"step": "implement", "substep": null, "task": "T012", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:07:29.836Z", "did": "zw004 reminder_id, OpenLoop.reminder_id, LoopStore.link set-once, REST ids"}
+{"step": "implement", "substep": null, "task": "T030", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:07:30.108Z", "did": "REST reminder_id/goal_id list+detail, route test"}
+{"step": "implement", "substep": null, "task": "T031", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:14:39.475Z", "did": "make codegen, regenerated ze-client committed (bc5760dc)"}
+{"step": "implement", "substep": null, "task": "T032", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:14:50.696Z", "did": "linkChips helper + chips in LoopReviewList, vitest"}
+{"step": "implement", "substep": null, "task": "T026", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.213Z", "did": "Wired CommitmentIntake into ze-api container (90ff30dd)"}
+{"step": "implement", "substep": null, "task": "T040", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.453Z", "did": "Frozen 163+168 baseline replay module (f8aacbbd)"}
+{"step": "implement", "substep": null, "task": "T041", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.689Z", "did": "Live runner, report, bar grid, holdout verdict, make target (f8aacbbd)"}
+{"step": "implement", "substep": null, "task": "T005", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:08:14.413Z", "did": "Held-out 9f7c949a (15 fact, 16 loop per language); minimums in check-sets 38e0b8c4; tests 52797688"}
+{"step": "implement", "substep": null, "task": "T044", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:08:14.501Z", "did": "Choice accuracy on turn_created none rows, link accuracy reported outside verdict (86e21b02); tests 52797688"}
+{"step": "implement", "substep": null, "task": "T010", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T16:17:40.852Z", "did": "SpeechAct shrunk to fact/forget/ingest/clarify/none; unknown maps to none (972c0f76); label tests 00af4702"}
+{"step": "implement", "substep": null, "task": "T014", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T16:17:40.967Z", "did": "turn_creation table, link() pg test (make test-pg green), label consumer tests (00af4702)"}
+{"step": "implement", "substep": null, "task": "T028", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T16:17:41.110Z", "did": "Row 7a in decide(), reminder/goal/loop criteria reworded (63e0b014)"}
+{"step": "implement", "substep": null, "task": "T042", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:31:42.249Z", "did": "Tuned runs 1 and 2, bars frozen (92dd67cc), notes in research.md"}
+{"step": "implement", "substep": null, "task": "T043", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:31:42.485Z", "did": "Held-out verdict KEEP OFF, failing clauses recorded (93b76e20)"}
+{"step": "implement", "substep": null, "task": "T049", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:04.328Z", "did": "Tuned run 3, wording+bars frozen (7ae261d6)"}
+{"step": "implement", "substep": null, "task": "T054", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:04.391Z", "did": "false resolves <= baseline clause + tests (4b8c5806)"}
+{"step": "implement", "substep": null, "task": "T053", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:04.452Z", "did": "holdout2 verdict recorded: EN ENABLE, PT KEEP OFF"}
+{"step": "implement", "substep": null, "task": "T046", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:45:18.501Z", "did": "--set holdout2 wired, spent set reference-only (eb649cbd)"}
+{"step": "implement", "substep": null, "task": "T055", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:51:02.824Z", "did": "Choice accuracy excludes gold_resolves; holdout3 wired (26383319)"}
+{"step": "implement", "substep": null, "task": "T060", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T16:51:02.887Z", "did": "waiting_on-writes verdict clause + tests (c4ef634f)"}
+{"step": "implement", "substep": null, "task": "T056", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T16:51:27.558Z", "did": "Wording f35350de (waiting_on never resolves, fact+question, keep-an-eye); 12 new tuned rows (c9e592d4), examples decoupled from tuned/held-out texts"}
+{"step": "implement", "substep": null, "task": "T058", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:13:06.267Z", "did": "Tuned run 4 on 160 rows at wording f35350de; bars frozen 0.70/0.70/0.55/0.60/0.95/0.80"}
+{"step": "implement", "substep": null, "task": "T059", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:14:37.399Z", "did": "holdout3 verdict once: ENABLE EN and PT at frozen bars"}
+{"step": "implement", "substep": null, "task": "T052", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:26:52.354Z", "did": "Gates green after merging main 5d13ca86: lint, test-memory/worldstate/core/test, test-py, test-pg 57, test-web 358, typecheck-web; spec status Implemented"}
+{"step": "implement", "substep": null, "task": "T050", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T19:26:54.053Z", "did": "Public docs, AGENTS.md, specs index and arch notes updated for the commitment intake: frozen bars, holdout3 ENABLE verdict, loop_gate without explicit_hold (7659e29d, b377945d)"}
+{"step": "implement", "substep": null, "task": "T051", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T19:26:54.153Z", "did": "Coverage check: git diff main --stat docs, READMEs, AGENTS.md and specs against T050; every public doc the diff touches is updated, plus docs/sdk.md (CommitmentChoice), docs/testing.md and specs/core/ze-memory.md"}
+{"step": "implement", "substep": null, "task": "T045", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:27:08.236Z", "did": "also_loop field: loader, check-sets rule, scoring, tests (done earlier, ticked late)"}
+{"step": "implement", "substep": null, "task": "T002", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:27:51.759Z", "did": "Tuned set eval/calibration/commitment_intake.jsonl exists (160 rows)"}
+{"step": "implement", "substep": null, "task": "T004", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:27:51.932Z", "did": "Stop point cleared: user OK given for live runs via the Maestro"}
+{"step": "implement", "substep": null, "task": "T047", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:27:52.132Z", "did": "holdout2 written by Brook, e3084f1f"}
+{"step": "implement", "substep": null, "task": "T048", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:27:52.381Z", "did": "Wording fixes by Mortise: 63e0b014, 108e02c9, f35350de"}
+{"step": "implement", "substep": null, "task": "T057", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T19:27:52.613Z", "did": "holdout3 written by Wren, 0b13f211"}

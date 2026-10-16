@@ -6,6 +6,8 @@ confidence arithmetic run together. The seam is bypassed as in `test_admission.p
 
 from __future__ import annotations
 
+from tests.commitment_fixtures import _BARS, conversation_admit, make
+
 import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -20,6 +22,7 @@ from ze_plugin.contribution import EvidenceRef
 from ze_worldstate import review
 from ze_worldstate.admission import LoopInflow
 from ze_worldstate.fingerprint import compute_evidence_fingerprint
+from ze_worldstate.intake import CommitmentIntake
 from ze_worldstate.types import (
     LoopClaimKind,
     LoopSource,
@@ -33,14 +36,16 @@ TITLE = "Reply to Ana about the budget"
 GATE_BARS = {
     "enabled": True,
     "loop_hold": 0.5,
-    "explicit_hold": 0.6,
     "resolves_hold": 0.7,
 }
 CORR_BARS = {"enabled": True, "corroborate_hold": 0.6, "promote_hold": 0.85}
 
 
 def _settings(corroboration=CORR_BARS):
-    surfaces = {"loop_gate": GATE_BARS}
+    surfaces = {
+        "loop_gate": GATE_BARS,
+        "commitment_intake": {"enabled": True, **_BARS},
+    }
     if corroboration is not None:
         surfaces["corroboration"] = corroboration
     return {"system_one": {"surfaces": surfaces}}
@@ -178,10 +183,11 @@ class FakeSystemOne:
                 answers={"same_concern": SystemOneAnswer(type="noul", noul=self.same)},
             )
         self.gate_calls += 1
+        if "commitment" in questions:
+            return make("loop", concern=0.9, resolves=0.0, explicit=0.0)
         answers = {
             "is_open_concern": SystemOneAnswer(type="noul", noul=0.9),
             "resolves_existing": SystemOneAnswer(type="noul", noul=0.0),
-            "explicit_declaration": SystemOneAnswer(type="noul", noul=0.0),
         }
         return SystemOneResult(outcome="ok", answers=answers, latency_ms=5)
 
@@ -201,15 +207,17 @@ class Harness:
         self.entity = entity or uuid4()
         embedder = AsyncMock()
         embedder.encode = lambda text: [1.0, 0.0]
-        self.inflow = LoopInflow(
+        settings = _settings() if settings is None else settings
+        deps = dict(
             loop_store=self.store,
             graph_store=FakeGraph(self.store),
             entity_resolver=AsyncMock(return_value=[self.entity]),
-            llm_client=WriterLLM(title),
             embedder=embedder,
             system_one_client=self.client,
-            settings=_settings() if settings is None else settings,
+            settings=settings,
         )
+        self.inflow = LoopInflow(llm_client=WriterLLM(title), **deps)
+        self.intake = CommitmentIntake(loop_inflow=self.inflow, **deps)
 
     @property
     def loop(self) -> OpenLoop:
@@ -222,18 +230,27 @@ class Harness:
 
     async def chat(self, thread="th1", text="I need to reply to Ana about the budget"):
         ev = EvidenceRef(kind="episode", id=uuid4())
-        adm = await self.inflow.admit({"thread_id": thread}, prompt=text)
+        adm = await conversation_admit(self.intake, {"thread_id": thread}, prompt=text)
         await adm.commit([ev])
         return ev
 
-    async def inbound(self, inflow, ref, evidence=None, text="Ana is waiting on the budget reply"):
-        ev = evidence if evidence is not None else [EvidenceRef(kind="episode", id=uuid4())]
+    async def inbound(
+        self, inflow, ref, evidence=None, text="Ana is waiting on the budget reply"
+    ):
+        ev = (
+            evidence
+            if evidence is not None
+            else [EvidenceRef(kind="episode", id=uuid4())]
+        )
         await self.inflow.extract(text, inflow, evidence=ev, source_ref=ref)
         return ev
 
     def keys(self, loop=None):
         loop = loop or self.loop
-        return [(s.role.value, s.key.inflow, s.promoted) for s in self.store.sources[loop.id]]
+        return [
+            (s.role.value, s.key.inflow, s.promoted)
+            for s in self.store.sources[loop.id]
+        ]
 
 
 # ---- US1 ------------------------------------------------------------------
@@ -241,9 +258,13 @@ class Harness:
 
 async def test_admit_puts_the_thread_key_on_the_admission():
     h = Harness()
-    adm = await h.inflow.admit({"thread_id": "th1"}, prompt="I need to reply to Ana")
+    adm = await conversation_admit(
+        h.intake, {"thread_id": "th1"}, prompt="I need to reply to Ana"
+    )
     assert adm.source == SourceKey("conversation", "th1")
-    assert (await h.inflow.admit({}, prompt="I need to reply to Ana")).source is None
+    assert (
+        await conversation_admit(h.intake, {}, prompt="I need to reply to Ana")
+    ).source is None
 
 
 async def test_independent_email_promotes_a_suspected_loop():
@@ -254,7 +275,10 @@ async def test_independent_email_promotes_a_suspected_loop():
     loop = h.loop
     assert loop.state is LoopState.ACTIVE
     assert loop.confidence == pytest.approx(0.7)
-    assert h.keys() == [("origin", "conversation", False), ("corroboration", "email", True)]
+    assert h.keys() == [
+        ("origin", "conversation", False),
+        ("corroboration", "email", True),
+    ]
     assert len(h.client.same_calls) == 1
     assert h.client.same_calls[0]["loop"] == TITLE
 
@@ -283,7 +307,12 @@ async def test_third_source_promotes_a_loop_capped_at_point_six():
     await h.inbound("ingestion", "doc-1")
     assert h.loop.state is LoopState.ACTIVE
     assert h.loop.confidence == pytest.approx(0.7)
-    assert [k[1] for k in h.keys()] == ["conversation", "email", "calendar", "ingestion"]
+    assert [k[1] for k in h.keys()] == [
+        "conversation",
+        "email",
+        "calendar",
+        "ingestion",
+    ]
 
 
 async def test_origin_row_is_written_for_each_create_path_with_a_key():
@@ -308,7 +337,9 @@ async def test_no_origin_row_without_a_key():
 async def test_declared_path_match_corroborates_a_suspected_loop():
     h = Harness(same=0.93)
     await h.inbound("email", "G1")
-    adm = await h.inflow.admit({"thread_id": "th9"}, prompt="remind me to reply to Ana")
+    adm = await conversation_admit(
+        h.intake, {"thread_id": "th9"}, prompt="remind me to reply to Ana"
+    )
     adm.decision = replace(adm.decision, kind="create_declared", reason="explicit")
     await adm.commit([EvidenceRef(kind="episode", id=uuid4())])
 

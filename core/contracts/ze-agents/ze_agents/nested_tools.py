@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from ze_agents.types import ToolCall
@@ -113,6 +114,33 @@ def tracking_earned(tool_calls: list[ToolCall]) -> bool:
         if payload is not None and payload.get("ok") is True:
             return True
     return False
+
+
+@dataclass(frozen=True)
+class TurnCreation:
+    reminder_id: str | None = None
+    goal_id: str | None = None
+
+
+def _created_id(call: ToolCall) -> str | None:
+    if not call.success:
+        return None
+    payload = tool_payload(call.result)
+    if payload is None or payload.get("error"):
+        return None
+    raw = payload.get("id")
+    return str(raw) if raw else None
+
+
+def turn_creation(tool_calls: list[ToolCall]) -> TurnCreation:
+    reminder_id: str | None = None
+    goal_id: str | None = None
+    for call in flatten_tool_calls(tool_calls):
+        if call.tool_name == "set_reminder" and reminder_id is None:
+            reminder_id = _created_id(call)
+        elif call.tool_name == "create_goal" and goal_id is None:
+            goal_id = _created_id(call)
+    return TurnCreation(reminder_id=reminder_id, goal_id=goal_id)
 
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")

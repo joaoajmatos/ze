@@ -289,3 +289,12 @@ async def test_fenced_haiku_reply_still_creates_loop():
     )
     assert len(result) == 1
     assert result[0].title == "Renew passport"
+
+
+async def test_resolve_entities_is_public_and_swallows_resolver_errors():
+    from ze_worldstate.extraction import resolve_entities
+
+    ids = [uuid4()]
+    assert await resolve_entities(AsyncMock(return_value=ids), "text") == ids
+    assert await resolve_entities(None, "text") == []
+    assert await resolve_entities(AsyncMock(side_effect=RuntimeError("x")), "t") == []

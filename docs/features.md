@@ -14,13 +14,13 @@ Companion is the only agent that speaks to you. It acts as the conductor: when a
 
 System One is a small model that returns typed judgments (a choice among labels, a yes/no probability, a score), never free text. Ze treats it as a fast gate, with code making the final decision. Five surfaces use it:
 
-- **Speech-act admission** decides whether a finished turn states a durable fact worth keeping.
+- **Commitment intake** decides what a finished conversation turn committed the user to: a durable fact worth keeping, a loop to open or close, or a link to a reminder or goal the turn already created.
 - **Routing choice** picks among the agents E5 shortlisted, decides whether the request needs more than one specialist, and grades how complex it is.
 - **Skill gating** picks at most one automatic skill from the skills E5 shortlisted.
-- **Loop gate** decides whether text opens, declares, or resolves an open loop.
+- **Loop gate** decides whether email, calendar, or ingested text opens or resolves an open loop.
 - **Corroboration** decides whether an independent source is about the same open matter as a suspected loop, and can promote it.
 
-Five of the six surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-speech-act`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`, `make calibrate-complexity`); the corroboration surface ships off until `make calibrate-corroboration` gives a held-out `ENABLE`. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing, skills, and speech act, the Haiku judge for the loop gate, and the plain evidence link for corroboration. See [configuration.md](configuration.md#system_one).
+Five of the six surfaces are on in the shipped config, each with bars measured on a labeled set (`make calibrate-commitment-intake`, `make calibrate-routing`, `make calibrate-skills`, `make calibrate-loop-gate`, `make calibrate-complexity`); the corroboration surface ships off until `make calibrate-corroboration` gives a held-out `ENABLE`. The code defaults are off. When a surface is off, uncalibrated, or skips, Ze falls back to the older path: the E5 thresholds and the Haiku judge for routing and skills, the Haiku fact extractor and loop gate for the commitment intake, the Haiku judge for the loop gate, the plain evidence link for corroboration, and the agent's full model for complexity. See [configuration.md](configuration.md#system_one).
 
 ## Goal engine
 

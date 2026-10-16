@@ -47,6 +47,7 @@ class OpenLoop:
     confidence: float
     state: LoopState = LoopState.SUSPECTED
     goal_id: UUID | None = None
+    reminder_id: UUID | None = None
     dismissed_evidence_fingerprint: str | None = None
     drift_deadline: datetime | None = None
     drift_rationale: str | None = None

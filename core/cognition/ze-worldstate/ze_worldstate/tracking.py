@@ -11,7 +11,7 @@ from ze_memory.graph.store import GraphStore
 
 from ze_worldstate import drift
 from ze_worldstate.contribution import loop_to_contribution
-from ze_worldstate.extraction import _resolve_entities, _whole_days
+from ze_worldstate.extraction import resolve_entities, _whole_days
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.store import LoopStore
 from ze_worldstate.types import (
@@ -83,7 +83,7 @@ class LoopTracker:
         return result
 
     async def _track(self, title: str, window: int) -> TrackResult:
-        entity_ids = await _resolve_entities(self._resolver, title)
+        entity_ids = await resolve_entities(self._resolver, title)
         match = await self._find_match(title, entity_ids)
         now = datetime.now(timezone.utc)
         deadline = now + timedelta(days=window)

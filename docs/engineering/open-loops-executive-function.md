@@ -43,7 +43,7 @@ Its summary line is blunt: the executive layer was built broadly and worked narr
 
 **F3: stuck-goal detection crashed.** The query for stuck goals called `.tzinfo` on a timestamp that is null for gates that have not fired. A goal with one open gate and any later gate raised an error. On the dev database, a goal idle for 108 days never produced an alert, and it dropped out of the priority ranking.
 
-The audit also noted that the speech-act judge and the loop gate both read every message and could disagree, that interruption governance covered two sources while about fifteen others were free, and that the dev database held no loops at all. It states its own limit up front: there was no real usage to measure, so nothing in it shows that the layer helps. That candor made the repair list credible.
+The audit also noted that the speech-act judge and the loop gate both read every message and could disagree (Phase 173 later merged them into one intake), that interruption governance covered two sources while about fifteen others were free, and that the dev database held no loops at all. It states its own limit up front: there was no real usage to measure, so nothing in it shows that the layer helps. That candor made the repair list credible.
 
 ## The repairs
 
@@ -51,11 +51,12 @@ The note recommended repairing first and adding features second. Phases 169 to 1
 
 | Phase | Repair |
 |---|---|
-| 168 | A System One gate asks three yes/no questions (is this an open concern, does it resolve a loop, is it an explicit declaration). A small model writes only the title. |
+| 168 | A System One gate asks yes/no questions (is this an open concern, does it resolve a loop, and for conversation, is it an explicit declaration). A small model writes only the title. |
 | 169 | A `track_loop` tool lets you say "keep the Porto move on my radar" and get a loop in the same turn. |
 | 170 | Drift fires on the deadline, and new evidence moves the deadline. Stuck-goal detection returns one row per goal. Loops carry evidence. A real-Postgres test harness was added (`make test-pg`) so SQL predicates run against real rows. |
 | 171 | Suspected loops reach you. The `/loops` page lists them, one confirmation stamps a 0.9 confidence and a 7-day deadline, and at the start of a session Ze asks about up to three of them. |
 | 172 | An independent source that matches a suspected loop can raise its confidence, and can promote it to active. This surface ships off (see [Calibrating a judgment model honestly](calibrating-a-judgment-model-honestly.md)). |
+| 173 | One System One request per conversation turn replaces the speech-act judge and the loop gate. A reminder that Ze sets no longer also opens a loop. The loop links to the reminder or goal. A message that says you are waiting on someone writes nothing. |
 | 177 | One governor sits on every proactive push. A shared daily budget covers discretionary nudges, quiet hours hold them, and reminders you set always fire. |
 
 Phase 170 is the most instructive. The fix for F1 was not clever. It switched drift to a plain deadline comparison. The lasting change was the real-Postgres test target, because the defect class was "a SQL predicate that no test ever ran."
