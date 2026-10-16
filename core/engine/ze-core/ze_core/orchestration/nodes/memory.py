@@ -217,16 +217,20 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
 
         turn_extractor = config["configurable"].get("turn_extractor")
         if turn_extractor is not None:
-            extracted = await turn_extractor(
-                config["configurable"],
-                prompt=ctx.prompt,
-                response=result.response,
-            )
-            if extracted.events:
+            try:
+                extracted = await turn_extractor(
+                    config["configurable"],
+                    prompt=ctx.prompt,
+                    response=result.response,
+                )
+            except Exception as exc:
+                log.warning("write_memory_turn_extractor_failed", error=str(exc))
+                extracted = None
+            if extracted is not None and extracted.events:
                 fire_and_forget(
                     store.propose_events(extracted.events), label="propose_events"
                 )
-            for entity in extracted.entities:
+            for entity in extracted.entities if extracted is not None else []:
                 fire_and_forget(
                     store.upsert_entity(entity),
                     label=f"upsert_entity:{entity.canonical_name}",

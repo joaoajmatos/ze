@@ -35,7 +35,9 @@ async def _generate_and_save(
 ) -> None:
     set_agent_context("session_title")
     session = await session_store.get(thread_id)
-    if session is None or session.title or session.title_source is not None:
+    # The first message is saved as a placeholder title with source "user" before
+    # the turn runs, so only a generated title ends the job.
+    if session is None or session.title_source == "generated":
         return
 
     try:

@@ -31,7 +31,3 @@ memory:
     enabled: false
   session_summary:
     enabled: false
-
-contacts:
-  consolidation:
-    nightly_cron: "0 3 1 1 *"      # once a year: effectively off

@@ -73,3 +73,49 @@ async def test_per_job_max_age_comes_from_config():
     )
     sched.add_cron_job(AsyncMock(), "0 * * * *", "a")
     assert "a:catchup" not in await _jobs(sched)
+
+
+def _shipped_settings():
+    import yaml
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "config" / "config.yaml"
+    return SimpleNamespace(config=yaml.safe_load(path.read_text()))
+
+
+def _registered_job_ids() -> set[str]:
+    """Every job id the code registers: `job_id = "x"` class attributes and `job_id="x"` arguments."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    pattern = re.compile(r"""\bjob_id\s*=\s*["']([A-Za-z0-9_.-]+)["']""")
+    ids: set[str] = set()
+    for top in ("apps/ze-api/ze_api", "core", "plugins", "integrations", "packages"):
+        for path in (root / top).rglob("*.py"):
+            if {"tests", ".venv", "node_modules"} & set(path.parts):
+                continue
+            ids.update(pattern.findall(path.read_text(encoding="utf-8")))
+    return ids
+
+
+def test_every_shipped_catch_up_max_age_key_is_a_registered_job_id():
+    limits = _shipped_settings().config["proactive"]["catch_up_max_age_hours"]
+    unknown = sorted(set(limits) - _registered_job_ids())
+    assert not unknown, f"catch_up_max_age_hours keys that match no job: {unknown}"
+
+
+async def test_shipped_attention_arbitration_limit_takes_effect():
+    """A missed fire far older than the shipped 4-hour limit must not catch up.
+
+    The yearly cron makes the missed fire (Jan 1) long past, whatever the time of day; without
+    the limit the same setup does catch up, so the test fails if the key matches no job id."""
+    job_id = "attention_arbitration_sweep"
+    store = _store(job_id, timedelta(days=400))
+    sched = build_proactive_scheduler(_shipped_settings(), run_store=store)
+    sched.add_cron_job(AsyncMock(), "0 0 1 1 *", job_id)
+    assert f"{job_id}:catchup" not in await _jobs(sched)
+
+    unlimited = build_proactive_scheduler(_settings(), run_store=store)
+    unlimited.add_cron_job(AsyncMock(), "0 0 1 1 *", job_id)
+    assert f"{job_id}:catchup" in await _jobs(unlimited)

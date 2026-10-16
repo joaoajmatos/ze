@@ -33,6 +33,10 @@ class TestTitleGenerator:
 
 
 class TestTitleOnlyUntilItExists:
+    """The first user message is saved as a 60-character placeholder with title_source
+    'user' before the turn runs (turns.py), so a generated title must replace that
+    placeholder exactly once."""
+
     @staticmethod
     def _session(title=None, title_source=None):
         from datetime import datetime, timezone
@@ -62,23 +66,26 @@ class TestTitleOnlyUntilItExists:
             )
         return generate, store
 
+    async def test_replaces_the_placeholder_the_first_message_saved(self):
+        session = self._session("first 60 chars of the message", "user")
+        generate, store = await self._run(session)
+        generate.assert_awaited_once()
+        store.upsert.assert_awaited_once()
+        assert store.upsert.await_args.kwargs["title"] == "A title"
+        assert store.upsert.await_args.kwargs["title_source"] == "generated"
+
     async def test_generates_when_the_session_has_no_title(self):
         generate, store = await self._run(self._session())
         generate.assert_awaited_once()
         store.upsert.assert_awaited_once()
 
-    async def test_skips_a_generated_title(self):
+    async def test_skips_once_a_title_was_generated(self):
         generate, store = await self._run(self._session("T", "generated"))
         generate.assert_not_awaited()
         store.upsert.assert_not_awaited()
 
-    async def test_never_overwrites_a_title_the_user_set(self):
-        generate, store = await self._run(self._session("Mine", "user"))
-        generate.assert_not_awaited()
-        store.upsert.assert_not_awaited()
-
-    async def test_skips_any_existing_title_even_without_a_source(self):
-        generate, store = await self._run(self._session("Old title", None))
+    async def test_skips_a_missing_session(self):
+        generate, store = await self._run(None)
         generate.assert_not_awaited()
 
     async def test_title_calls_are_attributed_to_session_title(self):

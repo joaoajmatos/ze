@@ -220,3 +220,51 @@ async def test_write_memory_labels_its_llm_calls_as_memory_write():
         cfg,
     )
     assert seen == ["memory_write"]
+
+
+async def test_write_memory_survives_a_turn_extractor_that_raises():
+    store = AsyncMock(spec=MemoryStore)
+    hook = AsyncMock()
+    cfg = make_config(memory_store=store)
+    cfg["configurable"]["turn_extractor"] = AsyncMock(side_effect=TypeError("boom"))
+    cfg["configurable"]["memory_hooks"] = [hook]
+    ctx = AgentContext(
+        session_id="s1", prompt="dinner with Ana", memory=MemoryContext()
+    )
+    result = await memory.write_memory(
+        base_state(
+            agent_context=ctx, agent_result=AgentResult(agent="research", response="r")
+        ),
+        cfg,
+    )
+    await asyncio.sleep(0)
+
+    assert result["messages"][-1] == {"role": "assistant", "content": "r"}
+    hook.assert_called_once()
+    store.propose_events.assert_not_called()
+
+
+async def test_write_memory_with_null_participants_in_the_model_reply():
+    """The real extractor on a reply with null list fields: the turn still completes."""
+    from ze_memory.extractor import gather_turn_proposals
+
+    store = AsyncMock(spec=MemoryStore)
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=(
+            '{"events":[{"title":"x","event_type":"meeting","participants":null}],'
+            '"entities":[{"name":"Ana","entity_type":"person","aliases":null}]}'
+        )
+    )
+    cfg = make_config(memory_store=store)
+    cfg["configurable"]["turn_extractor"] = gather_turn_proposals
+    cfg["configurable"]["openrouter_client"] = client
+    ctx = AgentContext(session_id="s1", prompt="met Ana today", memory=MemoryContext())
+    result = await memory.write_memory(
+        base_state(
+            agent_context=ctx, agent_result=AgentResult(agent="research", response="r")
+        ),
+        cfg,
+    )
+    await asyncio.sleep(0)
+    assert result["messages"][-1]["content"] == "r"

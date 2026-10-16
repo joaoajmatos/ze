@@ -386,20 +386,31 @@ async def extract_turn_graph(
         log.warning("memory_turn_extraction_failed", error=str(exc))
         return TurnProposals()
 
-    events = parsed.get("events")
-    entities = parsed.get("entities")
     return TurnProposals(
-        events=raw_to_events(events) if isinstance(events, list) else [],
-        entities=raw_to_entities(
-            [
-                e
-                for e in entities
-                if isinstance(e, dict) and e.get("name") and e.get("entity_type")
-            ]
-            if isinstance(entities, list)
-            else []
+        events=_parse_list(parsed.get("events"), raw_to_events, "events"),
+        entities=_parse_list(
+            parsed.get("entities"),
+            lambda items: raw_to_entities(
+                [
+                    e
+                    for e in items
+                    if isinstance(e, dict) and e.get("name") and e.get("entity_type")
+                ]
+            ),
+            "entities",
         ),
     )
+
+
+def _parse_list(value: Any, convert: Any, label: str) -> list:
+    """One malformed array costs only that array, never the turn or the other array."""
+    if not isinstance(value, list):
+        return []
+    try:
+        return convert(value)
+    except Exception as exc:
+        log.warning("memory_turn_extraction_item_failed", array=label, error=str(exc))
+        return []
 
 
 async def gather_turn_proposals(

@@ -205,6 +205,62 @@ async def test_extract_turn_graph_drops_incomplete_items():
     assert proposals == TurnProposals()
 
 
+async def test_extract_turn_graph_null_participants_does_not_raise():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps(
+            {
+                "events": [
+                    {"title": "x", "event_type": "meeting", "participants": None}
+                ],
+                "entities": [],
+            }
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert isinstance(proposals, TurnProposals)
+
+
+async def test_extract_turn_graph_null_aliases_does_not_raise():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps(
+            {
+                "events": [{"title": "Dinner", "event_type": "meal"}],
+                "entities": [{"name": "Ana", "entity_type": "person", "aliases": None}],
+            }
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    # the bad entity array is dropped, the good events survive
+    assert [e.title for e in proposals.events] == ["Dinner"]
+
+
+async def test_extract_turn_graph_a_bad_events_array_keeps_the_entities():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps(
+            {
+                "events": [
+                    {"title": "x", "event_type": "meeting", "participants": None}
+                ],
+                "entities": [{"name": "Ana", "entity_type": "person"}],
+            }
+        )
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert [e.canonical_name for e in proposals.entities] == ["Ana"]
+
+
+async def test_extract_turn_graph_non_list_events_value():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value=json.dumps({"events": {"title": "x"}, "entities": 3})
+    )
+    proposals = await extract_turn_graph(client, prompt="p", response="r", model="m")
+    assert proposals == TurnProposals()
+
+
 # ── gather_turn_proposals ─────────────────────────────────────────────────────
 
 

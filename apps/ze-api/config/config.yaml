@@ -156,7 +156,7 @@ proactive:
     inbound_poll: 1
     quiet_hours_release: 1
     correlation_scan: 4
-    attention_arbitration: 4
+    attention_arbitration_sweep: 4
   goal_advance_sweep:
     enabled: true
     cron: "*/15 * * * *"           # advances every active goal; no model call when nothing is runnable

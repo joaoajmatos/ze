@@ -500,7 +500,8 @@ class TestCostReconciler:
 
 
 class TestCostReconcilerRetryCap:
-    async def test_unavailable_generation_is_not_asked_again(self):
+    async def test_invalid_generation_id_is_not_asked_again(self):
+        """HTTP 400 'Invalid generation ID' is permanent: blacklisted at once."""
         from ze_agents.errors import GenerationUnavailableError
 
         dead = {"id": "r-dead", "generation_id": "gen-dead"}
@@ -513,7 +514,7 @@ class TestCostReconcilerRetryCap:
 
         async def _cost(gid):
             if gid == "gen-dead":
-                raise GenerationUnavailableError("gone", status_code=404)
+                raise GenerationUnavailableError("bad id", status_code=400)
             return 0.001
 
         client.fetch_generation_cost = AsyncMock(side_effect=_cost)
@@ -525,6 +526,81 @@ class TestCostReconcilerRetryCap:
         await reconciler.run()
         kwargs = store.fetch_pending.call_args.kwargs
         assert "gen-dead" in kwargs["exclude_generation_ids"]
+
+    async def test_a_404_is_retried_before_it_is_given_up_on(self):
+        """OpenRouter answers 404 for a generation it has not indexed yet, so one miss
+        must not blacklist the row for the process."""
+        from ze_agents.errors import GenerationUnavailableError
+
+        row = {"id": "r1", "generation_id": "gen-slow"}
+        store = AsyncMock(spec=PostgresCostStore)
+        store.has_pending_writes = True
+        store.fetch_pending = AsyncMock(return_value=[row])
+        store.update_cost = AsyncMock(return_value=True)
+        client = AsyncMock()
+        client.fetch_generation_cost = AsyncMock(
+            side_effect=[
+                GenerationUnavailableError("not yet", status_code=404),
+                GenerationUnavailableError("not yet", status_code=404),
+                0.002,
+            ]
+        )
+        reconciler = CostReconciler(store=store, openrouter_client=client)
+
+        await reconciler.run()
+        await reconciler.run()
+        assert (
+            "gen-slow"
+            not in store.fetch_pending.call_args.kwargs["exclude_generation_ids"]
+        )
+        await reconciler.run()
+
+        store.update_cost.assert_awaited_once_with("r1", 0.002)
+
+    async def test_a_404_is_given_up_on_after_three_misses(self):
+        from ze_agents.errors import GenerationUnavailableError
+
+        row = {"id": "r1", "generation_id": "gen-gone"}
+        store = AsyncMock(spec=PostgresCostStore)
+        store.has_pending_writes = True
+        store.fetch_pending = AsyncMock(return_value=[row])
+        client = AsyncMock()
+        client.fetch_generation_cost = AsyncMock(
+            side_effect=GenerationUnavailableError("gone", status_code=404)
+        )
+        reconciler = CostReconciler(store=store, openrouter_client=client)
+
+        for _ in range(3):
+            await reconciler.run()
+        await reconciler.run()
+
+        assert (
+            "gen-gone" in store.fetch_pending.call_args.kwargs["exclude_generation_ids"]
+        )
+
+    async def test_a_resolved_row_forgets_its_misses(self):
+        from ze_agents.errors import GenerationUnavailableError
+
+        row = {"id": "r1", "generation_id": "gen-x"}
+        store = AsyncMock(spec=PostgresCostStore)
+        store.has_pending_writes = True
+        store.fetch_pending = AsyncMock(return_value=[row])
+        store.update_cost = AsyncMock(return_value=False)  # row stays pending
+        client = AsyncMock()
+        not_found = GenerationUnavailableError("nf", status_code=404)
+        client.fetch_generation_cost = AsyncMock(
+            side_effect=[not_found, not_found, 0.1, not_found, not_found]
+        )
+        reconciler = CostReconciler(store=store, openrouter_client=client)
+
+        for _ in range(5):
+            await reconciler.run()
+
+        # 2 misses, a success, 2 more misses: never 3 in a row
+        assert (
+            "gen-x"
+            not in store.fetch_pending.call_args.kwargs["exclude_generation_ids"]
+        )
 
     async def test_one_unavailable_row_does_not_stop_the_batch(self):
         from ze_agents.errors import GenerationUnavailableError
