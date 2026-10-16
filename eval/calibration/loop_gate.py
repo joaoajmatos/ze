@@ -331,25 +331,6 @@ async def run_haiku_tolerant(
     return dict(await asyncio.gather(*(one(r) for r in rows)))
 
 
-async def run_speech_act(
-    client: Any, rows: list[Row], concurrency: int
-) -> dict[str, str | None]:
-    from ze_memory.speech_act_judge import SPEECH_ACT_QUESTIONS
-    from ze_memory.speech_act_judge import build_state as sa_state
-
-    sem = asyncio.Semaphore(concurrency)
-
-    async def one(row: Row) -> tuple[str, str | None]:
-        async with sem:
-            result = await client.evaluate(sa_state(row.text, ""), SPEECH_ACT_QUESTIONS)
-        answer = result.answers.get("speech_act") if result.outcome == "ok" else None
-        return row.id, answer.choice if answer else None
-
-    return dict(
-        await asyncio.gather(*(one(r) for r in rows if r.provenance == "conversation"))
-    )
-
-
 # --- reports -------------------------------------------------------------------------
 
 
@@ -457,20 +438,6 @@ def report_errors(
         )
 
 
-def report_agreement(
-    rows: list[Row], speech: dict[str, str | None], system_kinds: dict[str, str]
-) -> None:
-    conv = [r for r in rows if r.provenance == "conversation" and r.id in speech]
-    agree = sum(
-        (speech[r.id] == "loop") == (system_kinds[r.id] in CREATES) for r in conv
-    )
-    both = sum(speech[r.id] == "loop" and system_kinds[r.id] in CREATES for r in conv)
-    print(
-        f"\n== 163 speech-act 'loop' vs gate create on conversation rows: "
-        f"agree {agree}/{len(conv)}, both fire {both} (logged only; not a gate input)"
-    )
-
-
 # --- main ----------------------------------------------------------------------------
 
 
@@ -552,7 +519,6 @@ async def main_async(args: argparse.Namespace) -> int:
     haiku_gates = await run_haiku_tolerant(
         llm, rows, args.haiku_model, args.concurrency
     )
-    speech = {} if holdout else await run_speech_act(system, rows, args.concurrency)
     await llm.aclose()
     skipped = Counter(r.skip_reason for r in results.values() if r.outcome == "skip")
     if skipped:
@@ -596,7 +562,6 @@ async def main_async(args: argparse.Namespace) -> int:
             f"\nbars used: loop_hold={cfg.loop_hold} explicit_hold={cfg.explicit_hold} resolves_hold={cfg.resolves_hold}"
         )
         report_scores(rows, kinds, haiku_kinds, by_provenance=True)
-        report_agreement(rows, speech, kinds)
         report_errors(rows, results, kinds)
         if suggestion:
             print(

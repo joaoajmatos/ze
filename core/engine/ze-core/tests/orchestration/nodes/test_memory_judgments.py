@@ -307,3 +307,31 @@ async def test_intake_not_run_for_eval_threads():
     config["configurable"]["commitment_intake"] = intake
     await write_memory(_state(_trace()), config)
     intake.assert_not_awaited()
+
+
+async def test_outcome_row_shows_link_and_waiting_on():
+    from ze_worldstate.commitment_judge import IntakeOutcome
+
+    for outcome, expected in (
+        (
+            IntakeOutcome("link", "turn_created", link_kind="reminder"),
+            "link:turn_created:reminder",
+        ),
+        (IntakeOutcome("hold", "waiting_on"), "hold:waiting_on"),
+    ):
+        adm = _intake_admission(outcome=outcome)
+        out, _, _ = await _run_intake(AsyncMock(return_value=adm), _trace())
+        row = out["message_trace"].judgments[-1]
+        assert (row.question_id, row.answer, row.consumed) == (
+            "intake_outcome",
+            expected,
+            True,
+        )
+
+
+async def test_no_outcome_row_without_a_request():
+    from ze_worldstate.commitment_judge import IntakeOutcome
+
+    adm = _intake_admission(outcome=IntakeOutcome("hold", "trivial"), judgment=None)
+    out, _, _ = await _run_intake(AsyncMock(return_value=adm), _trace())
+    assert "message_trace" not in out

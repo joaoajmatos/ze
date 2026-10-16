@@ -12,6 +12,7 @@ from ze_agents.defaults import MODEL_SYNTHESIS
 from ze_agents.model_resolution import resolve_model
 from ze_agents.tasks import fire_and_forget
 from ze_core.conversation.messages.judgments import judgments_from_result
+from ze_core.conversation.messages.types import JudgmentTrace
 from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
@@ -75,6 +76,25 @@ async def _run_commitment_intake(
     except Exception as exc:
         log.warning("write_memory_commitment_intake_failed", error=str(exc))
         return None
+
+
+def _outcome_row(intake: Any) -> JudgmentTrace | None:
+    """The merged decision as one trace row, so link and waiting_on are visible (FR-018)."""
+    outcome = getattr(intake, "outcome", None)
+    judgment = intake.judgment
+    if outcome is None or judgment is None:
+        return None
+    answer = f"{outcome.kind}:{outcome.reason}"
+    if outcome.link_kind:
+        answer += f":{outcome.link_kind}"
+    return JudgmentTrace(
+        question_id="intake_outcome",
+        kind="choice",
+        latency_ms=judgment.latency_ms,
+        answer=answer,
+        consumed=True,
+        skip_reason=intake.skip_reason,
+    )
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
@@ -143,6 +163,9 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                     consumed=intake.consumed,
                     skip_reason=intake.skip_reason,
                 )
+                outcome_row = _outcome_row(intake)
+                if outcome_row is not None:
+                    rows.append(outcome_row)
         else:
             fact_result = await _run_fact_extractor(
                 config["configurable"].get("fact_extractor"), config, result, ctx
