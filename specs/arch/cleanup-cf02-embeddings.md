@@ -45,6 +45,8 @@ Delete `E5Embedder.encode()`. Every caller picks `encode_query` or `encode_passa
 | `ze_priority/open_query.py` examples | `encode_passage` | §3.1 |
 | `ze_seed/domains/_helpers.py`, `ze_messenger/inbound/processor.py` | `encode_passage` | none (stored) |
 | `ze_finance/recurring/detector.py` (`TextEmbedder` Protocol) | `encode_passage` | merchant merge threshold unchanged |
+| `ze_news/store.py` upsert, dedup, article vectors | `encode_passage` | dedup cosine 0.75 unchanged |
+| `ze_news/store.py` `search`, interest text, preference topics | `encode_query` | rank-only; scoring weights unchanged |
 | `eval/calibration/{open_query,corroboration}.py` | match production | — |
 
 Some of these files belong to other floors (`ze_priority/tools.py`, `ze_seed`, `ze_messenger`, `ze_finance`, `execution.py`, `memory.py`). The edit is one line each and follows from deleting the method. No other change is made in them.
@@ -124,8 +126,9 @@ Failing test first for each behavior change:
 - Companion `tools` contains the ten names; all are registered and READ.
 - Slow test: shipped numbers on held-out 1 to 3.
 
-## 6. Open points for the Maestro
+## 6. Decisions (Maestro, 2026-10-16)
 
-1. **Relevance floor.** Leave at 0.35 / 0.30 (inert, unchanged), or open a follow-up that builds a labeled retrieval set and sets a real floor? Recommendation: follow-up. It is a product-visible recall trade and needs real data.
-2. **Live scenario run.** Approve one live run of the new companion scenarios (about 9 turns on Sonnet) before review? Recommendation: yes, once, after the code is green.
-3. **Cross-floor one-liners.** Seven files outside the §12 list lose `encode()`; confirm the overlap with CF-04 / CF-07 / CF-11 is acceptable. Recommendation: yes; each edit is one line.
+1. **Relevance floor: unchanged.** 0.35 / 0.30 stay. The floor is inert (lowest unrelated cosine 0.73). The Maestro queues a follow-up to build a labeled retrieval set.
+2. **Detector stays in passage space** with unchanged constants; retrieval uses `encode_query`; the extra `encode_passage` per turn is accepted. Tests pin it (`test_detector_embeds_examples_as_passages`, `test_detector_receives_the_passage_embedding`, slow held-out 1 to 3).
+3. **Live companion scenarios:** approved once the code is green, but OpenRouter credits are exhausted (2026-10-16 ~21:00). Not run. Run them when the Maestro says credits are topped up.
+4. One-line `encode()` edits outside the §12 list are approved. Floor 182 also edits `ze_core` orchestration nodes: expect a small merge.
