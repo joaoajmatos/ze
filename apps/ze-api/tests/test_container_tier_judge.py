@@ -30,4 +30,21 @@ def test_build_config_carries_the_tier_judge_from_the_yaml_surface():
     judge = build_tier_judge(config=config, system_one_client=MagicMock())
     configurable = _container(tier_judge=judge)._build_config("t1")["configurable"]
     assert configurable["tier_judge"] is judge
-    assert judge.surface == ComplexitySurfaceConfig(enabled=False, simple_max=None)
+    assert judge.surface == ComplexitySurfaceConfig(enabled=True, simple_max=0.40)
+    assert judge.surface.calibrated
+
+
+def test_shipped_complexity_surface_is_never_half_enabled():
+    block = yaml.safe_load(CONFIG.read_text())["system_one"]["surfaces"]["complexity"]
+    if block["enabled"] is True:
+        assert isinstance(block["simple_max"], float)
+        assert 0.0 < block["simple_max"] < 1.0
+    else:
+        assert block["simple_max"] is None
+
+
+def test_the_surface_follows_system_one_enabled():
+    config = yaml.safe_load(CONFIG.read_text())
+    config["system_one"]["enabled"] = False
+    judge = build_tier_judge(config=config, system_one_client=MagicMock())
+    assert judge.surface.enabled is False

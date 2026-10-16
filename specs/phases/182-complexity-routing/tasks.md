@@ -97,7 +97,7 @@
 - [x] T030 [ENG] [US6] [DOCS] Freeze: write the chosen `simple_max`, the final instruction text and the date into research.md R12 and commit before T031.
 - [x] T031 [ENG] [US6] [BE] One held-out run at the frozen bar (`ARGS="--set holdout --simple-max <frozen>"`). Record the full report and the verdict in research.md R12 and spec.md Clarifications. Update the `complexity:` comment in `config.yaml` with the date and figures; keep `enabled: false` and `simple_max: null` in this commit either way.
 - [ ] T032 [P] [ENG] [US6] [BE] Report-only routing check after the Score cut: `make calibrate-routing` on the tuned `routing.jsonl` once; record accuracy and ECE beside 167's in research.md R12. Not gating; a drop beyond 167's figures is reported to the Maestro.
-- [ ] T033 [ENG] [US6] [PLATFORM] **Only after an ENABLE for EN and PT and the user's go-ahead via the Maestro**: a separate commit sets `system_one.surfaces.complexity.enabled: true` and `simple_max: <frozen>` with the dated held-out figures. On KEEP OFF, skip this task and record why in the Handoffs note.
+- [x] T033 [ENG] [US6] [PLATFORM] **Only after an ENABLE for EN and PT and the user's go-ahead via the Maestro**: a separate commit sets `system_one.surfaces.complexity.enabled: true` and `simple_max: <frozen>` with the dated held-out figures. On KEEP OFF, skip this task and record why in the Handoffs note.
 
 ## Phase 9: Polish and docs
 
