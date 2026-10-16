@@ -53,6 +53,6 @@ def build_embedding_router(
 def build_tier_judge(*, config: dict, system_one_client: Any) -> TierJudge:
     surface = complexity_surface_config(config)
     system_one = config.get("system_one")
-    if not (isinstance(system_one, dict) and system_one.get("enabled") is True):
+    if not (isinstance(system_one, dict) and bool(system_one.get("enabled", False))):
         surface = ComplexitySurfaceConfig(enabled=False, simple_max=surface.simple_max)
     return TierJudge(system_one_client, surface, config)
