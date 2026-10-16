@@ -1650,6 +1650,14 @@ export type LoopDetail = {
      */
     drift_rationale: string | null;
     /**
+     * Goal Id
+     */
+    goal_id: string | null;
+    /**
+     * Reminder Id
+     */
+    reminder_id: string | null;
+    /**
      * Created At
      */
     created_at: string | null;
@@ -1665,10 +1673,6 @@ export type LoopDetail = {
      * Source Inflows
      */
     source_inflows: Array<string>;
-    /**
-     * Goal Id
-     */
-    goal_id: string | null;
     /**
      * Evidence
      */
@@ -1751,6 +1755,14 @@ export type LoopListItem = {
      * Drift Rationale
      */
     drift_rationale: string | null;
+    /**
+     * Goal Id
+     */
+    goal_id: string | null;
+    /**
+     * Reminder Id
+     */
+    reminder_id: string | null;
     /**
      * Created At
      */
