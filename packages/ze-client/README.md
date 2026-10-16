@@ -8,7 +8,7 @@ Typed TypeScript client for the `ze-api` REST API and WebSocket protocol.
 
 ### Key features
 
-- One named function per route, taken from each route's `operation_id` (for example `listContacts()`)
+- One named function per route, taken from each route's `operation_id` (for example `listGoals()`)
 - Request and response types for every route
 - Types for every WebSocket frame
 - Helpers for file export, archive import, and health checks
@@ -38,10 +38,10 @@ Typed TypeScript client for the `ze-api` REST API and WebSocket protocol.
 ## Usage
 
 ```typescript
-import { configure, listContacts } from "@myguyze/ze-client";
+import { configure, listGoals } from "@myguyze/ze-client";
 
 configure({ serverUrl, apiKey });
-const { data } = await listContacts();
+const { data } = await listGoals();
 ```
 
 ## Testing
