@@ -8,7 +8,7 @@ import {
 } from "react";
 
 /** Marker on wrapper components whose single child should inherit clip classification. */
-export const CHART_CLIP_PASSTHROUGH = "__chartClipPassthrough" as const;
+const CHART_CLIP_PASSTHROUGH = "__chartClipPassthrough" as const;
 
 export function isChartClipPassthrough(type: unknown): boolean {
   return (

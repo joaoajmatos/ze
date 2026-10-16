@@ -425,4 +425,3 @@ export function useChart(): ChartContextValue {
   return { ...stable, ...hover };
 }
 
-export default ChartStableContext;

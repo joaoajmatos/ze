@@ -18,8 +18,8 @@ type ScaleBand<Domain extends { toString(): string }> = ReturnType<
   typeof scaleBand<Domain>
 >;
 
-export type BarLineCap = "round" | "butt" | number;
-export type BarAnimationType = "grow" | "fade";
+type BarLineCap = "round" | "butt" | number;
+type BarAnimationType = "grow" | "fade";
 
 // ── Bar-depth perspective trim ───────────────────────────────────────────
 // Uses the SHARED geometry (`bar-depth-geometry.ts`) so a
@@ -463,4 +463,3 @@ export function Bar(props: BarProps) {
 
 Bar.displayName = "Bar";
 
-export default Bar;

@@ -1,4 +1,4 @@
-export interface SquareColumnLayout {
+interface SquareColumnLayout {
   /** Number of squares in the column */
   count: number;
   /** Top-left Y of each square, bottom square first (relative to bar top at 0) */
@@ -22,7 +22,7 @@ export interface SquareColumnInput {
 }
 
 /** Quantize bar length into a stack of square cells. */
-export function computeSquareColumn({
+function computeSquareColumn({
   barLengthPx,
   squareSize,
   gap,

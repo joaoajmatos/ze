@@ -54,7 +54,7 @@ import {
 /** Skeleton bars to show when `status="loading"` and `data` is empty. */
 const FALLBACK_LOADING_BARS = 12;
 
-export type BarOrientation = "vertical" | "horizontal";
+type BarOrientation = "vertical" | "horizontal";
 
 export interface BarChartProps {
   /** Data array - each item should have an x-axis key and numeric values */
@@ -730,4 +730,3 @@ export function BarChart({
 
 BarChart.displayName = "BarChart";
 
-export default BarChart;

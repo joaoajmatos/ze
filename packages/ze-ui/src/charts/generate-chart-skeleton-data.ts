@@ -39,4 +39,4 @@ export function generateChartSkeletonFromTarget(
   }));
 }
 
-export { DEFAULT_SKELETON_DATA_KEY, DEFAULT_SKELETON_POINT_COUNT };
+;

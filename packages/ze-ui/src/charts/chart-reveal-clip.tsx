@@ -4,7 +4,7 @@ import type { Transition } from "motion/react";
 import { motion } from "motion/react";
 import { clipRevealTransition } from "./animation";
 
-export type ChartRevealClipMode = "reveal" | "conceal";
+type ChartRevealClipMode = "reveal" | "conceal";
 
 export interface ChartRevealClipProps {
   clipPathId: string;
