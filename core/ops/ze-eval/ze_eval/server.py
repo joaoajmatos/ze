@@ -54,16 +54,39 @@ async def _do_chat(prompt: str, session_id: str) -> dict:
         return resp.json()
 
 
+async def _do_confirm(
+    choice: str, session_id: str, edits: dict[str, str] | None = None
+) -> dict:
+    body: dict = {"session_id": session_id, "choice": choice}
+    if edits:
+        body["edits"] = edits
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        resp = await client.post(
+            f"{_ZE_EVAL_URL}/eval/confirm",
+            json=body,
+            headers=_HEADERS,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
 async def _run_scenario_turns(scenario: dict, session_id: str) -> dict:
     turns = scenario.get("turns")
     if turns:
         turn_results = []
         for i, turn in enumerate(turns):
-            result = await _do_chat(turn["prompt"], session_id)
+            if "confirm" in turn:
+                result = await _do_confirm(
+                    turn["confirm"], session_id, turn.get("edits")
+                )
+                step = {"confirm": turn["confirm"]}
+            else:
+                result = await _do_chat(turn["prompt"], session_id)
+                step = {"prompt": turn["prompt"]}
             turn_results.append(
                 {
                     "turn": i + 1,
-                    "prompt": turn["prompt"],
+                    **step,
                     "description": turn.get("description", ""),
                     "result": result,
                 }
@@ -84,13 +107,37 @@ async def ze_chat(prompt: str, session_id: str = "eval") -> str:
       - response: Ze's text response
       - agent_used: which agent handled the request (e.g. "companion", "research")
       - routing: { primary_agent, confidence, routing_method, is_compound, score_gap, raw_scores }
-      - pending_confirmation: true if Ze would pause to ask the user for confirmation
+      - pending_confirmation: true if Ze paused to ask the user to approve a write
+        it cannot undo; answer it with ze_confirm using the same session_id
+      - tool_calls: each call has gate (none, parked, approved, denied,
+        refused_over_cap, expired, pre_approved) and parked; a parked call waits
+        for the user's approval and has not run
       - error: error message if the graph failed
 
     Use session_id to simulate multi-turn conversations (same ID = shared history).
     Each unique session_id gets its own conversation thread.
     """
     result = await _do_chat(prompt, session_id)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def ze_confirm(
+    choice: str, session_id: str = "eval", edits: dict[str, str] | None = None
+) -> str:
+    """
+    Answer the open write confirmation of a session and return the resumed turn.
+
+    choice is "approve" or "deny". Approving runs exactly the parked calls shown
+    in the confirmation, so it really sends or deletes: use it only on an eval
+    instance whose Google account is a sandbox. edits maps a confirmation item id
+    to replacement text for an editable item (an email body, for example).
+
+    Returns the same JSON as ze_chat. pending_confirmation is true again when the
+    resumed turn parks another write (a second round). The call fails with 409
+    when the session has no open confirmation.
+    """
+    result = await _do_confirm(choice, session_id, edits)
     return json.dumps(result, indent=2)
 
 
@@ -120,7 +167,9 @@ async def ze_run_scenario(scenario_id: str) -> str:
 
     Supports both single-turn scenarios (with a top-level 'prompt') and multi-turn scenarios
     (with a 'turns' array of {prompt, description} objects). Multi-turn scenarios use the
-    same session_id across turns to maintain conversation context.
+    same session_id across turns to maintain conversation context. A turn can be
+    {confirm: approve|deny, edits?} instead of a prompt: it answers the confirmation the
+    previous turn opened.
 
     Returns JSON with:
       - scenario: the full scenario definition (prompt/turns, expected_agent, criteria, etc.)

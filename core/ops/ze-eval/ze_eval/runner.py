@@ -51,15 +51,74 @@ async def _chat(prompt: str, session_id: str, ze_url: str, ze_key: str) -> dict:
         return resp.json()
 
 
+class ConfirmStepError(RuntimeError):
+    """A ``confirm:`` step could not be answered."""
+
+
+_CONFIRM_CHOICES = ("approve", "deny")
+
+
+async def _confirm(
+    choice: str,
+    edits: dict[str, str] | None,
+    session_id: str,
+    ze_url: str,
+    ze_key: str,
+) -> dict:
+    body: dict = {"session_id": session_id, "choice": choice}
+    if edits:
+        body["edits"] = edits
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        resp = await client.post(
+            f"{ze_url.rstrip('/')}/eval/confirm",
+            json=body,
+            headers={"x-ze-api-key": ze_key},
+        )
+        if resp.status_code == 409:
+            raise ConfirmStepError(
+                f"confirm: {choice} found no open confirmation; "
+                "the step before it did not park a write"
+            )
+        resp.raise_for_status()
+        return resp.json()
+
+
+def turn_label(turn: dict) -> str:
+    """The text that stands for a turn when it is shown to the judge."""
+    if turn.get("confirm"):
+        return f"[confirm: {turn['confirm']}]"
+    return turn.get("prompt") or ""
+
+
+def _validate_turn(turn: dict) -> None:
+    has_prompt = "prompt" in turn
+    choice = turn.get("confirm")
+    if has_prompt == (choice is not None):
+        raise ValueError(f"a turn needs exactly one of prompt or confirm: {turn!r}")
+    if choice is not None and choice not in _CONFIRM_CHOICES:
+        raise ValueError(f"confirm must be approve or deny, got {choice!r}")
+    if has_prompt and "edits" in turn:
+        raise ValueError(f"edits only belong on a confirm step: {turn!r}")
+
+
 async def _run_turns(scenario: dict, session_id: str, ze_url: str, ze_key: str) -> dict:
     turns = scenario.get("turns")
     if turns:
+        for turn in turns:
+            _validate_turn(turn)
         turn_results = []
         for i, turn in enumerate(turns):
-            result = await _chat(turn["prompt"], session_id, ze_url, ze_key)
-            turn_results.append(
-                {"turn": i + 1, "prompt": turn["prompt"], "result": result}
-            )
+            if "confirm" in turn:
+                result = await _confirm(
+                    turn["confirm"], turn.get("edits"), session_id, ze_url, ze_key
+                )
+                entry = {"turn": i + 1, "confirm": turn["confirm"], "result": result}
+                if turn.get("edits"):
+                    entry["edits"] = turn["edits"]
+            else:
+                result = await _chat(turn["prompt"], session_id, ze_url, ze_key)
+                entry = {"turn": i + 1, "prompt": turn["prompt"], "result": result}
+            turn_results.append(entry)
         final_agent = (
             turn_results[-1]["result"].get("agent_used") if turn_results else None
         )
@@ -350,7 +409,7 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
             if use_judge and scenario.get("criteria"):
                 turns = ze_result.get("turns")
                 if turns:
-                    prompt_for_judge = " → ".join(t["prompt"] for t in turns)
+                    prompt_for_judge = " → ".join(turn_label(t) for t in turns)
                     response_for_judge = turns[-1]["result"].get("response", "")
                     tool_calls_for_judge = collect_tool_calls(turns)
                     pending_confirmation_for_judge = bool(

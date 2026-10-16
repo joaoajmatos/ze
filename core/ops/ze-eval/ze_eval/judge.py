@@ -47,7 +47,7 @@ Today's date: {today}. Your own knowledge may be older; do not mark a date or ve
 Tool calls:
 {tool_calls}
 Waiting for the user's confirmation: {pending_confirmation}
-Notes: a call marked "draft" is how a write that waits for the user's confirmation appears; it counts as invoking the tool. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. Web search runs on the server and never appears in the tool call list.
+Notes: a call marked "parked" waits for the user's approval; it counts as invoking the tool. A call marked "denied", "expired" or "refused_over_cap" did not run. A call marked "ok (approved)" ran after the user approved it. A call prefixed "[turn N]" was made during turn N of a multi-turn scenario. Web search runs on the server and never appears in the tool call list.
 
 ## Criteria
 {criteria}
@@ -62,15 +62,22 @@ Return JSON with exactly these fields:
 """
 
 
+_UNRUN_GATES = frozenset({"parked", "denied", "expired", "refused_over_cap"})
+_APPROVED_GATES = frozenset({"approved", "pre_approved"})
+
+
 def format_tool_calls(tool_calls: list[dict] | None) -> str:
     if not tool_calls:
         return "- none recorded"
     lines = []
     for call in tool_calls:
-        if call.get("is_draft"):
-            state = "draft"
+        gate = call.get("gate") or ("parked" if call.get("parked") else "none")
+        if gate in _UNRUN_GATES:
+            state = gate
         else:
             state = "ok" if call.get("success", True) else "failed"
+            if gate in _APPROVED_GATES and state == "ok":
+                state = f"ok ({gate})"
         turn = call.get("turn")
         turn_prefix = f"[turn {turn}] " if turn else ""
         lines.append(f"- {turn_prefix}{call.get('tool_name', '?')} ({state})")
