@@ -411,7 +411,7 @@ class GoalExecutor:
             notify=self._notify,
             source="goal",
             owner_ref=str(milestone.id),
-            source_name=f"Goal '{goal.title}'",
+            source_name=goal.title,
             confirmation=confirmation_from_loop(loop, round_),
             payload={
                 "goal_id": str(goal.id),

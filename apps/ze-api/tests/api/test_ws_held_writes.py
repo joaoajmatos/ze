@@ -28,7 +28,7 @@ def test_held_frame_follows_the_confirm_request_contract() -> None:
     frame = held_frame(hold)
     assert frame["type"] == "confirm_request"
     assert (frame["id"], frame["kind"], frame["round"]) == ("r1", "held", 1)
-    assert frame["source"] == {"kind": "workflow", "name": "Workflow 'Weekly summary'"}
+    assert frame["source"] == {"kind": "workflow", "name": "Weekly summary"}
     assert frame["items"][0]["tool"] == "delete_event"
     assert [a["value"] for a in frame["actions"]] == ["approve", "deny"]
 

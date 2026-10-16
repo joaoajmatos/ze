@@ -73,14 +73,23 @@ def memo_of(planner: Any) -> PlanMemo | None:
 
 
 def plan_system_prompt(template: str) -> str:
-    """Fill the `{agent_names}` slot of a planner prompt with the registered agents."""
-    names = ", ".join(sorted(get_registered_agents())) or _FALLBACK_AGENT_NAMES
-    return template.replace("{agent_names}", names)
+    """Fill the `{agent_names}` and `{agent_writes}` slots of a planner prompt.
+
+    `{agent_writes}` lists, per agent, the asks-first tools a step may name.
+    """
+    agents = sorted(get_registered_agents())
+    names = ", ".join(agents) or _FALLBACK_AGENT_NAMES
+    lines = [
+        f"  {agent}: {', '.join(tools)}"
+        for agent in agents
+        if (tools := _agent_asks_first_tools(agent))
+    ]
+    writes = "\n".join(lines) or "  (none)"
+    return template.replace("{agent_names}", names).replace("{agent_writes}", writes)
 
 
-def planned_writes(step: _Planned) -> list[str]:
-    """Asks-first tools of the step's agent; empty without an agent hint."""
-    hint = getattr(step, "agent_hint", None)
+def _agent_asks_first_tools(hint: str | None) -> list[str]:
+    """Asks-first tools of the named agent; empty without a hint or for an unknown agent."""
     if not hint:
         return []
     try:
@@ -94,6 +103,16 @@ def planned_writes(step: _Planned) -> list[str]:
         if spec is not None and spec.asks_first and name not in names:
             names.append(name)
     return names
+
+
+def planned_writes(step: _Planned) -> list[str]:
+    """The asks-first tools the step names, limited to ones its agent really has.
+
+    A step that names none (it only reads) plans no writes, whatever its agent can do.
+    """
+    allowed = _agent_asks_first_tools(getattr(step, "agent_hint", None))
+    named = getattr(step, "planned_writes", None) or []
+    return [name for name in allowed if name in named]
 
 
 def _effects(tools: Sequence[str]) -> str:

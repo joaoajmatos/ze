@@ -83,7 +83,7 @@ class WorkflowRunner:
             notify=self._notifier.notify,
             source="workflow",
             owner_ref=str(execution_id),
-            source_name=f"Workflow '{workflow.name}'",
+            source_name=workflow.name,
             confirmation=confirmation,
             payload={
                 "workflow_id": str(workflow.id),

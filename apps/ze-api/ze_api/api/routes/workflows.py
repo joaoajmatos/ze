@@ -146,6 +146,7 @@ def _steps_from_request(steps: list) -> list[WorkflowStep]:
             branches=[Branch(condition=b.condition, to=b.to) for b in s.branches],
             default_next=s.default_next,
             on_failure=s.on_failure,
+            planned_writes=list(s.planned_writes),
         )
         for s in steps
     ]

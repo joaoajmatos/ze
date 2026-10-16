@@ -192,6 +192,7 @@ async def test_get_workflow_returns_legacy_steps_with_backfilled_branch_fields()
             "branches": [],
             "default_next": None,
             "on_failure": "fail",
+            "planned_writes": [],
             "approved_writes": [],
         },
         {
@@ -201,6 +202,7 @@ async def test_get_workflow_returns_legacy_steps_with_backfilled_branch_fields()
             "branches": [],
             "default_next": None,
             "on_failure": "fail",
+            "planned_writes": [],
             "approved_writes": [],
         },
     ]

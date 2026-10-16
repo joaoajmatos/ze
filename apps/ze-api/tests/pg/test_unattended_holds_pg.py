@@ -42,6 +42,7 @@ def _workflow() -> Workflow:
                 task="send",
                 id="s1",
                 agent_hint="messenger",
+                planned_writes=["send_email"],
                 approved_writes=["send_email"],
             ),
         ],
@@ -61,6 +62,7 @@ async def test_workflow_step_approved_writes_round_trip(prod_pool):
     loaded = await store.get(wf_id)
 
     assert [s.approved_writes for s in loaded.steps] == [[], ["send_email"]]
+    assert [s.planned_writes for s in loaded.steps] == [[], ["send_email"]]
 
 
 async def test_execution_can_be_held_and_resumed_only_from_held(prod_pool):

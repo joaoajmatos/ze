@@ -595,6 +595,7 @@ class WorkflowStepResponse(BaseModel):
     branches: list[BranchResponse]
     default_next: str | None
     on_failure: str = "fail"
+    planned_writes: list[str] = []
     approved_writes: list[str] = []
 
 
@@ -606,6 +607,7 @@ class WorkflowStepInput(BaseModel):
     branches: list[BranchInput] = []
     default_next: str | None = None
     on_failure: str = "fail"
+    planned_writes: list[str] = []
 
 
 class UpdateWorkflowStepsRequest(BaseModel):

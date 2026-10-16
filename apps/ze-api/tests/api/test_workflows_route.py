@@ -284,7 +284,13 @@ async def _patch_steps(approve_writes: bool):
         "approve_writes": approve_writes,
         "steps": [
             {"id": "s0", "task": "Draft"},
-            {"id": "s1", "task": "Send it", "agent_hint": "route_mail"},
+            {
+                "id": "s1",
+                "task": "Send it",
+                "agent_hint": "route_mail",
+                "planned_writes": ["route_send_mail"],
+            },
+            {"id": "s2", "task": "Look at mail", "agent_hint": "route_mail"},
         ],
     }
     async with AsyncClient(
@@ -308,14 +314,14 @@ async def test_update_steps_clears_pre_approvals_and_lists_writes_needing_approv
     assert resp.json()["writes_needing_approval"] == [
         {"step_id": "s1", "agent": "route_mail", "tools": ["route_send_mail"]}
     ]
-    assert [s.approved_writes for s in saved] == [[], []]
+    assert [s.approved_writes for s in saved] == [[], [], []]
 
 
 @pytest.mark.asyncio
 async def test_update_steps_with_approve_writes_grants_the_changed_steps(mail_agent):
     resp, saved = await _patch_steps(approve_writes=True)
     assert resp.status_code == 200
-    assert [s.approved_writes for s in saved] == [[], ["route_send_mail"]]
+    assert [s.approved_writes for s in saved] == [[], ["route_send_mail"], []]
 
 
 @pytest.mark.asyncio

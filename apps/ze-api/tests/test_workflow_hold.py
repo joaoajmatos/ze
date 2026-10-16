@@ -317,6 +317,7 @@ async def test_an_unplanned_write_holds_the_run_and_pushes_once() -> None:
     assert hold.source == "workflow"
     assert hold.owner_ref == str(execution_id)
     assert hold.status is HeldWriteStatus.OPEN
+    assert hold.payload["source_name"] == "Weekly summary"
     assert hold.items[0]["tool"] == "hold_delete_event"
     assert hold.expires_at is not None
     delta = hold.expires_at - datetime.now(tz=timezone.utc)

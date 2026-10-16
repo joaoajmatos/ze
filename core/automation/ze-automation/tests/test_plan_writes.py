@@ -20,6 +20,7 @@ from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, tool
 from ze_automation.goals.types import Goal, Milestone
 from ze_automation.holds.planned import (
+    grant_planned_writes,
     plan_writes_check,
     planned_writes,
     writes_needing_approval,
@@ -93,7 +94,13 @@ def registry(monkeypatch):
     yield
 
 
+MAIL_WRITES = ["plan_send_email", "plan_archive_email"]
+
+
 def _step(id_: str, hint: str | None, task: str = "t", **kw) -> WorkflowStep:
+    """A step; a mail step names both mail writes unless `planned_writes` says otherwise."""
+    if hint == "plan_messenger":
+        kw.setdefault("planned_writes", list(MAIL_WRITES))
     return WorkflowStep(task=task, agent_hint=hint, id=id_, **kw)
 
 
@@ -103,6 +110,39 @@ def test_planned_writes_lists_the_asks_first_tools_of_the_hinted_agent() -> None
         "plan_archive_email",
     ]
     assert planned_writes(_step("s0", "plan_research")) == []
+
+
+def test_planned_writes_keeps_only_the_asks_first_tools_the_step_names() -> None:
+    step = _step(
+        "s0",
+        "plan_messenger",
+        planned_writes=["plan_send_email", "plan_list_mail", "no_such_tool"],
+    )
+    assert planned_writes(step) == ["plan_send_email"]
+
+
+def test_a_read_only_step_of_a_write_capable_agent_is_granted_nothing() -> None:
+    step = _step("s0", "plan_messenger", planned_writes=[])
+    assert planned_writes(step) == []
+    assert plan_writes_check([step]).kind == "run"
+    grant_planned_writes([step])
+    assert step.approved_writes == []
+
+
+def test_a_named_write_the_agent_does_not_have_is_not_granted() -> None:
+    step = _step("s0", "plan_research", planned_writes=["plan_send_email"])
+    assert planned_writes(step) == []
+
+
+def test_planner_prompt_lists_each_agents_asks_first_tools_for_the_writes_field() -> (
+    None
+):
+    from ze_automation.holds.planned import plan_system_prompt
+
+    text = plan_system_prompt("agents: {agent_names}\nwrites: {agent_writes}")
+    assert "plan_messenger" in text
+    assert "plan_messenger: plan_send_email, plan_archive_email" in text
+    assert "plan_research:" not in text
 
 
 def test_planned_writes_is_empty_without_a_hint_or_for_an_unknown_agent() -> None:
@@ -133,6 +173,7 @@ def test_plan_check_uses_the_given_label() -> None:
         description="",
         sequence=3,
         agent_hint="plan_messenger",
+        planned_writes=list(MAIL_WRITES),
     )
     decision = plan_writes_check([milestone], label="Milestone")
     assert decision.reason.startswith("Milestone 1 (plan_messenger) may:")
@@ -249,8 +290,11 @@ def _steps_json(*steps: dict) -> str:
     return json.dumps(list(steps))
 
 
-def _item(id_: str, hint: str, task: str = "t") -> dict:
-    return {"id": id_, "task": task, "agent_hint": hint}
+def _item(id_: str, hint: str, task: str = "t", **kw) -> dict:
+    item = {"id": id_, "task": task, "agent_hint": hint}
+    if hint == "plan_messenger":
+        item["planned_writes"] = list(MAIL_WRITES)
+    return {**item, **kw}
 
 
 async def test_edit_steps_check_always_asks_and_lists_planned_writes() -> None:
@@ -403,6 +447,7 @@ async def test_create_goal_check_asks_for_milestones_that_plan_writes() -> None:
             description="",
             sequence=2,
             agent_hint="plan_messenger",
+            planned_writes=list(MAIL_WRITES),
         ),
     ]
     decision = await goal_tools.create_goal_check(
@@ -421,6 +466,7 @@ async def test_approving_create_goal_stores_approved_writes_on_milestones() -> N
             description="",
             sequence=1,
             agent_hint="plan_messenger",
+            planned_writes=list(MAIL_WRITES),
         )
     ]
     planner = _goal_planner(milestones)

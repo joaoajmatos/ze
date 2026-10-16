@@ -27,6 +27,8 @@ You decompose a workflow description into an ordered list of steps.
 Each step must have:
   "task"       — natural language instruction for the agent
   "agent_hint" — the agent that should run the step: {agent_names} (or null)
+  "planned_writes" — the tools from the list below this step will call; [] when the
+                 step only reads or reasons. Name a tool only if the step needs it.
   "verify"     — natural language criterion to check the step output (or null)
 
 When the description contains an explicit either/or or conditional outcome, you MAY
@@ -46,7 +48,10 @@ For plain sequential workflows with no conditional language, omit id, branches, 
 default_next entirely — the system assigns ids and runs steps in list order.
 
 Output ONLY a JSON array — no explanation, no markdown:
-[{"task": "...", "agent_hint": "research", "verify": "..."}, ...]
+[{"task": "...", "agent_hint": "research", "planned_writes": [], "verify": "..."}, ...]
+
+Tools a step may name in planned_writes, by agent:
+{agent_writes}
 
 Omit agent_hint and verify if not applicable (use null).\
 """
@@ -104,8 +109,12 @@ def _parse_step(item: dict, index: int) -> WorkflowStep:
     on_failure = item.get("on_failure", "fail")
     if not isinstance(on_failure, str) or not on_failure:
         on_failure = "fail"
+    planned = item.get("planned_writes")
     return WorkflowStep(
         task=item["task"],
+        planned_writes=[w for w in planned if isinstance(w, str)]
+        if isinstance(planned, list)
+        else [],
         agent_hint=item.get("agent_hint"),
         verify=item.get("verify"),
         id=step_id,

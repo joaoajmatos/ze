@@ -54,6 +54,7 @@ async def get_workflow(store: WorkflowStore, workflow_id: UUID) -> dict | None:
                 ],
                 "default_next": s.default_next,
                 "on_failure": s.on_failure,
+                "planned_writes": list(s.planned_writes),
                 "approved_writes": list(s.approved_writes),
             }
             for s in wf.steps
@@ -86,6 +87,7 @@ def _step_to_response_dict(step: WorkflowStep) -> dict:
         "branches": [{"condition": b.condition, "to": b.to} for b in step.branches],
         "default_next": step.default_next,
         "on_failure": step.on_failure,
+        "planned_writes": list(step.planned_writes),
         "approved_writes": list(step.approved_writes),
     }
 
@@ -308,5 +310,7 @@ def held_write_to_dict(hold: HeldWrite) -> dict:
     }
 
 
-async def list_held_writes(store: HeldWriteStore, status: HeldWriteStatus) -> list[dict]:
+async def list_held_writes(
+    store: HeldWriteStore, status: HeldWriteStatus
+) -> list[dict]:
     return [held_write_to_dict(h) for h in await store.list(status)]

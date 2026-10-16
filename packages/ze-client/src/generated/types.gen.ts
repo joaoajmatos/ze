@@ -3928,6 +3928,10 @@ export type WorkflowStepInput = {
      * On Failure
      */
     on_failure?: string;
+    /**
+     * Planned Writes
+     */
+    planned_writes?: Array<string>;
 };
 
 /**
@@ -3962,6 +3966,10 @@ export type WorkflowStepResponse = {
      * On Failure
      */
     on_failure?: string;
+    /**
+     * Planned Writes
+     */
+    planned_writes?: Array<string>;
     /**
      * Approved Writes
      */

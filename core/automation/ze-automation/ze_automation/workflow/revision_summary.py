@@ -9,6 +9,7 @@ _COMPARED_FIELDS = (
     "branches",
     "default_next",
     "on_failure",
+    "planned_writes",
     "approved_writes",
 )
 

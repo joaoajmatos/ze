@@ -36,6 +36,8 @@ def _step_to_dict(step: WorkflowStep) -> dict:
     }
     if step.on_failure != "fail":
         data["on_failure"] = step.on_failure
+    if step.planned_writes:
+        data["planned_writes"] = list(step.planned_writes)
     if step.approved_writes:
         data["approved_writes"] = list(step.approved_writes)
     return data
@@ -70,6 +72,7 @@ def _step_from_dict(d: dict | str, index: int) -> WorkflowStep:
         ],
         default_next=d.get("default_next"),
         on_failure=d.get("on_failure", "fail"),
+        planned_writes=list(d.get("planned_writes") or []),
         approved_writes=list(d.get("approved_writes") or []),
     )
 

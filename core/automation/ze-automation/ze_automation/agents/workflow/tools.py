@@ -60,6 +60,7 @@ def _serialize_step(step: WorkflowStep) -> dict:
     return {
         "task": step.task,
         "agent_hint": step.agent_hint,
+        "planned_writes": list(step.planned_writes),
         "approved_writes": list(step.approved_writes),
         "id": step.id,
         "branches": [{"condition": b.condition, "to": b.to} for b in step.branches],
@@ -357,6 +358,9 @@ def _parse_steps(steps_json: str) -> list[WorkflowStep]:
             task=item["task"],
             agent_hint=item.get("agent_hint"),
             verify=item.get("verify"),
+            planned_writes=[
+                w for w in item.get("planned_writes") or [] if isinstance(w, str)
+            ],
             id=item["id"],
             branches=[
                 Branch(condition=b["condition"], to=b["to"])

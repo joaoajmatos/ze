@@ -58,7 +58,7 @@ def _hold(request_id: str = "r1", **kw) -> HeldWrite:
                 "proposed_text": "hi",
             },
         ],
-        payload={"source_name": "Workflow 'Weekly summary'"},
+        payload={"source_name": "Weekly summary"},
         expires_at=datetime.now(tz=timezone.utc) + timedelta(hours=24),
         created_at=datetime.now(tz=timezone.utc),
     )
@@ -96,7 +96,7 @@ async def test_list_returns_open_holds_by_default() -> None:
     assert resp.status_code == 200
     items = resp.json()["items"]
     assert [i["request_id"] for i in items] == ["open"]
-    assert items[0]["source_name"] == "Workflow 'Weekly summary'"
+    assert items[0]["source_name"] == "Weekly summary"
     assert items[0]["items"][0]["effect_phrase"] == "delete a calendar event"
 
 

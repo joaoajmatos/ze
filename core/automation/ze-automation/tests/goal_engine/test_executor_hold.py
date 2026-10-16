@@ -173,6 +173,7 @@ async def test_a_milestone_that_parks_is_held_with_its_loop_and_one_push() -> No
     assert hold.source == "goal"
     assert hold.owner_ref == str(rig.milestone.id)
     assert hold.items[0]["tool"] == "goal_send_email"
+    assert hold.payload["source_name"] == "Outreach"
     assert hold.payload["loop"]["agent"] == "goalagent"
     assert hold.payload["loop"]["parked"][0]["tool"] == "goal_send_email"
     rig.store.save_traces.assert_not_awaited()

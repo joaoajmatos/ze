@@ -88,6 +88,8 @@ class Milestone:
     sequence: int
     agent_hint: str | None = None
     approved_writes: list[str] = field(default_factory=list)
+    # Plan-time only (not stored): the asks-first tools this milestone says it will call.
+    planned_writes: list[str] = field(default_factory=list)
     status: MilestoneStatus = MilestoneStatus.PENDING
     output: str = ""
     reuse_hint: str = ""

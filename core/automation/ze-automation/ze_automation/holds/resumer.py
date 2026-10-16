@@ -136,7 +136,7 @@ async def open_hold(
     try:
         await notify(
             WRITE_APPROVAL_HELD,
-            f"{source_name} needs your OK",
+            f"{source.capitalize()} '{source_name}' needs your OK",
             body[:200],
             target_type=HELD_TARGET_TYPE,
             target_id=hold.request_id,
