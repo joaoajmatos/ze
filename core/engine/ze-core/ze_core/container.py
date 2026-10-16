@@ -40,7 +40,6 @@ class Container:
     tier_judge: Any = (
         None  # TierJudge | None; absent means every agent runs its full model
     )
-    preprocessor: Any = None  # InputPreprocessor | None
     plugins: list = field(default_factory=list)  # list[ZePlugin]
     _abort_tokens: dict = field(default_factory=dict)  # thread_id → AbortToken
     _fact_extractor: Any = None  # ze_memory.extractor.gather_fact_proposals or None
@@ -167,29 +166,6 @@ class Container:
         if token is not None:
             token.abort(reason)
 
-    async def invoke_raw(
-        self,
-        raw: RawInput,
-        thread_id: str,
-        *,
-        messages: list[dict] | None = None,
-    ) -> "InvokeResult":
-        """Run a conversation turn from raw transport input.
-
-        Audio and image bytes are passed directly into AgentState; the graph's
-        ``preprocess`` node handles transcription and vision captioning via
-        OpenRouterClient so no LLM calls are made here.
-        """
-        return await self.invoke(
-            prompt=raw.text or "",
-            thread_id=thread_id,
-            audio_data=raw.audio,
-            audio_mime=raw.audio_mime,
-            image_data=raw.image,
-            image_mime=raw.image_mime,
-            messages=messages,
-        )
-
     async def resume(
         self,
         thread_id: str,
@@ -273,14 +249,6 @@ class Container:
             pool = await asyncpg.create_pool(settings.database_url)
             checkpointer_pool = await asyncpg.create_pool(settings.database_url)
 
-            # 2a. Optionally apply pending migrations (ZC_AUTO_MIGRATE=true)
-            if settings.auto_migrate:
-                from ze_core.migrate import upgrade
-
-                log.info("container_auto_migrate_start")
-                upgrade(settings.database_url_sync)
-                log.info("container_auto_migrate_done")
-
         # 3. Load embedder (sentence_transformers)
         from ze_core.embeddings import get_embedder
 
@@ -317,7 +285,7 @@ class Container:
         # 7. Instantiate enabled agents
         from ze_agents.registry import get_enabled_agents
 
-        from ze_core.db import DBPool
+        from ze_agents.db import DBPool
 
         internal_deps: dict[type, Any] = {
             Settings: settings,

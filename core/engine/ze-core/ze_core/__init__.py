@@ -12,7 +12,6 @@ from ze_communication.types import (
     ThreadMessage,
 )
 from ze_core.container import Container
-from ze_core.db import DBPool
 from ze_agents.errors import (
     ChannelError,
     ChannelNotFoundError,
@@ -59,7 +58,6 @@ __all__ = [
     "OpenRouterError",
     "RateLimitError",
     "Container",
-    "DBPool",
     "Message",
     "SentMessage",
     "Thread",
