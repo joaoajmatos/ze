@@ -44,7 +44,7 @@ _RESOLVES_INSTRUCTIONS = (
     "Does the user report that something they needed to do is now done, in the past tense? "
     "A request to save, read, import or remember something is not a report that something is "
     "done, whatever it mentions. Waiting for someone else to reply or act is not done either: "
-    "'I sent my CV and I am waiting for her reply' reports a thing sent, not a thing finished."
+    "'I applied for the permit and I am waiting for the office to answer' reports a thing sent, not a thing finished."
 )
 
 _CONCERN_INSTRUCTIONS = (
@@ -70,7 +70,7 @@ _COMMITMENT_CRITERIA: dict[str, str] = {
         "A one-off task with a deadline is a loop, even if it takes weeks, unless the user "
         "frames it as an outcome to pursue. Asking Ze to keep an eye on something, or not to "
         "let them lose track of it, is a loop when the message names what to watch: "
-        "'keep an eye on the landlord deposit', 'não me deixes perder o prazo do visto'. "
+        "'keep an eye on the gas bill dispute', 'não me deixes esquecer o prazo do seguro'. "
         "Examples: 'I need to figure out whether to switch jobs', "
         "'I haven't decided on the job offer yet', 'I have to send the tax form by Friday', "
         "'I need to file the visa paperwork before March', "
