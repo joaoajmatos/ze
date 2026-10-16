@@ -451,7 +451,7 @@ and runs them against a single `alembic_version` table.
 
 | Package | Branch prefix | Tables |
 |---|---|---|
-| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`); capability_overrides dropped (`zc034`) |
+| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`); capability_overrides dropped (`zc034`); routing_log.complexity and routing_log.model_selected dropped (`zc035`, phase 182) |
 | ze-automation | `zc` (continues ze-core chain) | held_writes (`zc033`), goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
 | ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
 | ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
