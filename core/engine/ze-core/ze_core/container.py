@@ -13,7 +13,7 @@ from ze_agents.interface.types import RawInput
 from ze_logging import get_logger
 from ze_agents.types import AbortToken
 from ze_core.conversation import make_graph_input
-from ze_core.routing.factory import build_embedding_router
+from ze_core.routing.factory import build_embedding_router, build_tier_judge
 
 if TYPE_CHECKING:
     from ze_core.routing.router import EmbeddingRouter
@@ -35,6 +35,9 @@ class Container:
     memory_consolidator: Any
     graph: Any
     interface: Any = None
+    tier_judge: Any = (
+        None  # TierJudge | None; absent means every agent runs its full model
+    )
     preprocessor: Any = None  # InputPreprocessor | None
     plugins: list = field(default_factory=list)  # list[ZePlugin]
     _abort_tokens: dict = field(default_factory=dict)  # thread_id → AbortToken
@@ -52,6 +55,7 @@ class Container:
             "configurable": {
                 "thread_id": thread_id,
                 "router": self.router,
+                "tier_judge": self.tier_judge,
                 "openrouter_client": self.openrouter_client,
                 "capability_gate": self.capability_gate,
                 "memory_store": self.memory_store,
@@ -361,6 +365,9 @@ class Container:
             pool=pool,
             system_one_client=system_one_client,
         )
+        tier_judge = _build_tier_judge(
+            settings=settings, system_one_client=system_one_client
+        )
 
         # 10. Build CapabilityGate
         from ze_core.capability.gate import CapabilityGate
@@ -429,6 +436,7 @@ class Container:
             embedder=embedder,
             openrouter_client=openrouter_client,
             router=router,
+            tier_judge=tier_judge,
             capability_gate=capability_gate,
             memory_store=memory_store,
             memory_consolidator=memory_consolidator,
@@ -461,6 +469,10 @@ def _build_router(
         system_one_client=system_one_client,
         routing_store=PostgresRoutingStore(pool) if pool is not None else None,
     )
+
+
+def _build_tier_judge(*, settings: Any, system_one_client: Any):
+    return build_tier_judge(config=settings.config, system_one_client=system_one_client)
 
 
 def _discover_agents(app_root: Path, package: str) -> None:

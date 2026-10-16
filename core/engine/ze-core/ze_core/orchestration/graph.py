@@ -75,6 +75,7 @@ def graph_builder(
     builder.add_node("decompose", ov.get("decompose", nodes.decompose))
     builder.add_node("fetch_context", ov.get("fetch_context", nodes.fetch_context))
     builder.add_node("match_skills", ov.get("match_skills", nodes.match_skills))
+    builder.add_node("choose_tier", ov.get("choose_tier", nodes.choose_tier))
     builder.add_node(
         "capability_check", ov.get("capability_check", nodes.capability_check)
     )
@@ -104,7 +105,8 @@ def graph_builder(
     # embed_route and decompose routing conditionals are NOT wired here — see docstring.
 
     builder.add_edge("fetch_context", "match_skills")
-    builder.add_edge("match_skills", "capability_check")
+    builder.add_edge("match_skills", "choose_tier")
+    builder.add_edge("choose_tier", "capability_check")
     builder.add_conditional_edges(
         "capability_check",
         after_capability_check,

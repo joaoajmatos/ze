@@ -63,6 +63,7 @@ from ze_core.bootstrap import (
     register_harness_hooks,
 )
 from ze_core.container import Container as CoreContainer
+from ze_core.routing.factory import build_tier_judge
 from ze_core.telemetry.budget import SpendBudgetChecker, SpendBudgetConfig
 from ze_core.conversation import (
     TurnResult,
@@ -285,6 +286,7 @@ class ZeContainer(CoreContainer):
     procedure_admission: Any = None
     procedure_discovery: Any = None
     procedure_activator: Any = None
+    tier_judge: Any = None
 
     def _build_config(self, thread_id: str, **configurable_extra: object) -> dict:
         plugin_services: dict = {}
@@ -296,6 +298,7 @@ class ZeContainer(CoreContainer):
         configurable: dict = {
             "thread_id": str(thread_id),
             "router": self.router,
+            "tier_judge": self.tier_judge,
             "capability_gate": self.capability_gate,
             "memory_store": self.memory_store,
             "fact_extractor": gather_fact_proposals,
@@ -745,6 +748,9 @@ async def build_container(settings: Settings) -> ZeContainer:
     await register_bundled_skills(skills_stack.skill_store, plugins)
 
     router = build_router(shared, settings)
+    tier_judge = build_tier_judge(
+        config=settings.config, system_one_client=shared.system_one_client
+    )
     component_hook = register_harness_hooks(settings, memory_store=shared.memory_store)
     graph = build_graph(checkpointer=checkpointer, plugins=plugins)
 
@@ -792,6 +798,7 @@ async def build_container(settings: Settings) -> ZeContainer:
         embedder=shared.embedder,
         openrouter_client=shared.openrouter_client,
         router=router,
+        tier_judge=tier_judge,
         capability_gate=shared.capability_gate,
         budget_checker=budget_checker,
         memory_store=shared.memory_store,
