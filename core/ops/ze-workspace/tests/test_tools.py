@@ -8,8 +8,7 @@ from uuid import uuid4
 
 import pytest
 
-from ze_agents.errors import ToolConfirmationRequired
-from ze_agents.interrupt import workspace_confirmed, workspace_run_origin
+from ze_agents.interrupt import workspace_run_origin
 from ze_workspace.errors import WorkspaceUnavailableError
 from ze_workspace.gate import WorkspaceGate
 from ze_workspace.tools import (
@@ -20,7 +19,6 @@ from ze_workspace.tools import (
     workspace_read,
     workspace_run,
     workspace_run_skill_script,
-    workspace_write,
 )
 from ze_workspace.types import (
     WorkspaceFile,
@@ -102,20 +100,6 @@ async def test_list_returns_files():
     client.list_dir.assert_awaited_once()
 
 
-async def test_conversation_write_raises_confirmation():
-    _wire()
-    with pytest.raises(ToolConfirmationRequired) as exc:
-        await workspace_write("notes.txt", "secret")
-    assert exc.value.proposed == "secret"
-    assert exc.value.editable is True
-
-
-async def test_conversation_run_raises_confirmation():
-    _wire()
-    with pytest.raises(ToolConfirmationRequired):
-        await workspace_run("rm -rf /")
-
-
 async def test_unattended_run_executes_and_persists():
     client, store = _wire()
     token = workspace_run_origin.set("unattended")
@@ -138,22 +122,14 @@ async def test_truncated_output_mentions_spill_path():
             output_file_path=".ze-output/run-1.txt",
         )
     )
-    token = workspace_confirmed.set(True)
-    try:
-        result = await workspace_run("yes")
-    finally:
-        workspace_confirmed.reset(token)
+    result = await workspace_run("yes")
     assert ".ze-output/run-1.txt" in result
 
 
 async def test_read_and_delete():
     client, _ = _wire()
     assert await workspace_read("a.txt") == "hello"
-    token = workspace_confirmed.set(True)
-    try:
-        assert "Deleted" in await workspace_delete("a.txt")
-    finally:
-        workspace_confirmed.reset(token)
+    assert "Deleted" in await workspace_delete("a.txt")
     client.download.assert_awaited_once()
     client.delete.assert_awaited_once()
 
@@ -163,11 +139,7 @@ async def test_ingest_uses_injected_pipeline_and_does_not_delete():
         ingest=AsyncMock(return_value=SimpleNamespace(facts_count=2))
     )
     client, _ = _wire(ingestion=pipeline)
-    token = workspace_confirmed.set(True)
-    try:
-        result = await ingest_workspace_file("notes.txt")
-    finally:
-        workspace_confirmed.reset(token)
+    result = await ingest_workspace_file("notes.txt")
     assert "Ingested" in result
     assert "not deleted" in result.lower()
     pipeline.ingest.assert_awaited_once()
@@ -226,43 +198,12 @@ async def test_run_skill_script_auto_materializes_from_db_bytes():
         skill_store=store,
         settings=SimpleNamespace(workspace_timeout_seconds=120),
     )
-    token = workspace_confirmed.set(True)
-    try:
-        result = await workspace_run_skill_script(str(skill_uuid), "scripts/h.py")
-    finally:
-        workspace_confirmed.reset(token)
+    result = await workspace_run_skill_script(str(skill_uuid), "scripts/h.py")
     client.put.assert_awaited()
     put_args = client.put.await_args
     assert put_args.args[1] == b"print(1)"
     client.start_run.assert_awaited_once()
     assert "ok" in result
-
-
-async def test_run_skill_script_raises_confirmation():
-    skill_id = "11111111-1111-1111-1111-111111111111"
-    store = AsyncMock()
-    store.get = AsyncMock(
-        return_value=SimpleNamespace(
-            id=skill_id,
-            name="S",
-            status=SimpleNamespace(value="active"),
-            has_scripts=True,
-            executable_approved=True,
-        )
-    )
-    store.get_script = AsyncMock(
-        return_value=SimpleNamespace(filename="scripts/h.py", content=b"print(1)")
-    )
-    client, ws_store = _wire()
-    configure(
-        client=client,
-        gate=WorkspaceGate(),
-        store=ws_store,
-        skill_store=store,
-    )
-    with pytest.raises(ToolConfirmationRequired):
-        await workspace_run_skill_script(skill_id, "scripts/h.py")
-    client.start_run.assert_not_awaited()
 
 
 async def test_unavailable_sidecar_raises():
@@ -272,16 +213,7 @@ async def test_unavailable_sidecar_raises():
         await workspace_list("")
 
 
-async def test_conversation_run_does_not_detach_before_confirm():
-    run_watcher = AsyncMock()
-    client, store = _wire()
-    configure(client=client, gate=WorkspaceGate(), store=store, run_watcher=run_watcher)
-    with pytest.raises(ToolConfirmationRequired):
-        await workspace_run("echo hi")
-    run_watcher.detach.assert_not_awaited()
-
-
-async def test_ask_run_detaches_only_after_confirmation_resume():
+async def test_ask_run_detaches_when_it_outlasts_the_short_wait():
     import time
 
     run_watcher = AsyncMock()
@@ -306,15 +238,7 @@ async def test_ask_run_detaches_only_after_confirmation_resume():
         ),
         run_watcher=run_watcher,
     )
-    with pytest.raises(ToolConfirmationRequired):
-        await workspace_run("echo hi")
-    run_watcher.detach.assert_not_awaited()
-
-    token = workspace_confirmed.set(True)
-    try:
-        result = await workspace_run("echo hi")
-    finally:
-        workspace_confirmed.reset(token)
+    result = await workspace_run("echo hi")
     assert "still running" in result
     run_watcher.detach.assert_awaited_once()
 
@@ -341,18 +265,11 @@ async def test_workspace_run_refuses_while_another_run_in_progress(origin):
     running = _in_progress_run()
     client, store = _wire()
     store.list_in_progress = AsyncMock(return_value=[running])
-    confirm = (
-        workspace_confirmed.set(True)
-        if origin is WorkspaceRunOrigin.CONVERSATION
-        else None
-    )
     token = workspace_run_origin.set(origin.value)
     try:
         result = await workspace_run("echo hi")
     finally:
         workspace_run_origin.reset(token)
-        if confirm is not None:
-            workspace_confirmed.reset(confirm)
     if origin is WorkspaceRunOrigin.USER:
         assert "not allowed" in result.lower()
         client.start_run.assert_not_awaited()
@@ -383,11 +300,7 @@ async def test_workspace_run_skill_script_refuses_while_another_run_in_progress(
     store.list_in_progress = AsyncMock(return_value=[running])
     configure(client=client, gate=WorkspaceGate(), store=store, skill_store=skill_store)
 
-    token = workspace_confirmed.set(True)
-    try:
-        result = await workspace_run_skill_script(skill_id, "scripts/h.py")
-    finally:
-        workspace_confirmed.reset(token)
+    result = await workspace_run_skill_script(skill_id, "scripts/h.py")
 
     assert str(running.id) in result
     client.put.assert_not_awaited()

@@ -79,6 +79,8 @@ def _resolve_anchor(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="changed what Ze treats as most urgent",
+    asks_first=False,
+    no_ask_reason="A decaying override; the user can reorder again.",
 )
 async def reprioritize_item(
     priority_view: PriorityView,

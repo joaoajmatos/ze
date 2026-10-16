@@ -31,9 +31,21 @@ def after_capability_check(state: AgentState) -> str:
             return "end_blocked"
 
 
+def after_preflight(state: AgentState) -> str:
+    if state.get("blocked"):
+        return "end_blocked"
+    if state.get("budget_status") and not state.get("budget_approved"):
+        return "await_budget_confirmation"
+    return "execute_tool"
+
+
+def after_await_budget_confirmation(state: AgentState) -> str:
+    return "record_trace" if state.get("final_response") else "execute_tool"
+
+
 def after_execute_tool(state: AgentState) -> str:
-    if state.get("pending_subtask_awaits"):
-        return "await_subtask_confirmation"
+    if state.get("write_confirmation") is not None and state.get("parked_subtasks"):
+        return "await_write_confirmation"
     return "correlate"
 
 

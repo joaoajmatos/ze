@@ -30,6 +30,7 @@ def make_ctx(prompt: str = "remind me in 1 hour") -> AgentContext:
         session_id="test",
         prompt=prompt,
         intent="manage",
+        pre_approved_writes=frozenset(["cancel_reminder"]),
         gate_decision=GateDecision.EXECUTE,
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],

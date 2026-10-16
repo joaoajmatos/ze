@@ -116,7 +116,24 @@ def _trace_to_response(trace) -> MessageTraceResponse:
         ),
         resume_recap_applied=bool(getattr(trace, "resume_recap_applied", False)),
         loop_offer_ids=list(getattr(trace, "loop_offer_ids", None) or []),
+        write_confirmations=[
+            _write_confirmation_row(row)
+            for row in getattr(trace, "write_confirmations", None) or []
+        ],
     )
+
+
+def _write_confirmation_row(row: dict) -> dict:
+    return {
+        "request_id": str(row.get("request_id", "")),
+        "round": int(row.get("round", 1)),
+        "item_id": str(row.get("item_id", "")),
+        "agent": str(row.get("agent", "")),
+        "tool": row.get("tool"),
+        "effect": row.get("effect"),
+        "summary": str(row.get("summary", "")),
+        "outcome": row.get("outcome", "denied"),
+    }
 
 
 def _judgments_to_response(judgments) -> list[dict]:

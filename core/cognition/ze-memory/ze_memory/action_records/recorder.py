@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from ze_agents.park import current_approval
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
 from ze_logging import get_logger
 from ze_plugin.contribution import Contribution, SourceFunction, TargetFace
@@ -78,6 +79,9 @@ class ActionRecorder:
                     if lifecycle_value in NON_TERMINAL_LIFECYCLES:
                         causal.append(CausalRef(kind="action_record", id=rec.id))
                         break
+        approval = current_approval.get()
+        if approval and approval.get("request_id"):
+            causal.append(CausalRef(kind="approval", id=str(approval["request_id"])))
         draft = ActionRecordDraft(
             idempotency_key=idempotency_key(
                 producer_kind=producer_kind,

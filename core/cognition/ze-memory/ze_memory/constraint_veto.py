@@ -8,10 +8,8 @@ from typing import Any, Callable
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from ze_agents.errors import HookAbort
 from ze_agents.hooks import BaseHarnessHook, ToolStartEvent
-from ze_agents.interrupt import tool_interrupt_fn
-from ze_agents.tool import get_tool
+from ze_agents.tool import AskDecision, get_tool
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -358,7 +356,10 @@ async def load_reviewed_constraints(store: Any) -> list[ReviewedConstraint]:
 
 
 class ConstraintVetoHook(BaseHarnessHook):
-    """Refuse or confirm constraint-gated writes before the tool body runs."""
+    """Refuse or ask about constraint-gated writes before the tool body runs.
+
+    The decision is made at park time (`check_call`); this hook never interrupts.
+    """
 
     def __init__(
         self,
@@ -372,13 +373,13 @@ class ConstraintVetoHook(BaseHarnessHook):
         self._constraints = constraints
         self._now = now
 
-    async def on_tool_start(self, event: ToolStartEvent) -> dict[str, Any] | None:
+    async def check_call(self, event: ToolStartEvent) -> AskDecision:
         try:
             spec = get_tool(event.tool_name)
         except Exception:
-            return None
+            return AskDecision.run()
         if not spec.constraint_gate:
-            return None
+            return AskDecision.run()
 
         view = view_from_describe(event.tool_name, event.args, spec.constraint_describe)
         facts = await self._facts_for(event)
@@ -389,13 +390,10 @@ class ConstraintVetoHook(BaseHarnessHook):
             now=self._now,
         )
         if decision is VetoDecision.ALLOW:
-            return None
-
-        payload = veto_payload(ids, error)
+            return AskDecision.run()
         if decision is VetoDecision.CONFIRM:
-            if await self._user_approved(event, error):
-                return None
-        raise HookAbort(event.tool_name, error, result=payload)
+            return AskDecision.ask(error)
+        return AskDecision.refuse(error, veto_payload(ids, error))
 
     async def _facts_for(self, event: ToolStartEvent) -> list[ReviewedConstraint]:
         if self._constraints is not None:
@@ -406,24 +404,3 @@ class ConstraintVetoHook(BaseHarnessHook):
         facts = await load_reviewed_constraints(self._store)
         setattr(event.ctx, _CTX_CACHE_ATTR, facts)
         return facts
-
-    async def _user_approved(self, event: ToolStartEvent, prompt: str) -> bool:
-        interrupt_fn = tool_interrupt_fn.get()
-        if interrupt_fn is None:
-            return False
-        decision = interrupt_fn(
-            {
-                "kind": "constraint",
-                "prompt": prompt,
-                "editable": False,
-                "proposed": "",
-                "tool": event.tool_name,
-                "args": event.args,
-            }
-        )
-        choice = "approve"
-        if isinstance(decision, dict):
-            choice = str(decision.get("choice") or "approve")
-        elif isinstance(decision, str):
-            choice = decision
-        return choice == "approve"

@@ -88,6 +88,8 @@ class TestCallTool:
             access=ToolAccess.WRITE,
             description="Write something",
             reversibility=ToolReversibility.IRREVERSIBLE,
+            asks_first=False,
+            no_ask_reason="test tool, not under confirmation",
         )
         async def my_write(x: str) -> str:
             return f"wrote:{x}"
@@ -233,6 +235,8 @@ class TestCallToolHooks:
             access=ToolAccess.WRITE,
             description="t",
             reversibility=ToolReversibility.IRREVERSIBLE,
+            asks_first=False,
+            no_ask_reason="test tool, not under confirmation",
         )
         async def gated_write(x: str) -> str:
             return x

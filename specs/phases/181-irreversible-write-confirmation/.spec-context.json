@@ -2,8 +2,8 @@
   "workflow": "speckit",
   "specName": "Irreversible Write Confirmation",
   "branch": "181-irreversible-write-confirmation",
-  "currentStep": "tasks",
-  "status": "ready-to-implement",
+  "currentStep": "implement",
+  "status": "implementing",
   "history": [
     {
       "step": "specify",
@@ -25,6 +25,406 @@
       "kind": "complete",
       "by": "extension",
       "at": "2026-10-15T21:59:17.001Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T22:41:50.409Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:51.093Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:51.690Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:52.286Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:52.860Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:53.406Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:54.006Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:43:44.681Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:43:45.186Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:43.422Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:44.069Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:44.776Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:45.478Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:50:42.804Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:50:43.442Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:52:49.424Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:00.188Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:00.705Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:01.239Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:01.732Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:02.291Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:46:30.918Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:46:31.857Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:46:32.503Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:47:12.758Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:47:13.306Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:48:29.541Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:48:30.103Z"
     }
-  ]
+  ],
+  "currentTask": "T037",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "171-follow-ups not on main; no goal-local confirmation present"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "baseline green: agents 126, core 1054, memory 530, automation 410, workspace 76, api 391, lint clean"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "asks_first declaration tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_tool_asks_first.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "ToolSpec asks_first/no_ask_reason/ask_check/editable_field/summarize, AskDecision, sdk export",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/tool.py",
+        "packages/ze-sdk/ze_sdk/types.py",
+        "packages/ze-sdk/ze_sdk/__init__.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "park.py types, LoopParked, serde allowlist",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/park.py",
+        "core/contracts/ze-agents/ze_agents/errors.py",
+        "core/engine/ze-core/ze_core/checkpoint_serde.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "AgentContext/ToolCall additions",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/types.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "call_tool resolution-order tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_call_tool_park.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "call_tool park/approved/pre_approved/refuse/cap resolution",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "agentic_loop park tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_agentic_loop_park.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "agentic_loop raises LoopParked; loop_active; delegate deferral",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "delegate park tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_delegate_park.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "run_delegate returns child_loop on specialist park",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "agentic_loop resume tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_agentic_loop_resume.py"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "resume half of D2, run_delegate(resume=), approval cited on ActionRecorder via current_approval",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py",
+        "core/contracts/ze-agents/ze_agents/delegate.py",
+        "core/cognition/ze-memory/ze_memory/action_records/recorder.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "effects.py: effect_imperative, ensure_declined_lines (done by ENG-core lead)",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/effects.py",
+        "core/contracts/ze-agents/tests/test_effects.py",
+        "apps/ze-api/tests/test_effect_phrases.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "audit declarations applied (script)"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "audit test",
+      "files": [
+        "apps/ze-api/tests/test_tool_asks_first_audit.py"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "e2e via ze-core harness",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_write_confirmation_e2e.py"
+      ]
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "veto tests",
+      "files": [
+        "core/cognition/ze-memory/tests/test_constraint_veto.py"
+      ]
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "HarnessHook.check_call, veto refactor",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/constraint_veto.py",
+        "core/contracts/ze-agents/ze_agents/hooks.py"
+      ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "workspace ask check tests",
+      "files": [
+        "core/ops/ze-workspace/tests/test_workspace_ask_check.py"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "workspace tools use ask_check, _confirm removed",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/tools.py"
+      ]
+    }
+  }
 }

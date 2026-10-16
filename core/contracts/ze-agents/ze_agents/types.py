@@ -7,6 +7,7 @@ from typing import Any, Callable, Protocol, runtime_checkable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
+from ze_agents.park import ParkedLoop, ParkedWrite, WriteDecision
 
 
 # ── Capability types ──────────────────────────────────────────────────────────
@@ -104,7 +105,12 @@ class ToolCall:
     success: bool
     error: str | None = None
     is_draft: bool = False
-    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
+    # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused_over_cap" | "expired"
+    gate: str = "none"
+    parked: ParkedWrite | None = None
+    child_loop: ParkedLoop | None = None
+    # {request_id, outcome} for approved/edited calls; {outcome: "pre_approved"} for unattended
+    approval: dict[str, Any] | None = None
 
 
 @dataclass
@@ -175,6 +181,15 @@ class AgentContext:
     conductor_delegate_total: int = 0
     # Phase 165: a retry run regenerates text only; WRITE tools are refused.
     retry_mode: bool = False
+    # Phase 181 write confirmation. `resume` is the saved loop to re-enter after the
+    # user answered; the rest are runtime/turn-local. Never checkpoint a context.
+    resume: ParkedLoop | None = None
+    write_decisions: dict[str, WriteDecision] = field(default_factory=dict)
+    approved_call_ids: set[str] = field(default_factory=set)
+    pre_approved_writes: frozenset[str] = frozenset()
+    write_round: int = 0
+    approval_request_id: str | None = None
+    loop_active: bool = False
     # extensions must hold only msgpack-serializable primitives so stored contexts
     # can be checkpointed. Use identity_builder for callable injection instead.
     extensions: dict[str, str | int | float | bool | None] = field(default_factory=dict)

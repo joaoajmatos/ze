@@ -7,7 +7,6 @@ import pytest
 
 from ze_agents.base_agent import BaseAgent
 from ze_agents.hooks import clear_hooks, register_hook
-from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, get_tool, tool
@@ -105,6 +104,8 @@ async def test_unmarked_dummy_tool_completes():
         access=ToolAccess.WRITE,
         description="ungated twin",
         reversibility=ToolReversibility.IRREVERSIBLE,
+        asks_first=False,
+        no_ask_reason="test tool",
     )
     async def ping_pager_free(to: str) -> str:
         ran.append(to)
@@ -131,6 +132,8 @@ async def test_unmarked_remember_fact_is_not_intercepted():
         access=ToolAccess.WRITE,
         description="remember",
         reversibility=ToolReversibility.IRREVERSIBLE,
+        asks_first=False,
+        no_ask_reason="test tool",
     )
     async def remember_fact(value: str) -> dict:
         ran.append(value)
@@ -215,9 +218,7 @@ def test_unreviewed_shape_is_not_in_hook_input():
     assert decision is VetoDecision.ALLOW
 
 
-async def test_ambiguous_confirm_executes_after_approve():
-    ran = []
-
+def _note_contact_tool(ran: list) -> None:
     @tool(
         access=ToolAccess.WRITE,
         description="gated",
@@ -230,55 +231,58 @@ async def test_ambiguous_confirm_executes_after_approve():
             summary="note",
         ),
         reversibility=ToolReversibility.IRREVERSIBLE,
+        asks_first=False,
+        no_ask_reason="test tool",
     )
     async def note_contact(to: str) -> str:
         ran.append(to)
         return "ok"
 
-    register_hook(
-        ConstraintVetoHook(
-            constraints=[_fact("be careful with messages")],
-            user_timezone="UTC",
-        )
+
+def _veto_hook() -> ConstraintVetoHook:
+    return ConstraintVetoHook(
+        constraints=[_fact("be careful with messages")], user_timezone="UTC"
     )
-    token = tool_interrupt_fn.set(lambda payload: {"choice": "approve"})
-    try:
-        tc = await _agent().call_tool("note_contact", _ctx(), to="Ada")
-    finally:
-        tool_interrupt_fn.reset(token)
-    assert ran == ["Ada"]
-    assert tc.success is True
 
 
-async def test_ambiguous_confirm_without_interrupt_refuses():
-    ran = []
-
-    @tool(
-        access=ToolAccess.WRITE,
-        description="gated",
-        constraint_gate=True,
-        constraint_describe=lambda args: ConstraintWriteView(
-            tool_name="note_contact",
-            kind="outbound_message",
-            channel="email",
-            parties=["Ada"],
-            summary="note",
-        ),
-        reversibility=ToolReversibility.IRREVERSIBLE,
+async def test_confirm_level_conflict_parks_with_the_conflict_text():
+    ran: list = []
+    _note_contact_tool(ran)
+    register_hook(_veto_hook())
+    ctx = AgentContext(session_id="s1", prompt="go", intent="x", loop_active=True)
+    tc = await _agent().call_tool(
+        "note_contact", ctx, _lm_args={"to": "Ada"}, _call_id="c1", to="Ada"
     )
-    async def note_contact(to: str) -> str:
-        ran.append(to)
-        return "ok"
-
-    register_hook(
-        ConstraintVetoHook(
-            constraints=[_fact("be careful with messages")],
-            user_timezone="UTC",
-        )
-    )
-    tc = await _agent().call_tool("note_contact", _ctx(), to="Ada")
     assert ran == []
-    assert tc.result["veto"] is True
+    assert tc.gate == "parked"
+    assert tc.parked.reason == "constraint"
+    assert "careful" in tc.parked.conflict.lower() or tc.parked.conflict
+
+
+async def test_approved_resume_does_not_recheck_the_constraint():
+    ran: list = []
+    _note_contact_tool(ran)
+    register_hook(_veto_hook())
+    tc = await _agent().call_tool(
+        "note_contact", _ctx(), _approved_call_id="c1", to="Ada"
+    )
+    assert ran == ["Ada"] and tc.success
+
+
+async def test_check_call_maps_decisions():
+    ran: list = []
+    _note_contact_tool(ran)
+    from ze_agents.hooks import ToolStartEvent
+
+    event = ToolStartEvent("note_contact", {"to": "Ada"}, _ctx(), -1)
+    assert (await _veto_hook().check_call(event)).kind == "ask"
+    refuse = ConstraintVetoHook(
+        constraints=[_fact("never email Ada")], user_timezone="UTC"
+    )
+    decision = await refuse.check_call(event)
+    assert decision.kind == "refuse" and decision.result["veto"] is True
+    allow = ConstraintVetoHook(constraints=[], user_timezone="UTC")
+    assert (await allow.check_call(event)).kind == "run"
 
 
 async def test_load_reviewed_constraints_skips_unreviewed_and_contradicted():

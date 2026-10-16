@@ -2128,6 +2128,10 @@ export type MessageTraceResponse = {
      * Loop Offer Ids
      */
     loop_offer_ids?: Array<string>;
+    /**
+     * Write Confirmations
+     */
+    write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
 };
 
 /**
@@ -3292,7 +3296,7 @@ export type ToolCallTraceResponse = {
     /**
      * Gate
      */
-    gate?: 'none' | 'approved' | 'denied' | 'expired';
+    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused_over_cap' | 'expired';
     /**
      * Effect Phrase
      */
@@ -4084,6 +4088,44 @@ export type WorkspaceUsageTraceResponse = {
      * Planned
      */
     planned?: Array<string> | null;
+};
+
+/**
+ * WriteConfirmationOutcomeResponse
+ */
+export type WriteConfirmationOutcomeResponse = {
+    /**
+     * Request Id
+     */
+    request_id: string;
+    /**
+     * Round
+     */
+    round: number;
+    /**
+     * Item Id
+     */
+    item_id: string;
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tool
+     */
+    tool?: string | null;
+    /**
+     * Effect
+     */
+    effect?: string | null;
+    /**
+     * Summary
+     */
+    summary?: string;
+    /**
+     * Outcome
+     */
+    outcome: 'approved' | 'edited' | 'denied' | 'timed_out' | 'superseded' | 'refused';
 };
 
 /**

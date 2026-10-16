@@ -121,3 +121,6 @@ class MessageTrace:
     judgments: list[JudgmentTrace] = field(default_factory=list)
     sources: list[SourceTrace] = field(default_factory=list)
     effects_known: bool = False  # True only when tool calls carry registry metadata
+    # Phase 181: one row per confirmed item, every round (request_id, round, item_id,
+    # agent, tool, effect, summary, outcome).
+    write_confirmations: list[dict[str, Any]] = field(default_factory=list)

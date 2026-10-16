@@ -94,7 +94,14 @@ class ToolCallTraceResponse(BaseModel):
     access: Literal["read", "write", "delegate", "unknown"] = "unknown"
     reversibility: Literal["reversible", "irreversible"] | None = None
     undo_tool: str | None = None
-    gate: Literal["none", "approved", "denied", "expired"] = "none"
+    gate: Literal[
+        "none",
+        "approved",
+        "pre_approved",
+        "denied",
+        "refused_over_cap",
+        "expired",
+    ] = "none"
     effect_phrase: str | None = None
 
 
@@ -163,6 +170,19 @@ class SourceTraceResponse(BaseModel):
     title: str = ""
 
 
+class WriteConfirmationOutcomeResponse(BaseModel):
+    request_id: str
+    round: int
+    item_id: str
+    agent: str
+    tool: str | None = None
+    effect: str | None = None
+    summary: str = ""
+    outcome: Literal[
+        "approved", "edited", "denied", "timed_out", "superseded", "refused"
+    ]
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -184,6 +204,7 @@ class MessageTraceResponse(BaseModel):
     compaction: CompactionTraceResponse | None = None
     resume_recap_applied: bool = False
     loop_offer_ids: list[str] = []
+    write_confirmations: list[WriteConfirmationOutcomeResponse] = []
 
 
 class MessageTraceEntry(BaseModel):
@@ -736,14 +757,33 @@ class WsEditFrame(BaseModel):
     components: list[dict[str, Any]] = []
 
 
+class WsConfirmItem(BaseModel):
+    item_id: str
+    agent: str
+    tool: str | None = None
+    effect_phrase: str
+    summary: str
+    conflict: str | None = None
+    editable_field: str | None = None
+    proposed_text: str | None = None
+
+
+class WsConfirmSource(BaseModel):
+    kind: Literal["workflow", "goal"]
+    name: str
+
+
 class WsConfirmRequestFrame(BaseModel):
     type: Literal["confirm_request"]
     id: str
     thread_id: str | None = None
-    prompt: str
+    kind: Literal["write", "budget", "held"]
+    round: int = 1
+    title: str
+    items: list[WsConfirmItem]
+    source: WsConfirmSource | None = None
+    expires_at: str | None = None
     actions: list[WsConfirmAction]
-    editable: bool = False
-    proposed: str = ""
 
 
 class WsConfirmCancelFrame(BaseModel):
@@ -882,7 +922,7 @@ class WsConfirmFrame(BaseModel):
     id: str
     thread_id: str
     choice: Literal["approve", "deny"]
-    edited_content: str | None = None
+    edits: dict[str, str] = {}
 
 
 class WsActionFrame(BaseModel):

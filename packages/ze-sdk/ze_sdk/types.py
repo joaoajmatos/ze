@@ -7,6 +7,7 @@ from ze_agents.types import (
     AbortToken,
     Source,
 )
+from ze_agents.tool import AskDecision
 from ze_agents.interface.types import Action, Notification
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     "Mode",
     "AbortToken",
     "Source",
+    "AskDecision",
     "Action",
     "Notification",
 ]

@@ -80,6 +80,8 @@ async def test_write_tool_runs_normally_outside_retry_mode():
         access=ToolAccess.WRITE,
         description="w",
         reversibility=ToolReversibility.IRREVERSIBLE,
+        asks_first=False,
+        no_ask_reason="test tool, not under confirmation",
     )
     async def send_thing(x: str) -> str:
         ran.append(x)

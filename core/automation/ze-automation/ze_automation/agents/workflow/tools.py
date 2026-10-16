@@ -292,6 +292,8 @@ async def delete_workflow(
     description="Trigger a workflow to run immediately, outside its schedule.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="started a workflow run",
+    asks_first=False,
+    no_ask_reason="Starts a run now; the run's own asks-first steps are gated by plan pre-approval.",
 )
 async def trigger_workflow(
     store: WorkflowStore, scheduler: WorkflowScheduler, workflow_name: str
@@ -358,6 +360,8 @@ async def edit_workflow_steps(
     description="Cancel an in-progress workflow run by name (latest running execution).",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="cancelled a workflow run",
+    asks_first=False,
+    no_ask_reason="Stops a run the user asked to stop; the workflow itself is kept.",
 )
 async def cancel_workflow_run(
     store: WorkflowStore,

@@ -34,6 +34,8 @@ def _set_pipeline(pipeline: object) -> None:
     description="Fetch, process, and ingest content at the given URL (extraction, not remember_fact).",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ingested a web page",
+    asks_first=False,
+    no_ask_reason="Saves content the user asked to save; nothing leaves Ze.",
 )
 async def ingest_url(url: str) -> dict:
     if _pipeline is None:
@@ -56,6 +58,8 @@ async def ingest_url(url: str) -> dict:
     description="Ingest raw text or pre-extracted document content (extraction, not remember_fact).",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ingested text",
+    asks_first=False,
+    no_ask_reason="Saves content the user asked to save; nothing leaves Ze.",
 )
 async def ingest_text(text: str, label: str = "") -> dict:
     if _pipeline is None:

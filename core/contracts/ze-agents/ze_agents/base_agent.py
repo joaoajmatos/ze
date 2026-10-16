@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import time
+from dataclasses import dataclass
+from uuid import uuid4
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from functools import cached_property
@@ -11,8 +13,10 @@ from ze_agents.client import LLMClient
 from ze_agents.defaults import MODEL_AGENT_DEFAULT, MODEL_AGENT_TIMEOUT
 from ze_agents.errors import (
     AgentAbortedError,
+    AgentConfigError,
     AgentError,
     HookAbort,
+    LoopParked,
     ToolBlockedError,
     ToolConfirmationRequired,
 )
@@ -22,6 +26,16 @@ from ze_agents.hooks import (
     ToolEndEvent,
     ToolStartEvent,
     get_hooks,
+)
+from ze_agents.park import (
+    DECLINED_RESULT,
+    MAX_WRITE_ROUNDS,
+    OVER_CAP_RESULT,
+    ParkedLoop,
+    ParkedWrite,
+    ParkReason,
+    current_approval,
+    generic_summary,
 )
 from ze_agents.interrupt import (
     tool_interrupt_fn,
@@ -80,6 +94,11 @@ MEMORY_CONSTITUTION = (
 )
 
 BIOGRAPHY_HEADING = "## Retrieved biography"
+
+_DEFERRED_DELEGATE_RESULT = (
+    "Not run yet: another delegated action is waiting for the user's approval. "
+    "Ask again after it is answered."
+)
 
 
 def _fact_origin(provenance: Any) -> str:
@@ -312,6 +331,8 @@ class BaseAgent(ABC):
         ctx: AgentContext,
         _iteration: int = -1,
         _lm_args: dict | None = None,
+        _call_id: str | None = None,
+        _approved_call_id: str | None = None,
         **kwargs: Any,
     ) -> ToolCall:
         """Execute a registered tool with capability enforcement and hook dispatch.
@@ -319,6 +340,8 @@ class BaseAgent(ABC):
         READ tools execute in any gate state.
         WRITE tools are suppressed and return a draft ToolCall when gate is DRAFT.
         Any tool raises ToolBlockedError when gate is BLOCKED.
+        An asks-first WRITE tool is parked, not run, unless the user approved this
+        exact call (`_approved_call_id`) or a plan pre-approved the tool.
         """
         from ze_agents.tool import get_tool
 
@@ -354,8 +377,71 @@ class BaseAgent(ABC):
                 is_draft=True,
             )
 
-        # ── Hook: before ─────────────────────────────────────────────────────
         hooks = get_hooks()
+        confirmation_gate = "none"
+        approval: dict[str, Any] | None = None
+        if spec.access.value == "write":
+            approved = _approved_call_id is not None or (
+                _call_id is not None and _call_id in ctx.approved_call_ids
+            )
+            if approved:
+                confirmation_gate = "approved"
+                approval = {
+                    "request_id": ctx.approval_request_id,
+                    "outcome": "approved",
+                }
+            elif name in ctx.pre_approved_writes:
+                confirmation_gate = "pre_approved"
+                approval = {"outcome": "pre_approved"}
+            else:
+                resolution = await self._resolve_ask(spec, ctx, dict(kwargs), hooks)
+                if resolution is not None:
+                    if resolution.refuse is not None:
+                        return _refusal(
+                            name,
+                            stored_args,
+                            resolution.refuse,
+                            result=resolution.result,
+                        )
+                    if ctx.write_round >= MAX_WRITE_ROUNDS:
+                        return _refusal(
+                            name,
+                            stored_args,
+                            OVER_CAP_RESULT,
+                            gate="refused_over_cap",
+                        )
+                    if not ctx.loop_active:
+                        raise AgentConfigError(
+                            f"asks-first tool {name!r} called outside the agent loop"
+                        )
+                    summary = _summarize(spec, stored_args)
+                    if resolution.reason == "check" and resolution.text:
+                        summary = resolution.text
+                    return ToolCall(
+                        tool_name=name,
+                        args=stored_args,
+                        result=None,
+                        duration_ms=0,
+                        success=False,
+                        error="parked: awaiting the user's approval",
+                        gate="parked",
+                        parked=ParkedWrite(
+                            item_id=str(uuid4()),
+                            call_id=_call_id or "",
+                            tool=name,
+                            args=dict(stored_args),
+                            effect_phrase=spec.effect_phrase or name,
+                            summary=summary,
+                            agent=self.name,
+                            editable_field=spec.editable_field,
+                            conflict=resolution.text
+                            if resolution.reason == "constraint"
+                            else None,
+                            reason=resolution.reason,
+                        ),
+                    )
+
+        # ── Hook: before ─────────────────────────────────────────────────────
         args: dict[str, Any] = dict(kwargs)
         for hook in hooks:
             try:
@@ -388,6 +474,7 @@ class BaseAgent(ABC):
         log.debug("tool_start", tool=name, agent=self.name, access=spec.access.value)
         start = time.monotonic()
         confirmed = False
+        approval_token = current_approval.set(approval)
         try:
             result = await spec.func(**args)
         except ToolConfirmationRequired as exc:
@@ -445,6 +532,8 @@ class BaseAgent(ABC):
             )
             await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
             return tool_call
+        finally:
+            current_approval.reset(approval_token)
 
         duration_ms = int((time.monotonic() - start) * 1000)
         log.info("tool_complete", tool=name, agent=self.name, duration_ms=duration_ms)
@@ -454,12 +543,132 @@ class BaseAgent(ABC):
             result=result,
             duration_ms=duration_ms,
             success=True,
-            gate="approved" if confirmed else "none",
+            gate="approved" if confirmed else confirmation_gate,
+            approval=approval,
         )
 
         # ── Hook: after ───────────────────────────────────────────────────────
         await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
         return tool_call
+
+    async def _apply_resume(
+        self,
+        ctx: AgentContext,
+        resume: ParkedLoop,
+        messages: list[dict],
+        accumulated: list[ToolCall],
+        deps: dict[str, Any],
+    ) -> None:
+        """Answer a parked response: run exactly the approved calls, then the child.
+
+        No model call happens here. A child delegate that parks again re-parks this
+        loop (`LoopParked`) with the new child.
+        """
+        from ze_agents.delegate import run_delegate
+
+        for pw in resume.parked:
+            decision = ctx.write_decisions.get(pw.item_id)
+            approved = decision is not None and decision.outcome in (
+                "approved",
+                "edited",
+            )
+            if approved:
+                args = dict(pw.args)
+                if (
+                    decision.outcome == "edited"
+                    and pw.editable_field
+                    and decision.edited_text is not None
+                ):
+                    args[pw.editable_field] = decision.edited_text
+                merged = _merge_deps(pw.tool, args, {**deps, "ctx": ctx})
+                tool_call = await self.call_tool(
+                    pw.tool,
+                    ctx,
+                    _iteration=resume.iteration,
+                    _lm_args=args,
+                    _approved_call_id=pw.call_id,
+                    **merged,
+                )
+            else:
+                tool_call = ToolCall(
+                    tool_name=pw.tool,
+                    args=pw.args,
+                    result=DECLINED_RESULT,
+                    duration_ms=0,
+                    success=False,
+                    error="denied by user",
+                    gate="denied",
+                )
+            accumulated.append(tool_call)
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": pw.call_id,
+                    "content": DECLINED_RESULT
+                    if not approved
+                    else _serialise_result(tool_call),
+                }
+            )
+
+        if resume.child is None:
+            return
+        tool_call = await run_delegate(
+            resume.child_arguments or {},
+            ctx,
+            resume.iteration,
+            caller_name=self.name,
+            resume=resume.child,
+        )
+        if tool_call.child_loop is not None:
+            raise LoopParked(
+                ParkedLoop(
+                    agent=self.name,
+                    messages=list(messages),
+                    accumulated=list(accumulated),
+                    iteration=resume.iteration,
+                    parked=[],
+                    child=tool_call.child_loop,
+                    child_call_id=resume.child_call_id,
+                    child_arguments=resume.child_arguments,
+                )
+            )
+        accumulated.append(tool_call)
+        messages.append(
+            {
+                "role": "tool",
+                "tool_call_id": resume.child_call_id,
+                "content": _serialise_result(tool_call),
+            }
+        )
+
+    async def _resolve_ask(
+        self, spec: Any, ctx: AgentContext, args: dict[str, Any], hooks: list
+    ) -> _AskResolution | None:
+        """Steps 4-6 of the resolution order: None means the call may run."""
+        if spec.access.value != "write":
+            return None
+        if spec.constraint_gate:
+            for hook in hooks:
+                check = getattr(hook, "check_call", None)
+                if check is None:
+                    continue
+                decision = await check(ToolStartEvent(spec.name, args, ctx, -1))
+                if decision.kind == "refuse":
+                    return _AskResolution(
+                        refuse=decision.message, result=decision.result
+                    )
+                if decision.kind == "ask":
+                    return _AskResolution(text=decision.reason, reason="constraint")
+        if spec.ask_check is not None:
+            decision = spec.ask_check(args, ctx)
+            if decision.kind == "refuse":
+                return _AskResolution(refuse=decision.message)
+            if decision.kind == "ask":
+                return _AskResolution(text=decision.reason, reason="check")
+            return None
+        if spec.asks_first:
+            return _AskResolution(reason="asks_first")
+        return None
 
     # ── Agentic loop ──────────────────────────────────────────────────────────
 
@@ -475,7 +684,39 @@ class BaseAgent(ABC):
         max_history_tokens: int | None = None,
         max_tokens: int = 2000,
     ) -> tuple[str, list[ToolCall]]:
-        """Drive a ReAct loop: LLM picks tools, ze dispatches them, repeat until text."""
+        """Drive a ReAct loop: LLM picks tools, ze dispatches them, repeat until text.
+
+        Raises `LoopParked` after a response whose asks-first calls were parked.
+        """
+        previous_active = ctx.loop_active
+        ctx.loop_active = True
+        try:
+            return await self._run_loop(
+                ctx,
+                client,
+                messages,
+                system,
+                deps,
+                tool_names,
+                max_iterations,
+                max_history_tokens,
+                max_tokens,
+            )
+        finally:
+            ctx.loop_active = previous_active
+
+    async def _run_loop(
+        self,
+        ctx: AgentContext,
+        client: LLMClient,
+        messages: list[dict],
+        system: str,
+        deps: dict[str, Any] | None,
+        tool_names: list[str] | None,
+        max_iterations: int,
+        max_history_tokens: int | None,
+        max_tokens: int,
+    ) -> tuple[str, list[ToolCall]]:
         from ze_agents.delegate import (
             DELEGATE_TOOL_NAME,
             DELEGATE_TOOL_SCHEMA,
@@ -510,7 +751,16 @@ class BaseAgent(ABC):
         def _collect_sources(found: list[Source]) -> None:
             add_sources(ctx.sources, found)
 
-        for iteration in range(max_iterations):
+        start_iteration = 0
+        resume = ctx.resume
+        if resume is not None and resume.agent == self.name:
+            ctx.resume = None
+            messages[:] = list(resume.messages)
+            accumulated.extend(resume.accumulated)
+            await self._apply_resume(ctx, resume, messages, accumulated, _deps)
+            start_iteration = resume.iteration + 1
+
+        for iteration in range(start_iteration, max_iterations):
             if ctx.abort_token is not None and ctx.abort_token.is_set:
                 raise AgentAbortedError(ctx.abort_token.reason)
 
@@ -596,6 +846,11 @@ class BaseAgent(ABC):
             if invoke_calls and getattr(ctx, "procedure_invocation_id", None) is None:
                 tool_calls = invoke_calls[:1]
 
+            parked_writes: list[ParkedWrite] = []
+            child: ParkedLoop | None = None
+            child_call_id: str | None = None
+            child_arguments: dict[str, Any] | None = None
+
             for tc in tool_calls:
                 if _is_openrouter_server_tool(tc["name"]):
                     canonical = _canonical_openrouter_tool_name(tc["name"])
@@ -615,12 +870,26 @@ class BaseAgent(ABC):
                         }
                     )
                 elif tc["name"] == DELEGATE_TOOL_NAME:
-                    tool_call = await run_delegate(
-                        tc["arguments"],
-                        ctx,
-                        iteration,
-                        caller_name=self.name,
-                    )
+                    if child is not None:
+                        tool_call = ToolCall(
+                            tool_name=DELEGATE_TOOL_NAME,
+                            args=tc["arguments"],
+                            result=_DEFERRED_DELEGATE_RESULT,
+                            duration_ms=0,
+                            success=True,
+                        )
+                    else:
+                        tool_call = await run_delegate(
+                            tc["arguments"],
+                            ctx,
+                            iteration,
+                            caller_name=self.name,
+                        )
+                        if tool_call.child_loop is not None:
+                            child = tool_call.child_loop
+                            child_call_id = tc["id"]
+                            child_arguments = dict(tc["arguments"])
+                            continue
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -638,8 +907,12 @@ class BaseAgent(ABC):
                         ctx,
                         _iteration=iteration,
                         _lm_args=tc["arguments"],
+                        _call_id=tc["id"],
                         **merged,
                     )
+                    if tool_call.parked is not None:
+                        parked_writes.append(tool_call.parked)
+                        continue
                     accumulated.append(tool_call)
                     messages.append(
                         {
@@ -648,6 +921,20 @@ class BaseAgent(ABC):
                             "content": _serialise_result(tool_call),
                         }
                     )
+
+            if parked_writes or child is not None:
+                raise LoopParked(
+                    ParkedLoop(
+                        agent=self.name,
+                        messages=list(messages),
+                        accumulated=list(accumulated),
+                        iteration=iteration,
+                        parked=parked_writes,
+                        child=child,
+                        child_call_id=child_call_id,
+                        child_arguments=child_arguments,
+                    )
+                )
 
         log.warning(
             "agentic_loop_max_iterations",
@@ -669,6 +956,42 @@ class BaseAgent(ABC):
 
 
 # ── Module-level helpers ──────────────────────────────────────────────────────
+
+
+@dataclass
+class _AskResolution:
+    refuse: str | None = None
+    result: Any = None
+    text: str = ""
+    reason: ParkReason = "asks_first"
+
+
+def _refusal(
+    name: str,
+    args: dict[str, Any],
+    message: str,
+    *,
+    gate: str = "denied",
+    result: Any = None,
+) -> ToolCall:
+    return ToolCall(
+        tool_name=name,
+        args=args,
+        result=message if result is None else result,
+        duration_ms=0,
+        success=False,
+        error=f"refused: {message}",
+        gate=gate,
+    )
+
+
+def _summarize(spec: Any, args: dict[str, Any]) -> str:
+    if spec.summarize is not None:
+        try:
+            return str(spec.summarize(args))
+        except Exception as exc:
+            log.warning("tool_summarize_failed", tool=spec.name, error=str(exc))
+    return generic_summary(args)
 
 
 async def _dispatch_loop_hooks(hooks: list, method: str, event: Any) -> None:

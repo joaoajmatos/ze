@@ -49,6 +49,16 @@ class AgentState(TypedDict):
     pending_confirmation: bool
     approved_agents: list[str]  # agents whose confirmation gate the user approved
 
+    # ── Write confirmation (Phase 181) ─────────────────────────────────────
+    blocked: bool  # set by preflight when every routed agent is disabled
+    budget_status: dict | None  # set by preflight when the turn is over budget
+    budget_approved: bool
+    parked_subtasks: list  # list[ParkedSubtask]; loops waiting on the user
+    write_confirmation: Any | None  # WriteConfirmation; the open one
+    write_decisions: list  # list[WriteDecision]; answers to the open one
+    write_rounds: int  # confirmations answered this turn
+    write_outcomes: list  # list[dict]; per item, every round; copied to the trace
+
     # ── Conversation history ───────────────────────────────────────────────
     messages: list[dict]
     last_active_at: float | None

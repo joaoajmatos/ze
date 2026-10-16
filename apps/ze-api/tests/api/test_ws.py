@@ -382,8 +382,15 @@ async def test_component_submit_falls_back_to_graph_on_unknown_session():
 
 
 def _make_outcome(thread_id: str, draft: str = "Approve?") -> MagicMock:
+    from ze_agents.park import ConfirmItem, WriteConfirmation
+
     outcome = MagicMock()
-    outcome.draft = draft
+    outcome.confirmation = WriteConfirmation(
+        request_id=f"req-{draft}",
+        kind="write",
+        round=1,
+        items=[ConfirmItem("i1", "calendar", "delete_event", "delete", draft)],
+    )
     outcome.config = {"configurable": {"thread_id": thread_id}}
     return outcome
 
@@ -395,6 +402,9 @@ def _make_gate_container() -> AsyncMock:
     snapshot = MagicMock()
     snapshot.interrupts = None
     container.graph.aget_state = AsyncMock(return_value=snapshot)
+    container.resume_turn = AsyncMock(
+        return_value=MagicMock(response="", interrupted=False)
+    )
     return container
 
 

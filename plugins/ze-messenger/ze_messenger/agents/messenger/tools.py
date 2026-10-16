@@ -87,6 +87,8 @@ async def get_email(
     constraint_describe=_outbound_draft_view,
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="drafted an email",
+    asks_first=False,
+    no_ask_reason="Creates a draft in the user's mailbox; nothing is sent.",
 )
 async def draft_email(
     credentials: GoogleCredentials,
@@ -114,6 +116,7 @@ async def draft_email(
     constraint_describe=_outbound_message_view,
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="sent an email",
+    editable_field="body",
 )
 async def send_email(
     channel_registry: ChannelRegistry,

@@ -12,7 +12,8 @@ import time
 from typing import Any
 from uuid import uuid4
 
-from ze_agents.errors import AgentAbortedError
+from ze_agents.errors import AgentAbortedError, LoopParked
+from ze_agents.park import ParkedLoop
 from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
@@ -221,8 +222,12 @@ async def run_delegate(
     iteration: int,
     *,
     caller_name: str,
+    resume: ParkedLoop | None = None,
 ) -> ToolCall:
-    """Execute a delegate_to_agent tool call from inside agentic_loop."""
+    """Execute a delegate_to_agent tool call from inside agentic_loop.
+
+    With `resume`, re-enter the specialist's parked loop instead of starting it.
+    """
     agent_name: str = arguments.get("agent_name", "") or ""
     objective: str = arguments.get("objective", "") or ""
     depth: int = ctx.extensions.get("_delegate_depth", 0)  # type: ignore[assignment]
@@ -247,12 +252,12 @@ async def run_delegate(
 
     agent_name = agent_name.strip()
 
-    if _would_exceed_delegate_caps(ctx, agent_name):
+    if resume is None and _would_exceed_delegate_caps(ctx, agent_name):
         log.warning("delegate_cap_exceeded", to_agent=agent_name)
         _update_conductor_ledger(ctx, agent_name, "ask_user")
         return _failed(arguments, _ASK_USER_ERROR)
 
-    if _has_stalled(ctx, agent_name):
+    if resume is None and _has_stalled(ctx, agent_name):
         detail = str(ctx.extensions.get(_stall_key(agent_name)) or "empty or error")
         arguments = _inject_stall_context(arguments, detail)
         _update_conductor_ledger(ctx, agent_name, "replanned")
@@ -265,7 +270,8 @@ async def run_delegate(
         _update_conductor_ledger(ctx, agent_name, "stalled")
         return _failed(arguments, str(exc))
 
-    _bump_delegate_counts(ctx, agent_name)
+    if resume is None:
+        _bump_delegate_counts(ctx, agent_name)
 
     declared_intent = arguments.get("intent")
     intent = declared_intent.strip() if isinstance(declared_intent, str) else ""
@@ -336,6 +342,11 @@ async def run_delegate(
         identity_builder=ctx.identity_builder,
         abort_token=ctx.abort_token,
         retry_mode=ctx.retry_mode,
+        pre_approved_writes=ctx.pre_approved_writes,
+        write_round=ctx.write_round,
+        approval_request_id=ctx.approval_request_id,
+        write_decisions=ctx.write_decisions,
+        resume=resume,
         extensions={"_delegate_depth": depth + 1},
     )
 
@@ -346,6 +357,19 @@ async def run_delegate(
         result = await instance.run(sub_ctx)
     except AgentAbortedError:
         raise
+    except LoopParked as parked:
+        log.info("delegate_parked", to_agent=agent_name)
+        _update_conductor_ledger(ctx, agent_name, "awaiting_confirmation")
+        return ToolCall(
+            tool_name=DELEGATE_TOOL_NAME,
+            args=arguments,
+            result=None,
+            duration_ms=int((time.monotonic() - start) * 1000),
+            success=False,
+            error="parked: awaiting the user's approval",
+            gate="parked",
+            child_loop=parked.loop,
+        )
     except Exception as exc:
         duration_ms = int((time.monotonic() - start) * 1000)
         log.warning("delegate_error", to_agent=agent_name, error=str(exc))

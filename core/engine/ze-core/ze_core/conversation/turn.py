@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any
 
 from ze_agents.interface.types import RawInput
 
+from ze_agents.park import WriteConfirmation
+
 if TYPE_CHECKING:
     from ze_core.container import Container
 
@@ -51,6 +53,14 @@ def make_graph_input(
         "denied_subtask_indexes": [],
         "pending_confirmation": False,
         "approved_agents": [],
+        "blocked": False,
+        "budget_status": None,
+        "budget_approved": False,
+        "parked_subtasks": [],
+        "write_confirmation": None,
+        "write_decisions": [],
+        "write_rounds": 0,
+        "write_outcomes": [],
         "final_response": None,
         "error": None,
         "components": [],
@@ -82,47 +92,29 @@ def extract_response(state: dict) -> str:
 
 @dataclass
 class TurnResult:
-    """Outcome of one main-graph invocation (may pause at await_confirmation)."""
+    """Outcome of one main-graph invocation (may pause for the user's confirmation)."""
 
     final_state: dict
     config: dict
     interrupted: bool
-    draft: str = ""
-    confirm_agent: str = ""
-    confirm_action: str = ""
-    confirm_editable: bool = False
-    confirm_proposed: str = ""
-    confirm_request_id: str = ""
-    confirm_kind: str = ""
+    confirmation: WriteConfirmation | None = None
     error: str | None = None
     response: str | None = None
     message_id: str = ""
 
 
-def _interrupt_payload(graph_state_obj: Any) -> dict:
+def open_confirmation(graph_state_obj: Any) -> WriteConfirmation | None:
+    """The confirmation a paused graph is waiting on, if any."""
     if graph_state_obj is None:
-        return {}
-    interrupts = getattr(graph_state_obj, "interrupts", None) or ()
-    for item in interrupts:
+        return None
+    candidates: list[Any] = list(getattr(graph_state_obj, "interrupts", None) or ())
+    for task in getattr(graph_state_obj, "tasks", None) or ():
+        candidates.extend(getattr(task, "interrupts", None) or ())
+    for item in candidates:
         value = getattr(item, "value", item)
-        if isinstance(value, dict):
+        if isinstance(value, WriteConfirmation):
             return value
-    tasks = getattr(graph_state_obj, "tasks", None) or ()
-    for task in tasks:
-        for item in getattr(task, "interrupts", None) or ():
-            value = getattr(item, "value", item)
-            if isinstance(value, dict):
-                return value
-    return {}
-
-
-def _confirmation_meta(final_state: dict) -> tuple[str, str, str]:
-    result = final_state.get("agent_result")
-    envelope = final_state.get("envelope")
-    draft = result.response if result else ""
-    agent = envelope.primary_agent if envelope else ""
-    action = envelope.subtasks[0].intent if envelope and envelope.subtasks else ""
-    return draft, agent, action
+    return None
 
 
 async def invoke_raw_turn(
@@ -219,26 +211,11 @@ async def invoke_raw_turn(
     if not graph_ended and graph_state_obj:
         final_state = graph_state_obj.values
 
-    draft, agent, action = _confirmation_meta(final_state)
-    payload = _interrupt_payload(graph_state_obj)
-    if payload.get("prompt"):
-        draft = str(payload["prompt"])
-    if payload.get("agent"):
-        agent = str(payload["agent"])
-    if payload.get("intent"):
-        action = str(payload["intent"])
-
     return TurnResult(
         final_state=final_state,
         config=config,
         interrupted=interrupted,
-        draft=draft,
-        confirm_agent=agent,
-        confirm_action=action,
-        confirm_editable=bool(payload.get("editable", False)),
-        confirm_proposed=str(payload.get("proposed") or ""),
-        confirm_request_id=str(payload.get("request_id") or ""),
-        confirm_kind=str(payload.get("kind") or ""),
+        confirmation=open_confirmation(graph_state_obj),
         error=final_state.get("error"),
         response=None if interrupted else extract_response(final_state),
         message_id=pending_message_id,
@@ -248,38 +225,33 @@ async def invoke_raw_turn(
 async def resume_turn(
     container: Container, config: dict, resume: Any = None
 ) -> TurnResult:
-    """Resume the graph after the user confirms (async confirmation path)."""
+    """Resume the graph after the user answers its open confirmation."""
     from langgraph.types import Command
 
     graph_state_obj = await container.graph.aget_state(config)
-    payload = _interrupt_payload(graph_state_obj)
-    if payload:
-        value = resume if resume is not None else {"choice": "approve"}
-        final_state = await container.graph.ainvoke(Command(resume=value), config)
-    else:
-        final_state = await container.graph.ainvoke(None, config)
-    interrupted = False
+    if open_confirmation(graph_state_obj) is None:
+        return TurnResult(
+            final_state={},
+            config=config,
+            interrupted=False,
+            error="No pending confirmation.",
+        )
+    value = resume if resume is not None else {"choice": "approve"}
+    final_state = await container.graph.ainvoke(Command(resume=value), config)
     new_state = await container.graph.aget_state(config)
     if new_state and new_state.next:
-        interrupted = True
-        payload = _interrupt_payload(new_state)
-        draft = str(payload.get("prompt") or "")
         return TurnResult(
             final_state=new_state.values or final_state,
             config=config,
             interrupted=True,
-            draft=draft,
-            confirm_editable=bool(payload.get("editable", False)),
-            confirm_proposed=str(payload.get("proposed") or ""),
-            confirm_request_id=str(payload.get("request_id") or ""),
-            confirm_kind=str(payload.get("kind") or ""),
+            confirmation=open_confirmation(new_state),
             error=(new_state.values or {}).get("error") if new_state.values else None,
             response=None,
         )
     return TurnResult(
         final_state=final_state,
         config=config,
-        interrupted=interrupted,
+        interrupted=False,
         error=final_state.get("error") if isinstance(final_state, dict) else None,
         response=extract_response(final_state) if isinstance(final_state, dict) else "",
     )

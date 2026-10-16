@@ -84,6 +84,7 @@ def make_ctx(prompt: str = "check my inbox") -> AgentContext:
         session_id="s1",
         prompt=prompt,
         intent="read",
+        pre_approved_writes=frozenset(["archive_email", "send_email"]),
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
     )
@@ -267,6 +268,7 @@ async def test_run_sends_email_when_llm_requests():
         session_id="s1",
         prompt="send hi to alice",
         intent="create",
+        pre_approved_writes=frozenset(["archive_email", "send_email"]),
         memory=MemoryContext(),
         messages=[{"role": "user", "content": "send hi to alice"}],
     )

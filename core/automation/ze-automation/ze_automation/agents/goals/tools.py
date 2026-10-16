@@ -24,6 +24,8 @@ log = get_logger(__name__)
     description="Redirect a running goal with new instructions. Ze will finish its current step and then replan the remaining milestones incorporating your direction.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="steered a goal",
+    asks_first=False,
+    no_ask_reason="Queues the user's own instruction for the goal; the next milestone reads it.",
 )
 async def steer_goal(executor: GoalExecutor, goal_id: str, instruction: str) -> str:
     try:
@@ -237,7 +239,9 @@ async def create_goal(
 @tool(
     access=ToolAccess.WRITE,
     description="Pause an active goal by its ID.",
-    reversibility=ToolReversibility.IRREVERSIBLE,
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="resume_goal",
+    undo_note="Resumes the goal.",
     effect_phrase="paused a goal",
 )
 async def pause_goal(store: GoalStore, goal_id: str) -> dict:
@@ -255,7 +259,9 @@ async def pause_goal(store: GoalStore, goal_id: str) -> dict:
 @tool(
     access=ToolAccess.WRITE,
     description="Resume a paused goal by its ID and continue execution.",
-    reversibility=ToolReversibility.IRREVERSIBLE,
+    reversibility=ToolReversibility.REVERSIBLE,
+    undo_tool="pause_goal",
+    undo_note="Pauses the goal again.",
     effect_phrase="resumed a goal",
 )
 async def resume_goal(store: GoalStore, executor: GoalExecutor, goal_id: str) -> dict:

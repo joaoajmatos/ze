@@ -109,6 +109,8 @@ async def who_is_on_project(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="confirmed a project membership",
+    asks_first=False,
+    no_ask_reason="Records the user's own confirmation of an inferred claim; a later statement corrects it.",
 )
 async def confirm_project_membership(
     hypothesis_id: str,

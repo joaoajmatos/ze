@@ -44,6 +44,7 @@ def make_ctx(prompt: str = "what do I have today?") -> AgentContext:
         session_id="s1",
         prompt=prompt,
         intent="read",
+        pre_approved_writes=frozenset(["create_event", "delete_event", "update_event"]),
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
     )
@@ -147,6 +148,7 @@ async def test_run_creates_event_when_llm_requests():
         session_id="s1",
         prompt="schedule standup",
         intent="create",
+        pre_approved_writes=frozenset(["create_event", "delete_event", "update_event"]),
         memory=MemoryContext(),
         messages=[{"role": "user", "content": "schedule standup"}],
     )

@@ -115,6 +115,8 @@ async def confirm_loop(loop_store: LoopStore, loop_id: str) -> dict:
     description="Close an open loop by id after listing to find a unique title match.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="closed an open loop",
+    asks_first=False,
+    no_ask_reason="Bookkeeping the user asked for; `track_loop` re-opens the concern.",
 )
 async def close_loop(loop_store: LoopStore, loop_id: str) -> dict:
     try:
@@ -139,6 +141,8 @@ async def close_loop(loop_store: LoopStore, loop_id: str) -> dict:
     description="Drop an open loop by id after listing to find a unique title match.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="dropped an open loop",
+    asks_first=False,
+    no_ask_reason="Bookkeeping the user asked for; `track_loop` re-opens the concern.",
 )
 async def drop_loop(loop_store: LoopStore, loop_id: str) -> dict:
     try:

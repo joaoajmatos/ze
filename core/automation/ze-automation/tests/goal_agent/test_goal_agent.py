@@ -30,6 +30,9 @@ def make_ctx(prompt: str = "list my goals", intent: str = "read") -> AgentContex
         session_id="test",
         prompt=prompt,
         intent=intent,
+        pre_approved_writes=frozenset(
+            ["abandon_goal", "pause_goal", "resume_goal", "steer_goal"]
+        ),
         gate_decision=GateDecision.EXECUTE,
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],

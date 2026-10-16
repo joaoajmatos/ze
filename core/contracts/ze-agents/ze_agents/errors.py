@@ -1,3 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ze_agents.park import ParkedLoop
+
+
 class ZeCoreError(Exception):
     """Base exception for all Ze errors."""
 
@@ -70,6 +78,18 @@ class UnknownToolError(AgentError):
 
 class ToolBlockedError(AgentError):
     """Tool call rejected because the capability gate is BLOCKED."""
+
+
+class LoopParked(ZeCoreError):
+    """An agent loop stopped because asks-first tool calls await the user's decision.
+
+    Raised only by `agentic_loop`. Caught by `run_delegate`, the graph's tool
+    execution node and the goal executor; it never reaches the model.
+    """
+
+    def __init__(self, loop: ParkedLoop) -> None:
+        super().__init__(f"{loop.agent} parked {len(loop.all_parked())} write(s)")
+        self.loop = loop
 
 
 class ToolConfirmationRequired(AgentError):

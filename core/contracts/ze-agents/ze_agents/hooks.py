@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, runtime_checkable
 from typing_extensions import Protocol
 
 if TYPE_CHECKING:
+    from ze_agents.tool import AskDecision
     from ze_agents.types import AgentContext, ToolCall
 
 
@@ -61,6 +62,13 @@ class HarnessHook(Protocol):
         """Called after a tool executes (success or error). Cannot modify the result."""
         ...
 
+    async def check_call(self, event: ToolStartEvent) -> "AskDecision":
+        """Optional pre-call check for constraint-gated writes: run, ask or refuse.
+
+        Must not interrupt or run the tool.
+        """
+        ...
+
     async def on_loop_start(self, event: LoopStartEvent) -> None:
         """Called once when agentic_loop begins, before the first LLM call."""
         ...
@@ -78,6 +86,11 @@ class BaseHarnessHook:
 
     async def on_tool_end(self, event: ToolEndEvent) -> None:
         pass
+
+    async def check_call(self, event: ToolStartEvent) -> "AskDecision":
+        from ze_agents.tool import AskDecision
+
+        return AskDecision.run()
 
     async def on_loop_start(self, event: LoopStartEvent) -> None:
         pass

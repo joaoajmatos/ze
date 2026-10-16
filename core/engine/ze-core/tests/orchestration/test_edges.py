@@ -142,21 +142,6 @@ def test_after_execute_tool_always_goes_to_correlate():
     assert after_execute_tool(state) == "correlate"
 
 
-def test_after_execute_tool_pending_awaits_goes_to_subtask_confirmation():
-    state = base_state(
-        pending_subtask_awaits=[
-            {
-                "index": 1,
-                "agent": "messenger",
-                "intent": "create",
-                "prompt": "mail",
-                "request_id": "req-1",
-            }
-        ]
-    )
-    assert after_execute_tool(state) == "await_subtask_confirmation"
-
-
 def test_after_await_subtask_confirmation_returns_to_execute_tool():
     state = base_state(approved_subtask_indexes=[1])
     assert after_await_subtask_confirmation(state) == "execute_tool"

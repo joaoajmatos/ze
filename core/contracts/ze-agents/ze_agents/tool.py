@@ -4,7 +4,7 @@ import asyncio
 import inspect
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, get_type_hints
+from typing import Any, Callable, Literal, get_type_hints
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
 from ze_agents.reversibility import ToolReversibility
@@ -28,6 +28,28 @@ class ToolAccess(str, Enum):
     WRITE = "write"
 
 
+@dataclass(frozen=True)
+class AskDecision:
+    """Outcome of a pre-call check: run the tool, ask the user first, or refuse."""
+
+    kind: Literal["run", "ask", "refuse"]
+    reason: str = ""
+    message: str = ""
+    result: Any = None  # structured tool result returned on refuse
+
+    @classmethod
+    def run(cls) -> AskDecision:
+        return cls("run")
+
+    @classmethod
+    def ask(cls, reason: str = "") -> AskDecision:
+        return cls("ask", reason=reason)
+
+    @classmethod
+    def refuse(cls, message: str, result: Any = None) -> AskDecision:
+        return cls("refuse", message=message, result=result)
+
+
 @dataclass
 class ToolSpec:
     name: str
@@ -41,6 +63,11 @@ class ToolSpec:
     undo_tool: str | None = None
     undo_note: str | None = None
     effect_phrase: str | None = None
+    asks_first: bool | None = None
+    no_ask_reason: str | None = None
+    ask_check: Callable[[dict[str, Any], Any], AskDecision] | None = None
+    editable_field: str | None = None
+    summarize: Callable[[dict[str, Any]], str] | None = None
 
     def llm_schema(self) -> dict:
         if self._schema_override is not None:
@@ -84,13 +111,28 @@ def _check_declaration(
     undo_tool: str | None,
     undo_note: str | None,
     effect_phrase: str | None,
-) -> None:
+    asks_first: bool | None = None,
+    no_ask_reason: str | None = None,
+    ask_check: Callable | None = None,
+    editable_field: str | None = None,
+    summarize: Callable | None = None,
+    func: Callable | None = None,
+) -> bool | None:
+    """Validate a declaration; return the resolved `asks_first`."""
     if access is ToolAccess.READ:
         if any(
             v is not None for v in (reversibility, undo_tool, undo_note, effect_phrase)
         ):
             raise AgentConfigError(f"READ tool {name!r} must not declare reversibility")
-        return
+        if any(
+            v is not None
+            for v in (asks_first, no_ask_reason, ask_check, editable_field, summarize)
+        ):
+            raise AgentConfigError(
+                f"READ tool {name!r} must not declare asks_first, no_ask_reason, "
+                "ask_check, editable_field or summarize"
+            )
+        return None
     if reversibility is None:
         raise AgentConfigError(f"WRITE tool {name!r} must declare reversibility")
     if reversibility is ToolReversibility.REVERSIBLE:
@@ -102,6 +144,40 @@ def _check_declaration(
         raise AgentConfigError(
             f"IRREVERSIBLE tool {name!r} must not declare undo_tool or undo_note"
         )
+
+    if asks_first is True:
+        raise AgentConfigError(
+            f"Tool {name!r}: asks_first=True is the IRREVERSIBLE default; omit it"
+        )
+    if reversibility is ToolReversibility.REVERSIBLE:
+        if asks_first is not None:
+            raise AgentConfigError(
+                f"REVERSIBLE tool {name!r} must not declare asks_first"
+            )
+        if no_ask_reason is not None:
+            raise AgentConfigError(
+                f"REVERSIBLE tool {name!r} must not declare no_ask_reason"
+            )
+        resolved: bool | None = None
+    elif asks_first is False:
+        if not (no_ask_reason or "").strip():
+            raise AgentConfigError(
+                f"Tool {name!r} sets asks_first=False and needs a no_ask_reason"
+            )
+        resolved = False
+    else:
+        if no_ask_reason is not None:
+            raise AgentConfigError(
+                f"Tool {name!r} declares no_ask_reason without asks_first=False"
+            )
+        resolved = True
+
+    if editable_field is not None and func is not None:
+        if editable_field not in inspect.signature(func).parameters:
+            raise AgentConfigError(
+                f"Tool {name!r}: editable_field {editable_field!r} is not a parameter"
+            )
+    return resolved
 
 
 def validate_tool_declarations() -> None:
@@ -132,11 +208,18 @@ def tool(
     undo_tool: str | None = None,
     undo_note: str | None = None,
     effect_phrase: str | None = None,
+    asks_first: bool | None = None,
+    no_ask_reason: str | None = None,
+    ask_check: Callable[[dict[str, Any], Any], AskDecision] | None = None,
+    editable_field: str | None = None,
+    summarize: Callable[[dict[str, Any]], str] | None = None,
 ) -> Callable:
     """Decorator that registers an async function as a Ze tool.
 
     WRITE tools must declare `reversibility`; READ tools must declare none of the
     reversibility arguments. A REVERSIBLE tool names its compensating `undo_tool`.
+    An IRREVERSIBLE tool asks the user first unless it declares `asks_first=False`
+    with a `no_ask_reason`.
     """
     access_val = ToolAccess(access) if isinstance(access, str) else access
     reversibility_val = (
@@ -151,8 +234,19 @@ def tool(
         name = func.__name__
         if name in _tools:
             raise AgentConfigError(f"Duplicate tool name {name!r}")
-        _check_declaration(
-            name, access_val, reversibility_val, undo_tool, undo_note, effect_phrase
+        resolved_asks_first = _check_declaration(
+            name,
+            access_val,
+            reversibility_val,
+            undo_tool,
+            undo_note,
+            effect_phrase,
+            asks_first,
+            no_ask_reason,
+            ask_check,
+            editable_field,
+            summarize,
+            func,
         )
         _tools[name] = ToolSpec(
             name=name,
@@ -165,6 +259,11 @@ def tool(
             undo_tool=undo_tool,
             undo_note=undo_note,
             effect_phrase=effect_phrase,
+            asks_first=resolved_asks_first,
+            no_ask_reason=no_ask_reason,
+            ask_check=ask_check,
+            editable_field=editable_field,
+            summarize=summarize,
         )
         return func
 

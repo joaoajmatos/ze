@@ -104,9 +104,14 @@ async def test_delete_event_with_calendar_constraint_confirms_or_blocks():
                 user_timezone="UTC",
             )
         )
-        tc = await _agent().call_tool("delete_event", _ctx(), event_id="evt-1")
+        tc = await _agent().call_tool(
+            "delete_event",
+            _ctx().__class__(session_id="s1", prompt="p", intent="x", loop_active=True),
+            event_id="evt-1",
+        )
         assert ran == []
-        assert tc.result["veto"] is True
+        assert tc.gate == "parked"
+        assert tc.parked.reason == "constraint"
     finally:
         get_tool("delete_event").func = original
         clear_hooks()
@@ -166,11 +171,12 @@ async def test_cancel_reminder_with_reminder_constraint_does_not_complete_silent
         )
         tc = await _agent().call_tool(
             "cancel_reminder",
-            _ctx(),
+            _ctx().__class__(session_id="s1", prompt="p", intent="x", loop_active=True),
             reminder_id="11111111-1111-1111-1111-111111111111",
         )
         assert ran == []
-        assert tc.result["veto"] is True
+        assert tc.gate == "parked"
+        assert tc.parked.reason == "constraint"
     finally:
         get_tool("cancel_reminder").func = original
         clear_hooks()

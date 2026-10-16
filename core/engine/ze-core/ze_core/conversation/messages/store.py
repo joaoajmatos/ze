@@ -331,6 +331,11 @@ def _parse_trace(data: dict) -> MessageTrace:
         else None,
         resume_recap_applied=bool(data.get("resume_recap_applied", False)),
         loop_offer_ids=list(data.get("loop_offer_ids") or []),
+        write_confirmations=[
+            dict(row)
+            for row in data.get("write_confirmations") or []
+            if isinstance(row, dict)
+        ],
     )
 
 

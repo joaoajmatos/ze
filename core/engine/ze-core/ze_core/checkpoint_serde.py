@@ -21,6 +21,7 @@ CORE_CHECKPOINT_MODULES: tuple[str, ...] = (
     "ze_core.routing.types",
     "ze_core.conversation.messages.types",
     "ze_agents.types",
+    "ze_agents.park",
     "ze_memory.types",
 )
 

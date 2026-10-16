@@ -26,6 +26,8 @@ _DRAFT_SYSTEM = (
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="added a prospect",
+    asks_first=False,
+    no_ask_reason="An internal campaign record.",
 )
 async def add_prospect(
     name: str,
@@ -97,6 +99,8 @@ async def add_prospect(
     description="Draft a personalised outreach message for a prospect and save it.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="drafted outreach",
+    asks_first=False,
+    no_ask_reason="A draft; nothing is sent.",
 )
 async def draft_outreach(
     name: str,
@@ -142,6 +146,8 @@ async def draft_outreach(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="logged an outreach event",
+    asks_first=False,
+    no_ask_reason="An internal campaign record.",
 )
 async def log_outreach_event(
     contact_name: str,

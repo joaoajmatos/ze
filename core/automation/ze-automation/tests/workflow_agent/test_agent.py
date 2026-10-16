@@ -22,6 +22,9 @@ def make_ctx(prompt: str = "list my workflows", intent: str = "read") -> AgentCo
         session_id="test",
         prompt=prompt,
         intent=intent,
+        pre_approved_writes=frozenset(
+            ["delete_workflow", "edit_workflow_steps", "update_workflow"]
+        ),
         gate_decision=GateDecision.EXECUTE,
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
