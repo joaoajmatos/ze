@@ -49,7 +49,7 @@ def _make_processor(*, contact) -> tuple[InboundMessageProcessor, SimpleNamespac
     thread_map.get = AsyncMock(return_value=None)
     thread_map.set = AsyncMock()
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1] * 10)
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[0.1] * 10)
 
     # Only `notify`: a lingering `push(...)` call must raise AttributeError.
     notifier = SimpleNamespace(notify=AsyncMock(return_value="delivered"))

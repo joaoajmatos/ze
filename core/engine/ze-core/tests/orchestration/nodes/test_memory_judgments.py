@@ -24,7 +24,7 @@ def _config(extractor, *, thread_id: str = "s1") -> dict:
     store = AsyncMock()
     store.write_episode = AsyncMock()
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=[0.1, 0.2])
+    embedder.encode_passage = embedder.encode_query = MagicMock(return_value=[0.1, 0.2])
     return {
         "configurable": {
             "memory_store": store,

@@ -101,7 +101,7 @@ class OpenQueryDetector:
 
     def best_similarity(self, embedding: Any) -> float:
         if self._vectors is None:
-            self._vectors = _unit(self._embedder.encode(self._examples))
+            self._vectors = _unit(self._embedder.encode_passage(self._examples))
         return float(np.max(self._vectors @ _unit(embedding) - self._offsets))
 
     def is_open_query(self, embedding: Any) -> bool:

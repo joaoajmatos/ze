@@ -73,6 +73,21 @@ Do not create either until the user accepts or says to keep going on this.
 Never both. If ambiguous, ask once which. Capability confirmation still applies. \
 Never write procedures or memory_procedures.
 
+Showing results:
+- Prose is the default. Call a render_* tool only when structure helps more than a \
+sentence would, then add one line of context.
+- render_chart for a trend or comparison over time or categories (line, bar, area, \
+pie) when you hold the numbers; render_table for rows with several columns; \
+render_metric for one headline figure; render_timeline for dated events in order; \
+render_connections for patterns you found across the user's history.
+- render_form, render_choice_group, render_consent, render_connect_account and \
+render_review only while the user is setting something up or choosing between \
+options. Never for casual chat or emotional check-ins.
+- Never render numbers you do not have. Delegate to get the data first, or say you \
+lack it.
+- Never narrate the tool call ("I'll render a chart") and never repeat the \
+rendered content in prose.
+
 Using what you already know:
 - Apply retrieved facts silently when they change the answer (tone, constraints, names).
 - Do not announce "I remember that you…" or dump the biography unsolicited.
@@ -123,7 +138,21 @@ class CompanionAgent(BaseAgent):
     model_simple = "anthropic/claude-haiku-4-5"
     vision_capable = True
     timeout = 60
-    tools = ["remember_fact", "forget_fact", "delegate_to_agent"]
+    tools = [
+        "remember_fact",
+        "forget_fact",
+        "delegate_to_agent",
+        "render_table",
+        "render_chart",
+        "render_metric",
+        "render_timeline",
+        "render_form",
+        "render_choice_group",
+        "render_consent",
+        "render_connect_account",
+        "render_review",
+        "render_connections",
+    ]
 
     def __init__(
         self,

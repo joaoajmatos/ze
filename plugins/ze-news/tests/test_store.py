@@ -25,7 +25,9 @@ def _make_store():
     pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
 
     embedder = MagicMock()
-    embedder.encode.return_value = [0.1] * 384
+    embedder.encode_passage.return_value = embedder.encode_query.return_value = [
+        0.1
+    ] * 384
 
     return NewsStore(pool=pool, embedder=embedder), conn
 
@@ -133,3 +135,23 @@ async def test_prune_returns_count():
     conn.execute.return_value = "DELETE 3"
     count = await store.prune(older_than_days=7)
     assert count == 3
+
+
+async def test_search_embeds_the_user_query_as_a_query():
+    store, conn = _make_store()
+    conn.fetch = AsyncMock(return_value=[])
+
+    await store.search("ai regulation")
+
+    store._embedder.encode_query.assert_called_once_with("ai regulation")
+    store._embedder.encode_passage.assert_not_called()
+
+
+async def test_upsert_embeds_stored_articles_as_passages():
+    store, conn = _make_store()
+    conn.execute = AsyncMock(return_value="INSERT 0 1")
+
+    await store.upsert([_make_article()])
+
+    store._embedder.encode_passage.assert_called_with("Test Headline. A short summary.")
+    store._embedder.encode_query.assert_not_called()

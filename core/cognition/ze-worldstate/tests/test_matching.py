@@ -58,7 +58,7 @@ async def test_zero_entity_matches_falls_back_to_embedding_similarity():
     loop_store.list = AsyncMock(return_value=[existing])
 
     embedder = AsyncMock()
-    embedder.encode = lambda text: (
+    embedder.encode_passage = embedder.encode_query = lambda text: (
         [1.0, 0.0] if "passport" in text.lower() else [0.0, 1.0]
     )
 
@@ -80,7 +80,7 @@ async def test_no_similarity_match_returns_none():
     loop_store.list = AsyncMock(return_value=[existing])
 
     embedder = AsyncMock()
-    embedder.encode = lambda text: (
+    embedder.encode_passage = embedder.encode_query = lambda text: (
         [1.0, 0.0] if "passport" in text.lower() else [0.0, 1.0]
     )
 
@@ -115,7 +115,7 @@ async def test_dismissed_state_filter_only_considers_dropped_loops():
 
 def _passport_embedder():
     embedder = AsyncMock()
-    embedder.encode = lambda text: (
+    embedder.encode_passage = embedder.encode_query = lambda text: (
         [1.0, 0.0] if "passport" in text.lower() else [0.0, 1.0]
     )
     return embedder

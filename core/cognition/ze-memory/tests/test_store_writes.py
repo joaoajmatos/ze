@@ -351,7 +351,9 @@ class TestPromoteEventOutcome:
         store = PostgresMemoryStore.__new__(PostgresMemoryStore)
         store._pool = pool
         store._embedder = MagicMock()
-        store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+        store._embedder.encode_passage = store._embedder.encode_query = MagicMock(
+            return_value=[0.1] * 384
+        )
         client = AsyncMock()
         client.complete = AsyncMock(return_value=client_response or "[]")
         store._client = client
@@ -478,7 +480,9 @@ async def test_write_fact_returns_uuid():
     store = PostgresMemoryStore.__new__(PostgresMemoryStore)
     store._pool = pool
     store._embedder = MagicMock()
-    store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+    store._embedder.encode_passage = store._embedder.encode_query = MagicMock(
+        return_value=[0.1] * 384
+    )
     store._client = None
     store._graph_store = None
     store._traversal = None
@@ -509,7 +513,9 @@ async def test_write_fact_returns_none_on_db_error():
     store = PostgresMemoryStore.__new__(PostgresMemoryStore)
     store._pool = pool
     store._embedder = MagicMock()
-    store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+    store._embedder.encode_passage = store._embedder.encode_query = MagicMock(
+        return_value=[0.1] * 384
+    )
     store._client = None
     store._graph_store = None
     store._traversal = None
@@ -544,7 +550,9 @@ def _make_contradiction_store():
     store = PostgresMemoryStore.__new__(PostgresMemoryStore)
     store._pool = pool
     store._embedder = MagicMock()
-    store._embedder.encode = MagicMock(return_value=[0.1] * 384)
+    store._embedder.encode_passage = store._embedder.encode_query = MagicMock(
+        return_value=[0.1] * 384
+    )
     store._client = None
     store._graph_store = None
     store._traversal = None

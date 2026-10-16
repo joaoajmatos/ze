@@ -37,9 +37,11 @@ class _FakeEmbedder:
     def __init__(self, vocab: list[str]) -> None:
         self._vocab = vocab
 
-    def encode(self, text: str) -> np.ndarray:
+    def encode_passage(self, text: str) -> np.ndarray:
         lowered = text.lower()
         return np.array([1.0 if word in lowered else 0.0 for word in self._vocab])
+
+    encode_query = encode_passage
 
 
 def _view(items: list[PriorityItem]) -> AsyncMock:

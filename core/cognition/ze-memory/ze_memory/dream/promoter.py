@@ -182,7 +182,7 @@ class DreamPromoter:
         embedding = None
         if self._embedder is not None:
             try:
-                embedding = list(self._embedder.encode(content))
+                embedding = list(self._embedder.encode_passage(content))
             except Exception:
                 pass
 

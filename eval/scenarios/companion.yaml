@@ -47,3 +47,161 @@
     - Should attempt to summarise known facts if any exist
     - Should acknowledge if memory is sparse rather than fabricating details
     - Should not claim to know things it doesn't
+
+# ── render_* tools (CF-02 U-01) ──────────────────────────────────────────────
+# Every prompt carries its own data, so the companion needs no memory or specialist
+# to answer. expected_tools proves the render call ran; the criteria judge the prose.
+
+- id: companion_render_chart
+  prompt: "Chart my running distance this week in km: Mon 5, Tue 0, Wed 8, Thu 5, Fri 0, Sat 12, Sun 6."
+  description: A trend over categories with numbers supplied — the companion should draw a chart, not a text table
+  expected_agent: companion
+  expected_tools: [render_chart]
+  tags: [companion, render]
+  criteria:
+    - Should show the seven days as a chart, not as a list of numbers in prose
+    - Should not invent data points beyond the seven given
+    - Any prose should add context (for example the busiest day), not repeat every number
+    - Should not narrate the tool call ("I'll render a chart")
+
+- id: companion_render_table
+  prompt: "Compare three laptops side by side — Aero 14, 16 GB RAM, 1.2 kg, 1,099 EUR; Bolt 15, 32 GB RAM, 1.8 kg, 1,399 EUR; Core 13, 8 GB RAM, 1.0 kg, 799 EUR."
+  description: Rows with several columns — the companion should render a table
+  expected_agent: companion
+  expected_tools: [render_table]
+  tags: [companion, render]
+  criteria:
+    - Should present the three laptops as a table with RAM, weight and price columns
+    - Should keep every figure exactly as given
+    - Should not repeat the whole table in prose
+
+- id: companion_render_metric
+  prompt: "My savings are at 12,480 EUR, up 4.2% on last month. Show that as a headline figure."
+  description: One headline number with a change — the companion should render a metric
+  expected_agent: companion
+  expected_tools: [render_metric]
+  tags: [companion, render]
+  criteria:
+    - Should show 12,480 EUR as the headline value with the 4.2% change
+    - Should not change or round the figures
+
+- id: companion_render_timeline
+  prompt: "Lay my trip out as a timeline: 3 March flight to Berlin, 5 March conference day, 9 March train home."
+  description: Dated events in order — the companion should render a timeline
+  expected_agent: companion
+  expected_tools: [render_timeline]
+  tags: [companion, render]
+  criteria:
+    - Should list the three events in date order
+    - Should not add events the user did not give
+
+- id: companion_render_form
+  prompt: "I want a weekly check-in with you. Give me a small form to enter the day, the time and the topic."
+  description: Structured input the user asked for — the companion should render a form
+  expected_agent: companion
+  expected_tools: [render_form]
+  tags: [companion, render]
+  criteria:
+    - Should render a form with day, time and topic fields
+    - Should not claim the check-in is already scheduled
+
+- id: companion_render_choice_group
+  prompt: "Let me pick how you notify me. Offer the options as a choice: quiet, a daily digest, or everything."
+  description: A set of options to choose from — the companion should render a choice group
+  expected_agent: companion
+  expected_tools: [render_choice_group]
+  tags: [companion, render]
+  criteria:
+    - Should offer exactly quiet, daily digest and everything as options
+    - Should not claim a notification setting has been saved
+
+- id: companion_render_review
+  prompt: "Before you store anything, show me a review card of what you plan to save about me: lives in Porto, prefers window seats, allergic to peanuts. I will approve or edit."
+  description: Details held back for approval — the companion should render a review, not store them
+  expected_agent: companion
+  expected_tools: [render_review]
+  tags: [companion, render]
+  criteria:
+    - Should show the three details for approval
+    - Should not say the details are already saved
+
+- id: companion_render_consent_and_connect
+  prompt: "I want to hook up my Google account. Show me what access you would ask for (read my calendar, read my email) and a connect button, so I can decide."
+  description: Setup that needs consent and an account link — the companion should render both prompts and connect nothing itself
+  expected_agent: companion
+  expected_tools: [render_consent, render_connect_account]
+  tags: [companion, render]
+  criteria:
+    - Should show the two access scopes (calendar read, email read) for the user to allow or skip
+    - Should show an account connection prompt for Google
+    - Should not claim the account is already connected
+
+- id: companion_render_connections
+  prompt: "I've noticed I sleep badly the week before a deadline, skip my runs on those weeks, and snap at my partner more. Show me the connections you see between those three."
+  description: Cross-domain pattern from facts the user supplied — the companion should render connections
+  expected_agent: companion
+  expected_tools: [render_connections]
+  tags: [companion, render]
+  criteria:
+    - Should show a pattern linking deadlines, sleep, running and mood
+    - Should mark guesses as guesses rather than facts
+
+- id: companion_no_render_for_greeting
+  prompt: "Hey Ze, good morning!"
+  description: Casual chat — prose only, no render tool
+  expected_agent: companion
+  expected_tools:
+    - name: render_table
+      count: 0
+    - name: render_chart
+      count: 0
+    - name: render_metric
+      count: 0
+    - name: render_timeline
+      count: 0
+    - name: render_form
+      count: 0
+    - name: render_choice_group
+      count: 0
+    - name: render_consent
+      count: 0
+    - name: render_connect_account
+      count: 0
+    - name: render_review
+      count: 0
+    - name: render_connections
+      count: 0
+  tags: [companion, render, negative]
+  criteria:
+    - Should reply in plain, warm prose
+    - Should not render a card, table, form or chart
+
+- id: companion_no_render_for_emotional_checkin
+  prompt: "I'm overwhelmed by everything I have to do this week."
+  description: Emotional check-in — prose only, no render tool, no list of tasks
+  expected_agent: companion
+  expected_tools:
+    - name: render_table
+      count: 0
+    - name: render_chart
+      count: 0
+    - name: render_metric
+      count: 0
+    - name: render_timeline
+      count: 0
+    - name: render_form
+      count: 0
+    - name: render_choice_group
+      count: 0
+    - name: render_consent
+      count: 0
+    - name: render_connect_account
+      count: 0
+    - name: render_review
+      count: 0
+    - name: render_connections
+      count: 0
+  tags: [companion, render, negative]
+  criteria:
+    - Should acknowledge the feeling before anything else
+    - Should not render a form, table or choice group

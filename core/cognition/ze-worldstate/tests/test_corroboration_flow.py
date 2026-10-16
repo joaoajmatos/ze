@@ -206,7 +206,7 @@ class Harness:
         self.client = FakeSystemOne(same)
         self.entity = entity or uuid4()
         embedder = AsyncMock()
-        embedder.encode = lambda text: [1.0, 0.0]
+        embedder.encode_passage = embedder.encode_query = lambda text: [1.0, 0.0]
         settings = _settings() if settings is None else settings
         deps = dict(
             loop_store=self.store,

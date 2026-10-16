@@ -18,9 +18,9 @@ class E5Embedder:
     scores. Without them, scores cluster in a narrow 0.3–0.5 band regardless of
     match quality — identical to the paraphrase-model problem we're replacing.
 
-    - encode_query: user messages and search queries
-    - encode_passage: agent descriptions and stored content
-    - encode: compat shim for memory layer; treats all inputs as passages
+    - encode_query: a user question matched against stored content (retrieval)
+    - encode_passage: stored content, and both sides of a symmetric comparison
+      (dedup, title matching), which keeps those thresholds on one score scale
     """
 
     def __init__(self, model_name: str = _DEFAULT_MODEL) -> None:
@@ -55,17 +55,6 @@ class E5Embedder:
                 normalize_embeddings=normalize_embeddings,
                 **kwargs,
             )
-
-    def encode(
-        self,
-        text: Union[str, list[str]],
-        normalize_embeddings: bool = True,
-        **kwargs,
-    ) -> np.ndarray:
-        """Compat shim for memory layer callers — treats all inputs as passages."""
-        return self.encode_passage(
-            text, normalize_embeddings=normalize_embeddings, **kwargs
-        )
 
 
 @lru_cache(maxsize=1)

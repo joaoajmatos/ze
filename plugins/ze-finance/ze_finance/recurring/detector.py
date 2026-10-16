@@ -21,7 +21,7 @@ _MIN_ABSOLUTE_SPAN = 14  # span must be at least 14 days regardless of interval
 
 
 class TextEmbedder(Protocol):
-    def encode(self, texts: list[str] | str) -> object: ...
+    def encode_passage(self, texts: list[str] | str) -> object: ...
 
 
 def _normalise(description: str) -> str:
@@ -138,7 +138,7 @@ class RecurringDetector:
         if len(set(norms)) < 2:
             return {}
 
-        embeddings = self._embedder.encode(unique)  # type: ignore[union-attr]
+        embeddings = self._embedder.encode_passage(unique)  # type: ignore[union-attr]
         parent = {norm: norm for norm in norms}
 
         def find(node: str) -> str:

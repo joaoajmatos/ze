@@ -214,8 +214,10 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
 
     envelope = state.get("envelope")
     embed_text = state.get("image_caption") or state["prompt"]
-    prompt_embedding = embedder.encode(embed_text)
-    open_items_query = _is_open_query(prompt_embedding, config)
+    prompt_embedding = embedder.encode_query(embed_text)
+    # The open-query detector is calibrated passage-vs-passage (eval/calibration/open_query.py);
+    # query-vs-query loses recall at the same false-positive rate.
+    open_items_query = _is_open_query(embedder.encode_passage(embed_text), config)
     rerouted: RoutingEnvelope | None = None
     if open_items_query:
         rerouted = _open_query_envelope(envelope, config)

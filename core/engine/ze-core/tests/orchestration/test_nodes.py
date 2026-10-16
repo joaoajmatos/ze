@@ -53,7 +53,9 @@ def base_state(**overrides) -> dict:
 
 def make_mock_embedder():
     embedder = MagicMock()
-    embedder.encode = MagicMock(return_value=np.zeros(384))
+    embedder.encode_passage = embedder.encode_query = MagicMock(
+        return_value=np.zeros(384)
+    )
     return embedder
 
 

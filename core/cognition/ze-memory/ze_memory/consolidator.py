@@ -114,7 +114,7 @@ class MemoryConsolidator:
         if len(rows) < 2:
             return 0
 
-        embeddings = [self._embedder.encode(row["value"]) for row in rows]
+        embeddings = [self._embedder.encode_passage(row["value"]) for row in rows]
         contradicted_ids: set = set()
         merged = 0
 
@@ -175,7 +175,7 @@ class MemoryConsolidator:
                         rows[i]["value"], rows[j_idx]["value"]
                     )
                     if merged_value:
-                        new_emb = self._embedder.encode(merged_value)
+                        new_emb = self._embedder.encode_passage(merged_value)
                         await self._store.mark_contradicted(rows[i]["id"])
                         await self._store.mark_contradicted(rows[j_idx]["id"])
                         await self._notify_contradiction(rows[i]["id"])
@@ -294,7 +294,7 @@ class MemoryConsolidator:
                 continue
 
             try:
-                embedding = self._embedder.encode(summary)
+                embedding = self._embedder.encode_passage(summary)
                 deleted = await self._store.replace_session_episodes_with_summary(
                     session_id=session_id,
                     episode_count=len(episodes),
