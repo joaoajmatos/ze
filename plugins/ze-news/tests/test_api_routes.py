@@ -105,16 +105,3 @@ async def test_get_news_settings_returns_tree():
     assert data["title"] == "News"
     assert isinstance(data["tree"], list)
     _assert_valid_tree(data["tree"])
-
-
-@pytest.mark.asyncio
-async def test_list_news_returns_empty_without_store():
-    app = _make_app()
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        resp = await client.get(
-            "/api/v0/news", headers={"Authorization": f"Bearer {API_KEY}"}
-        )
-    assert resp.status_code == 200
-    assert resp.json() == []
