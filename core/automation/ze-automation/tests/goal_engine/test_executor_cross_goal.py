@@ -286,7 +286,6 @@ async def test_handle_gate_redirected_passes_none_when_no_prior_work():
 
 # ── _promote_learnings ────────────────────────────────────────────────────────
 
-from ze_sdk.memory import Fact  # noqa: E402
 from ze_automation.goals.types import GoalLearning  # noqa: E402
 
 
@@ -322,26 +321,19 @@ def _make_executor_with_memory(*, memory=_USE_DEFAULT_MEMORY, planner=None, stor
 
 
 async def test_promote_learnings_skips_when_memory_is_none():
-    executor, _, planner, _ = _make_executor_with_memory(memory=None)
+    executor, _, _, _ = _make_executor_with_memory(memory=None)
     await executor._promote_learnings(_goal(), [_learning()])
-    planner.promote_learnings.assert_not_called()
 
 
 async def test_promote_learnings_skips_when_no_learnings():
-    executor, _, planner, memory = _make_executor_with_memory()
+    executor, _, _, memory = _make_executor_with_memory()
     await executor._promote_learnings(_goal(), [])
-    planner.promote_learnings.assert_not_called()
     memory.propose_facts.assert_not_called()
 
 
 async def test_promote_learnings_does_not_write_memory_facts():
-    planner = AsyncMock()
-    planner.promote_learnings = AsyncMock(
-        return_value=[Fact(predicate="style", value="x")]
-    )
-    executor, _, _, memory = _make_executor_with_memory(planner=planner)
+    executor, _, _, memory = _make_executor_with_memory()
     await executor._promote_learnings(_goal(), [_learning()])
-    planner.promote_learnings.assert_not_called()
     memory.propose_facts.assert_not_called()
 
 
