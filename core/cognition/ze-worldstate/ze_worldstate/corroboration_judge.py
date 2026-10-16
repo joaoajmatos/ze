@@ -8,16 +8,21 @@ Imports ze_agents types only; ze-worldstate never depends on ze-core.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Literal
 
-from ze_agents.system_one import SystemOneQuestion, SystemOneResult
-from ze_logging import get_logger
+from ze_agents.system_one import (
+    SystemOneQuestion,
+    SystemOneResult,
+    parse_bar,
+    surface_block,
+    valid_noul,
+)
 
 from ze_worldstate import loop_judge
 
-log = get_logger(__name__)
+_bar = partial(parse_bar, event="corroboration_bar_invalid")
 
 Q_SAME = "same_concern"
 
@@ -52,28 +57,9 @@ class CorroborationSurfaceConfig:
         )
 
 
-def _bar(value: Any, name: str) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        log.warning("corroboration_bar_invalid", bar=name)
-        return None
-    if math.isnan(value) or not 0.0 <= value <= 1.0:
-        log.warning("corroboration_bar_invalid", bar=name)
-        return None
-    return float(value)
-
-
 def corroboration_surface_config(settings: Any) -> CorroborationSurfaceConfig:
-    config = (
-        settings if isinstance(settings, dict) else getattr(settings, "config", None)
-    )
-    if not isinstance(config, dict):
-        return CorroborationSurfaceConfig()
-    system_one = config.get("system_one")
-    surfaces = system_one.get("surfaces") if isinstance(system_one, dict) else None
-    block = surfaces.get("corroboration") if isinstance(surfaces, dict) else None
-    if not isinstance(block, dict):
+    block = surface_block(settings, "corroboration")
+    if block is None:
         return CorroborationSurfaceConfig()
     return CorroborationSurfaceConfig(
         enabled=block.get("enabled") is True,
@@ -103,7 +89,7 @@ def decide(
     if result.outcome == "skip":
         return CorroborationDecision("fallback", result.skip_reason or "error")
     answer = result.answers.get(Q_SAME)
-    if not loop_judge._valid_noul(answer):
+    if not valid_noul(answer):
         return CorroborationDecision("fallback", "invalid_answer")
     score = float(answer.noul)  # type: ignore[union-attr, arg-type]
     if score >= cfg.promote_hold:  # type: ignore[operator]

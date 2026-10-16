@@ -8,14 +8,19 @@ Imports ze_agents types only; ze-worldstate never depends on ze-core.
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Literal
 
-from ze_agents.system_one import SystemOneAnswer, SystemOneQuestion, SystemOneResult
-from ze_logging import get_logger
+from ze_agents.system_one import (
+    SystemOneQuestion,
+    SystemOneResult,
+    parse_bar,
+    surface_block,
+    valid_noul,
+)
 
-log = get_logger(__name__)
+_bar = partial(parse_bar, event="loop_gate_bar_invalid")
 
 Q_CONCERN = "is_open_concern"
 Q_RESOLVES = "resolves_existing"
@@ -71,28 +76,9 @@ class LoopGateSurfaceConfig:
         )
 
 
-def _bar(value: Any, name: str) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        log.warning("loop_gate_bar_invalid", bar=name)
-        return None
-    if math.isnan(value) or not 0.0 <= value <= 1.0:
-        log.warning("loop_gate_bar_invalid", bar=name)
-        return None
-    return float(value)
-
-
 def loop_gate_surface_config(settings: Any) -> LoopGateSurfaceConfig:
-    config = (
-        settings if isinstance(settings, dict) else getattr(settings, "config", None)
-    )
-    if not isinstance(config, dict):
-        return LoopGateSurfaceConfig()
-    system_one = config.get("system_one")
-    surfaces = system_one.get("surfaces") if isinstance(system_one, dict) else None
-    block = surfaces.get("loop_gate") if isinstance(surfaces, dict) else None
-    if not isinstance(block, dict):
+    block = surface_block(settings, "loop_gate")
+    if block is None:
         return LoopGateSurfaceConfig()
     return LoopGateSurfaceConfig(
         enabled=block.get("enabled") is True,
@@ -113,17 +99,6 @@ class LoopGateDecision:
     consumed: frozenset[str] = frozenset()
 
 
-def _valid_noul(answer: SystemOneAnswer | None) -> bool:
-    return (
-        answer is not None
-        and answer.type == "noul"
-        and isinstance(answer.noul, (int, float))
-        and not isinstance(answer.noul, bool)
-        and not math.isnan(answer.noul)
-        and 0.0 <= answer.noul <= 1.0
-    )
-
-
 def decide(
     result: SystemOneResult, cfg: LoopGateSurfaceConfig, provenance: str
 ) -> LoopGateDecision:
@@ -131,7 +106,7 @@ def decide(
     if result.outcome == "skip":
         return LoopGateDecision("fallback", result.skip_reason or "error")
     asked = tuple(LOOP_QUESTIONS)
-    if not all(_valid_noul(result.answers.get(qid)) for qid in asked):
+    if not all(valid_noul(result.answers.get(qid)) for qid in asked):
         return LoopGateDecision("fallback", "invalid_answer")
     loop_bar, resolves_bar = cfg.loop_hold, cfg.resolves_hold
     if loop_bar is None or resolves_bar is None:

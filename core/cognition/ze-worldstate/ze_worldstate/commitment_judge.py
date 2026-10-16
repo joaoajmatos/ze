@@ -10,10 +10,18 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Literal
 
 from ze_agents.nested_tools import TurnCreation
-from ze_agents.system_one import SystemOneAnswer, SystemOneQuestion, SystemOneResult
+from ze_agents.system_one import (
+    SystemOneAnswer,
+    SystemOneQuestion,
+    SystemOneResult,
+    parse_bar,
+    surface_block,
+    valid_noul,
+)
 from ze_logging import get_logger
 from ze_memory.fact_judge import (
     FACT_QUESTIONS,
@@ -173,28 +181,12 @@ class CommitmentIntakeSurfaceConfig:
         )
 
 
-def _bar(value: Any, name: str) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        log.warning("commitment_intake_bar_invalid", bar=name)
-        return None
-    if math.isnan(value) or not 0.0 <= value <= 1.0:
-        log.warning("commitment_intake_bar_invalid", bar=name)
-        return None
-    return float(value)
+_bar = partial(parse_bar, event="commitment_intake_bar_invalid")
 
 
 def commitment_intake_surface_config(settings: Any) -> CommitmentIntakeSurfaceConfig:
-    config = (
-        settings if isinstance(settings, dict) else getattr(settings, "config", None)
-    )
-    if not isinstance(config, dict):
-        return CommitmentIntakeSurfaceConfig()
-    system_one = config.get("system_one")
-    surfaces = system_one.get("surfaces") if isinstance(system_one, dict) else None
-    block = surfaces.get("commitment_intake") if isinstance(surfaces, dict) else None
-    if not isinstance(block, dict):
+    block = surface_block(settings, "commitment_intake")
+    if block is None:
         return CommitmentIntakeSurfaceConfig()
     return CommitmentIntakeSurfaceConfig(
         enabled=block.get("enabled") is True,
@@ -221,17 +213,6 @@ class IntakeOutcome:
     consumed: frozenset[str] = frozenset()
     link_kind: LinkKind | None = None
     family: str | None = None
-
-
-def _valid_noul(answer: SystemOneAnswer | None) -> bool:
-    return (
-        answer is not None
-        and answer.type == "noul"
-        and isinstance(answer.noul, (int, float))
-        and not isinstance(answer.noul, bool)
-        and not math.isnan(answer.noul)
-        and 0.0 <= answer.noul <= 1.0
-    )
 
 
 def _read_choice(
@@ -279,7 +260,7 @@ def _decide(
     if result.outcome == "skip":
         return IntakeOutcome("fallback", result.skip_reason or "error")
     read = _read_choice(result.answers.get(Q_COMMITMENT))
-    if read is None or not _valid_noul(result.answers.get(Q_RESOLVES)):
+    if read is None or not valid_noul(result.answers.get(Q_RESOLVES)):
         return _INVALID
     if not cfg.calibrated:
         return IntakeOutcome("fallback", "uncalibrated")
@@ -339,8 +320,8 @@ def _loop(
     if unsure_holds and confidence < cfg.choice_hold:
         return IntakeOutcome("hold", "loop_unsure", _BASE)
     if not (
-        _valid_noul(result.answers.get(Q_CONCERN))
-        and _valid_noul(result.answers.get(Q_EXPLICIT))
+        valid_noul(result.answers.get(Q_CONCERN))
+        and valid_noul(result.answers.get(Q_EXPLICIT))
     ):
         return _INVALID
     if float(result.answers[Q_CONCERN].noul or 0.0) < cfg.loop_hold:

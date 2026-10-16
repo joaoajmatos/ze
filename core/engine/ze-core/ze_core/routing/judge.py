@@ -7,12 +7,19 @@ trust / decompose / abstain / skip.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Literal
 
-from ze_agents.system_one import SystemOneAnswer, SystemOneQuestion, SystemOneResult
+from ze_agents.system_one import (
+    SystemOneQuestion,
+    SystemOneResult,
+    parse_bar,
+    surface_block,
+    valid_choice,
+    valid_noul,
+)
 from ze_logging import get_logger
 
 log = get_logger(__name__)
@@ -26,7 +33,6 @@ MIN_SHORTLIST = 2
 NONE_KEY = "none"
 Q_AGENT = "agent"
 Q_MULTI = "multi_specialist"
-QUESTION_IDS = (Q_AGENT, Q_MULTI)
 
 _JUDGE_SUFFIX = "Judge the user's words; history and context are background only."
 
@@ -63,16 +69,7 @@ class RoutingSurfaceConfig:
         )
 
 
-def parse_bar(value: Any, name: str) -> float | None:
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        log.warning("routing_bar_invalid", bar=name)
-        return None
-    if math.isnan(value) or not 0.0 <= value <= 1.0:
-        log.warning("routing_bar_invalid", bar=name)
-        return None
-    return float(value)
+_bar = partial(parse_bar, event="routing_bar_invalid")
 
 
 def _shortlist_k(value: Any) -> int:
@@ -82,20 +79,13 @@ def _shortlist_k(value: Any) -> int:
 
 
 def routing_surface_config(settings: Any) -> RoutingSurfaceConfig:
-    config = (
-        settings if isinstance(settings, dict) else getattr(settings, "config", None)
-    )
-    if not isinstance(config, dict):
-        return RoutingSurfaceConfig()
-    system_one = config.get("system_one")
-    surfaces = system_one.get("surfaces") if isinstance(system_one, dict) else None
-    block = surfaces.get("routing") if isinstance(surfaces, dict) else None
-    if not isinstance(block, dict):
+    block = surface_block(settings, "routing")
+    if block is None:
         return RoutingSurfaceConfig()
     return RoutingSurfaceConfig(
         enabled=block.get("enabled") is True,
-        choice_trust=parse_bar(block.get("choice_trust"), "choice_trust"),
-        multi_specialist_hold=parse_bar(
+        choice_trust=_bar(block.get("choice_trust"), "choice_trust"),
+        multi_specialist_hold=_bar(
             block.get("multi_specialist_hold"), "multi_specialist_hold"
         ),
         shortlist_k=_shortlist_k(block.get("shortlist_k", DEFAULT_SHORTLIST_K)),
@@ -149,25 +139,6 @@ class RoutingDecision:
     consumed: frozenset[str] = frozenset()
 
 
-def _valid_choice(answer: SystemOneAnswer | None, allowed: Sequence[str]) -> bool:
-    return (
-        answer is not None
-        and answer.type == "choice"
-        and answer.choice is not None
-        and answer.confidence is not None
-        and (answer.choice == NONE_KEY or answer.choice in allowed)
-    )
-
-
-def _valid_noul(answer: SystemOneAnswer | None) -> bool:
-    return (
-        answer is not None
-        and answer.type == "noul"
-        and isinstance(answer.noul, (int, float))
-        and not math.isnan(answer.noul)
-    )
-
-
 def decide(
     result: SystemOneResult, cfg: RoutingSurfaceConfig, names: Sequence[str]
 ) -> RoutingDecision:
@@ -183,7 +154,7 @@ def decide(
         return RoutingDecision("skip", "uncalibrated")
 
     choice = result.answers.get(Q_AGENT)
-    if choice is None or not _valid_choice(choice, names):
+    if choice is None or not valid_choice(choice, [*names, NONE_KEY]):
         return RoutingDecision("skip", "invalid_answer")
     peakedness = float(choice.confidence or 0.0)
 
@@ -198,7 +169,7 @@ def decide(
         return RoutingDecision("abstain", "choice_unsure")
 
     noul = result.answers.get(Q_MULTI)
-    if not _valid_noul(noul):
+    if not valid_noul(noul, unit_range=False):
         return RoutingDecision(
             "trust",
             "trusted",

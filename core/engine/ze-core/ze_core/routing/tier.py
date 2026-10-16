@@ -14,10 +14,14 @@ from typing import Any, Literal
 
 from ze_agents.model_resolution import resolve_model
 from ze_agents.registry import get_enabled_agents
-from ze_agents.system_one import SystemOneQuestion, SystemOneResult
+from ze_agents.system_one import (
+    SystemOneQuestion,
+    SystemOneResult,
+    parse_bar,
+    surface_block,
+)
 from ze_logging import get_logger
 
-from ze_core.routing.judge import parse_bar
 from ze_core.routing.types import RoutingEnvelope, RoutingJudgment
 
 log = get_logger(__name__)
@@ -57,19 +61,14 @@ class ComplexitySurfaceConfig:
 
 
 def complexity_surface_config(settings: Any) -> ComplexitySurfaceConfig:
-    config = (
-        settings if isinstance(settings, dict) else getattr(settings, "config", None)
-    )
-    if not isinstance(config, dict):
-        return ComplexitySurfaceConfig()
-    system_one = config.get("system_one")
-    surfaces = system_one.get("surfaces") if isinstance(system_one, dict) else None
-    block = surfaces.get("complexity") if isinstance(surfaces, dict) else None
-    if not isinstance(block, dict):
+    block = surface_block(settings, "complexity")
+    if block is None:
         return ComplexitySurfaceConfig()
     return ComplexitySurfaceConfig(
         enabled=block.get("enabled") is True,
-        simple_max=parse_bar(block.get("simple_max"), "simple_max"),
+        simple_max=parse_bar(
+            block.get("simple_max"), "simple_max", event="complexity_bar_invalid"
+        ),
     )
 
 
