@@ -47,7 +47,7 @@ export/import/delete workflow.
 
 ## System Flow
 
-![Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a capability check that executes, drafts, or pauses for confirmation, converging on a compound check before the response](diagrams/docs/turn-lifecycle.svg)
+![Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a preflight check that runs the turn, where execute_tool parks irreversible writes into one await_write_confirmation pause that resumes the run](diagrams/docs/turn-lifecycle.svg)
 
 <sub>[Interactive version](diagrams/docs/turn-lifecycle.html)</sub>
 
