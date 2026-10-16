@@ -29,4 +29,23 @@ describe("toTraceFrame", () => {
       workspace: undefined,
     });
   });
+
+  it("carries the write confirmation outcomes through", () => {
+    const outcome = {
+      request_id: "req-1",
+      round: 1,
+      item_id: "c1",
+      agent: "calendar",
+      tool: "delete_event",
+      effect: "deleted a calendar event",
+      summary: "Dentist",
+      outcome: "approved" as const,
+    };
+    const frame = toTraceFrame(
+      "msg-1",
+      { write_confirmations: [outcome] } as unknown as MessageTraceResponse,
+      "thread-a",
+    ) as unknown as { write_confirmations: unknown[] };
+    expect(frame.write_confirmations).toEqual([outcome]);
+  });
 });
