@@ -27,10 +27,12 @@ schema.
    to the last row of each batch after the batch is stored.
 3. No watermark row means "start at the oldest episode". The backlog drains at
    `max_episodes_per_run` (default 50) per run, as the old flag column did.
-4. ze-memory consolidation may delete raw episodes after it summarises them. Episodes
-   deleted before extraction are not extracted. The window is
-   `memory.consolidation` recency days, much longer than the nightly job interval, so
-   this is accepted.
+4. ze-memory consolidation archives raw episodes older than
+   `memory.consolidation.episode_archive_days` (default 7) into session summaries and
+   deletes them. An episode archived before extraction is not extracted. At the default
+   50 episodes per run, the nightly job keeps up while the user averages fewer than 50
+   turns a day; above that, raise `contacts.consolidation.max_episodes_per_run`. This is
+   accepted for a single-user assistant.
 5. Migrations (one `zc` chain; numbers set by the Maestro, rechained on land):
    - `zc035` (ze-personal): create `contacts_episode_watermark`; drop `zc013`'s
      `episodes.contacts_extracted` column and index.
