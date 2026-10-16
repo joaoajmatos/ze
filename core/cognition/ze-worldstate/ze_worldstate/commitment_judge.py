@@ -203,7 +203,7 @@ OutcomeKind = Literal[
     "hold",
     "fallback",
 ]
-LinkKind = Literal["reminder", "goal"]
+LinkKind = Literal["reminder", "goal", "reminder+goal"]
 
 
 @dataclass(frozen=True)
@@ -273,7 +273,13 @@ def _decide(
     ):
         return IntakeOutcome("resolve_loop", "resolves", frozenset({Q_RESOLVES}))
     if created.reminder_id or created.goal_id:
-        kind: LinkKind = "reminder" if created.reminder_id else "goal"
+        kind: LinkKind = (
+            "reminder+goal"
+            if created.reminder_id and created.goal_id
+            else "reminder"
+            if created.reminder_id
+            else "goal"
+        )
         return IntakeOutcome("link", "turn_created", _BASE, link_kind=kind)
     if choice is CommitmentChoice.WAITING_ON:
         return IntakeOutcome("hold", "waiting_on", _BASE)
