@@ -23,7 +23,7 @@ vi.mock("@/shared/api", async (importOriginal) => ({
 }));
 
 const confirmState = vi.hoisted(() => ({
-  pendingConfirm: null as { id: string } | null,
+  pendingConfirms: [] as { id: string }[],
   respond: vi.fn(),
   clear: vi.fn(),
 }));
@@ -64,7 +64,7 @@ async function flush() {
 
 describe("useChatWorkspace delivery watchdog", () => {
   beforeEach(() => {
-    confirmState.pendingConfirm = null;
+    confirmState.pendingConfirms = [];
     confirmState.respond.mockReset();
     vi.useFakeTimers();
     handlers.clear();
@@ -93,12 +93,12 @@ describe("useChatWorkspace delivery watchdog", () => {
   }
 
   it("hands the pending confirmation and its responder to the widget", async () => {
-    confirmState.pendingConfirm = { id: "req-1" };
+    confirmState.pendingConfirms = [{ id: "req-1" }];
     const hook = setup();
     await flush();
-    expect(hook.result.current.pendingConfirm).toEqual({ id: "req-1" });
-    hook.result.current.respondToConfirm("approve", { c1: "edited" });
-    expect(confirmState.respond).toHaveBeenCalledWith("approve", { c1: "edited" });
+    expect(hook.result.current.pendingConfirms).toEqual([{ id: "req-1" }]);
+    hook.result.current.respondToConfirm("req-1", "approve", { c1: "edited" });
+    expect(confirmState.respond).toHaveBeenCalledWith("req-1", "approve", { c1: "edited" });
   });
 
   it("re-fetches history when no reply arrives within the bound", async () => {

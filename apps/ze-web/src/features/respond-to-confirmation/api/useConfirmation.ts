@@ -1,18 +1,19 @@
 import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useSendNotice } from "@/features/send-context-notice";
 import { useWsStore, send } from "@/shared/api";
-import { usePendingConfirms } from "../model/pending-store";
+import { type PendingConfirm, usePendingConfirms } from "../model/pending-store";
 
+const NONE: PendingConfirm[] = [];
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
 
 export function useConfirmation(ephemeral: boolean, threadId: string) {
-  const stored = usePendingConfirms((s) => s.byThread[threadId] ?? null);
-  const pendingConfirm = ephemeral ? null : stored;
+  const stored = usePendingConfirms((s) => s.byThread[threadId]);
+  const pendingConfirms = ephemeral || !stored ? NONE : stored;
   const setThreadThinking = useWsStore((s) => s.setThreadThinking);
 
-  function respond(value: string, edits: Record<string, string> = {}) {
-    if (!pendingConfirm || pendingConfirm.submitted) return;
-    const confirm = pendingConfirm;
+  function respond(id: string, value: string, edits: Record<string, string> = {}) {
+    const confirm = pendingConfirms.find((c) => c.id === id);
+    if (!confirm || confirm.submitted) return;
     const checkpoint = value === "approve" || value === "deny";
 
     const sent = send(
@@ -33,8 +34,8 @@ export function useConfirmation(ephemeral: boolean, threadId: string) {
     }
 
     // Item cards wait for confirm_cancel or the next round; prompt cards close at once.
-    if (confirm.items.length > 0) usePendingConfirms.getState().set({ ...confirm, submitted: true });
-    else usePendingConfirms.getState().clear(confirm.threadId);
+    if (confirm.items.length > 0) usePendingConfirms.getState().markSubmitted(confirm.threadId, id);
+    else usePendingConfirms.getState().remove(confirm.threadId, id);
     if (checkpoint) setThreadThinking(threadId, true);
   }
 
@@ -42,5 +43,5 @@ export function useConfirmation(ephemeral: boolean, threadId: string) {
     usePendingConfirms.getState().clear(threadId);
   }
 
-  return { pendingConfirm, respond, clear };
+  return { pendingConfirms, respond, clear };
 }

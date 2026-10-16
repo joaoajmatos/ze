@@ -81,7 +81,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
   const showTyping = isThinking;
   const deliveryFailed = failedThread === threadId;
 
-  const { pendingConfirm, respond: respondToConfirm, clear: clearConfirm } = useConfirmation(
+  const { pendingConfirms, respond: respondToConfirm, clear: clearConfirm } = useConfirmation(
     ephemeral,
     threadId,
   );
@@ -336,7 +336,7 @@ export function useChatWorkspace(options: UseChatWorkspaceOptions = {}) {
     isThinking,
     isConnected,
     deliveryFailed,
-    pendingConfirm,
+    pendingConfirms,
     sendMessage,
     retry,
     removeMessage: remove,

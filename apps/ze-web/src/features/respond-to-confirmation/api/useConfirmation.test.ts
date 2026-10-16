@@ -79,7 +79,7 @@ describe("useConfirmation", () => {
   it("keeps the request's items, kind, round and expiry", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
-    expect(result.current.pendingConfirm).toMatchObject({
+    expect(result.current.pendingConfirms[0]).toMatchObject({
       id: "req-1",
       kind: "write",
       round: 1,
@@ -87,13 +87,13 @@ describe("useConfirmation", () => {
       expiresAt: "2026-10-15T20:15:00Z",
       submitted: false,
     });
-    expect(result.current.pendingConfirm?.items).toHaveLength(1);
+    expect(result.current.pendingConfirms[0]?.items).toHaveLength(1);
   });
 
   it("sends confirm with the choice and the edits", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
-    act(() => result.current.respond("approve", { c1: "new body" }));
+    act(() => result.current.respond("req-1", "approve", { c1: "new body" }));
     expect(sendMock).toHaveBeenCalledWith({
       type: "confirm",
       id: "req-1",
@@ -106,7 +106,7 @@ describe("useConfirmation", () => {
   it("sends deny without edits", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
-    act(() => result.current.respond("deny", {}));
+    act(() => result.current.respond("req-1", "deny", {}));
     expect(sendMock).toHaveBeenCalledWith({
       type: "confirm",
       id: "req-1",
@@ -118,41 +118,41 @@ describe("useConfirmation", () => {
   it("marks the card submitted until confirm_cancel arrives", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
-    act(() => result.current.respond("approve", {}));
-    expect(result.current.pendingConfirm?.submitted).toBe(true);
+    act(() => result.current.respond("req-1", "approve", {}));
+    expect(result.current.pendingConfirms[0]?.submitted).toBe(true);
     expect(useWsStore.getState().thinkingThreads[THREAD]).toBe(true);
     act(() => handlers.get("confirm_cancel")?.({ type: "confirm_cancel", id: "req-1", thread_id: THREAD }));
-    expect(result.current.pendingConfirm).toBeNull();
+    expect(result.current.pendingConfirms).toEqual([]);
   });
 
   it("ignores a confirm_cancel for another request", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
     act(() => handlers.get("confirm_cancel")?.({ type: "confirm_cancel", id: "other", thread_id: THREAD }));
-    expect(result.current.pendingConfirm?.id).toBe("req-1");
+    expect(result.current.pendingConfirms[0]?.id).toBe("req-1");
   });
 
   it("replaces the card when the next round arrives", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
-    act(() => result.current.respond("approve", {}));
+    act(() => result.current.respond("req-1", "approve", {}));
     open(requestFrame({ id: "req-2", round: 2 }));
-    expect(result.current.pendingConfirm).toMatchObject({ id: "req-2", round: 2, submitted: false });
+    expect(result.current.pendingConfirms[0]).toMatchObject({ id: "req-2", round: 2, submitted: false });
   });
 
   it("re-enables the card and shows a notice when the socket is down", () => {
     sendMock.mockReturnValue(false);
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open();
-    act(() => result.current.respond("approve", {}));
-    expect(result.current.pendingConfirm?.submitted).toBe(false);
+    act(() => result.current.respond("req-1", "approve", {}));
+    expect(result.current.pendingConfirms[0]?.submitted).toBe(false);
     expect(useSendNotice.getState().notice).toMatch(/not connected/i);
   });
 
   it("flags attention instead of opening a card for another thread", () => {
     const { result } = renderHook(() => useConfirmation(false, THREAD));
     open(requestFrame({ thread_id: "thread-2" }));
-    expect(result.current.pendingConfirm).toBeNull();
+    expect(result.current.pendingConfirms).toEqual([]);
   });
 
   it("keeps a request for another thread and shows it once that thread opens", () => {
@@ -160,10 +160,73 @@ describe("useConfirmation", () => {
       initialProps: { thread: THREAD },
     });
     open(requestFrame({ id: "req-t2", thread_id: "thread-2" }));
-    expect(result.current.pendingConfirm).toBeNull();
+    expect(result.current.pendingConfirms).toEqual([]);
     expect(useWsStore.getState().attentionThreads["thread-2"]).toBe(true);
     rerender({ thread: "thread-2" });
-    expect(result.current.pendingConfirm).toMatchObject({ id: "req-t2", threadId: "thread-2" });
+    expect(result.current.pendingConfirms[0]).toMatchObject({ id: "req-t2", threadId: "thread-2" });
+  });
+
+  it("keeps a write confirmation open when a prompt frame arrives on the same thread", () => {
+    const { result } = renderHook(() => useConfirmation(false, THREAD));
+    open();
+    open(requestFrame({ id: "gate-1", kind: "prompt", items: [], title: "Continue?" }));
+    expect(result.current.pendingConfirms.map((c) => c.id)).toEqual(["req-1", "gate-1"]);
+    act(() => result.current.respond("req-1", "approve", {}));
+    expect(sendMock).toHaveBeenCalledWith(expect.objectContaining({ id: "req-1", choice: "approve" }));
+    expect(result.current.pendingConfirms.map((c) => c.id)).toEqual(["req-1", "gate-1"]);
+  });
+
+  it("cancels by request id even when the cancel frame names no thread", () => {
+    const { result, rerender } = renderHook(({ thread }) => useConfirmation(false, thread), {
+      initialProps: { thread: THREAD },
+    });
+    open(requestFrame({ id: "req-t2", thread_id: "thread-2" }));
+    act(() => handlers.get("confirm_cancel")?.({ type: "confirm_cancel", id: "req-t2" }));
+    rerender({ thread: "thread-2" });
+    expect(result.current.pendingConfirms).toEqual([]);
+  });
+
+  it("cancels by request id when the cancel frame names the wrong thread", () => {
+    const { result } = renderHook(() => useConfirmation(false, THREAD));
+    open();
+    act(() =>
+      handlers.get("confirm_cancel")?.({ type: "confirm_cancel", id: "req-1", thread_id: "thread-9" }),
+    );
+    expect(result.current.pendingConfirms).toEqual([]);
+  });
+
+  describe("acknowledging an answer without a confirm_cancel", () => {
+    it.each(["typing", "token"])("clears the answered card on the next %s frame", (type) => {
+      const { result } = renderHook(() => useConfirmation(false, THREAD));
+      open();
+      act(() => result.current.respond("req-1", "approve", {}));
+      expect(result.current.pendingConfirms[0]?.submitted).toBe(true);
+      act(() => handlers.get(type)?.({ type, thread_id: THREAD }));
+      expect(result.current.pendingConfirms).toEqual([]);
+    });
+
+    it("clears the answered card when the reply message arrives", () => {
+      const { result } = renderHook(() => useConfirmation(false, THREAD));
+      open();
+      act(() => result.current.respond("req-1", "deny", {}));
+      act(() => handlers.get("message")?.({ type: "message", message: { thread_id: THREAD } }));
+      expect(result.current.pendingConfirms).toEqual([]);
+    });
+
+    it("leaves an unanswered card alone", () => {
+      const { result } = renderHook(() => useConfirmation(false, THREAD));
+      open();
+      act(() => handlers.get("typing")?.({ type: "typing", thread_id: THREAD }));
+      expect(result.current.pendingConfirms).toHaveLength(1);
+    });
+
+    it("does not clear another thread's answered card", () => {
+      const { result } = renderHook(() => useConfirmation(false, THREAD));
+      open();
+      act(() => result.current.respond("req-1", "approve", {}));
+      act(() => handlers.get("typing")?.({ type: "typing", thread_id: "thread-2" }));
+      expect(result.current.pendingConfirms).toHaveLength(1);
+    });
   });
 
   describe("prompt frames (kind \"prompt\", no items)", () => {
@@ -189,7 +252,7 @@ describe("useConfirmation", () => {
     it("opens a card from the prompt without throwing", () => {
       const { result } = renderHook(() => useConfirmation(false, THREAD));
       open(promptFrame());
-      expect(result.current.pendingConfirm).toMatchObject({
+      expect(result.current.pendingConfirms[0]).toMatchObject({
         id: "gate-1",
         kind: "prompt",
         title: "Milestone 2 is ready. Continue?",
@@ -201,13 +264,13 @@ describe("useConfirmation", () => {
     it("sends a non-checkpoint button as an action frame and closes the card", () => {
       const { result } = renderHook(() => useConfirmation(false, THREAD));
       open(promptFrame());
-      act(() => result.current.respond("goal_gate:pause:abc"));
+      act(() => result.current.respond("gate-1", "goal_gate:pause:abc"));
       expect(sendMock).toHaveBeenCalledWith({
         type: "action",
         payload: "goal_gate:pause:abc",
         thread_id: THREAD,
       });
-      expect(result.current.pendingConfirm).toBeNull();
+      expect(result.current.pendingConfirms).toEqual([]);
       expect(useWsStore.getState().thinkingThreads[THREAD]).toBeFalsy();
     });
 
@@ -223,22 +286,22 @@ describe("useConfirmation", () => {
           ],
         }),
       );
-      act(() => result.current.respond("deny"));
+      act(() => result.current.respond("reset-1", "deny"));
       expect(sendMock).toHaveBeenCalledWith({
         type: "confirm",
         id: "reset-1",
         choice: "deny",
         thread_id: THREAD,
       });
-      expect(result.current.pendingConfirm).toBeNull();
+      expect(result.current.pendingConfirms).toEqual([]);
     });
 
     it("restores the card and shows a notice when an action cannot be sent", () => {
       sendMock.mockReturnValue(false);
       const { result } = renderHook(() => useConfirmation(false, THREAD));
       open(promptFrame());
-      act(() => result.current.respond("goal_gate:pause:abc"));
-      expect(result.current.pendingConfirm?.id).toBe("gate-1");
+      act(() => result.current.respond("gate-1", "goal_gate:pause:abc"));
+      expect(result.current.pendingConfirms[0]?.id).toBe("gate-1");
       expect(useSendNotice.getState().notice).toMatch(/not connected/i);
     });
   });

@@ -29,7 +29,7 @@ export function ChatWorkspace() {
     isThinking,
     isConnected,
     deliveryFailed,
-    pendingConfirm,
+    pendingConfirms,
     sendMessage,
     retry,
     removeMessage,
@@ -170,7 +170,7 @@ export function ChatWorkspace() {
         </div>
       )}
 
-      {pendingConfirm && (
+      {pendingConfirms.map((pendingConfirm) => (
         <ConfirmationCard
           key={pendingConfirm.id}
           title={pendingConfirm.title}
@@ -179,9 +179,9 @@ export function ChatWorkspace() {
           actions={pendingConfirm.actions}
           disabled={pendingConfirm.submitted}
           highlighted={searchParams.get("confirm") === pendingConfirm.id}
-          onRespond={respondToConfirm}
+          onRespond={(value, edits) => respondToConfirm(pendingConfirm.id, value, edits)}
         />
-      )}
+      ))}
 
       <div className="relative z-10 flex-shrink-0">
         <ChatInput
