@@ -155,3 +155,86 @@ def test_also_loop_is_only_for_mixed_rows_whose_gold_is_not_loop(cal):
     text = "\n".join(cal.row_problems("t", [wrong_kind, loop_gold, booked]))
     for rid in "bcd":
         assert f"t/{rid}:" in text
+
+
+def _holdout2_rows(cal, prefix="h2"):
+    rows = []
+    for lang in cal.LANGS:
+        n = 0
+
+        def add(choice, **over):
+            nonlocal n
+            n += 1
+            rows.append(
+                _row(
+                    cal,
+                    id=f"{prefix}-{lang}-{n}",
+                    lang=lang,
+                    text=f"{prefix} {lang} text number {n}",
+                    gold_choice=choice,
+                    kind="blind",
+                    **over,
+                )
+            )
+
+        for _ in range(15):
+            add("fact", gold_family="identity")
+        for _ in range(15):
+            add("loop")
+        for choice in cal.CHOICES:
+            if choice not in ("fact", "loop"):
+                add(choice)
+        add("reminder", turn_created="reminder")
+        add("goal", turn_created="goal")
+        add("none", gold_resolves=True)
+    return rows
+
+
+def test_a_blind_holdout2_with_its_own_kind_names_passes_the_shape_check(cal):
+    holdout = cal.load_rows(cal.HOLDOUT)
+    h2 = _holdout2_rows(cal)
+    assert cal.shape_problems(None, holdout, h2) == []
+    assert any("hard-negative" not in n for n in cal.kind_notes("holdout2", h2))
+
+
+def test_holdout2_text_or_ids_shared_with_other_sets_are_rejected(cal):
+    holdout = cal.load_rows(cal.HOLDOUT)
+    tuned = cal.load_rows(cal.TUNED)
+    h2 = _holdout2_rows(cal)
+    h2[0].text = holdout[3].text.upper()
+    h2[1].text = tuned[3].text
+    h2[2].id = holdout[0].id
+    text = "\n".join(cal.shape_problems(tuned, holdout, h2))
+    assert "holdout2/h2-en-1: text equals" in text
+    assert "holdout2/h2-en-2: text equals" in text
+    assert "ids repeat between holdout2" in text
+
+
+def test_holdout2_below_the_depth_minimums_fails(cal):
+    holdout = cal.load_rows(cal.HOLDOUT)
+    h2 = [r for r in _holdout2_rows(cal) if not (r.lang == "pt" and r.gold_fact)]
+    problems = cal.shape_problems(None, holdout, h2)
+    assert any(p.startswith("holdout2/pt:") and "fact rows" in p for p in problems)
+
+
+async def test_the_spent_holdout_cannot_run_a_verdict(cal, capsys):
+    import argparse
+
+    args = argparse.Namespace(
+        check_sets=False, set="holdout", replay=None, bars="0.5,0.5,0.5,0.5,0.5,0.5"
+    )
+    assert await cal.main_async(args) == 2
+    assert "spent" in capsys.readouterr().err
+
+
+async def test_holdout2_verdict_needs_bars_and_refuses_replay(cal, capsys, tmp_path):
+    import argparse
+
+    base = dict(check_sets=False, set="holdout2")
+    no_bars = argparse.Namespace(**base, replay=None, bars=None)
+    assert await cal.main_async(no_bars) == 2
+    replay = argparse.Namespace(
+        **base, replay=tmp_path / "r.json", bars="0.5,0.5,0.5,0.5,0.5,0.5"
+    )
+    assert await cal.main_async(replay) == 2
+    assert "tuning" in capsys.readouterr().err
