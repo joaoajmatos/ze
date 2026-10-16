@@ -59,6 +59,7 @@ def test_core_and_integration_packages_do_not_import_the_engine() -> None:
 
 
 def _dependency_graph() -> dict[str, set[str]]:
+    """Edges from [project].dependencies only; optional and dev groups are not hard edges."""
     manifests = [
         path
         for pattern in ("*/*/pyproject.toml", "*/*/*/pyproject.toml")
