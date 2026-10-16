@@ -5,11 +5,16 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock
 
+import pytest
+
 
 from ze_memory.extractor import (
     extract_events,
+    extract_facts,
     gather_event_proposals,
+    gather_fact_proposals,
     parse_event_response,
+    parse_fact_response,
     raw_to_events,
 )
 from ze_memory.types import Event
@@ -189,3 +194,59 @@ async def test_gather_event_proposals_with_client():
 async def test_gather_event_proposals_without_client_returns_empty():
     events = await gather_event_proposals({}, prompt="hi", response="hello")
     assert events == []
+
+
+# ── facts ─────────────────────────────────────────────────────────────────────
+
+
+def test_parse_fact_response_strips_markdown_fence():
+    raw = '```json\n{"family": "identity", "facts": [{"value": "Lisbon", "confidence": 0.9}]}\n```'
+    assert parse_fact_response(raw) == [
+        {"predicate": "identity", "value": "Lisbon", "confidence": 0.9}
+    ]
+
+
+def test_parse_fact_response_invalid_returns_empty():
+    assert parse_fact_response("not json") == []
+    assert parse_fact_response('{"key": "x"}') == []
+    assert (
+        parse_fact_response('{"family": "city", "facts": [{"value": "Lisbon"}]}') == []
+    )
+
+
+@pytest.mark.asyncio
+async def test_extract_user_facts_skips_error_responses():
+    client = AsyncMock()
+    facts = await extract_facts(client, prompt="hi", response="[ERROR] boom", model="m")
+    assert facts == []
+    client.complete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gather_fact_proposals_merges_llm_output():
+    client = AsyncMock()
+    client.complete = AsyncMock(
+        return_value='{"family": "preference", "facts": [{"value": "Python"}]}'
+    )
+    configurable = {"openrouter_client": client, "settings": None}
+    proposals = await gather_fact_proposals(
+        configurable,
+        agent="companion",
+        prompt="I love Python",
+        response="Great choice!",
+    )
+    assert proposals.path == "haiku"
+    assert len(proposals.facts) == 1
+    assert proposals.facts[0].predicate == "preference"
+
+
+@pytest.mark.asyncio
+async def test_gather_without_client_returns_empty():
+    proposals = await gather_fact_proposals(
+        {},
+        agent="companion",
+        prompt="I love Python",
+        response="hello",
+    )
+    assert proposals.facts == []
+    assert proposals.path == "none"
