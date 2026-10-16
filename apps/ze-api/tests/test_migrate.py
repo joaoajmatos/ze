@@ -113,4 +113,15 @@ def test_phase_180_revision_extends_the_core_chain():
     cfg = ze_migrate._build_config("postgresql+psycopg2://test/test")
     script = ScriptDirectory.from_config(cfg)
     assert script.get_revision("zc032").down_revision == "zc031"
-    assert "zc032" in set(script.get_heads())
+
+
+def test_cleanup_cf04_revisions_extend_the_core_chain():
+    from alembic.script import ScriptDirectory
+
+    cfg = ze_migrate._build_config("postgresql+psycopg2://test/test")
+    script = ScriptDirectory.from_config(cfg)
+    assert script.get_revision("zc035").down_revision == "zc032"
+    assert script.get_revision("zc036").down_revision == "zc035"
+    assert "zc022" in script.get_revision("zc036").dependencies
+    assert script.get_revision("zc037").down_revision == "zc036"
+    assert "zc037" in set(script.get_heads())
