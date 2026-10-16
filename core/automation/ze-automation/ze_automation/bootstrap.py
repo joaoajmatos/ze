@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 import asyncpg
 
@@ -220,6 +220,7 @@ async def configure_workflow_executor(
     router: Any,
     persona_store: Any,
     workflow_graph_builder: Any,
+    begin_workflow_turn: Callable[[Any], dict[str, Any]],
     workspace_gate: Any = None,
 ) -> None:
     workflow_graph = workflow_graph_builder(
@@ -242,16 +243,8 @@ async def configure_workflow_executor(
     }
 
     async def _workflow_executor(workflow: Any, execution_id: Any) -> None:
-        from ze_agents.interface.types import RawInput as _RawInput
-        from ze_core.conversation import make_graph_input
-        from ze_core.telemetry.context import set_flow_context
-
-        set_flow_context("workflow_execution", session_id=f"workflow:{workflow.id}")
         initial_state = {
-            **make_graph_input(
-                _RawInput(text=f"[workflow] {workflow.name}"),
-                f"workflow:{workflow.id}",
-            ),
+            **begin_workflow_turn(workflow),
             "workflow_id": workflow.id,
             "workflow_execution_id": execution_id,
             "workflow_steps": workflow.steps,

@@ -7,6 +7,17 @@ from __future__ import annotations
 from typing import Any
 
 
+def begin_workflow_turn(workflow: Any) -> dict[str, Any]:
+    """Set the telemetry flow and return the engine's base graph input for a workflow run."""
+    from ze_agents.interface.types import RawInput
+    from ze_core.conversation import make_graph_input
+    from ze_core.telemetry.context import set_flow_context
+
+    session_id = f"workflow:{workflow.id}"
+    set_flow_context("workflow_execution", session_id=session_id)
+    return make_graph_input(RawInput(text=f"[workflow] {workflow.name}"), session_id)
+
+
 def build_workflow_graph(
     checkpointer: Any,
     plugins: list | None = None,
