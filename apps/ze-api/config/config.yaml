@@ -13,18 +13,22 @@ routing:
   threshold: 0.73
   gap_threshold: 0.02
 
-# Typed judgments (Jev via OpenRouter System One). 163 speech-act, 164 routing (167-calibrated) and 166 skills are on.
+# Typed judgments (Jev via OpenRouter System One). 164 routing (167-calibrated), 166 skills and 168 loop gate are on; 173 commitment intake is off until a held-out ENABLE.
 system_one:
   enabled: true
   model: typesafe/jev-1.13
   timeout_ms: 2000
   surfaces:
-    speech_act:
-      enabled: true
-      # Calibrated 2026-10-09 (make calibrate-speech-act, 60 EN+PT rows): exact-act 0.967,
-      # fact precision 1.00 / recall 0.93, ECE 0.036. Flat region 0.5-0.9 x 0.5-0.75; mid-region chosen for margin.
-      choice_hold: 0.9
-      biography_hold: 0.7
+    commitment_intake:
+      # Phase 173: one conversation request (commitment Choice + fact and loop Nouls) replaces the 163 speech-act and 168 conversation loop-gate requests.
+      # Off with null bars until make calibrate-commitment-intake gives ENABLE on the held-out set; the Haiku fact extractor and 109 loop gate run meanwhile.
+      enabled: false
+      choice_hold: null
+      family_hold: null
+      biography_hold: null
+      loop_hold: null
+      explicit_hold: null
+      resolves_hold: null
     routing:
       enabled: true
       # Calibrated 2026-10-12 (167, k=9, 52 held-out EN+PT rows): zero harmful trusts and zero research->companion
@@ -43,6 +47,7 @@ system_one:
       shortlist_k: 5            # live recall 0.985 at k=5 (k=4 already meets 0.95)
       shortlist_floor: 0.35     # non-binding on the calibration roster (E5 cosines 0.71-0.89)
     loop_gate:
+      # Email, calendar and ingestion inflows only; conversation turns use commitment_intake.
       enabled: true
       # Calibrated 2026-10-12 (make calibrate-loop-gate; 88 tuned + 48 held-out rows, EN+PT). Held-out verdict ENABLE for
       # EN and PT: recall 10/10 each, precision 1.00, zero false creates. Haiku baseline (same prompt, fence-tolerant)
