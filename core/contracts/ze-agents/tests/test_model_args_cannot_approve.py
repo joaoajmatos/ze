@@ -107,3 +107,31 @@ async def test_a_model_argument_cannot_replace_an_injected_dependency() -> None:
     await _run(ctx, tc)
 
     assert calls == [{"text": "hi", "ctx": ctx}]
+
+
+async def test_the_model_is_not_asked_for_an_injected_dependency() -> None:
+    async def draft(campaign_id: str, body: str = "") -> str:
+        calls.append({"campaign_id": campaign_id, "body": body})
+        return "drafted"
+
+    tool(access=ToolAccess.READ, description="draft")(draft)
+    client = _client(
+        (None, [{"id": "c1", "name": "draft", "arguments": {}}]), ("ok", [])
+    )
+
+    class _Drafter(_Agent):
+        tools = ["draft"]
+
+    await _Drafter().agentic_loop(
+        AgentContext(session_id="s", prompt="p"),
+        client,
+        [{"role": "user", "content": "go"}],
+        system="s",
+        deps={"campaign_id": "camp-1"},
+    )
+
+    [schema] = client.complete_with_tools.await_args_list[0].kwargs["tools"]
+    params = schema["function"]["parameters"]
+    assert set(params["properties"]) == {"body"}
+    assert params["required"] == []
+    assert calls == [{"campaign_id": "camp-1", "body": ""}]

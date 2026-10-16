@@ -720,7 +720,7 @@ class BaseAgent(ABC):
                 if n in _OPENROUTER_TOOL_SCHEMAS
                 else DELEGATE_TOOL_SCHEMA
                 if n == DELEGATE_TOOL_NAME
-                else get_tool(n).llm_schema()
+                else _hide_deps(get_tool(n).llm_schema(), _deps)
                 for n in visible
             ]
 
@@ -966,6 +966,22 @@ async def _dispatch_tool_end(
             await hook.on_tool_end(ToolEndEvent(name, tool_call, ctx, iteration))
         except Exception as exc:
             log.warning("hook_error_on_tool_end", tool=name, error=str(exc))
+
+
+def _hide_deps(schema: dict, deps: dict[str, Any]) -> dict:
+    """The tool schema without the parameters this loop injects: the model never sees them."""
+    params = schema["function"]["parameters"]
+    hidden = set(deps) & set(params.get("properties") or {})
+    if not hidden:
+        return schema
+    visible = {
+        **params,
+        "properties": {
+            k: v for k, v in params["properties"].items() if k not in hidden
+        },
+        "required": [r for r in params.get("required") or [] if r not in hidden],
+    }
+    return {**schema, "function": {**schema["function"], "parameters": visible}}
 
 
 def _model_args(tool_name: str, llm_args: dict) -> dict:
