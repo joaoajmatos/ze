@@ -2,16 +2,25 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import types
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, get_type_hints
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Literal,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
 from ze_agents.reversibility import ToolReversibility
 
 _tools: dict[str, ToolSpec] = {}
-
-_JSON_PRIMITIVE_TYPES = frozenset({str, int, float, bool, list, dict})
 
 _PY_TO_JSON: dict[type, str] = {
     str: "string",
@@ -21,6 +30,116 @@ _PY_TO_JSON: dict[type, str] = {
     list: "array",
     dict: "object",
 }
+
+
+class _InjectedMarker:
+    def __repr__(self) -> str:
+        return "Injected"
+
+
+_INJECTED = _InjectedMarker()
+_T = TypeVar("_T")
+
+Injected = Annotated[_T, _INJECTED]
+"""Marks a tool parameter that Ze supplies and the model never sees.
+
+`session_id: Injected[str | None] = None`. The parameter is left out of the
+tool's schema, and a value the model sends for it is dropped before the call.
+"""
+
+_HIDDEN = object()
+
+
+class _UnsupportedParam(Exception):
+    pass
+
+
+def _param_schema(annotation: Any) -> dict | object:
+    """JSON schema for a model-visible type, or `_HIDDEN` for a dependency.
+
+    Raises `_UnsupportedParam` for a data-shaped type JSON schema cannot express.
+    """
+    if annotation is inspect.Parameter.empty or annotation in (Any, object):
+        return _HIDDEN
+    origin = get_origin(annotation)
+    if origin is Annotated:
+        inner, *extras = get_args(annotation)
+        if any(extra is _INJECTED for extra in extras):
+            return _HIDDEN
+        return _param_schema(inner)
+    if origin in (Union, types.UnionType):
+        members = [a for a in get_args(annotation) if a is not type(None)]
+        schemas = [_param_schema(a) for a in members]
+        if all(schema is _HIDDEN for schema in schemas):
+            return _HIDDEN
+        if len(schemas) == 1:
+            return schemas[0]
+        raise _UnsupportedParam(f"a union of several types ({annotation})")
+    if origin is list:
+        if not get_args(annotation):
+            return {"type": "array"}
+        (item,) = get_args(annotation)
+        items = _param_schema(item)
+        if items is _HIDDEN:
+            raise _UnsupportedParam(f"list items of type {item!r}")
+        return {"type": "array", "items": items}
+    if origin is dict:
+        key = (get_args(annotation) or (str,))[0]
+        if key is not str:
+            raise _UnsupportedParam("dict keys other than str")
+        return {"type": "object"}
+    if annotation in _PY_TO_JSON:
+        return {"type": _PY_TO_JSON[annotation]}
+    if (
+        origin in (set, frozenset, tuple, Literal)
+        or annotation in (set, frozenset, tuple, type(None))
+        or (inspect.isclass(annotation) and issubclass(annotation, Enum))
+    ):
+        raise _UnsupportedParam(f"type {annotation!r}")
+    return _HIDDEN
+
+
+def _resolve_hints(func: Callable) -> dict[str, Any]:
+    try:
+        return get_type_hints(func, include_extras=True)
+    except Exception:
+        pass
+    hints: dict[str, Any] = {}
+    for name, param in inspect.signature(func).parameters.items():
+        annotation = param.annotation
+        if isinstance(annotation, str):
+            try:
+                annotation = eval(annotation, func.__globals__)  # noqa: S307
+            except Exception:
+                continue
+        hints[name] = annotation
+    return hints
+
+
+def _build_parameters(name: str, func: Callable) -> tuple[dict, frozenset[str]]:
+    """The model-visible parameters schema and the names of hidden parameters."""
+    hints = _resolve_hints(func)
+    properties: dict[str, Any] = {}
+    required: list[str] = []
+    hidden: set[str] = set()
+    for param_name, param in inspect.signature(func).parameters.items():
+        if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
+            continue
+        try:
+            schema = _param_schema(hints.get(param_name, inspect.Parameter.empty))
+        except _UnsupportedParam as exc:
+            raise AgentConfigError(
+                f"Tool {name!r} parameter {param_name!r}: JSON schema cannot express "
+                f"{exc}; change the type or mark it Injected[...]"
+            ) from None
+        if schema is _HIDDEN:
+            hidden.add(param_name)
+            continue
+        properties[param_name] = schema
+        if param.default is inspect.Parameter.empty:
+            required.append(param_name)
+    params = {"type": "object", "properties": properties, "required": required}
+    return params, frozenset(hidden)
 
 
 class ToolAccess(str, Enum):
@@ -46,27 +165,7 @@ class ToolSpec:
         if self._schema_override is not None:
             params = self._schema_override
         else:
-            sig = inspect.signature(self.func)
-            try:
-                hints = get_type_hints(self.func)
-            except Exception:
-                hints = {}
-
-            properties: dict[str, Any] = {}
-            required: list[str] = []
-            for param_name, param in sig.parameters.items():
-                annotation = hints.get(param_name)
-                if annotation not in _JSON_PRIMITIVE_TYPES:
-                    continue
-                properties[param_name] = {"type": _PY_TO_JSON[annotation]}
-                if param.default is inspect.Parameter.empty:
-                    required.append(param_name)
-            params = {
-                "type": "object",
-                "properties": properties,
-                "required": required,
-            }
-
+            params, _ = _build_parameters(self.name, self.func)
         return {
             "type": "function",
             "function": {
@@ -75,6 +174,13 @@ class ToolSpec:
                 "parameters": params,
             },
         }
+
+    def hidden_params(self) -> frozenset[str]:
+        """Parameters the model cannot set: `Injected[...]` ones and dependencies."""
+        if self._schema_override is not None:
+            return frozenset()
+        _, hidden = _build_parameters(self.name, self.func)
+        return hidden
 
 
 def _check_declaration(
@@ -183,6 +289,7 @@ def tool(
         _check_declaration(
             name, access_val, reversibility_val, undo_tool, undo_note, effect_phrase
         )
+        _build_parameters(name, func)
         _tools[name] = ToolSpec(
             name=name,
             access=access_val,

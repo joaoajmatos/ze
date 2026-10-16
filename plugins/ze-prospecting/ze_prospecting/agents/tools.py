@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import Injected, ToolAccess, tool
 from ze_sdk import ToolReversibility
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import Person, PersonSource
@@ -35,7 +35,7 @@ async def add_prospect(
     contact_info: dict,
     source_url: str,
     enrichment_notes: str,
-    campaign_id: str,
+    campaign_id: Injected[str],
     channel: str = "email",
     person_store: PersonStore = None,
     campaign_store: ProspectCampaignStore = None,
@@ -103,9 +103,9 @@ async def draft_outreach(
     context: str,
     campaign_brief: str,
     channel: str,
-    campaign_id: str,
+    campaign_id: Injected[str],
     client: LLMClient,
-    model: str,
+    model: Injected[str],
     person_store: PersonStore,
     campaign_store: ProspectCampaignStore,
 ) -> str:

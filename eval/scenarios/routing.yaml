@@ -59,3 +59,23 @@
     - Ze should recognise this as a compound task
     - Should handle both the research and the reminder parts
     - Should not silently drop either subtask
+
+- id: routing_finance_spending_since
+  prompt: "How much did I spend since September 1st?"
+  description: Finance date filter — get_spending_summary must receive since
+  expected_agent: finance
+  expected_tools: [get_spending_summary]
+  tags: [routing, finance, tool_schema]
+  criteria:
+    - Should route to the finance agent
+    - Should call get_spending_summary with since set to September 1st of this year
+    - Should not sum spending over all time
+
+- id: routing_news_tags
+  prompt: "Show me today's AI headlines."
+  description: News tag filter — get_headlines or search_news must receive tags
+  expected_agent: news
+  tags: [routing, news, tool_schema]
+  criteria:
+    - Should route to the news agent
+    - Should filter by an AI tag (tags on get_headlines or search_news), not list every headline

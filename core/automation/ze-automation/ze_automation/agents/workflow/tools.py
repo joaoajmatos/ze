@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool, undo_payload
+from ze_agents.tool import Injected, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.errors import WorkflowPlanError
 from ze_automation.workflow.planner import WorkflowPlanner, validate_step_targets
@@ -148,8 +148,8 @@ async def create_workflow(
     workflow_name: str,
     description: str,
     schedule_description: str = "",
-    session_id: str | None = None,
-    user_message_id: str | None = None,
+    session_id: Injected[str | None] = None,
+    user_message_id: Injected[str | None] = None,
 ) -> dict:
     try:
         steps = await planner.plan(description)
@@ -322,8 +322,8 @@ async def edit_workflow_steps(
     store: WorkflowStore,
     workflow_name: str,
     steps_json: str,
-    session_id: str | None = None,
-    user_message_id: str | None = None,
+    session_id: Injected[str | None] = None,
+    user_message_id: Injected[str | None] = None,
 ) -> dict:
     wf = await store.get_by_name(workflow_name)
     if wf is None:
