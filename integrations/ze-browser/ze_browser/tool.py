@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import Injected, ToolAccess, tool
 from ze_agents.types import ToolCall
 from ze_browser.client import BrowserClient
 
@@ -19,8 +19,8 @@ _BLOCKED_MSG = "[blocked or empty — skip this URL]"
 async def browser_extract(
     url: str,
     browser_client: BrowserClient,
-    browser_delay_ms: int,
-    browser_max_text_chars: int,
+    browser_delay_ms: Injected[int],
+    browser_max_text_chars: Injected[int],
 ) -> ToolCall:
     await asyncio.sleep(browser_delay_ms / 1000)
     start = time.monotonic()

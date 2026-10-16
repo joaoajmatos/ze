@@ -1,8 +1,16 @@
+from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Set as AbstractSet
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
+from pathlib import Path
+from uuid import UUID
+
 import pytest
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import (
+    Injected,
     ToolAccess,
     ToolSpec,
     clear_tool_registry,
@@ -178,6 +186,105 @@ class TestToolSpecLlmSchema:
         schema = spec.llm_schema()
         assert schema["function"]["parameters"] is override
         assert "items" in schema["function"]["parameters"]["properties"]
+
+    def test_optional_params_are_visible_and_not_required(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def opt_tool(event_id: str, summary: str | None = None) -> str: ...
+
+        params = get_tool("opt_tool").llm_schema()["function"]["parameters"]
+        assert params["properties"]["summary"] == {"type": "string"}
+        assert params["required"] == ["event_id"]
+
+    def test_typed_lists_and_dicts(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def list_tool(
+            locations: list[str],
+            tags: list[str] | None = None,
+            counts: dict[str, int] | None = None,
+        ) -> str: ...
+
+        params = get_tool("list_tool").llm_schema()["function"]["parameters"]
+        array = {"type": "array", "items": {"type": "string"}}
+        assert params["properties"]["locations"] == array
+        assert params["properties"]["tags"] == array
+        assert params["properties"]["counts"] == {"type": "object"}
+        assert params["required"] == ["locations"]
+
+    def test_injected_params_are_hidden(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def inj_tool(
+            q: str,
+            delay_ms: Injected[int],
+            session_id: Injected[str | None] = None,
+            restore_ids: Injected[list[str] | None] = None,
+        ) -> str: ...
+
+        params = get_tool("inj_tool").llm_schema()["function"]["parameters"]
+        assert list(params["properties"]) == ["q"]
+        assert params["required"] == ["q"]
+
+    def test_dependency_types_are_hidden(self):
+        from typing import Any
+
+        from ze_agents.types import AgentContext
+
+        @tool(access=ToolAccess.READ, description="t")
+        async def dep_tool(
+            q: str,
+            ctx: AgentContext | None = None,
+            embedder: Any = None,
+            store: object = None,
+        ) -> str: ...
+
+        params = get_tool("dep_tool").llm_schema()["function"]["parameters"]
+        assert list(params["properties"]) == ["q"]
+
+    def test_hidden_params_lists_injected_and_dependencies(self):
+        class _Store:
+            pass
+
+        @tool(access=ToolAccess.READ, description="t")
+        async def mixed(q: str, store: _Store, sid: Injected[str]) -> str: ...
+
+        assert get_tool("mixed").hidden_params() == frozenset({"store", "sid"})
+
+    @pytest.mark.parametrize(
+        "annotation",
+        [
+            set[str],
+            tuple[str, str],
+            str | int,
+            list[ToolSpec],
+            dict[int, str],
+            datetime | None,
+            date,
+            time,
+            timedelta,
+            UUID | None,
+            Decimal,
+            Path,
+            bytes,
+            Sequence[str] | None,
+            Mapping[str, str],
+            Iterable[str],
+            AbstractSet[str],
+            Sequence,
+        ],
+    )
+    def test_visible_param_without_json_shape_fails_registration(self, annotation):
+        async def bad(x): ...
+
+        bad.__annotations__ = {"x": annotation}
+        with pytest.raises(AgentConfigError, match="x"):
+            tool(access=ToolAccess.READ, description="t")(bad)
+        assert "bad" not in registered_tools()
+
+    def test_union_of_injected_and_json_type_names_the_cause(self):
+        async def mixed_union(x): ...
+
+        mixed_union.__annotations__ = {"x": Injected[str] | int}
+        with pytest.raises(AgentConfigError, match="mark the whole parameter"):
+            tool(access=ToolAccess.READ, description="t")(mixed_union)
 
     def test_constraint_gate_defaults_false(self):
         @tool(

@@ -680,14 +680,13 @@ class BaseAgent(ABC):
                         }
                     )
                 else:
-                    merged = _merge_deps(
-                        tc["name"], tc["arguments"], {**_deps, "ctx": ctx}
-                    )
+                    model_args = _model_args(tc["name"], tc["arguments"])
+                    merged = _merge_deps(tc["name"], model_args, {**_deps, "ctx": ctx})
                     tool_call = await self.call_tool(
                         tc["name"],
                         ctx,
                         _iteration=iteration,
-                        _lm_args=tc["arguments"],
+                        _lm_args=model_args,
                         **merged,
                     )
                     accumulated.append(tool_call)
@@ -783,6 +782,16 @@ def _split_undo(spec: Any, result: Any) -> tuple[Any, dict[str, Any] | None]:
         return stripped, payload
     log.warning("undo_payload_dropped", tool=spec.name)
     return stripped, None
+
+
+def _model_args(tool_name: str, llm_args: dict) -> dict:
+    """Drop values the model sent for parameters it cannot set."""
+    from ze_agents.tool import get_tool
+
+    if _is_openrouter_server_tool(tool_name):
+        return dict(llm_args)
+    hidden = get_tool(tool_name).hidden_params()
+    return {k: v for k, v in llm_args.items() if k not in hidden}
 
 
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:

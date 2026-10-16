@@ -25,7 +25,7 @@ from ze_agents.hooks import (
     register_hook,
 )
 from ze_agents.reversibility import ToolReversibility
-from ze_agents.tool import ToolAccess, clear_tool_registry, tool
+from ze_agents.tool import Injected, ToolAccess, clear_tool_registry, tool
 from ze_agents.types import AbortToken, AgentContext, AgentResult, ToolCall
 
 
@@ -455,6 +455,34 @@ class TestAgenticLoop:
         await a.agentic_loop(_ctx(), client, messages, system="s", deps={"db": fake_db})
 
         assert captured["db"] is fake_db
+
+    async def test_model_cannot_set_hidden_params(self):
+        captured: dict = {}
+
+        @tool(access=ToolAccess.READ, description="t")
+        async def scoped_tool(
+            q: str, session_id: Injected[str | None] = None, db: object = None
+        ) -> str:
+            captured.update(session_id=session_id, db=db)
+            return "ok"
+
+        a = _agent()
+        a.tools = ["scoped_tool"]
+        forged = {"q": "hi", "session_id": "forged", "db": "forged"}
+        client = self._client(
+            [
+                (None, [{"id": "c1", "name": "scoped_tool", "arguments": forged}]),
+                ("done", None),
+            ]
+        )
+        messages = [{"role": "user", "content": "x"}]
+
+        _, calls = await a.agentic_loop(
+            _ctx(), client, messages, system="s", deps={"session_id": "real"}
+        )
+
+        assert captured == {"session_id": "real", "db": None}
+        assert calls[0].args == {"q": "hi"}
 
     async def test_no_text_no_tool_calls_raises(self):
         @tool(access=ToolAccess.READ, description="t")

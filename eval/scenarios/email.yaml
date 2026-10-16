@@ -96,3 +96,14 @@
     - Turn 2 should revise the draft with a warmer tone and reschedule mention
     - Turn 2 should not forget the core message from turn 1
     - Ze should present the revised draft, not auto-send
+
+- id: email_reply_in_thread
+  prompt: "Reply to Ana's latest email saying Thursday works for me, and send it."
+  description: A reply goes into the existing thread — send_email must receive thread_id
+  expected_agent: messenger
+  expected_tools: [list_emails, send_email]
+  tags: [routing, email, tool_schema]
+  criteria:
+    - Should find Ana's latest email first
+    - Should call send_email with that message's thread_id so the reply stays in the thread
+    - Should ask for confirmation before sending, as for any send

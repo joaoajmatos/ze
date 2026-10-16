@@ -44,7 +44,7 @@ Imported by `ze-plugin`, `ze-core`, and `ze-onboarding`. Re-exported to plugin a
 
 <sub>[Interactive version](../../docs/diagrams/core/contracts/ze-agents/dependencies.html)</sub>
 
-No other Ze package dependencies. Third-party: `structlog`, `pyyaml`, `typing_extensions`.
+Depends on `ze-logging` only. Third-party: `pyyaml`, `typing_extensions`.
 
 ## Usage
 
