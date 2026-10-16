@@ -21,6 +21,7 @@ from ze_core.conversation.messages.types import (
     ProcedureUsageTrace,
     SkillUsageTrace,
     SourceTrace,
+    TierTrace,
     ToolCallTrace,
     WorkspaceUsageTrace,
 )
@@ -351,6 +352,7 @@ def _parse_trace(data: dict) -> MessageTrace:
         if data.get("rollback")
         else None,
         loop_offer_ids=list(data.get("loop_offer_ids") or []),
+        tier=TierTrace(**data["tier"]) if data.get("tier") else None,
     )
 
 

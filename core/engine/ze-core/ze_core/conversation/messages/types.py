@@ -163,6 +163,14 @@ class JudgmentTrace:
 
 
 @dataclass
+class TierTrace:
+    agent: str
+    tier: str  # "simple" | "full"
+    decided_by: str
+    model: str
+
+
+@dataclass
 class SourceTrace:
     url: str
     title: str = ""
@@ -191,3 +199,4 @@ class MessageTrace:
     sources: list[SourceTrace] = field(default_factory=list)
     effects_known: bool = False  # True only when tool calls carry registry metadata
     rollback: RollbackTrace | None = None
+    tier: TierTrace | None = None

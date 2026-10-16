@@ -5,11 +5,9 @@ from typing import Any
 from ze_agents.client import LLMClient
 from ze_agents.system_one import SystemOneResult
 from ze_agents.errors import InvalidPromptError, RoutingError
-from ze_agents.model_resolution import resolve_model
 from ze_logging import get_logger
 from ze_agents.registry import get_enabled_agents
 from ze_agents.tasks import fire_and_forget
-from ze_core.routing.complexity import ComplexityEstimator
 from ze_core.routing.judge import (
     RoutingDecision,
     RoutingSurfaceConfig,
@@ -19,6 +17,7 @@ from ze_core.routing.judge import (
     shortlist,
 )
 from ze_core.routing.store import RoutingStore
+from ze_core.routing.tier import resolve_agent_model
 from ze_core.routing.types import (
     RouterConfig,
     RoutingEnvelope,
@@ -36,7 +35,6 @@ class EmbeddingRouter:
         openrouter_client: LLMClient,
         routing_store: RoutingStore | None = None,
         config: RouterConfig | None = None,
-        estimator: ComplexityEstimator | None = None,
         app_config: dict | None = None,
         system_one_client: Any = None,
         surface: RoutingSurfaceConfig | None = None,
@@ -45,7 +43,6 @@ class EmbeddingRouter:
         self._client = openrouter_client
         self._store = routing_store
         self._config = config or RouterConfig()
-        self._estimator = estimator or ComplexityEstimator()
         self._app_config = app_config or {}
         self._system_one = system_one_client
         self._surface = surface or RoutingSurfaceConfig()
@@ -88,7 +85,6 @@ class EmbeddingRouter:
             raise RoutingError(f"Forced agent {agent_name!r} is not an enabled agent")
         prompt = prompt.strip()
         intent = self._primary_intent(agent_name)
-        complexity = self._estimator.classify(prompt, intent, 1.0)
         envelope = RoutingEnvelope(
             primary_agent=agent_name,
             confidence=1.0,
@@ -100,12 +96,11 @@ class EmbeddingRouter:
                     agent=agent_name,
                     intent=intent,
                     prompt=prompt,
-                    model=self._resolve_model(agent_name, complexity),
+                    model=self._full_model(agent_name),
                 )
             ],
             requires_synthesis=False,
             raw_scores={agent_name: 1.0},
-            complexity=complexity,
         )
         if self._store is not None:
             fire_and_forget(
@@ -126,16 +121,8 @@ class EmbeddingRouter:
             descriptions, normalize_embeddings=True
         )
 
-    def _resolve_model(self, agent_name: str, complexity: str) -> str:
-        enabled = get_enabled_agents()
-        agent_cls = enabled.get(agent_name)
-        if agent_cls is None:
-            declared = None
-        elif complexity == "simple" and agent_cls.model_simple:
-            declared = agent_cls.model_simple
-        else:
-            declared = agent_cls.model
-        return resolve_model(agent_name, declared, self._app_config)
+    def _full_model(self, agent_name: str) -> str:
+        return resolve_agent_model(agent_name, "full", self._app_config)
 
     def _primary_intent(self, agent_name: str) -> str:
         enabled = get_enabled_agents()
@@ -147,8 +134,7 @@ class EmbeddingRouter:
     def _single_agent_envelope(self, prompt: str) -> RoutingEnvelope:
         agent_name = self._agent_names[0]
         intent = self._primary_intent(agent_name)
-        complexity = self._estimator.classify(prompt, intent, 1.0)
-        model = self._resolve_model(agent_name, complexity)
+        model = self._full_model(agent_name)
         return RoutingEnvelope(
             primary_agent=agent_name,
             confidence=1.0,
@@ -160,7 +146,6 @@ class EmbeddingRouter:
             ],
             requires_synthesis=False,
             raw_scores={agent_name: 1.0},
-            complexity=complexity,
         )
 
     async def _judge(
@@ -206,20 +191,11 @@ class EmbeddingRouter:
         compound: bool,
         confidence: float,
         score_gap: float,
-        top_score: float,
         raw_scores: dict[str, float],
-        decision: RoutingDecision | None,
         judgment: RoutingJudgment | None,
     ) -> RoutingEnvelope:
         intent = self._primary_intent(primary)
-        if decision is not None and decision.complexity is not None:
-            complexity, source = decision.complexity, "score"
-        else:
-            complexity, source = (
-                self._estimator.classify(prompt, intent, top_score),
-                "regex",
-            )
-        model = self._resolve_model(primary, complexity)
+        model = self._full_model(primary)
         return RoutingEnvelope(
             primary_agent=primary,
             confidence=confidence,
@@ -231,9 +207,7 @@ class EmbeddingRouter:
             ],
             requires_synthesis=False,
             raw_scores=raw_scores,
-            complexity=complexity,
             judgment=judgment,
-            complexity_source=source,
         )
 
     async def _score_and_route(
@@ -253,9 +227,7 @@ class EmbeddingRouter:
         )
         common = dict(
             score_gap=score_gap,
-            top_score=top_score,
             raw_scores=raw_scores,
-            decision=decision,
             judgment=judgment,
         )
 

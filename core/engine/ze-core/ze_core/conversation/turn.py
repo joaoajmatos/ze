@@ -63,6 +63,7 @@ def make_graph_input(
         "correlations": [],
         "message_trace": None,
         "judgments": [],
+        "tier": None,
         "skill_matches": None,
     }
 

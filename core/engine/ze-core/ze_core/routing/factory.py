@@ -11,10 +11,14 @@ from ze_agents.defaults import (
 )
 from ze_agents.model_resolution import resolve_model
 
-from ze_core.routing.complexity import ComplexityEstimator
 from ze_core.routing.judge import routing_surface_config
 from ze_core.routing.router import EmbeddingRouter
 from ze_core.routing.store import RoutingStore
+from ze_core.routing.tier import (
+    ComplexitySurfaceConfig,
+    TierJudge,
+    complexity_surface_config,
+)
 from ze_core.routing.types import RouterConfig
 
 
@@ -34,15 +38,21 @@ def build_embedding_router(
     config: dict,
     system_one_client: Any,
     routing_store: RoutingStore | None = None,
-    estimator: ComplexityEstimator | None = None,
 ) -> EmbeddingRouter:
     return EmbeddingRouter(
         embedder=embedder,
         openrouter_client=openrouter_client,
         routing_store=routing_store,
         config=router_config_from(config),
-        estimator=estimator,
         app_config=config,
         system_one_client=system_one_client,
         surface=routing_surface_config(config),
     )
+
+
+def build_tier_judge(*, config: dict, system_one_client: Any) -> TierJudge:
+    surface = complexity_surface_config(config)
+    system_one = config.get("system_one")
+    if not (isinstance(system_one, dict) and system_one.get("enabled") is True):
+        surface = ComplexitySurfaceConfig(enabled=False, simple_max=surface.simple_max)
+    return TierJudge(system_one_client, surface, config)

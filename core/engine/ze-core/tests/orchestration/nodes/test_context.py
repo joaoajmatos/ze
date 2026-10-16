@@ -429,7 +429,6 @@ def _envelope(agent_name: str, intent: str, *, compound: bool = False):
             SubTask(agent=agent_name, intent=intent, prompt="p", model="m-goals")
         ],
         requires_synthesis=False,
-        complexity="complex",
     )
 
 
@@ -447,7 +446,7 @@ class TestOpenQueryAnsweredByCompanion:
             turn_surfacer=_surfacer(_ranked_mentions(), global_query=global_query)
         )
         router = MagicMock()
-        router._resolve_model = MagicMock(return_value="m-companion")
+        router._app_config = {"models": {"overrides": {"companion": "m-companion"}}}
         config["configurable"]["router"] = router
         config["configurable"]["forced_agent"] = forced
         return config

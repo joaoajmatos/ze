@@ -32,7 +32,6 @@ system_one:
       # (ho-loops-en: loops->companion at confidence 0.29, never trusted at 0.5, falls back to decompose).
       choice_trust: 0.5
       multi_specialist_hold: 0.5
-      complexity_lookup_max: null   # suggestion 0.16/0.17 per set but 0.02 combined (outlier); regex tiering stays
       shortlist_k: 9                # 167 recall gate: smallest k with recall >= 0.95 on all three sets (0.571 at k=6 on holdout2)
     skills:
       enabled: true
@@ -59,6 +58,10 @@ system_one:
       enabled: false
       corroborate_hold: null
       promote_hold: null
+    complexity:
+      # Phase 182: needs_deep_reasoning Noul picks model_simple after fetch_context/match_skills. Off = every agent runs its full model. Enable only after a held-out ENABLE in EN and PT (make calibrate-complexity).
+      enabled: false
+      simple_max: null
 
 # Opt-in spend ceiling, token-estimated in real time inside capability_check.
 # Absent/null limits = current (telemetry-only) behavior, zero change.
