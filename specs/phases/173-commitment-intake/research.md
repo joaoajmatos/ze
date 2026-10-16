@@ -46,3 +46,22 @@ Two bar sets, both from the tuned set only:
 The whole difference is `ci-t-en-073` / `ci-t-pt-073`, mixed rows with gold `fact` ("I'm allergic to nuts, and I still haven't answered the school about the trip"). The text also carries a real open concern, so the model's `loop` Choice at 0.93 EN / 0.80 PT is defensible, but the gold counts it as a false create. The suggested `choice_hold` 0.95 only avoids it because EN-073 scores 0.93, which is a grid-edge fit to one ambiguous row. Two PT loop rows (`ci-t-pt-029`, `-031`) score `loop` at 0.88 / 0.91 and are held at 0.95. A bar around 0.85 recovers them but lets the mixed row through.
 
 Open question for the Maestro: score a `mixed` row whose text also carries an open concern as "loop acceptable" (neither a false create nor a required hit), for example with an optional `also_loop` row field. Changing the held-out rows is still allowed before the first held-out run.
+
+### Frozen bars for the held-out verdict (2026-10-16, chosen on the tuned set only)
+
+`also_loop` landed first (`460e7ce3`): a mixed row that states a fact and also carries a real open concern accepts a loop answer (neither a false create nor a required hit). Marked by text only, before any held-out model output exists: tuned `ci-t-en-073`, `ci-t-pt-073`; held-out `ho-en-40`, `ho-pt-40` (the other mixed rows either created a reminder or have a loop gold, which the schema excludes).
+
+Run 2 re-scored offline (`--replay`, no new spend). The tuned set is flat across `choice_hold` 0.5 to 0.8 (EN perfect, PT fact recall 5/6 from `ci-t-pt-049`, `none`@0.55 on a fact row, which no bar below 0.55 can recover while keeping precision), loop recall stays 1.00 for `loop_hold` 0.50 to 0.70, false resolves are zero for `resolves_hold` at or above 0.85 (false rows reach 0.84, true rows start at 0.90), and `explicit_hold` 0.95 gives the fewest false declared. Centres of those plateaus, not their grid edges:
+
+| bar | frozen value |
+|---|---|
+| `choice_hold` | 0.65 |
+| `family_hold` | 0.65 |
+| `biography_hold` | 0.55 |
+| `loop_hold` | 0.60 |
+| `explicit_hold` | 0.95 |
+| `resolves_hold` | 0.90 |
+
+Tuned set at these bars, EN / PT: Choice accuracy 1.00 / 0.98, link accuracy 24/24 both, duplicate bookings 0 / 0 (baseline 18 / 17), false loop creates 0 / 0, fact precision 1.00 / 1.00 and recall 1.00 / 0.83 (baseline 0.83 / 0.67), loop precision and recall 1.00 / 1.00 (baseline precision 0.37 / 0.39), `waiting_on` writes 0/10.
+
+Config proposal if the verdict is `ENABLE` (`system_one.surfaces.commitment_intake`): `enabled: true`, `choice_hold: 0.65`, `family_hold: 0.65`, `biography_hold: 0.55`, `loop_hold: 0.6`, `explicit_hold: 0.95`, `resolves_hold: 0.9`. Nothing in the shipped config changes before the verdict. Wording is frozen at the commit that carries this note; any change after the held-out run needs a fresh held-out set (FR-020).
