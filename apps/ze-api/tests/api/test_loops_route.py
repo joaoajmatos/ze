@@ -157,6 +157,38 @@ async def test_get_loop_returns_promotion_and_sources():
 
 
 @pytest.mark.asyncio
+async def test_list_and_detail_expose_reminder_and_goal_ids():
+    reminder_id, goal_id = uuid4(), uuid4()
+    linked = _loop(reminder_id=reminder_id, goal_id=goal_id)
+    unlinked = _loop()
+    store = AsyncMock()
+    store.list = AsyncMock(return_value=[linked, unlinked])
+    store.list_sources_for = AsyncMock(return_value={})
+    store.get = AsyncMock(return_value=linked)
+    store.list_evidence = AsyncMock(return_value=[])
+    store.list_sources = AsyncMock(return_value=[])
+    app, _ = _make_app(store)
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        listed = await client.get("/api/v0/loops", headers=headers)
+        detail = await client.get(f"/api/v0/loops/{linked.id}", headers=headers)
+
+    assert listed.status_code == 200
+    first, second = listed.json()
+    assert (first["reminder_id"], first["goal_id"]) == (
+        str(reminder_id),
+        str(goal_id),
+    )
+    assert (second["reminder_id"], second["goal_id"]) == (None, None)
+    assert detail.status_code == 200
+    assert detail.json()["reminder_id"] == str(reminder_id)
+    assert detail.json()["goal_id"] == str(goal_id)
+
+
+@pytest.mark.asyncio
 async def test_get_loop_404_when_missing():
     store = AsyncMock()
     store.get = AsyncMock(return_value=None)

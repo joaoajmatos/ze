@@ -1325,6 +1325,8 @@ class LoopListItem(BaseModel):
     provenance: str
     confidence: float
     drift_rationale: str | None
+    goal_id: UUIDType | None
+    reminder_id: UUIDType | None
     created_at: str | None
     updated_at: str | None
     promoted: bool
@@ -1353,7 +1355,6 @@ class LoopSourceItem(BaseModel):
 
 
 class LoopDetail(LoopListItem):
-    goal_id: UUIDType | None
     evidence: list[LoopEvidenceItem]
     entities: list[LoopEntityItem]
     sources: list[LoopSourceItem]

@@ -333,7 +333,7 @@ class CommitmentIntake:
             return LinkOutcome(kind, False, "error")
         log.info("commitment_linked", kind=kind, loop_id=str(loop.id), changed=changed)
         return LinkOutcome(
-            kind, bool(changed), "linked" if changed else "not_live", loop.id
+            kind, bool(changed), "linked" if changed else "unchanged", loop.id
         )
 
     def _log(

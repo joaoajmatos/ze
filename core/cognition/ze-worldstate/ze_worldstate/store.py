@@ -48,6 +48,7 @@ def _loop_from_row(row) -> OpenLoop:
         provenance=row["provenance"],
         confidence=row["confidence"],
         goal_id=row["goal_id"],
+        reminder_id=row["reminder_id"],
         dismissed_evidence_fingerprint=row["dismissed_evidence_fingerprint"],
         drift_deadline=row["drift_deadline"],
         drift_rationale=row["drift_rationale"],
@@ -86,6 +87,14 @@ class LoopStore(Protocol):
     async def transition(
         self, loop_id: UUID, new_state: str, *, user_asked: bool = False
     ) -> OpenLoop: ...
+
+    async def link(
+        self,
+        loop_id: UUID,
+        *,
+        reminder_id: UUID | None = None,
+        goal_id: UUID | None = None,
+    ) -> bool: ...
 
     async def link_entity(self, loop_id: UUID, entity_id: UUID) -> None: ...
 
@@ -146,8 +155,8 @@ class PostgresLoopStore:
                 """
                 INSERT INTO open_loops
                   (title, state, claim_kind, provenance, confidence, goal_id,
-                   dismissed_evidence_fingerprint, confirmed_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                   reminder_id, dismissed_evidence_fingerprint, confirmed_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING *
                 """,
                 loop.title,
@@ -156,6 +165,7 @@ class PostgresLoopStore:
                 loop.provenance,
                 loop.confidence,
                 loop.goal_id,
+                loop.reminder_id,
                 loop.dismissed_evidence_fingerprint,
                 loop.confirmed_at,
             )
@@ -337,10 +347,31 @@ class PostgresLoopStore:
                 """,
                 loop_id,
             )
-        return [
-            EvidenceRef(kind=r["target_type"], id=r["target_id"])
-            for r in rows
-        ]
+        return [EvidenceRef(kind=r["target_type"], id=r["target_id"]) for r in rows]
+
+    async def link(
+        self,
+        loop_id: UUID,
+        *,
+        reminder_id: UUID | None = None,
+        goal_id: UUID | None = None,
+    ) -> bool:
+        """Set the reminder or goal pointer once on a live loop; never overwrite."""
+        if reminder_id is None and goal_id is None:
+            return False
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "UPDATE open_loops SET reminder_id = COALESCE(reminder_id, $2),"
+                " goal_id = COALESCE(goal_id, $3), updated_at = now()"
+                " WHERE id = $1 AND state IN ('suspected', 'active', 'drifting')"
+                " AND (reminder_id IS DISTINCT FROM COALESCE(reminder_id, $2)"
+                " OR goal_id IS DISTINCT FROM COALESCE(goal_id, $3))"
+                " RETURNING id",
+                loop_id,
+                reminder_id,
+                goal_id,
+            )
+        return row is not None
 
     async def set_drift_deadline(self, loop_id: UUID, deadline: datetime) -> None:
         async with self._pool.acquire() as conn:

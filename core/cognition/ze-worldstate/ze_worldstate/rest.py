@@ -31,6 +31,8 @@ def _loop_to_list_item(loop: OpenLoop, sources: list[LoopSource]) -> dict:
         "provenance": loop.provenance,
         "confidence": loop.confidence,
         "drift_rationale": loop.drift_rationale,
+        "goal_id": loop.goal_id,
+        "reminder_id": loop.reminder_id,
         "created_at": loop.created_at.isoformat() if loop.created_at else None,
         "updated_at": loop.updated_at.isoformat() if loop.updated_at else None,
         "promoted": _is_promoted(sources),
@@ -89,9 +91,7 @@ async def _fetch_evidence_summaries(
                 summary = row["s"] if row else ""
             else:
                 summary = ""
-            summaries.append(
-                {"type": ref.kind, "id": ref.id, "summary": summary}
-            )
+            summaries.append({"type": ref.kind, "id": ref.id, "summary": summary})
     return summaries
 
 
@@ -126,7 +126,6 @@ async def get_loop(loop_store: LoopStore, loop_id: UUID, pool: Any = None) -> di
     sources = await loop_store.list_sources(loop_id)
     return {
         **_loop_to_list_item(loop, sources),
-        "goal_id": loop.goal_id,
         "evidence": await _fetch_evidence_summaries(pool, loop_store, loop_id),
         "entities": await _fetch_entities(pool, loop_id),
         "sources": [_source_to_item(source) for source in sources],

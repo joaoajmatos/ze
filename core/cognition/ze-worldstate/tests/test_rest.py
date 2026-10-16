@@ -66,8 +66,12 @@ async def test_list_loops_adds_promoted_and_source_inflows_in_one_query():
     loop_store.list_sources_for = AsyncMock(
         return_value={
             loop.id: [
-                _source(loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation", ref="T1"),
-                _source(loop.id, inflow="email", ref="G1", same_concern=0.93, promoted=True),
+                _source(
+                    loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation", ref="T1"
+                ),
+                _source(
+                    loop.id, inflow="email", ref="G1", same_concern=0.93, promoted=True
+                ),
             ]
         }
     )
@@ -88,7 +92,9 @@ async def test_list_loops_source_inflows_are_distinct_and_first_seen_order():
     loop_store.list_sources_for = AsyncMock(
         return_value={
             loop.id: [
-                _source(loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation", ref="T1"),
+                _source(
+                    loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation", ref="T1"
+                ),
                 _source(loop.id, inflow="email", ref="G1", minutes=1),
                 _source(loop.id, inflow="conversation", ref="T2", minutes=2),
             ]
@@ -107,8 +113,12 @@ async def test_list_loops_not_promoted_when_no_corroboration_promoted():
     loop_store.list_sources_for = AsyncMock(
         return_value={
             loop.id: [
-                _source(loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation", ref="T1"),
-                _source(loop.id, inflow="email", ref="G1", same_concern=0.8, promoted=False),
+                _source(
+                    loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation", ref="T1"
+                ),
+                _source(
+                    loop.id, inflow="email", ref="G1", same_concern=0.8, promoted=False
+                ),
             ]
         }
     )
@@ -206,3 +216,29 @@ async def test_get_loop_raises_when_missing():
 
     with pytest.raises(LoopNotFoundError):
         await rest.get_loop(loop_store, uuid4())
+
+
+async def test_list_and_detail_expose_reminder_and_goal_ids():
+    reminder_id, goal_id = uuid4(), uuid4()
+    loop = _loop(reminder_id=reminder_id, goal_id=goal_id)
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=[loop])
+    loop_store.list_sources_for = AsyncMock(return_value={})
+    loop_store.get = AsyncMock(return_value=loop)
+    loop_store.list_sources = AsyncMock(return_value=[])
+
+    (item,) = await rest.list_loops(loop_store)
+    detail = await rest.get_loop(loop_store, loop.id)
+
+    for payload in (item, detail):
+        assert payload["reminder_id"] == reminder_id
+        assert payload["goal_id"] == goal_id
+
+
+async def test_unlinked_loop_has_null_ids():
+    loop = _loop()
+    loop_store = AsyncMock()
+    loop_store.list = AsyncMock(return_value=[loop])
+    loop_store.list_sources_for = AsyncMock(return_value={})
+    (item,) = await rest.list_loops(loop_store)
+    assert item["reminder_id"] is None and item["goal_id"] is None

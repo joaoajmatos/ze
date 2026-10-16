@@ -466,7 +466,7 @@ async def test_link_terminal_loop_is_refused_by_store(monkeypatch):
     adm = await _admit(
         intake, llm, tool_calls=[_tc("set_reminder", {"id": str(uuid4())})]
     )
-    assert (adm.link.linked, adm.link.reason) == (False, "not_live")
+    assert (adm.link.linked, adm.link.reason) == (False, "unchanged")
 
 
 async def test_link_non_uuid_id_is_skipped(monkeypatch):
