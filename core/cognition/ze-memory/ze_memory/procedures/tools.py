@@ -17,8 +17,6 @@ from ze_memory.procedures.types import MatchState, ProcedureInvocationOrigin
 
 log = get_logger(__name__)
 
-INVOKE_PROCEDURE_TOOL = "invoke_procedure"
-
 _activator: Any = None
 
 
