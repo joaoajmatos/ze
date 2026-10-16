@@ -124,7 +124,7 @@ async def run_live() -> list[CheckRow]:
             resp = await client.post(
                 f"{base}/eval/chat",
                 json={"prompt": prompt["prompt"], "session_id": session_id},
-                headers={"x-ze-api-key": key},
+                headers={"Authorization": f"Bearer {key}"},
             )
             resp.raise_for_status()
             wall = time.monotonic() - started

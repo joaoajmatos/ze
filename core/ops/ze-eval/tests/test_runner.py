@@ -113,7 +113,7 @@ def test_confirm_turn_posts_to_eval_confirm_with_the_same_session(ze_http):
     chat, confirm = ze_http.requests
     assert chat.url.path == "/eval/chat"
     assert confirm.url.path == "/eval/confirm"
-    assert confirm.headers["x-ze-api-key"] == "key"
+    assert confirm.headers["authorization"] == "Bearer key"
     assert json.loads(confirm.content) == {"session_id": "eval-s1", "choice": "approve"}
     assert [t["result"]["tool_calls"][0]["gate"] for t in result["turns"]] == [
         "parked",

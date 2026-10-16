@@ -8,7 +8,7 @@ import httpx
 class ZeEvalClient:
     def __init__(self, base_url: str, api_key: str, timeout: float = 90.0) -> None:
         self._base_url = base_url.rstrip("/")
-        self._headers = {"x-ze-api-key": api_key}
+        self._headers = {"Authorization": f"Bearer {api_key}"}
         self._timeout = timeout
 
     async def chat(

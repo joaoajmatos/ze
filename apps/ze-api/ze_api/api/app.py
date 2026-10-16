@@ -86,6 +86,13 @@ def _parse_cors_origins(value: str) -> list[str]:
     return [origin.strip() for origin in value.split(",") if origin.strip()]
 
 
+def _include_dev_routers(app: FastAPI) -> None:
+    """Eval and debug surfaces: mounted only when the server runs with EVAL_MODE."""
+    app.include_router(eval.router)
+    app.include_router(collisions.router, prefix="/api/v0")
+    app.include_router(routing.router, prefix="/api/v0/routing")
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
@@ -122,13 +129,9 @@ def create_app() -> FastAPI:
     # WebSocket — auth handled by the WS handshake
     app.include_router(ws_router)
 
-    # Internal tooling — exempt from versioning
-    app.include_router(eval.router)
-
     # Versioned REST API
     app.include_router(activity.router, prefix="/api/v0")
     app.include_router(memory.router, prefix="/api/v0/memory")
-    app.include_router(routing.router, prefix="/api/v0/routing")
     app.include_router(workflows.router, prefix="/api/v0/workflows")
     app.include_router(costs.router, prefix="/api/v0/costs")
     app.include_router(goals.router, prefix="/api/v0")
@@ -142,7 +145,6 @@ def create_app() -> FastAPI:
     app.include_router(dream.router, prefix="/api/v0")
     app.include_router(notifications.router, prefix="/api/v0")
     app.include_router(loops.router, prefix="/api/v0")
-    app.include_router(collisions.router, prefix="/api/v0")
     app.include_router(priority.router, prefix="/api/v0")
     app.include_router(procedures.router, prefix="/api/v0")
     app.include_router(skills.router, prefix="/api/v0")
@@ -150,6 +152,9 @@ def create_app() -> FastAPI:
     app.include_router(channels.router)
     app.include_router(ui.router)
     app.include_router(webhooks.router)
+
+    if settings.eval_mode:
+        _include_dev_routers(app)
 
     return app
 
