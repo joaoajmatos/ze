@@ -504,6 +504,33 @@ def report_errors(outcomes: Sequence[Outcome], simple_max: float) -> None:
 # --- main ----------------------------------------------------------------------------
 
 
+def report_borderline(
+    outcomes: Sequence[Outcome], lo: float = 0.15, hi: float = 0.5
+) -> None:
+    """Tuned set only: every row whose Noul sits near the bar, to read the margin by eye."""
+    print(
+        f"\n== tuned-set borderline rows, Noul in [{lo}, {hi}) (noul, id, lang, agent, gold)"
+    )
+    near = sorted(
+        (o for o in outcomes if o.noul is not None and lo <= o.noul < hi),
+        key=lambda o: o.noul,
+    )
+    for o in near:
+        print(f"  {o.noul:.3f}  {o.id} {o.lang} {o.agent:<9s} gold {o.gold_tier}")
+    full = sorted(
+        o.noul for o in outcomes if o.gold_tier == "full" and o.noul is not None
+    )
+    simple = sorted(
+        o.noul for o in outcomes if o.gold_tier == "simple" and o.noul is not None
+    )
+    if full and simple:
+        print(
+            f"  lowest full {full[0]:.3f}, highest simple {simple[-1]:.3f},"
+            f" median full {full[len(full) // 2]:.3f},"
+            f" median simple {simple[len(simple) // 2]:.3f}"
+        )
+
+
 def config_system_one() -> dict:
     return (yaml.safe_load(CONFIG.read_text(encoding="utf-8")) or {}).get(
         "system_one"
@@ -625,6 +652,7 @@ async def main_async(args: argparse.Namespace) -> int:
         for lang in LANGS:
             report_language(outcomes, v.per_lang[lang], bar)
         report_errors(outcomes, bar)
+        report_borderline(outcomes)
         print(f"\nSuggested simple_max (tuned set only): {suggestion}\nbar used: {bar}")
         return 0
 
