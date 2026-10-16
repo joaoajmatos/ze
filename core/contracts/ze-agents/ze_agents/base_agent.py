@@ -28,6 +28,7 @@ from ze_agents.hooks import (
 )
 from ze_agents.park import (
     DECLINED_RESULT,
+    ApprovedCall,
     MAX_WRITE_ROUNDS,
     OVER_CAP_RESULT,
     ParkedLoop,
@@ -321,16 +322,19 @@ class BaseAgent(ABC):
         self,
         name: str,
         ctx: AgentContext,
+        /,
         _iteration: int = -1,
         _lm_args: dict | None = None,
         _call_id: str | None = None,
-        _approved_call_id: str | None = None,
+        _approval: ApprovedCall | None = None,
         **kwargs: Any,
     ) -> ToolCall:
         """Execute a registered tool with write confirmation and hook dispatch.
 
         An asks-first WRITE tool is parked, not run, unless the user approved this
-        exact call (`_approved_call_id`) or a plan pre-approved the tool.
+        exact call (`_approval`, built by the resume path) or a plan pre-approved the
+        tool. Model arguments never reach the private parameters: the loop strips
+        `_`-prefixed keys (`_model_args`).
         """
         from ze_agents.tool import get_tool
 
@@ -355,10 +359,7 @@ class BaseAgent(ABC):
         confirmation_gate = "none"
         approval: dict[str, Any] | None = None
         if spec.access.value == "write":
-            approved = _approved_call_id is not None or (
-                _call_id is not None and _call_id in ctx.approved_call_ids
-            )
-            if approved:
+            if isinstance(_approval, ApprovedCall):
                 confirmation_gate = "approved"
                 approval = {
                     "request_id": ctx.approval_request_id,
@@ -520,7 +521,7 @@ class BaseAgent(ABC):
                     ctx,
                     _iteration=resume.iteration,
                     _lm_args=args,
-                    _approved_call_id=pw.call_id,
+                    _approval=ApprovedCall(pw.call_id),
                     **merged,
                 )
             else:
@@ -848,14 +849,13 @@ class BaseAgent(ABC):
                         }
                     )
                 else:
-                    merged = _merge_deps(
-                        tc["name"], tc["arguments"], {**_deps, "ctx": ctx}
-                    )
+                    model_args = _model_args(tc["name"], tc["arguments"])
+                    merged = _merge_deps(tc["name"], model_args, {**_deps, "ctx": ctx})
                     tool_call = await self.call_tool(
                         tc["name"],
                         ctx,
                         _iteration=iteration,
-                        _lm_args=tc["arguments"],
+                        _lm_args=model_args,
                         _call_id=tc["id"],
                         **merged,
                     )
@@ -968,8 +968,16 @@ async def _dispatch_tool_end(
             log.warning("hook_error_on_tool_end", tool=name, error=str(exc))
 
 
+def _model_args(tool_name: str, llm_args: dict) -> dict:
+    """The model's arguments without `_`-prefixed keys, which only Ze code may pass."""
+    reserved = [key for key in llm_args if key.startswith("_")]
+    if reserved:
+        log.warning("tool_reserved_args_dropped", tool=tool_name, keys=reserved)
+    return {k: v for k, v in llm_args.items() if not k.startswith("_")}
+
+
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
-    """Inject internal deps into tool kwargs for params the LLM cannot provide."""
+    """Inject internal deps into tool kwargs. A dep wins over a model argument of the same name."""
     import inspect
     from ze_agents.tool import get_tool
 
@@ -977,9 +985,9 @@ def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
         return dict(llm_args)
 
     spec = get_tool(tool_name)
-    merged = dict(llm_args)
+    merged = _model_args(tool_name, llm_args)
     for param_name in inspect.signature(spec.func).parameters:
-        if param_name not in merged and param_name in deps:
+        if param_name in deps:
             merged[param_name] = deps[param_name]
     return merged
 

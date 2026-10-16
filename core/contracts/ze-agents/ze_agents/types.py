@@ -153,7 +153,6 @@ class AgentContext:
     # user answered; the rest are runtime/turn-local. Never checkpoint a context.
     resume: ParkedLoop | None = None
     write_decisions: dict[str, WriteDecision] = field(default_factory=dict)
-    approved_call_ids: set[str] = field(default_factory=set)
     pre_approved_writes: frozenset[str] = frozenset()
     write_round: int = 0
     approval_request_id: str | None = None

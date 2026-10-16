@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from ze_agents.park import ApprovedCall
 from ze_agents.base_agent import BaseAgent
 from ze_agents.hooks import clear_hooks, register_hook
 from ze_agents.registry import clear_registry
@@ -267,7 +268,7 @@ async def test_approved_resume_does_not_recheck_the_constraint():
     _note_contact_tool(ran)
     register_hook(_veto_hook())
     tc = await _agent().call_tool(
-        "note_contact", _ctx(), _approved_call_id="c1", to="Ada"
+        "note_contact", _ctx(), _approval=ApprovedCall("c1"), to="Ada"
     )
     assert ran == ["Ada"] and tc.success
 

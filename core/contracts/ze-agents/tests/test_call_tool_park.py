@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from ze_agents.park import ApprovedCall
 from ze_agents.base_agent import BaseAgent
 from ze_agents.errors import AgentConfigError
 from ze_agents.park import OVER_CAP_RESULT
@@ -94,7 +95,7 @@ async def test_approved_call_id_runs() -> None:
         "delete_event",
         _ctx(),
         _lm_args={"event_id": "e1"},
-        _approved_call_id="c1",
+        _approval=ApprovedCall("c1"),
         event_id="e1",
     )
     assert calls == [("delete_event", {"event_id": "e1", "body": ""})]

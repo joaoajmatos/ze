@@ -30,6 +30,18 @@ current_approval: ContextVar[dict[str, Any] | None] = ContextVar(
     "current_approval", default=None
 )
 
+
+@dataclass(frozen=True)
+class ApprovedCall:
+    """The user approved this parked call. Built only by the resume path, from park state.
+
+    Runtime only, never checkpointed. Approval is this object, never a value a model
+    can put in its tool arguments.
+    """
+
+    call_id: str
+
+
 ParkReason = Literal["asks_first", "constraint", "check"]
 DecisionOutcome = Literal["approved", "edited", "denied", "timed_out", "superseded"]
 ConfirmationKind = Literal["write", "budget", "held"]

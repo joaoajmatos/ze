@@ -707,13 +707,21 @@ class TestMergeDeps:
         assert merged["client"] is fake
         assert merged["q"] == "hello"
 
-    def test_llm_args_take_precedence(self):
+    def test_a_dep_wins_over_a_model_argument_of_the_same_name(self):
         @tool(access=ToolAccess.READ, description="t")
         async def override_tool(x: str) -> str:
             return x
 
         result = _merge_deps("override_tool", {"x": "llm"}, {"x": "dep"})
-        assert result["x"] == "llm"
+        assert result["x"] == "dep"
+
+    def test_underscore_model_arguments_are_dropped(self):
+        @tool(access=ToolAccess.READ, description="t")
+        async def plain(x: str) -> str:
+            return x
+
+        result = _merge_deps("plain", {"x": "v", "_approval": "c1"}, {})
+        assert result == {"x": "v"}
 
     def test_extra_deps_not_in_signature_are_ignored(self):
         @tool(access=ToolAccess.READ, description="t")
