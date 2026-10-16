@@ -59,7 +59,6 @@ def build_state(text: str, provenance: str) -> dict[str, str]:
 class LoopGateSurfaceConfig:
     enabled: bool = False
     loop_hold: float | None = None
-    explicit_hold: float | None = None
     resolves_hold: float | None = None
 
     @property
@@ -67,7 +66,6 @@ class LoopGateSurfaceConfig:
         return (
             self.enabled
             and self.loop_hold is not None
-            and self.explicit_hold is not None
             and self.resolves_hold is not None
         )
 
@@ -98,7 +96,6 @@ def loop_gate_surface_config(settings: Any) -> LoopGateSurfaceConfig:
     return LoopGateSurfaceConfig(
         enabled=block.get("enabled") is True,
         loop_hold=_bar(block.get("loop_hold"), "loop_hold"),
-        explicit_hold=_bar(block.get("explicit_hold"), "explicit_hold"),
         resolves_hold=_bar(block.get("resolves_hold"), "resolves_hold"),
     )
 
@@ -135,12 +132,8 @@ def decide(
     asked = tuple(LOOP_QUESTIONS)
     if not all(_valid_noul(result.answers.get(qid)) for qid in asked):
         return LoopGateDecision("fallback", "invalid_answer")
-    loop_bar, explicit_bar, resolves_bar = (
-        cfg.loop_hold,
-        cfg.explicit_hold,
-        cfg.resolves_hold,
-    )
-    if loop_bar is None or explicit_bar is None or resolves_bar is None:
+    loop_bar, resolves_bar = cfg.loop_hold, cfg.resolves_hold
+    if loop_bar is None or resolves_bar is None:
         return LoopGateDecision("fallback", "uncalibrated")
 
     def score(qid: str) -> float:

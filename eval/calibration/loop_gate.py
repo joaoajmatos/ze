@@ -7,7 +7,7 @@ baseline. It costs credits and is never collected by pytest.
 - Default `--set tuned`: per language and provenance precision, recall, false creates, false
   resolve, false declared, explicit and resolves accuracy, a reliability table per Noul, and
   suggested bars chosen on the tuned set only. Held-out rows are never read or printed.
-- `--set holdout --bars LOOP,EXPLICIT,RESOLVES`: the single verdict run on
+- `--set holdout --bars LOOP,RESOLVES`: the single verdict run on
   eval/calibration/loop_gate_holdout.jsonl with frozen wording and bars. ENABLE or KEEP OFF per
   language, with the failing clause. Tuning after this run voids the set (FR-016): write a new
   held-out file before the next verdict.
@@ -240,7 +240,7 @@ def suggest_bars(
     plateau: list[tuple[float, float]] = []
     for loop_hold in GRID:
         for resolves_hold in GRID:
-            cfg = LoopGateSurfaceConfig(True, loop_hold, 0.5, resolves_hold)
+            cfg = LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
             c = score(rows, _kinds_for(rows, results, cfg))
             key = (c.false_creates, c.false_resolve, -c.recall)
             if best_key is None or key < best_key:
@@ -251,17 +251,7 @@ def suggest_bars(
         return None
     loop_hold = _median([p[0] for p in plateau])
     resolves_hold = _median([p[1] for p in plateau])
-    best_exp: tuple | None = None
-    exp_plateau: list[float] = []
-    for explicit_hold in GRID:
-        cfg = LoopGateSurfaceConfig(True, loop_hold, explicit_hold, resolves_hold)
-        c = score(rows, _kinds_for(rows, results, cfg))
-        key = (c.false_declared, -c.explicit_acc)
-        if best_exp is None or key < best_exp:
-            best_exp, exp_plateau = key, [explicit_hold]
-        elif key == best_exp:
-            exp_plateau.append(explicit_hold)
-    return LoopGateSurfaceConfig(True, loop_hold, _median(exp_plateau), resolves_hold)
+    return LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
 
 
 # --- live runs -----------------------------------------------------------------------
@@ -339,8 +329,7 @@ def _fmt(c: Counts) -> str:
     return (
         f"n={c.n} fb={c.fallback} P={c.precision:.3f} R={c.recall:.3f} "
         f"({c.hit_positives}/{c.positives}) creates={c.creates} falseC={c.false_creates} "
-        f"falseRes={c.false_resolve} falseDecl={c.false_declared} "
-        f"explAcc={c.explicit_acc:.3f} resAcc={c.resolves_acc:.3f}"
+        f"falseRes={c.false_resolve} resAcc={c.resolves_acc:.3f}"
     )
 
 
@@ -395,14 +384,12 @@ def report_reliability(rows: list[Row], results: dict[str, SystemOneResult]) -> 
 
 
 def report_grid(rows: list[Row], results: dict[str, SystemOneResult]) -> None:
-    print(
-        "\n== bar grid: false creates / recall (loop_hold rows, resolves_hold cols; explicit_hold n/a)"
-    )
+    print("\n== bar grid: false creates / recall (loop_hold rows, resolves_hold cols)")
     print("loop\\res   " + "".join(f"{b:>10.2f}" for b in GRID))
     for loop_hold in GRID:
         cells = ""
         for resolves_hold in GRID:
-            cfg = LoopGateSurfaceConfig(True, loop_hold, 0.5, resolves_hold)
+            cfg = LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
             c = score(rows, _kinds_for(rows, results, cfg))
             cells += f"{c.false_creates:>5d}/{c.recall:<4.2f}"
         print(f"{loop_hold:>8.2f}  " + cells)
@@ -439,10 +426,10 @@ def report_errors(
 
 def parse_bars(text: str) -> LoopGateSurfaceConfig:
     try:
-        loop_hold, explicit_hold, resolves_hold = (float(x) for x in text.split(","))
+        loop_hold, resolves_hold = (float(x) for x in text.split(","))
     except ValueError:
-        raise SystemExit("--bars needs LOOP,EXPLICIT,RESOLVES, e.g. 0.6,0.7,0.8")
-    return LoopGateSurfaceConfig(True, loop_hold, explicit_hold, resolves_hold)
+        raise SystemExit("--bars needs LOOP,RESOLVES, e.g. 0.75,0.8")
+    return LoopGateSurfaceConfig(True, loop_hold, resolves_hold)
 
 
 def config_model() -> str | None:
@@ -496,9 +483,7 @@ async def main_async(args: argparse.Namespace) -> int:
         print("Dataset problems; run --check-sets.", file=sys.stderr)
         return 1
     if holdout and not args.bars:
-        print(
-            "--set holdout needs frozen --bars LOOP,EXPLICIT,RESOLVES.", file=sys.stderr
-        )
+        print("--set holdout needs frozen --bars LOOP,RESOLVES.", file=sys.stderr)
         return 2
     if holdout:
         print(
@@ -559,15 +544,14 @@ async def main_async(args: argparse.Namespace) -> int:
             return 0
         kinds = _kinds_for(rows, results, cfg)
         print(
-            f"\nbars used: loop_hold={cfg.loop_hold} explicit_hold={cfg.explicit_hold} resolves_hold={cfg.resolves_hold}"
+            f"\nbars used: loop_hold={cfg.loop_hold} resolves_hold={cfg.resolves_hold}"
         )
         report_scores(rows, kinds, haiku_kinds, by_provenance=True)
         report_errors(rows, results, kinds)
         if suggestion:
             print(
                 "\nSuggested bars (tuned set only): "
-                f"loop_hold: {suggestion.loop_hold}  explicit_hold: {suggestion.explicit_hold}"
-                f"  resolves_hold: {suggestion.resolves_hold}"
+                f"loop_hold: {suggestion.loop_hold}  resolves_hold: {suggestion.resolves_hold}"
             )
         return 0
 
@@ -575,9 +559,7 @@ async def main_async(args: argparse.Namespace) -> int:
     kinds = _kinds_for(rows, results, cfg)
     out = report_scores(rows, kinds, haiku_kinds, by_provenance=False)
     print("\n== HELD-OUT VERDICT")
-    print(
-        f"bars: loop_hold={cfg.loop_hold} explicit_hold={cfg.explicit_hold} resolves_hold={cfg.resolves_hold}"
-    )
+    print(f"bars: loop_hold={cfg.loop_hold} resolves_hold={cfg.resolves_hold}")
     overall = True
     for lang in LANGS:
         sys_c, hk_c = out[lang]
@@ -604,7 +586,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--bars",
         default=None,
-        help="LOOP,EXPLICIT,RESOLVES (required for --set holdout)",
+        help="LOOP,RESOLVES (required for --set holdout)",
     )
     p.add_argument("--model", default=None)
     p.add_argument("--haiku-model", default=DEFAULT_EXTRACTION_MODEL)

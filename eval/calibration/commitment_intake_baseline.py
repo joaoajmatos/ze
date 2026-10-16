@@ -23,7 +23,6 @@ from ze_worldstate.loop_judge import (
     LOOP_QUESTIONS,
     Q_CONCERN,
     Q_RESOLVES,
-    LoopGateSurfaceConfig,
     build_state as loop_build_state,
 )
 
@@ -31,8 +30,19 @@ ASSISTANT_CAP = 1000
 
 BASELINE_CHOICE_HOLD = 0.9
 BASELINE_BIOGRAPHY_HOLD = 0.7
-BASELINE_LOOP_BARS = LoopGateSurfaceConfig(
-    enabled=True, loop_hold=0.75, explicit_hold=0.85, resolves_hold=0.8
+
+
+@dataclass(frozen=True)
+class BaselineLoopBars:
+    """The 168 conversation bars as shipped; loop_judge no longer carries explicit_hold."""
+
+    loop_hold: float
+    explicit_hold: float
+    resolves_hold: float
+
+
+BASELINE_LOOP_BARS = BaselineLoopBars(
+    loop_hold=0.75, explicit_hold=0.85, resolves_hold=0.8
 )
 
 _SPEECH_ACTS = (
@@ -156,7 +166,7 @@ def questions_168() -> dict[str, SystemOneQuestion]:
     return {**LOOP_QUESTIONS, Q_EXPLICIT: COMMITMENT_QUESTIONS[Q_EXPLICIT]}
 
 
-def decide_loop_168(result: SystemOneResult, cfg: LoopGateSurfaceConfig) -> str:
+def decide_loop_168(result: SystemOneResult, cfg: BaselineLoopBars) -> str:
     """The deleted 168 conversation rules (resolves, concern, explicit), bars as shipped."""
     if result.outcome == "skip":
         return "fallback"
@@ -173,8 +183,6 @@ def decide_loop_168(result: SystemOneResult, cfg: LoopGateSurfaceConfig) -> str:
         ):
             return "fallback"
         scores[qid] = float(value)
-    if cfg.loop_hold is None or cfg.explicit_hold is None or cfg.resolves_hold is None:
-        return "fallback"
     if scores[Q_RESOLVES] >= cfg.resolves_hold:
         return "resolve"
     if scores[Q_CONCERN] < cfg.loop_hold:

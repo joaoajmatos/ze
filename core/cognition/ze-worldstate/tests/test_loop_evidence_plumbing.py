@@ -18,7 +18,7 @@ from ze_worldstate.fingerprint import compute_evidence_fingerprint
 from ze_worldstate.intake import CommitmentIntake
 from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
 
-BARS = {"enabled": True, "loop_hold": 0.5, "explicit_hold": 0.6, "resolves_hold": 0.7}
+BARS = {"enabled": True, "loop_hold": 0.5, "resolves_hold": 0.7}
 
 
 def _loop(state=LoopState.ACTIVE, fingerprint=None) -> OpenLoop:

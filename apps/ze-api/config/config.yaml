@@ -53,7 +53,6 @@ system_one:
       # EN and PT: recall 10/10 each, precision 1.00, zero false creates. Haiku baseline (same prompt, fence-tolerant)
       # EN 9/10 recall, 1 false create; PT 10/10, 1 false create. The 109 gate failed on every reply (fenced JSON) until its parse was fixed after the verdict.
       loop_hold: 0.75
-      explicit_hold: 0.85
       resolves_hold: 0.8
     corroboration:
       # Phase 172: same-concern Noul for suspected-loop corroboration. Off with null bars until make calibrate-corroboration gives ENABLE on the held-out set.

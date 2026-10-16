@@ -36,7 +36,6 @@ TITLE = "Reply to Ana about the budget"
 GATE_BARS = {
     "enabled": True,
     "loop_hold": 0.5,
-    "explicit_hold": 0.6,
     "resolves_hold": 0.7,
 }
 CORR_BARS = {"enabled": True, "corroborate_hold": 0.6, "promote_hold": 0.85}

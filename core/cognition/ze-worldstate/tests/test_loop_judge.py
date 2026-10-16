@@ -32,8 +32,7 @@ def test_enabled_with_null_bar_is_uncalibrated():
             {
                 "enabled": True,
                 "loop_hold": 0.5,
-                "explicit_hold": None,
-                "resolves_hold": 0.5,
+                "resolves_hold": None,
             }
         )
     )
@@ -46,13 +45,12 @@ def test_all_bars_set_is_calibrated():
             {
                 "enabled": True,
                 "loop_hold": 0.5,
-                "explicit_hold": 0.6,
                 "resolves_hold": 0.7,
             }
         )
     )
     assert cfg.calibrated
-    assert (cfg.loop_hold, cfg.explicit_hold, cfg.resolves_hold) == (0.5, 0.6, 0.7)
+    assert (cfg.loop_hold, cfg.resolves_hold) == (0.5, 0.7)
 
 
 @pytest.mark.parametrize("bad", ["0.5", math.nan, 1.5, -0.1, True])
@@ -62,7 +60,6 @@ def test_bad_bars_become_none(bad):
             {
                 "enabled": True,
                 "loop_hold": bad,
-                "explicit_hold": 0.5,
                 "resolves_hold": 0.5,
             }
         )
@@ -114,9 +111,7 @@ def _result(**noul):
     return SystemOneResult(outcome="ok", answers=answers)
 
 
-CFG = LoopGateSurfaceConfig(
-    enabled=True, loop_hold=0.5, explicit_hold=0.6, resolves_hold=0.7
-)
+CFG = LoopGateSurfaceConfig(enabled=True, loop_hold=0.5, resolves_hold=0.7)
 
 
 def test_decide_skip_is_fallback():
@@ -143,9 +138,7 @@ def test_decide_non_noul_answer_is_invalid():
 
 
 def test_decide_null_bar_is_uncalibrated():
-    cfg = LoopGateSurfaceConfig(
-        enabled=True, loop_hold=0.5, explicit_hold=None, resolves_hold=0.7
-    )
+    cfg = LoopGateSurfaceConfig(enabled=True, loop_hold=0.5, resolves_hold=None)
     d = decide(_result(is_open_concern=0.9, resolves_existing=0.1), cfg, "email")
     assert (d.kind, d.reason) == ("fallback", "uncalibrated")
 

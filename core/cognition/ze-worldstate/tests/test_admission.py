@@ -11,7 +11,7 @@ from ze_worldstate.admission import LoopInflow
 from ze_worldstate.loop_judge import LoopGateDecision
 from ze_worldstate.types import LoopProvenance, LoopState
 
-BARS = {"enabled": True, "loop_hold": 0.5, "explicit_hold": 0.6, "resolves_hold": 0.7}
+BARS = {"enabled": True, "loop_hold": 0.5, "resolves_hold": 0.7}
 
 
 @pytest.fixture(autouse=True)
