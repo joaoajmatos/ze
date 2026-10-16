@@ -176,10 +176,11 @@ function AccordionGroup({
 }: NavGroupProps) {
   const isChildActive = useChildActive(childPaths);
   const [open, setOpen] = useState(defaultOpen || isChildActive);
-
-  useEffect(() => {
+  const [wasChildActive, setWasChildActive] = useState(isChildActive);
+  if (wasChildActive !== isChildActive) {
+    setWasChildActive(isChildActive);
     if (isChildActive) setOpen(true);
-  }, [isChildActive]);
+  }
 
   const toggle = () => setOpen((o) => !o);
 

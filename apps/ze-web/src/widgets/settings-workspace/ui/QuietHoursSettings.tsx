@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   useQuietHoursQuery,
   useUpdateQuietHoursMutation,
@@ -46,13 +46,14 @@ export function QuietHoursSettings() {
   const [end, setEnd] = useState("");
   const [timezone, setTimezone] = useState(browserTimeZone());
 
-  useEffect(() => {
-    if (!data) return;
+  const [syncedData, setSyncedData] = useState<typeof data>(undefined);
+  if (data && data !== syncedData) {
+    setSyncedData(data);
     setEnabled(data.enabled);
     setStart(data.start ?? "");
     setEnd(data.end ?? "");
     setTimezone(data.timezone ?? browserTimeZone());
-  }, [data]);
+  }
 
   const errors = fieldMessages(mutation.error);
   const maxPerDay = data?.max_discretionary_per_day ?? 5;

@@ -1,5 +1,5 @@
 import type { MessageSchema as Message } from "@myguyze/ze-client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useSession } from "@/entities/session";
 import { ChatErrorBoundary } from "@/shared/ui";
 import { MessageBubble } from "./MessageBubble";
@@ -29,7 +29,6 @@ export function ChatMessageList({
   const bottomRef = useRef<HTMLDivElement>(null);
   const highlightMessageId = useSession((s) => s.highlightMessageId);
   const setHighlightMessage = useSession((s) => s.setHighlightMessage);
-  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,14 +36,15 @@ export function ChatMessageList({
 
   useEffect(() => {
     if (!highlightMessageId) return;
-    const el = document.getElementById(`message-${highlightMessageId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setUnavailable(false);
-    } else if (messages.length > 0) {
-      setUnavailable(true);
-    }
+    document
+      .getElementById(`message-${highlightMessageId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [highlightMessageId, messages]);
+
+  const unavailable =
+    Boolean(highlightMessageId) &&
+    messages.length > 0 &&
+    !messages.some((m) => m.id === highlightMessageId);
 
   const streamingMessage: Message | null = streamingText?.trim()
     ? {

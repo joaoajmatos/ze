@@ -1,7 +1,7 @@
 import { parsePrimitiveTree, type PrimitiveTree } from "@myguyze/ze-ui";
 import { PrimitiveTreeRenderer } from "@myguyze/ze-ui/react";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { createElement, useState } from "react";
 import { usePluginScreenActions } from "@/features/primitive-tree";
 import type { UiContribution } from "@/entities/ui-manifest";
 import { usePluginSettingsQuery } from "@/entities/ui-manifest";
@@ -15,7 +15,6 @@ export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
   const actions = usePluginScreenActions(() => {
     void refetch();
   });
-  const Icon = resolveNavIcon(entry.icon);
 
   let nodes: PrimitiveTree | null = null;
   if (data?.tree) {
@@ -34,7 +33,7 @@ export function PluginSettingsSection({ entry }: { entry: UiContribution }) {
         className="w-full flex items-center justify-between gap-3 text-left"
       >
         <span className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase text-smoke">
-          <Icon className="w-3.5 h-3.5" />
+          {createElement(resolveNavIcon(entry.icon), { className: "w-3.5 h-3.5" })}
           {entry.label}
         </span>
         <ChevronDown className={cn("w-4 h-4 text-smoke transition-transform", open && "rotate-180")} />

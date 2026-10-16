@@ -40,9 +40,11 @@ function useOverlayChat(
       threadId: overlayThreadId,
     });
 
-  useEffect(() => {
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
     if (!open) setInput("");
-  }, [open]);
+  }
 
   function handleSend() {
     if (sendMessage(input)) setInput("");

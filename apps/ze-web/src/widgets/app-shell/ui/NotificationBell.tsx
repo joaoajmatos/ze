@@ -42,9 +42,11 @@ export function NotificationBell() {
   const highlightedId =
     confirmId && heldWrites.some((h) => h.request_id === confirmId) ? confirmId : null;
 
-  useEffect(() => {
+  const [seenHighlightedId, setSeenHighlightedId] = useState<string | null>(null);
+  if (seenHighlightedId !== highlightedId) {
+    setSeenHighlightedId(highlightedId);
     if (highlightedId) setOpen(true);
-  }, [highlightedId]);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

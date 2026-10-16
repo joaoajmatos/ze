@@ -18,7 +18,7 @@ export function MemoryFeed({ filters, asOf, search }: MemoryFeedProps) {
     useMemoryFeedQuery(filters, asOf);
 
   const firstPage = data?.pages[0];
-  const allItems = data?.pages.flatMap((p) => p.items) ?? [];
+  const allItems = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
 
   const query = search?.trim().toLowerCase() ?? "";
   const filteredItems = useMemo(() => {

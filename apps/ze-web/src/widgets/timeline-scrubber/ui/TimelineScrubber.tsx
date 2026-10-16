@@ -1,5 +1,5 @@
 import { History } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, Slider } from "@/shared/ui";
 
 interface ActivityDay {
@@ -58,7 +58,7 @@ export function TimelineScrubber({ earliest, value, onChange, activity, activity
   // render (including the ones a drag triggers) made `committedMs` below
   // drift on each tick, so the sync effect kept snapping liveMs back to
   // "now" mid-drag and the thumb could never actually move away from Now.
-  const max = useMemo(() => Date.now(), []);
+  const [max] = useState(() => Date.now());
   const todayIndex = dayIndex(max, min);
   const committedMs = value ? value.getTime() : max;
 
@@ -69,9 +69,11 @@ export function TimelineScrubber({ earliest, value, onChange, activity, activity
   const [liveMs, setLiveMs] = useState(committedMs);
   const [dragging, setDragging] = useState(false);
 
-  useEffect(() => {
+  const [syncedMs, setSyncedMs] = useState(committedMs);
+  if (syncedMs !== committedMs) {
+    setSyncedMs(committedMs);
     setLiveMs(committedMs);
-  }, [committedMs]);
+  }
 
   // Bucket day-level activity into a fixed number of bars so the density graph
   // stays legible and cheap to render whether the history spans weeks or years.
