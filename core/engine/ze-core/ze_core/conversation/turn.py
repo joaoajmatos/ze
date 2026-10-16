@@ -9,6 +9,7 @@ from uuid import UUID
 from ze_agents.interface.types import RawInput
 
 from ze_agents.park import WriteConfirmation
+from ze_core.telemetry.context import enter_turn_context
 
 if TYPE_CHECKING:
     from ze_core.container import Container
@@ -122,6 +123,7 @@ async def invoke_raw_turn(
     from uuid import uuid4
     from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 
+    enter_turn_context(thread_id)
     graph_input = make_graph_input(raw, thread_id)
     config = container._build_config(thread_id, **(config_extra or {}))
     interface = container.interface
@@ -237,6 +239,7 @@ async def resume_turn(
     """
     from langgraph.types import Command
 
+    enter_turn_context(config["configurable"]["thread_id"])
     graph_state_obj = await container.graph.aget_state(config)
     confirmation = open_confirmation(graph_state_obj)
     if confirmation is None or (

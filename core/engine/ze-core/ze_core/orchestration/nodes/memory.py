@@ -17,6 +17,7 @@ from ze_core.openrouter.context_windows import get_context_window
 from ze_core.orchestration.nodes.context import SESSION_HISTORY_LIMIT
 from ze_core.orchestration.nodes.correlation import _format_text_section
 from ze_core.orchestration.state import AgentState
+from ze_core.telemetry.context import set_agent_context
 from ze_agents.types import AgentResult
 from ze_memory.contribution import PerceptionFactSubmit, submit_perception_facts
 from ze_memory.fact_judge import FACT_QUESTIONS
@@ -98,6 +99,7 @@ def _outcome_row(intake: Any) -> JudgmentTrace | None:
 
 
 async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
+    set_agent_context("memory_write")
     store: Any = config["configurable"]["memory_store"]
     embedder: Any = config["configurable"]["embedder"]
     ctx = state.get("agent_context")
@@ -213,24 +215,18 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             ]
             await submit_perception_facts(store, items)
 
-        event_extractor = config["configurable"].get("event_extractor")
-        if event_extractor is not None:
-            events = await event_extractor(
+        turn_extractor = config["configurable"].get("turn_extractor")
+        if turn_extractor is not None:
+            extracted = await turn_extractor(
                 config["configurable"],
                 prompt=ctx.prompt,
                 response=result.response,
             )
-            if events:
-                fire_and_forget(store.propose_events(events), label="propose_events")
-
-        entity_extractor = config["configurable"].get("entity_extractor")
-        if entity_extractor is not None:
-            entities = await entity_extractor(
-                config["configurable"],
-                prompt=ctx.prompt,
-                response=result.response,
-            )
-            for entity in entities:
+            if extracted.events:
+                fire_and_forget(
+                    store.propose_events(extracted.events), label="propose_events"
+                )
+            for entity in extracted.entities:
                 fire_and_forget(
                     store.upsert_entity(entity),
                     label=f"upsert_entity:{entity.canonical_name}",
@@ -328,8 +324,6 @@ async def _compact(
 
 
 async def synthesize(state: AgentState, config: RunnableConfig) -> dict:
-    from ze_core.telemetry.context import set_agent_context
-
     set_agent_context("synthesis")
 
     client: Any = config["configurable"]["openrouter_client"]

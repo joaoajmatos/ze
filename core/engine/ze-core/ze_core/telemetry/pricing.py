@@ -17,14 +17,28 @@ MODEL_PRICING: dict[str, tuple[float, float]] = {
     "anthropic/claude-haiku-4-5": (1.00, 5.00),
     "openai/gpt-4o-mini": (0.15, 0.60),
     "google/gemini-flash-1.5": (0.075, 0.30),
+    # System One. Derived 2026-10-16 from OpenRouter's own per-generation costs
+    # (native prompt tokens x 4.2e-8, no completion charge; four samples fit exactly).
+    # Version-agnostic: a dated slug such as -20260917 matches by prefix.
+    "typesafe/jev-": (0.042, 0.0),
 }
 
 DEFAULT_PRICING: tuple[float, float] = (5.00, 15.00)
 """Conservative fallback for a model slug absent from the table."""
 
 
+def _rates(model: str) -> tuple[float, float]:
+    exact = MODEL_PRICING.get(model)
+    if exact is not None:
+        return exact
+    for slug, rates in MODEL_PRICING.items():
+        if slug.endswith("-") and model.startswith(slug):
+            return rates
+    return DEFAULT_PRICING
+
+
 def estimate_cost_usd(model: str, prompt_tokens: int, completion_tokens: int) -> float:
-    prompt_rate, completion_rate = MODEL_PRICING.get(model, DEFAULT_PRICING)
+    prompt_rate, completion_rate = _rates(model)
     return (
         prompt_tokens * prompt_rate + completion_tokens * completion_rate
     ) / 1_000_000

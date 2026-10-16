@@ -137,3 +137,55 @@ async def test_a_parked_write_escaping_a_job_is_logged_and_not_raised():
 
     job.assert_awaited_once()
     store.record_finish.assert_awaited_once_with("a", "error")
+
+
+async def test_wrapper_enters_job_context_before_the_job_runs():
+    order: list[str] = []
+    fn = AsyncMock(side_effect=lambda: order.append("job"))
+    sched = ProactiveScheduler(job_context=lambda job_id: order.append(f"ctx:{job_id}"))
+    sched.add_cron_job(fn, "0 8 * * *", "a")
+    await sched._scheduler.get_job("a").func()
+    assert order == ["ctx:a", "job"]
+
+
+async def test_global_catch_up_switch_off_skips_every_catchup():
+    runs = {"a": _run("a", timedelta(minutes=10))}
+    sched = ProactiveScheduler(run_store=_store(runs), catch_up=False)
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a")
+    assert "a:catchup" not in await _started(sched)
+
+
+async def test_global_catch_up_switch_on_by_default():
+    runs = {"a": _run("a", timedelta(minutes=10))}
+    sched = ProactiveScheduler(run_store=_store(runs))
+    sched.add_cron_job(AsyncMock(), "* * * * *", "a")
+    assert "a:catchup" in await _started(sched)
+
+
+async def test_configured_per_job_max_age_applies():
+    runs = {"a": _run("a", timedelta(hours=3))}
+    sched = ProactiveScheduler(
+        run_store=_store(runs), catch_up_max_age_hours={"a": 0.0001}
+    )
+    sched.add_cron_job(AsyncMock(), "0 * * * *", "a")
+    assert "a:catchup" not in await _started(sched)
+
+
+async def test_configured_max_age_leaves_other_jobs_alone():
+    runs = {i: _run(i, timedelta(hours=3)) for i in ("a", "b")}
+    sched = ProactiveScheduler(
+        run_store=_store(runs), catch_up_max_age_hours={"a": 0.0001}
+    )
+    sched.add_cron_job(AsyncMock(), "0 * * * *", "a")
+    sched.add_cron_job(AsyncMock(), "0 * * * *", "b")
+    jobs = await _started(sched)
+    assert "a:catchup" not in jobs and "b:catchup" in jobs
+
+
+async def test_explicit_registration_max_age_wins_over_config():
+    runs = {"a": _run("a", timedelta(hours=3))}
+    sched = ProactiveScheduler(
+        run_store=_store(runs), catch_up_max_age_hours={"a": 0.0001}
+    )
+    sched.add_cron_job(AsyncMock(), "0 * * * *", "a", catch_up_max_age_hours=2)
+    assert "a:catchup" in await _started(sched)

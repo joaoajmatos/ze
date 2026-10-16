@@ -5,6 +5,7 @@ from typing import Any
 from ze_agents.settings import Settings as CoreSettings
 from ze_automation.bootstrap import register_proactive_jobs as register_automation_jobs
 from ze_core.bootstrap import register_engine_jobs
+from ze_core.telemetry.context import set_agent_context, start_flow_context
 from ze_correlation.bootstrap import (
     register_proactive_jobs as register_correlation_jobs,
 )
@@ -26,6 +27,22 @@ from ze_logging import get_logger
 from ze_workspace.action_handoff import retry_pending_workspace_action_records
 
 log = get_logger(__name__)
+
+
+def _enter_job_cost_context(job_id: str) -> None:
+    start_flow_context("proactive", session_id=f"job:{job_id}")
+    set_agent_context(job_id)
+
+
+def build_proactive_scheduler(settings: Any, *, run_store: Any) -> ProactiveScheduler:
+    """Scheduler with job cost attribution and the `proactive.catch_up*` config applied."""
+    cfg = (getattr(settings, "config", None) or {}).get("proactive", {})
+    return ProactiveScheduler(
+        run_store=run_store,
+        job_context=_enter_job_cost_context,
+        catch_up=bool(cfg.get("catch_up", True)),
+        catch_up_max_age_hours=cfg.get("catch_up_max_age_hours") or {},
+    )
 
 
 def register_all_proactive_jobs(

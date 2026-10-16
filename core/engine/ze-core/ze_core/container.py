@@ -17,6 +17,7 @@ from langgraph.types import Command
 from ze_core.conversation import make_graph_input
 from ze_core.conversation.turn import open_confirmation
 from ze_core.routing.factory import build_embedding_router, build_tier_judge
+from ze_core.telemetry.context import enter_turn_context
 
 if TYPE_CHECKING:
     from ze_core.routing.router import EmbeddingRouter
@@ -44,8 +45,7 @@ class Container:
     plugins: list = field(default_factory=list)  # list[ZePlugin]
     _abort_tokens: dict = field(default_factory=dict)  # thread_id → AbortToken
     _fact_extractor: Any = None  # ze_memory.extractor.gather_fact_proposals or None
-    _event_extractor: Any = None  # ze_memory.extractor.gather_event_proposals or None
-    _entity_extractor: Any = None  # ze_memory.extractor.gather_entity_proposals or None
+    _turn_extractor: Any = None  # ze_memory.extractor.gather_turn_proposals or None
 
     def _build_config(self, thread_id: str, **extra: Any) -> dict:
         """Build the LangGraph configurable dict for a conversation thread."""
@@ -61,8 +61,7 @@ class Container:
                 "openrouter_client": self.openrouter_client,
                 "memory_store": self.memory_store,
                 "fact_extractor": self._fact_extractor,
-                "event_extractor": self._event_extractor,
-                "entity_extractor": self._entity_extractor,
+                "turn_extractor": self._turn_extractor,
                 **plugin_services,
                 **extra,
             }
@@ -111,6 +110,7 @@ class Container:
         # otherwise the prior turns persist and write_memory keeps appending.
         if messages is not None:
             graph_input["messages"] = messages
+        enter_turn_context(thread_id)
         abort_token = AbortToken()
         self._abort_tokens[thread_id] = abort_token
         config = self._build_config(thread_id, abort_token=abort_token)
@@ -202,6 +202,7 @@ class Container:
         """
         from ze_agents.interface.types import InvokeResult, OutboundMessage
 
+        enter_turn_context(thread_id)
         config = self._build_config(thread_id)
         state = await self.graph.ainvoke(
             Command(resume={"choice": choice, "edits": edits or {}}), config
@@ -350,9 +351,8 @@ class Container:
 
         # 11. Build MemoryStore and MemoryConsolidator
         from ze_memory.extractor import (
-            gather_entity_proposals,
-            gather_event_proposals,
             gather_fact_proposals,
+            gather_turn_proposals,
         )
         from ze_memory.retriever import PostgresMemoryStore
 
@@ -417,8 +417,7 @@ class Container:
             interface=interface,
             plugins=resolved_plugins,
             _fact_extractor=gather_fact_proposals,
-            _event_extractor=gather_event_proposals,
-            _entity_extractor=gather_entity_proposals,
+            _turn_extractor=gather_turn_proposals,
         )
 
 

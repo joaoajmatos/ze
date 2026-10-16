@@ -50,7 +50,18 @@ class PostgresCostStore:
         except Exception as exc:
             log.warning("cost_write_failed", error=str(exc))
 
-    async def fetch_pending(self, batch_size: int, min_age_seconds: int) -> list[dict]:
+    async def fetch_pending(
+        self,
+        batch_size: int,
+        min_age_seconds: int,
+        max_age_seconds: int,
+        exclude_generation_ids: list[str] | None = None,
+    ) -> list[dict]:
+        """Unpriced rows inside the recency window, newest first.
+
+        Newest first and the window keep rows OpenRouter has no record of from
+        starving the rows it can still price.
+        """
         async with self._pool.acquire() as conn:
             return await conn.fetch(
                 """
@@ -59,20 +70,25 @@ class PostgresCostStore:
                 WHERE cost_usd IS NULL
                   AND generation_id IS NOT NULL
                   AND created_at < NOW() - ($1 * INTERVAL '1 second')
-                ORDER BY created_at ASC
-                LIMIT $2
+                  AND created_at > NOW() - ($2 * INTERVAL '1 second')
+                  AND generation_id <> ALL($3::text[])
+                ORDER BY created_at DESC
+                LIMIT $4
                 """,
                 min_age_seconds,
+                max_age_seconds,
+                exclude_generation_ids or [],
                 batch_size,
             )
 
-    async def update_cost(self, row_id: Any, cost_usd: float) -> None:
+    async def update_cost(self, row_id: Any, cost_usd: float) -> bool:
         async with self._pool.acquire() as conn:
-            await conn.execute(
+            status = await conn.execute(
                 "UPDATE llm_cost_log SET cost_usd = $1 WHERE id = $2",
                 cost_usd,
                 row_id,
             )
+        return status == "UPDATE 1"
 
     async def fetch_session_usage(self, session_id: str) -> list[dict]:
         async with self._pool.acquire() as conn:

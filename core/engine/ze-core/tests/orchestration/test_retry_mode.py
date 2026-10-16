@@ -122,15 +122,13 @@ async def test_delegate_subcontext_inherits_retry_mode():
 async def test_write_memory_in_retry_skips_admission_but_extends_history():
     store = AsyncMock(spec=MemoryStore)
     fact_extractor = AsyncMock()
-    event_extractor = AsyncMock()
-    entity_extractor = AsyncMock()
+    turn_extractor = AsyncMock()
     hook = AsyncMock()
     cfg = make_config(memory_store=store)
     cfg["configurable"].update(
         retry_mode=True,
         fact_extractor=fact_extractor,
-        event_extractor=event_extractor,
-        entity_extractor=entity_extractor,
+        turn_extractor=turn_extractor,
         memory_hooks=[hook],
     )
     ctx = AgentContext(session_id="s1", prompt="hi", memory=MemoryContext())
@@ -146,8 +144,7 @@ async def test_write_memory_in_retry_skips_admission_but_extends_history():
     store.propose_events.assert_not_called()
     store.upsert_entity.assert_not_called()
     fact_extractor.assert_not_called()
-    event_extractor.assert_not_called()
-    entity_extractor.assert_not_called()
+    turn_extractor.assert_not_called()
     hook.assert_not_called()
     assert result["messages"][-2:] == [
         {"role": "user", "content": "hi"},
@@ -167,3 +164,59 @@ async def test_write_memory_without_retry_still_writes_episode():
     )
     await asyncio.sleep(0)
     store.write_episode.assert_called_once()
+
+
+async def test_write_memory_makes_one_extractor_call_and_stores_its_events_and_entities():
+    from ze_memory.extractor import TurnProposals
+    from ze_memory.types import Entity, Event
+
+    store = AsyncMock(spec=MemoryStore)
+    event = Event(
+        id=None, event_type="meal", title="Dinner", start_at=None, end_at=None
+    )
+    entity = Entity(
+        id=None, entity_type="person", canonical_name="Ana", aliases=[], attrs={}
+    )
+    turn_extractor = AsyncMock(
+        return_value=TurnProposals(events=[event], entities=[entity])
+    )
+    cfg = make_config(memory_store=store)
+    cfg["configurable"]["turn_extractor"] = turn_extractor
+    ctx = AgentContext(
+        session_id="s1", prompt="dinner with Ana", memory=MemoryContext()
+    )
+    await memory.write_memory(
+        base_state(
+            agent_context=ctx, agent_result=AgentResult(agent="research", response="r")
+        ),
+        cfg,
+    )
+    await asyncio.sleep(0)
+
+    turn_extractor.assert_awaited_once()
+    store.propose_events.assert_called_once_with([event])
+    store.upsert_entity.assert_called_once_with(entity)
+
+
+async def test_write_memory_labels_its_llm_calls_as_memory_write():
+    from ze_core.telemetry.context import get_cost_context
+
+    seen = []
+
+    async def _extractor(configurable, *, prompt, response):
+        from ze_memory.extractor import TurnProposals
+
+        seen.append(get_cost_context().agent)
+        return TurnProposals()
+
+    store = AsyncMock(spec=MemoryStore)
+    cfg = make_config(memory_store=store)
+    cfg["configurable"]["turn_extractor"] = _extractor
+    ctx = AgentContext(session_id="s1", prompt="hello there", memory=MemoryContext())
+    await memory.write_memory(
+        base_state(
+            agent_context=ctx, agent_result=AgentResult(agent="research", response="r")
+        ),
+        cfg,
+    )
+    assert seen == ["memory_write"]

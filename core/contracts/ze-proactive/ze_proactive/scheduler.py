@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Awaitable, Callable
+from typing import TYPE_CHECKING, Awaitable, Callable, Mapping
 
 from ze_agents.errors import LoopParked
 from ze_logging import get_logger
@@ -37,6 +37,10 @@ class ProactiveScheduler:
         self,
         run_store: "JobRunStore | None" = None,
         clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+        *,
+        job_context: Callable[[str], None] | None = None,
+        catch_up: bool = True,
+        catch_up_max_age_hours: Mapping[str, float] | None = None,
     ) -> None:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -44,6 +48,9 @@ class ProactiveScheduler:
         self._started = False
         self._run_store = run_store
         self._clock = clock
+        self._job_context = job_context
+        self._catch_up = catch_up
+        self._catch_up_max_age = dict(catch_up_max_age_hours or {})
         self._registered: dict[str, _Registration] = {}
 
     def register(
@@ -94,8 +101,11 @@ class ProactiveScheduler:
         self, job_id: str, fn: Callable[[], Awaitable[None]]
     ) -> Callable[[], Awaitable[None]]:
         store = self._run_store
+        job_context = self._job_context
 
         async def run() -> None:
+            if job_context is not None:
+                job_context(job_id)
             if store is not None:
                 await store.record_start(job_id)
             try:
@@ -131,7 +141,7 @@ class ProactiveScheduler:
         log.info("proactive_scheduler_started", jobs=len(self._scheduler.get_jobs()))
 
     async def _schedule_catch_ups(self) -> None:
-        if self._run_store is None:
+        if self._run_store is None or not self._catch_up:
             return
         from apscheduler.triggers.date import DateTrigger
 
@@ -146,9 +156,12 @@ class ProactiveScheduler:
             missed = missed_fire_time(reg.cron, run.last_started_at, now, tz)
             if missed is None:
                 continue
-            if reg.catch_up_max_age_hours is not None and now - missed > timedelta(
-                hours=reg.catch_up_max_age_hours
-            ):
+            max_age = (
+                reg.catch_up_max_age_hours
+                if reg.catch_up_max_age_hours is not None
+                else self._catch_up_max_age.get(job_id)
+            )
+            if max_age is not None and now - missed > timedelta(hours=max_age):
                 log.info("proactive_job_catch_up_too_old", job_id=job_id)
                 continue
             scheduled += 1
