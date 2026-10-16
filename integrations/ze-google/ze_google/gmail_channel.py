@@ -160,20 +160,6 @@ class GmailChannel(InboundChannel):
                 )
         return inbound
 
-    async def poll_replies(
-        self,
-        thread_ids: list[str],
-        since: datetime,
-    ) -> list[ThreadMessage]:
-        """Backward-compat thin wrapper around get_thread for prospecting use case."""
-        replies: list[ThreadMessage] = []
-        for thread_id in thread_ids:
-            thread = await self.get_thread(thread_id)
-            for msg in thread.messages:
-                if not msg.is_outbound and msg.sent_at > since:
-                    replies.append(msg)
-        return replies
-
     async def _resolve_user_email(self) -> str:
         if self._user_email is None:
             service = self._creds.gmail()
