@@ -185,9 +185,33 @@
       "kind": "complete",
       "by": "ENG-B",
       "at": "2026-10-16T16:08:14.501Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T16:17:40.852Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T16:17:40.967Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T16:17:41.110Z"
     }
   ],
-  "currentTask": "T044",
+  "currentTask": "T028",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -257,6 +281,18 @@
     "T044": {
       "status": "DONE",
       "did": "Choice accuracy on turn_created none rows, link accuracy reported outside verdict (86e21b02); tests 52797688"
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "SpeechAct shrunk to fact/forget/ingest/clarify/none; unknown maps to none (972c0f76); label tests 00af4702"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "turn_creation table, link() pg test (make test-pg green), label consumer tests (00af4702)"
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "Row 7a in decide(), reminder/goal/loop criteria reworded (63e0b014)"
     }
   }
 }
