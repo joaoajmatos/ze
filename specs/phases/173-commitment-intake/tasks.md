@@ -50,6 +50,7 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 - [ ] T047 [JR: Brook] Write `eval/calibration/commitment_intake_holdout2.jsonl` blind, from `holdout2-brief.md` only (no run output, no earlier set, no judge wording, no research notes, no Clarifications). `--check-sets` exits 0. Commit that file alone; never edit it after. Owns: that file.
 - [ ] T048 [ENG-A] Fix the wording (criteria, question text) in `commitment_judge.py` using tuned-set evidence only; keep FR-003/R4 definitions. Table tests stay green. Owns: `ze_worldstate/commitment_judge.py`, its tests.
 - [ ] T049 [ENG-B] Tuned run 3 on the T048 wording; choose and freeze bars on the tuned set only; record in `research.md` with the commit that freezes wording and bars. Needs T046, T048.
+- [ ] T054 [ENG-B] Spec R11 / FR-022 amendment: add the verdict clause "false resolves <= baseline" per language to `commitment_intake.py`, reusing the existing `false_resolve` count for intake and baseline, print it in the clause table, and add an offline test (intake above baseline gives KEEP OFF, equal passes). Before T053. Owns: `eval/calibration/commitment_intake.py` and its tests.
 - [ ] T053 [ENG-B] The one verdict on holdout2 at the T049 frozen bars (user OK given 2026-10-16, R9). `ENABLE`: set bars and `enabled: true` in `config.yaml`. `KEEP OFF`: leave off, record the clauses, stop and ask the Maestro. Needs T047, T049.
 
 ## Phase 5: Docs and polish
@@ -60,4 +61,4 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 ## Dependencies
 
-T001 -> T002/T003 -> T004 -> T042; T028, T044 -> T042 (tuned run 2); T005 -> T043. R9: T046 -> T047; T048 -> T049; T047, T049 -> T053; T053 replaces T043 as the landing gate. T043 must say `ENABLE` before the floor lands (spec R1). T010,T011 -> T021 -> T022,T023 -> T024,T025,T026. T012,T013 -> T023. T030 -> T031 -> T032. T040 after T021. T050 after T053. [P] tasks run beside their phase siblings. Shared-file order for 181: land the smaller diff first; the other rebases (`nodes/memory.py`, `nested_tools.py`).
+T001 -> T002/T003 -> T004 -> T042; T028, T044 -> T042 (tuned run 2); T005 -> T043. R9: T046 -> T047; T048 -> T049; T047, T049, T054 -> T053; T053 replaces T043 as the landing gate. T043 must say `ENABLE` before the floor lands (spec R1). T010,T011 -> T021 -> T022,T023 -> T024,T025,T026. T012,T013 -> T023. T030 -> T031 -> T032. T040 after T021. T050 after T053. [P] tasks run beside their phase siblings. Shared-file order for 181: land the smaller diff first; the other rebases (`nodes/memory.py`, `nested_tools.py`).
