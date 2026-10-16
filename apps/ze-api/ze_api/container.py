@@ -519,11 +519,14 @@ async def build_container(settings: Settings) -> ZeContainer:
             await interruption_settings_store.get(), datetime.now(timezone.utc)
         )
 
+    from ze_api.api.websocket.held import held_push_frame
+
     interface = NativeAppInterface(
         message_store=message_store,
         connection_manager=connection_manager,
         notifier=push_notifier,
         quiet_now=quiet_now,
+        confirm_frame_for=held_push_frame(automation.held_write_store),
     )
     validate_interface(interface)
 

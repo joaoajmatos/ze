@@ -23,5 +23,5 @@ GOAL_SUGGESTION = PushKind("goal_suggestion", "discretionary", "normal", "goals"
 GOAL_OVERLAP = PushKind("goal_overlap", "discretionary", "normal", "goals")
 GOAL_REUSE = PushKind("goal_reuse", "discretionary", "low", "goals")
 WRITE_APPROVAL_HELD = PushKind(
-    "write_approval_held", "requested", "normal", "automation"
+    "write_approval_held", "requested", "normal", "automation", in_chat=False
 )

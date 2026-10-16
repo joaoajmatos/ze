@@ -17,6 +17,9 @@ from ze_automation.holds.resumer import (
     HeldWriteNotOpenError,
 )
 from ze_automation.holds.types import HeldWriteStatus
+from ze_logging import get_logger
+
+log = get_logger(__name__)
 
 router = APIRouter(
     prefix="/held-writes",
@@ -68,6 +71,9 @@ async def decide_held_write(
         raise HTTPException(status_code=409, detail="Held write is not open") from exc
     except HeldWriteEditError as exc:
         raise HTTPException(status_code=422, detail="invalid edit") from exc
+    log.info(
+        "held_write_answered", request_id=request_id, choice=body.choice, via="rest"
+    )
     resumer.resume_in_background(hold, body.choice, body.edits)
     container = request.app.state.container
     await container.connection_manager.send_frame(

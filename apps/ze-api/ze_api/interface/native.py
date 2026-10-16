@@ -64,11 +64,16 @@ class NativeAppInterface:
         connection_manager: ConnectionManager,
         notifier: PushNotifier | None,
         quiet_now: Callable[[], Awaitable[bool]] | None = None,
+        confirm_frame_for: Callable[[Notification], Awaitable[dict | None]]
+        | None = None,
     ) -> None:
         self._store = message_store
         self._conn = connection_manager
         self._notifier = notifier
         self._quiet_now = quiet_now
+        # A push that stands for an open confirmation (a held write) also sends
+        # its card, the same frame the on-connect replay sends.
+        self._confirm_frame_for = confirm_frame_for
 
     async def _is_quiet(self) -> bool:
         if self._quiet_now is None:
@@ -98,6 +103,7 @@ class NativeAppInterface:
             )
             if notification.event_type is not None:
                 await self._send_notification_frame(notification)
+            await self._send_confirm_card(notification)
             return
         await self._send_message(
             notification.content,
@@ -270,6 +276,16 @@ class NativeAppInterface:
                 )
             except Exception as exc:
                 log.warning("native_interface_confirmation_ntfy_failed", error=str(exc))
+
+    async def _send_confirm_card(self, notification: Notification) -> None:
+        if self._confirm_frame_for is None:
+            return
+        try:
+            frame = await self._confirm_frame_for(notification)
+            if frame is not None:
+                await self._conn.send_frame(frame)
+        except Exception as exc:
+            log.warning("native_interface_confirm_card_failed", error=str(exc))
 
     async def _send_notification_frame(self, notification: Notification) -> None:
         try:
