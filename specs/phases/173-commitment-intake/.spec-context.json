@@ -129,9 +129,25 @@
       "kind": "complete",
       "by": "ENG-A",
       "at": "2026-10-16T15:07:30.108Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T15:14:39.475Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ENG-A",
+      "at": "2026-10-16T15:14:50.696Z"
     }
   ],
-  "currentTask": "T030",
+  "currentTask": "T032",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -173,6 +189,14 @@
     "T030": {
       "status": "DONE",
       "did": "REST reminder_id/goal_id list+detail, route test"
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "make codegen, regenerated ze-client committed (bc5760dc)"
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "linkChips helper + chips in LoopReviewList, vitest"
     }
   }
 }

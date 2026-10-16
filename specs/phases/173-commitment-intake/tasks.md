@@ -31,8 +31,8 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 ## Phase 3: US8 links on REST and web
 
 - [x] T030 [JR] REST: `reminder_id` and `goal_id` on list and detail in `ze_api/api/routes/loops.py` and `schemas.py`; TestClient tests. Owns those files and `apps/ze-api/tests/api/test_loops*.py`.
-- [ ] T031 [WEB] `make codegen` (never hand-edit generated files), commit regenerated `packages/ze-client`.
-- [ ] T032 [WEB] `entities/loop`: `lib/format.ts` helpers `linkChips(loop)`; `widgets/loop-review/ui/LoopReviewList.tsx`: "Has reminder" and "Linked goal" chips; vitest for both, both, neither. Owns: `apps/ze-web/src/entities/loop/**`, `apps/ze-web/src/widgets/loop-review/**`. Run `make test-web typecheck-web`.
+- [x] T031 [WEB] `make codegen` (never hand-edit generated files), commit regenerated `packages/ze-client`.
+- [x] T032 [WEB] `entities/loop`: `lib/format.ts` helpers `linkChips(loop)`; `widgets/loop-review/ui/LoopReviewList.tsx`: "Has reminder" and "Linked goal" chips; vitest for both, both, neither. Owns: `apps/ze-web/src/entities/loop/**`, `apps/ze-web/src/widgets/loop-review/**`. Run `make test-web typecheck-web`.
 
 ## Phase 4: US7 calibration tooling
 
