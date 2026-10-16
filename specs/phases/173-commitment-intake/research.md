@@ -159,7 +159,7 @@ Per FR-020 any change from here needs a fresh held-out set. The task rule is to 
 
 ### Run 4 and frozen bars for the holdout3 verdict (T058, 2026-10-16, tuned set only)
 
-Wording: Mortise's commits 108e02c9 (tie-break, clarify, resolves ignores save requests) and f35350de (waiting_on never resolves; a fact with a question reads as fact; "keep an eye on" is an open concern), tuned set 160 rows at c9e592d4 (T056). Same model (`typesafe/jev-1.13`) and seed 173. Raw results `eval/results/commitment_intake_tuned_run4.json` (gitignored).
+Wording: Mortise's commits 108e02c9 (tie-break, clarify, resolves ignores save requests) f35350de (waiting_on never resolves; a fact with a question reads as fact; "keep an eye on" is an open concern) and c9e592d4 (T056: two prompt examples swapped, see "Provenance of the frozen wording" below), tuned set 160 rows at c9e592d4. The bars were frozen in cb36c6a2. Same model (`typesafe/jev-1.13`) and seed 173. Raw results `eval/results/commitment_intake_tuned_run4.json` (gitignored).
 
 Result at the grid-suggested bars (0.5/0.5/0.5/0.6/0.95/0.7): both languages clean. Choice accuracy 51/52 = 0.981 per language (one `fact` read as `loop` each), link accuracy 24/24, duplicates 0, false creates 0, false resolves 0 (baseline 1), fact precision 1.00 and loop precision 1.00 (baseline loop precision 0.39 / 0.41), loop recall 16/16, waiting_on rows written 0/7 per language.
 
@@ -177,7 +177,7 @@ Offline replay of run 4 at the frozen bars: EN clean (fact 8/8, loop 16/16); PT 
 
 ### holdout3 verdict (T059, 2026-10-16): ENABLE, both languages
 
-One run, 147 rows (EN 73, PT 74; Wren, blind, `eval/calibration/commitment_intake_holdout3.jsonl`, committed in 0b13f211 before any run), model `typesafe/jev-1.13`, seed 173, bars frozen in the run 4 section above (`choice=family 0.70, biography 0.55, loop 0.60, explicit 0.95, resolves 0.80`; wording f35350de, tuned set c9e592d4). Raw results `eval/results/commitment_intake_holdout3_verdict.json` (gitignored). Nothing was re-scored or re-tuned afterwards.
+One run, 147 rows (EN 73, PT 74; Wren, blind, `eval/calibration/commitment_intake_holdout3.jsonl`, committed in 0b13f211 before any run), model `typesafe/jev-1.13`, seed 173, bars frozen in the run 4 section above (`choice=family 0.70, biography 0.55, loop 0.60, explicit 0.95, resolves 0.80`; wording c9e592d4, the last commit to touch `commitment_judge.py`; tuned set c9e592d4). Raw results `eval/results/commitment_intake_holdout3_verdict.json` (gitignored). Nothing was re-scored or re-tuned afterwards.
 
 | Clause (per language) | EN | PT | Bar |
 |---|---|---|---|
@@ -201,3 +201,11 @@ Not verdict clauses, for the record:
 - Fact misses (9 of 42, all held, none persisted wrongly): `family` confidence under 0.70 on short statements (EN `h3-en-57` 0.48, `-63` 0.56, `-69` 0.50; PT `h3-pt-64` 0.60, `-70` 0.60), `biography` under 0.55 (EN `h3-en-59` 0.52; PT `h3-pt-56` 0.42, `-60` 0.43), one `fact` Choice at 0.55 (`h3-pt-72`, a fact plus a question). The two mixed fact-plus-open-task rows (`h3-en-70`, `h3-pt-71`) were read as `loop`; the fact was held and the loop created, which the `also_loop` rule allows. These misses cost recall only; recall still clears the baseline in both languages.
 
 Config: the surface can be enabled with the frozen bars in a separate commit.
+
+### Provenance of the frozen wording (added 2026-10-16, after review)
+
+- **Which commit.** The wording the holdout3 verdict ran against is the `commitment_judge.py` of c9e592d4. That is the last commit to touch the file, and `git diff cb36c6a2 f1f9e768` shows no change to `core/` or to the tuned set between the bars freeze and the enable commit. Earlier text in this file and in the config comment named f35350de as the frozen wording. That was wrong: c9e592d4 follows f35350de and changes two example strings.
+- **What c9e592d4 changed in the wording.** Two examples. In the `resolves_existing` instructions, "I sent my CV and I am waiting for her reply" became "I applied for the permit and I am waiting for the office to answer". In the loop criterion, "keep an eye on the landlord deposit" and "não me deixes perder o prazo do visto" became "keep an eye on the gas bill dispute" and "não me deixes esquecer o prazo do seguro". It also added the 12 tuned rows `ci-t-{en,pt}-075..080`.
+- **Who.** Mortise (ENG-A) made the swap in T056. Git cannot show this, because every commit on the floor carries the same author. The source is Mortise's own session record.
+- **Why.** The old CV example was taken from the Maestro's holdout2 report, a spent set. Mortise swapped it, and swapped the two loop examples that were close to the new tuned rows, so that no example matches a tuned row or a text from a report.
+- **Did the author read holdout3?** Mortise's tool-call record for this session shows no read of any held-out file (`commitment_intake_holdout*.jsonl`, `loop_gate_holdout*`) and no command that prints one. Mortise did not open `commitment_intake_holdout3.jsonl`. Mortise also cannot rule out that a replacement example resembles a holdout3 row, because the rule is not to open the file; no overlap check was run against holdout3. The holdout3 check-sets rule compares texts for equality with the tuned and spent sets only.
