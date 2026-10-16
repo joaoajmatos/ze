@@ -59,3 +59,45 @@ async def test_get_snapshot_no_failed_sources_is_empty_tuple():
     result = await get_snapshot(view, override_store)
 
     assert result.sources_failed == ()
+
+
+async def test_submit_override_unpacks_service_tuple():
+    from unittest.mock import patch
+
+    from ze_priority.rest import submit_override
+    from ze_priority.types import PriorityOverride, PriorityOverrideRequest
+
+    item = _item("Follow up with Maria", 1)
+    anchor = _item("Other", 2)
+    view = _view_with(set(), [item, anchor])
+    override_store = AsyncMock()
+    override_store.get_active.return_value = []
+    override = PriorityOverride(
+        id=uuid4(),
+        source_kind="loop",
+        source_id=item.source_id,
+        anchor_source_kind="loop",
+        anchor_source_id=anchor.source_id,
+        relation="below",
+        pinned=False,
+        submitted_at=datetime.now(UTC),
+        superseded_at=None,
+        contribution_domain_id=uuid4(),
+    )
+    request = PriorityOverrideRequest(
+        source_kind="loop",
+        source_id=item.source_id,
+        anchor_source_kind="loop",
+        anchor_source_id=anchor.source_id,
+        relation="below",
+        pinned=False,
+    )
+    with patch(
+        "ze_priority.rest.submit_reprioritization",
+        AsyncMock(return_value=(override, uuid4())),
+    ):
+        row = await submit_override(
+            request, priority_view=view, override_store=override_store
+        )
+
+    assert row.source_id == item.source_id

@@ -29,7 +29,7 @@ Open loops, goals, hypotheses, and contact follow-ups each compete for attention
 | `service.py` | `submit_reprioritization()` — the one validated write path |
 | `store.py` | `PriorityOverrideStore` Protocol and Postgres store |
 | `contribution.py` | Turns an override into seam contributions |
-| `tools.py`, `agent.py` | The `reprioritize_item` tool |
+| `tools.py`, `agent.py` | The `reprioritize_item` tool and its undo, `restore_priority_override`. The restore tool reinstates an override that Ze already admitted, so it bypasses the contribution seam and collision detection by design. Do not route it through the seam |
 | `turn.py` | `TurnSurfacing` — open-item mentions, resume loop offers, and recap for a turn |
 | `open_query.py` | `OpenQueryDetector` — E5 similarity check for "what's open" questions |
 | `arbitration.py` | `AttentionArbitrationJob` |

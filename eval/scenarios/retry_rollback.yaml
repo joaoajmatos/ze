@@ -1,0 +1,31 @@
+- id: retry_rollback_refused_with_irreversible_action
+  prompt: "Remind me tomorrow at 5pm to call Ana. Also email Ana that I'll call."
+  description: >
+    A turn that sets a reminder and also sends an email. The email cannot be
+    undone, so Phase 180 refuses Retry for the whole reply instead of rolling
+    back only the reminder.
+  expected_tools: [set_reminder]
+  tags: [retry, rollback]
+  criteria:
+    - Should set the reminder and handle the email request in the same turn
+    - The trace should record the email action as irreversible
+    - Retry is unavailable with reason has_irreversible_action, and no partial rollback is offered
+
+- id: retry_rollback_refused_after_existing_loop
+  description: >
+    The second ask finds the loop the first ask created. track_loop reinforces
+    it (outcome reinforced) and returns no undo payload, because dropping it
+    would remove a loop that existed before this turn. Retry is unavailable
+    with reason not_undoable.
+  turns:
+    - prompt: "Keep the tax return on my radar."
+      description: "Turn 1: creates the loop"
+    - prompt: "Keep the tax return on my radar."
+      description: "Turn 2: reinforces the existing loop"
+  expected_agent: loops
+  expected_tools: [track_loop]
+  tags: [retry, rollback, multi_turn]
+  criteria:
+    - Turn 1 should call track_loop and create the loop
+    - Turn 2 should call track_loop and report that the loop was already tracked, not create a duplicate
+    - The trace for turn 2 should record track_loop without an undo payload, so Retry is unavailable with reason not_undoable

@@ -250,6 +250,68 @@ async def test_trace_update_keeps_numbers_numeric():
     json.dumps(frame)
 
 
+async def test_trace_update_hides_agent_and_undo_args():
+    from ze_core.conversation.messages.types import (
+        MessageTrace,
+        RollbackEntry,
+        RollbackTrace,
+        ToolCallTrace,
+    )
+
+    iface, store, conn, _ = _make_interface(connected=True)
+    trace = MessageTrace(
+        agent="companion",
+        routing_method="embedding",
+        confidence=0.9,
+        score_gap=0.1,
+        is_compound=False,
+        subtasks=[],
+        tool_calls=[
+            ToolCallTrace(
+                name="set_reminder",
+                result_snippet="",
+                duration_ms=1,
+                success=True,
+                agent="reminders",
+                undo_args={"reminder_id": "secret"},
+                undo_note="n",
+                call_index=3,
+            )
+        ],
+        rollback=RollbackTrace(
+            replaces="old",
+            entries=[
+                RollbackEntry(
+                    entry_id="e1",
+                    call_index=0,
+                    tool="set_reminder",
+                    undo_tool="cancel_reminder",
+                    effect_phrase="set a reminder",
+                    outcome="undone",
+                )
+            ],
+        ),
+    )
+
+    await iface.send_with_thread("hi", thread_id="t1", trace=trace)
+
+    frame = conn.send_frame.call_args[0][0]
+    call = frame["tool_calls"][0]
+    assert "agent" not in call and "undo_args" not in call
+    assert call["undo_note"] == "n"
+    assert "secret" not in str(frame)
+    entry = frame["rollback"]["entries"][0]
+    assert set(entry) == {
+        "entry_id",
+        "tool",
+        "effect_phrase",
+        "outcome",
+        "at",
+        "failure_code",
+    }
+    assert frame["rollback"]["replaces"] == "old"
+
+
 # ── governor (phase 177) ────────────────────────────────────────────────────
 
 

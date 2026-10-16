@@ -252,8 +252,8 @@ async def get_fact_quality(
     operation_id="getProfile",
     summary="Current user profile",
     description=(
-        "The synthesised user profile — preferences, habits, topics, relationships, "
-        "and goals. Updated nightly by the consolidation job."
+        "The synthesised user profile as key/value facets (preferences, topics, and "
+        "other traits). Updated nightly by the consolidation job."
     ),
 )
 async def get_profile(container=Depends(get_container)) -> UserProfileResponse:

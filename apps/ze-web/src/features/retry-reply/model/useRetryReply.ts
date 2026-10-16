@@ -5,6 +5,8 @@ import { send, useFrame, useWsStore } from "@/shared/api";
 import { queryKeys } from "@/shared/lib";
 
 export const RETRY_FAILED_NOTICE = "Retry failed. The original reply is unchanged.";
+const PARTIAL_NOTICE = "Ze could not undo everything, so the original reply stays.";
+const ROLLED_BACK_FAILED_NOTICE = "Ze undid the earlier actions but could not write a new reply.";
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
 
 interface UseRetryReplyOptions {
@@ -28,12 +30,13 @@ export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryRepl
     void queryClient.invalidateQueries({ queryKey: ["message-traces"] });
   }
 
-  function retry(messageId: string): boolean {
+  function retry(messageId: string, confirmedPlan?: string[]): boolean {
     if (isThinking) return false;
     const frame: Extract<WsOutboundFrame, { type: "retry" }> = {
       type: "retry",
       message_id: messageId,
       thread_id: threadId,
+      ...(confirmedPlan && confirmedPlan.length > 0 ? { confirmed_plan: confirmedPlan } : {}),
     };
     if (!send(frame)) {
       onNotice(NOT_CONNECTED_NOTICE);
@@ -51,6 +54,16 @@ export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryRepl
     refresh();
   });
 
+  useFrame("message_rollback", (frame) => {
+    if (frame.thread_id && frame.thread_id !== threadId) return;
+    // A denied or expired paused retry ends here with no error frame.
+    if (pendingId === frame.message_id && frame.rollback.state === "rolled_back_retry_failed") {
+      setPendingId(null);
+      setThreadThinking(threadId, false);
+    }
+    refresh();
+  });
+
   useFrame("error", (frame) => {
     if (!pendingId || (frame.thread_id && frame.thread_id !== threadId)) return;
     if (frame.code === "retry_unavailable") {
@@ -58,6 +71,12 @@ export function useRetryReply({ threadId, onSuperseded, onNotice }: UseRetryRepl
       refresh();
     } else if (frame.code === "busy") {
       onNotice(frame.detail);
+    } else if (frame.code === "retry_partial") {
+      onNotice(frame.detail || PARTIAL_NOTICE);
+      refresh();
+    } else if (frame.code === "retry_failed" && frame.rolled_back) {
+      onNotice(frame.detail || ROLLED_BACK_FAILED_NOTICE);
+      refresh();
     } else {
       onNotice(RETRY_FAILED_NOTICE);
     }

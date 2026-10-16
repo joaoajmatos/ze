@@ -13,8 +13,17 @@ from httpx import ASGITransport, AsyncClient
 
 from ze_api.api.dependencies import require_api_key
 from ze_api.api.routes.loops import router
+from ze_plugin.contribution import EvidenceRef
 from ze_worldstate.errors import InvalidLoopTransitionError, LoopNotFoundError
-from ze_worldstate.types import LoopClaimKind, LoopProvenance, LoopState, OpenLoop
+from ze_worldstate.types import (
+    LoopClaimKind,
+    LoopProvenance,
+    LoopSource,
+    LoopSourceRole,
+    LoopState,
+    OpenLoop,
+    SourceKey,
+)
 
 API_KEY = "test-key"
 
@@ -34,6 +43,26 @@ def _loop(**overrides) -> OpenLoop:
     return OpenLoop(**defaults)
 
 
+def _source(
+    loop_id,
+    *,
+    role=LoopSourceRole.CORROBORATION,
+    inflow="email",
+    ref="G1",
+    same_concern=None,
+    promoted=False,
+) -> LoopSource:
+    return LoopSource(
+        loop_id=loop_id,
+        role=role,
+        key=SourceKey(inflow, ref),
+        evidence=EvidenceRef(kind="episode", id=uuid4()),
+        same_concern=same_concern,
+        promoted=promoted,
+        created_at=datetime.now(timezone.utc),
+    )
+
+
 def _make_app(loop_store=None, pool=None) -> tuple[FastAPI, AsyncMock]:
     app = FastAPI()
     store = loop_store or AsyncMock()
@@ -49,6 +78,7 @@ def _make_app(loop_store=None, pool=None) -> tuple[FastAPI, AsyncMock]:
 async def test_list_loops_defaults_to_non_terminal_states():
     store = AsyncMock()
     store.list = AsyncMock(return_value=[_loop()])
+    store.list_sources_for = AsyncMock(return_value={})
     app, _ = _make_app(store)
 
     async with AsyncClient(
@@ -63,6 +93,67 @@ async def test_list_loops_defaults_to_non_terminal_states():
     assert len(data) == 1
     assert data[0]["state"] == "suspected"
     store.list.assert_awaited_once_with(["suspected", "active", "drifting"])
+
+
+@pytest.mark.asyncio
+async def test_list_loops_reports_promotion_and_source_inflows():
+    loop = _loop(state=LoopState.ACTIVE)
+    store = AsyncMock()
+    store.list = AsyncMock(return_value=[loop])
+    store.list_sources_for = AsyncMock(
+        return_value={
+            loop.id: [
+                _source(loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation"),
+                _source(loop.id, inflow="email", same_concern=0.93, promoted=True),
+            ]
+        }
+    )
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            "/api/v0/loops", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    assert resp.status_code == 200
+    item = resp.json()[0]
+    assert item["promoted"] is True
+    assert item["source_inflows"] == ["conversation", "email"]
+    store.list_sources_for.assert_awaited_once_with([loop.id])
+
+
+@pytest.mark.asyncio
+async def test_get_loop_returns_promotion_and_sources():
+    loop = _loop(state=LoopState.ACTIVE)
+    store = AsyncMock()
+    store.get = AsyncMock(return_value=loop)
+    store.list_evidence = AsyncMock(return_value=[])
+    store.list_sources = AsyncMock(
+        return_value=[
+            _source(loop.id, role=LoopSourceRole.ORIGIN, inflow="conversation"),
+            _source(loop.id, inflow="email", same_concern=0.93, promoted=True),
+        ]
+    )
+    app, _ = _make_app(store)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        resp = await client.get(
+            f"/api/v0/loops/{loop.id}", headers={"Authorization": f"Bearer {API_KEY}"}
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["promoted"] is True
+    assert data["source_inflows"] == ["conversation", "email"]
+    assert [s["role"] for s in data["sources"]] == ["origin", "corroboration"]
+    assert data["sources"][0]["same_concern"] is None
+    assert data["sources"][0]["evidence_kind"] == "episode"
+    assert data["sources"][1]["same_concern"] == 0.93
+    assert data["sources"][1]["promoted"] is True
 
 
 @pytest.mark.asyncio

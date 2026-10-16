@@ -27,7 +27,11 @@ async def test_remember_fact_submits_prompt_supplied_reviewed():
             memory_store=store,
         )
     submit.assert_awaited_once()
-    assert result == {"ok": True, "id": str(fact_id)}
+    assert result == {
+        "ok": True,
+        "id": str(fact_id),
+        "undo": {"fact_id": str(fact_id), "restore_fact_ids": []},
+    }
 
 
 async def test_remember_fact_returns_ok_false_on_seam_failure():

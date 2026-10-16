@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from ze_agents.tool import ToolAccess, tool
-from ze_sdk import ToolReversibility
+from ze_sdk import ToolReversibility, undo_payload
 from ze_sdk.proactive import ProactiveNotifier
 from ze_calendar.action_records import emit_reminder_mutation
 from ze_calendar.reminders.store import ReminderStore, fire_reminder
@@ -69,7 +69,12 @@ async def set_reminder(
         lifecycle=ActionLifecycle.SUCCEEDED,
         outcome=ActionOutcome.SUCCESS,
     )
-    return {"id": str(rid), "label": label, "fire_at": fire_dt.isoformat()}
+    return {
+        "id": str(rid),
+        "label": label,
+        "fire_at": fire_dt.isoformat(),
+        "undo": undo_payload(reminder_id=str(rid)),
+    }
 
 
 @tool(

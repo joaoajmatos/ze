@@ -1,6 +1,6 @@
 # Ze — System One
 
-System One is a small model that answers closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Ze uses it as a fast gate in four places. Code makes every final decision.
+System One is a small model that answers closed questions. It never writes text. It returns a choice among labels, a yes/no probability, or a score. Ze uses it as a fast gate in five places. Code makes every final decision.
 
 This page explains the layers around it, the three question types, where Ze asks the questions, and how Ze handles a failure. For setup and tuning, see [configuration.md](configuration.md#system_one).
 
@@ -61,7 +61,7 @@ A skip is not an error. A skip happens when the master switch is off, the key is
 
 ---
 
-## The four surfaces
+## The five surfaces
 
 Each surface follows the same pattern. Code builds the shortlist or the candidate. One request asks the questions. A pure function, `decide()`, turns the answers into an action using bars from `config.yaml`. If a bar is `null`, the surface counts as uncalibrated and skips.
 
@@ -71,6 +71,7 @@ Each surface follows the same pattern. Code builds the shortlist or the candidat
 | **Routing** (phase 164) | The `embed_route` node (`ze_core/routing/judge.py`) | Choice: agent (shortlist plus `none`). Noul: needs more than one specialist. Score: complexity | trust, decompose, abstain, skip |
 | **Skills** (phase 166) | The `match_skills` node (`ze_skills/judge.py`) | Choice: skill (shortlist plus `none`). Noul: needs a skill | apply, drop, abstain, skip |
 | **Loop gate** (phase 168) | The `write_memory` node for conversation; the email, calendar, and ingestion extractors for the rest (`ze_worldstate/loop_judge.py`) | Noul: open concern. Noul: resolves an existing loop. Noul: explicit declaration (conversation only) | create declared, create suspected, resolve, hold, fallback |
+| **Corroboration** (phase 172) | Both suspected match paths in `ze_worldstate/extraction.py` (`ze_worldstate/corroboration_judge.py`) | Noul: same concern | corroborate, promote, not same, fallback |
 
 ### Speech act
 
@@ -96,6 +97,18 @@ Each question has its own bar (`loop_hold`, `resolves_hold`, `explicit_hold`). C
 
 Conversation runs the gate in the `write_memory` node, beside the fact extractor, and records its rows in the message trace. Trivial turns skip the request. A turn where `track_loop` or `confirm_loop` succeeded also skips the conversation gate, because the user's own ask already wrote the loop. Email, calendar, and ingestion run the same gate. They can create suspected loops and resolve existing ones, log their judgments, and write no message-trace rows. When the surface is off, uncalibrated, skipped, or returns an invalid answer, Ze runs the older Haiku gate. That gate now strips the code fence Haiku wraps around its JSON. Before phase 168 it did not, all 136 replies in the calibration runs failed to parse, and loop extraction created no loops in production.
 
+### Corroboration
+
+When the gate admits a text as a concern and it matches a `suspected` loop, Ze first decides in code whether the text is an independent source: its source key is new to the loop, its evidence is not already linked, and its key is not on a matching dropped loop. A non-independent match makes no request.
+
+For an independent match, one System One Noul, `same_concern`, asks whether the text is about the same unfinished matter as the loop title. The state holds the loop title (capped at 200 characters), the new text's inflow, and the text capped with the 168 per-inflow caps. Ze makes one attempt. Code decides against two bars:
+
+- At or above `corroborate_hold`: Ze links the evidence and raises the loop's confidence, capped at 0.6. The loop stays `suspected`.
+- At or above `promote_hold`: Ze does the same, then promotes the loop to `active` at confidence 0.7 with a 7-day drift deadline.
+- Below both, or a skip, an invalid answer, or a failure: the plain evidence link. Promotion changes open-loop state only; it is never a fact.
+
+Ze stores each counted score on the loop's `open_loop_sources` row (score, model, latency) and logs the judgment as `corroboration_judgment`. The conversation commit is fire-and-forget, so these judgments do not reach `MessageTrace.judgments`.
+
 ---
 
 ## Status
@@ -106,6 +119,7 @@ Conversation runs the gate in the `write_memory` node, beside the fact extractor
 | Routing | On, with `choice_trust: 0.5`, `multi_specialist_hold: 0.5`, `shortlist_k: 9` and `complexity_lookup_max: null` | Phase 167 calibrated on 52 held-out English and Portuguese rows on 2026-10-12. After the loops criteria refinement, both held-out sets score 1.000 in each language, ECE 0.041 and 0.014, zero research-to-companion misses and zero harmful trusts. The complexity score overlaps across levels, so the bar stays unset and the word-count classifier picks the model tier |
 | Skills | On, with `choice_trust: 0.75`, `needs_skill_hold: 0.6` and `shortlist_k: 5` | Calibrated on 84 English and Portuguese rows on 2026-10-12: zero wrong applies |
 | Loop gate | On, with `loop_hold: 0.75`, `explicit_hold: 0.85` and `resolves_hold: 0.8` | Calibrated 2026-10-12 on 88 tuned and 48 held-out English and Portuguese rows. On the held-out set, 10 of 10 loops found in each language, precision 1.00, zero false creates. A fence-tolerant Haiku baseline found 9 of 10 (English) and 10 of 10 (Portuguese) with one false create each. The counts are small, so the comparison is coarse |
+| Corroboration | Off, with `corroborate_hold: null` and `promote_hold: null` | Calibrated 2026-10-15 (`make calibrate-corroboration`; 84 tuned + 47 held-out English and Portuguese rows). Candidate bars 0.6 and 0.8: English passed on the held-out set (precision 1.00, recall 14 of 14, zero false promotions); Portuguese failed one clause (recall 12 of 13, below the E5 baseline recall minus 0.05). The E5 title-cosine baseline matches every row at 0.75, so its recall is a ceiling, not a rival. The surface stays off until both languages pass; the held-out set is spent for these bars |
 
 Calibration scripts live in `eval/calibration/`. Each one runs the labeled set against the live service and costs credits:
 
@@ -114,13 +128,14 @@ make calibrate-speech-act
 make calibrate-routing
 make calibrate-skills       # add --recall for the offline shortlist check
 make calibrate-loop-gate    # tuned set by default; --set holdout gives the verdict
+make calibrate-corroboration   # tuned set by default; --set holdout --bars C,P gives the verdict
 ```
 
 ---
 
 ## Trace
 
-Every judgment appears in the message trace as a `JudgmentTrace` row: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The speech-act and loop-gate rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact.
+Judgments appear in the message trace as `JudgmentTrace` rows: the question id, the kind, the latency, the answer, the probabilities, the peakedness, the model, the token count, whether code used the answer (`consumed`), and the skip reason. `embed_route` and `match_skills` add their rows to `state["judgments"]`. The speech-act and loop-gate rows are added after the turn. The trace panel in `ze-web` shows them. Use them to see why Ze routed a turn, applied a skill, or kept a fact. A corroboration judgment does not reach the trace: the conversation loop commit is fire-and-forget, so Ze stores the score on the loop's source row and logs `corroboration_judgment` instead.
 
 ---
 

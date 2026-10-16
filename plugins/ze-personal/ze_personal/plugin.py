@@ -182,10 +182,11 @@ class PersonalPlugin(ZePlugin):
             )
 
         return [
+            # Facts reference memory_entities (subject_id/object_id) and
+            # memory_episodes (source_episode_id, added in zm005) — import last.
+            _domain("memory.facts", "memory_facts", 5),
             # Memory (leaf, no FK dependencies) — order 10
-            _domain("memory.facts", "user_facts", 10),
-            _domain("memory.episodes", "episodes", 10),
-            _domain("memory.profile", "user_profile", 10),
+            _domain("memory.episodes", "memory_episodes", 10),
             _domain("memory.profile_facets", "memory_profile_facets", 10),
             _domain("memory.entities", "memory_entities", 10),
             _domain("memory.events", "memory_events", 10),

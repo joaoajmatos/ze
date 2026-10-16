@@ -19,7 +19,9 @@ router = APIRouter(
     operation_id="listLoops",
     summary="List open loops",
     description="Return open loops, optionally filtered to one lifecycle state. "
-    "Defaults to non-terminal states (suspected, active, drifting).",
+    "Defaults to non-terminal states (suspected, active, drifting). Each item "
+    "reports whether the loop was promoted by corroboration and the distinct "
+    "inflows it was seen in.",
 )
 async def list_loops(
     state: str | None = Query(default=None),
@@ -35,7 +37,9 @@ async def list_loops(
     response_model=LoopDetail,
     operation_id="getLoop",
     summary="Get open loop detail",
-    description="Return full detail for one loop, including its evidence and entity links.",
+    description="Return full detail for one loop, including its evidence, entity "
+    "links and recorded sources (origin and counted corroborations, with the "
+    "same-concern score) in time order.",
 )
 async def get_loop(
     loop_id: UUID,
