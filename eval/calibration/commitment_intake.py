@@ -18,7 +18,9 @@ as the baseline. It costs credits and is never collected by pytest.
 
 Acceptance rule per language (FR-022): zero duplicate bookings, zero false loop creates, fact
 precision >= baseline and fact recall >= baseline - 0.05, loop precision >= baseline and loop
-recall >= baseline - 0.05, Choice accuracy >= 0.9.
+recall >= baseline - 0.05, Choice accuracy >= 0.9. Choice accuracy covers rows where the turn
+created nothing; link accuracy (outcome is a link of the right kind) covers the rest and is
+reported beside it (amendment of FR-022, 2026-10-16).
 """
 
 from __future__ import annotations
@@ -240,6 +242,7 @@ class Pred:
     resolve: bool = False
     fallback: bool = False
     wrote: bool = False
+    link_kind: str | None = None
 
 
 def pred_from_outcome(outcome: IntakeOutcome) -> Pred:
@@ -250,6 +253,7 @@ def pred_from_outcome(outcome: IntakeOutcome) -> Pred:
         resolve=outcome.kind == "resolve_loop",
         fallback=outcome.kind == "fallback",
         wrote=outcome.kind in WRITES,
+        link_kind=outcome.link_kind if outcome.kind == "link" else None,
     )
 
 
@@ -288,6 +292,8 @@ class Counts:
     waiting_written: int = 0
     choice_total: int = 0
     choice_ok: int = 0
+    link_total: int = 0
+    link_ok: int = 0
 
     @property
     def fact_precision(self) -> float:
@@ -317,6 +323,10 @@ class Counts:
     def choice_acc(self) -> float:
         return self.choice_ok / self.choice_total if self.choice_total else 0.0
 
+    @property
+    def link_acc(self) -> float:
+        return self.link_ok / self.link_total if self.link_total else 1.0
+
 
 def predicted_choice(result: SystemOneResult) -> str | None:
     answer = result.answers.get(Q_COMMITMENT) if result.outcome == "ok" else None
@@ -330,7 +340,11 @@ def score(
     preds: dict[str, Pred],
     choices: dict[str, str | None] | None = None,
 ) -> Counts:
-    """A fallback row counts as a miss and never as a write. A skipped Choice counts as wrong."""
+    """A fallback row counts as a miss and never as a write. A skipped Choice counts as wrong.
+
+    Choice accuracy covers rows where the turn created nothing. When a reminder or goal already
+    exists the outcome is a link whatever the Choice says (decision row 5), so those rows are
+    scored by `link_acc` instead (dated amendment of FR-022, 2026-10-16)."""
     c = Counts()
     for r in rows:
         p = preds[r.id]
@@ -355,9 +369,12 @@ def score(
         if r.gold_choice == "waiting_on":
             c.waiting_total += 1
             c.waiting_written += p.wrote
-        if choices is not None:
+        if choices is not None and r.turn_created == "none":
             c.choice_total += 1
             c.choice_ok += choices[r.id] == r.gold_choice
+        if r.turn_created != "none":
+            c.link_total += 1
+            c.link_ok += p.link_kind == r.turn_created
     return c
 
 
@@ -607,12 +624,20 @@ def _fmt(c: Counts) -> str:
 
 def report_choice(rows: list[Row], results: dict[str, RowResults]) -> None:
     for lang in LANGS:
-        scoped = [r for r in rows if r.lang == lang]
+        in_lang = [r for r in rows if r.lang == lang]
+        scoped = [r for r in in_lang if r.turn_created == "none"]
         chosen = choices_for(scoped, results)
         ok = sum(chosen[r.id] == r.gold_choice for r in scoped)
         print(
-            f"\n== [{lang}] Choice accuracy: {ok}/{len(scoped)} = "
+            f"\n== [{lang}] Choice accuracy (turn created nothing): {ok}/{len(scoped)} = "
             f"{ok / len(scoped) if scoped else 0:.3f} (skipped count as wrong)"
+        )
+        linked = [r for r in in_lang if r.turn_created != "none"]
+        link_chosen = choices_for(linked, results)
+        print(
+            f"   rows where the turn created a reminder or goal ({len(linked)}): the outcome is a link"
+            f" whatever the Choice says; Choice read as reminder/goal/loop on "
+            f"{sum(link_chosen[r.id] in ('reminder', 'goal', 'loop') for r in linked)}"
         )
         print(
             "label".ljust(12)
@@ -776,7 +801,10 @@ def report_scores(
         out[lang] = (score(scoped, system_preds, chosen), score(scoped, base_preds))
         s, b = out[lang]
         print(f"\n== [{lang}]")
-        print(f"  intake:   {_fmt(s)} choiceAcc={s.choice_acc:.3f}")
+        print(
+            f"  intake:   {_fmt(s)} choiceAcc={s.choice_acc:.3f}"
+            f" linkAcc={s.link_acc:.3f} ({s.link_ok}/{s.link_total})"
+        )
         print(f"  baseline: {_fmt(b)}")
         print(
             f"  waiting_on rows written to a store (SC-005): {s.waiting_written}/{s.waiting_total}"
@@ -854,7 +882,8 @@ def report_verdict(
             f"[{lang}] {'ENABLE' if ok else 'KEEP OFF'}"
             f"  intake: factP={s.fact_precision:.3f} factR={s.fact_recall:.3f}"
             f" loopP={s.loop_precision:.3f} loopR={s.loop_recall:.3f} dup={s.duplicates}"
-            f" falseC={s.false_creates} choiceAcc={s.choice_acc:.3f} fallback={s.fallback}"
+            f" falseC={s.false_creates} choiceAcc={s.choice_acc:.3f}"
+            f" linkAcc={s.link_acc:.3f} fallback={s.fallback}"
             f" | baseline: factP={b.fact_precision:.3f} factR={b.fact_recall:.3f}"
             f" loopP={b.loop_precision:.3f} loopR={b.loop_recall:.3f} dup={b.duplicates}"
             + (f"\n      failing: {'; '.join(failing)}" if failing else "")
