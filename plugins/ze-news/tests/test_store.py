@@ -34,22 +34,51 @@ def _make_store():
 
 async def test_upsert_new_article():
     store, conn = _make_store()
-    conn.execute.return_value = "INSERT 0 1"
+    conn.fetchval.return_value = True
 
     article = _make_article()
     new_articles = await store.upsert([article])
 
     assert len(new_articles) == 1
     assert new_articles[0].url == article.url
-    conn.execute.assert_called_once()
+    conn.fetchval.assert_called_once()
 
 
 async def test_upsert_duplicate_skipped():
     store, conn = _make_store()
-    conn.execute.return_value = "INSERT 0 0"
+    conn.fetchval.return_value = False
 
     new_articles = await store.upsert([_make_article()])
     assert new_articles == []
+
+
+async def test_upsert_conflict_update_is_not_new():
+    """ON CONFLICT DO UPDATE reports 'INSERT 0 1' for an update too, so the
+    command tag cannot tell a new row from a re-fetched one."""
+    store, conn = _make_store()
+    conn.execute.return_value = "INSERT 0 1"
+    conn.fetchval.return_value = False
+
+    new_articles = await store.upsert([_make_article()])
+    assert new_articles == []
+
+
+async def test_upsert_keeps_only_inserted_rows_of_a_batch():
+    store, conn = _make_store()
+    conn.fetchval.side_effect = [True, False, True]
+    articles = [_make_article(url=f"https://example.com/{i}") for i in range(3)]
+
+    new_articles = await store.upsert(articles)
+
+    assert [a.url for a in new_articles] == [articles[0].url, articles[2].url]
+
+
+async def test_upsert_sql_detects_insert_with_xmax():
+    store, conn = _make_store()
+    conn.fetchval.return_value = True
+    await store.upsert([_make_article()])
+    sql = conn.fetchval.call_args[0][0]
+    assert "xmax = 0" in sql
 
 
 async def test_upsert_empty_list():
