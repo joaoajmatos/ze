@@ -245,6 +245,23 @@ metadata. Older traces parse to `false`.
 
 The trace stores these values so that Retry never depends on registry state at retry time.
 
+### Model tier in the trace
+
+`choose_tier` writes a `TierTrace` to `MessageTrace.tier` with four fields: `agent`, `tier`
+(`simple` or `full`), `decided_by`, and `model`, the model that ran. `decided_by` is one of
+`system_one`, `off`, `uncalibrated`, `skip`, `invalid_answer`, `no_simple_model`, or
+`compound`. Older traces have no `tier` and parse to `null`.
+
+The REST trace response (`GET /api/v0/messages/{id}/trace` and the batch route) returns
+`tier` on the trace. The WebSocket sends a partial `trace_update` frame with `{"tier": ...}`
+as soon as `choose_tier` finishes, and the final frame repeats it. The Routing section of the
+trace panel shows one line, such as "Light model · System One" or "Full model · tiering off".
+It shows nothing when `decided_by` is `no_simple_model`, because that agent has one model.
+The Noul itself appears in `judgments` as `needs_deep_reasoning`.
+
+`routing_log` no longer stores a model or a complexity label. Routing always assigns the
+full model, so only the trace records which model ran.
+
 ### Web sources
 
 When a reply used web search, `MessageTrace.sources` lists the pages the provider
@@ -941,7 +958,7 @@ it owns no tables and no revision files.
 
 | Table | Purpose |
 |---|---|
-| `routing_log` | Every routing decision with scores and outcome |
+| `routing_log` | Every routing decision with scores and outcome (not the model tier; that is in the message trace) |
 | `memory_facts` | Facts with pgvector embeddings, review status, expiry |
 | `memory_episodes` | Episodic memory summaries with pgvector embeddings |
 | `memory_entities` | Named entities with canonical names, aliases, and attributes |
