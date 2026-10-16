@@ -81,7 +81,7 @@
 
 ## Phase 7: User Story 5 — The tier is explainable (P2)
 
-- [ ] T022 [ENG] [US5] [BE] `ze_core/orchestration/nodes/trace.py` `record_trace` copies `state["tier"]` to `MessageTrace.tier`; `ze_core/conversation/turn.py` sends a partial `trace_update` `{"tier": {...}}` on `on_chain_end` of `choose_tier`. Tests: the persisted trace and the partial frame carry the record for each `decided_by`.
+- [x] T022 [ENG] [US5] [BE] `ze_core/orchestration/nodes/trace.py` `record_trace` copies `state["tier"]` to `MessageTrace.tier`; `ze_core/conversation/turn.py` sends a partial `trace_update` `{"tier": {...}}` on `on_chain_end` of `choose_tier`. Tests: the persisted trace and the partial frame carry the record for each `decided_by`.
 - [ ] T023 [JR] [US5] [BE] `apps/ze-api/ze_api/api/schemas.py`: `TierTraceResponse` (`agent`, `tier: Literal["simple","full"]`, `decided_by`, `model`); `tier: TierTraceResponse | None = None` on `MessageTraceResponse` and `MessageTraceEntry`; the WS `trace_update` schema the same. Extend the message-trace route test and the WS frame schema test. Run `make codegen` and commit `packages/ze-client` generated files.
 - [ ] T024 [JR] [US5] [WEB] `apps/ze-web/src/widgets/message-trace/ui/RoutingBadge.tsx`: optional `tier` prop rendering one line with the text table in contracts/tier-judgment.md (nothing for `no_simple_model`); pass `trace.tier` from `MessageTracePanel.tsx` and `widgets/trace-panel/ui/RoutingSection.tsx`. Vitest `RoutingBadge.test.tsx` covers each text and the absent case. `make test-web` and `make typecheck-web` green.
 

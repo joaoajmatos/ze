@@ -90,6 +90,7 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
             agent_result, list(state.get("subtask_results") or [])
         ),
         effects_known=True,
+        tier=state.get("tier"),
     )
     updates: dict[str, Any] = {"message_trace": trace}
     offer_ids = list(state.get("loop_offer_ids") or [])
