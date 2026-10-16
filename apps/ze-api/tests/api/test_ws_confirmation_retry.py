@@ -277,3 +277,75 @@ async def test_reply_then_second_gate_does_not_supersede_twice():
     env.msgs.mark_superseded.assert_awaited_once()
     assert "retry_replaces" not in seen["config"]["configurable"]
     assert seen["config"]["configurable"]["retry_mode"] is True
+
+
+async def test_a_paused_retry_row_remembers_what_it_replaces():
+    env = _Env()
+    env.container.settings = SimpleNamespace(confirm_timeout_seconds=900)
+    env.container.notifier = None
+    outcome = SimpleNamespace(
+        confirmation=WriteConfirmation(
+            request_id="req-7",
+            kind="write",
+            round=1,
+            items=[
+                ConfirmItem("i1", "messenger", "send_email", "send an email", "to: a")
+            ],
+        ),
+        config=env.config,
+    )
+    with patch("asyncio.create_task", side_effect=lambda coro: coro.close()):
+        await send_confirmation_request(
+            env.conn, env.container, outcome, "t1", confirmation_store=env.store
+        )
+    saved = env.store.save.await_args.kwargs["actions"]
+    assert saved["retry_replaces"] == str(env.old.id)
+
+
+async def test_a_paused_retry_superseded_by_a_new_turn_is_marked_failed():
+    env = _Env()
+    env.store.get_pending_for_thread = AsyncMock(
+        return_value=[
+            {
+                "thread_id": "t1",
+                "request_id": "req-1",
+                "actions": {"kind": "write", "retry_replaces": str(env.old.id)},
+            }
+        ]
+    )
+
+    await confirmation.supersede_open_confirmations(
+        env.conn, env.store, "t1", msg_store=env.msgs
+    )
+
+    assert env.states() == ["rolled_back_retry_failed"]
+
+
+async def test_after_a_restart_the_resumed_retry_still_supersedes():
+    env = _Env()
+    env.store.get_pending = AsyncMock(
+        return_value={
+            "thread_id": "t1",
+            "request_id": "req-1",
+            "actions": {"kind": "write", "retry_replaces": str(env.old.id)},
+        }
+    )
+    env.container._build_config = lambda thread_id, **extra: {
+        "configurable": {"thread_id": thread_id, **extra}
+    }
+
+    await handle_confirm(
+        MagicMock(),
+        {"type": "confirm", "id": "req-1", "choice": "approve"},
+        env.container,
+        env.conn,
+        None,
+        thread_id="t1",
+        confirmation_store=env.store,
+        msg_store=env.msgs,
+    )
+
+    resumed = env.container.resume_turn.await_args.args[0]["configurable"]
+    assert resumed["retry_replaces"] == str(env.old.id)
+    assert resumed["retry_mode"] is True
+    env.msgs.mark_superseded.assert_awaited_once_with(env.old.id, env.new_id)

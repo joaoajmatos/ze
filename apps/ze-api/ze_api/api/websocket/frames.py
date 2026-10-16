@@ -20,13 +20,22 @@ _TITLES = {
 }
 
 
-def confirmation_payload(confirmation: WriteConfirmation) -> dict[str, Any]:
-    """What `pending_confirmations.actions` stores: enough to rebuild the frame."""
-    return {
+def confirmation_payload(
+    confirmation: WriteConfirmation, retry_replaces: str | None = None
+) -> dict[str, Any]:
+    """What `pending_confirmations.actions` stores: enough to rebuild the frame.
+
+    `retry_replaces` marks a paused retry (Phase 180): the reply it supersedes
+    survives a restart and a superseding turn this way.
+    """
+    payload: dict[str, Any] = {
         "kind": confirmation.kind,
         "round": confirmation.round,
         "items": [asdict(item) for item in confirmation.items],
     }
+    if retry_replaces:
+        payload["retry_replaces"] = retry_replaces
+    return payload
 
 
 def confirm_title(kind: str) -> str:

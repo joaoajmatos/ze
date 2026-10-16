@@ -150,7 +150,7 @@ async def handle_confirm(
             return None
         thread_id = row.get("thread_id") or thread_id
         if pending_config is None or extract_thread_id(pending_config) != thread_id:
-            pending_config = container._build_config(thread_id)
+            pending_config = container._build_config(thread_id, **_retry_identity(row))
     elif pending_config is None:
         await _no_pending(conn_mgr, thread_id)
         return None
@@ -362,21 +362,37 @@ async def confirmation_timeout(
 
 
 async def supersede_open_confirmations(
-    conn_mgr: ConnectionManager, confirmation_store: Any, thread_id: str
+    conn_mgr: ConnectionManager,
+    confirmation_store: Any,
+    thread_id: str,
+    *,
+    msg_store: Any | None = None,
 ) -> list[dict]:
     """Clear and cancel every open confirmation on the thread; returns the cleared rows.
 
     A newer turn's checkpoint replaced theirs, so they can no longer be answered.
+    A paused retry among them ends with no reply: its undo stands (Phase 180).
     """
     stale = await confirmation_store.get_pending_for_thread(thread_id)
     cleared = []
     for row in stale:
         if await confirmation_store.clear(thread_id, row["request_id"]):
             cleared.append(row)
+            old_id = retry_replaces_of({"configurable": _retry_identity(row)})
+            await _retry_without_reply(None, msg_store, conn_mgr, thread_id, old_id)
         await conn_mgr.send_frame(
             {"type": "confirm_cancel", "id": row["request_id"]}, thread_id
         )
     return cleared
+
+
+def _retry_identity(row: dict) -> dict[str, Any]:
+    """The retry keys a pending row carries, as graph config extras (Phase 180)."""
+    payload = row.get("actions")
+    replaces = payload.get("retry_replaces") if isinstance(payload, dict) else None
+    if not replaces:
+        return {}
+    return {"retry_mode": True, "retry_replaces": str(replaces)}
 
 
 async def send_confirmation_request(
@@ -405,13 +421,19 @@ async def send_confirmation_request(
 
     if confirmation_store is not None and effective_thread_id:
         await supersede_open_confirmations(
-            conn_mgr, confirmation_store, effective_thread_id
+            conn_mgr,
+            confirmation_store,
+            effective_thread_id,
+            msg_store=getattr(container, "message_store", None),
         )
+        replaces = retry_replaces_of(outcome.config)
         await confirmation_store.save(
             thread_id=effective_thread_id,
             request_id=request_id,
             prompt=frame["title"],
-            actions=confirmation_payload(confirmation),
+            actions=confirmation_payload(
+                confirmation, str(replaces) if replaces else None
+            ),
             expires_at=expires_at,
         )
 

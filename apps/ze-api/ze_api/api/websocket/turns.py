@@ -140,7 +140,10 @@ async def handle_message(
             # This turn completed with a direct response, superseding any gate(s)
             # left open on this thread — their checkpoints can no longer be resumed.
             stale = await supersede_open_confirmations(
-                conn_mgr, confirmation_store, effective_thread_id
+                conn_mgr,
+                confirmation_store,
+                effective_thread_id,
+                msg_store=getattr(container, "message_store", None),
             )
             _record_superseded(outcome.final_state.get("message_trace"), stale)
 
