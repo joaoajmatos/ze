@@ -441,6 +441,8 @@ class BaseAgent(ABC):
                     duration_ms=0,
                     success=False,
                     error=f"skipped: {e.reason}",
+                    gate=confirmation_gate,
+                    approval=approval,
                 )
             except Exception as exc:
                 log.warning(
@@ -466,6 +468,8 @@ class BaseAgent(ABC):
                 duration_ms=duration_ms,
                 success=False,
                 error=str(exc),
+                gate=confirmation_gate,
+                approval=approval,
             )
             await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
             return tool_call

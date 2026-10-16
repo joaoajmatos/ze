@@ -272,3 +272,25 @@ async def test_a_failed_or_empty_summarize_falls_back_to_the_arguments(result) -
         "delete_event", _ctx(), _lm_args={"event_id": "e1"}, event_id="e1"
     )
     assert tc.parked.summary == "event_id: e1"
+
+
+async def test_an_approved_call_that_fails_keeps_its_approval() -> None:
+    async def _boom(event_id: str = "") -> str:
+        raise RuntimeError("No email channel available")
+
+    tool(
+        access=ToolAccess.WRITE,
+        description="send",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+        effect_phrase="sent an email",
+    )(_boom)
+    tc = await _Agent().call_tool(
+        "_boom",
+        _ctx(approval_request_id="req-1"),
+        _lm_args={"event_id": "e1"},
+        _approval=ApprovedCall("c1"),
+        event_id="e1",
+    )
+    assert tc.success is False and tc.error == "No email channel available"
+    assert tc.gate == "approved"
+    assert tc.approval == {"request_id": "req-1", "outcome": "approved"}
