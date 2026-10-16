@@ -1,0 +1,30 @@
+{
+  "workflow": "speckit",
+  "specName": "Complexity Routing",
+  "branch": "182-complexity-routing",
+  "currentStep": "tasks",
+  "status": "ready-to-implement",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-16T17:31:16.487Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-16T17:36:44.685Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-16T17:38:57.477Z"
+    }
+  ]
+}
