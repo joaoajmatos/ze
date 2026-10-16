@@ -17,16 +17,27 @@ def routing_correct(scenario: dict, agent_used: str | None) -> bool | None:
     return agent_used == expected
 
 
+_DID_NOT_RUN = frozenset(
+    {"parked", "denied", "refused", "expired", "refused_over_cap", "duplicate"}
+)
+
+
 def tools_correct(scenario: dict, ze_result: dict) -> bool | None:
     """
     Check that every tool listed in expected_tools was called and succeeded.
 
     Each entry may be a bare string (name only) or a dict with 'name' and
-    optional 'args' conditions and 'allow_draft'. Returns None when the
+    optional 'args', 'allow_parked', 'gate', 'count' and 'turn'. Returns None when the
     scenario declares no expected_tools.
 
-    A call suppressed by draft mode (is_draft, success False) counts only for
-    entries that set ``allow_draft: true``; drafts are never counted otherwise.
+    A call that waits for the user's approval (``gate`` "parked") or that the
+    user denied, let expire or hit the confirmation cap did not run, so it never
+    counts by default; ``allow_parked: true`` accepts a parked call as well. A
+    ``gate`` entry (a gate name or a list) matches calls by their gate alone and
+    ignores ``success``, so an approved write that failed still proves the
+    approval. ``count`` asks for exactly that many matching calls; 0 proves the
+    tool did not run. ``turn`` (1-based) limits the match to the calls of one turn,
+    which is how a scenario shows a write did not run before its confirm step.
     """
     expected = scenario.get("expected_tools")
     if not expected:
@@ -35,28 +46,39 @@ def tools_correct(scenario: dict, ze_result: dict) -> bool | None:
 
     for entry in expected:
         if isinstance(entry, str):
-            tool_name = entry
-            expected_args = None
-            allow_draft = False
-        else:
-            tool_name = entry["name"]
-            expected_args = entry.get("args")
-            allow_draft = bool(entry.get("allow_draft"))
-
-        successful_calls = [
-            tc
-            for tc in calls
-            if tc.get("tool_name") == tool_name
-            and (tc.get("success") or (allow_draft and tc.get("is_draft")))
-        ]
-        if not successful_calls:
-            return False
-        if expected_args and not any(
-            _match_args(tc.get("args", {}), expected_args) for tc in successful_calls
-        ):
+            entry = {"name": entry}
+        matching = [tc for tc in calls if _counts(tc, entry)]
+        expected_args = entry.get("args")
+        if expected_args:
+            matching = [
+                tc for tc in matching if _match_args(tc.get("args", {}), expected_args)
+            ]
+        count = entry.get("count")
+        if count is None:
+            if not matching:
+                return False
+        elif len(matching) != count:
             return False
 
     return True
+
+
+def _gate(call: dict) -> str:
+    return call.get("gate") or ("parked" if call.get("parked") else "none")
+
+
+def _counts(call: dict, entry: dict) -> bool:
+    if call.get("tool_name") != entry["name"]:
+        return False
+    if entry.get("turn") is not None and call.get("turn") != entry["turn"]:
+        return False
+    gate = _gate(call)
+    wanted = entry.get("gate")
+    if wanted is not None:
+        return gate in ([wanted] if isinstance(wanted, str) else wanted)
+    if gate == "parked":
+        return bool(entry.get("allow_parked"))
+    return bool(call.get("success")) and gate not in _DID_NOT_RUN
 
 
 def outcome_correct(verify_results: list[VerifyResult]) -> bool | None:
@@ -70,10 +92,14 @@ def _collect_tool_calls(ze_result: dict) -> list[dict]:
     turns = ze_result.get("turns")
     if turns:
         calls: list[dict] = []
-        for turn in turns:
-            calls.extend(turn["result"].get("tool_calls", []))
+        for idx, turn in enumerate(turns, start=1):
+            number = turn.get("turn", idx)
+            calls.extend(
+                {**call, "turn": number}
+                for call in turn["result"].get("tool_calls", [])
+            )
         return calls
-    return ze_result.get("tool_calls", [])
+    return [{**call, "turn": 1} for call in ze_result.get("tool_calls", [])]
 
 
 def _match_args(actual: dict, expected_args: dict) -> bool:

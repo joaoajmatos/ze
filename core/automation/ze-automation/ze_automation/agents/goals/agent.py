@@ -5,7 +5,6 @@ from typing import AsyncIterator
 from ze_agents.base_agent import BaseAgent
 from ze_agents.nested_tools import enforce_domain_cancel_confirmations
 from ze_agents.registry import agent
-from ze_agents.types import Intent, Mode
 from ze_agents.types import AgentContext, AgentResult
 from ze_automation.goals.executor import GoalExecutor
 from ze_automation.goals.planner import GoalPlanner
@@ -90,21 +89,6 @@ class GoalAgent(BaseAgent):
         "render_card",
         "render_confirm",
     ]
-    intents = {
-        "create": Intent(
-            Mode.CONFIRM,
-            "Create a new multi-week goal and decompose it into milestones.",
-        ),
-        "read": Intent(
-            Mode.AUTONOMOUS,
-            "Inspect goal status, list active goals, or review progress and traces.",
-        ),
-        "update": Intent(
-            Mode.CONFIRM,
-            "Pause, resume, or redirect (steer) an active goal mid-execution.",
-        ),
-        "delete": Intent(Mode.CONFIRM, "Abandon a goal."),
-    }
 
     def __init__(
         self,

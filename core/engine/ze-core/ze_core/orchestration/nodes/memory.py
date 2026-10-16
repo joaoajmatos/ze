@@ -126,6 +126,8 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
             error_msg = state.get("error") or "unknown error"
             result = AgentResult(agent=agent_name, response=f"[ERROR] {error_msg}")
 
+    reply = final_response or result.response
+
     from ze_core.orchestration.procedure_activation import complete_procedure_invocation
 
     if not is_retry:
@@ -141,7 +143,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
                 session_id=ctx.session_id,
                 agent=result.agent,
                 prompt=ctx.prompt,
-                response=result.response,
+                response=reply,
                 embedding=embedding,
             ),
             label="write_episode",
@@ -254,7 +256,7 @@ async def write_memory(state: AgentState, config: RunnableConfig) -> dict:
     current = list(state.get("messages") or [])
     updated = current + [
         {"role": "user", "content": user_content},
-        {"role": "assistant", "content": result.response},
+        {"role": "assistant", "content": reply},
     ]
 
     older_span = (

@@ -91,7 +91,7 @@ async def test_config_carries_the_retry_identity():
 
 
 async def test_interrupt_is_returned_without_restoring_history():
-    c, graph, _ = _container({"final_response": "x"}, next_=("await_confirmation",))
+    c, graph, _ = _container({"final_response": "x"}, next_=("await_write_confirmation",))
     result = await invoke_retry_turn(c, "t1", "q", replaces=_OLD)
     assert result.interrupted is True
     assert graph.aupdate_state.await_count == 1

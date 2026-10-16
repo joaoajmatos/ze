@@ -207,3 +207,28 @@ async def test_get_message_trace_exposes_below_floor():
         )
 
     assert resp.json()["skills_used"][0]["below_floor"] is True
+
+
+async def test_a_trace_with_a_deduplicated_call_is_served() -> None:
+    message_id = uuid4()
+    trace = _trace()
+    trace.tool_calls = [
+        ToolCallTrace(
+            name="cancel_reminder",
+            result_snippet="approved once; not repeated",
+            duration_ms=0,
+            success=True,
+            access="write",
+            gate="duplicate",
+        )
+    ]
+    store = AsyncMock()
+    store.get_trace = AsyncMock(return_value=trace)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_make_app(store)), base_url="http://test"
+    ) as client:
+        resp = await client.get(f"/api/v0/messages/{message_id}/trace")
+
+    assert resp.status_code == 200
+    assert resp.json()["tool_calls"][0]["gate"] == "duplicate"

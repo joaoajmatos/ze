@@ -9,6 +9,7 @@ Public SDK surface for Ze plugin development. Flat re-export layer — plugin pa
 ### Key features
 
 - Single import for agent authoring: `@agent`, `@tool`, `BaseAgent`, `get_logger`
+- Write confirmation: `ToolReversibility`, `asks_first`, `no_ask_reason`, `ask_check`
 - Plugin framework re-exports: `ZePlugin`, `DataDomain`, channel types
 - Proactive job types and push kinds: `ProactiveScheduler`, `ProactiveJob`, `@proactive_job`, `PushKind`, `PushOutcome`
 - Memory, signal, and onboarding types for plugin hook implementations (`Signal`, `SignalSource`)

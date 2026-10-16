@@ -59,9 +59,7 @@ async def test_fetch_context_attaches_ready_and_blocked_guidance() -> None:
             "session_id": "s1",
             "prompt": "clear the morning inbox",
             "messages": [],
-            "envelope": SimpleNamespace(
-                subtasks=[SimpleNamespace(agent="companion", intent="read")]
-            ),
+            "envelope": SimpleNamespace(subtasks=[SimpleNamespace(agent="companion")]),
         },
         _config(discovery),
     )
@@ -99,7 +97,7 @@ async def test_fetch_context_discovers_for_any_routed_agent() -> None:
                 "prompt": "clear the morning inbox",
                 "messages": [],
                 "envelope": SimpleNamespace(
-                    subtasks=[SimpleNamespace(agent=agent_name, intent="read")]
+                    subtasks=[SimpleNamespace(agent=agent_name)]
                 ),
             },
             _config(discovery),

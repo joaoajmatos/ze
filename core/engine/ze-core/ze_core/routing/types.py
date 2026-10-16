@@ -13,9 +13,11 @@ from ze_agents.defaults import (
 @dataclass
 class SubTask:
     agent: str
-    intent: str
     prompt: str
     model: str = ""
+    # Routing label set by the fallback decomposer: this subtask changes something.
+    # Read only by is_mixed_gather_act; it gates nothing.
+    changes: bool = False
 
 
 @dataclass
@@ -33,7 +35,7 @@ class RoutingEnvelope:
     primary_agent: str
     confidence: float
     score_gap: float
-    routing_method: str  # "embedding" | "haiku" | "fallback" | "forced" (eval only)
+    routing_method: str  # "embedding" | "haiku" | "fallback" | "forced" (eval only) | "open_query" (fetch_context reroute)
     is_compound: bool
     subtasks: list[SubTask]
     requires_synthesis: bool

@@ -20,7 +20,6 @@ import pytest
 
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer  # type: ignore[import]
 
-from ze_agents.types import GateDecision
 from ze_memory.types import Episode, Fact, MemoryContext, ProfileFacet
 from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.checkpoint_serde import build_checkpoint_serde
@@ -88,8 +87,6 @@ def _make_agent_context() -> AgentContext:
     return AgentContext(
         session_id="test-session",
         prompt="what is on my calendar today?",
-        intent="read",
-        gate_decision=GateDecision.EXECUTE,
         memory=_make_memory_context(),
         contacts=None,
         tool_calls=[
@@ -116,11 +113,7 @@ def _make_envelope() -> RoutingEnvelope:
         score_gap=0.3,
         routing_method="embedding",
         is_compound=False,
-        subtasks=[
-            SubTask(
-                agent="calendar", intent="read", prompt="what is on my calendar today?"
-            )
-        ],
+        subtasks=[SubTask(agent="calendar", prompt="what is on my calendar today?")],
         requires_synthesis=False,
         raw_scores={"calendar": 0.92, "research": 0.62},
     )
@@ -169,7 +162,6 @@ def test_agent_context_round_trips(serde: JsonPlusSerializer) -> None:
     restored = round_trip(serde, original)
     assert restored.session_id == original.session_id
     assert restored.prompt == original.prompt
-    assert restored.gate_decision == GateDecision.EXECUTE
     assert restored.memory.facts[0].predicate == "name"
     assert restored.tool_calls[0].tool_name == "get_events"
     assert restored.extensions == {}
@@ -192,17 +184,11 @@ def test_agent_result_round_trips(serde: JsonPlusSerializer) -> None:
     assert restored.tool_calls[0].success is True
 
 
-def test_gate_decision_round_trips(serde: JsonPlusSerializer) -> None:
-    for decision in GateDecision:
-        assert round_trip(serde, decision) == decision
-
-
 def test_full_agent_state_dict_round_trips(serde: JsonPlusSerializer) -> None:
     """Mirrors what LangGraph checkpoints: the entire state dict value by value."""
     state = {
         "prompt": "what is on my calendar today?",
         "session_id": "test-session",
-        "session_overrides": {},
         "input_modality": "text",
         "audio_data": None,
         "audio_mime": None,
@@ -212,15 +198,15 @@ def test_full_agent_state_dict_round_trips(serde: JsonPlusSerializer) -> None:
         "envelope": _make_envelope(),
         "memory_context": _make_memory_context(),
         "agent_context": _make_agent_context(),
-        "gate_decision": GateDecision.EXECUTE,
         "agent_result": _make_agent_result(),
         "subtask_results": [_make_agent_result()],
         "completed_subtask_indexes": [0],
-        "subtask_gate_decisions": [],
-        "pending_subtask_awaits": [],
-        "approved_subtask_indexes": [],
-        "denied_subtask_indexes": [],
-        "pending_confirmation": False,
+        "blocked": False,
+        "parked_subtasks": [],
+        "write_confirmation": None,
+        "write_decisions": [],
+        "write_rounds": 0,
+        "write_outcomes": [],
         "messages": [{"role": "user", "content": "what is on my calendar today?"}],
         "last_active_at": 1_700_000_000.0,
         "final_response": "You have a standup at 10am.",
@@ -266,7 +252,6 @@ def test_non_serializable_embed_fn_raises(serde: JsonPlusSerializer) -> None:
     ctx = AgentContext(
         session_id="s",
         prompt="p",
-        intent="read",
         embed_fn=lambda _text: [0.1],
     )
     with pytest.raises((TypeError, Exception)):
@@ -289,22 +274,7 @@ def test_non_serializable_identity_builder_raises(serde: JsonPlusSerializer) -> 
     ctx = AgentContext(
         session_id="s",
         prompt="p",
-        intent="read",
         identity_builder=_some_builder,
-    )
-    with pytest.raises((TypeError, Exception)):
-        serde.dumps_typed(ctx)
-
-
-def test_non_serializable_evaluate_delegate_raises(serde: JsonPlusSerializer) -> None:
-    async def _eval(_agent: str, _intent: str) -> GateDecision:
-        return GateDecision.EXECUTE
-
-    ctx = AgentContext(
-        session_id="s",
-        prompt="p",
-        intent="read",
-        evaluate_delegate=_eval,
     )
     with pytest.raises((TypeError, Exception)):
         serde.dumps_typed(ctx)

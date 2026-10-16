@@ -87,7 +87,7 @@ async def test_locked_resume_turn_extracts_thread_id_from_config(monkeypatch):
     lock = ThreadTurnLock()
     seen_thread_ids: list[str] = []
 
-    async def fake_resume_turn(container, config, resume=None):
+    async def fake_resume_turn(container, config, resume=None, request_id=None):
         seen_thread_ids.append(config["configurable"]["thread_id"])
         return None
 

@@ -28,7 +28,10 @@ def _register(name: str, sources_on_result: list[Source]) -> None:
 
 async def test_context_sources_are_added_to_the_agent_result():
     _register("research", [])
-    ctx = AgentContext(session_id="s", prompt="p", intent="read")
+    ctx = AgentContext(
+        session_id="s",
+        prompt="p",
+    )
 
     result = await _run_with_timeout("research", ctx)
 
@@ -37,7 +40,10 @@ async def test_context_sources_are_added_to_the_agent_result():
 
 async def test_result_sources_are_kept_without_duplicates():
     _register("research", [Source("https://ctx.test", "Ctx"), Source("https://b.test")])
-    ctx = AgentContext(session_id="s", prompt="p", intent="read")
+    ctx = AgentContext(
+        session_id="s",
+        prompt="p",
+    )
 
     result = await _run_with_timeout("research", ctx)
 

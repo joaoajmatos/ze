@@ -20,7 +20,7 @@ class _PluginWithWorkflowTypes:
 def test_collect_types_from_module_finds_dataclasses_and_enums() -> None:
     types = collect_types_from_module("ze_agents.types")
     assert ("ze_agents.types", "AgentResult") in types
-    assert ("ze_agents.types", "GateDecision") in types
+    assert ("ze_agents.types", "ToolCall") in types
 
 
 def test_collect_types_from_module_skips_imported_reexports() -> None:
@@ -52,7 +52,7 @@ def test_core_modules_cover_routing_and_memory() -> None:
 
 def test_workflow_types_round_trip_through_built_serde() -> None:
     serde = build_checkpoint_serde(plugins=[_PluginWithWorkflowTypes()])
-    original = WorkflowStep(task="send email", agent_hint="email", intent="execute")
+    original = WorkflowStep(task="send email", agent_hint="email")
     type_, data = serde.dumps_typed(original)
     restored = serde.loads_typed((type_, data))
     assert isinstance(restored, WorkflowStep)

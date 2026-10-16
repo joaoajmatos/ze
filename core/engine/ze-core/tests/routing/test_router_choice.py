@@ -42,7 +42,7 @@ def clean_registry():
 def _router(scores, client=None, surface=CAL, agents=None) -> EmbeddingRouter:
     clear_registry()
     for name in agents or sorted(scores):
-        register_agent(name, intents={"read": "Read"})
+        register_agent(name)
     return EmbeddingRouter(
         cosine_embedder(scores),
         AsyncMock(),
@@ -186,7 +186,7 @@ def _fields(env):
         env.score_gap,
         env.routing_method,
         env.is_compound,
-        [(s.agent, s.intent, s.prompt, s.model) for s in env.subtasks],
+        [(s.agent, s.prompt, s.model) for s in env.subtasks],
         env.requires_synthesis,
         env.raw_scores,
         env.is_sequential,

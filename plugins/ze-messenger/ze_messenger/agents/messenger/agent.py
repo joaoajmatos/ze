@@ -4,7 +4,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.client import LLMClient
 from ze_agents.registry import agent
 from ze_agents.settings import Settings
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_communication.channel import InboundChannel
 from ze_communication.registry import ChannelRegistry
 from ze_personal.channels.thread_channel_map import ThreadChannelMap
@@ -53,12 +53,6 @@ class MessengerAgent(BaseAgent):
     vision_capable = True
     timeout = 30
     tools = ["list_emails", "get_email", "draft_email", "send_email", "archive_email"]
-    intents = {
-        "read": Intent(Mode.AUTONOMOUS, "Search and retrieve emails from Gmail."),
-        "create": Intent(Mode.DRAFT_ONLY, "Draft or send an email."),
-        "update": Intent(Mode.DRAFT_ONLY, "Draft a reply or forward."),
-        "delete": Intent(Mode.CONFIRM, "Archive or delete an email."),
-    }
 
     def __init__(
         self,
@@ -75,10 +69,7 @@ class MessengerAgent(BaseAgent):
         self._settings = settings
 
     async def run(self, ctx: AgentContext) -> AgentResult:
-        key = (
-            "email.drafting" if ctx.intent in ("create", "update") else "email.reading"
-        )
-        await self.emit(ctx, key)
+        await self.emit(ctx, "email.reading")
 
         default_channel = await self._default_channel()
 

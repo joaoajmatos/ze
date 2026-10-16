@@ -16,6 +16,14 @@ from ze_core.conversation.messages.types import (
 
 _WORKSPACE_RUN_TOOLS = frozenset({"workspace_run", "workspace_run_skill_script"})
 _MAX_PHRASES = 3
+_NEVER_RAN = (
+    "denied",
+    "refused",
+    "expired",
+    "parked",
+    "refused_over_cap",
+    "duplicate",
+)
 
 
 class RetryReason(StrEnum):
@@ -129,7 +137,7 @@ def retry_eligibility(
         return RetryEligibility(available=True)
     irreversible = [c for c in actions if c.reversibility != "reversible"]
     if irreversible:
-        if any(c.gate == "approved" for c in irreversible):
+        if any(c.gate in ("approved", "pre_approved") for c in irreversible):
             return _no(
                 RetryReason.CONFIRMED_ACTION,
                 f"{said} You approved it, and Retry never repeats an approved action.",
@@ -197,7 +205,7 @@ def _no(
 
 def _is_action(call: ToolCallTrace) -> bool:
     """A write that ran or may have partly run. A denied or expired gate never ran."""
-    return call.access == "write" and call.gate not in ("denied", "expired")
+    return call.access == "write" and call.gate not in _NEVER_RAN
 
 
 def _ran_workspace(trace: MessageTrace, actions: list[ToolCallTrace]) -> bool:

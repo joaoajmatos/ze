@@ -22,7 +22,7 @@ class _Mention:
 
 
 def _envelope(is_compound: bool = False) -> RoutingEnvelope:
-    st = SubTask(agent="research", intent="read", prompt="hi Maria")
+    st = SubTask(agent="research", prompt="hi Maria")
     return RoutingEnvelope(
         primary_agent="research",
         confidence=0.9,

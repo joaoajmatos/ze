@@ -243,3 +243,13 @@ class TestExtractSchedule:
         planner = _make_planner(f"```json\n{payload}\n```")
         cron = await planner.extract_schedule("every Monday at 8am")
         assert cron == "0 8 * * 1"
+
+
+def test_parse_step_reads_the_writes_the_step_names() -> None:
+    from ze_automation.workflow.planner import _parse_step
+
+    step = _parse_step(
+        {"task": "t", "agent_hint": "messenger", "planned_writes": ["send_email", 3]}, 0
+    )
+    assert step.planned_writes == ["send_email"]
+    assert _parse_step({"task": "t"}, 1).planned_writes == []

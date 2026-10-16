@@ -1,83 +1,55 @@
-import type { WsConfirmAction, WsOutboundFrame } from "@myguyze/ze-client";
-import { useState } from "react";
+import type { WsOutboundFrame } from "@myguyze/ze-client";
 import { useSendNotice } from "@/features/send-context-notice";
-import { useFrame, useWsStore, send } from "@/shared/api";
+import { useWsStore, send } from "@/shared/api";
+import { useMemo } from "react";
+import { HELD_KEY, type PendingConfirm, usePendingConfirms } from "../model/pending-store";
 
-export interface PendingConfirm {
-  id: string;
-  prompt: string;
-  actions: WsConfirmAction[];
-  threadId: string;
-  editable: boolean;
-  proposed: string;
-}
-
+const NONE: PendingConfirm[] = [];
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
 
-export function useConfirmation(active: boolean, ephemeral: boolean, threadId: string) {
-  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
+export function useConfirmation(ephemeral: boolean, threadId: string) {
+  const stored = usePendingConfirms((s) => s.byThread[threadId]);
+  const held = usePendingConfirms((s) => s.byThread[HELD_KEY]);
+  const pendingConfirms = useMemo(
+    () => (ephemeral ? NONE : [...(held ?? NONE), ...(stored ?? NONE)]),
+    [ephemeral, held, stored],
+  );
   const setThreadThinking = useWsStore((s) => s.setThreadThinking);
-  const setThreadAttention = useWsStore((s) => s.setThreadAttention);
 
-  useFrame("confirm_request", (frame) => {
-    if (ephemeral) return;
-    const frameThread = frame.thread_id ?? threadId;
-    if (frameThread !== threadId) {
-      setThreadAttention(frameThread, true);
-      return;
-    }
-    if (!active) return;
-    setThreadThinking(threadId, false);
-    const extra = frame as typeof frame & { editable?: boolean; proposed?: string };
-    setPendingConfirm({
-      id: frame.id,
-      prompt: frame.prompt,
-      actions: frame.actions,
-      threadId,
-      editable: Boolean(extra.editable),
-      proposed: extra.proposed ?? "",
-    });
-  });
+  function respond(id: string, value: string, edits: Record<string, string> = {}) {
+    const confirm = pendingConfirms.find((c) => c.id === id);
+    if (!confirm || confirm.submitted) return;
+    const isHeld = confirm.threadId === HELD_KEY;
+    const sendThread = isHeld ? threadId : confirm.threadId;
+    const checkpoint = value === "approve" || value === "deny";
 
-  useFrame("confirm_cancel", (frame) => {
-    const frameThread = frame.thread_id ?? threadId;
-    if (frameThread !== threadId) return;
-    if (!active || ephemeral) return;
-    setPendingConfirm(null);
-  });
-
-  function respond(value: string, editedContent?: string) {
-    if (!pendingConfirm) return;
-    const confirm = pendingConfirm;
-    setPendingConfirm(null);
-
-    const isCheckpoint = value === "approve" || value === "deny";
-    const sent = isCheckpoint
-      ? send({
-          type: "confirm",
-          id: confirm.id,
-          choice: value,
-          thread_id: confirm.threadId,
-          ...(value === "approve" && editedContent != null
-            ? { edited_content: editedContent }
-            : {}),
-        } as WsOutboundFrame)
-      : send({ type: "action", payload: value, thread_id: confirm.threadId });
+    const sent = send(
+      (checkpoint
+        ? {
+            type: "confirm",
+            id: confirm.id,
+            choice: value,
+            thread_id: sendThread,
+            ...(value === "approve" ? { edits } : {}),
+          }
+        : { type: "action", payload: value, thread_id: sendThread }) as WsOutboundFrame,
+    );
 
     if (!sent) {
-      setPendingConfirm(confirm);
       useSendNotice.getState().showNotice(NOT_CONNECTED_NOTICE);
       return;
     }
 
-    if (isCheckpoint && value === "approve") {
-      setThreadThinking(threadId, true);
-    }
+    // Item cards wait for confirm_cancel or the next round; prompt and held cards close at once
+    // (a held run resumes off-thread, so no frame on this thread would acknowledge it).
+    if (confirm.items.length > 0 && !isHeld) usePendingConfirms.getState().markSubmitted(confirm.threadId, id);
+    else usePendingConfirms.getState().remove(confirm.threadId, id);
+    if (checkpoint && !isHeld) setThreadThinking(threadId, true);
   }
 
   function clear() {
-    setPendingConfirm(null);
+    usePendingConfirms.getState().clear(threadId);
   }
 
-  return { pendingConfirm, respond, clear };
+  return { pendingConfirms, respond, clear };
 }

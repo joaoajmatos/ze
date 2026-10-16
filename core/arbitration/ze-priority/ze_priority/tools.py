@@ -9,7 +9,7 @@ from uuid import UUID
 import numpy as np
 
 from ze_agents.nli import NLIClient
-from ze_agents.tool import ToolAccess, tool, undo_payload
+from ze_agents.tool import Injected, ToolAccess, tool, undo_payload
 from ze_agents.reversibility import ToolReversibility
 from ze_collision.store import CollisionLogStore
 from ze_logging import get_logger
@@ -164,11 +164,13 @@ async def reprioritize_item(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="restored an earlier priority order",
+    asks_first=False,
+    no_ask_reason="Restores the priority order the user had before their own change.",
 )
 async def restore_priority_override(
     override_store: PriorityOverrideStore,
     override_id: str,
-    prior_override_id: str | None = None,
+    prior_override_id: Injected[str | None] = None,
 ) -> dict:
     try:
         reinstated = await override_store.restore(

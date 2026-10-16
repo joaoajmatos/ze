@@ -58,6 +58,7 @@ EXPECTED: dict[str, tuple[str, str]] = {
     "finance_price_change": (D, "normal"),
     "inbound_message": (D, "normal"),
     "quiet_hours_summary": (A, "normal"),
+    "write_approval_held": (R, "normal"),
 }
 
 
@@ -70,7 +71,7 @@ def test_registry_matches_spec_inventory():
         if k.source != "tests"
     }
     assert registry == EXPECTED
-    assert len(EXPECTED) == 31
+    assert len(EXPECTED) == 32
 
 
 SCAN_ROOTS = ["core", "plugins", "apps/ze-api/ze_api"]

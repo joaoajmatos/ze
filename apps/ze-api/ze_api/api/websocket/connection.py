@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import WebSocket
 
+from ze_api.api.websocket.frames import frame_from_pending
 from ze_api.api.websocket.serializers import message_to_dict
 from ze_logging import get_logger
 
@@ -47,6 +48,7 @@ class ConnectionManager:
         ws: WebSocket,
         message_store: Any,
         confirmation_store: Any | None = None,
+        held_store: Any | None = None,
     ) -> None:
         async with self._lock:
             if self._ws is not None:
@@ -85,21 +87,25 @@ class ConnectionManager:
                     async with self._lock:
                         if self._ws is not None:
                             try:
-                                await self._ws.send_json(
-                                    {
-                                        "type": "confirm_request",
-                                        "thread_id": pending["thread_id"],
-                                        "id": pending["request_id"],
-                                        "prompt": pending["prompt"],
-                                        "actions": pending["actions"],
-                                    }
-                                )
+                                await self._ws.send_json(frame_from_pending(pending))
                             except Exception as exc:
                                 log.warning(
                                     "ws_confirmation_replay_failed", error=str(exc)
                                 )
             except Exception as exc:
                 log.warning("ws_confirmation_replay_error", error=str(exc))
+
+        # Replay open held writes (unattended runs waiting for the user).
+        if held_store is not None:
+            try:
+                from ze_api.api.websocket.held import open_held_frames
+
+                for frame in await open_held_frames(held_store):
+                    async with self._lock:
+                        if self._ws is not None:
+                            await self._ws.send_json(frame)
+            except Exception as exc:
+                log.warning("ws_held_replay_error", error=str(exc))
 
     async def disconnect(self, ws: WebSocket) -> None:
         async with self._lock:

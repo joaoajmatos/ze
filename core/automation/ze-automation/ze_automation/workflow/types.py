@@ -15,11 +15,13 @@ class WorkflowStep:
     task: str
     agent_hint: str | None = None
     verify: str | None = None
-    intent: str = "execute"
     id: str = ""
     branches: list["Branch"] = field(default_factory=list)
     default_next: str | None = None
     on_failure: str = "fail"
+    # Asks-first tools this step says it will call; what a plan approval grants.
+    planned_writes: list[str] = field(default_factory=list)
+    approved_writes: list[str] = field(default_factory=list)
 
 
 @dataclass

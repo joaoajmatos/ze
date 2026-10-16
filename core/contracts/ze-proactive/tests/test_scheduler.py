@@ -121,3 +121,19 @@ async def test_cron_jobs_have_no_misfire_limit():
     sched.add_cron_job(AsyncMock(), "0 8 * * *", "a")
     job = sched._scheduler.get_job("a")
     assert job.misfire_grace_time is None and job.coalesce and job.max_instances == 1
+
+
+async def test_a_parked_write_escaping_a_job_is_logged_and_not_raised():
+    from ze_agents.errors import LoopParked
+    from ze_agents.park import ParkedLoop
+
+    store = _store()
+    sched = ProactiveScheduler(run_store=store)
+    job = AsyncMock(side_effect=LoopParked(ParkedLoop("a", [], [], 0)))
+    sched.add_cron_job(job, "* * * * *", "a")
+    registered = sched._registered["a"]
+
+    await registered.run()
+
+    job.assert_awaited_once()
+    store.record_finish.assert_awaited_once_with("a", "error")

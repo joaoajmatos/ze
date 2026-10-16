@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import Injected, ToolAccess, tool
 from ze_news.jobs.fetch import NewsFetchJob
 from ze_news.store import NewsStore
 from ze_news.types import PersonalizationContext
@@ -46,8 +46,8 @@ async def get_headlines(
     tags: list[str] | None = None,
     personalized: bool = True,
     _personalization_ctx: PersonalizationContext | None = None,
-    _diagnostic_query: bool = False,
-    _min_preferences: int = 2,
+    _diagnostic_query: Injected[bool] = False,
+    _min_preferences: Injected[int] = 2,
 ) -> dict:
     if _diagnostic_query:
         return {

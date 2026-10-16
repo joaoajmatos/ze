@@ -14,13 +14,10 @@ class ArtifactType(str, Enum):
     SYNTHESIZED_PROCEDURE = "synthesized_procedure"
     HINDSIGHT_FACT = "hindsight_fact"
     PLAN_STRESS_TEST = "plan_stress_test"
-    COUNTERFACTUAL = "counterfactual"
-    PERTURBATION_CHECK = "perturbation_check"
 
 
 class ArtifactStatus(str, Enum):
     PENDING = "pending"
-    CRITIC_ONLY = "critic_only"
     PROMOTED = "promoted"
     REJECTED = "rejected"
     NEEDS_REVIEW = "needs_review"
@@ -65,20 +62,10 @@ class DreamRun:
     artifacts_generated: int
     artifacts_promoted: int
     artifacts_rejected: int
-    artifacts_pending_review: int
     sleep_pass_duration_ms: int
     dream_pass_duration_ms: int
     integration_duration_ms: int
     error: Optional[str]
-
-
-@dataclass
-class ReplayCandidate:
-    episode_id: UUID
-    replay_score: float
-    recency_score: float
-    novelty_score: float
-    confidence_inverse_score: float
 
 
 @dataclass

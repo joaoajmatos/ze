@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from ze_agents.base_agent import RETRY_WRITE_REFUSAL, BaseAgent
+from ze_agents.park import ApprovedCall
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool, undo_payload
@@ -33,7 +34,7 @@ def _agent() -> BaseAgent:
 
 
 def _ctx(retry: bool = False) -> AgentContext:
-    return AgentContext(session_id="s1", prompt="hi", intent="write", retry_mode=retry)
+    return AgentContext(session_id="s1", prompt="hi", retry_mode=retry)
 
 
 def _reversible(name: str, result):
@@ -86,7 +87,7 @@ async def test_payload_dropped_from_irreversible_tool():
     async def send() -> dict:
         return {"ok": True, "undo": {"x": 1}}
 
-    tc = await _agent().call_tool("send", _ctx())
+    tc = await _agent().call_tool("send", _ctx(), _approval=ApprovedCall("c1"))
     assert tc.undo is None
     assert tc.result == {"ok": True}
 
@@ -165,7 +166,7 @@ async def test_agent_set_on_retry_refusal():
 
     tc = await _agent().call_tool("send", _ctx(True))
     assert tc.agent == "owner"
-    assert tc.gate == "denied"
+    assert tc.gate == "refused"
     assert tc.result == RETRY_WRITE_REFUSAL
 
 
@@ -210,3 +211,46 @@ async def test_clean_result_with_empty_error_key_keeps_payload():
     _reversible("make", {"ok": True, "error": None, "undo": {"id": "1"}})
     tc = await _agent().call_tool("make", _ctx())
     assert tc.undo == {"id": "1"}
+
+
+async def test_retry_pauses_a_reversible_write_that_asks():
+    """One retry policy (180, kept by 181 M13): a reversible write that needs an OK
+    parks and pauses the retry; it never runs unasked."""
+    from ze_agents.tool import AskDecision
+
+    ran = []
+
+    async def plan(name: str = "") -> dict:
+        ran.append(name)
+        return {"ok": True, "undo": undo_payload(name=name)}
+
+    tool(
+        access=ToolAccess.WRITE,
+        description="plan",
+        reversibility=ToolReversibility.REVERSIBLE,
+        undo_tool="undoer",
+        undo_note="n",
+        ask_check=lambda args, ctx: AskDecision.ask("Step 2 may send an email"),
+    )(plan)
+    _undoer()
+    ctx = _ctx(True)
+    ctx.loop_active = True
+
+    tc = await _agent().call_tool("plan", ctx, _lm_args={"name": "x"}, name="x")
+
+    assert ran == []
+    assert tc.gate == "parked" and tc.parked is not None
+
+
+async def test_retry_refuses_an_irreversible_write_even_when_approved():
+    @tool(
+        access=ToolAccess.WRITE,
+        description="w",
+        reversibility=ToolReversibility.IRREVERSIBLE,
+    )
+    async def send() -> str:
+        return "sent"
+
+    tc = await _agent().call_tool("send", _ctx(True), _approval=ApprovedCall("c1"))
+
+    assert tc.gate == "refused" and tc.result == RETRY_WRITE_REFUSAL

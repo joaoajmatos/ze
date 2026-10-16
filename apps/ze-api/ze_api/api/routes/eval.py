@@ -1,11 +1,16 @@
 from ze_agents.registry import get_enabled_agents
 from fastapi import APIRouter, Header, HTTPException, Request, status
+from ze_agents.delegate import DELEGATE_TOOL_NAME
 from ze_agents.interface.types import RawInput
+from ze_agents.park import ParkedLoop
+from ze_agents.types import ToolCall
+from ze_core.conversation.turn import NO_PENDING_CONFIRMATION
 from ze_core.telemetry.context import set_flow_context
 
 from ze_api.api.schemas import (
     EvalChatRequest,
     EvalChatResponse,
+    EvalConfirmRequest,
     EvalRoutingInfo,
     EvalToolCall,
 )
@@ -77,9 +82,88 @@ async def eval_chat(
             error=str(exc),
         )
 
-    if outcome.error:
+    return _turn_response(body.session_id, outcome)
+
+
+@router.post(
+    "/eval/confirm",
+    response_model=EvalChatResponse,
+    operation_id="evalConfirm",
+    summary="Eval confirm",
+    description=(
+        "Answer the open write confirmation of an eval session (approve or deny, "
+        "with optional edits to editable items) and return the resumed turn in the "
+        "eval chat shape. 409 when the session has no open confirmation."
+    ),
+)
+async def eval_confirm(
+    body: EvalConfirmRequest,
+    request: Request,
+    x_ze_api_key: str | None = Header(default=None),
+) -> EvalChatResponse:
+    _check_api_key(x_ze_api_key, request.app.state.settings)
+    set_flow_context("eval", session_id=body.session_id)
+
+    container = request.app.state.container
+    config = container._build_config(f"eval-{body.session_id}")
+    try:
+        outcome = await container.resume_turn(
+            config, resume={"choice": body.choice, "edits": body.edits}
+        )
+    except Exception as exc:
+        log.exception("eval_confirm_error", session_id=body.session_id, error=str(exc))
         return EvalChatResponse(
             session_id=body.session_id,
+            response=None,
+            agent_used=None,
+            routing=None,
+            pending_confirmation=False,
+            error=str(exc),
+        )
+    if outcome.error == NO_PENDING_CONFIRMATION:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=NO_PENDING_CONFIRMATION
+        )
+    return _turn_response(body.session_id, outcome)
+
+
+def _eval_call(tc: ToolCall) -> EvalToolCall:
+    return EvalToolCall(
+        tool_name=tc.tool_name,
+        args=tc.args,
+        duration_ms=tc.duration_ms,
+        success=tc.success,
+        error=tc.error,
+        gate=tc.gate,
+        parked=tc.parked is not None or tc.gate == "parked",
+    )
+
+
+def _parked_call(tool_name: str, args: dict) -> EvalToolCall:
+    return EvalToolCall(
+        tool_name=tool_name,
+        args=args,
+        duration_ms=0,
+        success=False,
+        gate="parked",
+        parked=True,
+    )
+
+
+def _parked_calls(loop: ParkedLoop) -> list[EvalToolCall]:
+    """A parked loop's calls in order: those that ran, its parked writes, then its parked delegate."""
+    calls = [_eval_call(tc) for tc in loop.accumulated]
+    calls.extend(_parked_call(pw.tool, pw.args) for pw in loop.parked)
+    if loop.child is not None:
+        calls.append(_parked_call(DELEGATE_TOOL_NAME, loop.child_arguments or {}))
+        calls.extend(_parked_calls(loop.child))
+    return calls
+
+
+def _turn_response(session_id: str, outcome) -> EvalChatResponse:
+    if outcome.error:
+        return EvalChatResponse(
+            session_id=session_id,
             response=None,
             agent_used=None,
             routing=None,
@@ -105,29 +189,21 @@ async def eval_chat(
     if response_text is None and agent_result is not None:
         response_text = agent_result.response
 
-    tool_calls: list[EvalToolCall] = []
-    tokens_used = 0
-    if agent_result is not None:
-        tool_calls = [
-            EvalToolCall(
-                tool_name=tc.tool_name,
-                args=tc.args,
-                duration_ms=tc.duration_ms,
-                success=tc.success,
-                error=tc.error,
-                is_draft=tc.is_draft,
-            )
-            for tc in (agent_result.tool_calls or [])
-        ]
-        tokens_used = agent_result.tokens_used or 0
+    results = [agent_result] if agent_result is not None else []
+    results.extend(final_state.get("subtask_results") or [])
+    tool_calls = [
+        _eval_call(tc) for result in results for tc in (result.tool_calls or [])
+    ]
+    for parked in final_state.get("parked_subtasks") or []:
+        tool_calls.extend(_parked_calls(parked.loop))
 
     return EvalChatResponse(
-        session_id=body.session_id,
+        session_id=session_id,
         response=response_text,
         agent_used=envelope.primary_agent if envelope else None,
         routing=routing,
         pending_confirmation=outcome.interrupted,
         error=final_state.get("error"),
         tool_calls=tool_calls,
-        tokens_used=tokens_used,
+        tokens_used=sum(result.tokens_used or 0 for result in results),
     )

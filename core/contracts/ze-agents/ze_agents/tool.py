@@ -1,17 +1,32 @@
 from __future__ import annotations
 
 import asyncio
+import collections.abc
 import inspect
-from dataclasses import dataclass
+import types
+from dataclasses import dataclass, field
+from datetime import date, time, timedelta
+from decimal import Decimal
 from enum import Enum
-from typing import Any, Callable, get_type_hints
+from pathlib import PurePath
+from uuid import UUID
+from typing import (
+    Annotated,
+    Any,
+    Awaitable,
+    Callable,
+    Literal,
+    TypeVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from ze_agents.errors import AgentConfigError, UnknownToolError
 from ze_agents.reversibility import ToolReversibility
 
 _tools: dict[str, ToolSpec] = {}
-
-_JSON_PRIMITIVE_TYPES = frozenset({str, int, float, bool, list, dict})
 
 _PY_TO_JSON: dict[type, str] = {
     str: "string",
@@ -23,9 +38,162 @@ _PY_TO_JSON: dict[type, str] = {
 }
 
 
+class _InjectedMarker:
+    def __repr__(self) -> str:
+        return "Injected"
+
+
+_INJECTED = _InjectedMarker()
+_T = TypeVar("_T")
+
+Injected = Annotated[_T, _INJECTED]
+"""Marks a tool parameter that Ze supplies and the model never sees.
+
+`session_id: Injected[str | None] = None`. The parameter is left out of the
+tool's schema, and a value the model sends for it is dropped before the call.
+"""
+
+_HIDDEN = object()
+
+# Data-shaped types with no JSON schema form here: a visible param of one of
+# these fails registration instead of silently disappearing from the schema.
+_NO_JSON_FORM: tuple[type, ...] = (
+    set,
+    frozenset,
+    tuple,
+    bytes,
+    date,  # datetime is a date subclass
+    time,
+    timedelta,
+    Decimal,
+    UUID,
+    PurePath,
+    Enum,
+    collections.abc.Iterable,  # Sequence, Mapping, Set, ... (list/dict handled above)
+)
+
+
+class _UnsupportedParam(Exception):
+    pass
+
+
+def _param_schema(annotation: Any) -> dict | object:
+    """JSON schema for a model-visible type, or `_HIDDEN` for a dependency.
+
+    Raises `_UnsupportedParam` for a data-shaped type JSON schema cannot express.
+    """
+    if annotation is inspect.Parameter.empty or annotation in (Any, object):
+        return _HIDDEN
+    origin = get_origin(annotation)
+    if origin is Annotated:
+        inner, *extras = get_args(annotation)
+        if any(extra is _INJECTED for extra in extras):
+            return _HIDDEN
+        return _param_schema(inner)
+    if origin in (Union, types.UnionType):
+        members = [a for a in get_args(annotation) if a is not type(None)]
+        schemas = [_param_schema(a) for a in members]
+        if all(schema is _HIDDEN for schema in schemas):
+            return _HIDDEN
+        if len(schemas) == 1:
+            return schemas[0]
+        if any(schema is _HIDDEN for schema in schemas):
+            raise _UnsupportedParam(
+                f"a union of a dependency or Injected type with a JSON type "
+                f"({annotation}); mark the whole parameter Injected[...]"
+            )
+        raise _UnsupportedParam(f"a union of several types ({annotation})")
+    if origin is list:
+        if not get_args(annotation):
+            return {"type": "array"}
+        (item,) = get_args(annotation)
+        items = _param_schema(item)
+        if items is _HIDDEN:
+            raise _UnsupportedParam(f"list items of type {item!r}")
+        return {"type": "array", "items": items}
+    if origin is dict:
+        key = (get_args(annotation) or (str,))[0]
+        if key is not str:
+            raise _UnsupportedParam("dict keys other than str")
+        return {"type": "object"}
+    if annotation in _PY_TO_JSON:
+        return {"type": _PY_TO_JSON[annotation]}
+    if annotation is type(None) or origin is Literal:
+        raise _UnsupportedParam(f"type {annotation!r}")
+    base = origin if inspect.isclass(origin) else annotation
+    if inspect.isclass(base) and issubclass(base, _NO_JSON_FORM):
+        raise _UnsupportedParam(f"type {annotation!r}; use str")
+    return _HIDDEN
+
+
+def _resolve_hints(func: Callable) -> dict[str, Any]:
+    try:
+        return get_type_hints(func, include_extras=True)
+    except Exception:
+        pass
+    hints: dict[str, Any] = {}
+    for name, param in inspect.signature(func).parameters.items():
+        annotation = param.annotation
+        if isinstance(annotation, str):
+            try:
+                annotation = eval(annotation, func.__globals__)  # noqa: S307
+            except Exception:
+                continue
+        hints[name] = annotation
+    return hints
+
+
+def _build_parameters(name: str, func: Callable) -> tuple[dict, frozenset[str]]:
+    """The model-visible parameters schema and the names of hidden parameters."""
+    hints = _resolve_hints(func)
+    properties: dict[str, Any] = {}
+    required: list[str] = []
+    hidden: set[str] = set()
+    for param_name, param in inspect.signature(func).parameters.items():
+        if param.kind in (param.VAR_POSITIONAL, param.VAR_KEYWORD):
+            continue
+        try:
+            schema = _param_schema(hints.get(param_name, inspect.Parameter.empty))
+        except _UnsupportedParam as exc:
+            raise AgentConfigError(
+                f"Tool {name!r} parameter {param_name!r}: JSON schema cannot express "
+                f"{exc}; change the type or mark it Injected[...]"
+            ) from None
+        if schema is _HIDDEN:
+            hidden.add(param_name)
+            continue
+        properties[param_name] = schema
+        if param.default is inspect.Parameter.empty:
+            required.append(param_name)
+    params = {"type": "object", "properties": properties, "required": required}
+    return params, frozenset(hidden)
+
+
 class ToolAccess(str, Enum):
     READ = "read"
     WRITE = "write"
+
+
+@dataclass(frozen=True)
+class AskDecision:
+    """Outcome of a pre-call check: run the tool, ask the user first, or refuse."""
+
+    kind: Literal["run", "ask", "refuse"]
+    reason: str = ""
+    message: str = ""
+    result: Any = None  # structured tool result returned on refuse
+
+    @classmethod
+    def run(cls) -> AskDecision:
+        return cls("run")
+
+    @classmethod
+    def ask(cls, reason: str = "") -> AskDecision:
+        return cls("ask", reason=reason)
+
+    @classmethod
+    def refuse(cls, message: str, result: Any = None) -> AskDecision:
+        return cls("refuse", message=message, result=result)
 
 
 @dataclass
@@ -41,32 +209,29 @@ class ToolSpec:
     undo_tool: str | None = None
     undo_note: str | None = None
     effect_phrase: str | None = None
+    asks_first: bool | None = None
+    no_ask_reason: str | None = None
+    ask_check: (
+        Callable[[dict[str, Any], Any], AskDecision | Awaitable[AskDecision]] | None
+    ) = None
+    editable_field: str | None = None
+    summarize: Callable[[dict[str, Any]], str | Awaitable[str | None] | None] | None = (
+        None
+    )
+    _parameters: tuple[dict, frozenset[str]] | None = field(
+        default=None, repr=False, compare=False
+    )
+
+    def _built(self) -> tuple[dict, frozenset[str]]:
+        if self._parameters is None:
+            self._parameters = _build_parameters(self.name, self.func)
+        return self._parameters
 
     def llm_schema(self) -> dict:
         if self._schema_override is not None:
             params = self._schema_override
         else:
-            sig = inspect.signature(self.func)
-            try:
-                hints = get_type_hints(self.func)
-            except Exception:
-                hints = {}
-
-            properties: dict[str, Any] = {}
-            required: list[str] = []
-            for param_name, param in sig.parameters.items():
-                annotation = hints.get(param_name)
-                if annotation not in _JSON_PRIMITIVE_TYPES:
-                    continue
-                properties[param_name] = {"type": _PY_TO_JSON[annotation]}
-                if param.default is inspect.Parameter.empty:
-                    required.append(param_name)
-            params = {
-                "type": "object",
-                "properties": properties,
-                "required": required,
-            }
-
+            params, _ = self._built()
         return {
             "type": "function",
             "function": {
@@ -76,6 +241,12 @@ class ToolSpec:
             },
         }
 
+    def hidden_params(self) -> frozenset[str]:
+        """Parameters the model cannot set: `Injected[...]` ones and dependencies."""
+        if self._schema_override is not None:
+            return frozenset()
+        return self._built()[1]
+
 
 def _check_declaration(
     name: str,
@@ -84,13 +255,28 @@ def _check_declaration(
     undo_tool: str | None,
     undo_note: str | None,
     effect_phrase: str | None,
-) -> None:
+    asks_first: bool | None = None,
+    no_ask_reason: str | None = None,
+    ask_check: Callable | None = None,
+    editable_field: str | None = None,
+    summarize: Callable | None = None,
+    func: Callable | None = None,
+) -> bool | None:
+    """Validate a declaration; return the resolved `asks_first`."""
     if access is ToolAccess.READ:
         if any(
             v is not None for v in (reversibility, undo_tool, undo_note, effect_phrase)
         ):
             raise AgentConfigError(f"READ tool {name!r} must not declare reversibility")
-        return
+        if any(
+            v is not None
+            for v in (asks_first, no_ask_reason, ask_check, editable_field, summarize)
+        ):
+            raise AgentConfigError(
+                f"READ tool {name!r} must not declare asks_first, no_ask_reason, "
+                "ask_check, editable_field or summarize"
+            )
+        return None
     if reversibility is None:
         raise AgentConfigError(f"WRITE tool {name!r} must declare reversibility")
     if reversibility is ToolReversibility.REVERSIBLE:
@@ -102,6 +288,40 @@ def _check_declaration(
         raise AgentConfigError(
             f"IRREVERSIBLE tool {name!r} must not declare undo_tool or undo_note"
         )
+
+    if asks_first is True:
+        raise AgentConfigError(
+            f"Tool {name!r}: asks_first=True is the IRREVERSIBLE default; omit it"
+        )
+    if reversibility is ToolReversibility.REVERSIBLE:
+        if asks_first is not None:
+            raise AgentConfigError(
+                f"REVERSIBLE tool {name!r} must not declare asks_first"
+            )
+        if no_ask_reason is not None:
+            raise AgentConfigError(
+                f"REVERSIBLE tool {name!r} must not declare no_ask_reason"
+            )
+        resolved: bool | None = None
+    elif asks_first is False:
+        if not (no_ask_reason or "").strip():
+            raise AgentConfigError(
+                f"Tool {name!r} sets asks_first=False and needs a no_ask_reason"
+            )
+        resolved = False
+    else:
+        if no_ask_reason is not None:
+            raise AgentConfigError(
+                f"Tool {name!r} declares no_ask_reason without asks_first=False"
+            )
+        resolved = True
+
+    if editable_field is not None and func is not None:
+        if editable_field not in inspect.signature(func).parameters:
+            raise AgentConfigError(
+                f"Tool {name!r}: editable_field {editable_field!r} is not a parameter"
+            )
+    return resolved
 
 
 _UNDO_SCALARS = (str, int, float, bool, type(None))
@@ -161,11 +381,19 @@ def tool(
     undo_tool: str | None = None,
     undo_note: str | None = None,
     effect_phrase: str | None = None,
+    asks_first: bool | None = None,
+    no_ask_reason: str | None = None,
+    ask_check: Callable[[dict[str, Any], Any], AskDecision | Awaitable[AskDecision]]
+    | None = None,
+    editable_field: str | None = None,
+    summarize: Callable[[dict[str, Any]], str] | None = None,
 ) -> Callable:
     """Decorator that registers an async function as a Ze tool.
 
     WRITE tools must declare `reversibility`; READ tools must declare none of the
     reversibility arguments. A REVERSIBLE tool names its compensating `undo_tool`.
+    An IRREVERSIBLE tool asks the user first unless it declares `asks_first=False`
+    with a `no_ask_reason`.
     """
     access_val = ToolAccess(access) if isinstance(access, str) else access
     reversibility_val = (
@@ -180,9 +408,21 @@ def tool(
         name = func.__name__
         if name in _tools:
             raise AgentConfigError(f"Duplicate tool name {name!r}")
-        _check_declaration(
-            name, access_val, reversibility_val, undo_tool, undo_note, effect_phrase
+        resolved_asks_first = _check_declaration(
+            name,
+            access_val,
+            reversibility_val,
+            undo_tool,
+            undo_note,
+            effect_phrase,
+            asks_first,
+            no_ask_reason,
+            ask_check,
+            editable_field,
+            summarize,
+            func,
         )
+        parameters = _build_parameters(name, func)
         _tools[name] = ToolSpec(
             name=name,
             access=access_val,
@@ -194,6 +434,12 @@ def tool(
             undo_tool=undo_tool,
             undo_note=undo_note,
             effect_phrase=effect_phrase,
+            asks_first=resolved_asks_first,
+            no_ask_reason=no_ask_reason,
+            ask_check=ask_check,
+            editable_field=editable_field,
+            summarize=summarize,
+            _parameters=parameters,
         )
         return func
 

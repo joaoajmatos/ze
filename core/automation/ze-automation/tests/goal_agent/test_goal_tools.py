@@ -7,6 +7,7 @@ from uuid import uuid4
 from ze_automation.goals.types import Goal, GoalStatus, PriorMilestoneOutput
 
 
+
 def _goal() -> Goal:
     return Goal(
         id=uuid4(),

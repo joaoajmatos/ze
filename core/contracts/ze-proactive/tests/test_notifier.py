@@ -258,3 +258,18 @@ async def test_summary_not_held_by_quiet_race():
     n._clock = iter([NOON, NIGHT, NIGHT, NIGHT]).__next__
     assert await n.deliver_held() == 1
     assert store.create.call_args.kwargs["delivery"] == "delivered"
+
+
+CARD = PushKind("n_card", "accountability", "high", "tests", in_chat=False)
+
+
+async def test_a_kind_shown_elsewhere_is_not_a_chat_message():
+    n, iface, _ = _make()
+    assert await n.notify(CARD, "t", "b") == "delivered"
+    assert iface.push.call_args.args[0].in_chat is False
+
+
+async def test_kinds_are_chat_messages_by_default():
+    n, iface, _ = _make()
+    await n.notify(ACC, "t", "b")
+    assert iface.push.call_args.args[0].in_chat is True

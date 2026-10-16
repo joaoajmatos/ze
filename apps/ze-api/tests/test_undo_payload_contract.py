@@ -12,6 +12,7 @@ import pytest
 
 from tests.test_tool_reversibility import _load_all_tool_modules
 from ze_agents.base_agent import _merge_deps
+from ze_agents.park import ApprovedCall
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import (
     ToolAccess,
@@ -19,12 +20,15 @@ from ze_agents.tool import (
     registered_tools,
     validate_tool_declarations,
 )
-from ze_agents.types import AgentContext, GateDecision
+from ze_agents.types import AgentContext
 
 # Phase 180 plan D1: the payload each REVERSIBLE tool returns and its undo tool.
 PAYLOAD_KEYS = {
     "set_reminder": ("cancel_reminder", {"reminder_id"}),
     "create_goal": ("abandon_goal", {"goal_id"}),
+    # Phase 181 made pause/resume a REVERSIBLE pair; each undoes the other.
+    "pause_goal": ("resume_goal", {"goal_id"}),
+    "resume_goal": ("pause_goal", {"goal_id"}),
     "create_workflow": ("delete_workflow", {"workflow_name"}),
     "enable_workflow": ("disable_workflow", {"workflow_name"}),
     "disable_workflow": ("enable_workflow", {"workflow_name"}),
@@ -68,12 +72,7 @@ def test_declarations_validate_with_the_restore_tool_registered() -> None:
 
 
 def _ctx() -> AgentContext:
-    return AgentContext(
-        session_id="t1",
-        prompt="x",
-        intent="write",
-        gate_decision=GateDecision.EXECUTE,
-    )
+    return AgentContext(session_id="t1", prompt="x")
 
 
 @pytest.fixture(autouse=True)
@@ -84,7 +83,10 @@ def _tools():
 async def _call(agent, name: str, **llm_args):
     """Call a tool the way the agent loop does: model args plus the agent's deps."""
     merged = _merge_deps(name, llm_args, agent.tool_deps())
-    return await agent.call_tool(name, _ctx(), _lm_args=llm_args, **merged)
+    # The forward write runs as the user approved it (Phase 181 park and resume).
+    return await agent.call_tool(
+        name, _ctx(), _lm_args=llm_args, _approval=ApprovedCall("test"), **merged
+    )
 
 
 async def _undo(agent, call):
@@ -168,6 +170,7 @@ async def test_goal_round_trip_abandons_it_and_it_cannot_be_approved() -> None:
     notifier.notify = AsyncMock()
     executor = object.__new__(GoalExecutor)
     executor._store = store
+    executor._held_store = None
     agent = GoalAgent(MagicMock(), store, planner, executor, notifier)
     with patch.object(goal_tools, "_check_convergence", AsyncMock()):
         call = await _call(

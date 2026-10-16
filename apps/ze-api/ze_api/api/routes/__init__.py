@@ -1,6 +1,5 @@
 from ze_api.api.routes import (
     activity,
-    capabilities,
     costs,
     data,
     dream,
@@ -8,6 +7,7 @@ from ze_api.api.routes import (
     feedback,
     goals,
     health,
+    held_writes,
     ingest,
     loops,
     memory,
@@ -23,7 +23,6 @@ from ze_api.api.routes import (
 
 __all__ = [
     "activity",
-    "capabilities",
     "costs",
     "data",
     "dream",
@@ -31,6 +30,7 @@ __all__ = [
     "feedback",
     "goals",
     "health",
+    "held_writes",
     "ingest",
     "loops",
     "memory",

@@ -90,11 +90,17 @@ tool without `reversibility` fails at import with `AgentConfigError`. A `READ` t
 declare none of these arguments. At startup Ze checks that each `undo_tool` names a
 registered `WRITE` tool.
 
+An `IRREVERSIBLE` `WRITE` tool asks the user first. It does not run until the user
+approves that exact call. Pass `asks_first=False` with a non-empty `no_ask_reason` only
+when the tool needs no confirmation. Registration fails without the reason. Use
+`editable_field` to let the user edit one parameter in the confirmation, and `summarize`
+to write the one-line summary the user sees. See [docs/sdk.md](sdk.md#asks-first).
+
 ### 4. Write the agent (`agent.py`)
 
 ```python
 from ze_sdk import agent, BaseAgent
-from ze_sdk.types import AgentContext, AgentResult, Mode
+from ze_sdk.types import AgentContext, AgentResult
 
 _AGENT_INSTRUCTIONS = """
 You are Ze's <name> agent. <Purpose, scope, tone.>
@@ -111,10 +117,6 @@ class MyAgent(BaseAgent):
     model        = "anthropic/claude-sonnet-4-5"
     timeout      = 30
     tools        = ["get_record", "create_record"]
-    intents      = {
-        "read":   Intent(Mode.AUTONOMOUS, "Retrieve a record."),
-        "create": Intent(Mode.CONFIRM,    "Create a new record."),
-    }
 
     def __init__(self, store: MyStore) -> None:
         self._store = store
@@ -181,8 +183,8 @@ plugins/<pkg>/tests/agents/<name>/
 - No real API calls — mock `client.complete_with_tools` with `AsyncMock`.
 - No real DB — mock `pool.acquire()` with `AsyncMock`.
 - Build `AgentContext` directly (it's a dataclass).
-- Test draft mode: set `gate_decision=GateDecision.DRAFT`, assert WRITE tools return `is_draft=True`.
-- Test blocked mode: set `gate_decision=GateDecision.BLOCKED`, assert `ToolBlockedError` is raised.
+- Test the park path: call each asks-first tool through `agentic_loop`, assert that it
+  parks with its exact arguments, and assert that the function body did not run.
 
 ---
 
@@ -401,34 +403,21 @@ Return instances from `ZePlugin.channels()`. `ze-api` collects them into the sha
 
 ---
 
-## Capability model
+## Write confirmation
 
-Every agent intent maps to a `Mode` that controls what the capability gate allows.
+Ze asks before an irreversible write runs. The rule comes from the tool declaration,
+not from the agent or the route. A `WRITE` tool that is `IRREVERSIBLE` parks until the
+user approves it. A `REVERSIBLE` tool runs without asking. Use the declaration to
+choose the behavior:
 
-| Mode | Gate decision | Effect |
-|------|--------------|--------|
-| `AUTONOMOUS` | `EXECUTE` | All tools run immediately. |
-| `CONFIRM` | `AWAIT_CONFIRMATION` | Graph pauses; user must approve before execution continues. |
-| `DRAFT_ONLY` | `DRAFT` | WRITE tools return `is_draft=True` without executing. |
-| `DISABLED` | `BLOCKED` | All tools raise `ToolBlockedError`. |
+| Declaration | Effect |
+|---|---|
+| `IRREVERSIBLE` (default) | The call parks. The user approves or denies that exact call. |
+| `asks_first=False` + `no_ask_reason` | The call runs without asking. The reason is required. |
+| `REVERSIBLE` + `undo_tool` | The call runs without asking. Ze records the undo. |
 
-Agents declare capabilities per-intent via `intents`. Only declare intents the
-agent meaningfully uses:
-
-```python
-intents = {
-    "read":   Intent(Mode.AUTONOMOUS, "Retrieve records."),
-    "write":  Intent(Mode.CONFIRM,    "Create or update a record."),
-    "delete": Intent(Mode.DISABLED,   "Delete a record."),
-}
-```
-
-For any intent not listed, the gate falls back to `default_mode` (default:
-`Mode.CONFIRM`). Read-only agents that should never produce a confirmation
-dialog regardless of intent should set `default_mode = Mode.AUTONOMOUS`.
-
-Use `CONFIRM` for any action with real-world consequences (sending email, creating
-calendar events, spending money). Use `AUTONOMOUS` only for read-only operations.
+Choose `IRREVERSIBLE` for any action with real-world consequences, such as sending an
+email, creating or deleting a calendar event, or spending money.
 
 ---
 
@@ -437,14 +426,12 @@ calendar events, spending money). Use `AUTONOMOUS` only for read-only operations
 Raise typed errors from `ze_sdk.errors`. Never raise bare `Exception` or `ValueError`.
 
 ```python
-from ze_sdk.errors import AgentError, ToolBlockedError
+from ze_sdk.errors import AgentError
 
 # In a tool:
 if not result:
     raise AgentError("Record not found — cannot proceed.")
 
-# ToolBlockedError is raised automatically by call_tool when gate is BLOCKED.
-# You do not need to raise it yourself.
 ```
 
 The error hierarchy:
@@ -452,7 +439,6 @@ The error hierarchy:
   - `AgentError` — unrecoverable agent failure
     - `AgentAbortedError` — loop cancelled via `AbortToken`
     - `AgentConfigError` — misconfiguration caught at startup
-    - `ToolBlockedError` — tool rejected by the capability gate
   - `ChannelError` — channel failure
     - `ChannelSendError` — channel transport failure
 
@@ -465,13 +451,13 @@ The error hierarchy:
 ### New agent in an existing plugin
 
 - [ ] Spec written in `specs/phases/`
-- [ ] `agent.py` with `@agent` class — `name`, `description`, `model`, `intents`, `tools` set
+- [ ] `agent.py` with `@agent` class — `name`, `description`, `model`, `tools` set
 - [ ] `tools.py` with `@tool` functions — `access` and `description` set on each; `reversibility` and `effect_phrase` set on each `WRITE` tool
 - [ ] Module paths added to `plugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters type-annotated
 - [ ] New shared dependencies added to `plugin_deps` in `ze_api/container.py` (only when no plugin already provides the type)
 - [ ] Progress keys added to `locales/en.yaml` (and `pt.yaml`) in the plugin package
-- [ ] Tests cover the golden path, draft mode, and blocked mode
+- [ ] Tests cover the golden path and the park path for asks-first tools
 
 ### New plugin package
 

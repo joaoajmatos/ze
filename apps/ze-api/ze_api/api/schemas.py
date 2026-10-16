@@ -10,7 +10,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    RootModel,
     ValidationInfo,
     field_validator,
 )
@@ -139,7 +138,16 @@ class ToolCallTraceResponse(BaseModel):
     access: Literal["read", "write", "delegate", "unknown"] = "unknown"
     reversibility: Literal["reversible", "irreversible"] | None = None
     undo_tool: str | None = None
-    gate: Literal["none", "approved", "denied", "expired"] = "none"
+    gate: Literal[
+        "none",
+        "approved",
+        "pre_approved",
+        "denied",
+        "refused",
+        "refused_over_cap",
+        "expired",
+        "duplicate",
+    ] = "none"
     effect_phrase: str | None = None
 
 
@@ -208,6 +216,25 @@ class SourceTraceResponse(BaseModel):
     title: str = ""
 
 
+class WriteConfirmationOutcomeResponse(BaseModel):
+    request_id: str
+    round: int
+    item_id: str
+    agent: str
+    tool: str | None = None
+    effect: str | None = None
+    summary: str = ""
+    outcome: Literal[
+        "approved",
+        "edited",
+        "pre_approved",
+        "denied",
+        "timed_out",
+        "superseded",
+        "refused",
+    ]
+
+
 class MessageTraceResponse(BaseModel):
     agent: str
     routing_method: str
@@ -230,6 +257,7 @@ class MessageTraceResponse(BaseModel):
     resume_recap_applied: bool = False
     rollback: RollbackTraceResponse | None = None
     loop_offer_ids: list[str] = []
+    write_confirmations: list[WriteConfirmationOutcomeResponse] = []
 
 
 class MessageTraceEntry(BaseModel):
@@ -277,31 +305,6 @@ class FeedbackView(BaseModel):
 
 class MessageFeedbackResponse(BaseModel):
     items: list[FeedbackView]
-
-
-# ── REST: capabilities ────────────────────────────────────────────────────────
-
-CapabilityMode = Literal["autonomous", "confirm", "draft_only", "disabled"]
-
-
-class CapabilityModeUpdate(BaseModel):
-    mode: CapabilityMode
-
-
-class AgentCapabilityConfig(BaseModel):
-    """Per-agent entry from capabilities.yaml (enabled + intent modes)."""
-
-    model_config = ConfigDict(extra="allow")
-
-    enabled: bool | None = None
-
-
-class CapabilitiesResponse(RootModel[dict[str, AgentCapabilityConfig]]):
-    """Full capabilities map keyed by agent name."""
-
-
-class UpdateCapabilityResponse(RootModel[dict[str, AgentCapabilityConfig]]):
-    """Updated capabilities for a single agent after PUT."""
 
 
 # ── REST: memory ──────────────────────────────────────────────────────────────
@@ -644,21 +647,24 @@ class WorkflowStepResponse(BaseModel):
     branches: list[BranchResponse]
     default_next: str | None
     on_failure: str = "fail"
+    planned_writes: list[str] = []
+    approved_writes: list[str] = []
 
 
 class WorkflowStepInput(BaseModel):
     task: str
     agent_hint: str | None = None
     verify: str | None = None
-    intent: str = "execute"
     id: str
     branches: list[BranchInput] = []
     default_next: str | None = None
     on_failure: str = "fail"
+    planned_writes: list[str] = []
 
 
 class UpdateWorkflowStepsRequest(BaseModel):
     steps: list[WorkflowStepInput]
+    approve_writes: bool = False
 
 
 class WorkflowResponse(BaseModel):
@@ -674,6 +680,47 @@ class WorkflowResponse(BaseModel):
 
 class WorkflowDetailResponse(WorkflowResponse):
     steps: list[WorkflowStepResponse]
+
+
+class StepWritesNeedingApproval(BaseModel):
+    step_id: str
+    agent: str
+    tools: list[str]
+
+
+class UpdateWorkflowStepsResponse(WorkflowDetailResponse):
+    writes_needing_approval: list[StepWritesNeedingApproval] = []
+
+
+class ConfirmItemOut(BaseModel):
+    item_id: str
+    agent: str
+    tool: str | None = None
+    effect_phrase: str
+    summary: str
+    conflict: str | None = None
+    editable_field: str | None = None
+    proposed_text: str | None = None
+
+
+class HeldWriteOut(BaseModel):
+    request_id: str
+    source: Literal["workflow", "goal"]
+    source_name: str
+    owner_ref: str
+    items: list[ConfirmItemOut]
+    status: Literal["open", "approved", "denied", "expired"]
+    created_at: str | None = None
+    expires_at: str | None = None
+
+
+class HeldWriteListResponse(BaseModel):
+    items: list[HeldWriteOut]
+
+
+class HeldWriteDecisionIn(BaseModel):
+    choice: Literal["approve", "deny"]
+    edits: dict[str, str] = {}
 
 
 class WorkflowExecutionResponse(BaseModel):
@@ -745,7 +792,14 @@ class EvalToolCall(BaseModel):
     duration_ms: int
     success: bool
     error: str | None = None
-    is_draft: bool = False
+    gate: str = "none"
+    parked: bool = False
+
+
+class EvalConfirmRequest(BaseModel):
+    session_id: str = "eval"
+    choice: Literal["approve", "deny"]
+    edits: dict[str, str] = {}
 
 
 class EvalChatResponse(BaseModel):
@@ -787,20 +841,41 @@ class WsEditFrame(BaseModel):
     components: list[dict[str, Any]] = []
 
 
+class WsConfirmItem(BaseModel):
+    item_id: str
+    agent: str
+    tool: str | None = None
+    effect_phrase: str
+    summary: str
+    conflict: str | None = None
+    editable_field: str | None = None
+    proposed_text: str | None = None
+
+
+class WsConfirmSource(BaseModel):
+    kind: Literal["workflow", "goal"]
+    name: str
+
+
 class WsConfirmRequestFrame(BaseModel):
     type: Literal["confirm_request"]
     id: str
     thread_id: str | None = None
-    prompt: str
+    kind: Literal["write", "budget", "held", "prompt"]
+    round: int = 1
+    title: str
+    items: list[WsConfirmItem]
+    source: WsConfirmSource | None = None
+    expires_at: str | None = None
     actions: list[WsConfirmAction]
-    editable: bool = False
-    proposed: str = ""
 
 
 class WsConfirmCancelFrame(BaseModel):
     type: Literal["confirm_cancel"]
     id: str
     thread_id: str | None = None
+    # "answered": the user approved or denied it (possibly on another client).
+    reason: Literal["answered"] | None = None
 
 
 class WsTypingFrame(BaseModel):
@@ -876,6 +951,7 @@ class WsTraceUpdateFrame(BaseModel):
     judgments: list[JudgmentTraceResponse] = []
     sources: list[SourceTraceResponse] = []
     effects_known: bool = False
+    write_confirmations: list[WriteConfirmationOutcomeResponse] = []
     rollback: RollbackTraceResponse | None = None
 
 
@@ -947,7 +1023,7 @@ class WsConfirmFrame(BaseModel):
     id: str
     thread_id: str
     choice: Literal["approve", "deny"]
-    edited_content: str | None = None
+    edits: dict[str, str] = {}
 
 
 class WsActionFrame(BaseModel):
@@ -962,7 +1038,6 @@ class WsCommandFrame(BaseModel):
     name: Literal[
         "cancel",
         "costs",
-        "capabilities",
         "status",
         "onboarding",
         "reset",
@@ -1292,11 +1367,7 @@ class QuietHoursUpdate(BaseModel):
             return None
         if not _QUIET_HOURS_TIME_RE.match(value):
             raise ValueError("must be HH:MM in 24-hour time")
-        if (
-            info.field_name == "end"
-            and enabled
-            and info.data.get("start") == value
-        ):
+        if info.field_name == "end" and enabled and info.data.get("start") == value:
             raise ValueError("start and end must differ")
         return value
 

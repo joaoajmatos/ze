@@ -126,18 +126,6 @@ class PostgresHypothesisStore:
             )
         return [_row_to_hypothesis(r) for r in rows]
 
-    async def set_feedback(
-        self,
-        hypothesis_id: UUID,
-        feedback: str,
-    ) -> None:
-        async with self._pool.acquire() as conn:  # type: ignore[union-attr]
-            await conn.execute(
-                "UPDATE correlation_hypothesis SET feedback = $1 WHERE id = $2",
-                feedback,
-                hypothesis_id,
-            )
-
     async def update_evidence(
         self,
         hypothesis_id: UUID,

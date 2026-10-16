@@ -158,7 +158,7 @@ make migrate  # runs against DATABASE_URL_SYNC
 fly ssh console -C "kill -HUP 1"
 ```
 
-This reloads capability modes and YAML settings without interrupting the process.
+This reloads YAML settings without interrupting the process.
 Changes to model assignments or plugin configuration require a full `fly deploy`.
 
 ### Update a secret

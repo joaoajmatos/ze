@@ -22,8 +22,14 @@ vi.mock("@/shared/api", async (importOriginal) => ({
   },
 }));
 
+const confirmState = vi.hoisted(() => ({
+  pendingConfirms: [] as { id: string }[],
+  respond: vi.fn(),
+  clear: vi.fn(),
+}));
+
 vi.mock("@/features/respond-to-confirmation", () => ({
-  useConfirmation: () => ({ pendingConfirm: null, respond: vi.fn(), clear: vi.fn() }),
+  useConfirmation: () => confirmState,
 }));
 
 import { useWsStore } from "@/shared/api";
@@ -58,6 +64,8 @@ async function flush() {
 
 describe("useChatWorkspace delivery watchdog", () => {
   beforeEach(() => {
+    confirmState.pendingConfirms = [];
+    confirmState.respond.mockReset();
     vi.useFakeTimers();
     handlers.clear();
     sendMock.mockClear();
@@ -83,6 +91,15 @@ describe("useChatWorkspace delivery watchdog", () => {
     });
     listMessagesMock.mockClear();
   }
+
+  it("hands the pending confirmation and its responder to the widget", async () => {
+    confirmState.pendingConfirms = [{ id: "req-1" }];
+    const hook = setup();
+    await flush();
+    expect(hook.result.current.pendingConfirms).toEqual([{ id: "req-1" }]);
+    hook.result.current.respondToConfirm("req-1", "approve", { c1: "edited" });
+    expect(confirmState.respond).toHaveBeenCalledWith("req-1", "approve", { c1: "edited" });
+  });
 
   it("re-fetches history when no reply arrives within the bound", async () => {
     const hook = setup();

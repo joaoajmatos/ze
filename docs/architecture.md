@@ -47,7 +47,7 @@ export/import/delete workflow.
 
 ## System Flow
 
-![Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a capability check that executes, drafts, or pauses for confirmation, converging on a compound check before the response](diagrams/docs/turn-lifecycle.svg)
+![Flowchart showing multimodal input preprocessed and embed-routed, either going straight to context fetch or through a decompose step for compound requests, then a preflight check that runs the turn, where execute_tool parks irreversible writes into one await_write_confirmation pause that resumes the run](diagrams/docs/turn-lifecycle.svg)
 
 <sub>[Interactive version](diagrams/docs/turn-lifecycle.html)</sub>
 
@@ -83,7 +83,7 @@ the E5 rules above. The surface is on in the shipped config (calibrated 2026-10-
 **Conductor rewrite.** After `decompose`, a sequential multi-specialist turn, or a turn that
 mixes gathering and acting, becomes a companion-primary turn (`apply_conductor_rewrite`).
 The decomposed subtasks stay as a hint. Companion then calls specialists through
-`delegate_to_agent`, one at a time, each with its own capability and confirmation check.
+`delegate_to_agent`, one at a time, each with its own write confirmation check.
 Only independent compound requests keep the parallel fan-out and `synthesize`.
 
 **Cost-aware routing** (`ze_core.routing.complexity`): agents with a `model_simple`
@@ -164,7 +164,7 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 
 ### Nodes
 
-![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, match_skills then capability_check branches to execute_tool, draft_response, or await_confirmation which loops back to resume execution, execute_tool feeds correlate then independent compound synthesizes, write_memory, and the response](diagrams/docs/graph-node-flow.svg)
+![Flowchart of the LangGraph nodes in execution order: preprocess and embed_route route into fetch_context directly or via decompose for compound requests, then preflight runs the turn while execute_tool parks irreversible writes into await_write_confirmation, which resumes the run, before correlate, compound, synthesize and write_memory return the response](diagrams/docs/graph-node-flow.svg)
 
 <sub>[Interactive version](diagrams/docs/graph-node-flow.html)</sub>
 
@@ -176,17 +176,15 @@ Persistence for `messages`, `sessions`, and `pending_confirmations` lives in
 | `preprocess` | `nodes/preprocessing.py` | Normalize audio/image input before routing |
 | `embed_route` | `nodes/routing.py` | Embed prompt, score agents, choose path |
 | `decompose` | `nodes/routing.py` | Haiku decomposes compound tasks into subtasks |
-| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
+| `fetch_context` | `nodes/context.py` | pgvector semantic search over facts + episodes. It detects "what's open" questions by E5 similarity against English and Portuguese examples. When one fires on a single-agent turn, it swaps the route to `companion` before `capability_check`, so the turn answers from the ranked priority list, followed by suspected loops marked unconfirmed, and never pauses on a specialist's confirmation intent. After a session gap it adds the resume recap, capped at 5 loops, and a resume question about up to 3 suspected loops. A loop offered once stays quiet for 7 days (cooldown in `push_log`) |
 | `match_skills` | `nodes/skills.py` | Match active skills; inject instructions and narrow tools |
-| `capability_check` | `nodes/execution.py` | Evaluate permission mode for agent.intent, strictest-wins with the optional spend budget |
+| `preflight` | `nodes/execution.py` | Refuse a disabled agent. Pause for the spend budget (113) before the turn runs, unless the user already approved it |
 | `execute_tool` | `nodes/execution.py` | Call `agent.run()`, enforce timeout; fans independent subtasks out in parallel |
-| `await_subtask_confirmation` | `nodes/execution.py` | Pause for a per-subtask confirmation gate, then resume `execute_tool` |
+| `await_write_confirmation` | `nodes/execution.py` | Pause once per turn for every parked write, then resume the parked agent loops with the user's answer (at most 3 rounds) |
 | `correlate` | `nodes/correlation.py` | Surface inline relationship hypotheses when relevant |
 | `surface_loops` | `nodes/loop_surfacing.py` | Mention relevant open items inline. Skips when the turn asked what's open, because the answer already lists them (up to 10 items) |
-| `draft_response` | `nodes/execution.py` | Generate response, do not execute |
-| `await_confirmation` | `nodes/execution.py` | Pause graph, emit confirm_request frame |
 | `synthesize` | `nodes/memory.py` | Merge independent parallel subtask results into one response |
-| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call |
+| `record_trace` | `nodes/trace.py` | Build the `MessageTrace` stored on the message, with effect metadata for each tool call. After a resume that offered loops, it appends one short keep-tracking question in the user's language when the reply does not already end with a question |
 | `write_memory` | `nodes/memory.py` | Episode write plus gated fact extraction and the open-loop gate (judged beside the fact extractor, committed fire-and-forget; the System One rows join the trace); skips eval threads. A turn where the `loops` agent's `track_loop` or `confirm_loop` tool succeeded skips the loop gate, because the tool already wrote the user-asked loop. In a retry run it only extends session history |
 
 </details>
@@ -198,15 +196,38 @@ It holds the prompt, routing envelope, memory context, gate decision, agent resu
 conversation history, and workflow state. It must remain JSON-serializable at all times
 because `AsyncPostgresSaver` checkpoints it to Postgres on every pause.
 
-### Human-in-the-loop
+### Write confirmation
 
-When `capability_check` resolves to `confirm`, the graph pauses at
-`await_confirmation` (`interrupt_before`). The WS handler sends a `confirm_request`
-frame to the web app. The app presents approve/cancel UI. The client's `confirm`
-reply causes `graph.ainvoke(None, config)` with the same `thread_id` to resume from
-the checkpoint.
+A `WRITE` tool that declares `IRREVERSIBLE` asks the user first. It does not run until
+the user approves that exact call. A `REVERSIBLE` tool runs without asking. A tool
+opts out only with `asks_first=False` and a written `no_ask_reason`. The rule applies to
+every agent, route and delegate, so the route does not change it.
 
-See [docs/native-interface.md](native-interface.md) for the full WebSocket protocol.
+The mechanism is park and resume:
+
+1. **Park.** The agent loop calls an asks-first tool. Ze records the tool, the exact
+   arguments and the effect phrase. The call does not run, and the loop stops at that
+   point. Its transcript is saved in the conversation state.
+2. **Pause once.** Other work in the turn finishes: parallel subtasks complete, reads
+   run, and reversible writes run. Then the graph pauses once in
+   `await_write_confirmation`. The user sees one confirmation that lists every parked
+   write, with **Approve all** and **Deny all**. Items whose tool allows edits also show
+   **Edit**.
+3. **Resume.** On approval, Ze runs exactly the approved calls with the approved
+   arguments, or with the edited text where the tool allows an edit. Each parked loop
+   then resumes from its saved transcript with the real results, so later steps can use
+   them, and the model writes the reply. A resumed loop can park again. The user then gets
+   a new confirmation, up to 3 rounds per turn.
+4. **Deny or timeout.** Nothing runs. Each parked call returns a declined result. A
+   timeout counts as a deny. The timeout is `CONFIRM_TIMEOUT_SECONDS` (900 s by default).
+   Ze adds a line per denied item in the form "Okay, I didn't <effect>.", so the reply
+   never claims that a denied write happened.
+
+The spend budget (113) is a separate pause before the turn runs. It does not depend on
+the writes.
+
+Interactive confirmations use the `confirm_request` and `confirm` frames. See
+[docs/native-interface.md](native-interface.md) for the full WebSocket protocol.
 
 ### Message trace effect metadata
 
@@ -322,7 +343,7 @@ and reason codes.
 All agents subclass `BaseAgent` (`ze_agents.base_agent`) and register via `@agent` (`ze_agents.registry`). Plugin code imports these via `ze_sdk`. Each agent owns:
 
 - A system prompt (`_AGENT_INSTRUCTIONS` string at the top of `agent.py`).
-- Class attributes: `description`, `model`, `intents`, `tools`, `timeout`.
+- Class attributes: `description`, `model`, `tools`, `timeout`.
 - Optionally a `tools.py` with Python `@tool` functions for local tool execution.
 
 Specialists cannot call each other. The orchestration graph handles independent
@@ -563,25 +584,6 @@ name-dropping. Agents do not query memory themselves.
 
 ---
 
-## Capability Gate
-
-**Module:** `ze_core.capability`
-
-Every agent action has an explicit permission mode defined as a class attribute on the
-`@agent` class, keyed by `agent.intent`:
-
-| Mode | Behavior |
-|---|---|
-| `autonomous` | Execute immediately |
-| `confirm` | Pause graph, send `confirm_request` frame to app. 15-min timeout. |
-| `draft_only` | Generate response, never execute without a config change |
-| `disabled` | Block, return error message |
-
-Override modes at runtime via `PUT /capabilities` (persisted in DB via
-`PostgresCapabilityOverrideStore`). `config.yaml` hot-reloads on `SIGHUP`.
-
----
-
 ## Proactive Ze
 
 **Modules:** `ze_proactive` (scheduler, notifier, governor) · `ze_personal/jobs/` · `ze_automation/jobs/` · `ze_prospecting/jobs/` · `ze_calendar/jobs/` · `ze_news/jobs/`
@@ -617,8 +619,8 @@ See [docs/scheduled-jobs.md](scheduled-jobs.md) for the full lifecycle and confi
 
 **Module:** `ze_automation.goals` · **Agent:** `ze_automation/agents/goals/`
 
-Goals address multi-week objectives that neither workflows nor per-action capability
-gates fit well: Ze works in the background and checks in at **verification gates**
+Goals address multi-week objectives that neither workflows nor per-action write
+confirmations fit well: Ze works in the background and checks in at **verification gates**
 (days apart), not on every write.
 
 ### Primitives
@@ -658,7 +660,7 @@ or conversationally.
 
 | Path | When | Mechanism |
 |---|---|---|
-| Capability gate | Per high-risk agent action in the main graph | `await_confirmation` node → `confirm_request` WS frame |
+| Write confirmation | Per irreversible write in the main graph and delegates | `await_write_confirmation` node → `confirm_request` WS frame |
 | Verification gate | Between milestone batches on a goal | Rich checkpoint message + conversational or app-driven approve/stop/redirect |
 
 See [docs/goals.md](goals.md) for usage including steering, proactive suggestions, stuck detection, cross-goal output reuse, and learning promotion.
@@ -845,12 +847,10 @@ import time, so codegen needs no running server.
 | `POST` | `/api/v0/memory/consolidate` | `consolidateMemory` |
 | `GET` | `/api/v0/memory/profile` | `getProfile` |
 
-### Capabilities / Workflows / Data / Ingestion
+### Workflows / Data / Ingestion
 
 | Method | Path | operationId |
 |---|---|---|
-| `GET` | `/api/v0/capabilities` | `listCapabilities` |
-| `PUT` | `/api/v0/capabilities/{agent}/{intent}` | `updateCapability` |
 | `GET` | `/api/v0/workflows` | `listWorkflows` |
 | `GET` | `/api/v0/routing/log` | `getRoutingLog` |
 | `POST` | `/api/v0/ingest` | `ingest` |
@@ -971,12 +971,12 @@ it owns no tables and no revision files.
 ## Design principles
 
 - **Zero LLM calls in the routing happy path.** Local embeddings handle the common case.
-- **Configurability over automation.** Every write-risk action requires an explicit
-  permission mode. Nothing executes autonomously unless the user has opted in via YAML.
+- **Consent before irreversible action.** Every irreversible write asks the user first.
+  A tool opts out only with a written reason.
 - **Memory as editorial problem.** Agents propose; the user can review. Ze never silently
   accumulates writes to long-term memory without opportunity for correction.
 - **Modular agents.** Each agent is isolated — its own system prompt, tool registry,
-  model config, and intent map.
+  and model config.
 - **Dependency injection throughout.** Every module accepts dependencies as constructor
   arguments. No module reads from globals or `os.environ` directly except `ze_api/settings.py`.
 - **Spec-first development.** No module is implemented without a reviewed spec in `specs/phases/`.

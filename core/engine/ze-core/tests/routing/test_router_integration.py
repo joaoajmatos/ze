@@ -69,14 +69,14 @@ def make_router(
 
 
 def test_subtask_fields():
-    st = SubTask(agent="research", intent="read", prompt="hello")
+    st = SubTask(agent="research", prompt="hello")
     assert st.agent == "research"
-    assert st.intent == "read"
+    assert st.changes is False
     assert st.prompt == "hello"
 
 
 def test_routing_envelope_defaults():
-    st = SubTask(agent="research", intent="read", prompt="hi")
+    st = SubTask(agent="research", prompt="hi")
     env = RoutingEnvelope(
         primary_agent="research",
         confidence=0.9,

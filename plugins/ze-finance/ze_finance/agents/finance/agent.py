@@ -7,7 +7,7 @@ import ze_finance.agents.finance.tools  # noqa: F401
 from ze_agents.base_agent import BaseAgent
 from ze_agents.client import LLMClient
 from ze_agents.registry import agent
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_finance.recurring.store import RecurringStore
 from ze_finance.store import PortfolioStore, TransactionStore
 
@@ -41,16 +41,6 @@ class FinanceAgent(BaseAgent):
     """
     # Pinned to Anthropic — financial data must not reach other providers.
     model = "anthropic/claude-haiku-4-5"
-    intents = {
-        "read": Intent(
-            Mode.AUTONOMOUS,
-            "Retrieve portfolio, positions, spending, and transaction data.",
-        ),
-        "confirm": Intent(
-            Mode.CONFIRM, "Confirm or dismiss detected recurring expenses."
-        ),
-    }
-    default_mode = Mode.AUTONOMOUS
     tools = [
         "get_portfolio_summary",
         "get_positions",

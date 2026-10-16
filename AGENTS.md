@@ -34,7 +34,9 @@ ze/                           # monorepo root
 │   │   │       ├── registry.py  # @agent decorator + module-level agent registry
 │   │   │       ├── settings.py  # Settings dataclass
 │   │   │       ├── system_one.py # SystemOneClient Protocol — typed judgments (noul / choice / score)
-│   │   │       └── tool.py      # @tool decorator, ToolAccess
+│   │   │       ├── park.py      # Parked writes, loops and subtasks; WriteConfirmation
+│   │   │       ├── effects.py   # effect_imperative, ensure_declined_lines
+│   │   │       └── tool.py      # @tool decorator, ToolAccess, asks_first
 │   │   ├── ze-communication/    # Channel contract — types, outbound/inbound ABCs, registry
 │   │   │   └── ze_communication/
 │   │   │       ├── types.py     # ChannelType, ChannelHandle, Message, SentMessage, Thread, InboundMessage
@@ -51,7 +53,6 @@ ze/                           # monorepo root
 │   ├── engine/                 # The orchestration engine itself
 │   │   └── ze-core/             # Engine — routing, orchestration, telemetry, DI container
 │   │       └── ze_core/
-│   │           ├── capability/  # CapabilityGate, PostgresCapabilityOverrideStore, modes
 │   │           ├── conversation/# invoke_raw_turn (turn.py) — streamed graph turn entry point; retry.py (Retry eligibility), rewind.py, rollback.py (run_rollback — undo a reply's actions before a retry)
 │   │           ├── openrouter/  # OpenRouterClient, System One client (engine internal — plugins use the Protocols)
 │   │           ├── orchestration/# graph_builder, graph nodes, AgentState, edges, judgment_state (shared System One state)
@@ -94,6 +95,7 @@ ze/                           # monorepo root
 │   │   │       ├── workflow/    # WorkflowStore, WorkflowPlanner, WorkflowScheduler, PostgresWorkflowStore, types
 │   │   │       ├── accountability/ # AccountabilityStore, ActivitySummary, AnomalyRecord, build_narrative
 │   │   │       ├── agents/      # GoalAgent, WorkflowManagerAgent
+│   │   │       ├── holds/       # plan-time approved writes for unattended runs (phase 181)
 │   │   │       ├── jobs/        # goal/workflow/accountability proactive jobs
 │   │   │       ├── runtime/     # AutomationPlanner, AutomationStore contracts
 │   │   │       └── migrations/  # zc006–zc009 (goal traces/suggestions/stuck/reuse), zc011 (workflows), zc014 (accountability),
@@ -375,8 +377,9 @@ pages → widgets → features → entities → shared
 - The WebSocket endpoint lives at `/ws`. One connection at a time — a new connection
   displaces the previous one with close code `4000`.
 - On connect, unread messages are replayed from `MessageStore` before new frames flow.
-- Confirmation requests are sent as `{"type": "confirmation", ...}` frames; the client
-  replies with `{"type": "confirm", "id": "...", "choice": "approve"|"deny"|"edit"}`.
+- Confirmation requests are sent as `{"type": "confirm_request", ...}` frames with `kind`
+  (`write`, `budget`, `held`) and `items`; the client replies with
+  `{"type": "confirm", "id": "...", "choice": "approve"|"deny", "edits": {...}}`.
 - `ConnectionManager` is on `app.state.connection_manager`; never instantiate it outside the lifespan.
 
 ## Configuration files
@@ -397,7 +400,7 @@ CONFIRM_TIMEOUT_SECONDS=900
 
 ### `apps/ze-api/config/config.yaml`
 Structural config: model assignments, contacts consolidation settings, proactive
-schedules. Agent config (description, model, intents) lives on
+schedules. Agent config (description, model) lives on
 `@agent` class attributes in Python — not in YAML.
 
 Hot-reloaded on SIGHUP without restart.
@@ -408,7 +411,7 @@ Hot-reloaded on SIGHUP without restart.
 2. Create the agent in the appropriate package — `ze_personal/agents/`, `ze_messenger/agents/`,
    `ze_prospecting/agents/`, or `ze_calendar/agents/` — decorate with `@agent` from
    `ze_sdk`, subclass `BaseAgent` from `ze_sdk`.
-   Put `description`, `model`, `intents`, `tools`, and `timeout` as class
+   Put `description`, `model`, `tools`, and `timeout` as class
    attributes. Define `_AGENT_INSTRUCTIONS` at the top.
 3. Add a `tools.py` alongside the agent if it needs Python tools. Use `@tool` from
    `ze_sdk`. Use `"openrouter:web_search"` in `tools` for web search —
@@ -447,8 +450,8 @@ and runs them against a single `alembic_version` table.
 
 | Package | Branch prefix | Tables |
 |---|---|---|
-| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, capability_overrides, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`) |
-| ze-automation | `zc` (continues ze-core chain) | goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
+| ze-core | `zc` | user_facts, episodes, user_profile, routing_log, llm_cost_log, goals, goal_milestones, goal_gates, persona_state, LangGraph checkpoints, messages, sessions, pending_confirmations, messages.rollback (`zc032`); capability_overrides dropped (`zc034`) |
+| ze-automation | `zc` (continues ze-core chain) | held_writes (`zc033`), goal_execution_traces, goal_suggestions (stuck goals col, reuse hint col), workflows, workflow_executions, workflow_revisions, accountability_anomalies, goal_learning_* (`zc030`; drops the old goal_learnings) |
 | ze-personal | `zc` (continues ze-automation chain) | contacts, contact_channels, contact_sources, insights, episodes.contacts_extracted, user_channels, user_channel_watermarks, thread_channel_map (contact_relationships dropped in `zc029`) |
 | ze-memory | `zm` | memory_entities, memory_facts, memory_episodes, memory_events, memory_task_state, memory_profile_facets, memory_relationships, memory_signals, memory_session_summaries, memory_retrieval_cache, memory_dream_*, memory_episode_metadata, action_records, procedure_* (`zm022`–`zm023`; replace memory_procedures), feedback_records (`zm024`) |
 | ze-onboarding | `zo` | onboarding_sessions, onboarding_steps, onboarding_seeds |
@@ -484,15 +487,14 @@ and runs them against a single `alembic_version` table.
 
 ```
 preprocess (voice → transcript, image → caption) → [inject_routing_context, when a plugin adds a pre_route_node]
-  → embed_route → (compound?) → decompose → fetch_context → match_skills → capability_check
+  → embed_route → (compound?) → decompose → fetch_context → match_skills → preflight
                 ↘ fetch_context ↗
 
-capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask gates)
-                   execute_tool → correlate → surface_loops → (compound?) → synthesize → record_trace → write_memory → END
-                                                                          ↘ record_trace ↗
-                 → draft_response → await_confirmation  (graph pauses here: interrupt_before)
-                                    await_confirmation → execute_tool | record_trace
-                 → END (blocked)
+preflight → blocked (disabled agent) → END
+          → budget pause (113, before the turn) → execute_tool
+          → execute_tool ⇄ await_write_confirmation  (one pause per turn for all parked writes; max 3 rounds)
+            execute_tool → correlate → surface_loops → (compound?) → synthesize → record_trace → write_memory → END
+                                                                   ↘ record_trace ↗
 ```
 
 - Graph builder: `ze_core/orchestration/graph.py`; conditional edges in `edges.py`.
@@ -641,6 +643,7 @@ capability_check → execute_tool ⇄ await_subtask_confirmation  (per-subtask g
 | 172 | Corroboration Promotion — an independent source that matches a `suspected` loop is judged by one System One Noul `same_concern` (state = loop title capped at 200 + inflow + capped text, one attempt); pure `decide()` in `ze_worldstate/corroboration_judge.py` against two bars (`corroborate_hold`, `promote_hold`); `corroboration.py` links the evidence and raises confidence (`min(0.6, 1-(1-c)(1-0.5·s))`, stays suspected) or also promotes to `active` at `GREATEST(confidence, 0.7)` with a 7-day drift deadline in one UPDATE guarded by `state='suspected'`; independence is a pure code rule (source key new to the loop, evidence not already linked, key not on a matching dropped loop) and a non-independent match makes no request; origin rows are written on every create with a key; new table `open_loop_sources` (`zw003`) records the origin and each counted corroboration; REST gains `promoted`/`source_inflows`/`sources` and the `/loops` row shows "Promoted · seen in: …"; `make calibrate-corroboration` (E5 cosine 0.75 baseline); surface `system_one.surfaces.corroboration` ships off with null bars until a held-out `ENABLE` | Implemented |
 | 177 | Interruption Governor (part 1) — one governor for every proactive push: `PushKind` (class requested/accountability/discretionary + urgency) registered process-wide, pure `decide()` in `ze_proactive/governor.py`; the shared daily budget (`proactive.budget.max_pushes_per_day` default 5) covers every discretionary push; quiet hours (`interruption_settings`, ship off) hold accountability and discretionary pushes, `QuietHoursReleaseJob` releases them with one summary buzz; `notify()` is the only send path (`push()`/`push_notification()` deleted); ntfy priority low 2/normal 3/high 5 and a `buzz` flag; REST `GET/PUT /api/v0/notifications/quiet-hours` + a Settings form; cron catch-up (`proactive_job_runs`, `catch_up_max_age_hours`), workflow catch-up, late calendar reminders; migration `zpro004` | Implemented |
 | 180 | Retry Rollback — Retry undoes the reversible actions of the latest reply, then regenerates it. Reversible tools return a per-call `undo_payload` (`ze_sdk`) that `call_tool` stores on `ToolCall.undo` and the trace; `retry_eligibility` builds a public plan (entry ids = hash of message, call index, tool, args), the client confirms it as `confirmed_plan`, and the server recomputes it under the thread lock (`undo_not_confirmed` / `plan_changed`); `run_rollback` (`ze_core/conversation/rollback.py`) runs each undo through the owning agent's `BaseAgent.run_undo` with no model call and records each entry on `messages.rollback` (`zc032`; states `partial`, `rolled_back_awaiting_confirmation`, `rolled_back_retry_failed`, `superseded`); one retry policy (irreversible writes refused, reversible writes run under the normal gates, a confirmation pauses the retry); `message_rollback` frame, `retry_partial`, `history_unavailable`; `remember_fact` and priority overrides restore what they displaced; web two-step consent, rollback notice, trace `RollbackSection` | Implemented |
+| 181 | Irreversible Write Confirmation — every WRITE tool that is IRREVERSIBLE asks first unless it declares `asks_first=False` with a reason: `call_tool` parks it, `LoopParked` is caught at the delegate/subtask boundary, one `await_write_confirmation` pause per turn (`confirm_request` frame with items; at most 3 rounds, a 4th is `refused_over_cap`), resume runs exactly the approved calls before any model call; approval is an `ApprovedCall` built only from park state (model `_` args are stripped, injected deps win and are hidden from schemas); one item per identical `(tool, args)` (repeat gate `duplicate`); deny/timeout give a code-guaranteed "Okay, I didn't <effect>."; the 144 veto runs before pre-approval; summaries name the target (`summarize` gets deps); goal gates/suggestions/workspace reset use `kind: "prompt"` frames; a confirmation push rings the bell without a chat message (`PushKind.in_chat`); intents, modes, `CapabilityGate` and capabilities REST/WS hard-cut (`zc032`); per-step `approved_writes` for workflows/goals, unplanned writes hold in `held_writes` (`zc033`, 24 h, `write_approval_held` push, REST `/api/v0/held-writes`, `HeldWriteExpiryJob`); eval `/eval/confirm` + `confirm:` scenario step | Implemented |
 
 ## graphify
 
@@ -735,5 +738,5 @@ before adding one.
 - Perception/memory fact writes go through the contribution seam (`specs/arch/contribution-seam.md`): Phase 133 wraps writers; Phase 134 hard-cuts `memory_facts` onto shared claim vocabulary and removes public `propose_facts`.
 - Experiential learning is phases 135–139 (action-record ledger, instrumentation, evidence-backed learning, procedure lifecycle/activation); procedures are first-class, not only goal/workflow steps.
 - Memory honesty is phases 140–150 in `specs/arch/memory-honesty-roadmap.md`. Companion-conductor is `specs/arch/companion-conductor-roadmap.md` (151–161): companion sole speaker/conductor, fat `delegate_to_agent`, no `plan_sequential`/swarm; phase dir 151 is conductor ACI, not memory-honesty.
-- Every `WRITE` `@tool` declares `reversibility` (plus `undo_tool`/`undo_note` when reversible, and `effect_phrase`); an undeclared WRITE tool fails registration. Retry eligibility reads it. A `REVERSIBLE` tool returns `undo_payload(...)` per call, only in the clean case, so Retry can undo that exact call. Perception holds two licences: `FACT` and `FEEDBACK_RECORD`.
+- Every `WRITE` `@tool` declares `reversibility` (plus `undo_tool`/`undo_note` when reversible, and `effect_phrase`); an undeclared WRITE tool fails registration. Retry eligibility reads it. IRREVERSIBLE tools ask first unless they declare `asks_first=False` with a reason. A `REVERSIBLE` tool returns `undo_payload(...)` per call, only in the clean case, so Retry can undo that exact call. Perception holds two licences: `FACT` and `FEEDBACK_RECORD`.
 - `.cursor/rules/` is gitignored; do not commit Cursor rules.

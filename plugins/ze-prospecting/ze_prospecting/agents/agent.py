@@ -5,7 +5,6 @@ from typing import AsyncIterator
 
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
-from ze_agents.types import Intent, Mode
 from ze_agents.types import AgentContext, AgentResult
 from ze_browser import BrowserClient
 from ze_personal.contacts.store import PersonStore
@@ -62,10 +61,6 @@ class ProspectingAgent(BaseAgent):
         "draft_outreach",
         "log_outreach_event",
     ]
-    intents = {
-        "read": Intent(Mode.AUTONOMOUS, "Research and enrich prospect candidates"),
-        "write": Intent(Mode.AUTONOMOUS, "Draft outreach for prospects"),
-    }
 
     def __init__(
         self,

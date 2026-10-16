@@ -78,6 +78,38 @@ class TurnSurfacing:
         ]
         return mentions if limit is None else mentions[:limit]
 
+    async def open_query_mentions(self, limit: int) -> list[OpenItemMention]:
+        """Ranked items, then suspected loops labeled unconfirmed, for "what's open?".
+
+        Suspected loops are not ranked or pushed; they only appear in this answer.
+        """
+        mentions = await self.recap_mentions(limit=limit)
+        room = limit - len(mentions)
+        if room <= 0:
+            return mentions
+        try:
+            loops = await self._loop_store.list(states=[LoopState.SUSPECTED.value])
+        except Exception as exc:
+            log.warning("turn_surfacing_suspected_list_failed", error=str(exc))
+            return mentions
+        suspected = sorted(
+            (loop for loop in loops if loop.id is not None),
+            key=lambda loop: (
+                -loop.confidence,
+                -(loop.created_at.timestamp() if loop.created_at else 0.0),
+            ),
+        )
+        for loop in suspected[:room]:
+            mentions.append(
+                OpenItemMention(
+                    source_kind="loop",
+                    source_id=loop.id,
+                    title=loop.title,
+                    mention_text=f'"{loop.title}" (unconfirmed — not tracked yet)',
+                )
+            )
+        return mentions
+
     async def resume_loop_offers(self, limit: int = OFFER_LIMIT) -> list[LoopOffer]:
         """Suspected loops to ask about at session resume, recorded as offered.
 

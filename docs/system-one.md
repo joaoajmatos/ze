@@ -22,7 +22,7 @@ Four rules keep the layers apart:
 1. **System One is not an LLM.** Ze never sends it as a chat completion. OpenRouter hosts it at `POST /api/v1/systemone`, and Ze uses the same `OPENROUTER_API_KEY`.
 2. **E5 stays the shortlist.** System One chooses among the few candidates E5 ranks highest. It does not replace the embeddings.
 3. **NLI stays for contradiction checks.** System One does not replace it.
-4. **Code owns policy.** Budgets, capability gates, confirmations, windows, and writes never depend on a model.
+4. **Code owns policy.** Budgets, write confirmations, windows, and writes never depend on a model.
 
 ---
 
@@ -141,7 +141,7 @@ Judgments appear in the message trace as `JudgmentTrace` rows: the question id, 
 
 ## What System One never does
 
-It never writes replies, drafts, or plans. It never replaces the capability gate, the confirmation flow, the spend budget, the write-time contradiction check, or any date or window math. A probability of 0.62 does not license Ze to state a suspicion as a fact. Claim kinds on contributions still decide how Ze may surface a claim.
+It never writes replies, drafts, or plans. It never replaces the write confirmation, the confirmation flow, the spend budget, the write-time contradiction check, or any date or window math. A probability of 0.62 does not license Ze to state a suspicion as a fact. Claim kinds on contributions still decide how Ze may surface a claim.
 
 ---
 

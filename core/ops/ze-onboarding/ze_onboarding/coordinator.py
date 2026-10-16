@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from ze_agents.errors import OnboardingError as OnboardingError  # noqa: F401 — re-export
+from ze_agents.errors import OnboardingError
 from ze_onboarding.types import (
     OnboardingPersistence,
     OnboardingProvider,

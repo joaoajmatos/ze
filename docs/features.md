@@ -8,7 +8,7 @@ Ze is a Python/FastAPI backend with LangGraph orchestration, a React web client,
 
 ## One voice, many specialists
 
-Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own capability and confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
+Companion is the only agent that speaks to you. It acts as the conductor: when a request needs several specialists in sequence, the router sends it to companion, and companion calls them through one `delegate_to_agent` tool. Each call carries a full brief, runs in an isolated worker, and passes its own write confirmation check. Independent requests (for example, "check my calendar and summarize the news") still fan out in parallel in the graph and merge in a `synthesize` step. Work that must outlive the turn becomes a goal or a workflow; companion can promote a conductor run into either one.
 
 ## System One
 
@@ -32,7 +32,7 @@ The Priority page ranks drifting loops, stuck goals, and correlation hypotheses 
 
 ## Open loops
 
-Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. When a later independent source matches a suspected loop, Ze asks one System One same-concern question, raises the loop's confidence, and can promote it to `active`; the loop records each source, and the Open loops page labels it "Promoted · seen in: chat, email". At the start of a new session, Ze asks whether to keep track of up to three loops it noticed. The Open loops page (Automation) lists them for review. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
+Most of what someone means to follow up on is smaller than a goal: a promise made in an email thread, a decision left pending, a project quietly stalling because a dependency didn't land. `ze-worldstate` tracks these as open loops, extracted from conversation, email, calendar, and ingestion. Extraction is gated: three System One yes/no questions decide whether text opens, declares, or resolves a loop, and Haiku writes only the title. If System One skips, the older Haiku judge runs as the fallback. Confidence decays on its own; a contradiction or a missed deadline moves a loop to `drifting`. You can also ask Ze to keep something on the radar ("keep the Porto move on my radar"). The `loops` agent creates that loop in the same turn with the `track_loop` tool, and the post-turn gate skips that turn. When a later independent source matches a suspected loop, Ze asks one System One same-concern question, raises the loop's confidence, and can promote it to `active`; the loop records each source, and the Open loops page labels it "Promoted · seen in: chat, email". At the start of a new session, Ze asks whether to keep track of up to three loops it noticed. If the reply skips the question, Ze adds a short one in your language (English or Portuguese). Ask "what's still on my plate?" and the answer comes from the merged priority ranking, not from one agent's own list. The Open loops page (Automation) lists them for review. Drifting loops surface inline in the next relevant conversation, or push through ntfy once they clear the salience bar. Loop pushes are discretionary, so they share one daily budget with every other unprompted nudge, and quiet hours hold them like the rest.
 
 ![State machine showing an open loop moving from suspected to active, by an independent corroboration or a confirmation, then to drifting, where a contradiction or a missed deadline is the guard that triggers drift, and drifting loops finally resolving to closed or dropped](diagrams/root/open-loops.svg)
 
@@ -78,7 +78,9 @@ Ze doesn't wait to be asked. Morning briefings, calendar reminders, weekly insig
 
 ## Agents
 
-Thirteen agents: research, companion, calendar, messenger, reminders, workflow, goals, loops, priority, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`; tool access is gated per agent. Agents can also use imported Agent Skills (`SKILL.md`), which you review before they take effect, and a chat-first workspace: an isolated computer with files and a shell, reached through chat.
+Thirteen agents: research, companion, calendar, messenger, reminders, workflow, goals, loops, priority, prospecting, news, ingestion, finance. Each runs in a ReAct loop via `BaseAgent`. Agents can also use imported Agent Skills (`SKILL.md`), which you review before they take effect, and a chat-first workspace: an isolated computer with files and a shell, reached through chat.
+
+Ze asks before it does anything it cannot undo. An irreversible write waits until you approve that exact action. Reads and reversible writes run without asking. A turn shows one confirmation card for all the writes it parked, and a denied write is reported as not done.
 
 <details>
 <summary>Agent reference</summary>
@@ -87,17 +89,17 @@ Thirteen agents: research, companion, calendar, messenger, reminders, workflow, 
 |---|---|---|
 | `research` | Web search + synthesis, delegation | Autonomous |
 | `companion` | Reasoning, writing, conversation | Autonomous |
-| `calendar` | Google Calendar CRUD + availability | Read auto · writes confirm |
-| `messenger` | Cross-channel messaging (Gmail) | Read auto · draft-first |
+| `calendar` | Google Calendar CRUD + availability | Read auto · irreversible writes ask first |
+| `messenger` | Cross-channel messaging (Gmail) | Read auto · sends ask first |
 | `reminders` | NL reminders + proactive push | Autonomous |
-| `workflow` | Recurring multi-step tasks | Read auto · manage confirm |
-| `goals` | Multi-week autonomous objectives | Read auto · writes confirm |
+| `workflow` | Recurring multi-step tasks | Read auto · irreversible changes ask first |
+| `goals` | Multi-week autonomous objectives | Read auto · irreversible writes ask first |
 | `loops` | List, track, confirm, close, or drop open loops | Autonomous |
-| `priority` | Reorder what Ze treats as most important | Writes confirm |
+| `priority` | Reorder what Ze treats as most important | Irreversible writes ask first |
 | `prospecting` | Browser-sidecar research + outreach | Autonomous |
 | `news` | Personalized RSS headlines + search | Autonomous |
 | `ingestion` | URL / PDF / video / audio / text → memory | Autonomous |
-| `finance` | Portfolio, spending, recurring expenses (Trading212 + CSV) | Read auto · recurring review confirms |
+| `finance` | Portfolio, spending, recurring expenses (Trading212 + CSV) | Read auto · irreversible writes ask first |
 
 </details>
 

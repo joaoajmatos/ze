@@ -11,7 +11,10 @@ import ze_messenger.agents.messenger.tools  # noqa: F401
 
 
 def _ctx() -> AgentContext:
-    return AgentContext(session_id="s1", prompt="send it", intent="create")
+    return AgentContext(
+        session_id="s1",
+        prompt="send it",
+    )
 
 
 def _agent() -> BaseAgent:
@@ -121,13 +124,14 @@ async def test_draft_email_person_level_confirms_never_contact():
         )
         tc = await _agent().call_tool(
             "draft_email",
-            _ctx(),
+            _ctx().__class__(session_id="s1", prompt="p", loop_active=True),
             to="Bob",
             subject="hi",
             body="hello",
         )
         assert ran == []
-        assert tc.result["veto"] is True
+        assert tc.gate == "parked"
+        assert tc.parked.reason == "constraint"
     finally:
         get_tool("draft_email").func = original
         clear_hooks()

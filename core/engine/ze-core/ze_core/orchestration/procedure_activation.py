@@ -7,7 +7,7 @@ from uuid import UUID
 
 from langchain_core.runnables import RunnableConfig
 
-from ze_agents.types import AgentContext, AgentResult, GateDecision
+from ze_agents.types import AgentContext, AgentResult
 from ze_logging import get_logger
 from ze_memory.procedures.discovery import format_procedure_guidance, intersect_tools
 from ze_memory.procedures.types import (
@@ -28,26 +28,6 @@ def facts_from_memory(memory: Any) -> list[str]:
         value = getattr(fact, "value", "")
         lines.append(f"{predicate}: {value}")
     return lines
-
-
-def capability_allowed_tools(
-    gate_decision: GateDecision | None, candidate_tools: frozenset[str]
-) -> frozenset[str]:
-    if gate_decision is GateDecision.BLOCKED:
-        return frozenset()
-    if gate_decision is GateDecision.DRAFT:
-        from ze_agents.tool import get_tool
-
-        readable: set[str] = set()
-        for name in candidate_tools:
-            try:
-                spec = get_tool(name)
-            except Exception:
-                continue
-            if spec.access.value == "read":
-                readable.add(name)
-        return frozenset(readable)
-    return candidate_tools
 
 
 async def attach_procedure_matches(
@@ -97,19 +77,21 @@ async def record_guided_actions(
         invocation_id = UUID(str(invocation_raw))
     except ValueError:
         return
-    gate = getattr(ctx, "gate_decision", None)
     for index, call in enumerate(getattr(result, "tool_calls", None) or []):
         name = getattr(call, "tool_name", "") or ""
         if name == "invoke_procedure":
             continue
         success = bool(getattr(call, "success", False))
-        is_draft = bool(getattr(call, "is_draft", False))
-        error = str(getattr(call, "error", "") or "")
-        if gate is GateDecision.BLOCKED or "blocked by the capability gate" in error:
+        gate = str(getattr(call, "gate", "none") or "none")
+        if gate in ("denied", "refused", "refused_over_cap", "expired"):
             decision = CapabilityDecision.DENIED
             outcome = ProcedureActionOutcome.NOT_EXECUTED
-        elif gate is GateDecision.AWAIT_CONFIRMATION or is_draft:
+        elif gate == "parked":
             decision = CapabilityDecision.AWAITING_CONFIRMATION
+            outcome = ProcedureActionOutcome.NOT_EXECUTED
+        elif gate == "duplicate":
+            # Approved, but the one run is recorded on the call it repeats.
+            decision = CapabilityDecision.ALLOWED
             outcome = ProcedureActionOutcome.NOT_EXECUTED
         elif success:
             decision = CapabilityDecision.ALLOWED

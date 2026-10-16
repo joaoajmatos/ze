@@ -44,7 +44,10 @@ Ze will:
 1. Create a `Goal` record (title, objective, success condition, time horizon).
 2. Run `GoalPlanner` to produce milestones and verification gates.
 3. Send the plan via the native app / WebSocket with **Start goal** / **Cancel** options.
-4. On approval, set status to `ACTIVE` and begin the advance loop.
+4. On approval, set status to `ACTIVE` and begin the advance loop. Approving the plan also
+   approves the irreversible writes that each milestone names, as in
+   [workflows.md](workflows.md#irreversible-steps-in-unattended-runs). Editing a milestone
+   clears its approval.
 
 You can also manage goals conversationally:
 
@@ -58,6 +61,8 @@ You can also manage goals conversationally:
 
 `GoalAgent` handles create / inspect / steer / pause / resume / abandon. It does **not**
 execute milestones — that is `GoalExecutor`'s job.
+
+Reading goals never pauses a turn. Each write tool (`create_goal`, `steer_goal`, `pause_goal`, `resume_goal`, `abandon_goal`) asks for your confirmation before it acts. On a single-agent turn the agent runs as a read, so the question comes from the tool. In a multi-step turn, the write intents keep their per-step confirmation, so the question comes first and no sibling step runs twice.
 
 **Steering** (`steer_goal` tool) enqueues a free-text instruction that is applied before the next milestone runs: Ze re-plans the remaining milestones around the instruction and continues. Steering only works while the goal is `ACTIVE`; if the goal is `AWAITING_GATE`, resolve the gate first.
 
@@ -73,7 +78,7 @@ Ze returns a summary of active and awaiting-gate goals with milestone progress a
 
 ## Verification gates
 
-Gates are the multi-step equivalent of the per-action capability gate. Ze batches
+Gates are the multi-step check-in for a goal. They do not replace the write confirmation for an irreversible action. Ze batches
 meaningful work, then surfaces a checkpoint message:
 
 - What Ze has completed (summarized milestone outputs).
@@ -109,6 +114,11 @@ Gate placement (enforced by the planner prompt):
 - The scheduler fires `goal_advance_sweep` (every 15 minutes for all active goals).
 - You approve a gate or finish a redirect.
 - You approve the initial plan after creation.
+
+A milestone that calls an irreversible write without your approval holds the advance loop.
+You answer the hold from the notification bell, the REST API or the chat. A hold that
+nobody answers within 24 hours counts as a deny. See
+[workflows.md](workflows.md#irreversible-steps-in-unattended-runs).
 
 ![Flowchart showing a goal advancing: if not active it returns, if a gate is due it fires the gate and awaits confirmation, otherwise it runs the milestone, stores output and learning, and checks for more milestones, looping back or marking the goal complete](diagrams/docs/goal-milestone-loop.svg)
 
@@ -212,7 +222,7 @@ goals
   retrospective_text, last_stuck_alert_at, ...
 
 goal_milestones
-  id, goal_id, sequence, title, description, intent, agent_hint,
+  id, goal_id, sequence, title, description, agent_hint,
   status, output, reuse_hint, completed_at, ...
 
 goal_gates
@@ -244,8 +254,8 @@ The planner sets `reuse_hint` on milestones when a prior goal's output may be re
 
 ## Configuration
 
-The `@agent` class in `ze_automation/agents/goals/agent.py` declares goal capabilities.
-Intent capabilities default to `confirm` for create, update, and delete; read is autonomous.
+The `@agent` class in `ze_automation/agents/goals/agent.py` declares the goal tools.
+An irreversible write asks first by default, and a read runs without asking.
 
 `ze_automation/bootstrap.py` fixes the advance sweep cron (`*/15 * * * *`, job id
 `goal_advance_sweep`). Proactive job crons are configurable via `proactive.*` in

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-from ze_agents.types import AgentContext, AgentResult, GateDecision, ToolCall
+from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_core.conversation.messages.types import ProcedureUsageTrace
 from ze_core.orchestration.nodes.trace import record_trace
 from ze_core.orchestration.procedure_activation import (
@@ -27,8 +27,6 @@ async def test_blocked_gate_records_not_executed_action_link() -> None:
     ctx = AgentContext(
         session_id="s1",
         prompt="clear inbox",
-        intent="execute",
-        gate_decision=GateDecision.BLOCKED,
         procedure_invocation_id=str(invocation_id),
         procedure_invoked_id=str(uuid4()),
         procedure_invoked_version_id=str(uuid4()),
@@ -43,7 +41,8 @@ async def test_blocked_gate_records_not_executed_action_link() -> None:
                 result=None,
                 duration_ms=0,
                 success=False,
-                error="Tool 'search_email' is blocked by the capability gate",
+                error="refused",
+                gate="denied",
             )
         ],
     )
@@ -61,7 +60,6 @@ async def test_complete_is_forwarded_once() -> None:
     ctx = AgentContext(
         session_id="s1",
         prompt="clear inbox",
-        intent="execute",
         procedure_invocation_id=str(invocation_id),
     )
     result = AgentResult(
@@ -100,7 +98,6 @@ async def test_record_trace_includes_procedure_usage() -> None:
         "agent_context": AgentContext(
             session_id="s1",
             prompt="hi",
-            intent="read",
             procedure_invocation_id=str(invocation_id),
             procedure_invoked_id=str(procedure_id),
             procedure_invoked_version_id=str(version_id),
@@ -112,3 +109,34 @@ async def test_record_trace_includes_procedure_usage() -> None:
         procedure_id=str(procedure_id),
         version_id=str(version_id),
     )
+
+
+async def test_a_duplicate_call_is_allowed_but_not_executed_here() -> None:
+    activator = SimpleNamespace(record_action=AsyncMock(), complete=AsyncMock())
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="cancel it",
+        procedure_invocation_id=str(uuid4()),
+        procedure_invoked_id=str(uuid4()),
+        procedure_invoked_version_id=str(uuid4()),
+    )
+    result = AgentResult(
+        agent="reminders",
+        response="done",
+        tool_calls=[
+            ToolCall(
+                tool_name="cancel_reminder",
+                args={},
+                result="approved once; not repeated",
+                duration_ms=0,
+                success=True,
+                gate="duplicate",
+            )
+        ],
+    )
+    await record_guided_actions(
+        ctx, result, {"configurable": {"procedure_activator": activator}}
+    )
+    kwargs = activator.record_action.await_args.kwargs
+    assert kwargs["capability_decision"] is CapabilityDecision.ALLOWED
+    assert kwargs["outcome"] is ProcedureActionOutcome.NOT_EXECUTED

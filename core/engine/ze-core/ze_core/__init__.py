@@ -1,6 +1,5 @@
 """Ze Core — convention-based agent framework."""
 
-from ze_agents.types import Mode
 import ze_agents.defaults as defaults
 from ze_communication.channel import Channel
 from ze_communication.registry import ChannelRegistry
@@ -45,7 +44,6 @@ from ze_agents.settings import Settings
 
 __all__ = [
     "defaults",
-    "Mode",
     "Action",
     "InputPreprocessor",
     "Notification",

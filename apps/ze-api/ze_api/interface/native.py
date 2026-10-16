@@ -15,6 +15,7 @@ from ze_agents.interface.types import (
     Notification,
     OutboundMessage,
 )
+from ze_api.api.websocket.frames import build_prompt_frame
 from ze_core.conversation.messages import Message
 from ze_logging import get_logger
 
@@ -89,11 +90,16 @@ class NativeAppInterface:
         connection_manager: ConnectionManager,
         notifier: PushNotifier | None,
         quiet_now: Callable[[], Awaitable[bool]] | None = None,
+        confirm_frame_for: Callable[[Notification], Awaitable[dict | None]]
+        | None = None,
     ) -> None:
         self._store = message_store
         self._conn = connection_manager
         self._notifier = notifier
         self._quiet_now = quiet_now
+        # A push that stands for an open confirmation (a held write) also sends
+        # its card, the same frame the on-connect replay sends.
+        self._confirm_frame_for = confirm_frame_for
 
     async def _is_quiet(self) -> bool:
         if self._quiet_now is None:
@@ -113,6 +119,17 @@ class NativeAppInterface:
         if notification.delivery in {"held", "suppressed"}:
             if notification.event_type is not None:
                 await self._send_notification_frame(notification)
+            return
+        if not notification.in_chat:
+            await self._ntfy(
+                notification.content,
+                _NTFY_PRIORITY_MAP.get(notification.urgency, 3),
+                buzz=notification.buzz,
+                respect_quiet=False,
+            )
+            if notification.event_type is not None:
+                await self._send_notification_frame(notification)
+            await self._send_confirm_card(notification)
             return
         await self._send_message(
             notification.content,
@@ -207,6 +224,12 @@ class NativeAppInterface:
         except Exception as exc:
             log.warning("native_interface_push_failed", error=str(exc))
 
+        await self._ntfy(text, ntfy_priority, buzz=buzz, respect_quiet=respect_quiet)
+        return True
+
+    async def _ntfy(
+        self, text: str, priority: int, *, buzz: bool, respect_quiet: bool
+    ) -> None:
         # Only push via ntfy when the WebSocket is not connected — the client is
         # receiving frames in real-time when connected, so a push notification
         # would be redundant noise.
@@ -220,15 +243,10 @@ class NativeAppInterface:
 
             try:
                 await self._notifier.push(
-                    PushNotification(
-                        title="Ze",
-                        body=text[:200],
-                        priority=ntfy_priority,
-                    )
+                    PushNotification(title="Ze", body=text[:200], priority=priority)
                 )
             except Exception as exc:
                 log.warning("native_interface_ntfy_failed", error=str(exc))
-        return True
 
     async def send_with_thread(
         self,
@@ -257,14 +275,13 @@ class NativeAppInterface:
 
     async def send_confirmation(self, request: ConfirmationRequest) -> None:
         """Deliver a confirmation UI frame over WebSocket (and ntfy if backgrounded)."""
-        actions = _confirmation_actions(request.options)
         await self._conn.send_frame(
-            {
-                "type": "confirm_request",
-                "id": str(uuid4()),
-                "prompt": request.content,
-                "actions": actions,
-            }
+            build_prompt_frame(
+                request_id=str(uuid4()),
+                thread_id=None,
+                title=request.content,
+                actions=_confirmation_actions(request.options),
+            )
         )
 
         if (
@@ -285,6 +302,16 @@ class NativeAppInterface:
                 )
             except Exception as exc:
                 log.warning("native_interface_confirmation_ntfy_failed", error=str(exc))
+
+    async def _send_confirm_card(self, notification: Notification) -> None:
+        if self._confirm_frame_for is None:
+            return
+        try:
+            frame = await self._confirm_frame_for(notification)
+            if frame is not None:
+                await self._conn.send_frame(frame)
+        except Exception as exc:
+            log.warning("native_interface_confirm_card_failed", error=str(exc))
 
     async def _send_notification_frame(self, notification: Notification) -> None:
         try:
@@ -316,14 +343,12 @@ class NativeAppInterface:
             else notification.content
         )
         await self._conn.send_frame(
-            {
-                "type": "confirm_request",
-                "id": str(uuid4()),
-                "prompt": prompt,
-                "actions": [
-                    _action_to_frame(action) for action in notification.actions
-                ],
-            }
+            build_prompt_frame(
+                request_id=str(uuid4()),
+                thread_id=None,
+                title=prompt,
+                actions=[_action_to_frame(action) for action in notification.actions],
+            )
         )
 
 

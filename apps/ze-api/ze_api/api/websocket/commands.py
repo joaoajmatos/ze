@@ -12,25 +12,6 @@ from ze_logging import get_logger
 log = get_logger(__name__)
 
 
-def build_capabilities_summary() -> str:
-    from ze_agents.registry import get_registered_agents
-
-    agents = get_registered_agents()
-    lines: list[str] = ["Here's what I can help you with:\n"]
-    for cls in sorted(
-        agents.values(), key=lambda c: getattr(c, "display_name", "") or c.name
-    ):
-        if not getattr(cls, "enabled", True):
-            continue
-        label = getattr(cls, "display_name", "") or cls.name.capitalize()
-        raw = getattr(cls, "description", "").strip()
-        summary = raw.splitlines()[0].strip() if raw else ""
-        lines.append(f"**{label}** — {summary}")
-
-    lines.append("\nJust ask — I'll figure out what to use.")
-    return "\n".join(lines)
-
-
 def _drop_thread_pendings(
     pending_configs: dict[str, dict],
     thread_pending_requests: dict[str, set[str]],
@@ -151,19 +132,6 @@ async def handle_command(
                 {"type": "error", "detail": "Could not reset state."},
                 data.get("thread_id") or None,
             )
-        return
-
-    if name == "capabilities":
-        try:
-            summary = build_capabilities_summary()
-            await conn_mgr.send_frame(
-                {
-                    "type": "message",
-                    "message": ephemeral_assistant_message(summary),
-                }
-            )
-        except Exception as exc:
-            log.warning("ws_capabilities_command_failed", error=str(exc))
         return
 
     log.warning("ws_unknown_command", name=name)

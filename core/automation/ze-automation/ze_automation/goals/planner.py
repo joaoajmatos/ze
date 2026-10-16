@@ -25,6 +25,7 @@ from ze_automation.goals.types import (
     VerificationGate,
 )
 from ze_logging import get_logger
+from ze_automation.holds.planned import PlanMemo, plan_system_prompt
 
 log = get_logger(__name__)
 
@@ -40,8 +41,8 @@ Output ONLY a JSON object with two keys — no explanation, no markdown:
     {
       "title": "Short action title",
       "description": "Detailed task instruction for the agent",
-      "agent_hint": "research | companion | null",
-      "intent": "read | create | update | delete | execute | reason",
+      "agent_hint": "{agent_names} | null",
+      "planned_writes": [],
       "sequence": 1,
       "reuse_hint": ""
     }
@@ -53,6 +54,10 @@ Output ONLY a JSON object with two keys — no explanation, no markdown:
     }
   ]
 }
+
+"planned_writes" names the tools from this list the milestone will call; use [] when it only
+reads or reasons, and name a tool only if the milestone needs it. Tools by agent:
+{agent_writes}
 
 Gate placement rules (apply ALL of them):
 - Always place a gate before the first outreach or communication milestone.
@@ -253,7 +258,9 @@ def _parse_plan(
                 description=item["description"],
                 sequence=item["sequence"],
                 agent_hint=item.get("agent_hint"),
-                intent=item.get("intent", "execute"),
+                planned_writes=[
+                    w for w in item.get("planned_writes") or [] if isinstance(w, str)
+                ],
                 status=MilestoneStatus.PENDING,
                 reuse_hint=(item.get("reuse_hint") or "")[:300],
             )
@@ -289,6 +296,7 @@ class GoalPlanner:
         self._memory = memory_store
         self._embedder = embedder
         self._discovery = procedure_discovery
+        self.plan_memo = PlanMemo()
 
     async def plan(
         self,
@@ -332,7 +340,7 @@ class GoalPlanner:
         raw = await self._client.complete(
             messages=[{"role": "user", "content": prompt}],
             model=self._model,
-            system=_PLAN_SYSTEM,
+            system=plan_system_prompt(_PLAN_SYSTEM),
             max_tokens=_PLAN_MAX_TOKENS,
         )
 
@@ -393,7 +401,7 @@ class GoalPlanner:
         raw = await self._client.complete(
             messages=[{"role": "user", "content": prompt}],
             model=self._model,
-            system=_PLAN_SYSTEM,
+            system=plan_system_prompt(_PLAN_SYSTEM),
             max_tokens=_PLAN_MAX_TOKENS,
         )
 
