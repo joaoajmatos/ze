@@ -75,4 +75,4 @@
   tags: [prospecting, tool_schema]
   criteria:
     - Should call add_prospect with the person's company and role filled in
-    - Should not invent a campaign id in its reply
+    - The add_prospect call arguments should not include campaign_id (Ze supplies it)

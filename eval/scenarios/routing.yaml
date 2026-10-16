@@ -73,9 +73,10 @@
 
 - id: routing_news_tags
   prompt: "Show me today's AI headlines."
-  description: News tag filter — get_headlines or search_news must receive tags
+  description: News tag filter — get_headlines must receive tags
   expected_agent: news
+  expected_tools: [get_headlines]
   tags: [routing, news, tool_schema]
   criteria:
     - Should route to the news agent
-    - Should filter by an AI tag (tags on get_headlines or search_news), not list every headline
+    - Should call get_headlines with an AI tag in tags, not list every headline
