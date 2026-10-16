@@ -35,7 +35,7 @@ Evaluated in order; the first matching row wins. No request is made unless the l
 
 ## State (`build_tier_state`)
 
-Named fields, each capped, omitted when empty (research R3): `task`, `conversation`, `recap`, `memory`, `focus`, `skill`, `agent`. Nothing else. Total under ~8 kB.
+Named fields, each capped, omitted when empty (research R3): `task`, `conversation`, `recap`, `memory`, `focus`, `skill`. Nothing else; no agent description or tool list (FR-006, amended 2026-10-16). Total under ~8 kB.
 
 ## Effects
 

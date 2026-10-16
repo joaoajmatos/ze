@@ -40,6 +40,13 @@ The user pinned the flag, the hard cut and the "task at hand" requirement before
 - Q: Flag, coverage and trace? → A: **(user)** Own surface `system_one.surfaces.complexity` (`enabled: false`, `simple_max: null`); `complexity_lookup_max` deleted. Single-agent turns only; compound and conductor turns keep the full model with no request; delegated specialists unchanged. `MessageTrace.tier` plus the judgment row and one line in the web Routing section.
 - Note: shipping off moves the 7.5% of tiered turns the regex sent to Haiku (21 of 279 in dev) onto the full model until the surface is enabled. Accepted with the scope.
 
+### Session 2026-10-16 (tuning, before the freeze)
+
+Decided by the Spec Architect (Corbel) on the ENG lead's (Purlin) tuned-set evidence. Relayed to the user through the Maestro; the held-out verdict run (T031) waits for the Maestro's go.
+
+- Q: Keep the `agent` field in the tier state? → A: **Dropped (amends FR-006).** Tuned set, 94 rows (47 EN, 47 PT), same instructions, zero false downgrades in every variant; the margin between the lowest `full` Noul and the light rows decides. A (routing criteria, 600 cap): lowest full ~0.31–0.36, light outlier 0.34–0.36, so the classes nearly touch. B (tool names first 250 + description 349): lowest full 0.42, light outlier 0.43, so they overlap. C (no agent field): lowest full 0.60, highest light 0.45, next 0.38, a clear gap. Run-to-run noise is about 0.02. The field describes the agent's scope, not the task's difficulty, and added noise. The task's likely tools and steps are still judged from the task itself: the instruction asks about synthesis, planning and dependent steps, and the conversation, memory, focus and skill fields stay.
+- Q: Which bar is frozen, given that FR-017's "highest step below the lowest full row" gives 0.55, only 0.05 under 0.60? → A: **0.40 (amends FR-017).** The binding clause of the acceptance rule is zero false downgrades on unseen rows; light-model recall only needs 0.5. On the frozen-state run (run 5) the lowest tuned `full` Noul is 0.56 (0.60 on run 4 with the same state, so single-row noise reaches about 0.04) and the highest light row is 0.44. At 0.40 the bar sits 0.16 under the lowest `full` row and tuned light-model recall is 22/23 or better per language. The literal rule's 0.55 and the ENG lead's alternative 0.45 (margin 0.11) were rejected: each trades the harm margin for at most one more tuned light row.
+
 ---
 
 ## User Scenarios & Testing *(mandatory)*
@@ -67,7 +74,7 @@ After a ten-message exchange in which the user and companion draft a plan to res
 
 **Why this priority**: This is the user's pinned requirement. Judging four words alone is exactly what fails today.
 
-**Independent Test**: With a fake System One client that records the state it is sent, run the tier step on a fixture conversation. Assert the state carries the conversation turns, the recap or session summary, the retrieved memory items, the active workflow or goal in focus, the matched skill and the routed agent's description and tool names, each capped; and that the instruction asks about the task the user is trying to get done.
+**Independent Test**: With a fake System One client that records the state it is sent, run the tier step on a fixture conversation. Assert the state carries the conversation turns, the recap or session summary, the retrieved memory items, the active workflow or goal in focus, and the matched skill, each capped, and no agent description or tool list; and that the instruction asks about the task the user is trying to get done.
 
 **Acceptance Scenarios**:
 
@@ -137,7 +144,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 
 **Acceptance Scenarios**:
 
-1. **Given** the tuned set, **When** the bar is suggested, **Then** it is the highest Noul value that downgrades no tuned row gold-labelled `full`, or none when the levels overlap.
+1. **Given** the tuned set, **When** the bar is suggested, **Then** it follows FR-017: no tuned `full` row judged light, at least 0.15 under the lowest tuned `full` Noul, and tuned light-model recall of at least 0.8 per language; or none when no such bar exists.
 2. **Given** the frozen bar, **When** the held-out set is scored once, **Then** the report prints, per language, false downgrades, light-model recall, precision, latency p50/p90, and the verdict.
 3. **Given** KEEP OFF, **When** the phase closes, **Then** the config keeps `enabled: false` with a dated comment and the figures, and the docs say "calibrated, not enabled".
 
@@ -169,7 +176,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 **Task at hand (user-pinned)**
 
 - **FR-005**: The tier MUST be judged on the task the user is trying to get done, not on the latest message alone. The judgment MUST run after the turn's context is gathered (after `fetch_context` and `match_skills`) and before `capability_check`.
-- **FR-006**: The judgment state MUST carry these named fields, each capped, absent when empty: the user's message (`task`); the recent conversation, wider than the routing hint (`conversation`); the resume recap or session summary when the session resumed (`recap`); the top retrieved memory items (`memory`); the active goal, workflow or invoked procedure in focus (`focus`); the matched skill's name and description (`skill`); the routed agent's description and tool names (`agent`). It MUST NOT carry full transcripts, memory bodies beyond the caps, skill bodies, or database rows (pinned rule 6).
+- **FR-006**: The judgment state MUST carry these named fields, each capped, absent when empty: the user's message (`task`); the recent conversation, wider than the routing hint (`conversation`); the resume recap or session summary when the session resumed (`recap`); the top retrieved memory items (`memory`); the active goal, workflow or invoked procedure in focus (`focus`); the matched skill's name and description (`skill`). It MUST NOT carry an agent description or tool list (amended 2026-10-16: the `agent` field added noise on the tuned set), full transcripts, memory bodies beyond the caps, skill bodies, or database rows (pinned rule 6).
 - **FR-007**: The question instruction MUST tell the model to judge the task the user is trying to get done and to use the conversation and context to resolve what "it", "that plan", "go ahead" or "the other one" refers to. It MUST NOT carry the routing instruction "history and context are background only".
 
 **Question shape**
@@ -192,7 +199,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 **Calibration and acceptance**
 
 - **FR-016**: The surface MAY be enabled only when, on the held-out set, for English and for Portuguese separately, at the frozen `simple_max`: (a) zero false downgrades (rows gold-labelled `full` judged light); (b) light-model recall of at least 0.5 (at least half the rows gold-labelled `simple` judged light); (c) skipped or invalid rows at most 10% of the language's rows. Otherwise the verdict is KEEP OFF. Precision, latency p50/p90 and per-agent counts are reported, not gating.
-- **FR-017**: The bar MUST be chosen on the tuned set only: the highest Noul value at which no tuned `full` row is judged light, or none when the classes overlap so that no such bar gives any light-model recall. The bar MUST be frozen (written into the spec's research notes with the date) before the held-out run.
+- **FR-017** (amended 2026-10-16): The bar MUST be chosen on the tuned set only. It MUST judge no tuned `full` row light, sit at least 0.15 below the lowest tuned `full` Noul, and keep tuned light-model recall at or above 0.8 per language; among such bars, prefer the larger margin. If no bar meets all three, there is none and the surface stays off. The frozen value, both margins and the run-to-run noise MUST be recorded. (Originally: the highest Noul value at which no tuned `full` row is judged light.) The bar MUST be frozen (written into the spec's research notes with the date) before the held-out run.
 - **FR-018**: The tuned set and the held-out set MUST be separate files of multi-turn rows. Each row MUST carry the routed agent, a conversation (zero or more prior turns), optional recap, memory, focus and skill fixtures, the user's message, the gold tier and a one-line reason. Each set MUST cover EN and PT equally, all three tiered agents, both tiers, and anaphoric follow-ups in both directions ("ok go ahead with that plan" after a planning exchange → `full`; "ok thanks" or "and the other one?" after a lookup → `simple`).
 - **FR-019**: The held-out set MUST be written by an author who has not seen the tuned set or the bar, from a written brief ([contracts/holdout-brief.md](./contracts/holdout-brief.md)), and committed before any live run. It MUST be scored once for the verdict; after that it is spent for this bar.
 - **FR-020**: Enabling the surface MUST be a separate commit that sets `enabled: true` and the bar with a dated comment quoting the held-out figures. It MUST NOT be part of the implementation commits.

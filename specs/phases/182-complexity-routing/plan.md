@@ -6,7 +6,7 @@
 
 ## Summary
 
-Routing keeps choosing the agent and now always assigns the agent's **full** model. A new graph node, `choose_tier`, runs after `match_skills` and before `capability_check`. For a single-agent turn whose agent declares a distinct `model_simple`, it builds a capped task state (task, conversation, recap, memory, focus, skill, agent), asks System One one Noul (`needs_deep_reasoning`, one attempt), and swaps in `model_simple` only when the answer is at or below `simple_max`. Every other outcome keeps the full model. The surface `system_one.surfaces.complexity` ships off with a null bar.
+Routing keeps choosing the agent and now always assigns the agent's **full** model. A new graph node, `choose_tier`, runs after `match_skills` and before `capability_check`. For a single-agent turn whose agent declares a distinct `model_simple`, it builds a capped task state (task, conversation, recap, memory, focus, skill; the agent field was dropped in tuning, spec FR-006 amended 2026-10-16), asks System One one Noul (`needs_deep_reasoning`, one attempt), and swaps in `model_simple` only when the answer is at or below `simple_max`. Every other outcome keeps the full model. The surface `system_one.surfaces.complexity` ships off with a null bar.
 
 Hard cuts in the same change: the regex `ComplexityEstimator`, the routing Score question and `complexity_lookup_max`, `RoutingEnvelope.complexity` / `complexity_source`, `EmbeddingRouter._resolve_model(agent, complexity)`, the `gold_complexity` field of the routing calibration sets, and the `routing_log.complexity` / `model_selected` columns.
 
