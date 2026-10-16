@@ -10,7 +10,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from ze_agents.system_one import SystemOneAnswer, SystemOneQuestion
+from ze_agents.system_one import (
+    SystemOneAnswer,
+    SystemOneQuestion,
+    valid_choice,
+    valid_noul,
+)
 
 from ze_memory.extractor import PredicateFamily, admit_family
 
@@ -74,26 +79,13 @@ _FAMILY = frozenset({"family"})
 _BOTH = frozenset({"family", "biography"})
 
 
-def _valid_choice(answer: SystemOneAnswer | None) -> bool:
-    return (
-        answer is not None
-        and answer.type == "choice"
-        and answer.choice is not None
-        and answer.confidence is not None
-    )
-
-
-def _valid_noul(answer: SystemOneAnswer | None) -> bool:
-    return answer is not None and answer.type == "noul" and answer.noul is not None
-
-
 def decide_fact(
     family: SystemOneAnswer | None,
     biography: SystemOneAnswer | None,
     bars: FactBars,
 ) -> AdmissionDecision:
     """Pure fact decision once the commitment Choice has said `fact` (163 rules 7-9)."""
-    if not (_valid_choice(family) and _valid_noul(biography)):
+    if not (valid_choice(family) and valid_noul(biography, unit_range=False)):
         return AdmissionDecision("skip", "invalid_answer")
     kept = admit_family(family.choice)
     if kept is None:

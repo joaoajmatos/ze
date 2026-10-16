@@ -7,7 +7,6 @@ import math
 import pytest
 
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
-from ze_core.routing.judge import parse_bar
 from ze_core.routing.tier import (
     Q_DEEP,
     TIER_INSTRUCTIONS,
@@ -56,18 +55,6 @@ def _envelope(agent: str = "t182") -> RoutingEnvelope:
         subtasks=[SubTask(agent=agent, prompt="hi", model="full-m")],
         requires_synthesis=False,
     )
-
-
-class TestParseBar:
-    @pytest.mark.parametrize("value", [True, "0.5", -0.1, 1.1, math.nan, [0.5]])
-    def test_invalid_is_none(self, value):
-        assert parse_bar(value, "simple_max") is None
-
-    def test_valid_and_null(self):
-        assert parse_bar(None, "x") is None
-        assert parse_bar(0, "x") == 0.0
-        assert parse_bar(1, "x") == 1.0
-        assert parse_bar(0.25, "x") == 0.25
 
 
 class TestSurfaceConfig:

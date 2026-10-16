@@ -6,6 +6,7 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 
 from ze_core.routing.judge import (
     HISTORY_CAP,
@@ -311,6 +312,12 @@ class TestDecideMultiSpecialistAndScore:
 
     def test_noul_missing_is_trust_and_unconsumed(self):
         d = decide(ok_result(choice="calendar", noul=None), _CAL, _SHORT)
+        assert d.kind == "trust"
+        assert d.consumed == frozenset({"agent"})
+
+    @pytest.mark.parametrize("noul", [True, False])
+    def test_bool_noul_is_not_a_probability(self, noul):
+        d = decide(ok_result(choice="calendar", noul=noul), _CAL, _SHORT)
         assert d.kind == "trust"
         assert d.consumed == frozenset({"agent"})
 
