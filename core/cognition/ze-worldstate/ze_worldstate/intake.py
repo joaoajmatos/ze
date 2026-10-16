@@ -107,6 +107,8 @@ class CommitmentIntake:
         """Never raises; any failure is a fallback admission."""
         calls = tool_calls or []
         tracked = tracking_earned(calls)
+        created = turn_creation(calls)
+        suppress_loop = tracked or bool(created.reminder_id or created.goal_id)
         source = self._source(configurable)
         if not prompt.strip() or is_trivial_turn(prompt):
             return IntakeAdmission(
@@ -132,7 +134,7 @@ class CommitmentIntake:
                 response,
                 agent,
                 source,
-                tracked,
+                suppress_loop,
                 skip_reason,
                 None,
             )
@@ -144,10 +146,16 @@ class CommitmentIntake:
         except Exception as exc:
             log.warning("commitment_intake_call_failed", error=str(exc))
             return await self._fallback(
-                configurable, prompt, response, agent, source, tracked, "error", None
+                configurable,
+                prompt,
+                response,
+                agent,
+                source,
+                suppress_loop,
+                "error",
+                None,
             )
 
-        created = turn_creation(calls)
         outcome = decide(result, cfg, created, tracked)
         self._log(outcome, result, created)
         if outcome.kind == "fallback":
@@ -159,7 +167,7 @@ class CommitmentIntake:
                 response,
                 agent,
                 source,
-                tracked,
+                suppress_loop,
                 outcome.reason,
                 result,
                 outcome=outcome,
@@ -193,7 +201,7 @@ class CommitmentIntake:
         response: str,
         agent: str,
         source: SourceKey | None,
-        tracked: bool,
+        suppress_loop: bool,
         reason: str,
         result: SystemOneResult | None,
         *,
@@ -203,7 +211,7 @@ class CommitmentIntake:
         fact = await self._haiku_facts(configurable, prompt, response, agent)
         fact.skip_reason = reason
         loop = None
-        if not tracked:
+        if not suppress_loop:
             loop = self._loop_admission(
                 prompt,
                 LoopGateDecision("fallback", reason),

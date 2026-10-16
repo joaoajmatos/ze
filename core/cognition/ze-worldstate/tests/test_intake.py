@@ -135,6 +135,10 @@ def _tc(name, result, success=True):
     )
 
 
+_REMINDER = [_tc("set_reminder", {"id": str(uuid4()), "label": "call Ana"})]
+_GOAL = [_tc("create_goal", {"id": str(uuid4()), "title": "MVP"})]
+
+
 # ── one request (US7) ────────────────────────────────────────────────────────
 
 
@@ -239,6 +243,16 @@ async def test_fallback_skips_loop_gate_when_track_loop_succeeded():
     adm = await _admit(intake, llm, tool_calls=[_tc("track_loop", {"ok": True})])
     assert adm.loop is None
     assert adm.fact is not None
+
+
+@pytest.mark.parametrize("calls", [_REMINDER, _GOAL], ids=["reminder", "goal"])
+async def test_fallback_skips_loop_gate_when_turn_created_reminder_or_goal(calls):
+    intake, loop_store, llm = _build(FakeSystemOne(exc=RuntimeError("down")))
+    adm = await _admit(intake, llm, tool_calls=calls)
+    assert adm.loop is None
+    assert adm.fact is not None
+    loop_store.create.assert_not_called()
+    assert not any("relevance gate" in s for s in llm.calls)
 
 
 async def test_fact_fallback_error_never_raises(monkeypatch):
@@ -365,9 +379,6 @@ async def test_non_fact_choices_write_nothing(choice):
 
 
 # ── turn-created reminder or goal (US1-US3) ──────────────────────────────────
-
-_REMINDER = [_tc("set_reminder", {"id": str(uuid4()), "label": "call Ana"})]
-_GOAL = [_tc("create_goal", {"id": str(uuid4()), "title": "MVP"})]
 
 
 @pytest.mark.parametrize("choice", ["reminder", "loop", "goal", "fact"])
