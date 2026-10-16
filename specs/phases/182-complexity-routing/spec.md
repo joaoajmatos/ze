@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-16
 
-**Status**: Ready to implement (scope signed off by the user 2026-10-16); surface ships off
+**Status**: Implemented (surface enabled). Scope signed off by the user 2026-10-16; held-out ENABLE for EN and PT at `simple_max` 0.40; enabled in a separate commit with the user's go-ahead
 
 **Input**: User description (via the Maestro): "Complexity only picks the model tier for agents with `model_simple` (companion, research, goals: Sonnet 4.5 vs Haiku 4.5). The decider is the English-only regex `ComplexityEstimator`, biased to 'complex'. System One already asks a graded complexity Score on every routing call, but it did not calibrate (167: 0.16/0.17 per set, 0.02 combined). There is no way to turn tiering off. Pinned: (1) a feature flag that ships off, so every agent uses its full model, turned on in a separate commit only after a held-out ENABLE in EN and PT; (2) hard-cut the regex estimator, System One decides, and off/skip/invalid/uncalibrated means the full model; (3) spec now, build after the user signs off." Added mid-spec as a core requirement: "Complexity must NOT be judged from the latest message alone. The judge has to understand the task at hand: what the user is actually trying to get done, which may span earlier turns, retrieved memory, an active goal or workflow, a matched skill, or what the task will likely involve."
 
@@ -24,7 +24,7 @@ Three agents declare a lighter `model_simple`: companion, research and goals. Fo
 
 The decision is also made in the wrong place. It runs inside routing, before Ze has retrieved memory, built the resume recap, matched a skill or looked at the active workflow. The only context it sees is the last four messages, 240 characters each, and its instruction says "judge the user's words; history is background only". That cannot tell "ok do it" after a long planning exchange from "ok thanks".
 
-This phase replaces the regex with one System One judgment that runs **after** Ze has gathered the turn's context, asks about **the task the user is trying to get done**, and can only ever downgrade a turn to the light model when it is confident the light model is enough. Everything else runs on the full model. The surface ships off; with it off, every agent always runs its full model.
+This phase replaces the regex with one System One judgment that runs **after** Ze has gathered the turn's context, asks about **the task the user is trying to get done**, and can only ever downgrade a turn to the light model when it is confident the light model is enough. Everything else runs on the full model. The implementation commits ship the surface off, and with it off every agent always runs its full model. A separate commit enables it only after a held-out ENABLE in English and Portuguese; that happened on 2026-10-16 at `simple_max` 0.40.
 
 ## Clarifications
 
@@ -57,11 +57,11 @@ Decided by the Spec Architect (Corbel) on the ENG lead's (Purlin) tuned-set evid
 
 ### User Story 1 - With the flag off, every agent runs its full model (Priority: P1)
 
-The phase lands with the surface off. Every turn routed to companion, research or goals runs Sonnet 4.5, whatever the prompt length or language. No System One request is made for the tier, and the trace says the tier came from the flag being off.
+The implementation commits land with the surface off (FR-001, FR-020), and turning it off again restores this state. Every turn routed to companion, research or goals runs Sonnet 4.5, whatever the prompt length or language. No System One request is made for the tier, and the trace says the tier came from the flag being off.
 
-**Why this priority**: This is the shipped state (pinned decision 1) and the fail-safe for every other path. It also deletes the regex.
+**Why this priority**: This is the state until a held-out ENABLE (pinned decision 1) and the fail-safe for every other path. It also deletes the regex.
 
-**Independent Test**: With the shipped config, route a short English lookup ("what is DNS"), a short Portuguese one and a long analysis prompt to research and to companion through the graph with a call-counting fake System One client. Every subtask model is the agent's full model, the tier client is never called, and the trace shows tier `full`, decided by `off`.
+**Independent Test**: With `system_one.surfaces.complexity.enabled: false`, route a short English lookup ("what is DNS"), a short Portuguese one and a long analysis prompt to research and to companion through the graph with a call-counting fake System One client. Every subtask model is the agent's full model, the tier client is never called, and the trace shows tier `full`, decided by `off`.
 
 **Acceptance Scenarios**:
 
@@ -172,7 +172,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 
 **Flag and fail-safe**
 
-- **FR-001**: The tier MUST be controlled by a surface `system_one.surfaces.complexity` with `enabled` (bool) and `simple_max` (number in [0, 1] or null). It MUST ship `enabled: false`, `simple_max: null`.
+- **FR-001**: The tier MUST be controlled by a surface `system_one.surfaces.complexity` with `enabled` (bool) and `simple_max` (number in [0, 1] or null). The implementation commits MUST ship `enabled: false`, `simple_max: null`; only the separate enable commit of FR-020 may change them.
 - **FR-002**: When the surface is off, uncalibrated (`simple_max` null), the global System One switch is off, or no client is injected, every subtask MUST run its agent's full model and no tier request MUST be made.
 - **FR-003**: When a tier request is made and the client skips, times out, raises, or returns a missing or malformed answer, the subtask MUST run the full model. The tier MUST never be the light model unless a valid judgment at or below the bar says so.
 - **FR-004**: The regex `ComplexityEstimator`, its tests and every call to it MUST be deleted. No code path MAY fall back to it.
@@ -221,7 +221,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 
 ### Measurable Outcomes
 
-- **SC-001**: With the shipped config, 100% of turns run their agent's full model and 0 tier requests are made.
+- **SC-001**: With the surface off or uncalibrated, 100% of turns run their agent's full model and 0 tier requests are made. With it on, the light model is used only within the held-out acceptance of SC-007.
 - **SC-002**: No code path picks a model tier from the message text alone; the regex classifier is gone.
 - **SC-003**: For a planning exchange followed by "ok go ahead with that plan" (EN and PT), the tier judgment receives the earlier turns that define the plan.
 - **SC-004**: Every skip, timeout, error or malformed answer results in the full model (0 exceptions in unit fixtures).
