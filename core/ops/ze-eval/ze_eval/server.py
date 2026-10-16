@@ -180,11 +180,15 @@ async def ze_run_scenario(scenario_id: str) -> str:
 
     You (the evaluator) should read the criteria and judge whether Ze's response passes.
     """
-    from ze_eval.scenario import load_scenario_by_id
+    from ze_eval.scenario import is_runnable, load_scenario_by_id
 
     scenario = load_scenario_by_id(scenario_id)
     if scenario is None:
         return json.dumps({"error": f"Scenario '{scenario_id}' not found"})
+    if not is_runnable(scenario):
+        return json.dumps(
+            {"error": f"Scenario '{scenario_id}' is sandbox-only; set ZE_EVAL_SANDBOX=1"}
+        )
 
     result = await _run_scenario_turns(scenario, f"eval-{scenario_id}")
 
@@ -220,7 +224,9 @@ async def ze_run_suite(tag: str = "") -> str:
     Available tags: companion, routing, persona, research, reminders, memory,
     edge_case, multi_turn, emotional, safety, compound, graceful_degradation.
     """
-    scenarios = load_scenarios(tag=tag)
+    from ze_eval.scenario import is_runnable
+
+    scenarios = [s for s in load_scenarios(tag=tag) if is_runnable(s)]
 
     results = []
     for scenario in scenarios:

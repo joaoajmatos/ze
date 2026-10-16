@@ -43,3 +43,41 @@ def test_write_confirmation_scenarios_never_approve_a_send() -> None:
         sends_mail = "send_email" in text or "email" in s.get("description", "").lower()
         approves = any(t.get("confirm") == "approve" for t in s.get("turns") or [])
         assert not (sends_mail and approves), s["id"]
+
+
+def test_sandbox_scenarios_run_only_with_the_explicit_flag(monkeypatch) -> None:
+    from ze_eval.scenario import SANDBOX_ENV, is_runnable
+
+    scenario = {"id": "x", "requires_sandbox": True}
+    monkeypatch.delenv(SANDBOX_ENV, raising=False)
+    assert is_runnable(scenario) is False
+    monkeypatch.setenv(SANDBOX_ENV, "0")
+    assert is_runnable(scenario) is False
+    monkeypatch.setenv(SANDBOX_ENV, "1")
+    assert is_runnable(scenario) is True
+    assert is_runnable({"id": "y"}) is True
+
+
+def test_every_calendar_delete_in_write_confirmation_is_sandbox_only() -> None:
+    for scenario in load_scenarios(tag="confirmation"):
+        tools = [
+            t if isinstance(t, str) else t.get("name")
+            for t in scenario.get("expected_tools") or []
+        ]
+        if "delete_event" in tools or "create_event" in tools:
+            assert scenario.get("requires_sandbox") is True, scenario["id"]
+
+
+def test_sandbox_delete_scenario_creates_then_deletes_its_own_event() -> None:
+    (scenario,) = [
+        s
+        for s in load_scenarios(tag="confirmation")
+        if s["id"] == "write_confirmation_delete_event_approve"
+    ]
+    assert scenario["requires_sandbox"] is True
+    deletes = [t for t in scenario["expected_tools"] if t["name"] == "delete_event"]
+    creates = [t for t in scenario["expected_tools"] if t["name"] == "create_event"]
+    assert creates and deletes
+    assert max(c["turn"] for c in creates if c.get("gate") == "approved") < min(
+        d["turn"] for d in deletes if d.get("gate") == "parked"
+    )

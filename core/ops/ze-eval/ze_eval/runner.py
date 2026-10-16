@@ -11,6 +11,8 @@ Environment variables:
   ZE_EVAL_URL        Ze server base URL (default: http://localhost:8000)
   ZE_API_KEY         Ze API key
   OPENROUTER_API_KEY Required only when --judge is set
+  ZE_EVAL_SANDBOX   Set to 1 to run scenarios with requires_sandbox (they create and
+                     delete calendar events; only with a sandbox calendar)
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ import httpx
 
 from ze_eval.judge import DEFAULT_JUDGE_MODEL, judge
 from ze_eval.metrics import fetch_session_metrics
-from ze_eval.scenario import load_scenarios
+from ze_eval.scenario import is_runnable, load_scenarios
 from ze_eval.scoring import outcome_correct, routing_correct, tools_correct
 from ze_eval.verifier import run_verification
 
@@ -330,7 +332,16 @@ async def run(args: argparse.Namespace, results_dir: Path | None = None) -> dict
         )
         sys.exit(1)
 
-    scenarios = load_scenarios(args.tag)
+    all_scenarios = load_scenarios(args.tag)
+    scenarios = [s for s in all_scenarios if is_runnable(s)]
+    skipped = [s["id"] for s in all_scenarios if not is_runnable(s)]
+    if skipped:
+        print(
+            f"Skipped {len(skipped)} sandbox-only scenario(s) "
+            "(set ZE_EVAL_SANDBOX=1 when Google points at a sandbox calendar): "
+            + ", ".join(skipped),
+            file=sys.stderr,
+        )
     if not scenarios:
         print(
             f"No scenarios found{' for tag: ' + args.tag if args.tag else ''}.",
