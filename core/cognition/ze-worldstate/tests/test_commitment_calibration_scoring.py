@@ -409,3 +409,34 @@ def test_choice_accuracy_excludes_gold_resolves_rows(cal):
     )
     assert (c.choice_ok, c.choice_total) == (1, 1)
     assert c.resolves_ok == 2
+
+
+def test_verdict_fails_on_any_waiting_on_write(cal):
+    ok, failing = cal.verdict(
+        _good(cal, waiting_total=5, waiting_written=1), _good(cal)
+    )
+    assert not ok
+    assert failing == ["waiting_on rows written to a store 1 != 0"]
+    assert cal.verdict(_good(cal, waiting_total=5, waiting_written=0), _good(cal))[0]
+
+
+@pytest.mark.parametrize(
+    "answers",
+    [
+        dict(commitment="loop", concern=0.95),
+        dict(commitment="none", resolves=0.95),
+        dict(commitment="fact", bio=0.95, family="identity"),
+    ],
+)
+def test_a_waiting_on_row_that_writes_is_counted(cal, answers):
+    row = _row(cal, id="w", gold_choice="waiting_on", kind="waiting_on")
+    results = {"w": cal.RowResults(_system(**answers), _r163("drop"), _r168())}
+    c = cal.score([row], cal.preds_for([row], results, _bars(cal)))
+    assert (c.waiting_total, c.waiting_written) == (1, 1)
+
+
+def test_a_held_waiting_on_row_writes_nothing(cal):
+    row = _row(cal, id="w", gold_choice="waiting_on", kind="waiting_on")
+    results = {"w": cal.RowResults(_system("waiting_on"), _r163("drop"), _r168())}
+    c = cal.score([row], cal.preds_for([row], results, _bars(cal)))
+    assert (c.waiting_total, c.waiting_written) == (1, 0)

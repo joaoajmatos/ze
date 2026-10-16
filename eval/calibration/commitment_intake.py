@@ -18,7 +18,7 @@ as the baseline. It costs credits and is never collected by pytest.
 
 Acceptance rule per language (FR-022): zero duplicate bookings, zero false loop creates, fact
 precision >= baseline and fact recall >= baseline - 0.05, loop precision >= baseline and loop
-recall >= baseline - 0.05, false resolves <= baseline, Choice accuracy >= 0.9. Choice accuracy
+recall >= baseline - 0.05, false resolves <= baseline, waiting_on rows write nothing, Choice accuracy >= 0.9. Choice accuracy
 covers rows where the turn created nothing and that are not resolves rows; link accuracy
 (outcome is a link of the right kind) covers the created-something rows and is reported beside
 it (amendments of FR-022, 2026-10-16).
@@ -492,6 +492,10 @@ def verdict(system: Counts, baseline: Counts) -> tuple[bool, list[str]]:
     if system.loop_recall < baseline.loop_recall - RECALL_SLACK:
         failing.append(
             f"loop recall {system.loop_recall:.3f} < baseline {baseline.loop_recall:.3f} - {RECALL_SLACK}"
+        )
+    if system.waiting_written:
+        failing.append(
+            f"waiting_on rows written to a store {system.waiting_written} != 0"
         )
     if system.false_resolve > baseline.false_resolve:
         failing.append(
@@ -984,7 +988,7 @@ def report_verdict(
             f"[{lang}] {'ENABLE' if ok else 'KEEP OFF'}"
             f"  intake: factP={s.fact_precision:.3f} factR={s.fact_recall:.3f}"
             f" loopP={s.loop_precision:.3f} loopR={s.loop_recall:.3f} dup={s.duplicates}"
-            f" falseC={s.false_creates} falseRes={s.false_resolve} choiceAcc={s.choice_acc:.3f}"
+            f" falseC={s.false_creates} falseRes={s.false_resolve} waitingWrites={s.waiting_written}/{s.waiting_total} choiceAcc={s.choice_acc:.3f}"
             f" linkAcc={s.link_acc:.3f} fallback={s.fallback}"
             f" | baseline: factP={b.fact_precision:.3f} factR={b.fact_recall:.3f}"
             f" loopP={b.loop_precision:.3f} loopR={b.loop_recall:.3f} dup={b.duplicates} falseRes={b.false_resolve}"
