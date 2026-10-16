@@ -15,7 +15,7 @@
 `AskDecision`: `RUN` \| `ASK(reason: str = "")` \| `REFUSE(message: str)`.
 
 Resolution order in `call_tool` (first match wins). The constraint veto runs before any approval or pre-approval can let a call through (amended 2026-10-16, Plumb B2):
-1. `ctx.retry_mode` and WRITE → refused (165, unchanged).
+1. `ctx.retry_mode` and an IRREVERSIBLE WRITE → refused (gate `refused`), never parked. A REVERSIBLE write in a retry continues down this list, so it may park on a constraint CONFIRM or an `ask_check` ASK; the retry then pauses on the 180 paused-retry path and the answered pause supersedes the old reply (FR-022, amended by M13).
 2. constraint veto (constraint-gated tools), on every other WRITE call, approved and pre-approved ones included: VETO → refuse (gate `refused`), whatever the approval.
 3. `_approval` (an `ApprovedCall` built only by the resume path from park state, never from model args) → run, outcome `approved`. A CONFIRM-level conflict is not asked again: the user saw it on the item.
 4. constraint veto CONFIRM(text) on a call that is not approved → park with `conflict=text`, even when the tool opted out or is pre-approved. In an unattended run that park becomes a hold (FR-025).

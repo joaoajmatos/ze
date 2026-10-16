@@ -12,7 +12,7 @@
 
 **Depends on**: 165 and 180 on `main` (they are). The 171 Follow-ups floor's goal-local fix (goals declare read first; goal write tools confirm at tool level) lands before or with this phase; this phase replaces that local confirmation.
 
-**Does not change**: the 165 reversibility vocabulary itself (`REVERSIBLE` / `IRREVERSIBLE`, `undo_tool`, `undo_note`, `effect_phrase`), Retry (a retry still never asks and never writes), 180 rollback, the routing decision (which agent answers), the 144 constraint matching rules, the 113 budget arithmetic, the 177 governor's classes and budget.
+**Does not change**: the 165 reversibility vocabulary itself (`REVERSIBLE` / `IRREVERSIBLE`, `undo_tool`, `undo_note`, `effect_phrase`), Retry eligibility and its rule that a retry never runs an IRREVERSIBLE write (FR-022, amended by M13), 180 rollback, the routing decision (which agent answers), the 144 constraint matching rules, the 113 budget arithmetic, the 177 governor's classes and budget.
 
 ---
 
@@ -60,7 +60,7 @@ Answers marked **(user, Qn)** were given by the user through the Maestro (questi
 - Q: Unattended runs? → A: **(user, Q8)** Pre-approval at plan time: approving a workflow or goal plan (and each workflow revision, 108) approves the asks-first tools it names for its steps. A call that was not pre-approved holds the run and is pushed through the 177 governor; the user approves or denies from the notification or chat, and the run continues. Unattended is a P2 story inside this phase.
 - Q: Workspace? → A: **(user, Q9)** The WorkspaceGate decision (action × origin) becomes a declared pre-call check that feeds the same park mechanism. Workspace tools opt out of the default with that check as their reason; the check parks the call when the gate says to ask. The in-tool `ToolConfirmationRequired` path is deleted.
 - Q: Deny and timeout? → A: **(user, Q10)** Nothing runs. Ze replies "Okay, I didn't <effect>" for each denied item. A timeout (`CONFIRM_TIMEOUT_SECONDS`) counts as a deny. Both are recorded on the message trace.
-- Q: Retry? → A: **(user, statement)** Unchanged. A retry turn never parks and never opens a confirmation; every WRITE tool stays refused (165). 180's rule that a reply with an irreversible action cannot be retried keeps working.
+- Q: Retry? → A: **(user, statement)** Unchanged. A retry turn never parks and never opens a confirmation; every WRITE tool stays refused (165). 180's rule that a reply with an irreversible action cannot be retried keeps working. **Amended 2026-10-17 (M13, decision A)**: after the Phase 180 merge a retry refuses only IRREVERSIBLE writes. A REVERSIBLE write that still asks (a plan approval from `create_workflow`/`create_goal`, or a constraint OK) may pause the retry; see FR-022.
 - Q: Cobble's goal-local confirmation (171 Follow-ups)? → A: **(user, statement)** Replaced by this mechanism; the local confirmation code is deleted.
 - Q: What does a deny do to the parked loop? → A: **(user, C2)** The denied calls do not run. Each parked loop resumes with a "the user declined; nothing was done" result for each denied call, so the rest of the turn (other subtasks, reads already done) can still be reported. Code then makes sure the reply contains the "Okay, I didn't <effect>" line for each denied item, so a model that ignores the denial cannot claim the write happened. Reason: with park and resume, a fixed one-line reply would drop the answers of sibling subtasks that finished.
 - Q: How many times can one turn pause? → A: **(user, C3)** At most 3 confirmations per user turn. A fourth asks-first call in the same turn is not parked; the loop gets a refusal ("ask the user in your reply instead") and the call does not run. Reason: bounds a model that keeps proposing writes.
@@ -276,7 +276,7 @@ Eval scenarios cover "delete my 3pm", "send Ana the notes", a compound read + se
 - **Nested parking deeper than one delegate level.** Delegation depth is capped today (`_DELEGATE_MAX_DEPTH`); the saved state holds one transcript per parked level, innermost first.
 - **The user approves a confirmation that was already superseded or expired.** The reply is rejected as stale; nothing runs.
 - **Two confirmations open on two threads.** Independent, keyed by `request_id` (113, 159).
-- **Retry of a turn that parked.** Retry never parks; writes are refused (165). 180 already refuses to retry a reply that executed an irreversible action.
+- **Retry of a turn that parked.** A retry never runs an IRREVERSIBLE write: the call is refused (165), never parked. A REVERSIBLE write that needs a plan approval or a constraint OK may park; the retry then waits on the Phase 180 paused-retry path (`rolled_back_awaiting_confirmation`, `retry_replaces`), and the answered pause produces the reply that supersedes the old one. 180 already refuses to retry a reply that executed an irreversible action.
 - **Streaming.** Tokens streamed before a park are shown; the confirmation follows; the resumed loop streams its reply as a new message.
 - **Reconnect while a confirmation is open.** The open confirmation is replayed on connect, as today, with its items.
 - **Agents that call a tool outside the shared loop** (the companion calls one tool directly). Asks-first tools may only be called through the shared loop or the delegate path; a direct call of an asks-first tool fails loudly (not silently runs).
@@ -322,7 +322,7 @@ Eval scenarios cover "delete my 3pm", "send Ana the notes", a compound read + se
 
 - **FR-020**: The 144 constraint veto MUST be evaluated when a constraint-gated call is made, before it parks or runs. A conflict that needs the user's OK MUST park the call (even if the tool opted out) with the conflict text on the item. A hard veto MUST refuse the call without parking. The veto MUST run before any approval or pre-approval lets a call run: a pre-approved unattended call that conflicts MUST hold (CONFIRM) or be refused (VETO), and an approved call MUST still be refused by a hard veto that matches it as it will run (with the user's edits).
 - **FR-021**: The 113 spend budget check MUST run as its own pause before the turn executes. Approve runs the turn (writes still park). Deny ends the turn with nothing run. It MUST NOT be combined with write confirmations.
-- **FR-022**: A retry turn MUST NOT park or open a confirmation; WRITE tools stay refused (165). Retry eligibility (165, 180) is unchanged.
+- **FR-022** *(amended 2026-10-17, M13 decision A)*: A retry turn MUST NOT run an IRREVERSIBLE write; such a call is refused, never parked. A retry MAY pause for a REVERSIBLE write that needs a plan approval (`ask_check`) or a constraint OK (144 CONFIRM); a hard veto still refuses. Such a pause goes through the Phase 180 paused-retry path (`rolled_back_awaiting_confirmation`, `retry_replaces`): when it is answered (approve, deny or timeout), the resulting reply supersedes the old reply. Retry eligibility (165, 180) is unchanged.
 
 **Unattended**
 
