@@ -448,7 +448,7 @@ def _discover_agents(app_root: Path, package: str) -> None:
 
 
 def _validate_registry(settings: Any) -> None:
-    """Validate tool names against the tool registry (name/description/capabilities
+    """Validate tool names against the tool registry (name and description
     are already validated by @agent at decoration time)."""
     from ze_agents.registry import get_registered_agents
     from ze_agents.tool import registered_tools, validate_tool_declarations

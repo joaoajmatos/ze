@@ -4108,7 +4108,7 @@ export type WriteConfirmationOutcomeResponse = {
     /**
      * Outcome
      */
-    outcome: 'approved' | 'edited' | 'denied' | 'timed_out' | 'superseded' | 'refused';
+    outcome: 'approved' | 'edited' | 'pre_approved' | 'denied' | 'timed_out' | 'superseded' | 'refused';
 };
 
 /**

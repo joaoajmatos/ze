@@ -156,6 +156,15 @@ export type Url = string;
 export type Title1 = string;
 export type Sources = SourceTraceResponse[];
 export type EffectsKnown = boolean;
+export type RequestId1 = string;
+export type Round1 = number;
+export type ItemId1 = string;
+export type Agent3 = string;
+export type Tool1 = string | null;
+export type Effect = string | null;
+export type Summary1 = string;
+export type Outcome = "approved" | "edited" | "pre_approved" | "denied" | "timed_out" | "superseded" | "refused";
+export type WriteConfirmations = WriteConfirmationOutcomeResponse[];
 export type Type11 = "notification";
 export type Id5 = string;
 export type EventType = string;
@@ -398,6 +407,7 @@ export interface WsTraceUpdateFrame {
   judgments?: Judgments;
   sources?: Sources;
   effects_known?: EffectsKnown;
+  write_confirmations?: WriteConfirmations;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -507,6 +517,20 @@ export interface JudgmentTraceResponse {
 export interface SourceTraceResponse {
   url: Url;
   title?: Title1;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WriteConfirmationOutcomeResponse".
+ */
+export interface WriteConfirmationOutcomeResponse {
+  request_id: RequestId1;
+  round: Round1;
+  item_id: ItemId1;
+  agent: Agent3;
+  tool?: Tool1;
+  effect?: Effect;
+  summary?: Summary1;
+  outcome: Outcome;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

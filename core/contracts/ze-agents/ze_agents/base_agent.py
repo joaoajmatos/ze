@@ -326,9 +326,8 @@ class BaseAgent(ABC):
         _approved_call_id: str | None = None,
         **kwargs: Any,
     ) -> ToolCall:
-        """Execute a registered tool with capability enforcement and hook dispatch.
+        """Execute a registered tool with write confirmation and hook dispatch.
 
-        READ tools execute in any gate state.
         An asks-first WRITE tool is parked, not run, unless the user approved this
         exact call (`_approved_call_id`) or a plan pre-approved the tool.
         """

@@ -60,7 +60,7 @@ class AgentState(TypedDict):
     components: list[dict]
 
     # ── Conductor (Phase 153 — sequential rewrite; not a DAG) ──────────────
-    conductor_hint: list | None  # list[{agent, intent, prompt}]
+    conductor_hint: list | None  # list[{agent, prompt, changes}]
     conductor_ledger: list  # list[{agent, status, request_id?}]
     conductor_delegate_counts: dict  # agent name → attempted delegates this turn
     conductor_delegate_total: int

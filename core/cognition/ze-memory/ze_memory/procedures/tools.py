@@ -67,5 +67,5 @@ async def invoke_procedure(procedure_id: str, ctx: AgentContext | None = None) -
     return (
         f"Invoked procedure {match.name} version {match.version_number}. "
         "Follow its steps using only the now-narrowed tools. "
-        "The capability gate still applies to every action."
+        "Actions that cannot be undone still need the user's approval."
     )

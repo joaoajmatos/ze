@@ -66,7 +66,7 @@ async def test_record_trace_omits_procedure_when_not_invoked() -> None:
 
 
 async def test_record_trace_copies_conductor_ledger() -> None:
-    hint = [{"agent": "calendar", "intent": "read", "prompt": "tue"}]
+    hint = [{"agent": "calendar", "prompt": "tue"}]
     ledger = [
         {"agent": "calendar", "status": "stalled"},
         {"agent": "calendar", "status": "replanned"},

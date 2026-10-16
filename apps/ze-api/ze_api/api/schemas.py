@@ -178,7 +178,13 @@ class WriteConfirmationOutcomeResponse(BaseModel):
     effect: str | None = None
     summary: str = ""
     outcome: Literal[
-        "approved", "edited", "denied", "timed_out", "superseded", "refused"
+        "approved",
+        "edited",
+        "pre_approved",
+        "denied",
+        "timed_out",
+        "superseded",
+        "refused",
     ]
 
 
@@ -834,6 +840,7 @@ class WsTraceUpdateFrame(BaseModel):
     judgments: list[JudgmentTraceResponse] = []
     sources: list[SourceTraceResponse] = []
     effects_known: bool = False
+    write_confirmations: list[WriteConfirmationOutcomeResponse] = []
 
 
 class WsNotificationFrame(BaseModel):

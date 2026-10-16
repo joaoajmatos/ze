@@ -33,10 +33,8 @@ async def decompose(prompt, raw_scores, client, settings):
     )
 
 
-def single_subtask_response(agent="research", intent="read", prompt="find it") -> str:
-    return json.dumps(
-        {"subtasks": [{"agent": agent, "intent": intent, "prompt": prompt}]}
-    )
+def single_subtask_response(agent="research", prompt="find it") -> str:
+    return json.dumps({"subtasks": [{"agent": agent, "prompt": prompt}]})
 
 
 def compound_response() -> str:

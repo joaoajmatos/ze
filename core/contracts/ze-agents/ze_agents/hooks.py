@@ -45,7 +45,7 @@ class HarnessHook(Protocol):
     """Extension point for cross-cutting concerns in the agent execution loop.
 
     All methods have default no-op implementations via BaseHarnessHook.
-    Hooks self-filter by agent using event.ctx.intent or event.tool_name.
+    Hooks self-filter by agent or by event.tool_name.
     """
 
     async def on_tool_start(self, event: ToolStartEvent) -> dict[str, Any] | None:
