@@ -4,7 +4,7 @@ Normative for `ze_core/routing/tier.py` and `ze_core/orchestration/nodes/tier.py
 
 ## When `choose_tier` asks
 
-Evaluated in order; the first matching row wins. No request is made unless the last row is reached.
+Evaluated in order; the first matching row wins. No request is made unless the last row is reached. Implementation note: a missing `tier_judge` is checked first among rows 3-5 (row 3 needs the judge's app config to compare the two models), so with no judge the label is `off`, not `no_simple_model`. Any exception while building the state or asking (rows 6) fails safe to the full model with `decided_by` `skip` and no judgment row.
 
 | # | Condition | Tier | `decided_by` | Request |
 |---|---|---|---|---|

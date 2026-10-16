@@ -287,3 +287,47 @@ class TestCompoundAndConductor:
             "companion", "full", "compound", "companion-full"
         )
         assert client.calls == []
+
+
+class TestFailSafe:
+    async def test_a_state_builder_that_raises_keeps_the_full_model(self):
+        client = FakeSystemOneClient(_noul(0.0))
+        with patch(
+            "ze_core.orchestration.nodes.tier.build_tier_state",
+            side_effect=KeyError("prompt"),
+        ):
+            result = await choose_tier(_state(), _config(client))
+        assert result == {"tier": TierTrace("t182", "full", "skip", "t182-full")}
+        assert client.calls == []
+
+    async def test_malformed_history_never_kills_the_turn(self):
+        client = FakeSystemOneClient(_noul(0.0))
+        state = _state(
+            messages=[
+                {"role": "assistant", "content": ["not", "a", "string"]},
+                {"role": "user", "content": "thanks"},
+            ]
+        )
+        result = await choose_tier(state, _config(client))
+        assert result["tier"].tier == "full"
+        assert result["tier"].decided_by == "skip"
+
+    async def test_a_judge_that_raises_outside_the_client_keeps_the_full_model(self):
+        judge = TierJudge(FakeSystemOneClient(_noul(0.0)), ON, {})
+
+        async def boom(*args, **kwargs):
+            raise RuntimeError("boom")
+
+        judge.choose = boom
+        result = await choose_tier(_state(), _config(judge=judge))
+        assert result == {"tier": TierTrace("t182", "full", "skip", "t182-full")}
+
+    async def test_cost_context_is_restored_after_a_state_failure(self):
+        set_flow_context("chat", "s1")
+        set_agent_context("companion")
+        with patch(
+            "ze_core.orchestration.nodes.tier.build_tier_state",
+            side_effect=RuntimeError("boom"),
+        ):
+            await choose_tier(_state(), _config(FakeSystemOneClient(_noul(0.0))))
+        assert get_cost_context().agent == "companion"

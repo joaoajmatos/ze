@@ -55,6 +55,9 @@ async def choose_tier(state: AgentState, config: RunnableConfig) -> dict:
     set_agent_context("router")
     try:
         outcome = await judge.choose(envelope, build_tier_state(state))
+    except Exception as exc:
+        log.warning("tier_node_error", agent=subtask.agent, error=str(exc))
+        return _not_asked(envelope, "skip")
     finally:
         set_agent_context(previous_agent)
 
