@@ -6,7 +6,7 @@ from uuid import uuid4
 import pytest
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent, clear_registry
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_automation.workflow.types import Workflow, WorkflowExecution
 from ze_memory.types import Entity, MemoryContext, SessionSummary
 
@@ -406,7 +406,7 @@ class TestFetchContextOpenQueryFlag:
         assert result["agent_context"].open_priorities_note is None
 
 
-def _register_agent(name: str, intents: dict[str, Mode]) -> None:
+def _register_agent(name: str) -> None:
     class _A(BaseAgent):
         async def run(self, ctx: AgentContext) -> AgentResult:
             return AgentResult(agent=name, response="ok")
@@ -414,7 +414,6 @@ def _register_agent(name: str, intents: dict[str, Mode]) -> None:
     _A.name = name
     _A.description = f"The {name} agent"
     _A.enabled = True
-    _A.intents = {k: Intent(m, k) for k, m in intents.items()}
     agent(_A)
 
 
@@ -425,9 +424,7 @@ def _envelope(agent_name: str, intent: str, *, compound: bool = False):
         score_gap=0.3,
         routing_method="embedding",
         is_compound=compound,
-        subtasks=[
-            SubTask(agent=agent_name, intent=intent, prompt="p", model="m-goals")
-        ],
+        subtasks=[SubTask(agent=agent_name, prompt="p", model="m-goals")],
         requires_synthesis=False,
         complexity="complex",
     )
@@ -437,8 +434,8 @@ class TestOpenQueryAnsweredByCompanion:
     @pytest.fixture(autouse=True)
     def registry(self):
         clear_registry()
-        _register_agent("goals", {"create": Mode.CONFIRM, "read": Mode.AUTONOMOUS})
-        _register_agent("companion", {"reason": Mode.AUTONOMOUS})
+        _register_agent("goals")
+        _register_agent("companion")
         yield
         clear_registry()
 
@@ -459,10 +456,9 @@ class TestOpenQueryAnsweredByCompanion:
 
         env = result["envelope"]
         assert env.primary_agent == "companion"
-        assert [(s.agent, s.intent, s.model) for s in env.subtasks] == [
-            ("companion", "reason", "m-companion")
+        assert [(s.agent, s.model) for s in env.subtasks] == [
+            ("companion", "m-companion")
         ]
-        assert result["agent_context"].intent == "reason"
         assert result["agent_context"].open_priorities_note is not None
 
     async def test_non_open_prompt_keeps_envelope(self):
@@ -493,7 +489,7 @@ class TestOpenQueryAnsweredByCompanion:
 
     async def test_missing_companion_keeps_envelope(self):
         clear_registry()
-        _register_agent("goals", {"create": Mode.CONFIRM})
+        _register_agent("goals")
         state = _state(prompt="what's open")
         state["envelope"] = _envelope("goals", "create")
         result = await fetch_context(state, self._config(global_query=True))
@@ -502,8 +498,8 @@ class TestOpenQueryAnsweredByCompanion:
 
 class TestOpenQueryRerouteTrace:
     async def test_rerouted_envelope_drops_the_old_route_scores(self):
-        _register_agent("goals", {"create": Mode.CONFIRM})
-        _register_agent("companion", {"reason": Mode.AUTONOMOUS})
+        _register_agent("goals")
+        _register_agent("companion")
         state = _state(prompt="what's open")
         state["envelope"] = _envelope("goals", "create")
         config = _config(turn_surfacer=_surfacer(_ranked_mentions(), global_query=True))

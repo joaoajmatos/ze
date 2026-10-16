@@ -32,7 +32,7 @@ from ze_finance.plugin import FinancePlugin
 
 | Module | What it provides |
 |---|---|
-| `agents/finance/` | `FinanceAgent` and its `@tool` functions (`get_portfolio_summary`, `get_positions`, `get_spending_summary`, `get_recent_transactions`, `get_account_balances`, `get_recurring_expenses`, `confirm_recurring`, `dismiss_recurring`) |
+| `agents/finance/` | `FinanceAgent` and its `@tool` functions (`get_portfolio_summary`, `get_positions`, `get_spending_summary`, `get_transactions`, `get_account_balance`, `get_recurring_expenses`, `confirm_recurring`, `dismiss_recurring`) |
 | `categoriser.py` | `CategoryInferrer` — keyword rules + optional Anthropic haiku batch for "Other" descriptions |
 | `errors.py` | `FinanceError`, `ZeIntegrationError`, `FinanceParseError` |
 | `jobs/snapshot.py` | `DailySnapshotJob` — syncs all data sources, runs categorisation, emits signals |
@@ -42,7 +42,7 @@ from ze_finance.plugin import FinancePlugin
 | `recurring/types.py` | `RecurringExpense`, `RecurringStatus`, `UpsertResult`; `snap_interval()`, `cadence_label()` |
 | `recurring/detector.py` | `RecurringDetector` — gap-analysis algorithm; optional async NLI merchant merge |
 | `recurring/store.py` | `RecurringStore` — upsert with price-change resurface logic, confirm/dismiss, nudge rate-limiting |
-| `risk/types.py` | `FactorTaxonomy` enum — 12-factor taxonomy for the future risk engine |
+| `risk/types.py` | `FactorTaxonomy` enum — 13-factor taxonomy for the future risk engine |
 | `risk/engine.py` | `RiskEngine` Protocol stub |
 | `signals/finance.py` | `FinanceSignalSource` — emits `finance.pnl_swing` and `finance.large_transaction` signals |
 | `source.py` | `DataSource` Protocol — implemented by all ingestion backends |

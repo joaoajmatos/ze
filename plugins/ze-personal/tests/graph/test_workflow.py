@@ -4,12 +4,12 @@ from uuid import uuid4
 
 import pytest
 
-from ze_agents.types import AgentResult, GateDecision, ToolCall
+from ze_agents.types import AgentResult, ToolCall
 from ze_automation.workflow.types import Branch, StepResult, WorkflowStep
 from ze_personal.graph.workflow import (
     _resolve_step_output,
     _resolve_verify_model,
-    after_capability_check_workflow,
+    after_preflight_workflow,
     after_handle_step_failure,
     after_route_branch,
     after_verify_step,
@@ -84,7 +84,7 @@ async def test_verify_step_accepts_subtask_results_without_agent_result():
             "openrouter_client": MagicMock(),
         }
     }
-    step = WorkflowStep(task="search news", intent="read", id="s0")
+    step = WorkflowStep(task="search news", id="s0")
     state = {
         "workflow_steps": [step],
         "steps_by_id": {"s0": step},
@@ -112,7 +112,7 @@ async def test_verify_step_records_duration_from_load_workflow_step_start():
             "openrouter_client": MagicMock(),
         }
     }
-    step = WorkflowStep(task="search news", intent="read", id="s0")
+    step = WorkflowStep(task="search news", id="s0")
     loaded = await load_workflow_step(
         {
             "workflow_steps": [step],
@@ -147,7 +147,7 @@ async def test_verify_step_fails_when_all_outputs_empty():
             "openrouter_client": MagicMock(),
         }
     }
-    step = WorkflowStep(task="search news", intent="read", id="s0")
+    step = WorkflowStep(task="search news", id="s0")
     state = {
         "workflow_steps": [step],
         "steps_by_id": {"s0": step},
@@ -588,9 +588,9 @@ class TestLoopGuard:
 class TestLegacyWorkflowExecution:
     def _legacy_linear_steps(self) -> list[WorkflowStep]:
         return [
-            WorkflowStep(task="Fetch news", agent_hint="news", intent="read", id="s0"),
-            WorkflowStep(task="Summarize", intent="reason", id="s1"),
-            WorkflowStep(task="Send digest", intent="execute", id="s2"),
+            WorkflowStep(task="Fetch news", agent_hint="news", id="s0"),
+            WorkflowStep(task="Summarize", id="s1"),
+            WorkflowStep(task="Send digest", id="s2"),
         ]
 
     async def _run_linear_step(
@@ -1076,19 +1076,13 @@ class TestCancellation:
         assert after_route_branch(result) == "workflow_cancelled"
 
 
-def test_after_capability_check_blocked_fails_workflow():
-    assert (
-        after_capability_check_workflow({"gate_decision": GateDecision.BLOCKED})
-        == "workflow_failed"
-    )
+def test_after_preflight_blocked_fails_workflow():
+    assert after_preflight_workflow({"blocked": True}) == "workflow_failed"
 
 
-def test_after_capability_check_allows_execution():
-    assert after_capability_check_workflow({}) == "execute_tool"
-    assert (
-        after_capability_check_workflow({"gate_decision": GateDecision.EXECUTE})
-        == "execute_tool"
-    )
+def test_after_preflight_allows_execution():
+    assert after_preflight_workflow({}) == "execute_tool"
+    assert after_preflight_workflow({"blocked": False}) == "execute_tool"
 
 
 _JSON_WRAPS = [
@@ -1127,7 +1121,7 @@ async def test_verify_step_tolerates_fenced_and_prose_replies(wrap):
     config = {
         "configurable": {"workflow_store": _make_store(), "openrouter_client": client}
     }
-    step = WorkflowStep(task="search", intent="read", id="s0", verify="has results")
+    step = WorkflowStep(task="search", id="s0", verify="has results")
     state = {
         "workflow_steps": [step],
         "steps_by_id": {"s0": step},

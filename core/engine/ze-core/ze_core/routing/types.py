@@ -13,9 +13,11 @@ from ze_agents.defaults import (
 @dataclass
 class SubTask:
     agent: str
-    intent: str
     prompt: str
     model: str = ""
+    # Routing label set by the fallback decomposer: this subtask changes something.
+    # Read only by is_mixed_gather_act; it gates nothing.
+    changes: bool = False
 
 
 @dataclass

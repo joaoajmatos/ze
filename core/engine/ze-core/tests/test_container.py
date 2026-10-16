@@ -7,7 +7,7 @@ from ze_agents.errors import AgentConfigError, RoutingError
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_agents.base_agent import BaseAgent
 from ze_agents.tool import clear_tool_registry
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +26,6 @@ def _agent_cls(
     name="test",
     description="test agent",
     enabled=True,
-    intents=None,
     tools=None,
 ):
     class _A(BaseAgent):
@@ -36,7 +35,6 @@ def _agent_cls(
     _A.name = name
     _A.description = description
     _A.enabled = enabled
-    _A.intents = intents or {"read": Intent(Mode.AUTONOMOUS, "Read.")}
     _A.tools = tools or []
     return _A
 
@@ -186,20 +184,6 @@ class TestValidateRegistry:
         agent(cls)
         with pytest.raises(RoutingError, match="No enabled"):
             _validate_registry(None)
-
-    def test_passes_with_intents(self):
-        from ze_core.container import _validate_registry
-
-        cls = _agent_cls(
-            "x",
-            "desc",
-            intents={
-                "read": Intent(Mode.AUTONOMOUS, "Read."),
-                "write": Intent(Mode.CONFIRM, "Write."),
-            },
-        )
-        agent(cls)
-        _validate_registry(None)
 
 
 class TestValidateModelConfig:
@@ -502,7 +486,6 @@ def _make_container():
         embedder=MagicMock(),
         openrouter_client=client,
         router=MagicMock(),
-        capability_gate=MagicMock(),
         memory_store=MagicMock(),
         memory_consolidator=MagicMock(),
         graph=MagicMock(),

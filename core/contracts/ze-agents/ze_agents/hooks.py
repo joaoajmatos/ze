@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, runtime_checkable
 from typing_extensions import Protocol
 
 if TYPE_CHECKING:
+    from ze_agents.tool import AskDecision
     from ze_agents.types import AgentContext, ToolCall
 
 
@@ -44,7 +45,7 @@ class HarnessHook(Protocol):
     """Extension point for cross-cutting concerns in the agent execution loop.
 
     All methods have default no-op implementations via BaseHarnessHook.
-    Hooks self-filter by agent using event.ctx.intent or event.tool_name.
+    Hooks self-filter by agent or by event.tool_name.
     """
 
     async def on_tool_start(self, event: ToolStartEvent) -> dict[str, Any] | None:
@@ -59,6 +60,13 @@ class HarnessHook(Protocol):
 
     async def on_tool_end(self, event: ToolEndEvent) -> None:
         """Called after a tool executes (success or error). Cannot modify the result."""
+        ...
+
+    async def check_call(self, event: ToolStartEvent) -> "AskDecision":
+        """Optional pre-call check for constraint-gated writes: run, ask or refuse.
+
+        Must not interrupt or run the tool.
+        """
         ...
 
     async def on_loop_start(self, event: LoopStartEvent) -> None:
@@ -78,6 +86,11 @@ class BaseHarnessHook:
 
     async def on_tool_end(self, event: ToolEndEvent) -> None:
         pass
+
+    async def check_call(self, event: ToolStartEvent) -> "AskDecision":
+        from ze_agents.tool import AskDecision
+
+        return AskDecision.run()
 
     async def on_loop_start(self, event: LoopStartEvent) -> None:
         pass

@@ -6,6 +6,7 @@ from ze_agents import defaults
 from ze_agents.errors import LLMJsonParseError, WorkflowPlanError
 from ze_agents.llm_json import parse_llm_json
 from ze_logging import get_logger
+from ze_automation.holds.planned import PlanMemo, plan_system_prompt
 from ze_agents.client import LLMClient
 from ze_sdk.memory import Procedure
 from ze_automation.workflow.types import Branch, StepResult, WorkflowStep
@@ -25,8 +26,9 @@ _PLAN_SYSTEM = """\
 You decompose a workflow description into an ordered list of steps.
 Each step must have:
   "task"       — natural language instruction for the agent
-  "agent_hint" — one of: research, calendar, email, companion (or null)
-  "intent"     — one of: read, create, update, delete, execute, reason
+  "agent_hint" — the agent that should run the step: {agent_names} (or null)
+  "planned_writes" — the tools from the list below this step will call; [] when the
+                 step only reads or reasons. Name a tool only if the step needs it.
   "verify"     — natural language criterion to check the step output (or null)
 
 When the description contains an explicit either/or or conditional outcome, you MAY
@@ -46,15 +48,10 @@ For plain sequential workflows with no conditional language, omit id, branches, 
 default_next entirely — the system assigns ids and runs steps in list order.
 
 Output ONLY a JSON array — no explanation, no markdown:
-[{"task": "...", "agent_hint": "research", "intent": "read", "verify": "..."}, ...]
+[{"task": "...", "agent_hint": "research", "planned_writes": [], "verify": "..."}, ...]
 
-Intent guidelines:
-  research/companion tasks that only retrieve information → "read"
-  tasks that create new items (emails, events, workflows) → "create"
-  tasks that modify existing items → "update"
-  tasks that remove items → "delete"
-  tasks that run or trigger something → "execute"
-  tasks that reason, summarise, or plan → "reason"
+Tools a step may name in planned_writes, by agent:
+{agent_writes}
 
 Omit agent_hint and verify if not applicable (use null).\
 """
@@ -112,11 +109,14 @@ def _parse_step(item: dict, index: int) -> WorkflowStep:
     on_failure = item.get("on_failure", "fail")
     if not isinstance(on_failure, str) or not on_failure:
         on_failure = "fail"
+    planned = item.get("planned_writes")
     return WorkflowStep(
         task=item["task"],
+        planned_writes=[w for w in planned if isinstance(w, str)]
+        if isinstance(planned, list)
+        else [],
         agent_hint=item.get("agent_hint"),
         verify=item.get("verify"),
-        intent=item.get("intent", "execute"),
         id=step_id,
         branches=_parse_branches(item.get("branches")),
         default_next=default_next,
@@ -132,6 +132,7 @@ class WorkflowPlanner:
     ) -> None:
         self._client = openrouter_client
         self._discovery = procedure_discovery
+        self.plan_memo = PlanMemo()
 
     async def plan(self, description: str) -> list[WorkflowStep]:
         prompt = description
@@ -141,7 +142,7 @@ class WorkflowPlanner:
         raw = await self._client.complete(
             messages=[{"role": "user", "content": prompt}],
             model=defaults.MODEL_WORKFLOW_PLAN,
-            system=_PLAN_SYSTEM,
+            system=plan_system_prompt(_PLAN_SYSTEM),
         )
         try:
             data = parse_llm_json(raw, expect=list)

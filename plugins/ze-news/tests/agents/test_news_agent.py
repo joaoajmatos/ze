@@ -25,7 +25,6 @@ def make_ctx(prompt: str = "whats in the news regarding AI?") -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         messages=[{"role": "user", "content": prompt}],
     )
 

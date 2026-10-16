@@ -20,6 +20,9 @@ class PushKind:
     push_class: PushClass
     urgency: Urgency
     source: str
+    # False when the thing pushed is already in the conversation (a confirmation
+    # card): the push rings the bell and buzzes, but adds no chat message.
+    in_chat: bool = True
 
     def __post_init__(self) -> None:
         from ze_proactive.push_kinds import register

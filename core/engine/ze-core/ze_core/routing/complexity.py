@@ -32,7 +32,7 @@ class ComplexityEstimator:
         re.IGNORECASE,
     )
 
-    def classify(self, prompt: str, intent: str, confidence: float) -> str:
+    def classify(self, prompt: str, agent: str, confidence: float) -> str:
         score = 0
 
         word_count = len(prompt.split())
@@ -41,7 +41,7 @@ class ComplexityEstimator:
         elif word_count < 12:
             score -= 1
 
-        if intent == "reason":
+        if agent == "companion":
             score += 2
 
         complex_hits = len(self._COMPLEX_PATTERNS.findall(prompt))

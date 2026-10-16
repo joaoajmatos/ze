@@ -411,3 +411,30 @@ async def test_quiet_check_error_counts_as_not_quiet():
     iface = NativeAppInterface(store, conn, notifier, quiet_now=boom)
     await iface.send(OutboundMessage(content="hi"))
     notifier.push.assert_called_once()
+
+
+async def test_a_push_not_shown_in_chat_saves_no_message_but_buzzes_and_rings():
+    iface, store, conn, notifier = _make_interface(connected=False)
+
+    await iface.push(
+        Notification(
+            content="send an email: to ana@example.com",
+            urgency="high",
+            id="n-1",
+            event_type="confirmation_request",
+            title="Ze needs your approval",
+            in_chat=False,
+        )
+    )
+
+    store.save.assert_not_called()
+    conn.push.assert_not_called()
+    notifier.push.assert_awaited_once()
+    frames = [c.args[0] for c in conn.send_frame.call_args_list]
+    assert [f["type"] for f in frames] == ["notification"]
+
+
+def test_a_confirmation_request_push_is_not_a_chat_message():
+    from ze_api.push_kinds import CONFIRMATION_REQUEST
+
+    assert CONFIRMATION_REQUEST.in_chat is False

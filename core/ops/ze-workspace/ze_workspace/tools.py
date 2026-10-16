@@ -8,13 +8,11 @@ from types import SimpleNamespace
 from typing import Any
 from uuid import UUID, uuid4
 
-from ze_agents.errors import ToolConfirmationRequired
 from ze_agents.interrupt import (
-    workspace_confirmed,
     workspace_run_origin,
     workspace_thread_id,
 )
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import AskDecision, ToolAccess, tool
 from ze_agents.reversibility import ToolReversibility
 from ze_logging import get_logger
 
@@ -108,10 +106,48 @@ async def _decide(
     return _gate.decide(action=action, origin=origin)
 
 
-def _confirm(prompt: str, proposed: str, *, editable: bool = True) -> None:
-    if workspace_confirmed.get():
-        return
-    raise ToolConfirmationRequired(prompt, editable=editable, proposed=proposed)
+_DENIED = {
+    WorkspaceAction.WRITE: "Writing to the workspace is not allowed.",
+    WorkspaceAction.DELETE: "Deleting from the workspace is not allowed.",
+    WorkspaceAction.RUN: "Running commands in the workspace is not allowed.",
+    WorkspaceAction.RUN_SCRIPT: "Running skill scripts in the workspace is not allowed.",
+    WorkspaceAction.RESET: "Resetting the workspace is not allowed.",
+}
+
+
+def _ask_reason(action: WorkspaceAction, args: dict[str, Any]) -> str:
+    if action is WorkspaceAction.WRITE:
+        return (
+            f"Write file {args.get('path', '')} "
+            f"({len(str(args.get('content', '')))} characters) in the workspace?"
+        )
+    if action is WorkspaceAction.DELETE:
+        return f"Delete {args.get('path', '')} from the workspace?"
+    if action is WorkspaceAction.RUN:
+        return f"Run in the workspace: {args.get('command', '')}"
+    if action is WorkspaceAction.RUN_SCRIPT:
+        return f"Run skill script {args.get('filename', '')} in the workspace?"
+    return "Reset the workspace? All files will be removed."
+
+
+def workspace_ask_check(action: WorkspaceAction):
+    """Pre-call check for a workspace tool: WorkspaceGate decides per action and origin."""
+
+    def _check(args: dict[str, Any], ctx: Any) -> AskDecision:
+        if _gate is None:
+            return AskDecision.run()
+        origin = WorkspaceRunOrigin(workspace_run_origin.get())
+        decision = _gate.decide(action=action, origin=origin)
+        if decision is WorkspaceGateDecision.DENY:
+            return AskDecision.refuse(_DENIED[action])
+        if decision is WorkspaceGateDecision.CONFIRM:
+            return AskDecision.ask(_ask_reason(action, args))
+        return AskDecision.run()
+
+    return _check
+
+
+_GATE_REASON = "WorkspaceGate decides per action and origin"
 
 
 async def _record_run(
@@ -308,16 +344,15 @@ async def workspace_read(path: str) -> str:
     description="Write a text file in the workspace. Path is relative to the workspace root.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="wrote a workspace file",
+    asks_first=False,
+    no_ask_reason=_GATE_REASON,
+    ask_check=workspace_ask_check(WorkspaceAction.WRITE),
+    editable_field="content",
 )
 async def workspace_write(path: str, content: str) -> str:
     decision = await _decide(WorkspaceAction.WRITE)
     if decision is WorkspaceGateDecision.DENY:
         return "Writing to the workspace is not allowed."
-    if decision is WorkspaceGateDecision.CONFIRM:
-        _confirm(
-            f"Write file {path} ({len(content)} characters) in the workspace?",
-            content,
-        )
     client = await _ensure_client()
     result = await client.put(path, content.encode("utf-8"), overwrite=True)
     stored = result.get("path") or path
@@ -330,16 +365,15 @@ async def workspace_write(path: str, content: str) -> str:
     description="Delete a file or directory in the workspace.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="deleted a workspace file",
+    asks_first=False,
+    no_ask_reason=_GATE_REASON,
+    ask_check=workspace_ask_check(WorkspaceAction.DELETE),
+    editable_field="path",
 )
 async def workspace_delete(path: str) -> str:
     decision = await _decide(WorkspaceAction.DELETE)
     if decision is WorkspaceGateDecision.DENY:
         return "Deleting from the workspace is not allowed."
-    if decision is WorkspaceGateDecision.CONFIRM:
-        _confirm(
-            f"Delete {path} from the workspace?",
-            path,
-        )
     client = await _ensure_client()
     await client.delete(path)
     await _store.touch_used()
@@ -351,6 +385,10 @@ async def workspace_delete(path: str) -> str:
     description="Run a shell command in the workspace. Command is a single string executed via bash -lc.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ran a workspace command",
+    asks_first=False,
+    no_ask_reason=_GATE_REASON,
+    ask_check=workspace_ask_check(WorkspaceAction.RUN),
+    editable_field="command",
 )
 async def workspace_run(command: str) -> str:
     decision = await _decide(WorkspaceAction.RUN)
@@ -362,11 +400,6 @@ async def workspace_run(command: str) -> str:
             error_summary="command refused",
         )
         return "Running commands in the workspace is not allowed."
-    if decision is WorkspaceGateDecision.CONFIRM:
-        _confirm(
-            f"Run in the workspace: {command}",
-            command,
-        )
     refusal = await _refusal_if_busy()
     if refusal is not None:
         return refusal
@@ -391,6 +424,10 @@ async def workspace_run(command: str) -> str:
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ran a skill script",
+    asks_first=False,
+    no_ask_reason=_GATE_REASON,
+    ask_check=workspace_ask_check(WorkspaceAction.RUN_SCRIPT),
+    editable_field="filename",
 )
 async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     if _skill_store is None:
@@ -426,11 +463,6 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
             skill_script_path=filename,
         )
         return "Running skill scripts in the workspace is not allowed."
-    if decision is WorkspaceGateDecision.CONFIRM:
-        _confirm(
-            f"Run skill script {filename} in the workspace?",
-            filename,
-        )
 
     refusal = await _refusal_if_busy()
     if refusal is not None:
@@ -463,16 +495,13 @@ async def workspace_run_skill_script(skill_id: str, filename: str) -> str:
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="ingested a workspace file",
+    asks_first=False,
+    no_ask_reason="Saves a workspace file the user asked to save; nothing leaves Ze.",
 )
 async def ingest_workspace_file(path: str) -> str:
     decision = await _decide(WorkspaceAction.INGEST)
     if decision is WorkspaceGateDecision.DENY:
         return "Ingesting a workspace file is not allowed."
-    if decision is WorkspaceGateDecision.CONFIRM:
-        _confirm(
-            f"Ingest workspace file {path} into memory?",
-            path,
-        )
     if _ingestion is None:
         return "Ingestion pipeline is not available."
     client = await _ensure_client()
@@ -494,17 +523,14 @@ async def ingest_workspace_file(path: str) -> str:
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="reset the workspace",
+    asks_first=False,
+    no_ask_reason=_GATE_REASON,
+    ask_check=workspace_ask_check(WorkspaceAction.RESET),
 )
 async def workspace_reset() -> str:
     decision = await _decide(WorkspaceAction.RESET)
     if decision is WorkspaceGateDecision.DENY:
         return "Resetting the workspace is not allowed."
-    if decision is WorkspaceGateDecision.CONFIRM:
-        _confirm(
-            "Reset the workspace? All files will be removed.",
-            "reset",
-            editable=False,
-        )
     client = await _ensure_client()
     await client.reset()
     if _store is not None:

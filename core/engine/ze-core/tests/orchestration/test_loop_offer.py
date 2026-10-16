@@ -2,7 +2,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from ze_agents.types import GateDecision
 from ze_core.orchestration.loop_offer import with_loop_offer_line
 from ze_core.orchestration.nodes.trace import record_trace
 from ze_core.routing.types import RoutingEnvelope, SubTask
@@ -55,7 +54,7 @@ def _state(**extra):
         score_gap=0.3,
         routing_method="embedding",
         is_compound=False,
-        subtasks=[SubTask(agent="companion", intent="reason", prompt="p")],
+        subtasks=[SubTask(agent="companion", prompt="p")],
         requires_synthesis=False,
     )
     return {
@@ -92,16 +91,8 @@ class TestRecordTraceAppendsOffer:
         result = await record_trace(_state(error="boom"), {"configurable": {}})
         assert "final_response" not in result
 
-    @pytest.mark.parametrize(
-        "gate", [GateDecision.DRAFT, GateDecision.AWAIT_CONFIRMATION]
-    )
-    async def test_draft_or_confirmation_turn_gets_no_line(self, gate):
-        state = _state(gate_decision=gate, final_response="Draft: send this.")
-        result = await record_trace(state, {"configurable": {}})
-        assert "final_response" not in result
-
     async def test_executed_turn_still_gets_the_line(self):
-        state = _state(gate_decision=GateDecision.EXECUTE)
+        state = _state()
         result = await record_trace(state, {"configurable": {}})
         assert result["final_response"].endswith("acompanhá-la?")
 

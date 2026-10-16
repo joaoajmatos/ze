@@ -19,6 +19,32 @@ Ze no longer builds throwaway "dynamic plans". A request with several dependent 
 
 ---
 
+## Irreversible steps in unattended runs
+
+A scheduled run has no one to answer a prompt, so approval happens at plan time.
+
+- Approving a workflow plan approves, for each step, the tools that ask first (irreversible
+  writes) that the step names. The approval covers any arguments the step passes.
+- Editing a step clears its approval. The next run holds that step's irreversible writes
+  until you approve them again.
+
+A write that is not approved holds the run:
+
+1. Ze holds the call and sends a `write_approval_held` push. The push counts as a
+   requested notification, so quiet hours do not delay it.
+2. You answer the hold in one of three places:
+   - the notification bell in the web app;
+   - the REST API: `POST /api/v0/held-writes/{request_id}/decision` with `choice`
+     (`approve` or `deny`) and optional `edits`. `GET /api/v0/held-writes?status=open`
+     lists open holds;
+   - the chat, with a `confirm` reply for the hold.
+3. On approval, Ze runs the held call with the approved arguments and the run continues.
+   On denial, nothing runs, and the step gets a declined result.
+
+A hold that nobody answers within 24 hours expires and counts as a deny. The expiry job
+runs hourly by default. Set `proactive.held_write_expiry.cron` to change the schedule, or
+`enabled: false` to turn the job off (see [scheduled-jobs.md](scheduled-jobs.md)).
+
 ## Creating a workflow (conversational)
 
 Just describe what you want in the chat. Ze's `WorkflowManagerAgent` handles
@@ -30,7 +56,8 @@ Ze will:
 
 1. Parse the description into an ordered list of steps.
 2. Extract a cron expression from the schedule phrase.
-3. Ask you to confirm the plan (`manage` intent actions use `confirm` mode by default).
+3. Ask you to approve the plan. Approving it also approves the irreversible writes
+   that each step names (see [Irreversible steps in unattended runs](#irreversible-steps-in-unattended-runs)).
 4. Store the workflow and schedule it.
 
 You can also manage workflows conversationally:
@@ -52,13 +79,13 @@ You can also manage workflows conversationally:
 
 For a workflow with N steps, the graph runs through the following loop for each step:
 
-![Flowchart showing a workflow step loading, routing, fetching context, then a capability check that executes or pauses for confirmation, writing memory and verifying the step, which loops back, synthesizes, or fails, ending at END](diagrams/docs/workflow-graph.svg)
+![Flowchart showing a workflow step loading, routing, fetching context, then preflight running the step; a write the step does not pre-approve parks at await_write_confirmation, which holds an unattended run, then write_memory and verify_step, looping back for more steps or ending in synthesis or failure](diagrams/docs/workflow-graph.svg)
 
 <sub>[Interactive version](diagrams/docs/workflow-graph.html)</sub>
 
 `load_workflow_step` resets per-step state and sets `prompt` to the step's task.
 The graph then routes normally — `embed_route` picks the right agent, memory is
-injected, and capability is enforced — exactly as if the user had typed the task.
+injected, and irreversible writes still ask first — exactly as if the user had typed the task.
 
 ### Branching
 
@@ -118,7 +145,7 @@ workflows
   id           UUID
   name         TEXT  (unique)
   description  TEXT
-  steps        JSONB (list of WorkflowStep: task, agent_hint, verify, intent,
+  steps        JSONB (list of WorkflowStep: task, agent_hint, verify,
                       id, branches, default_next, on_failure)
   schedule     TEXT  (cron expression, NULL = on-demand only)
   enabled      BOOL

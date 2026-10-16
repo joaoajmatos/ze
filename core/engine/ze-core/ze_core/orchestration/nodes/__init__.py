@@ -1,11 +1,10 @@
 from ze_core.orchestration.nodes.context import fetch_context
 from ze_core.orchestration.nodes.correlation import correlate
 from ze_core.orchestration.nodes.execution import (
-    await_confirmation,
-    await_subtask_confirmation,
-    capability_check,
-    draft_response,
+    await_budget_confirmation,
+    await_write_confirmation,
     execute_tool,
+    preflight,
 )
 from ze_core.orchestration.nodes.loop_surfacing import surface_loops
 from ze_core.orchestration.nodes.memory import synthesize, write_memory
@@ -15,16 +14,15 @@ from ze_core.orchestration.nodes.skills import match_skills
 from ze_core.orchestration.nodes.trace import record_trace
 
 __all__ = [
-    "await_confirmation",
-    "await_subtask_confirmation",
-    "capability_check",
+    "await_budget_confirmation",
+    "await_write_confirmation",
     "correlate",
     "decompose",
-    "draft_response",
     "embed_route",
     "execute_tool",
     "fetch_context",
     "match_skills",
+    "preflight",
     "preprocess",
     "record_trace",
     "surface_loops",

@@ -20,7 +20,7 @@ class PendingConfirmationStore:
         thread_id: str,
         request_id: str,
         prompt: str,
-        actions: list[dict],
+        actions: dict | list[dict],
         expires_at: datetime,
     ) -> None:
         try:
@@ -59,6 +59,7 @@ class PendingConfirmationStore:
                     "request_id": row["request_id"],
                     "prompt": row["prompt"],
                     "actions": row["actions"],
+                    "expires_at": row["expires_at"],
                 }
                 for row in rows
             ]
@@ -80,6 +81,7 @@ class PendingConfirmationStore:
                     "request_id": row["request_id"],
                     "prompt": row["prompt"],
                     "actions": row["actions"],
+                    "expires_at": row["expires_at"],
                 }
                 for row in rows
             ]

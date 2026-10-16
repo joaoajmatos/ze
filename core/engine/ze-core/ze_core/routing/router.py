@@ -87,8 +87,7 @@ class EmbeddingRouter:
         if agent_name not in get_enabled_agents():
             raise RoutingError(f"Forced agent {agent_name!r} is not an enabled agent")
         prompt = prompt.strip()
-        intent = self._primary_intent(agent_name)
-        complexity = self._estimator.classify(prompt, intent, 1.0)
+        complexity = self._estimator.classify(prompt, agent_name, 1.0)
         envelope = RoutingEnvelope(
             primary_agent=agent_name,
             confidence=1.0,
@@ -98,7 +97,6 @@ class EmbeddingRouter:
             subtasks=[
                 SubTask(
                     agent=agent_name,
-                    intent=intent,
                     prompt=prompt,
                     model=self._resolve_model(agent_name, complexity),
                 )
@@ -137,17 +135,9 @@ class EmbeddingRouter:
             declared = agent_cls.model
         return resolve_model(agent_name, declared, self._app_config)
 
-    def _primary_intent(self, agent_name: str) -> str:
-        enabled = get_enabled_agents()
-        agent_cls = enabled.get(agent_name)
-        if agent_cls is None:
-            return "read"
-        return next(iter(getattr(agent_cls, "intents", {})), "read")
-
     def _single_agent_envelope(self, prompt: str) -> RoutingEnvelope:
         agent_name = self._agent_names[0]
-        intent = self._primary_intent(agent_name)
-        complexity = self._estimator.classify(prompt, intent, 1.0)
+        complexity = self._estimator.classify(prompt, agent_name, 1.0)
         model = self._resolve_model(agent_name, complexity)
         return RoutingEnvelope(
             primary_agent=agent_name,
@@ -155,9 +145,7 @@ class EmbeddingRouter:
             score_gap=0.0,
             routing_method="embedding",
             is_compound=False,
-            subtasks=[
-                SubTask(agent=agent_name, intent=intent, prompt=prompt, model=model)
-            ],
+            subtasks=[SubTask(agent=agent_name, prompt=prompt, model=model)],
             requires_synthesis=False,
             raw_scores={agent_name: 1.0},
             complexity=complexity,
@@ -211,12 +199,11 @@ class EmbeddingRouter:
         decision: RoutingDecision | None,
         judgment: RoutingJudgment | None,
     ) -> RoutingEnvelope:
-        intent = self._primary_intent(primary)
         if decision is not None and decision.complexity is not None:
             complexity, source = decision.complexity, "score"
         else:
             complexity, source = (
-                self._estimator.classify(prompt, intent, top_score),
+                self._estimator.classify(prompt, primary, top_score),
                 "regex",
             )
         model = self._resolve_model(primary, complexity)
@@ -226,9 +213,7 @@ class EmbeddingRouter:
             score_gap=score_gap,
             routing_method="embedding",
             is_compound=compound,
-            subtasks=[
-                SubTask(agent=primary, intent=intent, prompt=prompt, model=model)
-            ],
+            subtasks=[SubTask(agent=primary, prompt=prompt, model=model)],
             requires_synthesis=False,
             raw_scores=raw_scores,
             complexity=complexity,

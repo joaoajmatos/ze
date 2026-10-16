@@ -204,6 +204,7 @@ async def _handle_stuck_action(
             )
             return
         await store.update_status(goal_id, GoalStatus.PAUSED)
+        await executor.close_holds(goal_id)
         await _reply(
             container,
             conn_mgr,
@@ -220,6 +221,7 @@ async def _handle_stuck_action(
             )
             return
         await store.update_status(goal_id, GoalStatus.ABANDONED)
+        await executor.close_holds(goal_id)
         await _reply(container, conn_mgr, f"Abandoned <b>{title}</b>.", thread_id)
         await conn_mgr.send_frame({"type": "refresh", "screen": "goals"}, thread_id)
         return

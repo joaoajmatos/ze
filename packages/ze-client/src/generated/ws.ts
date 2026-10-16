@@ -49,16 +49,29 @@ export type Components1 = {
 export type Type2 = "confirm_request";
 export type Id2 = string;
 export type ThreadId2 = string | null;
-export type Prompt = string;
+export type Kind = "write" | "budget" | "held" | "prompt";
+export type Round = number;
+export type Title = string;
+export type ItemId = string;
+export type Agent = string;
+export type Tool1 = string | null;
+export type EffectPhrase1 = string;
+export type Summary = string;
+export type Conflict = string | null;
+export type EditableField = string | null;
+export type ProposedText = string | null;
+export type Items = WsConfirmItem[];
+export type Kind1 = "workflow" | "goal";
+export type Name = string;
+export type ExpiresAt = string | null;
 export type Label = string;
 export type Value = string;
 export type Style = ("primary" | "secondary" | "danger") | null;
 export type Actions = WsConfirmAction[];
-export type Editable = boolean;
-export type Proposed = string;
 export type Type3 = "confirm_cancel";
 export type Id3 = string;
 export type ThreadId3 = string | null;
+export type Reason = "answered" | null;
 export type Type4 = "typing";
 export type ThreadId4 = string | null;
 export type Text2 = string | null;
@@ -75,8 +88,8 @@ export type ReasonText = string | null;
 export type RolledBack = boolean | null;
 export type Plan = UndoPlanEntryResponse[] | null;
 export type EntryId1 = string;
-export type Tool1 = string;
-export type EffectPhrase1 = string;
+export type Tool2 = string;
+export type EffectPhrase2 = string;
 export type UndoNote = string | null;
 export type Type7 = "message_superseded";
 export type ThreadId7 = string | null;
@@ -93,7 +106,7 @@ export type Type11 = "trace_update";
 export type ThreadId10 = string;
 export type MessageId3 = string;
 export type Partial = boolean;
-export type Agent = string;
+export type Agent1 = string;
 export type RoutingMethod = string;
 export type Confidence = number;
 export type ScoreGap = number;
@@ -104,19 +117,27 @@ export type Score = number;
 export type Source = string;
 export type ExtractionConfidence = number | null;
 export type MemoryChunks = MemoryChunkTraceResponse[];
-export type Name = string;
+export type Name1 = string;
 export type ResultSnippet = string;
 export type DurationMs = number;
 export type Success = boolean;
 export type Access = "read" | "write" | "delegate" | "unknown";
 export type Reversibility = ("reversible" | "irreversible") | null;
 export type UndoTool = string | null;
-export type Gate = "none" | "approved" | "denied" | "expired";
-export type EffectPhrase2 = string | null;
+export type Gate =
+  | "none"
+  | "approved"
+  | "pre_approved"
+  | "denied"
+  | "refused"
+  | "refused_over_cap"
+  | "expired"
+  | "duplicate";
+export type EffectPhrase3 = string | null;
 export type ToolCalls = ToolCallTraceResponse[];
 export type TotalDurationMs = number;
 export type SkillId = string;
-export type Name1 = string;
+export type Name2 = string;
 export type Source1 = string;
 export type Trigger = string;
 export type Similarity = number | null;
@@ -142,12 +163,12 @@ export type ConductorHint =
       [k: string]: string;
     }[]
   | null;
-export type Agent1 = string;
+export type Agent2 = string;
 export type Status1 = string;
 export type RequestId = string | null;
 export type ConductorLedger = ConductorLedgerEntryResponse[];
 export type QuestionId = string;
-export type Kind = string;
+export type Kind2 = string;
 export type LatencyMs = number;
 export type Answer = string | number | null;
 export type Probabilities = {
@@ -160,16 +181,25 @@ export type Consumed = boolean;
 export type SkipReason = string | null;
 export type Judgments = JudgmentTraceResponse[];
 export type Url = string;
-export type Title = string;
+export type Title1 = string;
 export type Sources = SourceTraceResponse[];
 export type EffectsKnown = boolean;
+export type RequestId1 = string;
+export type Round1 = number;
+export type ItemId1 = string;
+export type Agent3 = string;
+export type Tool3 = string | null;
+export type Effect = string | null;
+export type Summary1 = string;
+export type Outcome1 = "approved" | "edited" | "pre_approved" | "denied" | "timed_out" | "superseded" | "refused";
+export type WriteConfirmations = WriteConfirmationOutcomeResponse[];
 export type Replaces1 = string;
 export type Entries1 = RollbackEntryResponse[];
 export type Type12 = "notification";
 export type Id5 = string;
 export type EventType = string;
 export type Source2 = string;
-export type Title1 = string;
+export type Title2 = string;
 export type Body = string;
 export type TargetType = string | null;
 export type TargetId = string | null;
@@ -206,13 +236,12 @@ export type Type15 = "confirm";
 export type Id6 = string;
 export type ThreadId12 = string;
 export type Choice = "approve" | "deny";
-export type EditedContent = string | null;
 export type Type16 = "action";
 export type Payload = string;
 export type ThreadId13 = string | null;
 export type Type17 = "command";
 export type ThreadId14 = string | null;
-export type Name2 = "cancel" | "costs" | "capabilities" | "status" | "onboarding" | "reset" | "reset_preview";
+export type Name3 = "cancel" | "costs" | "status" | "onboarding" | "reset" | "reset_preview";
 export type Type18 = "component_submit";
 export type StepId = string;
 export type SessionId1 = string | null;
@@ -300,10 +329,35 @@ export interface WsConfirmRequestFrame {
   type: Type2;
   id: Id2;
   thread_id?: ThreadId2;
-  prompt: Prompt;
+  kind: Kind;
+  round?: Round;
+  title: Title;
+  items: Items;
+  source?: WsConfirmSource | null;
+  expires_at?: ExpiresAt;
   actions: Actions;
-  editable?: Editable;
-  proposed?: Proposed;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsConfirmItem".
+ */
+export interface WsConfirmItem {
+  item_id: ItemId;
+  agent: Agent;
+  tool?: Tool1;
+  effect_phrase: EffectPhrase1;
+  summary: Summary;
+  conflict?: Conflict;
+  editable_field?: EditableField;
+  proposed_text?: ProposedText;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WsConfirmSource".
+ */
+export interface WsConfirmSource {
+  kind: Kind1;
+  name: Name;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -322,6 +376,7 @@ export interface WsConfirmCancelFrame {
   type: Type3;
   id: Id3;
   thread_id?: ThreadId3;
+  reason?: Reason;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -363,8 +418,8 @@ export interface WsErrorFrame {
  */
 export interface UndoPlanEntryResponse {
   entry_id: EntryId1;
-  tool: Tool1;
-  effect_phrase: EffectPhrase1;
+  tool: Tool2;
+  effect_phrase: EffectPhrase2;
   undo_note?: UndoNote;
 }
 /**
@@ -412,7 +467,7 @@ export interface WsTraceUpdateFrame {
   thread_id: ThreadId10;
   message_id: MessageId3;
   partial?: Partial;
-  agent: Agent;
+  agent: Agent1;
   routing_method: RoutingMethod;
   confidence: Confidence;
   score_gap: ScoreGap;
@@ -429,6 +484,7 @@ export interface WsTraceUpdateFrame {
   judgments?: Judgments;
   sources?: Sources;
   effects_known?: EffectsKnown;
+  write_confirmations?: WriteConfirmations;
   rollback?: RollbackTraceResponse | null;
 }
 /**
@@ -446,7 +502,7 @@ export interface MemoryChunkTraceResponse {
  * via the `definition` "ToolCallTraceResponse".
  */
 export interface ToolCallTraceResponse {
-  name: Name;
+  name: Name1;
   result_snippet: ResultSnippet;
   duration_ms: DurationMs;
   success: Success;
@@ -454,7 +510,7 @@ export interface ToolCallTraceResponse {
   reversibility?: Reversibility;
   undo_tool?: UndoTool;
   gate?: Gate;
-  effect_phrase?: EffectPhrase2;
+  effect_phrase?: EffectPhrase3;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -462,7 +518,7 @@ export interface ToolCallTraceResponse {
  */
 export interface SkillUsageTraceResponse {
   skill_id: SkillId;
-  name: Name1;
+  name: Name2;
   source: Source1;
   trigger: Trigger;
   similarity?: Similarity;
@@ -512,7 +568,7 @@ export interface ProcedureUsageTraceResponse {
  * via the `definition` "ConductorLedgerEntryResponse".
  */
 export interface ConductorLedgerEntryResponse {
-  agent: Agent1;
+  agent: Agent2;
   status: Status1;
   request_id?: RequestId;
 }
@@ -522,7 +578,7 @@ export interface ConductorLedgerEntryResponse {
  */
 export interface JudgmentTraceResponse {
   question_id: QuestionId;
-  kind: Kind;
+  kind: Kind2;
   latency_ms: LatencyMs;
   answer?: Answer;
   probabilities?: Probabilities;
@@ -538,7 +594,21 @@ export interface JudgmentTraceResponse {
  */
 export interface SourceTraceResponse {
   url: Url;
-  title?: Title;
+  title?: Title1;
+}
+/**
+ * This interface was referenced by `WsProtocol`'s JSON-Schema
+ * via the `definition` "WriteConfirmationOutcomeResponse".
+ */
+export interface WriteConfirmationOutcomeResponse {
+  request_id: RequestId1;
+  round: Round1;
+  item_id: ItemId1;
+  agent: Agent3;
+  tool?: Tool3;
+  effect?: Effect;
+  summary?: Summary1;
+  outcome: Outcome1;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -557,7 +627,7 @@ export interface WsNotificationFrame {
   id: Id5;
   event_type: EventType;
   source: Source2;
-  title: Title1;
+  title: Title2;
   body: Body;
   target_type: TargetType;
   target_id: TargetId;
@@ -612,7 +682,10 @@ export interface WsConfirmFrame {
   id: Id6;
   thread_id: ThreadId12;
   choice: Choice;
-  edited_content?: EditedContent;
+  edits?: Edits;
+}
+export interface Edits {
+  [k: string]: string;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema
@@ -630,7 +703,7 @@ export interface WsActionFrame {
 export interface WsCommandFrame {
   type: Type17;
   thread_id?: ThreadId14;
-  name: Name2;
+  name: Name3;
 }
 /**
  * This interface was referenced by `WsProtocol`'s JSON-Schema

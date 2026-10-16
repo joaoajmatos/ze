@@ -27,19 +27,6 @@ export type ActivityHeatmapResponse = {
 };
 
 /**
- * AgentCapabilityConfig
- *
- * Per-agent entry from capabilities.yaml (enabled + intent modes).
- */
-export type AgentCapabilityConfig = {
-    /**
-     * Enabled
-     */
-    enabled?: boolean | null;
-    [key: string]: unknown;
-};
-
-/**
  * AgentCostBucket
  */
 export type AgentCostBucket = {
@@ -202,25 +189,6 @@ export type CancelWorkflowExecutionResponse = {
 };
 
 /**
- * CapabilitiesResponse
- *
- * Full capabilities map keyed by agent name.
- */
-export type CapabilitiesResponse = {
-    [key: string]: AgentCapabilityConfig;
-};
-
-/**
- * CapabilityModeUpdate
- */
-export type CapabilityModeUpdate = {
-    /**
-     * Mode
-     */
-    mode: 'autonomous' | 'confirm' | 'draft_only' | 'disabled';
-};
-
-/**
  * ChannelInfo
  */
 export type ChannelInfo = {
@@ -351,6 +319,44 @@ export type ConductorLedgerEntryResponse = {
      * Request Id
      */
     request_id?: string | null;
+};
+
+/**
+ * ConfirmItemOut
+ */
+export type ConfirmItemOut = {
+    /**
+     * Item Id
+     */
+    item_id: string;
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tool
+     */
+    tool?: string | null;
+    /**
+     * Effect Phrase
+     */
+    effect_phrase: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Conflict
+     */
+    conflict?: string | null;
+    /**
+     * Editable Field
+     */
+    editable_field?: string | null;
+    /**
+     * Proposed Text
+     */
+    proposed_text?: string | null;
 };
 
 /**
@@ -872,6 +878,26 @@ export type EvalChatResponse = {
 };
 
 /**
+ * EvalConfirmRequest
+ */
+export type EvalConfirmRequest = {
+    /**
+     * Session Id
+     */
+    session_id?: string;
+    /**
+     * Choice
+     */
+    choice: 'approve' | 'deny';
+    /**
+     * Edits
+     */
+    edits?: {
+        [key: string]: string;
+    };
+};
+
+/**
  * EvalRoutingInfo
  */
 export type EvalRoutingInfo = {
@@ -930,9 +956,13 @@ export type EvalToolCall = {
      */
     error?: string | null;
     /**
-     * Is Draft
+     * Gate
      */
-    is_draft?: boolean;
+    gate?: string;
+    /**
+     * Parked
+     */
+    parked?: boolean;
 };
 
 /**
@@ -1352,6 +1382,75 @@ export type HeatmapDay = {
      */
     agents: Array<AgentDayCount>;
 };
+
+/**
+ * HeldWriteDecisionIn
+ */
+export type HeldWriteDecisionIn = {
+    /**
+     * Choice
+     */
+    choice: 'approve' | 'deny';
+    /**
+     * Edits
+     */
+    edits?: {
+        [key: string]: string;
+    };
+};
+
+/**
+ * HeldWriteListResponse
+ */
+export type HeldWriteListResponse = {
+    /**
+     * Items
+     */
+    items: Array<HeldWriteOut>;
+};
+
+/**
+ * HeldWriteOut
+ */
+export type HeldWriteOut = {
+    /**
+     * Request Id
+     */
+    request_id: string;
+    /**
+     * Source
+     */
+    source: 'workflow' | 'goal';
+    /**
+     * Source Name
+     */
+    source_name: string;
+    /**
+     * Owner Ref
+     */
+    owner_ref: string;
+    /**
+     * Items
+     */
+    items: Array<ConfirmItemOut>;
+    /**
+     * Status
+     */
+    status: 'open' | 'approved' | 'denied' | 'expired';
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Expires At
+     */
+    expires_at?: string | null;
+};
+
+/**
+ * HeldWriteStatus
+ */
+export type HeldWriteStatus = 'open' | 'approved' | 'denied' | 'expired';
 
 /**
  * ImportResponse
@@ -2181,6 +2280,10 @@ export type MessageTraceResponse = {
      * Loop Offer Ids
      */
     loop_offer_ids?: Array<string>;
+    /**
+     * Write Confirmations
+     */
+    write_confirmations?: Array<WriteConfirmationOutcomeResponse>;
 };
 
 /**
@@ -3389,6 +3492,24 @@ export type StepResultResponse = {
 };
 
 /**
+ * StepWritesNeedingApproval
+ */
+export type StepWritesNeedingApproval = {
+    /**
+     * Step Id
+     */
+    step_id: string;
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tools
+     */
+    tools: Array<string>;
+};
+
+/**
  * TimelineBoundsResponse
  */
 export type TimelineBoundsResponse = {
@@ -3437,7 +3558,7 @@ export type ToolCallTraceResponse = {
     /**
      * Gate
      */
-    gate?: 'none' | 'approved' | 'denied' | 'expired';
+    gate?: 'none' | 'approved' | 'pre_approved' | 'denied' | 'refused' | 'refused_over_cap' | 'expired' | 'duplicate';
     /**
      * Effect Phrase
      */
@@ -3555,15 +3676,6 @@ export type UnreadCountResponse = {
 };
 
 /**
- * UpdateCapabilityResponse
- *
- * Updated capabilities for a single agent after PUT.
- */
-export type UpdateCapabilityResponse = {
-    [key: string]: AgentCapabilityConfig;
-};
-
-/**
  * UpdateWorkflowStepsRequest
  */
 export type UpdateWorkflowStepsRequest = {
@@ -3571,6 +3683,56 @@ export type UpdateWorkflowStepsRequest = {
      * Steps
      */
     steps: Array<WorkflowStepInput>;
+    /**
+     * Approve Writes
+     */
+    approve_writes?: boolean;
+};
+
+/**
+ * UpdateWorkflowStepsResponse
+ */
+export type UpdateWorkflowStepsResponse = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Description
+     */
+    description: string;
+    /**
+     * Schedule
+     */
+    schedule: string | null;
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Last Run At
+     */
+    last_run_at: string | null;
+    /**
+     * Next Run At
+     */
+    next_run_at: string | null;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Steps
+     */
+    steps: Array<WorkflowStepResponse>;
+    /**
+     * Writes Needing Approval
+     */
+    writes_needing_approval?: Array<StepWritesNeedingApproval>;
 };
 
 /**
@@ -3898,10 +4060,6 @@ export type WorkflowStepInput = {
      */
     verify?: string | null;
     /**
-     * Intent
-     */
-    intent?: string;
-    /**
      * Id
      */
     id: string;
@@ -3917,6 +4075,10 @@ export type WorkflowStepInput = {
      * On Failure
      */
     on_failure?: string;
+    /**
+     * Planned Writes
+     */
+    planned_writes?: Array<string>;
 };
 
 /**
@@ -3951,6 +4113,14 @@ export type WorkflowStepResponse = {
      * On Failure
      */
     on_failure?: string;
+    /**
+     * Planned Writes
+     */
+    planned_writes?: Array<string>;
+    /**
+     * Approved Writes
+     */
+    approved_writes?: Array<string>;
 };
 
 /**
@@ -4234,6 +4404,44 @@ export type WorkspaceUsageTraceResponse = {
 };
 
 /**
+ * WriteConfirmationOutcomeResponse
+ */
+export type WriteConfirmationOutcomeResponse = {
+    /**
+     * Request Id
+     */
+    request_id: string;
+    /**
+     * Round
+     */
+    round: number;
+    /**
+     * Item Id
+     */
+    item_id: string;
+    /**
+     * Agent
+     */
+    agent: string;
+    /**
+     * Tool
+     */
+    tool?: string | null;
+    /**
+     * Effect
+     */
+    effect?: string | null;
+    /**
+     * Summary
+     */
+    summary?: string;
+    /**
+     * Outcome
+     */
+    outcome: 'approved' | 'edited' | 'pre_approved' | 'denied' | 'timed_out' | 'superseded' | 'refused';
+};
+
+/**
  * WsSchemaResponse
  */
 export type WsSchemaResponse = {
@@ -4314,6 +4522,37 @@ export type EvalChatEvalChatPostResponses = {
 
 export type EvalChatEvalChatPostResponse = EvalChatEvalChatPostResponses[keyof EvalChatEvalChatPostResponses];
 
+export type EvalConfirmData = {
+    body: EvalConfirmRequest;
+    headers?: {
+        /**
+         * X-Ze-Api-Key
+         */
+        'x-ze-api-key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/eval/confirm';
+};
+
+export type EvalConfirmErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EvalConfirmError = EvalConfirmErrors[keyof EvalConfirmErrors];
+
+export type EvalConfirmResponses = {
+    /**
+     * Successful Response
+     */
+    200: EvalChatResponse;
+};
+
+export type EvalConfirmResponse = EvalConfirmResponses[keyof EvalConfirmResponses];
+
 export type GetActivityHeatmapData = {
     body?: never;
     path?: never;
@@ -4351,56 +4590,6 @@ export type GetActivityHeatmapResponses = {
 };
 
 export type GetActivityHeatmapResponse = GetActivityHeatmapResponses[keyof GetActivityHeatmapResponses];
-
-export type ListCapabilitiesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/capabilities';
-};
-
-export type ListCapabilitiesResponses = {
-    /**
-     * Successful Response
-     */
-    200: CapabilitiesResponse;
-};
-
-export type ListCapabilitiesResponse = ListCapabilitiesResponses[keyof ListCapabilitiesResponses];
-
-export type UpdateCapabilityData = {
-    body: CapabilityModeUpdate;
-    path: {
-        /**
-         * Agent
-         */
-        agent: string;
-        /**
-         * Intent
-         */
-        intent: string;
-    };
-    query?: never;
-    url: '/api/v0/capabilities/{agent}/{intent}';
-};
-
-export type UpdateCapabilityErrors = {
-    /**
-     * Validation error (unknown agent/intent or invalid request body)
-     */
-    422: ErrorDetail;
-};
-
-export type UpdateCapabilityError = UpdateCapabilityErrors[keyof UpdateCapabilityErrors];
-
-export type UpdateCapabilityResponses = {
-    /**
-     * Successful Response
-     */
-    200: UpdateCapabilityResponse;
-};
-
-export type UpdateCapabilityResponse2 = UpdateCapabilityResponses[keyof UpdateCapabilityResponses];
 
 export type GetMemoryFeedData = {
     body?: never;
@@ -4910,10 +5099,10 @@ export type UpdateWorkflowStepsResponses = {
     /**
      * Successful Response
      */
-    200: WorkflowDetailResponse;
+    200: UpdateWorkflowStepsResponse;
 };
 
-export type UpdateWorkflowStepsResponse = UpdateWorkflowStepsResponses[keyof UpdateWorkflowStepsResponses];
+export type UpdateWorkflowStepsResponse2 = UpdateWorkflowStepsResponses[keyof UpdateWorkflowStepsResponses];
 
 export type ListWorkflowRevisionsData = {
     body?: never;
@@ -5347,6 +5536,63 @@ export type StartGoalResponses = {
 };
 
 export type StartGoalResponse = StartGoalResponses[keyof StartGoalResponses];
+
+export type ListHeldWritesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        status?: HeldWriteStatus;
+    };
+    url: '/api/v0/held-writes';
+};
+
+export type ListHeldWritesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListHeldWritesError = ListHeldWritesErrors[keyof ListHeldWritesErrors];
+
+export type ListHeldWritesResponses = {
+    /**
+     * Successful Response
+     */
+    200: HeldWriteListResponse;
+};
+
+export type ListHeldWritesResponse = ListHeldWritesResponses[keyof ListHeldWritesResponses];
+
+export type DecideHeldWriteData = {
+    body: HeldWriteDecisionIn;
+    path: {
+        /**
+         * Request Id
+         */
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v0/held-writes/{request_id}/decision';
+};
+
+export type DecideHeldWriteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DecideHeldWriteError = DecideHeldWriteErrors[keyof DecideHeldWriteErrors];
+
+export type DecideHeldWriteResponses = {
+    /**
+     * Successful Response
+     */
+    200: HeldWriteOut;
+};
+
+export type DecideHeldWriteResponse = DecideHeldWriteResponses[keyof DecideHeldWriteResponses];
 
 export type ListSessionsData = {
     body?: never;

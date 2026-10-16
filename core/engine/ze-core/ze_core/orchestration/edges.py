@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from ze_agents.types import GateDecision
 from ze_core.orchestration.state import AgentState
 
 
@@ -16,29 +15,22 @@ def after_decompose(state: AgentState) -> str:
     return "fetch_context"
 
 
-def after_capability_check(state: AgentState) -> str:
-    envelope = state.get("envelope")
-    if envelope and envelope.is_compound and len(envelope.subtasks) > 1:
-        if state.get("gate_decision") == GateDecision.BLOCKED:
-            return "end_blocked"
-        return "execute_tool"
-    match state.get("gate_decision"):
-        case GateDecision.EXECUTE:
-            return "execute_tool"
-        case GateDecision.DRAFT | GateDecision.AWAIT_CONFIRMATION:
-            return "draft_response"
-        case _:
-            return "end_blocked"
+def after_preflight(state: AgentState) -> str:
+    if state.get("blocked"):
+        return "end_blocked"
+    if state.get("budget_status") and not state.get("budget_approved"):
+        return "await_budget_confirmation"
+    return "execute_tool"
+
+
+def after_await_budget_confirmation(state: AgentState) -> str:
+    return "record_trace" if state.get("final_response") else "execute_tool"
 
 
 def after_execute_tool(state: AgentState) -> str:
-    if state.get("pending_subtask_awaits"):
-        return "await_subtask_confirmation"
+    if state.get("write_confirmation") is not None and state.get("parked_subtasks"):
+        return "await_write_confirmation"
     return "correlate"
-
-
-def after_await_subtask_confirmation(state: AgentState) -> str:
-    return "execute_tool"
 
 
 def after_correlate(state: AgentState) -> str:
@@ -55,11 +47,3 @@ def after_surface_loops(state: AgentState) -> str:
     if envelope and envelope.is_compound and state.get("subtask_results"):
         return "synthesize"
     return "record_trace"
-
-
-def after_await_confirmation(state: AgentState) -> str:
-    """Route to record_trace when the draft IS the final response (DRAFT_ONLY ceiling).
-    Otherwise route to execute_tool to perform the approved action."""
-    if state.get("final_response"):
-        return "record_trace"
-    return "execute_tool"

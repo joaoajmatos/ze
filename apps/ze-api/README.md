@@ -9,7 +9,7 @@ Deployment unit for Ze. Wires all packages together, exposes the WebSocket chat 
 ### Key features
 
 - WebSocket chat at `/ws` — primary user interface, with confirmation flow and message replay
-- REST management API — memory inspection, costs, capabilities, workflows, contacts
+- REST management API — memory inspection, costs, workflows, held writes, contacts
 - `ZeContainer` — DI wiring for all plugins, integrations, and shared services
 - Alembic meta-migrator — discovers and runs migrations from all owning packages
 - Agent harness hooks — tool-call caps (`ze_agents`), component collection (`ze_components`); configured in `ze_core/bootstrap.py`
@@ -68,14 +68,14 @@ Connect at `ws://<host>:8000/ws` with `Authorization: Bearer <ZE_API_KEY>` heade
 {"type": "message", "message": {"role": "assistant", "text": "...", "components": [...]}}
 ```
 
-**Receive** (confirmation request):
+**Receive** (confirmation request — Ze parked a write it cannot undo):
 ```json
-{"type": "confirm_request", "id": "<uuid>", "prompt": "...", "actions": [{"label": "Approve", "payload": "yes"}]}
+{"type": "confirm_request", "id": "<uuid>", "thread_id": "<uuid>", "kind": "write", "round": 1, "title": "Ze needs your OK", "items": [{"item_id": "c1", "agent": "messenger", "tool": "send_email", "effect_phrase": "send an email", "summary": "to: ana@example.com"}], "actions": [{"label": "Approve all", "value": "approve", "style": "primary"}, {"label": "Deny all", "value": "deny", "style": "secondary"}], "expires_at": "..."}
 ```
 
-**Send** (confirmation reply — same as a regular message on the original thread):
+**Send** (confirmation reply):
 ```json
-{"type": "message", "text": "yes", "thread_id": "<original-thread-id>"}
+{"type": "confirm", "id": "<request id>", "choice": "approve"}
 ```
 
 **Send** (retry the latest reply; the server refuses it if a write ran):
@@ -94,8 +94,8 @@ Full protocol reference: [docs/native-interface.md](../../docs/native-interface.
 | `GET /api/v0/messages` | Unread message list (WebSocket replay fallback). Hides retried replies unless `include_superseded=true` |
 | `PUT /api/v0/messages/{message_id}/feedback` | Rate an assistant reply (`up`, `down`, `none`) |
 | `GET /api/v0/messages/feedback` | Batch read of ratings and Retry eligibility |
-| `GET /api/v0/capabilities` | List capability overrides |
-| `PUT /api/v0/capabilities/{agent}/{intent}` | Update a capability mode |
+| `GET /api/v0/held-writes` | List writes that unattended workflow and goal runs hold for approval |
+| `POST /api/v0/held-writes/{request_id}/decision` | Approve or deny a held write |
 | `GET /api/v0/memory/facts` | Inspect stored facts |
 | `GET /api/v0/memory/profile` | Get current user profile |
 | `GET /api/v0/routing/log` | Routing decision log |

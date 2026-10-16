@@ -72,7 +72,7 @@ def _milestone_from_row(row) -> Milestone:
         description=row["description"],
         sequence=row["sequence"],
         agent_hint=row["agent_hint"],
-        intent=row["intent"],
+        approved_writes=list(row["approved_writes"] or []),
         status=MilestoneStatus(row["status"]),
         output=row["output"],
         reuse_hint=row["reuse_hint"] if "reuse_hint" in keys else "",
@@ -221,7 +221,7 @@ class PostgresGoalStore:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                INSERT INTO goal_milestones (goal_id, title, description, sequence, agent_hint, intent, status)
+                INSERT INTO goal_milestones (goal_id, title, description, sequence, agent_hint, approved_writes, status)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING *
                 """,
@@ -230,7 +230,7 @@ class PostgresGoalStore:
                 m.description,
                 m.sequence,
                 m.agent_hint,
-                m.intent,
+                m.approved_writes,
                 m.status.value,
             )
         return _milestone_from_row(row)
@@ -280,7 +280,7 @@ class PostgresGoalStore:
                 for m in new_milestones:
                     row = await conn.fetchrow(
                         """
-                        INSERT INTO goal_milestones (goal_id, title, description, sequence, agent_hint, intent, status)
+                        INSERT INTO goal_milestones (goal_id, title, description, sequence, agent_hint, approved_writes, status)
                         VALUES ($1, $2, $3, $4, $5, $6, $7)
                         RETURNING *
                         """,
@@ -289,7 +289,7 @@ class PostgresGoalStore:
                         m.description,
                         m.sequence,
                         m.agent_hint,
-                        m.intent,
+                        m.approved_writes,
                         m.status.value,
                     )
                     results.append(_milestone_from_row(row))

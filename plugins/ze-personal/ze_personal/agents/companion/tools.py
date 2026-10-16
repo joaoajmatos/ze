@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import Injected, ToolAccess, tool
 from ze_sdk import ToolReversibility, undo_payload
 from ze_logging import get_logger
 from ze_sdk.contribution import TargetFace
@@ -92,7 +92,7 @@ async def forget_fact(
     memory_store: PostgresMemoryStore,
     query: str = "",
     fact_id: str = "",
-    restore_fact_ids: list[str] | None = None,
+    restore_fact_ids: Injected[list[str] | None] = None,
 ) -> dict:
     text = query.strip()
     target = fact_id.strip()

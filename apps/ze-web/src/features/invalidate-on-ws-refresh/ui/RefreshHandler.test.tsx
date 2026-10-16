@@ -76,4 +76,58 @@ describe("RefreshHandler — notification frame", () => {
       }),
     ).not.toThrow();
   });
+
+  it("refetches open held writes when a held_write notification arrives", () => {
+    useFrame.mockClear();
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RefreshHandler />
+      </QueryClientProvider>,
+    );
+
+    getHandler("notification")({
+      type: "notification",
+      id: "n-held",
+      event_type: "write_approval_held",
+      source: "workflow",
+      title: "Workflow 'Weekly' needs your OK",
+      body: "send an email",
+      target_type: "held_write",
+      target_id: "req-1",
+      created_at: "2026-07-13T00:00:00Z",
+      read: false,
+    });
+
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.heldWrites });
+  });
+
+  it("leaves held writes alone for other notifications", () => {
+    useFrame.mockClear();
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RefreshHandler />
+      </QueryClientProvider>,
+    );
+
+    getHandler("notification")({
+      type: "notification",
+      id: "n-goal",
+      event_type: "stuck_goal",
+      source: "goals",
+      title: "Goal stuck",
+      body: "",
+      target_type: "goal",
+      target_id: "goal-a",
+      created_at: "2026-07-13T00:00:00Z",
+      read: false,
+    });
+
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: queryKeys.heldWrites });
+  });
 });

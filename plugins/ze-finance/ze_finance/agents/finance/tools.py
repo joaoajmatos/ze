@@ -251,6 +251,8 @@ async def get_recurring_expenses(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="confirmed a recurring expense",
+    asks_first=False,
+    no_ask_reason="The user's own classification of an expense.",
 )
 async def confirm_recurring(
     recurring_store: RecurringStore,
@@ -269,6 +271,8 @@ async def confirm_recurring(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="dismissed a recurring expense",
+    asks_first=False,
+    no_ask_reason="The user's own classification of an expense.",
 )
 async def dismiss_recurring(
     recurring_store: RecurringStore,

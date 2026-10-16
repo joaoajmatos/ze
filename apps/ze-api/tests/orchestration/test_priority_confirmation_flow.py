@@ -1,12 +1,8 @@
-"""Integration test for reprioritize_item's confirmation gate (Phase 127, T033).
+"""reprioritize_item runs without a confirmation (Phase 127 / 181 audit).
 
-Proves — against the *real* `PriorityAgent`/`reprioritize_item` tool and the real
-`ze_core` orchestration nodes, not a stand-in — that: (1) capability_check routes
-a "priority"/"update" subtask through AWAIT_CONFIRMATION (Mode.CONFIRM, FR-007);
-(2) the DRAFT pass never submits a Contribution, because `reprioritize_item` is a
-WRITE tool and BaseAgent suppresses WRITE tools while ctx.gate_decision is DRAFT;
-(3) only the EXECUTE pass (post await_confirmation resume) actually calls
-`submit_reprioritization`'s write path.
+Against the *real* `PriorityAgent`/`reprioritize_item` tool and the real
+`execute_tool` node: the tool opts out of asking first (a decaying override the
+user can reorder again), so the override is submitted in the same turn.
 """
 
 from __future__ import annotations
@@ -19,14 +15,8 @@ import numpy as np
 import pytest
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile
 from ze_agents.registry import register_instance
-from ze_agents.types import AgentContext, GateDecision
-from ze_core.capability.gate import CapabilityGate
-from ze_core.orchestration.nodes.execution import (
-    await_confirmation,
-    capability_check,
-    draft_response,
-    execute_tool,
-)
+from ze_agents.types import AgentContext
+from ze_core.orchestration.nodes.execution import execute_tool
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze_memory.types import MemoryContext
 
@@ -80,11 +70,7 @@ def _wire_priority_agent(client, view, override_store) -> None:
 
 
 def _envelope() -> RoutingEnvelope:
-    subtasks = [
-        SubTask(
-            agent="priority", intent="update", prompt="deprioritize the berlin move"
-        )
-    ]
+    subtasks = [SubTask(agent="priority", prompt="deprioritize the berlin move")]
     return RoutingEnvelope(
         primary_agent="priority",
         confidence=0.9,
@@ -101,7 +87,6 @@ def _ctx() -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt="deprioritize the berlin move",
-        intent="update",
         memory=MemoryContext(),
         messages=[{"role": "user", "content": "deprioritize the berlin move"}],
     )
@@ -135,46 +120,7 @@ _TOOL_CALL = [
 
 
 @pytest.mark.asyncio
-async def test_capability_check_routes_priority_update_to_await_confirmation():
-    gate = CapabilityGate()
-    state = {"envelope": _envelope(), "session_overrides": {}}
-
-    result = await capability_check(state, {"configurable": {"capability_gate": gate}})
-
-    assert result["gate_decision"] == GateDecision.AWAIT_CONFIRMATION
-
-
-@pytest.mark.asyncio
-async def test_draft_pass_never_submits_the_contribution():
-    view, override_store = _view_and_store()
-    client = _client([(None, _TOOL_CALL), ("I'll deprioritize the Berlin move.", None)])
-    _wire_priority_agent(client, view, override_store)
-
-    state = {
-        "envelope": _envelope(),
-        "agent_context": _ctx(),
-        "image_data": None,
-    }
-    result = await draft_response(state, {"configurable": {}})
-
-    assert result["pending_confirmation"] is True
-    assert "Berlin" in result["agent_result"].response
-    override_store.create.assert_not_awaited()
-
-    resumed = await await_confirmation(
-        {
-            "session_id": "s1",
-            "envelope": _envelope(),
-            "gate_decision": GateDecision.AWAIT_CONFIRMATION,
-        },
-        {"configurable": {}},
-    )
-    assert resumed["gate_decision"] == GateDecision.EXECUTE
-    override_store.create.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_execute_pass_submits_the_contribution_only_after_resume():
+async def test_the_override_is_submitted_without_a_confirmation():
     view, override_store = _view_and_store()
     client = _client([(None, _TOOL_CALL), ("Done — deprioritized.", None)])
     _wire_priority_agent(client, view, override_store)
@@ -182,7 +128,6 @@ async def test_execute_pass_submits_the_contribution_only_after_resume():
     state = {
         "envelope": _envelope(),
         "agent_context": _ctx(),
-        "gate_decision": GateDecision.EXECUTE,
         "image_data": None,
     }
     result = await execute_tool(state, {"configurable": {}})

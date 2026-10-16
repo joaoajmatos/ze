@@ -1,0 +1,918 @@
+{
+  "workflow": "speckit",
+  "specName": "Irreversible Write Confirmation",
+  "branch": "181-irreversible-write-confirmation",
+  "currentStep": "implement",
+  "status": "implemented",
+  "history": [
+    {
+      "step": "specify",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T21:38:14.652Z"
+    },
+    {
+      "step": "plan",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-15T21:54:34.531Z"
+    },
+    {
+      "step": "tasks",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-15T21:59:17.001Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "start",
+      "by": "extension",
+      "at": "2026-10-15T22:41:50.409Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T001",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:51.093Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T002",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:51.690Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T003",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:52.286Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T004",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:52.860Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T005",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:53.406Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T006",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:41:54.006Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T008",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:43:44.681Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T009",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:43:45.186Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T010",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:43.422Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T011",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:44.069Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T012",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:44.776Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T013",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:47:45.478Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T024",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:50:42.804Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T025",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:50:43.442Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T007",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T22:52:49.424Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T016",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:00.188Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T017",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:00.705Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T018",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:01.239Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T019",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:01.732Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T020",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-15T23:02:02.291Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T014",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:46:30.918Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T015",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:46:31.857Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T021",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:46:32.503Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T033",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:47:12.758Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T034",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:47:13.306Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T036",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:48:29.541Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T037",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:48:30.103Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:16.987Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T027",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:17.668Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T028",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:18.313Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T030",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:52:18.850Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T029",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:35.314Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T031",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:36.040Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T032",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:36.719Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T035",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T11:54:54.558Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T038",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:25:25.767Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T039",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:25:51.687Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:25:59.178Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:06.013Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T042",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:13.312Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T043",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:19.572Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T044",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:28.462Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T046",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T12:26:33.508Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T022",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T15:17:42.858Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T023",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T15:17:57.709Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T045",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T15:18:07.777Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T058",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T15:23:29.183Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T056",
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T15:37:11.803Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T059",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T15:47:41.539Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T061",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.051Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T062",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.335Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T063",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.636Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T065",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:01:31.928Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T060",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T16:08:46.002Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T049",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.569Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T050",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.640Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T051",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.717Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T052",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.791Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T053",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.861Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T054",
+      "kind": "complete",
+      "by": "Gimbal",
+      "at": "2026-10-16T16:22:06.926Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T055",
+      "kind": "complete",
+      "by": "ai",
+      "at": "2026-10-16T16:29:12.173Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T064",
+      "kind": "complete",
+      "by": "Ratchet",
+      "at": "2026-10-16T16:34:19.093Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T066",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T16:41:55.283Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T057",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T16:42:07.791Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T047",
+      "kind": "complete",
+      "by": "Rivet",
+      "at": "2026-10-16T17:49:50.181Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T048",
+      "kind": "complete",
+      "by": "Rivet",
+      "at": "2026-10-16T17:49:50.269Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T067",
+      "kind": "complete",
+      "by": "Halyard",
+      "at": "2026-10-16T17:53:57.312Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "kind": "complete",
+      "by": "extension",
+      "at": "2026-10-16T17:53:57.525Z"
+    }
+  ],
+  "currentTask": "T067",
+  "task_summaries": {
+    "T001": {
+      "status": "DONE",
+      "did": "171-follow-ups not on main; no goal-local confirmation present"
+    },
+    "T002": {
+      "status": "DONE",
+      "did": "baseline green: agents 126, core 1054, memory 530, automation 410, workspace 76, api 391, lint clean"
+    },
+    "T003": {
+      "status": "DONE",
+      "did": "asks_first declaration tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_tool_asks_first.py"
+      ]
+    },
+    "T004": {
+      "status": "DONE",
+      "did": "ToolSpec asks_first/no_ask_reason/ask_check/editable_field/summarize, AskDecision, sdk export",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/tool.py",
+        "packages/ze-sdk/ze_sdk/types.py",
+        "packages/ze-sdk/ze_sdk/__init__.py"
+      ]
+    },
+    "T005": {
+      "status": "DONE",
+      "did": "park.py types, LoopParked, serde allowlist",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/park.py",
+        "core/contracts/ze-agents/ze_agents/errors.py",
+        "core/engine/ze-core/ze_core/checkpoint_serde.py"
+      ]
+    },
+    "T006": {
+      "status": "DONE",
+      "did": "AgentContext/ToolCall additions",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/types.py"
+      ]
+    },
+    "T008": {
+      "status": "DONE",
+      "did": "call_tool resolution-order tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_call_tool_park.py"
+      ]
+    },
+    "T009": {
+      "status": "DONE",
+      "did": "call_tool park/approved/pre_approved/refuse/cap resolution",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py"
+      ]
+    },
+    "T010": {
+      "status": "DONE",
+      "did": "agentic_loop park tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_agentic_loop_park.py"
+      ]
+    },
+    "T011": {
+      "status": "DONE",
+      "did": "agentic_loop raises LoopParked; loop_active; delegate deferral",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py"
+      ]
+    },
+    "T012": {
+      "status": "DONE",
+      "did": "delegate park tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_delegate_park.py"
+      ]
+    },
+    "T013": {
+      "status": "DONE",
+      "did": "run_delegate returns child_loop on specialist park",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/delegate.py"
+      ]
+    },
+    "T024": {
+      "status": "DONE",
+      "did": "agentic_loop resume tests",
+      "files": [
+        "core/contracts/ze-agents/tests/test_agentic_loop_resume.py"
+      ]
+    },
+    "T025": {
+      "status": "DONE",
+      "did": "resume half of D2, run_delegate(resume=), approval cited on ActionRecorder via current_approval",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/base_agent.py",
+        "core/contracts/ze-agents/ze_agents/delegate.py",
+        "core/cognition/ze-memory/ze_memory/action_records/recorder.py"
+      ]
+    },
+    "T007": {
+      "status": "DONE",
+      "did": "effects.py: effect_imperative, ensure_declined_lines (done by ENG-core lead)",
+      "files": [
+        "core/contracts/ze-agents/ze_agents/effects.py",
+        "core/contracts/ze-agents/tests/test_effects.py",
+        "apps/ze-api/tests/test_effect_phrases.py"
+      ]
+    },
+    "T016": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T017": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T018": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T019": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T020": {
+      "status": "DONE",
+      "did": "US1 graph/transport/trace (see commit)"
+    },
+    "T014": {
+      "status": "DONE",
+      "did": "audit declarations applied (script)"
+    },
+    "T015": {
+      "status": "DONE",
+      "did": "audit test",
+      "files": [
+        "apps/ze-api/tests/test_tool_asks_first_audit.py"
+      ]
+    },
+    "T021": {
+      "status": "DONE",
+      "did": "e2e via ze-core harness",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_write_confirmation_e2e.py"
+      ]
+    },
+    "T033": {
+      "status": "DONE",
+      "did": "veto tests",
+      "files": [
+        "core/cognition/ze-memory/tests/test_constraint_veto.py"
+      ]
+    },
+    "T034": {
+      "status": "DONE",
+      "did": "HarnessHook.check_call, veto refactor",
+      "files": [
+        "core/cognition/ze-memory/ze_memory/constraint_veto.py",
+        "core/contracts/ze-agents/ze_agents/hooks.py"
+      ]
+    },
+    "T036": {
+      "status": "DONE",
+      "did": "workspace ask check tests",
+      "files": [
+        "core/ops/ze-workspace/tests/test_workspace_ask_check.py"
+      ]
+    },
+    "T037": {
+      "status": "DONE",
+      "did": "workspace tools use ask_check, _confirm removed",
+      "files": [
+        "core/ops/ze-workspace/ze_workspace/tools.py"
+      ]
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T027": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T028": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T030": {
+      "status": "DONE",
+      "did": "covered by graph tests / implemented in execution.py"
+    },
+    "T029": {
+      "status": "DONE",
+      "did": "compound/deny/timeout/supersede"
+    },
+    "T031": {
+      "status": "DONE",
+      "did": "compound/deny/timeout/supersede"
+    },
+    "T032": {
+      "status": "DONE",
+      "did": "compound/deny/timeout/supersede"
+    },
+    "T035": {
+      "status": "DONE",
+      "did": "budget pause tests",
+      "files": [
+        "core/engine/ze-core/tests/orchestration/test_budget_pause.py"
+      ]
+    },
+    "T038": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T039": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T042": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T043": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T044": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T046": {
+      "status": "DONE",
+      "did": "hard cut: intents/gate/capability removed, routing label, guard tests, zc032"
+    },
+    "T022": {
+      "status": "DONE",
+      "did": "JR-web: T022 done (ze-web tests + typecheck green)"
+    },
+    "T023": {
+      "status": "DONE",
+      "did": "JR-web: T023 done (ze-web tests + typecheck green)"
+    },
+    "T045": {
+      "status": "DONE",
+      "did": "JR-web: T045 done (ze-web tests + typecheck green)"
+    },
+    "T058": {
+      "status": "DONE",
+      "did": "ENG-core: POST /api/v0/eval/confirm (evalConfirm), parked flag on eval tool calls incl. subtask results; tests/api/test_eval_confirm.py; codegen"
+    },
+    "T056": {
+      "status": "DONE",
+      "did": "ENG-core: sweep of gate leftovers (44ce3d3b); guard test green"
+    },
+    "T059": {
+      "status": "DONE",
+      "did": "JR-eval: T059 eval confirm step, judge text, write_confirmation.yaml (92f56655)"
+    },
+    "T061": {
+      "status": "DONE",
+      "did": "JR-docs: T061 docs committed (see git log)"
+    },
+    "T062": {
+      "status": "DONE",
+      "did": "JR-docs: T062 docs committed (see git log)"
+    },
+    "T063": {
+      "status": "DONE",
+      "did": "JR-docs: T063 docs committed (see git log)"
+    },
+    "T065": {
+      "status": "DONE",
+      "did": "JR-docs: T065 docs committed (see git log)"
+    },
+    "T060": {
+      "status": "DONE"
+    },
+    "T049": {
+      "status": "DONE",
+      "did": "ENG-auto T049"
+    },
+    "T050": {
+      "status": "DONE",
+      "did": "ENG-auto T050"
+    },
+    "T051": {
+      "status": "DONE",
+      "did": "ENG-auto T051"
+    },
+    "T052": {
+      "status": "DONE",
+      "did": "ENG-auto T052"
+    },
+    "T053": {
+      "status": "DONE",
+      "did": "ENG-auto T053"
+    },
+    "T054": {
+      "status": "DONE",
+      "did": "ENG-auto T054"
+    },
+    "T055": {
+      "status": "DONE",
+      "did": "JR-web: held writes in the notification bell, ?confirm= deep link; ze-web 293 tests green"
+    },
+    "T064": {
+      "status": "DONE",
+      "did": "JR-docs: diagrams redrawn (981ca9a9), alt text (6ce43373)"
+    },
+    "T066": {
+      "status": "DONE"
+    },
+    "T057": {
+      "status": "DONE",
+      "did": "N/A: T001 found no 171 Follow-ups goal-local confirmation on this branch"
+    },
+    "T047": {
+      "status": "DONE",
+      "did": "committed by Rivet (174e35d9 / 594f965e); ticked at close"
+    },
+    "T048": {
+      "status": "DONE",
+      "did": "committed by Rivet (174e35d9 / 594f965e); ticked at close"
+    },
+    "T067": {
+      "status": "DONE",
+      "did": "gates on 109878a0: test-py 4443 passed (33 suites), test-pg 41, ze-ui 22 + ze-web 304, typecheck-web, lint; quickstart e2e by Tally (QA) at 496667ef, findings fixed"
+    }
+  }
+}

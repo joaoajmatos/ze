@@ -16,7 +16,6 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 
-from ze_api.api.websocket.confirmation import confirmation_timeout, handle_confirm
 from ze_api.api.websocket.connection import ConnectionManager
 from ze_api.api.websocket.onboarding import send_onboarding_view
 from ze_api.api.websocket.serializers import message_to_dict
@@ -138,41 +137,44 @@ class TestMessageFrameConformance:
 
 
 class TestConfirmRequestFrameConformance:
-    """confirm_request frame: {type, id, prompt, actions: [{label, value, style?}]}"""
+    """confirm_request frames from both builders validate against WsConfirmRequestFrame."""
 
-    async def test_confirm_request_shape_matches_protocol(self):
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
+    def test_write_confirmation_frame_matches_the_schema(self):
+        from ze_api.api.schemas import WsConfirmRequestFrame
+        from ze_api.api.websocket.frames import build_confirm_frame
 
-        request_id = str(uuid4())
-        frame = {
-            "type": "confirm_request",
-            "id": request_id,
-            "prompt": "Delete 10 emails?",
-            "actions": [
-                {"label": "Approve", "value": "approve", "style": "primary"},
-                {"label": "Cancel", "value": "deny", "style": "secondary"},
+        frame = build_confirm_frame(
+            request_id=str(uuid4()),
+            thread_id="t1",
+            kind="write",
+            round_=1,
+            items=[
+                {
+                    "item_id": "i1",
+                    "agent": "calendar",
+                    "tool": "delete_event",
+                    "effect_phrase": "delete a calendar event",
+                    "summary": "Dentist 15:00",
+                }
             ],
-        }
-        await mgr.send_frame(frame)
+            expires_at=datetime.now(timezone.utc),
+        )
+        WsConfirmRequestFrame.model_validate(frame)
 
-        sent = _frames_sent(ws)[0]
-        assert sent["type"] == "confirm_request"
-        assert isinstance(sent["id"], str)
-        assert isinstance(sent["prompt"], str)
-        assert isinstance(sent["actions"], list)
-        for action in sent["actions"]:
-            assert "label" in action
-            assert "value" in action
+    def test_prompt_frame_matches_the_schema(self):
+        from ze_api.api.schemas import WsConfirmRequestFrame
+        from ze_api.api.websocket.frames import build_prompt_frame
 
-    async def test_confirm_request_action_style_is_primary_secondary_or_danger(self):
-        valid_styles = {"primary", "secondary", "danger"}
-        for style in valid_styles:
-            action = {"label": "OK", "value": "approve", "style": style}
-            assert action["style"] in valid_styles
+        frame = build_prompt_frame(
+            request_id=str(uuid4()),
+            thread_id=None,
+            title="Start this goal?",
+            actions=[
+                {"label": "Start", "value": "goal_plan:yes:g1", "style": "primary"},
+                {"label": "Cancel", "value": "goal_plan:no:g1", "style": "danger"},
+            ],
+        )
+        WsConfirmRequestFrame.model_validate(frame)
 
 
 class TestConfirmCancelFrameConformance:
@@ -260,462 +262,6 @@ def _make_container(thread_id: str = "t1") -> Any:
     graph_state.interrupts = ()
     container.graph.aget_state = AsyncMock(return_value=graph_state)
     return container
-
-
-class TestConfirmationApproveFlow:
-    """approve path: resumes graph and delivers response."""
-
-    async def test_approve_calls_resume_turn(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        container = _make_container()
-        pending_config = _make_pending_config()
-
-        result = await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "approve"},
-            container,
-            mgr,
-            pending_config,
-            thread_id="t1",
-        )
-
-        container.resume_turn.assert_awaited_once_with(
-            pending_config,
-            resume={"choice": "approve", "edited_content": None},
-        )
-        assert result is None  # gate resolved
-
-    async def test_approve_interrupted_sends_next_request_id(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = _make_container()
-        pending_config = _make_pending_config()
-        outcome = container.resume_turn.return_value
-        outcome.interrupted = True
-        outcome.response = None
-        outcome.draft = "Allow messenger to: mail"
-        outcome.confirm_request_id = "req-next"
-        outcome.config = pending_config
-        outcome.confirm_editable = False
-        outcome.confirm_proposed = ""
-        outcome.final_state = {}
-        container.settings.confirm_timeout_seconds = 900
-        container.notifier = None
-
-        result = await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "approve"},
-            container,
-            mgr,
-            pending_config,
-            thread_id="t1",
-        )
-
-        assert result == ("req-next", pending_config)
-        frames = _frames_sent(ws)
-        confirm_frames = [f for f in frames if f.get("type") == "confirm_request"]
-        assert len(confirm_frames) == 1
-        assert confirm_frames[0]["id"] == "req-next"
-
-    async def test_approve_sends_typing_before_resume(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = _make_container()
-        pending_config = _make_pending_config()
-
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "approve"},
-            container,
-            mgr,
-            pending_config,
-            thread_id="t1",
-        )
-
-        frames = _frames_sent(ws)
-        assert any(f.get("type") == "typing" for f in frames)
-
-    async def test_approve_clears_confirmation_store(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        container = _make_container()
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=True)
-
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "approve"},
-            container,
-            mgr,
-            _make_pending_config(),
-            thread_id="t1",
-            confirmation_store=confirmation_store,
-        )
-
-        confirmation_store.clear.assert_awaited_once()
-
-    async def test_approve_error_sends_error_frame(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = _make_container()
-        container.resume_turn = AsyncMock(side_effect=RuntimeError("graph error"))
-
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "approve"},
-            container,
-            mgr,
-            _make_pending_config(),
-            thread_id="t1",
-        )
-
-        frames = _frames_sent(ws)
-        error_frames = [f for f in frames if f.get("type") == "error"]
-        assert len(error_frames) == 1
-
-
-class TestConfirmationDenyFlow:
-    """deny path: aborts checkpoint and sends confirm_cancel."""
-
-    async def test_deny_calls_abort_pending_checkpoint(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        container = _make_container()
-        pending_config = _make_pending_config()
-
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "deny"},
-            container,
-            mgr,
-            pending_config,
-            thread_id="t1",
-        )
-
-        container.abort_pending_checkpoint.assert_awaited_once_with(pending_config)
-        container.resume_turn.assert_not_awaited()
-
-    async def test_deny_in_node_interrupt_resumes_with_choice(self):
-        """152: LangGraph tool interrupt (delegate) deny resumes; does not abort."""
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        container = _make_container()
-        graph_state = MagicMock()
-        graph_state.interrupts = ({"kind": "delegate"},)
-        container.graph.aget_state = AsyncMock(return_value=graph_state)
-        pending_config = _make_pending_config()
-
-        result = await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "deny"},
-            container,
-            mgr,
-            pending_config,
-            thread_id="t1",
-        )
-
-        container.resume_turn.assert_awaited_once_with(
-            pending_config, resume={"choice": "deny"}
-        )
-        container.abort_pending_checkpoint.assert_not_awaited()
-        assert result is None
-
-    async def test_deny_sends_confirm_cancel_frame(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = _make_container()
-
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-99", "choice": "deny"},
-            container,
-            mgr,
-            _make_pending_config(),
-            thread_id="t1",
-        )
-
-        frames = _frames_sent(ws)
-        cancel_frames = [f for f in frames if f.get("type") == "confirm_cancel"]
-        assert len(cancel_frames) == 1
-        assert cancel_frames[0]["id"] == "req-99"
-
-    async def test_deny_returns_none_clearing_pending_config(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        container = _make_container()
-
-        result = await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "deny"},
-            container,
-            mgr,
-            _make_pending_config(),
-            thread_id="t1",
-        )
-
-        assert result is None
-
-    async def test_deny_with_no_pending_config_sends_error(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = _make_container()
-
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "deny"},
-            container,
-            mgr,
-            None,  # no pending config
-            thread_id="t1",
-        )
-
-        frames = _frames_sent(ws)
-        error_frames = [f for f in frames if f.get("type") == "error"]
-        assert len(error_frames) == 1
-
-    async def test_deny_abort_failure_is_swallowed(self):
-        ws = _make_ws()
-        mgr = ConnectionManager()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        container = _make_container()
-        container.abort_pending_checkpoint = AsyncMock(
-            side_effect=RuntimeError("checkpoint error")
-        )
-
-        # Should not raise — failure is logged, confirm_cancel still sent
-        await handle_confirm(
-            ws,
-            {"type": "confirm", "id": "req-1", "choice": "deny"},
-            container,
-            mgr,
-            _make_pending_config(),
-            thread_id="t1",
-        )
-
-
-class TestConfirmationTimeoutFlow:
-    """timeout path: clears store, aborts checkpoint, notifies user."""
-
-    async def test_timeout_clears_store_and_aborts_checkpoint(self):
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=True)
-
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = AsyncMock()
-        container.abort_pending_checkpoint = AsyncMock()
-
-        graph_config = _make_pending_config("thread-timeout")
-
-        await confirmation_timeout(
-            confirmation_store,
-            mgr,
-            None,
-            "thread-timeout",
-            0,
-            "req-timeout",
-            container=container,
-            graph_config=graph_config,
-        )
-
-        confirmation_store.clear.assert_awaited_once_with(
-            "thread-timeout", "req-timeout"
-        )
-        container.abort_pending_checkpoint.assert_awaited_once_with(graph_config)
-
-    async def test_timeout_sends_message_to_user(self):
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=True)
-
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        await confirmation_timeout(
-            confirmation_store,
-            mgr,
-            None,
-            "thread-1",
-            0,
-        )
-
-        frames = _frames_sent(ws)
-        msg_frames = [f for f in frames if f.get("type") == "message"]
-        assert len(msg_frames) == 1
-        assert "elapsed" in msg_frames[0]["message"]["text"]
-        assert msg_frames[0]["thread_id"] == "thread-1"
-
-    async def test_timeout_noop_when_already_cleared(self):
-        """If the user already responded, clear() returns False — no message sent."""
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=False)
-
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = AsyncMock()
-
-        await confirmation_timeout(
-            confirmation_store,
-            mgr,
-            None,
-            "thread-1",
-            0,
-            container=container,
-            graph_config=_make_pending_config(),
-        )
-
-        # No message sent and checkpoint not aborted
-        assert _frames_sent(ws) == []
-        container.abort_pending_checkpoint.assert_not_awaited()
-
-    async def test_timeout_abort_failure_is_swallowed(self):
-        """Checkpoint abort failure must not prevent the timeout message."""
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=True)
-
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        container = AsyncMock()
-        container.abort_pending_checkpoint = AsyncMock(side_effect=RuntimeError("boom"))
-
-        await confirmation_timeout(
-            confirmation_store,
-            mgr,
-            None,
-            "thread-1",
-            0,
-            container=container,
-            graph_config=_make_pending_config(),
-        )
-
-        # Message still sent despite abort failure
-        frames = _frames_sent(ws)
-        assert any(f.get("type") == "message" for f in frames)
-
-    async def test_timeout_unfinished_conductor_offers_promote_without_create(self):
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=True)
-
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-        ws.send_json.reset_mock()
-
-        snapshot = MagicMock()
-        snapshot.values = {
-            "conductor_ledger": [
-                {"agent": "calendar", "status": "awaiting_confirmation"}
-            ]
-        }
-        container = AsyncMock()
-        container.abort_pending_checkpoint = AsyncMock()
-        container.graph.aget_state = AsyncMock(return_value=snapshot)
-        container.create_goal = AsyncMock()
-        container.goal_store = AsyncMock()
-        container.workflow_store = AsyncMock()
-
-        await confirmation_timeout(
-            confirmation_store,
-            mgr,
-            None,
-            "thread-promote",
-            0,
-            "req-promote",
-            container=container,
-            graph_config=_make_pending_config("thread-promote"),
-        )
-
-        frames = _frames_sent(ws)
-        msg_frames = [f for f in frames if f.get("type") == "message"]
-        assert len(msg_frames) == 1
-        text = msg_frames[0]["message"]["text"]
-        assert msg_frames[0]["thread_id"] == "thread-promote"
-        assert "elapsed" in text
-        assert "goal" in text
-        assert "workflow" in text
-        container.create_goal.assert_not_called()
-        container.goal_store.create.assert_not_called()
-        container.workflow_store.create.assert_not_called()
-
-    async def test_timeout_ntfy_is_tagged_with_thread_id(self):
-        confirmation_store = AsyncMock()
-        confirmation_store.clear = AsyncMock(return_value=True)
-
-        mgr = ConnectionManager()
-        ws = _make_ws()
-        store = _make_msg_store([])
-        await mgr.connect(ws, store)
-
-        notifier = AsyncMock()
-        notifier.notify = AsyncMock(return_value="delivered")
-
-        await confirmation_timeout(
-            confirmation_store,
-            mgr,
-            notifier,
-            "thread-a",
-            0,
-            "req-a",
-        )
-
-        notifier.notify.assert_awaited_once()
-        kind = notifier.notify.await_args.args[0]
-        assert kind.event_type == "confirmation_timeout"
-        assert notifier.notify.await_args.kwargs["target_id"] == "thread-a"
-        assert notifier.notify.await_args.kwargs["target_type"] == "thread"
 
 
 # ── Unread replay — multi-conversation ───────────────────────────────────────

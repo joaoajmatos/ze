@@ -7,8 +7,8 @@ never reaches the system prompt (the open-query reroute answered "nothing open")
 import pytest
 
 from ze_agents.registry import agent, clear_registry, register_instance
-from ze_agents.types import AgentContext, AgentResult, GateDecision
-from ze_core.orchestration.nodes.execution import draft_response, execute_tool
+from ze_agents.types import AgentContext, AgentResult
+from ze_core.orchestration.nodes.execution import execute_tool
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from ze_memory.types import MemoryContext
 
@@ -38,7 +38,6 @@ def _register(name: str, seen: list):
     _A.description = name
     _A.enabled = True
     _A.timeout = 30
-    _A.intents = {}
     agent(_A)
     register_instance(name, _A())
 
@@ -51,14 +50,13 @@ def _state(*agents: str) -> dict:
         routing_method="open_query",
         is_compound=len(agents) > 1,
         subtasks=[
-            SubTask(agent=a, intent="reason", prompt="what's open") for a in agents
+            SubTask(agent=a, prompt="what's open") for a in agents
         ],
         requires_synthesis=len(agents) > 1,
     )
     ctx = AgentContext(
         session_id="s1",
         prompt="what's open",
-        intent="reason",
         memory=MemoryContext(),
         messages=[],
     )
@@ -68,9 +66,7 @@ def _state(*agents: str) -> dict:
     return {
         "envelope": envelope,
         "agent_context": ctx,
-        "session_overrides": {},
         "image_data": None,
-        "gate_decision": GateDecision.EXECUTE,
     }
 
 
@@ -96,10 +92,3 @@ async def test_compound_subtasks_receive_the_prompt_notes():
         _state("calendar", "messenger"), {"configurable": {"thread_id": "s1"}}
     )
     assert sorted(seen) == [("calendar", *_NOTES), ("messenger", *_NOTES)]
-
-
-async def test_draft_receives_the_prompt_notes():
-    seen: list = []
-    _register("companion", seen)
-    await draft_response(_state("companion"), {"configurable": {"thread_id": "s1"}})
-    assert seen == [("companion", *_NOTES)]

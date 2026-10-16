@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock
 
 from ze_automation.agents.workflow.agent import WorkflowManagerAgent
 from ze_agents.types import AgentContext, AgentResult
-from ze_agents.types import GateDecision
 from ze_sdk.memory import MemoryContext
 
 
@@ -21,8 +20,9 @@ def make_ctx(prompt: str = "list my workflows", intent: str = "read") -> AgentCo
     return AgentContext(
         session_id="test",
         prompt=prompt,
-        intent=intent,
-        gate_decision=GateDecision.EXECUTE,
+        pre_approved_writes=frozenset(
+            ["delete_workflow", "edit_workflow_steps", "update_workflow"]
+        ),
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
     )

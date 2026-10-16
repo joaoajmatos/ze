@@ -31,7 +31,6 @@ def _ctx(skill_tool_names: list[str] | None = None) -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt="hello",
-        intent="read",
         skill_tool_names=skill_tool_names,
     )
 
@@ -149,7 +148,6 @@ def test_routing_criteria_defaults_to_empty_and_agents_register_without_it():
     class _Plain(BaseAgent):
         name = "plain"
         description = "Plain agent"
-        intents = {}
 
         async def run(self, ctx):  # pragma: no cover
             return AgentResult(agent="plain", response="")

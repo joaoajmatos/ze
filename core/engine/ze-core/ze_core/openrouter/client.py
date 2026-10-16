@@ -171,13 +171,14 @@ class OpenRouterClient:
         model: str,
         tools: list[dict],
         system: str | None = None,
+        temperature: float = 0.3,
         max_tokens: int = 2000,
         token_sink: Callable[[str], Awaitable[None]] | None = None,
         source_sink: Callable[[list[Source]], None] | None = None,
     ) -> tuple[str | None, list[dict] | None]:
         with capture_citations() as citations:
             result = await self._stream_complete_with_tools(
-                messages, model, tools, system, max_tokens, token_sink
+                messages, model, tools, system, temperature, max_tokens, token_sink
             )
         if citations and source_sink is not None:
             source_sink(citations)
@@ -281,6 +282,7 @@ class OpenRouterClient:
         model: str,
         tools: list[dict],
         system: str | None = None,
+        temperature: float = 0.3,
         max_tokens: int = 2000,
         token_sink: Callable[[str], Awaitable[None]] | None = None,
     ) -> tuple[str | None, list[dict] | None]:
@@ -300,6 +302,7 @@ class OpenRouterClient:
                 event_stream = await self._sdk.chat.send_async(
                     messages=full_messages,
                     model=model,
+                    temperature=temperature,
                     max_tokens=max_tokens,
                     stream=True,
                     tools=tools,

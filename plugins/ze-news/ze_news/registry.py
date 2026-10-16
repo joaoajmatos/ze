@@ -29,8 +29,5 @@ class SourceRegistry:
     def all(self) -> list[NewsSource]:
         return list(self._sources)
 
-    def by_tag(self, tag: str) -> list[NewsSource]:
-        return [s for s in self._sources if hasattr(s, "_tags") and tag in s._tags]
-
     def by_key(self, key: str) -> NewsSource | None:
         return self._by_key.get(key)

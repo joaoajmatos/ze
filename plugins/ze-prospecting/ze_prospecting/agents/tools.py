@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from ze_agents.tool import ToolAccess, tool
+from ze_agents.tool import Injected, ToolAccess, tool
 from ze_sdk import ToolReversibility
 from ze_personal.contacts.store import PersonStore
 from ze_personal.contacts.types import Person, PersonSource
@@ -26,6 +26,8 @@ _DRAFT_SYSTEM = (
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="added a prospect",
+    asks_first=False,
+    no_ask_reason="An internal campaign record.",
 )
 async def add_prospect(
     name: str,
@@ -35,7 +37,7 @@ async def add_prospect(
     contact_info: dict,
     source_url: str,
     enrichment_notes: str,
-    campaign_id: str,
+    campaign_id: Injected[str],
     channel: str = "email",
     person_store: PersonStore = None,
     campaign_store: ProspectCampaignStore = None,
@@ -97,15 +99,17 @@ async def add_prospect(
     description="Draft a personalised outreach message for a prospect and save it.",
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="drafted outreach",
+    asks_first=False,
+    no_ask_reason="A draft; nothing is sent.",
 )
 async def draft_outreach(
     name: str,
     context: str,
     campaign_brief: str,
     channel: str,
-    campaign_id: str,
+    campaign_id: Injected[str],
     client: LLMClient,
-    model: str,
+    model: Injected[str],
     person_store: PersonStore,
     campaign_store: ProspectCampaignStore,
 ) -> str:
@@ -142,6 +146,8 @@ async def draft_outreach(
     ),
     reversibility=ToolReversibility.IRREVERSIBLE,
     effect_phrase="logged an outreach event",
+    asks_first=False,
+    no_ask_reason="An internal campaign record.",
 )
 async def log_outreach_event(
     contact_name: str,

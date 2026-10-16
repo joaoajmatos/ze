@@ -5,7 +5,6 @@ from uuid import uuid4
 
 from ze_calendar.agents.reminders.agent import RemindersAgent
 from ze_agents.types import AgentContext, AgentResult
-from ze_agents.types import GateDecision
 from ze_memory.types import MemoryContext
 
 
@@ -29,8 +28,7 @@ def make_ctx(prompt: str = "remind me in 1 hour") -> AgentContext:
     return AgentContext(
         session_id="test",
         prompt=prompt,
-        intent="manage",
-        gate_decision=GateDecision.EXECUTE,
+        pre_approved_writes=frozenset(["cancel_reminder"]),
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
     )

@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { Outlet, NavLink } from "react-router-dom";
 import { RefreshHandler } from "@/features/invalidate-on-ws-refresh";
 import { useOverlay } from "@/features/open-context-overlay";
+import { ConfirmationFrameHandler } from "@/features/respond-to-confirmation";
 import { NoticeBanner } from "@/features/send-context-notice";
 import { mergeMobileNavRoutes, pluginNavRoutes, useUiManifestQuery } from "@/entities/ui-manifest";
 import { AutomationIcon, KnowledgeIcon, SystemIcon, automationNavRoutes, knowledgeNavRoutes, systemNavRoutes, navRoutes, settingsNavRoute } from "@/shared/config";
@@ -163,6 +164,7 @@ export function AppShell() {
       </nav>
 
       <RefreshHandler />
+      <ConfirmationFrameHandler />
       <ContextOverlay />
     </div>
   );

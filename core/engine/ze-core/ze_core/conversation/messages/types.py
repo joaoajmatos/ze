@@ -107,7 +107,7 @@ class ToolCallTrace:
     access: str = "unknown"  # "read" | "write" | "delegate" | "unknown"
     reversibility: str | None = None  # "reversible" | "irreversible" | None
     undo_tool: str | None = None
-    gate: str = "none"  # "none" | "approved" | "denied" | "expired"
+    gate: str = "none"  # "none" | "approved" | "denied" | "refused" | "expired"
     effect_phrase: str | None = None
     agent: str | None = None  # owning agent; nested delegate calls keep the delegate
     undo_args: dict[str, Any] | None = None  # ids and names only; never sent to clients
@@ -190,4 +190,7 @@ class MessageTrace:
     judgments: list[JudgmentTrace] = field(default_factory=list)
     sources: list[SourceTrace] = field(default_factory=list)
     effects_known: bool = False  # True only when tool calls carry registry metadata
+    # Phase 181: one row per confirmed item, every round (request_id, round, item_id,
+    # agent, tool, effect, summary, outcome).
+    write_confirmations: list[dict[str, Any]] = field(default_factory=list)
     rollback: RollbackTrace | None = None

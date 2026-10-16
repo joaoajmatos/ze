@@ -44,6 +44,7 @@ class MilestoneStatus(StrEnum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     SKIPPED = "skipped"
+    HELD = "held"
 
 
 class GateStatus(StrEnum):
@@ -86,7 +87,9 @@ class Milestone:
     description: str
     sequence: int
     agent_hint: str | None = None
-    intent: str = "execute"
+    approved_writes: list[str] = field(default_factory=list)
+    # Plan-time only (not stored): the asks-first tools this milestone says it will call.
+    planned_writes: list[str] = field(default_factory=list)
     status: MilestoneStatus = MilestoneStatus.PENDING
     output: str = ""
     reuse_hint: str = ""

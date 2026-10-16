@@ -6,7 +6,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.client import LLMClient
 from ze_agents.nested_tools import enforce_domain_cancel_confirmations
 from ze_agents.registry import agent
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_worldstate.store import LoopStore
 from ze_worldstate.tracking import LoopTracker
 import ze_worldstate.agents.tools  # noqa: F401
@@ -68,10 +68,6 @@ class LoopsAgent(BaseAgent):
     vision_capable = False
     timeout = 15
     tools = ["list_open_loops", "track_loop", "confirm_loop", "close_loop", "drop_loop"]
-    intents = {
-        "manage": Intent(Mode.AUTONOMOUS, "List, track, confirm, close, or drop an open loop."),
-    }
-    default_mode = Mode.AUTONOMOUS
 
     def __init__(
         self,

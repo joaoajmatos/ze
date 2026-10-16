@@ -1,6 +1,5 @@
 from ze_core.orchestration.promote import (
     classify_promote_kind,
-    confirmation_timeout_message,
     ledger_is_unfinished,
     should_offer_promote,
 )
@@ -42,22 +41,6 @@ def test_skipped_and_denied_are_terminal():
     ]
     assert ledger_is_unfinished(ledger) is False
     assert should_offer_promote(ledger) is False
-
-
-def test_timeout_message_offers_when_unfinished_without_creating():
-    ledger = [{"agent": "calendar", "status": "awaiting_confirmation"}]
-    text = confirmation_timeout_message(ledger)
-    assert "elapsed" in text
-    assert "goal" in text
-    assert "workflow" in text
-    assert "not until you accept" in text
-
-
-def test_timeout_message_stays_generic_when_finished():
-    ledger = [{"agent": "calendar", "status": "done"}]
-    text = confirmation_timeout_message(ledger)
-    assert text.endswith("try again.")
-    assert "workflow" not in text
 
 
 def test_classify_promote_kind_never_both():

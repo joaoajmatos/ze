@@ -148,7 +148,6 @@ async def _open_priorities_note(
 
 
 _OPEN_QUERY_AGENT = "companion"
-_OPEN_QUERY_INTENT = "reason"
 
 
 def _open_query_envelope(
@@ -157,7 +156,7 @@ def _open_query_envelope(
     """Reroute a single-agent "what's open?" turn to companion.
 
     The merged PriorityView is not any specialist's data: the goals agent would
-    answer with its own goals and gate on whichever intent it declares first.
+    answer with its own goals only.
     Forced (eval) routes, compound turns and an absent companion stay as routed.
     """
     from ze_agents.registry import get_enabled_agents
@@ -186,7 +185,6 @@ def _open_query_envelope(
         subtasks=[
             SubTask(
                 agent=_OPEN_QUERY_AGENT,
-                intent=_OPEN_QUERY_INTENT,
                 prompt=prompt,
                 model=model,
             )
@@ -227,14 +225,12 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     agent_name = (
         envelope.subtasks[0].agent if envelope and envelope.subtasks else "global"
     )
-    intent = envelope.subtasks[0].intent if envelope and envelope.subtasks else "read"
 
     _request = RetrievalRequest(
         module=agent_name,
         agent=agent_name,
         query_text=embed_text,
         query_embedding=prompt_embedding,
-        intent=intent,
         task_id=None,
         goal_id=None,
         max_tokens=2000,
@@ -283,7 +279,6 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     agent_context = AgentContext(
         session_id=state["session_id"],
         prompt=prompt_for_ctx,
-        intent=intent,
         memory=memory_context,
         contacts=contact_context,
         messages=messages,

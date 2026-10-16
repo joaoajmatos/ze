@@ -62,6 +62,19 @@ class WorkflowScheduler:
         self._scheduler = AsyncIOScheduler()
         self._cancellation = CancellationRegistry()
         self._running_executions: set[UUID] = set()
+        self._held_canceller: Callable[[UUID], Awaitable[None]] | None = None
+
+    def configure_held_canceller(
+        self, canceller: Callable[[UUID], Awaitable[None]]
+    ) -> None:
+        """Set the hook that closes a held run's open hold when the run is cancelled."""
+        self._held_canceller = canceller
+
+    async def resume_execution(
+        self, workflow: Workflow, execution_id: UUID, executor: WorkflowExecutor
+    ) -> None:
+        """Continue a held run under the same bookkeeping as a fresh one."""
+        await self._run_execution(workflow, execution_id, executor)
 
     def configure_executor(
         self,
@@ -156,6 +169,12 @@ class WorkflowScheduler:
         self, workflow_id: UUID, execution_id: UUID
     ) -> Literal["cancelled", "not_running"]:
         execution = await self._store.get_execution(workflow_id, execution_id)
+        if execution is not None and execution.status == "held":
+            if self._held_canceller is None:
+                return "not_running"
+            await self._held_canceller(execution_id)
+            log.info("workflow_held_cancelled", execution_id=str(execution_id))
+            return "cancelled"
         if execution is None or execution.status != "running":
             return "not_running"
         if execution_id not in self._running_executions:
@@ -220,11 +239,16 @@ class WorkflowScheduler:
         )
         await self._run_execution(workflow, execution_id)
 
-    async def _run_execution(self, workflow: Workflow, execution_id: UUID) -> None:
+    async def _run_execution(
+        self,
+        workflow: Workflow,
+        execution_id: UUID,
+        executor: WorkflowExecutor | None = None,
+    ) -> None:
         self._cancellation.register(execution_id)
         self._running_executions.add(execution_id)
         try:
-            await self._executor(workflow, execution_id)
+            await (executor or self._executor)(workflow, execution_id)
         except Exception as exc:
             log.exception(
                 "workflow_execution_error", workflow=workflow.name, error=str(exc)
@@ -249,6 +273,14 @@ class WorkflowScheduler:
                 await self._on_failure(
                     workflow, RuntimeError(execution.error or "Workflow step failed")
                 )
+            return
+
+        if execution is not None and execution.status == "held":
+            log.info(
+                "workflow_execution_held",
+                workflow=workflow.name,
+                execution_id=str(execution_id),
+            )
             return
 
         if execution is not None and execution.status == "cancelled":

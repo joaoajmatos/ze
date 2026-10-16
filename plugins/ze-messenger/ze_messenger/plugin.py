@@ -56,7 +56,6 @@ class MessengerPlugin(ZePlugin):
         self._settings = settings
         self._embedder = embedder
         self._pool = pool
-        self._action_record_store = action_record_store
         self._outbound_store = None
         if pool is not None:
             from ze_messenger.outbound.adapter import configure_outbound_ledger

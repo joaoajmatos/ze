@@ -15,7 +15,6 @@ def _ctx(prompt: str = "I prefer aisle seats") -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         memory=MemoryContext(),
         messages=[],
     )

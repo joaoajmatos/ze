@@ -14,7 +14,8 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 - Workflows (`workflow/`) — `WorkflowStore`, `WorkflowPlanner`, `WorkflowScheduler`, step validation, retry, revision history (`workflow_revisions`)
 - Accountability (`accountability/`) — `AccountabilityStore`, weekly activity narrative, cost anomaly detection
 - Agents (`agents/`) — `GoalAgent`, `WorkflowAgent`, the conversational surface for both engines
-- Jobs (`jobs/`) — `AccountabilityJob`, `CostAnomalyJob`, `GoalNarrativeJob`, `GoalSuggestionJob`, `StuckGoalJob`, all scheduled via `ze-proactive`
+- Holds (`holds/`) — per-step `approved_writes` from plan approval (`planned.py`), and held writes for unattended runs: `HeldWriteStore`, `HeldWriteResumer`, a 24-hour hold
+- Jobs (`jobs/`) — `AccountabilityJob`, `CostAnomalyJob`, `GoalNarrativeJob`, `GoalSuggestionJob`, `StuckGoalJob`, `HeldWriteExpiryJob`, all scheduled via `ze-proactive`
 - `runtime/contracts.py` — `AutomationPlanner` / `AutomationStore` protocols other packages code against instead of importing concrete goal/workflow types
 
 ### Integration
@@ -29,12 +30,13 @@ It also owns accountability: the weekly narrative and cost-anomaly detection tha
 | `workflow/` | `WorkflowStore` protocol + `PostgresWorkflowStore`, `WorkflowPlanner`, `WorkflowScheduler`, retry, revision summaries, validation, types |
 | `accountability/` | `AccountabilityStore`, `ActivitySummary` / `AnomalyRecord` types, narrative building |
 | `agents/` | `GoalAgent`, `WorkflowAgent` |
-| `jobs/` | Proactive job wrappers around the goal/workflow/accountability engines |
+| `holds/` | `planned.py` (plan-time approval: a step's `approved_writes` lists the irreversible tools it may run, with any arguments; a step edit clears it), `store.py` (`HeldWriteStore` protocol + `PostgresHeldWriteStore`), `resumer.py` (`HeldWriteResumer`: approve, deny, edit, or timeout, then resume the parked run), `types.py` (`HeldWrite`, `HeldWriteStatus`) |
+| `jobs/` | Proactive job wrappers around the goal/workflow/accountability engines; `held_write_expiry.py` (`HeldWriteExpiryJob`, hourly by default) |
 | `runtime/contracts.py` | `AutomationPlanner`, `AutomationStore` — shared protocols |
 | `graph/routing_context.py` | Goal/workflow context injected into the LangGraph routing node |
 | `bootstrap.py` | DI wiring — stores, planners, executors, schedulers, jobs |
 | `rest.py` | Workflow list/detail/execution/revision REST handlers |
-| `migrations/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025`/`zc026` (workflow execution + revisions), `zc030` (goal learning claims), `zc038` (learning evidence checks) — continues the `ze-core` `zc` migration chain |
+| `migrations/` | `zc006`–`zc009` (goal traces/suggestions/stuck/reuse), `zc011` (workflows), `zc014` (accountability), `zc021`/`zc025`/`zc026` (workflow execution + revisions), `zc030` (goal learning claims), `zc033` (`held_writes`), `zc038` (learning evidence checks) — continues the `ze-core` `zc` migration chain |
 
 Every `WRITE` tool in this package declares `reversibility` and an `effect_phrase`. Retry reads these declarations to decide if a reply can be regenerated.
 

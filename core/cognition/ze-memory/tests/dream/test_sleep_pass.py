@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 
@@ -71,10 +71,7 @@ def _make_sleep_pass(pool=None, episodes=None, entities=None, settings=None):
 async def test_run_no_episodes_returns_empty_stats():
     sleep_pass, _ = _make_sleep_pass()
     run_id = uuid4()
-    with patch.object(
-        sleep_pass, "_check_sensitive_entities", new=AsyncMock(return_value=False)
-    ):
-        stats = await sleep_pass.run(run_id)
+    stats = await sleep_pass.run(run_id)
     assert stats["episodes_scored"] == 0
     assert stats["episodes_replayed"] == 0
     assert "duration_ms" in stats
@@ -83,10 +80,7 @@ async def test_run_no_episodes_returns_empty_stats():
 async def test_run_delegates_to_consolidator():
     sleep_pass, _ = _make_sleep_pass()
     run_id = uuid4()
-    with patch.object(
-        sleep_pass, "_check_sensitive_entities", new=AsyncMock(return_value=False)
-    ):
-        await sleep_pass.run(run_id)
+    await sleep_pass.run(run_id)
     sleep_pass._consolidator.archive_session_episodes.assert_awaited_once()
     sleep_pass._consolidator.dedup_facts.assert_awaited_once()
 
@@ -117,10 +111,7 @@ async def test_schema_candidates_saved_to_dream_store():
 
     sleep_pass, dream_store = _make_sleep_pass(pool=pool)
     run_id = uuid4()
-    with patch.object(
-        sleep_pass, "_check_sensitive_entities", new=AsyncMock(return_value=False)
-    ):
-        stats = await sleep_pass.run(run_id)
+    stats = await sleep_pass.run(run_id)
     assert stats["schema_candidates"] == 1
     dream_store.save_artifact.assert_awaited_once()
 
@@ -155,43 +146,8 @@ async def test_schema_candidates_capped_at_max():
     settings = {"dream": {"max_schema_candidates_per_run": max_candidates}}
     sleep_pass, dream_store = _make_sleep_pass(pool=pool, settings=settings)
     run_id = uuid4()
-    with patch.object(
-        sleep_pass, "_check_sensitive_entities", new=AsyncMock(return_value=False)
-    ):
-        stats = await sleep_pass.run(run_id)
+    stats = await sleep_pass.run(run_id)
     assert stats["schema_candidates"] <= max_candidates
-
-
-async def test_check_sensitive_entities_returns_true_when_sensitive():
-    episode_id = uuid4()
-    conn = AsyncMock()
-    conn.fetchrow = AsyncMock(return_value={"exists": True})
-    pool = MagicMock()
-    pool.acquire = MagicMock(
-        return_value=AsyncMock(
-            __aenter__=AsyncMock(return_value=conn),
-            __aexit__=AsyncMock(return_value=False),
-        )
-    )
-    sleep_pass, _ = _make_sleep_pass(pool=pool)
-    result = await sleep_pass._check_sensitive_entities(episode_id)
-    assert result is True
-
-
-async def test_check_sensitive_entities_returns_false_when_none():
-    episode_id = uuid4()
-    conn = AsyncMock()
-    conn.fetchrow = AsyncMock(return_value=None)
-    pool = MagicMock()
-    pool.acquire = MagicMock(
-        return_value=AsyncMock(
-            __aenter__=AsyncMock(return_value=conn),
-            __aexit__=AsyncMock(return_value=False),
-        )
-    )
-    sleep_pass, _ = _make_sleep_pass(pool=pool)
-    result = await sleep_pass._check_sensitive_entities(episode_id)
-    assert result is False
 
 
 async def test_decay_pass_marks_archived_when_weight_drops():
