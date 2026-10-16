@@ -1,21 +1,30 @@
 import { Bell, CheckCheck, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { NotificationItem } from "@myguyze/ze-client";
+import { useDecideHeldWriteMutation, useHeldWritesQuery } from "@/entities/confirmation";
 import {
   useMarkAllReadMutation,
   useMarkReadMutation,
   useNotificationsQuery,
   useUnreadCountQuery,
 } from "@/entities/notification";
+import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { EmptyState } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import { relativeTime, targetRoute } from "../lib/format";
+
+const HELD_ACTIONS = [
+  { label: "Approve all", value: "approve", style: "primary" as const },
+  { label: "Deny all", value: "deny", style: "secondary" as const },
+];
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const confirmId = searchParams.get("confirm");
 
   const { data: unreadCount } = useUnreadCountQuery();
   const {
@@ -27,6 +36,14 @@ export function NotificationBell() {
   } = useNotificationsQuery({ markRead: open });
   const markRead = useMarkReadMutation();
   const markAllRead = useMarkAllReadMutation();
+  const { data: heldWrites = [] } = useHeldWritesQuery();
+  const decideHeldWrite = useDecideHeldWriteMutation();
+  const highlightedId =
+    confirmId && heldWrites.some((h) => h.request_id === confirmId) ? confirmId : null;
+
+  useEffect(() => {
+    if (highlightedId) setOpen(true);
+  }, [highlightedId]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -40,8 +57,33 @@ export function NotificationBell() {
 
   const items = data?.pages.flatMap((p) => p.items) ?? [];
 
+  function setConfirmParam(requestId: string | null) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (requestId) next.set("confirm", requestId);
+        else next.delete("confirm");
+        return next;
+      },
+      { replace: true },
+    );
+  }
+
+  function answerHeldWrite(requestId: string, value: string, edits: Record<string, string>) {
+    decideHeldWrite.mutate({
+      requestId,
+      choice: value === "approve" ? "approve" : "deny",
+      edits,
+    });
+    if (confirmId === requestId) setConfirmParam(null);
+  }
+
   function handleItemClick(item: NotificationItem) {
     if (!item.read) void markRead.mutate(item.id);
+    if (item.target_type === "held_write" && item.target_id) {
+      setConfirmParam(item.target_id);
+      return;
+    }
     const route = targetRoute(item.target_type, item.target_id);
     if (route) {
       setOpen(false);
@@ -79,11 +121,36 @@ export function NotificationBell() {
           </div>
 
           <div className="overflow-y-auto flex-1">
+            {heldWrites.length > 0 && (
+              <ul aria-label="Writes waiting for your OK" className="px-3 pt-3">
+                {heldWrites.map((held) => (
+                  <li
+                    key={held.request_id}
+                    data-testid={`held-write-${held.request_id}`}
+                    data-highlighted={held.request_id === highlightedId ? "true" : undefined}
+                  >
+                    <ConfirmationCard
+                      title="Waiting for your OK"
+                      items={held.items}
+                      source={{ kind: held.source, name: held.source_name }}
+                      actions={HELD_ACTIONS}
+                      disabled={
+                        decideHeldWrite.isPending &&
+                        decideHeldWrite.variables?.requestId === held.request_id
+                      }
+                      highlighted={held.request_id === highlightedId}
+                      onRespond={(value, edits) => answerHeldWrite(held.request_id, value, edits)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="size-4 animate-spin text-smoke" />
               </div>
-            ) : items.length === 0 ? (
+            ) : items.length === 0 && heldWrites.length === 0 ? (
               <EmptyState icon={Bell} message="You're all caught up." />
             ) : (
               <ul>

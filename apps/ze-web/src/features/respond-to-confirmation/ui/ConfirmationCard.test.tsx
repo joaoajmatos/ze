@@ -179,4 +179,20 @@ describe("ConfirmationCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(onRespond).toHaveBeenCalledWith("goal_gate:pause:abc", {});
   });
+
+  it("scrolls itself into view when highlighted", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(
+      <ConfirmationCard title="Ze needs your OK" items={[item()]} actions={actions} onRespond={vi.fn()} highlighted />,
+    );
+    expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("does not scroll when not highlighted", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(<ConfirmationCard title="Ze needs your OK" items={[item()]} actions={actions} onRespond={vi.fn()} />);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
 });

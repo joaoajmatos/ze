@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChatMessageList, ChatInput } from "@/entities/message";
 import type { ChatAttachment } from "@/entities/message";
 import { placeWorkspaceFile } from "@/entities/workspace";
@@ -35,6 +36,7 @@ export function ChatWorkspace() {
     respondToConfirm,
   } = useChatWorkspace();
 
+  const [searchParams] = useSearchParams();
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [attaching, setAttaching] = useState(false);
@@ -176,6 +178,7 @@ export function ChatWorkspace() {
           source={pendingConfirm.source}
           actions={pendingConfirm.actions}
           disabled={pendingConfirm.submitted}
+          highlighted={searchParams.get("confirm") === pendingConfirm.id}
           onRespond={respondToConfirm}
         />
       )}

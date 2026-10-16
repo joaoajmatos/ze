@@ -1,5 +1,5 @@
 import type { WsConfirmAction } from "@myguyze/ze-client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import type { ConfirmItem, ConfirmSource } from "../model/types";
 
@@ -10,6 +10,7 @@ interface ConfirmationCardProps {
   onRespond: (value: string, edits: Record<string, string>) => void;
   source?: ConfirmSource | null;
   disabled?: boolean;
+  highlighted?: boolean;
 }
 
 export function ConfirmationCard({
@@ -19,8 +20,14 @@ export function ConfirmationCard({
   onRespond,
   source = null,
   disabled = false,
+  highlighted = false,
 }: ConfirmationCardProps) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlighted) rootRef.current?.scrollIntoView?.({ block: "nearest" });
+  }, [highlighted]);
 
   function editsFor(value: string): Record<string, string> {
     if (value !== "approve") return {};
@@ -35,7 +42,13 @@ export function ConfirmationCard({
   }
 
   return (
-    <div className="relative z-10 mb-3 w-full rounded-pill border border-plum-voltage/40 bg-plum-voltage/5 p-4">
+    <div
+      ref={rootRef}
+      className={cn(
+        "relative z-10 mb-3 w-full rounded-pill border border-plum-voltage/40 bg-plum-voltage/5 p-4",
+        highlighted && "ring-2 ring-plum-voltage/60",
+      )}
+    >
       <p className="text-sm font-medium text-foreground">{title}</p>
       {source && (
         <p data-testid="confirm-source" className="mt-1 text-xs text-smoke">
