@@ -281,9 +281,17 @@
       "kind": "complete",
       "by": "ENG-A",
       "at": "2026-10-16T16:51:27.558Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T058",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T19:13:06.267Z"
     }
   ],
-  "currentTask": "T056",
+  "currentTask": "T058",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -401,6 +409,10 @@
     "T056": {
       "status": "DONE",
       "did": "Wording f35350de (waiting_on never resolves, fact+question, keep-an-eye); 12 new tuned rows (c9e592d4), examples decoupled from tuned/held-out texts"
+    },
+    "T058": {
+      "status": "DONE",
+      "did": "Tuned run 4 on 160 rows at wording f35350de; bars frozen 0.70/0.70/0.55/0.60/0.95/0.80"
     }
   }
 }
