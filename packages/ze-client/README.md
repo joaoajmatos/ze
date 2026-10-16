@@ -33,7 +33,7 @@ Typed TypeScript client for the `ze-api` REST API and WebSocket protocol.
 
 ## Dependencies
 
-`@hey-api/client-fetch`. No Ze packages.
+None. The generated bundle carries its own fetch client. No Ze packages.
 
 ## Usage
 
