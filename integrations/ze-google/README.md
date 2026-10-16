@@ -1,6 +1,6 @@
 # ze-google
 
-Shared Google OAuth2 credentials for Ze. Provides authenticated service client factories for Google APIs — no Ze framework dependencies.
+Shared Google OAuth2 credentials for Ze. Provides authenticated service client factories for Google APIs, plus the Gmail channel.
 
 ## Role in Ze
 
@@ -14,17 +14,20 @@ Google Calendar and Gmail are the two primary external services Ze integrates wi
 
 ### Integration
 
-Satisfies the `ZeIntegration` protocol structurally. Plugins declare `GoogleCredentials` in `integration_types()`; `ze-api` bootstrap calls `from_settings` once and injects the result into `EmailPlugin` and `CalendarPlugin`. Credentials are obtained once via `make google-auth`.
+Satisfies the `ZeIntegration` protocol structurally. Plugins declare `GoogleCredentials` in `integration_types()`; `ze-api` bootstrap calls `from_settings` once and injects the result into `MessengerPlugin` and `CalendarPlugin`. Credentials are obtained once via `make google-auth`.
 
 ## Responsibilities
 
 | Module | What it provides |
 |---|---|
 | `auth.py` | `GoogleCredentials`, `SCOPES`, `calendar()` and `gmail()` client factories |
+| `gmail_channel.py` | `GmailChannel` — the Gmail `InboundChannel`: `send()`, `get_thread()`, `poll_new_messages()` |
+| `settings.py` | `GoogleSettings`, `get_google_settings()` — OAuth env vars |
+| `webhook.py` | `GmailWebhookVerifier` — verifies Pub/Sub push OIDC tokens |
 
 ## Dependencies
 
-No Ze package dependencies. Depends only on: `google-auth`, `google-api-python-client`.
+Ze: `ze-communication` (channel types and the webhook verifier base). Third party: `google-auth`, `google-api-python-client`.
 
 ## Usage
 
