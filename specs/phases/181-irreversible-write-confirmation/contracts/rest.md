@@ -25,8 +25,8 @@ The `capabilities` OpenAPI tag, the `/capabilities` WS command (`websocket/comma
 
 ## Added: eval confirm (owner: ze-api `routes/eval.py`, eval-only, same guard as the other eval routes)
 
-### `POST /api/v0/eval/confirm`
-- operation_id `evalConfirm`; body `{ thread_id, choice: "approve"|"deny", edits? }` — answers the thread's open confirmation.
+### `POST /eval/confirm`
+- Unversioned, like `/eval/chat`. operation_id `evalConfirm`; body `{ session_id, choice: "approve"|"deny", edits? }`; the route prefixes `eval-` to `session_id` exactly as `/eval/chat` does, then answers that thread's open confirmation. 409 when it has none, 422 on a bad choice.
 - 200 the same turn-result shape the eval chat route returns (response, tool calls with `parked`/`gate`, `pending_confirmation`).
 
 ## Changed: eval tool-call shape

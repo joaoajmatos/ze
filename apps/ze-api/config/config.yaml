@@ -51,7 +51,7 @@ system_one:
       explicit_hold: 0.85
       resolves_hold: 0.8
 
-# Opt-in spend ceiling, token-estimated in real time inside capability_check.
+# Opt-in spend ceiling, token-estimated in real time inside preflight.
 # Absent/null limits = current (telemetry-only) behavior, zero change.
 budget:
   session_limit_usd: null    # e.g. 2.00

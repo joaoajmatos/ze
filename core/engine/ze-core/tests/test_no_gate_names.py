@@ -15,28 +15,33 @@ from ze_agents.tool import ToolAccess, clear_tool_registry, tool
 from ze_agents.types import AgentContext
 
 ROOT = Path(__file__).resolve().parents[4]
-_ROOTS = ("core", "plugins", "apps", "packages", "integrations")
+_ROOTS = ("core", "plugins", "apps", "packages", "integrations", "eval")
 _REMOVED = re.compile(
     r"\bGateDecision\b|\bIntent\(|\bMode\.|intents = \{|default_mode\b|_primary_intent"
     r"|CapabilityGate|session_overrides|capability_overrides|ToolConfirmationRequired"
-    r"|tool_interrupt_fn|workspace_confirmed|is_draft"
+    r"|tool_interrupt_fn|workspace_confirmed|is_draft|DRAFT_ONLY|AWAIT_CONFIRMATION"
+    r"|\bcapability_check\b|\bdraft_response\b|\bawait_confirmation\b"
+    r"|\bawait_subtask_confirmation\b"
 )
+_SKIP_PARTS = {".venv", "node_modules", "migrations", ".pytest_cache", "results"}
+
+
+def _files(*patterns: str):
+    for top in _ROOTS:
+        for pattern in patterns:
+            for path in (ROOT / top).rglob(pattern):
+                if _SKIP_PARTS & set(path.parts) or path.name == Path(__file__).name:
+                    continue
+                yield path
 
 
 def _python_files():
-    for top in _ROOTS:
-        for path in (ROOT / top).rglob("*.py"):
-            parts = set(path.parts) | {p for p in path.parts}
-            if ".venv" in parts or "node_modules" in parts or "migrations" in parts:
-                continue
-            if path.name == Path(__file__).name or "ze-eval" in parts:
-                continue
-            yield path
+    return _files("*.py")
 
 
 def test_removed_gate_names_are_gone() -> None:
     hits = []
-    for path in _python_files():
+    for path in _files("*.py", "*.yaml", "*.yml"):
         for number, line in enumerate(path.read_text().splitlines(), 1):
             if _REMOVED.search(line):
                 hits.append(f"{path.relative_to(ROOT)}:{number}: {line.strip()}")

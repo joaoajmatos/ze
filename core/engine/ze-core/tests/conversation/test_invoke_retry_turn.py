@@ -81,7 +81,9 @@ async def test_empty_reply_restores_and_fails():
 
 
 async def test_interrupt_is_never_left_pending():
-    c, graph, _ = _container({"final_response": "x"}, next_=("await_confirmation",))
+    c, graph, _ = _container(
+        {"final_response": "x"}, next_=("await_write_confirmation",)
+    )
     with pytest.raises(RetryFailedError):
         await invoke_retry_turn(c, "t1", "q")
     assert graph.aupdate_state.await_args.args[1] == {"messages": HISTORY}
