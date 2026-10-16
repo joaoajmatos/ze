@@ -5,11 +5,9 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from ze_agents.registry import get_enabled_agents
-
 from ze_core.conversation.messages.memory_chunks import extract_memory_chunks
 from ze_core.orchestration.state import AgentState
-from ze_core.routing.judge import build_state, criterion_for
+from ze_core.routing.judge import build_state
 
 HISTORY_HINT_TURNS = 4  # last N messages included as routing context
 HISTORY_HINT_CHARS = 240  # per-message truncation
@@ -24,7 +22,6 @@ TIER_MEMORY_ITEMS = 5
 TIER_MEMORY_ITEM_CAP = 200
 TIER_FOCUS_CAP = 600
 TIER_SKILL_CAP = 300
-TIER_AGENT_CAP = 600
 
 _RECAP_HEADER = "[Resuming"
 _RECAP_WORKFLOWS = "In-flight workflows:"
@@ -142,25 +139,11 @@ def _tier_skill(ctx: Any) -> str:
     return "\n".join(lines)
 
 
-def _tier_agent(state: AgentState) -> str:
-    envelope = state.get("envelope")
-    if envelope is None:
-        return ""
-    name = envelope.subtasks[0].agent if envelope.subtasks else envelope.primary_agent
-    cls = get_enabled_agents().get(name)
-    if cls is None:
-        return name
-    text = f"{name}: {criterion_for(cls)}"
-    tools = [t for t in getattr(cls, "tools", None) or [] if isinstance(t, str)]
-    if tools:
-        text += f"\nTools: {', '.join(tools)}"
-    return text
-
-
 def build_tier_state(state: AgentState) -> dict[str, str]:
-    """``{task, conversation?, recap?, memory?, focus?, skill?, agent?}`` for the tier judge.
+    """``{task, conversation?, recap?, memory?, focus?, skill?}`` for the tier judge.
 
-    Named, capped fields only; empty ones are omitted (ADR pin 6, research R3).
+    Named, capped fields only; empty ones are omitted (ADR pin 6, research R3). There is
+    no agent field: on the tuned set it added noise to the difficulty judgment (R12).
     """
     ctx = state.get("agent_context")
     recap, workflows = _split_recap(getattr(ctx, "resume_recap", None))
@@ -171,6 +154,5 @@ def build_tier_state(state: AgentState) -> dict[str, str]:
         "memory": _tier_memory(state.get("memory_context")),
         "focus": _tier_focus(state, ctx, workflows)[:TIER_FOCUS_CAP],
         "skill": _tier_skill(ctx)[:TIER_SKILL_CAP],
-        "agent": _tier_agent(state)[:TIER_AGENT_CAP],
     }
     return {key: value for key, value in fields.items() if value.strip()}

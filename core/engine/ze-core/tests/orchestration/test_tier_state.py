@@ -12,7 +12,7 @@ from ze_core.orchestration.judgment_state import build_tier_state
 from ze_core.routing.types import RoutingEnvelope, SubTask
 from tests.support.routing import register_agent
 
-FIELDS = {"task", "conversation", "recap", "memory", "focus", "skill", "agent"}
+FIELDS = {"task", "conversation", "recap", "memory", "focus", "skill"}
 
 RECAP = (
     "[Resuming after a gap — outstanding context, not visible to the user]\n"
@@ -112,12 +112,6 @@ class TestFields:
     def test_empty_fields_are_omitted(self):
         state = {"prompt": "thanks", "image_caption": None}
         assert build_tier_state(state) == {"task": "thanks"}
-
-    def test_agent_field_names_the_agent_description_and_tools(self):
-        text = build_tier_state(_full_state())["agent"]
-        assert "companion" in text
-        assert "Personal companion" in text
-        assert "remember_fact" in text and "track_loop" in text
 
     def test_skill_field_names_and_describes_active_skills(self):
         text = build_tier_state(_full_state())["skill"]
@@ -221,9 +215,19 @@ class TestCaps:
         ]
         assert len(build_tier_state(state)["skill"]) == 300
 
-    def test_agent_capped_at_600(self):
-        get_enabled_agents()["companion"].description = "d" * 2000
-        assert len(build_tier_state(_full_state())["agent"]) == 600
+    def test_no_agent_field_and_no_routing_text(self):
+        """Tuned-set figures (research R12): an agent field added noise to the difficulty judgment."""
+        cls = get_enabled_agents()["companion"]
+        cls.routing_criteria = "Not for: a comparison, a how-to"
+        state = build_tier_state(_full_state())
+        assert "agent" not in state
+        assert not any("comparison" in value for value in state.values())
+        assert not any("remember_fact" in value for value in state.values())
+
+    def test_state_does_not_need_the_agent_registry(self):
+        clear_registry()
+        state = build_tier_state(_full_state())
+        assert set(state) == FIELDS
 
     def test_whole_state_stays_under_eight_kilobytes(self):
         state = _full_state()

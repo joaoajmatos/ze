@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import importlib.util
 import json
 import math
 import os
@@ -34,7 +33,6 @@ from typing import Any, Sequence
 
 import yaml
 
-from ze_agents.registry import get_enabled_agents
 from ze_agents.system_one import SystemOneResult
 from ze_agents.types import AgentContext
 from ze_core.orchestration.judgment_state import build_tier_state
@@ -45,16 +43,12 @@ from ze_core.routing.tier import (
     build_tier_question,
     decide_tier,
 )
-from ze_core.routing.types import RoutingEnvelope, SubTask
 
 ROOT = Path(__file__).resolve().parents[2]
 TUNED = Path(__file__).with_name("complexity.jsonl")
 HOLDOUT = Path(__file__).with_name("complexity_holdout.jsonl")
 VERDICT_MARKER = ROOT / "eval" / "results" / "complexity_holdout_verdict.json"
 CONFIG = ROOT / "apps" / "ze-api" / "config" / "config.yaml"
-AGENT_MODULES = (
-    ROOT / "core" / "engine" / "ze-core" / "tests" / "support" / "agent_modules.py"
-)
 
 LANGS = ("en", "pt")
 AGENTS = ("companion", "research", "goals")
@@ -367,21 +361,6 @@ def percentile(values: Sequence[int], q: float) -> int:
 # --- state ---------------------------------------------------------------------------
 
 
-def load_roster() -> None:
-    """Register the real agents so the ``agent`` field is what production sends."""
-    from ze_agents.bootstrap import reload_agent_modules
-
-    spec = importlib.util.spec_from_file_location(
-        "_complexity_agent_modules", AGENT_MODULES
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    reload_agent_modules(module.ALL_AGENT_MODULE_PATHS)
-    missing = [a for a in AGENTS if a not in get_enabled_agents()]
-    if missing:
-        raise SystemExit(f"agents not registered: {missing}")
-
-
 def row_state(row: Row) -> dict[str, str]:
     """The production tier state for this row, built from a synthetic ``AgentState``."""
     recap = ResumeRecap(session_narrative=row.recap).render() if row.recap else None
@@ -392,15 +371,6 @@ def row_state(row: Row) -> dict[str, str]:
         messages=[*row.conversation, {"role": "user", "content": row.prompt}],
         resume_recap=recap,
         active_skills=[SimpleNamespace(**row.skill)] if row.skill else [],
-    )
-    envelope = RoutingEnvelope(
-        primary_agent=row.agent,
-        confidence=1.0,
-        score_gap=1.0,
-        routing_method="embedding",
-        is_compound=False,
-        subtasks=[SubTask(agent=row.agent, intent="reason", prompt=row.prompt)],
-        requires_synthesis=False,
     )
     memory = SimpleNamespace(
         facts=[],
@@ -415,7 +385,6 @@ def row_state(row: Row) -> dict[str, str]:
             "image_caption": None,
             "agent_context": ctx,
             "memory_context": memory if row.memory else None,
-            "envelope": envelope,
             "routing_hints": row.focus,
         }
     )
@@ -424,8 +393,11 @@ def row_state(row: Row) -> dict[str, str]:
 # --- live run ------------------------------------------------------------------------
 
 
+STATE_FIELDS = ("conversation", "recap", "memory", "focus", "skill")
+
+
 async def run_system_one(
-    client: Any, rows: list[Row], concurrency: int
+    client: Any, rows: list[Row], concurrency: int, without: Sequence[str] = ()
 ) -> dict[str, SystemOneResult]:
     sem = asyncio.Semaphore(concurrency)
     questions = build_tier_question()
@@ -433,9 +405,8 @@ async def run_system_one(
     async def one(row: Row) -> tuple[str, SystemOneResult]:
         async with sem:
             try:
-                result = await client.evaluate(
-                    row_state(row), questions, max_attempts=1
-                )
+                state = {k: v for k, v in row_state(row).items() if k not in without}
+                result = await client.evaluate(state, questions, max_attempts=1)
             except Exception:
                 result = SystemOneResult(outcome="skip", skip_reason="error")
         return row.id, result
@@ -595,6 +566,12 @@ async def main_async(args: argparse.Namespace) -> int:
     if holdout and args.simple_max is None:
         print("--set holdout needs the frozen --simple-max.", file=sys.stderr)
         return 2
+    if holdout and args.without:
+        print(
+            "--without is a tuning experiment; the verdict run uses the production state.",
+            file=sys.stderr,
+        )
+        return 2
     if holdout and VERDICT_MARKER.exists() and not args.rerun:
         print(
             f"The held-out set was already scored once ({VERDICT_MARKER.name});"
@@ -625,7 +602,6 @@ async def main_async(args: argparse.Namespace) -> int:
 
     from ze_core.openrouter.system_one import DEFAULT_MODEL, OpenRouterSystemOneClient
 
-    load_roster()
     settings = config_system_one()
     model = args.model or settings.get("model") or DEFAULT_MODEL
     timeout_ms = args.timeout_ms or int(settings.get("timeout_ms", 2000))
@@ -634,7 +610,7 @@ async def main_async(args: argparse.Namespace) -> int:
     )
     print(f"model={model} set={args.set} rows={len(rows)} timeout_ms={timeout_ms}")
     started = time.monotonic()
-    results = await run_system_one(client, rows, args.concurrency)
+    results = await run_system_one(client, rows, args.concurrency, args.without)
     outcomes = [outcome_for(r, results[r.id]) for r in rows]
     print(f"live run took {time.monotonic() - started:.1f}s")
 
@@ -701,6 +677,13 @@ def parser() -> argparse.ArgumentParser:
         help="default: system_one.timeout_ms from config.yaml, so the skip rate matches production",
     )
     p.add_argument("--concurrency", type=int, default=4)
+    p.add_argument(
+        "--without",
+        nargs="*",
+        choices=STATE_FIELDS,
+        default=[],
+        help="tuned-set experiment: drop these state fields before the request",
+    )
     p.add_argument(
         "--rerun",
         action="store_true",
