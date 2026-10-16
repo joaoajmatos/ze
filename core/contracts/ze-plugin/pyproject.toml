@@ -11,6 +11,7 @@ dependencies = [
     "ze-agents",
     "ze-logging",
     "ze-data",
+    "ze-communication",
     "pyyaml==6.0.3",
     "fastapi==0.136.3",
 ]
@@ -19,6 +20,7 @@ dependencies = [
 ze-agents = { workspace = true }
 ze-logging = { workspace = true }
 ze-data = { workspace = true }
+ze-communication = { workspace = true }
 
 [dependency-groups]
 dev = [

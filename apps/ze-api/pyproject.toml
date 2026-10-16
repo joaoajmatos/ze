@@ -29,6 +29,10 @@ dependencies = [
     "ze-calendar",
     "ze-seed",
     "ze-google",
+    "ze-agents",
+    "ze-communication",
+    "ze-plugin",
+    "ze-proactive",
     "fastapi==0.136.3",
     "uvicorn[standard]==0.48.0",
     "httpx[http2]==0.28.1",
@@ -88,6 +92,10 @@ ze-onboarding    = { workspace = true }
 ze-calendar      = { workspace = true }
 ze-seed          = { workspace = true }
 ze-google        = { workspace = true }
+ze-agents = { workspace = true }
+ze-communication = { workspace = true }
+ze-plugin = { workspace = true }
+ze-proactive = { workspace = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

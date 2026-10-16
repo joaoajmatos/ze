@@ -7,12 +7,12 @@ name = "ze-browser"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
+    "ze-agents",
     "httpx==0.28.1",
-    "ze-core",
 ]
 
 [tool.uv.sources]
-ze-core = { workspace = true }
+ze-agents = { workspace = true }
 
 [dependency-groups]
 dev = [

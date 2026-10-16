@@ -4,6 +4,8 @@ ze_core is the engine; only ze-core and ze-seed (which reads engine message type
 """
 
 import ast
+import re
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -54,3 +56,54 @@ def test_core_and_integration_packages_do_not_import_the_engine() -> None:
         "ze-api injects engine behavior into core packages; they must not import ze_core:\n"
         + "\n".join(found)
     )
+
+
+def _dependency_graph() -> dict[str, set[str]]:
+    manifests = [
+        path
+        for pattern in ("*/*/pyproject.toml", "*/*/*/pyproject.toml")
+        for path in REPO_ROOT.glob(pattern)
+        if not SKIPPED_PARTS & set(path.relative_to(REPO_ROOT).parts)
+    ]
+    declared: dict[str, set[str]] = {}
+    for path in manifests:
+        project = tomllib.loads(path.read_text()).get("project")
+        if project:
+            declared[project["name"]] = {
+                re.split(r"[<>=\[;~! ]", dep)[0] for dep in project.get("dependencies", [])
+            }
+    return {name: deps & declared.keys() for name, deps in declared.items()}
+
+
+def _cycles(graph: dict[str, set[str]]) -> list[list[str]]:
+    found: list[list[str]] = []
+    state: dict[str, int] = {}
+    path: list[str] = []
+
+    def visit(node: str) -> None:
+        state[node] = 1
+        path.append(node)
+        for dep in sorted(graph[node]):
+            if state.get(dep) == 1:
+                found.append(path[path.index(dep) :] + [dep])
+            elif dep not in state:
+                visit(dep)
+        path.pop()
+        state[node] = 2
+
+    for node in sorted(graph):
+        if node not in state:
+            visit(node)
+    return found
+
+
+def test_cycle_finder_reports_a_loop() -> None:
+    assert _cycles({"a": {"b"}, "b": {"a"}, "c": {"a"}}) == [["a", "b", "a"]]
+    assert _cycles({"a": {"b"}, "b": set()}) == []
+
+
+def test_declared_workspace_dependencies_have_no_cycles() -> None:
+    graph = _dependency_graph()
+    assert "ze-agents" in graph, "no workspace manifests found; the globs are stale"
+    cycles = _cycles(graph)
+    assert not cycles, "ze-* dependency cycles:\n" + "\n".join(" -> ".join(c) for c in cycles)
