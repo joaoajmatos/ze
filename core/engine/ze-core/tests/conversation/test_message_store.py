@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -334,3 +334,18 @@ async def test_unreadable_rollback_record_loads_as_none():
     pool, _ = _make_pool_mock(rows=[_make_row(msg, rollback={"entries": "bad"})])
     loaded = await PostgresMessageStore(pool=pool).get_message(msg.id)
     assert loaded is not None and loaded.rollback is None
+
+
+async def test_agent_activity_by_day_counts_assistant_traces_in_range():
+    day = date(2026, 10, 1)
+    pool, conn = _make_pool_mock(rows=[{"day": day, "agent": "research", "count": 3}])
+    store = PostgresMessageStore(pool)
+    start = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    end = datetime(2026, 10, 2, tzinfo=timezone.utc)
+
+    result = await store.agent_activity_by_day(start, end)
+
+    assert result == [(day, "research", 3)]
+    sql, *args = conn.fetch.call_args[0]
+    assert "role = 'assistant'" in sql
+    assert args == [start, end]

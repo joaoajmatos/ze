@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, fields
-from datetime import datetime
+from datetime import date, datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -51,11 +51,9 @@ class MessageStore(Protocol):
     async def save_trace(self, message_id: UUID, trace: MessageTrace) -> None: ...
     async def get_trace(self, message_id: UUID) -> MessageTrace | None: ...
     async def get_traces(self, message_ids: list[UUID]) -> dict[UUID, MessageTrace]: ...
-    async def list_with_agent(
-        self,
-        start: datetime,
-        end: datetime,
-    ) -> list[tuple[UUID, str, datetime]]: ...
+    async def agent_activity_by_day(
+        self, start: datetime, end: datetime
+    ) -> list[tuple[date, str, int]]: ...
 
 
 class PostgresMessageStore:
@@ -282,25 +280,30 @@ class PostgresMessageStore:
             result[row["id"]] = _parse_trace(data)
         return result
 
-    async def list_with_agent(
-        self,
-        start: datetime,
-        end: datetime,
-    ) -> list[tuple[UUID, str, datetime]]:
+    async def agent_activity_by_day(
+        self, start: datetime, end: datetime
+    ) -> list[tuple[date, str, int]]:
+        """Assistant replies per UTC day and agent in [start, end), busiest agent first."""
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, trace->>'agent' AS agent, created_at
+                SELECT
+                    date_trunc('day', created_at AT TIME ZONE 'UTC')::date AS day,
+                    trace->>'agent'                                          AS agent,
+                    COUNT(*)::int                                            AS count
                 FROM messages
-                WHERE trace IS NOT NULL
+                WHERE role = 'assistant'
+                  AND trace IS NOT NULL
+                  AND trace->>'agent' IS NOT NULL
                   AND created_at >= $1
                   AND created_at < $2
-                ORDER BY created_at ASC
+                GROUP BY 1, 2
+                ORDER BY 1 ASC, 3 DESC
                 """,
                 start,
                 end,
             )
-        return [(r["id"], r["agent"], r["created_at"]) for r in rows]
+        return [(r["day"], r["agent"], r["count"]) for r in rows]
 
 
 def _parse_trace(data: dict) -> MessageTrace:
