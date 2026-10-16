@@ -125,6 +125,13 @@ def test_spec_node_with_a_code_twin_is_renamed(tmp_path):
     assert labels["store"] == "Store"
 
 
+def test_edgeless_phantoms_are_removed(tmp_path):
+    graph = _build_repo(tmp_path)
+    graph["nodes"].append(_node("orphan_phantom", "Store", "", None))
+    data = _run(tmp_path, graph)
+    assert "orphan_phantom" not in {n["id"] for n in data["nodes"]}
+
+
 def test_second_run_changes_nothing(tmp_path):
     first = _run(tmp_path, _build_repo(tmp_path))
     second = _run(tmp_path, first)

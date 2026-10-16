@@ -254,6 +254,7 @@ class Report:
     edges_dropped: int = 0
     imports_added: int = 0
     spec_nodes_renamed: int = 0
+    orphans_removed: int = 0
     calls_added: int = 0
     left_labels: Counter = field(default_factory=Counter)
 
@@ -320,6 +321,8 @@ def repair(
 
     remap: dict[str, str] = {}
     for pid, node in phantoms.items():
+        if not incident[pid]:
+            continue
         label = norm_label(node["label"])
         files = {e.get("source_file") for e in incident[pid] if e.get("source_file")}
         targets: set[str] = set()
@@ -434,6 +437,13 @@ def repair(
             n["label"] = f"{n['label']} (spec)"
             n["norm_label"] = n["label"].lower()
             rep.spec_nodes_renamed += 1
+    linked = {edge["source"] for edge in graph.links} | {
+        edge["target"] for edge in graph.links
+    }
+    for pid in phantoms:
+        if pid in graph.nodes and pid not in linked:
+            del graph.nodes[pid]
+            rep.orphans_removed += 1
     graph.data["nodes"] = list(graph.nodes.values())
     graph.data["links"] = graph.links
     for h in graph.data.get("hyperedges", []) or []:
@@ -479,6 +489,7 @@ def main(argv: list[str] | None = None) -> int:
         f"edges: repointed {rep.edges_repointed}, dropped {rep.edges_dropped} (self/duplicate), "
         f"imports added {rep.imports_added}, calls added {rep.calls_added}"
     )
+    print(f"edgeless phantom nodes removed: {rep.orphans_removed}")
     print(
         f"spec nodes renamed so the code symbol is the unique match: {rep.spec_nodes_renamed}"
     )
