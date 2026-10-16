@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from ze_logging import get_logger
 
 from ze_agents.claims import ClaimKind, Confidence, DecayProfile, Provenance
+from ze_agents.client import LLMClient
 from ze_agents.errors import LLMJsonParseError
 from ze_agents.llm_json import parse_llm_json
 from ze_collision.detect import submit_and_detect_collisions
@@ -59,7 +60,7 @@ class CorrelationEngine:
         self,
         memory_store: Any,  # PostgresMemoryStore — graph expand + retrieval
         relevance_model: Any,  # Phase 56 RelevanceModel
-        llm_client: Any,  # ze_agents LLMClient protocol
+        llm_client: LLMClient,
         hypothesis_store: PostgresHypothesisStore,
         settings: Any,
         collision_store: Any = None,
