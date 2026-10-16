@@ -26,6 +26,8 @@ async def test_consolidator_reads_turn_episodes_once_past_the_watermark(pg_pool)
             assert await conn.fetchval("SELECT to_regclass($1)", legacy) is None
     first = await make_episode(pg_pool, prompt="Lunch with Rita Gomes from Acme")
     await make_episode(pg_pool, agent="consolidator", prompt="archive")
+    await make_episode(pg_pool, session_id="workflow:w1", prompt="Workflow run for Ana Reis")
+    await make_episode(pg_pool, session_id="eval-run-1", prompt="Eval turn about Ana Reis")
     client = AsyncMock()
     client.complete = AsyncMock(return_value='{"people": [], "projects": [], "relationships": []}')
     consolidator = _consolidator(pg_pool, client)
@@ -34,6 +36,7 @@ async def test_consolidator_reads_turn_episodes_once_past_the_watermark(pg_pool)
 
     assert report.episodes_scanned == 1
     assert "Rita Gomes" in client.complete.call_args.kwargs["messages"][0]["content"]
+    assert "Ana Reis" not in client.complete.call_args.kwargs["messages"][0]["content"]
     async with pg_pool.acquire() as conn:
         assert await conn.fetchval("SELECT last_episode_id FROM contacts_episode_watermark") == first
 

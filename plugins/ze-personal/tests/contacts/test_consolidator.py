@@ -361,6 +361,9 @@ async def test_load_reads_turn_episodes_from_memory_episodes_after_watermark():
     assert "contacts_episode_watermark" in sql
     assert "(e.created_at, e.id) > (w.last_created_at, w.last_episode_id)" in sql
     assert "ORDER BY e.created_at, e.id" in sql
+    assert "e.session_id NOT LIKE 'workflow:%'" in sql
+    assert "e.session_id NOT LIKE 'eval-%'" in sql
+    assert "onboarding" not in sql
     assert conn.fetch.call_args[0][1] == 50
 
 

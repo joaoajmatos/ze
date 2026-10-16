@@ -140,6 +140,8 @@ class ContactsConsolidator:
                 FROM memory_episodes e
                 LEFT JOIN contacts_episode_watermark w ON w.id = 1
                 WHERE e.agent <> 'consolidator'
+                  AND e.session_id NOT LIKE 'workflow:%'
+                  AND e.session_id NOT LIKE 'eval-%'
                   AND (
                     w.id IS NULL
                     OR (e.created_at, e.id) > (w.last_created_at, w.last_episode_id)
