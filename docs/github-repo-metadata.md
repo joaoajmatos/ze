@@ -4,11 +4,11 @@ Draft values for the repository settings. Apply them by hand. Nothing in the rep
 
 ## Description
 
-A model of you: a self-hosted personal AI that keeps a world-state of one person, with claims that carry a kind, a source, and decaying confidence.
+A self-hosted personal assistant for one person. It keeps one record of that person's world, where each claim has a kind, a source, and a confidence that decays.
 
 Shorter option (under 100 characters):
 
-A model of you: a self-hosted personal AI with a calibrated, honest world-state.
+A self-hosted personal assistant for one person, built around one shared world-state.
 
 ## Website
 

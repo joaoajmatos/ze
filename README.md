@@ -2,9 +2,7 @@
 
 # Ze
 
-**A model of you.**
-
-A personal AI that keeps a model of you, and says how sure it is.
+**A self-hosted personal assistant for one person.**
 
 <p>
   <a href="https://github.com/joaoajmatos/ze/actions/workflows/ci.yml"><img src="https://github.com/joaoajmatos/ze/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -18,17 +16,17 @@ A personal AI that keeps a model of you, and says how sure it is.
 
 ---
 
-Ze is a self-hosted personal AI assistant, built for one user. This repository is for engineers who design agent systems and want to follow one worked through in the open.
+This repository is for engineers who design agent systems and want to follow one as it is built.
 
-Most assistants are a chat window with tools. Ze is different. One mind writes to one world-state: a model of you, your people, your projects, and everything still open. Every claim in that model has a kind, a source, and a confidence that decays. Ze may state a suspicion only as a suspicion.
+Ze keeps one record of your world: you, your people, your projects, and the things still open. One agent writes to it. Each claim in the record has a kind, a source, and a confidence that decays over time. When Ze only suspects something, it says so.
 
 Ze is pre-v1. It has one user, it runs locally, and it is in active development.
 
 ---
 
-## What makes Ze different
+## How Ze works
 
-**One mind, not a router over specialists.** Companion is the only agent that speaks to you. Specialists (calendar, email, research, finance) are tools it calls with a full brief, each behind its own capability and confirmation check. Ze has no swarm and no hand-offs. Read [One mind, not a router](docs/engineering/one-mind-not-a-router.md).
+**One mind, not a router over specialists.** Companion is the only agent that speaks to you. Specialists (calendar, email, research, finance) are tools it calls with a full brief. Every irreversible write asks you first. Ze has no swarm and no hand-offs. Read [One mind, not a router](docs/engineering/one-mind-not-a-router.md).
 
 **Claims have kinds, sources, and decaying confidence.** A fact, an inference, a suspicion, and a priority are different things. Each carries where it came from and how fast its certainty ages. A claim reaches you only with the posture its kind allows. See the [doctrine](specs/arch/ze-doctrine.md).
 
@@ -55,7 +53,7 @@ Ze is pre-v1. One person uses it, self-hosted on their own machine, and it is in
 - Layered memory: facts, episodes, a graph, nightly consolidation, and an offline dream pass.
 - Goals that run for weeks, with verification gates. Open loops with drift detection. One priority ranking over both.
 - Proactive jobs behind one interruption budget and quiet hours.
-- Four System One surfaces on in the shipped config: the commitment intake, routing choice, skill gating, and the loop gate.
+- Five System One surfaces on in the shipped config: the commitment intake, the routing choice, the model tier, skill gating, and the loop gate.
 
 **What is off or unfinished**
 
