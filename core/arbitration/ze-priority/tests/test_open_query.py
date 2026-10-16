@@ -60,7 +60,7 @@ def test_embedder_failure_is_false_and_retried_later():
             self.calls += 1
             if self.calls == 1:
                 raise RuntimeError("model not loaded")
-            return super().encode(texts) if False else np.stack([_VECS[t] for t in texts])
+            return np.stack([_VECS[t] for t in texts])
 
     embedder = Flaky()
     d = _detector(embedder)
