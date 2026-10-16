@@ -60,7 +60,6 @@ class WorkflowManagerAgent(BaseAgent):
       Not for one-off reminders (use reminders), long-term goals, or Google Calendar events.
     """
     model = "anthropic/claude-sonnet-4-5"
-    vision_capable = True
     timeout = 60
     tools = [
         "list_workflows",

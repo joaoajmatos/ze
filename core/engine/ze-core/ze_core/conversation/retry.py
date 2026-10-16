@@ -37,7 +37,6 @@ class RetryReason(StrEnum):
     UNKNOWN_TOOL = "unknown_tool"
     TURN_PENDING = "turn_pending"
     BUSY = "busy"
-    DISCONNECTED = "disconnected"  # client-side only; the server never returns it
 
 
 @dataclass(frozen=True)
@@ -237,20 +236,3 @@ def _said(phrases: list[str]) -> str:
     else:
         joined = ", ".join(phrases[:-1]) + f" and {phrases[-1]}"
     return f"This reply {joined}."
-
-
-def eligibility_payload(result: RetryEligibility) -> dict[str, Any]:
-    return {
-        "available": result.available,
-        "reason_code": result.reason_code.value if result.reason_code else None,
-        "reason_text": result.reason_text,
-        "plan": [
-            {
-                "entry_id": e.entry_id,
-                "tool": e.tool,
-                "effect_phrase": e.effect_phrase,
-                "undo_note": e.undo_note,
-            }
-            for e in result.plan
-        ],
-    }

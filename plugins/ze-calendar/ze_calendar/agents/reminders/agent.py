@@ -46,7 +46,6 @@ class RemindersAgent(BaseAgent):
       Not for recurring automations (use workflow), calendar events, or goals.
     """
     model = "anthropic/claude-haiku-4-5"
-    vision_capable = False
     timeout = 15
     tools = ["set_reminder", "list_reminders", "cancel_reminder"]
 

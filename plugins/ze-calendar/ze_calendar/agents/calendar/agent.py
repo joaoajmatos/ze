@@ -47,7 +47,6 @@ class CalendarAgent(BaseAgent):
       "update my 2pm meeting". Not for one-off personal reminders or email.
     """
     model = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 30
     tools = [
         "list_events",

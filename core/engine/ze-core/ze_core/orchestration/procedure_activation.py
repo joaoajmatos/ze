@@ -9,7 +9,7 @@ from langchain_core.runnables import RunnableConfig
 
 from ze_agents.types import AgentContext, AgentResult
 from ze_logging import get_logger
-from ze_memory.procedures.discovery import format_procedure_guidance, intersect_tools
+from ze_memory.procedures.discovery import format_procedure_guidance
 from ze_memory.procedures.types import (
     CapabilityDecision,
     ProcedureActionOutcome,
@@ -156,11 +156,3 @@ def procedure_usage_trace(ctx: AgentContext | None) -> dict[str, str] | None:
         "procedure_id": str(procedure_id),
         "version_id": str(version_id),
     }
-
-
-def intersect_for_invocation(
-    agent_allowed: frozenset[str],
-    capability_allowed: frozenset[str],
-    procedure_relevant: frozenset[str],
-) -> frozenset[str]:
-    return intersect_tools(agent_allowed, capability_allowed, procedure_relevant)

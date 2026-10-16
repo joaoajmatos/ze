@@ -50,7 +50,6 @@ class MessengerAgent(BaseAgent):
       "search my inbox for X". Not for calendar events or reminders.
     """
     model = "anthropic/claude-haiku-4-5"
-    vision_capable = True
     timeout = 30
     tools = ["list_emails", "get_email", "draft_email", "send_email", "archive_email"]
 

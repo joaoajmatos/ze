@@ -127,7 +127,6 @@ class NewsAgent(BaseAgent):
       For news digest and headline summaries only — not for factual research or web search.
     """
     model = "openai/gpt-4o-mini"
-    vision_capable = False
     timeout = 30
     tools = ["refresh_news", "get_headlines", "search_news"]
 
