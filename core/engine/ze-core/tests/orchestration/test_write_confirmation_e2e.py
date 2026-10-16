@@ -34,7 +34,7 @@ async def _pending(graph, cfg) -> WriteConfirmation | None:
 
 def _graph(client, tools):
     h.register_agent("calendar", client, tools)
-    return h.compiled_graph([SubTask("calendar", "read", "do it")])
+    return h.compiled_graph([SubTask("calendar", "do it")])
 
 
 async def test_opt_out_write_runs_without_a_confirmation() -> None:
@@ -108,7 +108,7 @@ async def test_conductor_delegation_shows_one_item_and_resumes_the_conductor() -
         ("I emailed Ana.", None),
     )
     h.register_agent("companion", companion_client, [DELEGATE_TOOL_NAME])
-    graph = h.compiled_graph([SubTask("companion", "reason", "email Ana")])
+    graph = h.compiled_graph([SubTask("companion", "email Ana")])
     cfg = h.thread_config()
     await graph.ainvoke(h.graph_input("email Ana"), cfg)
 

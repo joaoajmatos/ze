@@ -2,10 +2,6 @@ from ze_api.api.schemas import ErrorDetail
 
 OPENAPI_TAGS = [
     {
-        "name": "capabilities",
-        "description": "Read and update per-agent capability modes (`capabilities.yaml`).",
-    },
-    {
         "name": "memory",
         "description": "User facts, review workflow, and memory digest.",
     },

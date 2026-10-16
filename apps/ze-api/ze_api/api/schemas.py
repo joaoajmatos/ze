@@ -10,7 +10,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    RootModel,
     ValidationInfo,
     field_validator,
 )
@@ -250,31 +249,6 @@ class FeedbackView(BaseModel):
 
 class MessageFeedbackResponse(BaseModel):
     items: list[FeedbackView]
-
-
-# ── REST: capabilities ────────────────────────────────────────────────────────
-
-CapabilityMode = Literal["autonomous", "confirm", "draft_only", "disabled"]
-
-
-class CapabilityModeUpdate(BaseModel):
-    mode: CapabilityMode
-
-
-class AgentCapabilityConfig(BaseModel):
-    """Per-agent entry from capabilities.yaml (enabled + intent modes)."""
-
-    model_config = ConfigDict(extra="allow")
-
-    enabled: bool | None = None
-
-
-class CapabilitiesResponse(RootModel[dict[str, AgentCapabilityConfig]]):
-    """Full capabilities map keyed by agent name."""
-
-
-class UpdateCapabilityResponse(RootModel[dict[str, AgentCapabilityConfig]]):
-    """Updated capabilities for a single agent after PUT."""
 
 
 # ── REST: memory ──────────────────────────────────────────────────────────────
@@ -715,7 +689,7 @@ class EvalToolCall(BaseModel):
     duration_ms: int
     success: bool
     error: str | None = None
-    is_draft: bool = False
+    gate: str = "none"
 
 
 class EvalChatResponse(BaseModel):
@@ -937,7 +911,6 @@ class WsCommandFrame(BaseModel):
     name: Literal[
         "cancel",
         "costs",
-        "capabilities",
         "status",
         "onboarding",
         "reset",

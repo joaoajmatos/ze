@@ -32,7 +32,10 @@ def _clean():
 
 
 def _ctx() -> AgentContext:
-    return AgentContext(session_id="s1", prompt="go", intent="create")
+    return AgentContext(
+        session_id="s1",
+        prompt="go",
+    )
 
 
 def _agent() -> BaseAgent:
@@ -249,7 +252,7 @@ async def test_confirm_level_conflict_parks_with_the_conflict_text():
     ran: list = []
     _note_contact_tool(ran)
     register_hook(_veto_hook())
-    ctx = AgentContext(session_id="s1", prompt="go", intent="x", loop_active=True)
+    ctx = AgentContext(session_id="s1", prompt="go", loop_active=True)
     tc = await _agent().call_tool(
         "note_contact", ctx, _lm_args={"to": "Ada"}, _call_id="c1", to="Ada"
     )

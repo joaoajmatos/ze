@@ -12,13 +12,9 @@ from ze_agents.errors import LoopParked
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult, GateDecision
+from ze_agents.types import AgentContext, AgentResult
 
 calls: list[tuple[str, dict]] = []
-
-
-async def _eval_execute(_agent: str, _intent: str) -> GateDecision:
-    return GateDecision.EXECUTE
 
 
 @pytest.fixture(autouse=True)
@@ -59,8 +55,6 @@ def _ctx() -> AgentContext:
     return AgentContext(
         session_id="s",
         prompt="p",
-        intent="reason",
-        evaluate_delegate=_eval_execute,
     )
 
 

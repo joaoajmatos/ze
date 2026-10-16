@@ -4,13 +4,10 @@ import numpy as np
 from unittest.mock import AsyncMock, MagicMock
 
 from ze_agents.types import AgentContext, AgentResult
-from ze_core.capability.gate import CapabilityGate
-from ze_agents.types import GateDecision
 from ze_agents.errors import AgentTimeoutError
 from ze_memory.retriever import PostgresMemoryStore as MemoryStore
 from ze_memory.types import Fact, MemoryContext
 from ze_core.orchestration.nodes import context, execution, memory, routing
-from ze_core.orchestration.nodes.execution import await_confirmation, capability_check
 from ze_core.orchestration.nodes.memory import synthesize
 from ze_core.orchestration.nodes.routing import embed_route
 from ze_core.routing.types import RoutingEnvelope, SubTask
@@ -22,12 +19,11 @@ from tests.support.settings import make_settings
 
 def make_envelope(
     agent="research",
-    intent="read",
     is_compound=False,
     subtasks=None,
 ) -> RoutingEnvelope:
     if subtasks is None:
-        subtasks = [SubTask(agent=agent, intent=intent, prompt="test prompt")]
+        subtasks = [SubTask(agent=agent, prompt="test prompt")]
     return RoutingEnvelope(
         primary_agent=subtasks[0].agent,
         confidence=0.9,
@@ -43,14 +39,11 @@ def base_state(**overrides) -> dict:
     defaults: dict = {
         "prompt": "find AI news",
         "session_id": "s1",
-        "session_overrides": {},
         "envelope": make_envelope(),
         "memory_context": None,
         "agent_context": None,
-        "gate_decision": None,
         "agent_result": None,
         "subtask_results": [],
-        "pending_confirmation": False,
         "final_response": None,
         "error": None,
     }
@@ -75,7 +68,6 @@ def make_persona_store():
 def make_config(
     router=None,
     memory_store=None,
-    capability_gate=None,
     settings=None,
     openrouter_client=None,
     embedder=None,
@@ -86,7 +78,6 @@ def make_config(
             "router": router or MagicMock(),
             "memory_store": memory_store or AsyncMock(spec=MemoryStore),
             "persona_store": persona_store or make_persona_store(),
-            "capability_gate": capability_gate or MagicMock(spec=CapabilityGate),
             "settings": settings or make_settings(),
             "openrouter_client": openrouter_client or AsyncMock(),
             "embedder": embedder or make_mock_embedder(),
@@ -151,35 +142,6 @@ async def test_fetch_context_passes_memory_to_agent_context():
     assert result["agent_context"].memory.facts[0].value == "Alice"
 
 
-# ── execution.capability_check ────────────────────────────────────────────────
-
-
-async def test_capability_check_execute():
-    gate = MagicMock(spec=CapabilityGate)
-    gate.evaluate.return_value = GateDecision.EXECUTE
-    cfg = make_config(capability_gate=gate)
-    result = await capability_check(base_state(), cfg)
-    assert result["gate_decision"] == GateDecision.EXECUTE
-
-
-async def test_capability_check_blocked_when_no_envelope():
-    gate = MagicMock(spec=CapabilityGate)
-    cfg = make_config(capability_gate=gate)
-    result = await capability_check(base_state(envelope=None), cfg)
-    assert result["gate_decision"] == GateDecision.BLOCKED
-
-
-async def test_capability_check_passes_session_overrides():
-    gate = MagicMock(spec=CapabilityGate)
-    gate.evaluate.return_value = GateDecision.EXECUTE
-    cfg = make_config(capability_gate=gate)
-    overrides = {"research.read": "autonomous"}
-    await capability_check(base_state(session_overrides=overrides), cfg)
-    gate.evaluate.assert_called_once_with(
-        agent="research", intent="read", session_overrides=overrides
-    )
-
-
 # ── execution.execute_tool ────────────────────────────────────────────────────
 
 
@@ -192,10 +154,8 @@ async def test_execute_tool_single_agent(monkeypatch):
 
     monkeypatch.setitem(reg._instances, "research", mock_agent)
 
-    ctx = AgentContext(
-        session_id="s1", prompt="test", intent="read", memory=MemoryContext()
-    )
-    state = base_state(agent_context=ctx, gate_decision=GateDecision.EXECUTE)
+    ctx = AgentContext(session_id="s1", prompt="test", memory=MemoryContext())
+    state = base_state(agent_context=ctx)
     result = await execution.execute_tool(state, make_config())
     assert result["agent_result"].response == "found it"
     assert result["subtask_results"] == []
@@ -216,13 +176,11 @@ async def test_execute_tool_compound_accumulates_results(monkeypatch):
     monkeypatch.setitem(reg._instances, "companion", mock_companion)
 
     subtasks = [
-        SubTask(agent="research", intent="read", prompt="search part"),
-        SubTask(agent="companion", intent="reason", prompt="reason part"),
+        SubTask(agent="research", prompt="search part"),
+        SubTask(agent="companion", prompt="reason part"),
     ]
     envelope = make_envelope(is_compound=True, subtasks=subtasks)
-    ctx = AgentContext(
-        session_id="s1", prompt="compound", intent="read", memory=MemoryContext()
-    )
+    ctx = AgentContext(session_id="s1", prompt="compound", memory=MemoryContext())
     state = base_state(envelope=envelope, agent_context=ctx)
 
     result = await execution.execute_tool(state, make_config())
@@ -242,23 +200,10 @@ async def test_execute_tool_raises_timeout(monkeypatch):
 
     monkeypatch.setitem(reg._instances, "research", mock_agent)
 
-    ctx = AgentContext(
-        session_id="s1", prompt="test", intent="read", memory=MemoryContext()
-    )
+    ctx = AgentContext(session_id="s1", prompt="test", memory=MemoryContext())
     state = base_state(agent_context=ctx)
     with pytest.raises(AgentTimeoutError):
         await execution.execute_tool(state, make_config())
-
-
-# ── confirmation.await_confirmation ──────────────────────────────────────────
-
-
-async def test_await_confirmation_clears_pending_and_sets_execute():
-    from ze_agents.types import GateDecision
-
-    result = await await_confirmation(base_state(), make_config())
-    assert result["pending_confirmation"] is False
-    assert result["gate_decision"] == GateDecision.EXECUTE
 
 
 # ── memory.write_memory ───────────────────────────────────────────────────────
@@ -273,9 +218,7 @@ async def test_write_memory_schedules_tasks_without_blocking():
     cfg = make_config(memory_store=store, openrouter_client=client)
 
     result_obj = AgentResult(agent="research", response="done")
-    ctx = AgentContext(
-        session_id="s1", prompt="hi", intent="read", memory=MemoryContext()
-    )
+    ctx = AgentContext(session_id="s1", prompt="hi", memory=MemoryContext())
     state = base_state(agent_context=ctx, agent_result=result_obj)
 
     result = await memory.write_memory(state, cfg)
@@ -455,8 +398,8 @@ def test_apply_conductor_rewrite_sequential_multi_becomes_companion():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="calendar", intent="read", prompt="tuesday"),
-            SubTask(agent="email", intent="create", prompt="mail them"),
+            SubTask(agent="calendar", prompt="tuesday"),
+            SubTask(agent="email", prompt="mail them"),
         ],
         requires_synthesis=False,
         is_sequential=True,
@@ -477,8 +420,8 @@ def test_apply_conductor_rewrite_skips_independent_compound():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="research", intent="read", prompt="a"),
-            SubTask(agent="news", intent="read", prompt="b"),
+            SubTask(agent="research", prompt="a"),
+            SubTask(agent="news", prompt="b"),
         ],
         requires_synthesis=True,
         is_sequential=False,
@@ -495,7 +438,7 @@ def test_apply_conductor_rewrite_skips_sequential_one_subtask():
         score_gap=0.2,
         routing_method="haiku",
         is_compound=False,
-        subtasks=[SubTask(agent="calendar", intent="read", prompt="tuesday")],
+        subtasks=[SubTask(agent="calendar", prompt="tuesday")],
         requires_synthesis=False,
         is_sequential=True,
     )
@@ -512,8 +455,8 @@ def test_apply_conductor_rewrite_mixed_gather_act_sequential_false_research_mess
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="research", intent="read", prompt="latest X"),
-            SubTask(agent="messenger", intent="create", prompt="email Y"),
+            SubTask(agent="research", prompt="latest X"),
+            SubTask(agent="messenger", prompt="email Y", changes=True),
         ],
         requires_synthesis=True,
         is_sequential=False,
@@ -534,8 +477,8 @@ def test_apply_conductor_rewrite_calendar_read_messenger_create_not_name_list():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="calendar", intent="read", prompt="tuesday"),
-            SubTask(agent="messenger", intent="create", prompt="mail alex"),
+            SubTask(agent="calendar", prompt="tuesday"),
+            SubTask(agent="messenger", prompt="mail alex", changes=True),
         ],
         requires_synthesis=True,
         is_sequential=False,
@@ -556,8 +499,8 @@ def test_apply_conductor_rewrite_two_act_only_sequential_false_stays_compound():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="calendar", intent="create", prompt="event"),
-            SubTask(agent="messenger", intent="create", prompt="mail"),
+            SubTask(agent="calendar", prompt="event"),
+            SubTask(agent="messenger", prompt="mail"),
         ],
         requires_synthesis=True,
         is_sequential=False,
@@ -575,8 +518,8 @@ def test_apply_conductor_rewrite_send_alias_is_act():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="research", intent="read", prompt="latest X"),
-            SubTask(agent="messenger", intent="send", prompt="email Y"),
+            SubTask(agent="research", prompt="latest X"),
+            SubTask(agent="messenger", prompt="email Y", changes=True),
         ],
         requires_synthesis=True,
         is_sequential=False,
@@ -586,7 +529,7 @@ def test_apply_conductor_rewrite_send_alias_is_act():
     )
     assert rewritten.primary_agent == "companion"
     assert hint is not None
-    assert [h["intent"] for h in hint] == ["read", "send"]
+    assert [h["changes"] for h in hint] == [False, True]
 
 
 def test_apply_conductor_rewrite_sequential_true_mixed_still_rewrites():
@@ -597,8 +540,8 @@ def test_apply_conductor_rewrite_sequential_true_mixed_still_rewrites():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="research", intent="read", prompt="latest X"),
-            SubTask(agent="messenger", intent="create", prompt="email Y"),
+            SubTask(agent="research", prompt="latest X"),
+            SubTask(agent="messenger", prompt="email Y"),
         ],
         requires_synthesis=False,
         is_sequential=True,
@@ -617,8 +560,8 @@ def test_apply_conductor_rewrite_news_research_all_read_identity():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="news", intent="read", prompt="headlines"),
-            SubTask(agent="research", intent="read", prompt="context"),
+            SubTask(agent="news", prompt="headlines"),
+            SubTask(agent="research", prompt="context"),
         ],
         requires_synthesis=True,
         is_sequential=False,
@@ -629,20 +572,17 @@ def test_apply_conductor_rewrite_news_research_all_read_identity():
 
 
 @pytest.mark.parametrize(
-    "gather,act,expect_rewrite",
+    "first_changes,second_changes,expect_rewrite",
     [
-        ("lookup", "send", True),
-        ("search", "delete", True),
-        ("SEARCH", "CREATE", True),
-        ("lookup", "update", True),
-        ("manage", "create", False),
-        ("reason", "create", False),
-        ("", "create", False),
-        ("read", "manage", False),
-        ("  Read  ", "Send", True),
+        (False, True, True),
+        (True, False, True),
+        (False, False, False),
+        (True, True, False),
     ],
 )
-def test_apply_conductor_rewrite_intent_family_aliases(gather, act, expect_rewrite):
+def test_apply_conductor_rewrite_reads_the_changes_label(
+    first_changes, second_changes, expect_rewrite
+):
     env = RoutingEnvelope(
         primary_agent="alpha",
         confidence=0.8,
@@ -650,13 +590,13 @@ def test_apply_conductor_rewrite_intent_family_aliases(gather, act, expect_rewri
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="alpha", intent=gather, prompt="g"),
-            SubTask(agent="beta", intent=act, prompt="a"),
+            SubTask(agent="alpha", prompt="g", changes=first_changes),
+            SubTask(agent="beta", prompt="a", changes=second_changes),
         ],
         requires_synthesis=True,
         is_sequential=False,
     )
-    rewritten, hint = routing.apply_conductor_rewrite(env, "mixed intents")
+    rewritten, hint = routing.apply_conductor_rewrite(env, "mixed")
     if expect_rewrite:
         assert rewritten.primary_agent == "companion"
         assert hint is not None
@@ -665,7 +605,7 @@ def test_apply_conductor_rewrite_intent_family_aliases(gather, act, expect_rewri
         assert hint is None
 
 
-def test_apply_conductor_rewrite_same_agent_mixed_intents_stays_specialist():
+def test_apply_conductor_rewrite_same_agent_mixed_changes_stays_specialist():
     env = RoutingEnvelope(
         primary_agent="messenger",
         confidence=0.8,
@@ -673,8 +613,8 @@ def test_apply_conductor_rewrite_same_agent_mixed_intents_stays_specialist():
         routing_method="haiku",
         is_compound=True,
         subtasks=[
-            SubTask(agent="messenger", intent="read", prompt="inbox"),
-            SubTask(agent="messenger", intent="create", prompt="draft"),
+            SubTask(agent="messenger", prompt="inbox"),
+            SubTask(agent="messenger", prompt="draft", changes=True),
         ],
         requires_synthesis=True,
         is_sequential=False,

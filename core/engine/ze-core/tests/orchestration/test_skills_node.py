@@ -54,7 +54,10 @@ _MISSING = object()
 
 def _state(prompt: str = "hi", agent_context: Any = _MISSING) -> dict:
     if agent_context is _MISSING:
-        agent_context = AgentContext(session_id="s1", prompt=prompt, intent="read")
+        agent_context = AgentContext(
+            session_id="s1",
+            prompt=prompt,
+        )
     return {
         "prompt": prompt,
         "image_caption": None,
@@ -87,7 +90,10 @@ async def test_no_op_when_no_skills_matched():
 async def test_populates_agent_context_active_skills_and_skill_tool_names():
     skill = _FakeSkill("Pirate Speak", allowed_tools=["search"])
     match = _FakeMatch(skill)
-    ctx = AgentContext(session_id="s1", prompt="hi", intent="read")
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="hi",
+    )
     state = _state(agent_context=ctx)
 
     result = await match_skills(state, _config(matcher=_matcher([match])))
@@ -102,7 +108,10 @@ async def test_populates_agent_context_active_skills_and_skill_tool_names():
 async def test_skill_tool_names_none_when_no_skill_restricts_tools():
     skill = _FakeSkill("Pirate Speak", allowed_tools=None)
     match = _FakeMatch(skill)
-    ctx = AgentContext(session_id="s1", prompt="hi", intent="read")
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="hi",
+    )
 
     await match_skills(_state(agent_context=ctx), _config(matcher=_matcher([match])))
 
@@ -113,7 +122,10 @@ async def test_skill_tool_names_none_when_no_skill_restricts_tools():
 async def test_multiple_matched_skills_tool_names_intersected():
     skill_a = _FakeSkill("A", allowed_tools=["tool_a", "tool_b"])
     skill_b = _FakeSkill("B", allowed_tools=["tool_b", "tool_c"])
-    ctx = AgentContext(session_id="s1", prompt="hi", intent="read")
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="hi",
+    )
 
     await match_skills(
         _state(agent_context=ctx),
@@ -125,7 +137,10 @@ async def test_multiple_matched_skills_tool_names_intersected():
 
 @pytest.mark.asyncio
 async def test_matcher_error_is_swallowed():
-    ctx = AgentContext(session_id="s1", prompt="hi", intent="read")
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="hi",
+    )
     result = await match_skills(
         _state(agent_context=ctx), _config(matcher=_matcher(error=True))
     )
@@ -206,7 +221,10 @@ async def test_skip_judgment_rows_carry_reason_and_abstain_keeps_matches():
     )
     a = _FakeMatch(_FakeSkill("A", allowed_tools=["x"]))
     b = _FakeMatch(_FakeSkill("B", allowed_tools=["x", "y"]))
-    ctx = AgentContext(session_id="s1", prompt="hi", intent="read")
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="hi",
+    )
 
     result = await match_skills(
         _state(agent_context=ctx), _config(matcher=_matcher([a, b], judgment=skip))
@@ -219,7 +237,10 @@ async def test_skip_judgment_rows_carry_reason_and_abstain_keeps_matches():
 
 @pytest.mark.asyncio
 async def test_dropped_skill_imposes_no_restriction():
-    ctx = AgentContext(session_id="s1", prompt="hi", intent="read")
+    ctx = AgentContext(
+        session_id="s1",
+        prompt="hi",
+    )
     chosen = _FakeMatch(_FakeSkill("A", allowed_tools=None))
 
     await match_skills(

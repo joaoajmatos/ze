@@ -1,7 +1,6 @@
-from ze_agents.types import GateDecision
 from ze_core.orchestration.edges import (
-    after_await_subtask_confirmation,
-    after_capability_check,
+    after_await_budget_confirmation,
+    after_preflight,
     after_correlate,
     after_decompose,
     after_embed_route,
@@ -13,7 +12,7 @@ from ze_core.routing.types import RoutingEnvelope, SubTask
 def make_envelope(
     is_compound: bool = False, agents=("research",), is_sequential: bool = False
 ) -> RoutingEnvelope:
-    subtasks = [SubTask(agent=a, intent="read", prompt="hi") for a in agents]
+    subtasks = [SubTask(agent=a, prompt="hi") for a in agents]
     return RoutingEnvelope(
         primary_agent=subtasks[0].agent,
         confidence=0.9,
@@ -30,14 +29,11 @@ def base_state(**overrides) -> dict:
     defaults: dict = {
         "prompt": "hello",
         "session_id": "s1",
-        "session_overrides": {},
         "envelope": None,
         "memory_context": None,
         "agent_context": None,
-        "gate_decision": None,
         "agent_result": None,
         "subtask_results": [],
-        "pending_confirmation": False,
         "final_response": None,
         "error": None,
     }
@@ -90,61 +86,44 @@ def test_after_decompose_non_sequential_goes_to_fetch_context():
     assert after_decompose(state) == "fetch_context"
 
 
-# ── after_capability_check ────────────────────────────────────────────────────
+# ── after_preflight ───────────────────────────────────────────────────────────
 
 
-def test_after_capability_check_execute():
-    state = base_state(gate_decision=GateDecision.EXECUTE)
-    assert after_capability_check(state) == "execute_tool"
+def test_after_preflight_runs_by_default():
+    assert after_preflight(base_state()) == "execute_tool"
 
 
-def test_after_capability_check_draft():
-    state = base_state(gate_decision=GateDecision.DRAFT)
-    assert after_capability_check(state) == "draft_response"
+def test_after_preflight_blocked_ends():
+    assert after_preflight(base_state(blocked=True)) == "end_blocked"
 
 
-def test_after_capability_check_await_confirmation():
-    state = base_state(gate_decision=GateDecision.AWAIT_CONFIRMATION)
-    assert after_capability_check(state) == "draft_response"
+def test_after_preflight_over_budget_pauses():
+    state = base_state(budget_status={"scope": "day"}, budget_approved=False)
+    assert after_preflight(state) == "await_budget_confirmation"
 
 
-def test_after_capability_check_blocked():
-    state = base_state(gate_decision=GateDecision.BLOCKED)
-    assert after_capability_check(state) == "end_blocked"
+def test_after_preflight_approved_budget_runs():
+    state = base_state(budget_status={"scope": "day"}, budget_approved=True)
+    assert after_preflight(state) == "execute_tool"
 
 
-def test_after_capability_check_none_goes_to_end_blocked():
-    state = base_state(gate_decision=None)
-    assert after_capability_check(state) == "end_blocked"
-
-
-def test_after_capability_check_compound_mixed_goes_to_execute_tool():
-    state = base_state(
-        envelope=make_envelope(is_compound=True, agents=("calendar", "messenger")),
-        gate_decision=GateDecision.AWAIT_CONFIRMATION,
-    )
-    assert after_capability_check(state) == "execute_tool"
-
-
-def test_after_capability_check_compound_all_blocked_ends():
-    state = base_state(
-        envelope=make_envelope(is_compound=True, agents=("alpha", "beta")),
-        gate_decision=GateDecision.BLOCKED,
-    )
-    assert after_capability_check(state) == "end_blocked"
+def test_after_await_budget_confirmation():
+    assert after_await_budget_confirmation(base_state()) == "execute_tool"
+    denied = base_state(final_response="Okay, I didn't run that.")
+    assert after_await_budget_confirmation(denied) == "record_trace"
 
 
 # ── after_execute_tool ────────────────────────────────────────────────────────
 
 
-def test_after_execute_tool_always_goes_to_correlate():
+def test_after_execute_tool_without_a_park_goes_to_correlate():
     state = base_state(subtask_results=[])
     assert after_execute_tool(state) == "correlate"
 
 
-def test_after_await_subtask_confirmation_returns_to_execute_tool():
-    state = base_state(approved_subtask_indexes=[1])
-    assert after_await_subtask_confirmation(state) == "execute_tool"
+def test_after_execute_tool_with_an_open_confirmation_pauses():
+    state = base_state(write_confirmation=object(), parked_subtasks=[object()])
+    assert after_execute_tool(state) == "await_write_confirmation"
 
 
 def test_after_execute_tool_compound_also_goes_to_correlate():

@@ -2,37 +2,11 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Callable, Protocol, runtime_checkable
 from uuid import UUID
 
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.park import ParkedLoop, ParkedWrite, WriteDecision
-
-
-# ── Capability types ──────────────────────────────────────────────────────────
-
-
-class Mode(str, Enum):
-    AUTONOMOUS = "autonomous"
-    CONFIRM = "confirm"
-    DRAFT_ONLY = "draft_only"
-    DISABLED = "disabled"
-
-
-class GateDecision(str, Enum):
-    EXECUTE = "execute"
-    DRAFT = "draft"
-    AWAIT_CONFIRMATION = "confirm"
-    BLOCKED = "blocked"
-
-
-@dataclass
-class Intent:
-    """An agent capability: execution mode and a human-readable description."""
-
-    mode: Mode
-    description: str = ""
 
 
 # ── Orchestration types ───────────────────────────────────────────────────────
@@ -104,7 +78,6 @@ class ToolCall:
     duration_ms: int
     success: bool
     error: str | None = None
-    is_draft: bool = False
     # "none" | "approved" | "pre_approved" | "parked" | "denied" | "refused_over_cap" | "expired"
     gate: str = "none"
     parked: ParkedWrite | None = None
@@ -117,8 +90,6 @@ class ToolCall:
 class AgentContext:
     session_id: str
     prompt: str
-    intent: str
-    gate_decision: GateDecision = GateDecision.EXECUTE
     memory: Any = None
     contacts: Any = None
     tool_calls: list[ToolCall] = field(default_factory=list)
@@ -171,9 +142,6 @@ class AgentContext:
     procedure_invocation_id: str | None = field(default=None, repr=False)
     procedure_invoked_id: str | None = field(default=None, repr=False)
     procedure_invoked_version_id: str | None = field(default=None, repr=False)
-    # evaluate_delegate is runtime-only (engine-injected). Never checkpoint.
-    # Signature: (agent: str, intent: str) -> GateDecision (sync or async).
-    evaluate_delegate: Any = field(default=None, repr=False)
     # Turn-local conductor hint/ledger (Phase 153). Lists of primitives only.
     conductor_hint: list[dict[str, str]] | None = None
     conductor_ledger: list[dict[str, str]] = field(default_factory=list)
@@ -202,7 +170,6 @@ class RetrievalRequest:
     agent: str
     query_text: str
     query_embedding: Any
-    intent: str | None = None
     task_id: UUID | None = None
     goal_id: UUID | None = None
     max_tokens: int = 2000

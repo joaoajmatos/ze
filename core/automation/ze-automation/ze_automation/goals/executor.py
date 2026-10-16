@@ -9,7 +9,7 @@ from uuid import UUID
 from ze_agents.claims import ClaimKind, Provenance
 from ze_agents.errors import GoalExecutionError
 from ze_sdk.memory import MemoryStore, Procedure, TaskState
-from ze_agents.types import AgentContext, GateDecision, ToolCall
+from ze_agents.types import AgentContext, ToolCall
 from ze_automation.goals.planner import GoalPlanner
 from ze_automation.goals.store import GoalStore
 from ze_automation.goals.types import (
@@ -765,8 +765,7 @@ class GoalExecutor:
         ctx = AgentContext(
             session_id=f"goal:{milestone.goal_id}",
             prompt=prompt,
-            intent=milestone.intent,
-            gate_decision=GateDecision.EXECUTE,
+            pre_approved_writes=_asks_first_tools(),
             memory_store=self._memory,
             extensions={"goal_id": str(milestone.goal_id)},
         )
@@ -931,3 +930,12 @@ class GoalExecutor:
             log.warning(
                 "goal_task_state_sync_failed", goal_id=str(goal_id), error=str(exc)
             )
+
+
+def _asks_first_tools() -> frozenset[str]:
+    """Transitional (until per-milestone pre-approval): creating the goal was the gate."""
+    from ze_agents.tool import registered_tools
+
+    return frozenset(
+        name for name, spec in registered_tools().items() if spec.asks_first
+    )

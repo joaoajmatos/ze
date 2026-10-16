@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChatMessageList, ChatInput, ConfirmBar } from "@/entities/message";
+import { ChatMessageList, ChatInput } from "@/entities/message";
 import type { ChatAttachment } from "@/entities/message";
 import { placeWorkspaceFile } from "@/entities/workspace";
-import { reconnect, send } from "@/shared/api";
+import { reconnect } from "@/shared/api";
 import { useTopBarQuickActions } from "@/shared/lib";
 import { useSendNotice } from "@/features/send-context-notice";
+import { ConfirmationCard } from "@/features/respond-to-confirmation";
 import { ReplyActions } from "@/features/reply-feedback";
 import { RetryButton, useRetryReply } from "@/features/retry-reply";
 import { useMessageFeedbackQuery } from "@/entities/message-feedback";
@@ -150,12 +151,6 @@ export function ChatWorkspace() {
             Ze
           </p>
           <p className="text-sm text-smoke">Your personal AI assistant</p>
-          <button
-            onClick={() => send({ type: "command", name: "capabilities" })}
-            className="px-4 py-2 rounded-pill border border-plum-voltage/50 text-plum-voltage text-xs hover:border-plum-voltage transition-colors"
-          >
-            What can you help me with?
-          </button>
         </div>
       )}
 
@@ -174,12 +169,14 @@ export function ChatWorkspace() {
       )}
 
       {pendingConfirm && (
-        <ConfirmBar
-          prompt={pendingConfirm.prompt}
+        <ConfirmationCard
+          key={pendingConfirm.id}
+          title={pendingConfirm.title}
+          items={pendingConfirm.items}
+          source={pendingConfirm.source}
           actions={pendingConfirm.actions}
-          onConfirm={respondToConfirm}
-          editable={pendingConfirm.editable}
-          proposed={pendingConfirm.proposed}
+          disabled={pendingConfirm.submitted}
+          onRespond={respondToConfirm}
         />
       )}
 

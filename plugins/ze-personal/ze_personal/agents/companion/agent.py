@@ -9,7 +9,6 @@ from ze_agents.types import AgentContext, AgentResult, ToolCall
 from ze_personal.contacts.store import PersonStore
 from ze_agents.client import LLMClient
 from ze_agents.settings import Settings
-from ze_agents.types import Intent, Mode
 from ze_personal.agents.companion.honesty import hold_token_sink, publish_honest_reply
 from ze_sdk.memory import PostgresMemoryStore
 
@@ -125,12 +124,6 @@ class CompanionAgent(BaseAgent):
     vision_capable = True
     timeout = 60
     tools = ["remember_fact", "forget_fact", "delegate_to_agent"]
-    intents = {
-        "reason": Intent(
-            Mode.AUTONOMOUS, "Reason, converse, and answer questions directly."
-        ),
-    }
-    default_mode = Mode.AUTONOMOUS
 
     def __init__(
         self,

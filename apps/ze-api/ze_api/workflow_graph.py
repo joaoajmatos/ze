@@ -15,7 +15,7 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
     from ze_core.orchestration.graph import graph_builder
     from ze_core.orchestration.state import build_state_type
     from ze_personal.graph.workflow import (
-        after_capability_check_workflow,
+        after_preflight_workflow,
         after_handle_step_failure,
         after_route_branch,
         after_verify_step,
@@ -50,10 +50,10 @@ def build_workflow_graph(checkpointer: Any, plugins: list | None = None) -> Any:
         {"decompose": "decompose", "fetch_context": "fetch_context"},
     )
     builder.add_edge("decompose", "fetch_context")
-    builder.add_edge("fetch_context", "capability_check")
+    builder.add_edge("fetch_context", "preflight")
     builder.add_conditional_edges(
-        "capability_check",
-        after_capability_check_workflow,
+        "preflight",
+        after_preflight_workflow,
         {"execute_tool": "execute_tool", "workflow_failed": "workflow_failed"},
     )
     # Do NOT add execute_tool → write_memory here. The base graph already has

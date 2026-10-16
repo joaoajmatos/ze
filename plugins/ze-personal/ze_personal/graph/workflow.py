@@ -20,7 +20,6 @@ from ze_sdk import parse_llm_json
 from ze_sdk.memory import candidate_from_procedure, ProcedureSourceKind
 from ze_agents.defaults import MODEL_WORKFLOW_VERIFY
 from ze_agents.model_resolution import resolve_model
-from ze_agents.types import GateDecision
 from ze_logging import get_logger
 from ze_automation.workflow.retry import (
     RETRY_DELAY_SECONDS,
@@ -107,7 +106,6 @@ async def load_workflow_step(state: dict[str, Any], config: RunnableConfig) -> d
         "envelope": None,
         "memory_context": None,
         "agent_context": None,
-        "gate_decision": None,
         "agent_result": None,
         "subtask_results": [],
         "final_response": None,
@@ -138,7 +136,7 @@ async def verify_step(state: dict[str, Any], config: RunnableConfig) -> dict:
         failed = [
             tc
             for tc in tool_calls
-            if not tc.success and not getattr(tc, "is_draft", False)
+            if not tc.success and getattr(tc, "gate", "none") != "parked"
         ]
         if failed:
             return await _fail_step(
@@ -528,10 +526,9 @@ async def workflow_cancelled(state: dict[str, Any], config: RunnableConfig) -> d
 # ── Edge functions ────────────────────────────────────────────────────────────
 
 
-def after_capability_check_workflow(state: dict[str, Any]) -> str:
-    """In workflow mode all steps execute directly — workflow creation was the gate."""
-    decision = state.get("gate_decision")
-    if decision == GateDecision.BLOCKED:
+def after_preflight_workflow(state: dict[str, Any]) -> str:
+    """Workflow steps execute directly; only a disabled agent fails the step."""
+    if state.get("blocked"):
         return "workflow_failed"
     return "execute_tool"
 

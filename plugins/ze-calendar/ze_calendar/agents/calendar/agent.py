@@ -2,7 +2,6 @@ from typing import AsyncIterator
 
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent
-from ze_agents.types import Intent, Mode
 from ze_agents.types import AgentContext, AgentResult
 from ze_personal.contacts.extractors import (
     extract_calendar_contacts,
@@ -57,12 +56,6 @@ class CalendarAgent(BaseAgent):
         "delete_event",
         "world_time",
     ]
-    intents = {
-        "read": Intent(Mode.AUTONOMOUS, "Search and retrieve calendar events."),
-        "create": Intent(Mode.CONFIRM, "Create a new calendar event."),
-        "update": Intent(Mode.CONFIRM, "Update an existing calendar event."),
-        "delete": Intent(Mode.CONFIRM, "Delete a calendar event."),
-    }
 
     def __init__(
         self,
@@ -76,12 +69,7 @@ class CalendarAgent(BaseAgent):
         self._timezone_service = TimezoneService()
 
     async def run(self, ctx: AgentContext) -> AgentResult:
-        key = (
-            "calendar.writing"
-            if ctx.intent in ("create", "update", "delete")
-            else "calendar.reading"
-        )
-        await self.emit(ctx, key)
+        await self.emit(ctx, "calendar.reading")
         system = self._build_system_prompt(
             _AGENT_INSTRUCTIONS, ctx, timezone=self._settings.timezone
         )

@@ -8,7 +8,7 @@ from ze_agents.base_agent import BaseAgent
 from ze_agents.client import LLMClient
 from ze_agents.nli import NLIClient
 from ze_agents.registry import agent
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_collision.store import CollisionLogStore
 
 import ze_priority.tools  # noqa: F401 — registers reprioritize_item
@@ -48,11 +48,6 @@ class PriorityAgent(BaseAgent):
     model = "anthropic/claude-haiku-4-5"
     timeout = 30
     tools = ["reprioritize_item"]
-    intents = {
-        "update": Intent(
-            Mode.CONFIRM, "Reprioritize an item — make it more or less urgent."
-        ),
-    }
 
     def __init__(
         self,

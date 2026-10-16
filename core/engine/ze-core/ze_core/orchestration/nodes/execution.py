@@ -8,7 +8,6 @@ from uuid import uuid4
 from langchain_core.runnables import RunnableConfig
 from langgraph.types import interrupt
 
-from ze_agents.types import GateDecision
 from ze_agents.effects import effect_imperative
 from ze_agents.errors import AgentTimeoutError, LoopParked, UnknownAgentError
 from ze_agents.park import (
@@ -23,19 +22,6 @@ from ze_core.orchestration.state import AgentState
 from ze_agents.types import AgentContext, AgentResult, add_sources
 
 log = get_logger(__name__)
-
-
-def bind_delegate_evaluator(
-    ctx: AgentContext,
-    config: RunnableConfig,
-    state: AgentState,
-) -> None:
-    """Delegates always run: the specialist's asks-first writes park instead."""
-
-    async def evaluate_delegate(agent: str, intent: str) -> GateDecision:
-        return GateDecision.EXECUTE
-
-    ctx.evaluate_delegate = evaluate_delegate
 
 
 def _conductor_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
@@ -63,41 +49,6 @@ def _procedure_kwargs(base_ctx: AgentContext) -> dict[str, Any]:
             base_ctx, "procedure_invoked_version_id", None
         ),
     }
-
-
-_GATE_RANK: dict[GateDecision, int] = {
-    GateDecision.BLOCKED: 0,
-    GateDecision.DRAFT: 1,
-    GateDecision.AWAIT_CONFIRMATION: 2,
-    GateDecision.EXECUTE: 3,
-}
-
-
-def _compose_budget(decision: GateDecision, within_budget: bool) -> GateDecision:
-    if within_budget:
-        return decision
-    return min(
-        (decision, GateDecision.AWAIT_CONFIRMATION),
-        key=lambda d: _GATE_RANK.get(d, 0),
-    )
-
-
-def _decision_for_subtask(
-    index: int,
-    decisions: list,
-    fallback: GateDecision,
-) -> GateDecision:
-    if index < len(decisions):
-        item = decisions[index]
-        raw = item.get("decision") if isinstance(item, dict) else item
-        if isinstance(raw, GateDecision):
-            return raw
-        if isinstance(raw, str):
-            try:
-                return GateDecision(raw)
-            except ValueError:
-                pass
-    return fallback or GateDecision.EXECUTE
 
 
 BUDGET_DENIED_REPLY = (
@@ -281,6 +232,11 @@ def _park_updates(state: dict, new_parked: list[ParkedSubtask]) -> dict:
     return updates
 
 
+def _pre_approved(base_ctx: AgentContext, config: RunnableConfig) -> frozenset[str]:
+    extra = config["configurable"].get("pre_approved_writes") or ()
+    return frozenset(base_ctx.pre_approved_writes) | frozenset(extra)
+
+
 def _resume_kwargs(state: dict, index: int) -> dict[str, Any]:
     """AgentContext fields that re-enter subtask `index`'s parked loop, if it parked."""
     parked = {ps.index: ps for ps in state.get("parked_subtasks") or []}
@@ -296,61 +252,6 @@ def _resume_kwargs(state: dict, index: int) -> dict[str, Any]:
     return kwargs
 
 
-async def capability_check(state: AgentState, config: RunnableConfig) -> dict:
-    from ze_core.capability.gate import CapabilityGate
-
-    gate: CapabilityGate = config["configurable"]["capability_gate"]
-    envelope = state.get("envelope")
-    subtasks = envelope.subtasks if envelope and envelope.subtasks else []
-
-    if not subtasks:
-        return {"gate_decision": GateDecision.BLOCKED}
-
-    overrides = state.get("session_overrides") or {}
-    decisions = [
-        gate.evaluate(agent=st.agent, intent=st.intent, session_overrides=overrides)
-        for st in subtasks
-    ]
-
-    state_updates: dict[str, Any] = {}
-    budget_checker = config["configurable"].get("budget_checker")
-    if budget_checker is not None:
-        status = await budget_checker.check(session_id=state["session_id"])
-        if not status.within_budget:
-            decisions = [_compose_budget(d, False) for d in decisions]
-            state_updates["budget_status"] = status
-
-    if config["configurable"].get("retry_mode"):
-        decisions = [
-            GateDecision.EXECUTE
-            if d in (GateDecision.AWAIT_CONFIRMATION, GateDecision.DRAFT)
-            else d
-            for d in decisions
-        ]
-
-    is_parallel_compound = bool(envelope and envelope.is_compound and len(subtasks) > 1)
-    if is_parallel_compound:
-        state_updates["subtask_gate_decisions"] = [
-            {"agent": st.agent, "intent": st.intent, "decision": d}
-            for st, d in zip(subtasks, decisions)
-        ]
-        overall = (
-            GateDecision.BLOCKED
-            if all(d == GateDecision.BLOCKED for d in decisions)
-            else GateDecision.EXECUTE
-        )
-        return {"gate_decision": overall, **state_updates}
-
-    decision = min(decisions, key=lambda d: _GATE_RANK.get(d, 0))
-    if config["configurable"].get("retry_mode") and decision in (
-        GateDecision.AWAIT_CONFIRMATION,
-        GateDecision.DRAFT,
-    ):
-        # A retry never opens a confirmation: WRITE tools are refused at dispatch.
-        decision = GateDecision.EXECUTE
-    return {"gate_decision": decision, **state_updates}
-
-
 async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     envelope = state.get("envelope")
     base_ctx = state.get("agent_context")
@@ -358,7 +259,6 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     if not envelope or not base_ctx:
         return {"error": "Missing routing envelope or agent context"}
 
-    gate_decision: GateDecision = state.get("gate_decision") or GateDecision.EXECUTE
     reporter = config["configurable"].get("reporter")
     token_queue: asyncio.Queue | None = config["configurable"].get("token_queue")
     token_sink = config["configurable"].get("token_sink")
@@ -371,7 +271,6 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
         return await _execute_compound(
             envelope.subtasks,
             base_ctx,
-            gate_decision,
             state,
             config,
             reporter=reporter,
@@ -383,7 +282,6 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     return await _execute_single(
         envelope.subtasks[0],
         base_ctx,
-        gate_decision,
         state,
         config,
         token_queue=token_queue,
@@ -396,117 +294,7 @@ async def execute_tool(state: AgentState, config: RunnableConfig) -> dict:
     )
 
 
-async def draft_response(state: AgentState, config: RunnableConfig) -> dict:
-    envelope = state.get("envelope")
-    base_ctx = state.get("agent_context")
-
-    if not envelope or not base_ctx:
-        return {"error": "Missing routing envelope or agent context"}
-
-    subtask = envelope.subtasks[0]
-    ctx = AgentContext(
-        session_id=base_ctx.session_id,
-        prompt=subtask.prompt,
-        intent=subtask.intent,
-        gate_decision=GateDecision.DRAFT,
-        memory=base_ctx.memory,
-        contacts=base_ctx.contacts,
-        persona=base_ctx.persona,
-        retry_mode=base_ctx.retry_mode,
-        model=subtask.model or None,
-        messages=_build_messages(state, subtask.agent, base_ctx),
-        identity_builder=config["configurable"].get("identity_builder"),
-        abort_token=config["configurable"].get("abort_token"),
-        embed_fn=_embed_fn(config),
-        active_skills=base_ctx.active_skills,
-        skill_tool_names=base_ctx.skill_tool_names,
-        **_procedure_kwargs(base_ctx),
-        **_conductor_kwargs(base_ctx),
-    )
-    result = await _run_with_timeout(subtask.agent, ctx)
-
-    budget_status = state.get("budget_status")
-    if budget_status is not None and not budget_status.within_budget:
-        result.response = (
-            f"{result.response}\n\n"
-            f"(This would push {budget_status.scope} spend to an estimated "
-            f"${budget_status.current_spend_usd:.2f}, at or over your configured "
-            f"${budget_status.limit_usd:.2f} limit. Approve to continue anyway.)"
-        )
-
-    return {"agent_result": result, "pending_confirmation": True}
-
-
-async def await_confirmation(state: AgentState, config: RunnableConfig) -> dict:
-    log.info(
-        "orchestration_confirmation_received",
-        session_id=state["session_id"],
-        agent=state["envelope"].primary_agent if state.get("envelope") else None,
-    )
-    # If the original gate decision was DRAFT (DRAFT_ONLY ceiling), the draft IS
-    # the final response — promoting to EXECUTE would exceed the ceiling.
-    if state.get("gate_decision") == GateDecision.DRAFT:
-        draft = state.get("agent_result")
-        return {
-            "pending_confirmation": False,
-            "final_response": draft.response if draft else "",
-        }
-    return {
-        "pending_confirmation": False,
-        "gate_decision": GateDecision.EXECUTE,
-        "approved_agents": _with_agent(
-            state, state["envelope"].primary_agent if state.get("envelope") else None
-        ),
-    }
-
-
-async def await_subtask_confirmation(state: AgentState, config: RunnableConfig) -> dict:
-    pending = list(state.get("pending_subtask_awaits") or [])
-    if not pending:
-        return {}
-    item = pending[0]
-    resume = interrupt(
-        {
-            "kind": "compound_subtask",
-            "request_id": item["request_id"],
-            "prompt": f"Allow {item['agent']} to: {item['prompt']}",
-            "agent": item["agent"],
-            "intent": item["intent"],
-            "editable": False,
-            "proposed": "",
-            "subtask_index": item["index"],
-        }
-    )
-    choice = "approve"
-    if isinstance(resume, dict):
-        choice = str(resume.get("choice") or "approve")
-    elif isinstance(resume, str):
-        choice = resume
-    remaining = pending[1:]
-    updates: dict[str, Any] = {
-        "pending_subtask_awaits": remaining,
-        "pending_confirmation": bool(remaining),
-    }
-    if choice == "approve":
-        approved = list(state.get("approved_subtask_indexes") or [])
-        approved.append(int(item["index"]))
-        updates["approved_subtask_indexes"] = approved
-        updates["approved_agents"] = _with_agent(state, item["agent"])
-    else:
-        denied = list(state.get("denied_subtask_indexes") or [])
-        denied.append(int(item["index"]))
-        updates["denied_subtask_indexes"] = denied
-    return updates
-
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-def _with_agent(state: dict, agent: str | None) -> list[str]:
-    approved = list(state.get("approved_agents") or [])
-    if agent and agent not in approved:
-        approved.append(agent)
-    return approved
 
 
 def _embed_fn(config: RunnableConfig) -> Any:
@@ -551,7 +339,6 @@ def _sync_procedure_invocation(source: AgentContext, dest: AgentContext) -> None
 async def _execute_single(
     subtask: Any,
     base_ctx: AgentContext,
-    gate_decision: GateDecision,
     state: dict,
     config: RunnableConfig,
     token_queue: asyncio.Queue | None = None,
@@ -565,8 +352,6 @@ async def _execute_single(
     ctx = AgentContext(
         session_id=base_ctx.session_id,
         prompt=subtask.prompt,
-        intent=subtask.intent,
-        gate_decision=gate_decision,
         memory=base_ctx.memory,
         contacts=base_ctx.contacts,
         persona=base_ctx.persona,
@@ -580,12 +365,11 @@ async def _execute_single(
         token_sink=token_sink,
         active_skills=base_ctx.active_skills,
         skill_tool_names=base_ctx.skill_tool_names,
-        pre_approved_writes=base_ctx.pre_approved_writes,
+        pre_approved_writes=_pre_approved(base_ctx, config),
         **_resume_kwargs(state, 0),
         **_procedure_kwargs(base_ctx),
         **_conductor_kwargs(base_ctx),
     )
-    bind_delegate_evaluator(ctx, config, state)
     result = await _run_with_timeout(
         subtask.agent, ctx, token_queue=token_queue, index=0
     )
@@ -634,7 +418,6 @@ async def _execute_single(
 async def _execute_compound(
     subtasks: list,
     base_ctx: AgentContext,
-    gate_decision: GateDecision,
     state: dict,
     config: RunnableConfig,
     reporter: Any = None,
@@ -649,7 +432,6 @@ async def _execute_compound(
         return await _execute_single(
             subtasks[0],
             base_ctx,
-            gate_decision,
             state,
             config,
             token_queue=token_queue,
@@ -672,8 +454,6 @@ async def _execute_compound(
         ctx = AgentContext(
             session_id=base_ctx.session_id,
             prompt=subtask.prompt,
-            intent=subtask.intent,
-            gate_decision=GateDecision.EXECUTE,
             memory=base_ctx.memory,
             contacts=base_ctx.contacts,
             persona=base_ctx.persona,
@@ -686,12 +466,11 @@ async def _execute_compound(
             embed_fn=embed_fn,
             active_skills=base_ctx.active_skills,
             skill_tool_names=base_ctx.skill_tool_names,
-            pre_approved_writes=base_ctx.pre_approved_writes,
+            pre_approved_writes=_pre_approved(base_ctx, config),
             **_resume_kwargs(state, index),
             **_procedure_kwargs(base_ctx),
             **_conductor_kwargs(base_ctx),
         )
-        bind_delegate_evaluator(ctx, config, state)
         return ctx
 
     to_run = [

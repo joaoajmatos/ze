@@ -13,13 +13,9 @@ from ze_agents.park import DECLINED_RESULT, WriteDecision
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult, GateDecision
+from ze_agents.types import AgentContext, AgentResult
 
 events: list[tuple] = []
-
-
-async def _eval_execute(_agent: str, _intent: str) -> GateDecision:
-    return GateDecision.EXECUTE
 
 
 @pytest.fixture(autouse=True)
@@ -88,7 +84,7 @@ class _Cal(BaseAgent):
 
 
 def _ctx(**kw) -> AgentContext:
-    return AgentContext(session_id="s", prompt="p", intent="x", **kw)
+    return AgentContext(session_id="s", prompt="p", **kw)
 
 
 async def _park(client) -> object:
@@ -230,7 +226,7 @@ def _register_calendar(client) -> None:
 
 
 def _comp_ctx(**kw) -> AgentContext:
-    return _ctx(evaluate_delegate=_eval_execute, **kw)
+    return _ctx(**kw)
 
 
 async def test_nested_conductor_resumes_the_specialist_first() -> None:

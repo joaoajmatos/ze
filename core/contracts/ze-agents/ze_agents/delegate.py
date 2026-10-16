@@ -7,17 +7,14 @@ conflicts with clear_tool_registry() in tests.
 
 from __future__ import annotations
 
-import inspect
 import time
 from typing import Any
-from uuid import uuid4
 
 from ze_agents.errors import AgentAbortedError, LoopParked
 from ze_agents.park import ParkedLoop
-from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.registry import get_agent
 from ze_logging import get_logger
-from ze_agents.types import AgentContext, GateDecision, ToolCall, add_sources
+from ze_agents.types import AgentContext, ToolCall, add_sources
 
 log = get_logger(__name__)
 
@@ -67,13 +64,6 @@ DELEGATE_TOOL_SCHEMA: dict = {
                 "stop_condition": {
                     "type": "string",
                     "description": "Hint for when the worker should stop.",
-                },
-                "intent": {
-                    "type": "string",
-                    "description": (
-                        "Optional specialist intent key (e.g. read, create). "
-                        "Omitted uses the specialist's default mode."
-                    ),
                 },
             },
             "required": ["agent_name", "objective"],
@@ -273,66 +263,10 @@ async def run_delegate(
     if resume is None:
         _bump_delegate_counts(ctx, agent_name)
 
-    declared_intent = arguments.get("intent")
-    intent = declared_intent.strip() if isinstance(declared_intent, str) else ""
-    evaluator = ctx.evaluate_delegate
-    if evaluator is None:
-        return _failed(arguments, "delegate gate evaluator missing")
-    decision = evaluator(agent_name, intent)
-    if inspect.isawaitable(decision):
-        decision = await decision
-
-    if ctx.retry_mode and decision in (
-        GateDecision.AWAIT_CONFIRMATION,
-        GateDecision.DRAFT,
-    ):
-        # A retry never opens a confirmation; WRITE tools are refused at dispatch.
-        decision = GateDecision.EXECUTE
-
-    if decision == GateDecision.BLOCKED:
-        log.warning("delegate_blocked", to_agent=agent_name, intent=intent)
-        _update_conductor_ledger(ctx, agent_name, "skipped")
-        return _failed(arguments, "blocked by capability gate")
-
-    approved_gate = False
-    if decision == GateDecision.AWAIT_CONFIRMATION:
-        interrupt_fn = tool_interrupt_fn.get()
-        request_id = str(uuid4())
-        if interrupt_fn is None:
-            return _failed(arguments, "confirmation required but no interrupt")
-        _update_conductor_ledger(
-            ctx, agent_name, "awaiting_confirmation", request_id=request_id
-        )
-        resume = interrupt_fn(
-            {
-                "kind": "delegate",
-                "request_id": request_id,
-                "prompt": f"Allow {agent_name} to: {objective.strip()}",
-                "agent": agent_name,
-                "intent": intent,
-                "editable": False,
-                "proposed": "",
-            }
-        )
-        choice = "approve"
-        if isinstance(resume, dict):
-            choice = str(resume.get("choice") or "approve")
-        elif isinstance(resume, str):
-            choice = resume
-        if choice != "approve":
-            _update_conductor_ledger(ctx, agent_name, "denied", request_id=request_id)
-            denied = _failed(arguments, "denied by user")
-            denied.gate = "denied"
-            return denied
-        decision = GateDecision.EXECUTE
-        approved_gate = True
-
     prompt = assemble_delegate_prompt(arguments)
     sub_ctx = AgentContext(
         session_id=ctx.session_id,
         prompt=prompt,
-        intent=agent_name,
-        gate_decision=decision,
         memory=ctx.memory,
         contacts=ctx.contacts,
         persona=ctx.persona,
@@ -387,7 +321,7 @@ async def run_delegate(
             "duration_ms": call.duration_ms,
             "success": call.success,
             "error": call.error,
-            "gate": "approved" if approved_gate else call.gate,
+            "gate": call.gate,
         }
         for call in result.tool_calls
     ]
@@ -402,7 +336,7 @@ async def run_delegate(
             duration_ms=duration_ms,
             success=False,
             error="stalled: empty response",
-            gate="approved" if approved_gate else "none",
+            gate="none",
         )
 
     log.info("delegate_done", to_agent=agent_name, duration_ms=duration_ms)
@@ -413,5 +347,5 @@ async def run_delegate(
         result={"response": result.response, "tool_calls": nested},
         duration_ms=duration_ms,
         success=True,
-        gate="approved" if approved_gate else "none",
+        gate="none",
     )

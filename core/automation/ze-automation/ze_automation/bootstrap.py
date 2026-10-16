@@ -215,7 +215,7 @@ async def configure_workflow_executor(
 
     workflow_graph_config: dict = {
         "configurable": {
-            "capability_gate": shared.capability_gate,
+            "pre_approved_writes": _asks_first_tools(),
             "memory_store": shared.memory_store,
             "persona_store": persona_store,
             "openrouter_client": shared.openrouter_client,
@@ -388,3 +388,12 @@ def register_proactive_jobs(
             "cost_anomaly_scheduled",
             cron=_acc_cfg.get("cost_anomaly_schedule", "0 */6 * * *"),
         )
+
+
+def _asks_first_tools() -> frozenset[str]:
+    """Transitional (until per-step pre-approval): workflow creation was the gate."""
+    from ze_agents.tool import registered_tools
+
+    return frozenset(
+        name for name, spec in registered_tools().items() if spec.asks_first
+    )

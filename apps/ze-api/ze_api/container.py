@@ -292,7 +292,6 @@ class ZeContainer(CoreContainer):
         configurable: dict = {
             "thread_id": str(thread_id),
             "router": self.router,
-            "capability_gate": self.capability_gate,
             "memory_store": self.memory_store,
             "fact_extractor": gather_fact_proposals,
             "persona_store": self.persona_store,
@@ -778,7 +777,6 @@ async def build_container(settings: Settings) -> ZeContainer:
         embedder=shared.embedder,
         openrouter_client=shared.openrouter_client,
         router=router,
-        capability_gate=shared.capability_gate,
         budget_checker=budget_checker,
         memory_store=shared.memory_store,
         memory_consolidator=shared.memory_consolidator,

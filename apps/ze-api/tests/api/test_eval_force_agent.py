@@ -11,7 +11,7 @@ from httpx import ASGITransport, AsyncClient
 
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import agent, clear_registry
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 from ze_api.api.routes.eval import router
 
 KEY = "k"
@@ -25,7 +25,6 @@ def _register(name: str) -> None:
     _A.name = name
     _A.description = f"The {name} agent"
     _A.enabled = True
-    _A.intents = {"read": Intent(Mode.AUTONOMOUS, "Read")}
     agent(_A)
 
 

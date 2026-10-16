@@ -65,7 +65,6 @@ def _setup(thread_id="t1", **extra):
     ctx = AgentContext(
         session_id="s1",
         prompt="I need to renew my passport",
-        intent="read",
         memory=MemoryContext(),
     )
     state = base_state(

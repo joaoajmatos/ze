@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from ze_core.capability.gate import CapabilityGate
 from ze_memory.consolidator import MemoryConsolidator
 from ze_memory.retriever import PostgresMemoryStore as MemoryStore
 from ze_core.conversation.messages import PostgresMessageStore as MessageStore
@@ -43,10 +42,6 @@ def get_openrouter_client(request: Request) -> OpenRouterClient:
 
 def get_router(request: Request) -> EmbeddingRouter:
     return request.app.state.container.router
-
-
-def get_capability_gate(request: Request) -> CapabilityGate:
-    return request.app.state.container.capability_gate
 
 
 def get_memory_store(request: Request) -> MemoryStore:

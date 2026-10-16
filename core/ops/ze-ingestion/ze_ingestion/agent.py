@@ -6,7 +6,7 @@ from ze_logging import get_logger
 from ze_agents.registry import agent
 from ze_agents.tool import ToolAccess, tool
 from ze_agents.reversibility import ToolReversibility
-from ze_agents.types import AgentContext, AgentResult, Intent, Mode
+from ze_agents.types import AgentContext, AgentResult
 
 log = get_logger(__name__)
 
@@ -90,10 +90,6 @@ class IngestionAgent(BaseAgent):
     description = "Ingest external content — URLs, PDFs, videos, audio — via the ingestion pipeline"
     model = "anthropic/claude-sonnet-4-5"
     timeout = 120
-    intents = {
-        "write": Intent(Mode.AUTONOMOUS, "Ingest content via the extraction pipeline."),
-    }
-    default_mode = Mode.AUTONOMOUS
     tools = ["ingest_url", "ingest_text"]
 
     def __init__(self, openrouter_client: LLMClient) -> None:

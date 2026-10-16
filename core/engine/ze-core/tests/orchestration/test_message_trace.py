@@ -28,7 +28,6 @@ async def test_record_trace_serializes_procedure_invocation_ids() -> None:
             "agent_context": AgentContext(
                 session_id="s1",
                 prompt="clear inbox",
-                intent="execute",
                 procedure_invocation_id=str(invocation_id),
                 procedure_invoked_id=str(procedure_id),
                 procedure_invoked_version_id=str(version_id),
@@ -57,7 +56,8 @@ async def test_record_trace_omits_procedure_when_not_invoked() -> None:
             ),
             "agent_result": AgentResult(agent="companion", response="ok"),
             "agent_context": AgentContext(
-                session_id="s1", prompt="hello", intent="read"
+                session_id="s1",
+                prompt="hello",
             ),
         },
         {"configurable": {}},
@@ -86,7 +86,8 @@ async def test_record_trace_copies_conductor_ledger() -> None:
             "conductor_hint": hint,
             "conductor_ledger": ledger,
             "agent_context": AgentContext(
-                session_id="s1", prompt="hello", intent="reason"
+                session_id="s1",
+                prompt="hello",
             ),
         },
         {"configurable": {}},
@@ -114,7 +115,8 @@ async def test_record_trace_marks_promote_offered_on_unfinished_close() -> None:
             "agent_result": AgentResult(agent="companion", response="ok"),
             "conductor_ledger": ledger,
             "agent_context": AgentContext(
-                session_id="s1", prompt="hello", intent="reason"
+                session_id="s1",
+                prompt="hello",
             ),
         },
         {"configurable": {}},
@@ -203,7 +205,10 @@ def _state(result, **extra) -> dict:
             subtasks=[],
         ),
         "agent_result": result,
-        "agent_context": AgentContext(session_id="s1", prompt="x", intent="read"),
+        "agent_context": AgentContext(
+            session_id="s1",
+            prompt="x",
+        ),
         **extra,
     }
 
@@ -364,7 +369,7 @@ async def test_retry_refused_write_is_not_recorded_as_an_action(effect_tools) ->
         async def run(self, ctx):
             return AgentResult(agent=self.name, response="ok")
 
-    ctx = AgentContext(session_id="s", prompt="p", intent="read", retry_mode=True)
+    ctx = AgentContext(session_id="s", prompt="p", retry_mode=True)
     refused = await _A().call_tool("send_email", ctx)
     result = AgentResult(agent="companion", response="ok", tool_calls=[refused])
     trace = (await record_trace(_state(result), {"configurable": {}}))["message_trace"]

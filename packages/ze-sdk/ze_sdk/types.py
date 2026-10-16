@@ -2,8 +2,6 @@ from ze_agents.types import (
     AgentContext,
     AgentResult,
     ToolCall,
-    GateDecision,
-    Mode,
     AbortToken,
     Source,
 )
@@ -14,8 +12,6 @@ __all__ = [
     "AgentContext",
     "AgentResult",
     "ToolCall",
-    "GateDecision",
-    "Mode",
     "AbortToken",
     "Source",
     "AskDecision",

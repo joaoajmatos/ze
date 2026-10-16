@@ -27,19 +27,6 @@ export type ActivityHeatmapResponse = {
 };
 
 /**
- * AgentCapabilityConfig
- *
- * Per-agent entry from capabilities.yaml (enabled + intent modes).
- */
-export type AgentCapabilityConfig = {
-    /**
-     * Enabled
-     */
-    enabled?: boolean | null;
-    [key: string]: unknown;
-};
-
-/**
  * AgentCostBucket
  */
 export type AgentCostBucket = {
@@ -199,25 +186,6 @@ export type CancelWorkflowExecutionResponse = {
      * Message
      */
     message: string;
-};
-
-/**
- * CapabilitiesResponse
- *
- * Full capabilities map keyed by agent name.
- */
-export type CapabilitiesResponse = {
-    [key: string]: AgentCapabilityConfig;
-};
-
-/**
- * CapabilityModeUpdate
- */
-export type CapabilityModeUpdate = {
-    /**
-     * Mode
-     */
-    mode: 'autonomous' | 'confirm' | 'draft_only' | 'disabled';
 };
 
 /**
@@ -930,9 +898,9 @@ export type EvalToolCall = {
      */
     error?: string | null;
     /**
-     * Is Draft
+     * Gate
      */
-    is_draft?: boolean;
+    gate?: string;
 };
 
 /**
@@ -3392,15 +3360,6 @@ export type UnreadCountResponse = {
 };
 
 /**
- * UpdateCapabilityResponse
- *
- * Updated capabilities for a single agent after PUT.
- */
-export type UpdateCapabilityResponse = {
-    [key: string]: AgentCapabilityConfig;
-};
-
-/**
  * UpdateWorkflowStepsRequest
  */
 export type UpdateWorkflowStepsRequest = {
@@ -4246,56 +4205,6 @@ export type GetActivityHeatmapResponses = {
 };
 
 export type GetActivityHeatmapResponse = GetActivityHeatmapResponses[keyof GetActivityHeatmapResponses];
-
-export type ListCapabilitiesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v0/capabilities';
-};
-
-export type ListCapabilitiesResponses = {
-    /**
-     * Successful Response
-     */
-    200: CapabilitiesResponse;
-};
-
-export type ListCapabilitiesResponse = ListCapabilitiesResponses[keyof ListCapabilitiesResponses];
-
-export type UpdateCapabilityData = {
-    body: CapabilityModeUpdate;
-    path: {
-        /**
-         * Agent
-         */
-        agent: string;
-        /**
-         * Intent
-         */
-        intent: string;
-    };
-    query?: never;
-    url: '/api/v0/capabilities/{agent}/{intent}';
-};
-
-export type UpdateCapabilityErrors = {
-    /**
-     * Validation error (unknown agent/intent or invalid request body)
-     */
-    422: ErrorDetail;
-};
-
-export type UpdateCapabilityError = UpdateCapabilityErrors[keyof UpdateCapabilityErrors];
-
-export type UpdateCapabilityResponses = {
-    /**
-     * Successful Response
-     */
-    200: UpdateCapabilityResponse;
-};
-
-export type UpdateCapabilityResponse2 = UpdateCapabilityResponses[keyof UpdateCapabilityResponses];
 
 export type GetMemoryFeedData = {
     body?: never;

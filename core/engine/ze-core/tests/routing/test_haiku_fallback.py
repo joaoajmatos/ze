@@ -43,8 +43,8 @@ def compound_response() -> str:
     return json.dumps(
         {
             "subtasks": [
-                {"agent": "research", "intent": "read", "prompt": "search part"},
-                {"agent": "companion", "intent": "reason", "prompt": "reasoning part"},
+                {"agent": "research", "changes": False, "prompt": "search part"},
+                {"agent": "companion", "changes": False, "prompt": "reasoning part"},
             ]
         }
     )
@@ -68,7 +68,7 @@ async def test_decompose_single_subtask(settings):
     assert env.requires_synthesis is False
     assert len(env.subtasks) == 1
     assert env.subtasks[0].agent == "research"
-    assert env.subtasks[0].intent == "read"
+    assert env.subtasks[0].changes is False
 
 
 async def test_decompose_sets_primary_agent_from_first_subtask(settings):
@@ -148,7 +148,7 @@ async def test_decompose_retries_on_missing_subtasks_key(settings):
 
 async def test_decompose_raises_on_unknown_agent(settings):
     bad_response = json.dumps(
-        {"subtasks": [{"agent": "ghost_agent", "intent": "read", "prompt": "hi"}]}
+        {"subtasks": [{"agent": "ghost_agent", "changes": False, "prompt": "hi"}]}
     )
     client = make_client(bad_response)
     with pytest.raises(RoutingError, match="unknown agent"):

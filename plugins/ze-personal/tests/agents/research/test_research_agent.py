@@ -40,7 +40,6 @@ def make_ctx(
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         memory=memory or MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
         identity_builder=build_identity_block,

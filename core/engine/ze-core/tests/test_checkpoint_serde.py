@@ -20,7 +20,7 @@ class _PluginWithWorkflowTypes:
 def test_collect_types_from_module_finds_dataclasses_and_enums() -> None:
     types = collect_types_from_module("ze_agents.types")
     assert ("ze_agents.types", "AgentResult") in types
-    assert ("ze_agents.types", "GateDecision") in types
+    assert ("ze_agents.types", "ToolCall") in types
 
 
 def test_collect_types_from_module_skips_imported_reexports() -> None:

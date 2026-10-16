@@ -11,12 +11,11 @@ from ze_agents.base_agent import RETRY_WRITE_REFUSAL, BaseAgent
 from ze_agents.registry import clear_registry
 from ze_agents.reversibility import ToolReversibility
 from ze_agents.tool import ToolAccess, clear_tool_registry, tool
-from ze_agents.types import AgentContext, AgentResult, GateDecision
-from ze_core.capability.gate import CapabilityGate
-from ze_core.orchestration.nodes import execution, memory
+from ze_agents.types import AgentContext, AgentResult
+from ze_core.orchestration.nodes import memory
 from ze_memory.retriever import PostgresMemoryStore as MemoryStore
 from ze_memory.types import MemoryContext
-from tests.orchestration.test_nodes import base_state, make_config, make_envelope
+from tests.orchestration.test_nodes import base_state, make_config
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +40,7 @@ def _agent() -> BaseAgent:
 
 
 def _ctx(retry: bool) -> AgentContext:
-    return AgentContext(session_id="s1", prompt="hi", intent="read", retry_mode=retry)
+    return AgentContext(session_id="s1", prompt="hi", retry_mode=retry)
 
 
 async def test_write_tool_refused_in_retry_mode_and_body_never_runs():
@@ -109,7 +108,6 @@ async def test_delegate_subcontext_inherits_retry_mode():
 
     register_instance("calendar", _Spec())
     ctx = _ctx(True)
-    ctx.evaluate_delegate = lambda agent, intent: GateDecision.EXECUTE
     call = await run_delegate(
         {"agent_name": "calendar", "objective": "check tuesday"},
         ctx,
@@ -118,35 +116,6 @@ async def test_delegate_subcontext_inherits_retry_mode():
     )
     assert call.tool_name == DELEGATE_TOOL_NAME
     assert seen == [True]
-
-
-async def test_capability_check_never_opens_confirmation_in_retry():
-    gate = AsyncMock(spec=CapabilityGate)
-    gate.evaluate = lambda **kw: GateDecision.AWAIT_CONFIRMATION
-    cfg = make_config(capability_gate=gate)
-    cfg["configurable"]["retry_mode"] = True
-    result = await execution.capability_check(
-        base_state(envelope=make_envelope(intent="write")), cfg
-    )
-    assert result["gate_decision"] is GateDecision.EXECUTE
-
-
-async def test_capability_check_blocked_stays_blocked_in_retry():
-    gate = AsyncMock(spec=CapabilityGate)
-    gate.evaluate = lambda **kw: GateDecision.BLOCKED
-    cfg = make_config(capability_gate=gate)
-    cfg["configurable"]["retry_mode"] = True
-    result = await execution.capability_check(base_state(), cfg)
-    assert result["gate_decision"] is GateDecision.BLOCKED
-
-
-async def test_capability_check_unchanged_without_retry():
-    gate = AsyncMock(spec=CapabilityGate)
-    gate.evaluate = lambda **kw: GateDecision.AWAIT_CONFIRMATION
-    result = await execution.capability_check(
-        base_state(), make_config(capability_gate=gate)
-    )
-    assert result["gate_decision"] is GateDecision.AWAIT_CONFIRMATION
 
 
 async def test_write_memory_in_retry_skips_admission_but_extends_history():
@@ -163,9 +132,7 @@ async def test_write_memory_in_retry_skips_admission_but_extends_history():
         entity_extractor=entity_extractor,
         memory_hooks=[hook],
     )
-    ctx = AgentContext(
-        session_id="s1", prompt="hi", intent="read", memory=MemoryContext()
-    )
+    ctx = AgentContext(session_id="s1", prompt="hi", memory=MemoryContext())
     state = base_state(
         agent_context=ctx,
         agent_result=AgentResult(agent="research", response="new reply"),
@@ -190,9 +157,7 @@ async def test_write_memory_in_retry_skips_admission_but_extends_history():
 async def test_write_memory_without_retry_still_writes_episode():
     store = AsyncMock(spec=MemoryStore)
     cfg = make_config(memory_store=store)
-    ctx = AgentContext(
-        session_id="s1", prompt="hi", intent="read", memory=MemoryContext()
-    )
+    ctx = AgentContext(session_id="s1", prompt="hi", memory=MemoryContext())
     await memory.write_memory(
         base_state(
             agent_context=ctx, agent_result=AgentResult(agent="research", response="r")
@@ -201,52 +166,3 @@ async def test_write_memory_without_retry_still_writes_episode():
     )
     await asyncio.sleep(0)
     store.write_episode.assert_called_once()
-
-
-async def test_compound_capability_check_downgrades_confirmations_in_retry():
-    from ze_core.routing.types import SubTask
-
-    gate = AsyncMock(spec=CapabilityGate)
-    gate.evaluate = lambda **kw: GateDecision.AWAIT_CONFIRMATION
-    env = make_envelope(
-        is_compound=True,
-        subtasks=[
-            SubTask(agent="a", intent="write", prompt="x"),
-            SubTask(agent="b", intent="write", prompt="y"),
-        ],
-    )
-    cfg = make_config(capability_gate=gate)
-    cfg["configurable"]["retry_mode"] = True
-    result = await execution.capability_check(base_state(envelope=env), cfg)
-    assert [d["decision"] for d in result["subtask_gate_decisions"]] == [
-        GateDecision.EXECUTE,
-        GateDecision.EXECUTE,
-    ]
-
-
-async def test_delegate_confirmation_is_downgraded_in_retry():
-    from ze_agents.delegate import run_delegate
-    from ze_agents.registry import register_instance
-
-    seen = []
-
-    class _Spec(BaseAgent):
-        name = "messenger"
-        description = "d"
-        tools = []
-
-        async def run(self, ctx):
-            seen.append(ctx.gate_decision)
-            return AgentResult(agent=self.name, response="done")
-
-    register_instance("messenger", _Spec())
-    ctx = _ctx(True)
-    ctx.evaluate_delegate = lambda agent, intent: GateDecision.AWAIT_CONFIRMATION
-    call = await run_delegate(
-        {"agent_name": "messenger", "objective": "mail ana"},
-        ctx,
-        0,
-        caller_name="companion",
-    )
-    assert call.success is True
-    assert seen == [GateDecision.EXECUTE]

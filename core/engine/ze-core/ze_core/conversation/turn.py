@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 def make_graph_input(
     raw: RawInput,
     session_id: str,
-    *,
-    session_overrides: dict[str, str] | None = None,
 ) -> dict:
     """Build AgentState input for the main conversation graph from raw transport input.
 
@@ -33,7 +31,6 @@ def make_graph_input(
     return {
         "prompt": raw.text or "",
         "session_id": session_id,
-        "session_overrides": session_overrides or {},
         "input_modality": modality,
         "audio_data": raw.audio,
         "audio_mime": raw.audio_mime,
@@ -43,16 +40,9 @@ def make_graph_input(
         "envelope": None,
         "memory_context": None,
         "agent_context": None,
-        "gate_decision": None,
-        "subtask_gate_decisions": [],
         "agent_result": None,
         "subtask_results": [],
         "completed_subtask_indexes": [],
-        "pending_subtask_awaits": [],
-        "approved_subtask_indexes": [],
-        "denied_subtask_indexes": [],
-        "pending_confirmation": False,
-        "approved_agents": [],
         "blocked": False,
         "budget_status": None,
         "budget_approved": False,

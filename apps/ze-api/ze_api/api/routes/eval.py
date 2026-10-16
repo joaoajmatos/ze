@@ -115,7 +115,7 @@ async def eval_chat(
                 duration_ms=tc.duration_ms,
                 success=tc.success,
                 error=tc.error,
-                is_draft=tc.is_draft,
+                gate=tc.gate,
             )
             for tc in (agent_result.tool_calls or [])
         ]

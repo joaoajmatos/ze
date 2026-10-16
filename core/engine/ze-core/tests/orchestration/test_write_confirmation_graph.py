@@ -26,9 +26,7 @@ def clean():
 
 def _single(client, tools=("list_events", "delete_event", "send_email")):
     h.register_agent("calendar", client, list(tools))
-    return h.compiled_graph(
-        [SubTask(agent="calendar", intent="read", prompt="delete my 3pm")]
-    )
+    return h.compiled_graph([SubTask(agent="calendar", prompt="delete my 3pm")])
 
 
 async def _open_confirmation(graph, cfg) -> WriteConfirmation:
@@ -72,7 +70,7 @@ async def test_park_pauses_once_and_approval_runs_the_call_once() -> None:
 
 async def test_disabled_agent_ends_blocked() -> None:
     h.register_agent("calendar", h.scripted_client(), ["list_events"], enabled=False)
-    graph = h.compiled_graph([SubTask(agent="calendar", intent="read", prompt="hi")])
+    graph = h.compiled_graph([SubTask(agent="calendar", prompt="hi")])
     cfg = h.thread_config()
     out = await graph.ainvoke(h.graph_input("hi"), cfg)
     assert out.get("agent_result") is None

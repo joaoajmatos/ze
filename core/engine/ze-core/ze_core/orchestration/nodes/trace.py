@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 
+from ze_agents.effects import ensure_declined_lines
 from ze_agents.types import Source, add_sources
 from ze_core.conversation.messages.types import (
     CompactionTrace,
@@ -89,7 +91,26 @@ async def record_trace(state: AgentState, config: RunnableConfig) -> dict:
         effects_known=True,
         write_confirmations=[dict(row) for row in state.get("write_outcomes") or []],
     )
-    return {"message_trace": trace}
+    update: dict[str, Any] = {"message_trace": trace}
+    update.update(_with_declined_lines(state, agent_result))
+    return update
+
+
+def _with_declined_lines(state: AgentState, agent_result: Any) -> dict[str, Any]:
+    """Append "Okay, I didn't ..." for each declined item the reply leaves out."""
+    rows = list(state.get("write_outcomes") or [])
+    if not rows:
+        return {}
+    reply = state.get("final_response") or (
+        agent_result.response if agent_result is not None else ""
+    )
+    fixed = ensure_declined_lines(reply or "", rows)
+    if fixed == (reply or ""):
+        return {}
+    update: dict[str, Any] = {"final_response": fixed}
+    if agent_result is not None and not state.get("final_response"):
+        update["agent_result"] = replace(agent_result, response=fixed)
+    return update
 
 
 def _extract_sources(agent_result: Any, subtask_results: list[Any]) -> list[SourceTrace]:

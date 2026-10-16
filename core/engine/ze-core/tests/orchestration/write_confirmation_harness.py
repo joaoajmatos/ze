@@ -145,7 +145,6 @@ def compiled_graph(
             "agent_context": AgentContext(
                 session_id=state["session_id"],
                 prompt=state["prompt"],
-                intent="read",
                 messages=[{"role": "user", "content": state["prompt"]}],
             )
         }
@@ -157,6 +156,7 @@ def compiled_graph(
     node_overrides = {
         "preprocess": noop,
         "embed_route": embed_route,
+        "decompose": noop,
         "fetch_context": fetch_context,
         "match_skills": noop,
         "correlate": noop,

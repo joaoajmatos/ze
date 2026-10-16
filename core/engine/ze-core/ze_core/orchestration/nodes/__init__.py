@@ -2,11 +2,7 @@ from ze_core.orchestration.nodes.context import fetch_context
 from ze_core.orchestration.nodes.correlation import correlate
 from ze_core.orchestration.nodes.execution import (
     await_budget_confirmation,
-    await_confirmation,
-    await_subtask_confirmation,
     await_write_confirmation,
-    capability_check,
-    draft_response,
     execute_tool,
     preflight,
 )
@@ -19,13 +15,9 @@ from ze_core.orchestration.nodes.trace import record_trace
 
 __all__ = [
     "await_budget_confirmation",
-    "await_confirmation",
-    "await_subtask_confirmation",
     "await_write_confirmation",
-    "capability_check",
     "correlate",
     "decompose",
-    "draft_response",
     "embed_route",
     "execute_tool",
     "fetch_context",

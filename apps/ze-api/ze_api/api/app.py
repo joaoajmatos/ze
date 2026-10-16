@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from ze_api.api.openapi import OPENAPI_TAGS
 from ze_api.api.routes import (
     activity,
-    capabilities,
     channels,
     collisions,
     costs,
@@ -92,7 +91,7 @@ def create_app() -> FastAPI:
         title="Ze API",
         version="0.1.0",
         description=(
-            "Personal AI assistant API. REST endpoints manage capabilities, memory, "
+            "Personal AI assistant API. REST endpoints manage memory, "
             "and routing logs. Chat is handled via WebSocket at /ws."
         ),
         lifespan=lifespan,
@@ -127,7 +126,6 @@ def create_app() -> FastAPI:
 
     # Versioned REST API
     app.include_router(activity.router, prefix="/api/v0")
-    app.include_router(capabilities.router, prefix="/api/v0/capabilities")
     app.include_router(memory.router, prefix="/api/v0/memory")
     app.include_router(routing.router, prefix="/api/v0/routing")
     app.include_router(workflows.router, prefix="/api/v0/workflows")

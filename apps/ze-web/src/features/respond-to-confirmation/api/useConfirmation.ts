@@ -1,15 +1,24 @@
-import type { WsConfirmAction, WsOutboundFrame } from "@myguyze/ze-client";
+import type {
+  WsConfirmAction,
+  WsConfirmItem,
+  WsConfirmSource,
+  WsOutboundFrame,
+} from "@myguyze/ze-client";
 import { useState } from "react";
 import { useSendNotice } from "@/features/send-context-notice";
 import { useFrame, useWsStore, send } from "@/shared/api";
 
 export interface PendingConfirm {
   id: string;
-  prompt: string;
-  actions: WsConfirmAction[];
   threadId: string;
-  editable: boolean;
-  proposed: string;
+  kind: "write" | "budget" | "held";
+  round: number;
+  title: string;
+  items: WsConfirmItem[];
+  source: WsConfirmSource | null;
+  expiresAt: string | null;
+  actions: WsConfirmAction[];
+  submitted: boolean;
 }
 
 const NOT_CONNECTED_NOTICE = "Not connected. Retry when Ze reconnects.";
@@ -28,14 +37,17 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
     }
     if (!active) return;
     setThreadThinking(threadId, false);
-    const extra = frame as typeof frame & { editable?: boolean; proposed?: string };
     setPendingConfirm({
       id: frame.id,
-      prompt: frame.prompt,
-      actions: frame.actions,
       threadId,
-      editable: Boolean(extra.editable),
-      proposed: extra.proposed ?? "",
+      kind: frame.kind,
+      round: frame.round ?? 1,
+      title: frame.title,
+      items: frame.items,
+      source: frame.source ?? null,
+      expiresAt: frame.expires_at ?? null,
+      actions: frame.actions,
+      submitted: false,
     });
   });
 
@@ -43,26 +55,21 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
     const frameThread = frame.thread_id ?? threadId;
     if (frameThread !== threadId) return;
     if (!active || ephemeral) return;
-    setPendingConfirm(null);
+    setPendingConfirm((current) => (current && current.id === frame.id ? null : current));
   });
 
-  function respond(value: string, editedContent?: string) {
-    if (!pendingConfirm) return;
+  function respond(choice: "approve" | "deny", edits: Record<string, string> = {}) {
+    if (!pendingConfirm || pendingConfirm.submitted) return;
     const confirm = pendingConfirm;
-    setPendingConfirm(null);
+    setPendingConfirm({ ...confirm, submitted: true });
 
-    const isCheckpoint = value === "approve" || value === "deny";
-    const sent = isCheckpoint
-      ? send({
-          type: "confirm",
-          id: confirm.id,
-          choice: value,
-          thread_id: confirm.threadId,
-          ...(value === "approve" && editedContent != null
-            ? { edited_content: editedContent }
-            : {}),
-        } as WsOutboundFrame)
-      : send({ type: "action", payload: value, thread_id: confirm.threadId });
+    const sent = send({
+      type: "confirm",
+      id: confirm.id,
+      choice,
+      thread_id: confirm.threadId,
+      ...(choice === "approve" ? { edits } : {}),
+    } as WsOutboundFrame);
 
     if (!sent) {
       setPendingConfirm(confirm);
@@ -70,9 +77,7 @@ export function useConfirmation(active: boolean, ephemeral: boolean, threadId: s
       return;
     }
 
-    if (isCheckpoint && value === "approve") {
-      setThreadThinking(threadId, true);
-    }
+    setThreadThinking(threadId, true);
   }
 
   function clear() {

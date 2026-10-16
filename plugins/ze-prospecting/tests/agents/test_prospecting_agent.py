@@ -44,7 +44,6 @@ def make_ctx(prompt: str = "find 5 charter operators in Portugal") -> AgentConte
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         memory=MemoryContext(),
         contacts=PersonContext(),
         messages=[{"role": "user", "content": prompt}],

@@ -166,7 +166,6 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     agent_name = (
         envelope.subtasks[0].agent if envelope and envelope.subtasks else "global"
     )
-    intent = envelope.subtasks[0].intent if envelope and envelope.subtasks else "read"
 
     embed_text = state.get("image_caption") or state["prompt"]
     prompt_embedding = embedder.encode(embed_text)
@@ -177,7 +176,6 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
         agent=agent_name,
         query_text=embed_text,
         query_embedding=prompt_embedding,
-        intent=intent,
         task_id=None,
         goal_id=None,
         max_tokens=2000,
@@ -226,7 +224,6 @@ async def fetch_context(state: AgentState, config: RunnableConfig) -> dict:
     agent_context = AgentContext(
         session_id=state["session_id"],
         prompt=prompt_for_ctx,
-        intent=intent,
         memory=memory_context,
         contacts=contact_context,
         messages=messages,

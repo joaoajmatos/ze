@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from ze_automation.agents.goals.agent import GoalAgent
 from ze_agents.types import AgentContext, AgentResult
-from ze_agents.types import GateDecision
 from ze_automation.goals.types import (
     ExecutionTrace,
     Goal,
@@ -29,11 +28,9 @@ def make_ctx(prompt: str = "list my goals", intent: str = "read") -> AgentContex
     return AgentContext(
         session_id="test",
         prompt=prompt,
-        intent=intent,
         pre_approved_writes=frozenset(
             ["abandon_goal", "pause_goal", "resume_goal", "steer_goal"]
         ),
-        gate_decision=GateDecision.EXECUTE,
         memory=MemoryContext(),
         messages=[{"role": "user", "content": prompt}],
     )

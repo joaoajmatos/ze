@@ -34,7 +34,7 @@ class _Agent(BaseAgent):
 
 
 def _ctx(**kw) -> AgentContext:
-    base = dict(session_id="s", prompt="p", intent="x", loop_active=True)
+    base = dict(session_id="s", prompt="p", loop_active=True)
     base.update(kw)
     return AgentContext(**base)
 

@@ -17,8 +17,6 @@ from ze_agents.errors import (
     AgentError,
     HookAbort,
     LoopParked,
-    ToolBlockedError,
-    ToolConfirmationRequired,
 )
 from ze_agents.hooks import (
     LoopEndEvent,
@@ -38,17 +36,12 @@ from ze_agents.park import (
     generic_summary,
 )
 from ze_agents.interrupt import (
-    tool_interrupt_fn,
-    workspace_confirmed,
     workspace_thread_id,
 )
 from ze_logging import get_logger
 from ze_agents.types import (
     AgentContext,
     AgentResult,
-    GateDecision,
-    Intent,
-    Mode,
     RetrievalRequest,
     Source,
     ToolCall,
@@ -164,8 +157,6 @@ class BaseAgent(ABC):
     vision_capable: bool = False
     timeout: int = MODEL_AGENT_TIMEOUT
     enabled: bool = True
-    intents: dict[str, Intent] = {}
-    default_mode: Mode = Mode.CONFIRM
     tools: list[str] = []
     system_prompt: str = ""
 
@@ -338,17 +329,12 @@ class BaseAgent(ABC):
         """Execute a registered tool with capability enforcement and hook dispatch.
 
         READ tools execute in any gate state.
-        WRITE tools are suppressed and return a draft ToolCall when gate is DRAFT.
-        Any tool raises ToolBlockedError when gate is BLOCKED.
         An asks-first WRITE tool is parked, not run, unless the user approved this
         exact call (`_approved_call_id`) or a plan pre-approved the tool.
         """
         from ze_agents.tool import get_tool
 
         spec = get_tool(name)
-
-        if ctx.gate_decision == GateDecision.BLOCKED:
-            raise ToolBlockedError(f"Tool {name!r} is blocked by the capability gate")
 
         stored_args = _lm_args if _lm_args is not None else kwargs
         workspace_thread_id.set(ctx.session_id)
@@ -363,18 +349,6 @@ class BaseAgent(ABC):
                 success=False,
                 error="blocked: retry runs cannot change anything",
                 gate="denied",
-            )
-
-        if spec.access.value == "write" and ctx.gate_decision == GateDecision.DRAFT:
-            log.info("tool_suppressed_draft", tool=name, agent=self.name)
-            return ToolCall(
-                tool_name=name,
-                args=stored_args,
-                result=None,
-                duration_ms=0,
-                success=False,
-                error="suppressed: draft mode",
-                is_draft=True,
             )
 
         hooks = get_hooks()
@@ -473,52 +447,9 @@ class BaseAgent(ABC):
         # ── Execute ───────────────────────────────────────────────────────────
         log.debug("tool_start", tool=name, agent=self.name, access=spec.access.value)
         start = time.monotonic()
-        confirmed = False
         approval_token = current_approval.set(approval)
         try:
             result = await spec.func(**args)
-        except ToolConfirmationRequired as exc:
-            interrupt_fn = tool_interrupt_fn.get()
-            if interrupt_fn is None:
-                raise
-            decision = interrupt_fn(
-                {
-                    "kind": "workspace",
-                    "prompt": exc.prompt,
-                    "editable": exc.editable,
-                    "proposed": exc.proposed,
-                    "tool": name,
-                    "args": stored_args,
-                }
-            )
-            choice = "approve"
-            edited = None
-            if isinstance(decision, dict):
-                choice = str(decision.get("choice") or "approve")
-                edited = decision.get("edited_content")
-            elif isinstance(decision, str):
-                choice = decision
-            if choice != "approve":
-                duration_ms = int((time.monotonic() - start) * 1000)
-                tool_call = ToolCall(
-                    tool_name=name,
-                    args=stored_args,
-                    result=None,
-                    duration_ms=duration_ms,
-                    success=False,
-                    error="denied by user",
-                    gate="denied",
-                )
-                await _dispatch_tool_end(hooks, name, tool_call, ctx, _iteration)
-                return tool_call
-            if edited is not None:
-                args = _apply_edited_content(name, args, str(edited))
-            confirmed = True
-            confirmed_token = workspace_confirmed.set(True)
-            try:
-                result = await spec.func(**args)
-            finally:
-                workspace_confirmed.reset(confirmed_token)
         except Exception as exc:
             duration_ms = int((time.monotonic() - start) * 1000)
             log.warning("tool_error", tool=name, agent=self.name, error=str(exc))
@@ -543,7 +474,7 @@ class BaseAgent(ABC):
             result=result,
             duration_ms=duration_ms,
             success=True,
-            gate="approved" if confirmed else confirmation_gate,
+            gate=confirmation_gate,
             approval=approval,
         )
 
@@ -1019,23 +950,6 @@ async def _dispatch_tool_end(
             log.warning("hook_error_on_tool_end", tool=name, error=str(exc))
 
 
-def _apply_edited_content(
-    tool_name: str, args: dict[str, Any], edited: str
-) -> dict[str, Any]:
-    updated = dict(args)
-    if tool_name == "workspace_run":
-        updated["command"] = edited
-    elif tool_name == "workspace_write":
-        updated["content"] = edited
-    elif tool_name in {"workspace_delete", "ingest_workspace_file"}:
-        updated["path"] = edited
-    elif tool_name == "workspace_run_skill_script":
-        updated["filename"] = edited
-    else:
-        updated["content"] = edited
-    return updated
-
-
 def _merge_deps(tool_name: str, llm_args: dict, deps: dict[str, Any]) -> dict:
     """Inject internal deps into tool kwargs for params the LLM cannot provide."""
     import inspect
@@ -1091,7 +1005,6 @@ async def _fetch_tool_executor_context(ctx: Any) -> str:
             agent="tool_executor",
             query_text=ctx.prompt,
             query_embedding=embedding,
-            intent=ctx.intent,
             task_id=None,
             goal_id=goal_id,
             max_tokens=800,

@@ -24,7 +24,6 @@ import pytest
 
 import ze_workspace.bootstrap as bootstrap
 import ze_workspace.tools as tools
-from ze_agents.interrupt import workspace_confirmed
 from ze_workspace.followthrough import RunWatcher
 from ze_workspace.turn_lock import ThreadTurnLock
 from ze_workspace.types import (
@@ -175,7 +174,6 @@ def _wire(monkeypatch, *, short_wait: float, run_seconds: float):
     stack.client.start_run = AsyncMock(side_effect=fake_start_run)
     stack.client.get_run = AsyncMock(side_effect=fake_get_run)
     stack.client.watch_run = fake_watch_run
-    workspace_confirmed.set(True)
     return stack, store
 
 

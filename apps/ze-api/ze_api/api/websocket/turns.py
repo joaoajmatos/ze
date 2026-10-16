@@ -128,6 +128,11 @@ async def handle_message(
             stale = await confirmation_store.get_pending_for_thread(effective_thread_id)
             for row in stale:
                 await confirmation_store.clear(effective_thread_id, row["request_id"])
+                await conn_mgr.send_frame(
+                    {"type": "confirm_cancel", "id": row["request_id"]},
+                    effective_thread_id,
+                )
+            _record_superseded(outcome.final_state.get("message_trace"), stale)
 
         if session_store is not None and effective_thread_id:
             preview = outcome.response[:120].strip() if outcome.response else None
@@ -160,6 +165,29 @@ async def handle_message(
         )
 
     return None
+
+
+def _record_superseded(trace: Any, stale: list[dict]) -> None:
+    """The superseding turn's trace records what the cleared confirmations asked."""
+    if trace is None:
+        return
+    for row in stale:
+        payload = row.get("actions")
+        if not isinstance(payload, dict):
+            continue
+        for item in payload.get("items") or []:
+            trace.write_confirmations.append(
+                {
+                    "request_id": row["request_id"],
+                    "round": int(payload.get("round") or 1),
+                    "item_id": item.get("item_id", ""),
+                    "agent": item.get("agent", ""),
+                    "tool": item.get("tool"),
+                    "effect": item.get("effect_phrase"),
+                    "summary": item.get("summary", ""),
+                    "outcome": "superseded",
+                }
+            )
 
 
 async def _handle_gate_redirect_message(

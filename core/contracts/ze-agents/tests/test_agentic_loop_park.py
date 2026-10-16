@@ -64,7 +64,10 @@ class _Agent(BaseAgent):
 
 
 def _ctx() -> AgentContext:
-    return AgentContext(session_id="s", prompt="p", intent="x")
+    return AgentContext(
+        session_id="s",
+        prompt="p",
+    )
 
 
 def _client(*responses):

@@ -103,4 +103,5 @@ def test_phase_165_revisions_join_the_discovered_chains():
     assert zm024.down_revision == "zm023"
     assert isinstance(cfg, Config)
     heads = set(script.get_heads())
-    assert {"zc031", "zm024"} <= heads
+    assert {"zc032", "zm024"} <= heads
+    assert script.get_revision("zc032").down_revision == "zc031"

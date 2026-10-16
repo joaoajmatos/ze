@@ -4,8 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze_agents.types import GateDecision
-from ze_agents.errors import AgentAbortedError, AgentError, HookAbort, ToolBlockedError
+from ze_agents.errors import AgentAbortedError, AgentError, HookAbort
 from ze_agents.registry import clear_registry
 from ze_agents.base_agent import (
     BaseAgent,
@@ -40,14 +39,10 @@ def clean():
     clear_hooks()
 
 
-def _ctx(
-    gate: GateDecision = GateDecision.EXECUTE, model: str | None = None
-) -> AgentContext:
+def _ctx(model: str | None = None) -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt="hello",
-        intent="read",
-        gate_decision=gate,
         model=model,
     )
 
@@ -81,7 +76,6 @@ class TestCallTool:
         assert tc.result == "read:hi"
         assert tc.tool_name == "my_read"
         assert tc.error is None
-        assert tc.is_draft is False
 
     async def test_executes_write_tool_in_execute_mode(self):
         @tool(
@@ -95,36 +89,10 @@ class TestCallTool:
             return f"wrote:{x}"
 
         a = _agent()
-        tc = await a.call_tool("my_write", _ctx(GateDecision.EXECUTE), x="data")
+        tc = await a.call_tool("my_write", _ctx(), x="data")
 
         assert tc.success is True
         assert tc.result == "wrote:data"
-
-    async def test_write_tool_suppressed_in_draft_mode(self):
-        @tool(
-            access=ToolAccess.WRITE,
-            description="Write",
-            reversibility=ToolReversibility.IRREVERSIBLE,
-        )
-        async def draft_write(x: str) -> str:
-            return "should not run"
-
-        a = _agent()
-        tc = await a.call_tool("draft_write", _ctx(GateDecision.DRAFT), x="data")
-
-        assert tc.success is False
-        assert tc.is_draft is True
-        assert tc.result is None
-        assert "suppressed" in tc.error
-
-    async def test_blocked_gate_raises(self):
-        @tool(access=ToolAccess.READ, description="Read")
-        async def blocked_read(x: str) -> str:
-            return x
-
-        a = _agent()
-        with pytest.raises(ToolBlockedError):
-            await a.call_tool("blocked_read", _ctx(GateDecision.BLOCKED), x="hi")
 
     async def test_tool_exception_returns_failed_toolcall(self):
         @tool(access=ToolAccess.READ, description="Failing tool")
@@ -145,7 +113,7 @@ class TestCallTool:
             return f"got:{x}"
 
         a = _agent()
-        tc = await a.call_tool("read_draft", _ctx(GateDecision.DRAFT), x="q")
+        tc = await a.call_tool("read_draft", _ctx(), x="q")
         assert tc.success is True
 
     async def test_unknown_tool_raises(self):
@@ -291,47 +259,6 @@ class TestCallToolHooks:
 
         tc = await _agent().call_tool("normal_tool", _ctx(), x="hi")
         assert tc.success is True
-
-    async def test_hooks_do_not_fire_for_blocked_gate(self):
-        events = []
-
-        class _H(BaseHarnessHook):
-            async def on_tool_start(self, e: ToolStartEvent):
-                events.append("start")
-
-        register_hook(_H())
-
-        @tool(access=ToolAccess.READ, description="t")
-        async def blocked_tool(x: str) -> str:
-            return x
-
-        with pytest.raises(ToolBlockedError):
-            await _agent().call_tool("blocked_tool", _ctx(GateDecision.BLOCKED), x="hi")
-
-        assert events == []
-
-    async def test_hooks_do_not_fire_for_draft_suppressed_write(self):
-        events = []
-
-        class _H(BaseHarnessHook):
-            async def on_tool_start(self, e: ToolStartEvent):
-                events.append("start")
-
-        register_hook(_H())
-
-        @tool(
-            access=ToolAccess.WRITE,
-            description="t",
-            reversibility=ToolReversibility.IRREVERSIBLE,
-        )
-        async def draft_write_tool(x: str) -> str:
-            return x
-
-        tc = await _agent().call_tool(
-            "draft_write_tool", _ctx(GateDecision.DRAFT), x="v"
-        )
-        assert tc.is_draft is True
-        assert events == []
 
     async def test_iteration_passed_to_events(self):
         iterations = []
@@ -895,8 +822,6 @@ class TestToolExecutorContextFetch:
         ctx = AgentContext(
             session_id="s1",
             prompt="Do the task",
-            intent="execute",
-            gate_decision=GateDecision.EXECUTE,
             memory_store=memory_store,
             embed_fn=MagicMock(return_value=[0.1] * 384)
             if memory_store is not None
@@ -982,7 +907,6 @@ class TestBuildSystemPrompt:
         ctx = AgentContext(
             session_id="s1",
             prompt="what's open",
-            intent="read",
             resume_recap="[Resuming after a gap]",
             open_priorities_note="[Open priorities]",
         )
@@ -1003,7 +927,6 @@ class TestBuildSystemPrompt:
         ctx = AgentContext(
             session_id="s1",
             prompt="hi",
-            intent="read",
             memory=MemoryContext(
                 facts=[
                     Fact(
@@ -1033,7 +956,6 @@ class TestBuildSystemPrompt:
         ctx = AgentContext(
             session_id="s1",
             prompt="hi",
-            intent="read",
             identity_builder=builder,
             memory=MemoryContext(
                 facts=[Fact(predicate="preference", value="dark mode")]

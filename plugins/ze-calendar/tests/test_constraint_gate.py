@@ -12,7 +12,10 @@ import ze_calendar.agents.reminders.tools  # noqa: F401
 
 
 def _ctx() -> AgentContext:
-    return AgentContext(session_id="s1", prompt="schedule it", intent="create")
+    return AgentContext(
+        session_id="s1",
+        prompt="schedule it",
+    )
 
 
 def _agent() -> BaseAgent:
@@ -106,7 +109,7 @@ async def test_delete_event_with_calendar_constraint_confirms_or_blocks():
         )
         tc = await _agent().call_tool(
             "delete_event",
-            _ctx().__class__(session_id="s1", prompt="p", intent="x", loop_active=True),
+            _ctx().__class__(session_id="s1", prompt="p", loop_active=True),
             event_id="evt-1",
         )
         assert ran == []
@@ -171,7 +174,7 @@ async def test_cancel_reminder_with_reminder_constraint_does_not_complete_silent
         )
         tc = await _agent().call_tool(
             "cancel_reminder",
-            _ctx().__class__(session_id="s1", prompt="p", intent="x", loop_active=True),
+            _ctx().__class__(session_id="s1", prompt="p", loop_active=True),
             reminder_id="11111111-1111-1111-1111-111111111111",
         )
         assert ran == []

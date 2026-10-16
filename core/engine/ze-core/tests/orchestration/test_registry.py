@@ -1,6 +1,5 @@
 import pytest
 
-from ze_agents.types import Intent, Mode
 from ze_agents.errors import AgentConfigError, UnknownAgentError
 from ze_agents.base_agent import BaseAgent
 from ze_agents.registry import (
@@ -65,24 +64,6 @@ class TestAgentDecorator:
         cls.description = "   "
         with pytest.raises(AgentConfigError, match="non-empty `description`"):
             agent(cls)
-
-    def test_intents_with_mixed_modes_registers(self):
-        cls = _make_agent("goodmap")
-        cls.intents = {
-            "read": Intent(Mode.AUTONOMOUS, "Read something."),
-            "write": Intent(Mode.CONFIRM, "Write something."),
-        }
-        result = agent(cls)
-        assert get_registered_agents()["goodmap"] is result
-
-    def test_intents_secondary_entries_without_description_register(self):
-        cls = _make_agent("secondary")
-        cls.intents = {
-            "read": Intent(Mode.AUTONOMOUS, "Primary routing intent."),
-            "reason": Intent(Mode.AUTONOMOUS),
-        }
-        result = agent(cls)
-        assert get_registered_agents()["secondary"] is result
 
 
 class TestToolNormalisation:
@@ -193,11 +174,3 @@ class TestBaseAgentDefaults:
         with pytest.raises(NotImplementedError):
             async for _ in instance.stream(None):  # type: ignore[arg-type]
                 pass
-
-
-class TestModeEnum:
-    def test_mode_is_str_comparable(self):
-        assert Mode.AUTONOMOUS == "autonomous"
-        assert Mode.CONFIRM == "confirm"
-        assert Mode.DRAFT_ONLY == "draft_only"
-        assert Mode.DISABLED == "disabled"

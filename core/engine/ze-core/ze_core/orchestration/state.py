@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, TypedDict
 if TYPE_CHECKING:
     from ze_plugin.plugin import ZePlugin
 
-from ze_agents.types import GateDecision
 from ze_agents.types import AgentContext, AgentResult
 from ze_core.routing.types import RoutingEnvelope
 
@@ -14,7 +13,6 @@ class AgentState(TypedDict):
     # ── Input ──────────────────────────────────────────────────────────────
     prompt: str
     session_id: str
-    session_overrides: dict[str, str]  # "agent.intent" → mode string
 
     # ── Multimodal ─────────────────────────────────────────────────────────
     input_modality: str  # "text" | "voice" | "image" — default "text"
@@ -33,21 +31,10 @@ class AgentState(TypedDict):
     memory_context: Any | None
     agent_context: AgentContext | None
 
-    # ── Capability ─────────────────────────────────────────────────────────
-    gate_decision: GateDecision | None
-    subtask_gate_decisions: (
-        list  # list[{agent, intent, decision}] aligned with envelope.subtasks
-    )
-
     # ── Execution ──────────────────────────────────────────────────────────
     agent_result: AgentResult | None
     subtask_results: list[AgentResult]
     completed_subtask_indexes: list[int]
-    pending_subtask_awaits: list  # list[{index, agent, intent, prompt, request_id}]
-    approved_subtask_indexes: list[int]
-    denied_subtask_indexes: list[int]
-    pending_confirmation: bool
-    approved_agents: list[str]  # agents whose confirmation gate the user approved
 
     # ── Write confirmation (Phase 181) ─────────────────────────────────────
     blocked: bool  # set by preflight when every routed agent is disabled

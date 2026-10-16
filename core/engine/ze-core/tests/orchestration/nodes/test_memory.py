@@ -19,7 +19,6 @@ def _ctx(prompt: str = "hello") -> AgentContext:
     return AgentContext(
         session_id="s1",
         prompt=prompt,
-        intent="read",
         memory=MemoryContext(),
         messages=[],
     )
@@ -275,7 +274,7 @@ class TestWriteMemory:
             score_gap=0.3,
             routing_method="embedding",
             is_compound=True,
-            subtasks=[SubTask(agent="a", intent="read", prompt="p")],
+            subtasks=[SubTask(agent="a", prompt="p")],
             requires_synthesis=True,
         )
         state = {
@@ -308,7 +307,6 @@ class TestWriteMemoryCompaction:
         return AgentContext(
             session_id="s1",
             prompt="hi",
-            intent="read",
             memory=MemoryContext(),
             messages=[],
             model="unknown/model",  # forces DEFAULT_CONTEXT_WINDOW_TOKENS

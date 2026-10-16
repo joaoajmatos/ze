@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ze_agents.types import GateDecision
 from ze_agents.errors import AgentAbortedError
 from ze_agents.registry import agent, clear_registry, register_instance
 from ze_agents.base_agent import BaseAgent
@@ -14,15 +13,10 @@ from ze_agents.delegate import (
     _DELEGATE_MAX_DEPTH,
     run_delegate,
 )
-from ze_agents.interrupt import tool_interrupt_fn
 from ze_agents.tool import clear_tool_registry
 from ze_agents.types import AbortToken, AgentContext, AgentResult, ToolCall
 
 _CALLER = "companion"
-
-
-async def _eval_execute(_agent: str, _intent: str) -> GateDecision:
-    return GateDecision.EXECUTE
 
 
 @pytest.fixture(autouse=True)
@@ -36,20 +30,14 @@ def clean():
 
 def _ctx(
     depth: int = 0,
-    gate_decision: GateDecision = GateDecision.EXECUTE,
     abort_token: AbortToken | None = None,
-    intent: str = "reason",
-    evaluate_delegate=None,
 ) -> AgentContext:
     extensions = {"_delegate_depth": depth} if depth else {}
     return AgentContext(
         session_id="s1",
         prompt="hello",
-        intent=intent,
-        gate_decision=gate_decision,
         extensions=extensions,
         abort_token=abort_token,
-        evaluate_delegate=evaluate_delegate or _eval_execute,
     )
 
 
@@ -101,7 +89,6 @@ class TestDelegateToolSchema:
             "inputs",
             "output_shape",
             "stop_condition",
-            "intent",
         ):
             assert name in props
             assert name not in required
@@ -285,31 +272,6 @@ class TestRunDelegate:
         tc = await _run({"agent_name": "empty_obj", "objective": "  "})
         assert tc.success is False
         assert ran["n"] == 0
-
-    async def test_evaluator_sets_gate_not_parent_copy(self):
-        received = {}
-
-        async def _eval(_agent: str, _intent: str) -> GateDecision:
-            return GateDecision.DRAFT
-
-        @agent
-        class _G(BaseAgent):
-            name = "gate_agent"
-            description = "gate"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                received["gate"] = ctx.gate_decision
-                return AgentResult(agent="gate_agent", response="ok")
-
-        register_instance("gate_agent", _G())
-
-        await _run(
-            {"agent_name": "gate_agent", "objective": "t"},
-            _ctx(gate_decision=GateDecision.EXECUTE, evaluate_delegate=_eval),
-        )
-
-        assert received["gate"] == GateDecision.DRAFT
 
     async def test_inherits_abort_token(self):
         received = {}
@@ -503,9 +465,7 @@ class TestRunDelegate:
         ctx = AgentContext(
             session_id="s1",
             prompt="q",
-            intent="reason",
             abort_token=token,
-            evaluate_delegate=_eval_execute,
         )
 
         with pytest.raises(AgentAbortedError):
@@ -554,7 +514,10 @@ class TestDelegateInAgenticLoop:
         client = MagicMock()
         client.complete_with_tools = AsyncMock(side_effect=_capture)
         messages = [{"role": "user", "content": "q"}]
-        ctx = AgentContext(session_id="s1", prompt="q", intent="reason")
+        ctx = AgentContext(
+            session_id="s1",
+            prompt="q",
+        )
 
         await a.agentic_loop(ctx, client, messages, system="s")
 
@@ -586,8 +549,6 @@ class TestDelegateInAgenticLoop:
         ctx = AgentContext(
             session_id="s1",
             prompt="q",
-            intent="reason",
-            evaluate_delegate=_eval_execute,
         )
         messages = [{"role": "user", "content": "q"}]
 
@@ -633,229 +594,16 @@ class TestDelegateInAgenticLoop:
                 ("I cannot delegate.", None),
             ]
         )
-        ctx = AgentContext(session_id="s1", prompt="q", intent="read")
+        ctx = AgentContext(
+            session_id="s1",
+            prompt="q",
+        )
         text, calls = await a.agentic_loop(
             ctx, client, [{"role": "user", "content": "q"}], system="s"
         )
 
         assert text == "I cannot delegate."
         assert calls[0].success is False
-        assert ran["n"] == 0
-
-
-class TestPerDelegateGate:
-    async def test_lookup_runs_write_does_not_until_confirm(self):
-        order: list[str] = []
-
-        @agent
-        class _Cal(BaseAgent):
-            name = "calendar"
-            description = "calendar"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                order.append("calendar")
-                return AgentResult(agent="calendar", response="tue 3pm")
-
-        @agent
-        class _Mail(BaseAgent):
-            name = "messenger"
-            description = "mail"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                order.append("messenger")
-                return AgentResult(agent="messenger", response="sent")
-
-        register_instance("calendar", _Cal())
-        register_instance("messenger", _Mail())
-
-        async def _eval(agent: str, intent: str) -> GateDecision:
-            if agent == "calendar":
-                return GateDecision.EXECUTE
-            return GateDecision.AWAIT_CONFIRMATION
-
-        ctx = _ctx(evaluate_delegate=_eval)
-        cal = await _run({"agent_name": "calendar", "objective": "what's Tuesday"}, ctx)
-        assert cal.success is True
-        assert order == ["calendar"]
-
-        mail = await _run({"agent_name": "messenger", "objective": "email Bob"}, ctx)
-        assert mail.success is False
-        assert "interrupt" in (mail.error or "")
-        assert order == ["calendar"]
-
-    async def test_await_runs_once_after_approve(self):
-        ran = {"n": 0}
-
-        @agent
-        class _W(BaseAgent):
-            name = "calendar"
-            description = "cal"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                ran["n"] += 1
-                assert ctx.gate_decision == GateDecision.EXECUTE
-                return AgentResult(agent="calendar", response="created")
-
-        register_instance("calendar", _W())
-
-        async def _eval(_a: str, _i: str) -> GateDecision:
-            return GateDecision.AWAIT_CONFIRMATION
-
-        seen = {}
-
-        def _interrupt(payload: dict) -> dict:
-            seen["payload"] = payload
-            assert ran["n"] == 0
-            return {"choice": "approve"}
-
-        token = tool_interrupt_fn.set(_interrupt)
-        try:
-            tc = await _run(
-                {"agent_name": "calendar", "objective": "create event"},
-                _ctx(evaluate_delegate=_eval),
-            )
-        finally:
-            tool_interrupt_fn.reset(token)
-
-        assert tc.success is True
-        assert ran["n"] == 1
-        assert seen["payload"]["kind"] == "delegate"
-        assert seen["payload"]["request_id"]
-
-    async def test_deny_does_not_run_worker(self):
-        ran = {"n": 0}
-
-        @agent
-        class _W(BaseAgent):
-            name = "calendar"
-            description = "cal"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                ran["n"] += 1
-                return AgentResult(agent="calendar", response="created")
-
-        register_instance("calendar", _W())
-
-        async def _eval(_a: str, _i: str) -> GateDecision:
-            return GateDecision.AWAIT_CONFIRMATION
-
-        token = tool_interrupt_fn.set(lambda _p: {"choice": "deny"})
-        try:
-            tc = await _run(
-                {"agent_name": "calendar", "objective": "create event"},
-                _ctx(evaluate_delegate=_eval),
-            )
-        finally:
-            tool_interrupt_fn.reset(token)
-
-        assert tc.success is False
-        assert "denied" in (tc.error or "")
-        assert ran["n"] == 0
-
-    async def test_blocked_fails_without_run(self):
-        ran = {"n": 0}
-
-        @agent
-        class _W(BaseAgent):
-            name = "calendar"
-            description = "cal"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                ran["n"] += 1
-                return AgentResult(agent="calendar", response="nope")
-
-        register_instance("calendar", _W())
-
-        async def _eval(_a: str, _i: str) -> GateDecision:
-            return GateDecision.BLOCKED
-
-        tc = await _run(
-            {"agent_name": "calendar", "objective": "x"},
-            _ctx(evaluate_delegate=_eval),
-        )
-        assert tc.success is False
-        assert ran["n"] == 0
-
-    async def test_declared_intent_is_passed_to_evaluator(self):
-        seen = {}
-
-        async def _eval(agent: str, intent: str) -> GateDecision:
-            seen["agent"] = agent
-            seen["intent"] = intent
-            if intent == "create":
-                return GateDecision.DRAFT
-            return GateDecision.EXECUTE
-
-        received = {}
-
-        @agent
-        class _C(BaseAgent):
-            name = "calendar"
-            description = "cal"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                received["gate"] = ctx.gate_decision
-                return AgentResult(agent="calendar", response="ok")
-
-        register_instance("calendar", _C())
-
-        await _run(
-            {"agent_name": "calendar", "objective": "look", "intent": "read"},
-            _ctx(evaluate_delegate=_eval),
-        )
-        assert seen["intent"] == "read"
-        assert received["gate"] == GateDecision.EXECUTE
-
-        await _run(
-            {"agent_name": "calendar", "objective": "make", "intent": "create"},
-            _ctx(evaluate_delegate=_eval),
-        )
-        assert seen["intent"] == "create"
-        assert received["gate"] == GateDecision.DRAFT
-
-    async def test_omitted_intent_still_runs(self):
-        seen = {}
-
-        async def _eval(agent: str, intent: str) -> GateDecision:
-            seen["intent"] = intent
-            return GateDecision.EXECUTE
-
-        _make_agent("reminders", response="set")
-        tc = await _run(
-            {"agent_name": "reminders", "objective": "remind me at 3"},
-            _ctx(evaluate_delegate=_eval),
-        )
-        assert tc.success is True
-        assert seen["intent"] == ""
-
-    async def test_missing_evaluator_fails_without_run(self):
-        ran = {"n": 0}
-
-        @agent
-        class _C(BaseAgent):
-            name = "calendar"
-            description = "cal"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                ran["n"] += 1
-                return AgentResult(agent="calendar", response="ok")
-
-        register_instance("calendar", _C())
-        ctx = AgentContext(
-            session_id="s1",
-            prompt="h",
-            intent="reason",
-            evaluate_delegate=None,
-        )
-        tc = await _run({"agent_name": "calendar", "objective": "x"}, ctx)
-        assert tc.success is False
         assert ran["n"] == 0
 
 
@@ -964,38 +712,6 @@ class TestConductorStallReplan:
         assert seventh.success is False
         assert "ask_user" in (seventh.error or "")
         assert ctx.conductor_delegate_total == 6
-
-    async def test_confirmation_wait_is_not_stall(self):
-        ran = {"n": 0}
-
-        @agent
-        class _W(BaseAgent):
-            name = "calendar"
-            description = "cal"
-            tools = []
-
-            async def run(self, ctx: AgentContext) -> AgentResult:
-                ran["n"] += 1
-                return AgentResult(agent="calendar", response="created")
-
-        register_instance("calendar", _W())
-
-        async def _eval(_a: str, _i: str) -> GateDecision:
-            return GateDecision.AWAIT_CONFIRMATION
-
-        token = tool_interrupt_fn.set(lambda _p: {"choice": "approve"})
-        ctx = _ctx(evaluate_delegate=_eval)
-        try:
-            tc = await _run(
-                {"agent_name": "calendar", "objective": "create event"},
-                ctx,
-            )
-        finally:
-            tool_interrupt_fn.reset(token)
-
-        assert tc.success is True
-        assert ran["n"] == 1
-        assert "stalled" not in [e["status"] for e in ctx.conductor_ledger]
 
     async def test_speech_act_one_shot_under_cap(self):
         _make_agent("reminders", response="cancelled dentist")

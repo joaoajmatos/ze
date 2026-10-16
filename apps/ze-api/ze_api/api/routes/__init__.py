@@ -1,6 +1,5 @@
 from ze_api.api.routes import (
     activity,
-    capabilities,
     costs,
     data,
     dream,
@@ -23,7 +22,6 @@ from ze_api.api.routes import (
 
 __all__ = [
     "activity",
-    "capabilities",
     "costs",
     "data",
     "dream",
