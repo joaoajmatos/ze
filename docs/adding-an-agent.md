@@ -48,7 +48,6 @@ async def web_search(query: str, client: SomeClient, max_results: int = 5) -> To
         duration_ms=...,
         success=True,
         error=None,
-        is_draft=False,
     )
 
 @tool(
@@ -76,7 +75,7 @@ async def set_reminder(label: str, fire_at: str, store: ReminderStore) -> ToolCa
 
 | Access | Use when |
 |---|---|
-| `READ` | No external side effects. Safe in any mode including `draft_only`. |
+| `READ` | No external side effects. Runs without asking, in any turn, including a retry. |
 | `WRITE` | Creates, modifies, deletes, or sends anything external. When in doubt, use `WRITE`. |
 
 ### `reversibility` — required on every `WRITE` tool
@@ -101,10 +100,44 @@ not, gets Retry unavailable, and the reason uses your `effect_phrase`. Ze does n
 actions on Retry in this version. The `REVERSIBLE` declaration records the undo for a
 later phase.
 
-**Draft mode suppression** — when the capability gate returns `DRAFT`, calling
-`self.call_tool("send_email", ctx, ...)` will **not** execute the tool. Instead,
-`BaseAgent.call_tool()` returns a `ToolCall` with `is_draft=True` and
-`error="suppressed: draft mode"` automatically. `READ` tools are never suppressed.
+### `asks_first`: confirm before an irreversible write
+
+An `IRREVERSIBLE` `WRITE` tool asks first by default. You do not pass `asks_first`.
+Ze parks the call with its exact arguments. The user approves or denies the call in one
+confirmation for the turn. The function body runs only after the user approves that
+exact call. A tool body never opens a confirmation itself.
+
+To opt out, pass `asks_first=False` and a non-empty `no_ask_reason`. Registration fails
+without the reason. A `REVERSIBLE` tool cannot ask first.
+
+| Argument | Use |
+|---|---|
+| `asks_first=False` | The tool runs without asking. Requires `reversibility=ToolReversibility.IRREVERSIBLE` and `no_ask_reason`. |
+| `no_ask_reason` | One sentence that says why the tool needs no confirmation. Allowed only with `asks_first=False`. |
+| `editable_field` | The name of a parameter the user may edit in the confirmation, for example `"body"` for an email. |
+| `summarize` | A function that returns a short summary of the arguments. The confirmation shows it. |
+| `ask_check` | A function that decides per call whether to ask. It must be cheap and free of side effects. It runs on every call. |
+
+```python
+@tool(
+    access=ToolAccess.WRITE,
+    reversibility=ToolReversibility.IRREVERSIBLE,
+    effect_phrase="sent an email",
+    editable_field="body",
+    summarize=lambda a: f"to {a.get('to', '')}: {a.get('subject', '')}",
+    description="Send an email via Gmail.",
+)
+async def send_email(to: str, subject: str, body: str, client: GmailClient) -> ToolCall:
+    ...
+```
+
+Call asks-first tools only from `agentic_loop` or `delegate_to_agent`. A direct
+`call_tool` on an asks-first tool raises `AgentConfigError`.
+
+**Parked calls** — when the model calls an asks-first tool, `BaseAgent.call_tool()`
+does not run it. The loop stops at that call. The turn pauses once for the user (see
+[Write confirmation](architecture.md#write-confirmation)). A denied call returns a
+declined result to the model. `READ` and `REVERSIBLE` tools never park.
 
 ### Tool parameters
 
@@ -118,7 +151,7 @@ parameters. They do not import from global state or access `self`.
 
 ```python
 from ze_sdk import agent, BaseAgent
-from ze_sdk.types import AgentContext, AgentResult, Intent, Mode
+from ze_sdk.types import AgentContext, AgentResult
 from ze_agents.client import LLMClient
 from ze_api.settings import Settings
 
@@ -150,11 +183,6 @@ class MyAgent(BaseAgent):
     vision_capable = False                         # set True if agent should receive image data
     timeout = 30
     tools = ["tool_one", "tool_two"]               # must match @tool-registered names
-    intents = {
-        "read":   Intent(Mode.AUTONOMOUS, "Retrieve information."),
-        "create": Intent(Mode.CONFIRM,    "Create something."),
-    }
-    # default_mode = Mode.AUTONOMOUS  # uncomment for read-only agents that accept any intent
 
     def __init__(self, openrouter_client: LLMClient, settings: Settings) -> None:
         self._client = openrouter_client
@@ -181,7 +209,7 @@ class MyAgent(BaseAgent):
 |---|---|
 | `self._build_system_prompt(instructions, ctx)` | Assembles datetime, memory constitution, persona, your job instructions, then retrieved biography |
 | `self.agentic_loop(ctx, client=…)` | Runs the LLM-driven ReAct tool loop; returns `(response, tool_calls)` |
-| `self.call_tool(name, ctx, **kwargs)` | Executes a single tool with draft-mode suppression and structured logging |
+| `self.call_tool(name, ctx, **kwargs)` | Runs a single tool, or parks it when the tool asks first; logs the call |
 | `self._model(ctx)` | Returns the correct model string — primary or `model_simple` based on complexity |
 | `self.emit(ctx, key)` | Sends a localized progress message to the client mid-turn (see [Progress messages](#progress-messages)) |
 
@@ -355,20 +383,19 @@ Conventions:
 - No real API calls. Mock clients with `AsyncMock`.
 - No real DB. Mock `asyncpg` pools with `AsyncMock`.
 - Build `AgentContext` directly in tests — it's a dataclass.
-- Test draft mode explicitly: pass `gate_decision=GateDecision.DRAFT` in context and
-  assert that `WRITE` tools return `is_draft=True` without side effects.
-- Test blocked mode: pass `gate_decision=GateDecision.BLOCKED` and assert `ToolBlockedError`.
+- Test the park path for each asks-first tool: call it through `agentic_loop` and assert
+  that it parks with its exact arguments and that the function body did not run.
 
 ---
 
 ## Checklist
 
 - [ ] Spec written and reviewed
-- [ ] Agent module in the correct domain package — `@agent` class with `name`, `description`, `model`, `intents`, `tools` class attributes
+- [ ] Agent module in the correct domain package — `@agent` class with `name`, `description`, `model`, `tools` class attributes
 - [ ] Module path added to the package's `ZePlugin.agent_module_paths()` (tools module listed first)
 - [ ] All `__init__` parameters are type-annotated
 - [ ] All tool calls go through `self.call_tool()` or `self.agentic_loop()`, never direct function calls
 - [ ] `tools.py` — all tools decorated with `@tool` (if applicable); every `WRITE` tool declares `reversibility` and `effect_phrase`
 - [ ] Progress keys added to `locales/en.yaml` (and `locales/pt.yaml`) in the plugin package
-- [ ] Tests written (including draft + blocked mode)
+- [ ] Tests written (including the park path for asks-first tools)
 - [ ] Optional: `bundled_skill_paths()` if the plugin ships a `SKILL.md`

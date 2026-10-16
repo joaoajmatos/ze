@@ -12,14 +12,14 @@ Plugin packages never import `ze-core` directly.
 ```python
 from ze_sdk import ZePlugin, agent, tool, ToolAccess, BaseAgent, get_logger, Settings, DBPool, NLIClient
 from ze_sdk import DataDomain
-from ze_sdk.types import AgentContext, AgentResult, ToolCall, GateDecision, Mode, AbortToken, Action, Notification
+from ze_sdk.types import AgentContext, AgentResult, ToolCall, AskDecision, AbortToken, Action, Notification
 from ze_sdk.proactive import ProactiveJob, proactive_job, ProactiveScheduler, ProactiveNotifier, PushKind, PushOutcome, PushLogStore, PushLogEntry
 from ze_sdk.channels import Channel, ChannelType, ChannelHandle, Message, SentMessage, Thread, ThreadMessage, ChannelSendError
 from ze_sdk.memory import MemoryContext, Fact, Episode, Procedure, Entity, TaskState, RetrievalRequest, MemoryStore, PostgresMemoryStore, PostgresDreamStore, DreamArtifact, DreamJournalEntry, DreamRun, ArtifactType, ArtifactStatus
 from ze_sdk.contribution import Contribution, EvidenceRef, SourceFunction, TargetFace, validate_and_submit, submit_and_detect_collisions
 from ze_sdk.api import require_api_key
 from ze_sdk.onboarding import OnboardingProvider, OnboardingStep, OnboardingField, OnboardingSeed, OnboardingResult
-from ze_sdk.errors import ZeError, AgentError, ToolBlockedError, AgentAbortedError, AgentConfigError, ChannelSendError
+from ze_sdk.errors import ZeError, AgentError, AgentAbortedError, AgentConfigError, ChannelSendError
 ```
 
 ---
@@ -31,7 +31,7 @@ from ze_sdk.errors import ZeError, AgentError, ToolBlockedError, AgentAbortedErr
 | `ZePlugin` | Abstract base class for domain extensions. Override only the hooks you need.|
 | `agent` | Class decorator that registers a `BaseAgent` subclass in the global `AgentRegistry`. |
 | `tool` | Function decorator that registers an async function as a callable tool. |
-| `ToolAccess` | Enum — `READ` or `WRITE`. Controls draft-mode suppression. |
+| `ToolAccess` | Enum — `READ` or `WRITE`. A `WRITE` tool that is irreversible asks first by default. |
 | `ToolReversibility` | Enum — `REVERSIBLE` or `IRREVERSIBLE`. Required on every `WRITE` tool; see [Tool reversibility](#tool-reversibility). |
 | `BaseAgent` | Abstract base class all agents inherit. Provides `agentic_loop`, `call_tool`, `emit`, and `_build_system_prompt`. |
 | `get_logger` | Structured logger factory. Always call as `get_logger(__name__)`. |
@@ -89,8 +89,6 @@ Passed to every `BaseAgent.run()` call. Contains everything the agent needs for 
 |-------|------|-------------|
 | `session_id` | `str` | Unique conversation/graph thread ID. |
 | `prompt` | `str` | The user's message for this turn. |
-| `intent` | `str` | Intent key chosen by the router (e.g. `"read"`, `"create"`). |
-| `gate_decision` | `GateDecision` | Capability gate outcome — controls tool execution. |
 | `memory` | `MemoryContext \| None` | Retrieved memory for this turn. |
 | `contacts` | `ContactsContext \| None` | Retrieved contacts for this turn. |
 | `tool_calls` | `list[ToolCall]` | Tool calls accumulated so far in this turn. |
@@ -129,29 +127,16 @@ Structured record of a single tool invocation.
 | `duration_ms` | `int` | Wall-clock execution time. |
 | `success` | `bool` | Whether the tool ran without exception. |
 | `error` | `str \| None` | Error message if `success=False`. |
-| `is_draft` | `bool` | `True` when a WRITE tool was suppressed by the gate. |
 
-### `GateDecision`
+### `AskDecision`
 
-Controls which tools the capability gate allows.
+Returned by an `ask_check` function. It tells Ze what to do with one call.
 
 | Value | Meaning |
 |-------|---------|
-| `EXECUTE` | All tools run normally. |
-| `DRAFT` | WRITE tools are suppressed (`is_draft=True`); READ tools run. |
-| `AWAIT_CONFIRMATION` | Agent must pause and request user confirmation. |
-| `BLOCKED` | All tools raise `ToolBlockedError`. |
-
-### `Mode`
-
-Configured per-intent on an agent class. Maps the intent to a gate policy.
-
-| Value | Behaviour |
-|-------|-----------|
-| `AUTONOMOUS` | Always `EXECUTE`. |
-| `CONFIRM` | Always `AWAIT_CONFIRMATION`. |
-| `DRAFT_ONLY` | Always `DRAFT`. |
-| `DISABLED` | Always `BLOCKED`. |
+| `RUN` | Run the call without asking. |
+| `ASK(reason)` | Park the call and ask the user. `reason` is optional. |
+| `REFUSE(message)` | Refuse the call. Nothing is parked, and the model gets `message`. |
 
 ### `AbortToken`
 
@@ -185,10 +170,6 @@ class MyAgent(BaseAgent):
     vision_capable = False              # set True to receive image data in ctx
     timeout      = 30                   # seconds
     tools        = ["tool_a", "tool_b"] # @tool-registered names
-    intents      = {
-        "read":  Intent(Mode.AUTONOMOUS, "Retrieve info."),
-        "write": Intent(Mode.CONFIRM,    "Create something."),
-    }
 ```
 
 All attributes except `name` have defaults — only override what differs.
@@ -225,10 +206,10 @@ Drives an LLM ReAct loop: the model picks tools, ze dispatches them through `cal
 
 #### `await self.call_tool(name, ctx, **kwargs) -> ToolCall`
 
-Executes a single registered tool with capability enforcement and hook dispatch.
+Executes a single registered tool, with hook dispatch.
 
-- WRITE tools return `is_draft=True` when `gate_decision == DRAFT`.
-- Any tool raises `ToolBlockedError` when `gate_decision == BLOCKED`.
+- An asks-first `WRITE` tool does not run. The call parks, and the loop stops at it. See [Write confirmation](architecture.md#write-confirmation).
+- A call to an asks-first tool outside `agentic_loop` or `delegate_to_agent` raises `AgentConfigError`.
 - Pass all tool dependencies (clients, settings) as keyword arguments.
 
 #### `await self.emit(ctx, key, **kwargs)`
@@ -276,12 +257,27 @@ async def get_record(id: str, db: DBPool) -> str:
         return str(row)
 ```
 
+### Asks first
+
+An irreversible `WRITE` tool asks the user first by default. You pass no argument for this.
+
+| Argument | Meaning |
+|---|---|
+| `asks_first=False` | The tool runs without asking. Requires `reversibility=ToolReversibility.IRREVERSIBLE` and `no_ask_reason`. |
+| `no_ask_reason` | One sentence that says why no confirmation is needed. Allowed only with `asks_first=False`. |
+| `editable_field` | The name of a parameter the user may edit in the confirmation, for example `"body"`. |
+| `summarize` | A function that returns a short summary of the arguments for the confirmation. |
+| `ask_check` | A function `(args, ctx) -> AskDecision` that decides per call. It must be cheap and free of side effects. |
+
+The function body runs only after the user approves that exact call. A tool body never
+opens a confirmation itself.
+
 ### Rules
 
 - Tools must be `async def`.
 - All parameters the LLM cannot infer must be typed — they are injected via `deps` in `agentic_loop` or passed explicitly via `call_tool(**kwargs)`.
-- `ToolAccess.READ` — no external side effects. Runs in any gate state.
-- `ToolAccess.WRITE` — creates, modifies, deletes, or sends. Suppressed in DRAFT mode. Must declare `reversibility`.
+- `ToolAccess.READ` — no external side effects. Runs without asking.
+- `ToolAccess.WRITE` — creates, modifies, deletes, or sends. An irreversible write asks first unless it declares `asks_first=False` with a `no_ask_reason`. Must declare `reversibility`.
 
 ### Tool reversibility
 
@@ -510,13 +506,12 @@ Always raise a typed `ZeError` subclass. Never raise bare `Exception` or `ValueE
 | `AgentError` | Unrecoverable agent-level failure (unexpected LLM response, missing result). |
 | `AgentAbortedError` | Agent loop was cancelled via `AbortToken`. |
 | `AgentConfigError` | Misconfiguration detected at startup (missing type hints, unregistered tool). |
-| `ToolBlockedError` | Tool call was rejected because the gate decision is `BLOCKED`. |
 | `ChannelSendError` | Channel `send()` failed. |
 
 Import from `ze_sdk.errors`:
 
 ```python
-from ze_sdk.errors import AgentError, ToolBlockedError
+from ze_sdk.errors import AgentError
 ```
 
 ---
