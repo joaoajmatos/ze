@@ -34,7 +34,7 @@ from ze_worldstate.commitment_judge import (
     commitment_intake_surface_config,
     decide,
 )
-from ze_worldstate.extraction import _resolve_entities
+from ze_worldstate.extraction import resolve_entities
 from ze_worldstate.loop_judge import CONVERSATION, LoopGateDecision
 from ze_worldstate.matching import find_matching_loop
 from ze_worldstate.types import LoopAdmission, SourceKey
@@ -321,7 +321,7 @@ class CommitmentIntake:
         if not targets:
             return tuple(outcomes)
         try:
-            entity_ids = await _resolve_entities(self._entity_resolver, prompt)
+            entity_ids = await resolve_entities(self._entity_resolver, prompt)
             loop = await find_matching_loop(
                 entity_ids,
                 prompt[:200],
