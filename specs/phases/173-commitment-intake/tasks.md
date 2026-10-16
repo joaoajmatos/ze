@@ -25,7 +25,7 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 - [x] T023 [ENG-A] `ze_worldstate/intake.py` `CommitmentIntake.admit()`: one request, outcome handling (fact via `write_fact_values`, loop via `LoopInflow` commit helpers, link via D-4, resolve), fallback delegation, never raises, trace rows. Edit `admission.py`: remove conversation `admit`, expose reusable `_commit_for`/`_finish` as needed. Owns: `ze_worldstate/{intake.py,admission.py}`.
 - [x] T024 [ENG-A] Tests: single request counted (US7), trivial turn, skip/throw/invalid fallbacks run Haiku paths, `link` sets pointer once and never on terminal loops, no loop on reminder/goal turns (US1-US3), declared/suspected/resolve parity with 168 rows, 109 fallback parity. Owns: `core/cognition/ze-worldstate/tests/{test_intake.py,test_admission.py}` (update).
 - [x] T025 [ENG-B] `ze_core/orchestration/nodes/memory.py`: replace the `gather` block with `commitment_intake` (fallback to `fact_extractor` when absent); `judgments_from_result` rows from the single result; keep `tracking_earned`. **(181)** shared file: minimal diff. Update `core/engine/ze-core/tests/orchestration/nodes/test_memory.py` and `test_loop_admission_node.py`.
-- [ ] T026 [ENG-B] Wiring: `apps/ze-api/ze_api/container.py` builds `CommitmentIntake` and sets `configurable["commitment_intake"]`; `ze_core/container.py` keeps `_fact_extractor` fallback only; delete the `loop_admission` conversation key. Owns those two files.
+- [x] T026 [ENG-B] Wiring: `apps/ze-api/ze_api/container.py` builds `CommitmentIntake` and sets `configurable["commitment_intake"]`; `ze_core/container.py` keeps `_fact_extractor` fallback only; delete the `loop_admission` conversation key. Owns those two files.
 - [x] T027 [ENG-B] `config.yaml`: delete `speech_act` block, add `commitment_intake` (enabled false, null bars) and update the header comment; keep `loop_gate`. Owns: `apps/ze-api/config/config.yaml`.
 
 ## Phase 3: US8 links on REST and web
@@ -36,8 +36,8 @@ Lanes: **[ENG-A]** memory + worldstate logic, **[ENG-B]** wiring + calibration t
 
 ## Phase 4: US7 calibration tooling
 
-- [ ] T040 [ENG-B] `eval/calibration/commitment_intake_baseline.py`: frozen 163 questions + decide + `loop_judge.decide` replay (D-6). Owns that file.
-- [ ] T041 [ENG-B] Finish `commitment_intake.py`: live run (tuned), report (FR-021), bar grid, reliability tables, `--set holdout --bars`, verdict per FR-022. Delete `eval/calibration/speech_act.{py,jsonl}`. Makefile: `calibrate-commitment-intake` replaces `calibrate-speech-act` (help text + .PHONY). Owns: Makefile calibrate lines, the eval files.
+- [x] T040 [ENG-B] `eval/calibration/commitment_intake_baseline.py`: frozen 163 questions + decide + `loop_judge.decide` replay (D-6). Owns that file.
+- [x] T041 [ENG-B] Finish `commitment_intake.py`: live run (tuned), report (FR-021), bar grid, reliability tables, `--set holdout --bars`, verdict per FR-022. Delete `eval/calibration/speech_act.{py,jsonl}`. Makefile: `calibrate-commitment-intake` replaces `calibrate-speech-act` (help text + .PHONY). Owns: Makefile calibrate lines, the eval files.
 - [ ] T042 [ENG-B] Live tuned run -> choose bars (after T004 OK). Record in `research.md` tuning notes.
 - [ ] T043 [ENG-B] Live held-out run once at frozen bars -> verdict. `ENABLE`: set bars and `enabled: true` in `config.yaml`; `KEEP OFF`: leave off and record the failing clause. (User OK required.)
 

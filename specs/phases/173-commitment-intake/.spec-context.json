@@ -145,9 +145,33 @@
       "kind": "complete",
       "by": "ENG-A",
       "at": "2026-10-16T15:14:50.696Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T026",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T15:57:37.213Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T040",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T15:57:37.453Z"
+    },
+    {
+      "step": "implement",
+      "substep": null,
+      "task": "T041",
+      "kind": "complete",
+      "by": "ENG-B",
+      "at": "2026-10-16T15:57:37.689Z"
     }
   ],
-  "currentTask": "T032",
+  "currentTask": "T041",
   "task_summaries": {
     "T001": {
       "status": "DONE"
@@ -197,6 +221,18 @@
     "T032": {
       "status": "DONE",
       "did": "linkChips helper + chips in LoopReviewList, vitest"
+    },
+    "T026": {
+      "status": "DONE",
+      "did": "Wired CommitmentIntake into ze-api container (90ff30dd)"
+    },
+    "T040": {
+      "status": "DONE",
+      "did": "Frozen 163+168 baseline replay module (f8aacbbd)"
+    },
+    "T041": {
+      "status": "DONE",
+      "did": "Live runner, report, bar grid, holdout verdict, make target (f8aacbbd)"
     }
   }
 }

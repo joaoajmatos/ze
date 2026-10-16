@@ -13,3 +13,6 @@
 {"step": "implement", "substep": null, "task": "T030", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:07:30.108Z", "did": "REST reminder_id/goal_id list+detail, route test"}
 {"step": "implement", "substep": null, "task": "T031", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:14:39.475Z", "did": "make codegen, regenerated ze-client committed (bc5760dc)"}
 {"step": "implement", "substep": null, "task": "T032", "kind": "complete", "by": "ENG-A", "at": "2026-10-16T15:14:50.696Z", "did": "linkChips helper + chips in LoopReviewList, vitest"}
+{"step": "implement", "substep": null, "task": "T026", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.213Z", "did": "Wired CommitmentIntake into ze-api container (90ff30dd)"}
+{"step": "implement", "substep": null, "task": "T040", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.453Z", "did": "Frozen 163+168 baseline replay module (f8aacbbd)"}
+{"step": "implement", "substep": null, "task": "T041", "kind": "complete", "by": "ENG-B", "at": "2026-10-16T15:57:37.689Z", "did": "Live runner, report, bar grid, holdout verdict, make target (f8aacbbd)"}
