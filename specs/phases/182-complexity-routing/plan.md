@@ -6,7 +6,7 @@
 
 ## Summary
 
-Routing keeps choosing the agent and now always assigns the agent's **full** model. A new graph node, `choose_tier`, runs after `match_skills` and before `capability_check`. For a single-agent turn whose agent declares a distinct `model_simple`, it builds a capped task state (task, conversation, recap, memory, focus, skill; the agent field was dropped in tuning, spec FR-006 amended 2026-10-16), asks System One one Noul (`needs_deep_reasoning`, one attempt), and swaps in `model_simple` only when the answer is at or below `simple_max`. Every other outcome keeps the full model. The surface `system_one.surfaces.complexity` ships off with a null bar.
+Routing keeps choosing the agent and now always assigns the agent's **full** model. A new graph node, `choose_tier`, runs after `match_skills` and before `preflight` (the node phase 181 put in place of `capability_check`). For a single-agent turn whose agent declares a distinct `model_simple`, it builds a capped task state (task, conversation, recap, memory, focus, skill; the agent field was dropped in tuning, spec FR-006 amended 2026-10-16), asks System One one Noul (`needs_deep_reasoning`, one attempt), and swaps in `model_simple` only when the answer is at or below `simple_max`. Every other outcome keeps the full model. The surface `system_one.surfaces.complexity` ships off with a null bar.
 
 Hard cuts in the same change: the regex `ComplexityEstimator`, the routing Score question and `complexity_lookup_max`, `RoutingEnvelope.complexity` / `complexity_source`, `EmbeddingRouter._resolve_model(agent, complexity)`, the `gold_complexity` field of the routing calibration sets, and the `routing_log.complexity` / `model_selected` columns.
 
@@ -57,7 +57,7 @@ The trace gains `MessageTrace.tier` (REST, `trace_update`, Routing section in ze
 | `RoutingSurfaceConfig.complexity_lookup_max`, `RoutingDecision.complexity`, `Q_COMPLEXITY`, `_complexity`, `normalise_complexity_score`, `COMPLEXITY_SCORE_MAX` (deleted) | ze-core: `routing/judge.py` (`build_questions`, `decide`, `routing_surface_config`); eval: `eval/calibration/routing.py` (`grid_metrics` L408, `report` L547, lookup-bar suggestion, Score histogram); tests `test_routing_judge.py` L72-77, 96-110, 336-364, `test_router_choice.py` L26, 94, 125, `test_calibration_script.py` L43-132, `test_calibration_dataset.py` L25-82, `tests/support/routing.py` L102, `tests/conversation/test_judgments.py` L98-139, `test_routing_nodes.py` L413-473 |
 | `build_embedding_router` (drops `estimator`; sibling `build_tier_judge` added) | ze-core: `bootstrap.build_router` L160, `container._build_router` L457 / `from_config` L357; ze-api: `container.build_container` L747; tests `test_router_factory.py` |
 | `Container._build_config` / `ZeContainer._build_config` (add `tier_judge`) | ze-core `container.py` L45; ze-api `container.py` L289 |
-| `graph_builder` edges (`match_skills → choose_tier → capability_check`) | ze-core `orchestration/graph.py`, `orchestration/nodes/__init__.py`; no test asserts node names today (grep), so the node test is new |
+| `graph_builder` edges (`match_skills → choose_tier → preflight`) | ze-core `orchestration/graph.py`, `orchestration/nodes/__init__.py`; no test asserts node names today (grep), so the node test is new |
 | `MessageTrace` (+ `tier`) | ze-core `conversation/messages/types.py`, `nodes/trace.py` `record_trace` L71, `conversation/turn.py` (partial frame); ze-api `api/schemas.py` `MessageTraceResponse` L211 (wrapped by `MessageTraceEntry.trace`), `WsTraceUpdateFrame` L860 → `make codegen` (`@myguyze/ze-client`); ze-web `widgets/message-trace/ui/RoutingBadge.tsx`, `MessageTracePanel.tsx`, `widgets/trace-panel/ui/RoutingSection.tsx` |
 | `routing_log` columns (dropped) | ze-core `routing/store.py` `write_log`; `001_initial_schema.py` (history only); `rest.py` and `RoutingLogEntry` do not select them |
 | `model_simple` (semantics unchanged; now read by the tier step) | declared on companion, research (ze-personal), goals (ze-automation); `BaseAgent` attribute (ze-agents); `ze_api/testing.py` L44 and `tests/support/gate.py` L38 expose it (unchanged) |
@@ -77,7 +77,7 @@ No plugin, `ze_sdk` or `ze_agents` signature changes. `delegate_to_agent` unchan
 
 ### `ze_core/orchestration/judgment_state.py`
 
-Add `build_tier_state(state) -> dict[str, str]` per research R3, reading `agent_context`, `memory_context`, `envelope`, `image_caption`/`prompt`. `build_judgment_state` and `history_hint` stay unchanged for routing and skills.
+Add `build_tier_state(state) -> dict[str, str]` per research R3, reading `agent_context`, `memory_context`, `routing_hints`, `image_caption`/`prompt` (not the envelope: the agent field was dropped, spec FR-006 amended 2026-10-16). `build_judgment_state` and `history_hint` stay unchanged for routing and skills.
 
 ### `ze_core/orchestration/nodes/tier.py` (new): `choose_tier`
 
@@ -101,7 +101,7 @@ Add `build_tier_state(state) -> dict[str, str]` per research R3, reading `agent_
 
 - `config.yaml`: delete `complexity_lookup_max`; add `complexity: {enabled: false, simple_max: null}` with a dated comment.
 - Both `_build_config` methods add `"tier_judge"`; both containers build it with `build_tier_judge(config, system_one_client)`.
-- Graph: `match_skills → choose_tier → capability_check`.
+- Graph: `match_skills → choose_tier → preflight`.
 
 ### Trace and storage
 

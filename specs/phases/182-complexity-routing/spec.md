@@ -32,7 +32,7 @@ This phase replaces the regex with one System One judgment that runs **after** Z
 
 The user pinned the flag, the hard cut and the "task at hand" requirement before the spec was written. The answers below were given by the user and relayed by the Maestro; each matches the Spec Architect's recommendation. Alternatives are recorded in [research.md](./research.md).
 
-- Q: Where is the tier decided, so that it judges the task at hand? → A: **(user)** A new graph node, `choose_tier`, after `fetch_context` and `match_skills` and before `capability_check`. Routing always assigns the full model; `choose_tier` may swap in `model_simple`. Its state carries the conversation, the resume recap, retrieved memory, active goals and the workflow in view, the matched skill, and the routed agent's criteria and tools. Starting on the light model and escalating inside the agent loop (research R1 option C) is a follow-up phase, not this one.
+- Q: Where is the tier decided, so that it judges the task at hand? → A: **(user)** A new graph node, `choose_tier`, after `fetch_context` and `match_skills` and before `capability_check` (since phase 181 landed, before `preflight`). Routing always assigns the full model; `choose_tier` may swap in `model_simple`. Its state carries the conversation, the resume recap, retrieved memory, active goals and the workflow in view, the matched skill, and the routed agent's criteria and tools (the agent field was later dropped; see the tuning session below). Starting on the light model and escalating inside the agent loop (research R1 option C) is a follow-up phase, not this one.
 - Q: Question shape? → A: **(user)** One Noul, `needs_deep_reasoning`, and one bar, `simple_max`. The light model only when the Noul is at or below the bar. The graded routing Score is hard-cut.
 - Q: Acceptance rule? → A: **(user)** Per language on the held-out set, at the frozen bar: zero false downgrades, light-model recall at least 0.5, skipped or invalid rows at most 10%. Latency is reported, not gating (FR-016).
 - Q: `routing_log.complexity` and `model_selected`? → A: **(user)** Dropped in a ze-core `zc` migration, numbered at build time after floors 181 and 173 land (FR-015).
@@ -158,7 +158,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 
 - **Image turns**: the state uses the caption, as routing does today.
 - **Retry (165/180)**: a retry re-runs the graph, so the tier is judged again; the retried reply may run a different tier, and the trace says which.
-- **Confirmation resume**: the tier is fixed before `capability_check`; resuming after a confirmation does not ask again.
+- **Confirmation resume**: the tier is fixed before `preflight`. The pauses after it (`await_budget_confirmation` after `preflight`, `await_write_confirmation` after `execute_tool`) resume into `execute_tool`, so resuming never asks again.
 - **Open-query reroute**: `fetch_context` may reroute to companion; the tier step runs after it and judges the rerouted agent.
 - **Forced eval route**: the tier step runs as for any single-agent turn, so evals exercise it.
 - **`models.overrides`**: the full model and the light model both go through the existing override resolution.
@@ -179,7 +179,7 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 
 **Task at hand (user-pinned)**
 
-- **FR-005**: The tier MUST be judged on the task the user is trying to get done, not on the latest message alone. The judgment MUST run after the turn's context is gathered (after `fetch_context` and `match_skills`) and before `capability_check`.
+- **FR-005**: The tier MUST be judged on the task the user is trying to get done, not on the latest message alone. The judgment MUST run after the turn's context is gathered (after `fetch_context` and `match_skills`) and before `preflight`.
 - **FR-006**: The judgment state MUST carry these named fields, each capped, absent when empty: the user's message (`task`); the recent conversation, wider than the routing hint (`conversation`); the resume recap or session summary when the session resumed (`recap`); the top retrieved memory items (`memory`); the active goal, workflow or invoked procedure in focus (`focus`); the matched skill's name and description (`skill`). It MUST NOT carry an agent description or tool list (amended 2026-10-16: the `agent` field added noise on the tuned set), full transcripts, memory bodies beyond the caps, skill bodies, or database rows (pinned rule 6).
 - **FR-007**: The question instruction MUST tell the model to judge the task the user is trying to get done and to use the conversation and context to resolve what "it", "that plan", "go ahead" or "the other one" refers to. It MUST NOT carry the routing instruction "history and context are background only".
 
@@ -259,5 +259,5 @@ The implementer builds a tuned set and a calibration command, chooses `simple_ma
 - `routing_log`
 - `fetch_context`
 - `match_skills`
-- `capability_check`
+- `preflight`
 - `max_attempts=1`
