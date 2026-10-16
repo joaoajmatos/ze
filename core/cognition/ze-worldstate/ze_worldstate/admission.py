@@ -1,8 +1,8 @@
 """Loop gate — one System One request per qualifying text, then a code-owned commit.
 
-`LoopInflow` judges a text (conversation, email, calendar, ingestion) with three Nouls, decides in
-pure code, and hands back a `LoopAdmission` whose `commit` creates or closes the loop. Any failure
-falls back to the 109 Haiku gate (FR-012, FR-013).
+`LoopInflow` judges a text (email, calendar, ingestion) with the loop Nouls, decides in pure code,
+and commits inline. The conversation inflow is judged by `CommitmentIntake` (173), which builds its
+`LoopAdmission` through `finish`. Any failure falls back to the 109 Haiku gate (FR-012, FR-013).
 """
 
 from __future__ import annotations
@@ -57,14 +57,6 @@ class LoopInflow:
         self._settings = settings
         self._model = model
 
-    async def admit(self, configurable: dict, *, prompt: str) -> LoopAdmission:
-        """Conversation gate. Never raises; any failure is a fallback admission."""
-        thread_id = configurable.get("thread_id")
-        source = SourceKey(CONVERSATION, str(thread_id)) if thread_id else None
-        admission = await self._judge(prompt, CONVERSATION)
-        admission.source = source
-        return admission
-
     async def extract(
         self,
         text: str,
@@ -100,7 +92,7 @@ class LoopInflow:
             skip_reason=admission.skip_reason,
         )
 
-    def _commit_for(self, text: str, provenance: str, admission: LoopAdmission):
+    def commit_for(self, text: str, provenance: str, admission: LoopAdmission):
         async def _commit(evidence: Sequence[EvidenceRef] = ()) -> list:
             try:
                 return await propose_loop_candidates(
@@ -129,7 +121,7 @@ class LoopInflow:
 
         return _commit
 
-    def _finish(
+    def finish(
         self,
         text: str,
         provenance: str,
@@ -150,7 +142,7 @@ class LoopInflow:
             skip_reason=skip_reason,
         )
         if decision.kind != "hold":
-            admission.commit = self._commit_for(text, provenance, admission)
+            admission.commit = self.commit_for(text, provenance, admission)
         return admission
 
     async def _judge(self, text: str, provenance: str) -> LoopAdmission:
@@ -159,23 +151,23 @@ class LoopInflow:
             or not text.strip()
             or (provenance == CONVERSATION and is_trivial_turn(text))
         ):
-            return self._finish(text, provenance, LoopGateDecision("hold", "trivial"))
+            return self.finish(text, provenance, LoopGateDecision("hold", "trivial"))
 
         cfg = loop_gate_surface_config(self._settings)
         if not cfg.enabled:
-            return self._finish(
+            return self.finish(
                 text, provenance, LoopGateDecision("fallback", "disabled")
             )
         if not cfg.calibrated:
             log.warning("loop_gate_uncalibrated")
-            return self._finish(
+            return self.finish(
                 text,
                 provenance,
                 LoopGateDecision("fallback", "uncalibrated"),
                 skip_reason="uncalibrated",
             )
         if self._system_one is None or not loop_judge.supported_provenance(provenance):
-            return self._finish(
+            return self.finish(
                 text, provenance, LoopGateDecision("fallback", "unavailable")
             )
 
@@ -186,7 +178,7 @@ class LoopInflow:
             )
         except Exception as exc:
             log.warning("loop_gate_system_one_call_failed", error=str(exc))
-            return self._finish(
+            return self.finish(
                 text,
                 provenance,
                 LoopGateDecision("fallback", "error"),
@@ -195,7 +187,7 @@ class LoopInflow:
         decision = loop_judge.decide(result, cfg, provenance)
         if decision.reason == "invalid_answer":
             log.warning("loop_gate_invalid_answer")
-        return self._finish(
+        return self.finish(
             text,
             provenance,
             decision,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from tests.commitment_fixtures import conversation_admit
+
 import json
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -208,7 +210,7 @@ def _inflow(monkeypatch):
 async def test_admission_commit_takes_evidence_and_links_it(monkeypatch):
     inflow, env = _inflow(monkeypatch)
     ref = _ref()
-    admission = await inflow.admit({}, prompt="Daniel is still waiting on my answer to the passport form")
+    admission = await conversation_admit(inflow, {}, prompt="Daniel is still waiting on my answer to the passport form")
 
     created = await admission.commit([ref])
 

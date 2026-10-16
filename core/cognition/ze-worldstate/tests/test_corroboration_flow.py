@@ -6,6 +6,8 @@ confidence arithmetic run together. The seam is bypassed as in `test_admission.p
 
 from __future__ import annotations
 
+from tests.commitment_fixtures import conversation_admit
+
 import json
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -222,7 +224,7 @@ class Harness:
 
     async def chat(self, thread="th1", text="I need to reply to Ana about the budget"):
         ev = EvidenceRef(kind="episode", id=uuid4())
-        adm = await self.inflow.admit({"thread_id": thread}, prompt=text)
+        adm = await conversation_admit(self.inflow, {"thread_id": thread}, prompt=text)
         await adm.commit([ev])
         return ev
 
@@ -241,9 +243,9 @@ class Harness:
 
 async def test_admit_puts_the_thread_key_on_the_admission():
     h = Harness()
-    adm = await h.inflow.admit({"thread_id": "th1"}, prompt="I need to reply to Ana")
+    adm = await conversation_admit(h.inflow, {"thread_id": "th1"}, prompt="I need to reply to Ana")
     assert adm.source == SourceKey("conversation", "th1")
-    assert (await h.inflow.admit({}, prompt="I need to reply to Ana")).source is None
+    assert (await conversation_admit(h.inflow, {}, prompt="I need to reply to Ana")).source is None
 
 
 async def test_independent_email_promotes_a_suspected_loop():
@@ -308,7 +310,7 @@ async def test_no_origin_row_without_a_key():
 async def test_declared_path_match_corroborates_a_suspected_loop():
     h = Harness(same=0.93)
     await h.inbound("email", "G1")
-    adm = await h.inflow.admit({"thread_id": "th9"}, prompt="remind me to reply to Ana")
+    adm = await conversation_admit(h.inflow, {"thread_id": "th9"}, prompt="remind me to reply to Ana")
     adm.decision = replace(adm.decision, kind="create_declared", reason="explicit")
     await adm.commit([EvidenceRef(kind="episode", id=uuid4())])
 

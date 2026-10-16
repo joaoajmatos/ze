@@ -8,6 +8,7 @@ import pytest
 from ze_agents.system_one import SystemOneAnswer, SystemOneResult
 
 from ze_worldstate.admission import LoopInflow
+from ze_worldstate.loop_judge import LoopGateDecision
 from ze_worldstate.types import LoopProvenance, LoopState
 
 BARS = {"enabled": True, "loop_hold": 0.5, "explicit_hold": 0.6, "resolves_hold": 0.7}
@@ -114,96 +115,14 @@ def _inflow(system_one=None, llm=None, settings=None, **kw):
 # --- US4: fallback keeps 109 behavior -------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "settings,client",
-    [
-        ({}, FakeSystemOne(_ok())),
-        (_settings({**BARS, "enabled": False}), FakeSystemOne(_ok())),
-        (_settings({**BARS, "explicit_hold": None}), FakeSystemOne(_ok())),
-        (None, None),
-        (None, FakeSystemOne(SystemOneResult(outcome="skip", skip_reason="timeout"))),
-        (
-            None,
-            FakeSystemOne(
-                SystemOneResult(
-                    outcome="ok",
-                    answers={"is_open_concern": SystemOneAnswer(type="noul", noul=0.9)},
-                )
-            ),
-        ),
-        (None, FakeSystemOne(exc=RuntimeError("down"))),
-    ],
-)
-async def test_fallback_runs_109_haiku_gate(settings, client):
-    llm = CountingLLM(gate={"is_loop": True, "title": "Renew passport"})
-    inflow, loop_store, _, _ = _inflow(client, llm, settings)
-    adm = await inflow.admit({}, prompt="I need to renew my passport before the trip")
-    assert adm.decision.kind == "fallback"
-    created = await adm.commit()
-    assert [loop.title for loop in created] == ["Renew passport"]
-    assert created[0].state == LoopState.SUSPECTED and created[0].confidence == 0.3
-    assert any("relevance gate" in s for s in llm.calls)
-
-
-async def test_off_or_uncalibrated_makes_no_system_one_request():
-    client = FakeSystemOne(_ok())
-    for settings in ({}, _settings({**BARS, "loop_hold": None})):
-        inflow, *_ = _inflow(client, None, settings)
-        await inflow.admit({}, prompt="I need to renew my passport")
-    assert client.calls == []
-
-
-def test_uncalibrated_warns_once_per_call(monkeypatch):
-    from ze_worldstate import admission
-
-    warned = []
-    monkeypatch.setattr(
-        admission.log, "warning", lambda event, **kw: warned.append(event)
-    )
-    inflow, *_ = _inflow(
-        FakeSystemOne(_ok()), None, _settings({**BARS, "loop_hold": None})
-    )
-    import asyncio
-
-    asyncio.run(inflow.admit({}, prompt="I need to renew my passport"))
-    assert warned.count("loop_gate_uncalibrated") == 1
-
-
 # --- US1: gate ------------------------------------------------------------------------
 
 
-async def test_negative_noul_makes_no_llm_call_and_no_loop():
-    client = FakeSystemOne(_ok(concern=0.05, explicit=0.0))
-    inflow, loop_store, _, llm = _inflow(client)
-    adm = await inflow.admit({}, prompt="What's the weather in Lisbon tomorrow?")
-    assert adm.decision.kind == "hold"
-    assert adm.commit is None
-    assert llm.calls == []
-    loop_store.create.assert_not_called()
-    assert client.calls[0][2] == 1
-    assert set(adm.question_kinds) == {
-        "is_open_concern",
-        "explicit_declaration",
-        "resolves_existing",
-    }
-
-
-async def test_trivial_conversation_turn_makes_no_request():
-    client = FakeSystemOne(_ok(concern=0.9))
-    inflow, *_ = _inflow(client)
-    adm = await inflow.admit({}, prompt="thanks!")
-    assert adm.decision.reason == "trivial"
-    assert adm.judgment is None and adm.commit is None
-    assert client.calls == []
-
-
-async def test_positive_answer_has_commit():
-    inflow, *_ = _inflow(FakeSystemOne(_ok(concern=0.9, explicit=0.1)))
-    adm = await inflow.admit({}, prompt="Daniel is still waiting on my answer")
-    assert adm.decision.kind == "create_suspected"
-    assert adm.commit is not None
-    assert adm.consumed == frozenset(
-        {"is_open_concern", "explicit_declaration", "resolves_existing"}
+def _admitted(inflow, kind, text):
+    """The commit the conversation intake builds once it has decided (173)."""
+    consumed = {"resolve": {"resolves_existing"}}.get(kind, set())
+    return inflow.finish(
+        text, "conversation", LoopGateDecision(kind, "test", frozenset(consumed))
     )
 
 
@@ -215,7 +134,7 @@ async def test_suspected_create_uses_writer_only():
     inflow, loop_store, _, _ = _inflow(
         FakeSystemOne(_ok(concern=0.9, explicit=0.1)), llm
     )
-    adm = await inflow.admit({}, prompt="Daniel is still waiting on my answer")
+    adm = _admitted(inflow, "create_suspected", "Daniel is still waiting on my answer")
     created = await adm.commit()
     assert len(created) == 1
     assert created[0].state == LoopState.SUSPECTED and created[0].confidence == 0.3
@@ -239,7 +158,7 @@ async def test_declared_create_window(window, expected_days):
     inflow, loop_store, _, _ = _inflow(
         FakeSystemOne(_ok(concern=0.9, explicit=0.95)), llm
     )
-    adm = await inflow.admit({}, prompt="I need to renew my passport by Friday")
+    adm = _admitted(inflow, "create_declared", "I need to renew my passport by Friday")
     assert adm.decision.kind == "create_declared"
     (created,) = await adm.commit()
     assert created.state == LoopState.ACTIVE and created.confidence == 0.9
@@ -254,7 +173,7 @@ async def test_empty_title_or_writer_failure_creates_nothing(writer):
     inflow, loop_store, _, _ = _inflow(
         FakeSystemOne(_ok(concern=0.9, explicit=0.9)), llm
     )
-    adm = await inflow.admit({}, prompt="I need to renew my passport")
+    adm = _admitted(inflow, "create_declared", "I need to renew my passport")
     assert await adm.commit() == []
     loop_store.create.assert_not_called()
 
@@ -273,7 +192,7 @@ async def test_resolves_closes_matching_loop(monkeypatch):
         FakeSystemOne(_ok(concern=0.9, resolves=0.9, explicit=0.9)),
         CountingLLM(writer={"title": "Renew passport"}),
     )
-    adm = await inflow.admit({}, prompt="I renewed my passport, it is done")
+    adm = _admitted(inflow, "resolve", "I renewed my passport, it is done")
     assert adm.decision.kind == "resolve"
     assert adm.consumed == frozenset({"resolves_existing"})
     closed = await adm.commit()
@@ -289,7 +208,7 @@ async def test_resolves_without_match_closes_and_creates_nothing(monkeypatch):
     inflow, loop_store, _, _ = _inflow(
         FakeSystemOne(_ok(resolves=0.95, concern=0.1, explicit=0.0))
     )
-    adm = await inflow.admit({}, prompt="I renewed my passport, it is done")
+    adm = _admitted(inflow, "resolve", "I renewed my passport, it is done")
     assert await adm.commit() == []
     loop_store.transition.assert_not_called()
     loop_store.create.assert_not_called()
