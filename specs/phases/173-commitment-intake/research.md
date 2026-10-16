@@ -122,3 +122,37 @@ Tuned set at these bars, EN / PT (baseline in brackets): Choice accuracy 1.00 / 
 Wording and bars are frozen at the commit that carries this note. holdout2 (`e3084f1f`) was written blind and has had no model run. One verdict follows; any later change needs a fresh held-out set (FR-020).
 
 Config proposal if the verdict is `ENABLE`: `enabled: true`, `choice_hold: 0.65`, `family_hold: 0.65`, `biography_hold: 0.55`, `loop_hold: 0.6`, `explicit_hold: 0.95`, `resolves_hold: 0.8`.
+
+### holdout2 verdict (T053, 2026-10-16): EN ENABLE, PT KEEP OFF, overall KEEP OFF
+
+One live run on `commitment_intake_holdout2.jsonl` (184 rows, 92 per language, written blind, `typesafe/jev-1.13`, seed 173) at the bars and wording frozen in `7ae261d6`. Raw results: `eval/results/commitment_intake_holdout2_verdict.json` (gitignored). Nothing was re-scored or re-tuned afterwards; the diagnosis reads the saved answers only.
+
+| FR-022 clause | EN | PT |
+|---|---|---|
+| duplicate bookings = 0 | 0 pass (baseline 7) | 0 pass (baseline 6) |
+| false loop creates = 0 | 0 pass (baseline 5) | 0 pass (baseline 3) |
+| fact precision >= baseline | 1.00 vs 1.00 pass | 1.00 vs 1.00 pass |
+| fact recall >= baseline - 0.05 | 0.636 vs 0.500 pass | 0.609 vs 0.409 pass |
+| loop precision >= baseline | 1.00 vs 0.64 pass | 1.00 vs 0.69 pass |
+| loop recall >= baseline - 0.05 | 0.909 vs 0.955 - 0.05 = 0.905 pass | 0.909 vs 0.909 pass |
+| false resolves <= baseline | 2 vs 2 pass | 2 vs 2 pass |
+| Choice accuracy >= 0.9 | 0.928 pass | **0.892 FAIL** |
+
+Verdict: **EN ENABLE**, **PT KEEP OFF** (one clause: Choice accuracy 0.892, 9 of 83 wrong on the rows where the turn created nothing; 8 wrong would have passed), **OVERALL KEEP OFF**. The shipped config stays `enabled: false` with null bars. Link accuracy 9/9 both.
+
+Diagnosis (saved answers only). The 9 PT Choice errors:
+
+- Three are `resolves` rows (`h2-pt-90`, `-91`, `-92`: "Aceitei a proposta de emprego, ficou resolvido", "Já paguei a multa", "Marquei a inspeção do carro para dia 14"). Their gold Choice is `none` and the Choice question has no "resolves" option; the model reads `fact` or `loop`, and the pipeline still resolves the loop correctly for two of them (the outcome is right, the Choice label is not what the metric scores). EN has the same three rows wrong.
+- Two are `mixed` rows where a fact sits beside a question ("Sou vegetariano — que receitas rápidas me sugeres com grão-de-bico?"): the model reads `none` (the question wins), gold `fact`.
+- Two are `loop_declared` rows read as `reminder` at 0.49 to 0.57 ("Não me deixes esquecer o processo do seguro", "Mantém-me a par das revisões da tese, é para entregar até dia 20"); the loop is still created via row 7a, so the outcome is right.
+- One is `h2-pt-49` ("Vivo a dizer que vou cancelar a subscrição do ginásio...", gold `loop`) read as `fact`@0.48, held.
+- Plus `h2-pt-86` (a third party's passport, gold `none`) read as `fact`@0.26, held.
+
+Not clause-failing, but real:
+
+- **SC-005 is violated once per language.** `h2-en-65` and `h2-pt-65` ("I sent my CV to the recruiter on Monday and I'm waiting for her reply", gold `waiting_on`) read as `waiting_on`@1.00 but score `resolves_existing` 0.86 and 0.88, above `resolves_hold` 0.80, so a loop is resolved. `waiting_on` rows write 1/5 per language. FR-022 does not list this and the first verdict did not show it.
+- **False resolves** equal the baseline (2 per language): `h2-*-65` and `h2-*-85` ("last year I was worried about my taxes, but that's all sorted now", gold `none`, resolves 0.94 to 0.95).
+- **Loop misses** (EN `h2-en-30`, `-31`; PT `h2-pt-30`, `-49`): "keep an eye on my visa extension", "don't let me lose track of the insurance claim" read as `loop` at 0.79 to 0.89 but `is_open_concern` falls under 0.60, so they are held as `not_open_concern`.
+- Explicit-vs-implied accuracy is 0.59 in both languages for the intake and the baseline (declared versus suspected only; not an FR-022 clause).
+
+Per FR-020 any change from here needs a fresh held-out set. The task rule is to stop here and ask the Maestro.
